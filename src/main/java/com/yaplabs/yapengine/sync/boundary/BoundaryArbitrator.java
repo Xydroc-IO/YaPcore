@@ -11,17 +11,28 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Logger;
 
 /**
  * Thread 8 — Boundary Sync & Entity Handoff.
  * Receives cross-quad transactions, acquires leases via Thread 7 DLM,
  * then applies destination work on this thread (not on the DLM).
+ * <p>
+ * Critical latency rule: after {@link #requestLease}, wait on the <em>granted</em>
+ * queue (and wake on deny→requeue). Never park on {@code inbound.poll} while a
+ * lease is in flight — that used to cost up to ~20ms per border barrier and
+ * stacked to ~60ms MSPT under high-pop bots on the origin border planes.
  */
 @ThreadSafe
 public final class BoundaryArbitrator implements Runnable {
 
     private static final Logger LOG = Logger.getLogger("YapEngine.Boundary");
+
+    /** Idle wait when no inbound / granted work (interruptible via {@link #wake()}). */
+    private static final long IDLE_PARK_NANOS = TimeUnit.MILLISECONDS.toNanos(20);
+    /** Max wait for a single in-flight lease grant. */
+    private static final long GRANT_WAIT_NS = TimeUnit.MILLISECONDS.toNanos(250);
 
     public record BoundaryTransaction(
             String entityId,
@@ -50,6 +61,7 @@ public final class BoundaryArbitrator implements Runnable {
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicLong processed = new AtomicLong();
     private final AtomicLong retried = new AtomicLong();
+    private final AtomicLong grantTimeouts = new AtomicLong();
     private volatile Thread thread;
 
     public BoundaryArbitrator(ChunkSyncDlm dlm) {
@@ -67,6 +79,7 @@ public final class BoundaryArbitrator implements Runnable {
 
     public void stop() {
         running.set(false);
+        wake();
         if (thread != null) {
             thread.interrupt();
         }
@@ -78,6 +91,7 @@ public final class BoundaryArbitrator implements Runnable {
 
     public void submit(BoundaryTransaction tx) {
         inbound.offer(Objects.requireNonNull(tx));
+        wake();
     }
 
     public long getProcessed() {
@@ -88,8 +102,19 @@ public final class BoundaryArbitrator implements Runnable {
         return retried.get();
     }
 
+    public long getGrantTimeouts() {
+        return grantTimeouts.get();
+    }
+
     public int pending() {
         return inbound.size() + granted.size();
+    }
+
+    private void wake() {
+        Thread t = thread;
+        if (t != null) {
+            LockSupport.unpark(t);
+        }
     }
 
     @Override
@@ -97,17 +122,20 @@ public final class BoundaryArbitrator implements Runnable {
         while (running.get()) {
             try {
                 drainGranted();
-                BoundaryTransaction tx = inbound.poll(20, TimeUnit.MILLISECONDS);
+                BoundaryTransaction tx = inbound.poll();
                 if (tx != null) {
                     requestLease(tx);
+                    awaitGrantOrRetry();
+                    continue;
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
+                // Idle: park until submit / grant / stop — do not block on inbound
+                // alone while another queue may become ready.
+                LockSupport.parkNanos(IDLE_PARK_NANOS);
             } catch (RuntimeException ex) {
                 LOG.severe("Boundary fault: " + ex.getMessage());
             }
         }
+        drainGranted();
         LOG.info("Boundary Sync shut down");
     }
 
@@ -116,12 +144,45 @@ public final class BoundaryArbitrator implements Runnable {
         dlm.submit(ChunkSyncDlm.LeaseOp.acquire(
                 tx.inventoryKey(),
                 owner,
-                lease -> granted.offer(new GrantedWork(tx, lease)),
+                lease -> {
+                    granted.offer(new GrantedWork(tx, lease));
+                    wake();
+                },
                 () -> {
                     retried.incrementAndGet();
                     inbound.offer(tx);
+                    wake();
                 }
         ));
+    }
+
+    /**
+     * After submitting a lease acquire, wait for that grant (or a deny→inbound requeue).
+     * Must not sleep on {@code inbound.poll} — grants arrive on {@code granted}.
+     * Never abandon an in-flight lease: Paper main is blocked on the apply latch.
+     */
+    private void awaitGrantOrRetry() {
+        long warnAfter = System.nanoTime() + GRANT_WAIT_NS;
+        boolean warned = false;
+        while (running.get()) {
+            GrantedWork work = granted.poll();
+            if (work != null) {
+                completeWithLease(work.tx(), work.lease());
+                drainGranted();
+                return;
+            }
+            // Deny path re-queued to inbound — outer loop will requestLease again.
+            if (!inbound.isEmpty()) {
+                return;
+            }
+            if (!warned && System.nanoTime() >= warnAfter) {
+                warned = true;
+                grantTimeouts.incrementAndGet();
+                LOG.warning("Boundary grant slow (>250ms); inbound=" + inbound.size()
+                        + " granted=" + granted.size() + " dlmPending=" + dlm.pending());
+            }
+            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+        }
     }
 
     private void drainGranted() {

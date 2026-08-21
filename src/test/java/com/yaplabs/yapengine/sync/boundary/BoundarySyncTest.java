@@ -57,6 +57,37 @@ class BoundarySyncTest {
                 "expected >= 1 processed=" + layer.getProcessed());
     }
 
+    /**
+     * Regression: T8 used to park on inbound.poll(20ms) while the lease grant
+     * sat on another queue — ~20ms × N serial border barriers ≈ high-pop MSPT blowup.
+     * 40 sequential handoffs must finish well under the old 40×20ms floor.
+     */
+    @Test
+    @Timeout(30)
+    void sequentialHandoffsAreNotPollGapped() throws InterruptedException {
+        final int n = 40;
+        CountDownLatch applied = new CountDownLatch(n);
+        long start = System.nanoTime();
+        for (int i = 0; i < n; i++) {
+            final int id = i;
+            layer.submitHandoff(new ChunkSyncLayer.Handoff(
+                    "lat-" + id,
+                    "inv:lat-" + id,
+                    SpatialQuadrant.NW,
+                    SpatialQuadrant.SE,
+                    SequenceToken.next("lat-" + id),
+                    applied::countDown
+            ));
+        }
+        assertTrue(applied.await(5, TimeUnit.SECONDS), "handoffs did not complete");
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+        // Old bug floor ≈ 800ms; healthy path should be tens of ms even on a loaded CI box.
+        assertTrue(elapsedMs < 400,
+                "sequential handoffs took " + elapsedMs + "ms (poll-gap regression?)");
+        assertTrue(layer.getProcessed() >= n,
+                "processed=" + layer.getProcessed());
+    }
+
     @Test
     @Tag("soak")
     @Timeout(120)

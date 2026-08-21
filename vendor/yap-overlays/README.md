@@ -23,13 +23,18 @@ Phase 3 / **3.5** / **3.6** / **3.7** hooks in the vendored Paper tree pinned by
 7. **Tracker skip-clean + early-out (Phase 3.9)** — skip queueing empty
    `sendChanges` (`spatial-tracker-skip-clean`, **default on**); `ServerEntity`
    cheap early-out on main and spatial. Still **not** Folia player tick.
-8. **Barrier coalesce + distant brain (Phase 3.10)** —
+8. **Tracker dirty-bit snapshot (high-pop)** — `ChunkMap` reuses
+   `trackerEntities` array unless add/remove dirtied it (kills per-tick
+   `.clone()` tax that only YaP pays for spatial safety). Player-path skip-clean
+   before main `sendChanges` for bots. Passenger fast-path in `ServerEntity`.
+9. **Tracker interior+border single barrier** — `runParallelTickWithBorder`
+   when both queues have work (avoids back-to-back waits).
+10. **Barrier coalesce + distant brain (Phase 3.10)** —
    `spatial-coalesce-barriers` merges entity+BE+events into one barrier;
    `spatial-entity-activation` runs Paper EAR on spatial ticks;
    `spatial-distant-brain` throttles far path recomputes / full ticks
    (`YapDistantBrain` — YaP code, not Leaf).
-9. Rebuild → **`lib/paper-26.2-yap.jar`** (`scripts/build-vendor-paper.sh`).
-
+11. Rebuild → **`lib/paper-26.2-yap.jar`** (`scripts/build-vendor-paper.sh`).
 Stock Fill Paper is **not** used for default Phase 3 NMS: missing
 `lib/paper-*-yap.jar` fails boot. Set `paper-phase3-nms-tick=false` only for
 intentional leases/accounting without authoritative interior tick.

@@ -5,6 +5,8 @@ import com.yapcore.paper.phase3.YapPhase3Flags;
 import com.yapcore.paper.phase3.YapSpatialTickCoordinator;
 import com.yaplabs.yapengine.core.spatial.SpatialQuadrant;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -1085,49 +1087,53 @@ public final class InteriorWorldTickBridge {
         });
     }
 
-    // --- Phase 3.8 / 3.9: non-player tracker sendChanges on spatial cores / T8 ---
+    // --- Phase 3.8 / 3.9 / Leaf-gap: non-player tracker sendChanges on spatial cores / T8 ---
 
     private static final ThreadLocal<List<PendingTrackerSend>> PENDING_TRACKER =
             ThreadLocal.withInitial(ArrayList::new);
-    private static final ThreadLocal<List<Runnable>> PENDING_BORDER_TRACKER =
+    private static final ThreadLocal<List<Object>> PENDING_BORDER_TRACKER =
             ThreadLocal.withInitial(ArrayList::new);
 
-    private static volatile Method entityGetEntityData;
-    private static volatile Method entityDataIsDirty;
-    private static volatile java.lang.reflect.Field entityNeedsSync;
-    private static volatile java.lang.reflect.Field entityHurtMarked;
-    private static volatile java.lang.reflect.Field entitySyncPosition;
-    private static volatile java.lang.reflect.Field serverEntityTickCount;
-    private static volatile java.lang.reflect.Field serverEntityUpdateInterval;
-    private static volatile java.lang.reflect.Field serverEntityForceResync;
-    private static volatile boolean trackerReflectFailed;
+    private static volatile MethodHandle sendChangesMh;
+    private static volatile boolean sendChangesMhFailed;
 
     /**
      * Queue non-player {@code ServerEntity.sendChanges} for spatial flush.
-     * {@code moonrise$tick} / track-untrack must already have run on Paper main.
-     * Players are never offered (ChunkMap keeps them on main).
-     * <p>
-     * Phase 3.9: returns {@code true} also when the send is a known no-op (skip-clean),
-     * so main does not run {@code sendChanges} either.
-     *
-     * @param serverEntity optional {@code ServerEntity} for interval/force checks; may be null
-     * @return false if the work should run on main (unknown entity / offer fail)
+     * Prefer {@link #offerTrackerSendChanges(Object, Object, int, int)} from ChunkMap
+     * (coords + no per-entity Runnable / chunkPosition reflect).
      */
     public static boolean offerTrackerSendChanges(Object nmsEntity, Runnable sendChanges) {
         return offerTrackerSendChanges(nmsEntity, null, sendChanges);
     }
 
+    /** Legacy 3-arg path: resolves chunk via reflect; prefer the cx/cz overload. */
     public static boolean offerTrackerSendChanges(Object nmsEntity, Object serverEntity, Runnable sendChanges) {
-        if (nmsEntity == null || sendChanges == null || !YapPhase3Flags.spatialTracker()) {
+        if (nmsEntity == null || !YapPhase3Flags.spatialTracker()) {
             return false;
         }
-        if (YapPhase3Flags.spatialTrackerSkipClean() && isCleanTrackerSend(nmsEntity, serverEntity)) {
-            TRACKER_SKIPPED.incrementAndGet();
-            return true;
+        if (serverEntity != null) {
+            try {
+                int cx;
+                int cz;
+                if (entityChunkPos == null) {
+                    entityChunkPos = nmsEntity.getClass().getMethod("chunkPosition");
+                }
+                Object pos = entityChunkPos.invoke(nmsEntity);
+                if (chunkPosX == null) {
+                    chunkPosX = pos.getClass().getMethod("x");
+                    chunkPosZ = pos.getClass().getMethod("z");
+                }
+                cx = ((Number) chunkPosX.invoke(pos)).intValue();
+                cz = ((Number) chunkPosZ.invoke(pos)).intValue();
+                return offerTrackerSendChanges(nmsEntity, serverEntity, cx, cz);
+            } catch (Throwable t) {
+                return false;
+            }
+        }
+        if (sendChanges == null) {
+            return false;
         }
         try {
-            int cx;
-            int cz;
             if (entityChunkPos == null) {
                 entityChunkPos = nmsEntity.getClass().getMethod("chunkPosition");
             }
@@ -1136,92 +1142,45 @@ public final class InteriorWorldTickBridge {
                 chunkPosX = pos.getClass().getMethod("x");
                 chunkPosZ = pos.getClass().getMethod("z");
             }
-            cx = ((Number) chunkPosX.invoke(pos)).intValue();
-            cz = ((Number) chunkPosZ.invoke(pos)).intValue();
-            if (YapSpatialTickCoordinator.isBorderChunk(cx, cz)) {
-                if (!YapPhase3Flags.spatialBorders()) {
-                    return false;
-                }
-                PENDING_BORDER_TRACKER.get().add(sendChanges);
-                return true;
-            }
-            SpatialQuadrant q = SpatialQuadrant.byId(quadrantId(cx, cz));
-            PENDING_TRACKER.get().add(new PendingTrackerSend(q, sendChanges));
-            return true;
+            int cx = ((Number) chunkPosX.invoke(pos)).intValue();
+            int cz = ((Number) chunkPosZ.invoke(pos)).intValue();
+            return queueTrackerSend(cx, cz, serverEntity, sendChanges);
         } catch (Throwable t) {
             return false;
         }
     }
 
     /**
-     * True when {@code sendChanges} would only bump tickCount — no packets.
-     * Uses entity dirty flags + ServerEntity interval when available.
+     * Leaf-gap hot path: ChunkMap passes chunk coords + ServerEntity (no Runnable alloc,
+     * no chunkPosition reflect). Clean skips happen in ChunkMap via NMS {@code yapIsCleanTrackerSend}.
+     *
+     * @return false if the work should run on main (offer fail / borders off)
      */
-    static boolean isCleanTrackerSend(Object nmsEntity, Object serverEntity) {
-        if (trackerReflectFailed) {
+    public static boolean offerTrackerSendChanges(Object nmsEntity, Object serverEntity, int cx, int cz) {
+        if (nmsEntity == null || serverEntity == null || !YapPhase3Flags.spatialTracker()) {
             return false;
         }
+        return queueTrackerSend(cx, cz, serverEntity, null);
+    }
+
+    /** Count a ChunkMap-side clean skip (NMS early-out mirrored before offer). */
+    public static void noteTrackerSkip() {
+        TRACKER_SKIPPED.incrementAndGet();
+    }
+
+    private static boolean queueTrackerSend(int cx, int cz, Object serverEntity, Runnable sendChanges) {
         try {
-            if (entityHurtMarked == null) {
-                Class<?> ec = nmsEntity.getClass();
-                while (ec != null) {
-                    try {
-                        entityNeedsSync = ec.getDeclaredField("needsSync");
-                        entityNeedsSync.setAccessible(true);
-                        entityHurtMarked = ec.getDeclaredField("hurtMarked");
-                        entityHurtMarked.setAccessible(true);
-                        entitySyncPosition = ec.getDeclaredField("syncPosition");
-                        entitySyncPosition.setAccessible(true);
-                        break;
-                    } catch (NoSuchFieldException e) {
-                        ec = ec.getSuperclass();
-                    }
-                }
-                entityGetEntityData = nmsEntity.getClass().getMethod("getEntityData");
-            }
-            if (entityHurtMarked == null) {
-                trackerReflectFailed = true;
-                return false;
-            }
-            if (Boolean.TRUE.equals(entityNeedsSync.get(nmsEntity))
-                    || Boolean.TRUE.equals(entityHurtMarked.get(nmsEntity))
-                    || Boolean.TRUE.equals(entitySyncPosition.get(nmsEntity))) {
-                return false;
-            }
-            Object data = entityGetEntityData.invoke(nmsEntity);
-            if (entityDataIsDirty == null) {
-                entityDataIsDirty = data.getClass().getMethod("isDirty");
-            }
-            if (Boolean.TRUE.equals(entityDataIsDirty.invoke(data))) {
-                return false;
-            }
-            if (serverEntity != null) {
-                if (serverEntityTickCount == null) {
-                    Class<?> sc = serverEntity.getClass();
-                    serverEntityTickCount = sc.getDeclaredField("tickCount");
-                    serverEntityTickCount.setAccessible(true);
-                    serverEntityUpdateInterval = sc.getDeclaredField("updateInterval");
-                    serverEntityUpdateInterval.setAccessible(true);
-                    try {
-                        serverEntityForceResync = sc.getDeclaredField("forceStateResync");
-                        serverEntityForceResync.setAccessible(true);
-                    } catch (NoSuchFieldException ignored) {
-                        serverEntityForceResync = null;
-                    }
-                }
-                if (serverEntityForceResync != null
-                        && Boolean.TRUE.equals(serverEntityForceResync.get(serverEntity))) {
+            if (YapSpatialTickCoordinator.isBorderChunk(cx, cz)) {
+                if (!YapPhase3Flags.spatialBorders()) {
                     return false;
                 }
-                int tick = serverEntityTickCount.getInt(serverEntity);
-                int interval = Math.max(1, serverEntityUpdateInterval.getInt(serverEntity));
-                if (tick % interval == 0) {
-                    return false; // position/rotation sync tick
-                }
+                PENDING_BORDER_TRACKER.get().add(serverEntity != null ? serverEntity : sendChanges);
+                return true;
             }
+            SpatialQuadrant q = SpatialQuadrant.byId(quadrantId(cx, cz));
+            PENDING_TRACKER.get().add(new PendingTrackerSend(q, serverEntity, sendChanges));
             return true;
         } catch (Throwable t) {
-            trackerReflectFailed = true;
             return false;
         }
     }
@@ -1230,58 +1189,95 @@ public final class InteriorWorldTickBridge {
     public static void flushTrackerSendChanges() {
         YapDistantBrain.bumpTick();
         List<PendingTrackerSend> interior = PENDING_TRACKER.get();
-        List<Runnable> border = PENDING_BORDER_TRACKER.get();
+        List<Object> border = PENDING_BORDER_TRACKER.get();
         if (interior.isEmpty() && border.isEmpty()) {
             return;
         }
         List<PendingTrackerSend> intCopy = new ArrayList<>(interior);
         interior.clear();
-        List<Runnable> borderCopy = new ArrayList<>(border);
+        List<Object> borderCopy = new ArrayList<>(border);
         border.clear();
 
         YapSpatialTickCoordinator coord = PaperTickBridgeHolder.COORDINATOR;
-        // Tiny batches: run on main — latch wakeup often costs more than a few sendChanges
-        final int tiny = 12;
+        // Tiny batches: run on main — latch wakeup often costs more than a few sendChanges.
+        final int tiny = 48;
+        boolean interiorSpatial = coord != null && coord.isOnline() && intCopy.size() > tiny;
+        boolean borderSpatial = coord != null && coord.isOnline()
+                && YapPhase3Flags.spatialBorders() && !borderCopy.isEmpty();
+
+        if (!intCopy.isEmpty() && !interiorSpatial) {
+            for (PendingTrackerSend p : intCopy) {
+                runTrackerSend(p, false);
+            }
+            intCopy = List.of();
+        }
+        if (!borderCopy.isEmpty() && !borderSpatial) {
+            for (Object o : borderCopy) {
+                runTrackerTarget(o, true);
+            }
+            borderCopy = List.of();
+        }
+
+        if (intCopy.isEmpty() && borderCopy.isEmpty()) {
+            return;
+        }
+
+        Map<SpatialQuadrant, Runnable> work = null;
         if (!intCopy.isEmpty()) {
-            if (coord == null || !coord.isOnline() || intCopy.size() <= tiny) {
-                for (PendingTrackerSend p : intCopy) {
-                    runTrackerSend(p.send, false);
-                }
-            } else {
-                EnumMap<SpatialQuadrant, List<Runnable>> byQ = new EnumMap<>(SpatialQuadrant.class);
-                for (PendingTrackerSend p : intCopy) {
-                    byQ.computeIfAbsent(p.quad, k -> new ArrayList<>()).add(p.send);
-                }
-                Map<SpatialQuadrant, Runnable> work = new EnumMap<>(SpatialQuadrant.class);
-                for (var e : byQ.entrySet()) {
-                    List<Runnable> list = e.getValue();
-                    work.put(e.getKey(), () -> coord.runOwned(() -> {
-                        for (Runnable r : list) {
-                            runTrackerSend(r, false);
-                        }
-                    }));
-                }
-                coord.runParallelTick(work);
+            EnumMap<SpatialQuadrant, List<PendingTrackerSend>> byQ = new EnumMap<>(SpatialQuadrant.class);
+            for (PendingTrackerSend p : intCopy) {
+                byQ.computeIfAbsent(p.quad, k -> new ArrayList<>()).add(p);
+            }
+            work = new EnumMap<>(SpatialQuadrant.class);
+            for (var e : byQ.entrySet()) {
+                List<PendingTrackerSend> list = e.getValue();
+                work.put(e.getKey(), () -> coord.runOwned(() -> {
+                    for (PendingTrackerSend p : list) {
+                        runTrackerSend(p, false);
+                    }
+                }));
             }
         }
-        if (!borderCopy.isEmpty()) {
-            if (coord == null || !coord.isOnline() || !YapPhase3Flags.spatialBorders()) {
-                for (Runnable r : borderCopy) {
-                    runTrackerSend(r, true);
+
+        // High-pop: one barrier when both interior + border tracker work exist
+        if (work != null && !borderCopy.isEmpty()) {
+            List<Object> borderFinal = borderCopy;
+            coord.runParallelTickWithBorder(work, "border:tracker", () -> {
+                for (Object o : borderFinal) {
+                    runTrackerTarget(o, true);
                 }
-            } else {
-                coord.runBorderTickSync("border:tracker", () -> {
-                    for (Runnable r : borderCopy) {
-                        runTrackerSend(r, true);
-                    }
-                });
-            }
+            });
+            return;
+        }
+        if (work != null) {
+            coord.runParallelTick(work);
+            return;
+        }
+        if (!borderCopy.isEmpty()) {
+            List<Object> borderFinal = borderCopy;
+            coord.runBorderTickSync("border:tracker", () -> {
+                for (Object o : borderFinal) {
+                    runTrackerTarget(o, true);
+                }
+            });
         }
     }
 
-    private static void runTrackerSend(Runnable send, boolean border) {
+    private static void runTrackerSend(PendingTrackerSend p, boolean border) {
+        if (p.serverEntity != null) {
+            runTrackerTarget(p.serverEntity, border);
+        } else if (p.send != null) {
+            runTrackerTarget(p.send, border);
+        }
+    }
+
+    private static void runTrackerTarget(Object target, boolean border) {
         try {
-            send.run();
+            if (target instanceof Runnable r) {
+                r.run();
+            } else {
+                invokeSendChanges(target);
+            }
             if (border) {
                 BORDER_TRACKER_SENDS.incrementAndGet();
             } else {
@@ -1295,6 +1291,30 @@ public final class InteriorWorldTickBridge {
         }
     }
 
-    private record PendingTrackerSend(SpatialQuadrant quad, Runnable send) {
+    private static void invokeSendChanges(Object serverEntity) throws Throwable {
+        MethodHandle mh = sendChangesMh;
+        if (mh == null && !sendChangesMhFailed) {
+            synchronized (InteriorWorldTickBridge.class) {
+                if (sendChangesMh == null && !sendChangesMhFailed) {
+                    try {
+                        sendChangesMh = MethodHandles.publicLookup()
+                                .findVirtual(serverEntity.getClass(), "sendChanges",
+                                        java.lang.invoke.MethodType.methodType(void.class));
+                    } catch (Throwable t) {
+                        sendChangesMhFailed = true;
+                        throw t;
+                    }
+                }
+                mh = sendChangesMh;
+            }
+        }
+        if (mh == null) {
+            serverEntity.getClass().getMethod("sendChanges").invoke(serverEntity);
+            return;
+        }
+        mh.invoke(serverEntity);
+    }
+
+    private record PendingTrackerSend(SpatialQuadrant quad, Object serverEntity, Runnable send) {
     }
 }

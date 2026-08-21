@@ -251,6 +251,93 @@ public final class YapSpatialTickCoordinator {
         return ok && !failed.get();
     }
 
+    /**
+     * Run interior quadrant work and optional border work with <strong>one</strong> main-thread
+     * barrier wait. Used by tracker flush when both interior and border sends are pending —
+     * avoids paying {@link #runParallelTick} then {@link #runBorderTickSync} back-to-back
+     * (high-pop / heavypop MSPT tax).
+     */
+    public boolean runParallelTickWithBorder(
+            Map<SpatialQuadrant, Runnable> quadrantWork,
+            String borderLeaseKey,
+            Runnable borderMutation) {
+        boolean hasInterior = quadrantWork != null && !quadrantWork.isEmpty();
+        boolean hasBorder = borderMutation != null;
+        if (!hasInterior && !hasBorder) {
+            return true;
+        }
+        if (!hasBorder) {
+            return runParallelTick(quadrantWork);
+        }
+        if (!hasInterior) {
+            return runBorderTickSync(borderLeaseKey != null ? borderLeaseKey : "border", borderMutation);
+        }
+        if (!online.get()) {
+            runParallelTick(quadrantWork);
+            borderMutation.run();
+            return true;
+        }
+
+        EnumMap<SpatialQuadrant, Runnable> work = new EnumMap<>(SpatialQuadrant.class);
+        for (var e : quadrantWork.entrySet()) {
+            if (e.getValue() != null) {
+                work.put(e.getKey(), e.getValue());
+            }
+        }
+        if (work.isEmpty()) {
+            return runBorderTickSync(borderLeaseKey != null ? borderLeaseKey : "border", borderMutation);
+        }
+
+        CountDownLatch done = new CountDownLatch(work.size() + 1);
+        AtomicBoolean failed = new AtomicBoolean(false);
+        for (var e : work.entrySet()) {
+            SpatialQuadrant q = e.getKey();
+            Runnable task = e.getValue();
+            gameCore.loop(q).executeUrgent(() -> {
+                try {
+                    task.run();
+                    tasksRun.incrementAndGet();
+                } catch (Throwable t) {
+                    failed.set(true);
+                    LOG.log(Level.SEVERE, "Phase 3 tick fault in " + q, t);
+                } finally {
+                    done.countDown();
+                }
+            });
+        }
+        String leaseKey = borderLeaseKey != null ? borderLeaseKey : "border";
+        submitBorderHandoff(
+                "border-tick:" + leaseKey,
+                leaseKey,
+                SpatialQuadrant.NW,
+                SpatialQuadrant.SE,
+                () -> {
+                    try {
+                        borderMutation.run();
+                        leasedMutations.incrementAndGet();
+                    } catch (Throwable t) {
+                        failed.set(true);
+                        LOG.log(Level.SEVERE, "Border tick fault key=" + leaseKey, t);
+                    } finally {
+                        done.countDown();
+                    }
+                });
+        boolean ok;
+        try {
+            ok = done.await(TICK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            if (!ok) {
+                overruns.incrementAndGet();
+                done.await();
+                ok = true;
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+        ticks.incrementAndGet();
+        return ok && !failed.get();
+    }
+
     /** Convenience: build a 4-way map (nulls allowed). */
     public boolean runParallelTick(Runnable nw, Runnable ne, Runnable sw, Runnable se) {
         EnumMap<SpatialQuadrant, Runnable> map = new EnumMap<>(SpatialQuadrant.class);

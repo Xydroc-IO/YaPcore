@@ -762,61 +762,72 @@ else:
 PY2
 fi
 
-# --- ChunkMap: Phase 3.8/3.9 spatial non-player tracker sendChanges ---
+# --- ChunkMap: Phase 3.8/3.9/Leaf-gap spatial non-player tracker sendChanges ---
 CM="$ROOT/vendor/paper/paper-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java"
 if [[ -f "$CM" ]]; then
-  if grep -q 'yapSpatialTrackerEnabledM' "$CM"; then
-    echo "YaP ChunkMap spatial-tracker 3.9 hook already present"
-  elif grep -q 'yapOfferTrackerSendChanges' "$CM"; then
-    echo "Upgrading YaP ChunkMap spatial-tracker 3.8 → 3.9…"
-    python3 - <<'PYCM39'
+  if grep -q 'yapOfferTrackerMh' "$CM"; then
+    echo "YaP ChunkMap Leaf-gap tracker MethodHandle hook already present"
+  elif grep -q 'yapSpatialTrackerEnabledM\|yapOfferTrackerSendChanges' "$CM"; then
+    echo "Upgrading YaP ChunkMap tracker → Leaf-gap MethodHandles + cx/cz…"
+    python3 - <<'PYCMLEAF'
 from pathlib import Path
+import re
 path = Path("/home/xydroc/Desktop/YaPcore/vendor/paper/paper-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java")
 text = path.read_text()
-# Flag cache + 3-arg offer
-old_flag = '            final boolean yapSpatialTracker = Boolean.getBoolean("yapcore.phase3.spatial-tracker");'
-new_flag = '            final boolean yapSpatialTracker = yapSpatialTrackerEnabled();'
-if old_flag in text:
-    text = text.replace(old_flag, new_flag, 1)
-old_offer = '''    private static boolean yapOfferTrackerSendChanges(final Entity entity, final ChunkMap.TrackedEntity tracker) {
+# Replace bridge statics + helpers from first "private static volatile Class<?> yapTrackerBridgeCl"
+# through end marker
+pat = re.compile(
+    r"    private static volatile Class<\?> yapTrackerBridgeCl;.*?    // Paper end - optimise entity tracker / YaPcore spatial tracker",
+    re.S,
+)
+new = '''    private static volatile Class<?> yapTrackerBridgeCl;
+    private static volatile java.lang.invoke.MethodHandle yapOfferTrackerMh;
+    private static volatile java.lang.invoke.MethodHandle yapFlushTrackerMh;
+    private static volatile java.lang.invoke.MethodHandle yapSpatialTrackerEnabledMh;
+    private static volatile java.lang.invoke.MethodHandle yapNoteTrackerSkipMh;
+    private static volatile boolean yapTrackerBridgeFailed;
+    private static volatile boolean yapTrackerSkipClean = true;
+
+    private static boolean yapEnsureTrackerBridge() {
+        if (yapTrackerBridgeFailed) {
+            return false;
+        }
+        if (yapOfferTrackerMh != null) {
+            return true;
+        }
         try {
-            if (yapTrackerBridgeFailed) {
-                return false;
+            yapTrackerBridgeCl = Class.forName(
+                    "com.yapcore.paper.phase3.nms.InteriorWorldTickBridge",
+                    true,
+                    ClassLoader.getSystemClassLoader());
+            java.lang.invoke.MethodHandles.Lookup lookup = java.lang.invoke.MethodHandles.publicLookup();
+            yapOfferTrackerMh = lookup.findStatic(yapTrackerBridgeCl, "offerTrackerSendChanges",
+                    java.lang.invoke.MethodType.methodType(boolean.class, Object.class, Object.class, int.class, int.class));
+            yapFlushTrackerMh = lookup.findStatic(yapTrackerBridgeCl, "flushTrackerSendChanges",
+                    java.lang.invoke.MethodType.methodType(void.class));
+            yapSpatialTrackerEnabledMh = lookup.findStatic(yapTrackerBridgeCl, "spatialTrackerEnabled",
+                    java.lang.invoke.MethodType.methodType(boolean.class));
+            try {
+                yapNoteTrackerSkipMh = lookup.findStatic(yapTrackerBridgeCl, "noteTrackerSkip",
+                        java.lang.invoke.MethodType.methodType(void.class));
+            } catch (Throwable ignored) {
+                yapNoteTrackerSkipMh = null;
             }
-            if (yapTrackerBridgeCl == null) {
-                yapTrackerBridgeCl = Class.forName(
-                        "com.yapcore.paper.phase3.nms.InteriorWorldTickBridge",
-                        true,
-                        ClassLoader.getSystemClassLoader());
-                yapOfferTrackerM = yapTrackerBridgeCl.getMethod(
-                        "offerTrackerSendChanges", Object.class, Runnable.class);
-                yapFlushTrackerM = yapTrackerBridgeCl.getMethod("flushTrackerSendChanges");
-            }
-            Object ok = yapOfferTrackerM.invoke(null, entity, (Runnable) () -> tracker.serverEntity.sendChanges());
-            return Boolean.TRUE.equals(ok);
+            String skip = System.getProperty("yapcore.phase3.spatial-tracker-skip-clean");
+            yapTrackerSkipClean = skip == null || Boolean.parseBoolean(skip);
+            return true;
         } catch (Throwable t) {
             yapTrackerBridgeFailed = true;
             return false;
         }
-    }'''
-new_offer = '''    private static volatile java.lang.reflect.Method yapSpatialTrackerEnabledM;
+    }
 
     private static boolean yapSpatialTrackerEnabled() {
         try {
-            if (yapTrackerBridgeFailed) {
+            if (!yapEnsureTrackerBridge()) {
                 return Boolean.getBoolean("yapcore.phase3.spatial-tracker");
             }
-            if (yapTrackerBridgeCl == null) {
-                yapTrackerBridgeCl = Class.forName(
-                        "com.yapcore.paper.phase3.nms.InteriorWorldTickBridge",
-                        true,
-                        ClassLoader.getSystemClassLoader());
-                yapOfferTrackerM = yapTrackerBridgeCl.getMethod(
-                        "offerTrackerSendChanges", Object.class, Object.class, Runnable.class);
-                yapFlushTrackerM = yapTrackerBridgeCl.getMethod("flushTrackerSendChanges");
-                yapSpatialTrackerEnabledM = yapTrackerBridgeCl.getMethod("spatialTrackerEnabled");
-            }
-            return Boolean.TRUE.equals(yapSpatialTrackerEnabledM.invoke(null));
+            return (boolean) yapSpatialTrackerEnabledMh.invokeExact();
         } catch (Throwable t) {
             return Boolean.getBoolean("yapcore.phase3.spatial-tracker");
         }
@@ -824,31 +835,41 @@ new_offer = '''    private static volatile java.lang.reflect.Method yapSpatialTr
 
     private static boolean yapOfferTrackerSendChanges(final Entity entity, final ChunkMap.TrackedEntity tracker) {
         try {
-            if (yapTrackerBridgeFailed) {
+            if (!yapEnsureTrackerBridge() || yapOfferTrackerMh == null) {
                 return false;
             }
-            if (yapTrackerBridgeCl == null) {
-                yapSpatialTrackerEnabled();
+            if (yapTrackerSkipClean && tracker.serverEntity.yapIsCleanTrackerSend()) {
+                tracker.serverEntity.yapBumpCleanTrackerTick();
+                if (yapNoteTrackerSkipMh != null) {
+                    yapNoteTrackerSkipMh.invokeExact();
+                }
+                return true;
             }
-            if (yapOfferTrackerM == null) {
-                return false;
-            }
-            Object ok = yapOfferTrackerM.invoke(null, entity, tracker.serverEntity,
-                    (Runnable) () -> tracker.serverEntity.sendChanges());
-            return Boolean.TRUE.equals(ok);
+            final net.minecraft.world.level.ChunkPos pos = entity.chunkPosition();
+            return (boolean) yapOfferTrackerMh.invokeExact(
+                    (Object) entity, (Object) tracker.serverEntity, pos.x(), pos.z());
         } catch (Throwable t) {
             yapTrackerBridgeFailed = true;
             return false;
         }
-    }'''
-if old_offer in text:
-    text = text.replace(old_offer, new_offer, 1)
-    path.write_text(text)
-    print("Upgraded ChunkMap to Phase 3.9 tracker hooks")
-else:
-    print("WARN: 3.8 offer method pattern missing — manual check ChunkMap")
-    path.write_text(text)
-PYCM39
+    }
+
+    private static void yapFlushTrackerSendChanges() {
+        try {
+            if (yapTrackerBridgeFailed || yapFlushTrackerMh == null) {
+                return;
+            }
+            yapFlushTrackerMh.invokeExact();
+        } catch (Throwable ignored) {
+        }
+    }
+    // Paper end - optimise entity tracker / YaPcore spatial tracker'''
+m = pat.search(text)
+if not m:
+    raise SystemExit("WARN: ChunkMap tracker bridge block not found for Leaf-gap upgrade")
+path.write_text(pat.sub(new, text, count=1))
+print("Upgraded ChunkMap to Leaf-gap MethodHandle tracker hooks")
+PYCMLEAF
   else
     python3 - <<'PYCM'
 from pathlib import Path
@@ -909,27 +930,53 @@ new = """    private void newTrackerTick() {
     }
 
     private static volatile Class<?> yapTrackerBridgeCl;
-    private static volatile java.lang.reflect.Method yapOfferTrackerM;
-    private static volatile java.lang.reflect.Method yapFlushTrackerM;
-    private static volatile java.lang.reflect.Method yapSpatialTrackerEnabledM;
+    private static volatile java.lang.invoke.MethodHandle yapOfferTrackerMh;
+    private static volatile java.lang.invoke.MethodHandle yapFlushTrackerMh;
+    private static volatile java.lang.invoke.MethodHandle yapSpatialTrackerEnabledMh;
+    private static volatile java.lang.invoke.MethodHandle yapNoteTrackerSkipMh;
     private static volatile boolean yapTrackerBridgeFailed;
+    private static volatile boolean yapTrackerSkipClean = true;
+
+    private static boolean yapEnsureTrackerBridge() {
+        if (yapTrackerBridgeFailed) {
+            return false;
+        }
+        if (yapOfferTrackerMh != null) {
+            return true;
+        }
+        try {
+            yapTrackerBridgeCl = Class.forName(
+                    "com.yapcore.paper.phase3.nms.InteriorWorldTickBridge",
+                    true,
+                    ClassLoader.getSystemClassLoader());
+            java.lang.invoke.MethodHandles.Lookup lookup = java.lang.invoke.MethodHandles.publicLookup();
+            yapOfferTrackerMh = lookup.findStatic(yapTrackerBridgeCl, "offerTrackerSendChanges",
+                    java.lang.invoke.MethodType.methodType(boolean.class, Object.class, Object.class, int.class, int.class));
+            yapFlushTrackerMh = lookup.findStatic(yapTrackerBridgeCl, "flushTrackerSendChanges",
+                    java.lang.invoke.MethodType.methodType(void.class));
+            yapSpatialTrackerEnabledMh = lookup.findStatic(yapTrackerBridgeCl, "spatialTrackerEnabled",
+                    java.lang.invoke.MethodType.methodType(boolean.class));
+            try {
+                yapNoteTrackerSkipMh = lookup.findStatic(yapTrackerBridgeCl, "noteTrackerSkip",
+                        java.lang.invoke.MethodType.methodType(void.class));
+            } catch (Throwable ignored) {
+                yapNoteTrackerSkipMh = null;
+            }
+            String skip = System.getProperty("yapcore.phase3.spatial-tracker-skip-clean");
+            yapTrackerSkipClean = skip == null || Boolean.parseBoolean(skip);
+            return true;
+        } catch (Throwable t) {
+            yapTrackerBridgeFailed = true;
+            return false;
+        }
+    }
 
     private static boolean yapSpatialTrackerEnabled() {
         try {
-            if (yapTrackerBridgeFailed) {
+            if (!yapEnsureTrackerBridge()) {
                 return Boolean.getBoolean("yapcore.phase3.spatial-tracker");
             }
-            if (yapTrackerBridgeCl == null) {
-                yapTrackerBridgeCl = Class.forName(
-                        "com.yapcore.paper.phase3.nms.InteriorWorldTickBridge",
-                        true,
-                        ClassLoader.getSystemClassLoader());
-                yapOfferTrackerM = yapTrackerBridgeCl.getMethod(
-                        "offerTrackerSendChanges", Object.class, Object.class, Runnable.class);
-                yapFlushTrackerM = yapTrackerBridgeCl.getMethod("flushTrackerSendChanges");
-                yapSpatialTrackerEnabledM = yapTrackerBridgeCl.getMethod("spatialTrackerEnabled");
-            }
-            return Boolean.TRUE.equals(yapSpatialTrackerEnabledM.invoke(null));
+            return (boolean) yapSpatialTrackerEnabledMh.invokeExact();
         } catch (Throwable t) {
             return Boolean.getBoolean("yapcore.phase3.spatial-tracker");
         }
@@ -937,18 +984,19 @@ new = """    private void newTrackerTick() {
 
     private static boolean yapOfferTrackerSendChanges(final Entity entity, final ChunkMap.TrackedEntity tracker) {
         try {
-            if (yapTrackerBridgeFailed) {
+            if (!yapEnsureTrackerBridge() || yapOfferTrackerMh == null) {
                 return false;
             }
-            if (yapTrackerBridgeCl == null) {
-                yapSpatialTrackerEnabled();
+            if (yapTrackerSkipClean && tracker.serverEntity.yapIsCleanTrackerSend()) {
+                tracker.serverEntity.yapBumpCleanTrackerTick();
+                if (yapNoteTrackerSkipMh != null) {
+                    yapNoteTrackerSkipMh.invokeExact();
+                }
+                return true;
             }
-            if (yapOfferTrackerM == null) {
-                return false;
-            }
-            Object ok = yapOfferTrackerM.invoke(null, entity, tracker.serverEntity,
-                    (Runnable) () -> tracker.serverEntity.sendChanges());
-            return Boolean.TRUE.equals(ok);
+            final net.minecraft.world.level.ChunkPos pos = entity.chunkPosition();
+            return (boolean) yapOfferTrackerMh.invokeExact(
+                    (Object) entity, (Object) tracker.serverEntity, pos.x(), pos.z());
         } catch (Throwable t) {
             yapTrackerBridgeFailed = true;
             return false;
@@ -957,10 +1005,10 @@ new = """    private void newTrackerTick() {
 
     private static void yapFlushTrackerSendChanges() {
         try {
-            if (yapTrackerBridgeFailed || yapFlushTrackerM == null) {
+            if (yapTrackerBridgeFailed || yapFlushTrackerMh == null) {
                 return;
             }
-            yapFlushTrackerM.invoke(null);
+            yapFlushTrackerMh.invokeExact();
         } catch (Throwable ignored) {
         }
     }
@@ -968,29 +1016,386 @@ new = """    private void newTrackerTick() {
 if old not in text:
     raise SystemExit("ChunkMap.newTrackerTick pattern not found — already patched or Paper changed")
 path.write_text(text.replace(old, new, 1))
-print("Patched ChunkMap.newTrackerTick for YaPcore spatial-tracker 3.9")
+print("Patched ChunkMap.newTrackerTick for YaPcore Leaf-gap spatial-tracker")
 PYCM
+  fi
+
+  # Serialize trackerEntities for Yap spatial TickThread cores (ReferenceList is not concurrent).
+  # Prevents ArrayIndexOutOfBoundsException Index -1 under multiplayer NaturalSpawner + interior tick.
+  if grep -q 'yapTrackerEntitiesDirty' "$CM"; then
+    echo "YaP ChunkMap trackerEntities dirty-bit snapshot already present"
+  elif grep -q 'yapTrackerEntitiesLock' "$CM"; then
+    echo "Upgrading ChunkMap trackerEntities → dirty-bit snapshot (high-pop)…"
+    python3 - <<'PYCMDIRTY'
+from pathlib import Path
+path = Path("/home/xydroc/Desktop/YaPcore/vendor/paper/paper-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java")
+text = path.read_text()
+if "yapTrackerEntitiesDirty" in text:
+    print("dirty-bit already present")
+    raise SystemExit(0)
+
+# Mark dirty on list mutations (add inside lock)
+old_add = """                    this.checkIteratingTrackerEntities();
+                    this.trackerEntities.add(entity);
+                    // Paper end - optimise entity tracker"""
+new_add = """                    this.checkIteratingTrackerEntities();
+                    this.trackerEntities.add(entity);
+                    this.yapTrackerEntitiesDirty = true;
+                    // Paper end - optimise entity tracker"""
+if old_add in text:
+    text = text.replace(old_add, new_add, 1)
+
+old_rm = """            this.checkIteratingTrackerEntities();
+            this.trackerEntities.remove(entity);
+            // Paper end - optimise entity tracker"""
+new_rm = """            this.checkIteratingTrackerEntities();
+            this.trackerEntities.remove(entity);
+            this.yapTrackerEntitiesDirty = true;
+            // Paper end - optimise entity tracker"""
+if old_rm in text:
+    text = text.replace(old_rm, new_rm, 1)
+
+old_fields = """    /** YaPcore — ReferenceList is single-threaded; spatial TickThread cores need a lock. */
+    private final Object yapTrackerEntitiesLock = new Object();
+
+    private void checkIteratingTrackerEntities() {
+        if (!this.iteratingTrackerEntities) {
+            return;
+        }
+
+        this.trackerEntities = this.trackerEntities.copy();
+        this.iteratingTrackerEntities = false;
+    }
+
+    private void newTrackerTick() {
+        final Entity[] trackerEntitiesRaw;
+        final int len;
+        // Snapshot under lock so spatial add/remove cannot corrupt iteration (Paper #14032 + Yap races).
+        // Do not hold the lock across sendChanges / spatial flush (deadlock risk).
+        synchronized (this.yapTrackerEntitiesLock) {
+            this.iteratingTrackerEntities = true;
+            final ca.spottedleaf.moonrise.common.list.ReferenceList<net.minecraft.world.entity.Entity> trackerEntities = this.trackerEntities;
+            len = trackerEntities.size();
+            trackerEntitiesRaw = trackerEntities.getRawDataUnchecked().clone();
+        }"""
+new_fields = """    /** YaPcore — ReferenceList is single-threaded; spatial TickThread cores need a lock. */
+    private final Object yapTrackerEntitiesLock = new Object();
+    /** YaPcore high-pop — avoid cloning trackerEntities every tick; refresh only when dirty. */
+    private volatile boolean yapTrackerEntitiesDirty = true;
+    private Entity[] yapTrackerEntitiesSnap = EMPTY_ENTITY_ARRAY;
+    private int yapTrackerEntitiesSnapLen = 0;
+
+    private void checkIteratingTrackerEntities() {
+        if (!this.iteratingTrackerEntities) {
+            return;
+        }
+
+        this.trackerEntities = this.trackerEntities.copy();
+        this.iteratingTrackerEntities = false;
+        this.yapTrackerEntitiesDirty = true;
+    }
+
+    private void newTrackerTick() {
+        final Entity[] trackerEntitiesRaw;
+        final int len;
+        // Snapshot under lock so spatial add/remove cannot corrupt iteration (Paper #14032 + Yap races).
+        // Dirty-bit: clone only when the list changed — Paper/Leaf never pay this tax (single-thread).
+        // Do not hold the lock across sendChanges / spatial flush (deadlock risk).
+        synchronized (this.yapTrackerEntitiesLock) {
+            this.iteratingTrackerEntities = true;
+            if (this.yapTrackerEntitiesDirty || this.yapTrackerEntitiesSnap == null) {
+                final ca.spottedleaf.moonrise.common.list.ReferenceList<net.minecraft.world.entity.Entity> trackerEntities = this.trackerEntities;
+                this.yapTrackerEntitiesSnapLen = trackerEntities.size();
+                this.yapTrackerEntitiesSnap = trackerEntities.getRawDataUnchecked().clone();
+                this.yapTrackerEntitiesDirty = false;
+            }
+            len = this.yapTrackerEntitiesSnapLen;
+            trackerEntitiesRaw = this.yapTrackerEntitiesSnap;
+        }"""
+if old_fields not in text:
+    raise SystemExit("WARN: ChunkMap dirty-bit upgrade pattern not found (tree may already differ)")
+text = text.replace(old_fields, new_fields, 1)
+
+# Player-path skip-clean before main sendChanges
+old_send = """                    if (yapSpatialTracker
+                            && !(entity instanceof net.minecraft.world.entity.player.Player)
+                            && yapOfferTrackerSendChanges(entity, tracker)) {
+                        continue;
+                    }
+                    tracker.serverEntity.sendChanges();"""
+new_send = """                    if (yapSpatialTracker
+                            && !(entity instanceof net.minecraft.world.entity.player.Player)
+                            && yapOfferTrackerSendChanges(entity, tracker)) {
+                        continue;
+                    }
+                    // Phase 3.9 player-path: skip clean sendChanges on main (bots) without Folia player tick
+                    if (yapTrackerSkipClean && tracker.serverEntity.yapIsCleanTrackerSend()) {
+                        tracker.serverEntity.yapBumpCleanTrackerTick();
+                        try {
+                            if (yapNoteTrackerSkipMh != null) {
+                                yapNoteTrackerSkipMh.invokeExact();
+                            }
+                        } catch (Throwable ignored) {
+                        }
+                        continue;
+                    }
+                    tracker.serverEntity.sendChanges();"""
+if old_send in text and "Phase 3.9 player-path" not in text:
+    text = text.replace(old_send, new_send, 1)
+
+old_note = """            if (yapTrackerSkipClean && tracker.serverEntity.yapIsCleanTrackerSend()) {
+                tracker.serverEntity.yapBumpCleanTrackerTick();
+                if (yapNoteTrackerSkipMh != null) {
+                    yapNoteTrackerSkipMh.invokeExact();
+                }
+                return true;
+            }"""
+new_note = """            if (yapTrackerSkipClean && tracker.serverEntity.yapIsCleanTrackerSend()) {
+                tracker.serverEntity.yapBumpCleanTrackerTick();
+                yapNoteTrackerSkip();
+                return true;
+            }"""
+if old_note in text:
+    text = text.replace(old_note, new_note, 1)
+
+if "private static void yapNoteTrackerSkip()" not in text:
+    needle = "    private static void yapFlushTrackerSendChanges() {"
+    helper = """    private static void yapNoteTrackerSkip() {
+        try {
+            if (yapNoteTrackerSkipMh != null) {
+                yapNoteTrackerSkipMh.invokeExact();
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private static void yapFlushTrackerSendChanges() {"""
+    if needle not in text:
+        raise SystemExit("WARN: yapFlushTrackerSendChanges not found for yapNoteTrackerSkip helper")
+    text = text.replace(needle, helper, 1)
+
+path.write_text(text)
+print("Patched ChunkMap dirty-bit snapshot + player-path skip-clean")
+PYCMDIRTY
+  elif grep -q 'yapOfferTrackerMh' "$CM"; then
+    echo "Upgrading ChunkMap trackerEntities → Yap spatial lock + snapshot iteration…"
+    python3 - <<'PYCMLOCK'
+from pathlib import Path
+path = Path("/home/xydroc/Desktop/YaPcore/vendor/paper/paper-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java")
+text = path.read_text()
+old_add = """                ((ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerEntity)entity).moonrise$setTrackedEntity(trackedEntity);
+                // note: the tick loop is OK when adding entities
+                this.trackerEntities.add(entity);
+                // Paper end - optimise entity tracker"""
+new_add = """                ((ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerEntity)entity).moonrise$setTrackedEntity(trackedEntity);
+                // YaPcore: spatial cores are TickThread — serialize Moonrise ReferenceList mutations
+                synchronized (this.yapTrackerEntitiesLock) {
+                    this.checkIteratingTrackerEntities();
+                    this.trackerEntities.add(entity);
+                    this.yapTrackerEntitiesDirty = true;
+                }
+                // Paper end - optimise entity tracker"""
+if old_add not in text and "yapTrackerEntitiesLock" not in text:
+    raise SystemExit("WARN: ChunkMap.addEntity trackerEntities pattern not found for lock upgrade")
+if old_add in text:
+    text = text.replace(old_add, new_add, 1)
+
+old_rm = """        ((ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerEntity)entity).moonrise$setTrackedEntity(null);
+        this.checkIteratingTrackerEntities();
+        this.trackerEntities.remove(entity);
+        // Paper end - optimise entity tracker"""
+new_rm = """        ((ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerEntity)entity).moonrise$setTrackedEntity(null);
+        synchronized (this.yapTrackerEntitiesLock) {
+            this.checkIteratingTrackerEntities();
+            this.trackerEntities.remove(entity);
+            this.yapTrackerEntitiesDirty = true;
+        }
+        // Paper end - optimise entity tracker"""
+if old_rm in text:
+    text = text.replace(old_rm, new_rm, 1)
+
+old_tick = """    private ca.spottedleaf.moonrise.common.list.ReferenceList<net.minecraft.world.entity.Entity> trackerEntities = new ca.spottedleaf.moonrise.common.list.ReferenceList<>(EMPTY_ENTITY_ARRAY);
+    private boolean iteratingTrackerEntities = false;
+
+    private void checkIteratingTrackerEntities() {
+        if (!this.iteratingTrackerEntities) {
+            return;
+        }
+
+        this.trackerEntities = this.trackerEntities.copy();
+        this.iteratingTrackerEntities = false;
+    }
+
+    private void newTrackerTick() {
+        this.iteratingTrackerEntities = true;
+        try {
+            final ca.spottedleaf.moonrise.common.list.ReferenceList<net.minecraft.world.entity.Entity> trackerEntities = this.trackerEntities;
+            final Entity[] trackerEntitiesRaw = trackerEntities.getRawDataUnchecked();
+            // YaPcore Phase 3.8/3.9 — non-player sendChanges on spatial cores; moonrise$tick + players stay main
+            final boolean yapSpatialTracker = yapSpatialTrackerEnabled();
+            for (int i = 0, len = trackerEntities.size(); i < len; ++i) {
+                final Entity entity = trackerEntitiesRaw[i];
+                final ChunkMap.TrackedEntity tracker = ((ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerEntity)entity).moonrise$getTrackedEntity();
+                if (tracker == null) {
+                    continue;
+                }
+                ((ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerTrackedEntity)tracker).moonrise$tick(((ca.spottedleaf.moonrise.patches.chunk_system.entity.ChunkSystemEntity)entity).moonrise$getChunkData().nearbyPlayers);
+                if (((ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerTrackedEntity)tracker).moonrise$hasPlayers()
+                    || ((ca.spottedleaf.moonrise.patches.chunk_system.entity.ChunkSystemEntity)entity).moonrise$getChunkStatus().isOrAfter(FullChunkStatus.ENTITY_TICKING)) {
+                    if (yapSpatialTracker
+                            && !(entity instanceof net.minecraft.world.entity.player.Player)
+                            && yapOfferTrackerSendChanges(entity, tracker)) {
+                        continue;
+                    }
+                    tracker.serverEntity.sendChanges();
+                }
+            }
+            if (yapSpatialTracker) {
+                yapFlushTrackerSendChanges();
+            }
+        } finally {
+            this.iteratingTrackerEntities = false;
+        }
+    }"""
+new_tick = """    private ca.spottedleaf.moonrise.common.list.ReferenceList<net.minecraft.world.entity.Entity> trackerEntities = new ca.spottedleaf.moonrise.common.list.ReferenceList<>(EMPTY_ENTITY_ARRAY);
+    private boolean iteratingTrackerEntities = false;
+    /** YaPcore — ReferenceList is single-threaded; spatial TickThread cores need a lock. */
+    private final Object yapTrackerEntitiesLock = new Object();
+    /** YaPcore high-pop — avoid cloning trackerEntities every tick; refresh only when dirty. */
+    private volatile boolean yapTrackerEntitiesDirty = true;
+    private Entity[] yapTrackerEntitiesSnap = EMPTY_ENTITY_ARRAY;
+    private int yapTrackerEntitiesSnapLen = 0;
+
+    private void checkIteratingTrackerEntities() {
+        if (!this.iteratingTrackerEntities) {
+            return;
+        }
+
+        this.trackerEntities = this.trackerEntities.copy();
+        this.iteratingTrackerEntities = false;
+        this.yapTrackerEntitiesDirty = true;
+    }
+
+    private void newTrackerTick() {
+        final Entity[] trackerEntitiesRaw;
+        final int len;
+        // Snapshot under lock so spatial add/remove cannot corrupt iteration (Paper #14032 + Yap races).
+        // Dirty-bit: clone only when the list changed — Paper/Leaf never pay this tax (single-thread).
+        // Do not hold the lock across sendChanges / spatial flush (deadlock risk).
+        synchronized (this.yapTrackerEntitiesLock) {
+            this.iteratingTrackerEntities = true;
+            if (this.yapTrackerEntitiesDirty || this.yapTrackerEntitiesSnap == null) {
+                final ca.spottedleaf.moonrise.common.list.ReferenceList<net.minecraft.world.entity.Entity> trackerEntities = this.trackerEntities;
+                this.yapTrackerEntitiesSnapLen = trackerEntities.size();
+                this.yapTrackerEntitiesSnap = trackerEntities.getRawDataUnchecked().clone();
+                this.yapTrackerEntitiesDirty = false;
+            }
+            len = this.yapTrackerEntitiesSnapLen;
+            trackerEntitiesRaw = this.yapTrackerEntitiesSnap;
+        }
+        try {
+            // YaPcore Phase 3.8/3.9 — non-player sendChanges on spatial cores; moonrise$tick + players stay main
+            final boolean yapSpatialTracker = yapSpatialTrackerEnabled();
+            for (int i = 0; i < len; ++i) {
+                final Entity entity = trackerEntitiesRaw[i];
+                if (entity == null) {
+                    continue;
+                }
+                final ChunkMap.TrackedEntity tracker = ((ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerEntity)entity).moonrise$getTrackedEntity();
+                if (tracker == null) {
+                    continue;
+                }
+                ((ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerTrackedEntity)tracker).moonrise$tick(((ca.spottedleaf.moonrise.patches.chunk_system.entity.ChunkSystemEntity)entity).moonrise$getChunkData().nearbyPlayers);
+                if (((ca.spottedleaf.moonrise.patches.entity_tracker.EntityTrackerTrackedEntity)tracker).moonrise$hasPlayers()
+                    || ((ca.spottedleaf.moonrise.patches.chunk_system.entity.ChunkSystemEntity)entity).moonrise$getChunkStatus().isOrAfter(FullChunkStatus.ENTITY_TICKING)) {
+                    if (yapSpatialTracker
+                            && !(entity instanceof net.minecraft.world.entity.player.Player)
+                            && yapOfferTrackerSendChanges(entity, tracker)) {
+                        continue;
+                    }
+                    if (yapTrackerSkipClean && tracker.serverEntity.yapIsCleanTrackerSend()) {
+                        tracker.serverEntity.yapBumpCleanTrackerTick();
+                        try {
+                            if (yapNoteTrackerSkipMh != null) {
+                                yapNoteTrackerSkipMh.invokeExact();
+                            }
+                        } catch (Throwable ignored) {
+                        }
+                        continue;
+                    }
+                    tracker.serverEntity.sendChanges();
+                }
+            }
+            if (yapSpatialTracker) {
+                yapFlushTrackerSendChanges();
+            }
+        } finally {
+            synchronized (this.yapTrackerEntitiesLock) {
+                this.iteratingTrackerEntities = false;
+            }
+        }
+    }"""
+if old_tick not in text:
+    if "yapTrackerEntitiesLock" not in text:
+        raise SystemExit("WARN: ChunkMap.newTrackerTick pattern not found for lock upgrade")
+else:
+    text = text.replace(old_tick, new_tick, 1)
+path.write_text(text)
+print("Patched ChunkMap trackerEntities lock + snapshot iteration")
+PYCMLOCK
   fi
 fi
 
-# --- ServerEntity: Phase 3.9 clean sendChanges early-out (players stay on main) ---
+# --- ServerEntity: Phase 3.9 clean sendChanges early-out + Leaf-gap helpers ---
 SE="$ROOT/vendor/paper/paper-server/src/minecraft/java/net/minecraft/server/level/ServerEntity.java"
 if [[ -f "$SE" ]]; then
-  if grep -q 'YaPcore Phase 3.9' "$SE"; then
-    echo "YaP ServerEntity sendChanges early-out already present"
-  else
-    python3 - <<'PYSE'
+  if grep -q 'passengersUnchanged' "$SE"; then
+    echo "YaP ServerEntity passenger fast-path already present"
+  elif grep -q 'yapIsCleanTrackerSend' "$SE"; then
+    echo "Upgrading ServerEntity yapIsCleanTrackerSend → passenger fast-path…"
+    python3 - <<'PYSEPASS'
+from pathlib import Path
+path = Path("/home/xydroc/Desktop/YaPcore/vendor/paper/paper-server/src/minecraft/java/net/minecraft/server/level/ServerEntity.java")
+text = path.read_text()
+old = """    boolean yapIsCleanTrackerSend() {
+        return !this.forceStateResync
+                && !this.entity.needsSync
+                && !this.entity.hurtMarked
+                && !this.entity.syncPosition
+                && (this.tickCount % this.updateInterval) != 0
+                && !(this.entity instanceof ItemFrame)
+                && !this.entity.getEntityData().isDirty()
+                && this.entity.getPassengers().equals(this.lastPassengers);
+    }"""
+new = """    boolean yapIsCleanTrackerSend() {
+        // High-pop: avoid getPassengers().equals when we know the vehicle is still empty
+        final boolean passengersUnchanged = this.lastPassengers.isEmpty()
+                ? !this.entity.isVehicle()
+                : this.entity.getPassengers().equals(this.lastPassengers);
+        return !this.forceStateResync
+                && !this.entity.needsSync
+                && !this.entity.hurtMarked
+                && !this.entity.syncPosition
+                && (this.tickCount % this.updateInterval) != 0
+                && !(this.entity instanceof ItemFrame)
+                && !this.entity.getEntityData().isDirty()
+                && passengersUnchanged;
+    }"""
+if old not in text:
+    if "passengersUnchanged" in text:
+        print("passenger fast-path already present")
+        raise SystemExit(0)
+    raise SystemExit("WARN: yapIsCleanTrackerSend pattern missing for passenger fast-path")
+path.write_text(text.replace(old, new, 1))
+print("Patched ServerEntity passenger fast-path")
+PYSEPASS
+  elif grep -q 'YaPcore Phase 3.9' "$SE"; then
+    echo "Upgrading ServerEntity early-out → yapIsCleanTrackerSend helper…"
+    python3 - <<'PYSEUP'
 from pathlib import Path
 path = Path("/home/xydroc/Desktop/YaPcore/vendor/paper/paper-server/src/minecraft/java/net/minecraft/server/level/ServerEntity.java")
 text = path.read_text()
 old = """    public void sendChanges() {
-        // Paper start - optimise collisions
-        if (((ca.spottedleaf.moonrise.patches.chunk_system.entity.ChunkSystemEntity)this.entity).moonrise$isHardColliding()) {
-            this.teleportDelay = 9999;
-        }
-        // Paper end - optimise collisions
-        this.entity.updateDataBeforeSync();"""
-new = """    public void sendChanges() {
         // YaPcore Phase 3.9 — skip empty packet work (players stay on main; non-players too)
         // Does not move player tick off the server thread.
         if (!this.forceStateResync
@@ -1003,6 +1408,83 @@ new = """    public void sendChanges() {
                 && this.entity.getPassengers().equals(this.lastPassengers)) {
             this.tickCount++;
             return;
+        }"""
+new = """    /**
+     * YaPcore Leaf-gap — true when {@link #sendChanges()} would only bump tickCount.
+     * Called from ChunkMap before spatial offer (direct fields, no reflect).
+     */
+    boolean yapIsCleanTrackerSend() {
+        // High-pop: avoid getPassengers().equals when we know the vehicle is still empty
+        final boolean passengersUnchanged = this.lastPassengers.isEmpty()
+                ? !this.entity.isVehicle()
+                : this.entity.getPassengers().equals(this.lastPassengers);
+        return !this.forceStateResync
+                && !this.entity.needsSync
+                && !this.entity.hurtMarked
+                && !this.entity.syncPosition
+                && (this.tickCount % this.updateInterval) != 0
+                && !(this.entity instanceof ItemFrame)
+                && !this.entity.getEntityData().isDirty()
+                && passengersUnchanged;
+    }
+
+    void yapBumpCleanTrackerTick() {
+        this.tickCount++;
+    }
+
+    public void sendChanges() {
+        // YaPcore Phase 3.9 — skip empty packet work (players stay on main; non-players too)
+        // Does not move player tick off the server thread.
+        if (this.yapIsCleanTrackerSend()) {
+            this.yapBumpCleanTrackerTick();
+            return;
+        }"""
+if old not in text:
+    raise SystemExit("WARN: ServerEntity Phase 3.9 early-out pattern missing for upgrade")
+path.write_text(text.replace(old, new, 1))
+print("Upgraded ServerEntity with yapIsCleanTrackerSend")
+PYSEUP
+  else
+    python3 - <<'PYSE'
+from pathlib import Path
+path = Path("/home/xydroc/Desktop/YaPcore/vendor/paper/paper-server/src/minecraft/java/net/minecraft/server/level/ServerEntity.java")
+text = path.read_text()
+old = """    public void sendChanges() {
+        // Paper start - optimise collisions
+        if (((ca.spottedleaf.moonrise.patches.chunk_system.entity.ChunkSystemEntity)this.entity).moonrise$isHardColliding()) {
+            this.teleportDelay = 9999;
+        }
+        // Paper end - optimise collisions
+        this.entity.updateDataBeforeSync();"""
+new = """    /**
+     * YaPcore Leaf-gap — true when {@link #sendChanges()} would only bump tickCount.
+     * Called from ChunkMap before spatial offer (direct fields, no reflect).
+     */
+    boolean yapIsCleanTrackerSend() {
+        // High-pop: avoid getPassengers().equals when we know the vehicle is still empty
+        final boolean passengersUnchanged = this.lastPassengers.isEmpty()
+                ? !this.entity.isVehicle()
+                : this.entity.getPassengers().equals(this.lastPassengers);
+        return !this.forceStateResync
+                && !this.entity.needsSync
+                && !this.entity.hurtMarked
+                && !this.entity.syncPosition
+                && (this.tickCount % this.updateInterval) != 0
+                && !(this.entity instanceof ItemFrame)
+                && !this.entity.getEntityData().isDirty()
+                && passengersUnchanged;
+    }
+
+    void yapBumpCleanTrackerTick() {
+        this.tickCount++;
+    }
+
+    public void sendChanges() {
+        // YaPcore Phase 3.9 — skip empty packet work (players stay on main; non-players too)
+        // Does not move player tick off the server thread.
+        if (this.yapIsCleanTrackerSend()) {
+            this.yapBumpCleanTrackerTick();
+            return;
         }
         // Paper start - optimise collisions
         if (((ca.spottedleaf.moonrise.patches.chunk_system.entity.ChunkSystemEntity)this.entity).moonrise$isHardColliding()) {
@@ -1013,7 +1495,7 @@ new = """    public void sendChanges() {
 if old not in text:
     raise SystemExit("ServerEntity.sendChanges pattern not found")
 path.write_text(text.replace(old, new, 1))
-print("Patched ServerEntity.sendChanges early-out (Phase 3.9)")
+print("Patched ServerEntity.sendChanges early-out + Leaf-gap helpers")
 PYSE
   fi
 fi
@@ -1110,7 +1592,7 @@ fi
 # --- Mob.serverAiStep: Phase 3.11 distant goal throttle ---
 MOB="$ROOT/vendor/paper/paper-server/src/minecraft/java/net/minecraft/world/entity/Mob.java"
 if [[ -f "$MOB" ]]; then
-  if grep -q 'yapShouldThrottleGoals' "$MOB"; then
+  if grep -q 'private static boolean yapShouldThrottleGoals' "$MOB"; then
     echo "YaP Mob.serverAiStep distant-goals hook already present"
   else
     python3 - <<'PYMOB'
@@ -1141,9 +1623,10 @@ new = """        // Paper end - Allow nerfed mobs to jump and float
         profiler.push("sensing");
         this.sensing.tick();
         profiler.pop();"""
-if old not in text:
+if old in text:
+    text = text.replace(old, new, 1)
+elif "yapShouldThrottleGoals(this)" not in text:
     raise SystemExit("Mob.serverAiStep sensing pattern not found")
-# Insert helper before customServerAiStep if missing
 helper = """
     private static volatile Class<?> yapBrainCl;
     private static volatile java.lang.reflect.Method yapThrottleGoalsM;
@@ -1169,9 +1652,7 @@ helper = """
     }
 
 """
-text = text.replace(old, new, 1)
-if "yapShouldThrottleGoals" not in text.split("protected void customServerAiStep")[0]:
-    # helper already in new block call site; add method before customServerAiStep
+if "private static boolean yapShouldThrottleGoals" not in text:
     anchor = "    protected void customServerAiStep(final ServerLevel level) {"
     if anchor not in text:
         raise SystemExit("customServerAiStep anchor missing")

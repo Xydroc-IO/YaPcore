@@ -8,6 +8,7 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 
@@ -15,11 +16,15 @@ import java.util.logging.Logger;
  * Thread 7 — Chunk Sync DLM & Lease Manager.
  * Owns {@link AtomicLeaseManager}; grants / releases region leases and runs
  * atomic sector mutations off the spatial cores.
+ * <p>
+ * {@link #submit} unparks the DLM thread so acquire/release after an idle park
+ * is not delayed by a timed poll gap (matters for Paper-main border barriers).
  */
 @ThreadSafe
 public final class ChunkSyncDlm implements Runnable {
 
     private static final Logger LOG = Logger.getLogger("YapEngine.DLM");
+    private static final long IDLE_PARK_NANOS = TimeUnit.MILLISECONDS.toNanos(50);
 
     public enum OpKind {
         ACQUIRE, RELEASE, SECTOR_MUTATION
@@ -74,6 +79,7 @@ public final class ChunkSyncDlm implements Runnable {
 
     public void stop() {
         running.set(false);
+        wake();
         if (thread != null) {
             thread.interrupt();
         }
@@ -85,6 +91,14 @@ public final class ChunkSyncDlm implements Runnable {
 
     public void submit(LeaseOp op) {
         ops.offer(Objects.requireNonNull(op));
+        wake();
+    }
+
+    private void wake() {
+        Thread t = thread;
+        if (t != null) {
+            LockSupport.unpark(t);
+        }
     }
 
     public long grantedCount() {
@@ -107,16 +121,26 @@ public final class ChunkSyncDlm implements Runnable {
     public void run() {
         while (running.get()) {
             try {
-                LeaseOp op = ops.poll(50, TimeUnit.MILLISECONDS);
+                LeaseOp op = ops.poll();
                 if (op == null) {
+                    LockSupport.parkNanos(IDLE_PARK_NANOS);
                     continue;
                 }
                 dispatch(op);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
+                // Burst-drain so release+next-acquire in one border tick stay tight
+                while ((op = ops.poll()) != null) {
+                    dispatch(op);
+                }
             } catch (RuntimeException ex) {
                 LOG.severe("DLM fault: " + ex.getMessage());
+            }
+        }
+        LeaseOp leftover;
+        while ((leftover = ops.poll()) != null) {
+            try {
+                dispatch(leftover);
+            } catch (RuntimeException ex) {
+                LOG.severe("DLM drain fault: " + ex.getMessage());
             }
         }
         LOG.info("Chunk Sync DLM shut down");
@@ -147,6 +171,7 @@ public final class ChunkSyncDlm implements Runnable {
                 AtomicLeaseManager.Lease lease = leases.tryAcquire(op.resourceKey(), op.owner());
                 if (lease == null) {
                     ops.offer(op);
+                    wake();
                     return;
                 }
                 try {
