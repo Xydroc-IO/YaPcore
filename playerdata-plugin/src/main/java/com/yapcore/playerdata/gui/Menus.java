@@ -78,16 +78,35 @@ public final class Menus {
         for (int i = 0; i < 45; i++) {
             inv.setItem(i, YapMenuHolder.filler());
         }
-        double bal = balances.getBalance(player.getUniqueId());
-        inv.setItem(4, YapMenuHolder.icon(Material.GOLD_INGOT, NamedTextColor.GREEN,
-                "Balance", "$" + String.format("%.2f", bal), "Profile: " + config.inventoryProfile()));
-        inv.setItem(19, YapMenuHolder.icon(Material.RED_BED, "Homes", "Click to open"));
-        inv.setItem(21, YapMenuHolder.icon(Material.ENDER_PEARL, "Warps", "Click to open"));
-        inv.setItem(23, YapMenuHolder.icon(Material.CHEST, "Kits", "Click to open"));
-        inv.setItem(25, YapMenuHolder.icon(Material.IRON_PICKAXE, "Jobs", "Click to open"));
-        inv.setItem(29, YapMenuHolder.icon(Material.GOLDEN_HORSE_ARMOR, "Auctions", "Click to open"));
-        inv.setItem(31, YapMenuHolder.icon(Material.WRITABLE_BOOK, "Mail", "Click to open"));
-        inv.setItem(33, YapMenuHolder.icon(Material.GOLDEN_SHOVEL, "Claims", "Click to open"));
+        if (config.economyEnabled()) {
+            double bal = balances.getBalance(player.getUniqueId());
+            inv.setItem(4, YapMenuHolder.icon(Material.GOLD_INGOT, NamedTextColor.GREEN,
+                    "Balance", "$" + String.format("%.2f", bal), "Profile: " + config.inventoryProfile()));
+        } else {
+            inv.setItem(4, YapMenuHolder.icon(Material.PAPER, NamedTextColor.GRAY,
+                    "Profile", "Economy off", "Profile: " + config.inventoryProfile()));
+        }
+        if (config.featureHomes()) {
+            inv.setItem(19, YapMenuHolder.icon(Material.RED_BED, "Homes", "Click to open"));
+        }
+        if (config.featureWarps()) {
+            inv.setItem(21, YapMenuHolder.icon(Material.ENDER_PEARL, "Warps", "Click to open"));
+        }
+        if (config.featureKits()) {
+            inv.setItem(23, YapMenuHolder.icon(Material.CHEST, "Kits", "Click to open"));
+        }
+        if (config.featureJobs()) {
+            inv.setItem(25, YapMenuHolder.icon(Material.IRON_PICKAXE, "Jobs", "Click to open"));
+        }
+        if (config.featureAuctions()) {
+            inv.setItem(29, YapMenuHolder.icon(Material.GOLDEN_HORSE_ARMOR, "Auctions", "Click to open"));
+        }
+        if (config.featureMail()) {
+            inv.setItem(31, YapMenuHolder.icon(Material.WRITABLE_BOOK, "Mail", "Click to open"));
+        }
+        if (config.featureClaims() && claims != null) {
+            inv.setItem(33, YapMenuHolder.icon(Material.GOLDEN_SHOVEL, "Claims", "Click to open"));
+        }
         inv.setItem(40, YapMenuHolder.icon(Material.BARRIER, NamedTextColor.RED, "Close"));
         player.openInventory(inv);
     }
@@ -193,6 +212,10 @@ public final class Menus {
     }
 
     public void openJobs(Player player) {
+        if (!config.featureJobs()) {
+            player.sendMessage("§cJobs are disabled.");
+            return;
+        }
         if (!Perms.require(player, "yapdata.jobs")) {
             return;
         }
@@ -236,6 +259,10 @@ public final class Menus {
     }
 
     public void openAuctions(Player player) {
+        if (!config.featureAuctions()) {
+            player.sendMessage("§cAuctions are disabled.");
+            return;
+        }
         if (!Perms.require(player, "yapdata.ah")) {
             return;
         }
@@ -311,6 +338,10 @@ public final class Menus {
     }
 
     public void openClaims(Player player) {
+        if (!config.featureClaims() || claims == null) {
+            player.sendMessage("§cClaims are disabled.");
+            return;
+        }
         if (!Perms.require(player, "yapdata.claim")) {
             return;
         }
@@ -394,31 +425,45 @@ public final class Menus {
     private boolean hubClick(Player player, String name) {
         return switch (name) {
             case "Homes" -> {
-                openHomes(player);
+                if (config.featureHomes()) {
+                    openHomes(player);
+                }
                 yield true;
             }
             case "Warps" -> {
-                openWarps(player);
+                if (config.featureWarps()) {
+                    openWarps(player);
+                }
                 yield true;
             }
             case "Kits" -> {
-                openKits(player);
+                if (config.featureKits()) {
+                    openKits(player);
+                }
                 yield true;
             }
             case "Jobs" -> {
-                openJobs(player);
+                if (config.featureJobs()) {
+                    openJobs(player);
+                }
                 yield true;
             }
             case "Auctions" -> {
-                openAuctions(player);
+                if (config.featureAuctions()) {
+                    openAuctions(player);
+                }
                 yield true;
             }
             case "Mail" -> {
-                openMail(player);
+                if (config.featureMail()) {
+                    openMail(player);
+                }
                 yield true;
             }
             case "Claims" -> {
-                openClaims(player);
+                if (config.featureClaims()) {
+                    openClaims(player);
+                }
                 yield true;
             }
             case "Close" -> {
@@ -547,6 +592,9 @@ public final class Menus {
     }
 
     private boolean claimsClick(Player player, int slot, boolean shift, String name) throws Exception {
+        if (claims == null) {
+            return true;
+        }
         if ("Back".equals(name)) {
             openHub(player);
             return true;

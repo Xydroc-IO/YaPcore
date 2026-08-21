@@ -25,6 +25,25 @@ autosave-seconds: 60
 starting-balance: 0.00
 lock-ttl-seconds: 120
 
+# Master money switch. false → no /bal /pay, Vault provider, shops/jobs/AH/traders,
+# or claim tax (claims themselves can stay on). sync.economy is forced off.
+economy:
+  enabled: true
+
+# Feature modules (freeze: no new Essentials-class commands without product review).
+# shops / jobs / auctions default off — highest EssentialsX overlap.
+# Money features also require economy.enabled=true.
+features:
+  homes: true
+  warps: true
+  kits: true
+  mail: true
+  shops: false
+  jobs: false
+  auctions: false
+  claims: true
+  traders: false
+
 # Offline password auth (AuthMe-class). Session lock is separate (always on).
 auth:
   enabled: true
@@ -41,6 +60,7 @@ sync:
   enderchest: true
   xp: true
   vitals: true
+  # Ignored when economy.enabled=false
   economy: true
 
 homes:
@@ -54,6 +74,7 @@ auctions:
   fee-percent: 0
 
 claims:
+  # Legacy: also AND'd with features.claims
   enabled: true
   require-claim-to-build: false
   tool: GOLDEN_SHOVEL
@@ -65,6 +86,7 @@ claims:
   visual-seconds: 8
   subdivide-min-area: 4
   tax:
+    # Forced off when economy.enabled=false
     enabled: true
     per-block-per-day: 0.01
     tick-minutes: 60

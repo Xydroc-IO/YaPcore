@@ -33,6 +33,9 @@ public final class MenuListener implements Listener {
             return;
         }
         if (holder.kind() == YapMenuHolder.Kind.NPC_TRADER) {
+            if (traders == null) {
+                return;
+            }
             Long traderId = holder.context();
             ItemStack clicked = event.getCurrentItem();
             String name = "";

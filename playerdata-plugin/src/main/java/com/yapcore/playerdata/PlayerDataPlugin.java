@@ -42,12 +42,16 @@ import com.yapcore.playerdata.sync.JoinQuitListener;
 import com.yapcore.playerdata.sync.SessionLock;
 import com.yapcore.playerdata.sync.SyncService;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Cross-server player data + claims (subdivides/taxes) + NPC traders + fancy GUIs.
+ * Cross-server player data + optional modules (homes, claims, economy features).
  */
 public final class PlayerDataPlugin extends JavaPlugin {
 
@@ -99,25 +103,41 @@ public final class PlayerDataPlugin extends JavaPlugin {
         ClaimRepository claimRepo = new ClaimRepository(database);
         NpcTraderRepository traderRepo = new NpcTraderRepository(database);
 
-        claims = new ClaimService(this, config, claimRepo);
-        claims.start();
-        taxes = new TaxService(this, config, claims, balances);
-        taxes.start();
+        if (config.featureClaims()) {
+            claims = new ClaimService(this, config, claimRepo);
+            claims.start();
+            if (config.claimsTaxEnabled()) {
+                taxes = new TaxService(this, config, claims, balances);
+                taxes.start();
+            }
+        }
 
-        traders = new NpcTraderService(this, config, traderRepo, balances);
-        traders.start();
+        if (config.featureTraders()) {
+            traders = new NpcTraderService(this, config, traderRepo, balances);
+            traders.start();
+        }
 
         menus = new Menus(this, config, sync, balances, homes, warps, kits, jobs, auctions, mail, claims);
 
-        getServer().getPluginManager().registerEvents(new JoinQuitListener(this, sync, mail), this);
+        getServer().getPluginManager().registerEvents(
+                new JoinQuitListener(this, sync, config.featureMail() ? mail : null), this);
         getServer().getPluginManager().registerEvents(new AuthListener(auth, repository, config), this);
         getServer().getPluginManager().registerEvents(new MenuListener(menus, traders), this);
-        getServer().getPluginManager().registerEvents(new ClaimListener(this, claims), this);
-        getServer().getPluginManager().registerEvents(new NpcTraderListener(traders), this);
+        if (claims != null) {
+            getServer().getPluginManager().registerEvents(new ClaimListener(this, claims), this);
+        }
+        if (traders != null) {
+            getServer().getPluginManager().registerEvents(new NpcTraderListener(traders), this);
+        }
 
-        BalanceCommands balanceCommands = new BalanceCommands(balances);
-        bind("bal", balanceCommands, balanceCommands);
-        bind("pay", balanceCommands, balanceCommands);
+        if (config.economyEnabled()) {
+            BalanceCommands balanceCommands = new BalanceCommands(balances);
+            bind("bal", balanceCommands, balanceCommands);
+            bind("pay", balanceCommands, balanceCommands);
+        } else {
+            bindDisabled("bal", "economy");
+            bindDisabled("pay", "economy");
+        }
 
         AdminCommand admin = new AdminCommand(this, config, database, sync, auth);
         bind("yapdata", admin, admin);
@@ -132,44 +152,88 @@ public final class PlayerDataPlugin extends JavaPlugin {
         MenuCommand menuCommand = new MenuCommand(menus, sync);
         bind("menu", menuCommand, menuCommand);
 
-        HomeCommands homeCommands = new HomeCommands(config, homes, sync, menus);
-        bind("sethome", homeCommands, homeCommands);
-        bind("home", homeCommands, homeCommands);
-        bind("delhome", homeCommands, homeCommands);
-        bind("homes", homeCommands, homeCommands);
+        if (config.featureHomes()) {
+            HomeCommands homeCommands = new HomeCommands(config, homes, sync, menus);
+            bind("sethome", homeCommands, homeCommands);
+            bind("home", homeCommands, homeCommands);
+            bind("delhome", homeCommands, homeCommands);
+            bind("homes", homeCommands, homeCommands);
+        } else {
+            bindDisabled("sethome", "features.homes");
+            bindDisabled("home", "features.homes");
+            bindDisabled("delhome", "features.homes");
+            bindDisabled("homes", "features.homes");
+        }
 
-        WarpCommands warpCommands = new WarpCommands(config, warps, menus);
-        bind("setwarp", warpCommands, warpCommands);
-        bind("delwarp", warpCommands, warpCommands);
-        bind("warp", warpCommands, warpCommands);
-        bind("warps", warpCommands, warpCommands);
+        if (config.featureWarps()) {
+            WarpCommands warpCommands = new WarpCommands(config, warps, menus);
+            bind("setwarp", warpCommands, warpCommands);
+            bind("delwarp", warpCommands, warpCommands);
+            bind("warp", warpCommands, warpCommands);
+            bind("warps", warpCommands, warpCommands);
+        } else {
+            bindDisabled("setwarp", "features.warps");
+            bindDisabled("delwarp", "features.warps");
+            bindDisabled("warp", "features.warps");
+            bindDisabled("warps", "features.warps");
+        }
 
-        KitCommands kitCommands = new KitCommands(config, kits, sync, menus);
-        bind("kit", kitCommands, kitCommands);
-        bind("kits", kitCommands, kitCommands);
+        if (config.featureKits()) {
+            KitCommands kitCommands = new KitCommands(config, kits, sync, menus);
+            bind("kit", kitCommands, kitCommands);
+            bind("kits", kitCommands, kitCommands);
+        } else {
+            bindDisabled("kit", "features.kits");
+            bindDisabled("kits", "features.kits");
+        }
 
-        MailCommands mailCommands = new MailCommands(config, mail, sync, menus);
-        bind("mail", mailCommands, mailCommands);
+        if (config.featureMail()) {
+            MailCommands mailCommands = new MailCommands(config, mail, sync, menus);
+            bind("mail", mailCommands, mailCommands);
+        } else {
+            bindDisabled("mail", "features.mail");
+        }
 
-        ShopCommands shopCommands = new ShopCommands(config, shops, balances, sync);
-        bind("shop", shopCommands, shopCommands);
-        getServer().getPluginManager().registerEvents(new ShopListener(shopCommands), this);
+        if (config.featureShops()) {
+            ShopCommands shopCommands = new ShopCommands(config, shops, balances, sync);
+            bind("shop", shopCommands, shopCommands);
+            getServer().getPluginManager().registerEvents(new ShopListener(shopCommands), this);
+        } else {
+            bindDisabled("shop", config.economyEnabled() ? "features.shops" : "economy");
+        }
 
-        JobCommands jobCommands = new JobCommands(config, jobs, sync, menus);
-        bind("jobs", jobCommands, jobCommands);
-        getServer().getPluginManager().registerEvents(
-                new JobListener(this, config, jobs, balances, sync), this);
+        if (config.featureJobs()) {
+            JobCommands jobCommands = new JobCommands(config, jobs, sync, menus);
+            bind("jobs", jobCommands, jobCommands);
+            getServer().getPluginManager().registerEvents(
+                    new JobListener(this, config, jobs, balances, sync), this);
+        } else {
+            bindDisabled("jobs", config.economyEnabled() ? "features.jobs" : "economy");
+        }
 
-        AuctionCommands auctionCommands = new AuctionCommands(config, auctions, balances, sync, menus);
-        bind("ah", auctionCommands, auctionCommands);
+        if (config.featureAuctions()) {
+            AuctionCommands auctionCommands = new AuctionCommands(config, auctions, balances, sync, menus);
+            bind("ah", auctionCommands, auctionCommands);
+        } else {
+            bindDisabled("ah", config.economyEnabled() ? "features.auctions" : "economy");
+        }
 
-        ClaimCommands claimCommands = new ClaimCommands(this, claims, taxes, sync, menus);
-        bind("claim", claimCommands, claimCommands);
+        if (config.featureClaims() && claims != null) {
+            ClaimCommands claimCommands = new ClaimCommands(this, claims, taxes, sync, menus);
+            bind("claim", claimCommands, claimCommands);
+        } else {
+            bindDisabled("claim", "features.claims");
+        }
 
-        TraderCommands traderCommands = new TraderCommands(traders, sync);
-        bind("trader", traderCommands, traderCommands);
+        if (config.featureTraders() && traders != null) {
+            TraderCommands traderCommands = new TraderCommands(traders, sync);
+            bind("trader", traderCommands, traderCommands);
+        } else {
+            bindDisabled("trader", config.economyEnabled() ? "features.traders" : "economy");
+        }
 
-        if (config.syncEconomy() && Bukkit.getPluginManager().getPlugin("Vault") != null) {
+        if (config.economyEnabled() && config.syncEconomy()
+                && Bukkit.getPluginManager().getPlugin("Vault") != null) {
             try {
                 economy = new YaPEconomy(this, sync, balances);
                 economy.register();
@@ -182,9 +246,43 @@ public final class PlayerDataPlugin extends JavaPlugin {
             sync.beginJoin(online);
         }
 
-        getLogger().info("YaPPlayerData 0.5 — auth+session-lock · server-id=" + config.serverId()
+        getLogger().info("YaPPlayerData 0.6 — server-id=" + config.serverId()
                 + " profile=" + config.inventoryProfile()
-                + " auth=" + (auth.isActive() ? "on" : "off"));
+                + " auth=" + (auth.isActive() ? "on" : "off")
+                + " economy=" + (config.economyEnabled() ? "on" : "off")
+                + " modules=" + enabledModulesSummary());
+    }
+
+    private String enabledModulesSummary() {
+        List<String> on = new ArrayList<>();
+        if (config.featureHomes()) {
+            on.add("homes");
+        }
+        if (config.featureWarps()) {
+            on.add("warps");
+        }
+        if (config.featureKits()) {
+            on.add("kits");
+        }
+        if (config.featureMail()) {
+            on.add("mail");
+        }
+        if (config.featureShops()) {
+            on.add("shops");
+        }
+        if (config.featureJobs()) {
+            on.add("jobs");
+        }
+        if (config.featureAuctions()) {
+            on.add("ah");
+        }
+        if (config.featureClaims()) {
+            on.add("claims");
+        }
+        if (config.featureTraders()) {
+            on.add("traders");
+        }
+        return on.isEmpty() ? "none" : String.join(",", on);
     }
 
     @Override
@@ -240,5 +338,22 @@ public final class PlayerDataPlugin extends JavaPlugin {
         }
         cmd.setExecutor(exec);
         cmd.setTabCompleter(tabs);
+    }
+
+    private void bindDisabled(String name, String configKey) {
+        PluginCommand cmd = getCommand(name);
+        if (cmd == null) {
+            return;
+        }
+        cmd.setExecutor((sender, command, label, args) -> {
+            tellDisabled(sender, configKey);
+            return true;
+        });
+        cmd.setTabCompleter((sender, command, alias, args) -> List.of());
+    }
+
+    private static void tellDisabled(CommandSender sender, String configKey) {
+        sender.sendMessage("§cYaPPlayerData: that feature is disabled (§f"
+                + configKey + "§c in plugins/YaPPlayerData/config.yml).");
     }
 }

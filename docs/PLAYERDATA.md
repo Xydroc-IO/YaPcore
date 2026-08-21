@@ -60,16 +60,48 @@ auth:
 
 Session lock and password auth are independent: lock always runs; auth is optional via config.
 
-## Features (v0.6)
+## Features (v0.6) — modular
+
+Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin.
+
+| Area | Default | Config |
+|------|---------|--------|
+| Auth `/login` | on | `auth.enabled` |
+| Economy `/bal` `/pay` + Vault | on | `economy.enabled` |
+| Homes / warps / kits / mail | on | `features.homes` … |
+| Claims | on | `features.claims` (+ `claims.*`) |
+| Shops / jobs / auctions | **off** | `features.shops` / `jobs` / `auctions` |
+| NPC traders | **off** | `features.traders` |
+
+Money features require `economy.enabled: true`. When economy is off, shops/jobs/AH/traders and claim tax stay off even if their feature flags are true.
+
+```yaml
+# No economy network (sync + homes only):
+economy:
+  enabled: false
+features:
+  homes: true
+  warps: true
+  kits: true
+  mail: true
+  shops: false
+  jobs: false
+  auctions: false
+  claims: true
+  traders: false
+```
+
+**Freeze:** no new Essentials-class commands without product review. Prefer feature toggles over a separate `yap-essentials` jar unless a real install profile needs it.
 
 | Area | What |
 |------|------|
 | Auth | `/register` `/login` · freeze until auth · BCrypt |
 | Session lock | Cross-server dual-login kick · `/yapdata unlock` |
-| Sync | Inv / XP / vitals / economy · profile `global` or `server` |
-| Fancy GUIs | `/menu` hub |
-| Claims | Shovel · subdivides · taxes |
-| NPC traders | `/trader` |
-| Homes/warps/kits/mail/shops/jobs/AH | As before |
+| Sync | Inv / XP / vitals · economy when enabled |
+| Fancy GUIs | `/menu` hub (icons match enabled modules) |
+| Claims | Shovel · subdivides · taxes (tax needs economy) |
+| NPC traders | `/trader` (needs economy) |
+| Homes/warps/kits/mail | Cross-server |
+| Shops/jobs/AH | Opt-in money modules |
 
 Plugin jar: `gradle :playerdata-plugin:installIntoPlugins` (also in `assembleRelease`).

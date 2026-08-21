@@ -51,6 +51,17 @@ public final class PlayerDataConfig {
     private Map<String, KitDef> kits = Map.of();
     private Map<String, JobDef> jobs = Map.of();
 
+    private boolean economyEnabled = true;
+    private boolean featureHomes = true;
+    private boolean featureWarps = true;
+    private boolean featureKits = true;
+    private boolean featureMail = true;
+    private boolean featureShops = false;
+    private boolean featureJobs = false;
+    private boolean featureAuctions = false;
+    private boolean featureClaims = true;
+    private boolean featureTraders = false;
+
     private boolean claimsEnabled = true;
     private boolean claimsRequireClaimToBuild = false;
     private Material claimsTool = Material.GOLDEN_SHOVEL;
@@ -96,7 +107,8 @@ public final class PlayerDataConfig {
         syncEnderchest = c.getBoolean("sync.enderchest", true);
         syncXp = c.getBoolean("sync.xp", true);
         syncVitals = c.getBoolean("sync.vitals", true);
-        syncEconomy = c.getBoolean("sync.economy", true);
+        economyEnabled = c.getBoolean("economy.enabled", true);
+        syncEconomy = economyEnabled && c.getBoolean("sync.economy", true);
         inventoryProfileMode = c.getString("inventory-profile", "global");
         maxHomes = Math.max(1, c.getInt("homes.max", 3));
         mailMaxUnread = Math.max(1, c.getInt("mail.max-unread", 50));
@@ -104,7 +116,19 @@ public final class PlayerDataConfig {
         auctionFeePercent = Math.max(0, c.getInt("auctions.fee-percent", 0));
         kits = loadKits(c.getConfigurationSection("kits"));
         jobs = loadJobs(c.getConfigurationSection("jobs"));
-        claimsEnabled = c.getBoolean("claims.enabled", true);
+
+        featureHomes = c.getBoolean("features.homes", true);
+        featureWarps = c.getBoolean("features.warps", true);
+        featureKits = c.getBoolean("features.kits", true);
+        featureMail = c.getBoolean("features.mail", true);
+        featureShops = economyEnabled && c.getBoolean("features.shops", false);
+        featureJobs = economyEnabled && c.getBoolean("features.jobs", false);
+        featureAuctions = economyEnabled && c.getBoolean("features.auctions", false);
+        featureTraders = economyEnabled && c.getBoolean("features.traders", false);
+        // features.claims AND legacy claims.enabled
+        featureClaims = c.getBoolean("features.claims", true) && c.getBoolean("claims.enabled", true);
+
+        claimsEnabled = featureClaims;
         claimsRequireClaimToBuild = c.getBoolean("claims.require-claim-to-build", false);
         claimsTool = parseMaterial(c.getString("claims.tool", "GOLDEN_SHOVEL"), Material.GOLDEN_SHOVEL);
         claimsInspectTool = parseMaterial(c.getString("claims.inspect-tool", "STICK"), Material.STICK);
@@ -114,7 +138,7 @@ public final class PlayerDataConfig {
         claimsMaxArea = Math.max(claimsMinArea, c.getInt("claims.max-area", 50_000));
         claimsVisualSeconds = Math.max(1, c.getInt("claims.visual-seconds", 8));
         claimsSubMinArea = Math.max(1, c.getInt("claims.subdivide-min-area", 4));
-        claimsTaxEnabled = c.getBoolean("claims.tax.enabled", true);
+        claimsTaxEnabled = economyEnabled && featureClaims && c.getBoolean("claims.tax.enabled", true);
         claimsTaxPerBlockPerDay = Math.max(0, c.getDouble("claims.tax.per-block-per-day", 0.01));
         claimsTaxTickMinutes = Math.max(1, c.getInt("claims.tax.tick-minutes", 60));
         claimsTaxFreezeAmount = Math.max(0, c.getDouble("claims.tax.freeze-at", 50.0));
@@ -262,6 +286,47 @@ public final class PlayerDataConfig {
 
     public boolean syncEconomy() {
         return syncEconomy;
+    }
+
+    /** Master money switch — when false, balance/Vault/money features stay off. */
+    public boolean economyEnabled() {
+        return economyEnabled;
+    }
+
+    public boolean featureHomes() {
+        return featureHomes;
+    }
+
+    public boolean featureWarps() {
+        return featureWarps;
+    }
+
+    public boolean featureKits() {
+        return featureKits;
+    }
+
+    public boolean featureMail() {
+        return featureMail;
+    }
+
+    public boolean featureShops() {
+        return featureShops;
+    }
+
+    public boolean featureJobs() {
+        return featureJobs;
+    }
+
+    public boolean featureAuctions() {
+        return featureAuctions;
+    }
+
+    public boolean featureClaims() {
+        return featureClaims;
+    }
+
+    public boolean featureTraders() {
+        return featureTraders;
     }
 
     public int maxHomes() {

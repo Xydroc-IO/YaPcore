@@ -89,11 +89,19 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
                     yield true;
                 }
                 case "tax" -> {
-                    player.sendMessage(taxes.status(player));
+                    if (taxes == null) {
+                        player.sendMessage("§cClaim tax is disabled (economy or claims.tax off).");
+                    } else {
+                        player.sendMessage(taxes.status(player));
+                    }
                     yield true;
                 }
                 case "paytax" -> {
-                    player.sendMessage(taxes.payTax(player));
+                    if (taxes == null) {
+                        player.sendMessage("§cClaim tax is disabled (economy or claims.tax off).");
+                    } else {
+                        player.sendMessage(taxes.payTax(player));
+                    }
                     yield true;
                 }
                 case "here", "info" -> {

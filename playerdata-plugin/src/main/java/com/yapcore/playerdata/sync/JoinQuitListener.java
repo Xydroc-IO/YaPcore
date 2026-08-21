@@ -37,7 +37,7 @@ public final class JoinQuitListener implements Listener {
         Player player = event.getPlayer();
         sync.beginJoin(player);
         Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
-            if (!player.isOnline()) {
+            if (!player.isOnline() || mail == null) {
                 return;
             }
             try {
