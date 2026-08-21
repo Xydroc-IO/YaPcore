@@ -1,0 +1,7 @@
+name: YaPChat
+version: '0.1.0'
+main: com.yapcore.chat.ChatPlugin
+api-version: '1.21'
+author: YapLabs
+description: Unsigned system chat — removes "Chat messages cannot be verified" on offline/Via servers
+website: https://github.com/yaplabs

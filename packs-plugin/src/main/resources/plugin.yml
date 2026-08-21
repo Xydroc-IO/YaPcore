@@ -1,0 +1,16 @@
+name: YaPPacks
+version: '0.1.0'
+main: com.yapcore.packs.PacksPlugin
+api-version: '1.21'
+author: YapLabs
+description: Push multiple YaPcore resource packs to JE clients via addResourcePack
+website: https://github.com/yaplabs
+commands:
+  yappacks:
+    description: Reload / list active multi-packs
+    usage: /yappacks [reload|list]
+    permission: yappacks.admin
+permissions:
+  yappacks.admin:
+    description: Manage YaPPacks
+    default: op

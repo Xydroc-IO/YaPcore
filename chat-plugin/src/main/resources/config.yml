@@ -1,0 +1,2 @@
+# Convert player chat to unsigned system messages (hides secure-chat toast).
+unsigned-system-chat: true

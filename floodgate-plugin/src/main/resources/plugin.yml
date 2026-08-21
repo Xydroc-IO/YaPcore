@@ -1,0 +1,15 @@
+name: YaPFloodgate
+version: '0.1.0'
+main: com.yapcore.floodgate.paper.FloodgatePlugin
+api-version: '1.21'
+author: YapLabs
+description: Native Floodgate identity behind Velocity (no Floodgate jar) — isBedrock / XUID / link
+website: https://github.com/yaplabs
+commands:
+  yapfloodgate:
+    description: Inspect Floodgate / Bedrock identity
+    usage: /yapfloodgate [player]
+    permission: yapfloodgate.admin
+permissions:
+  yapfloodgate.admin:
+    default: op

@@ -79,17 +79,30 @@ Missing secret with `velocity-enabled=true` **fails boot** (fail-closed).
 
 ## Bedrock / Geyser
 
-For networks, put **Geyser on Velocity** (or Floodgate), not as the public YaPcore Bedrock listener.
+For networks, put **Geyser (+ Floodgate) on Velocity**, not as the public YaPcore Bedrock listener.
+
+YaPcore does **not** need the Floodgate jar on the backend. Ship **`yap-floodgate.jar`** instead:
+
+1. On Velocity: Geyser + Floodgate, `send-floodgate-data: true`, shared `key.pem`
+2. Copy `key.pem` → `plugins/YaPFloodgate/key.pem` on YaPcore
+3. Enable modern forwarding (same as above)
+
+`yap-floodgate` decrypts the hostname Floodgate blob and/or recognizes
+`UUID(0, xuid)` players, exposing Bedrock XUID / link without the Floodgate plugin.
 
 Typical behind-Velocity JE network:
 
 ```properties
 bedrock-enabled=false
 crossplay-enabled=false
+velocity-enabled=true
 ```
 
 If you still want YaPcore’s built-in Bedrock on the same host, bind it separately and don’t expose
 it as the main public join path while Velocity owns Java.
+
+Native Bedrock UDP (no Velocity) already uses first-party `FloodgateAuth` with the same
+`UUID(0, xuid)` scheme.
 
 ---
 
