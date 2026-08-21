@@ -1,6 +1,6 @@
 name: YaPVehiclesModule
 main: com.yapcore.vehicles.module.VehiclesPackagingModule
-version: 1.0.0
+version: 1.0.0.0
 api: yap-module-1
 author: YapLabs
 description: Operator packaging for YaP Vehicles (requires plugins/yap-vehicles.jar)

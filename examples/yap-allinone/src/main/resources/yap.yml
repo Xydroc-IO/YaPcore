@@ -1,6 +1,6 @@
 name: DemoAllInOne
 main: com.example.demo.DemoAllInOnePlugin
-version: 1.0.0
+version: 1.0.0.0
 api: yap-1
 author: YaPcore
 description: Example all-in-one plugin using UI + Heavy + SYNC pools

@@ -1,5 +1,5 @@
 name: PlaceholderAPI
-version: '3.0.0-yap'
+version: '1.0.0.0'
 main: me.clip.placeholderapi.PlaceholderAPIPlugin
 api-version: '1.21'
 load: STARTUP
