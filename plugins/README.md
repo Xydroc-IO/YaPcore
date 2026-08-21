@@ -18,8 +18,15 @@ See [docs/PLUGINS.md](../docs/PLUGINS.md) and [docs/PLUGIN_COMPAT.md](../docs/PL
 | `yap-plugin-compat.jar` | 1.20–1.21 → 26.2 back-compat (`/yapcompat`) |
 | `yap-pregen.jar` | Chunk pre-generator (`/yappregen`) |
 | `yap-stacker.jar` | Full PDC mob/item/spawner stacker (`/yapstacker`) |
-| `yap-playerdata.jar` | Cross-server inv/money + homes/warps/kits/mail/shops/jobs/ah |
+| `yap-db.jar` | Shared MariaDB Hikari pool (`YaPDB`) — `docs/YAPDB.md` / `docs/MARIADB.md` |
+| `yap-playerdata.jar` | Cross-server data + offline `/login` + session lock + claims + GUIs (uses YaPDB) |
+| `yap-packs.jar` | Multi-active resource packs (`Player.addResourcePack` — `/yappacks`) |
+| `yap-chat.jar` | Unsigned system chat — clears “Chat messages cannot be verified” (offline/Via) |
+| `yap-floodgate.jar` | Velocity+Geyser Bedrock identity without Floodgate jar (`/yapfloodgate`) |
 
 See [docs/VEHICLES.md](../docs/VEHICLES.md) · [docs/PLACEHOLDERAPI.md](../docs/PLACEHOLDERAPI.md) ·
 [docs/PLUGIN_BACKCOMPAT.md](../docs/PLUGIN_BACKCOMPAT.md) · [docs/PREGEN.md](../docs/PREGEN.md) ·
-[docs/STACKER.md](../docs/STACKER.md) · [docs/PLAYERDATA.md](../docs/PLAYERDATA.md).
+[docs/STACKER.md](../docs/STACKER.md) · [docs/YAPDB.md](../docs/YAPDB.md) ·
+[docs/PLAYERDATA.md](../docs/PLAYERDATA.md) · [docs/MARIADB.md](../docs/MARIADB.md) ·
+[docs/PERMISSIONS.md](../docs/PERMISSIONS.md) ·
+[docs/CLIENTS_AND_PACKS.md](../docs/CLIENTS_AND_PACKS.md) · [docs/VELOCITY.md](../docs/VELOCITY.md).

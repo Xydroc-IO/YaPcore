@@ -182,6 +182,22 @@ no stdin + dashboard off under `yap.bench.scenario`.
 | `…T151456Z` | vs Paper 1200 TNT / 256 hoppers | stock 2.707 → Yap 2.558 (**+5.5%**), fuseΔ=900 both | **WIN (fair)** |
 | `…T150931Z` | denser eco 2400 TNT / 512 hoppers | Leaf 4.265 · **Yap 4.516 (#2, −5.9% vs Leaf)** · Paper 5.121 · Purpur 5.384; fuseΔ=900 all | Yap **#2/4** |
 
+### JFR Leaf-gap slice — 2026-08-21 denser heavypop
+
+Same load (2400 TNT / 512 hoppers). Profiles:
+`bench/profiles/20260821T154415Z-heavypop-leaf.jfr`,
+`bench/profiles/20260821T155727Z-heavypop-yapcore.jfr`.
+Fair MSPT: Leaf **4.314** · Yap **4.386** (**−1.7%** — essentially tied).
+
+| Side | What JFR shows |
+|------|----------------|
+| **Leaf heavier on main** | `tickNonPassenger`, `ChunkMap.newTrackerTick` / `tick`, entity forEach |
+| **Yap heavier** | TNT collision (`checkInsideBlocks`, `BlockGetter` travel), `InteriorWorldTickBridge.tickNmsEntity` / `runTrackerSend`, `yapOfferTrackerSendChanges` |
+| **Read** | Offload works (main tickNonPassenger nearly gone). Remaining gap is **collision density + tracker offer/flush tax**, not “Leaf magic skips alone”. Next slice: cheaper tracker barrier / less per-entity offer reflect. |
+
+Harness: `YAP_BENCH_JFR=1 ./scripts/bench/run-vs-ecosystem.sh heavypop 45` →
+`bench/profiles/<stamp>-heavypop-<id>.jfr`; summarize with `scripts/bench/summarize-jfr.sh`.
+
 ### Fair heavypop cite (classic heavy piles) — 2026-08-21 ~03:09
 
 Hopper snapshot fixed to scan `HEAVY_PILES`. 15s warmup / 45s sample. FAIRNESS OK.

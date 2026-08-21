@@ -225,7 +225,7 @@ tasks.named<JavaExec>("run") {
 
 tasks.register("installProductDefaults") {
     group = "distribution"
-    description = "Install YaP Vehicles + Knobs + PlaceholderAPI + PluginCompat + Pregen + Stacker + PlayerData into plugins/ and modules/"
+    description = "Install YaP Vehicles + Knobs + PlaceholderAPI + PluginCompat + Pregen + Stacker + YapDb + PlayerData + Packs into plugins/ and modules/"
     dependsOn(
         ":vehicles-plugin:installIntoPlugins",
         ":vehicles-module:installIntoModules",
@@ -239,8 +239,20 @@ tasks.register("installProductDefaults") {
     if (findProject(":pregen-plugin") != null) {
         dependsOn(":pregen-plugin:installIntoPlugins")
     }
+    if (findProject(":yap-db-plugin") != null) {
+        dependsOn(":yap-db-plugin:installIntoPlugins")
+    }
     if (findProject(":playerdata-plugin") != null) {
         dependsOn(":playerdata-plugin:installIntoPlugins")
+    }
+    if (findProject(":packs-plugin") != null) {
+        dependsOn(":packs-plugin:installIntoPlugins")
+    }
+    if (findProject(":chat-plugin") != null) {
+        dependsOn(":chat-plugin:installIntoPlugins")
+    }
+    if (findProject(":floodgate-plugin") != null) {
+        dependsOn(":floodgate-plugin:installIntoPlugins")
     }
 }
 
@@ -276,7 +288,11 @@ tasks.register("assembleRelease") {
             "yap-plugin-compat.jar",
             "yap-pregen.jar",
             "yap-stacker.jar",
+            "yap-db.jar",
             "yap-playerdata.jar",
+            "yap-packs.jar",
+            "yap-chat.jar",
+            "yap-floodgate.jar",
         )
         val packFiles = listOf(
             "yapcore-default.zip",
@@ -288,7 +304,7 @@ tasks.register("assembleRelease") {
         )
         val docFiles = listOf(
             "VEHICLES.md", "CLIENTS_AND_PACKS.md", "WEB_DASHBOARD.md", "PREGEN.md",
-            "WINDOWS.md", "NGINX_AND_LOCALHOST.md",
+            "WINDOWS.md", "NGINX_AND_LOCALHOST.md", "PLAYERDATA.md", "MARIADB.md", "YAPDB.md",
         )
         val linuxScripts = listOf(
             "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
@@ -333,6 +349,13 @@ tasks.register("assembleRelease") {
                 into(dest.resolve("deploy/nginx"))
                 include("*.template", "README.md")
                 exclude("generated/**")
+            }
+            project.copy {
+                from(project.file("deploy/mariadb"))
+                into(dest.resolve("deploy/mariadb"))
+                exclude("**/generated/**")
+                // .env is gitignored; ship example only
+                exclude(".env")
             }
             // Paper pin only (clone happens on the host)
             project.copy {
@@ -400,6 +423,10 @@ tasks.register("assembleRelease") {
                 "nginx-setup.cmd" to "Nginx-Setup.ps1",
                 "vendor-paper.cmd" to "Vendor-Paper.ps1",
                 "build-vendor-paper.cmd" to "Build-Vendor-Paper.ps1",
+                "start-mariadb.cmd" to "Start-MariaDB.ps1",
+                "stop-mariadb.cmd" to "Stop-MariaDB.ps1",
+                "configure-playerdata.cmd" to "Configure-PlayerData.ps1",
+                "configure-db.cmd" to "Configure-Db.ps1",
             )
             map.forEach { (cmdName, ps1) ->
                 dest.resolve(cmdName).writeText(
@@ -441,7 +468,32 @@ tasks.register("assembleRelease") {
             into(linux.resolve("scripts"))
             include(*linuxScripts.toTypedArray())
         }
+        project.copy {
+            from(project.file("scripts/db"))
+            into(linux.resolve("scripts/db"))
+            include("*.sh")
+        }
         writeLinuxWrappers(linux)
+        listOf("start-mariadb", "stop-mariadb", "configure-playerdata", "configure-db").forEach { name ->
+            val script = when (name) {
+                "configure-playerdata" -> "configure-playerdata.sh"
+                "configure-db" -> "configure-db.sh"
+                else -> "$name.sh"
+            }
+            val wrapper = linux.resolve("$name.sh")
+            wrapper.writeText(
+                """
+                #!/usr/bin/env bash
+                set -eu
+                ROOT="${'$'}(CDPATH= cd -- "${'$'}(dirname -- "${'$'}0")" && pwd)"
+                exec bash "${'$'}ROOT/scripts/db/$script" "${'$'}@"
+                """.trimIndent() + "\n"
+            )
+            wrapper.setExecutable(true)
+        }
+        linux.resolve("scripts/db").listFiles()
+            ?.filter { it.name.endsWith(".sh") }
+            ?.forEach { it.setExecutable(true) }
         linux.resolve("RELEASE.txt").writeText(
             """
             YaPcore — Linux release
@@ -449,12 +501,21 @@ tasks.register("assembleRelease") {
 
             Launch
             ------
-              chmod +x *.sh scripts/*.sh
+              chmod +x *.sh scripts/*.sh scripts/db/*.sh
               ./start.sh --fg
               ./gui.sh
               ./stop.sh
               ./status.sh
               ./start-prod.sh --fg
+
+            MariaDB (YaPPlayerData — single or multi-backend)
+            -------------------------------------------------
+              ./start-mariadb.sh
+              ./configure-playerdata.sh
+              ./configure-db.sh
+              # multi-backend: ./configure-db.sh --host <db-ip> --server-id survival
+              ./stop-mariadb.sh
+              See docs/MARIADB.md
 
             Paperclip (Phase 3)
             -------------------
@@ -497,6 +558,15 @@ tasks.register("assembleRelease") {
               gui.cmd
               stop.cmd / status.cmd / start-prod.cmd
 
+            MariaDB (YaPPlayerData — single or multi-backend)
+            -------------------------------------------------
+              start-mariadb.cmd
+              configure-playerdata.cmd
+              configure-db.cmd
+              rem multi-backend: Configure-PlayerData.ps1 -HostAddress <db-ip> -ServerId survival
+              stop-mariadb.cmd
+              See docs\MARIADB.md
+
             Paperclip (Phase 3) — native Windows
             ------------------------------------
               vendor-paper.cmd
@@ -521,11 +591,11 @@ tasks.register("assembleRelease") {
 
             Pick your OS folder (each is a full self-contained server tree):
 
-              linux/     → bash: start, nginx-setup, vendor-paper, build-vendor-paper
-              windows/   → cmd:  start, nginx-setup, vendor-paper, build-vendor-paper
+              linux/     → bash: start, nginx-setup, start-mariadb, configure-db, configure-playerdata
+              windows/   → cmd:  start, nginx-setup, start-mariadb, configure-db, configure-playerdata
 
-            Both include deploy/nginx templates and vendor/paper.pin.
-            See linux/RELEASE.txt, windows/RELEASE.txt, and docs/WINDOWS.md.
+            Both include deploy/nginx, deploy/mariadb, and vendor/paper.pin.
+            See linux/RELEASE.txt, windows/RELEASE.txt, docs/WINDOWS.md, docs/MARIADB.md.
             """.trimIndent() + "\n"
         )
 

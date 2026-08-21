@@ -117,12 +117,24 @@ else
   STDIN_KEEPALIVE="$ROOT/logs/yap-stdin.keepalive"
   rm -f "$STDIN_KEEPALIVE"
   mkfifo "$STDIN_KEEPALIVE"
-  # Reader side opened by java; writer held by sleep so the fifo never gets EOF.
-  nohup sleep infinity >"$STDIN_KEEPALIVE" </dev/null 2>/dev/null &
+  setsid bash -c "exec tail -f /dev/null >\"$STDIN_KEEPALIVE\"" </dev/null >/dev/null 2>&1 &
   echo $! >"$ROOT/logs/yap-stdin.keepalive.pid"
-  nohup "${NUMA_PREFIX[@]}" "$JAVA_BIN" "${JVM_OPTS[@]}" -jar "$JAR" "${APP_ARGS[@]}" \
-    >>"$LOG_FILE" 2>&1 <"$STDIN_KEEPALIVE" &
-  echo $! >"$PID_FILE"
-  echo "Started in background pid=$(cat "$PID_FILE")  log=$LOG_FILE"
+  # New session; echo real JVM/shell-exec PID into pidfile (plain `setsid cmd &` stores a fleeting pid).
+  setsid bash -c '
+    echo $$ > "$1"
+    shift
+    logfile=$1; shift
+    fifopath=$1; shift
+    exec "$@" >>"$logfile" 2>&1 <"$fifopath"
+  ' bash "$PID_FILE" "$LOG_FILE" "$STDIN_KEEPALIVE" \
+    "${NUMA_PREFIX[@]}" "$JAVA_BIN" "${JVM_OPTS[@]}" -jar "$JAR" "${APP_ARGS[@]}" \
+    </dev/null >/dev/null 2>&1 &
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    if [ -s "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+      break
+    fi
+    sleep 0.2
+  done
+  echo "Started in background pid=$(cat "$PID_FILE" 2>/dev/null || echo '?')  log=$LOG_FILE"
   echo "Stop with: $ROOT/scripts/stop.sh"
 fi
