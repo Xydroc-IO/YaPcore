@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -56,7 +57,9 @@ public final class PacketIdDump {
             // Play resource packs (776 uses *_push/pop; older dumps use add_/remove_)
             Map.entry("resource_pack_push", "add_resource_pack"),
             Map.entry("resource_pack_pop", "remove_resource_pack"),
-            Map.entry("resource_pack", "resource_pack_receive")
+            Map.entry("resource_pack", "resource_pack_receive"),
+            Map.entry("set_equipment", "entity_equipment"),
+            Map.entry("set_creative_mode_slot", "set_creative_slot")
     );
 
     /** protocolVersion → dump */
@@ -165,8 +168,15 @@ public final class PacketIdDump {
         return n;
     }
 
+    /** protocolVersion → dump resource path from index.json (P4.10). */
+    private static final ConcurrentHashMap<Integer, String> INDEX_RESOURCES = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, List<String>> INDEX_COMPANIONS = new ConcurrentHashMap<>();
+    private static volatile boolean indexLoaded;
+    private static volatile int paperPinProtocol = 776;
+
     /** Prefer exact protocol dump; else nearest lower known dump for the band. */
     public static PacketIdDump forProtocol(int protocol) {
+        ensureIndex();
         return BY_PROTO.computeIfAbsent(protocol, PacketIdDump::load);
     }
 
@@ -179,21 +189,98 @@ public final class PacketIdDump {
         return forProtocol(band.minProtocol());
     }
 
+    /** Product Paper pin protocol from index (default 776). */
+    public static int paperPinProtocol() {
+        ensureIndex();
+        return paperPinProtocol;
+    }
+
+    /** True when index lists an exact dump for this protocol (not merely nearest). */
+    public static boolean hasExactDump(int protocol) {
+        ensureIndex();
+        return INDEX_RESOURCES.containsKey(protocol);
+    }
+
+    private static void ensureIndex() {
+        if (indexLoaded) {
+            return;
+        }
+        synchronized (PacketIdDump.class) {
+            if (indexLoaded) {
+                return;
+            }
+            loadIndex();
+            indexLoaded = true;
+        }
+    }
+
+    private static void loadIndex() {
+        try (InputStream in = PacketIdDump.class.getClassLoader()
+                .getResourceAsStream("protocol/vanilla/index.json")) {
+            if (in == null) {
+                LOG.fine("No protocol/vanilla/index.json — using hard-coded dump switch");
+                return;
+            }
+            JsonObject root = JsonParser.parseReader(new InputStreamReader(in, StandardCharsets.UTF_8))
+                    .getAsJsonObject();
+            if (root.has("paperPinProtocol")) {
+                paperPinProtocol = root.get("paperPinProtocol").getAsInt();
+            }
+            if (root.has("dumps") && root.get("dumps").isJsonObject()) {
+                for (var e : root.getAsJsonObject("dumps").entrySet()) {
+                    int proto = Integer.parseInt(e.getKey());
+                    JsonObject entry = e.getValue().getAsJsonObject();
+                    if (entry.has("resource")) {
+                        INDEX_RESOURCES.put(proto, entry.get("resource").getAsString());
+                    }
+                }
+            }
+            if (root.has("companions") && root.get("companions").isJsonObject()) {
+                for (var e : root.getAsJsonObject("companions").entrySet()) {
+                    int proto = Integer.parseInt(e.getKey());
+                    List<String> paths = new java.util.ArrayList<>();
+                    for (JsonElement el : e.getValue().getAsJsonArray()) {
+                        paths.add(el.getAsString());
+                    }
+                    INDEX_COMPANIONS.put(proto, List.copyOf(paths));
+                }
+            }
+            LOG.info("Protocol dump index loaded: " + INDEX_RESOURCES.size()
+                    + " dumps, paper pin=" + paperPinProtocol);
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Failed loading protocol/vanilla/index.json", e);
+        }
+    }
+
     private static PacketIdDump load(int protocol) {
         String resource = resourceFor(protocol);
         if (resource == null) {
             return empty(protocol);
         }
         PacketIdDump primary = loadResource(protocol, resource);
-        // 26.2 Mojang names ↔ 26.1 minecraft-data names share identical play IDs —
-        // merge so mid-band remaps (774→776) resolve by either naming scheme.
+        List<String> companions = INDEX_COMPANIONS.get(protocol);
+        if (companions != null) {
+            PacketIdDump merged = primary;
+            for (String path : companions) {
+                if (path.equals(resource)) {
+                    continue;
+                }
+                merged = mergeById(merged, loadResource(protocol, path));
+            }
+            return merged;
+        }
+        // Legacy hard-coded companions when index absent
         if (protocol >= 776) {
-            PacketIdDump companion = loadResource(776, "protocol/vanilla/26.1/packets.json");
-            return mergeById(primary, companion);
+            return mergeById(primary, loadResource(776, "protocol/vanilla/26.1/packets.json"));
         }
         if (protocol == 775) {
-            PacketIdDump companion = loadResource(775, "protocol/vanilla/26.2/packets.json");
-            return mergeById(primary, companion);
+            return mergeById(primary, loadResource(775, "protocol/vanilla/26.2/packets.json"));
+        }
+        if (protocol == 765) {
+            return mergeById(primary, loadResource(765, "protocol/vanilla/1.20.3/packets.json"));
+        }
+        if (protocol == 766) {
+            return mergeById(primary, loadResource(766, "protocol/vanilla/1.21.1/packets.json"));
         }
         return primary;
     }
@@ -289,17 +376,41 @@ public final class PacketIdDump {
     }
 
     private static String resourceFor(int protocol) {
-        // Exact dumps we ship
-        return switch (protocol) {
-            case 767 -> "protocol/vanilla/1.21.1/packets.json";
-            case 769 -> "protocol/vanilla/1.21.4/packets.json";
-            case 771 -> "protocol/vanilla/1.21.6/packets.json";
+        ensureIndex();
+        String fromIndex = INDEX_RESOURCES.get(protocol);
+        if (fromIndex != null) {
+            return fromIndex;
+        }
+        // Exact dumps we ship (fallback if index missing an entry)
+        String hardcoded = switch (protocol) {
+            case 764 -> "protocol/vanilla/1.20.2/packets.json";
+            case 765 -> "protocol/vanilla/1.20.4/packets.json";
+            case 766 -> "protocol/vanilla/1.20.5/packets.json";
+            case 767, 768 -> "protocol/vanilla/1.21.1/packets.json";
+            case 769, 770 -> "protocol/vanilla/1.21.4/packets.json";
+            case 771, 772 -> "protocol/vanilla/1.21.6/packets.json";
             case 773 -> "protocol/vanilla/1.21.10/packets.json";
             case 774 -> "protocol/vanilla/1.21.11/packets.json";
             case 775 -> "protocol/vanilla/26.1/packets.json";
             case 776, 777 -> "protocol/vanilla/26.2/packets.json";
-            default -> nearestResource(protocol);
+            default -> null;
         };
+        if (hardcoded != null) {
+            return hardcoded;
+        }
+        // P4.10: future protocols — prefer highest indexed dump ≤ protocol, else nearestResource
+        int best = -1;
+        for (int p : INDEX_RESOURCES.keySet()) {
+            if (p <= protocol && p > best) {
+                best = p;
+            }
+        }
+        if (best >= 0) {
+            final int nearest = best;
+            LOG.fine(() -> "P4.10 nearest indexed dump for proto " + protocol + " → " + nearest);
+            return INDEX_RESOURCES.get(nearest);
+        }
+        return nearestResource(protocol);
     }
 
     private static String nearestResource(int protocol) {
@@ -316,15 +427,26 @@ public final class PacketIdDump {
         if (protocol >= 774) {
             return "protocol/vanilla/1.21.11/packets.json";
         }
+        if (protocol >= 773) {
+            return "protocol/vanilla/1.21.10/packets.json";
+        }
         if (protocol >= 771) {
-            return protocol >= 773
-                    ? "protocol/vanilla/1.21.10/packets.json"
-                    : "protocol/vanilla/1.21.6/packets.json";
+            return "protocol/vanilla/1.21.6/packets.json";
+        }
+        if (protocol >= 769) {
+            return "protocol/vanilla/1.21.4/packets.json";
+        }
+        if (protocol >= 767) {
+            return "protocol/vanilla/1.21.1/packets.json";
         }
         if (protocol >= 766) {
-            return protocol >= 768
-                    ? "protocol/vanilla/1.21.4/packets.json"
-                    : "protocol/vanilla/1.21.1/packets.json";
+            return "protocol/vanilla/1.20.5/packets.json";
+        }
+        if (protocol >= 765) {
+            return "protocol/vanilla/1.20.4/packets.json";
+        }
+        if (protocol >= 764) {
+            return "protocol/vanilla/1.20.2/packets.json";
         }
         return null;
     }

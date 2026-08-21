@@ -6,7 +6,7 @@ import io.netty.buffer.Unpooled;
 
 /**
  * Legacy column sections (id&lt;&lt;4|meta shorts) ↔ simple paletted section payloads.
- * Clean-room — enough for Via Rewind/forward chunk reshape, not full 1.18 light codec.
+ * Clean-room — Via Rewind/forward chunk reshape + P4.3 full-bright light on rebuild.
  */
 public final class ChunkPaletteCodec {
 
@@ -160,9 +160,9 @@ public final class ChunkPaletteCodec {
         return out;
     }
 
-    /** Minimal modern-ish chunk body: X/Z + empty heightmaps + one paletted section buffer. */
+    /** Minimal modern-ish chunk body: X/Z + empty heightmaps + one paletted section buffer + light. */
     public static ByteBuf buildModernishColumn(int chunkX, int chunkZ, ByteBuf sectionsPayload) {
-        ByteBuf out = Unpooled.buffer(64 + sectionsPayload.readableBytes());
+        ByteBuf out = Unpooled.buffer(64 + sectionsPayload.readableBytes() + 4096);
         out.writeInt(chunkX);
         out.writeInt(chunkZ);
         // Heightmaps: empty NBT compound (0x0a type + empty name + end) — best-effort
@@ -172,6 +172,7 @@ public final class ChunkPaletteCodec {
         McCodec.writeVarInt(out, sectionsPayload.readableBytes());
         out.writeBytes(sectionsPayload, sectionsPayload.readerIndex(), sectionsPayload.readableBytes());
         McCodec.writeVarInt(out, 0); // block entities
+        ChunkLightCodec.writeFullBright(out);
         return out;
     }
 }

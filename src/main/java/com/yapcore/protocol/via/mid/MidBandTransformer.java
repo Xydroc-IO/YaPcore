@@ -7,9 +7,11 @@ import com.yapcore.protocol.via.ViaDirection;
 import com.yapcore.protocol.via.ViaSession;
 import com.yapcore.protocol.via.id.PacketIdDump;
 import com.yapcore.protocol.via.remap.BlockRemapper;
+import com.yapcore.protocol.via.remap.ChunkLightCodec;
 import com.yapcore.protocol.via.remap.ChunkRemapper;
 import com.yapcore.protocol.via.remap.EntityRemapper;
 import com.yapcore.protocol.via.remap.ItemRemapper;
+import com.yapcore.protocol.via.remap.SlotCodec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -17,11 +19,11 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
- * Completes ViaBackwards-class paths for modern mid bands (766–775) ↔ Paper 776.
+ * Completes ViaBackwards-class paths for modern mid bands (764–775) ↔ Paper 776.
  * Remaps <b>every</b> play packet ID by name via {@link PacketIdDump}; handles
- * login session-UUID layout and join-critical body reshapes.
+ * login session-UUID layout and join-critical body reshapes (slots, equipment, metadata).
  * <p>
- * Applies when client &lt; server and dumps exist for both (covers 774→776).
+ * Applies when client &lt; server and dumps exist for both (covers 764–765 and 774→776).
  */
 public final class MidBandTransformer {
 
@@ -98,8 +100,11 @@ public final class MidBandTransformer {
             return null; // drop — never same-ID passthrough across bands
         }
         String name = clientDump.playC2sName(clientId);
-        if (name != null && (name.contains("slot") || name.contains("click") || name.equals("set_slot"))) {
-            return remapItemTowardServer(body, serverId);
+        if (name != null) {
+            String n = PacketIdDump.canonicalize(name);
+            if (isSlot(n) || n.contains("click") || n.contains("creative")) {
+                return remapInventoryPacket(n, body, serverId, true);
+            }
         }
         return rewriteId(body, serverId);
     }
@@ -128,8 +133,12 @@ public final class MidBandTransformer {
         if (isSpawn(n)) {
             return remapSpawn(body, clientId);
         }
-        if (isSlot(n)) {
-            return remapItemTowardClient(body, clientId);
+        if (ChunkLightCodec.isLightPacket(n)) {
+            // Same BitSet + array layout 764–776 — ID remap only
+            return rewriteId(body, clientId);
+        }
+        if (isSlot(n) || isEquipment(n) || isMetadata(n)) {
+            return remapInventoryPacket(n, body, clientId, false);
         }
         return rewriteId(body, clientId);
     }
@@ -145,6 +154,14 @@ public final class MidBandTransformer {
     private static boolean isSlot(String n) {
         return n.equals("set_slot") || n.equals("container_set_slot")
                 || n.equals("window_items") || n.equals("container_set_content");
+    }
+
+    private static boolean isEquipment(String n) {
+        return n.equals("set_equipment") || n.equals("entity_equipment");
+    }
+
+    private static boolean isMetadata(String n) {
+        return n.equals("set_entity_data") || n.equals("entity_metadata");
     }
 
     private ByteBuf remapSpawn(ByteBuf body, int outId) {
@@ -169,110 +186,36 @@ public final class MidBandTransformer {
         }
     }
 
-    private ByteBuf remapItemTowardServer(ByteBuf body, int outId) {
-        // 1.20.5+ uses present-flag + VarInt item id + components — short rewrite corrupts stacks.
-        ProtocolBand client = session.clientBand();
-        ProtocolBand server = session.serverBand();
-        if (usesComponentItems(client) && usesComponentItems(server)) {
-            return remapModernItemId(body, outId, true);
-        }
-        if (usesComponentItems(client) || usesComponentItems(server)) {
-            // Cross-era (NBT ↔ components): do not half-parse; ID remap only.
-            return rewriteId(body, outId);
-        }
-        int mark = body.readerIndex();
-        try {
-            ByteBuf out = Unpooled.buffer(body.readableBytes() + 8);
-            McCodec.writeVarInt(out, outId);
-            if (body.readableBytes() >= 2) {
-                out.writeShort(body.readShort());
-            }
-            if (body.readableBytes() >= 2) {
-                int itemId = body.readShort() & 0xFFFF;
-                out.writeShort(items.remapToServer(itemId));
-            }
-            out.writeBytes(body, body.readerIndex(), body.readableBytes());
-            return out;
-        } catch (Exception e) {
-            body.readerIndex(mark);
-            return rewriteId(body, outId);
-        }
-    }
-
-    private ByteBuf remapItemTowardClient(ByteBuf body, int outId) {
-        ProtocolBand client = session.clientBand();
-        ProtocolBand server = session.serverBand();
-        if (usesComponentItems(client) && usesComponentItems(server)) {
-            return remapModernItemId(body, outId, false);
-        }
-        if (usesComponentItems(client) || usesComponentItems(server)) {
-            return rewriteId(body, outId);
-        }
-        int mark = body.readerIndex();
-        try {
-            ByteBuf out = Unpooled.buffer(body.readableBytes() + 8);
-            McCodec.writeVarInt(out, outId);
-            if (body.readableBytes() >= 2) {
-                out.writeShort(body.readShort());
-            }
-            if (body.readableBytes() >= 2) {
-                int itemId = body.readShort() & 0xFFFF;
-                out.writeShort(items.remapToClient(itemId));
-            }
-            out.writeBytes(body, body.readerIndex(), body.readableBytes());
-            return out;
-        } catch (Exception e) {
-            body.readerIndex(mark);
-            return rewriteId(body, outId);
-        }
-    }
-
-    /** 1.20.5+ (766+) item components era — remap VarInt item ids, copy components opaque. */
-    private static boolean usesComponentItems(ProtocolBand band) {
-        return band.ordinal() >= ProtocolBand.V1_21.ordinal();
-    }
-
     /**
-     * Walk set_slot / window_items-ish buffers: after optional window/slot headers,
-     * remap modern item stacks in-place by rewriting only the item id VarInt.
-     * On parse failure, fall back to ID-only rewrite (safe passthrough).
+     * Inventory / equipment / metadata item remaps via {@link SlotCodec}
+     * (full window_items walk, NBT↔components for 764–765 ↔ 776).
      */
-    private ByteBuf remapModernItemId(ByteBuf body, int outId, boolean towardServer) {
-        int mark = body.readerIndex();
-        try {
-            ByteBuf out = Unpooled.buffer(body.readableBytes() + 16);
-            McCodec.writeVarInt(out, outId);
-            // Best-effort: copy bytes while rewriting the first modern item present in buffer.
-            // Full multi-slot window_items walker can deepen later; single-slot set_slot is primary.
-            boolean remapped = false;
-            if (body.readableBytes() >= 3) {
-                out.writeByte(body.readUnsignedByte());
-                out.writeShort(body.readShort());
-            }
-            if (body.isReadable()) {
-                boolean present = body.readBoolean();
-                out.writeBoolean(present);
-                if (present && body.isReadable()) {
-                    int count = McCodec.readVarInt(body);
-                    McCodec.writeVarInt(out, count);
-                    int itemId = McCodec.readVarInt(body);
-                    int mapped = towardServer ? items.remapToServer(itemId) : items.remapToClient(itemId);
-                    McCodec.writeVarInt(out, mapped);
-                    out.writeBytes(body, body.readerIndex(), body.readableBytes());
-                    remapped = true;
-                } else {
-                    out.writeBytes(body, body.readerIndex(), body.readableBytes());
-                }
-            }
-            if (!remapped && out.readableBytes() <= 5) {
-                body.readerIndex(mark);
-                return rewriteId(body, outId);
-            }
-            return out;
-        } catch (Exception e) {
-            body.readerIndex(mark);
+    private ByteBuf remapInventoryPacket(String n, ByteBuf body, int outId, boolean towardServer) {
+        ProtocolBand src = towardServer ? session.clientBand() : session.serverBand();
+        ProtocolBand dst = towardServer ? session.serverBand() : session.clientBand();
+        SlotCodec slots = new SlotCodec(src, dst, items, !towardServer,
+                towardServer ? session.clientProtocol() : session.serverProtocol(),
+                towardServer ? session.serverProtocol() : session.clientProtocol());
+        ByteBuf remapped;
+        if (n.equals("window_items") || n.equals("container_set_content")) {
+            remapped = slots.remapWindowItems(body, outId);
+        } else if (isEquipment(n)) {
+            remapped = slots.remapEquipment(body, outId);
+        } else if (isMetadata(n)) {
+            remapped = slots.remapEntityMetadata(body, outId);
+        } else if (n.equals("set_slot") || n.equals("container_set_slot")) {
+            remapped = slots.remapSetSlot(body, outId);
+        } else if (n.contains("click") && !n.contains("button")) {
+            remapped = slots.remapWindowClick(body, outId);
+        } else if (n.contains("creative")) {
+            remapped = slots.remapCreativeSlot(body, outId);
+        } else {
             return rewriteId(body, outId);
         }
+        if (remapped == null) {
+            return rewriteId(body, outId);
+        }
+        return remapped;
     }
 
     private static ByteBuf stripLoginSessionUuid(ByteBuf body) {

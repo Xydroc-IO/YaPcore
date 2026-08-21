@@ -27,7 +27,7 @@ class BandPathCompletenessTest {
 
     @Test
     void dumpsExistForModernProtocols() {
-        for (int proto : new int[]{767, 769, 771, 773, 774, 775, 776}) {
+        for (int proto : new int[]{764, 765, 766, 767, 769, 771, 773, 774, 775, 776}) {
             PacketIdDump dump = PacketIdDump.forProtocol(proto);
             assertTrue(dump.hasPlay(), "dump missing for " + proto);
             assertTrue(dump.playS2cId("keep_alive") >= 0, "keep_alive S2C @" + proto);

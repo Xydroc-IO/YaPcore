@@ -493,6 +493,28 @@ public final class DualStackGateway {
                     applyBedrockAction(action.type(), action.username(), action.payload(), peer.address());
                 }
             });
+            rakNet.setDisconnectHandler(peer -> {
+                long guid = peer.state().clientGuid();
+                if (guid == 0L) {
+                    guid = peer.address().hashCode();
+                }
+                var session = bedrockSessions.get(guid);
+                String user = session != null ? session.username() : null;
+                bedrockBridge.onDisconnect(guid);
+                if (user != null) {
+                    clients.get(user).ifPresent(s -> {
+                        if (crossplay != null) {
+                            crossplay.leave(s);
+                        }
+                        clients.unregister(s);
+                    });
+                    trafficCop.ingest(new GameEvent(GameEvent.Type.CLIENT_LEAVE, user, Map.of(
+                            "edition", "BEDROCK"
+                    )));
+                }
+                guidToAddr.remove(guid);
+                addrToGuid.remove(peer.address().toString());
+            });
         }
 
         @Override
