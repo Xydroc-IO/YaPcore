@@ -1,0 +1,4 @@
+{
+  "_comment": "Copy a captured retail Bedrock Login identity JSON here as retail-chain.json (gitignored). Expect validateChainJson → valid=true, mojangAuthenticated=true, non-blank XUID. Capture: join once with Xbox Live, save the identity/Certificate chain from the Login packet (never commit real JWTs).",
+  "Certificate": "{\"chain\":[\"eyJ...<device-self>\",\"eyJ...<mojang-ca>\",\"eyJ...<user-extraData-with-XUID>\"]}"
+}

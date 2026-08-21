@@ -147,6 +147,168 @@ public final class BedrockPaperWorldSync {
         }
     }
 
+    /** Paper overworld spawn (block coords), or null if unavailable. */
+    public double[] spawnPosition() {
+        if (!isEnabled()) {
+            return null;
+        }
+        try {
+            ClassLoader cl = paperLoader.get();
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit", true, cl);
+            Method getWorlds = bukkit.getMethod("getWorlds");
+            @SuppressWarnings("unchecked")
+            java.util.List<Object> worlds = (java.util.List<Object>) getWorlds.invoke(null);
+            if (worlds == null || worlds.isEmpty()) {
+                return null;
+            }
+            Object world = worlds.get(0);
+            Object spawn = world.getClass().getMethod("getSpawnLocation").invoke(world);
+            double x = ((Number) spawn.getClass().getMethod("getX").invoke(spawn)).doubleValue();
+            double y = ((Number) spawn.getClass().getMethod("getY").invoke(spawn)).doubleValue();
+            double z = ((Number) spawn.getClass().getMethod("getZ").invoke(spawn)).doubleValue();
+            return new double[]{x, y, z};
+        } catch (Exception e) {
+            LOG.log(Level.FINE, "Paper spawn lookup failed", e);
+            return null;
+        }
+    }
+
+    /** Highest solid block Y at chunk center, or -1. */
+    public int sampleGroundY(int chunkX, int chunkZ) {
+        if (!isEnabled()) {
+            return -1;
+        }
+        try {
+            int x = (chunkX << 4) + 8;
+            int z = (chunkZ << 4) + 8;
+            ClassLoader cl = paperLoader.get();
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit", true, cl);
+            Method getWorlds = bukkit.getMethod("getWorlds");
+            @SuppressWarnings("unchecked")
+            java.util.List<Object> worlds = (java.util.List<Object>) getWorlds.invoke(null);
+            if (worlds == null || worlds.isEmpty()) {
+                return -1;
+            }
+            Object world = worlds.get(0);
+            Method highest = world.getClass().getMethod("getHighestBlockYAt", int.class, int.class);
+            return ((Number) highest.invoke(world, x, z)).intValue();
+        } catch (Exception e) {
+            return -1;
+        }
+    }
+
+    public record OnlinePlayer(String name, java.util.UUID uuid, double x, double y, double z) {
+    }
+
+    /** Snapshot of Paper online players (JE) for BE entity mirror. */
+    public java.util.List<OnlinePlayer> listOnlinePlayers() {
+        java.util.List<OnlinePlayer> out = new java.util.ArrayList<>();
+        if (!isEnabled()) {
+            return out;
+        }
+        try {
+            ClassLoader cl = paperLoader.get();
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit", true, cl);
+            Object coll = bukkit.getMethod("getOnlinePlayers").invoke(null);
+            if (coll instanceof java.util.Collection<?> c) {
+                for (Object p : c) {
+                    out.add(readPlayer(p));
+                }
+            }
+        } catch (Exception e) {
+            LOG.log(Level.FINE, "listOnlinePlayers failed", e);
+        }
+        return out;
+    }
+
+    private OnlinePlayer readPlayer(Object p) throws ReflectiveOperationException {
+        String name = (String) p.getClass().getMethod("getName").invoke(p);
+        java.util.UUID uuid = (java.util.UUID) p.getClass().getMethod("getUniqueId").invoke(p);
+        Object loc = p.getClass().getMethod("getLocation").invoke(p);
+        double x = ((Number) loc.getClass().getMethod("getX").invoke(loc)).doubleValue();
+        double y = ((Number) loc.getClass().getMethod("getY").invoke(loc)).doubleValue();
+        double z = ((Number) loc.getClass().getMethod("getZ").invoke(loc)).doubleValue();
+        return new OnlinePlayer(name, uuid, x, y, z);
+    }
+
+    /**
+     * Snapshot one overworld column as Bedrock hashed state ids (air/stone/dirt/grass/bedrock).
+     * Y range −64..319 → 24×4096 ints, XZY index {@code (x<<8)|(z<<4)|localY}.
+     * Returns null if Paper is unavailable. Read-only; runs on the calling thread
+     * (same pattern as {@link #spawnPosition()}).
+     */
+    public int[][] snapshotColumnHashedStates(int chunkX, int chunkZ) {
+        if (!isEnabled()) {
+            return null;
+        }
+        try {
+            return readColumnHashedStates(chunkX, chunkZ);
+        } catch (Exception e) {
+            LOG.log(Level.FINE, "column snapshot failed", e);
+            return null;
+        }
+    }
+
+    private int[][] readColumnHashedStates(int chunkX, int chunkZ) throws ReflectiveOperationException {
+        final int sections = 24;
+        final int minY = -64;
+        int[][] out = new int[sections][4096];
+        int baseX = chunkX << 4;
+        int baseZ = chunkZ << 4;
+        for (int s = 0; s < sections; s++) {
+            int y0 = minY + s * 16;
+            boolean anyNonAir = false;
+            for (int ly = 0; ly < 16; ly++) {
+                int y = y0 + ly;
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        int state = materialToHashedState(blockAt(baseX + x, y, baseZ + z));
+                        out[s][(x << 8) | (z << 4) | ly] = state;
+                        if (state != BedrockPacketCodec.hashedAir()) {
+                            anyNonAir = true;
+                        }
+                    }
+                }
+            }
+            if (!anyNonAir) {
+                // leave as air (default 0 fill → remap)
+                java.util.Arrays.fill(out[s], BedrockPacketCodec.hashedAir());
+            }
+        }
+        return out;
+    }
+
+    private int materialToHashedState(Object block) throws ReflectiveOperationException {
+        if (block == null) {
+            return BedrockPacketCodec.hashedAir();
+        }
+        Object type = block.getClass().getMethod("getType").invoke(block);
+        if (type == null) {
+            return BedrockPacketCodec.hashedAir();
+        }
+        String name = String.valueOf(type);
+        // Enum name or Material.toString
+        int dot = name.lastIndexOf('.');
+        if (dot >= 0) {
+            name = name.substring(dot + 1);
+        }
+        name = name.toUpperCase();
+        return switch (name) {
+            case "AIR", "CAVE_AIR", "VOID_AIR" -> BedrockPacketCodec.hashedAir();
+            case "BEDROCK" -> BedrockPacketCodec.hashedBedrock();
+            case "GRASS_BLOCK", "GRASS" -> BedrockPacketCodec.hashedGrass();
+            case "DIRT", "COARSE_DIRT", "ROOTED_DIRT", "PODZOL", "MUD" -> BedrockPacketCodec.hashedDirt();
+            case "WATER", "LAVA" -> BedrockPacketCodec.hashedAir(); // treat fluids as air for silhouette MVP
+            default -> {
+                // leaves / glass / etc. still solid silhouette
+                if (name.contains("AIR")) {
+                    yield BedrockPacketCodec.hashedAir();
+                }
+                yield BedrockPacketCodec.hashedStone();
+            }
+        };
+    }
+
     private static Object findAnyPlugin(Class<?> bukkit) {
         try {
             Object pm = bukkit.getMethod("getPluginManager").invoke(null);

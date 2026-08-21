@@ -28,6 +28,13 @@ public final class ChunkRemapper {
         }
         String fromFmt = catalogs.sectionFormat(from);
         String toFmt = catalogs.sectionFormat(to);
+        // Mid-modern paletted↔paletted (1.20.2+ ↔ 26.2): section layout matches —
+        // do NOT scan the packet as packed block shorts (corrupts heightmaps/light).
+        if ("paletted".equals(fromFmt) && "paletted".equals(toFmt)
+                && from.ordinal() >= ProtocolBand.V1_20_2.ordinal()
+                && to.ordinal() >= ProtocolBand.V1_20_2.ordinal()) {
+            return body.retainedDuplicate();
+        }
         if ("legacy".equals(fromFmt) || from.ordinal() <= ProtocolBand.V1_8.ordinal()) {
             return legacyColumnToModern(body);
         }

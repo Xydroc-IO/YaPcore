@@ -33,8 +33,10 @@ public final class BedrockGameplayBridge {
     private final AtomicLong runtimeIds = new AtomicLong(1);
     private final Map<Long, Integer> chunkRadius = new ConcurrentHashMap<>();
     private final Map<Long, Long> runtimeByGuid = new ConcurrentHashMap<>();
+    private final Map<Long, Integer> pendingProtocol = new ConcurrentHashMap<>();
     private BiConsumer<Long, List<ByteBuf>> outbound = (guid, packets) -> {
     };
+    private volatile BedrockPaperWorldSync paperWorld;
 
     public BedrockGameplayBridge(BedrockSessionManager sessions,
                                  FloodgateAuth floodgate,
@@ -44,6 +46,10 @@ public final class BedrockGameplayBridge {
         this.floodgate = floodgate;
         this.skins = skins;
         this.forms = forms;
+    }
+
+    public void setPaperWorld(BedrockPaperWorldSync paperWorld) {
+        this.paperWorld = paperWorld;
     }
 
     public BedrockEntityTracker entities() {
@@ -100,7 +106,21 @@ public final class BedrockGameplayBridge {
         BedrockSessionManager.BedrockSession s = sessions.get(guid);
         String user = s != null ? s.username() : "BedrockPlayer";
         switch (kind) {
-            case REQUEST_NETWORK_SETTINGS -> sendNetworkSettings(guid);
+            case REQUEST_NETWORK_SETTINGS -> {
+                int proto = 0;
+                try {
+                    ByteBuf b = decoded.body().duplicate();
+                    if (b.readableBytes() >= 4) {
+                        proto = b.readInt(); // i32 BE per minecraft-data
+                    }
+                } catch (Exception ignored) {
+                    // default
+                }
+                if (proto != 0) {
+                    pendingProtocol.put(guid, proto);
+                }
+                sendNetworkSettings(guid);
+            }
             case LOGIN -> beginLogin(guid, address, decoded.body(), actions);
             case CLIENT_TO_SERVER_HANDSHAKE, RESOURCE_PACK_CLIENT_RESPONSE, SET_LOCAL_PLAYER_AS_INITIALIZED ->
                     sendSpawnSequence(guid, sessions.get(guid));
@@ -223,8 +243,24 @@ public final class BedrockGameplayBridge {
     }
 
     private void sendNetworkSettings(long guid) {
+        LOG.info("BE network settings → guid=" + Long.toHexString(guid));
         outbound.accept(guid, List.of(BedrockPacketCodec.networkSettingsUncompressed()));
-        LOG.fine("BE network settings → guid=" + Long.toHexString(guid));
+        // Next batches must include compression-method byte (255=none).
+        markCompressionHeader(guid);
+    }
+
+    private void markCompressionHeader(long guid) {
+        // DualStackGateway outbound closes over rakNet peers; set via callback if present.
+        if (compressionArmed != null) {
+            compressionArmed.accept(guid);
+        }
+    }
+
+    private java.util.function.LongConsumer compressionArmed;
+
+    /** Called by DualStackGateway so RakNetPeer can arm compressor-in-header. */
+    public void setCompressionArmed(java.util.function.LongConsumer compressionArmed) {
+        this.compressionArmed = compressionArmed;
     }
 
     private void handleChunkRadius(long guid, ByteBuf body, List<GameAction> actions, String user) {
@@ -237,14 +273,20 @@ public final class BedrockGameplayBridge {
         chunkRadius.put(guid, radius);
         List<ByteBuf> out = new ArrayList<>();
         out.add(BedrockPacketCodec.chunkRadiusUpdated(radius));
-        out.add(BedrockPacketCodec.networkChunkPublisherUpdate(8, 64, -8, radius * 16));
-        // Send a 3×3 air chunk ring around spawn so clients leave the loading screen
-        for (int cx = -1; cx <= 1; cx++) {
-            for (int cz = -1; cz <= 1; cz++) {
-                out.add(BedrockPacketCodec.levelChunkEmpty(cx, cz));
+        double[] spawn = paperSpawnOrDefault();
+        int sx = (int) Math.floor(spawn[0]);
+        int sy = (int) Math.floor(spawn[1]);
+        int sz = (int) Math.floor(spawn[2]);
+        out.add(BedrockPacketCodec.networkChunkPublisherUpdate(sx, sy, sz, radius * 16));
+        int baseCx = sx >> 4;
+        int baseCz = sz >> 4;
+        for (int cx = baseCx - 1; cx <= baseCx + 1; cx++) {
+            for (int cz = baseCz - 1; cz <= baseCz + 1; cz++) {
+                out.add(chunkFor(cx, cz));
             }
         }
         outbound.accept(guid, out);
+        mirrorPaperPlayers();
         actions.add(new GameAction("MOVE", user, Map.of("chunkRadius", Integer.toString(radius))));
     }
 
@@ -256,8 +298,12 @@ public final class BedrockGameplayBridge {
 
     private void beginLogin(long guid, String address, ByteBuf body, List<GameAction> actions) {
         FloodgateAuth.Identity identity = floodgate.authenticate(body, address);
+        int proto = pendingProtocol.getOrDefault(guid, identity.protocol());
+        if (proto <= 0) {
+            proto = identity.protocol() > 0 ? identity.protocol() : 712;
+        }
         long runtime = runtimeIds.getAndIncrement();
-        sessions.open(guid, identity.username(), identity.protocol(), address);
+        sessions.open(guid, identity.username(), proto, address);
         runtimeByGuid.put(guid, runtime);
         skins.registerDefault(identity.username(), identity.javaUuid());
         entities.addPlayer(runtime, runtime, identity.javaUuid(), identity.username(),
@@ -272,7 +318,7 @@ public final class BedrockGameplayBridge {
         }
         announce.release();
         actions.add(new GameAction("JOIN", identity.username(), Map.of(
-                "protocol", Integer.toString(identity.protocol()),
+                "protocol", Integer.toString(proto),
                 "xuid", identity.xuid(),
                 "uuid", identity.javaUuid().toString(),
                 "floodgate", "true",
@@ -282,25 +328,86 @@ public final class BedrockGameplayBridge {
         out.add(BedrockPacketCodec.playStatus(BedrockPacketCodec.PlayStatus.LOGIN_SUCCESS));
         out.add(BedrockPacketCodec.resourcePacksInfoEmpty());
         out.add(BedrockPacketCodec.resourcePackStackEmpty());
+        double[] spawn = paperSpawnOrDefault();
+        int sx = (int) Math.floor(spawn[0]);
+        int sy = (int) Math.floor(spawn[1]);
+        int sz = (int) Math.floor(spawn[2]);
         out.add(BedrockPacketCodec.startGame(runtime, runtime, "YaPcore",
-                8, 64, -8, identity.javaUuid()));
+                sx, sy, sz, identity.javaUuid()));
+        out.add(BedrockPacketCodec.updateAttributesDefault(runtime));
+        out.add(BedrockPacketCodec.setTime(1000));
+        out.add(BedrockPacketCodec.setDifficulty(1));
+        out.add(BedrockPacketCodec.setCommandsEnabled(true));
+        out.add(BedrockPacketCodec.creativeContentFull());
+        out.add(BedrockNbtDumps.availableEntityIdentifiers());
+        out.add(BedrockNbtDumps.biomeDefinitionList());
+        out.add(BedrockPacketCodec.playerListAddSelf(identity.javaUuid(), runtime, identity.username()));
+        // Local player uses player_list + start_game; add_player is for remote peers only
         out.add(BedrockPacketCodec.playStatus(BedrockPacketCodec.PlayStatus.PLAYER_SPAWN));
         out.add(BedrockPacketCodec.chunkRadiusUpdated(8));
-        out.add(BedrockPacketCodec.networkChunkPublisherUpdate(8, 64, -8, 128));
-        for (int cx = -1; cx <= 1; cx++) {
-            for (int cz = -1; cz <= 1; cz++) {
-                out.add(BedrockPacketCodec.levelChunkEmpty(cx, cz));
+        out.add(BedrockPacketCodec.networkChunkPublisherUpdate(sx, sy, sz, 128));
+        int baseCx = sx >> 4;
+        int baseCz = sz >> 4;
+        for (int cx = baseCx - 1; cx <= baseCx + 1; cx++) {
+            for (int cz = baseCz - 1; cz <= baseCz + 1; cz++) {
+                out.add(chunkFor(cx, cz));
             }
         }
         out.add(BedrockPacketCodec.inventoryContentEmpty(0, 36));
-        out.addAll(entities.snapshotPackets());
-        ByteBuf skin = skins.clientboundSkinPacket(identity.username());
-        if (skin != null) {
-            out.add(skin);
-        }
+        out.addAll(entities.snapshotPackets(runtime));
         outbound.accept(guid, out);
+        mirrorPaperPlayers();
         LOG.info("BE login " + identity.username() + " xuid=" + identity.xuid()
                 + " uuid=" + identity.javaUuid());
+    }
+
+    /** Spawn-ring columns: Paper world when attached, else flat / empty. */
+    private ByteBuf chunkFor(int cx, int cz) {
+        BedrockPaperWorldSync sync = paperWorld;
+        if (sync != null && sync.isEnabled() && !Boolean.getBoolean("yapcore.bedrock.flat-chunks")) {
+            int[][] column = sync.snapshotColumnHashedStates(cx, cz);
+            if (column != null) {
+                return BedrockPacketCodec.levelChunkFromColumn(cx, cz, column);
+            }
+        }
+        if (Boolean.getBoolean("yapcore.bedrock.flat-chunks")
+                || Boolean.getBoolean("yapcore.bedrock.paper-chunks-fallback-flat")) {
+            return BedrockPacketCodec.levelChunkFlat(cx, cz);
+        }
+        // Prefer flat silhouette over empty marker so BE clients see ground
+        return BedrockPacketCodec.levelChunkFlat(cx, cz);
+    }
+
+    private double[] paperSpawnOrDefault() {
+        BedrockPaperWorldSync sync = paperWorld;
+        if (sync != null && sync.isEnabled()) {
+            double[] s = sync.spawnPosition();
+            if (s != null) {
+                return s;
+            }
+        }
+        return new double[]{8, 64, -8};
+    }
+
+    /** Mirror Paper JE online players into the BE entity roster. */
+    private void mirrorPaperPlayers() {
+        BedrockPaperWorldSync sync = paperWorld;
+        if (sync == null || !sync.isEnabled()) {
+            return;
+        }
+        for (BedrockPaperWorldSync.OnlinePlayer p : sync.listOnlinePlayers()) {
+            if (p.name() == null || p.uuid() == null) {
+                continue;
+            }
+            if (entities.runtimeFor(p.name()) != null) {
+                Long rt = entities.runtimeFor(p.name());
+                entities.move(rt, (float) p.x(), (float) p.y(), (float) p.z(), 0f, 0f);
+                continue;
+            }
+            long runtime = runtimeIds.getAndIncrement();
+            entities.addPlayer(runtime, runtime, p.uuid(), p.name(),
+                    (float) p.x(), (float) p.y(), (float) p.z(), true);
+        }
     }
 
     private void sendSpawnSequence(long guid, BedrockSessionManager.BedrockSession session) {
@@ -310,17 +417,25 @@ public final class BedrockGameplayBridge {
         long runtime = runtimeIds.getAndIncrement();
         UUID uuid = floodgate.uuidFor(session.username());
         int radius = chunkRadius.getOrDefault(guid, 8);
+        double[] spawn = paperSpawnOrDefault();
+        int sx = (int) Math.floor(spawn[0]);
+        int sy = (int) Math.floor(spawn[1]);
+        int sz = (int) Math.floor(spawn[2]);
         List<ByteBuf> out = new ArrayList<>();
-        out.add(BedrockPacketCodec.startGame(runtime, runtime, "YaPcore", 8, 64, -8, uuid));
+        out.add(BedrockPacketCodec.startGame(runtime, runtime, "YaPcore", sx, sy, sz, uuid));
         out.add(BedrockPacketCodec.playStatus(BedrockPacketCodec.PlayStatus.PLAYER_SPAWN));
         out.add(BedrockPacketCodec.chunkRadiusUpdated(radius));
-        out.add(BedrockPacketCodec.networkChunkPublisherUpdate(8, 64, -8, radius * 16));
-        for (int cx = -1; cx <= 1; cx++) {
-            for (int cz = -1; cz <= 1; cz++) {
-                out.add(BedrockPacketCodec.levelChunkEmpty(cx, cz));
+        out.add(BedrockPacketCodec.networkChunkPublisherUpdate(sx, sy, sz, radius * 16));
+        int baseCx = sx >> 4;
+        int baseCz = sz >> 4;
+        for (int cx = baseCx - 1; cx <= baseCx + 1; cx++) {
+            for (int cz = baseCz - 1; cz <= baseCz + 1; cz++) {
+                out.add(chunkFor(cx, cz));
             }
         }
+        out.addAll(entities.snapshotPackets());
         outbound.accept(guid, out);
+        mirrorPaperPlayers();
     }
 
     public ByteBuf encodeChatToClient(String source, String message) {

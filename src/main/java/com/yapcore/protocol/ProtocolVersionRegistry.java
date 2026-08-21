@@ -74,6 +74,8 @@ public final class ProtocolVersionRegistry {
         list.add(new ProtocolVersion(ClientEdition.BEDROCK, 671, "1.21.0", "Bedrock 1.21", true));
         list.add(new ProtocolVersion(ClientEdition.BEDROCK, 686, "1.21.20", "Bedrock 1.21.20", true));
         list.add(new ProtocolVersion(ClientEdition.BEDROCK, 712, "1.21.50", "Bedrock 1.21.50", true));
+        list.add(new ProtocolVersion(ClientEdition.BEDROCK, 766, "1.21.50", "Bedrock 1.21.50 (proto 766)", true));
+        list.add(new ProtocolVersion(ClientEdition.BEDROCK, 776, "1.21.60", "Bedrock 1.21.60+", true));
 
         list.sort(Comparator.comparingInt(ProtocolVersion::protocolId));
         this.versions = Collections.unmodifiableList(list);

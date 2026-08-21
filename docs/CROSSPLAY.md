@@ -5,6 +5,12 @@ YaPcore aims for **one shared world** and **full** protocol coverage:
 - **Bedrock:** built-in Geyser **parity** (`GeyserStyleTranslator` / CrossplayHub) — not the Geyser jar
 - **Older / other JE:** built-in ViaVersion + ViaBackwards + ViaRewind **parity**
   (`ProtocolCompat` / `ViaStyleRemapper`) — not Via\* jars
+- **Floodgate-class auth:** first-party `FloodgateAuth` / Xbox chain in core; behind Velocity use
+  **`yap-floodgate.jar`** (not the Floodgate jar) — [VELOCITY.md](VELOCITY.md)
+
+**Supported JE floor: 1.20.2+** onto Paper 26.2. Pre-1.19 / Rewind-depth is **best-effort**,
+not product DoD for play remaps. Live matrix (2026-08-21): JE **7/7** join/spawn under zlib;
+Bedrock smoke `geyserParitySmoke=true` on 1.21.50 (~1599 itemstates).
 
 **Phase 4 DoD** is that parity on the Paper-backed world. Slice plan:
 [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md).
@@ -44,6 +50,7 @@ Java TCP  ──┐  ViaStyleRemapper (older JE)   ┌─ YapEngine spatial core
             ├─ DualStackGateway ─────────────┤
 Bedrock UDP─┘  CrossplayHub                  └─ UnifiedPlayer roster
                GeyserStyleTranslator
+               FloodgateAuth (core) / yap-floodgate (Velocity)
 ```
 
 On join, both editions register a `UnifiedPlayer` into the same spatial
@@ -52,9 +59,16 @@ partition. Moves/chats/clicks are translated into shared engine ops.
 ## Scope (Phase 4)
 
 **Target:** full Geyser feature parity + full Via\* feature parity in YaP code.
-Scaffold (join, shared spawn, action path, band registry) is live; codecs and
-remaps expand until the [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md) checklists pass.
-Do not treat “Geyser-class / Via-class” as “good enough forever.”
+**Join/spawn replace claim:** JE matrix green + Bedrock smoke green — operators do **not**
+need Via\* or Geyser jars for supported bands. Soft gameplay depth (richer BE metadata,
+block-state catalogs) still hardens from live clients — see [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md).
+
+Re-run:
+
+```bash
+HOST=127.0.0.1 PORT=25566 ./scripts/protocol-matrix/run-matrix.sh
+HOST=127.0.0.1 PORT=25566 ./scripts/protocol-matrix/run-bedrock-smoke.sh
+```
 
 ## GUI
 

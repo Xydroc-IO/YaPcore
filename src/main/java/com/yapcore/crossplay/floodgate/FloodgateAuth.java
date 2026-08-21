@@ -3,7 +3,6 @@ package com.yapcore.crossplay.floodgate;
 import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,11 +56,20 @@ public final class FloodgateAuth {
 
         if (loginBody != null && loginBody.isReadable()) {
             try {
-                protocol = readUnsignedVarInt(loginBody);
-                int chainLen = readUnsignedVarInt(loginBody);
-                byte[] chainBytes = new byte[Math.min(chainLen, loginBody.readableBytes())];
-                loginBody.readBytes(chainBytes);
-                String chainJson = new String(chainBytes, StandardCharsets.UTF_8);
+                // packet_login: i32 protocol + encapsulated(varint) LoginTokens
+                // LoginTokens: LittleString identity + LittleString client
+                if (loginBody.readableBytes() >= 4) {
+                    protocol = loginBody.readInt();
+                }
+                if (loginBody.isReadable()) {
+                    int encLen = readUnsignedVarInt(loginBody);
+                    if (encLen < 0 || encLen > loginBody.readableBytes()) {
+                        throw new IllegalArgumentException("bad login encapsulate len=" + encLen);
+                    }
+                }
+                String identity = readLittleString(loginBody);
+                String clientJwt = loginBody.isReadable() ? readLittleString(loginBody) : "";
+                String chainJson = identity;
                 XboxChainValidator.ChainResult result = chainValidator.validateChainJson(chainJson);
                 if (!result.valid() && !offlineFallback) {
                     throw new IllegalStateException("Xbox chain invalid: " + result.failReason());
@@ -76,8 +84,10 @@ public final class FloodgateAuth {
                     linked = result.mojangAuthenticated();
                     pubKey = result.identityPublicKey() != null ? result.identityPublicKey() : "";
                 } else {
-                    // Soft scrape fallback for corrupt/test chains when offline allowed
                     ParsedChain scraped = scrapeChain(chainJson);
+                    if (scraped.username == null && clientJwt != null && !clientJwt.isBlank()) {
+                        scraped = mergeScrape(scraped, scrapeChain(clientJwt));
+                    }
                     if (scraped.username != null) {
                         username = scraped.username;
                     }
@@ -85,21 +95,18 @@ public final class FloodgateAuth {
                         xuid = scraped.xuid;
                     }
                     pubKey = scraped.identityPublicKey != null ? scraped.identityPublicKey : "";
-                    LOG.warning("Xbox chain soft-fail (" + result.failReason() + ") using scrape for " + username);
-                }
-                if (loginBody.isReadable()) {
-                    int skinLen = readUnsignedVarInt(loginBody);
-                    loginBody.skipBytes(Math.min(skinLen, loginBody.readableBytes()));
+                    LOG.info("Xbox chain offline/self-signed (" + result.failReason()
+                            + ") identity=" + username);
                 }
             } catch (Exception e) {
-                LOG.fine("Login parse fallback: " + e.getMessage());
+                LOG.warning("Login parse fallback: " + e.getMessage());
                 if (!offlineFallback) {
                     throw e instanceof RuntimeException re ? re : new IllegalStateException(e);
                 }
             }
         }
 
-        if (xuid.isBlank()) {
+        if (xuid.isBlank() || "0".equals(xuid)) {
             xuid = offlineXuid(username, address);
         }
         UUID javaUuid = uuidFromXuid(xuid);
@@ -137,24 +144,21 @@ public final class FloodgateAuth {
         return Map.copyOf(byName);
     }
 
+    /**
+     * Real Floodgate UUID for an XUID: {@code new UUID(0, xuid)}.
+     * Non-numeric tokens (legacy call sites) fall back to a deterministic MSB=0 id.
+     */
     public static UUID uuidFromXuid(String xuid) {
+        if (xuid == null || xuid.isBlank()) {
+            return new UUID(0L, 0L);
+        }
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-1");
-            byte[] hash = md.digest(("Floodgate:" + xuid).getBytes(StandardCharsets.UTF_8));
-            long msb = 0;
-            long lsb = 0;
-            for (int i = 0; i < 8; i++) {
-                msb = (msb << 8) | (hash[i] & 0xff);
-            }
-            for (int i = 8; i < 16; i++) {
-                lsb = (lsb << 8) | (hash[i] & 0xff);
-            }
-            // Set version/variant bits for a name-based UUID feel
-            msb = (msb & 0xffffffffffff0fffL) | 0x0000000000003000L;
-            lsb = (lsb & 0x3fffffffffffffffL) | 0x8000000000000000L;
-            return new UUID(msb, lsb);
-        } catch (Exception e) {
-            return UUID.nameUUIDFromBytes(("OfflinePlayer:" + xuid).getBytes(StandardCharsets.UTF_8));
+            long n = Long.parseUnsignedLong(xuid.trim());
+            return new UUID(0L, n);
+        } catch (NumberFormatException e) {
+            // Synthetic / legacy: keep MSB=0 Floodgate shape
+            long n = Math.abs((long) xuid.hashCode()) | 0x1L;
+            return new UUID(0L, n);
         }
     }
 
@@ -162,16 +166,103 @@ public final class FloodgateAuth {
         return Long.toUnsignedString(Math.abs((username + "|" + address).hashCode() * 31L + 0xF100D6A7EL));
     }
 
+    private static ParsedChain mergeScrape(ParsedChain a, ParsedChain b) {
+        if (a == null) {
+            return b;
+        }
+        if (b == null) {
+            return a;
+        }
+        if (a.username == null) {
+            a.username = b.username;
+        }
+        if (a.xuid == null) {
+            a.xuid = b.xuid;
+        }
+        if (a.identityPublicKey == null) {
+            a.identityPublicKey = b.identityPublicKey;
+        }
+        return a;
+    }
+
     private static ParsedChain scrapeChain(String chainJson) {
         ParsedChain p = new ParsedChain();
-        p.username = extractJsonString(chainJson, "displayName");
-        String xuid = extractJsonString(chainJson, "XUID");
-        if (xuid == null) {
-            xuid = extractJsonString(chainJson, "xuid");
+        if (chainJson == null || chainJson.isBlank()) {
+            return p;
         }
-        p.xuid = xuid;
-        p.identityPublicKey = extractJsonString(chainJson, "identityPublicKey");
+        // Prefer JWT payload claims (offline: extraData.displayName / OIDC: xname)
+        int jwt = chainJson.indexOf("eyJ");
+        while (jwt >= 0) {
+            int end = chainJson.indexOf('"', jwt);
+            if (end < 0) {
+                end = chainJson.indexOf(',', jwt);
+            }
+            if (end < 0) {
+                end = chainJson.length();
+            }
+            String token = chainJson.substring(jwt, end).replace("]", "").replace("}", "").trim();
+            String[] parts = token.split("\\.");
+            if (parts.length >= 2) {
+                try {
+                    byte[] payload = java.util.Base64.getUrlDecoder().decode(padB64(parts[1]));
+                    String json = new String(payload, StandardCharsets.UTF_8);
+                    if (p.username == null) {
+                        p.username = extractJsonString(json, "displayName");
+                    }
+                    if (p.username == null) {
+                        p.username = extractJsonString(json, "xname");
+                    }
+                    if (p.username == null) {
+                        p.username = extractJsonString(json, "ThirdPartyName");
+                    }
+                    if (p.xuid == null) {
+                        p.xuid = extractJsonString(json, "XUID");
+                    }
+                    if (p.xuid == null) {
+                        p.xuid = extractJsonString(json, "xid");
+                    }
+                    if (p.xuid == null || "0".equals(p.xuid)) {
+                        String identity = extractJsonString(json, "identity");
+                        if (identity != null && identity.length() > 8) {
+                            // UUID-as-identity for offline — keep xuid synthetic later
+                        }
+                    }
+                    if (p.identityPublicKey == null) {
+                        p.identityPublicKey = extractJsonString(json, "identityPublicKey");
+                    }
+                    if (p.identityPublicKey == null) {
+                        p.identityPublicKey = extractJsonString(json, "cpk");
+                    }
+                } catch (Exception ignored) {
+                    // try next token
+                }
+            }
+            jwt = chainJson.indexOf("eyJ", jwt + 3);
+        }
+        if (p.username == null) {
+            p.username = extractJsonString(chainJson, "displayName");
+        }
+        if (p.username == null) {
+            p.username = extractJsonString(chainJson, "xname");
+        }
+        if (p.xuid == null) {
+            p.xuid = extractJsonString(chainJson, "XUID");
+        }
+        if (p.xuid == null) {
+            p.xuid = extractJsonString(chainJson, "xuid");
+        }
+        if (p.identityPublicKey == null) {
+            p.identityPublicKey = extractJsonString(chainJson, "identityPublicKey");
+        }
         return p;
+    }
+
+    private static String padB64(String s) {
+        int m = s.length() % 4;
+        if (m == 0) {
+            return s;
+        }
+        return s + "====".substring(m);
     }
 
     private static String extractJsonString(String json, String key) {
@@ -206,6 +297,17 @@ public final class FloodgateAuth {
             }
         }
         return value | ((b & 0x7F) << (size * 7));
+    }
+
+    /** Bedrock LittleString: li32 length + UTF-8 bytes. */
+    private static String readLittleString(ByteBuf in) {
+        int len = in.readIntLE();
+        if (len < 0 || len > in.readableBytes()) {
+            throw new IllegalArgumentException("bad LittleString len=" + len);
+        }
+        byte[] bytes = new byte[len];
+        in.readBytes(bytes);
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
     private static final class ParsedChain {

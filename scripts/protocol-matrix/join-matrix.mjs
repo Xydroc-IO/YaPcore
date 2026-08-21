@@ -19,15 +19,26 @@ const HOST = process.env.HOST || '127.0.0.1';
 const PORT = parseInt(process.env.PORT || '25566', 10);
 const TIMEOUT_MS = parseInt(process.env.TIMEOUT_MS || '20000', 10);
 
-const MATRIX = [
-  ['1.8.9 / Rewind', '1.8.9', 47],
-  ['1.12.2', '1.12.2', 340],
-  ['1.16.5', '1.16.5', 754],
-  ['1.19.4', '1.19.4', 762],
+/**
+ * Product DoD: JE 1.20.2+ (config-era) onto Paper 26.2.
+ * 1.19.4 stays as an optional canary. Pre-1.19 is best-effort Rewind — only when MATRIX_FULL=1.
+ */
+const MATRIX_DOD = [
+  ['1.19.4 canary', '1.19.4', 762],
   ['1.20.4', '1.20.4', 765],
   ['1.21.1', '1.21.1', 767],
   ['1.21.4', '1.21.4', 769],
 ];
+
+const MATRIX_LEGACY = [
+  ['1.8.9 / Rewind', '1.8.9', 47],
+  ['1.12.2', '1.12.2', 340],
+  ['1.16.5', '1.16.5', 754],
+];
+
+const MATRIX = process.env.MATRIX_FULL === '1'
+  ? [...MATRIX_LEGACY, ...MATRIX_DOD]
+  : MATRIX_DOD;
 
 function attempt(label, version, protocol) {
   return new Promise((resolve) => {

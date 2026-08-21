@@ -93,10 +93,17 @@ public final class BedrockEntityTracker {
         ));
     }
 
-    /** Packets a newly joined client needs to see existing entities. */
+    /** Packets a newly joined client needs to see existing entities (excludes {@code exceptRuntime}). */
     public List<ByteBuf> snapshotPackets() {
+        return snapshotPackets(-1L);
+    }
+
+    public List<ByteBuf> snapshotPackets(long exceptRuntime) {
         List<ByteBuf> out = new ArrayList<>();
         for (Tracked t : byRuntime.values()) {
+            if (t.runtimeId() == exceptRuntime) {
+                continue;
+            }
             if (t.player() && t.uuid() != null) {
                 out.add(BedrockPacketCodec.addPlayer(t.uuid(), t.name(), t.runtimeId(),
                         t.x(), t.y(), t.z(), 0f, 0f));

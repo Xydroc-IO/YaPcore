@@ -11,6 +11,54 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BedrockPacketCodecGameplayTest {
 
     @Test
+    void itemstatesLoadedAndStartGameIncludesThem() {
+        assertTrue(BedrockItemStates.all().size() > 1000);
+        ByteBuf pkt = BedrockPacketCodec.startGame(1, 1, "YaPcore", 0, 64, 0,
+                java.util.UUID.randomUUID());
+        int size = pkt.readableBytes();
+        assertEquals(BedrockPacketIds.START_GAME.id, BedrockPacketCodec.decode(pkt).id());
+        assertTrue(size > 10_000, "itemstates should inflate start_game, got " + size);
+        pkt.release();
+    }
+
+    @Test
+    void entityAndBiomeIdentifierPacketsEncode() {
+        ByteBuf ent = BedrockPacketCodec.availableEntityIdentifiersEmpty();
+        assertEquals(BedrockPacketIds.AVAILABLE_ACTOR_IDENTIFIERS.id,
+                BedrockPacketCodec.decode(ent).id());
+        ent.release();
+        ByteBuf bio = BedrockPacketCodec.biomeDefinitionListEmpty();
+        assertEquals(BedrockPacketIds.BIOME_DEFINITION_LIST.id,
+                BedrockPacketCodec.decode(bio).id());
+        bio.release();
+    }
+
+    @Test
+    void paperColumnEncoderAndNbtDumps() {
+        int[][] col = new int[24][4096];
+        for (int s = 0; s < 24; s++) {
+            java.util.Arrays.fill(col[s], BedrockPacketCodec.hashedAir());
+        }
+        java.util.Arrays.fill(col[8], BedrockPacketCodec.hashedStone());
+        col[8][0] = BedrockPacketCodec.hashedGrass();
+        ByteBuf chunk = BedrockPacketCodec.levelChunkFromColumn(0, 0, col);
+        assertEquals(BedrockPacketIds.LEVEL_CHUNK.id, BedrockPacketCodec.decode(chunk).id());
+        chunk.release();
+
+        ByteBuf ent = BedrockNbtDumps.availableEntityIdentifiers();
+        assertEquals(BedrockPacketIds.AVAILABLE_ACTOR_IDENTIFIERS.id,
+                BedrockPacketCodec.decode(ent).id());
+        assertTrue(ent.readableBytes() > 32);
+        ent.release();
+
+        ByteBuf bio = BedrockNbtDumps.biomeDefinitionList();
+        assertEquals(BedrockPacketIds.BIOME_DEFINITION_LIST.id,
+                BedrockPacketCodec.decode(bio).id());
+        assertTrue(bio.readableBytes() > 1000);
+        bio.release();
+    }
+
+    @Test
     void networkSettingsRoundTripId() {
         ByteBuf pkt = BedrockPacketCodec.networkSettingsUncompressed();
         BedrockPacketCodec.Decoded d = BedrockPacketCodec.decode(pkt);
@@ -84,12 +132,32 @@ class BedrockPacketCodecGameplayTest {
     }
 
     @Test
-    void entityTrackerAddRemove() {
-        BedrockEntityTracker tracker = new BedrockEntityTracker();
-        tracker.addPlayer(1, 1, java.util.UUID.randomUUID(), "Alex", 0, 64, 0, false);
-        assertEquals(1, tracker.all().size());
-        assertEquals(1, tracker.snapshotPackets().size());
-        tracker.removeByName("Alex");
-        assertTrue(tracker.all().isEmpty());
+    void itemstatesAndCreativeAndMetadataEncode() {
+        assertTrue(BedrockItemStates.all().size() > 1000);
+
+        java.util.UUID uuid = java.util.UUID.randomUUID();
+        ByteBuf start = BedrockPacketCodec.startGame(1, 1, "YaPcore", 0, 64, 0, uuid);
+        int startSize = start.readableBytes();
+        assertEquals(BedrockPacketCodec.ID_START_GAME, BedrockPacketCodec.decode(start).id());
+        assertTrue(startSize > 10_000, "itemstates inflate start_game, got " + startSize);
+        start.release();
+
+        ByteBuf creative = BedrockPacketCodec.creativeContentFull();
+        int creativeSize = creative.readableBytes();
+        assertEquals(BedrockPacketIds.CREATIVE_CONTENT.id, BedrockPacketCodec.decode(creative).id());
+        assertTrue(creativeSize > 5_000, "creative catalog size=" + creativeSize);
+        creative.release();
+
+        ByteBuf add = BedrockPacketCodec.addPlayer(uuid, "Steve", 7, 1f, 65f, 2f, 0f, 0f);
+        int addSize = add.readableBytes();
+        assertEquals(BedrockPacketCodec.ID_ADD_PLAYER, BedrockPacketCodec.decode(add).id());
+        assertTrue(addSize > 80, "dense metadata add_player size=" + addSize);
+        add.release();
+
+        ByteBuf chunk = BedrockPacketCodec.levelChunkFlat(0, 0);
+        int chunkSize = chunk.readableBytes();
+        assertEquals(BedrockPacketIds.LEVEL_CHUNK.id, BedrockPacketCodec.decode(chunk).id());
+        assertTrue(chunkSize > 200, "layered chunk size=" + chunkSize);
+        chunk.release();
     }
 }

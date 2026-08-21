@@ -366,13 +366,29 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
                     }
                     return;
                 }
-                // Config add_resource_pack (0x09): accept toward Paper; do NOT forward to
-                // mid-band clients (their config task FSM rejects out-of-order registries).
+                // Config resource_pack_push (0x09 on Paper 776): always auto-ack toward Paper
+                // so the config FSM never stalls; forward remapped pack only to clients that
+                // speak config resource-pack packets (1.20.2+).
                 if (session.state() == ConnState.CONFIG && peekId == 0x09) {
                     if (out != null) {
-                        autoAcceptResourcePack(out);
-                        out.release();
-                        out = null;
+                        autoAcceptResourcePack(out, false);
+                        if (!shouldForwardResourcePack(session)) {
+                            out.release();
+                            out = null;
+                        }
+                    }
+                }
+                // Play resource_pack_push (id 81 on Paper 776): YaPPacks extras /addResourcePack.
+                // Same auto-ack + optional forward — wrong/missing play ID remaps caused resets.
+                if (session.state() == ConnState.PLAY && isPlayResourcePackPush(peekId)) {
+                    if (out != null) {
+                        autoAcceptResourcePack(out, true);
+                        if (!shouldForwardResourcePack(session)) {
+                            out.release();
+                            out = null;
+                        } else {
+                            LOG.info("Via play: forwarding remapped resource_pack_push to client");
+                        }
                     }
                 }
                 if (out == null) {
@@ -408,7 +424,7 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
             }
         }
 
-        private void autoAcceptResourcePack(ByteBuf transformedS2C) {
+        private void autoAcceptResourcePack(ByteBuf transformedS2C, boolean playPhase) {
             try {
                 int mark = transformedS2C.readerIndex();
                 McCodec.readVarInt(transformedS2C); // packet id
@@ -418,17 +434,50 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
                 }
                 transformedS2C.readerIndex(mark);
                 // Paper expects ACCEPTED then SUCCESSFULLY_LOADED for forced packs
-                enqueueC2S(resourcePackStatus(uuid, 3)); // ACCEPTED
-                enqueueC2S(resourcePackStatus(uuid, 0)); // SUCCESSFULLY_LOADED
-                LOG.info("Via config: auto-accepted resource pack (accepted+loaded)");
+                enqueueC2S(resourcePackStatus(uuid, 3, playPhase)); // ACCEPTED
+                enqueueC2S(resourcePackStatus(uuid, 0, playPhase)); // SUCCESSFULLY_LOADED
+                LOG.info("Via " + (playPhase ? "play" : "config")
+                        + ": auto-accepted resource pack (accepted+loaded)");
             } catch (Exception e) {
                 LOG.log(Level.FINE, "resource pack auto-ack", e);
             }
         }
 
-        private static ByteBuf resourcePackStatus(byte[] uuid, int result) {
+        /** Paper 776 play S2C resource_pack_push = 81 (also accept dump-resolved ids). */
+        private boolean isPlayResourcePackPush(int serverPacketId) {
+            if (serverPacketId == 81) {
+                return true;
+            }
+            try {
+                var dump = com.yapcore.protocol.via.id.PacketIdDump.forProtocol(
+                        session.serverProtocol());
+                String name = dump.playS2cName(serverPacketId);
+                if (name == null) {
+                    return false;
+                }
+                String n = com.yapcore.protocol.via.id.PacketIdDump.canonicalize(name);
+                return "resource_pack_push".equals(n) || "add_resource_pack".equals(n);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        /** Forward pack prompt to JE clients that have config/play add_resource_pack (≈1.20.2+). */
+        private static boolean shouldForwardResourcePack(ViaSession session) {
+            if (session.isConfigSkip()) {
+                return false;
+            }
+            if (!session.clientBand().hasConfigurationPhase()) {
+                return false;
+            }
+            // Pre-1.20.2 config either lacks packs or uses incompatible layouts
+            return session.clientProtocol() >= 764;
+        }
+
+        private static ByteBuf resourcePackStatus(byte[] uuid, int result, boolean playPhase) {
             ByteBuf accept = Unpooled.buffer(24);
-            McCodec.writeVarInt(accept, 0x06); // config serverbound resource_pack
+            // Config C2S resource_pack = 0x06; Play C2S resource_pack = 49 on Paper 776
+            McCodec.writeVarInt(accept, playPhase ? 49 : 0x06);
             accept.writeBytes(uuid);
             McCodec.writeVarInt(accept, result);
             return accept;

@@ -52,7 +52,11 @@ public final class PacketIdDump {
             Map.entry("use_item_on", "block_place"),
             Map.entry("chat", "chat_message"),
             Map.entry("login_finished", "success"),
-            Map.entry("hello", "login_start")
+            Map.entry("hello", "login_start"),
+            // Play resource packs (776 uses *_push/pop; older dumps use add_/remove_)
+            Map.entry("resource_pack_push", "add_resource_pack"),
+            Map.entry("resource_pack_pop", "remove_resource_pack"),
+            Map.entry("resource_pack", "resource_pack_receive")
     );
 
     /** protocolVersion → dump */

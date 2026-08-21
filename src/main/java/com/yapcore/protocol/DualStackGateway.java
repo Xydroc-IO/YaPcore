@@ -317,18 +317,22 @@ public final class DualStackGateway {
                 "shared-port", Boolean.toString(config.isSharedListenPort())
         )));
 
-        Optional<ResourcePackOffer> offer = packs.createOffer(session);
-        offer.ifPresent(o -> trafficCop.ingest(new GameEvent(
-                GameEvent.Type.RESOURCE_PACK_OFFER,
-                username,
-                Map.of(
-                        "url", o.url(),
-                        "sha1", o.sha1Hex(),
-                        "forced", Boolean.toString(o.forced()),
-                        "prompt", o.prompt(),
-                        "edition", edition.name()
-                )
-        )));
+        var offers = packs.createOffers(session);
+        if (!offers.isEmpty()) {
+            ResourcePackOffer o = offers.get(0);
+            trafficCop.ingest(new GameEvent(
+                    GameEvent.Type.RESOURCE_PACK_OFFER,
+                    username,
+                    Map.of(
+                            "url", o.url(),
+                            "sha1", o.sha1Hex(),
+                            "forced", Boolean.toString(o.forced()),
+                            "prompt", o.prompt(),
+                            "edition", edition.name(),
+                            "count", Integer.toString(offers.size())
+                    )
+            ));
+        }
         return session;
     }
 
@@ -427,9 +431,21 @@ public final class DualStackGateway {
 
         BedrockUdpHandler() {
             DualStackGateway.this.rakNetSessions = rakNet;
+            bedrockBridge.setCompressionArmed(guid -> {
+                InetSocketAddress addr = guidToAddr.get(guid);
+                if (addr != null) {
+                    rakNet.peer(addr).setGameCompressionHeader(true);
+                }
+            });
             bedrockBridge.setOutbound((guid, packets) -> {
                 InetSocketAddress addr = guidToAddr.get(guid);
                 if (addr == null || bedrockChannel == null) {
+                    LOG.warning(
+                            "BE outbound drop guid=" + Long.toHexString(guid)
+                                    + " addr=" + addr + " ch=" + (bedrockChannel != null));
+                    for (ByteBuf pkt : packets) {
+                        pkt.release();
+                    }
                     return;
                 }
                 RakNetSessionManager.RakNetPeer peer = rakNet.peer(addr);
@@ -438,9 +454,10 @@ public final class DualStackGateway {
                     BedrockPacketCodec.writeUnsignedVarInt(batch, pkt.readableBytes());
                     batch.writeBytes(pkt);
                     pkt.release();
-                    ByteBuf framed = rakNet.encapsulateGame(peer, batch);
+                    for (ByteBuf framed : rakNet.encapsulateGameDatagrams(peer, batch)) {
+                        bedrockChannel.writeAndFlush(new DatagramPacket(framed, addr));
+                    }
                     batch.release();
-                    bedrockChannel.writeAndFlush(new DatagramPacket(framed, addr));
                 }
             });
             formService.setSender((user, buf) -> {
@@ -458,9 +475,10 @@ public final class DualStackGateway {
                 BedrockPacketCodec.writeUnsignedVarInt(batch, buf.readableBytes());
                 batch.writeBytes(buf);
                 buf.release();
-                ByteBuf framed = rakNet.encapsulateGame(rakNet.peer(addr), batch);
+                for (ByteBuf framed : rakNet.encapsulateGameDatagrams(rakNet.peer(addr), batch)) {
+                    bedrockChannel.writeAndFlush(new DatagramPacket(framed, addr));
+                }
                 batch.release();
-                bedrockChannel.writeAndFlush(new DatagramPacket(framed, addr));
             });
             rakNet.setGamePacketHandler((peer, gameBatch) -> {
                 long guid = peer.state().clientGuid();
@@ -509,8 +527,14 @@ public final class DualStackGateway {
                         || RakNetReliability.isFrameSet(id)
                         || id == RakNetReliability.ID_ACK
                         || id == RakNetReliability.ID_NACK) {
-                    for (ByteBuf reply : rakNet.handle(sender, content.duplicate())) {
-                        ctx.writeAndFlush(new DatagramPacket(reply, sender));
+                    // retainedDuplicate: handle() may retain frame slices past this read
+                    ByteBuf copy = content.retainedDuplicate();
+                    try {
+                        for (ByteBuf reply : rakNet.handle(sender, copy)) {
+                            ctx.writeAndFlush(new DatagramPacket(reply, sender));
+                        }
+                    } finally {
+                        copy.release();
                     }
                     ThreadMetrics.bump("Gateway", "bedrock-raknet");
                     return;

@@ -170,6 +170,16 @@ public final class MidBandTransformer {
     }
 
     private ByteBuf remapItemTowardServer(ByteBuf body, int outId) {
+        // 1.20.5+ uses present-flag + VarInt item id + components — short rewrite corrupts stacks.
+        ProtocolBand client = session.clientBand();
+        ProtocolBand server = session.serverBand();
+        if (usesComponentItems(client) && usesComponentItems(server)) {
+            return remapModernItemId(body, outId, true);
+        }
+        if (usesComponentItems(client) || usesComponentItems(server)) {
+            // Cross-era (NBT ↔ components): do not half-parse; ID remap only.
+            return rewriteId(body, outId);
+        }
         int mark = body.readerIndex();
         try {
             ByteBuf out = Unpooled.buffer(body.readableBytes() + 8);
@@ -190,6 +200,14 @@ public final class MidBandTransformer {
     }
 
     private ByteBuf remapItemTowardClient(ByteBuf body, int outId) {
+        ProtocolBand client = session.clientBand();
+        ProtocolBand server = session.serverBand();
+        if (usesComponentItems(client) && usesComponentItems(server)) {
+            return remapModernItemId(body, outId, false);
+        }
+        if (usesComponentItems(client) || usesComponentItems(server)) {
+            return rewriteId(body, outId);
+        }
         int mark = body.readerIndex();
         try {
             ByteBuf out = Unpooled.buffer(body.readableBytes() + 8);
@@ -202,6 +220,54 @@ public final class MidBandTransformer {
                 out.writeShort(items.remapToClient(itemId));
             }
             out.writeBytes(body, body.readerIndex(), body.readableBytes());
+            return out;
+        } catch (Exception e) {
+            body.readerIndex(mark);
+            return rewriteId(body, outId);
+        }
+    }
+
+    /** 1.20.5+ (766+) item components era — remap VarInt item ids, copy components opaque. */
+    private static boolean usesComponentItems(ProtocolBand band) {
+        return band.ordinal() >= ProtocolBand.V1_21.ordinal();
+    }
+
+    /**
+     * Walk set_slot / window_items-ish buffers: after optional window/slot headers,
+     * remap modern item stacks in-place by rewriting only the item id VarInt.
+     * On parse failure, fall back to ID-only rewrite (safe passthrough).
+     */
+    private ByteBuf remapModernItemId(ByteBuf body, int outId, boolean towardServer) {
+        int mark = body.readerIndex();
+        try {
+            ByteBuf out = Unpooled.buffer(body.readableBytes() + 16);
+            McCodec.writeVarInt(out, outId);
+            // Best-effort: copy bytes while rewriting the first modern item present in buffer.
+            // Full multi-slot window_items walker can deepen later; single-slot set_slot is primary.
+            boolean remapped = false;
+            if (body.readableBytes() >= 3) {
+                out.writeByte(body.readUnsignedByte());
+                out.writeShort(body.readShort());
+            }
+            if (body.isReadable()) {
+                boolean present = body.readBoolean();
+                out.writeBoolean(present);
+                if (present && body.isReadable()) {
+                    int count = McCodec.readVarInt(body);
+                    McCodec.writeVarInt(out, count);
+                    int itemId = McCodec.readVarInt(body);
+                    int mapped = towardServer ? items.remapToServer(itemId) : items.remapToClient(itemId);
+                    McCodec.writeVarInt(out, mapped);
+                    out.writeBytes(body, body.readerIndex(), body.readableBytes());
+                    remapped = true;
+                } else {
+                    out.writeBytes(body, body.readerIndex(), body.readableBytes());
+                }
+            }
+            if (!remapped && out.readableBytes() <= 5) {
+                body.readerIndex(mark);
+                return rewriteId(body, outId);
+            }
             return out;
         } catch (Exception e) {
             body.readerIndex(mark);

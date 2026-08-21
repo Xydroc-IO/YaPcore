@@ -4,6 +4,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -132,106 +133,148 @@ public final class BedrockPacketCodec {
         return out;
     }
 
-    /** Minimal StartGame — enough for spawn scaffolding; fields deepen toward full Geyser parity. */
+    /** Minimal StartGame matching bedrock 1.21.50 {@code packet_start_game} (79 fields). */
     public static ByteBuf startGame(long entityUniqueId, long runtimeId, String levelName,
                                     int blockX, int blockY, int blockZ, UUID worldId) {
-        ByteBuf out = Unpooled.buffer(256);
+        ByteBuf out = Unpooled.buffer(512);
         writeUnsignedVarInt(out, ID_START_GAME);
-        out.writeLongLE(entityUniqueId);
-        writeUnsignedVarInt(out, (int) runtimeId);
-        writeUnsignedVarInt(out, 0); // player gamemode
+        // entity_id zigzag64, runtime_entity_id varint64
+        writeZigZag64(out, entityUniqueId);
+        writeUnsignedVarLong(out, runtimeId);
+        writeSignedVarInt(out, 0); // player_gamemode survival
         out.writeFloatLE(blockX + 0.5f);
         out.writeFloatLE(blockY + 1.62f);
         out.writeFloatLE(blockZ + 0.5f);
         out.writeFloatLE(0f); // pitch
         out.writeFloatLE(0f); // yaw
-        // seed / biome / dimension stubs
-        out.writeLongLE(worldId.getMostSignificantBits() ^ worldId.getLeastSignificantBits());
-        writeUnsignedVarInt(out, 0); // spawn biome type
+        out.writeLongLE(0L); // seed
+        out.writeShortLE(0); // biome_type
         writeString(out, "plains");
-        writeUnsignedVarInt(out, 0); // dimension
-        writeUnsignedVarInt(out, 1); // generator
-        writeUnsignedVarInt(out, 0); // world gamemode
-        writeUnsignedVarInt(out, 0); // difficulty
-        out.writeIntLE(blockX);
-        out.writeIntLE(blockY);
-        out.writeIntLE(blockZ);
-        out.writeBoolean(false); // achievements
-        writeUnsignedVarInt(out, 0); // editor world type
-        out.writeBoolean(false); // created in editor
-        out.writeBoolean(false); // exported from editor
-        writeUnsignedVarInt(out, 0); // day cycle stop time
-        out.writeIntLE(0); // edu offer
-        out.writeBoolean(false); // edu features
-        writeString(out, ""); // edu product id
-        out.writeFloatLE(0f); // rain
-        out.writeFloatLE(0f); // lightning
-        writeString(out, ""); // multiplayer authority
-        out.writeBoolean(true); // multiplayer game
-        out.writeBoolean(true); // lan broadcast
-        writeUnsignedVarInt(out, 0); // xbl broadcast
-        writeUnsignedVarInt(out, 0); // platform broadcast
-        out.writeBoolean(true); // commands enabled
-        out.writeBoolean(false); // texture packs required
-        writeUnsignedVarInt(out, 0); // gamerules count
-        writeUnsignedVarInt(out, 0); // experiments
-        out.writeBoolean(false); // experiments previously toggled
-        out.writeBoolean(false); // bonus chest
-        out.writeBoolean(false); // map enabled
-        out.writeByte(1); // permission level
-        out.writeIntLE(4); // chunk tick range
-        out.writeBoolean(false); // locked behavior
-        out.writeBoolean(false); // locked resource
-        out.writeBoolean(false); // from locked template
-        out.writeBoolean(false); // msa gamertags only
-        out.writeBoolean(false); // from world template
-        out.writeBoolean(false); // world template option locked
-        out.writeBoolean(false); // only spawn v1 villagers
-        writeString(out, "1.21.0"); // persona disabled / base game version
-        out.writeIntLE(0); // limited world width
-        out.writeIntLE(0); // limited world length
-        out.writeBoolean(false); // nether type
-        writeString(out, ""); // edu resource uri button
-        writeString(out, ""); // edu resource uri link
-        out.writeBoolean(false); // experimental gameplay
-        out.writeByte(0); // chat restriction
-        out.writeBoolean(false); // disable player interactions
-        writeString(out, levelName);
-        writeString(out, levelName);
-        writeString(out, ""); // premium world template
-        out.writeBoolean(false); // is trial
-        writeUnsignedVarInt(out, 0); // rewind history size / movement authority combo (stub)
-        out.writeBoolean(false); // server authoritative block breaking
-        out.writeLongLE(System.currentTimeMillis());
-        out.writeIntLE(0); // enchant seed
-        writeUnsignedVarInt(out, 0); // block properties
-        writeUnsignedVarInt(out, 0); // item states
-        writeString(out, ""); // multiplayer correlation id
-        out.writeBoolean(false); // inventories server authoritative
-        writeString(out, ""); // server engine version
+        writeSignedVarInt(out, 0); // dimension overworld
+        writeSignedVarInt(out, 1); // generator
+        writeSignedVarInt(out, 0); // world_gamemode
+        out.writeBoolean(false); // hardcore
+        writeSignedVarInt(out, 1); // difficulty normal
+        // spawn_position BlockCoordinates
+        writeSignedVarInt(out, blockX);
+        writeUnsignedVarInt(out, blockY);
+        writeSignedVarInt(out, blockZ);
+        out.writeBoolean(true); // achievements_disabled
+        writeSignedVarInt(out, 0); // editor_world_type not_editor
+        out.writeBoolean(false); // created_in_editor
+        out.writeBoolean(false); // exported_from_editor
+        writeSignedVarInt(out, 0); // day_cycle_stop_time
+        writeSignedVarInt(out, 0); // edu_offer
+        out.writeBoolean(false); // edu_features_enabled
+        writeString(out, ""); // edu_product_uuid
+        out.writeFloatLE(0f); // rain_level
+        out.writeFloatLE(0f); // lightning_level
+        out.writeBoolean(false); // has_confirmed_platform_locked_content
+        out.writeBoolean(true); // is_multiplayer
+        out.writeBoolean(true); // broadcast_to_lan
+        writeUnsignedVarInt(out, 4); // xbox_live_broadcast_mode (friends)
+        writeUnsignedVarInt(out, 4); // platform_broadcast_mode
+        out.writeBoolean(true); // enable_commands
+        out.writeBoolean(false); // is_texturepacks_required
+        writeUnsignedVarInt(out, 0); // gamerules
+        out.writeIntLE(0); // experiments count (li32)
+        out.writeBoolean(false); // experiments_previously_used
+        out.writeBoolean(false); // bonus_chest
+        out.writeBoolean(false); // map_enabled
+        out.writeByte(1); // permission_level member
+        out.writeIntLE(4); // server_chunk_tick_range
+        out.writeBoolean(false); // has_locked_behavior_pack
+        out.writeBoolean(false); // has_locked_resource_pack
+        out.writeBoolean(false); // is_from_locked_world_template
+        out.writeBoolean(false); // msa_gamertags_only
+        out.writeBoolean(false); // is_from_world_template
+        out.writeBoolean(false); // is_world_template_option_locked
+        out.writeBoolean(false); // only_spawn_v1_villagers
+        out.writeBoolean(false); // persona_disabled
+        out.writeBoolean(false); // custom_skins_disabled
+        out.writeBoolean(false); // emote_chat_muted
+        writeString(out, "1.21.50"); // game_version
+        out.writeIntLE(0); // limited_world_width
+        out.writeIntLE(0); // limited_world_length
+        out.writeBoolean(false); // is_new_nether
+        writeString(out, ""); // edu_resource_uri.button_name
+        writeString(out, ""); // edu_resource_uri.link_uri
+        out.writeBoolean(false); // experimental_gameplay_override
+        out.writeByte(0); // chat_restriction_level none
+        out.writeBoolean(false); // disable_player_interactions
+        writeString(out, "YaPcore"); // server_identifier
+        writeString(out, "YaPcore"); // world_identifier
+        writeString(out, ""); // scenario_identifier
+        writeString(out, levelName == null ? "YaPcore" : levelName); // level_id
+        writeString(out, levelName == null ? "YaPcore" : levelName); // world_name
+        writeString(out, ""); // premium_world_template_id
+        out.writeBoolean(false); // is_trial
+        writeSignedVarInt(out, 0); // movement_authority client
+        writeSignedVarInt(out, 0); // rewind_history_size
+        out.writeBoolean(false); // server_authoritative_block_breaking
+        out.writeLongLE(0L); // current_tick
+        writeSignedVarInt(out, 0); // enchantment_seed
+        writeUnsignedVarInt(out, 0); // block_properties
+        BedrockItemStates.writeTo(out); // itemstates (vanilla table; needs MTU-split + deflate)
+        writeString(out, ""); // multiplayer_correlation_id
+        out.writeBoolean(false); // server_authoritative_inventory
+        writeString(out, "YaPcore"); // engine
+        writeEmptyNetworkNbt(out); // property_data
+        out.writeLongLE(0L); // block_pallette_checksum
+        // world_template_id uuid
+        out.writeLongLE(worldId.getMostSignificantBits());
+        out.writeLongLE(worldId.getLeastSignificantBits());
+        out.writeBoolean(false); // client_side_generation
+        out.writeBoolean(true); // block_network_ids_are_hashes (state ids = hashed runtime ids)
+        out.writeBoolean(false); // server_controlled_sound
         return out;
     }
 
+    /** Empty Bedrock network NBT compound (little-endian varint name lengths). */
+    public static void writeEmptyNetworkNbt(ByteBuf out) {
+        out.writeByte(0x0a); // TAG_Compound
+        writeUnsignedVarInt(out, 0); // empty name (network / littleVarint)
+        out.writeByte(0x00); // TAG_End
+    }
+
+    public static void writeZigZag64(ByteBuf out, long value) {
+        writeUnsignedVarLong(out, (value << 1) ^ (value >> 63));
+    }
+
+    public static void writeUnsignedVarLong(ByteBuf out, long value) {
+        while ((value & ~0x7FL) != 0L) {
+            out.writeByte((int) ((value & 0x7F) | 0x80));
+            value >>>= 7;
+        }
+        out.writeByte((int) value);
+    }
+
     public static ByteBuf resourcePacksInfoEmpty() {
-        ByteBuf out = Unpooled.buffer(16);
+        // 1.21.50 packet_resource_packs_info
+        ByteBuf out = Unpooled.buffer(48);
         writeUnsignedVarInt(out, ID_RESOURCE_PACKS_INFO);
-        out.writeBoolean(false); // forced to accept
-        out.writeBoolean(false); // scripting
-        out.writeBoolean(false); // forcing server packs
-        writeUnsignedVarInt(out, 0); // behavior packs
-        writeUnsignedVarInt(out, 0); // resource packs
+        out.writeBoolean(false); // must_accept
+        out.writeBoolean(false); // has_addons
+        out.writeBoolean(false); // has_scripts
+        // world_template: uuid + version string
+        out.writeLongLE(0L);
+        out.writeLongLE(0L);
+        writeString(out, "0.0.0");
+        out.writeShortLE(0); // texture_packs count (li16)
         return out;
     }
 
     public static ByteBuf resourcePackStackEmpty() {
-        ByteBuf out = Unpooled.buffer(16);
+        // 1.21.50 packet_resource_pack_stack
+        ByteBuf out = Unpooled.buffer(32);
         writeUnsignedVarInt(out, ID_RESOURCE_PACK_STACK);
-        out.writeBoolean(false); // must accept
-        writeUnsignedVarInt(out, 0); // behavior
-        writeUnsignedVarInt(out, 0); // resource
-        writeString(out, "1.21.0");
-        out.writeBoolean(false); // experiments
-        out.writeBoolean(false); // previously toggled
+        out.writeBoolean(false); // must_accept
+        writeUnsignedVarInt(out, 0); // behavior_packs
+        writeUnsignedVarInt(out, 0); // resource_packs
+        writeString(out, "1.21.50");
+        out.writeIntLE(0); // experiments count (li32)
+        out.writeBoolean(false); // experiments_previously_used
+        out.writeBoolean(false); // has_editor_packs
         return out;
     }
 
@@ -255,22 +298,30 @@ public final class BedrockPacketCodec {
         return out;
     }
 
+    /**
+     * Matches bedrock-protocol {@code packet_network_settings}: lu16 threshold, lu16 algorithm,
+     * bool throttle, u8 throttle threshold, lf32 throttle scalar.
+     */
     public static ByteBuf networkSettings(int compressionThreshold, int compressionAlgorithm,
-                                          boolean clientThrottle, float clientThrottleThreshold,
+                                          boolean clientThrottle, int clientThrottleThreshold,
                                           float clientThrottleScalar) {
         ByteBuf out = Unpooled.buffer(16);
         writeUnsignedVarInt(out, ID_NETWORK_SETTINGS);
         out.writeShortLE(compressionThreshold);
         out.writeShortLE(compressionAlgorithm);
         out.writeBoolean(clientThrottle);
-        out.writeFloatLE(clientThrottleThreshold);
+        out.writeByte(clientThrottleThreshold & 0xff);
         out.writeFloatLE(clientThrottleScalar);
         return out;
     }
 
-    /** No compression yet — threshold 0 tells client to send uncompressed. */
+    /**
+     * Disable client compression: lu16 max threshold so payloads never exceed it
+     * ({@code buf.length > threshold} is false). Threshold 0 would compress everything
+     * in bedrock-protocol's framer.
+     */
     public static ByteBuf networkSettingsUncompressed() {
-        return networkSettings(0, 0, false, 0f, 0f);
+        return networkSettings(65535, 0, false, 0, 0f);
     }
 
     public static ByteBuf chunkRadiusUpdated(int radius) {
@@ -281,35 +332,358 @@ public final class BedrockPacketCodec {
     }
 
     public static ByteBuf networkChunkPublisherUpdate(int blockX, int blockY, int blockZ, int radiusBlocks) {
-        ByteBuf out = Unpooled.buffer(24);
+        ByteBuf out = Unpooled.buffer(32);
         writeUnsignedVarInt(out, 0x79); // NETWORK_CHUNK_PUBLISHER_UPDATE
-        out.writeIntLE(blockX);
-        out.writeIntLE(blockY);
-        out.writeIntLE(blockZ);
+        // BlockCoordinates: zigzag32 x, varint y, zigzag32 z
+        writeZigZag32(out, blockX);
+        writeUnsignedVarInt(out, blockY);
+        writeZigZag32(out, blockZ);
         writeUnsignedVarInt(out, radiusBlocks);
+        out.writeIntLE(0); // saved_chunks count (lu32)
         return out;
     }
 
     /**
-     * Minimal empty LEVEL_CHUNK (air column) so clients progress past spawn.
-     * Full palette codecs deepen later.
+     * Empty column marker (sub_chunk_count=0) — known-good for smoke / join.
+     * Use {@link #levelChunkFlat} when the client accepts real palettes.
      */
     public static ByteBuf levelChunkEmpty(int chunkX, int chunkZ) {
+        return levelChunkMarker(chunkX, chunkZ);
+    }
+
+    public static ByteBuf levelChunkMarker(int chunkX, int chunkZ) {
         ByteBuf out = Unpooled.buffer(64);
         writeUnsignedVarInt(out, BedrockPacketIds.LEVEL_CHUNK.id);
-        out.writeIntLE(chunkX);
-        out.writeIntLE(chunkZ);
-        writeUnsignedVarInt(out, 0); // dimension
-        writeUnsignedVarInt(out, 1); // subchunk count (empty)
-        out.writeBoolean(false); // cache enabled
-        writeUnsignedVarInt(out, 0); // blob count
-        // payload: empty subchunks marker
-        ByteBuf payload = Unpooled.buffer(8);
-        payload.writeByte(0); // version / empty
+        writeZigZag32(out, chunkX);
+        writeZigZag32(out, chunkZ);
+        writeZigZag32(out, 0);
+        writeUnsignedVarInt(out, 0);
+        out.writeBoolean(false);
+        writeUnsignedVarInt(out, 0);
+        return out;
+    }
+
+    /** Air / dirt / stone / grass_block / bedrock defaultState (prismarine-registry bedrock_1.21.50). */
+    static final int STATE_AIR = 11261;
+    static final int STATE_DIRT = 8805;
+    static final int STATE_STONE = 2325;
+    static final int STATE_GRASS = 9981;
+    static final int STATE_BEDROCK = 11785;
+    private static final int BIOME_PLAINS = 1;
+    private static final int SHIELD_NETWORK_ID = 1162;
+
+    public static int hashedAir() {
+        return STATE_AIR;
+    }
+
+    public static int hashedDirt() {
+        return STATE_DIRT;
+    }
+
+    public static int hashedStone() {
+        return STATE_STONE;
+    }
+
+    public static int hashedGrass() {
+        return STATE_GRASS;
+    }
+
+    public static int hashedBedrock() {
+        return STATE_BEDROCK;
+    }
+
+    public static ByteBuf levelChunkFlat(int chunkX, int chunkZ) {
+        // Overworld -64..320 → 24 subchunks; index 0 = y -64..-49, index 8 = y 64..79
+        final int sections = 24;
+        ByteBuf payload = Unpooled.buffer(sections * 64 + 256);
+        for (int i = 0; i < sections; i++) {
+            int absY0 = -64 + i * 16;
+            if (absY0 == -64) {
+                writeLayeredSubChunk(payload, y -> y == 0 ? STATE_BEDROCK : STATE_STONE);
+            } else if (absY0 == 48) {
+                writeLayeredSubChunk(payload, y -> y >= 14 ? STATE_DIRT : STATE_STONE);
+            } else if (absY0 == 64) {
+                writeLayeredSubChunk(payload, y -> y == 0 ? STATE_GRASS : STATE_AIR);
+            } else if (absY0 < 48) {
+                writeUniformSubChunk(payload, STATE_STONE);
+            } else {
+                writeUniformSubChunk(payload, STATE_AIR);
+            }
+        }
+        // Biomes: one plains section + 0xFF reuse for remaining height (1.18+)
+        writeUniformBiomeStorage(payload, BIOME_PLAINS);
+        for (int i = 1; i < sections; i++) {
+            payload.writeByte(0xFF);
+        }
+        payload.writeByte(0); // border blocks length
+
+        ByteBuf out = Unpooled.buffer(payload.readableBytes() + 32);
+        writeUnsignedVarInt(out, BedrockPacketIds.LEVEL_CHUNK.id);
+        writeZigZag32(out, chunkX);
+        writeZigZag32(out, chunkZ);
+        writeZigZag32(out, 0); // dimension
+        writeUnsignedVarInt(out, sections); // sub_chunk_count
+        out.writeBoolean(false); // cache_enabled
         writeUnsignedVarInt(out, payload.readableBytes());
         out.writeBytes(payload);
         payload.release();
         return out;
+    }
+
+    /**
+     * Encode a Paper (or other) column: {@code states[section][4096]} hashed runtime ids,
+     * section 0 = y −64..−49, XZY index {@code (x<<8)|(z<<4)|localY}.
+     */
+    public static ByteBuf levelChunkFromColumn(int chunkX, int chunkZ, int[][] states) {
+        if (states == null || states.length == 0) {
+            return levelChunkFlat(chunkX, chunkZ);
+        }
+        final int sections = Math.min(24, states.length);
+        ByteBuf payload = Unpooled.buffer(sections * 128 + 256);
+        for (int i = 0; i < sections; i++) {
+            int[] sec = states[i];
+            if (sec == null || sec.length < 4096) {
+                writeUniformSubChunk(payload, STATE_AIR);
+                continue;
+            }
+            int first = sec[0];
+            boolean uniform = true;
+            for (int j = 1; j < 4096; j++) {
+                if (sec[j] != first) {
+                    uniform = false;
+                    break;
+                }
+            }
+            if (uniform) {
+                writeUniformSubChunk(payload, first);
+            } else {
+                writePaletteSubChunk(payload, sec);
+            }
+        }
+        writeUniformBiomeStorage(payload, BIOME_PLAINS);
+        for (int i = 1; i < sections; i++) {
+            payload.writeByte(0xFF);
+        }
+        payload.writeByte(0);
+
+        ByteBuf out = Unpooled.buffer(payload.readableBytes() + 32);
+        writeUnsignedVarInt(out, BedrockPacketIds.LEVEL_CHUNK.id);
+        writeZigZag32(out, chunkX);
+        writeZigZag32(out, chunkZ);
+        writeZigZag32(out, 0);
+        writeUnsignedVarInt(out, sections);
+        out.writeBoolean(false);
+        writeUnsignedVarInt(out, payload.readableBytes());
+        out.writeBytes(payload);
+        payload.release();
+        return out;
+    }
+
+    /** SubChunk v8 + 1 layer, single-value palette (1.18+ runtime short form). */
+    private static void writeUniformSubChunk(ByteBuf out, int runtimeStateId) {
+        out.writeByte(8); // version
+        out.writeByte(1); // storage count
+        out.writeByte(1); // bits=0 | network
+        writeSignedVarInt(out, runtimeStateId); // zigzag state only (no palette size)
+    }
+
+    /**
+     * Real multi-entry network palette (Paletted4): {@code localY -> hashed state}.
+     * Block indices packed XZY into LE words.
+     */
+    private static void writeLayeredSubChunk(ByteBuf out, java.util.function.IntUnaryOperator localYToState) {
+        out.writeByte(8);
+        out.writeByte(1);
+        out.writeByte(0x09); // bits=4 | network
+        int[] palette = new int[8];
+        int paletteSize = 0;
+        int[] indices = new int[4096];
+        for (int y = 0; y < 16; y++) {
+            int state = localYToState.applyAsInt(y);
+            int pal = -1;
+            for (int p = 0; p < paletteSize; p++) {
+                if (palette[p] == state) {
+                    pal = p;
+                    break;
+                }
+            }
+            if (pal < 0) {
+                pal = paletteSize;
+                palette[paletteSize++] = state;
+            }
+            for (int z = 0; z < 16; z++) {
+                for (int x = 0; x < 16; x++) {
+                    indices[(x << 8) | (z << 4) | y] = pal;
+                }
+            }
+        }
+        for (int w = 0; w < 512; w++) {
+            int word = 0;
+            for (int b = 0; b < 8; b++) {
+                word |= (indices[w * 8 + b] & 0xF) << (b * 4);
+            }
+            out.writeIntLE(word);
+        }
+        writeUnsignedVarInt(out, paletteSize);
+        for (int p = 0; p < paletteSize; p++) {
+            writeSignedVarInt(out, palette[p]);
+        }
+    }
+
+    /** Arbitrary XZY column section (bits adaptive 1–8). */
+    private static void writePaletteSubChunk(ByteBuf out, int[] states4096) {
+        // Build palette
+        int[] palette = new int[256];
+        int paletteSize = 0;
+        int[] indices = new int[4096];
+        for (int i = 0; i < 4096; i++) {
+            int state = states4096[i];
+            int pal = -1;
+            for (int p = 0; p < paletteSize; p++) {
+                if (palette[p] == state) {
+                    pal = p;
+                    break;
+                }
+            }
+            if (pal < 0) {
+                if (paletteSize >= palette.length) {
+                    // too many unique — fall back to stone uniform
+                    writeUniformSubChunk(out, STATE_STONE);
+                    return;
+                }
+                pal = paletteSize;
+                palette[paletteSize++] = state;
+            }
+            indices[i] = pal;
+        }
+        if (paletteSize == 1) {
+            writeUniformSubChunk(out, palette[0]);
+            return;
+        }
+        int bits = 1;
+        while ((1 << bits) < paletteSize && bits < 8) {
+            bits++;
+        }
+        if (bits == 3) {
+            bits = 4; // Bedrock skips 3
+        }
+        if (bits > 4 && bits < 8) {
+            bits = 8;
+        }
+        out.writeByte(8);
+        out.writeByte(1);
+        out.writeByte((bits << 1) | 1);
+        int blocksPerWord = Math.max(1, 32 / bits);
+        int words = (4096 + blocksPerWord - 1) / blocksPerWord;
+        for (int w = 0; w < words; w++) {
+            int word = 0;
+            for (int b = 0; b < blocksPerWord; b++) {
+                int idx = w * blocksPerWord + b;
+                if (idx >= 4096) {
+                    break;
+                }
+                word |= (indices[idx] & ((1 << bits) - 1)) << (b * bits);
+            }
+            out.writeIntLE(word);
+        }
+        writeSignedVarInt(out, paletteSize);
+        for (int p = 0; p < paletteSize; p++) {
+            writeSignedVarInt(out, palette[p]);
+        }
+    }
+
+    /** Biome single-value runtime: type byte + (id << 1) as unsigned varint. */
+    private static void writeUniformBiomeStorage(ByteBuf out, int biomeId) {
+        out.writeByte(1); // (0<<1)|1
+        writeUnsignedVarInt(out, biomeId << 1);
+    }
+
+    /** Full ADD_PLAYER matching 1.21.50 {@code packet_add_player}. */
+    public static ByteBuf addPlayer(UUID uuid, String username, long runtimeId,
+                                    float x, float y, float z, float yaw, float pitch) {
+        ByteBuf out = Unpooled.buffer(192 + (username == null ? 0 : username.length()));
+        writeUnsignedVarInt(out, ID_ADD_PLAYER);
+        out.writeLongLE(uuid.getMostSignificantBits());
+        out.writeLongLE(uuid.getLeastSignificantBits());
+        writeString(out, username == null ? "" : username);
+        writeUnsignedVarLong(out, runtimeId);
+        writeString(out, ""); // platform_chat_id
+        out.writeFloatLE(x);
+        out.writeFloatLE(y);
+        out.writeFloatLE(z);
+        out.writeFloatLE(0f); // velocity
+        out.writeFloatLE(0f);
+        out.writeFloatLE(0f);
+        out.writeFloatLE(pitch);
+        out.writeFloatLE(yaw);
+        out.writeFloatLE(yaw); // head_yaw
+        writeSignedVarInt(out, 0); // held_item air
+        writeSignedVarInt(out, 0); // gamemode survival
+        writePlayerMetadata(out, username);
+        writeUnsignedVarInt(out, 0); // properties ints
+        writeUnsignedVarInt(out, 0); // properties floats
+        out.writeLongLE(runtimeId); // unique_id li64
+        out.writeByte(1); // permission_level member
+        out.writeByte(0); // command_permission normal
+        // abilities: one base layer
+        out.writeByte(1); // layer count
+        out.writeShortLE(1); // type = base
+        out.writeIntLE(0x000D3FFF); // allowed — build/mine/doors/containers/attack/fly bits
+        out.writeIntLE(0x000D3FFF); // enabled
+        out.writeFloatLE(0.05f); // fly_speed
+        out.writeFloatLE(0.1f); // walk_speed
+        writeUnsignedVarInt(out, 0); // links
+        writeString(out, ""); // device_id
+        out.writeIntLE(1); // device_os Android (harmless for PC viewers)
+        return out;
+    }
+
+    /**
+     * Dense player MetadataDictionary: flags, health, nametag, air, scale, AABB.
+     * Key/type ids match bedrock 1.21.50 protocol.json.
+     */
+    static void writePlayerMetadata(ByteBuf out, String nametag) {
+        writeUnsignedVarInt(out, 7);
+        writeUnsignedVarInt(out, 0); // flags
+        writeUnsignedVarInt(out, 7); // long
+        writeZigZag64(out, (1L << 14) | (1L << 15) | (1L << 19) | (1L << 22));
+        writeUnsignedVarInt(out, 1); // health
+        writeUnsignedVarInt(out, 3); // float
+        out.writeFloatLE(20f);
+        writeUnsignedVarInt(out, 4); // nametag
+        writeUnsignedVarInt(out, 4); // string
+        writeString(out, nametag == null ? "" : nametag);
+        writeUnsignedVarInt(out, 7); // air
+        writeUnsignedVarInt(out, 1); // short
+        out.writeShortLE(300);
+        writeUnsignedVarInt(out, 38); // scale
+        writeUnsignedVarInt(out, 3);
+        out.writeFloatLE(1f);
+        writeUnsignedVarInt(out, 53); // boundingbox_width
+        writeUnsignedVarInt(out, 3);
+        out.writeFloatLE(0.6f);
+        writeUnsignedVarInt(out, 54); // boundingbox_height
+        writeUnsignedVarInt(out, 3);
+        out.writeFloatLE(1.8f);
+    }
+
+    static void writeActorMetadata(ByteBuf out, String nametag) {
+        writeUnsignedVarInt(out, 5);
+        writeUnsignedVarInt(out, 0);
+        writeUnsignedVarInt(out, 7);
+        writeZigZag64(out, (1L << 14) | (1L << 15) | (1L << 19) | (1L << 22));
+        writeUnsignedVarInt(out, 1);
+        writeUnsignedVarInt(out, 3);
+        out.writeFloatLE(20f);
+        writeUnsignedVarInt(out, 4);
+        writeUnsignedVarInt(out, 4);
+        writeString(out, nametag == null ? "" : nametag);
+        writeUnsignedVarInt(out, 38);
+        writeUnsignedVarInt(out, 3);
+        out.writeFloatLE(1f);
+        writeUnsignedVarInt(out, 53);
+        writeUnsignedVarInt(out, 3);
+        out.writeFloatLE(0.6f);
     }
 
     public static ByteBuf updateBlock(int x, int y, int z, int runtimeId, int flags, int layer) {
@@ -322,27 +696,19 @@ public final class BedrockPacketCodec {
         return out;
     }
 
-    /** Minimal ADD_PLAYER — enough for other Bedrock clients to see a peer. */
-    public static ByteBuf addPlayer(UUID uuid, String username, long runtimeId,
-                                    float x, float y, float z, float yaw, float pitch) {
-        ByteBuf out = Unpooled.buffer(128 + username.length());
-        writeUnsignedVarInt(out, ID_ADD_PLAYER);
-        out.writeLongLE(uuid.getMostSignificantBits());
-        out.writeLongLE(uuid.getLeastSignificantBits());
-        writeString(out, username);
-        writeUnsignedVarInt(out, (int) runtimeId);
-        out.writeFloatLE(x);
-        out.writeFloatLE(y);
-        out.writeFloatLE(z);
-        out.writeFloatLE(pitch);
-        out.writeFloatLE(yaw);
-        out.writeFloatLE(yaw); // head yaw
-        // held item empty
-        writeUnsignedVarInt(out, 0); // network id air
-        writeUnsignedVarInt(out, 0); // metadata count
-        writeUnsignedVarInt(out, 0); // unique entity links
-        writeString(out, ""); // device id
-        writeUnsignedVarInt(out, 0); // build platform
+    /** AVAILABLE_ENTITY_IDENTIFIERS — empty network NBT compound. */
+    public static ByteBuf availableEntityIdentifiersEmpty() {
+        ByteBuf out = Unpooled.buffer(16);
+        writeUnsignedVarInt(out, BedrockPacketIds.AVAILABLE_ACTOR_IDENTIFIERS.id);
+        writeEmptyNetworkNbt(out);
+        return out;
+    }
+
+    /** BIOME_DEFINITION_LIST — empty network NBT compound. */
+    public static ByteBuf biomeDefinitionListEmpty() {
+        ByteBuf out = Unpooled.buffer(16);
+        writeUnsignedVarInt(out, BedrockPacketIds.BIOME_DEFINITION_LIST.id);
+        writeEmptyNetworkNbt(out);
         return out;
     }
 
@@ -363,7 +729,7 @@ public final class BedrockPacketCodec {
         out.writeFloatLE(yaw);
         out.writeFloatLE(yaw);
         writeUnsignedVarInt(out, 0); // attributes
-        writeUnsignedVarInt(out, 0); // metadata
+        writeActorMetadata(out, actorType);
         writeUnsignedVarInt(out, 0); // entity links
         return out;
     }
@@ -375,14 +741,209 @@ public final class BedrockPacketCodec {
         return out;
     }
 
+    public static ByteBuf setTime(int time) {
+        ByteBuf out = Unpooled.buffer(8);
+        writeUnsignedVarInt(out, BedrockPacketIds.SET_TIME.id);
+        writeSignedVarInt(out, time);
+        return out;
+    }
+
+    public static ByteBuf setDifficulty(int difficulty) {
+        ByteBuf out = Unpooled.buffer(8);
+        writeUnsignedVarInt(out, BedrockPacketIds.SET_DIFFICULTY.id);
+        writeUnsignedVarInt(out, difficulty);
+        return out;
+    }
+
+    public static ByteBuf setCommandsEnabled(boolean enabled) {
+        ByteBuf out = Unpooled.buffer(4);
+        writeUnsignedVarInt(out, 0x3b); // SET_COMMANDS_ENABLED
+        out.writeBoolean(enabled);
+        return out;
+    }
+
+    /**
+     * Default player attributes (health / movement / hunger) for 1.21.50 PlayerAttributes.
+     */
+    public static ByteBuf updateAttributesDefault(long runtimeId) {
+        ByteBuf out = Unpooled.buffer(128);
+        writeUnsignedVarInt(out, BedrockPacketIds.UPDATE_ATTRIBUTES.id);
+        writeUnsignedVarLong(out, runtimeId);
+        String[] names = {
+                "minecraft:health",
+                "minecraft:player.hunger",
+                "minecraft:movement",
+                "minecraft:player.level",
+                "minecraft:player.experience"
+        };
+        float[][] vals = {
+                {0f, 20f, 20f, 0f, 20f, 20f},
+                {0f, 20f, 20f, 0f, 20f, 20f},
+                {0f, 3.4028e38f, 0.1f, 0f, 3.4028e38f, 0.1f},
+                {0f, 24791f, 0f, 0f, 24791f, 0f},
+                {0f, 1f, 0f, 0f, 1f, 0f}
+        };
+        writeUnsignedVarInt(out, names.length);
+        for (int i = 0; i < names.length; i++) {
+            out.writeFloatLE(vals[i][0]); // min
+            out.writeFloatLE(vals[i][1]); // max
+            out.writeFloatLE(vals[i][2]); // current
+            out.writeFloatLE(vals[i][3]); // default_min
+            out.writeFloatLE(vals[i][4]); // default_max
+            out.writeFloatLE(vals[i][5]); // default
+            writeString(out, names[i]);
+            writeUnsignedVarInt(out, 0); // modifiers
+        }
+        writeUnsignedVarLong(out, 0L); // tick
+        return out;
+    }
+
+    /** Empty creative inventory (varint count 0). */
+    public static ByteBuf creativeContentEmpty() {
+        ByteBuf out = Unpooled.buffer(8);
+        writeUnsignedVarInt(out, BedrockPacketIds.CREATIVE_CONTENT.id);
+        writeUnsignedVarInt(out, 0);
+        return out;
+    }
+
+    /**
+     * Full creative catalog from vanilla itemstates (ItemLegacy entries).
+     * Skips air; shield gets blocking_tick=0 extra.
+     */
+    public static ByteBuf creativeContentFull() {
+        List<BedrockItemStates.ItemState> states = BedrockItemStates.all();
+        ByteBuf out = Unpooled.buffer(Math.max(64, states.size() * 24));
+        writeUnsignedVarInt(out, BedrockPacketIds.CREATIVE_CONTENT.id);
+        int count = 0;
+        for (BedrockItemStates.ItemState s : states) {
+            if (s.runtimeId() == 0 || "minecraft:air".equals(s.name())) {
+                continue;
+            }
+            count++;
+        }
+        writeUnsignedVarInt(out, count);
+        int entryId = 1;
+        for (BedrockItemStates.ItemState s : states) {
+            if (s.runtimeId() == 0 || "minecraft:air".equals(s.name())) {
+                continue;
+            }
+            writeUnsignedVarInt(out, entryId++);
+            writeItemLegacy(out, s.runtimeId() & 0xFFFF);
+        }
+        return out;
+    }
+
+    /** ItemLegacy for creative / inventory (network_id != 0). */
+    static void writeItemLegacy(ByteBuf out, int networkId) {
+        writeSignedVarInt(out, networkId);
+        out.writeShortLE(1); // count
+        writeUnsignedVarInt(out, 0); // metadata
+        writeSignedVarInt(out, 0); // block_runtime_id
+        ByteBuf extra = Unpooled.buffer(16);
+        extra.writeShortLE(0); // has_nbt false
+        extra.writeIntLE(0); // can_place_on
+        extra.writeIntLE(0); // can_destroy
+        if (networkId == SHIELD_NETWORK_ID) {
+            extra.writeLongLE(0L); // blocking_tick
+        }
+        writeUnsignedVarInt(out, extra.readableBytes());
+        out.writeBytes(extra);
+        extra.release();
+    }
+
+    /**
+     * Minimal available_commands with zero enums/commands — enough for clients
+     * that expect the packet before chat.
+     */
+    public static ByteBuf availableCommandsEmpty() {
+        ByteBuf out = Unpooled.buffer(32);
+        writeUnsignedVarInt(out, BedrockPacketIds.AVAILABLE_COMMANDS.id);
+        writeUnsignedVarInt(out, 0); // values_len → enum type byte size becomes 0-path
+        // chained_subcommand_values
+        writeUnsignedVarInt(out, 0);
+        // suffixes
+        writeUnsignedVarInt(out, 0);
+        // enums
+        writeUnsignedVarInt(out, 0);
+        // chained_subcommands
+        writeUnsignedVarInt(out, 0);
+        // commands
+        writeUnsignedVarInt(out, 0);
+        // dynamic_enums
+        writeUnsignedVarInt(out, 0);
+        // constraints
+        writeUnsignedVarInt(out, 0);
+        return out;
+    }
+
+    /** Player list add with one entry and minimal Skin (1.21.50). */
+    public static ByteBuf playerListAddSelf(UUID uuid, long entityUniqueId, String username) {
+        ByteBuf out = Unpooled.buffer(384 + (username == null ? 0 : username.length()));
+        writeUnsignedVarInt(out, BedrockPacketIds.PLAYER_LIST.id);
+        out.writeByte(0); // type add
+        writeUnsignedVarInt(out, 1); // records_count
+        out.writeLongLE(uuid.getMostSignificantBits());
+        out.writeLongLE(uuid.getLeastSignificantBits());
+        writeZigZag64(out, entityUniqueId);
+        writeString(out, username == null ? "Player" : username);
+        writeString(out, ""); // xbox_user_id
+        writeString(out, ""); // platform_chat_id
+        out.writeIntLE(0); // build_platform (li32)
+        writeMinimalSkin(out);
+        out.writeBoolean(false); // is_teacher
+        out.writeBoolean(true); // is_host
+        out.writeBoolean(false); // is_subclient
+        out.writeBoolean(true); // verified[0]
+        return out;
+    }
+
+    /** Minimal Skin matching 1.21.50 {@code Skin} + empty {@code SkinImage}s. */
+    public static void writeMinimalSkin(ByteBuf out) {
+        writeString(out, "Standard_Custom"); // skin_id
+        writeString(out, ""); // play_fab_id
+        writeString(out, "{\"geometry\":{\"default\":\"geometry.humanoid.custom\"}}"); // skin_resource_pack
+        writeEmptySkinImage(out); // skin_data
+        out.writeIntLE(0); // animations count (li32)
+        writeEmptySkinImage(out); // cape_data
+        writeString(out, ""); // geometry_data
+        writeString(out, "1.14.0"); // geometry_data_version
+        writeString(out, ""); // animation_data
+        writeString(out, ""); // cape_id
+        writeString(out, "Standard_Custom"); // full_skin_id
+        writeString(out, "wide"); // arm_size
+        writeString(out, "#0"); // skin_color
+        out.writeIntLE(0); // personal_pieces
+        out.writeIntLE(0); // piece_tint_colors
+        out.writeBoolean(false); // premium
+        out.writeBoolean(false); // persona
+        out.writeBoolean(false); // cape_on_classic
+        out.writeBoolean(true); // primary_user
+        out.writeBoolean(false); // overriding_player_appearance
+    }
+
+    private static void writeEmptySkinImage(ByteBuf out) {
+        out.writeIntLE(0); // width
+        out.writeIntLE(0); // height
+        writeUnsignedVarInt(out, 0); // ByteArray data
+    }
+
+    /**
+     * Empty inventory content for 1.21.50 {@code packet_inventory_content}:
+     * window_id, ItemStacks(count), FullContainerName, storage Item(air).
+     */
     public static ByteBuf inventoryContentEmpty(int windowId, int size) {
-        ByteBuf out = Unpooled.buffer(16 + size);
+        ByteBuf out = Unpooled.buffer(32);
         writeUnsignedVarInt(out, ID_INVENTORY_CONTENT);
         writeUnsignedVarInt(out, windowId);
-        writeUnsignedVarInt(out, Math.max(0, size));
-        for (int i = 0; i < size; i++) {
-            writeUnsignedVarInt(out, 0); // air network id
+        int slots = Math.max(0, size);
+        writeUnsignedVarInt(out, slots);
+        for (int i = 0; i < slots; i++) {
+            writeSignedVarInt(out, 0); // Item network_id air → void (no further fields)
         }
+        // FullContainerName: container_id u8 + option&lt;u32&gt; absent
+        out.writeByte(29); // inventory
+        out.writeByte(0); // no dynamic_container_id
+        writeSignedVarInt(out, 0); // storage_item air
         return out;
     }
 
@@ -430,6 +991,11 @@ public final class BedrockPacketCodec {
 
     public static void writeSignedVarInt(ByteBuf out, int value) {
         writeUnsignedVarInt(out, (value << 1) ^ (value >> 31));
+    }
+
+    /** Alias for zigzag32 (same encoding as signed VarInt). */
+    public static void writeZigZag32(ByteBuf out, int value) {
+        writeSignedVarInt(out, value);
     }
 
     public static int readSignedVarInt(ByteBuf in) {

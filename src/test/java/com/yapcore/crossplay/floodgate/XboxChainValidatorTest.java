@@ -47,6 +47,81 @@ class XboxChainValidatorTest {
         assertFalse(r.mojangAuthenticated());
     }
 
+    @Test
+    void certificateEnvelopeUnwrapsBeforeChainParse() throws Exception {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
+        kpg.initialize(new ECGenParameterSpec("secp384r1"));
+        KeyPair kp = kpg.generateKeyPair();
+        String spki = Base64.getEncoder().encodeToString(kp.getPublic().getEncoded());
+
+        String header = b64Url("{\"alg\":\"ES384\",\"x5u\":\"" + spki + "\"}");
+        String payload = b64Url("{\"extraData\":{\"displayName\":\"WrappedUser\",\"XUID\":\"\"},"
+                + "\"identityPublicKey\":\"" + spki + "\",\"nbf\":0,\"exp\":9999999999,\"iat\":1}");
+        byte[] joseSig = signEs384((ECPrivateKey) kp.getPrivate(), header + "." + payload);
+        String jwt = header + "." + payload + "." + b64UrlRaw(joseSig);
+        String inner = "{\"chain\":[\"" + jwt + "\"]}";
+        // Escape for JSON string value
+        String envelope = "{\"Certificate\":\"" + inner.replace("\\", "\\\\").replace("\"", "\\\"") + "\"}";
+
+        XboxChainValidator v = new XboxChainValidator(true);
+        var r = v.validateChainJson(envelope);
+        assertTrue(r.valid(), r.failReason());
+        assertEquals("WrappedUser", r.username());
+    }
+
+    @Test
+    void mojangRootedMultiHopWithXuidAuthenticates() throws Exception {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
+        kpg.initialize(new ECGenParameterSpec("secp384r1"));
+        KeyPair root = kpg.generateKeyPair();
+        KeyPair mid = kpg.generateKeyPair();
+        KeyPair user = kpg.generateKeyPair();
+        String rootSpki = Base64.getEncoder().encodeToString(root.getPublic().getEncoded());
+        String midSpki = Base64.getEncoder().encodeToString(mid.getPublic().getEncoded());
+        String userSpki = Base64.getEncoder().encodeToString(user.getPublic().getEncoded());
+
+        String t0 = jwt((ECPrivateKey) root.getPrivate(), rootSpki,
+                "{\"certificateAuthority\":true,\"identityPublicKey\":\"" + midSpki
+                        + "\",\"nbf\":0,\"exp\":9999999999,\"iat\":1}");
+        String t1 = jwt((ECPrivateKey) mid.getPrivate(), midSpki,
+                "{\"identityPublicKey\":\"" + userSpki
+                        + "\",\"nbf\":0,\"exp\":9999999999,\"iat\":1}");
+        String t2 = jwt((ECPrivateKey) user.getPrivate(), userSpki,
+                "{\"extraData\":{\"displayName\":\"RetailLike\",\"XUID\":\"2535429032489415\"},"
+                        + "\"identityPublicKey\":\"" + userSpki
+                        + "\",\"nbf\":0,\"exp\":9999999999,\"iat\":1}");
+        String chain = "{\"chain\":[\"" + t0 + "\",\"" + t1 + "\",\"" + t2 + "\"]}";
+
+        XboxChainValidator v = new XboxChainValidator(root.getPublic(), false);
+        var r = v.validateChainJson(chain);
+        assertTrue(r.valid(), r.failReason());
+        assertTrue(r.mojangAuthenticated());
+        assertEquals("RetailLike", r.username());
+        assertEquals("2535429032489415", r.xuid());
+    }
+
+    @Test
+    void optionalRetailFixtureIfPresent() throws Exception {
+        var url = getClass().getClassLoader().getResource("xbox/retail-chain.json");
+        org.junit.jupiter.api.Assumptions.assumeTrue(url != null,
+                "no xbox/retail-chain.json — capture a retail Login identity JSON locally");
+        String json = new String(url.openStream().readAllBytes(), StandardCharsets.UTF_8);
+        XboxChainValidator v = new XboxChainValidator(false);
+        var r = v.validateChainJson(json);
+        assertTrue(r.valid(), r.failReason());
+        assertTrue(r.mojangAuthenticated(), "retail fixture must reach Mojang root + XUID");
+        assertNotNull(r.username());
+        assertNotNull(r.xuid());
+        assertFalse(r.xuid().isBlank());
+    }
+
+    private static String jwt(ECPrivateKey key, String x5u, String payloadJson) throws Exception {
+        String header = b64Url("{\"alg\":\"ES384\",\"x5u\":\"" + x5u + "\"}");
+        String payload = b64Url(payloadJson);
+        byte[] joseSig = signEs384(key, header + "." + payload);
+        return header + "." + payload + "." + b64UrlRaw(joseSig);
+    }
+
     private static String b64Url(String s) {
         return Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(s.getBytes(StandardCharsets.UTF_8));

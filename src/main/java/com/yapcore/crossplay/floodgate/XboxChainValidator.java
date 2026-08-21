@@ -48,6 +48,15 @@ public final class XboxChainValidator {
         this.mojangRoot = parseSpkiEc(MOJANG_ROOT_SPKI_B64);
     }
 
+    /**
+     * Test / soak constructor: inject a stand-in root (proves Mojang-rooted walk + XUID
+     * without Mojang's private key). Production uses {@link #XboxChainValidator(boolean)}.
+     */
+    public XboxChainValidator(PublicKey rootPublicKey, boolean allowSelfSignedOffline) {
+        this.allowSelfSignedOffline = allowSelfSignedOffline;
+        this.mojangRoot = rootPublicKey != null ? rootPublicKey : parseSpkiEc(MOJANG_ROOT_SPKI_B64);
+    }
+
     public XboxChainValidator() {
         this(true);
     }
@@ -56,6 +65,7 @@ public final class XboxChainValidator {
         if (chainJson == null || chainJson.isBlank()) {
             return ChainResult.fail("empty chain");
         }
+        chainJson = unwrapCertificateEnvelope(chainJson);
         List<String> tokens = extractJwtList(chainJson);
         if (tokens.isEmpty()) {
             // raw JWT blob
@@ -218,6 +228,34 @@ public final class XboxChainValidator {
             return false;
         }
         return java.util.Arrays.equals(a.getEncoded(), b.getEncoded());
+    }
+
+    /**
+     * Retail clients often wrap identity as {@code {"Certificate":"{\"chain\":[...]}"}}
+     * or nest AuthenticationType; unwrap before JWT extraction.
+     */
+    static String unwrapCertificateEnvelope(String raw) {
+        String s = raw.trim();
+        if (!s.startsWith("{")) {
+            return s;
+        }
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = new com.google.gson.Gson().fromJson(s, Map.class);
+            if (map == null) {
+                return s;
+            }
+            Object cert = map.get("Certificate");
+            if (cert instanceof String cs && !cs.isBlank()) {
+                return unwrapCertificateEnvelope(cs);
+            }
+            if (map.containsKey("chain")) {
+                return s;
+            }
+        } catch (Exception ignored) {
+            // fall through
+        }
+        return s;
     }
 
     private static List<String> extractJwtList(String chainJson) {

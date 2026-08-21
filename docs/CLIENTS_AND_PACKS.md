@@ -30,13 +30,19 @@ paper-dir=paper-kernel
 ./scripts/start.sh --fg           # cds into paper-kernel
 ```
 
-## Built-in multi-version (full Via parity — no Via* plugins)
+## Built-in multi-version (Via-class — no Via* plugins)
 
-**Phase 4 DoD:** first-party equivalents of ViaVersion + ViaBackwards + ViaRewind
-on the Paper JE path. See [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md).
+**Supported JE (product DoD):** **1.20.2 → current** onto Paper 26.2
+(first-party ViaBackwards-class remaps). **1.19.4** is an optional canary.
 
-Scaffold today: `ProtocolBand` / `ProtocolCompat` / `ViaStyleRemapper`. Bedrock
-uses first-party Geyser parity (`GeyserStyleTranslator`), not the Geyser jar.
+**Best-effort:** pre-1.19 (incl. 1.8 Rewind) may still join for status/spawn
+checks (`MATRIX_FULL=1`); deep play remaps are **not** a Phase 4 blocker.
+
+**Phase 4 DoD:** first-party ViaVersion + ViaBackwards equivalents on the Paper
+JE path. ViaRewind-depth is best-effort only. See [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md).
+
+Scaffold: `ProtocolBand` / `ProtocolCompat` / `ViaStyleRemapper`. Bedrock uses
+first-party Geyser parity (`GeyserStyleTranslator`), not the Geyser jar.
 
 | Path | Who remaps |
 |------|------------|
@@ -61,36 +67,58 @@ Shared listen port (`shared-listen-port=true`) uses the same number for JE TCP a
 
 ## Resource packs (auto-download on join)
 
+**Login prompt:** The first active pack is written to Paper `server.properties` so
+Minecraft shows the normal **Yes / No** download dialog before you enter the world.
+`resource-pack-forced=false` (default) lets players decline without being kicked.
+
+**Multiple actives:** Extras are listed in `plugins/YaPPacks/active.json`. Play-phase
+`addResourcePack` is remapped through Via (`resource_pack_push`↔`add_resource_pack`
+aliases + play auto-ack). Default `push-extras-on-join: true` with `skip-primary: true`.
+If a client still resets, set `push-extras-on-join: false` and merge overlays into one zip.
+
 ```properties
 resource-pack-enabled=true
-resource-pack-file=yapcore-default.zip
-resource-pack-forced=true
+resource-pack-files=yapcore-default.zip,my-overlay.zip
+resource-pack-forced=false
+resource-pack-prompt=This server offers a resource pack. Click Yes to download, or No to play without it.
 resource-pack-http-port=8081
 resource-pack-public-host=yapcoremc.yaplabs.us
-public-pack-port=443
+public-pack-port=80
+resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
 ```
 
 **Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Vehicles) — built on
 `gradle prepareClientPack`. Credit / license: `resourcepacks/CREDITS.md`,
 `FAITHFUL_LICENSE.txt`.
 
+**Publish for Cloudflare:** after rebuilding the zip, mirror it into nginx’s docroot.
+The publish script also writes a **hash-suffixed** name (`yapcore-default-<sha8>.zip`) —
+use that as `resource-pack-files` so Cloudflare cannot serve a stale zip. Minecraft
+reports “failed to download” when the SHA-1 in `server.properties` does not match
+the bytes it fetched.
+
+```bash
+./scripts/build-default-resourcepack.sh          # also calls publish when possible
+./scripts/publish-resourcepack-www.sh            # → …/yapcore-default.zip + …-<sha8>.zip
+curl -sL http://yapcoremc.yaplabs.us/pack/yapcore-default-<sha8>.zip | sha1sum
+```
+
 **Yes — textures auto-download.** With Paper as game authority, YaPcore writes
 the active pack URL + SHA-1 into Paper `server.properties`. On join, the client
-shows Minecraft’s resource-pack prompt and downloads from the pack HTTP host
-(`:8081` locally, or the Cloudflare/nginx edge publicly). If
-`resource-pack-forced=true`, declining kicks the player.
+shows Minecraft’s resource-pack prompt and downloads from that URL.
+If `resource-pack-forced=true`, declining kicks the player.
 
-Refresh the zip: `./scripts/fetch-faithful-64x.sh`
+Refresh the zip: `./scripts/fetch-faithful-64x.sh` then
+`./scripts/build-default-resourcepack.sh`.
 
 | Client location | Pack URL offered |
 |-----------------|------------------|
-| Loopback (`127.0.0.1`) | Public/edge URL still used by Paper (one URL for all players) |
-| Internet / LAN | `https://yapcoremc.yaplabs.us/pack/<file>` when `public-pack-port=443` |
+| All clients (Paper) | `resource-pack-url` / `public-pack-port` (one URL for everyone) |
+| Recommended public | `http://yapcoremc.yaplabs.us/pack/<file>` (`public-pack-port=80`) |
 
-YaPcore also serves files on `:8081` for the edge proxy and native-path offers.
-Operators can enable/list packs from the [web dashboard](WEB_DASHBOARD.md) Packs tab
-(or Control Panel). Rebuild: `./scripts/build-default-resourcepack.sh` or
-`gradle prepareClientPack`.
+YaPcore also serves files on `:8081` for local/edge proxy use. Operators can
+enable/list packs from the [web dashboard](WEB_DASHBOARD.md) Packs tab
+(or Control Panel).
 
 See [NETWORKING.md](NETWORKING.md) and [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md).
 

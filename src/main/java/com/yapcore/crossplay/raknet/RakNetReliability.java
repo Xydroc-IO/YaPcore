@@ -26,8 +26,9 @@ public final class RakNetReliability {
     public static final int ID_NEW_INCOMING_CONNECTION = 0x13;
     public static final int ID_DISCONNECT = 0x15;
     public static final int ID_INCOMPATIBLE_PROTOCOL = 0x19;
+    /** Datagram IDs 0x80–0x8f (ID_DATA_PACKET_0..F); must accept full range. */
     public static final int ID_FRAME_SET_RANGE_START = 0x80;
-    public static final int ID_FRAME_SET_RANGE_END = 0x8d;
+    public static final int ID_FRAME_SET_RANGE_END = 0x8f;
     public static final int ID_NACK = 0xa0;
     public static final int ID_ACK = 0xc0;
 
@@ -56,6 +57,17 @@ public final class RakNetReliability {
             return this == RELIABLE_ORDERED || this == RELIABLE_ORDERED_WITH_ACK_RECEIPT;
         }
 
+        /** Order index+channel present (ordered OR sequenced). */
+        public boolean isSequencedOrOrdered() {
+            return isOrdered()
+                    || this == UNRELIABLE_SEQUENCED
+                    || this == RELIABLE_SEQUENCED;
+        }
+
+        public boolean isSequenced() {
+            return this == UNRELIABLE_SEQUENCED || this == RELIABLE_SEQUENCED;
+        }
+
         public static Reliability of(int code) {
             for (Reliability r : values()) {
                 if (r.code == code) {
@@ -75,7 +87,10 @@ public final class RakNetReliability {
         private final AtomicInteger sendSequence = new AtomicInteger();
         private final AtomicInteger sendOrder = new AtomicInteger();
         private final AtomicInteger sendDatagram = new AtomicInteger();
+        private final AtomicInteger sendSplitId = new AtomicInteger();
         private final BitSet receivedReliable = new BitSet();
+        private final java.util.concurrent.ConcurrentHashMap<Integer, SplitAssembler> splits =
+                new java.util.concurrent.ConcurrentHashMap<>();
         private volatile boolean connected;
         private volatile int mtu = 1492;
         private volatile long clientGuid;
@@ -93,6 +108,10 @@ public final class RakNetReliability {
             return sendOrder.getAndIncrement();
         }
 
+        public int nextSplitId() {
+            return sendSplitId.getAndIncrement() & 0xFFFF;
+        }
+
         public int nextDatagram() {
             return sendDatagram.getAndIncrement() & 0xFFFFFF;
         }
@@ -105,6 +124,20 @@ public final class RakNetReliability {
                 receivedReliable.set(reliableIndex);
                 return true;
             }
+        }
+
+        /** Returns assembled payload when complete, else null. Caller owns returned buffer. */
+        public ByteBuf acceptSplit(int splitId, int splitCount, int splitIndex, ByteBuf fragment) {
+            if (splitCount <= 0 || splitCount > 512 || splitIndex < 0 || splitIndex >= splitCount) {
+                fragment.release();
+                return null;
+            }
+            SplitAssembler asm = splits.computeIfAbsent(splitId, id -> new SplitAssembler(splitCount));
+            ByteBuf done = asm.add(splitIndex, fragment);
+            if (done != null) {
+                splits.remove(splitId);
+            }
+            return done;
         }
 
         public boolean connected() {
@@ -137,6 +170,37 @@ public final class RakNetReliability {
 
         public void touchPing() {
             lastPingMs = System.currentTimeMillis();
+        }
+    }
+
+    private static final class SplitAssembler {
+        private final ByteBuf[] parts;
+        private int received;
+
+        SplitAssembler(int count) {
+            this.parts = new ByteBuf[count];
+        }
+
+        synchronized ByteBuf add(int index, ByteBuf fragment) {
+            if (parts[index] != null) {
+                fragment.release();
+                return null;
+            }
+            parts[index] = fragment;
+            received++;
+            if (received < parts.length) {
+                return null;
+            }
+            int total = 0;
+            for (ByteBuf p : parts) {
+                total += p.readableBytes();
+            }
+            ByteBuf out = Unpooled.buffer(total);
+            for (ByteBuf p : parts) {
+                out.writeBytes(p);
+                p.release();
+            }
+            return out;
         }
     }
 
@@ -176,13 +240,16 @@ public final class RakNetReliability {
         return out;
     }
 
+    /** Bedrock / modern RakNet expect 20 system addresses in CRA. */
+    public static final int SYSTEM_ADDRESS_COUNT = 20;
+
     public static ByteBuf connectionRequestAccepted(InetAddrCookie internal, short systemIndex,
                                                     InetAddrCookie[] systemAddresses, long requestTime, long time) {
-        ByteBuf out = Unpooled.buffer(256);
+        ByteBuf out = Unpooled.buffer(512);
         out.writeByte(ID_CONNECTION_REQUEST_ACCEPTED);
         writeAddress(out, internal);
         out.writeShort(systemIndex);
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < SYSTEM_ADDRESS_COUNT; i++) {
             writeAddress(out, i < systemAddresses.length && systemAddresses[i] != null
                     ? systemAddresses[i] : InetAddrCookie.loopback());
         }
@@ -200,11 +267,22 @@ public final class RakNetReliability {
     }
 
     public static ByteBuf wrapFrameSet(SessionState state, Frame frame) {
-        ByteBuf out = Unpooled.buffer(frame.payload().readableBytes() + 32);
+        return wrapFrameSet(state, frame, false, 0, 0, 0);
+    }
+
+    /**
+     * Encode one RELIABLE_ORDERED frame into a datagram. When {@code split}, writes
+     * splitCount/splitId/splitIndex (BE) after the order header.
+     */
+    public static ByteBuf wrapFrameSet(SessionState state, Frame frame,
+                                       boolean split, int splitCount, int splitId, int splitIndex) {
+        ByteBuf out = Unpooled.buffer(frame.payload().readableBytes() + 48);
         out.writeByte(ID_FRAME_SET_RANGE_START);
         writeTriadLe(out, state.nextDatagram());
-        // flags: reliability in top 3 bits of first byte of frame header
         int flags = (frame.reliability().code << 5);
+        if (split) {
+            flags |= 0x10;
+        }
         out.writeByte(flags);
         out.writeShort(frame.payload().readableBytes() << 3); // bit length
         if (frame.reliability().isReliable()) {
@@ -218,6 +296,11 @@ public final class RakNetReliability {
             writeTriadLe(out, frame.orderIndex());
             out.writeByte(frame.orderChannel());
         }
+        if (split) {
+            out.writeInt(splitCount);
+            out.writeShort(splitId);
+            out.writeInt(splitIndex);
+        }
         out.writeBytes(frame.payload());
         return out;
     }
@@ -227,42 +310,117 @@ public final class RakNetReliability {
                 state.nextOrder(), 0, payload);
     }
 
+    /**
+     * Split a large game payload across MTU-sized RELIABLE_ORDERED frames (shared order index).
+     */
+    public static List<ByteBuf> wrapReliableOrderedPossiblySplit(SessionState state, ByteBuf payload) {
+        int overhead = 64; // frame-set + reliability + split headers + slack
+        int maxPayload = Math.max(400, state.mtu() - overhead);
+        if (payload.readableBytes() <= maxPayload) {
+            ByteBuf dg = wrapFrameSet(state, reliableOrdered(state, payload.retain()));
+            payload.release();
+            return List.of(dg);
+        }
+        int total = payload.readableBytes();
+        int splitCount = (total + maxPayload - 1) / maxPayload;
+        if (splitCount > 512) {
+            maxPayload = (total + 511) / 512;
+            splitCount = (total + maxPayload - 1) / maxPayload;
+        }
+        int splitId = state.nextSplitId();
+        int orderIndex = state.nextOrder();
+        List<ByteBuf> out = new ArrayList<>(splitCount);
+        for (int i = 0; i < splitCount; i++) {
+            int from = i * maxPayload;
+            int len = Math.min(maxPayload, total - from);
+            ByteBuf part = payload.retainedSlice(payload.readerIndex() + from, len);
+            Frame frame = new Frame(Reliability.RELIABLE_ORDERED, state.nextReliable(), 0,
+                    orderIndex, 0, part);
+            out.add(wrapFrameSet(state, frame, true, splitCount, splitId, i));
+            part.release(); // wrapFrameSet copied bytes
+        }
+        payload.release();
+        return out;
+    }
+
     public static Frame unreliable(ByteBuf payload) {
         return new Frame(Reliability.UNRELIABLE, 0, 0, 0, 0, payload);
     }
 
     public static List<Frame> decodeFrameSet(ByteBuf buf, SessionState state) {
+        return decodeFrameSetEx(buf, state).frames();
+    }
+
+    public record DecodedFrameSet(int datagramNumber, List<Frame> frames, int splitFragmentsAccepted) {
+        public boolean madeProgress() {
+            return !frames.isEmpty() || splitFragmentsAccepted > 0;
+        }
+    }
+
+    public static DecodedFrameSet decodeFrameSetEx(ByteBuf buf, SessionState state) {
         List<Frame> frames = new ArrayList<>();
+        int splits = 0;
         if (!buf.isReadable()) {
-            return frames;
+            return new DecodedFrameSet(-1, frames, 0);
         }
         int id = buf.readUnsignedByte();
         if (!isFrameSet(id)) {
             buf.readerIndex(buf.readerIndex() - 1);
-            return frames;
+            return new DecodedFrameSet(-1, frames, 0);
         }
-        readTriadLe(buf); // datagram number
+        int datagramNumber = readTriadLe(buf);
         while (buf.isReadable()) {
+            if (buf.readableBytes() < 3) {
+                break; // flags + bitLen
+            }
             int flags = buf.readUnsignedByte();
             Reliability rel = Reliability.of((flags >> 5) & 0x7);
+            boolean split = (flags & 0x10) != 0;
             int bitLen = buf.readUnsignedShort();
-            int byteLen = (bitLen + 7) / 8;
+            // Match jsp-raknet / Cloudburst: length in bits >> 3 (not round-up)
+            int byteLen = bitLen >>> 3;
+            if (byteLen <= 0) {
+                break;
+            }
             int reliableIndex = 0;
             int sequenceIndex = 0;
             int orderIndex = 0;
             int orderChannel = 0;
             if (rel.isReliable()) {
-                reliableIndex = readTriadLe(buf);
-                if (!state.markReceived(reliableIndex)) {
-                    // duplicate
+                if (buf.readableBytes() < 3) {
+                    break;
                 }
+                reliableIndex = readTriadLe(buf);
+                state.markReceived(reliableIndex);
             }
-            if (rel == Reliability.UNRELIABLE_SEQUENCED || rel == Reliability.RELIABLE_SEQUENCED) {
+            if (rel.isSequenced()) {
+                if (buf.readableBytes() < 3) {
+                    break;
+                }
                 sequenceIndex = readTriadLe(buf);
             }
-            if (rel.isOrdered()) {
+            if (rel.isSequencedOrOrdered()) {
+                if (buf.readableBytes() < 4) {
+                    break;
+                }
                 orderIndex = readTriadLe(buf);
                 orderChannel = buf.readUnsignedByte();
+            }
+            if (split) {
+                // splitCount(int BE) + splitId(short BE) + splitIndex(int BE)
+                if (buf.readableBytes() < 10 + byteLen) {
+                    break;
+                }
+                int splitCount = buf.readInt();
+                int splitId = buf.readUnsignedShort();
+                int splitIndex = buf.readInt();
+                ByteBuf fragment = buf.readRetainedSlice(byteLen);
+                splits++;
+                ByteBuf assembled = state.acceptSplit(splitId, splitCount, splitIndex, fragment);
+                if (assembled != null) {
+                    frames.add(new Frame(rel, reliableIndex, sequenceIndex, orderIndex, orderChannel, assembled));
+                }
+                continue;
             }
             if (buf.readableBytes() < byteLen) {
                 break;
@@ -270,7 +428,7 @@ public final class RakNetReliability {
             ByteBuf payload = buf.readRetainedSlice(byteLen);
             frames.add(new Frame(rel, reliableIndex, sequenceIndex, orderIndex, orderChannel, payload));
         }
-        return frames;
+        return new DecodedFrameSet(datagramNumber, frames, splits);
     }
 
     public static ByteBuf buildAck(int... datagramNumbers) {

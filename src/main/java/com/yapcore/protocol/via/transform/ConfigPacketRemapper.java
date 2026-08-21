@@ -134,16 +134,14 @@ public final class ConfigPacketRemapper {
         if (clientId == null) {
             clientId = clientMap.get(name);
         }
-        if (clientId == null) {
-            // Client has no such packet (e.g. select_known_packs on 1.20.4)
-            if ("select_known_packs".equals(name)) {
-                session.noteConfigAutoReply(ViaSession.ConfigAutoReply.KNOWN_PACKS);
+            if (clientId == null) {
+                // Client has no such packet (e.g. select_known_packs on 1.20.4)
+                if ("select_known_packs".equals(name)) {
+                    session.noteConfigAutoReply(ViaSession.ConfigAutoReply.KNOWN_PACKS);
+                }
+                // resource_pack_push handled in ViaProxyHandler (auto-ack + optional forward)
+                return null;
             }
-            if ("resource_pack_push".equals(name) || "add_resource_pack".equals(name)) {
-                // handled by ViaProxyHandler peek as well
-            }
-            return null;
-        }
         // Keepalive/ping id remap only — body unchanged
         ByteBuf out = Unpooled.buffer(body.readableBytes() + 5);
         McCodec.writeVarInt(out, clientId);
