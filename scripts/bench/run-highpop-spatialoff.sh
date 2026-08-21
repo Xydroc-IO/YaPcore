@@ -343,7 +343,7 @@ kv.update({
     "max-players": str(players + 50),
     "gui-enabled": "false",
     "game-authority": "paper",
-    "paper-phase3-nms-tick": "true",
+    "paper-phase3-nms-tick": "false",
     # Bots cannot satisfy forced packs — match stock Paper highpop (no pack gate).
     "resource-pack-enabled": "false",
     "resource-pack-forced": "false",
@@ -368,11 +368,13 @@ PY
     "$JAVA_BIN" -Xms"$XMS" -Xmx"$XMX" \
       -Dyapcore.home="$ROOT" \
       -Dyapcore.paper.dir=bench/workdir-yap \
-      -Dyapcore.phase3.spatial-tick=true \
-      -Dyapcore.phase3.spatial-blockfluid=true \
-      -Dyapcore.phase3.spatial-random=true \
-      -Dyapcore.phase3.spatial-blockentities=true \
-      -Dyapcore.phase3.spatial-redstone=true \
+      -Dyapcore.phase3.spatial-tick=false \
+      -Dyapcore.phase3.spatial-blockfluid=false \
+      -Dyapcore.phase3.spatial-random=false \
+      -Dyapcore.phase3.spatial-blockentities=false \
+      -Dyapcore.phase3.spatial-redstone=false \
+      -Dyapcore.phase3.spatial-borders=false \
+      -Dyapcore.phase3.spatial-tracker=false \
       -Dyap.bench.scenario=highpop \
       -Dyap.bench.seconds="$SECONDS_N" \
       -Dyap.bench.warmup="$WARMUP" \

@@ -18,6 +18,7 @@ const createClient = mc.createClient;
 const HOST = process.env.HOST || '127.0.0.1';
 const PORT = parseInt(process.env.PORT || '25566', 10);
 const TIMEOUT_MS = parseInt(process.env.TIMEOUT_MS || '20000', 10);
+const RESOURCE_PACK = process.env.RESOURCE_PACK === '1' || process.env.RESOURCE_PACK === 'true';
 
 /**
  * Product DoD: JE 1.20.2+ (config-era) onto Paper 26.2.
@@ -45,7 +46,9 @@ function attempt(label, version, protocol) {
     const started = Date.now();
     const result = {
       label, version, protocol, host: HOST, port: PORT,
-      statusPing: false, loginOk: false, spawned: false, error: null, ms: 0,
+      statusPing: false, loginOk: false, spawned: false,
+      resourcePackSeen: false, resourcePackMode: RESOURCE_PACK ? 'on' : 'off',
+      error: null, ms: 0,
     };
     let client;
     let settled = false;
@@ -62,7 +65,7 @@ function attempt(label, version, protocol) {
       client = createClient({
         host: HOST,
         port: PORT,
-        username: 'YapMatrix_' + protocol,
+        username: 'YapMatrix_' + protocol + (RESOURCE_PACK ? 'p' : ''),
         version,
         auth: 'offline',
         hideErrors: true,
@@ -74,6 +77,21 @@ function attempt(label, version, protocol) {
     }
     client.on('state', () => { result.statusPing = true; });
     client.on('login', () => { result.loginOk = true; });
+    // Pack packets (name varies by version / via remap)
+    const notePack = (name) => {
+      if (!name) return;
+      const n = String(name).toLowerCase();
+      if (n.includes('resource_pack') || n.includes('add_resource_pack')) {
+        result.resourcePackSeen = true;
+        // Do not client.write pack status here — ViaProxyHandler auto-acks toward Paper;
+        // naive writes break version-specific serializers (seen on 1.21.4).
+      }
+    };
+    client.on('packet', (data, meta) => {
+      if (meta?.name) notePack(meta.name);
+    });
+    client.on('resource_pack_send', () => { result.resourcePackSeen = true; });
+    client.on('resourcePackSend', () => { result.resourcePackSeen = true; });
     client.on('playerJoin', () => {
       result.spawned = true; result.loginOk = true; clearTimeout(timer); done();
     });
@@ -96,22 +114,26 @@ function attempt(label, version, protocol) {
 
 const rows = [];
 for (const [label, version, protocol] of MATRIX) {
-  process.stderr.write(`… ${label} (${version} / ${protocol})\n`);
+  process.stderr.write(`… ${label} (${version} / ${protocol})${RESOURCE_PACK ? ' [pack-on]' : ''}\n`);
   rows.push(await attempt(label, version, protocol));
 }
 
+const passedSpawn = rows.filter((r) => r.spawned).length;
+const passedLogin = rows.filter((r) => r.loginOk).length;
+const passedStatus = rows.filter((r) => r.statusPing).length;
 const summary = {
   at: new Date().toISOString(),
   target: `${HOST}:${PORT}`,
+  resourcePack: RESOURCE_PACK,
   rows,
-  passedSpawn: rows.filter(r => r.spawned).length,
-  passedLogin: rows.filter(r => r.loginOk).length,
-  passedStatus: rows.filter(r => r.statusPing).length,
+  passedSpawn,
+  passedLogin,
+  passedStatus,
   total: rows.length,
 };
 console.log(JSON.stringify(summary, null, 2));
 
-const gaps = rows.filter(r => !r.spawned);
+const gaps = rows.filter((r) => !r.spawned);
 if (gaps.length) {
   process.stderr.write('\nGaps (no spawn) — fill remaps from these failures:\n');
   for (const g of gaps) {
@@ -119,4 +141,4 @@ if (gaps.length) {
   }
   process.exit(2);
 }
-process.stderr.write('\nAll matrix clients spawned.\n');
+process.stderr.write(`\nAll matrix clients spawned${RESOURCE_PACK ? ' (resource-pack-on)' : ''}.\n`);

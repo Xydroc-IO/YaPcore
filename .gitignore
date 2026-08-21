@@ -226,3 +226,7 @@ agent-transcripts/
 
 # Captured retail Xbox Login JWTs (never commit)
 src/test/resources/xbox/retail-chain.json
+/build/xbox-chain-capture.json
+/build/xbox-client-jwt-capture.txt
+xbox-chain-capture.json
+xbox-client-jwt-capture.txt

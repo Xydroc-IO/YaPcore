@@ -161,7 +161,7 @@ run_plain_jar() {
       -Dyap.bench.out="$out" \
       -Dyapcore.home="$ROOT" \
       "${extra[@]}" \
-      -jar paper.jar --nogui
+      -jar paper.jar --nogui </dev/null
   ) || true
   if [ ! -f "$out" ]; then
     echo "WARN: $id run did not write $out" >&2
