@@ -20,11 +20,14 @@ public final class MailCommands implements CommandExecutor, TabCompleter {
     private final PlayerDataConfig config;
     private final MailRepository mail;
     private final SyncService sync;
+    private final com.yapcore.playerdata.gui.Menus menus;
 
-    public MailCommands(PlayerDataConfig config, MailRepository mail, SyncService sync) {
+    public MailCommands(PlayerDataConfig config, MailRepository mail, SyncService sync,
+                        com.yapcore.playerdata.gui.Menus menus) {
         this.config = config;
         this.mail = mail;
         this.sync = sync;
+        this.menus = menus;
     }
 
     @Override
@@ -39,22 +42,13 @@ public final class MailCommands implements CommandExecutor, TabCompleter {
         }
         try {
             if (args.length == 0) {
-                player.sendMessage("Usage: /mail <read|clear|send <player> <msg>>");
+                menus.openMail(player);
                 return true;
             }
             String sub = args[0].toLowerCase(Locale.ROOT);
             return switch (sub) {
-                case "read", "list" -> {
-                    var list = mail.list(player.getUniqueId(), config.mailMaxUnread());
-                    if (list.isEmpty()) {
-                        player.sendMessage("§7No mail.");
-                    } else {
-                        for (var m : list) {
-                            player.sendMessage((m.read() ? "§7" : "§a") + "#" + m.id()
-                                    + " §f" + m.fromName() + "§7: " + m.message());
-                        }
-                        mail.markAllRead(player.getUniqueId());
-                    }
+                case "read", "list", "gui" -> {
+                    menus.openMail(player);
                     yield true;
                 }
                 case "clear" -> {

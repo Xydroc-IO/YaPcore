@@ -1,12 +1,16 @@
 name: YaPPlayerData
-version: '0.2.0'
+version: '0.3.0'
 main: com.yapcore.playerdata.PlayerDataPlugin
 api-version: '1.21'
 author: YapLabs
-description: Cross-server player data — inv profiles, economy, homes, warps, kits, mail, shops, jobs, auctions
+description: Cross-server player data, claims, and fancy GUIs — first-party YaPcore
 website: https://github.com/yaplabs
 softdepend: [Vault, PlaceholderAPI]
 commands:
+  menu:
+    description: Open YaP hub GUI
+    usage: /menu
+    aliases: [yapmenu, playermenu]
   bal:
     description: Show your balance (or another player's)
     usage: /bal [player]
@@ -28,7 +32,7 @@ commands:
     description: Delete a home
     usage: /delhome <name>
   homes:
-    description: List homes
+    description: Homes GUI
     usage: /homes
   setwarp:
     description: Set a server warp
@@ -42,31 +46,35 @@ commands:
     description: Teleport to a warp
     usage: /warp <name>
   warps:
-    description: List warps
+    description: Warps GUI
     usage: /warps
   kit:
     description: Claim a kit
-    usage: /kit <name>
+    usage: /kit [name]
   kits:
-    description: List kits
+    description: Kits GUI
     usage: /kits
   mail:
-    description: Player mail
-    usage: /mail <read|clear|send <player> <msg>>
+    description: Mail GUI / send
+    usage: /mail [read|clear|send <player> <msg>]
   shop:
     description: Chest shops
     usage: /shop <create <price>|remove|info>
   jobs:
-    description: Join/leave jobs
+    description: Jobs GUI / join / leave
     usage: /jobs [join|leave|list] [name]
     aliases: [job]
   ah:
-    description: Auction house
+    description: Auction house GUI
     usage: /ah [list|sell <price>|buy <id>|cancel <id>]
     aliases: [auction, auctions]
+  claim:
+    description: Land claims GUI / tools / trust
+    usage: /claim [tool|blocks|list|here|abandon|trust|untrust]
+    aliases: [claims]
 permissions:
   yapdata.admin:
-    description: Reload, status, force-save, manage others' shops/auctions
+    description: Reload, status, force-save, manage others' shops/auctions/claims
     default: op
   yapdata.balance.others:
     description: View other players' balances
@@ -77,3 +85,9 @@ permissions:
   yapdata.kit.*:
     description: Access all kits
     default: true
+  yapdata.claims.admin:
+    description: Bypass claim protection
+    default: op
+  yapdata.claims.wilderness:
+    description: Build in wilderness when require-claim-to-build is true
+    default: false
