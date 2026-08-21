@@ -21,6 +21,7 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -123,6 +124,14 @@ public final class PaperFiles {
         // Velocity authenticates; Paper must be offline-mode when modern forwarding is on.
         boolean online = config.isVelocityEnabled() ? false : config.isOnlineMode();
         p.setProperty("online-mode", Boolean.toString(online));
+        // Offline mode / Via / dual-stack cannot present Mojang chat-signing keys.
+        // enforce-secure-profile=true → join failures or "Chat messages cannot be verified".
+        boolean secureProfile = online && !config.isProtocolViaEnabled();
+        p.setProperty("enforce-secure-profile", Boolean.toString(secureProfile));
+        if (!secureProfile) {
+            LOG.info("Paper enforce-secure-profile=false (online-mode=" + online
+                    + ", via=" + config.isProtocolViaEnabled() + ")");
+        }
         if (config.isVelocityEnabled()) {
             p.setProperty("prevent-proxy-connections", "false");
         }
@@ -158,36 +167,29 @@ public final class PaperFiles {
     }
 
     /**
-     * Push YaPcore's active pack into Paper so vanilla/Fabric clients get the
-     * join prompt and download from the pack HTTP/edge URL.
+     * Push the primary active pack into Paper {@code server.properties} so the client
+     * gets the normal Yes/No download prompt during login (config phase).
+     * Extra actives stay in {@code plugins/YaPPacks/active.json} for optional play-phase
+     * push (disabled by default — Via remapping of play {@code add_resource_pack} was
+     * resetting connections).
      */
     static void applyResourcePack(Properties p, Path rootDir, ServerConfig config) {
         if (rootDir == null || !config.isResourcePackEnabled()) {
-            p.setProperty("resource-pack", "");
-            p.setProperty("resource-pack-sha1", "");
-            p.setProperty("resource-pack-id", "");
-            p.setProperty("resource-pack-prompt", "");
-            p.setProperty("require-resource-pack", "false");
+            clearPackProps(p);
             return;
         }
-        String fileName = config.getResourcePackFile();
-        if (fileName == null || fileName.isBlank()) {
-            p.setProperty("resource-pack", "");
-            p.setProperty("resource-pack-sha1", "");
-            p.setProperty("resource-pack-id", "");
-            p.setProperty("resource-pack-prompt", "");
-            p.setProperty("require-resource-pack", "false");
+        List<String> files = config.getResourcePackFiles();
+        if (files.isEmpty()) {
+            clearPackProps(p);
+            LOG.info("Paper resource packs: none active");
             return;
         }
-        Path pack = rootDir.resolve(config.getResourcePackDir()).resolve(fileName).normalize();
+        String fileName = files.get(0);
         Path packsRoot = rootDir.resolve(config.getResourcePackDir()).toAbsolutePath().normalize();
+        Path pack = rootDir.resolve(config.getResourcePackDir()).resolve(fileName).normalize();
         if (!pack.toAbsolutePath().normalize().startsWith(packsRoot) || !Files.isRegularFile(pack)) {
             LOG.warning("Active resource pack missing: " + pack);
-            p.setProperty("resource-pack", "");
-            p.setProperty("resource-pack-sha1", "");
-            p.setProperty("resource-pack-id", "");
-            p.setProperty("resource-pack-prompt", "");
-            p.setProperty("require-resource-pack", "false");
+            clearPackProps(p);
             return;
         }
         try {
@@ -195,20 +197,31 @@ public final class PaperFiles {
             String sha1 = sha1Hex(pack);
             String prompt = config.getResourcePackPrompt();
             if (prompt == null || prompt.isBlank()) {
-                prompt = "This server uses a resource pack for the best experience.";
+                prompt = "This server offers a resource pack. Click Yes to download, or No to play without it.";
             }
+            boolean forced = config.isResourcePackForced();
             UUID id = UUID.nameUUIDFromBytes(("yapcore-pack:" + fileName + ":" + sha1)
                     .getBytes(StandardCharsets.UTF_8));
             p.setProperty("resource-pack", url);
             p.setProperty("resource-pack-sha1", sha1);
             p.setProperty("resource-pack-id", id.toString());
             p.setProperty("resource-pack-prompt", jsonTextComponent(prompt));
-            p.setProperty("require-resource-pack", Boolean.toString(config.isResourcePackForced()));
-            LOG.info("Paper resource pack → " + url + " sha1=" + sha1
-                    + " required=" + config.isResourcePackForced());
+            p.setProperty("require-resource-pack", Boolean.toString(forced));
+            LOG.info("Paper resource pack (login prompt) → " + url + " sha1=" + sha1
+                    + " required=" + forced
+                    + (files.size() > 1 ? " (+" + (files.size() - 1) + " extra via YaPPacks)" : ""));
         } catch (IOException e) {
             LOG.warning("Could not hash resource pack " + pack + ": " + e.getMessage());
+            clearPackProps(p);
         }
+    }
+
+    private static void clearPackProps(Properties p) {
+        p.setProperty("resource-pack", "");
+        p.setProperty("resource-pack-sha1", "");
+        p.setProperty("resource-pack-id", "");
+        p.setProperty("resource-pack-prompt", "");
+        p.setProperty("require-resource-pack", "false");
     }
 
     private static String jsonTextComponent(String text) {

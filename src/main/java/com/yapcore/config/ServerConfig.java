@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -72,7 +74,7 @@ public final class ServerConfig {
         props.setProperty("server-name", "YaPcore");
         props.setProperty("bind-host", "0.0.0.0");
         props.setProperty("port", "25566");
-        props.setProperty("max-players", "100");
+        props.setProperty("max-players", "300");
         props.setProperty("ram-mb", "2048");
         props.setProperty("ram-min-mb", "512");
         props.setProperty("view-distance", "10");
@@ -103,12 +105,17 @@ public final class ServerConfig {
         // Resource / texture packs
         props.setProperty("resource-pack-enabled", "true");
         props.setProperty("resource-pack-dir", "resourcepacks");
-        props.setProperty("resource-pack-file", "faithful-64x.zip");
+        props.setProperty("resource-pack-file", "yapcore-default.zip");
+        // Comma-separated ordered actives (overrides single file when non-empty). Later packs win on conflicts.
+        props.setProperty("resource-pack-files", "yapcore-default.zip");
         props.setProperty("resource-pack-http-port", "8081");
         props.setProperty("resource-pack-public-host", "");
-        props.setProperty("resource-pack-forced", "true");
+        // Absolute URL override (optional). {file} → active pack file name.
+        // Prefer this when Cloudflare HTTPS (443) is broken — e.g. http://host:8081/pack/{file}
+        props.setProperty("resource-pack-url", "");
+        props.setProperty("resource-pack-forced", "false");
         props.setProperty("resource-pack-prompt",
-                "YaPcore uses Faithful 64x (https://faithfulpack.net) — accept to download.");
+                "This server offers a resource pack. Click Yes to download, or No to play without it.");
         // Product path: Paper → YapEngine Phase 3 (tick on cores 3–6).
         props.setProperty("game-authority", "paper");
         props.setProperty("paper-embed", "true");
@@ -152,6 +159,8 @@ public final class ServerConfig {
         props.setProperty("web-dashboard-bind", "0.0.0.0");
         props.setProperty("web-dashboard-token", "");
         props.setProperty("web-dashboard-localhost-only", "false");
+        // LuckPerms YaP group pack — apply once after Paper is up when LP jar is present
+        props.setProperty("yap-ranks-auto-apply", "false");
     }
 
     private void applyMissingDefaults() {
@@ -259,7 +268,7 @@ public final class ServerConfig {
     }
 
     public int getMaxPlayers() {
-        return Math.max(1, parseInt("max-players", 100));
+        return Math.max(1, parseInt("max-players", 300));
     }
 
     public void setMaxPlayers(int max) {
@@ -531,11 +540,54 @@ public final class ServerConfig {
     }
 
     public String getResourcePackFile() {
-        return props.getProperty("resource-pack-file", "faithful-64x.zip");
+        List<String> files = getResourcePackFiles();
+        return files.isEmpty() ? props.getProperty("resource-pack-file", "") : files.get(0);
     }
 
     public void setResourcePackFile(String fileName) {
-        props.setProperty("resource-pack-file", fileName == null ? "" : fileName);
+        if (fileName == null || fileName.isBlank()) {
+            setResourcePackFiles(List.of());
+            return;
+        }
+        setResourcePackFiles(List.of(fileName.trim()));
+    }
+
+    /** Ordered active pack zip names. Empty = no packs. */
+    public List<String> getResourcePackFiles() {
+        String multi = props.getProperty("resource-pack-files", "");
+        List<String> out = new ArrayList<>();
+        if (multi != null && !multi.isBlank()) {
+            for (String part : multi.split(",")) {
+                String n = part.trim();
+                if (!n.isEmpty() && !out.contains(n)) {
+                    out.add(n);
+                }
+            }
+        }
+        if (out.isEmpty()) {
+            String single = props.getProperty("resource-pack-file", "");
+            if (single != null && !single.isBlank()) {
+                out.add(single.trim());
+            }
+        }
+        return List.copyOf(out);
+    }
+
+    public void setResourcePackFiles(List<String> fileNames) {
+        List<String> clean = new ArrayList<>();
+        if (fileNames != null) {
+            for (String n : fileNames) {
+                if (n == null) {
+                    continue;
+                }
+                String t = n.trim();
+                if (!t.isEmpty() && !clean.contains(t)) {
+                    clean.add(t);
+                }
+            }
+        }
+        props.setProperty("resource-pack-files", String.join(",", clean));
+        props.setProperty("resource-pack-file", clean.isEmpty() ? "" : clean.get(0));
     }
 
     public int getResourcePackHttpPort() {
@@ -552,6 +604,18 @@ public final class ServerConfig {
 
     public void setResourcePackPublicHost(String host) {
         props.setProperty("resource-pack-public-host", host == null ? "" : host);
+    }
+
+    /**
+     * Optional absolute pack URL. Use {@code {file}} for the active zip name.
+     * Empty → build from public host / pack port (see {@code PublicEndpoint#packUrl}).
+     */
+    public String getResourcePackUrl() {
+        return props.getProperty("resource-pack-url", "");
+    }
+
+    public void setResourcePackUrl(String url) {
+        props.setProperty("resource-pack-url", url == null ? "" : url);
     }
 
     public boolean isResourcePackForced() {
@@ -605,6 +669,15 @@ public final class ServerConfig {
 
     public void setWebDashboardLocalhostOnly(boolean localhostOnly) {
         props.setProperty("web-dashboard-localhost-only", Boolean.toString(localhostOnly));
+    }
+
+    /** When true, apply examples/luckperms pack once after Paper start if LuckPerms is installed. */
+    public boolean isYapRanksAutoApply() {
+        return Boolean.parseBoolean(props.getProperty("yap-ranks-auto-apply", "false"));
+    }
+
+    public void setYapRanksAutoApply(boolean enabled) {
+        props.setProperty("yap-ranks-auto-apply", Boolean.toString(enabled));
     }
 
     public String getResourcePackPrompt() {

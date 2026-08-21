@@ -12,15 +12,20 @@ public-host=yapcoremc.yaplabs.us
 # Advertised join ports = nginx stream front (not the local bind port)
 public-port=25565
 public-bedrock-port=25565
-# Packs via Cloudflare HTTPS → nginx :80 → YaPcore :8081
-public-pack-port=443
+# Packs: Cloudflare orange-cloud only proxies 80/443 (not :8081).
+# HTTPS :443 currently returns CF 526 (origin SSL) — advertise HTTP :80.
+public-pack-port=80
 resource-pack-enabled=true
-resource-pack-file=faithful-64x.zip
-resource-pack-forced=true
-resource-pack-prompt=YaPcore uses Faithful 64x (https://faithfulpack.net) — accept to download.
+resource-pack-file=yapcore-default-155d5f4f.zip
+resource-pack-files=yapcore-default-155d5f4f.zip
+resource-pack-forced=false
+resource-pack-prompt=This server offers a resource pack (Faithful 64x + YaP Vehicles). Click Yes to download, or No to play without it.
 resource-pack-public-host=yapcoremc.yaplabs.us
 resource-pack-http-port=8081
-public-pack-port=443
+# Served from nginx docroot /var/www/html/pack/ (see scripts/publish-resourcepack-www.sh)
+resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
+# Add more actives (comma-separated). Later packs win on conflicts:
+# resource-pack-files=yapcore-default.zip,custom-overlay.zip
 
 # nginx (scripts/nginx-setup.sh + GUI nginx tab)
 nginx-domain=yapcoremc.yaplabs.us

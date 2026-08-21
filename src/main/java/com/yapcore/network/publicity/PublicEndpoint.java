@@ -140,6 +140,10 @@ public final class PublicEndpoint {
     }
 
     public String packUrl(String fileName) {
+        String override = config.getResourcePackUrl();
+        if (override != null && !override.isBlank()) {
+            return override.replace("{file}", fileName);
+        }
         return packBaseUrl() + "/pack/" + fileName;
     }
 

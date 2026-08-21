@@ -16,9 +16,11 @@ import javax.swing.ListSelectionModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
-/** Resource / texture packs tab. */
+/** Resource / texture packs tab — multiple packs can be active at once. */
 public final class PacksPanel {
 
     private static final Logger LOG = Logger.getLogger("YaPcore.GUI.Packs");
@@ -33,9 +35,9 @@ public final class PacksPanel {
         this.server = server;
         root = GuiTheme.card();
         root.setLayout(new BorderLayout(8, 8));
-        root.add(GuiTheme.sectionTitle("Texture / Resource Packs"), BorderLayout.NORTH);
+        root.add(GuiTheme.sectionTitle("Texture / Resource Packs (multi-active)"), BorderLayout.NORTH);
 
-        list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         list.setBackground(new java.awt.Color(0x0D, 0x11, 0x17));
         list.setForeground(GuiTheme.TEXT);
         JScrollPane scroll = new JScrollPane(list);
@@ -45,18 +47,26 @@ public final class PacksPanel {
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         buttons.setOpaque(false);
         JButton add = new JButton("Add…");
-        JButton activate = new JButton("Set Active");
-        JButton remove = new JButton("Remove");
-        JButton clear = new JButton("Clear Active");
+        JButton activate = new JButton("Add to Active");
+        JButton deactivate = new JButton("Remove from Active");
+        JButton only = new JButton("Set Only Active");
+        JButton remove = new JButton("Delete File");
+        JButton clear = new JButton("Clear All Active");
         GuiTheme.stylePrimary(add);
         GuiTheme.stylePrimary(activate);
+        GuiTheme.stylePrimary(deactivate);
+        GuiTheme.stylePrimary(only);
         GuiTheme.styleDanger(remove);
         add.addActionListener(e -> addPack());
-        activate.addActionListener(e -> activatePack());
+        activate.addActionListener(e -> addToActive());
+        deactivate.addActionListener(e -> removeFromActive());
+        only.addActionListener(e -> setOnlyActive());
         remove.addActionListener(e -> removePack());
         clear.addActionListener(e -> clearPack());
         buttons.add(add);
         buttons.add(activate);
+        buttons.add(deactivate);
+        buttons.add(only);
         buttons.add(remove);
         buttons.add(clear);
         root.add(buttons, BorderLayout.SOUTH);
@@ -73,14 +83,22 @@ public final class PacksPanel {
 
     public void refresh() {
         model.clear();
-        String active = server.getResourcePacks().getActivePack()
-                .map(p -> p.getFileName()).orElse("");
+        var actives = server.getResourcePacks().getActivePacks().stream()
+                .map(p -> p.getFileName()).toList();
         for (var p : server.getResourcePacks().listPacks()) {
-            String mark = p.getFileName().equals(active) ? " ★" : "";
+            String mark = actives.contains(p.getFileName()) ? " ★" : "";
             model.addElement(p.getFileName() + " (" + p.sizeLabel() + ")" + mark);
         }
-        activeLabel.setText(active.isBlank() ? "none" : active);
+        activeLabel.setText(actives.isEmpty() ? "none" : String.join(", ", actives));
         activeLabel.setForeground(GuiTheme.TEXT);
+    }
+
+    private List<String> selectedFileNames() {
+        List<String> out = new ArrayList<>();
+        for (String selected : list.getSelectedValuesList()) {
+            out.add(selected.contains(" ") ? selected.substring(0, selected.indexOf(' ')) : selected);
+        }
+        return out;
     }
 
     private void addPack() {
@@ -99,44 +117,81 @@ public final class PacksPanel {
         }
     }
 
-    private void activatePack() {
-        String selected = list.getSelectedValue();
-        if (selected == null) {
-            JOptionPane.showMessageDialog(root, "Select a pack first.", "Set Active", JOptionPane.WARNING_MESSAGE);
+    private void addToActive() {
+        List<String> names = selectedFileNames();
+        if (names.isEmpty()) {
+            JOptionPane.showMessageDialog(root, "Select one or more packs.", "Add to Active",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
-        String fileName = selected.contains(" ") ? selected.substring(0, selected.indexOf(' ')) : selected;
         try {
-            server.getResourcePacks().setActivePack(fileName);
+            for (String n : names) {
+                server.getResourcePacks().addActivePack(n);
+            }
             refresh();
             JOptionPane.showMessageDialog(root,
-                    "Clients will download:\n" + server.getResourcePacks().buildPublicUrl(fileName),
-                    "Active Pack", JOptionPane.INFORMATION_MESSAGE);
+                    "Active packs:\n" + String.join("\n",
+                            server.getResourcePacks().getActivePacks().stream()
+                                    .map(p -> p.getFileName() + " → "
+                                            + server.getResourcePacks().buildPublicUrl(p.getFileName()))
+                                    .toList()),
+                    "Active Packs", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(root, e.getMessage(), "Set Active", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(root, e.getMessage(), "Add to Active", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void removeFromActive() {
+        List<String> names = selectedFileNames();
+        if (names.isEmpty()) {
+            return;
+        }
+        try {
+            for (String n : names) {
+                server.getResourcePacks().removeActivePack(n);
+            }
+            refresh();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(root, e.getMessage(), "Remove from Active", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void setOnlyActive() {
+        List<String> names = selectedFileNames();
+        if (names.isEmpty()) {
+            JOptionPane.showMessageDialog(root, "Select one or more packs.", "Set Only Active",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        try {
+            server.getResourcePacks().setActivePacks(names);
+            refresh();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(root, e.getMessage(), "Set Only Active", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void removePack() {
-        String selected = list.getSelectedValue();
-        if (selected == null) {
+        List<String> names = selectedFileNames();
+        if (names.isEmpty()) {
             return;
         }
-        String fileName = selected.contains(" ") ? selected.substring(0, selected.indexOf(' ')) : selected;
         try {
-            server.getResourcePacks().removePack(fileName);
+            for (String n : names) {
+                server.getResourcePacks().removePack(n);
+            }
             refresh();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(root, e.getMessage(), "Remove Pack", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(root, e.getMessage(), "Delete File", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void clearPack() {
         try {
-            server.getResourcePacks().setActivePack("");
+            server.getResourcePacks().setActivePacks(List.of());
             refresh();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(root, e.getMessage(), "Clear Pack", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(root, e.getMessage(), "Clear All Active", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

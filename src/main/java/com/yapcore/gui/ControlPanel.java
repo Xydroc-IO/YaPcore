@@ -247,7 +247,7 @@ public final class ControlPanel extends JFrame {
         c.gridy++;
         runtime.add(kv("Clients", dualStackLabel), c);
         c.gridy++;
-        runtime.add(kv("Active pack", activePackLabel), c);
+        runtime.add(kv("Active packs", activePackLabel), c);
         c.gridy++;
         c.weighty = 1;
         runtime.add(new JLabel(), c);
@@ -330,8 +330,9 @@ public final class ControlPanel extends JFrame {
         heapLabel.setText(used + " / " + max + " MB");
         dualStackLabel.setText("J " + server.getGateway().getClients().countEdition(ClientEdition.JAVA)
                 + " / B " + server.getGateway().getClients().countEdition(ClientEdition.BEDROCK));
-        activePackLabel.setText(server.getResourcePacks().getActivePack()
-                .map(p -> p.getFileName()).orElse("none"));
+        var actives = server.getResourcePacks().getActivePacks();
+        activePackLabel.setText(actives.isEmpty() ? "none"
+                : actives.stream().map(p -> p.getFileName()).reduce((a, b) -> a + ", " + b).orElse("none"));
         updateButtonState();
     }
 

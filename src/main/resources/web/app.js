@@ -71,6 +71,7 @@
       if (btn.dataset.tab === "connect") loadConnect();
       if (btn.dataset.tab === "vehicles") renderVehicles();
       if (btn.dataset.tab === "pregen") refreshPregen();
+      if (btn.dataset.tab === "ranks") refreshRanks();
     };
   });
 
@@ -162,6 +163,7 @@
     ["online-mode", "Online mode", "bool"],
     ["resource-pack-enabled", "Pack HTTP", "bool"],
     ["internet-exposed", "Internet exposed", "bool"],
+    ["yap-ranks-auto-apply", "Auto-apply YaP LuckPerms ranks once", "bool"],
   ];
 
   async function loadSettings() {
@@ -341,6 +343,37 @@
   $("pregenResume").onclick = () => pregen("resume");
   $("pregenCancel").onclick = () => pregen("cancel");
   $("pregenStatus").onclick = () => refreshPregen();
+
+  async function refreshRanks() {
+    try {
+      const r = await api("/api/ranks");
+      $("rkLp").textContent = r.luckpermsInstalled ? "yes" : "missing";
+      $("rkApplied").textContent = r.applied ? "yes" : "no";
+      $("rkCmds").textContent = String(r.commandCount || 0);
+      $("rkAuto").textContent = r.autoApply ? "on" : "off";
+      $("ranksOut").textContent = (r.commands || []).join("\n")
+        + "\n\n— Assign players —\nlp user Steve parent set vip\nlp user Alex parent set mod\nlp user Admin parent set admin";
+    } catch (e) {
+      $("ranksOut").textContent = e.message;
+    }
+  }
+  async function ranksAction(action, force) {
+    try {
+      const body = { action };
+      if (force) body.force = "true";
+      const r = await api("/api/ranks", { method: "POST", body: JSON.stringify(body) });
+      $("ranksOut").textContent = (r.result || "") + "\n\n(refreshing…)";
+      await refreshRanks();
+      if (r.result) $("ranksOut").textContent = r.result + "\n\n" + $("ranksOut").textContent;
+    } catch (e) { alert(e.message); }
+  }
+  $("ranksRefresh").onclick = () => refreshRanks();
+  $("ranksApply").onclick = () => ranksAction("apply");
+  $("ranksForce").onclick = () => {
+    if (!confirm("Force re-apply the LuckPerms pack?")) return;
+    ranksAction("apply", true);
+  };
+  $("ranksReset").onclick = () => ranksAction("reset-marker");
 
   async function boot() {
     try {

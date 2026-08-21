@@ -41,6 +41,7 @@
       <button data-tab="packs">Packs</button>
       <button data-tab="vehicles">Vehicles</button>
       <button data-tab="pregen">Pregen</button>
+      <button data-tab="ranks">Ranks</button>
     </nav>
 
     <main>
@@ -133,6 +134,25 @@
           <button id="pregenStatus">Refresh status</button>
         </div>
         <pre id="pregenOut" class="report"></pre>
+      </section>
+
+      <section id="tab-ranks" class="panel">
+        <p class="muted">LuckPerms group pack — <code>default</code> / <code>vip</code> / <code>mod</code> / <code>admin</code>
+          with track, weights, and chat prefixes. Install LP first:
+          <code>scripts/install-luckperms.sh</code></p>
+        <div class="grid stats" id="ranksStats">
+          <div class="stat"><span>LuckPerms</span><strong id="rkLp">—</strong></div>
+          <div class="stat"><span>Pack applied</span><strong id="rkApplied">—</strong></div>
+          <div class="stat"><span>Commands</span><strong id="rkCmds">—</strong></div>
+          <div class="stat"><span>Auto-apply</span><strong id="rkAuto">—</strong></div>
+        </div>
+        <div class="toolbar">
+          <button id="ranksRefresh">Refresh</button>
+          <button id="ranksApply" class="primary">Apply pack</button>
+          <button id="ranksForce">Force re-apply</button>
+          <button id="ranksReset">Reset marker</button>
+        </div>
+        <pre id="ranksOut" class="report"></pre>
       </section>
     </main>
   </div>

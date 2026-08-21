@@ -1,11 +1,12 @@
 package com.yapcore.resourcepack;
 
-import com.yapcore.client.ClientEdition;
 import com.yapcore.client.ClientSession;
 import com.yapcore.config.ServerConfig;
+import com.yapcore.network.publicity.PublicEndpoint;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -13,17 +14,21 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Manages texture / resource packs and builds seamless download offers for clients.
+ * Manages texture / resource packs. Multiple packs can be active at once;
+ * Paper clients receive each via {@code Player.addResourcePack} (see YaPPacks plugin).
  */
 public final class ResourcePackManager {
 
@@ -33,7 +38,6 @@ public final class ResourcePackManager {
     private final ServerConfig config;
     private final CopyOnWriteArrayList<Consumer<List<ResourcePackInfo>>> listeners = new CopyOnWriteArrayList<>();
     private volatile ResourcePackHttpServer httpServer;
-    private volatile String publicHost = "127.0.0.1";
 
     public ResourcePackManager(Path packsDir, ServerConfig config) {
         this.packsDir = Objects.requireNonNull(packsDir);
@@ -53,9 +57,7 @@ public final class ResourcePackManager {
     }
 
     public void setPublicHost(String host) {
-        if (host != null && !host.isBlank() && !"0.0.0.0".equals(host)) {
-            this.publicHost = host;
-        }
+        // retained for API compat; PublicEndpoint owns advertisement now
     }
 
     public synchronized void startHttp() throws IOException {
@@ -70,6 +72,40 @@ public final class ResourcePackManager {
                 packsDir
         );
         httpServer.start();
+        writePluginManifest();
+        List<ResourcePackInfo> actives = getActivePacks();
+        LOG.info("Active resource packs (" + actives.size() + "): "
+                + actives.stream().map(ResourcePackInfo::getFileName).collect(Collectors.joining(", ")));
+        for (ResourcePackInfo pack : actives) {
+            probePackUrl(buildPublicUrl(pack.getFileName()));
+        }
+    }
+
+    private void probePackUrl(String url) {
+        Thread t = new Thread(() -> {
+            try {
+                java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                        .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
+                        .connectTimeout(java.time.Duration.ofSeconds(5))
+                        .build();
+                var req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
+                        .method("HEAD", java.net.http.HttpRequest.BodyPublishers.noBody())
+                        .timeout(java.time.Duration.ofSeconds(8))
+                        .build();
+                var res = client.send(req, java.net.http.HttpResponse.BodyHandlers.discarding());
+                int code = res.statusCode();
+                if (code >= 200 && code < 400) {
+                    LOG.info("Pack URL probe OK (" + code + "): " + url);
+                } else {
+                    LOG.severe("Pack URL probe FAILED (" + code + "): " + url
+                            + " — fix nginx/Cloudflare or resource-pack-url / publish-resourcepack-www.sh");
+                }
+            } catch (Exception e) {
+                LOG.severe("Pack URL probe FAILED: " + url + " (" + e.getMessage() + ")");
+            }
+        }, "yap-pack-url-probe");
+        t.setDaemon(true);
+        t.start();
     }
 
     public synchronized void stopHttp() {
@@ -132,91 +168,207 @@ public final class ResourcePackManager {
         if (!Files.exists(target)) {
             return false;
         }
-        if (fileName.equals(config.getResourcePackFile())) {
-            config.setResourcePackFile("");
+        List<String> actives = new ArrayList<>(config.getResourcePackFiles());
+        if (actives.remove(fileName)) {
+            config.setResourcePackFiles(actives);
             config.save();
         }
         Files.delete(target);
         LOG.info("Removed resource pack " + fileName);
+        writePluginManifest();
         fireChanged();
         return true;
     }
 
-    public void setActivePack(String fileName) throws IOException {
-        if (fileName == null || fileName.isBlank()) {
-            config.setResourcePackFile("");
-            config.save();
-            fireChanged();
-            return;
+    /** Replace the entire active set (ordered). Empty clears. */
+    public void setActivePacks(List<String> fileNames) throws IOException {
+        List<String> clean = new ArrayList<>();
+        if (fileNames != null) {
+            for (String name : fileNames) {
+                if (name == null || name.isBlank()) {
+                    continue;
+                }
+                String n = name.trim();
+                Path target = packsDir.resolve(n);
+                if (!Files.isRegularFile(target)) {
+                    throw new IOException("Pack not found: " + n);
+                }
+                if (!clean.contains(n)) {
+                    clean.add(n);
+                }
+            }
         }
-        Path target = packsDir.resolve(fileName);
-        if (!Files.isRegularFile(target)) {
-            throw new IOException("Pack not found: " + fileName);
-        }
-        config.setResourcePackFile(fileName);
+        config.setResourcePackFiles(clean);
         config.save();
-        LOG.info("Active resource pack set to " + fileName);
+        LOG.info("Active resource packs → " + (clean.isEmpty() ? "(none)" : String.join(", ", clean)));
+        writePluginManifest();
         fireChanged();
     }
 
-    public Optional<ResourcePackInfo> getActivePack() {
-        String file = config.getResourcePackFile();
-        if (file == null || file.isBlank()) {
-            return Optional.empty();
+    /** Back-compat: set a single active pack (replaces the list). */
+    public void setActivePack(String fileName) throws IOException {
+        if (fileName == null || fileName.isBlank()) {
+            setActivePacks(List.of());
+            return;
         }
-        Path path = packsDir.resolve(file);
-        if (!Files.isRegularFile(path)) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(fromPath(path));
-        } catch (IOException e) {
-            return Optional.empty();
-        }
+        setActivePacks(List.of(fileName.trim()));
     }
 
-    /**
-     * Build a download offer for a connecting client. Same pack URL works for both
-     * editions when a zip/mcpack is hosted; clients pull it automatically.
-     */
-    public Optional<ResourcePackOffer> createOffer(ClientSession session) {
+    public void addActivePack(String fileName) throws IOException {
+        if (fileName == null || fileName.isBlank()) {
+            return;
+        }
+        String n = fileName.trim();
+        if (!Files.isRegularFile(packsDir.resolve(n))) {
+            throw new IOException("Pack not found: " + n);
+        }
+        LinkedHashSet<String> set = new LinkedHashSet<>(config.getResourcePackFiles());
+        set.add(n);
+        setActivePacks(new ArrayList<>(set));
+    }
+
+    public void removeActivePack(String fileName) throws IOException {
+        if (fileName == null || fileName.isBlank()) {
+            return;
+        }
+        List<String> next = new ArrayList<>(config.getResourcePackFiles());
+        next.remove(fileName.trim());
+        setActivePacks(next);
+    }
+
+    public boolean isActive(String fileName) {
+        return fileName != null && config.getResourcePackFiles().contains(fileName);
+    }
+
+    public List<ResourcePackInfo> getActivePacks() {
+        List<ResourcePackInfo> out = new ArrayList<>();
+        for (String file : config.getResourcePackFiles()) {
+            Path path = packsDir.resolve(file);
+            if (!Files.isRegularFile(path)) {
+                LOG.warning("Active pack missing on disk: " + file);
+                continue;
+            }
+            try {
+                out.add(fromPath(path));
+            } catch (IOException e) {
+                LOG.warning("Could not read active pack " + file + ": " + e.getMessage());
+            }
+        }
+        return out;
+    }
+
+    public Optional<ResourcePackInfo> getActivePack() {
+        List<ResourcePackInfo> all = getActivePacks();
+        return all.isEmpty() ? Optional.empty() : Optional.of(all.get(0));
+    }
+
+    /** Offers for every active pack (native dual-stack path). */
+    public List<ResourcePackOffer> createOffers(ClientSession session) {
         if (!config.isResourcePackEnabled()) {
-            return Optional.empty();
+            return List.of();
         }
-        Optional<ResourcePackInfo> active = getActivePack();
-        if (active.isEmpty()) {
-            return Optional.empty();
+        List<ResourcePackOffer> offers = new ArrayList<>();
+        String prompt = config.getResourcePackPrompt();
+        boolean forced = config.isResourcePackForced();
+        for (ResourcePackInfo pack : getActivePacks()) {
+            String url = buildPublicUrl(pack.getFileName(), session);
+            boolean zip = pack.getFileName().toLowerCase(Locale.ROOT).endsWith(".zip")
+                    || pack.getFileName().toLowerCase(Locale.ROOT).endsWith(".mcpack");
+            ResourcePackOffer offer = new ResourcePackOffer(
+                    packUuid(pack.getFileName(), pack.getSha1Hex()).toString(),
+                    url,
+                    pack.getSha1Hex(),
+                    prompt == null || prompt.isBlank() ? pack.getPrompt() : prompt,
+                    forced,
+                    zip,
+                    true
+            );
+            offers.add(offer);
         }
-        ResourcePackInfo pack = active.get();
-        String url = buildPublicUrl(pack.getFileName(), session);
-        boolean javaOk = pack.getFileName().toLowerCase(Locale.ROOT).endsWith(".zip")
-                || pack.getFileName().toLowerCase(Locale.ROOT).endsWith(".mcpack");
-        boolean bedrockOk = true;
-        ResourcePackOffer offer = new ResourcePackOffer(
-                pack.getId(),
-                url,
-                pack.getSha1Hex(),
-                config.getResourcePackPrompt().isBlank() ? pack.getPrompt() : config.getResourcePackPrompt(),
-                config.isResourcePackForced(),
-                javaOk,
-                bedrockOk
-        );
-        session.offerResourcePack(offer);
-        LOG.info("Offered resource pack to " + session.getUsername()
-                + " [" + session.getEdition() + "] url=" + url);
-        return Optional.of(offer);
+        if (!offers.isEmpty() && session != null) {
+            session.offerResourcePack(offers.get(0));
+            LOG.info("Offered " + offers.size() + " resource pack(s) to " + session.getUsername()
+                    + " [" + session.getEdition() + "]");
+        }
+        return offers;
+    }
+
+    public Optional<ResourcePackOffer> createOffer(ClientSession session) {
+        List<ResourcePackOffer> offers = createOffers(session);
+        return offers.isEmpty() ? Optional.empty() : Optional.of(offers.get(0));
     }
 
     public String buildPublicUrl(String fileName) {
-        return new com.yapcore.network.publicity.PublicEndpoint(config).packUrl(fileName);
+        return new PublicEndpoint(config).packUrl(fileName);
     }
 
     public String buildPublicUrl(String fileName, ClientSession session) {
-        var ep = new com.yapcore.network.publicity.PublicEndpoint(config);
+        var ep = new PublicEndpoint(config);
         if (session != null && session.getAddress() != null) {
             return ep.packUrlForClient(fileName, session.getAddress());
         }
         return ep.packUrl(fileName);
+    }
+
+    public static UUID packUuid(String fileName, String sha1) {
+        return UUID.nameUUIDFromBytes(("yapcore-pack:" + fileName + ":" + sha1)
+                .getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Write {@code plugins/YaPPacks/active.json} for the Paper plugin that pushes
+     * multiple packs via {@code Player.addResourcePack}.
+     */
+    public void writePluginManifest() {
+        try {
+            Path root = packsDir.toAbsolutePath().normalize().getParent();
+            if (root == null) {
+                return;
+            }
+            Path dir = root.resolve("plugins").resolve("YaPPacks");
+            Files.createDirectories(dir);
+            Path file = dir.resolve("active.json");
+            PublicEndpoint ep = new PublicEndpoint(config);
+            StringBuilder json = new StringBuilder();
+            json.append("{\n");
+            json.append("  \"enabled\": ").append(config.isResourcePackEnabled()).append(",\n");
+            json.append("  \"forced\": ").append(config.isResourcePackForced()).append(",\n");
+            json.append("  \"prompt\": ").append(jsonString(config.getResourcePackPrompt())).append(",\n");
+            json.append("  \"packs\": [\n");
+            List<ResourcePackInfo> actives = getActivePacks();
+            for (int i = 0; i < actives.size(); i++) {
+                ResourcePackInfo p = actives.get(i);
+                String url = ep.packUrl(p.getFileName());
+                UUID id = packUuid(p.getFileName(), p.getSha1Hex());
+                json.append("    {\n");
+                json.append("      \"file\": ").append(jsonString(p.getFileName())).append(",\n");
+                json.append("      \"url\": ").append(jsonString(url)).append(",\n");
+                json.append("      \"sha1\": ").append(jsonString(p.getSha1Hex())).append(",\n");
+                json.append("      \"uuid\": ").append(jsonString(id.toString())).append("\n");
+                json.append("    }").append(i + 1 < actives.size() ? "," : "").append('\n');
+            }
+            json.append("  ]\n");
+            json.append("}\n");
+            Files.writeString(file, json.toString(), StandardCharsets.UTF_8);
+            // Mirror into paper-kernel/plugins when present (Phase 3 cwd)
+            Path paperPlugins = root.resolve("paper-kernel").resolve("plugins").resolve("YaPPacks");
+            if (Files.isDirectory(root.resolve("paper-kernel").resolve("plugins"))
+                    || Files.isSymbolicLink(root.resolve("paper-kernel").resolve("plugins"))) {
+                Files.createDirectories(paperPlugins);
+                Files.writeString(paperPlugins.resolve("active.json"), json.toString(), StandardCharsets.UTF_8);
+            }
+            LOG.info("Wrote YaPPacks manifest (" + actives.size() + " pack(s)) → " + file);
+        } catch (Exception e) {
+            LOG.warning("Could not write YaPPacks manifest: " + e.getMessage());
+        }
+    }
+
+    private static String jsonString(String s) {
+        if (s == null) {
+            return "\"\"";
+        }
+        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "") + "\"";
     }
 
     private ResourcePackInfo fromPath(Path path) throws IOException {

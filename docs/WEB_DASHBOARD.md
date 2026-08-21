@@ -31,16 +31,32 @@ Paste the token on the login screen (or set `Authorization: Bearer <token>`).
 | Area | Actions |
 |------|---------|
 | Status | Running state, players, heap, JE/BE counts, active pack |
-| Console | Live log (SSE) + run any server command |
+| Console | Live log (SSE) + run any server command (incl. LuckPerms rank pack) |
 | Connect | Join addresses + pack URL |
 | Settings | Identity, ports, editions, limits, public host |
 | Plugins / Modules | List, remove, install from host path |
 | Packs | List, set active, remove |
 | Vehicles | Spawn fleet types, shop/list/upgrades via `/yapvehicle` |
 | Pregen | Chunk pre-gen via `/yappregen` / Pregen tab |
+| Ranks | LuckPerms YaP pack status + Apply / Force re-apply |
 | Start / Stop | Server lifecycle from the header |
 
 Pack HTTP stays on **:8081**. Dashboard is a separate port (**:8080**).
+
+### Ranks via console / tab
+
+```bash
+./scripts/install-luckperms.sh
+# after Paper is up:
+ranks apply
+lp user Steve parent set vip
+```
+
+Dashboard **Ranks** tab calls `/api/ranks`. Pack file:
+[`examples/luckperms/apply-yap-ranks.txt`](../examples/luckperms/apply-yap-ranks.txt).
+See [PERMISSIONS.md](PERMISSIONS.md).
+
+Optional: `yap-ranks-auto-apply=true` in `config/server.properties`.
 
 ## Security
 

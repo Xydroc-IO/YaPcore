@@ -55,6 +55,7 @@ meta = stage / "pack.mcmeta"
 meta.write_text(json.dumps({
     "pack": {
         "pack_format": 34,
+        "supported_formats": {"min_inclusive": 22, "max_inclusive": 99},
         "description": "YaPcore default — Faithful 64x + YaP Vehicles (HD models & parts)"
     }
 }, indent=2) + "\n")
@@ -63,3 +64,8 @@ PY
 rm -f "$OUT"
 (cd "$STAGE" && zip -qr "$OUT" .)
 echo "Wrote $OUT ($(du -h "$OUT" | awk '{print $1}'))"
+
+# Mirror into nginx docroot for Cloudflare :80 /pack/ (when available)
+if [ -x "$ROOT/scripts/publish-resourcepack-www.sh" ]; then
+  "$ROOT/scripts/publish-resourcepack-www.sh" "$OUT" || true
+fi

@@ -8,6 +8,7 @@ import com.yapcore.config.ServerConfig;
 import com.yapcore.console.ConsoleBus;
 import com.yapcore.module.ModuleManager;
 import com.yapcore.plugin.PluginManager;
+import com.yapcore.ranks.YapRanks;
 import com.yapcore.resourcepack.ResourcePackManager;
 import com.yapcore.server.YaPcoreServer;
 
@@ -94,6 +95,7 @@ public final class WebDashboard {
         http.createContext("/api/console/stream", this::apiConsoleStream);
         http.createContext("/api/vehicles", this::apiVehicles);
         http.createContext("/api/pregen", this::apiPregen);
+        http.createContext("/api/ranks", this::apiRanks);
         http.createContext("/health", ex -> text(ex, 200, "ok"));
 
         http.setExecutor(Executors.newCachedThreadPool(r -> {
@@ -292,6 +294,7 @@ public final class WebDashboard {
             m.put("server-domain", cfg.getServerDomain());
             m.put("public-port", cfg.getPublicPort());
             m.put("web-dashboard-port", cfg.getWebDashboardPort());
+            m.put("yap-ranks-auto-apply", cfg.isYapRanksAutoApply());
             json(ex, 200, m);
             return;
         }
@@ -469,15 +472,15 @@ public final class WebDashboard {
         ResourcePackManager packs = server.getResourcePacks();
         if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
             List<Map<String, Object>> list = new ArrayList<>();
-            String active = packs.getActivePack().map(p -> p.getFileName()).orElse("");
+            var actives = packs.getActivePacks().stream().map(p -> p.getFileName()).toList();
             for (var p : packs.listPacks()) {
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("fileName", p.getFileName());
-                row.put("active", p.getFileName().equals(active));
+                row.put("active", actives.contains(p.getFileName()));
                 row.put("sizeLabel", p.sizeLabel());
                 list.add(row);
             }
-            json(ex, 200, Map.of("packs", list, "active", active));
+            json(ex, 200, Map.of("packs", list, "active", actives, "activeCount", actives.size()));
             return;
         }
         Map<String, String> body = TinyJson.parseFlatObject(readBody(ex));
@@ -485,15 +488,28 @@ public final class WebDashboard {
             String action = body.getOrDefault("action", "setActive");
             try {
                 if ("setActive".equals(action)) {
-                    packs.setActivePack(body.getOrDefault("fileName", ""));
+                    // comma-separated for multi
+                    String raw = body.getOrDefault("fileName", body.getOrDefault("fileNames", ""));
+                    List<String> names = new ArrayList<>();
+                    for (String part : raw.split(",")) {
+                        if (!part.isBlank()) {
+                            names.add(part.trim());
+                        }
+                    }
+                    packs.setActivePacks(names);
+                } else if ("addActive".equals(action)) {
+                    packs.addActivePack(body.getOrDefault("fileName", ""));
+                } else if ("removeActive".equals(action)) {
+                    packs.removeActivePack(body.getOrDefault("fileName", ""));
                 } else if ("clear".equals(action)) {
-                    packs.setActivePack("");
+                    packs.setActivePacks(List.of());
                 } else if ("remove".equals(action)) {
                     packs.removePack(body.getOrDefault("fileName", ""));
                 } else if ("add".equals(action)) {
                     packs.addPack(Path.of(body.getOrDefault("path", "")));
                 }
-                json(ex, 200, Map.of("ok", true));
+                json(ex, 200, Map.of("ok", true,
+                        "active", packs.getActivePacks().stream().map(p -> p.getFileName()).toList()));
             } catch (Exception e) {
                 json(ex, 400, Map.of("ok", false, "error", e.getMessage()));
             }
@@ -616,6 +632,45 @@ public final class WebDashboard {
             }
             String result = server.executeCommand(cmd);
             json(ex, 200, Map.of("ok", true, "command", cmd, "result", result == null ? "" : result));
+            return;
+        }
+        ex.sendResponseHeaders(405, -1);
+    }
+
+    private void apiRanks(HttpExchange ex) throws IOException {
+        if (!requireAuth(ex)) {
+            return;
+        }
+        Path root = server.getRootDir();
+        PluginManager pm = server.getPluginManager();
+        if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            try {
+                json(ex, 200, Map.of(
+                        "luckpermsInstalled", YapRanks.luckPermsInstalled(pm.getPluginsDir()),
+                        "applied", YapRanks.isApplied(root),
+                        "autoApply", server.getConfig().isYapRanksAutoApply(),
+                        "commandCount", YapRanks.loadCommands(root).size(),
+                        "commands", YapRanks.loadCommands(root),
+                        "hint", "POST {\"action\":\"apply\"} or {\"action\":\"apply\",\"force\":\"true\"}"));
+            } catch (Exception e) {
+                json(ex, 500, Map.of("error", e.getMessage() == null ? "ranks status failed" : e.getMessage()));
+            }
+            return;
+        }
+        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, String> body = TinyJson.parseFlatObject(readBody(ex));
+            String action = body.getOrDefault("action", "apply").toLowerCase();
+            String result = switch (action) {
+                case "status" -> server.executeCommand("ranks status");
+                case "reset-marker", "reset" -> server.executeCommand("ranks reset-marker");
+                case "show" -> server.executeCommand("ranks show");
+                case "apply" -> {
+                    boolean force = "true".equalsIgnoreCase(body.getOrDefault("force", "false"));
+                    yield server.executeCommand(force ? "ranks apply force" : "ranks apply");
+                }
+                default -> "Unknown action. Use apply, status, reset-marker, show.";
+            };
+            json(ex, 200, Map.of("ok", true, "action", action, "result", result == null ? "" : result));
             return;
         }
         ex.sendResponseHeaders(405, -1);
