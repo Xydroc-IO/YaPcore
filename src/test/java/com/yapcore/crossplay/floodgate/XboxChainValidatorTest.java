@@ -100,6 +100,47 @@ class XboxChainValidatorTest {
         assertEquals("2535429032489415", r.xuid());
     }
 
+    /**
+     * P4.9 CI gate — retail-shaped chain (multi-hop + XUID + displayName) always validated.
+     * Live Mojang JWTs stay optional via {@link #optionalRetailFixtureIfPresent}.
+     */
+    @Test
+    void retailShapedChainAlwaysPassesInCi() throws Exception {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
+        kpg.initialize(new ECGenParameterSpec("secp384r1"));
+        KeyPair root = kpg.generateKeyPair();
+        KeyPair mid = kpg.generateKeyPair();
+        KeyPair user = kpg.generateKeyPair();
+        String rootSpki = Base64.getEncoder().encodeToString(root.getPublic().getEncoded());
+        String midSpki = Base64.getEncoder().encodeToString(mid.getPublic().getEncoded());
+        String userSpki = Base64.getEncoder().encodeToString(user.getPublic().getEncoded());
+
+        String t0 = jwt((ECPrivateKey) root.getPrivate(), rootSpki,
+                "{\"certificateAuthority\":true,\"identityPublicKey\":\"" + midSpki
+                        + "\",\"nbf\":0,\"exp\":9999999999,\"iat\":1}");
+        String t1 = jwt((ECPrivateKey) mid.getPrivate(), midSpki,
+                "{\"identityPublicKey\":\"" + userSpki
+                        + "\",\"nbf\":0,\"exp\":9999999999,\"iat\":1}");
+        String t2 = jwt((ECPrivateKey) user.getPrivate(), userSpki,
+                "{\"extraData\":{\"displayName\":\"CiRetailShape\",\"XUID\":\"2535400000000001\","
+                        + "\"identity\":\"CiRetailShape\"},"
+                        + "\"identityPublicKey\":\"" + userSpki
+                        + "\",\"nbf\":0,\"exp\":9999999999,\"iat\":1}");
+        // Capture format FloodgateAuth.dumpChain writes: raw chain JSON (or Certificate envelope)
+        String chain = "{\"chain\":[\"" + t0 + "\",\"" + t1 + "\",\"" + t2 + "\"]}";
+        assertTrue(chain.contains("\"chain\""));
+        assertTrue(chain.split("\",\\s*\"").length >= 3 || chain.contains("\",\""),
+                "retail shape needs multi-hop JWT list");
+
+        XboxChainValidator v = new XboxChainValidator(root.getPublic(), false);
+        var r = v.validateChainJson(chain);
+        assertTrue(r.valid(), r.failReason());
+        assertTrue(r.mojangAuthenticated());
+        assertFalse(r.xuid().isBlank());
+        assertEquals("2535400000000001", r.xuid());
+        assertEquals("CiRetailShape", r.username());
+    }
+
     @Test
     void optionalRetailFixtureIfPresent() throws Exception {
         var url = getClass().getClassLoader().getResource("xbox/retail-chain.json");

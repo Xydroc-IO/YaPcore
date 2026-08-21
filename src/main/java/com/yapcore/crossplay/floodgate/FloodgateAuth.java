@@ -70,6 +70,7 @@ public final class FloodgateAuth {
                 String identity = readLittleString(loginBody);
                 String clientJwt = loginBody.isReadable() ? readLittleString(loginBody) : "";
                 String chainJson = identity;
+                maybeDumpChain(chainJson, clientJwt);
                 XboxChainValidator.ChainResult result = chainValidator.validateChainJson(chainJson);
                 if (!result.valid() && !offlineFallback) {
                     throw new IllegalStateException("Xbox chain invalid: " + result.failReason());
@@ -164,6 +165,37 @@ public final class FloodgateAuth {
 
     private static String offlineXuid(String username, String address) {
         return Long.toUnsignedString(Math.abs((username + "|" + address).hashCode() * 31L + 0xF100D6A7EL));
+    }
+
+    /**
+     * When {@code -Dyap.floodgate.dumpChain=true}, write Login identity JSON to
+     * {@code yap.floodgate.dumpChainPath} (default {@code build/xbox-chain-capture.json})
+     * for retail soak. Contains live JWTs — do not commit.
+     */
+    private static void maybeDumpChain(String identity, String clientJwt) {
+        if (!Boolean.getBoolean("yap.floodgate.dumpChain")) {
+            return;
+        }
+        try {
+            String path = System.getProperty("yap.floodgate.dumpChainPath", "build/xbox-chain-capture.json");
+            java.nio.file.Path p = java.nio.file.Path.of(path);
+            if (p.getParent() != null) {
+                java.nio.file.Files.createDirectories(p.getParent());
+            }
+            String body = identity == null ? "" : identity.trim();
+            if (!body.startsWith("{")) {
+                body = "{\"chain\":[" + body + "]}";
+            }
+            java.nio.file.Files.writeString(p, body, StandardCharsets.UTF_8);
+            LOG.warning("Wrote Xbox chain capture to " + p.toAbsolutePath()
+                    + " (contains live JWTs — gitignore; use xbox-chain-soak.sh)");
+            if (clientJwt != null && !clientJwt.isBlank()) {
+                java.nio.file.Path skin = p.resolveSibling("xbox-client-jwt-capture.txt");
+                java.nio.file.Files.writeString(skin, clientJwt, StandardCharsets.UTF_8);
+            }
+        } catch (Exception e) {
+            LOG.warning("dumpChain failed: " + e.getMessage());
+        }
     }
 
     private static ParsedChain mergeScrape(ParsedChain a, ParsedChain b) {

@@ -3,6 +3,7 @@ package com.yapcore.paper;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.fill.FillClient;
 import com.yapcore.network.publicity.PublicEndpoint;
+import com.yapcore.resourcepack.ResourcePackBundler;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -167,11 +168,8 @@ public final class PaperFiles {
     }
 
     /**
-     * Push the primary active pack into Paper {@code server.properties} so the client
-     * gets the normal Yes/No download prompt during login (config phase).
-     * Extra actives stay in {@code plugins/YaPPacks/active.json} for optional play-phase
-     * push (disabled by default — Via remapping of play {@code add_resource_pack} was
-     * resetting connections).
+     * Push the effective offer pack into Paper {@code server.properties} (Yes/No login prompt).
+     * Multiple actives are merged into one zip so clients get every pack without play-phase push.
      */
     static void applyResourcePack(Properties p, Path rootDir, ServerConfig config) {
         if (rootDir == null || !config.isResourcePackEnabled()) {
@@ -184,15 +182,20 @@ public final class PaperFiles {
             LOG.info("Paper resource packs: none active");
             return;
         }
-        String fileName = files.get(0);
         Path packsRoot = rootDir.resolve(config.getResourcePackDir()).toAbsolutePath().normalize();
-        Path pack = rootDir.resolve(config.getResourcePackDir()).resolve(fileName).normalize();
-        if (!pack.toAbsolutePath().normalize().startsWith(packsRoot) || !Files.isRegularFile(pack)) {
-            LOG.warning("Active resource pack missing: " + pack);
-            clearPackProps(p);
-            return;
-        }
         try {
+            String fileName = ResourcePackBundler.ensureOfferFile(
+                    rootDir.resolve(config.getResourcePackDir()), files);
+            if (fileName == null || fileName.isBlank()) {
+                clearPackProps(p);
+                return;
+            }
+            Path pack = rootDir.resolve(config.getResourcePackDir()).resolve(fileName).normalize();
+            if (!pack.toAbsolutePath().normalize().startsWith(packsRoot) || !Files.isRegularFile(pack)) {
+                LOG.warning("Offer resource pack missing: " + pack);
+                clearPackProps(p);
+                return;
+            }
             String url = new PublicEndpoint(config).packUrl(fileName);
             String sha1 = sha1Hex(pack);
             String prompt = config.getResourcePackPrompt();
@@ -209,9 +212,9 @@ public final class PaperFiles {
             p.setProperty("require-resource-pack", Boolean.toString(forced));
             LOG.info("Paper resource pack (login prompt) → " + url + " sha1=" + sha1
                     + " required=" + forced
-                    + (files.size() > 1 ? " (+" + (files.size() - 1) + " extra via YaPPacks)" : ""));
+                    + (files.size() > 1 ? " [merged " + files.size() + " actives → " + fileName + "]" : ""));
         } catch (IOException e) {
-            LOG.warning("Could not hash resource pack " + pack + ": " + e.getMessage());
+            LOG.warning("Could not prepare resource pack offer: " + e.getMessage());
             clearPackProps(p);
         }
     }

@@ -249,6 +249,19 @@ public final class BedrockPacketCodec {
         out.writeByte((int) value);
     }
 
+    public static long readUnsignedVarLong(ByteBuf in) {
+        long value = 0;
+        int size = 0;
+        int b;
+        while (((b = in.readUnsignedByte()) & 0x80) == 0x80) {
+            value |= (long) (b & 0x7F) << (size++ * 7);
+            if (size > 10) {
+                throw new IllegalArgumentException("VarLong too big");
+            }
+        }
+        return value | ((long) (b & 0x7F) << (size * 7));
+    }
+
     public static ByteBuf resourcePacksInfoEmpty() {
         // 1.21.50 packet_resource_packs_info
         ByteBuf out = Unpooled.buffer(48);
@@ -296,6 +309,133 @@ public final class BedrockPacketCodec {
         writeString(out, capeData == null ? "" : capeData);
         writeString(out, geometry == null ? "geometry.humanoid.custom" : geometry);
         return out;
+    }
+
+    /**
+     * P4.6 — container_open. Window types: 0=chest, 2=furnace, 3=enchant, 15=villager / trading.
+     * Layout (1.21.50): window_id u8, window_type i8/-zigzag, BlockCoordinates, runtime_entity_id zigzag64.
+     */
+    public static ByteBuf containerOpen(int windowId, int windowType, int x, int y, int z, long entityRuntimeId) {
+        ByteBuf out = Unpooled.buffer(32);
+        writeUnsignedVarInt(out, ID_CONTAINER_OPEN);
+        out.writeByte(windowId & 0xFF);
+        writeSignedVarInt(out, windowType);
+        writeBlockPosition(out, x, y, z);
+        writeSignedVarLong(out, entityRuntimeId);
+        return out;
+    }
+
+    /**
+     * PLAYER_ENCHANT_OPTIONS — list of enchant choices for the open table.
+     */
+    public static ByteBuf playerEnchantOptions(java.util.List<BedrockPaperRecipes.EnchantOption> options) {
+        ByteBuf out = Unpooled.buffer(64);
+        writeUnsignedVarInt(out, BedrockPacketIds.PLAYER_ENCHANT_OPTIONS.id);
+        int n = options == null ? 0 : Math.min(options.size(), 3);
+        writeUnsignedVarInt(out, n);
+        for (int i = 0; i < n; i++) {
+            BedrockPaperRecipes.EnchantOption o = options.get(i);
+            writeSignedVarInt(out, o.cost()); // min cost / level
+            out.writeIntLE(0); // primary slot
+            // enchants0 — primary list
+            writeUnsignedVarInt(out, 1);
+            out.writeByte(o.enchantType() & 0xFF);
+            out.writeByte(Math.max(1, o.enchantLevel()) & 0xFF);
+            writeUnsignedVarInt(out, 0); // enchants1
+            writeUnsignedVarInt(out, 0); // enchants2
+            writeString(out, o.primaryName() == null ? "enchant" : o.primaryName());
+            writeUnsignedVarInt(out, o.netId());
+        }
+        return out;
+    }
+
+    public static ByteBuf containerClose(int windowId, boolean serverInitiated) {
+        ByteBuf out = Unpooled.buffer(8);
+        writeUnsignedVarInt(out, ID_CONTAINER_CLOSE);
+        out.writeByte(windowId & 0xFF);
+        out.writeBoolean(serverInitiated);
+        return out;
+    }
+
+    /**
+     * CONTAINER_SET_DATA — property/value pairs for furnace progress / enchant costs.
+     * Enchant table typically uses property 0..2 for option costs.
+     */
+    public static ByteBuf containerSetData(int windowId, int property, int value) {
+        ByteBuf out = Unpooled.buffer(16);
+        writeUnsignedVarInt(out, BedrockPacketIds.CONTAINER_SET_DATA.id);
+        out.writeByte(windowId & 0xFF);
+        writeSignedVarInt(out, property);
+        writeSignedVarInt(out, value);
+        return out;
+    }
+
+    /**
+     * UPDATE_TRADE — shallow villager offers for 1.21.50-style clients.
+     * Each offer: buyA + optional buyB + sell as item legacy stubs (network id + count).
+     */
+    public static ByteBuf updateTrade(int windowId, int windowType, int size, int tradeTier,
+                                      boolean recipeAdded, boolean isEconomy, long traderEntityId,
+                                      long playerEntityId, String displayName,
+                                      java.util.List<int[]> offers) {
+        ByteBuf out = Unpooled.buffer(256);
+        writeUnsignedVarInt(out, BedrockPacketIds.UPDATE_TRADE.id);
+        out.writeByte(windowId & 0xFF);
+        writeSignedVarInt(out, windowType);
+        writeSignedVarInt(out, size);
+        writeSignedVarInt(out, tradeTier);
+        out.writeBoolean(recipeAdded);
+        out.writeBoolean(isEconomy);
+        writeSignedVarLong(out, traderEntityId);
+        writeSignedVarLong(out, playerEntityId);
+        writeString(out, displayName == null ? "Villager" : displayName);
+        // Remaining demand / recipe nbt — send empty compound list via offer count
+        int n = offers == null ? 0 : Math.min(offers.size(), 64);
+        writeUnsignedVarInt(out, n);
+        for (int i = 0; i < n; i++) {
+            int[] o = offers.get(i);
+            // buyA
+            writeItemLegacyTrade(out, o.length > 0 ? o[0] : 0, o.length > 1 ? o[1] : 0);
+            // sell
+            writeItemLegacyTrade(out, o.length > 4 ? o[4] : 0, o.length > 5 ? o[5] : 0);
+            out.writeBoolean(o.length > 2 && o[2] > 0); // has buyB
+            if (o.length > 2 && o[2] > 0) {
+                writeItemLegacyTrade(out, o[2], o.length > 3 ? o[3] : 1);
+            }
+            out.writeBoolean(true); // enabled
+            writeSignedVarInt(out, -1); // uses
+            writeSignedVarInt(out, Integer.MAX_VALUE); // max uses
+            writeSignedVarInt(out, 0); // trader exp
+            writeSignedVarInt(out, 0); // reward exp
+            writeSignedVarInt(out, 0); // price multiplier
+            writeSignedVarInt(out, 0); // demand
+        }
+        return out;
+    }
+
+    private static void writeItemLegacyTrade(ByteBuf out, int networkId, int count) {
+        writeSignedVarInt(out, networkId);
+        if (networkId != 0) {
+            out.writeShortLE(Math.max(1, count) & 0xFFFF);
+            writeUnsignedVarInt(out, 0); // metadata
+            writeSignedVarInt(out, 0); // block_runtime
+            writeUnsignedVarInt(out, 0); // user data / nbt empty
+        }
+    }
+
+    public static ContainerCloseDecode tryDecodeContainerClose(ByteBuf body) {
+        int mark = body.readerIndex();
+        try {
+            int windowId = body.readUnsignedByte();
+            boolean server = body.isReadable() && body.readBoolean();
+            return new ContainerCloseDecode(windowId, server);
+        } catch (Exception e) {
+            body.readerIndex(mark);
+            return null;
+        }
+    }
+
+    public record ContainerCloseDecode(int windowId, boolean serverInitiated) {
     }
 
     /**
@@ -668,22 +808,26 @@ public final class BedrockPacketCodec {
     }
 
     static void writeActorMetadata(ByteBuf out, String nametag) {
-        writeUnsignedVarInt(out, 5);
-        writeUnsignedVarInt(out, 0);
-        writeUnsignedVarInt(out, 7);
+        // G.25 — dense actor metadata (flags, health, nametag, scale, AABB)
+        writeUnsignedVarInt(out, 6);
+        writeUnsignedVarInt(out, 0); // flags
+        writeUnsignedVarInt(out, 7); // long
         writeZigZag64(out, (1L << 14) | (1L << 15) | (1L << 19) | (1L << 22));
-        writeUnsignedVarInt(out, 1);
-        writeUnsignedVarInt(out, 3);
+        writeUnsignedVarInt(out, 1); // health
+        writeUnsignedVarInt(out, 3); // float
         out.writeFloatLE(20f);
-        writeUnsignedVarInt(out, 4);
-        writeUnsignedVarInt(out, 4);
+        writeUnsignedVarInt(out, 4); // nametag
+        writeUnsignedVarInt(out, 4); // string
         writeString(out, nametag == null ? "" : nametag);
-        writeUnsignedVarInt(out, 38);
+        writeUnsignedVarInt(out, 38); // scale
         writeUnsignedVarInt(out, 3);
         out.writeFloatLE(1f);
-        writeUnsignedVarInt(out, 53);
+        writeUnsignedVarInt(out, 53); // boundingbox_width
         writeUnsignedVarInt(out, 3);
         out.writeFloatLE(0.6f);
+        writeUnsignedVarInt(out, 54); // boundingbox_height
+        writeUnsignedVarInt(out, 3);
+        out.writeFloatLE(1.8f);
     }
 
     public static ByteBuf updateBlock(int x, int y, int z, int runtimeId, int flags, int layer) {
@@ -835,8 +979,12 @@ public final class BedrockPacketCodec {
 
     /** ItemLegacy for creative / inventory (network_id != 0). */
     static void writeItemLegacy(ByteBuf out, int networkId) {
+        writeItemLegacy(out, networkId, 1);
+    }
+
+    static void writeItemLegacy(ByteBuf out, int networkId, int count) {
         writeSignedVarInt(out, networkId);
-        out.writeShortLE(1); // count
+        out.writeShortLE(Math.max(1, Math.min(64, count)));
         writeUnsignedVarInt(out, 0); // metadata
         writeSignedVarInt(out, 0); // block_runtime_id
         ByteBuf extra = Unpooled.buffer(16);
@@ -874,6 +1022,11 @@ public final class BedrockPacketCodec {
         // constraints
         writeUnsignedVarInt(out, 0);
         return out;
+    }
+
+    /** Rich vanilla-adjacent available_commands catalog (autocomplete UX). */
+    public static ByteBuf availableCommandsRich() {
+        return BedrockAvailableCommands.encodeDefault();
     }
 
     /** Player list add with one entry and minimal Skin (1.21.50). */
@@ -932,17 +1085,39 @@ public final class BedrockPacketCodec {
      * window_id, ItemStacks(count), FullContainerName, storage Item(air).
      */
     public static ByteBuf inventoryContentEmpty(int windowId, int size) {
-        ByteBuf out = Unpooled.buffer(32);
+        int[] air = new int[Math.max(0, size)];
+        return inventoryContent(windowId, air);
+    }
+
+    /**
+     * Inventory content with ItemLegacy slots (0 = air). Used for Paper inventory authority push.
+     */
+    public static ByteBuf inventoryContent(int windowId, int[] networkIds) {
+        return inventoryContent(windowId, networkIds, null);
+    }
+
+    /**
+     * @param counts optional parallel stack sizes (clamped 1–64); null → count 1
+     */
+    public static ByteBuf inventoryContent(int windowId, int[] networkIds, int[] counts) {
+        ByteBuf out = Unpooled.buffer(32 + networkIds.length * 16);
         writeUnsignedVarInt(out, ID_INVENTORY_CONTENT);
         writeUnsignedVarInt(out, windowId);
-        int slots = Math.max(0, size);
-        writeUnsignedVarInt(out, slots);
-        for (int i = 0; i < slots; i++) {
-            writeSignedVarInt(out, 0); // Item network_id air → void (no further fields)
+        writeUnsignedVarInt(out, networkIds.length);
+        for (int i = 0; i < networkIds.length; i++) {
+            int networkId = networkIds[i];
+            if (networkId == 0) {
+                writeSignedVarInt(out, 0);
+            } else {
+                int c = 1;
+                if (counts != null && i < counts.length && counts[i] > 0) {
+                    c = counts[i];
+                }
+                writeItemLegacy(out, networkId, c);
+            }
         }
-        // FullContainerName: container_id u8 + option&lt;u32&gt; absent
-        out.writeByte(29); // inventory
-        out.writeByte(0); // no dynamic_container_id
+        out.writeByte(29); // inventory container
+        out.writeByte(0);
         writeSignedVarInt(out, 0); // storage_item air
         return out;
     }
@@ -964,16 +1139,178 @@ public final class BedrockPacketCodec {
     public static ItemStackRequestDecode tryDecodeItemStackRequest(ByteBuf body) {
         int mark = body.readerIndex();
         try {
-            int requestId = readSignedVarInt(body);
+            java.util.List<StackAction> actions = new java.util.ArrayList<>();
+            int requestId;
+            int saved = body.readerIndex();
+            int first = readUnsignedVarInt(body);
+            // Protocol: requests[] count. If count is 1 and next looks like request_id, use array form.
+            // Legacy test/path: first value is zigzag request_id directly.
+            if (first == 1 && body.isReadable()) {
+                int beforeReq = body.readerIndex();
+                try {
+                    requestId = readSignedVarInt(body);
+                    int actionCount = readUnsignedVarInt(body);
+                    parseStackActions(body, actionCount, actions);
+                    return new ItemStackRequestDecode(requestId, actions.size(), List.copyOf(actions));
+                } catch (Exception e) {
+                    body.readerIndex(beforeReq);
+                }
+            }
+            // Legacy: rewind and treat first as request_id zigzag
+            body.readerIndex(saved);
+            requestId = readSignedVarInt(body);
             int actionCount = readUnsignedVarInt(body);
-            return new ItemStackRequestDecode(requestId, actionCount);
+            parseStackActions(body, actionCount, actions);
+            return new ItemStackRequestDecode(requestId, Math.max(actionCount, actions.size()), List.copyOf(actions));
         } catch (Exception e) {
             body.readerIndex(mark);
             return null;
         }
     }
 
-    public record ItemStackRequestDecode(int requestId, int actionCount) {
+    private static void parseStackActions(ByteBuf body, int actionCount,
+                                          java.util.List<StackAction> out) {
+        int n = Math.min(Math.max(0, actionCount), 64);
+        for (int i = 0; i < n; i++) {
+            if (body.readableBytes() < 1) {
+                return;
+            }
+            int typeId = body.readUnsignedByte();
+            try {
+                switch (typeId) {
+                    case 0, 1 -> { // take / place
+                        int count = body.readUnsignedByte();
+                        int src = readSlotInfoMapped(body);
+                        int dst = readSlotInfoMapped(body);
+                        out.add(new StackAction(typeId == 0 ? StackActionType.TAKE : StackActionType.PLACE,
+                                src, dst, count, 0));
+                    }
+                    case 2 -> { // swap
+                        int src = readSlotInfoMapped(body);
+                        int dst = readSlotInfoMapped(body);
+                        out.add(new StackAction(StackActionType.SWAP, src, dst, 0, 0));
+                    }
+                    case 3 -> { // drop
+                        int count = body.readUnsignedByte();
+                        int src = readSlotInfoMapped(body);
+                        body.readBoolean(); // randomly
+                        out.add(new StackAction(StackActionType.DROP, src, -1, count, 0));
+                    }
+                    case 4 -> { // destroy
+                        int count = body.readUnsignedByte();
+                        int src = readSlotInfoMapped(body);
+                        out.add(new StackAction(StackActionType.DESTROY, src, -1, count, 0));
+                    }
+                    case 5 -> { // consume
+                        int count = body.readUnsignedByte();
+                        int src = readSlotInfoMapped(body);
+                        out.add(new StackAction(StackActionType.CONSUME, src, -1, count, 0));
+                    }
+                    case 6 -> { // create — result lands on cursor
+                        int results = body.readUnsignedByte();
+                        int networkId = results > 0 ? creativeEntryToNetworkId(results) : 0;
+                        out.add(new StackAction(StackActionType.CREATE, -1, -1, 1, networkId));
+                    }
+                    case 10, 11 -> { // craft_recipe / craft_recipe_auto
+                        int recipeNetId = readUnsignedVarInt(body);
+                        int times = body.isReadable() ? Math.max(1, body.readUnsignedByte()) : 1;
+                        out.add(new StackAction(
+                                typeId == 10 ? StackActionType.CRAFT_RECIPE : StackActionType.CRAFT_RECIPE_AUTO,
+                                -1, -1, times, recipeNetId));
+                    }
+                    case 13 -> { // craft_recipe_optional (enchant option / filter trade)
+                        int recipeNetId = readUnsignedVarInt(body);
+                        int times = body.isReadable() ? Math.max(1, body.readUnsignedByte()) : 1;
+                        out.add(new StackAction(StackActionType.CRAFT_RECIPE_OPTIONAL,
+                                -1, -1, times, recipeNetId));
+                    }
+                    case 12, 14 -> { // craft_creative (12 modern / 14 legacy)
+                        int itemId = readUnsignedVarInt(body);
+                        int times = body.isReadable() ? body.readUnsignedByte() : 1;
+                        int networkId = creativeEntryToNetworkId(itemId);
+                        out.add(new StackAction(StackActionType.CRAFT_CREATIVE, -1, -1,
+                                Math.max(1, times), networkId));
+                    }
+                    default -> {
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                return;
+            }
+        }
+    }
+
+    /** FullContainerName + slot u8 + stack_id zigzag32 → packed (containerId<<16)|slot. */
+    private static int readSlotInfoMapped(ByteBuf body) {
+        int containerId = body.readUnsignedByte();
+        // option&lt;u32&gt; dynamic_container_id
+        if (body.readBoolean()) {
+            body.readIntLE();
+        }
+        int slot = body.readUnsignedByte();
+        readSignedVarInt(body); // stack_id
+        return (containerId << 16) | (slot & 0xffff);
+    }
+
+    private static int creativeEntryToNetworkId(int entryId) {
+        // creative_content entry_ids are 1-based over non-air itemstates
+        int idx = 0;
+        for (BedrockItemStates.ItemState s : BedrockItemStates.all()) {
+            if (s.runtimeId() == 0 || "minecraft:air".equals(s.name())) {
+                continue;
+            }
+            idx++;
+            if (idx == entryId) {
+                return s.runtimeId() & 0xFFFF;
+            }
+        }
+        return entryId; // fallback: treat as network id
+    }
+
+    public enum StackActionType {
+        TAKE, PLACE, SWAP, DROP, DESTROY, CONSUME, CREATE,
+        CRAFT_RECIPE, CRAFT_RECIPE_AUTO, CRAFT_RECIPE_OPTIONAL, CRAFT_CREATIVE
+    }
+
+    public record StackAction(StackActionType type, int sourceSlot, int destSlot,
+                              int count, int creativeNetworkId) {
+    }
+
+    public record ItemStackRequestDecode(int requestId, int actionCount,
+                                         java.util.List<StackAction> actions) {
+        public ItemStackRequestDecode(int requestId, int actionCount) {
+            this(requestId, actionCount, java.util.List.of());
+        }
+    }
+
+    public static MobEquipmentDecode tryDecodeMobEquipment(ByteBuf body) {
+        int mark = body.readerIndex();
+        try {
+            long runtimeId = readUnsignedVarLong(body);
+            // ItemLegacy — may be air
+            int networkId = readSignedVarInt(body);
+            if (networkId != 0) {
+                body.readUnsignedShortLE(); // count
+                readUnsignedVarInt(body); // metadata
+                readSignedVarInt(body); // block_runtime_id
+                int extraLen = readUnsignedVarInt(body);
+                if (extraLen > 0 && body.readableBytes() >= extraLen) {
+                    body.skipBytes(extraLen);
+                }
+            }
+            int inventorySlot = body.readUnsignedByte();
+            int hotbarSlot = body.readUnsignedByte();
+            int windowId = body.readUnsignedByte();
+            return new MobEquipmentDecode(runtimeId, networkId, inventorySlot, hotbarSlot, windowId);
+        } catch (Exception e) {
+            body.readerIndex(mark);
+            return null;
+        }
+    }
+
+    public record MobEquipmentDecode(long runtimeId, int networkId, int inventorySlot,
+                                      int hotbarSlot, int windowId) {
     }
 
     public static void writeBlockPosition(ByteBuf out, int x, int y, int z) {
@@ -991,6 +1328,10 @@ public final class BedrockPacketCodec {
 
     public static void writeSignedVarInt(ByteBuf out, int value) {
         writeUnsignedVarInt(out, (value << 1) ^ (value >> 31));
+    }
+
+    public static void writeSignedVarLong(ByteBuf out, long value) {
+        writeUnsignedVarLong(out, (value << 1) ^ (value >> 63));
     }
 
     /** Alias for zigzag32 (same encoding as signed VarInt). */
@@ -1160,5 +1501,40 @@ public final class BedrockPacketCodec {
     }
 
     public record TextDecode(int type, boolean needsTranslation, String source, String message) {
+    }
+
+    /** Decode {@code packet_command_request} — command string is first field. */
+    public static CommandRequestDecode tryDecodeCommandRequest(ByteBuf body) {
+        try {
+            String command = readString(body);
+            return new CommandRequestDecode(command == null ? "" : command);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public record CommandRequestDecode(String command) {
+    }
+
+    /**
+     * Minimal {@code command_output} success/failure toast for the requesting player.
+     * Schema: origin (player) + success bool + message count + messages.
+     */
+    public static ByteBuf commandOutputSimple(String message, boolean success) {
+        ByteBuf out = Unpooled.buffer(64 + (message == null ? 0 : message.length()));
+        writeUnsignedVarInt(out, BedrockPacketIds.COMMAND_OUTPUT.id);
+        // CommandOrigin: player
+        writeUnsignedVarInt(out, 0);
+        out.writeLongLE(0L);
+        out.writeLongLE(0L);
+        writeString(out, ""); // request_id
+        // player_entity_id switch void for type=player
+        out.writeByte(3); // output_type = all
+        writeUnsignedVarInt(out, success ? 1 : 0); // success_count
+        writeUnsignedVarInt(out, 1); // output messages
+        out.writeBoolean(success);
+        writeString(out, message == null ? "" : message);
+        writeUnsignedVarInt(out, 0); // params
+        return out;
     }
 }

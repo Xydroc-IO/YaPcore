@@ -64,6 +64,8 @@ public final class RakNetSessionManager {
     private final ConcurrentHashMap<String, RakNetPeer> peers = new ConcurrentHashMap<>();
     private BiConsumer<RakNetPeer, ByteBuf> gamePacketHandler = (p, b) -> {
     };
+    private java.util.function.Consumer<RakNetPeer> disconnectHandler = p -> {
+    };
 
     public RakNetSessionManager(long serverGuid) {
         this.serverGuid = serverGuid;
@@ -71,6 +73,11 @@ public final class RakNetSessionManager {
 
     public void setGamePacketHandler(BiConsumer<RakNetPeer, ByteBuf> handler) {
         this.gamePacketHandler = handler != null ? handler : (p, b) -> {
+        };
+    }
+
+    public void setDisconnectHandler(java.util.function.Consumer<RakNetPeer> handler) {
+        this.disconnectHandler = handler != null ? handler : p -> {
         };
     }
 
@@ -195,6 +202,11 @@ public final class RakNetSessionManager {
                         } else if (inner == RakNetReliability.ID_DISCONNECT) {
                             peer.setPhase(Phase.DISCONNECTED);
                             peer.state().setConnected(false);
+                            try {
+                                disconnectHandler.accept(peer);
+                            } catch (Exception e) {
+                                LOG.warning("RakNet disconnect handler: " + e.getMessage());
+                            }
                             remove(sender);
                         } else if (inner == 0xfe) {
                             payload.readUnsignedByte();

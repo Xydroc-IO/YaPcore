@@ -53,13 +53,28 @@ public final class BedrockEntityTracker {
 
     public Tracked addActor(long uniqueId, long runtimeId, String type,
                             float x, float y, float z, boolean announce) {
-        Tracked t = new Tracked(uniqueId, runtimeId, null, type, type, x, y, z, false);
+        return addActor(uniqueId, runtimeId, null, type, x, y, z, announce);
+    }
+
+    public Tracked addActor(long uniqueId, long runtimeId, UUID uuid, String type,
+                            float x, float y, float z, boolean announce) {
+        Tracked t = new Tracked(uniqueId, runtimeId, uuid, type, type, x, y, z, false);
         byRuntime.put(runtimeId, t);
+        if (uuid != null) {
+            runtimeByName.put("uuid:" + uuid, runtimeId);
+        }
         if (announce) {
             ByteBuf pkt = BedrockPacketCodec.addActor(uniqueId, runtimeId, type, x, y, z, 0f, 0f);
             broadcast.accept(-1L, List.of(pkt));
         }
         return t;
+    }
+
+    public Long runtimeForUuid(UUID uuid) {
+        if (uuid == null) {
+            return null;
+        }
+        return runtimeByName.get("uuid:" + uuid);
     }
 
     public void remove(long runtimeId) {
@@ -69,6 +84,9 @@ public final class BedrockEntityTracker {
         }
         if (t.name() != null) {
             runtimeByName.remove(t.name().toLowerCase());
+        }
+        if (t.uuid() != null) {
+            runtimeByName.remove("uuid:" + t.uuid());
         }
         broadcast.accept(-1L, List.of(BedrockPacketCodec.removeActor(t.uniqueId())));
     }

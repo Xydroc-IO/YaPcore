@@ -91,12 +91,23 @@ public final class GeyserStyleTranslator {
             }
             case "CHAT", "MESSAGE" -> {
                 String msg = payload.getOrDefault("msg", payload.getOrDefault("text", ""));
+                // Slash chat from BE TEXT also runs on Paper (COMMAND_REQUEST is primary)
+                if (msg.startsWith("/") && player.getEdition() == ClientEdition.BEDROCK) {
+                    String result = com.yapcore.paper.PaperCommandBridge.dispatchToPaper(msg, null);
+                    LOG.info("BE chat-command " + player.getUsername() + " → " + result);
+                }
                 engine.trafficCop().ingest("CHAT", player.getUsername(), Map.of(
                         "text", msg,
                         "edition", player.getEdition().name(),
                         "crossplay", "true"
                 ));
             }
+            case "COMMAND" -> engine.trafficCop().ingest("COMMAND", player.getUsername(), Map.of(
+                    "text", payload.getOrDefault("msg", ""),
+                    "result", payload.getOrDefault("result", ""),
+                    "edition", player.getEdition().name(),
+                    "crossplay", "true"
+            ));
             case "INTERACT", "CLICK" -> {
                 engine.trafficCop().ingest("GUI_CLICK", player.getUsername(), Map.of(
                         "item", payload.getOrDefault("item", "air"),
@@ -105,6 +116,19 @@ public final class GeyserStyleTranslator {
                         "edition", player.getEdition().name(),
                         "crossplay", "true"
                 ));
+            }
+            case "OPEN_CONTAINER" -> {
+                engine.trafficCop().ingest("OPEN_CONTAINER", player.getUsername(), Map.copyOf(payload));
+                if (player.getEdition() == ClientEdition.BEDROCK && paperWorld != null) {
+                    Map<String, String> p = new java.util.HashMap<>(payload);
+                    p.put("player", player.getUsername());
+                    paperWorld.apply("OPEN_CONTAINER", p);
+                }
+            }
+            case "CLOSE_CONTAINER" -> {
+                if (player.getEdition() == ClientEdition.BEDROCK && paperWorld != null) {
+                    paperWorld.apply("CLOSE_CONTAINER", Map.of("player", player.getUsername()));
+                }
             }
             case "BREAK" -> {
                 engine.trafficCop().ingest("BLOCK_BREAK", player.getUsername(), Map.of(
@@ -131,17 +155,31 @@ public final class GeyserStyleTranslator {
                     paperWorld.apply("PLACE", payload);
                 }
             }
-            case "ATTACK" -> engine.trafficCop().ingest("ATTACK", player.getUsername(), Map.of(
-                    "target", payload.getOrDefault("target", ""),
-                    "edition", player.getEdition().name(),
-                    "crossplay", "true"
-            ));
-            case "INV", "HOTBAR" -> engine.trafficCop().ingest("INVENTORY", player.getUsername(), Map.of(
-                    "slot", payload.getOrDefault("slot", "0"),
-                    "item", payload.getOrDefault("item", "air"),
-                    "edition", player.getEdition().name(),
-                    "crossplay", "true"
-            ));
+            case "ATTACK" -> {
+                engine.trafficCop().ingest("ATTACK", player.getUsername(), Map.of(
+                        "target", payload.getOrDefault("target", ""),
+                        "edition", player.getEdition().name(),
+                        "crossplay", "true"
+                ));
+                if (player.getEdition() == ClientEdition.BEDROCK && paperWorld != null) {
+                    Map<String, String> atk = new java.util.HashMap<>(payload);
+                    atk.put("attacker", player.getUsername());
+                    paperWorld.apply("ATTACK", atk);
+                }
+            }
+            case "INV", "HOTBAR" -> {
+                engine.trafficCop().ingest("INVENTORY", player.getUsername(), Map.of(
+                        "slot", payload.getOrDefault("slot", "0"),
+                        "item", payload.getOrDefault("item", "air"),
+                        "edition", player.getEdition().name(),
+                        "crossplay", "true"
+                ));
+                if (player.getEdition() == ClientEdition.BEDROCK && paperWorld != null) {
+                    Map<String, String> inv = new java.util.HashMap<>(payload);
+                    inv.put("player", player.getUsername());
+                    paperWorld.apply("INV", inv);
+                }
+            }
             case "FORM" -> {
                 if (forms != null) {
                     forms.sendSimple(player.getUsername(),

@@ -87,33 +87,58 @@ public final class PaperCommandBridge {
         }
     }
 
-    private static ClassLoader resolvePaperLoader(ClassLoader preferred) {
-        if (preferred != null) {
-            try {
-                Class.forName("org.bukkit.Bukkit", false, preferred);
-                Object server = Class.forName("org.bukkit.Bukkit", true, preferred)
-                        .getMethod("getServer").invoke(null);
-                if (server != null) {
-                    return preferred;
-                }
-            } catch (Throwable ignored) {
+    /**
+     * Resolve a classloader that can load live Paper {@code org.bukkit.Bukkit}
+     * (not YaPcore's stub). Paperclip host CL often cannot — Paper boots under
+     * the Server thread's context CL.
+     */
+    public static ClassLoader resolvePaperLoader(ClassLoader preferred) {
+        ClassLoader found = tryPaperLoader(preferred);
+        if (found != null) {
+            return found;
+        }
+        // Prefer Paper's main thread — most reliable live Bukkit CL
+        for (Thread th : Thread.getAllStackTraces().keySet()) {
+            if (th == null || th.getContextClassLoader() == null) {
+                continue;
+            }
+            if (!"Server thread".equals(th.getName())) {
+                continue;
+            }
+            found = tryPaperLoader(th.getContextClassLoader());
+            if (found != null) {
+                return found;
             }
         }
         for (Thread th : Thread.getAllStackTraces().keySet()) {
-            ClassLoader cl = th.getContextClassLoader();
-            if (cl == null) {
+            if (th == null) {
                 continue;
             }
-            try {
-                Class<?> bukkit = Class.forName("org.bukkit.Bukkit", false, cl);
-                Object server = bukkit.getMethod("getServer").invoke(null);
-                if (server != null) {
-                    return cl;
-                }
-            } catch (Throwable ignored) {
+            found = tryPaperLoader(th.getContextClassLoader());
+            if (found != null) {
+                return found;
             }
         }
-        return preferred;
+        return null;
+    }
+
+    /** Returns loader only if it exposes real Paper Bukkit (has isPrimaryThread). */
+    private static ClassLoader tryPaperLoader(ClassLoader cl) {
+        if (cl == null) {
+            return null;
+        }
+        try {
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit", false, cl);
+            // YaP stub Bukkit lacks isPrimaryThread — reject it
+            bukkit.getMethod("isPrimaryThread");
+            Object server = bukkit.getMethod("getServer").invoke(null);
+            if (server == null) {
+                return null;
+            }
+            return cl;
+        } catch (Throwable ignored) {
+            return null;
+        }
     }
 
     private static boolean scheduleOnMain(Class<?> bukkit, Object server, ClassLoader cl, Runnable run) {

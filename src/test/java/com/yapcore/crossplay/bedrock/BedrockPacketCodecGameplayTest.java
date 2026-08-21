@@ -34,6 +34,23 @@ class BedrockPacketCodecGameplayTest {
     }
 
     @Test
+    void blockRuntimeCatalogMapsCommonMaterials() {
+        BedrockBlockRuntimeIds.warm();
+        assertTrue(BedrockBlockRuntimeIds.all().size() > 1000);
+        assertEquals(BedrockPacketCodec.hashedAir(), BedrockBlockRuntimeIds.hashedForMaterial("AIR"));
+        assertEquals(BedrockPacketCodec.hashedStone(), BedrockBlockRuntimeIds.hashedForMaterial("STONE"));
+        assertEquals(BedrockPacketCodec.hashedGrass(), BedrockBlockRuntimeIds.hashedForMaterial("GRASS_BLOCK"));
+        int oak = BedrockBlockRuntimeIds.hashedForMaterial("OAK_LOG");
+        assertTrue(oak > 0 && oak != BedrockPacketCodec.hashedAir());
+        int water = BedrockBlockRuntimeIds.hashedForMaterial("minecraft:water");
+        assertTrue(water > 0 && water != BedrockPacketCodec.hashedAir());
+        assertTrue(BedrockBlockRuntimeIds.jeStates().size() > 10_000);
+        int oakY = BedrockBlockRuntimeIds.hashedForJeBlockData("minecraft:oak_log[axis=y]", "OAK_LOG");
+        int oakX = BedrockBlockRuntimeIds.hashedForJeBlockData("minecraft:oak_log[axis=x]", "OAK_LOG");
+        assertTrue(oakY != oakX);
+    }
+
+    @Test
     void paperColumnEncoderAndNbtDumps() {
         int[][] col = new int[24][4096];
         for (int s = 0; s < 24; s++) {
@@ -159,5 +176,22 @@ class BedrockPacketCodecGameplayTest {
         assertEquals(BedrockPacketIds.LEVEL_CHUNK.id, BedrockPacketCodec.decode(chunk).id());
         assertTrue(chunkSize > 200, "layered chunk size=" + chunkSize);
         chunk.release();
+    }
+
+    @Test
+    void inventoryAuthoritySwapAndGive() {
+        BedrockInventoryAuthority inv = new BedrockInventoryAuthority();
+        inv.ensure("Alex");
+        inv.give("Alex", 1, 16); // stone-ish network id
+        assertTrue(inv.storageNetworkIds("Alex")[0] == 1);
+        var actions = java.util.List.of(
+                new BedrockPacketCodec.StackAction(
+                        BedrockPacketCodec.StackActionType.SWAP, 0, 1, 0, 0));
+        assertTrue(inv.applyActions("Alex", actions));
+        int[] slots = inv.storageNetworkIds("Alex");
+        assertEquals(0, slots[0]);
+        assertEquals(1, slots[1]);
+        inv.clear("Alex");
+        assertEquals(0, inv.storageNetworkIds("Alex")[1]);
     }
 }
