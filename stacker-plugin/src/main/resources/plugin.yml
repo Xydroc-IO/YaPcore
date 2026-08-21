@@ -1,0 +1,33 @@
+name: YaPStacker
+version: '0.1.0'
+main: com.yapcore.stacker.StackerPlugin
+api-version: '1.21'
+author: YapLabs
+description: Full PDC mob/item/spawner stacker for YaPcore / Paper — no NMS
+website: https://github.com/yaplabs
+softdepend: [PlaceholderAPI, MythicMobs, Citizens]
+commands:
+  yapstacker:
+    description: YaP Stacker admin — reload, gui, give tools, stats
+    usage: /yapstacker <reload|status|gui|stats|give <wand|tool|aura> [player]>
+    aliases: [stacker]
+    permission: yapstacker.admin
+permissions:
+  yapstacker.admin:
+    description: Full YaP Stacker admin
+    default: op
+  yapstacker.gui:
+    description: Open stacker admin GUI
+    default: op
+  yapstacker.give:
+    description: Give stacker tools
+    default: op
+  yapstacker.aura:
+    description: Use kill-aura item
+    default: op
+  yapstacker.wand:
+    description: Use stack wand (spawners)
+    default: op
+  yapstacker.tool:
+    description: Use stack tool (mobs)
+    default: op

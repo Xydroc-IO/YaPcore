@@ -1,0 +1,87 @@
+# YaP Stacker — full mob / item / spawner stacking (PDC, no NMS)
+
+enabled: true
+
+mobs:
+  enabled: true
+  merge-radius: 5.0
+  max-stack: 100
+  # DECREMENT | INSTANT
+  kill-mode: DECREMENT
+  nametag: '<red>{type} <yellow>x{size}'
+  skip-named: true
+  skip-tamed: true
+  skip-leashed: true
+  require-same-age: true
+  require-same-sheep-color: true
+  require-same-slime-size: true
+  # Chunk load + periodic wander merge
+  remerge-on-chunk-load: true
+  wander-merge-interval-ticks: 100
+  wander-merge-max-per-tick: 64
+
+items:
+  enabled: true
+  merge-radius: 2.5
+  max-stack: 1000
+  nametag: '<aqua>{type} <yellow>x{size}'
+  # Also listen to vanilla ItemMergeEvent and raise effective merges
+  enhance-vanilla-merge: true
+
+spawners:
+  enabled: true
+  merge-radius: 3.0
+  max-stack: 64
+  # Place near same-type spawner → absorb into stack
+  stack-on-place: true
+  # Break removes 1 from stack (keeps block) unless sneak = break all
+  break-one: true
+  nametag-hologram: false
+
+tools:
+  kill-aura:
+    enabled: true
+    radius: 4.0
+    interval-ticks: 10
+    # How many stack units to kill per pulse per mob
+    kills-per-pulse: 1
+  # Special items given via /yapstacker give
+  wand-material: BLAZE_ROD
+  tool-material: GOLDEN_HOE
+  aura-material: NETHER_STAR
+
+hooks:
+  skip-citizens: true
+  skip-mythic-mobs: true
+  placeholderapi: true
+
+metrics:
+  enabled: true
+
+worlds: []
+
+whitelist: []
+
+blacklist:
+  - ENDER_DRAGON
+  - WITHER
+  - WARDEN
+  - ELDER_GUARDIAN
+
+# Per-type overrides (EntityType name). Missing keys inherit globals above.
+mob-rules:
+  ZOMBIE:
+    enabled: true
+    max-stack: 200
+    loot-multiplier: 1.0
+    xp-multiplier: 1.0
+  SLIME:
+    enabled: true
+    # Keep slime size on remainder; suppress weird multi-split from virtual stack
+    preserve-slime-size: true
+  MAGMA_CUBE:
+    enabled: true
+    preserve-slime-size: true
+  SHEEP:
+    enabled: true
+    require-same-color: true
