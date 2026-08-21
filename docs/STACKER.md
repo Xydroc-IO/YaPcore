@@ -1,7 +1,8 @@
 # YaP Stacker
 
 First-party **VortexStacker-class** mob / item / spawner stacker for YaPcore / Paper 26.2.
-Shipped as `plugins/yap-stacker.jar` (default product install).
+Shipped as `plugins/yap-stacker.jar` (**GAMEPLAY** opt-in:
+`gradle installGameplayDefaults` or `assembleRelease -PyapGameplay=true`).
 
 **Design:** stack sizes live in Bukkit **PersistentDataContainer** (PDC) on entities,
 item meta, and spawner tile states — **no NMS**, so it stays stable across Paper updates.

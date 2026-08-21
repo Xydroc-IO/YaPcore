@@ -11,24 +11,23 @@ plus **non-vanilla physics** (traction, slip, slopes, yaw inertia, fuel, damage)
 
 ## Operator install
 
-Included in the **release package** by default (`gradle shadowJar` /
-`assembleRelease` → `build/dist/yapcore-release/`):
+**GAMEPLAY opt-in** — not in the CORE default release:
+
+```bash
+gradle installGameplayDefaults
+# or: gradle assembleRelease -PyapGameplay=true
+# or:
+gradle :vehicles-plugin:installIntoPlugins
+gradle :vehicles-module:installIntoModules
+YAP_INCLUDE_VEHICLES=1 gradle prepareClientPack
+./scripts/start.sh --fg
+```
 
 | Artifact | Path |
 |----------|------|
 | Plugin | `plugins/yap-vehicles.jar` |
 | Module | `modules/yap-vehicles-module.jar` |
-| Client pack | `resourcepacks/yapcore-default.zip` (Faithful + Vehicles) |
-
-Manual reinstall:
-
-```bash
-gradle :vehicles-plugin:installIntoPlugins
-gradle :vehicles-module:installIntoModules
-gradle prepareClientPack
-./scripts/start.sh --fg
-```
-
+| Client pack | `resourcepacks/yapcore-default.zip` (Faithful + Vehicles when gameplay pack built) |
 - Config: `plugins/YaPVehicles/config.yml`
 - Pack: `resource-pack-file=yapcore-default.zip` in `config/server.properties`
 - Commands: `/yapvehicle spawn|list|destroy|types|give|adapt|shop|upgrades|reload`

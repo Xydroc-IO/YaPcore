@@ -9,6 +9,8 @@ Generated from the Markdown identity, ops, and whitepaper docs.
 | `WHAT_WE_ARE.pdf` | [../WHAT_WE_ARE.md](../WHAT_WE_ARE.md) |
 | `FULL_RUNDOWN.pdf` | [../FULL_RUNDOWN.md](../FULL_RUNDOWN.md) |
 | `COMPARE_ECOSYSTEM.pdf` | [../COMPARE_ECOSYSTEM.md](../COMPARE_ECOSYSTEM.md) |
+| `COMPARISON_BRIEF.pdf` | [../COMPARISON_BRIEF.md](../COMPARISON_BRIEF.md) |
+| `VIA_GEYSER_PARITY.pdf` | [../VIA_GEYSER_PARITY.md](../VIA_GEYSER_PARITY.md) |
 | `VEHICLES.pdf` | [../VEHICLES.md](../VEHICLES.md) |
 | `STACKER.pdf` | [../STACKER.md](../STACKER.md) |
 | `WEB_DASHBOARD.pdf` | [../WEB_DASHBOARD.md](../WEB_DASHBOARD.md) |

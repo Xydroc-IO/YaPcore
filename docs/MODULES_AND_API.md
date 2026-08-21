@@ -14,16 +14,28 @@ plugins and fine-tune **modules** the same way.
 Paper and YaP plugin jars share **`plugins/`** (see [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md)).
 Modules stay in `modules/`.
 
-Central configs: [TUNE.md](TUNE.md). Purpur-class mob encyclopedia ships as the
-Paper plugin `yap-gameplay-knobs` (`plugins/YaPGameplayKnobs/knobs.yml`) so it
-runs on real Paper under game-authority=paper.
+**Owner fine-tune path:** drop first-party packaging modules into `modules/` so every
+product surface is discoverable (`provides` / `requires`, Modules GUI, `FINE_TUNE.txt`).
+Engines and YAML stay in `plugins/` and `config/` — modules do not reimplement tick/
+economy logic.
 
-**Vehicles:** real (non-minecart) vehicle mechanics ship **by default** as Paper plugin
-`yap-vehicles` + module `provides: [vehicles]`, client models in `yapcore-default.zip` —
-see [VEHICLES.md](VEHICLES.md). Control from GUI, **web dashboard**, or `/yapvehicle`.
+```bash
+gradle installProductDefaults      # CORE plugins + CORE fine-tune modules
+gradle installFineTuneModules      # all packaging modules → modules/
+gradle assemblePluginDist          # …/modules/core + …/modules/gameplay
+```
 
-**Stacker:** mob / item / spawner stacking is a **Paper plugin** (`yap-stacker`), not a
-YaP module — PDC only, no NMS. See [STACKER.md](STACKER.md) (`/yapstacker`).
+See `modules/README.md` for the full jar table.
+
+Central configs: [TUNE.md](TUNE.md). Purpur-class mob encyclopedia is the Paper plugin
+`yap-gameplay-knobs` (`plugins/YaPGameplayKnobs/knobs.yml`) plus packaging module
+`provides: [gameplay-knobs]` (GAMEPLAY tier).
+
+**Vehicles:** GAMEPLAY opt-in — Paper plugin `yap-vehicles` + module `provides: [vehicles]`.
+See [VEHICLES.md](VEHICLES.md). Control from GUI, **web dashboard**, or `/yapvehicle`.
+
+**Stacker:** Paper plugin `yap-stacker` + optional module `provides: [stacker]`.
+See [STACKER.md](STACKER.md) (`/yapstacker`).
 
 GUI tabs: **Plugins**, **Modules**, and **Tune**. Headless: [WEB_DASHBOARD.md](WEB_DASHBOARD.md).
 
@@ -32,7 +44,7 @@ GUI tabs: **Plugins**, **Modules**, and **Tune**. Headless: [WEB_DASHBOARD.md](W
 ```yaml
 name: SpawnTweaks
 main: com.example.SpawnTweaksModule
-version: 1.0.0
+version: 1.0.0.0
 api: yap-module-1
 author: You
 description: Optional spawn radius / MOTD tweaks
@@ -89,3 +101,4 @@ Verify:
 - `examples/yap-module-demo` — sample module
 - [VEHICLES.md](VEHICLES.md) — vehicle API for Paper plugins
 - `examples/yap-vehicle-addon` — sample third-party vehicle type
+- `finetune-modules/` — first-party packaging modules source

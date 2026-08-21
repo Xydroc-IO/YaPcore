@@ -18,6 +18,7 @@ so we combine static analysis, deterministic interleaving, stress, and heap samp
 | `./scripts/test-jcstress.sh` | `gradle jcstress` |
 | `./scripts/test-stress.sh` | Boundary stress |
 | `./scripts/soak-jfr.sh` | Soak + JFR |
+| `./scripts/bench/run-pop-ladder.sh` | **Pop ladder** — play-soak + denser heavypop MSPT + bots 50/100/150/200 |
 
 > **`build/reports/problems/problems-report.html`** is Gradle’s toolchain deprecation UI. It is **not** a server soak report. Use **`logs/endurance/latest.html`** for FAIL codes with fix hints aimed at months-long uptime.
 

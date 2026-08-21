@@ -10,6 +10,11 @@ Pre-1.19 / Rewind-depth is **best-effort** (join matrix optional via
 
 This supersedes earlier “full ViaRewind parity” language for the product DoD.
 
+**Feature checklist (authoritative):** every Via\* / Geyser / Floodgate row,
+status, gates, and remaining delivery steps live in
+[VIA_GEYSER_PARITY.md](VIA_GEYSER_PARITY.md). This file is the live matrix notes
++ slice roll-up; that file is the fleshed-out parity map.
+
 ## Authority
 
 Paper remains the game (`game-authority=paper`). Translators sit on the public
@@ -80,14 +85,19 @@ Bench/scripts must not copy those jars into `plugins/` for the product path.
 
 ## Honesty bar (parity vs pipeline)
 
-**Replace claim (join/spawn):** With JE matrix **7/7 under zlib-on** and Bedrock
-`geyserParitySmoke=true`, YaPcore can replace **Via\* + Geyser** on the product
-path — operators do not need those jars for multi-version JE or Bedrock join.
+**Join/spawn replace:** With JE matrix green under zlib-on and Bedrock
+`geyserParitySmoke=true`, operators do **not** need Via\* / Geyser jars for
+multi-version JE join or Bedrock join/spawn.
+
+**Full play parity:** Claim after soak checklists in §E. **P4.1–P4.11** are
+**closed in code/docs** (dumps, click bodies, Paper inject, metadata/light,
+containers, combat split, forms/skins, Xbox-shaped CI, next-protocol dump
+plumbing, ViaBackwards honesty, **Paper column stream default**). Remaining:
+operator live soak ticks (§E) and denser G.25 metadata from retail clients.
 
 Catalogs (items/blocks/entities per band) and Xbox ES384 chain validation are
-**in-tree**. Soft BE depth (entity metadata richness, dump-backed biome/creative NBT,
-retail Xbox soak fixture) still hardens from live clients — they are **not**
-join/spawn blockers (`start_game` itemstates + flat chunks + empty inventory parse on 1.21.50).
+**in-tree**. Soft BE depth rows and Mid deepen rows are enumerated in the
+parity checklist — they are **not** join/spawn blockers.
 
 ### Live matrix (2026-08-21)
 
@@ -141,13 +151,16 @@ Artifact: `build/bedrock-smoke-latest.json`.
 
 | Packet / area | Status |
 |---------------|--------|
-| `start_game` itemstates / block_properties | **Itemstates landed** — `protocol/bedrock/1.21.50/itemstates.json` (~1599); regen via `node scripts/generate-bedrock-itemstates.mjs`; block_properties still empty (custom blocks only) |
-| `level_chunk` payload | **Paper-backed** when `BedrockPaperWorldSync` attached (air/solid→hashed ids); else flat palettes; `-Dyapcore.bedrock.flat-chunks` forces flat |
-| `add_player` / actor / metadata / abilities | **Dense metadata** (flags, health, nametag, air, scale, AABB) + full ability layer |
-| Creative / biome defs / entity identifiers | **Full creative** from itemstates; **dump-backed** `biome_definitions.nbt` + `available_entity_identifiers.nbt` |
-| Xbox chain on retail clients | Offline JWT + Certificate unwrap; **multi-hop Mojang-rooted soak** (stand-in root unit test); optional `xbox/retail-chain.json` for real Mojang JWTs |
+| `start_game` itemstates / block_properties | **Itemstates landed**; `block_properties` stays empty (vanilla — custom blocks only) |
+| `level_chunk` payload | **Paper-backed + per-state** — `block_state_hashes.json` (~27k JE `getAsString()`→hash via J2B); Material default fallback |
+| `add_player` / actor / metadata / abilities | **Dense metadata** + full ability layer |
+| Creative / biome defs / entity identifiers | **Full creative** from itemstates; **dump-backed** biome + entity identifier NBT |
+| `available_commands` | **Rich catalog** + **COMMAND_REQUEST → Paper** (`PaperCommandBridge`) + command_output/text ack |
+| Inventory authority | **Shadow + vault + live Paper Player** — counts in `inventory_content`; seed after inject; chest/furnace fill from Paper; no double `/give` when injected |
+| Via resource-pack-on | `RESOURCE_PACK=1` / `run-matrix-pack-on.sh` — **4/4 spawn** |
+| Xbox chain on retail clients | Multi-hop stand-in-root soak green; **capture** live Mojang JWTs with `-Dyap.floodgate.dumpChain=true` |
 
-**Next:** richer JE→BE block-state catalog (beyond air/stone/dirt/grass/bedrock); Paper chunk radius streaming beyond 3×3; Via matrix under resource-pack-on.
+**Next:** live Mojang Xbox soak ([XBOX_RETAIL_CAPTURE.md](XBOX_RETAIL_CAPTURE.md)); denser item-stack edge cases.
 
 
 ### Client matrix (how to re-run)
@@ -174,18 +187,30 @@ node scripts/generate-protocol-catalogs.mjs
 
 ## Delivery order (still one Phase 4 goal)
 
+**Join/spawn DoD is green** (JE matrix 4/4 + BE Geyser-parity smoke). Remaining items
+below are **optional fidelity / full play-parity soak**, not join-path blockers.
+
+Tracked as **P4.1–P4.11** in
+[VIA_GEYSER_PARITY.md §F](VIA_GEYSER_PARITY.md#f-delivery-order-remaining-to-claim-full-parity).
+
+Roll-up:
+
 1. **JE matrix DoD (1.20.2+ + 1.19.4 canary)** — spawn green under compression + pack ✅
-2. **Forced pack soak** — `resource-pack-forced=true` through Via ✅ (matrix bots auto-ack)
-3. **Play-phase pack remap** — YaPPacks extras via Via play auto-ack + ID aliases ✅ (enable live)
-4. **Mid play bodies (1.20–1.21)** — paletted chunk no-op + component-era item id remap landed; metadata/window_items deepen ongoing
-5. **Bedrock smoke + Paper world stream** — smoke green; Paper spawn + JE player mirror; flat chunks opt-in (`-Dyapcore.bedrock.flat-chunks=true`); true Paper column stream still next
-6. **4.G depth** — BE inventory/combat deepen (BREAK→Paper already live)
-7. **PlayerData MariaDB** — plugin stays enabled in release
+2. **Forced pack soak** — `resource-pack-forced=true` through Via ✅
+3. **Play-phase pack remap** — YaPPacks extras via Via play auto-ack + ID aliases ✅
+4. **Mid + BE deepen (first depth)** — dumps 764–765; SlotCodec/components; Paper columns;
+   ATTACK UUID + INV mirror; registry/particle tables ✅
+5. **Optional live soak** — `./scripts/protocol-matrix/play-soak.sh` + checklist ticks in
+   VIA_GEYSER_PARITY §E; human pack UX; denser G.25 metadata; rarer 26.x component ids
+6. **PlayerData MariaDB** — plugin stays enabled in release (orthogonal)
 
 Rewind (1.8–1.16) deepen is explicitly **out of product DoD** unless reopened.
 
 ## Related
 
+- [VIA_GEYSER_PARITY.md](VIA_GEYSER_PARITY.md) — **full feature checklist + DoD**
+- [PROTOCOL_DUMPS.md](PROTOCOL_DUMPS.md) — P4.10 next-protocol dump workflow
+- [VIA_BACKWARDS_LIMITATIONS.md](VIA_BACKWARDS_LIMITATIONS.md) — P4.11 honesty notes
 - [CROSSPLAY.md](CROSSPLAY.md) — ports / hub
 - [CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md) — client matrix
 - [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) — phase map

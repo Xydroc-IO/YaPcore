@@ -37,9 +37,10 @@
 5. **Phase 3 tick on cores 3–6** — NW/NE/SW/SE interior entities under leases; borders via DLM/boundary.
 6. **Dual-stack / crossplay** — first-party Via\* + Geyser feature parity on one shared world ([PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)); JE product floor **1.20.2+**; Bedrock smoke green for join/spawn.
 7. **Plugins** — all jars in `plugins/` (Paper + YaP); `paper-kernel/plugins` → symlink.
-   Defaults: **vehicles**, **gameplay knobs**, **PlaceholderAPI**, **pregen**, **stacker**,
-   **plugin-compat**, **yap-db**, **playerdata** (auth / session lock / claims / taxes / traders),
-   **packs**, **chat**, **floodgate** — see [PLUGINS.md](PLUGINS.md) / [PLAYERDATA.md](PLAYERDATA.md) / [YAPDB.md](YAPDB.md).
+   **CORE+NETWORK (default):** PlaceholderAPI, pregen, plugin-compat, **yap-db**, **playerdata**,
+   **packs**, **chat**, **floodgate**.
+   **GAMEPLAY (opt-in):** vehicles, stacker, knobs — `gradle installGameplayDefaults` / `-PyapGameplay=true`.
+   See [PLUGINS.md](PLUGINS.md) / [PLAYERDATA.md](PLAYERDATA.md) / [YAPDB.md](YAPDB.md).
 8. **Ops** — `config/server.properties`, Generational ZGC + NUMA, control panel, **browser dashboard** (`:8080` — Packs + **Ranks**), LuckPerms pack ([PERMISSIONS.md](PERMISSIONS.md)), Docker MariaDB ([MARIADB.md](MARIADB.md)), `logs/crashes/`, `gradle assembleRelease`.
 9. **Vehicles** — real cars/trucks/exotics, fuel, upgrades, shop, HD models — [VEHICLES.md](VEHICLES.md).
 

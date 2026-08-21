@@ -23,6 +23,10 @@
 | [NETWORKING](NETWORKING.md) | Domain / public ports / boot banner (`yapcoremc.yaplabs.us`) |
 | [VANILLA_CLIENTS](VANILLA_CLIENTS.md) | Java Edition join + built-in multi-version bands |
 | [PHASE4_PROTOCOL](PHASE4_PROTOCOL.md) | **Phase 4:** full Via\* + Geyser parity in first-party code |
+| [**VIA_GEYSER_PARITY**](VIA_GEYSER_PARITY.md) | **Feature checklist** — ViaVersion / Backwards / Rewind / Geyser / Floodgate rows + gates |
+| [**PROTOCOL_DUMPS**](PROTOCOL_DUMPS.md) | **P4.10** — add next Mojang protocol dump (`index.json` + generator) |
+| [**VIA_BACKWARDS_LIMITATIONS**](VIA_BACKWARDS_LIMITATIONS.md) | **P4.11** — honesty notes (smithing, sounds, placeholders, claim language) |
+| [XBOX_RETAIL_CAPTURE](XBOX_RETAIL_CAPTURE.md) | Optional live Mojang Xbox JWT capture → soak |
 | [CLIENTS_AND_PACKS](CLIENTS_AND_PACKS.md) | Multi-version matrix, dual-stack, resource packs |
 | [NGINX_AND_LOCALHOST](NGINX_AND_LOCALHOST.md) | Same-PC joins + nginx |
 | [**WINDOWS**](WINDOWS.md) | **Windows parity** — launchers, Paperclip, nginx stream |

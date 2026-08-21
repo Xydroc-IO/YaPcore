@@ -10,6 +10,15 @@ can hand off real UUID / IP / skin data safely.
 
 ## Quick setup
 
+```bash
+# From YaPcore root — creates forwarding.secret, wires config (does not enable yet)
+./scripts/setup-velocity-forwarding.sh
+
+# When Velocity is actually in front:
+./scripts/setup-velocity-forwarding.sh --enable
+# then restart YaPcore; players join Velocity only
+```
+
 ### 1. YaPcore (`config/server.properties`)
 
 ```properties

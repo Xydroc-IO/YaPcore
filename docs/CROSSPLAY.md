@@ -12,8 +12,12 @@ YaPcore aims for **one shared world** and **full** protocol coverage:
 not product DoD for play remaps. Live matrix (2026-08-21): JE **7/7** join/spawn under zlib;
 Bedrock smoke `geyserParitySmoke=true` on 1.21.50 (~1599 itemstates).
 
-**Phase 4 DoD** is that parity on the Paper-backed world. Slice plan:
-[PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md).
+**Phase 4 DoD** is that parity on the Paper-backed world. Slice roll-up:
+[PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md). Feature-by-feature checklist:
+[VIA_GEYSER_PARITY.md](VIA_GEYSER_PARITY.md).
+Bedrock terrain defaults to **Paper column stream** (P4.5); flat is opt-in
+(`-Dyapcore.bedrock.flat-chunks=true`). Automated soak preamble:
+`./scripts/protocol-matrix/play-soak.sh`.
 
 **Product note:** With default `game-authority=paper`, Paper owns the JE game.
 Phases 3–3.7 spatial tick is live on YapEngine (default on; high-pop target).

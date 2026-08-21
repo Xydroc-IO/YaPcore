@@ -1,6 +1,8 @@
 # Tuning YaPcore (central hub)
 
-One place for day-to-day knobs: **`config/`**.
+One place for day-to-day knobs: **`config/`**. Optional **fine-tune modules** in
+`modules/` make each surface discoverable (`provides` / Modules GUI / `FINE_TUNE.txt`)
+without forking engines — see [MODULES_AND_API.md](MODULES_AND_API.md).
 
 ## Layout
 
@@ -11,16 +13,18 @@ One place for day-to-day knobs: **`config/`**.
 | `config/spigot.yml` / `bukkit.yml` | Symlinks into paper-dir (**high-pop tuned**) |
 | `config/templates/highpop/` | Canonical Paper/Spigot/Bukkit performance templates |
 | `config/paper-server.properties` | Symlink → Paper’s `server.properties` (`view-distance=8`, `simulation-distance=6`) |
-| GUI **Tune** tab | Opens the same paths |
+| `modules/*.jar` | Packaging modules — point at the knobs below (`gradle installFineTuneModules`) |
+| GUI **Tune** / **Modules** tabs | Opens config paths / manages module jars |
 
 ### High-pop Paper configs (product)
 
 YaPcore ships high-pop **starting** defaults on the live kernel. **Entity
 activation ranges stay uncapped (`0`)** by default so MSPT vs Leaf/Paper is fair.
-Tighter EAR lives in `config/templates/highpop-ear/` (opt-in).
+Tighter EAR lives in `config/templates/highpop-ear/` (opt-in). Packaging module:
+`yap-highpop-module.jar` (`provides: [highpop]`).
 
 | Knob | Where | Intent |
-|------|-------|--------|
+|------|--------|--------|
 | EAR = 0 (always active) | `spigot.yml` | Fair vs Leaf — no activation free lunch |
 | Optional tight EAR | `templates/highpop-ear/` | Production-only, not scoreboard default |
 | Spawn limits / ticks-per | `bukkit.yml` | Fewer concurrent mobs |
@@ -35,7 +39,8 @@ Created automatically on start (`ConfigHub` / `yap_ensure_config_hub`).
 
 ```bash
 ./scripts/start.sh --fg
-gradle :gameplay-knobs-plugin:installIntoPlugins
+gradle installProductDefaults
+gradle :gameplay-knobs-plugin:installIntoPlugins   # or installGameplayDefaults
 ```
 
 ## Paper vs gameplay encyclopedia
@@ -43,8 +48,8 @@ gradle :gameplay-knobs-plugin:installIntoPlugins
 | Kind | Where |
 |------|--------|
 | Paper / Spigot / Bukkit | `config/paper/…`, `config/spigot.yml` |
-| YaP chassis / network | `config/server.properties` |
-| **Mob / gameplay encyclopedia** | `plugins/yap-gameplay-knobs.jar` → `plugins/YaPGameplayKnobs/knobs.yml` |
+| YaP chassis / network | `config/server.properties` (+ `yap-spatial-module`, `yap-ops-dashboard-module`, …) |
+| **Mob / gameplay encyclopedia** | `plugins/yap-gameplay-knobs.jar` → `plugins/YaPGameplayKnobs/knobs.yml` (+ `yap-gameplay-knobs-module`) |
 
 ### What the encyclopedia supports (live)
 

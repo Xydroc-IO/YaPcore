@@ -57,7 +57,7 @@ getScheduler().runHeavy(() -> {
 ```yaml
 name: MegaStore
 main: com.example.MegaStorePlugin
-version: 1.0.0
+version: 1.0.0.0
 api: yap-1
 author: You
 description: All-in-one store (GUI + economy + DB) without lag
@@ -74,20 +74,20 @@ Real vehicle mechanics for plugin authors (cars / bikes / custom chassis — **n
 minecarts or boats): [VEHICLES.md](VEHICLES.md). Soft-depend `YaPVehicles` and
 load `VehicleAPI` from `ServicesManager`.
 
-**Shipped by default** on `gradle shadowJar` / `assembleRelease`:
-`plugins/yap-vehicles.jar`, `modules/yap-vehicles-module.jar`, HD models in
-`resourcepacks/yapcore-default.zip`, **`plugins/yap-placeholderapi.jar`**
+**Shipped by default (CORE + NETWORK)** on `gradle shadowJar` / `assembleRelease`:
+`resourcepacks/yapcore-default.zip` (Faithful), **`plugins/yap-placeholderapi.jar`**
 (clip-compatible PlaceholderAPI — [PLACEHOLDERAPI.md](PLACEHOLDERAPI.md)),
 **`plugins/yap-pregen.jar`** ([PREGEN.md](PREGEN.md)),
-**`plugins/yap-stacker.jar`** (PDC mob/item/spawner stacker — [STACKER.md](STACKER.md)),
 **`plugins/yap-plugin-compat.jar`** ([PLUGIN_BACKCOMPAT.md](PLUGIN_BACKCOMPAT.md)),
-**`plugins/yap-gameplay-knobs.jar`**,
 **`plugins/yap-db.jar`** (shared MariaDB Hikari — [YAPDB.md](YAPDB.md) / [MARIADB.md](MARIADB.md)),
-**`plugins/yap-playerdata.jar`** (cross-server data, offline `/login`, claims, traders — [PLAYERDATA.md](PLAYERDATA.md);
-soft-depends YaPDB via `YapDbBridge`),
-**`plugins/yap-packs.jar`** (multi-active packs — `/yappacks`),
-**`plugins/yap-chat.jar`** (unsigned system chat for offline/Via),
-and **`plugins/yap-floodgate.jar`** (Velocity Bedrock identity without Floodgate jar — [VELOCITY.md](VELOCITY.md)).
+**`plugins/yap-playerdata.jar`** (cross-server data, offline `/login`, modular features — [PLAYERDATA.md](PLAYERDATA.md)),
+**`plugins/yap-packs.jar`**, **`plugins/yap-chat.jar`**,
+and **`plugins/yap-floodgate.jar`** ([VELOCITY.md](VELOCITY.md)).
+
+**GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `-PyapGameplay=true`):
+`plugins/yap-vehicles.jar`, `modules/yap-vehicles-module.jar`,
+**`plugins/yap-stacker.jar`** ([STACKER.md](STACKER.md)),
+**`plugins/yap-gameplay-knobs.jar`**, vehicles overlay in the default pack.
 
 SQL plugin authors: `compileOnly(project(":yap-db-api"))` and soft-depend `YaPDB`
 ([YAPDB.md](YAPDB.md)). Ranks: [PERMISSIONS.md](PERMISSIONS.md).

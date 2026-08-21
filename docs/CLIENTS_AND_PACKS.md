@@ -39,7 +39,8 @@ paper-dir=paper-kernel
 checks (`MATRIX_FULL=1`); deep play remaps are **not** a Phase 4 blocker.
 
 **Phase 4 DoD:** first-party ViaVersion + ViaBackwards equivalents on the Paper
-JE path. ViaRewind-depth is best-effort only. See [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md).
+JE path. ViaRewind-depth is best-effort only. See [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)
+and the full checklist [VIA_GEYSER_PARITY.md](VIA_GEYSER_PARITY.md).
 
 Scaffold: `ProtocolBand` / `ProtocolCompat` / `ViaStyleRemapper`. Bedrock uses
 first-party Geyser parity (`GeyserStyleTranslator`), not the Geyser jar.
@@ -67,14 +68,10 @@ Shared listen port (`shared-listen-port=true`) uses the same number for JE TCP a
 
 ## Resource packs (auto-download on join)
 
-**Login prompt:** The first active pack is written to Paper `server.properties` so
-Minecraft shows the normal **Yes / No** download dialog before you enter the world.
+**Login prompt:** Active packs become **one** Paper download (Yes/No). Several actives are
+**merged** into `yap-active-bundle-<hash>.zip` (later packs win on path conflicts) so every
+active pack applies without play-phase `addResourcePack`.  
 `resource-pack-forced=false` (default) lets players decline without being kicked.
-
-**Multiple actives:** Extras are listed in `plugins/YaPPacks/active.json`. Play-phase
-`addResourcePack` is remapped through Via (`resource_pack_push`↔`add_resource_pack`
-aliases + play auto-ack). Default `push-extras-on-join: true` with `skip-primary: true`.
-If a client still resets, set `push-extras-on-join: false` and merge overlays into one zip.
 
 ```properties
 resource-pack-enabled=true
@@ -86,6 +83,8 @@ resource-pack-public-host=yapcoremc.yaplabs.us
 public-pack-port=80
 resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
 ```
+
+Publish the **offer** zip (single file or `yap-active-bundle-*.zip`) to the edge docroot after changing actives.
 
 **Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Vehicles) — built on
 `gradle prepareClientPack`. Credit / license: `resourcepacks/CREDITS.md`,

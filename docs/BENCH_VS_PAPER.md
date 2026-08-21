@@ -42,6 +42,38 @@ Default: **500** Mineflayer clients. Not TNT-only.
 
 Fairness: `compare-highpop.py` rejects insufficient / mismatched online counts.
 
+### Pop ladder (low → heavy, 50–200 bots)
+
+After tracker/engine changes — and before marketing full play depth — run the
+**pop ladder**. Bots exercise real server work (move, combat, chests, digs), not
+TNT-only MSPT.
+
+| Tier | Players | Sample | Heap (default) |
+|------|--------:|-------:|----------------|
+| **low** | 50 | 30s | 4G / 6G |
+| **mid** | 100 | 40s | 6G / 8G |
+| **high** | 150 | 45s | 8G / 10G |
+| **heavy** | 200 | 45s | 8G / 12G |
+
+Also always (unless skipped): Phase 4 automated play-soak + denser heavypop MSPT
+(2400 TNT / 512 hoppers vs Leaf).
+
+```bash
+# Full ladder (YaP-only bots by default — fast regression)
+./scripts/bench/run-pop-ladder.sh
+
+# Cite-ready bot tiers vs Leaf/Paper
+YAP_BENCH_COMPETITORS=paper,leaf,yapcore ./scripts/bench/run-pop-ladder.sh --bots-only
+
+# Subset
+./scripts/bench/run-pop-ladder.sh --tiers mid,heavy
+./scripts/bench/run-pop-ladder.sh --msp-only    # denser heavypop only
+./scripts/bench/run-pop-ladder.sh --soak-only   # Phase 4 unit/Xbox gates
+```
+
+Log: `logs/bench/pop-ladder-<stamp>.log`. Live §E ticks remain operator-owned
+(`./scripts/protocol-matrix/play-soak.sh --all` with Via front + BE up).
+
 Same load proofs as above — ranks fair MSPT across forks:
 
 ```bash
@@ -160,9 +192,34 @@ offer/flush tax. With **spatial-tracker**, both orders win ~20%+ MSPT — produc
 gate for beating Paper under this density. Tracker remains players-on-main;
 `moonrise$tick` / track-untrack stay on Paper main.
 
+**Product bar:** beat Paper + Leaf at **250+ bots** fair highpop (MSPT under both,
+TPS ~20). Dirty-bit / skip-clean / tracker barrier merges reduce YaP-only tax;
+player tick stays on main (Paper ABI). Cite only `players_ok` JSON.
+
+### Border T7/T8 poll-gap fix — 2026-08-21 ~15:17 (highpop unblocked)
+
+**Bug:** after `requestLease`, T8 parked on `inbound.poll(20ms)` while the grant
+landed on `granted` — up to ~20ms dead wait per `runBorderTickSync`, stacked across
+entity/BE/event/tracker border flushes (~60ms MSPT). Bot waypoints sit on origin
+border planes; dense TNT heavypop sits deep-interior (why TNT could win while bots
+lost). **Fix:** wait/unpark on grant (deny→requeue wakes too); DLM `submit` unparks
++ burst-drains. Regression: `BoundarySyncTest.sequentialHandoffsAreNotPollGapped`.
+
+| Stamp | Players | Leaf | Paper | **Yap** | Verdict |
+|-------|--------:|-----:|------:|--------:|---------|
+| pre-fix `…T212607Z` | 50 | 11.2 | 15.8 | **65.7** | LOSS (pathology) |
+| `borderfix-…T221314Z` | 50 | 12.0 | 14.2 | **5.81** | **WIN #1** |
+| `borderfix100-…T221720Z` | 100 | 16.0 | 18.1 | **8.96** | **WIN #1** |
+
+Still need **250+** fair cite before claiming the full product bar.
+
 **Phase 3.9 (follow-on):** `spatial-tracker-skip-clean` + `ServerEntity` early-out
 cut empty packet work on main (players) and spatial (mobs) without Folia-style
-player tick. Rebuild YaP Paperclip after vendor hooks:
+player tick. **Dirty-bit `trackerEntities` snapshot** avoids cloning the tracker
+list every tick (YaP-only tax for spatial safety — Paper/Leaf iterate in place).
+**Passenger fast-path** skips `getPassengers().equals` when last was empty.
+**Tracker flush** uses one barrier for interior+border when both have work.
+Rebuild YaP Paperclip after vendor hooks:
 `./scripts/build-vendor-paper.sh`.
 
 **Phase 3.11:** deepen YaP-owned Leaf-class opts — `PathNavigation.createPath`,
@@ -182,7 +239,22 @@ no stdin + dashboard off under `yap.bench.scenario`.
 | `…T151456Z` | vs Paper 1200 TNT / 256 hoppers | stock 2.707 → Yap 2.558 (**+5.5%**), fuseΔ=900 both | **WIN (fair)** |
 | `…T150931Z` | denser eco 2400 TNT / 512 hoppers | Leaf 4.265 · **Yap 4.516 (#2, −5.9% vs Leaf)** · Paper 5.121 · Purpur 5.384; fuseΔ=900 all | Yap **#2/4** |
 
-### JFR Leaf-gap slice — 2026-08-21 denser heavypop
+### Leaf-gap closed — tracker MethodHandles (2026-08-21 ~12:07)
+
+Leaf-gap cuts: ChunkMap passes `cx/cz` + `ServerEntity` via **MethodHandles** (no
+per-entity `Method.invoke` / Runnable); NMS `yapIsCleanTrackerSend` skips clean
+offers without bridge reflect; flush `tiny=24` + single-quad path.
+
+Same denser load (**2400 TNT / 512 hoppers**), 15s warmup / 45s sample, fuse OK:
+
+| Stamp | Leaf MSPT | Yap MSPT | Δ vs Leaf | Verdict |
+|-------|-----------|----------|-----------|---------|
+| `…T190712Z` | 4.383 | **4.114** | **+6.5%** | **WIN (fair)** — Yap #1 |
+
+Also `…T190135Z`: Paper 5.839 → Yap 4.283 (**+26.6%** vs Paper) at same density.
+Profiles: `bench/profiles/20260821T190712Z-heavypop-{leaf,yapcore}.jfr`.
+
+### JFR Leaf-gap slice — 2026-08-21 denser heavypop (pre-cut baseline)
 
 Same load (2400 TNT / 512 hoppers). Profiles:
 `bench/profiles/20260821T154415Z-heavypop-leaf.jfr`,
@@ -193,7 +265,7 @@ Fair MSPT: Leaf **4.314** · Yap **4.386** (**−1.7%** — essentially tied).
 |------|----------------|
 | **Leaf heavier on main** | `tickNonPassenger`, `ChunkMap.newTrackerTick` / `tick`, entity forEach |
 | **Yap heavier** | TNT collision (`checkInsideBlocks`, `BlockGetter` travel), `InteriorWorldTickBridge.tickNmsEntity` / `runTrackerSend`, `yapOfferTrackerSendChanges` |
-| **Read** | Offload works (main tickNonPassenger nearly gone). Remaining gap is **collision density + tracker offer/flush tax**, not “Leaf magic skips alone”. Next slice: cheaper tracker barrier / less per-entity offer reflect. |
+| **Read (then)** | Offload works; remaining gap was collision + tracker offer/flush tax → addressed above (`…T190712Z` win). |
 
 Harness: `YAP_BENCH_JFR=1 ./scripts/bench/run-vs-ecosystem.sh heavypop 45` →
 `bench/profiles/<stamp>-heavypop-<id>.jfr`; summarize with `scripts/bench/summarize-jfr.sh`.
