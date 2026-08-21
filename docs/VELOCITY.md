@@ -93,11 +93,14 @@ it as the main public join path while Velocity owns Java.
 
 ---
 
-## ViaVersion
+## ViaVersion / ViaBackwards / ViaRewind / Geyser
 
-Via\* plugins go on **Velocity** and/or the backend (`plugins/`) as usual —
-same as any Paper network. YaPcore’s built-in `ProtocolBand` multi-version applies to the
-**native** authority path, not the default Paper JE port.
+**Do not use.** Phase 4 DoD is **full** Via\* + Geyser feature parity in YaPcore
+code ([PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)). Dropping those jars into
+`plugins/` is not the supported path.
+
+Proxy networks that still run Via on Velocity for *other* backends are outside
+YaPcore’s product surface; the YaPcore backend itself expects built-in remap.
 
 ---
 
@@ -114,6 +117,7 @@ same as any Paper network. YaPcore’s built-in `ProtocolBand` multi-version app
 
 ## Related
 
+- [PLAYERDATA.md](PLAYERDATA.md) — cross-server inventory / money sync (`yap-playerdata`)
 - [NETWORKING.md](NETWORKING.md) — domains / public ports  
 - [CROSSPLAY.md](CROSSPLAY.md) — JE + BE  
 - [CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md) — Paper authority path  

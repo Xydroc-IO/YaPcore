@@ -3,17 +3,18 @@
 Optimized 16-thread footprint with dedicated **Boundary Arbitration** (Thread 8)
 and consolidated UI sandboxes (Threads 10–11).
 
-**Product context:** YaPcore uses **Paper** as game authority. Phase 3 places
-interior entity tick on spatial cores **3–6** under DLM leases; border work uses
-Threads **7–8**. See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md).
+**Product context:** YaPcore uses **Paper** as game authority. Phases 3–3.7 place
+interior entity + world ticks on spatial cores **3–6** under DLM leases; border
+entities/TE/events tick on Thread **8** (`spatial-borders`). Spatial flags
+**default on** for high-pop product. See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md).
 
 | Thread | Component | Role |
 |--------|-----------|------|
 | 1 | Controller / Watchdog | Tick health, deadlock, crash snapshot |
 | 2 | Traffic Cop + SequenceToken | Ingest, µs sequencing, Epoll/Zstd |
-| 3–6 | Spatial Game Cores 0–3 | NW / NE / SW / SE quad-tree loops (**Phase 3 tick**) |
+| 3–6 | Spatial Game Cores 0–3 | NW / NE / SW / SE quad-tree loops (**Phase 3–3.6 tick**) |
 | 7 | Chunk Sync DLM & Lease Manager | Atomic leases, sector mutations |
-| 8 | Boundary Sync & Entity Handoff | Cross-quad arbitration via DLM leases |
+| 8 | Boundary Sync & Entity Handoff | Cross-quad arbitration + **Phase 3.7 border tick** |
 | 9 | Compatibility Bridge | Legacy Spigot/Paper sync marshaling |
 | 10 | UI Sandbox 0 | Menus / inventory clicks |
 | 11 | UI Sandbox 1 | Scoreboard / bossbar / HUD |

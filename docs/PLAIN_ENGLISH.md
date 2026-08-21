@@ -32,11 +32,11 @@ Normal Minecraft servers (including Paper) do a lot of the “game tick” — t
 
 YaPcore spreads more of that work across **dedicated workers**, instead of everything waiting in one line.
 
-We’re **not** claiming “already faster than Paper everywhere.” Phase 3 moves
-interior entity updates onto four spatial workers; Phase 3.5 also moves interior
-scheduled block/fluid and random ticks there, and we prove wins with a public
-MSPT scoreboard ([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)). Players and some systems
-still follow Paper’s main thread. We’re honest about what’s done and what’s next.
+We’re **not** optimizing for empty lobby servers. The product is aimed at
+**high-pop / heavy-load** networks — many entities, farms, hoppers, redstone —
+where YapEngine’s spatial workers earn their keep. Light idle MSPT can look worse
+with full spatial deferral on; that’s acceptable. The beat-Paper gate is the
+`heavypop` scoreboard ([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)).
 
 ---
 
@@ -45,8 +45,9 @@ still follow Paper’s main thread. We’re honest about what’s done and what�
 1. **A real Minecraft server** — powered by Paper.  
 2. **Java and Bedrock together** — toward the same shared world story.  
 3. **Familiar plugins** — Paper/Spigot-style jars and YaP plugins in **one** `plugins/` folder; YaP plugins keep heavy jobs off the hot path.  
-4. **Day-to-day ops tools** — config, control panel, resource packs, crash reports.  
-5. **A clear design, not a rename** — threading, dual-stack, and YaP tooling are intentional.
+4. **Day-to-day ops tools** — config, desktop control panel, **web dashboard** (browser, for headless), resource packs, crash reports.  
+5. **Vehicles built in** — real cars/trucks (not minecarts), fuel, upgrades, shop; HD models in the default pack.  
+6. **A clear design, not a rename** — threading, dual-stack, and YaP tooling are intentional.
 
 ---
 
@@ -59,7 +60,7 @@ Imagine a restaurant kitchen with **sixteen fixed jobs**:
 - Four people **cook different areas of the map** (NW / NE / SW / SE)  
 - Others handle **borders between stations**, **plugins**, **menus**, **heavy storage**, and **health checks**
 
-Paper still supplies the **recipes and the food** (real Minecraft). YapEngine is the **kitchen layout**. Phase 3 means those four map cooks already handle entity updates in the *middle* of their stations; edge-of-station work and players still go through careful handoff rules.
+Paper still supplies the **recipes and the food** (real Minecraft). YapEngine is the **kitchen layout**. Phases 3–3.7 mean those four map cooks already handle entities, farms, hoppers, and a lot of redstone in the *middle* of their stations; edge-of-station work goes to a border worker; players still follow careful main-thread rules.
 
 ---
 
@@ -69,12 +70,12 @@ Paper still supplies the **recipes and the food** (real Minecraft). YapEngine is
 |-------|------------------|--------|
 | Early wrap | YaPcore sits in front of Paper | Done (optional) |
 | Paper runs the public game | Players get real Paper gameplay | Done |
-| Split map entity work across four workers | Interior entity updates on the four map-area workers | **Done (Phase 3)** |
-| Beat Paper on MSPT (measured) | Also move interior block/fluid/random; public bench | **Active (Phase 3.5)** |
-| Polish crossplay + YaP plugins on that setup | Full product feel end-to-end | **Next (Phase 4)** |
+| Split map work across four workers | Interior entities, farms, hoppers, redstone on map-area workers; borders on a border worker | **Done (Phases 3–3.7)** |
+| Beat Paper under heavy load | Public `heavypop` MSPT scoreboard — not won yet | **Active gate** |
+| Polish crossplay + YaP plugins | Full product feel end-to-end | **Next (Phase 4)** |
 
 **What that means for you:**  
-YaPcore is a real Minecraft server product **today**: Paper does the game, YapEngine runs the chassis, and Phase 3 spatial tick is live for interior entities (Phase 3.5 expands world ticks + MSPT scoreboard). Next we polish dual-stack join and YaP plugins on that same Paper world.
+YaPcore is aimed at **busy / high-pop** servers, not empty lobbies. Paper does the game; YapEngine’s spatial workers are **on by default**. Light empty-world numbers can look worse — that’s OK. We only claim “faster under load” when the `heavypop` bench says so ([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)). Phase 4 polishes dual-stack join and YaP plugins.
 
 ---
 
@@ -105,9 +106,13 @@ See [WHAT_WE_ARE.md](WHAT_WE_ARE.md) and [FULL_RUNDOWN.md](FULL_RUNDOWN.md).
 | Question | Paper alone | YaPcore |
 |----------|-------------|---------|
 | Real Minecraft gameplay? | Yes | Yes — we **use Paper** |
-| World update on many workers? | Mostly one main thread | Phase 3: interior entities yes; more systems still on main |
+| World update on many workers? | Mostly one main thread | Yes — interiors on four map workers; borders on a border worker (high-pop defaults on) |
+| Built for empty lobbies or busy worlds? | Either | **Busy / high-pop** first |
 | Java + Bedrock in one product? | Usually needs extra tools | Built into our story |
 | Plugins? | Paper/Spigot plugins | Same + YaP jars — **one** `plugins/` folder |
+| Browser ops without a desktop? | Usually third-party panels | **Built-in web dashboard** (`:8080`) |
+| Vehicles / cars? | Usually separate plugins | **Shipped** YaP Vehicles + default client pack |
+| Mob / item stacker? | Usually separate plugins | **Shipped** YaP Stacker (no fragile server internals) |
 
 ---
 
@@ -117,6 +122,9 @@ See [WHAT_WE_ARE.md](WHAT_WE_ARE.md) and [FULL_RUNDOWN.md](FULL_RUNDOWN.md).
 |--------------|--------|
 | Short technical identity | [WHAT_WE_ARE.md](WHAT_WE_ARE.md) |
 | Full technical rundown | [FULL_RUNDOWN.md](FULL_RUNDOWN.md) |
+| Headless / browser control | [WEB_DASHBOARD.md](WEB_DASHBOARD.md) |
+| Vehicles | [VEHICLES.md](VEHICLES.md) |
+| Stacker (mobs / items / spawners) | [STACKER.md](STACKER.md) |
 | Paper → YapEngine phases | [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) |
 | Docs index | [README.md](README.md) |
 | Deep architecture paper | [whitepaper/YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) |

@@ -1,12 +1,18 @@
-# Crossplay (Geyser-class) & shared port
+# Crossplay & multi-version (full Geyser + Via parity — first-party)
 
-YaPcore aims for **one shared world**. Java and Bedrock clients join via a
-Geyser-style translation hub (`com.yapcore.crossplay`).
+YaPcore aims for **one shared world** and **full** protocol coverage:
+
+- **Bedrock:** built-in Geyser **parity** (`GeyserStyleTranslator` / CrossplayHub) — not the Geyser jar
+- **Older / other JE:** built-in ViaVersion + ViaBackwards + ViaRewind **parity**
+  (`ProtocolCompat` / `ViaStyleRemapper`) — not Via\* jars
+
+**Phase 4 DoD** is that parity on the Paper-backed world. Slice plan:
+[PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md).
 
 **Product note:** With default `game-authority=paper`, Paper owns the JE game.
-Phase 3 spatial tick is live on YapEngine. **Phase 4** polishes dual-stack so BE
-and JE feel like one finished join story on that Paper-backed world. See
-[PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md).
+Phases 3–3.7 spatial tick is live on YapEngine (default on; high-pop target).
+Phase 4 finishes dual-stack + full first-party Via/Geyser feature sets.
+See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md).
 
 ## Streamlined one-port join
 
@@ -19,36 +25,39 @@ port=25566
 bedrock-port=25566
 ```
 
-| Edition | Socket | Address |
-|---------|--------|---------|
-| Java | TCP `:25566` | `host:25566` |
-| Bedrock | UDP `:25566` | `host:25566` |
+| Edition | Socket (local bind) | Same-PC | Public (nginx / SRV) |
+|---------|---------------------|---------|----------------------|
+| Java | TCP `:25566` | `127.0.0.1:25566` | `yapcoremc.yaplabs.us:25565` |
+| Bedrock | UDP `:25566` | `127.0.0.1:25566` | `yapcoremc.yaplabs.us:25565` |
 
-Same host **and** same port number — OS allows TCP and UDP to share a port.
-Players type one address; the client protocol picks TCP vs UDP.
+Same host **and** same **local** port number — OS allows TCP and UDP to share a port.
+With nginx, players on the internet use **25565**; the origin still listens on **25566**.
 
 Disable with `shared-listen-port=false` to use a separate Bedrock UDP port.
+
+Domain / Cloudflare: [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md).
 
 ## Architecture
 
 ```
-Java TCP  ──┐                    ┌─ YapEngine spatial cores (same map)
-            ├─ DualStackGateway ─┤
-Bedrock UDP─┘   CrossplayHub     └─ UnifiedPlayer roster
-                GeyserStyleTranslator
+Java TCP  ──┐  ViaStyleRemapper (older JE)   ┌─ YapEngine spatial cores (same map)
+            ├─ DualStackGateway ─────────────┤
+Bedrock UDP─┘  CrossplayHub                  └─ UnifiedPlayer roster
+               GeyserStyleTranslator
 ```
 
 On join, both editions register a `UnifiedPlayer` into the same spatial
 partition. Moves/chats/clicks are translated into shared engine ops.
 
-## Honest scope
+## Scope (Phase 4)
 
-This is **Geyser-class architecture** (shared world + translator + dual front
-door). Full vanilla RakNet/JE packet parity is still expanding — the join,
-shared spawn, and action translation path are live; gameplay codecs deepen
-over time.
+**Target:** full Geyser feature parity + full Via\* feature parity in YaP code.
+Scaffold (join, shared spawn, action path, band registry) is live; codecs and
+remaps expand until the [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md) checklists pass.
+Do not treat “Geyser-class / Via-class” as “good enough forever.”
 
 ## GUI
 
-- **Connect** — one Crossplay address + Copy
+- **Connect** — Crossplay address + Copy (local vs public ports)
 - **Settings** — Shared listen port + Crossplay toggles
+- **nginx** — domain `yapcoremc.yaplabs.us`, stream/HTTP ports, install script

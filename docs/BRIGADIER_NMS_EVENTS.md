@@ -1,9 +1,21 @@
 # Brigadier, NMS, and Paper events
 
-YaPcore ships a **Paper-compatible compile/runtime surface** so plugins can use
-Brigadier, Craft/NMS casts, and the Paper event catalog without bundling Paper.
+## Product path (default)
 
-## Brigadier
+Under `game-authority=paper`, Brigadier, Craft/NMS, and the full Paper event
+catalog come from **real Paper** — complete API coverage. See
+[PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md).
+
+Compile plugins against `io.papermc.paper:paper-api:26.2.build.112-stable` and
+drop jars in `plugins/`.
+
+## Facade path (non-Paper authority only)
+
+YaPcore also ships skeletal `org.bukkit.*` / `io.papermc.*` stubs for the
+Compatibility Bridge when Paper is **not** the game authority. That path is
+**not** bit-identical Paper. Prefer Paper authority for any real plugin work.
+
+### Brigadier (facade)
 
 - Dependency: Mojang `com.mojang:brigadier`
 - Registrar: `io.papermc.paper.command.brigadier.Commands#register`
@@ -27,9 +39,9 @@ Commands.register(
 
 Adventure ↔ Brigadier: `io.papermc.paper.brigadier.PaperBrigadier.message(Component)`.
 
-## Paper / Bukkit events (~430+)
+### Paper / Bukkit events (facade stubs)
 
-Generated from **paper-api 1.21.4** sources into `org.bukkit.event.**`,
+Generated from **paper-api 26.2** sources into `org.bukkit.event.**`,
 `io.papermc.paper.event.**`, and `com.destroystokyo.paper.event.**`.
 
 - Listen with `@EventHandler` as usual
@@ -39,12 +51,11 @@ Generated from **paper-api 1.21.4** sources into `org.bukkit.event.**`,
 Regenerate:
 
 ```bash
-chmod +x scripts/generate-paper-event-stubs.sh
 ./scripts/generate-paper-event-stubs.sh
 gradle compileJava
 ```
 
-## Deep NMS / CraftBukkit
+### Deep NMS / CraftBukkit (facade)
 
 YaPcore provides **facades** (not Mojang obfuscated jars):
 
@@ -55,13 +66,9 @@ YaPcore provides **facades** (not Mojang obfuscated jars):
 | `MinecraftServer.getServer()` | `net.minecraft.server.MinecraftServer` |
 | `NmsAccess.get()` | helper entry |
 
-Online players are constructed as `CraftPlayer` (extends `BridgedPlayer`).
-Default world is `CraftWorld`.
-
-**Honest limit:** this is a stable facade for reflection and common plugin patterns.
-It is not a drop-in replacement for every Yarn/Mojmap NMS method on a given
-Minecraft build. Extend facades as plugin imports demand.
+**Honest limit:** facade only. Under Paper authority you get real CraftBukkit.
 
 ## Coverage
 
-See `com.yapcore.api.ApiCoverage` and [MODULES_AND_API.md](MODULES_AND_API.md).
+See `com.yapcore.api.ApiCoverage`, [PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md),
+and [MODULES_AND_API.md](MODULES_AND_API.md).

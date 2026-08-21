@@ -56,12 +56,15 @@ We don’t claim “every Paper plugin works perfectly on day one,” and we’r
 ### Where the product is today (August 2026)
 
 We use **Paper** for the real Minecraft game. Getting Paper to own the public
-join path is done. Spreading **interior entity updates** across the four map-area
-workers (with careful locks/leases, and careful handling of map borders) is also
-**done** — that’s Phase 3. Next is Phase 4: polishing Java + Bedrock join and YaP
-plugins so the whole product feels finished on that Paper-backed world.
+join path is done. Spreading **interior** entity, farm, hopper, and redstone work
+across the four map-area workers — plus border work on a dedicated border worker —
+is also **done** (Phases 3–3.7; those switches are **on by default**). The product
+is aimed at **busy / high-pop** servers; we measure beat-Paper on a heavy
+`heavypop` scoreboard and are **honest when we haven’t won yet**. Next is
+Phase 4: polishing Java + Bedrock join and YaP plugins on that Paper-backed world.
 
-Details: [PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md).
+Details: [PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md) ·
+[BENCH_VS_PAPER.md](../BENCH_VS_PAPER.md).
 
 ---
 
@@ -123,13 +126,16 @@ If something tries to change the world from the wrong lane, the Compatibility Br
 
 Smaller **modules** use the same lanes and can declare what they provide or need so operators can mix features cleanly. See [MODULES_AND_API.md](../MODULES_AND_API.md).
 
+The product build ships **YaP Vehicles** (real cars/trucks — not minecarts) and gameplay knobs by default, plus a **web dashboard** in the browser for headless hosts (`:8080`) alongside the desktop control panel. Client textures/models come from the default pack `yapcore-default.zip`.
+
 ---
 
 ## 5. Networking & crossplay (the join story)
 
 - **Java Edition** players connect the usual TCP way, including modern login/play flows.  
 - **Bedrock** players connect over UDP; the same port number can be shared with Java when configured that way.  
-- Operators can put a domain / reverse proxy (nginx) in front for a cleaner public edge.  
+- Operators can put a domain / reverse proxy (nginx) + Cloudflare in front — this
+  project’s public hostname is **`yapcoremc.yaplabs.us`**.
 - A **crossplay hub** aims at one shared player identity and world path across editions.
 
 On the same computer as the server, use `127.0.0.1` to join (hairpin NAT issues are common otherwise).
@@ -160,7 +166,7 @@ See [TESTING.md](../TESTING.md).
 
 ## 7. Caveats (what could make results misleading)
 
-- Incomplete Paper API coverage can skew “how many plugins port easily” studies.  
+- Rare Phase 3 threading edge cases can still surprise plugins that assume one entity thread (same “try it on Paper” discipline).  
 - Minecraft versions keep changing; packet/registry work is ongoing.  
 - NUMA / ZGC benefits depend on the machine.  
 - Bedrock feature parity can lag Java for some gameplay packets.
@@ -183,8 +189,8 @@ Still ahead: richer registry sync, deeper world streaming, fuller command graphs
 |-------------|------------|
 | Non-tech / just curious | [PLAIN_ENGLISH.md](../PLAIN_ENGLISH.md) |
 | Reading the engineer paper | [YAPCORE_WHITEPAPER.md](YAPCORE_WHITEPAPER.md) |
-| Running a server | [README](../../README.md), [NETWORKING](../NETWORKING.md) |
-| Writing plugins | [PLUGINS](../PLUGINS.md), [MODULES_AND_API](../MODULES_AND_API.md) |
+| Running a server | [README](../../README.md), [NETWORKING](../NETWORKING.md), [WEB_DASHBOARD](../WEB_DASHBOARD.md) |
+| Writing plugins | [PLUGINS](../PLUGINS.md), [MODULES_AND_API](../MODULES_AND_API.md), [VEHICLES](../VEHICLES.md) |
 | Working on the engine | [YAPENGINE_16THREAD](../YAPENGINE_16THREAD.md), [PERF_AND_LAYOUT](../PERF_AND_LAYOUT.md) |
 
 ### Citation (technical paper)

@@ -16,7 +16,7 @@
 
 | Piece | Meaning |
 |-------|---------|
-| **YaPcore** | The product / server you run (`yapcore.jar`, scripts, GUI, config, packs) |
+| **YaPcore** | The product / server you run (`yapcore.jar`, scripts, GUI + web dashboard, config, packs, shipped vehicles) |
 | **YapEngine** | The 16-thread runtime chassis (watchdog, Netty traffic, 4 spatial cores, DLM, bridge, UI/I/O, telemetry) |
 | **Paper** | The **game authority** — real Minecraft gameplay, not a clean-room rewrite |
 
@@ -24,7 +24,7 @@
 “A multi-threaded Minecraft server on YapEngine, using Paper for the game.”
 
 **Brand pitch (accurate today):**  
-“YaPcore front door + YapEngine chassis + Paper as the full game. Phase 3 same-JVM Paper ticks interior entities on cores 3–6 under DLM leases (YaP Paperclip). Players stay on Paper main; borders use T7/T8. Phase 4 polishes dual-stack + YaP plugins on that world.”
+“YaPcore front door + YapEngine chassis + Paper as the full game. Phases 3–3.7 same-JVM Paper ticks interiors on cores 3–6 and borders on T8 under DLM (YaP Paperclip; flags default on). Aimed at high-pop load; `heavypop` MSPT gate not yet won. Phase 4: full first-party Via\* + Geyser parity + YaP plugins.”
 
 ---
 
@@ -33,11 +33,14 @@
 1. **Run a joinable Minecraft server** for modern Java Edition (target **Paper 26.2** / protocol ~776). **Java 25+** required.
 2. **Boot YapEngine’s 16 logical threads** every start — chassis is always on.
 3. **Delegate the Minecraft game to Paper** (`game-authority=paper`).
-4. **Own the public edge** — dual-stack gateway, sequencing (`SequenceToken`), multi-version JE bands, resource-pack HTTP, ops GUI, crash dumps.
+4. **Own the public edge** — dual-stack gateway, sequencing (`SequenceToken`), multi-version JE bands, resource-pack HTTP, ops GUI + **web dashboard**, crash dumps.
 5. **Phase 3 tick on cores 3–6** — NW/NE/SW/SE interior entities under leases; borders via DLM/boundary.
-6. **Dual-stack / crossplay** — Java TCP + Bedrock UDP toward one shared world (Phase 4 polish next).
+6. **Dual-stack / crossplay** — full Via\* + Geyser feature parity in our code on one shared world (Phase 4 — [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)).
 7. **Plugins** — all jars in `plugins/` (Paper + YaP); `paper-kernel/plugins` → symlink.
-8. **Ops** — `config/server.properties`, Generational ZGC + NUMA, control panel, `logs/crashes/`.
+   Defaults: **vehicles**, **gameplay knobs**, **PlaceholderAPI**, **pregen**, **stacker**,
+   **plugin-compat**, **playerdata** — see [PLUGINS.md](PLUGINS.md) / [STACKER.md](STACKER.md).
+8. **Ops** — `config/server.properties`, Generational ZGC + NUMA, control panel, **browser dashboard** (`:8080`), `logs/crashes/`, `gradle assembleRelease`.
+9. **Vehicles** — real cars/trucks/exotics, fuel, upgrades, shop, HD models — [VEHICLES.md](VEHICLES.md).
 
 ---
 
@@ -45,7 +48,7 @@
 
 | Not this | Why |
 |----------|-----|
-| “Already a faster Paper everywhere” | Phase 3 is interior-entity spatial tick + leases — not every Paper subsystem on quads yet |
+| “Already a faster Paper everywhere” | High-pop product; `heavypop` gate not yet won; light idle may lose MSPT with full spatial on |
 | Folia / region-thread pool | Rejected; we use YapEngine’s fixed 16 roles |
 | Clean-room Minecraft | We wrap/port **Paper** on purpose |
 | Mojang `server.jar` as the product | Legacy `game-authority=mojang` only |
@@ -111,6 +114,7 @@ paper-dir=paper-kernel
 | **Interior entity tick** | Cores 3–6 under leases; needs `lib/paper-*-yap.jar` (fail-closed if NMS on) |
 | **Border chunk work** | T7/T8 handoffs |
 | **Players** | Paper main |
+| **Border entities / TE / redstone** | T8 under DLM (`spatial-borders`) |
 | **Paper / YaP plugins** | `plugins/` (unified; `paper-kernel/plugins` → symlink) |
 
 Port plan: [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md)
@@ -123,21 +127,23 @@ Port plan: [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md)
 |-------|------|--------|
 | **1** | Paper wrap + TCP proxy | Done (optional) |
 | **2** | Paper owns public JE | Done |
-| **3** | Leased interior tick on cores 3–6 + border T7/T8 + vendored Paper | **Done** |
-| **3.5** | Beat Paper MSPT — block/fluid/random + public bench | **Active** |
-| **3.6** | Interior block entities + redstone block events on quads | **Done** (opt-in flags) |
-| **4** | Dual-stack + YaP plugins polished on Paper-backed world | **Next** (after scoreboard) |
+| **3** | Leased interior tick on cores 3–6 + vendored Paper | **Done** |
+| **3.5** | Interior block/fluid/random under leases | **Done** (default on) |
+| **3.6** | Interior block entities + redstone block events on quads | **Done** (default on) |
+| **3.7** | Border entities / TE / events on T8 under DLM | **Done** (default on) |
+| **Gate** | Beat Paper on **`heavypop`** MSPT | **Active** — not yet won ([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)) |
+| **4** | Dual-stack + YaP plugins polished on Paper-backed world | **Next** |
 
 ### Phase 3 pieces (shipping)
 
-- `Phase3PaperRuntime` — Paperclip in-process  
+- `Phase3PaperRuntime` — Paperclip in-process; sets spatial 3.5–3.7 flags **on** if unset  
 - `Phase3PaperClassLoader` — platform parent + host bridge  
-- `YapSpatialTickCoordinator` — parallel tick + `runLeased` / border handoffs  
+- `YapSpatialTickCoordinator` — parallel tick + `runLeased` / border T8 handoffs  
 - `yap-spatial-tick` plugin — main-thread snapshot → spatial leased tick  
 - `InteriorEntityTickDriver` — NMS entity tick when YaP Paperclip present  
-- `InteriorWorldTickBridge` — Phase 3.5–3.6 interior block/fluid/random + block entities + redstone events under leases  
+- `InteriorWorldTickBridge` — Phase 3.5–3.7 interior + border world tick under leases  
 - `scripts/vendor-paper.sh` / `build-vendor-paper.sh` — pin 26.2-112 → `lib/paper-26.2-yap.jar`  
-- `scripts/bench/run-vs-paper.sh` — vs-Paper MSPT scoreboard  
+- `scripts/bench/run-vs-paper.sh` — vs-Paper MSPT scoreboard (`heavypop` primary)  
 - `scripts/start.sh` — `cd` into `paper-dir`
 
 ---
@@ -146,9 +152,11 @@ Port plan: [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md)
 
 ### Join
 
-- **Java Edition** — TCP (default `:25566`); with Paper embed, Paper owns JE protocol  
-- **Bedrock** — UDP, same port number by default (`shared-listen-port=true`)  
-- See [CROSSPLAY.md](CROSSPLAY.md), [CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md)
+- **Java Edition** — local TCP `:25566`; public/nginx `:25565` (`yapcoremc.yaplabs.us`)
+- **Bedrock** — UDP, same port numbers by default (`shared-listen-port=true`)
+- **Same PC** — always `127.0.0.1:25566` (not the public domain / WAN IP)
+- See [CROSSPLAY.md](CROSSPLAY.md), [CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md),
+  [NETWORKING.md](NETWORKING.md), [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md)
 
 ### Plugins & modules
 
@@ -158,14 +166,20 @@ Port plan: [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md)
 | YaP modules (`module.yml`) | `modules/` | Module runtime |
 | Fine-tune modules | `modules/` | `module.yml` |
 
-See [PLUGINS.md](PLUGINS.md), [MODULES_AND_API.md](MODULES_AND_API.md)
+See [PLUGINS.md](PLUGINS.md), [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md), [MODULES_AND_API.md](MODULES_AND_API.md)
 
 ### Packs & ops
 
-- Resource packs in `resourcepacks/` over HTTP (default `:8081`)
+- Default client pack: `resourcepacks/yapcore-default.zip` (Faithful 64x + YaP Vehicles) — HTTP `:8081`
+- Public pack edge: `https://yapcoremc.yaplabs.us/pack/`
+- nginx edge: `scripts/nginx-setup.sh` · [NGINX_AND_LOCALHOST.md](NGINX_AND_LOCALHOST.md)
 - Control GUI: `./scripts/gui.sh`
+- **Web dashboard (headless):** `http://127.0.0.1:8080/` — [WEB_DASHBOARD.md](WEB_DASHBOARD.md)
+- Release package: `gradle assembleRelease` → `build/dist/yapcore-release/{linux,windows}/`
+- Windows: Paperclip + nginx scripts — [WINDOWS.md](WINDOWS.md)
 - Crash reports: `logs/crashes/`
 - JVM: [ZGC_NUMA.md](ZGC_NUMA.md)
+- Vehicles: [VEHICLES.md](VEHICLES.md)
 
 ---
 
@@ -175,8 +189,9 @@ See [PLUGINS.md](PLUGINS.md), [MODULES_AND_API.md](MODULES_AND_API.md)
 # Java 25+ for Paper 26.2 / Phase 3
 ./scripts/vendor-paper.sh          # once — clone pin
 ./scripts/build-vendor-paper.sh    # → lib/paper-26.2-yap.jar
-gradle distJar
-./scripts/start.sh --fg            # cds into paper-kernel
+gradle assembleRelease             # jar + default plugins/packs + release folder
+./scripts/start.sh --fg            # headless + web dashboard :8080
+# or: cd build/dist/yapcore-release && ./start.sh --fg
 ./scripts/stop.sh
 ```
 
@@ -198,7 +213,7 @@ gradle distJar
 | Multithreaded world tick | Single main thread | **Phase 3 / 3.5** — interior entities + block/fluid/random on 3–6; players on main |
 
 | Thread design | Paper’s model | YapEngine **16-thread** matrix |
-| Bedrock + Java | Usually Geyser stack | Built-in dual-stack path |
+| Bedrock + Java | Usually Geyser stack | **Built-in full Geyser + Via parity** (Phase 4) |
 | Plugins | Bukkit/Spigot/Paper | Paper plugins + YaP pools |
 
 ---
@@ -209,7 +224,7 @@ gradle distJar
 “Multi-threaded Minecraft server on YapEngine, using Paper for the game.”
 
 **Technical:**  
-“Paper is the game authority. YapEngine’s 16-thread chassis is always on. Phase 3 puts interior entity tick on spatial cores under DLM leases. Next is Phase 4 — dual-stack and YaP plugins polished on that Paper-backed world.”
+“Paper is the game authority. YapEngine’s 16-thread chassis is always on. Phase 3 puts interior entity tick on spatial cores under DLM leases. Next is Phase 4 — full first-party Via\* + Geyser parity and YaP plugins on that Paper-backed world.”
 
 ---
 
@@ -222,5 +237,7 @@ gradle distJar
 | [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) | Phase 1–4 port plan |
 | [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) | Thread matrix |
 | [CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md) | Clients, versions, packs |
+| [WEB_DASHBOARD.md](WEB_DASHBOARD.md) | Headless browser control |
+| [VEHICLES.md](VEHICLES.md) | Real vehicle API + fleet |
 | [CROSSPLAY.md](CROSSPLAY.md) | JE + BE |
 | [whitepaper/YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) | Long-form architecture |

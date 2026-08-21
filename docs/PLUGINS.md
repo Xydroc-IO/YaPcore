@@ -19,9 +19,11 @@ cp MyPlugin.jar plugins/
 ### On Paper (default — production path)
 
 Put jars in **`plugins/`**. Within reason, anything that works on stock
-Paper 26.2 works here. Folia-only plugins do **not**.
+Paper 26.2 works here — **complete Paper API** from the embedded Paperclip
+([PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md)). Folia-only plugins do **not**.
 
-Optional smoke: `./scripts/smoke-paper-plugins.sh`
+Optional smoke: `./scripts/smoke-paper-plugins.sh` ·
+`./scripts/verify-paper-api-coverage.sh`
 
 ### YaP Compatibility Bridge (non-Paper authority only)
 
@@ -65,6 +67,22 @@ description: All-in-one store (GUI + economy + DB) without lag
 
 Same pools as YaP plugins; intended for **optional fine-tuning** operators add
 like mods. See [MODULES_AND_API.md](MODULES_AND_API.md).
+
+## 4. Vehicles (Paper plugin + API)
+
+Real vehicle mechanics for plugin authors (cars / bikes / custom chassis — **not**
+minecarts or boats): [VEHICLES.md](VEHICLES.md). Soft-depend `YaPVehicles` and
+load `VehicleAPI` from `ServicesManager`.
+
+**Shipped by default** on `gradle shadowJar` / `assembleRelease`:
+`plugins/yap-vehicles.jar`, `modules/yap-vehicles-module.jar`, HD models in
+`resourcepacks/yapcore-default.zip`, **`plugins/yap-placeholderapi.jar`**
+(clip-compatible PlaceholderAPI — [PLACEHOLDERAPI.md](PLACEHOLDERAPI.md)),
+**`plugins/yap-pregen.jar`** ([PREGEN.md](PREGEN.md)),
+**`plugins/yap-stacker.jar`** (PDC mob/item/spawner stacker — [STACKER.md](STACKER.md)),
+**`plugins/yap-plugin-compat.jar`** ([PLUGIN_BACKCOMPAT.md](PLUGIN_BACKCOMPAT.md)),
+**`plugins/yap-gameplay-knobs.jar`**, and
+**`plugins/yap-playerdata.jar`** (cross-server inv/money — [PLAYERDATA.md](PLAYERDATA.md)).
 
 ## Crash reports
 

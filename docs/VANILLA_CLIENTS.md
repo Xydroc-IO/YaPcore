@@ -34,8 +34,16 @@ port=25566
 ```
 
 1. Start (`./scripts/gui.sh` or `./scripts/start.sh`)
-2. Connect to `127.0.0.1:25566`
+2. Connect to `127.0.0.1:25566` (same PC) or `yapcoremc.yaplabs.us:25565` (public/nginx)
 3. MOTD / player counts should appear in the server list
+
+### Logs: STATUS ping vs join
+
+Server-list refreshes use handshake **intent=1** (STATUS). The client closes after
+the ping — that is normal and is **not** logged as `JE JOIN FAILED` anymore.
+Actual joins use **intent=2** (LOGIN) and should reach PLAY.
+
+Public domain / nginx: [NETWORKING.md](NETWORKING.md), [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md).
 
 ## Configuration dumps (why joins used to fail)
 

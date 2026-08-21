@@ -16,6 +16,8 @@ Drop **all** plugin jars into **[`plugins/`](../plugins/)** — one folder.
 | Question | Answer |
 |----------|--------|
 | Will LuckPerms / WorldEdit / Vault / most Paper plugins work? | **Yes** — put them in `plugins/` (same as stock Paper 26.x) |
+| Is Paper API coverage complete? | **Yes** on the product path — real Paper owns the API ([PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md)) |
+| Can 1.20–1.21 plugins run on 26.2? | **Often** — built-in Tier A+B rewrite ([PLUGIN_BACKCOMPAT.md](PLUGIN_BACKCOMPAT.md)) |
 | Can I use Folia-only plugins? | **No** — YaPcore is not Folia |
 | Do I need two plugin folders? | **No** — only `plugins/` |
 | Is every NMS/reflection plugin guaranteed? | **No** — same caveats as stock Paper (version pins, remaps) |
@@ -46,7 +48,7 @@ Layout check:
 ### Will work (in `plugins/`)
 
 - Standard Bukkit/Spigot/Paper plugins that work on **stock Paper 26.2**
-- Vault / services / PlaceholderAPI-style APIs
+- Vault / services / **built-in PlaceholderAPI** (`yap-placeholderapi.jar`, plugin name `PlaceholderAPI`)
 - Normal schedulers, events, commands, inventories, worlds
 - Most popular survival / minigame / chat / permission plugins
 

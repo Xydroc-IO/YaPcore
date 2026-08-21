@@ -37,10 +37,12 @@ Java+Bedrock dual-stack, resource packs, control GUI, and deep crash diagnostics
 
 See [docs/YAPENGINE_16THREAD.md](docs/YAPENGINE_16THREAD.md).
 
-**Game path:** **Paper** authority · **Phase 3 done** · **Phase 3.5 active** (MSPT scoreboard + leased world ticks) ·
-**Phase 4 next** (dual-stack + YaP plugins polish) —
+**Game path:** **Paper** authority · **Phases 3–3.7 done** (spatial tick **default on**) ·
+**Active:** beat Paper on **`heavypop`** MSPT · **Phase 4 next** (full Via + Geyser
+parity in our code + YaP plugins) —
 [docs/PAPER_YAPENGINE_PORT.md](docs/PAPER_YAPENGINE_PORT.md) · [docs/BENCH_VS_PAPER.md](docs/BENCH_VS_PAPER.md).  
-Default: `game-authority=paper`, `paper-embed=true`, `paper-phase3-tick-bridge=true`.
+Default: `game-authority=paper`, `paper-embed=true`, `paper-phase3-tick-bridge=true`.  
+Product target: **high-pop / heavy load** (not empty lobbies).
 
 ## Quick start
 
@@ -50,21 +52,34 @@ cd YaPcore
 chmod +x scripts/*.sh
 # Paper 26.2 / Phase 3 needs Java 25+
 ./scripts/vendor-paper.sh && ./scripts/build-vendor-paper.sh   # optional YaP Paperclip
-gradle shadowJar          # produces ./yapcore.jar (gitignored)
+gradle shadowJar          # jar + default plugins/packs; release → build/dist/yapcore-release/
 ./scripts/gui.sh          # control panel
 # or
 ./scripts/start.sh --fg   # headless (cds into paper-kernel for Phase 3)
+# Release tree: cd build/dist/yapcore-release/linux && ./start.sh --fg
+# Windows release: build\dist\yapcore-release\windows\start.cmd -Fg
 ./scripts/stop.sh
 ```
 
 Requires **Java 25+** for Paper 26.2 / Phase 3 (project toolchain may still compile
 main sources with JDK 21). The fat jar is built locally and is **not** committed.
+Release packages include **linux/** and **windows/** trees with native launchers.
+
+**Headless web dashboard** (default `:8080`): mirrors the control GUI in a browser —
+start/stop, console, settings, plugins, packs, vehicles. See
+[docs/WEB_DASHBOARD.md](docs/WEB_DASHBOARD.md).
 
 ## Dual-stack + resource packs
 
 Java **and** Bedrock are enabled by default. **JE multi-version is built in**
-(`ProtocolBand` / `backwards-compatible=true`) — no third-party protocol plugins.
+(`ProtocolBand` / `ViaStyleRemapper` / `backwards-compatible=true`) — **full Via\*
+parity** and **full Geyser parity** as Phase 4 DoD (own code). **Do not** install
+ViaVersion / ViaBackwards / ViaRewind / Geyser. See [docs/PHASE4_PROTOCOL.md](docs/PHASE4_PROTOCOL.md).
 Texture/resource packs in `resourcepacks/` download over the built-in HTTP host (default `:8081`).
+Default: **`yapcore-default.zip`** (Faithful 64x + YaP Vehicles HD models) — built on
+`gradle shadowJar` / `assembleRelease`; credit in `resourcepacks/CREDITS.md`.
+Public edge: **`yapcoremc.yaplabs.us`** via nginx + Cloudflare — see
+[docs/CLOUDFLARE_AND_NGINX.md](docs/CLOUDFLARE_AND_NGINX.md) and [docs/NETWORKING.md](docs/NETWORKING.md).
 See [docs/CLIENTS_AND_PACKS.md](docs/CLIENTS_AND_PACKS.md).
 
 **Velocity:** YaPcore is a Paper backend with modern forwarding — set `velocity-enabled=true`
@@ -83,7 +98,22 @@ Fine-tune modules stay in `modules/`.
 | Fine-tune module | `modules/` | `module.yml` | `YaPModule` |
 
 World/inventory → **SYNC** · DB/HTTP → **HEAVY** · menus → **UI**.  
-See [docs/PLUGINS.md](docs/PLUGINS.md), [docs/PLUGIN_COMPAT.md](docs/PLUGIN_COMPAT.md), and [docs/MODULES_AND_API.md](docs/MODULES_AND_API.md).
+See [docs/PLUGINS.md](docs/PLUGINS.md), [docs/PLUGIN_COMPAT.md](docs/PLUGIN_COMPAT.md),
+[docs/PLUGIN_BACKCOMPAT.md](docs/PLUGIN_BACKCOMPAT.md),
+[docs/PAPER_API_COVERAGE.md](docs/PAPER_API_COVERAGE.md), [docs/TUNE.md](docs/TUNE.md),
+[docs/MODULES_AND_API.md](docs/MODULES_AND_API.md), [docs/VEHICLES.md](docs/VEHICLES.md),
+[docs/STACKER.md](docs/STACKER.md), [docs/PREGEN.md](docs/PREGEN.md),
+[docs/PLACEHOLDERAPI.md](docs/PLACEHOLDERAPI.md), and [docs/PLAYERDATA.md](docs/PLAYERDATA.md).
+
+**Tune everything in one place:** `config/` (Paper via `config/paper/`) + GUI **Tune** tab.
+**Shipped by default** on `gradle shadowJar` / `assembleRelease`:
+`yap-vehicles`, `yap-gameplay-knobs`, `yap-placeholderapi`, `yap-plugin-compat`,
+`yap-pregen`, `yap-stacker`, `yap-playerdata`, `modules/yap-vehicles-module.jar`,
+and `resourcepacks/yapcore-default.zip`.
+Release folder: `build/dist/yapcore-release/` with **`linux/`** and **`windows/`**
+trees (each self-contained). Linux: `./start.sh --fg`. Windows: `start.cmd -Fg`.
+Vehicles: `/yapvehicle spawn buggy` — [docs/VEHICLES.md](docs/VEHICLES.md).
+Stacker: `/yapstacker gui` — [docs/STACKER.md](docs/STACKER.md).
 
 ## Crash logger
 
@@ -93,8 +123,9 @@ Reports under `logs/crashes/` (gitignored contents): thread dumps, heap/JVM/OS, 
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/gui.sh` | Control GUI |
+| `scripts/gui.sh` | Control GUI (Linux/dev) |
 | `scripts/start.sh` / `stop.sh` / `status.sh` | Lifecycle (Phase 3 cds into `paper-kernel`) |
+| `scripts/windows/*.ps1` + release `*.cmd` | Windows launchers in `yapcore-release/windows/` |
 | `scripts/vendor-paper.sh` / `build-vendor-paper.sh` | Vendor Paper 26.2 → `lib/paper-*-yap.jar` |
 | `scripts/nginx-setup.sh` | Optional nginx edge |
 | `./tests.sh` | Interactive test menu |

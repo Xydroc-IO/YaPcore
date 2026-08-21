@@ -10,7 +10,9 @@ Document ID: `YAP-WP-16T-001`
 
 ## Abstract
 
-Minecraft-class game servers traditionally serialize world mutation, plugin callbacks, and network I/O onto a single “main” thread, trading simplicity for latency under load. YaPcore (YapEngine) proposes a **fixed sixteen-thread** partitioning of server work: watchdog control, traffic/sequencing, parallel spatial game cores, chunk synchronization with deferred lease management, a legacy **Compatibility Bridge**, UI sandboxes, and heavy I/O workers. A **SequenceToken** model provides per-stream and global ordering without requiring every subsystem to share one lock. Legacy Spigot/Paper plugins and first-party YaP plugins/modules execute under an explicit **SYNC / HEAVY / UI** pool contract so inventory and block mutations never race the spatial cores. The shipping product path uses **Paper as game authority**, with Phase 3 interior entity tick on spatial cores 3–6 under DLM leases.
+Minecraft-class game servers traditionally serialize world mutation, plugin callbacks, and network I/O onto a single “main” thread, trading simplicity for latency under load. YaPcore (YapEngine) proposes a **fixed sixteen-thread** partitioning of server work: watchdog control, traffic/sequencing, parallel spatial game cores, chunk synchronization with deferred lease management, a legacy **Compatibility Bridge**, UI sandboxes, and heavy I/O workers. A **SequenceToken** model provides per-stream and global ordering without requiring every subsystem to share one lock. Legacy Spigot/Paper plugins and first-party YaP plugins/modules execute under an explicit **SYNC / HEAVY / UI** pool contract so inventory and block mutations never race the spatial cores. The shipping product path uses **Paper as game authority**, with Phase 3–3.7
+spatial tick (entities, block/fluid/random, block entities/redstone, border T8)
+on YapEngine under DLM leases — **default on** for high-pop product.
 
 This paper describes the architecture, concurrency invariants, networking and crossplay stance, plugin/module surface, and evaluation methodology. It is intended for systems researchers, server operators, and plugin authors evaluating YaPcore as a research and production platform.
 
@@ -36,15 +38,24 @@ YaPcore contributes:
 
 ### 1.3 Non-goals
 
-YaPcore does not claim bit-identical Paper API coverage on day one, nor full NeoForge dedicated-server semantics. API surface grows against measured plugin import demand (`ApiCoverage`).
+YaPcore uses **Paper as game authority** for the shipping product: Paper plugins
+receive **complete Paper API coverage** from the embedded Paperclip
+(`paper-api` 26.2), identical in surface to stock Paper. YaPcore does not claim
+NeoForge dedicated-server semantics. The Compatibility Bridge facade (non-Paper
+authority) remains best-effort stubs only — see `ApiCoverage` and
+[PAPER_API_COVERAGE.md](../PAPER_API_COVERAGE.md).
 
 ### 1.4 Product status (August 2026)
 
 YaPcore’s shipping product path uses **Paper as game authority**. Phases 1–2
-(wrap / Paper owns public JE) and **Phase 3** (interior entity tick on spatial
-cores 3–6 under DLM leases, border handoffs on threads 7–8, vendored YaP
-Paperclip) are **complete**. **Phase 4** (dual-stack + YaP plugin polish on the
-Paper-backed world) is next. See [PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md).
+(wrap / Paper owns public JE) and **Phases 3–3.7** (interior entity + world ticks
+on spatial cores 3–6 under DLM leases, block entities/redstone, border tick on
+thread 8, vendored YaP Paperclip; spatial flags **default on**) are **complete**.
+The product targets **high-population / heavy-load** networks; the public
+beat-Paper gate is the **`heavypop`** MSPT scoreboard
+([BENCH_VS_PAPER.md](../BENCH_VS_PAPER.md)) — not yet won. **Phase 4**
+(dual-stack + YaP plugin polish) is next. See
+[PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md).
 
 ---
 
@@ -96,9 +107,9 @@ Production launch scripts prefer **Generational ZGC** with optional **NUMA** pin
 
 `ThreadPools` tags the executing thread. Off-SYNC world APIs auto-queue through the Compatibility Bridge; authors should still schedule explicitly via `runTask` / `runSync` for clarity.
 
-Fine-tune **modules** (`module.yml`) share the same pools and may declare `provides`/`requires` for operator composition ([MODULES_AND_API.md](../MODULES_AND_API.md)).
+Fine-tune **modules** (`module.yml`) share the same pools and may declare `provides`/`requires` for operator composition ([MODULES_AND_API.md](../MODULES_AND_API.md)). First-party defaults ship **YaP Vehicles** (non-minecart chassis API) and gameplay knobs into `plugins/` / `modules/` on product builds.
 
-**Operator layout:** Paper (`plugin.yml`) and YaP (`yap.yml`) jars share one folder, `plugins/`. Under Paper game authority, Paper loads legacy jars; YaP loads only `yap.yml` jars from that same directory (`paper-kernel/plugins` → symlink). See [PLUGIN_COMPAT.md](../PLUGIN_COMPAT.md).
+**Operator layout:** Paper (`plugin.yml`) and YaP (`yap.yml`) jars share one folder, `plugins/`. Under Paper game authority, Paper loads legacy jars; YaP loads only `yap.yml` jars from that same directory (`paper-kernel/plugins` → symlink). See [PLUGIN_COMPAT.md](../PLUGIN_COMPAT.md). Product ops include a Swing control panel and a token-authenticated **web dashboard** (`:8080`) for headless hosts, plus resource-pack HTTP (`:8081`, default `yapcore-default.zip`).
 
 ---
 
@@ -106,7 +117,7 @@ Fine-tune **modules** (`module.yml`) share the same pools and may declare `provi
 
 - **Java Edition:** framed Netty pipeline, status/login/configuration/play, known-packs registry sync.
 - **Bedrock:** UDP path; optional shared port with Java TCP.
-- **Publicity:** domain/SRV/nginx stream templates for edge termination ([NGINX_AND_LOCALHOST.md](../NGINX_AND_LOCALHOST.md)).
+- **Publicity:** domain/SRV/nginx + Cloudflare edge for **`yapcoremc.yaplabs.us`** ([CLOUDFLARE_AND_NGINX.md](../CLOUDFLARE_AND_NGINX.md), [NETWORKING.md](../NETWORKING.md)).
 - **Crossplay hub:** unified player identity across editions ([CROSSPLAY.md](../CROSSPLAY.md)).
 
 Same-machine clients must use `127.0.0.1` (hairpin NAT).
@@ -129,7 +140,7 @@ Metrics of interest: tick time p99, bridge queue depth, cross-quadrant arbitrati
 
 ## 7. Threats to validity
 
-- Incomplete Paper API may bias plugin-porting studies.
+- Phase 3 spatial tick edge cases may still surprise plugins that assume a single-thread entity model (report vs stock Paper).
 - Protocol version sprawl (1.21.x+) requires continuous registry/packet maintenance.
 - NUMA/ZGC gains are hardware-dependent.
 - Bedrock parity lags Java for some gameplay packets.

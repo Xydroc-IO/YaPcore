@@ -12,7 +12,20 @@ plugins and fine-tune **modules** the same way.
 | **Module** (fine-tune) | `modules/` | `module.yml` | `com.yapcore.api.module.YaPModule` |
 
 Paper and YaP plugin jars share **`plugins/`** (see [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md)).
-Modules stay in `modules/`. GUI tabs: **Plugins** and **Modules**. Config: `modules-dir=modules`.
+Modules stay in `modules/`.
+
+Central configs: [TUNE.md](TUNE.md). Purpur-class mob encyclopedia ships as the
+Paper plugin `yap-gameplay-knobs` (`plugins/YaPGameplayKnobs/knobs.yml`) so it
+runs on real Paper under game-authority=paper.
+
+**Vehicles:** real (non-minecart) vehicle mechanics ship **by default** as Paper plugin
+`yap-vehicles` + module `provides: [vehicles]`, client models in `yapcore-default.zip` —
+see [VEHICLES.md](VEHICLES.md). Control from GUI, **web dashboard**, or `/yapvehicle`.
+
+**Stacker:** mob / item / spawner stacking is a **Paper plugin** (`yap-stacker`), not a
+YaP module — PDC only, no NMS. See [STACKER.md](STACKER.md) (`/yapstacker`).
+
+GUI tabs: **Plugins**, **Modules**, and **Tune**. Headless: [WEB_DASHBOARD.md](WEB_DASHBOARD.md).
 
 ### Example `module.yml`
 
@@ -45,18 +58,21 @@ without hopping to SYNC. Keep caches labeled by owning pool.
 
 ## API coverage (what authors can use)
 
-See `com.yapcore.api.ApiCoverage` at runtime. Highlights:
+**Paper plugins (`plugin.yml`):** **complete Paper API** under `game-authority=paper` —
+same `paper-api` 26.2 as stock Paper. Details: [PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md).
 
-- Adventure (`Component`, `Audience`) via Kyori
-- Inventory GUIs: `InventoryHolder`, click / drag / close events, `ItemMeta`
-- `OfflinePlayer`, permissions attachments, `Sound`, `World` / `Block`
-- Plugin messaging (`Messenger`) for Velocity-style channels
-- Chat: `AsyncPlayerChatEvent` + Paper `AsyncChatEvent`
-- Expanded `Material` catalog
+Runtime matrix: `com.yapcore.api.ApiCoverage`.
 
-Still growing: full Paper event surface, Brigadier, deep NMS/schematic APIs
-(track with world streaming). Missing Paper classes are added against real
-plugin import lists — not by vendoring a specific plugin.
+**YaP plugins / modules:** Adventure, dual-pool schedulers, modules `provides`/`requires`.
+
+**Not supported:** Folia `RegionScheduler` APIs.
+
+Verify:
+
+```bash
+./scripts/verify-paper-api-coverage.sh
+./scripts/smoke-paper-plugins.sh
+```
 
 ## Author checklist
 
@@ -71,3 +87,5 @@ plugin import lists — not by vendoring a specific plugin.
 - [PLUGINS.md](PLUGINS.md) — YaPPlugin dual-pool examples
 - `examples/yap-allinone` — sample YaP plugin
 - `examples/yap-module-demo` — sample module
+- [VEHICLES.md](VEHICLES.md) — vehicle API for Paper plugins
+- `examples/yap-vehicle-addon` — sample third-party vehicle type

@@ -42,6 +42,7 @@ Optional YaP Paperclip (Phase 3 NMS interior tick):
 
 Do not vendor third-party plugins into this repository. Extend APIs so *others* can
 publish jars to the unified **`plugins/`** folder or to **`modules/`**.
+Gameplay encyclopedia: [docs/TUNE.md](docs/TUNE.md) (`yap-gameplay-knobs`).
 See [docs/PLUGIN_COMPAT.md](docs/PLUGIN_COMPAT.md).
 
 ## Code of conduct
