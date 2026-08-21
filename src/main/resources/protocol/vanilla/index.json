@@ -1,0 +1,107 @@
+{
+  "paperPinProtocol": 776,
+  "generatedAt": "2026-08-21T18:50:08Z",
+  "note": "P4.10 \u2014 PacketIdDump prefers this index. Add future protocols via scripts/generate-protocol-dump.mjs.",
+  "dumps": {
+    "764": {
+      "label": "1.20.2",
+      "resource": "protocol/vanilla/1.20.2/packets.json",
+      "minecraftVersion": "1.20.2",
+      "playS2c": 113,
+      "playC2s": 54
+    },
+    "765": {
+      "label": "1.20.4",
+      "resource": "protocol/vanilla/1.20.4/packets.json",
+      "minecraftVersion": "1.20.4",
+      "playS2c": 117,
+      "playC2s": 55
+    },
+    "766": {
+      "label": "1.20.5",
+      "resource": "protocol/vanilla/1.20.5/packets.json",
+      "minecraftVersion": "1.20.5",
+      "playS2c": 122,
+      "playC2s": 58
+    },
+    "767": {
+      "label": "1.21.1",
+      "resource": "protocol/vanilla/1.21.1/packets.json",
+      "minecraftVersion": "1.21.1",
+      "playS2c": 124,
+      "playC2s": 58
+    },
+    "773": {
+      "label": "1.21.10",
+      "resource": "protocol/vanilla/1.21.10/packets.json",
+      "minecraftVersion": "1.21.10",
+      "playS2c": 139,
+      "playC2s": 66
+    },
+    "774": {
+      "label": "1.21.11",
+      "resource": "protocol/vanilla/1.21.11/packets.json",
+      "minecraftVersion": "1.21.11",
+      "playS2c": 139,
+      "playC2s": 66
+    },
+    "769": {
+      "label": "1.21.4",
+      "resource": "protocol/vanilla/1.21.4/packets.json",
+      "minecraftVersion": "1.21.4",
+      "playS2c": 131,
+      "playC2s": 62
+    },
+    "771": {
+      "label": "1.21.6",
+      "resource": "protocol/vanilla/1.21.6/packets.json",
+      "minecraftVersion": "1.21.6",
+      "playS2c": 134,
+      "playC2s": 66
+    },
+    "775": {
+      "label": "26.1",
+      "resource": "protocol/vanilla/26.1/packets.json",
+      "minecraftVersion": "26.1",
+      "playS2c": 141,
+      "playC2s": 69
+    },
+    "776": {
+      "label": "26.2",
+      "resource": "protocol/vanilla/26.2/packets.json",
+      "minecraftVersion": "26.2",
+      "playS2c": 141,
+      "playC2s": 69
+    }
+  },
+  "companions": {
+    "765": [
+      "protocol/vanilla/1.20.3/packets.json",
+      "protocol/vanilla/1.20.4/packets.json"
+    ],
+    "766": [
+      "protocol/vanilla/1.20.5/packets.json",
+      "protocol/vanilla/1.21.1/packets.json"
+    ],
+    "775": [
+      "protocol/vanilla/26.1/packets.json",
+      "protocol/vanilla/26.2/packets.json"
+    ],
+    "776": [
+      "protocol/vanilla/26.2/packets.json",
+      "protocol/vanilla/26.1/packets.json"
+    ],
+    "777": [
+      "protocol/vanilla/26.2/packets.json"
+    ]
+  },
+  "pendingNext": {
+    "status": "awaiting Mojang / minecraft-data release beyond Paper pin 776",
+    "whenShipped": [
+      "node scripts/generate-protocol-dump.mjs latest",
+      "or: node scripts/generate-protocol-dump.mjs --protocol <N>",
+      "commit packets.json + index.json",
+      "re-run scripts/protocol-matrix/run-matrix.sh against newer client"
+    ]
+  }
+}
