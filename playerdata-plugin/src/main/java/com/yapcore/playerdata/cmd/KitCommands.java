@@ -20,11 +20,14 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
     private final PlayerDataConfig config;
     private final KitRepository kits;
     private final SyncService sync;
+    private final com.yapcore.playerdata.gui.Menus menus;
 
-    public KitCommands(PlayerDataConfig config, KitRepository kits, SyncService sync) {
+    public KitCommands(PlayerDataConfig config, KitRepository kits, SyncService sync,
+                       com.yapcore.playerdata.gui.Menus menus) {
         this.config = config;
         this.kits = kits;
         this.sync = sync;
+        this.menus = menus;
     }
 
     @Override
@@ -40,15 +43,11 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
         String cmd = command.getName().toLowerCase(Locale.ROOT);
         try {
             if (cmd.equals("kits")) {
-                if (config.kits().isEmpty()) {
-                    player.sendMessage("§7No kits configured.");
-                } else {
-                    player.sendMessage("§aKits: §f" + String.join(", ", config.kits().keySet()));
-                }
+                menus.openKits(player);
                 return true;
             }
             if (args.length < 1) {
-                player.sendMessage("Usage: /kit <name>");
+                menus.openKits(player);
                 return true;
             }
             String id = args[0].toLowerCase(Locale.ROOT);

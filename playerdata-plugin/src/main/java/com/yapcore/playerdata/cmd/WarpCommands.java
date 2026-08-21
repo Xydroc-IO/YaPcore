@@ -18,10 +18,13 @@ import java.util.stream.Collectors;
 public final class WarpCommands implements CommandExecutor, TabCompleter {
     private final PlayerDataConfig config;
     private final WarpsRepository warps;
+    private final com.yapcore.playerdata.gui.Menus menus;
 
-    public WarpCommands(PlayerDataConfig config, WarpsRepository warps) {
+    public WarpCommands(PlayerDataConfig config, WarpsRepository warps,
+                        com.yapcore.playerdata.gui.Menus menus) {
         this.config = config;
         this.warps = warps;
+        this.menus = menus;
     }
 
     @Override
@@ -32,7 +35,14 @@ public final class WarpCommands implements CommandExecutor, TabCompleter {
                 case "setwarp" -> setWarp(sender, args);
                 case "delwarp" -> delWarp(sender, args);
                 case "warp" -> warp(sender, args);
-                case "warps" -> list(sender);
+                case "warps" -> {
+                    if (sender instanceof Player player) {
+                        menus.openWarps(player);
+                    } else {
+                        list(sender);
+                    }
+                    yield true;
+                }
                 default -> false;
             };
         } catch (Exception e) {

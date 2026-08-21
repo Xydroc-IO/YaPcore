@@ -21,13 +21,16 @@ public final class AuctionCommands implements CommandExecutor, TabCompleter {
     private final AuctionRepository auctions;
     private final BalanceStore balances;
     private final SyncService sync;
+    private final com.yapcore.playerdata.gui.Menus menus;
 
     public AuctionCommands(PlayerDataConfig config, AuctionRepository auctions,
-                           BalanceStore balances, SyncService sync) {
+                           BalanceStore balances, SyncService sync,
+                           com.yapcore.playerdata.gui.Menus menus) {
         this.config = config;
         this.auctions = auctions;
         this.balances = balances;
         this.sync = sync;
+        this.menus = menus;
     }
 
     @Override
@@ -41,22 +44,8 @@ public final class AuctionCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         try {
-            if (args.length == 0 || args[0].equalsIgnoreCase("list")) {
-                var list = auctions.listActive(20);
-                if (list.isEmpty()) {
-                    player.sendMessage("§7No active auctions. §f/ah sell <price>");
-                    return true;
-                }
-                for (var a : list) {
-                    ItemStack[] items = ItemSerializer.deserialize(a.itemBlob(), 1);
-                    String name = items.length > 0 && items[0] != null
-                            ? items[0].getAmount() + "x " + items[0].getType()
-                            : "item";
-                    player.sendMessage("§e#" + a.id() + " §f" + name
-                            + " §a$" + String.format("%.2f", a.price())
-                            + " §7by " + a.sellerName());
-                }
-                player.sendMessage("§7Buy with §f/ah buy <id>");
+            if (args.length == 0 || args[0].equalsIgnoreCase("list") || args[0].equalsIgnoreCase("gui")) {
+                menus.openAuctions(player);
                 return true;
             }
             String sub = args[0].toLowerCase(Locale.ROOT);

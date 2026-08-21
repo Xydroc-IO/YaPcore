@@ -19,11 +19,14 @@ public final class JobCommands implements CommandExecutor, TabCompleter {
     private final PlayerDataConfig config;
     private final JobRepository jobs;
     private final SyncService sync;
+    private final com.yapcore.playerdata.gui.Menus menus;
 
-    public JobCommands(PlayerDataConfig config, JobRepository jobs, SyncService sync) {
+    public JobCommands(PlayerDataConfig config, JobRepository jobs, SyncService sync,
+                       com.yapcore.playerdata.gui.Menus menus) {
         this.config = config;
         this.jobs = jobs;
         this.sync = sync;
+        this.menus = menus;
     }
 
     @Override
@@ -38,15 +41,7 @@ public final class JobCommands implements CommandExecutor, TabCompleter {
         }
         try {
             if (args.length == 0) {
-                var list = jobs.list(player.getUniqueId());
-                if (list.isEmpty()) {
-                    player.sendMessage("§7No jobs. §f/jobs join <name> §7· available: "
-                            + String.join(", ", config.jobs().keySet()));
-                } else {
-                    player.sendMessage("§aJobs: §f" + list.stream()
-                            .map(p -> p.job() + " L" + p.level())
-                            .collect(Collectors.joining(", ")));
-                }
+                menus.openJobs(player);
                 return true;
             }
             String sub = args[0].toLowerCase(Locale.ROOT);

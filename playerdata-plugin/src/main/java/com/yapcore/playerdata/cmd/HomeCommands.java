@@ -46,7 +46,10 @@ public final class HomeCommands implements CommandExecutor, TabCompleter {
                 case "sethome" -> setHome(player, args);
                 case "home" -> goHome(player, args);
                 case "delhome" -> delHome(player, args);
-                case "homes" -> listHomes(player);
+                case "homes" -> {
+                    menus.openHomes(player);
+                    yield true;
+                }
                 default -> false;
             };
         } catch (Exception e) {
