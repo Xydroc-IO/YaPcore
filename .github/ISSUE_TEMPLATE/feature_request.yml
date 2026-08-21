@@ -1,0 +1,31 @@
+name: Feature request
+description: Propose an API, module, or engine enhancement
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Engine / threading
+        - Networking / protocol
+        - Bukkit / Paper API
+        - Modules
+        - GUI / ops
+        - Docs / whitepaper
+        - Other
+    validations:
+      required: true

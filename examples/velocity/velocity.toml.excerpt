@@ -1,0 +1,15 @@
+# Velocity + YaPcore — excerpt only (merge into your velocity.toml)
+
+bind = "0.0.0.0:25565"
+
+[servers]
+# YaPcore Paper JE port (with velocity-bind-localhost=true)
+yapcore = "127.0.0.1:25566"
+
+try = ["yapcore"]
+
+player-info-forwarding-mode = "modern"
+online-mode = true
+
+# Put the same string in YaPcore velocity-secret / forwarding.secret
+# forwarding-secret-file defaults to "forwarding.secret" next to this file

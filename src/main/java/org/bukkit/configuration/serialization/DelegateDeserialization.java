@@ -1,0 +1,9 @@
+package org.bukkit.configuration.serialization;
+
+import java.lang.annotation.*;
+
+/** Paper API stub (YaPcore compatibility). */
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
+public @interface DelegateDeserialization {
+}

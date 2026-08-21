@@ -1,0 +1,42 @@
+name: Bug report
+description: Something broken in YaPcore / YapEngine
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please include reproduction steps and logs from `logs/crashes/` when possible.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Expected vs actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start with ./scripts/gui.sh
+        2. Connect with …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: YaPcore / Java version
+      placeholder: "0.1.0 / Java 21"
+    validations:
+      required: true
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Client edition
+      options: [Java, Bedrock, Both, N/A]
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste crashdump excerpts (redact secrets)

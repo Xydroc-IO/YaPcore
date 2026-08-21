@@ -1,0 +1,32 @@
+# YaPcore — copy to server.properties (gitignored) and edit
+server-name=YaPcore
+motd=YaPcore 16-Thread Engine
+port=25566
+bind-host=0.0.0.0
+allow-localhost=true
+internet-exposed=true
+
+# Public domain (Cloudflare DNS + nginx edge)
+server-domain=yapcoremc.yaplabs.us
+public-host=yapcoremc.yaplabs.us
+# Advertised join ports = nginx stream front (not the local bind port)
+public-port=25565
+public-bedrock-port=25565
+# Packs via Cloudflare HTTPS → nginx :80 → YaPcore :8081
+public-pack-port=443
+resource-pack-public-host=yapcoremc.yaplabs.us
+resource-pack-http-port=8081
+resource-pack-enabled=true
+
+# nginx (scripts/nginx-setup.sh + GUI nginx tab)
+nginx-domain=yapcoremc.yaplabs.us
+nginx-public-port=25565
+nginx-pack-port=80
+
+shared-listen-port=true
+crossplay-enabled=true
+bedrock-enabled=true
+java-enabled=true
+srv-enabled=true
+srv-priority=0
+srv-weight=5

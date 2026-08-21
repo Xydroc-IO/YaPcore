@@ -1,0 +1,21 @@
+# Cloudflare DNS for YaPcore — yapcoremc.yaplabs.us
+# Paste into Cloudflare → yaplabs.us → DNS → Records
+# Replace ORIGIN_IPV4 / ORIGIN_IPV6 with this machine's public addresses.
+
+# --- Game join (MUST be DNS only / grey cloud) ---
+# Cloudflare HTTP proxy does NOT carry Minecraft TCP or Bedrock UDP.
+yapcoremc.yaplabs.us.          300  IN  A      ORIGIN_IPV4     ; Proxy status: DNS only
+# yapcoremc.yaplabs.us.        300  IN  AAAA   ORIGIN_IPV6     ; optional IPv6, DNS only
+
+# Java clients can add just the hostname when SRV is published:
+_minecraft._tcp.yapcoremc.yaplabs.us.  3600  IN  SRV  0 5 25565 yapcoremc.yaplabs.us.
+
+# --- Resource packs / landing (MAY be Proxied / orange cloud) ---
+# Same hostname is fine: CF terminates HTTPS → origin :80 (nginx) → YaPcore :8081
+# SSL/TLS mode: Full (strict) if you put a real cert on nginx, or Flexible for HTTP origin.
+# Recommended: Full + Cloudflare Origin Certificate on nginx :443 (optional later).
+
+# Firewall / router on ORIGIN:
+#   TCP+UDP 25565  → this host (nginx stream → YaPcore :25566)
+#   TCP 80 (and 443 if terminating TLS locally) → nginx pack HTTP
+# Do NOT expose YaPcore pack port 8081 publicly if nginx fronts it.

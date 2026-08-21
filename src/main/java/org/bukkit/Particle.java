@@ -1,0 +1,6 @@
+package org.bukkit;
+
+/** Paper API stub (YaPcore compatibility). */
+public enum Particle {
+    POOF, EXPLOSION, EXPLOSION_EMITTER, FIREWORK, BUBBLE, SPLASH, FISHING, UNDERWATER, CRIT, ENCHANTED_HIT, SMOKE, LARGE_SMOKE, EFFECT, INSTANT_EFFECT;
+}

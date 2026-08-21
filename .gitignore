@@ -1,0 +1,212 @@
+# YaPcore — Git ignore (professional / GitHub-ready)
+# Keep the published tree: source, docs, branding, scripts, examples.
+# Never commit build outputs, vendored Paper trees, or live server state.
+
+# =============================================================================
+# Build / Gradle / JVM
+# =============================================================================
+.gradle/
+**/build/
+out/
+bin/
+target/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+*.war
+*.ear
+*.nar
+*.jmod
+hs_err_pid*
+replay_pid*
+replay_*.log
+
+# Root / module fat jars (also covered by *.jar)
+/yapcore.jar
+/yapcore-*.jar
+phase3-plugin/build/
+bench-plugin/build/
+
+# =============================================================================
+# Minecraft / Paper runtime caches (created next to the process cwd)
+# =============================================================================
+/libraries/
+/versions/
+/cache/
+libraries/
+versions/
+cache/
+crash-reports/
+.paper/
+*.marker
+yap-paper-ready.marker
+
+# Root leftover vanilla/Paper process files (live server cwd pollution)
+/server.properties
+/eula.txt
+/ops.json
+/whitelist.json
+/banned-ips.json
+/banned-players.json
+/usercache.json
+/bukkit.yml
+/spigot.yml
+/commands.yml
+/help.yml
+/permissions.yml
+/wepif.yml
+
+# =============================================================================
+# YaPcore runtime / operator state
+# =============================================================================
+yapcore.pid
+*.pid
+logs/*
+!logs/.gitkeep
+!logs/crashes/
+logs/crashes/*
+!logs/crashes/.gitkeep
+
+config/*
+!config/.gitkeep
+!config/*.example
+
+deploy/nginx/generated/
+
+# Profiling / dumps
+*.hprof
+*.jfr
+*.dump
+*.tdump
+heap-dumps/
+flight-recordings/
+spark/
+**/plugins/spark/tmp/
+**/plugins/bStats/
+
+# Worlds & schematics
+worlds/
+world/
+world_nether/
+world_the_end/
+**/world/
+**/world_nether/
+**/world_the_end/
+*.mschem
+*.schematic
+*.schem
+session.lock
+uid.dat
+
+# Embedded / wrap Paper kernels (full live trees)
+paper-kernel/
+game-kernel/
+
+# Downloaded / built server jars in lib/ (keep folder via .gitkeep)
+lib/*
+!lib/.gitkeep
+
+# Vendored Paper checkout (clone via scripts/vendor-paper.sh)
+vendor/paper/
+
+# =============================================================================
+# Bench lab (scripts regenerate workdirs + results)
+# =============================================================================
+bench/workdir-*/
+bench/workdir-stock/
+bench/workdir-yap/
+bench/results/*
+!bench/results/README.md
+!bench/results/.gitkeep
+
+# =============================================================================
+# Generated docs PDFs (regenerate: ./scripts/export-docs-pdf.sh)
+# =============================================================================
+docs/pdf/*.pdf
+
+# =============================================================================
+# Velocity / proxy / secrets
+# =============================================================================
+forwarding.secret
+**/forwarding.secret
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!*.key.example
+credentials.json
+secrets/
+local.properties
+*.keystore
+*.jks
+
+# =============================================================================
+# Operator-installed content (keep folders via README / .gitkeep)
+# =============================================================================
+plugins/**
+!plugins/.gitkeep
+!plugins/README.md
+modules/**
+!modules/.gitkeep
+!modules/README.md
+resourcepacks/**
+!resourcepacks/.gitkeep
+!resourcepacks/README.md
+!resourcepacks/README.txt
+
+# =============================================================================
+# IDE / OS / editors
+# =============================================================================
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+.project
+.classpath
+.settings/
+*.code-workspace
+
+# =============================================================================
+# Test / coverage / analysis
+# =============================================================================
+.jacoco/
+coverage/
+htmlcov/
+*.lcov
+spotbugsXml.xml
+spotbugs-*.html
+dependency-check-report.*
+fray-report/
+.jcstress/
+jcstress-results/
+test-output/
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# =============================================================================
+# Misc clutter
+# =============================================================================
+*.log
+*.tmp
+*.bak
+*.orig
+*.old
+*.swp
+*~
+node_modules/
+.cursor/
+agent-transcripts/
+.turbo/
+.cache/
+*.sublime-*

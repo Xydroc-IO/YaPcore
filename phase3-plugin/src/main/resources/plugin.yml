@@ -1,0 +1,6 @@
+name: YapSpatialTick
+version: '0.1.0'
+main: com.yapcore.phase3plugin.YapSpatialTickPlugin
+api-version: '1.21'
+description: Phase 3 — fan Paper tick accounting onto YapEngine spatial cores 3-6
+authors: [ YapLabs ]

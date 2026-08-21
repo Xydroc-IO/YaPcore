@@ -1,0 +1,6 @@
+name: YaP-MSPT-Bench
+version: 0.1.0
+main: com.yapcore.bench.BenchMsptPlugin
+api-version: '1.21'
+description: MSPT scoreboard harness for vs-Paper benches
+author: YapLabs

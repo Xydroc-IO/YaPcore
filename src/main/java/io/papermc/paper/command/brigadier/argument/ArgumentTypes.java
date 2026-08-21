@@ -1,0 +1,7 @@
+package io.papermc.paper.command.brigadier.argument;
+
+/** Paper API stub (YaPcore compatibility). */
+public class ArgumentTypes {
+    public ArgumentTypes() {}
+    public ArgumentTypes(Object... args) {}
+}

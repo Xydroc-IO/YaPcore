@@ -1,0 +1,21 @@
+# Normalize text; keep binary assets intact
+* text=auto eol=lf
+
+*.java text diff=java
+*.kt text
+*.kts text
+*.gradle text
+*.md text
+*.yml text
+*.yaml text
+*.properties text
+*.sh text eol=lf
+*.bat text eol=crlf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.jar binary
+*.zip binary

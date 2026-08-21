@@ -1,0 +1,33 @@
+# YaPcore nginx stream — Java TCP + Bedrock UDP proxy
+# Installed by scripts/nginx-setup.sh into /etc/nginx/yapcore-stream.conf
+# Include from nginx.conf:   include /etc/nginx/yapcore-stream.conf;
+#
+# Cloudflare cannot orange-cloud Minecraft TCP/UDP. Point DNS-only A/AAAA
+# at this machine (or use Spectrum). Players join __NGINX_DOMAIN__:__NGINX_PUBLIC_PORT__
+# or use SRV → port __NGINX_PUBLIC_PORT__.
+
+stream {
+    # Java Edition (TCP) — public front → local YaPcore
+    upstream yapcore_java {
+        server 127.0.0.1:__YAP_JAVA_PORT__;
+    }
+
+    server {
+        listen __NGINX_PUBLIC_PORT__;
+        listen [::]:__NGINX_PUBLIC_PORT__;
+        proxy_pass yapcore_java;
+        proxy_timeout 1h;
+        proxy_connect_timeout 10s;
+        # Minecraft keeps long-lived sockets
+        proxy_socket_keepalive on;
+    }
+
+    # Bedrock Edition (UDP) — same public port when shared-listen-port is used
+    server {
+        listen __NGINX_PUBLIC_PORT__ udp reuseport;
+        listen [::]:__NGINX_PUBLIC_PORT__ udp reuseport;
+        proxy_pass 127.0.0.1:__YAP_BEDROCK_PORT__;
+        proxy_timeout 1h;
+        proxy_responses 1;
+    }
+}

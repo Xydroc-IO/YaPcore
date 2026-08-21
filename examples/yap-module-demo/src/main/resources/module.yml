@@ -1,0 +1,7 @@
+name: DemoFineTune
+main: com.example.demo.DemoFineTuneModule
+version: 1.0.0
+api: yap-module-1
+author: YaPcore
+description: Example fine-tune module (SYNC/HEAVY/UI)
+provides: [demo-finetune]
