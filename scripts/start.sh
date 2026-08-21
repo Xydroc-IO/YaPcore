@@ -8,7 +8,10 @@ set -eu
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
 # Prefer project root when invoked from scripts/, else cwd
-if [ -f "$SCRIPT_DIR/../build.gradle.kts" ] || [ -f "$SCRIPT_DIR/../config/server.properties" ]; then
+# Works for full checkouts (build.gradle.kts) and release packages (yapcore.jar + config/).
+if [ -f "$SCRIPT_DIR/../build.gradle.kts" ] \
+  || [ -f "$SCRIPT_DIR/../config/server.properties" ] \
+  || [ -f "$SCRIPT_DIR/../yapcore.jar" ]; then
   ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)"
 else
   ROOT="$(pwd)"
@@ -110,8 +113,15 @@ fi
 if [ "$FOREGROUND" -eq 1 ] || [ "$MODE" = "gui" ]; then
   exec "${NUMA_PREFIX[@]}" "$JAVA_BIN" "${JVM_OPTS[@]}" -jar "$JAR" "${APP_ARGS[@]}"
 else
+  # Keep stdin open: Paper/JLine EOF on /dev/null shuts the dedicated server down.
+  STDIN_KEEPALIVE="$ROOT/logs/yap-stdin.keepalive"
+  rm -f "$STDIN_KEEPALIVE"
+  mkfifo "$STDIN_KEEPALIVE"
+  # Reader side opened by java; writer held by sleep so the fifo never gets EOF.
+  nohup sleep infinity >"$STDIN_KEEPALIVE" </dev/null 2>/dev/null &
+  echo $! >"$ROOT/logs/yap-stdin.keepalive.pid"
   nohup "${NUMA_PREFIX[@]}" "$JAVA_BIN" "${JVM_OPTS[@]}" -jar "$JAR" "${APP_ARGS[@]}" \
-    >>"$LOG_FILE" 2>&1 < /dev/null &
+    >>"$LOG_FILE" 2>&1 <"$STDIN_KEEPALIVE" &
   echo $! >"$PID_FILE"
   echo "Started in background pid=$(cat "$PID_FILE")  log=$LOG_FILE"
   echo "Stop with: $ROOT/scripts/stop.sh"

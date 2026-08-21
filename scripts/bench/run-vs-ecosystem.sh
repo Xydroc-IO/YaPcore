@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# vs-Paper MSPT scoreboard — idle|entity|farm|heavypop on stock Paper vs YaPcore.
-# Usage: ./scripts/bench/run-vs-paper.sh [scenario] [seconds]
-# Default scenario: heavypop (high-pop / heavy-load product gate)
-# Env: YAP_BENCH_WARMUP (default 15), YAP_BENCH_ENTITIES, YAP_BENCH_HOPPERS,
-#      YAP_BENCH_ORDER=stock-first|yap-first (default stock-first; swap to check order bias)
+# Ecosystem MSPT scoreboard — Paper + Purpur + Leaf + YaPcore (same load / fairness).
+# Usage: ./scripts/bench/run-vs-ecosystem.sh [scenario] [seconds]
+# Default scenario: heavypop
+# Env: YAP_BENCH_WARMUP, YAP_BENCH_ENTITIES, YAP_BENCH_HOPPERS,
+#      YAP_BENCH_COMPETITORS=paper,purpur,leaf,yapcore (comma list; default all)
+#      YAP_BENCH_JFR=1 → write bench/profiles/<stamp>-heavypop-<id>.jfr (Leaf gap profiling)
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
@@ -17,10 +18,11 @@ SECONDS_N="${2:-40}"
 WARMUP="${YAP_BENCH_WARMUP:-15}"
 ENTITIES="${YAP_BENCH_ENTITIES:-}"
 HOPPERS="${YAP_BENCH_HOPPERS:-}"
-ORDER="${YAP_BENCH_ORDER:-stock-first}"
-STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+COMPETITORS_CSV="${YAP_BENCH_COMPETITORS:-paper,purpur,leaf,yapcore}"
+STAMP="${YAP_BENCH_STAMP:-$(date -u +%Y%m%dT%H%M%SZ)}"
 RESULTS="$ROOT/bench/results"
-mkdir -p "$RESULTS"
+PROFILES="$ROOT/bench/profiles"
+mkdir -p "$RESULTS" "$ROOT/logs/bench" "$PROFILES"
 
 cd "$ROOT"
 export ROOT
@@ -34,6 +36,9 @@ if [ "${MAJOR:-0}" -lt 25 ] 2>/dev/null; then
   echo "Paper 26.2 / Phase 3 bench needs Java 25+ (have $FEATURE)" >&2
   exit 1
 fi
+
+echo "Ensuring competitor jars…"
+"$SCRIPT_DIR/fetch-competitors.sh" "$PAPER_VERSION"
 
 echo "Building bench plugin + YaPcore…"
 (cd "$ROOT" && gradle :bench-plugin:jar :phase3-plugin:installIntoResources shadowJar --no-daemon -q)
@@ -51,23 +56,15 @@ if [ -z "$YAP_JAR" ]; then
 fi
 case "$YAP_JAR" in /*) ;; *) YAP_JAR="$ROOT/$YAP_JAR" ;; esac
 
-STOCK_PAPER="$ROOT/lib/paper-${PAPER_VERSION}.jar"
 YAP_PAPER="$ROOT/lib/paper-${PAPER_VERSION}-yap.jar"
-if [ ! -f "$YAP_PAPER" ]; then
+if [[ "$COMPETITORS_CSV" == *yapcore* ]] && [ ! -f "$YAP_PAPER" ]; then
   echo "Missing $YAP_PAPER — run ./scripts/build-vendor-paper.sh" >&2
-  exit 1
-fi
-if [ ! -f "$STOCK_PAPER" ]; then
-  echo "Stock Paper missing at $STOCK_PAPER" >&2
   exit 1
 fi
 
 write_spigot_yml() {
   local dest="$1"
-  # Fair high-pop load needs:
-  # - max-tnt-per-tick: 0 (default 100 games entity half of heavypop)
-  # - max-tick-time entity/tile: 0 (default 50ms aborts mid-list; at ≥3600 TNT
-  #   both stock and YaP only fully tick ~2500 → fuseΔ fails fairness)
+  # Same fairness caps as run-vs-paper.sh (unlimited TNT + no 50ms entity abort).
   cat >"$dest" <<'EOF'
 world-settings:
   default:
@@ -79,8 +76,7 @@ world-settings:
       animals: 48
       monsters: 48
       raiders: 48
-      # 0 = always active (Spigot). Without a nearby player, misc (primed TNT)
-      # otherwise goes inactive and only a subset wakes — fuseΔ fails above ~2400 TNT.
+      # 0 = always active — needed for dense primed-TNT fuse proofs with no players.
       misc: 0
       water: 16
       villagers: 32
@@ -119,59 +115,84 @@ EOF
 
 prepare_workdir() {
   local work="$1"
-  local paper_jar="$2"
+  local server_jar="$2"
   local port="$3"
   local motd="$4"
   rm -rf "$work"
   mkdir -p "$work/plugins"
-  /bin/cp -f "$paper_jar" "$work/paper.jar"
+  /bin/cp -f "$server_jar" "$work/paper.jar"
   /bin/cp -f "$BENCH_JAR" "$work/plugins/yap-mspt-bench.jar"
   printf 'eula=true\n' >"$work/eula.txt"
   write_server_props "$work/server.properties" "$port" "$motd"
   write_spigot_yml "$work/spigot.yml"
 }
 
-run_stock() {
-  local out="$RESULTS/${STAMP}-${SCENARIO}-stock.json"
-  local work="$ROOT/bench/workdir-stock"
-  prepare_workdir "$work" "$STOCK_PAPER" 25670 "YaP MSPT bench stock"
-  echo "=== STOCK Paper scenario=$SCENARIO → $out ==="
+run_plain_jar() {
+  # Stock Paper / Purpur / Leaf — plain -jar, same JVM heap + bench props
+  local id="$1"
+  local jar="$2"
+  local port="$3"
+  local label="$4"
+  local out="$RESULTS/${STAMP}-${SCENARIO}-${id}.json"
+  local work="$ROOT/bench/workdir-${id}"
+  if [ ! -f "$jar" ]; then
+    echo "WARN: missing $jar — skip $id" >&2
+    return
+  fi
+  prepare_workdir "$work" "$jar" "$port" "YaP MSPT bench $id"
+  echo "=== $id scenario=$SCENARIO → $out ==="
+  local jfr_args=()
+  if [[ "${YAP_BENCH_JFR:-}" == "1" ]]; then
+    local jfr="$PROFILES/${STAMP}-${SCENARIO}-${id}.jfr"
+    jfr_args=(-XX:StartFlightRecording="filename=${jfr},settings=profile,maxsize=256m,dumponexit=true")
+    echo "JFR → $jfr"
+  fi
   (
     cd "$work"
     local extra=()
     [[ -n "$ENTITIES" ]] && extra+=(-Dyap.bench.entities="$ENTITIES")
     [[ -n "$HOPPERS" ]] && extra+=(-Dyap.bench.hoppers="$HOPPERS")
     "$JAVA_BIN" -Xms2G -Xmx4G \
+      "${jfr_args[@]}" \
       -Dyap.bench.scenario="$SCENARIO" \
       -Dyap.bench.seconds="$SECONDS_N" \
       -Dyap.bench.warmup="$WARMUP" \
-      -Dyap.bench.label=stock-paper \
+      -Dyap.bench.label="$label" \
       -Dyap.bench.out="$out" \
       -Dyapcore.home="$ROOT" \
       "${extra[@]}" \
       -jar paper.jar --nogui
   ) || true
   if [ ! -f "$out" ]; then
-    echo "WARN: stock run did not write $out" >&2
+    echo "WARN: $id run did not write $out" >&2
   fi
 }
 
 run_yap() {
   local out="$RESULTS/${STAMP}-${SCENARIO}-yapcore.json"
-  # Fresh isolated paper-dir — same seed/view as stock (not bloated paper-kernel)
   local work="$ROOT/bench/workdir-yap"
-  prepare_workdir "$work" "$YAP_PAPER" 25671 "YaP MSPT bench yapcore"
+  # YaP PaperFiles preserves bench props when -Dyap.bench.scenario is set.
+  # Use 25571 so we never collide with a leftover product listen on 25566.
+  prepare_workdir "$work" "$YAP_PAPER" 25571 "YaP MSPT bench yapcore"
   /bin/cp -f "$YAP_PAPER" "$work/paper-${PAPER_VERSION}.jar"
   if [ -f "$ROOT/src/main/resources/phase3/yap-spatial-tick.jar" ]; then
     /bin/cp -f "$ROOT/src/main/resources/phase3/yap-spatial-tick.jar" "$work/plugins/" || true
   fi
-  echo "=== YAPCORE Phase3 scenario=$SCENARIO → $out (paper-dir=bench/workdir-yap) ==="
+  write_server_props "$work/server.properties" 25571 "YaP MSPT bench yapcore"
+  echo "=== yapcore scenario=$SCENARIO → $out ==="
+  local jfr_args=()
+  if [[ "${YAP_BENCH_JFR:-}" == "1" ]]; then
+    local jfr="$PROFILES/${STAMP}-${SCENARIO}-yapcore.jfr"
+    jfr_args=(-XX:StartFlightRecording="filename=${jfr},settings=profile,maxsize=256m,dumponexit=true")
+    echo "JFR → $jfr"
+  fi
   (
     cd "$work"
     local extra=()
     [[ -n "$ENTITIES" ]] && extra+=(-Dyap.bench.entities="$ENTITIES")
     [[ -n "$HOPPERS" ]] && extra+=(-Dyap.bench.hoppers="$HOPPERS")
     "$JAVA_BIN" -Xms2G -Xmx4G \
+      "${jfr_args[@]}" \
       -Dyapcore.home="$ROOT" \
       -Dyapcore.paper.dir=bench/workdir-yap \
       -Dyapcore.phase3.spatial-tick=true \
@@ -195,21 +216,63 @@ run_yap() {
   fi
 }
 
-if [[ "$ORDER" == "yap-first" ]]; then
-  echo "Order: YaPcore first (checks cold-start / thermal bias)"
-  run_yap
-  run_stock
-else
-  echo "Order: stock Paper first"
-  run_stock
-  run_yap
-fi
+wait_ports_free() {
+  # Avoid Address-already-in-use between sequential competitors (Paperclip shutdown lag).
+  local ports=(25566 25570 25571 25572 25573)
+  local i
+  for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+    local busy=0
+    local p
+    for p in "${ports[@]}"; do
+      if ss -ltn 2>/dev/null | awk '{print $4}' | grep -qE ":${p}$"; then
+        busy=1
+        # Force-kill leftover bench JVMs holding the port (zombie Phase 3 is common).
+        local pid
+        pid="$(ss -ltnp 2>/dev/null | awk -v p=":$p" '$4 ~ p {print}' | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1)"
+        if [[ -n "$pid" ]]; then
+          local cmd
+          cmd="$(ps -p "$pid" -o args= 2>/dev/null || true)"
+          if [[ "$cmd" == *yap.bench* ]] || [[ "$cmd" == *bench/workdir* ]] || [[ "$cmd" == *yapcore* ]]; then
+            echo "Killing leftover bench JVM pid=$pid on port $p" >&2
+            kill -9 "$pid" 2>/dev/null || true
+          fi
+        fi
+        break
+      fi
+    done
+    [[ "$busy" -eq 0 ]] && return 0
+    sleep 2
+  done
+  echo "WARN: bench ports still busy after wait — continuing anyway" >&2
+}
+
+IFS=',' read -r -a COMPETITORS <<<"$COMPETITORS_CSV"
+echo "Competitors: ${COMPETITORS[*]} (stamp=$STAMP scenario=$SCENARIO)"
+
+for c in "${COMPETITORS[@]}"; do
+  c="$(echo "$c" | tr -d '[:space:]')"
+  wait_ports_free
+  case "$c" in
+    paper|stock)
+      run_plain_jar paper "$ROOT/lib/paper-${PAPER_VERSION}.jar" 25570 stock-paper
+      ;;
+    purpur)
+      run_plain_jar purpur "$ROOT/lib/purpur-${PAPER_VERSION}.jar" 25572 purpur
+      ;;
+    leaf)
+      run_plain_jar leaf "$ROOT/lib/leaf-${PAPER_VERSION}.jar" 25573 leaf
+      ;;
+    yapcore|yap)
+      run_yap
+      ;;
+    *)
+      echo "Unknown competitor: $c (use paper,purpur,leaf,yapcore)" >&2
+      exit 2
+      ;;
+  esac
+done
 
 echo
 echo "Results under $RESULTS"
 ls -1 "$RESULTS"/${STAMP}-${SCENARIO}-*.json 2>/dev/null || true
-if [ -f "$RESULTS/${STAMP}-${SCENARIO}-stock.json" ] && [ -f "$RESULTS/${STAMP}-${SCENARIO}-yapcore.json" ]; then
-  python3 "$SCRIPT_DIR/compare-results.py" \
-    "$RESULTS/${STAMP}-${SCENARIO}-stock.json" \
-    "$RESULTS/${STAMP}-${SCENARIO}-yapcore.json" || true
-fi
+python3 "$SCRIPT_DIR/compare-ecosystem.py" "$RESULTS" "$STAMP" "$SCENARIO" || true

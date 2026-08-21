@@ -14,9 +14,13 @@ public-port=25565
 public-bedrock-port=25565
 # Packs via Cloudflare HTTPS → nginx :80 → YaPcore :8081
 public-pack-port=443
+resource-pack-enabled=true
+resource-pack-file=faithful-64x.zip
+resource-pack-forced=true
+resource-pack-prompt=YaPcore uses Faithful 64x (https://faithfulpack.net) — accept to download.
 resource-pack-public-host=yapcoremc.yaplabs.us
 resource-pack-http-port=8081
-resource-pack-enabled=true
+public-pack-port=443
 
 # nginx (scripts/nginx-setup.sh + GUI nginx tab)
 nginx-domain=yapcoremc.yaplabs.us

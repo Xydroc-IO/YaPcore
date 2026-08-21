@@ -1,3 +1,3 @@
-# Place Java `.zip` resource packs and/or Bedrock `.mcpack` texture packs here.
-# Set the active pack from the GUI Packs tab or: setpack <filename>
-# Clients download seamlessly from the built-in HTTP server (default :8081).
+# Place Java `.zip` / Bedrock `.mcpack` here.
+# Default: faithful-64x.zip (Faithful Resource Pack — https://faithfulpack.net).
+# See README.md, CREDITS.md, FAITHFUL_LICENSE.txt. Refresh: ../scripts/fetch-faithful-64x.sh

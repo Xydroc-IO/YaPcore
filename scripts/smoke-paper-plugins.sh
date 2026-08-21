@@ -70,7 +70,9 @@ while kill -0 "$PID" 2>/dev/null; do
     break
   fi
   if grep -q 'YaP-COMPAT-SMOKE enabled' "$LOG" 2>/dev/null \
-    && grep -q 'YaP-COMPAT-SMOKE scheduler-ok' "$LOG" 2>/dev/null; then
+    && grep -q 'YaP-COMPAT-SMOKE scheduler-ok' "$LOG" 2>/dev/null \
+    && grep -q 'YaP-COMPAT-SMOKE craftserver-ok' "$LOG" 2>/dev/null \
+    && grep -q 'YaP-COMPAT-SMOKE paper-api-ok' "$LOG" 2>/dev/null; then
     ok=1
     break
   fi
@@ -86,7 +88,9 @@ wait "$PID" 2>/dev/null || true
 if [ "$ok" -ne 1 ]; then
   # Re-check after shutdown flush
   if grep -q 'YaP-COMPAT-SMOKE enabled' "$LOG" 2>/dev/null \
-    && grep -q 'YaP-COMPAT-SMOKE scheduler-ok' "$LOG" 2>/dev/null; then
+    && grep -q 'YaP-COMPAT-SMOKE scheduler-ok' "$LOG" 2>/dev/null \
+    && grep -q 'YaP-COMPAT-SMOKE craftserver-ok' "$LOG" 2>/dev/null \
+    && grep -q 'YaP-COMPAT-SMOKE paper-api-ok' "$LOG" 2>/dev/null; then
     ok=1
   fi
 fi
@@ -98,7 +102,8 @@ if [ "$ok" -ne 1 ]; then
   exit 1
 fi
 
-echo "OK — Paper plugin enable + scheduler smoke passed"
+echo "OK — Paper plugin enable + CraftServer + API surface smoke passed"
 echo "  log=$LOG"
 ./scripts/check-plugin-layout.sh || true
+./scripts/verify-paper-api-coverage.sh || true
 exit 0

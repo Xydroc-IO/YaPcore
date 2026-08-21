@@ -15,7 +15,9 @@
 set -eu
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-if [ -f "$SCRIPT_DIR/../build.gradle.kts" ] || [ -f "$SCRIPT_DIR/../config/server.properties" ]; then
+if [ -f "$SCRIPT_DIR/../build.gradle.kts" ] \
+  || [ -f "$SCRIPT_DIR/../config/server.properties" ] \
+  || [ -f "$SCRIPT_DIR/../yapcore.jar" ]; then
   ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)"
 else
   ROOT="$(pwd)"

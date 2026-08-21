@@ -11,7 +11,9 @@ fi
 set -eu
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-if [ -f "$SCRIPT_DIR/../build.gradle.kts" ] || [ -f "$SCRIPT_DIR/../config/server.properties" ]; then
+if [ -f "$SCRIPT_DIR/../build.gradle.kts" ] \
+  || [ -f "$SCRIPT_DIR/../config/server.properties" ] \
+  || [ -f "$SCRIPT_DIR/../yapcore.jar" ]; then
   ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)"
 else
   ROOT="$(pwd)"
@@ -91,6 +93,10 @@ if [ "${#LEFTOVER[@]}" -gt 0 ] && [ -n "${LEFTOVER[0]:-}" ]; then
 fi
 
 rm -f "$PID_FILE"
+if [ -f "$ROOT/logs/yap-stdin.keepalive.pid" ]; then
+  kill "$(cat "$ROOT/logs/yap-stdin.keepalive.pid")" 2>/dev/null || true
+  rm -f "$ROOT/logs/yap-stdin.keepalive.pid" "$ROOT/logs/yap-stdin.keepalive"
+fi
 
 if [ -n "$(yap_find_pids | head -n 1)" ]; then
   echo "YaPcore still appears to be running after stop." >&2

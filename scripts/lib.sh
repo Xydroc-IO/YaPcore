@@ -190,6 +190,7 @@ yap_apply_ulimits() {
 yap_ensure_dirs() {
   mkdir -p "$ROOT/config" "$ROOT/plugins" "$ROOT/logs" "$ROOT/lib" "$ROOT/$PAPER_DIR"
   yap_ensure_unified_plugins
+  yap_ensure_config_hub
   if [ ! -f "$ROOT/config/server.properties" ]; then
     cat >"$ROOT/config/server.properties" <<'EOF'
 server-name=YaPcore
@@ -216,6 +217,42 @@ public-port=0
 public-bedrock-port=0
 public-pack-port=0
 srv-enabled=true
+EOF
+  fi
+}
+
+# Central operator config: config/paper → paper-dir/config (+ optional file links).
+yap_ensure_config_hub() {
+  local hub="$ROOT/config"
+  local paper_cfg="$ROOT/$PAPER_DIR/config"
+  mkdir -p "$hub" "$paper_cfg"
+  if [ ! -e "$hub/paper" ]; then
+    ln -sfn "../$PAPER_DIR/config" "$hub/paper"
+  elif [ ! -L "$hub/paper" ]; then
+    echo "WARN: $hub/paper exists and is not a symlink — leave as-is" >&2
+  fi
+  for f in spigot.yml bukkit.yml commands.yml; do
+    if [ -f "$ROOT/$PAPER_DIR/$f" ] && [ ! -e "$hub/$f" ]; then
+      ln -sfn "../$PAPER_DIR/$f" "$hub/$f"
+    fi
+  done
+  if [ -f "$ROOT/$PAPER_DIR/server.properties" ] && [ ! -e "$hub/paper-server.properties" ]; then
+    ln -sfn "../$PAPER_DIR/server.properties" "$hub/paper-server.properties"
+  fi
+  if [ ! -f "$hub/README.md" ]; then
+    cat >"$hub/README.md" <<'EOF'
+# YaPcore config hub
+
+Edit **here** for day-to-day tuning.
+
+| Path | What |
+|------|------|
+| `server.properties` | YaP product (ports, dual-stack, Phase 3, packs) |
+| `paper/` | Paper globals / world defaults |
+| `spigot.yml` / `bukkit.yml` | Classic Spigot/Bukkit (symlinks) |
+
+Gameplay encyclopedia: `plugins/YaPGameplayKnobs/knobs.yml` (jar in `plugins/`).
+See `docs/TUNE.md`.
 EOF
   fi
 }

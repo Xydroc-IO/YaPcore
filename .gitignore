@@ -70,6 +70,7 @@ logs/crashes/*
 config/*
 !config/.gitkeep
 !config/*.example
+!config/README.md
 
 deploy/nginx/generated/
 
@@ -118,6 +119,10 @@ bench/workdir-yap/
 bench/results/*
 !bench/results/README.md
 !bench/results/.gitkeep
+bench/*.lock
+bench/*.port
+bench/highpop.lock
+bench/highpop-ready.port
 
 # =============================================================================
 # Generated docs PDFs (regenerate: ./scripts/export-docs-pdf.sh)
@@ -154,6 +159,12 @@ resourcepacks/**
 !resourcepacks/.gitkeep
 !resourcepacks/README.md
 !resourcepacks/README.txt
+!resourcepacks/FAITHFUL_LICENSE.txt
+!resourcepacks/CREDITS.md
+!resourcepacks/faithful-64x.zip
+!resourcepacks/yap-vehicles.zip
+!resourcepacks/yap-vehicles/
+!resourcepacks/yapcore-default.zip
 
 # =============================================================================
 # IDE / OS / editors

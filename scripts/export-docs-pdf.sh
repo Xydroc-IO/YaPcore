@@ -16,6 +16,10 @@ files = [
     ROOT / "docs" / "PLAIN_ENGLISH.md",
     ROOT / "docs" / "WHAT_WE_ARE.md",
     ROOT / "docs" / "FULL_RUNDOWN.md",
+    ROOT / "docs" / "COMPARE_ECOSYSTEM.md",
+    ROOT / "docs" / "VEHICLES.md",
+    ROOT / "docs" / "STACKER.md",
+    ROOT / "docs" / "WEB_DASHBOARD.md",
     ROOT / "docs" / "whitepaper" / "YAPCORE_WHITEPAPER.md",
     ROOT / "docs" / "whitepaper" / "YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md",
 ]
@@ -84,7 +88,7 @@ if [[ -z "$CHROME" ]]; then
 fi
 
 cd "$OUT"
-for f in PLAIN_ENGLISH WHAT_WE_ARE FULL_RUNDOWN YAPCORE_WHITEPAPER YAPCORE_WHITEPAPER_PLAIN_ENGLISH; do
+for f in PLAIN_ENGLISH WHAT_WE_ARE FULL_RUNDOWN COMPARE_ECOSYSTEM VEHICLES STACKER WEB_DASHBOARD YAPCORE_WHITEPAPER YAPCORE_WHITEPAPER_PLAIN_ENGLISH; do
   "$CHROME" --headless --disable-gpu --no-pdf-header-footer \
     --print-to-pdf="${f}.pdf" "file://${OUT}/${f}.html" >/dev/null 2>&1
   rm -f "${f}.html"
