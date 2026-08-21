@@ -1,0 +1,87 @@
+# YaP first-party LuckPerms starter pack
+# Applied via: ranks apply  |  dashboard Ranks tab  |  paste into console
+# Docs: docs/PERMISSIONS.md
+#
+# Groups: default → vip → mod → admin (inheritance + track "yap")
+# Weights / prefixes / suffixes for chat & tab list meta
+
+lp creategroup default
+lp creategroup vip
+lp creategroup mod
+lp creategroup admin
+
+lp group default setweight 0
+lp group vip setweight 10
+lp group mod setweight 50
+lp group admin setweight 100
+
+lp group default meta set prefix "&7"
+lp group vip meta set prefix "&a[VIP] "
+lp group mod meta set prefix "&9[Mod] "
+lp group admin meta set prefix "&c[Admin] "
+
+lp group default meta set suffix ""
+lp group vip meta set suffix " &a✦"
+lp group mod meta set suffix ""
+lp group admin meta set suffix ""
+
+lp group vip parent set default
+lp group mod parent set vip
+lp group admin parent set mod
+
+lp createtrack yap
+lp track yap append default
+lp track yap append vip
+lp track yap append mod
+lp track yap append admin
+
+# --- default (all players) ---
+lp group default permission set yapvehicles.drive true
+lp group default permission set yapdata.menu true
+lp group default permission set yapdata.balance true
+lp group default permission set yapdata.pay true
+lp group default permission set yapdata.home true
+lp group default permission set yapdata.warp true
+lp group default permission set yapdata.kit true
+lp group default permission set yapdata.kit.starter true
+lp group default permission set yapdata.mail true
+lp group default permission set yapdata.shop true
+lp group default permission set yapdata.jobs true
+lp group default permission set yapdata.job.miner true
+lp group default permission set yapdata.job.lumberjack true
+lp group default permission set yapdata.ah true
+lp group default permission set yapdata.claim true
+
+# --- vip ---
+lp group vip permission set yapvehicles.command true
+lp group vip permission set yapvehicles.spawn true
+lp group vip permission set yapdata.claims.wilderness true
+lp group vip permission set yapdata.kit.* true
+lp group vip permission set yapdata.job.* true
+
+# --- mod ---
+lp group mod permission set yapdata.warp.admin true
+lp group mod permission set yapdata.balance.others true
+lp group mod permission set yapdata.claims.admin true
+lp group mod permission set yapvehicles.destroy true
+lp group mod permission set yapstacker.gui true
+lp group mod permission set yapstacker.give true
+lp group mod permission set yapstacker.wand true
+lp group mod permission set yapstacker.tool true
+lp group mod permission set yapstacker.aura true
+lp group mod permission set yapcompat.status true
+lp group mod permission set placeholderapi.parse true
+
+# --- admin ---
+lp group admin permission set yapdata.admin true
+lp group admin permission set yapdata.trader.admin true
+lp group admin permission set yapstacker.admin true
+lp group admin permission set yappregen.admin true
+lp group admin permission set yapknobs.reload true
+lp group admin permission set yapdb.admin true
+lp group admin permission set yappacks.admin true
+lp group admin permission set placeholderapi.admin true
+lp group admin permission set yapvehicles.command true
+lp group admin permission set yapvehicles.spawn true
+lp group admin permission set yapvehicles.destroy true
+lp group admin permission set yapvehicles.drive true

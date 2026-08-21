@@ -22,6 +22,7 @@ import com.yapcore.kernel.GameKernel;
 import com.yapcore.paper.PaperKernel;
 import com.yapcore.paper.PaperPluginsLayout;
 import com.yapcore.paper.phase3.PaperTickBridge;
+import com.yapcore.ranks.YapRanks;
 import com.yapcore.resourcepack.ResourcePackManager;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -291,6 +292,84 @@ public final class YaPcoreServer {
                 + " (" + moduleManager.listModules().size() + " jars on disk)");
         LOG.info("Resource packs: " + resourcePacks.listPacks().size()
                 + " | active=" + resourcePacks.getActivePack().map(p -> p.getFileName()).orElse("none"));
+        maybeScheduleRanksAutoApply();
+    }
+
+    private void maybeScheduleRanksAutoApply() {
+        if (!config.isYapRanksAutoApply()) {
+            return;
+        }
+        if (!config.isPaperAuthority() || !paperKernel.isRunning()) {
+            LOG.warning("yap-ranks-auto-apply ignored — Paper not running");
+            return;
+        }
+        if (!YapRanks.luckPermsInstalled(pluginManager.getPluginsDir())) {
+            LOG.warning("yap-ranks-auto-apply set but LuckPerms jar not found in plugins/ — "
+                    + "run scripts/install-luckperms.sh");
+            return;
+        }
+        if (YapRanks.isApplied(rootDir)) {
+            LOG.info("YaP ranks pack already applied (config/yap-ranks-applied)");
+            return;
+        }
+        Thread t = new Thread(() -> {
+            try {
+                Thread.sleep(8_000L);
+                if (!running.get() || !paperKernel.isRunning()) {
+                    return;
+                }
+                var result = YapRanks.apply(rootDir, paperKernel::dispatchConsoleCommand, false);
+                LOG.info(result.summary());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (Exception e) {
+                LOG.log(Level.WARNING, "yap-ranks-auto-apply failed", e);
+            }
+        }, "yap-ranks-auto-apply");
+        t.setDaemon(true);
+        t.start();
+        LOG.info("Scheduled YaP ranks auto-apply in ~8s (LuckPerms detected)");
+    }
+
+    /** Apply / inspect the LuckPerms YaP group pack. */
+    public String ranksCommand(String[] parts) {
+        String sub = parts.length > 1 ? parts[1].toLowerCase(Locale.ROOT) : "status";
+        try {
+            return switch (sub) {
+                case "status" -> {
+                    boolean lp = YapRanks.luckPermsInstalled(pluginManager.getPluginsDir());
+                    boolean applied = YapRanks.isApplied(rootDir);
+                    int cmds = YapRanks.loadCommands(rootDir).size();
+                    yield "YaP ranks\n"
+                            + "  luckperms-jar=" + lp + "\n"
+                            + "  pack-applied=" + applied + "\n"
+                            + "  pack-commands=" + cmds + "\n"
+                            + "  auto-apply=" + config.isYapRanksAutoApply() + "\n"
+                            + "  paper-running=" + paperKernel.isRunning() + "\n"
+                            + "  install: scripts/install-luckperms.sh\n"
+                            + "  apply: ranks apply   (or dashboard Ranks tab)";
+                }
+                case "apply" -> {
+                    boolean force = parts.length > 2 && "force".equalsIgnoreCase(parts[2]);
+                    if (!paperKernel.isRunning()) {
+                        yield "Paper must be running to apply LuckPerms commands.";
+                    }
+                    if (!YapRanks.luckPermsInstalled(pluginManager.getPluginsDir())) {
+                        yield "LuckPerms not found in plugins/. Run: scripts/install-luckperms.sh";
+                    }
+                    var result = YapRanks.apply(rootDir, paperKernel::dispatchConsoleCommand, force);
+                    yield result.summary();
+                }
+                case "reset-marker" -> {
+                    YapRanks.clearApplied(rootDir);
+                    yield "Cleared config/yap-ranks-applied — next ranks apply will run the pack again.";
+                }
+                case "show" -> String.join("\n", YapRanks.loadCommands(rootDir));
+                default -> "Usage: ranks <status|apply [force]|reset-marker|show>";
+            };
+        } catch (Exception e) {
+            return "ranks failed: " + e.getMessage();
+        }
     }
 
     private void attachBedrockPaperWorldSync() {
@@ -304,7 +383,8 @@ public final class YaPcoreServer {
         var sync = new com.yapcore.crossplay.bedrock.BedrockPaperWorldSync();
         sync.attach(loader);
         gateway.crossplay().attachPaperWorld(sync);
-        LOG.info("Bedrock→Paper world sync online (BREAK/PLACE → Paper main thread)");
+        gateway.bedrockBridge().setPaperWorld(sync);
+        LOG.info("Bedrock→Paper world sync online (BREAK/PLACE → Paper main thread; BE spawn mirrors Paper)");
     }
 
     public synchronized void stop() {
@@ -354,6 +434,7 @@ public final class YaPcoreServer {
                       joinjava <name> [proto]   Simulate Java client join
                       joinbedrock <name> [proto] Simulate Bedrock client join
                       crashdump [reason]   Write full diagnostic crash report
+                      ranks [status|apply] LuckPerms YaP group pack (vip/mod/admin)
                       stop / end           Graceful shutdown
                       demo                 Run store-purchase lifecycle demo
 
@@ -364,6 +445,7 @@ public final class YaPcoreServer {
                       set ops=YourName in config, or run: op YourName
                     """ + PublicityCommands.helpLines();
             case "status" -> statusReport();
+            case "ranks", "yapranks" -> ranksCommand(parts);
             case "say" -> {
                 String msg = line.length() > 4 ? line.substring(4).trim() : "";
                 bukkitServer.broadcastMessage(msg);

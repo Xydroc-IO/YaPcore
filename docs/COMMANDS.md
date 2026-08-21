@@ -43,6 +43,18 @@ yapstacker give wand
 luckperms user Steve permission set example.perm true
 ```
 
+**Ranks / groups:** install LuckPerms, then apply the YaP pack:
+
+```bash
+./scripts/install-luckperms.sh
+# running server:
+ranks apply
+lp user Steve parent set vip
+```
+
+See [PERMISSIONS.md](PERMISSIONS.md) · [`examples/luckperms/`](../examples/luckperms/) ·
+dashboard **Ranks** tab.
+
 Leading `/` is optional. Feedback from Paper appears in Paper logs
 (`paper-kernel/logs/`) and often in the YaP console bus.
 
@@ -66,4 +78,5 @@ Leading `/` is optional. Feedback from Paper appears in Paper logs
 | `PaperCommandBridge` | Phase 3: `Bukkit.dispatchCommand(console, …)` on main thread |
 | Phase 2 process | Writes the line to Paper’s stdin |
 
-See [TUNE.md](TUNE.md) for config hub; [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md) for plugins.
+See [TUNE.md](TUNE.md) for config hub; [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md) for plugins;
+[PERMISSIONS.md](PERMISSIONS.md) for node → rank map.

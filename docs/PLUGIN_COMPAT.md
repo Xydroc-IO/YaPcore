@@ -37,6 +37,15 @@ cp LuckPerms-Bukkit-*.jar plugins/
 # Confirm enable in paper-kernel/logs/ or logs/server.log
 ```
 
+YaP command access is permission-node based. Install + apply ranks:
+
+```bash
+./scripts/install-luckperms.sh
+ranks apply   # after server start
+```
+
+See [PERMISSIONS.md](PERMISSIONS.md) · [`examples/luckperms/`](../examples/luckperms/).
+
 Layout check:
 
 ```bash
