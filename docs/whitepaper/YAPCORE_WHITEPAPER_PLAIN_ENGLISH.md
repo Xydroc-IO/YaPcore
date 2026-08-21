@@ -61,7 +61,9 @@ across the four map-area workers — plus border work on a dedicated border work
 is also **done** (Phases 3–3.7; those switches are **on by default**). The product
 is aimed at **busy / high-pop** servers; we measure beat-Paper on a heavy
 `heavypop` scoreboard and are **honest when we haven’t won yet**. Next is
-Phase 4: polishing Java + Bedrock join and YaP plugins on that Paper-backed world.
+Phase 4: polishing Java + Bedrock join (first-party Via/Geyser parity for supported bands)
+and shipping network plugins — shared MariaDB (`yap-db`), playerdata (offline `/login`, claims),
+LuckPerms ranks, multi-pack helpers — on that Paper-backed world.
 
 Details: [PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md) ·
 [BENCH_VS_PAPER.md](../BENCH_VS_PAPER.md).
@@ -126,7 +128,10 @@ If something tries to change the world from the wrong lane, the Compatibility Br
 
 Smaller **modules** use the same lanes and can declare what they provide or need so operators can mix features cleanly. See [MODULES_AND_API.md](../MODULES_AND_API.md).
 
-The product build ships **YaP Vehicles** (real cars/trucks — not minecarts) and gameplay knobs by default, plus a **web dashboard** in the browser for headless hosts (`:8080`) alongside the desktop control panel. Client textures/models come from the default pack `yapcore-default.zip`.
+The product build ships **YaP Vehicles** (real cars/trucks — not minecarts), gameplay knobs,
+**YapDb** / playerdata (shared MariaDB networks), packs/chat/floodgate helpers, and a **web dashboard**
+in the browser for headless hosts (`:8080` — including a Ranks tab) alongside the desktop control panel.
+Client textures/models come from the default pack `yapcore-default.zip`.
 
 ---
 

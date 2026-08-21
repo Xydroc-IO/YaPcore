@@ -54,7 +54,7 @@ thread 8, vendored YaP Paperclip; spatial flags **default on**) are **complete**
 The product targets **high-population / heavy-load** networks; the public
 beat-Paper gate is the **`heavypop`** MSPT scoreboard
 ([BENCH_VS_PAPER.md](../BENCH_VS_PAPER.md)) — not yet won. **Phase 4**
-(dual-stack + YaP plugin polish) is next. See
+(dual-stack + first-party Via/Geyser join/spawn + network plugins) is in progress. See
 [PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md).
 
 ---
@@ -107,9 +107,9 @@ Production launch scripts prefer **Generational ZGC** with optional **NUMA** pin
 
 `ThreadPools` tags the executing thread. Off-SYNC world APIs auto-queue through the Compatibility Bridge; authors should still schedule explicitly via `runTask` / `runSync` for clarity.
 
-Fine-tune **modules** (`module.yml`) share the same pools and may declare `provides`/`requires` for operator composition ([MODULES_AND_API.md](../MODULES_AND_API.md)). First-party defaults ship **YaP Vehicles** (non-minecart chassis API) and gameplay knobs into `plugins/` / `modules/` on product builds.
+Fine-tune **modules** (`module.yml`) share the same pools and may declare `provides`/`requires` for operator composition ([MODULES_AND_API.md](../MODULES_AND_API.md)). First-party defaults ship **YaP Vehicles**, gameplay knobs, **YapDb** (shared MariaDB pool), **YaPPlayerData**, packs/chat/floodgate helpers, and stacker/pregen into `plugins/` / `modules/` on product builds.
 
-**Operator layout:** Paper (`plugin.yml`) and YaP (`yap.yml`) jars share one folder, `plugins/`. Under Paper game authority, Paper loads legacy jars; YaP loads only `yap.yml` jars from that same directory (`paper-kernel/plugins` → symlink). See [PLUGIN_COMPAT.md](../PLUGIN_COMPAT.md). Product ops include a Swing control panel and a token-authenticated **web dashboard** (`:8080`) for headless hosts, plus resource-pack HTTP (`:8081`, default `yapcore-default.zip`).
+**Operator layout:** Paper (`plugin.yml`) and YaP (`yap.yml`) jars share one folder, `plugins/`. Under Paper game authority, Paper loads legacy jars; YaP loads only `yap.yml` jars from that same directory (`paper-kernel/plugins` → symlink). See [PLUGIN_COMPAT.md](../PLUGIN_COMPAT.md). Product ops include a Swing control panel and a token-authenticated **web dashboard** (`:8080`) for headless hosts (Console, Packs, **Ranks**), plus resource-pack HTTP (default `yapcore-default.zip`, multi-active extras). LuckPerms starter ranks: [PERMISSIONS.md](../PERMISSIONS.md). MariaDB packaging: [MARIADB.md](../MARIADB.md).
 
 ---
 

@@ -81,8 +81,16 @@ load `VehicleAPI` from `ServicesManager`.
 **`plugins/yap-pregen.jar`** ([PREGEN.md](PREGEN.md)),
 **`plugins/yap-stacker.jar`** (PDC mob/item/spawner stacker — [STACKER.md](STACKER.md)),
 **`plugins/yap-plugin-compat.jar`** ([PLUGIN_BACKCOMPAT.md](PLUGIN_BACKCOMPAT.md)),
-**`plugins/yap-gameplay-knobs.jar`**, and
-**`plugins/yap-playerdata.jar`** (cross-server inv/money — [PLAYERDATA.md](PLAYERDATA.md)).
+**`plugins/yap-gameplay-knobs.jar`**,
+**`plugins/yap-db.jar`** (shared MariaDB Hikari — [YAPDB.md](YAPDB.md) / [MARIADB.md](MARIADB.md)),
+**`plugins/yap-playerdata.jar`** (cross-server data, offline `/login`, claims, traders — [PLAYERDATA.md](PLAYERDATA.md);
+soft-depends YaPDB via `YapDbBridge`),
+**`plugins/yap-packs.jar`** (multi-active packs — `/yappacks`),
+**`plugins/yap-chat.jar`** (unsigned system chat for offline/Via),
+and **`plugins/yap-floodgate.jar`** (Velocity Bedrock identity without Floodgate jar — [VELOCITY.md](VELOCITY.md)).
+
+SQL plugin authors: `compileOnly(project(":yap-db-api"))` and soft-depend `YaPDB`
+([YAPDB.md](YAPDB.md)). Ranks: [PERMISSIONS.md](PERMISSIONS.md).
 
 ## Crash reports
 

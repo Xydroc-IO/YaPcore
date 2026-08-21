@@ -103,17 +103,22 @@ See [docs/PLUGINS.md](docs/PLUGINS.md), [docs/PLUGIN_COMPAT.md](docs/PLUGIN_COMP
 [docs/PAPER_API_COVERAGE.md](docs/PAPER_API_COVERAGE.md), [docs/TUNE.md](docs/TUNE.md),
 [docs/MODULES_AND_API.md](docs/MODULES_AND_API.md), [docs/VEHICLES.md](docs/VEHICLES.md),
 [docs/STACKER.md](docs/STACKER.md), [docs/PREGEN.md](docs/PREGEN.md),
-[docs/PLACEHOLDERAPI.md](docs/PLACEHOLDERAPI.md), and [docs/PLAYERDATA.md](docs/PLAYERDATA.md).
+[docs/PLACEHOLDERAPI.md](docs/PLACEHOLDERAPI.md), [docs/PLAYERDATA.md](docs/PLAYERDATA.md),
+[docs/YAPDB.md](docs/YAPDB.md), [docs/MARIADB.md](docs/MARIADB.md), and
+[docs/PERMISSIONS.md](docs/PERMISSIONS.md).
 
 **Tune everything in one place:** `config/` (Paper via `config/paper/`) + GUI **Tune** tab.
 **Shipped by default** on `gradle shadowJar` / `assembleRelease`:
 `yap-vehicles`, `yap-gameplay-knobs`, `yap-placeholderapi`, `yap-plugin-compat`,
-`yap-pregen`, `yap-stacker`, `yap-playerdata`, `modules/yap-vehicles-module.jar`,
+`yap-pregen`, `yap-stacker`, `yap-db`, `yap-playerdata`, `yap-packs`, `yap-chat`,
+`yap-floodgate`, `modules/yap-vehicles-module.jar`,
 and `resourcepacks/yapcore-default.zip`.
 Release folder: `build/dist/yapcore-release/` with **`linux/`** and **`windows/`**
 trees (each self-contained). Linux: `./start.sh --fg`. Windows: `start.cmd -Fg`.
 Vehicles: `/yapvehicle spawn buggy` — [docs/VEHICLES.md](docs/VEHICLES.md).
 Stacker: `/yapstacker gui` — [docs/STACKER.md](docs/STACKER.md).
+MariaDB / playerdata: [docs/MARIADB.md](docs/MARIADB.md) · [docs/PLAYERDATA.md](docs/PLAYERDATA.md).
+Ranks: [docs/PERMISSIONS.md](docs/PERMISSIONS.md).
 
 ## Crash logger
 
@@ -128,6 +133,8 @@ Reports under `logs/crashes/` (gitignored contents): thread dumps, heap/JVM/OS, 
 | `scripts/windows/*.ps1` + release `*.cmd` | Windows launchers in `yapcore-release/windows/` |
 | `scripts/vendor-paper.sh` / `build-vendor-paper.sh` | Vendor Paper 26.2 → `lib/paper-*-yap.jar` |
 | `scripts/nginx-setup.sh` | Optional nginx edge |
+| `scripts/db/start-mariadb.sh` / `configure-db.sh` | Docker MariaDB + JDBC into YapDb/playerdata |
+| `scripts/install-luckperms.sh` | Download LuckPerms + YaP rank pack ready |
 | `./tests.sh` | Interactive test menu |
 | `./test-endurance.sh` | Long soak → `logs/endurance/` |
 

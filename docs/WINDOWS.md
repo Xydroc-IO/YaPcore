@@ -69,8 +69,23 @@ Windows start creates **directory junctions** (like Linux symlinks):
 - `config\paper` → `paper-kernel\config`
 - `paper-kernel\plugins` → `..\plugins` (when safe)
 
+## MariaDB (shared YapDb + PlayerData)
+
+Same Docker package as Linux — [MARIADB.md](MARIADB.md) / [YAPDB.md](YAPDB.md):
+
+```powershell
+.\scripts\windows\Start-MariaDB.ps1
+.\scripts\windows\Configure-Db.ps1 -ServerId lobby
+# or both YaPDB + playerdata:
+.\scripts\windows\Configure-PlayerData.ps1 -ServerId lobby
+.\scripts\windows\Stop-MariaDB.ps1
+```
+
+Release zip ships matching `start-mariadb.cmd` / `configure-db.cmd` / `configure-playerdata.cmd`.
+
 ## Docs
 
 - [NGINX_AND_LOCALHOST.md](NGINX_AND_LOCALHOST.md)
 - [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md)
+- [MARIADB.md](MARIADB.md) · [PLAYERDATA.md](PLAYERDATA.md)
 - [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md)

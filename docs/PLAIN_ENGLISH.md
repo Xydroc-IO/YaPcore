@@ -43,11 +43,14 @@ with full spatial deferral on; that’s acceptable. The beat-Paper gate is the
 ## What you get as a player or server owner
 
 1. **A real Minecraft server** — powered by Paper.  
-2. **Java and Bedrock together** — toward the same shared world story.  
+2. **Java and Bedrock together** — toward the same shared world story (no Via\*/Geyser jars required for the product path).  
 3. **Familiar plugins** — Paper/Spigot-style jars and YaP plugins in **one** `plugins/` folder; YaP plugins keep heavy jobs off the hot path.  
-4. **Day-to-day ops tools** — config, desktop control panel, **web dashboard** (browser, for headless), resource packs, crash reports.  
-5. **Vehicles built in** — real cars/trucks (not minecarts), fuel, upgrades, shop; HD models in the default pack.  
-6. **A clear design, not a rename** — threading, dual-stack, and YaP tooling are intentional.
+4. **Network essentials shipped** — shared MariaDB pool (`yap-db`), cross-server player data with offline `/login`, claims/taxes/NPC traders, multi-pack helper, unsigned-chat fix, LuckPerms rank pack.  
+5. **Day-to-day ops tools** — config, desktop control panel, **web dashboard** (browser, for headless — including Ranks), resource packs, crash reports.  
+6. **Vehicles built in** — real cars/trucks (not minecarts), fuel, upgrades, shop; HD models in the default pack.  
+7. **A clear design, not a rename** — threading, dual-stack, and YaP tooling are intentional.
+
+YaPcore does **not** embed a database. Owners run one Docker MariaDB (Linux + Windows scripts) and point every backend at it — see [MARIADB.md](MARIADB.md) / [PLAYERDATA.md](PLAYERDATA.md) / [PERMISSIONS.md](PERMISSIONS.md).
 
 ---
 
@@ -72,10 +75,10 @@ Paper still supplies the **recipes and the food** (real Minecraft). YapEngine is
 | Paper runs the public game | Players get real Paper gameplay | Done |
 | Split map work across four workers | Interior entities, farms, hoppers, redstone on map-area workers; borders on a border worker | **Done (Phases 3–3.7)** |
 | Beat Paper under heavy load | Public `heavypop` MSPT scoreboard — not won yet | **Active gate** |
-| Polish crossplay + YaP plugins | Full product feel end-to-end | **Next (Phase 4)** |
+| Phase 4 dual-stack join | First-party Via\* + Geyser parity for supported bands | **In progress** — JE matrix + Bedrock smoke green for join/spawn |
 
 **What that means for you:**  
-YaPcore is aimed at **busy / high-pop** servers, not empty lobbies. Paper does the game; YapEngine’s spatial workers are **on by default**. Light empty-world numbers can look worse — that’s OK. We only claim “faster under load” when the `heavypop` bench says so ([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)). Phase 4 polishes dual-stack join and YaP plugins.
+YaPcore is aimed at **busy / high-pop** servers, not empty lobbies. Paper does the game; YapEngine’s spatial workers are **on by default**. Light empty-world numbers can look worse — that’s OK. We only claim “faster under load” when the `heavypop` bench says so ([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)). Phase 4 is about dual-stack join depth and YaP network plugins — not “install Via and Geyser.”
 
 ---
 
@@ -113,6 +116,9 @@ See [WHAT_WE_ARE.md](WHAT_WE_ARE.md) and [FULL_RUNDOWN.md](FULL_RUNDOWN.md).
 | Browser ops without a desktop? | Usually third-party panels | **Built-in web dashboard** (`:8080`) |
 | Vehicles / cars? | Usually separate plugins | **Shipped** YaP Vehicles + default client pack |
 | Mob / item stacker? | Usually separate plugins | **Shipped** YaP Stacker (no fragile server internals) |
+| Shared MariaDB for networks? | Bring your own + each plugin’s pool | **Shipped** Docker MariaDB + `yap-db` shared pool |
+| Offline `/login` + claims / traders? | AuthMe / GriefPrevention / extras | **Shipped** in `yap-playerdata` |
+| Ranks / permission groups? | Install LuckPerms yourself | **LuckPerms pack** + install script + dashboard Ranks tab |
 
 ---
 
@@ -125,6 +131,9 @@ See [WHAT_WE_ARE.md](WHAT_WE_ARE.md) and [FULL_RUNDOWN.md](FULL_RUNDOWN.md).
 | Headless / browser control | [WEB_DASHBOARD.md](WEB_DASHBOARD.md) |
 | Vehicles | [VEHICLES.md](VEHICLES.md) |
 | Stacker (mobs / items / spawners) | [STACKER.md](STACKER.md) |
+| Shared MariaDB / YapDb | [MARIADB.md](MARIADB.md) · [YAPDB.md](YAPDB.md) |
+| Player data / offline auth | [PLAYERDATA.md](PLAYERDATA.md) |
+| Permissions / LuckPerms ranks | [PERMISSIONS.md](PERMISSIONS.md) |
 | Paper → YapEngine phases | [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) |
 | Docs index | [README.md](README.md) |
 | Deep architecture paper | [whitepaper/YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) |

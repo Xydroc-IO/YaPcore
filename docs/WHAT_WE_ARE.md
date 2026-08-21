@@ -23,11 +23,11 @@ So:
 
 - We are **not** “Paper but already faster everywhere.”
 - We are **not** Folia (region pool).
-- We **are**: **Paper’s game + YapEngine’s threading + YaPcore’s edge** (network, Bedrock, packs, GUI + **web dashboard**, vehicles, YaP plugins).
+- We **are**: **Paper’s game + YapEngine’s threading + YaPcore’s edge** (network, Bedrock, packs, shared MariaDB, GUI + **web dashboard**, vehicles, network playerdata, YaP plugins).
 
 **Honest pitch today:**
 
-> **High-pop Minecraft on YapEngine — Paper gameplay, Phase 3–3.7 spatial tick on by default, beat Paper on the `heavypop` MSPT scoreboard (not yet), then Phase 4 dual-stack + YaP plugins.**
+> **High-pop Minecraft on YapEngine — Paper gameplay, Phase 3–3.7 spatial tick on by default, beat Paper on the `heavypop` MSPT scoreboard (not yet), Phase 4 first-party dual-stack + shipped network plugins (YapDb, playerdata, ranks).**
 
 ## What we do (product surface)
 
@@ -36,11 +36,12 @@ So:
 3. **Delegate the Minecraft game to Paper** (`game-authority=paper`, `paper-embed=true`).
 4. **Phase 3 (done):** interior entity tick on cores **3–6** with DLM leases; border entity/TE/redstone tick on **T8** under DLM (`spatial-borders`). YaP Paperclip via `scripts/build-vendor-paper.sh` → `lib/paper-26.2-yap.jar` (required when `paper-phase3-nms-tick=true`; no silent fallback).
 5. **Phases 3.5–3.7 (shipped, default on):** interior block/fluid/random + block entities/redstone on quads; border TE/events on T8. Product target is **high-pop / heavy load** — idle MSPT may lose; gate is `heavypop` ([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)).
-6. **Dual-stack:** Java + Bedrock toward one shared world (Phase 4 polish).
+6. **Dual-stack:** Java + Bedrock toward one shared world — first-party Via\* + Geyser parity for supported bands ([PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)); no Via\*/Geyser jars on the product path.
 7. **Plugins:** all jars in `plugins/`; YaP plugins use SYNC/HEAVY/UI pools. **Shipped by default:**
-   `yap-vehicles`, `yap-gameplay-knobs`, **`yap-placeholderapi`** (clip-compatible `PlaceholderAPI`),
-   `yap-pregen`, **`yap-stacker`** ([STACKER.md](STACKER.md)), `yap-plugin-compat`, `yap-playerdata`.
-8. **Ops:** config, resource packs HTTP (`yapcore-default.zip`), control GUI, **web dashboard** (`:8080` headless), crash/logging tooling, release package (`gradle assembleRelease`).
+   `yap-vehicles`, `yap-gameplay-knobs`, **`yap-placeholderapi`**, `yap-pregen`, **`yap-stacker`**,
+   `yap-plugin-compat`, **`yap-db`** ([YAPDB.md](YAPDB.md)), **`yap-playerdata`** (auth / lock / claims / traders — [PLAYERDATA.md](PLAYERDATA.md)),
+   **`yap-packs`**, **`yap-chat`**, **`yap-floodgate`** (Velocity Bedrock identity).
+8. **Ops:** config, multi-pack HTTP (`yapcore-default.zip` + extras), control GUI, **web dashboard** (`:8080` — Console, Packs, **Ranks**), LuckPerms pack ([PERMISSIONS.md](PERMISSIONS.md)), MariaDB Docker ([MARIADB.md](MARIADB.md)), crash/logging, `gradle assembleRelease`.
 9. **Vehicles:** real chassis / fleet / fuel / upgrades / shop — [VEHICLES.md](VEHICLES.md).
 
 ## What we are *not*
@@ -76,7 +77,7 @@ Details: [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) · Port plan: [PAPER_YAP
 | 3.6 — Block entities + redstone on quads | **Done** (default on) |
 | 3.7 — Border entities/TE/events on T8 | **Done** (default on) |
 | **Beat Paper `heavypop` MSPT** | **Active** — harness live; all-on still LOSS — [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md) |
-| 4 — Dual-stack + **full Via + Geyser parity** (own code) + YaP plugins | **Next** — [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md) |
+| 4 — Dual-stack + **full Via + Geyser parity** (own code) + YaP network plugins | **In progress** — JE matrix + BE smoke join/spawn green — [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md) |
 
 ## How to say it out loud
 

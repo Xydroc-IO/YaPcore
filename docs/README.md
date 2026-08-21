@@ -12,7 +12,9 @@
 | [**COMPARE_ECOSYSTEM**](COMPARE_ECOSYSTEM.md) | **YaPcore vs Paper, Purpur, Pufferfish, Leaf, Folia** |
 | [**PDFs**](pdf/) | Printable PDFs of the identity + whitepaper + vehicles + web dashboard docs |
 | [VELOCITY](VELOCITY.md) | **Velocity proxy** — modern forwarding as a Paper backend |
-| [**PLAYERDATA**](PLAYERDATA.md) | **Cross-server inv / XP / money** — shared MariaDB (`yap-playerdata`) |
+| [**PLAYERDATA**](PLAYERDATA.md) | **Cross-server inv / claims / GUIs** — `yap-playerdata` |
+| [**YAPDB**](YAPDB.md) | **Shared MariaDB Hikari pool** — `yap-db` for any SQL plugin |
+| [**MARIADB**](MARIADB.md) | **Easy MariaDB** — Docker package for Linux + Windows (single & multi) |
 | [YAPENGINE_16THREAD](YAPENGINE_16THREAD.md) | Thread roles 1–16 |
 | [PAPER_YAPENGINE_PORT](PAPER_YAPENGINE_PORT.md) | **Product:** Phases 3–3.7 done (spatial default on); **`heavypop` MSPT gate** active; Phase 4 next |
 | [BENCH_VS_PAPER](BENCH_VS_PAPER.md) | **MSPT scoreboard** — `heavypop` primary gate vs stock Paper |
@@ -36,6 +38,7 @@
 | [**VEHICLES**](VEHICLES.md) | **Real vehicle API** (not minecarts) — Paper plugin + author guide |
 | [TUNE](TUNE.md) | **Central config hub** + Purpur-class gameplay knobs module |
 | [COMMANDS](COMMANDS.md) | Vanilla / Paper / plugin commands from GUI + in-game |
+| [**PERMISSIONS**](PERMISSIONS.md) | **Node → role map** + LuckPerms pack, install script, dashboard Ranks |
 | [MODULES_AND_API](MODULES_AND_API.md) | Modules + API coverage + pools |
 | [BRIGADIER_NMS_EVENTS](BRIGADIER_NMS_EVENTS.md) | Brigadier, Craft/NMS, Paper event catalog |
 | [TESTING](TESTING.md) | Test lab, soak, Fray, JCStress |

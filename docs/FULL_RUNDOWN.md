@@ -24,7 +24,7 @@
 “A multi-threaded Minecraft server on YapEngine, using Paper for the game.”
 
 **Brand pitch (accurate today):**  
-“YaPcore front door + YapEngine chassis + Paper as the full game. Phases 3–3.7 same-JVM Paper ticks interiors on cores 3–6 and borders on T8 under DLM (YaP Paperclip; flags default on). Aimed at high-pop load; `heavypop` MSPT gate not yet won. Phase 4: full first-party Via\* + Geyser parity + YaP plugins.”
+“YaPcore front door + YapEngine chassis + Paper as the full game. Phases 3–3.7 same-JVM Paper ticks interiors on cores 3–6 and borders on T8 under DLM (YaP Paperclip; flags default on). Aimed at high-pop load; `heavypop` MSPT gate not yet won. Phase 4: first-party Via\* + Geyser join/spawn parity + shipped network plugins (YapDb, playerdata, ranks).”
 
 ---
 
@@ -35,11 +35,12 @@
 3. **Delegate the Minecraft game to Paper** (`game-authority=paper`).
 4. **Own the public edge** — dual-stack gateway, sequencing (`SequenceToken`), multi-version JE bands, resource-pack HTTP, ops GUI + **web dashboard**, crash dumps.
 5. **Phase 3 tick on cores 3–6** — NW/NE/SW/SE interior entities under leases; borders via DLM/boundary.
-6. **Dual-stack / crossplay** — full Via\* + Geyser feature parity in our code on one shared world (Phase 4 — [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)).
+6. **Dual-stack / crossplay** — first-party Via\* + Geyser feature parity on one shared world ([PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)); JE product floor **1.20.2+**; Bedrock smoke green for join/spawn.
 7. **Plugins** — all jars in `plugins/` (Paper + YaP); `paper-kernel/plugins` → symlink.
    Defaults: **vehicles**, **gameplay knobs**, **PlaceholderAPI**, **pregen**, **stacker**,
-   **plugin-compat**, **playerdata** — see [PLUGINS.md](PLUGINS.md) / [STACKER.md](STACKER.md).
-8. **Ops** — `config/server.properties`, Generational ZGC + NUMA, control panel, **browser dashboard** (`:8080`), `logs/crashes/`, `gradle assembleRelease`.
+   **plugin-compat**, **yap-db**, **playerdata** (auth / session lock / claims / taxes / traders),
+   **packs**, **chat**, **floodgate** — see [PLUGINS.md](PLUGINS.md) / [PLAYERDATA.md](PLAYERDATA.md) / [YAPDB.md](YAPDB.md).
+8. **Ops** — `config/server.properties`, Generational ZGC + NUMA, control panel, **browser dashboard** (`:8080` — Packs + **Ranks**), LuckPerms pack ([PERMISSIONS.md](PERMISSIONS.md)), Docker MariaDB ([MARIADB.md](MARIADB.md)), `logs/crashes/`, `gradle assembleRelease`.
 9. **Vehicles** — real cars/trucks/exotics, fuel, upgrades, shop, HD models — [VEHICLES.md](VEHICLES.md).
 
 ---
@@ -132,7 +133,7 @@ Port plan: [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md)
 | **3.6** | Interior block entities + redstone block events on quads | **Done** (default on) |
 | **3.7** | Border entities / TE / events on T8 under DLM | **Done** (default on) |
 | **Gate** | Beat Paper on **`heavypop`** MSPT | **Active** — not yet won ([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)) |
-| **4** | Dual-stack + YaP plugins polished on Paper-backed world | **Next** |
+| **4** | Dual-stack + YaP network plugins on Paper-backed world | **In progress** — JE matrix + BE smoke join/spawn ([PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)) |
 
 ### Phase 3 pieces (shipping)
 
@@ -170,13 +171,16 @@ See [PLUGINS.md](PLUGINS.md), [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md), [MODULES_AND
 
 ### Packs & ops
 
-- Default client pack: `resourcepacks/yapcore-default.zip` (Faithful 64x + YaP Vehicles) — HTTP `:8081`
+- Default client pack: `resourcepacks/yapcore-default.zip` (Faithful 64x + YaP Vehicles) — HTTP `:8081` (or public `:80` / nginx)
+- Multi-active extras via `yap-packs` + Packs panel / dashboard
 - Public pack edge: `https://yapcoremc.yaplabs.us/pack/`
 - nginx edge: `scripts/nginx-setup.sh` · [NGINX_AND_LOCALHOST.md](NGINX_AND_LOCALHOST.md)
 - Control GUI: `./scripts/gui.sh`
 - **Web dashboard (headless):** `http://127.0.0.1:8080/` — [WEB_DASHBOARD.md](WEB_DASHBOARD.md)
+- **MariaDB:** `./scripts/db/start-mariadb.sh` then `configure-db.sh` — [MARIADB.md](MARIADB.md)
+- **Ranks:** `./scripts/install-luckperms.sh` then `ranks apply` — [PERMISSIONS.md](PERMISSIONS.md)
 - Release package: `gradle assembleRelease` → `build/dist/yapcore-release/{linux,windows}/`
-- Windows: Paperclip + nginx scripts — [WINDOWS.md](WINDOWS.md)
+- Windows: Paperclip + nginx + MariaDB scripts — [WINDOWS.md](WINDOWS.md)
 - Crash reports: `logs/crashes/`
 - JVM: [ZGC_NUMA.md](ZGC_NUMA.md)
 - Vehicles: [VEHICLES.md](VEHICLES.md)
@@ -213,8 +217,9 @@ gradle assembleRelease             # jar + default plugins/packs + release folde
 | Multithreaded world tick | Single main thread | **Phase 3 / 3.5** — interior entities + block/fluid/random on 3–6; players on main |
 
 | Thread design | Paper’s model | YapEngine **16-thread** matrix |
-| Bedrock + Java | Usually Geyser stack | **Built-in full Geyser + Via parity** (Phase 4) |
-| Plugins | Bukkit/Spigot/Paper | Paper plugins + YaP pools |
+| Bedrock + Java | Usually Geyser stack | **Built-in** first-party Geyser + Via parity (Phase 4) |
+| Plugins | Bukkit/Spigot/Paper | Paper plugins + YaP pools + shipped network stack |
+| Shared SQL / offline auth / ranks | Bring your own | **Shipped** YapDb + playerdata + LuckPerms pack |
 
 ---
 
@@ -224,7 +229,7 @@ gradle assembleRelease             # jar + default plugins/packs + release folde
 “Multi-threaded Minecraft server on YapEngine, using Paper for the game.”
 
 **Technical:**  
-“Paper is the game authority. YapEngine’s 16-thread chassis is always on. Phase 3 puts interior entity tick on spatial cores under DLM leases. Next is Phase 4 — full first-party Via\* + Geyser parity and YaP plugins on that Paper-backed world.”
+“Paper is the game authority. YapEngine’s 16-thread chassis is always on. Phase 3 puts interior entity tick on spatial cores under DLM leases. Phase 4 ships first-party Via\* + Geyser join/spawn parity and network plugins (YapDb, playerdata, ranks) on that Paper-backed world.”
 
 ---
 
@@ -239,5 +244,8 @@ gradle assembleRelease             # jar + default plugins/packs + release folde
 | [CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md) | Clients, versions, packs |
 | [WEB_DASHBOARD.md](WEB_DASHBOARD.md) | Headless browser control |
 | [VEHICLES.md](VEHICLES.md) | Real vehicle API + fleet |
+| [PLAYERDATA.md](PLAYERDATA.md) | Cross-server data + auth |
+| [YAPDB.md](YAPDB.md) / [MARIADB.md](MARIADB.md) | Shared MariaDB |
+| [PERMISSIONS.md](PERMISSIONS.md) | LuckPerms ranks |
 | [CROSSPLAY.md](CROSSPLAY.md) | JE + BE |
 | [whitepaper/YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) | Long-form architecture |

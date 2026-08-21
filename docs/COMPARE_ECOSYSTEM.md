@@ -56,6 +56,10 @@ Historical notes (merged / superseded, not separate picks today): Tuinity → Pa
 | Web dashboard (headless browser ops) | ~ | ~ | ~ | ~ | ~ | ✓ `:8080` |
 | Shipped vehicles (non-minecart) | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ `yap-vehicles` |
 | Shipped mob/item/spawner stacker | ✗†† | ~ plugins | ~ | ~ | ✗ | ✓ `yap-stacker` (PDC, no NMS) |
+| Shared MariaDB pool (one Hikari) | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ `yap-db` |
+| Offline `/login` + session lock + claims | ✗ | ~ plugins | ~ | ~ | ✗ | ✓ `yap-playerdata` |
+| LuckPerms starter ranks + dashboard | ✗ | ~ DIY | ~ | ~ | ✗ | ✓ pack + `ranks apply` |
+| Multi-active resource packs | ~ | ~ | ~ | ~ | ~ | ✓ core + `yap-packs` |
 | Drop-in “just replace jar” | — | ✓ vs Paper | ✓ vs Paper | ~ | ✗ plugins | Product install / `assembleRelease` |
 
 † Folia needs Folia-aware plugins; many Paper plugins break.  
@@ -181,7 +185,7 @@ Choose Purpur when you want **knobs**. Choose YaPcore when you want **engine thr
 ### When YaPcore beats a Paper fork
 
 - You want **multi-threaded interior tick** without Folia plugin breakage.
-- You want **one product** for JE + Bedrock dual-stack, packs, GUI + web dashboard, vehicles, crash tooling.
+- You want **one product** for JE + Bedrock dual-stack, packs, GUI + web dashboard, vehicles, shared MariaDB / playerdata, ranks, crash tooling.
 - You want **explicit thread roles** (watchdog / traffic / quads / DLM / bridge / I/O) instead of opaque jar patches.
 
 ---
@@ -235,10 +239,12 @@ If someone sells you “the best Folia fork,” demand: plugin list, region metr
 | Phase 3.5–3.6 | Interior block/fluid/random + TE/redstone (**default on**) |
 | Phase 3.7 | Border entities/TE/events on T8 (DLM, **default on**) |
 | Beat-Paper gate | `heavypop` MSPT — not yet won |
-| Plugins | One `plugins/` folder — Paper jars + YaP `yap.yml` (vehicles + knobs shipped) |
-| Crossplay | JE TCP + BE UDP dual-stack (Phase 4 polish) |
-| Ops | Config, resource-pack HTTP, control GUI, **web dashboard**, crash dumps, ZGC/NUMA, `assembleRelease` |
-| Packs | Default `yapcore-default.zip` (Faithful 64x + YaP Vehicles) |
+| Plugins | One `plugins/` folder — Paper jars + YaP (`yap-db`, playerdata, packs, chat, floodgate, vehicles, …) |
+| Crossplay | JE TCP + BE UDP dual-stack — first-party Via/Geyser join/spawn (Phase 4) |
+| Network SQL | Docker MariaDB + shared `yap-db` Hikari; playerdata auth/lock/claims/traders |
+| Ranks | LuckPerms pack (`default`→`vip`→`mod`→`admin`) + dashboard Ranks tab |
+| Ops | Config, multi-pack HTTP, control GUI, **web dashboard**, crash dumps, ZGC/NUMA, `assembleRelease` |
+| Packs | Default `yapcore-default.zip` + multi-active extras |
 
 Architecture sketch:
 
