@@ -1,0 +1,123 @@
+{
+  "generatedAt": "2026-08-21T11:24:19.960Z",
+  "source": "minecraft-data (PrismarineJS)",
+  "bands": {
+    "V1_8": {
+      "file": "V1_8.json",
+      "minecraftVersion": "1.8",
+      "protocol": 47,
+      "items": 336,
+      "blocks": 198,
+      "entities": 48,
+      "sectionFormat": "legacy"
+    },
+    "V1_9": {
+      "file": "V1_9.json",
+      "minecraftVersion": "1.9",
+      "protocol": 107,
+      "items": 365,
+      "blocks": 214,
+      "entities": 50,
+      "sectionFormat": "legacy"
+    },
+    "V1_12": {
+      "file": "V1_12.json",
+      "minecraftVersion": "1.12.2",
+      "protocol": 340,
+      "items": 410,
+      "blocks": 254,
+      "entities": 92,
+      "sectionFormat": "legacy"
+    },
+    "V1_13": {
+      "file": "V1_13.json",
+      "minecraftVersion": "1.13.2",
+      "protocol": 404,
+      "items": 789,
+      "blocks": 598,
+      "entities": 95,
+      "sectionFormat": "paletted"
+    },
+    "V1_16": {
+      "file": "V1_16.json",
+      "minecraftVersion": "1.16.5",
+      "protocol": 754,
+      "items": 975,
+      "blocks": 763,
+      "entities": 108,
+      "sectionFormat": "paletted"
+    },
+    "V1_17": {
+      "file": "V1_17.json",
+      "minecraftVersion": "1.18.2",
+      "protocol": 758,
+      "items": 1100,
+      "blocks": 898,
+      "entities": 113,
+      "sectionFormat": "paletted"
+    },
+    "V1_19": {
+      "file": "V1_19.json",
+      "minecraftVersion": "1.19.4",
+      "protocol": 762,
+      "items": 1228,
+      "blocks": 998,
+      "entities": 124,
+      "sectionFormat": "paletted"
+    },
+    "V1_20_2": {
+      "file": "V1_20_2.json",
+      "minecraftVersion": "1.20.2",
+      "protocol": 764,
+      "items": 1255,
+      "blocks": 1003,
+      "entities": 124,
+      "sectionFormat": "paletted"
+    },
+    "V1_21": {
+      "file": "V1_21.json",
+      "minecraftVersion": "1.21.1",
+      "protocol": 767,
+      "items": 1333,
+      "blocks": 1060,
+      "entities": 130,
+      "sectionFormat": "paletted"
+    },
+    "V1_21_6": {
+      "file": "V1_21_6.json",
+      "minecraftVersion": "1.21.4",
+      "protocol": 769,
+      "items": 1385,
+      "blocks": 1095,
+      "entities": 149,
+      "sectionFormat": "paletted"
+    },
+    "V1_21_11": {
+      "file": "V1_21_11.json",
+      "minecraftVersion": "1.21.4",
+      "protocol": 769,
+      "items": 1385,
+      "blocks": 1095,
+      "entities": 149,
+      "sectionFormat": "paletted"
+    },
+    "V26_1": {
+      "file": "V26_1.json",
+      "minecraftVersion": "1.21.4",
+      "protocol": 769,
+      "items": 1385,
+      "blocks": 1095,
+      "entities": 149,
+      "sectionFormat": "paletted"
+    },
+    "V26_2": {
+      "file": "V26_2.json",
+      "minecraftVersion": "1.21.4",
+      "protocol": 769,
+      "items": 1385,
+      "blocks": 1095,
+      "entities": 149,
+      "sectionFormat": "paletted"
+    }
+  }
+}

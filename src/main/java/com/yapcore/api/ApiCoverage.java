@@ -6,6 +6,14 @@ import java.util.Map;
 
 /**
  * Declares what plugin/module authors can rely on today.
+ * <p>
+ * <b>Product path</b> ({@code game-authority=paper}): Paper plugins get
+ * <em>complete</em> Paper API coverage from the embedded Paperclip
+ * ({@code paper-api} 26.2 — same surface as stock Paper). YaP stubs never
+ * shadow that classpath ({@code Phase3PaperClassLoader} uses the platform parent).
+ * <p>
+ * <b>Facade path</b> (non-Paper authority / {@code yap.yml} bridge): best-effort
+ * stubs only — not bit-identical Paper method bodies.
  */
 public final class ApiCoverage {
 
@@ -19,31 +27,45 @@ public final class ApiCoverage {
 
     public static List<Entry> snapshot() {
         return List.of(
-                new Entry("Paper API type surface", Status.FULL, "~1.5k+ stubs from paper-api 1.21.4 on classpath"),
-                new Entry("JavaPlugin + plugin.yml", Status.FULL, "Paper: paper-dir/plugins; facade: soft-fail loader"),
-                new Entry("PluginClassLoader isolation", Status.PARTIAL, "Facade parent-first; real Paper uses Paper’s loader"),
-                new Entry("ServicesManager", Status.FULL, "Vault-style register/get"),
-                new Entry("YamlConfiguration", Status.FULL, "reload/save + defaults merge"),
-                new Entry("PluginCommand from plugin.yml", Status.FULL, "aliases + JavaPlugin executor"),
-                new Entry("YaPPlugin + yap.yml", Status.FULL, "Native dual-pool plugins"),
-                new Entry("YaPModule + module.yml", Status.FULL, "Fine-tune modules in modules/"),
-                new Entry("Scheduler SYNC/async", Status.FULL, "Bridge + Heavy I/O"),
-                new Entry("YaPScheduler UI/HEAVY/SYNC", Status.FULL, "ThreadPools ownership"),
-                new Entry("Adventure Component/Audience", Status.FULL, "Kyori Adventure"),
-                new Entry("Brigadier commands", Status.FULL, "Mojang brigadier + Paper Commands registrar"),
-                new Entry("Paper/Bukkit events", Status.FULL, "430+ Event stubs; HandlerList + soft-fail listeners"),
-                new Entry("NMS / CraftBukkit", Status.PARTIAL, "CraftPlayer/World/Server + MinecraftServer facades"),
-                new Entry("Inventory + InventoryHolder", Status.PARTIAL, "GUI open/click/close/drag"),
-                new Entry("ItemMeta / lore / display", Status.PARTIAL, "Common meta fields"),
-                new Entry("Player / OfflinePlayer", Status.PARTIAL, "Online + CraftPlayer.getHandle()"),
-                new Entry("Permissions + attachments", Status.PARTIAL, "Basic Permissible"),
-                new Entry("Sounds", Status.PARTIAL, "Common Sound enum + playSound"),
-                new Entry("World / Block", Status.PARTIAL, "Bridged + CraftWorld.getHandle()"),
-                new Entry("Plugin messaging", Status.PARTIAL, "Messenger + channels"),
-                new Entry("Material catalog", Status.PARTIAL, "Expanded common set"),
-                new Entry("Bit-identical Paper method bodies", Status.PARTIAL, "Stubs load; deepen hot paths as plugins demand"),
-                new Entry("Full Mojang NMS bytecode", Status.PLANNED, "Facades cover casts; not obfuscated jar"),
-                new Entry("Every Event field getter", Status.PARTIAL, "Stubs fire/listen; deepen payloads as needed")
+                // --- Product path (default): real Paper owns the API ---
+                new Entry("Paper API (game-authority=paper)", Status.FULL,
+                        "Complete — embedded Paperclip paper-api 26.2 (~2329 classes); same as stock Paper"),
+                new Entry("JavaPlugin + plugin.yml / paper-plugin.yml", Status.FULL,
+                        "Loaded by real Paper via plugins/ → paper-kernel/plugins symlink"),
+                new Entry("Paper PluginClassLoader", Status.FULL,
+                        "Paper’s loader; YaP stubs isolated (platform parent)"),
+                new Entry("ServicesManager / Vault-style", Status.FULL,
+                        "Real Paper ServicesManager"),
+                new Entry("Bukkit scheduler + Paper RegionScheduler-free APIs", Status.FULL,
+                        "Stock Paper schedulers (not Folia)"),
+                new Entry("Paper/Bukkit events + Adventure", Status.FULL,
+                        "Full Paper event catalog + Kyori Adventure from Paper"),
+                new Entry("Brigadier (Paper Commands registrar)", Status.FULL,
+                        "Real Paper brigadier command API"),
+                new Entry("CraftBukkit / NMS (Paper mappings)", Status.FULL,
+                        "Same as stock Paper 26.2 / YaP Paperclip overlays"),
+                new Entry("Inventory / ItemMeta / Player / World / perms / messaging", Status.FULL,
+                        "Complete under Paper authority"),
+                new Entry("Plugin back-compat 1.20–1.21 → 26.2", Status.PARTIAL,
+                        "Tier A+B: Enchantment/Potion/Particle fields + CraftBukkit v1_20/v1_21 packages"),
+                new Entry("Chunk pregen (yap-pregen)", Status.FULL,
+                        "Chunky-class shapes, multi-world, WorldEdit sel, dashboard Pregen tab"),
+
+                // --- YaP-native surface (always) ---
+                new Entry("YaPPlugin + yap.yml", Status.FULL,
+                        "Native dual-pool plugins in plugins/"),
+                new Entry("YaPModule + module.yml", Status.FULL,
+                        "Fine-tune modules in modules/"),
+                new Entry("YaPScheduler UI/HEAVY/SYNC", Status.FULL,
+                        "ThreadPools ownership for YaP plugins/modules"),
+
+                // --- Facade only (non-Paper authority) ---
+                new Entry("Facade: Paper type stubs (non-Paper authority)", Status.STUB,
+                        "Skeletal org.bukkit.*/io.papermc.* for soft-fail; not product path"),
+                new Entry("Facade: bit-identical Paper method bodies", Status.PLANNED,
+                        "Not a goal while Paper is game authority — use Paper"),
+                new Entry("Folia RegionScheduler APIs", Status.PLANNED,
+                        "Unsupported — YaPcore is not Folia")
         );
     }
 
@@ -53,5 +75,11 @@ public final class ApiCoverage {
             m.put(e.area(), e.status() + " — " + e.notes());
         }
         return m;
+    }
+
+    /** Human-readable product claim for banners / docs generation. */
+    public static String productClaim() {
+        return "Paper plugins: complete Paper API via embedded Paper 26.2 "
+                + "(game-authority=paper). Facade stubs are non-product only.";
     }
 }

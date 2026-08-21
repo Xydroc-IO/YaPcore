@@ -5,11 +5,21 @@ import com.yapcore.client.ClientRegistry;
 import com.yapcore.client.ClientSession;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.crossplay.CrossplayHub;
+import com.yapcore.crossplay.raknet.RakNetUnconnected;
+import com.yapcore.crossplay.raknet.RakNetReliability;
+import com.yapcore.crossplay.raknet.RakNetSessionManager;
+import com.yapcore.crossplay.bedrock.BedrockSessionManager;
+import com.yapcore.crossplay.bedrock.BedrockGameplayBridge;
+import com.yapcore.crossplay.bedrock.BedrockPacketCodec;
+import com.yapcore.crossplay.floodgate.FloodgateAuth;
+import com.yapcore.crossplay.form.FormService;
+import com.yapcore.crossplay.skin.SkinService;
 import com.yapcore.model.GameEvent;
 import com.yapcore.network.TrafficCop;
 import com.yapcore.protocol.java.JavaProtocolHandler;
 import com.yapcore.protocol.java.codec.McFrameCodec;
 import com.yapcore.protocol.compat.ProtocolCompat;
+import com.yapcore.protocol.via.ViaProxyHandler;
 import com.yapcore.kernel.JavaKernelProxyHandler;
 import com.yapcore.resourcepack.ResourcePackManager;
 import com.yapcore.resourcepack.ResourcePackOffer;
@@ -35,6 +45,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
@@ -52,8 +63,14 @@ public final class DualStackGateway {
     private final ProtocolVersionRegistry protocols;
     private final ResourcePackManager packs;
     private final CrossplayHub crossplay;
+    private final BedrockSessionManager bedrockSessions = new BedrockSessionManager();
+    private final FloodgateAuth floodgateAuth = new FloodgateAuth();
+    private final SkinService skinService = new SkinService();
+    private final FormService formService = new FormService();
+    private final BedrockGameplayBridge bedrockBridge;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private volatile boolean proxyToGameKernel;
+    private volatile RakNetSessionManager rakNetSessions;
 
     private NativeEventLoops.Transport javaTransport;
     private EventLoopGroup bedrockGroup;
@@ -72,6 +89,27 @@ public final class DualStackGateway {
         this.protocols = protocols;
         this.packs = packs;
         this.crossplay = crossplay;
+        this.bedrockBridge = new BedrockGameplayBridge(
+                bedrockSessions, floodgateAuth, skinService, formService);
+        if (crossplay != null) {
+            crossplay.attachFloodgate(floodgateAuth, skinService, formService);
+        }
+    }
+
+    public FloodgateAuth floodgateAuth() {
+        return floodgateAuth;
+    }
+
+    public SkinService skinService() {
+        return skinService;
+    }
+
+    public FormService formService() {
+        return formService;
+    }
+
+    public BedrockGameplayBridge bedrockBridge() {
+        return bedrockBridge;
     }
 
     public ClientRegistry getClients() {
@@ -84,6 +122,10 @@ public final class DualStackGateway {
 
     public CrossplayHub crossplay() {
         return crossplay;
+    }
+
+    public BedrockSessionManager bedrockSessions() {
+        return bedrockSessions;
     }
 
     /** When true, public JE TCP is raw-proxied to the Mojang game kernel (full vanilla game). */
@@ -115,10 +157,17 @@ public final class DualStackGateway {
                         @Override
                         protected void initChannel(SocketChannel ch) {
                             if (kernelProxy) {
-                                ch.pipeline().addLast("kernel-proxy", new JavaKernelProxyHandler(
-                                        "127.0.0.1",
-                                        config.getWrappedGamePort(),
-                                        javaTransport.worker()));
+                                if (config.isProtocolViaEnabled() && config.isPaperAuthority()) {
+                                    ch.pipeline().addLast("via-proxy", new ViaProxyHandler(
+                                            "127.0.0.1",
+                                            config.paperListenPort(),
+                                            ProtocolCompat.SERVER_PROTOCOL));
+                                } else {
+                                    ch.pipeline().addLast("kernel-proxy", new JavaKernelProxyHandler(
+                                            "127.0.0.1",
+                                            config.getWrappedGamePort(),
+                                            javaTransport.worker()));
+                                }
                             } else {
                                 ch.pipeline()
                                         .addLast("frame-dec", new McFrameCodec.Decoder())
@@ -133,10 +182,14 @@ public final class DualStackGateway {
                 javaChannel = boot.bind(config.getBindHost().equals("0.0.0.0") ? "0.0.0.0" : config.getBindHost(),
                         javaPort).sync().channel();
                 if (kernelProxy) {
+                    boolean via = config.isProtocolViaEnabled() && config.isPaperAuthority();
                     LOG.info("Java Edition listener on :" + javaPort
                             + " transport=" + javaTransport.kind()
-                            + " | mode=WRAPPED_GAME_PROXY → 127.0.0.1:" + config.getWrappedGamePort()
-                            + " (authority=" + config.getGameAuthority() + ")");
+                            + (via
+                            ? " | mode=VIA_PROXY → 127.0.0.1:" + config.paperListenPort()
+                            + " (Via parity, serverProto=" + ProtocolCompat.SERVER_PROTOCOL + ")"
+                            : " | mode=WRAPPED_GAME_PROXY → 127.0.0.1:" + config.getWrappedGamePort()
+                            + " (authority=" + config.getGameAuthority() + ")"));
                 } else {
                     LOG.info("Java Edition listener on :" + javaPort
                             + " transport=" + javaTransport.kind()
@@ -364,21 +417,104 @@ public final class DualStackGateway {
     }
 
     /**
-     * Bedrock UDP: responds to unconnected pings and accepts JOIN text datagrams.
-     * Full RakNet gameplay framing can plug into this handler later.
+     * Bedrock UDP: RakNet reliability + BE gameplay codecs + text JOIN fallback (Geyser 4.G1–G4).
      */
     private final class BedrockUdpHandler extends SimpleChannelInboundHandler<DatagramPacket> {
+        private final long serverGuid = java.util.concurrent.ThreadLocalRandom.current().nextLong();
+        private final RakNetSessionManager rakNet = new RakNetSessionManager(serverGuid);
+        private final ConcurrentHashMap<Long, InetSocketAddress> guidToAddr = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<String, Long> addrToGuid = new ConcurrentHashMap<>();
+
+        BedrockUdpHandler() {
+            DualStackGateway.this.rakNetSessions = rakNet;
+            bedrockBridge.setOutbound((guid, packets) -> {
+                InetSocketAddress addr = guidToAddr.get(guid);
+                if (addr == null || bedrockChannel == null) {
+                    return;
+                }
+                RakNetSessionManager.RakNetPeer peer = rakNet.peer(addr);
+                for (ByteBuf pkt : packets) {
+                    ByteBuf batch = Unpooled.buffer(pkt.readableBytes() + 8);
+                    BedrockPacketCodec.writeUnsignedVarInt(batch, pkt.readableBytes());
+                    batch.writeBytes(pkt);
+                    pkt.release();
+                    ByteBuf framed = rakNet.encapsulateGame(peer, batch);
+                    batch.release();
+                    bedrockChannel.writeAndFlush(new DatagramPacket(framed, addr));
+                }
+            });
+            formService.setSender((user, buf) -> {
+                BedrockSessionManager.BedrockSession s = bedrockSessions.byUsername(user);
+                if (s == null) {
+                    buf.release();
+                    return;
+                }
+                InetSocketAddress addr = guidToAddr.get(s.guid());
+                if (addr == null || bedrockChannel == null) {
+                    buf.release();
+                    return;
+                }
+                ByteBuf batch = Unpooled.buffer(buf.readableBytes() + 8);
+                BedrockPacketCodec.writeUnsignedVarInt(batch, buf.readableBytes());
+                batch.writeBytes(buf);
+                buf.release();
+                ByteBuf framed = rakNet.encapsulateGame(rakNet.peer(addr), batch);
+                batch.release();
+                bedrockChannel.writeAndFlush(new DatagramPacket(framed, addr));
+            });
+            rakNet.setGamePacketHandler((peer, gameBatch) -> {
+                long guid = peer.state().clientGuid();
+                if (guid == 0L) {
+                    guid = peer.address().hashCode();
+                }
+                guidToAddr.put(guid, peer.address());
+                addrToGuid.put(peer.address().toString(), guid);
+                var actions = bedrockBridge.onGameBatch(guid, peer.address().toString(), gameBatch);
+                gameBatch.release();
+                for (var action : actions) {
+                    applyBedrockAction(action.type(), action.username(), action.payload(), peer.address());
+                }
+            });
+        }
+
         @Override
         protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket packet) {
             ByteBuf content = packet.content();
             InetSocketAddress sender = packet.sender();
 
-            // RakNet Unconnected Ping starts with 0x01
-            if (content.readableBytes() > 0 && (content.getByte(content.readerIndex()) & 0xFF) == 0x01) {
-                ByteBuf pong = buildBedrockPong();
+            if (config.isProtocolGeyserEnabled() && RakNetUnconnected.isUnconnectedPing(content)) {
+                long pingTime = 0L;
+                try {
+                    pingTime = RakNetUnconnected.readPingTime(content);
+                } catch (Exception ignored) {
+                    pingTime = System.currentTimeMillis();
+                }
+                String motd = "MCPE;" + config.getMotd().replace(';', ' ') + ";"
+                        + protocols.recommended(ClientEdition.BEDROCK).protocolId() + ";"
+                        + protocols.recommended(ClientEdition.BEDROCK).minecraftVersion() + ";"
+                        + clients.size() + ";"
+                        + config.getMaxPlayers() + ";"
+                        + Long.toUnsignedString(serverGuid) + ";"
+                        + "YaPcore;Survival;";
+                ByteBuf pong = RakNetUnconnected.buildPong(pingTime, serverGuid, motd);
                 ctx.writeAndFlush(new DatagramPacket(pong, sender));
                 ThreadMetrics.bump("Gateway", "bedrock-ping");
                 return;
+            }
+
+            if (config.isProtocolGeyserEnabled()) {
+                int id = content.isReadable() ? content.getUnsignedByte(content.readerIndex()) : -1;
+                if (id == RakNetReliability.ID_OPEN_CONNECTION_REQUEST_1
+                        || id == RakNetReliability.ID_OPEN_CONNECTION_REQUEST_2
+                        || RakNetReliability.isFrameSet(id)
+                        || id == RakNetReliability.ID_ACK
+                        || id == RakNetReliability.ID_NACK) {
+                    for (ByteBuf reply : rakNet.handle(sender, content.duplicate())) {
+                        ctx.writeAndFlush(new DatagramPacket(reply, sender));
+                    }
+                    ThreadMetrics.bump("Gateway", "bedrock-raknet");
+                    return;
+                }
             }
 
             String raw = content.toString(CharsetUtil.UTF_8).trim();
@@ -391,10 +527,22 @@ public final class DualStackGateway {
                 String user = parts.length > 1 ? parts[1] : "BedrockPlayer";
                 int proto = parts.length > 2 ? parseInt(parts[2], protocols.recommended(ClientEdition.BEDROCK).protocolId())
                         : protocols.recommended(ClientEdition.BEDROCK).protocolId();
+                long guid = sender.hashCode() * 31L + user.hashCode();
+                FloodgateAuth.Identity identity = floodgateAuth.register(new FloodgateAuth.Identity(
+                        user,
+                        FloodgateAuth.uuidFromXuid(user + "|" + sender).toString().replace("-", "").substring(0, 16),
+                        FloodgateAuth.uuidFromXuid(user + "|" + sender),
+                        proto,
+                        false,
+                        ""));
+                bedrockSessions.open(guid, user, proto, sender.toString());
+                skinService.registerDefault(user, identity.javaUuid());
+                guidToAddr.put(guid, sender);
                 ClientSession session = acceptClient(user, ClientEdition.BEDROCK, proto, sender);
                 if (session != null) {
                     String reply = "OK|BEDROCK|" + session.getProtocol().minecraftVersion()
-                            + "|pack=" + session.getActiveOffer().map(ResourcePackOffer::url).orElse("none");
+                            + "|pack=" + session.getActiveOffer().map(ResourcePackOffer::url).orElse("none")
+                            + "|geyser=yap|floodgate=" + identity.javaUuid();
                     ctx.writeAndFlush(new DatagramPacket(
                             Unpooled.copiedBuffer(reply, StandardCharsets.UTF_8), sender));
                 }
@@ -408,6 +556,10 @@ public final class DualStackGateway {
                 }
             } else if ("LEAVE".equals(cmd)) {
                 String user = parts.length > 1 ? parts[1] : "BedrockPlayer";
+                BedrockSessionManager.BedrockSession bs = bedrockSessions.byUsername(user);
+                if (bs != null) {
+                    bedrockBridge.onDisconnect(bs.guid());
+                }
                 clients.get(user).ifPresent(s -> {
                     if (crossplay != null) {
                         crossplay.leave(s);
@@ -417,8 +569,15 @@ public final class DualStackGateway {
                 trafficCop.ingest(new GameEvent(GameEvent.Type.CLIENT_LEAVE, user, Map.of(
                         "edition", "BEDROCK"
                 )));
-            } else if ("MOVE".equals(cmd) || "CHAT".equals(cmd) || "INTERACT".equals(cmd)) {
+            } else if ("MOVE".equals(cmd) || "CHAT".equals(cmd) || "INTERACT".equals(cmd)
+                    || "BREAK".equals(cmd) || "PLACE".equals(cmd) || "ATTACK".equals(cmd)
+                    || "INV".equals(cmd) || "HOTBAR".equals(cmd)
+                    || "FORM".equals(cmd) || "SKIN".equals(cmd)) {
                 String user = parts.length > 1 ? parts[1] : "BedrockPlayer";
+                if ("FORM".equals(cmd) && parts.length > 2) {
+                    formService.sendSimple(user, "YaPcore", parts[2], "OK", "Cancel");
+                    return;
+                }
                 clients.get(user).ifPresent(s -> {
                     if (crossplay != null) {
                         java.util.concurrent.ConcurrentHashMap<String, String> map =
@@ -426,30 +585,26 @@ public final class DualStackGateway {
                         for (int i = 2; i + 1 < parts.length; i += 2) {
                             map.put(parts[i], parts[i + 1]);
                         }
-                        // Bedrock lane → Geyser-style translator → shared world
                         crossplay.handleAction(s, cmd, map);
                     }
                 });
             }
         }
 
-        private ByteBuf buildBedrockPong() {
-            // Minimal unconnected pong-like payload with MOTD for server lists
-            String motd = "MCPE;" + config.getMotd().replace(';', ' ') + ";"
-                    + protocols.recommended(ClientEdition.BEDROCK).protocolId() + ";"
-                    + protocols.recommended(ClientEdition.BEDROCK).minecraftVersion() + ";"
-                    + clients.size() + ";"
-                    + config.getMaxPlayers() + ";"
-                    + "YaPcore;Survival;";
-            byte[] bytes = motd.getBytes(StandardCharsets.UTF_8);
-            ByteBuf buf = Unpooled.buffer(1 + 8 + 8 + 16 + 2 + bytes.length);
-            buf.writeByte(0x1C); // Unconnected Pong
-            buf.writeLong(System.currentTimeMillis());
-            buf.writeLong(0x000000000003L);
-            buf.writeBytes(new byte[16]); // magic placeholder
-            buf.writeShort(bytes.length);
-            buf.writeBytes(bytes);
-            return buf;
+        private void applyBedrockAction(String type, String user, Map<String, String> payload,
+                                        InetSocketAddress sender) {
+            if ("JOIN".equalsIgnoreCase(type)) {
+                int proto = parseInt(payload.getOrDefault("protocol",
+                        Integer.toString(protocols.recommended(ClientEdition.BEDROCK).protocolId())),
+                        protocols.recommended(ClientEdition.BEDROCK).protocolId());
+                acceptClient(user, ClientEdition.BEDROCK, proto, sender);
+                return;
+            }
+            clients.get(user).ifPresent(s -> {
+                if (crossplay != null) {
+                    crossplay.handleAction(s, type, payload);
+                }
+            });
         }
     }
 

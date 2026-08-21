@@ -41,7 +41,7 @@ class PaperVelocitySupportTest {
         ServerConfig config = new ServerConfig(cfgFile);
         config.load();
 
-        PaperFiles.writeServerProperties(paper, config, 25566, "0.0.0.0", "test");
+        PaperFiles.writeServerProperties(root, paper, config, 25566, "0.0.0.0", "test");
         PaperFiles.applyVelocitySupport(root, paper, config);
 
         Properties props = new Properties();

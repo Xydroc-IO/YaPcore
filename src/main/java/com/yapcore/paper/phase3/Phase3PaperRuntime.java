@@ -1,7 +1,9 @@
 package com.yapcore.paper.phase3;
 
 import com.yapcore.config.ServerConfig;
+import com.yapcore.paper.PaperCommandBridge;
 import com.yapcore.paper.PaperFiles;
+import com.yapcore.paper.PaperOps;
 import com.yapcore.paper.PaperPluginsLayout;
 import com.yaplabs.yapengine.YapEngine;
 import com.yaplabs.yapengine.core.spatial.ParallelGameCore;
@@ -68,6 +70,17 @@ public final class Phase3PaperRuntime {
         return running.get();
     }
 
+    public URLClassLoader paperClassLoader() {
+        return paperLoader.get();
+    }
+
+    /**
+     * Run a Minecraft / Paper / plugin command as the Paper console.
+     */
+    public String dispatchConsoleCommand(String line) {
+        return PaperCommandBridge.dispatchToPaper(line, paperLoader.get());
+    }
+
     public synchronized void start() throws IOException, InterruptedException {
         if (!running.compareAndSet(false, true)) {
             return;
@@ -123,12 +136,37 @@ public final class Phase3PaperRuntime {
             if (System.getProperty("yapcore.phase3.spatial-redstone") == null) {
                 System.setProperty("yapcore.phase3.spatial-redstone", "true");
             }
+            if (System.getProperty("yapcore.phase3.spatial-borders") == null) {
+                System.setProperty("yapcore.phase3.spatial-borders", "true");
+            }
+            // Tracker sendChanges: on after fair heavypop WIN (…T124116Z +22.9%)
+            if (System.getProperty("yapcore.phase3.spatial-tracker") == null) {
+                System.setProperty("yapcore.phase3.spatial-tracker", "true");
+            }
+            if (System.getProperty("yapcore.phase3.spatial-tracker-skip-clean") == null) {
+                System.setProperty("yapcore.phase3.spatial-tracker-skip-clean", "true");
+            }
+            if (System.getProperty("yapcore.phase3.spatial-coalesce-barriers") == null) {
+                System.setProperty("yapcore.phase3.spatial-coalesce-barriers", "true");
+            }
+            if (System.getProperty("yapcore.phase3.spatial-entity-activation") == null) {
+                System.setProperty("yapcore.phase3.spatial-entity-activation", "true");
+            }
+            if (System.getProperty("yapcore.phase3.spatial-distant-brain") == null) {
+                System.setProperty("yapcore.phase3.spatial-distant-brain", "true");
+            }
             YapPhase3Flags.refresh();
             LOG.info("Phase 3 NMS spatial tick enabled (vendored YaP Paperclip)"
                     + " blockfluid=" + YapPhase3Flags.spatialBlockFluid()
                     + " random=" + YapPhase3Flags.spatialRandom()
                     + " blockentities=" + YapPhase3Flags.spatialBlockEntities()
-                    + " redstone=" + YapPhase3Flags.spatialRedstone());
+                    + " redstone=" + YapPhase3Flags.spatialRedstone()
+                    + " borders=" + YapPhase3Flags.spatialBorders()
+                    + " tracker=" + YapPhase3Flags.spatialTracker()
+                    + " tracker-skip-clean=" + YapPhase3Flags.spatialTrackerSkipClean()
+                    + " coalesce=" + YapPhase3Flags.spatialCoalesceBarriers()
+                    + " ear=" + YapPhase3Flags.spatialEntityActivation()
+                    + " distant-brain=" + YapPhase3Flags.spatialDistantBrain());
         } else {
             LOG.warning("Phase 3 NMS tick off (paper-phase3-nms-tick=false) — "
                     + "leased accounting + borders only; not authoritative interior entity tick");
@@ -136,16 +174,18 @@ public final class Phase3PaperRuntime {
 
         Files.createDirectories(dir);
         Files.deleteIfExists(dir.resolve("yap-paper-ready.marker"));
-        PaperPluginsLayout.ensureUnified(rootDir, dir);
+        PaperPluginsLayout.ensureUnifiedAndCompat(rootDir, dir, config);
         Path jar = PaperFiles.ensurePaperJar(rootDir, dir, config);
         PaperFiles.writeEula(dir);
         String bind = config.getBindHost();
         if ("0.0.0.0".equals(bind)) {
             bind = "";
         }
-        PaperFiles.writeServerProperties(dir, config, config.getPort(), bind,
-                "YaPcore Phase 3 — same-JVM Paper + YapEngine spatial tick");
+        PaperFiles.writeServerProperties(rootDir, dir, config, config.paperListenPort(), bind,
+                "YaPcore Phase 3 — same-JVM Paper + YapEngine spatial tick"
+                        + (config.isProtocolViaEnabled() ? " (Via front on :" + config.getPort() + ")" : ""));
         PaperFiles.applyVelocitySupport(rootDir, dir, config);
+        PaperOps.ensure(dir, config);
         installBridgePlugin(dir);
 
         // Platform parent avoids YaPcore paper-api stubs shadowing real Paper;
@@ -159,7 +199,9 @@ public final class Phase3PaperRuntime {
         t.setContextClassLoader(loader);
         paperThread.set(t);
         LOG.info("Phase 3 starting Paperclip same-JVM (platform parent + host bridge) JE=:"
-                + config.getPort() + " cwd=" + dir);
+                + config.paperListenPort() + " cwd=" + dir
+                + (config.isProtocolViaEnabled()
+                ? " | Via public=:" + config.getPort() : ""));
         t.start();
         if (!mainEntered.await(60, TimeUnit.SECONDS)) {
             running.set(false);
@@ -179,7 +221,7 @@ public final class Phase3PaperRuntime {
             if (late != null) {
                 throw new IOException("Phase 3 Paper failed: " + late.getMessage(), late);
             }
-            throw new IOException("Phase 3 Paper did not accept on :" + config.getPort());
+            throw new IOException("Phase 3 Paper did not accept on :" + config.paperListenPort());
         }
         Files.writeString(dir.resolve("yap-paper-ready.marker"), "phase3-ready\n");
         LOG.info("Phase 3 Paper online — spatial tick bridge exposed to plugins via "
@@ -290,7 +332,7 @@ public final class Phase3PaperRuntime {
                 return false;
             }
             try (var s = new java.net.Socket()) {
-                s.connect(new java.net.InetSocketAddress("127.0.0.1", config.getPort()), 500);
+                s.connect(new java.net.InetSocketAddress("127.0.0.1", config.paperListenPort()), 500);
                 return true;
             } catch (IOException ignored) {
                 // wait — Paperclip main may already have returned while Paper boots

@@ -94,6 +94,9 @@ public final class YapSpatialTickCoordinator {
     /**
      * Run mutation on the <em>current</em> thread under a DLM lease (spatial cores 3–6).
      * Returns false if the lease could not be acquired.
+     * <p>
+     * Prefer {@link #runOwned(Runnable)} for interior same-quadrant batches — those are
+     * exclusive by construction during {@link #runParallelTick} and skip CAS overhead.
      */
     public boolean runLeased(String resourceKey, Runnable mutation) {
         Objects.requireNonNull(resourceKey, "resourceKey");
@@ -113,28 +116,28 @@ public final class YapSpatialTickCoordinator {
         }
     }
 
+    /**
+     * Run mutation on the current spatial thread with no DLM acquire.
+     * Safe for interior work already partitioned by quadrant in {@link #runParallelTick}.
+     */
+    public void runOwned(Runnable mutation) {
+        Objects.requireNonNull(mutation, "mutation");
+        mutation.run();
+        leasedMutations.incrementAndGet();
+    }
+
     /** Chunk sector key used for leases. */
     public static String chunkKey(String worldName, int chunkX, int chunkZ) {
         return "c:" + worldName + ":" + chunkX + ":" + chunkZ;
     }
 
-    /** True when any of the 8 neighbors belongs to a different quadrant. */
+    /**
+     * True when any of the 8 neighbors belongs to a different quadrant.
+     * With sign-bit quadrants this is exactly the chunks on the {@code x=0} or
+     * {@code z=0} plane ({@code chunkX/Z ∈ {-1, 0}}) — O(1), no 3×3 scan.
+     */
     public static boolean isBorderChunk(int chunkX, int chunkZ) {
-        int self = BitwiseQuadrantIndex.quadrantId(
-                BitwiseQuadrantIndex.packChunk(chunkX, chunkZ));
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                if (dx == 0 && dz == 0) {
-                    continue;
-                }
-                int other = BitwiseQuadrantIndex.quadrantId(
-                        BitwiseQuadrantIndex.packChunk(chunkX + dx, chunkZ + dz));
-                if (other != self) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return chunkX == -1 || chunkX == 0 || chunkZ == -1 || chunkZ == 0;
     }
 
     public void submitBorderHandoff(String entityId, String inventoryKey,
@@ -147,33 +150,86 @@ public final class YapSpatialTickCoordinator {
     }
 
     /**
+     * Run {@code mutation} on Thread 8 (boundary) after T7 grants a DLM lease on
+     * {@code leaseKey}. Blocks the caller (Paper main) until apply completes —
+     * same tick semantics as interior flush barriers.
+     */
+    public boolean runBorderTickSync(String leaseKey, Runnable mutation) {
+        Objects.requireNonNull(leaseKey, "leaseKey");
+        Objects.requireNonNull(mutation, "mutation");
+        if (!online.get()) {
+            mutation.run();
+            return true;
+        }
+        CountDownLatch done = new CountDownLatch(1);
+        AtomicBoolean ok = new AtomicBoolean(false);
+        AtomicBoolean fault = new AtomicBoolean(false);
+        // from/to are bookkeeping for handoff logs; lease is on leaseKey
+        submitBorderHandoff(
+                "border-tick:" + leaseKey,
+                leaseKey,
+                SpatialQuadrant.NW,
+                SpatialQuadrant.SE,
+                () -> {
+                    try {
+                        mutation.run();
+                        leasedMutations.incrementAndGet();
+                        ok.set(true);
+                    } catch (Throwable t) {
+                        fault.set(true);
+                        LOG.log(Level.SEVERE, "Border tick fault key=" + leaseKey, t);
+                    } finally {
+                        done.countDown();
+                    }
+                });
+        try {
+            boolean finished = done.await(TICK_TIMEOUT_MS, TimeUnit.MILLISECONDS);
+            if (!finished) {
+                overruns.incrementAndGet();
+                done.await();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+        return ok.get() && !fault.get();
+    }
+
+    /**
      * Run one parallel tick: each quadrant’s work on its spatial core, then barrier.
      * Empty runnables are skipped. Returns false if the barrier timed out.
+     * <p>
+     * Always offloads to spatial cores 3–6 — including single-quadrant batches —
+     * so Paper main does not pay entity/BE/tracker flush work inline.
      */
     public boolean runParallelTick(Map<SpatialQuadrant, Runnable> quadrantWork) {
         if (!online.get() || quadrantWork == null || quadrantWork.isEmpty()) {
             return true;
         }
-        CountDownLatch done = new CountDownLatch(quadrantWork.size());
-        AtomicBoolean failed = new AtomicBoolean(false);
+        // Strip nulls
+        EnumMap<SpatialQuadrant, Runnable> work = new EnumMap<>(SpatialQuadrant.class);
         for (var e : quadrantWork.entrySet()) {
-            SpatialQuadrant q = e.getKey();
-            Runnable work = e.getValue();
-            if (work == null) {
-                done.countDown();
-                continue;
+            if (e.getValue() != null) {
+                work.put(e.getKey(), e.getValue());
             }
-            SequenceToken token = SequenceToken.next("tick:" + q.name());
+        }
+        if (work.isEmpty()) {
+            return true;
+        }
+        CountDownLatch done = new CountDownLatch(work.size());
+        AtomicBoolean failed = new AtomicBoolean(false);
+        for (var e : work.entrySet()) {
+            SpatialQuadrant q = e.getKey();
+            Runnable task = e.getValue();
             gameCore.loop(q).executeUrgent(() -> {
                 try {
-                    work.run();
+                    task.run();
                     tasksRun.incrementAndGet();
                 } catch (Throwable t) {
                     failed.set(true);
                     LOG.log(Level.SEVERE, "Phase 3 tick fault in " + q, t);
                 } finally {
                     done.countDown();
-                    token.forget();
                 }
             });
         }
@@ -192,10 +248,7 @@ public final class YapSpatialTickCoordinator {
             return false;
         }
         ticks.incrementAndGet();
-        if (failed.get()) {
-            return false;
-        }
-        return ok;
+        return ok && !failed.get();
     }
 
     /** Convenience: build a 4-way map (nulls allowed). */

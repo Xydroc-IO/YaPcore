@@ -11,6 +11,15 @@ public final class YapPhase3Flags {
     private static volatile boolean spatialRandom;
     private static volatile boolean spatialBlockEntities;
     private static volatile boolean spatialRedstone;
+    private static volatile boolean spatialBorders;
+    private static volatile boolean spatialTracker;
+    private static volatile boolean spatialTrackerSkipClean;
+    private static volatile boolean spatialCoalesceBarriers;
+    private static volatile boolean spatialEntityActivation;
+    private static volatile boolean spatialDistantBrain;
+    private static volatile int distantBrainStartBlocks;
+    private static volatile int distantBrainFarBlocks;
+    private static volatile int distantBrainMaxInterval;
     private static volatile boolean flushing;
 
     private YapPhase3Flags() {
@@ -22,7 +31,32 @@ public final class YapPhase3Flags {
         spatialRandom = Boolean.getBoolean("yapcore.phase3.spatial-random");
         spatialBlockEntities = Boolean.getBoolean("yapcore.phase3.spatial-blockentities");
         spatialRedstone = Boolean.getBoolean("yapcore.phase3.spatial-redstone");
+        spatialBorders = Boolean.getBoolean("yapcore.phase3.spatial-borders");
+        spatialTracker = Boolean.getBoolean("yapcore.phase3.spatial-tracker");
+        String skipClean = System.getProperty("yapcore.phase3.spatial-tracker-skip-clean");
+        spatialTrackerSkipClean = skipClean == null || Boolean.parseBoolean(skipClean);
+        String coalesce = System.getProperty("yapcore.phase3.spatial-coalesce-barriers");
+        spatialCoalesceBarriers = coalesce == null || Boolean.parseBoolean(coalesce);
+        String ear = System.getProperty("yapcore.phase3.spatial-entity-activation");
+        spatialEntityActivation = ear == null || Boolean.parseBoolean(ear);
+        String brain = System.getProperty("yapcore.phase3.spatial-distant-brain");
+        spatialDistantBrain = brain == null || Boolean.parseBoolean(brain);
+        distantBrainStartBlocks = intProp("yapcore.phase3.distant-brain-start", 24);
+        distantBrainFarBlocks = intProp("yapcore.phase3.distant-brain-far", 80);
+        distantBrainMaxInterval = intProp("yapcore.phase3.distant-brain-interval", 20);
         flushing = Boolean.getBoolean("yapcore.phase3.spatial-tick.flushing");
+    }
+
+    private static int intProp(String key, int def) {
+        String v = System.getProperty(key);
+        if (v == null || v.isBlank()) {
+            return def;
+        }
+        try {
+            return Integer.parseInt(v.trim());
+        } catch (NumberFormatException e) {
+            return def;
+        }
     }
 
     public static boolean spatialTick() {
@@ -43,6 +77,55 @@ public final class YapPhase3Flags {
 
     public static boolean spatialRedstone() {
         return spatialRedstone;
+    }
+
+    /** Border chunk entity / TE / redstone tick on T8 under DLM leases. */
+    public static boolean spatialBorders() {
+        return spatialBorders;
+    }
+
+    /**
+     * Non-player {@code ServerEntity.sendChanges} on spatial cores / T8.
+     * Players and track/untrack stay on Paper main. Default on for high-pop product.
+     */
+    public static boolean spatialTracker() {
+        return spatialTracker;
+    }
+
+    /**
+     * Phase 3.9 — skip queueing/running {@code sendChanges} when the tracker has
+     * nothing to emit (no dirty data / not on update interval). Does <em>not</em>
+     * move player tick off main.
+     */
+    public static boolean spatialTrackerSkipClean() {
+        return spatialTrackerSkipClean;
+    }
+
+    /** Merge block-events into entity/BE flush — fewer {@code runParallelTick} barriers. */
+    public static boolean spatialCoalesceBarriers() {
+        return spatialCoalesceBarriers;
+    }
+
+    /** Paper {@code ActivationRange} on spatial entity tick (players never offered). */
+    public static boolean spatialEntityActivation() {
+        return spatialEntityActivation;
+    }
+
+    /** First-party distant path/AI throttle (Leaf DAB–class, YaP code). */
+    public static boolean spatialDistantBrain() {
+        return spatialDistantBrain;
+    }
+
+    public static int distantBrainStartBlocks() {
+        return distantBrainStartBlocks;
+    }
+
+    public static int distantBrainFarBlocks() {
+        return distantBrainFarBlocks;
+    }
+
+    public static int distantBrainMaxInterval() {
+        return distantBrainMaxInterval;
     }
 
     public static boolean flushing() {

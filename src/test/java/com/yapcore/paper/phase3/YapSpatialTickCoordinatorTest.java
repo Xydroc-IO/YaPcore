@@ -42,8 +42,28 @@ final class YapSpatialTickCoordinatorTest {
     void borderDetectionMatchesQuadrantEdges() {
         assertTrue(YapSpatialTickCoordinator.isBorderChunk(0, 0)); // origin — all quads meet
         assertTrue(YapSpatialTickCoordinator.isBorderChunk(-1, 0));
+        assertTrue(YapSpatialTickCoordinator.isBorderChunk(0, 5)); // east plane
+        assertTrue(YapSpatialTickCoordinator.isBorderChunk(5, -1)); // south/north plane
         assertFalse(YapSpatialTickCoordinator.isBorderChunk(5, 5)); // deep SE interior
         assertFalse(YapSpatialTickCoordinator.isBorderChunk(-5, -5)); // deep NW
+        assertFalse(YapSpatialTickCoordinator.isBorderChunk(1, 5));
+    }
+
+    @Test
+    void singleQuadParallelTickRunsOffCaller() throws Exception {
+        AtomicInteger ran = new AtomicInteger();
+        String[] threadName = {""};
+        String caller = Thread.currentThread().getName();
+        assertTrue(coord.runParallelTick(
+                () -> {
+                    threadName[0] = Thread.currentThread().getName();
+                    ran.incrementAndGet();
+                },
+                null, null, null));
+        assertEquals(1, ran.get());
+        assertTrue(threadName[0].startsWith("yap-t"),
+                "expected spatial core, got " + threadName[0]);
+        assertFalse(threadName[0].equals(caller), "must not run inline on caller");
     }
 
     @Test
@@ -81,6 +101,21 @@ final class YapSpatialTickCoordinatorTest {
         assertTrue(done.await(5, TimeUnit.SECONDS));
         assertTrue(max.get() <= 1, "lease must be mutually exclusive");
         assertTrue(coord.leasedMutationCount() + coord.leaseDenyCount() >= 1);
+    }
+
+    @Test
+    void runBorderTickSyncRunsOnBoundaryUnderLease() throws Exception {
+        AtomicInteger ran = new AtomicInteger();
+        String[] threadName = {""};
+        assertTrue(coord.runBorderTickSync("border:test", () -> {
+            threadName[0] = Thread.currentThread().getName();
+            ran.incrementAndGet();
+        }));
+        assertEquals(1, ran.get());
+        assertTrue(threadName[0].startsWith("yap-t8-boundary"),
+                "expected T8, got " + threadName[0]);
+        assertTrue(coord.borderHandoffCount() >= 1);
+        assertTrue(coord.leasedMutationCount() >= 1);
     }
 
     @Test

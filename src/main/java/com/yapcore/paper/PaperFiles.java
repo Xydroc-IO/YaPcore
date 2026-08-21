@@ -2,11 +2,13 @@ package com.yapcore.paper;
 
 import com.yapcore.config.ServerConfig;
 import com.yapcore.fill.FillClient;
+import com.yapcore.network.publicity.PublicEndpoint;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.net.HttpURLConnection;
@@ -15,9 +17,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 /** Shared Paper jar / eula / server.properties helpers for wrap + embed. */
@@ -85,7 +91,12 @@ public final class PaperFiles {
         Files.writeString(dir.resolve("eula.txt"), "eula=true\n", StandardCharsets.UTF_8);
     }
 
-    public static void writeServerProperties(Path dir, ServerConfig config, int listenPort, String bindIp, String comment)
+    /**
+     * Write Paper {@code server.properties}. When {@code rootDir} is set, syncs YaPcore
+     * resource-pack settings so JE clients auto-download on join (Paper owns the protocol).
+     */
+    public static void writeServerProperties(Path rootDir, Path dir, ServerConfig config,
+                                             int listenPort, String bindIp, String comment)
             throws IOException {
         Path file = dir.resolve("server.properties");
         Properties p = new Properties();
@@ -95,22 +106,130 @@ public final class PaperFiles {
             }
         }
         String effectiveBind = effectivePaperBind(config, bindIp);
-        p.setProperty("server-port", Integer.toString(listenPort));
-        p.setProperty("server-ip", effectiveBind == null ? "" : effectiveBind);
+        boolean bench = System.getProperty("yap.bench.scenario") != null
+                && !System.getProperty("yap.bench.scenario").isBlank();
+        if (bench) {
+            // MSPT scoreboard owns port / view / seed — do not clobber with product config.
+            if (!p.containsKey("server-port")) {
+                p.setProperty("server-port", Integer.toString(listenPort));
+            }
+            if (!p.containsKey("server-ip")) {
+                p.setProperty("server-ip", effectiveBind == null ? "" : effectiveBind);
+            }
+        } else {
+            p.setProperty("server-port", Integer.toString(listenPort));
+            p.setProperty("server-ip", effectiveBind == null ? "" : effectiveBind);
+        }
         // Velocity authenticates; Paper must be offline-mode when modern forwarding is on.
         boolean online = config.isVelocityEnabled() ? false : config.isOnlineMode();
         p.setProperty("online-mode", Boolean.toString(online));
         if (config.isVelocityEnabled()) {
             p.setProperty("prevent-proxy-connections", "false");
         }
-        p.setProperty("max-players", Integer.toString(config.getMaxPlayers()));
-        p.setProperty("view-distance", Integer.toString(config.getViewDistance()));
-        p.setProperty("simulation-distance", Integer.toString(config.getViewDistance()));
-        p.setProperty("motd", config.getMotd());
+        if (!bench) {
+            p.setProperty("max-players", Integer.toString(config.getMaxPlayers()));
+            p.setProperty("view-distance", Integer.toString(config.getViewDistance()));
+            p.setProperty("simulation-distance", Integer.toString(config.getViewDistance()));
+            p.setProperty("motd", config.getMotd());
+        } else {
+            if (!p.containsKey("max-players")) {
+                p.setProperty("max-players", "20");
+            }
+            if (!p.containsKey("view-distance")) {
+                p.setProperty("view-distance", "6");
+            }
+            if (!p.containsKey("simulation-distance")) {
+                p.setProperty("simulation-distance", p.getProperty("view-distance", "6"));
+            }
+        }
         p.setProperty("spawn-protection", "0");
         p.setProperty("enable-command-block", "true");
+        applyResourcePack(p, rootDir, config);
         try (var out = Files.newOutputStream(file)) {
             p.store(out, comment);
+        }
+    }
+
+    /** @deprecated prefer {@link #writeServerProperties(Path, Path, ServerConfig, int, String, String)} */
+    @Deprecated
+    public static void writeServerProperties(Path dir, ServerConfig config, int listenPort, String bindIp, String comment)
+            throws IOException {
+        writeServerProperties(null, dir, config, listenPort, bindIp, comment);
+    }
+
+    /**
+     * Push YaPcore's active pack into Paper so vanilla/Fabric clients get the
+     * join prompt and download from the pack HTTP/edge URL.
+     */
+    static void applyResourcePack(Properties p, Path rootDir, ServerConfig config) {
+        if (rootDir == null || !config.isResourcePackEnabled()) {
+            p.setProperty("resource-pack", "");
+            p.setProperty("resource-pack-sha1", "");
+            p.setProperty("resource-pack-id", "");
+            p.setProperty("resource-pack-prompt", "");
+            p.setProperty("require-resource-pack", "false");
+            return;
+        }
+        String fileName = config.getResourcePackFile();
+        if (fileName == null || fileName.isBlank()) {
+            p.setProperty("resource-pack", "");
+            p.setProperty("resource-pack-sha1", "");
+            p.setProperty("resource-pack-id", "");
+            p.setProperty("resource-pack-prompt", "");
+            p.setProperty("require-resource-pack", "false");
+            return;
+        }
+        Path pack = rootDir.resolve(config.getResourcePackDir()).resolve(fileName).normalize();
+        Path packsRoot = rootDir.resolve(config.getResourcePackDir()).toAbsolutePath().normalize();
+        if (!pack.toAbsolutePath().normalize().startsWith(packsRoot) || !Files.isRegularFile(pack)) {
+            LOG.warning("Active resource pack missing: " + pack);
+            p.setProperty("resource-pack", "");
+            p.setProperty("resource-pack-sha1", "");
+            p.setProperty("resource-pack-id", "");
+            p.setProperty("resource-pack-prompt", "");
+            p.setProperty("require-resource-pack", "false");
+            return;
+        }
+        try {
+            String url = new PublicEndpoint(config).packUrl(fileName);
+            String sha1 = sha1Hex(pack);
+            String prompt = config.getResourcePackPrompt();
+            if (prompt == null || prompt.isBlank()) {
+                prompt = "This server uses a resource pack for the best experience.";
+            }
+            UUID id = UUID.nameUUIDFromBytes(("yapcore-pack:" + fileName + ":" + sha1)
+                    .getBytes(StandardCharsets.UTF_8));
+            p.setProperty("resource-pack", url);
+            p.setProperty("resource-pack-sha1", sha1);
+            p.setProperty("resource-pack-id", id.toString());
+            p.setProperty("resource-pack-prompt", jsonTextComponent(prompt));
+            p.setProperty("require-resource-pack", Boolean.toString(config.isResourcePackForced()));
+            LOG.info("Paper resource pack → " + url + " sha1=" + sha1
+                    + " required=" + config.isResourcePackForced());
+        } catch (IOException e) {
+            LOG.warning("Could not hash resource pack " + pack + ": " + e.getMessage());
+        }
+    }
+
+    private static String jsonTextComponent(String text) {
+        String escaped = text
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "");
+        return "{\"text\":\"" + escaped + "\"}";
+    }
+
+    private static String sha1Hex(Path path) throws IOException {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            try (InputStream in = Files.newInputStream(path);
+                 DigestInputStream din = new DigestInputStream(in, digest)) {
+                din.transferTo(OutputStream.nullOutputStream());
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (Exception e) {
+            throw new IOException("SHA-1 failed for " + path, e);
         }
     }
 
@@ -120,6 +239,10 @@ public final class PaperFiles {
      */
     public static String effectivePaperBind(ServerConfig config, String requestedBind) {
         if (config.isVelocityEnabled() && config.isVelocityBindLocalhost()) {
+            return "127.0.0.1";
+        }
+        // Via front: Paper stays on loopback; public JE is YaPcore's ViaProxyHandler.
+        if (config.isPaperAuthority() && config.isProtocolViaEnabled()) {
             return "127.0.0.1";
         }
         if (requestedBind == null || requestedBind.isBlank() || "0.0.0.0".equals(requestedBind)) {

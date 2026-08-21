@@ -15,9 +15,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Phase 3.5 / 3.6 — interior world work deferred from Paper main onto YapEngine
- * cores 3–6 under DLM leases: scheduled block/fluid/random, block entities,
- * and redstone block events.
+ * Phase 3.5 / 3.6 / 3.7 — world work deferred from Paper main onto YapEngine
+ * under DLM leases: interior on cores 3–6; border entities/TE/events on T8
+ * when {@code yapcore.phase3.spatial-borders} is set.
  * <p>
  * Called reflectively from vendored {@code ServerLevel} (Paper classloader →
  * system classloader host bridge).
@@ -30,6 +30,12 @@ public final class InteriorWorldTickBridge {
     private static final AtomicLong RANDOMS = new AtomicLong();
     private static final AtomicLong BLOCK_ENTITIES = new AtomicLong();
     private static final AtomicLong BLOCK_EVENTS = new AtomicLong();
+    private static final AtomicLong BORDER_ENTITIES = new AtomicLong();
+    private static final AtomicLong BORDER_BLOCK_ENTITIES = new AtomicLong();
+    private static final AtomicLong BORDER_BLOCK_EVENTS = new AtomicLong();
+    private static final AtomicLong TRACKER_SENDS = new AtomicLong();
+    private static final AtomicLong BORDER_TRACKER_SENDS = new AtomicLong();
+    private static final AtomicLong TRACKER_SKIPPED = new AtomicLong();
     private static final AtomicLong FAULTS = new AtomicLong();
 
     private static final ThreadLocal<List<PendingTick>> PENDING_TICKS =
@@ -64,6 +70,36 @@ public final class InteriorWorldTickBridge {
         return BLOCK_EVENTS.get();
     }
 
+    public static long borderEntityCount() {
+        return BORDER_ENTITIES.get();
+    }
+
+    public static long borderBlockEntityCount() {
+        return BORDER_BLOCK_ENTITIES.get();
+    }
+
+    public static long borderBlockEventCount() {
+        return BORDER_BLOCK_EVENTS.get();
+    }
+
+    public static long trackerSendCount() {
+        return TRACKER_SENDS.get();
+    }
+
+    public static long borderTrackerSendCount() {
+        return BORDER_TRACKER_SENDS.get();
+    }
+
+    /** Phase 3.9 — clean sendChanges skipped (not queued, not run). */
+    public static long trackerSkipCount() {
+        return TRACKER_SKIPPED.get();
+    }
+
+    /** Hot-path flag for ChunkMap (avoids synchronized {@code Boolean.getBoolean}). */
+    public static boolean spatialTrackerEnabled() {
+        return YapPhase3Flags.spatialTracker();
+    }
+
     public static long faultCount() {
         return FAULTS.get();
     }
@@ -96,9 +132,17 @@ public final class InteriorWorldTickBridge {
     private static volatile Method entityChunkPos;
     private static volatile Method chunkPosX;
     private static volatile Method chunkPosZ;
+    private static volatile Method checkIfActive;
+    private static volatile Method inactiveTickMethod;
+    private static volatile boolean activationResolved;
+    private static final AtomicLong ACTIVATION_SKIPS = new AtomicLong();
 
     public static long entityCount() {
         return ENTITIES.get();
+    }
+
+    public static long activationSkipCount() {
+        return ACTIVATION_SKIPS.get();
     }
 
     public static void offerEntity(Object nmsEntity) {
@@ -107,8 +151,26 @@ public final class InteriorWorldTickBridge {
         }
     }
 
-    /** Flush deferred interior entities onto spatial cores (call on Paper main after entity forEach). */
+    /**
+     * Flush deferred interior entities onto spatial cores (call on Paper main after entity forEach).
+     * When block-entity spatial tick is on, defer so {@link #flushBlockEntities()} can coalesce
+     * entity + BE into one barrier. Caller must still invoke {@link #flushBlockEntities()} (or
+     * force a drain) that tick — Paper hooks do this after the BE loop / when BE ticking is off.
+     */
     public static void flushEntities() {
+        if (YapPhase3Flags.spatialBlockEntities()) {
+            return;
+        }
+        flushEntitiesNow();
+    }
+
+    /** Force entity drain even when BE coalesce is enabled (BE ticking disabled path). */
+    public static void flushEntitiesForced() {
+        flushEntitiesNow();
+    }
+
+    private static void flushEntitiesNow() {
+        YapDistantBrain.bumpTick();
         List<Object> batch = PENDING_ENTITIES.get();
         if (batch.isEmpty()) {
             return;
@@ -135,20 +197,26 @@ public final class InteriorWorldTickBridge {
         for (var entry : byQ.entrySet()) {
             List<Object> list = entry.getValue();
             SpatialQuadrant q = entry.getKey();
-            work.put(q, () -> {
-                String key = "q:nms:" + q.name();
-                coord.runLeased(key, () -> {
-                    for (Object e : list) {
-                        tickNmsEntity(e);
-                    }
-                });
-            });
+            work.put(q, () -> coord.runOwned(() -> {
+                for (Object e : list) {
+                    tickNmsEntity(e);
+                }
+            }));
         }
         coord.runParallelTick(work);
     }
 
     private static void tickNmsEntity(Object nmsEntity) {
         try {
+            if (YapPhase3Flags.spatialEntityActivation() && !isEntityActive(nmsEntity)) {
+                inactiveTickEntity(nmsEntity);
+                ACTIVATION_SKIPS.incrementAndGet();
+                return;
+            }
+            if (YapDistantBrain.shouldThrottleFullTick(nmsEntity)) {
+                inactiveTickEntity(nmsEntity);
+                return;
+            }
             Method tick = resolveEntityTick(nmsEntity.getClass());
             if (tick == null) {
                 return;
@@ -156,10 +224,61 @@ public final class InteriorWorldTickBridge {
             tick.invoke(nmsEntity);
             ENTITIES.incrementAndGet();
         } catch (Throwable t) {
-            FAULTS.incrementAndGet();
-            if (FAULTS.get() < 5 || (FAULTS.get() % 200) == 0) {
-                LOG.log(Level.FINE, "Interior entity tick fault", t);
+            long n = FAULTS.incrementAndGet();
+            if (n <= 8 || (n % 500) == 0) {
+                LOG.log(Level.WARNING, "Interior entity tick fault #" + n, t);
             }
+        }
+    }
+
+    private static boolean isEntityActive(Object nmsEntity) {
+        resolveActivation(nmsEntity);
+        if (checkIfActive == null) {
+            return true;
+        }
+        try {
+            return Boolean.TRUE.equals(checkIfActive.invoke(null, nmsEntity));
+        } catch (ReflectiveOperationException e) {
+            return true;
+        }
+    }
+
+    private static void inactiveTickEntity(Object nmsEntity) {
+        resolveActivation(nmsEntity);
+        if (inactiveTickMethod == null) {
+            return;
+        }
+        try {
+            inactiveTickMethod.invoke(nmsEntity);
+        } catch (ReflectiveOperationException ignored) {
+            // best-effort
+        }
+    }
+
+    private static void resolveActivation(Object nmsEntity) {
+        if (activationResolved) {
+            return;
+        }
+        synchronized (InteriorWorldTickBridge.class) {
+            if (activationResolved) {
+                return;
+            }
+            ClassLoader cl = nmsEntity.getClass().getClassLoader();
+            try {
+                Class<?> ar = Class.forName("io.papermc.paper.entity.activation.ActivationRange", true, cl);
+                Class<?> entityCl = Class.forName("net.minecraft.world.entity.Entity", true, cl);
+                checkIfActive = ar.getMethod("checkIfActive", entityCl);
+            } catch (ReflectiveOperationException e) {
+                checkIfActive = null;
+            }
+            try {
+                Class<?> entityCl = Class.forName("net.minecraft.world.entity.Entity", true, cl);
+                inactiveTickMethod = entityCl.getMethod("inactiveTick");
+                inactiveTickMethod.setAccessible(true);
+            } catch (ReflectiveOperationException e) {
+                inactiveTickMethod = null;
+            }
+            activationResolved = true;
         }
     }
 
@@ -201,11 +320,23 @@ public final class InteriorWorldTickBridge {
         }
     }
 
-    private static final int PARALLEL_TICK_THRESHOLD = 32;
-    private static final int PARALLEL_RANDOM_THRESHOLD = 32;
+    private static final int PARALLEL_TICK_THRESHOLD = 48;
+    private static final int PARALLEL_RANDOM_THRESHOLD = 48;
 
     /** Flush deferred block/fluid ticks onto spatial cores (call on Paper main). */
     public static void flushBlockFluid() {
+        List<PendingTick> batch = PENDING_TICKS.get();
+        if (batch.isEmpty()) {
+            return;
+        }
+        // Defer barrier until flushRandom when possible — one wakeup for world ticks.
+        if (YapPhase3Flags.spatialRandom()) {
+            return;
+        }
+        flushBlockFluidNow();
+    }
+
+    private static void flushBlockFluidNow() {
         List<PendingTick> batch = PENDING_TICKS.get();
         if (batch.isEmpty()) {
             return;
@@ -223,15 +354,26 @@ public final class InteriorWorldTickBridge {
 
     /** Flush deferred random chunk ticks onto spatial cores (call on Paper main). */
     public static void flushRandom() {
-        List<PendingRandom> batch = PENDING_RANDOM.get();
-        if (batch.isEmpty()) {
+        // Coalesce: drain pending block/fluid in the same barrier as random.
+        boolean hasTicks = !PENDING_TICKS.get().isEmpty();
+        boolean hasRandom = !PENDING_RANDOM.get().isEmpty();
+        if (!hasTicks && !hasRandom) {
             return;
         }
+        if (hasTicks && hasRandom) {
+            flushWorldCombined();
+            return;
+        }
+        if (hasTicks) {
+            flushBlockFluidNow();
+        }
+        if (!hasRandom) {
+            return;
+        }
+        List<PendingRandom> batch = PENDING_RANDOM.get();
         List<PendingRandom> copy = new ArrayList<>(batch);
         batch.clear();
-        // Small batches: avoid 4-way spatial wakeup overhead on Paper main
         if (copy.size() < PARALLEL_RANDOM_THRESHOLD) {
-            System.setProperty("yapcore.phase3.spatial-tick.flushing", "true");
             YapPhase3Flags.setFlushing(true);
             try {
                 for (PendingRandom p : copy) {
@@ -245,10 +387,67 @@ public final class InteriorWorldTickBridge {
         fanOutRandom(copy);
     }
 
+    /** One barrier for scheduled block/fluid + random (high-pop path). */
+    private static void flushWorldCombined() {
+        List<PendingTick> ticks = new ArrayList<>(PENDING_TICKS.get());
+        PENDING_TICKS.get().clear();
+        List<PendingRandom> randoms = new ArrayList<>(PENDING_RANDOM.get());
+        PENDING_RANDOM.get().clear();
+        YapSpatialTickCoordinator coord = PaperTickBridgeHolder.COORDINATOR;
+        if (coord == null || !coord.isOnline()
+                || (ticks.size() + randoms.size()) < PARALLEL_TICK_THRESHOLD) {
+            for (PendingTick p : ticks) {
+                applyTick(p);
+            }
+            YapPhase3Flags.setFlushing(true);
+            try {
+                for (PendingRandom p : randoms) {
+                    applyRandom(p);
+                }
+            } finally {
+                YapPhase3Flags.setFlushing(false);
+            }
+            return;
+        }
+        EnumMap<SpatialQuadrant, List<PendingTick>> ticksByQ = new EnumMap<>(SpatialQuadrant.class);
+        EnumMap<SpatialQuadrant, List<PendingRandom>> rndByQ = new EnumMap<>(SpatialQuadrant.class);
+        for (PendingTick p : ticks) {
+            ticksByQ.computeIfAbsent(quadrantOfPos(p.pos), k -> new ArrayList<>()).add(p);
+        }
+        for (PendingRandom p : randoms) {
+            rndByQ.computeIfAbsent(quadrantOfChunk(p.chunk), k -> new ArrayList<>()).add(p);
+        }
+        Map<SpatialQuadrant, Runnable> work = new EnumMap<>(SpatialQuadrant.class);
+        for (SpatialQuadrant q : SpatialQuadrant.values()) {
+            List<PendingTick> tl = ticksByQ.get(q);
+            List<PendingRandom> rl = rndByQ.get(q);
+            if ((tl == null || tl.isEmpty()) && (rl == null || rl.isEmpty())) {
+                continue;
+            }
+            work.put(q, () -> coord.runOwned(() -> {
+                if (tl != null) {
+                    for (PendingTick p : tl) {
+                        applyTick(p);
+                    }
+                }
+                if (rl != null) {
+                    YapPhase3Flags.setFlushing(true);
+                    try {
+                        for (PendingRandom p : rl) {
+                            applyRandom(p);
+                        }
+                    } finally {
+                        YapPhase3Flags.setFlushing(false);
+                    }
+                }
+            }));
+        }
+        coord.runParallelTick(work);
+    }
+
     private static void fanOutTicks(List<PendingTick> copy) {
         YapSpatialTickCoordinator coord = PaperTickBridgeHolder.COORDINATOR;
         if (coord == null || !coord.isOnline()) {
-            // Fallback: run on main if Phase 3 host not ready
             for (PendingTick p : copy) {
                 applyTick(p);
             }
@@ -256,18 +455,16 @@ public final class InteriorWorldTickBridge {
         }
         EnumMap<SpatialQuadrant, List<PendingTick>> byQ = new EnumMap<>(SpatialQuadrant.class);
         for (PendingTick p : copy) {
-            SpatialQuadrant q = quadrantOfPos(p.pos);
-            byQ.computeIfAbsent(q, k -> new ArrayList<>()).add(p);
+            byQ.computeIfAbsent(quadrantOfPos(p.pos), k -> new ArrayList<>()).add(p);
         }
         Map<SpatialQuadrant, Runnable> work = new EnumMap<>(SpatialQuadrant.class);
         for (var e : byQ.entrySet()) {
             List<PendingTick> list = e.getValue();
-            work.put(e.getKey(), () -> {
+            work.put(e.getKey(), () -> coord.runOwned(() -> {
                 for (PendingTick p : list) {
-                    String key = leaseKey(p.level, p.pos);
-                    coord.runLeased(key, () -> applyTick(p));
+                    applyTick(p);
                 }
-            });
+            }));
         }
         coord.runParallelTick(work);
     }
@@ -282,18 +479,16 @@ public final class InteriorWorldTickBridge {
         }
         EnumMap<SpatialQuadrant, List<PendingRandom>> byQ = new EnumMap<>(SpatialQuadrant.class);
         for (PendingRandom p : copy) {
-            SpatialQuadrant q = quadrantOfChunk(p.chunk);
-            byQ.computeIfAbsent(q, k -> new ArrayList<>()).add(p);
+            byQ.computeIfAbsent(quadrantOfChunk(p.chunk), k -> new ArrayList<>()).add(p);
         }
         Map<SpatialQuadrant, Runnable> work = new EnumMap<>(SpatialQuadrant.class);
         for (var e : byQ.entrySet()) {
             List<PendingRandom> list = e.getValue();
-            work.put(e.getKey(), () -> {
+            work.put(e.getKey(), () -> coord.runOwned(() -> {
                 for (PendingRandom p : list) {
-                    String key = leaseKeyChunk(p.level, p.chunk);
-                    coord.runLeased(key, () -> applyRandom(p));
+                    applyRandom(p);
                 }
-            });
+            }));
         }
         coord.runParallelTick(work);
     }
@@ -500,17 +695,6 @@ public final class InteriorWorldTickBridge {
         }
     }
 
-    /** Flush deferred interior block-entity tickers onto spatial cores (Paper main). */
-    public static void flushBlockEntities() {
-        List<Object> batch = PENDING_BLOCK_ENTITIES.get();
-        if (batch.isEmpty()) {
-            return;
-        }
-        List<Object> copy = new ArrayList<>(batch);
-        batch.clear();
-        fanOutBlockEntities(copy);
-    }
-
     public static void offerBlockEvent(Object serverLevel, Object blockEventData) {
         if (serverLevel != null && blockEventData != null) {
             PENDING_BLOCK_EVENTS.get().add(new PendingBlockEvent(serverLevel, blockEventData));
@@ -519,9 +703,17 @@ public final class InteriorWorldTickBridge {
 
     /**
      * Flush deferred interior redstone/piston block events onto spatial cores.
-     * Caller must have already handled border events on Paper main.
+     * Phase 3.10: when coalesce is on, also drains deferred entities + BE in this barrier.
      */
     public static void flushBlockEvents() {
+        if (YapPhase3Flags.spatialCoalesceBarriers() && YapPhase3Flags.spatialRedstone()) {
+            if (!PENDING_BLOCK_ENTITIES.get().isEmpty()
+                    || !PENDING_ENTITIES.get().isEmpty()
+                    || !PENDING_BLOCK_EVENTS.get().isEmpty()) {
+                flushEntitiesBeAndEventsCombined();
+            }
+            return;
+        }
         List<PendingBlockEvent> batch = PENDING_BLOCK_EVENTS.get();
         if (batch.isEmpty()) {
             return;
@@ -529,6 +721,107 @@ public final class InteriorWorldTickBridge {
         List<PendingBlockEvent> copy = new ArrayList<>(batch);
         batch.clear();
         fanOutBlockEvents(copy);
+    }
+
+    /** Flush deferred interior block-entity tickers onto spatial cores (Paper main). */
+    public static void flushBlockEntities() {
+        // Defer until flushBlockEvents so redstone events share one runParallelTick
+        if (YapPhase3Flags.spatialCoalesceBarriers() && YapPhase3Flags.spatialRedstone()) {
+            return;
+        }
+        boolean hasBe = !PENDING_BLOCK_ENTITIES.get().isEmpty();
+        boolean hasEnt = !PENDING_ENTITIES.get().isEmpty();
+        if (!hasBe && !hasEnt) {
+            return;
+        }
+        if (hasBe && hasEnt) {
+            flushEntitiesBeAndEventsCombined();
+            return;
+        }
+        if (hasEnt) {
+            flushEntitiesNow();
+        }
+        if (!hasBe) {
+            return;
+        }
+        List<Object> batch = PENDING_BLOCK_ENTITIES.get();
+        List<Object> copy = new ArrayList<>(batch);
+        batch.clear();
+        fanOutBlockEntities(copy);
+    }
+
+    private static void flushEntitiesBeAndEventsCombined() {
+        List<Object> ents = new ArrayList<>(PENDING_ENTITIES.get());
+        PENDING_ENTITIES.get().clear();
+        List<Object> bes = new ArrayList<>(PENDING_BLOCK_ENTITIES.get());
+        PENDING_BLOCK_ENTITIES.get().clear();
+        List<PendingBlockEvent> evs = new ArrayList<>(PENDING_BLOCK_EVENTS.get());
+        PENDING_BLOCK_EVENTS.get().clear();
+        YapDistantBrain.bumpTick();
+        YapSpatialTickCoordinator coord = PaperTickBridgeHolder.COORDINATOR;
+        if (ents.isEmpty() && bes.isEmpty() && evs.isEmpty()) {
+            return;
+        }
+        if (coord == null || !coord.isOnline()) {
+            for (Object e : ents) {
+                tickNmsEntity(e);
+            }
+            for (Object t : bes) {
+                tickBlockEntity(t);
+            }
+            for (PendingBlockEvent e : evs) {
+                applyBlockEvent(e);
+            }
+            return;
+        }
+        EnumMap<SpatialQuadrant, List<Object>> entByQ = new EnumMap<>(SpatialQuadrant.class);
+        EnumMap<SpatialQuadrant, List<Object>> beByQ = new EnumMap<>(SpatialQuadrant.class);
+        EnumMap<SpatialQuadrant, List<PendingBlockEvent>> evByQ = new EnumMap<>(SpatialQuadrant.class);
+        for (Object e : ents) {
+            entByQ.computeIfAbsent(quadrantOfEntity(e), k -> new ArrayList<>()).add(e);
+        }
+        for (Object t : bes) {
+            beByQ.computeIfAbsent(quadrantOfBlockEntity(t), k -> new ArrayList<>()).add(t);
+        }
+        for (PendingBlockEvent e : evs) {
+            evByQ.computeIfAbsent(quadrantOfBlockEvent(e), k -> new ArrayList<>()).add(e);
+        }
+        Map<SpatialQuadrant, Runnable> work = new EnumMap<>(SpatialQuadrant.class);
+        for (SpatialQuadrant q : SpatialQuadrant.values()) {
+            List<Object> el = entByQ.get(q);
+            List<Object> bl = beByQ.get(q);
+            List<PendingBlockEvent> vl = evByQ.get(q);
+            if ((el == null || el.isEmpty()) && (bl == null || bl.isEmpty())
+                    && (vl == null || vl.isEmpty())) {
+                continue;
+            }
+            work.put(q, () -> coord.runOwned(() -> {
+                if (el != null) {
+                    for (Object e : el) {
+                        tickNmsEntity(e);
+                    }
+                }
+                if (bl != null) {
+                    for (Object t : bl) {
+                        tickBlockEntity(t);
+                    }
+                }
+                if (vl != null) {
+                    for (PendingBlockEvent e : vl) {
+                        applyBlockEvent(e);
+                    }
+                }
+            }));
+        }
+        coord.runParallelTick(work);
+    }
+
+    private static SpatialQuadrant quadrantOfBlockEvent(PendingBlockEvent e) {
+        return quadrantOfBlockEvent(e.eventData());
+    }
+
+    private static void flushEntitiesAndBlockEntitiesCombined() {
+        flushEntitiesBeAndEventsCombined();
     }
 
     private static void fanOutBlockEntities(List<Object> copy) {
@@ -541,22 +834,16 @@ public final class InteriorWorldTickBridge {
         }
         EnumMap<SpatialQuadrant, List<Object>> byQ = new EnumMap<>(SpatialQuadrant.class);
         for (Object t : copy) {
-            SpatialQuadrant q = quadrantOfBlockEntity(t);
-            byQ.computeIfAbsent(q, k -> new ArrayList<>()).add(t);
+            byQ.computeIfAbsent(quadrantOfBlockEntity(t), k -> new ArrayList<>()).add(t);
         }
         Map<SpatialQuadrant, Runnable> work = new EnumMap<>(SpatialQuadrant.class);
         for (var entry : byQ.entrySet()) {
             List<Object> list = entry.getValue();
-            SpatialQuadrant q = entry.getKey();
-            work.put(q, () -> {
-                // One lease per quadrant — hoppers/furnaces batch without per-TE acquire churn
-                String key = "q:be:" + q.name();
-                coord.runLeased(key, () -> {
-                    for (Object t : list) {
-                        tickBlockEntity(t);
-                    }
-                });
-            });
+            work.put(entry.getKey(), () -> coord.runOwned(() -> {
+                for (Object t : list) {
+                    tickBlockEntity(t);
+                }
+            }));
         }
         coord.runParallelTick(work);
     }
@@ -571,21 +858,16 @@ public final class InteriorWorldTickBridge {
         }
         EnumMap<SpatialQuadrant, List<PendingBlockEvent>> byQ = new EnumMap<>(SpatialQuadrant.class);
         for (PendingBlockEvent p : copy) {
-            SpatialQuadrant q = quadrantOfBlockEvent(p.eventData);
-            byQ.computeIfAbsent(q, k -> new ArrayList<>()).add(p);
+            byQ.computeIfAbsent(quadrantOfBlockEvent(p.eventData), k -> new ArrayList<>()).add(p);
         }
         Map<SpatialQuadrant, Runnable> work = new EnumMap<>(SpatialQuadrant.class);
         for (var entry : byQ.entrySet()) {
             List<PendingBlockEvent> list = entry.getValue();
-            SpatialQuadrant q = entry.getKey();
-            work.put(q, () -> {
-                String key = "q:bevt:" + q.name();
-                coord.runLeased(key, () -> {
-                    for (PendingBlockEvent p : list) {
-                        applyBlockEvent(p);
-                    }
-                });
-            });
+            work.put(entry.getKey(), () -> coord.runOwned(() -> {
+                for (PendingBlockEvent p : list) {
+                    applyBlockEvent(p);
+                }
+            }));
         }
         coord.runParallelTick(work);
     }
@@ -704,5 +986,315 @@ public final class InteriorWorldTickBridge {
     }
 
     private record PendingBlockEvent(Object level, Object eventData) {
+    }
+
+    // --- Phase 3.7: border chunk work on T8 under DLM leases ---
+
+    private static final ThreadLocal<List<Object>> PENDING_BORDER_ENTITIES =
+            ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<List<Object>> PENDING_BORDER_BLOCK_ENTITIES =
+            ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<List<PendingBlockEvent>> PENDING_BORDER_BLOCK_EVENTS =
+            ThreadLocal.withInitial(ArrayList::new);
+
+    public static void offerBorderEntity(Object nmsEntity) {
+        if (nmsEntity != null) {
+            PENDING_BORDER_ENTITIES.get().add(nmsEntity);
+        }
+    }
+
+    /** Flush deferred border entities onto T8 under a DLM lease (Paper main waits). */
+    public static void flushBorderEntities() {
+        List<Object> batch = PENDING_BORDER_ENTITIES.get();
+        if (batch.isEmpty()) {
+            return;
+        }
+        List<Object> copy = new ArrayList<>(batch);
+        batch.clear();
+        YapSpatialTickCoordinator coord = PaperTickBridgeHolder.COORDINATOR;
+        if (coord == null || !coord.isOnline() || !YapPhase3Flags.spatialBorders()) {
+            for (Object e : copy) {
+                tickNmsEntity(e);
+            }
+            BORDER_ENTITIES.addAndGet(copy.size());
+            return;
+        }
+        coord.runBorderTickSync("border:entities", () -> {
+            for (Object e : copy) {
+                tickNmsEntity(e);
+            }
+            BORDER_ENTITIES.addAndGet(copy.size());
+        });
+    }
+
+    public static void offerBorderBlockEntity(Object tickingBlockEntity) {
+        if (tickingBlockEntity != null) {
+            PENDING_BORDER_BLOCK_ENTITIES.get().add(tickingBlockEntity);
+        }
+    }
+
+    public static void flushBorderBlockEntities() {
+        List<Object> batch = PENDING_BORDER_BLOCK_ENTITIES.get();
+        if (batch.isEmpty()) {
+            return;
+        }
+        List<Object> copy = new ArrayList<>(batch);
+        batch.clear();
+        YapSpatialTickCoordinator coord = PaperTickBridgeHolder.COORDINATOR;
+        if (coord == null || !coord.isOnline() || !YapPhase3Flags.spatialBorders()) {
+            for (Object t : copy) {
+                tickBlockEntity(t);
+            }
+            BORDER_BLOCK_ENTITIES.addAndGet(copy.size());
+            return;
+        }
+        coord.runBorderTickSync("border:blockentities", () -> {
+            for (Object t : copy) {
+                tickBlockEntity(t);
+            }
+            BORDER_BLOCK_ENTITIES.addAndGet(copy.size());
+        });
+    }
+
+    public static void offerBorderBlockEvent(Object serverLevel, Object blockEventData) {
+        if (serverLevel != null && blockEventData != null) {
+            PENDING_BORDER_BLOCK_EVENTS.get().add(new PendingBlockEvent(serverLevel, blockEventData));
+        }
+    }
+
+    public static void flushBorderBlockEvents() {
+        List<PendingBlockEvent> batch = PENDING_BORDER_BLOCK_EVENTS.get();
+        if (batch.isEmpty()) {
+            return;
+        }
+        List<PendingBlockEvent> copy = new ArrayList<>(batch);
+        batch.clear();
+        YapSpatialTickCoordinator coord = PaperTickBridgeHolder.COORDINATOR;
+        if (coord == null || !coord.isOnline() || !YapPhase3Flags.spatialBorders()) {
+            for (PendingBlockEvent p : copy) {
+                applyBlockEvent(p);
+            }
+            BORDER_BLOCK_EVENTS.addAndGet(copy.size());
+            return;
+        }
+        coord.runBorderTickSync("border:blockevents", () -> {
+            for (PendingBlockEvent p : copy) {
+                applyBlockEvent(p);
+            }
+            BORDER_BLOCK_EVENTS.addAndGet(copy.size());
+        });
+    }
+
+    // --- Phase 3.8 / 3.9: non-player tracker sendChanges on spatial cores / T8 ---
+
+    private static final ThreadLocal<List<PendingTrackerSend>> PENDING_TRACKER =
+            ThreadLocal.withInitial(ArrayList::new);
+    private static final ThreadLocal<List<Runnable>> PENDING_BORDER_TRACKER =
+            ThreadLocal.withInitial(ArrayList::new);
+
+    private static volatile Method entityGetEntityData;
+    private static volatile Method entityDataIsDirty;
+    private static volatile java.lang.reflect.Field entityNeedsSync;
+    private static volatile java.lang.reflect.Field entityHurtMarked;
+    private static volatile java.lang.reflect.Field entitySyncPosition;
+    private static volatile java.lang.reflect.Field serverEntityTickCount;
+    private static volatile java.lang.reflect.Field serverEntityUpdateInterval;
+    private static volatile java.lang.reflect.Field serverEntityForceResync;
+    private static volatile boolean trackerReflectFailed;
+
+    /**
+     * Queue non-player {@code ServerEntity.sendChanges} for spatial flush.
+     * {@code moonrise$tick} / track-untrack must already have run on Paper main.
+     * Players are never offered (ChunkMap keeps them on main).
+     * <p>
+     * Phase 3.9: returns {@code true} also when the send is a known no-op (skip-clean),
+     * so main does not run {@code sendChanges} either.
+     *
+     * @param serverEntity optional {@code ServerEntity} for interval/force checks; may be null
+     * @return false if the work should run on main (unknown entity / offer fail)
+     */
+    public static boolean offerTrackerSendChanges(Object nmsEntity, Runnable sendChanges) {
+        return offerTrackerSendChanges(nmsEntity, null, sendChanges);
+    }
+
+    public static boolean offerTrackerSendChanges(Object nmsEntity, Object serverEntity, Runnable sendChanges) {
+        if (nmsEntity == null || sendChanges == null || !YapPhase3Flags.spatialTracker()) {
+            return false;
+        }
+        if (YapPhase3Flags.spatialTrackerSkipClean() && isCleanTrackerSend(nmsEntity, serverEntity)) {
+            TRACKER_SKIPPED.incrementAndGet();
+            return true;
+        }
+        try {
+            int cx;
+            int cz;
+            if (entityChunkPos == null) {
+                entityChunkPos = nmsEntity.getClass().getMethod("chunkPosition");
+            }
+            Object pos = entityChunkPos.invoke(nmsEntity);
+            if (chunkPosX == null) {
+                chunkPosX = pos.getClass().getMethod("x");
+                chunkPosZ = pos.getClass().getMethod("z");
+            }
+            cx = ((Number) chunkPosX.invoke(pos)).intValue();
+            cz = ((Number) chunkPosZ.invoke(pos)).intValue();
+            if (YapSpatialTickCoordinator.isBorderChunk(cx, cz)) {
+                if (!YapPhase3Flags.spatialBorders()) {
+                    return false;
+                }
+                PENDING_BORDER_TRACKER.get().add(sendChanges);
+                return true;
+            }
+            SpatialQuadrant q = SpatialQuadrant.byId(quadrantId(cx, cz));
+            PENDING_TRACKER.get().add(new PendingTrackerSend(q, sendChanges));
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
+     * True when {@code sendChanges} would only bump tickCount — no packets.
+     * Uses entity dirty flags + ServerEntity interval when available.
+     */
+    static boolean isCleanTrackerSend(Object nmsEntity, Object serverEntity) {
+        if (trackerReflectFailed) {
+            return false;
+        }
+        try {
+            if (entityHurtMarked == null) {
+                Class<?> ec = nmsEntity.getClass();
+                while (ec != null) {
+                    try {
+                        entityNeedsSync = ec.getDeclaredField("needsSync");
+                        entityNeedsSync.setAccessible(true);
+                        entityHurtMarked = ec.getDeclaredField("hurtMarked");
+                        entityHurtMarked.setAccessible(true);
+                        entitySyncPosition = ec.getDeclaredField("syncPosition");
+                        entitySyncPosition.setAccessible(true);
+                        break;
+                    } catch (NoSuchFieldException e) {
+                        ec = ec.getSuperclass();
+                    }
+                }
+                entityGetEntityData = nmsEntity.getClass().getMethod("getEntityData");
+            }
+            if (entityHurtMarked == null) {
+                trackerReflectFailed = true;
+                return false;
+            }
+            if (Boolean.TRUE.equals(entityNeedsSync.get(nmsEntity))
+                    || Boolean.TRUE.equals(entityHurtMarked.get(nmsEntity))
+                    || Boolean.TRUE.equals(entitySyncPosition.get(nmsEntity))) {
+                return false;
+            }
+            Object data = entityGetEntityData.invoke(nmsEntity);
+            if (entityDataIsDirty == null) {
+                entityDataIsDirty = data.getClass().getMethod("isDirty");
+            }
+            if (Boolean.TRUE.equals(entityDataIsDirty.invoke(data))) {
+                return false;
+            }
+            if (serverEntity != null) {
+                if (serverEntityTickCount == null) {
+                    Class<?> sc = serverEntity.getClass();
+                    serverEntityTickCount = sc.getDeclaredField("tickCount");
+                    serverEntityTickCount.setAccessible(true);
+                    serverEntityUpdateInterval = sc.getDeclaredField("updateInterval");
+                    serverEntityUpdateInterval.setAccessible(true);
+                    try {
+                        serverEntityForceResync = sc.getDeclaredField("forceStateResync");
+                        serverEntityForceResync.setAccessible(true);
+                    } catch (NoSuchFieldException ignored) {
+                        serverEntityForceResync = null;
+                    }
+                }
+                if (serverEntityForceResync != null
+                        && Boolean.TRUE.equals(serverEntityForceResync.get(serverEntity))) {
+                    return false;
+                }
+                int tick = serverEntityTickCount.getInt(serverEntity);
+                int interval = Math.max(1, serverEntityUpdateInterval.getInt(serverEntity));
+                if (tick % interval == 0) {
+                    return false; // position/rotation sync tick
+                }
+            }
+            return true;
+        } catch (Throwable t) {
+            trackerReflectFailed = true;
+            return false;
+        }
+    }
+
+    /** Flush deferred non-player tracker sends onto cores 3–6 / T8 (Paper main waits). */
+    public static void flushTrackerSendChanges() {
+        YapDistantBrain.bumpTick();
+        List<PendingTrackerSend> interior = PENDING_TRACKER.get();
+        List<Runnable> border = PENDING_BORDER_TRACKER.get();
+        if (interior.isEmpty() && border.isEmpty()) {
+            return;
+        }
+        List<PendingTrackerSend> intCopy = new ArrayList<>(interior);
+        interior.clear();
+        List<Runnable> borderCopy = new ArrayList<>(border);
+        border.clear();
+
+        YapSpatialTickCoordinator coord = PaperTickBridgeHolder.COORDINATOR;
+        // Tiny batches: run on main — latch wakeup often costs more than a few sendChanges
+        final int tiny = 12;
+        if (!intCopy.isEmpty()) {
+            if (coord == null || !coord.isOnline() || intCopy.size() <= tiny) {
+                for (PendingTrackerSend p : intCopy) {
+                    runTrackerSend(p.send, false);
+                }
+            } else {
+                EnumMap<SpatialQuadrant, List<Runnable>> byQ = new EnumMap<>(SpatialQuadrant.class);
+                for (PendingTrackerSend p : intCopy) {
+                    byQ.computeIfAbsent(p.quad, k -> new ArrayList<>()).add(p.send);
+                }
+                Map<SpatialQuadrant, Runnable> work = new EnumMap<>(SpatialQuadrant.class);
+                for (var e : byQ.entrySet()) {
+                    List<Runnable> list = e.getValue();
+                    work.put(e.getKey(), () -> coord.runOwned(() -> {
+                        for (Runnable r : list) {
+                            runTrackerSend(r, false);
+                        }
+                    }));
+                }
+                coord.runParallelTick(work);
+            }
+        }
+        if (!borderCopy.isEmpty()) {
+            if (coord == null || !coord.isOnline() || !YapPhase3Flags.spatialBorders()) {
+                for (Runnable r : borderCopy) {
+                    runTrackerSend(r, true);
+                }
+            } else {
+                coord.runBorderTickSync("border:tracker", () -> {
+                    for (Runnable r : borderCopy) {
+                        runTrackerSend(r, true);
+                    }
+                });
+            }
+        }
+    }
+
+    private static void runTrackerSend(Runnable send, boolean border) {
+        try {
+            send.run();
+            if (border) {
+                BORDER_TRACKER_SENDS.incrementAndGet();
+            } else {
+                TRACKER_SENDS.incrementAndGet();
+            }
+        } catch (Throwable t) {
+            long n = FAULTS.incrementAndGet();
+            if (n <= 8 || (n % 500) == 0) {
+                LOG.log(Level.WARNING, "Tracker sendChanges fault #" + n, t);
+            }
+        }
+    }
+
+    private record PendingTrackerSend(SpatialQuadrant quad, Runnable send) {
     }
 }

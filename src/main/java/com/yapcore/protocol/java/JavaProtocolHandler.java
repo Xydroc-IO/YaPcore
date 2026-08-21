@@ -134,6 +134,7 @@ public final class JavaProtocolHandler extends SimpleChannelInboundHandler<ByteB
         switch (packetId) {
             case 0x00 -> {
                 username = McCodec.readString(msg, 16);
+                band = ProtocolCompat.onJavaJoin(username, protocolVersion);
                 if (msg.readableBytes() >= 16) {
                     playerUuid = McCodec.readUuid(msg);
                 } else {

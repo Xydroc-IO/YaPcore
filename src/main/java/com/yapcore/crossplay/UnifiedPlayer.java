@@ -22,6 +22,7 @@ public final class UnifiedPlayer {
     private final AtomicInteger blockY = new AtomicInteger(64);
     private final AtomicInteger blockZ = new AtomicInteger(0);
     private final AtomicReference<String> dimension = new AtomicReference<>("overworld");
+    private final AtomicReference<UUID> linkedUuid = new AtomicReference<>();
 
     public UnifiedPlayer(ClientSession session) {
         Objects.requireNonNull(session);
@@ -29,6 +30,7 @@ public final class UnifiedPlayer {
         this.username = session.getUsername();
         this.edition = session.getEdition();
         this.sessionId = session.getSessionId();
+        this.linkedUuid.set(session.getSessionId());
     }
 
     public UUID getWorldId() {
@@ -72,6 +74,16 @@ public final class UnifiedPlayer {
     public void setDimension(String dim) {
         if (dim != null && !dim.isBlank()) {
             dimension.set(dim.trim());
+        }
+    }
+
+    public UUID getLinkedUuid() {
+        return linkedUuid.get();
+    }
+
+    public void setLinkedUuid(UUID uuid) {
+        if (uuid != null) {
+            linkedUuid.set(uuid);
         }
     }
 

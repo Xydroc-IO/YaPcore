@@ -70,6 +70,19 @@ public final class PaperPluginsLayout {
         return unified;
     }
 
+    /**
+     * Unify plugins layout, then optionally rewrite 1.20–1.21 jars for Paper 26.2.
+     */
+    public static Path ensureUnifiedAndCompat(Path rootDir, Path paperDir,
+                                              com.yapcore.config.ServerConfig config)
+            throws IOException {
+        Path plugins = ensureUnified(rootDir, paperDir);
+        if (config != null) {
+            com.yapcore.plugincompat.PluginCompat.preparePlugins(plugins, config);
+        }
+        return plugins;
+    }
+
     private static void createLink(Path paperDir, Path paperPlugins, Path unified)
             throws IOException {
         Path relative = paperDir.relativize(unified);

@@ -81,6 +81,9 @@ public final class ServerConfig {
         props.setProperty("modules-dir", "modules");
         props.setProperty("logs-dir", "logs");
         props.setProperty("online-mode", "false");
+        // Do not OP everyone by default — use ops= or console `op <name>`
+        props.setProperty("auto-op", "false");
+        props.setProperty("ops", "");
         props.setProperty("gui-enabled", "true");
         // Dual-stack clients (on by default)
         props.setProperty("java-enabled", "true");
@@ -93,14 +96,19 @@ public final class ServerConfig {
         props.setProperty("nginx-pack-port", "80");
         props.setProperty("nginx-domain", "");
         props.setProperty("backwards-compatible", "true");
+        // Paper 1.20–1.21 plugin jars → 26.2 (field + CraftBukkit package rewrite)
+        props.setProperty("plugin-compat-enabled", "true");
+        props.setProperty("plugin-compat-rewrite", "true");
+        props.setProperty("plugin-compat-backup", "true");
         // Resource / texture packs
         props.setProperty("resource-pack-enabled", "true");
         props.setProperty("resource-pack-dir", "resourcepacks");
-        props.setProperty("resource-pack-file", "");
+        props.setProperty("resource-pack-file", "faithful-64x.zip");
         props.setProperty("resource-pack-http-port", "8081");
         props.setProperty("resource-pack-public-host", "");
-        props.setProperty("resource-pack-forced", "false");
-        props.setProperty("resource-pack-prompt", "This server uses a resource pack for the best experience.");
+        props.setProperty("resource-pack-forced", "true");
+        props.setProperty("resource-pack-prompt",
+                "YaPcore uses Faithful 64x (https://faithfulpack.net) — accept to download.");
         // Product path: Paper → YapEngine Phase 3 (tick on cores 3–6).
         props.setProperty("game-authority", "paper");
         props.setProperty("paper-embed", "true");
@@ -112,6 +120,9 @@ public final class ServerConfig {
         props.setProperty("paper-ready-timeout-sec", "180");
         props.setProperty("paper-phase3-tick-bridge", "true");
         props.setProperty("paper-phase3-nms-tick", "true");
+        // Phase 4: first-party Via\* + Geyser parity (no plugin jars)
+        props.setProperty("protocol-via-enabled", "true");
+        props.setProperty("protocol-geyser-enabled", "true");
         // Legacy Mojang kernel (only when game-authority=mojang)
         props.setProperty("game-kernel-enabled", "false");
         props.setProperty("game-kernel-dir", "game-kernel");
@@ -135,6 +146,12 @@ public final class ServerConfig {
         props.setProperty("velocity-secret-file", "");
         props.setProperty("velocity-online-mode", "true");
         props.setProperty("velocity-bind-localhost", "true");
+        // Headless web control dashboard (mirrors Swing ControlPanel)
+        props.setProperty("web-dashboard-enabled", "true");
+        props.setProperty("web-dashboard-port", "8080");
+        props.setProperty("web-dashboard-bind", "0.0.0.0");
+        props.setProperty("web-dashboard-token", "");
+        props.setProperty("web-dashboard-localhost-only", "false");
     }
 
     private void applyMissingDefaults() {
@@ -304,6 +321,31 @@ public final class ServerConfig {
     }
 
     /**
+     * When true, joining players are granted OP so vanilla commands like
+     * {@code /gamemode} appear. Default {@code false} — use {@code ops=} or
+     * console {@code op <name>} instead.
+     */
+    public boolean isAutoOp() {
+        return Boolean.parseBoolean(props.getProperty("auto-op", "false"));
+    }
+
+    /** Comma-separated names always written into {@code ops.json} at Paper start. */
+    public java.util.List<String> getOps() {
+        String raw = props.getProperty("ops", "");
+        if (raw == null || raw.isBlank()) {
+            return java.util.List.of();
+        }
+        java.util.ArrayList<String> out = new java.util.ArrayList<>();
+        for (String p : raw.split(",")) {
+            String n = p.trim();
+            if (!n.isEmpty()) {
+                out.add(n);
+            }
+        }
+        return out;
+    }
+
+    /**
      * When true, YaPcore configures the Paper game for Velocity modern player-info
      * forwarding ({@code paper-global.yml} + {@code online-mode=false}).
      */
@@ -451,6 +493,31 @@ public final class ServerConfig {
         props.setProperty("backwards-compatible", Boolean.toString(enabled));
     }
 
+    /** Tier A/B: rewrite 1.20–1.21 plugin jars for Paper 26.2 before load. */
+    public boolean isPluginCompatEnabled() {
+        return Boolean.parseBoolean(props.getProperty("plugin-compat-enabled", "true"));
+    }
+
+    public void setPluginCompatEnabled(boolean enabled) {
+        props.setProperty("plugin-compat-enabled", Boolean.toString(enabled));
+    }
+
+    public boolean isPluginCompatRewrite() {
+        return Boolean.parseBoolean(props.getProperty("plugin-compat-rewrite", "true"));
+    }
+
+    public void setPluginCompatRewrite(boolean enabled) {
+        props.setProperty("plugin-compat-rewrite", Boolean.toString(enabled));
+    }
+
+    public boolean isPluginCompatBackup() {
+        return Boolean.parseBoolean(props.getProperty("plugin-compat-backup", "true"));
+    }
+
+    public void setPluginCompatBackup(boolean enabled) {
+        props.setProperty("plugin-compat-backup", Boolean.toString(enabled));
+    }
+
     public boolean isResourcePackEnabled() {
         return Boolean.parseBoolean(props.getProperty("resource-pack-enabled", "true"));
     }
@@ -464,7 +531,7 @@ public final class ServerConfig {
     }
 
     public String getResourcePackFile() {
-        return props.getProperty("resource-pack-file", "");
+        return props.getProperty("resource-pack-file", "faithful-64x.zip");
     }
 
     public void setResourcePackFile(String fileName) {
@@ -493,6 +560,51 @@ public final class ServerConfig {
 
     public void setResourcePackForced(boolean forced) {
         props.setProperty("resource-pack-forced", Boolean.toString(forced));
+    }
+
+    public boolean isWebDashboardEnabled() {
+        // MSPT benches: no dashboard bind (8080) and avoid JLine stdin when headless.
+        String bench = System.getProperty("yap.bench.scenario");
+        if (bench != null && !bench.isBlank()) {
+            return false;
+        }
+        return Boolean.parseBoolean(props.getProperty("web-dashboard-enabled", "true"));
+    }
+
+    public void setWebDashboardEnabled(boolean enabled) {
+        props.setProperty("web-dashboard-enabled", Boolean.toString(enabled));
+    }
+
+    public int getWebDashboardPort() {
+        return parseInt("web-dashboard-port", 8080);
+    }
+
+    public void setWebDashboardPort(int port) {
+        props.setProperty("web-dashboard-port", Integer.toString(port));
+    }
+
+    public String getWebDashboardBind() {
+        return props.getProperty("web-dashboard-bind", "0.0.0.0");
+    }
+
+    public void setWebDashboardBind(String bind) {
+        props.setProperty("web-dashboard-bind", bind == null ? "0.0.0.0" : bind);
+    }
+
+    public String getWebDashboardToken() {
+        return props.getProperty("web-dashboard-token", "");
+    }
+
+    public void setWebDashboardToken(String token) {
+        props.setProperty("web-dashboard-token", token == null ? "" : token);
+    }
+
+    public boolean isWebDashboardLocalhostOnly() {
+        return Boolean.parseBoolean(props.getProperty("web-dashboard-localhost-only", "false"));
+    }
+
+    public void setWebDashboardLocalhostOnly(boolean localhostOnly) {
+        props.setProperty("web-dashboard-localhost-only", Boolean.toString(localhostOnly));
     }
 
     public String getResourcePackPrompt() {
@@ -551,6 +663,49 @@ public final class ServerConfig {
         return Boolean.parseBoolean(props.getProperty("paper-phase3-nms-tick", "true"));
     }
 
+    /**
+     * Phase 4 Via\* parity front door. When true under Paper authority, YaPcore owns
+     * the public JE port and proxies (with remap) to Paper on {@link #getPaperPort()}.
+     * <p>
+     * Disabled under most MSPT benches so stock Paper and YaP hit the same socket path.
+     * <strong>Exception: {@code highpop}</strong> — keep native Via front so forks pay
+     * Via\* plugin cost while YaP uses ProtocolCompat (fair product-surface compare).
+     */
+    public boolean isProtocolViaEnabled() {
+        String bench = System.getProperty("yap.bench.scenario");
+        if (bench != null && !bench.isBlank()) {
+            if ("highpop".equalsIgnoreCase(bench.trim())) {
+                return Boolean.parseBoolean(props.getProperty("protocol-via-enabled", "true"));
+            }
+            return false;
+        }
+        return Boolean.parseBoolean(props.getProperty("protocol-via-enabled", "true"));
+    }
+
+    public void setProtocolViaEnabled(boolean enabled) {
+        props.setProperty("protocol-via-enabled", Boolean.toString(enabled));
+    }
+
+    /** Phase 4 Geyser parity — expand RakNet/BE codecs when true. */
+    public boolean isProtocolGeyserEnabled() {
+        return Boolean.parseBoolean(props.getProperty("protocol-geyser-enabled", "true"));
+    }
+
+    public void setProtocolGeyserEnabled(boolean enabled) {
+        props.setProperty("protocol-geyser-enabled", Boolean.toString(enabled));
+    }
+
+    /**
+     * Port Paper actually binds. With Via front + Paper authority → loopback
+     * {@link #getPaperPort()}; otherwise public {@link #getPort()} when embed.
+     */
+    public int paperListenPort() {
+        if (isPaperAuthority() && isProtocolViaEnabled()) {
+            return getPaperPort();
+        }
+        return isPaperEmbed() ? getPort() : getPaperPort();
+    }
+
     public boolean isNativeAuthority() {
         return getGameAuthority() == GameAuthority.NATIVE;
     }
@@ -591,17 +746,17 @@ public final class ServerConfig {
     public boolean isWrappedGameProxy() {
         return switch (getGameAuthority()) {
             case MOJANG -> true;
-            case PAPER -> !isPaperEmbed();
+            case PAPER -> !isPaperEmbed() || isProtocolViaEnabled();
             case NATIVE -> false;
         };
     }
 
-    /** YaPcore binds JE TCP for native or when proxying to a wrap. */
+    /** YaPcore binds JE TCP for native, wrap proxy, or Via front of Paper. */
     public boolean isYaPcoreJavaListener() {
         return switch (getGameAuthority()) {
             case NATIVE -> true;
             case MOJANG -> true;
-            case PAPER -> !isPaperEmbed();
+            case PAPER -> !isPaperEmbed() || isProtocolViaEnabled();
         };
     }
 

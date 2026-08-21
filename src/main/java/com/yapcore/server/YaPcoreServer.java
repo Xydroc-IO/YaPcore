@@ -4,6 +4,7 @@ import com.yapcore.YaPcoreEngine;
 import com.yapcore.client.ClientEdition;
 import com.yapcore.client.ClientRegistry;
 import com.yapcore.compat.YaPBukkitServer;
+import com.yapcore.config.ConfigHub;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.console.ConsoleBus;
 import com.yapcore.crash.CrashLogger;
@@ -84,8 +85,15 @@ public final class YaPcoreServer {
         if (config.isPaperAuthority()) {
             try {
                 PaperPluginsLayout.ensureUnified(rootDir, rootDir.resolve(config.getPaperDir()));
+                ConfigHub.ensure(rootDir, rootDir.resolve(config.getPaperDir()));
             } catch (IOException e) {
-                LOG.log(Level.WARNING, "Could not unify plugins folder", e);
+                LOG.log(Level.WARNING, "Could not unify plugins/config hub", e);
+            }
+        } else {
+            try {
+                ConfigHub.ensure(rootDir, rootDir.resolve(config.getPaperDir()));
+            } catch (IOException e) {
+                LOG.log(Level.WARNING, "Could not ensure config hub", e);
             }
         }
         this.pluginRuntime = new PluginRuntime(
@@ -210,6 +218,7 @@ public final class YaPcoreServer {
                     if (config.isPaperPhase3TickBridge() && !paperKernel.isPhase3()) {
                         paperTickBridge.start();
                     }
+                    attachBedrockPaperWorldSync();
                 }
                 case MOJANG -> {
                     gameKernel.start();
@@ -284,6 +293,20 @@ public final class YaPcoreServer {
                 + " | active=" + resourcePacks.getActivePack().map(p -> p.getFileName()).orElse("none"));
     }
 
+    private void attachBedrockPaperWorldSync() {
+        if (!config.isPaperAuthority() || !paperKernel.isPhase3() || paperKernel.phase3() == null) {
+            return;
+        }
+        var loader = paperKernel.phase3().paperClassLoader();
+        if (loader == null) {
+            return;
+        }
+        var sync = new com.yapcore.crossplay.bedrock.BedrockPaperWorldSync();
+        sync.attach(loader);
+        gateway.crossplay().attachPaperWorld(sync);
+        LOG.info("Bedrock→Paper world sync online (BREAK/PLACE → Paper main thread)");
+    }
+
     public synchronized void stop() {
         if (!running.compareAndSet(true, false)) {
             return;
@@ -333,6 +356,12 @@ public final class YaPcoreServer {
                       crashdump [reason]   Write full diagnostic crash report
                       stop / end           Graceful shutdown
                       demo                 Run store-purchase lifecycle demo
+
+                      Minecraft / Paper / plugin commands (when Paper is running):
+                      Type them here — e.g. give @p diamond 1, tp Steve 0 64 0,
+                      gamemode creative @a, op YourName, difficulty hard
+                      Leading / is optional. In-game vanilla commands need OP:
+                      set ops=YourName in config, or run: op YourName
                     """ + PublicityCommands.helpLines();
             case "status" -> statusReport();
             case "say" -> {
@@ -438,8 +467,16 @@ public final class YaPcoreServer {
                 t.start();
                 yield "Stopping…";
             }
-            default -> PublicityCommands.tryHandle(cmd, parts, line, config, resourcePacks)
-                    .orElse("Unknown command: " + cmd + " (type 'help')");
+            default -> {
+                var publicity = PublicityCommands.tryHandle(cmd, parts, line, config, resourcePacks);
+                if (publicity.isPresent()) {
+                    yield publicity.get();
+                }
+                if (config.isPaperAuthority() && paperKernel.isRunning()) {
+                    yield paperKernel.dispatchConsoleCommand(line);
+                }
+                yield "Unknown command: " + cmd + " (type 'help')";
+            }
         };
     }
 

@@ -45,7 +45,7 @@ public final class EmbeddedPaperRuntime {
     }
 
     public int listenPort() {
-        return config.getPort();
+        return config.paperListenPort();
     }
 
     public boolean isRunning() {
@@ -78,7 +78,7 @@ public final class EmbeddedPaperRuntime {
         if ("0.0.0.0".equals(bind)) {
             bind = "";
         }
-        PaperFiles.writeServerProperties(dir, config, listenPort(), bind,
+        PaperFiles.writeServerProperties(rootDir, dir, config, listenPort(), bind,
                 "YaPcore Phase 2 same-JVM Paper — public JE port");
         PaperFiles.applyVelocitySupport(rootDir, dir, config);
 

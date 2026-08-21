@@ -3,6 +3,7 @@ package com.yapcore;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.gui.ControlPanel;
 import com.yapcore.server.YaPcoreServer;
+import com.yapcore.web.WebDashboard;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
@@ -13,10 +14,11 @@ import java.util.logging.Logger;
 
 /**
  * Process entry: headless server or control GUI.
+ * Web dashboard (default :8080) runs in both modes when enabled.
  *
  * <pre>
- *   java -jar yapcore.jar              # GUI (default)
- *   java -jar yapcore.jar --nogui      # headless console
+ *   java -jar yapcore.jar              # GUI (default) + web dashboard
+ *   java -jar yapcore.jar --nogui      # headless + web dashboard
  *   java -jar yapcore.jar --gui        # force GUI
  * </pre>
  */
@@ -38,7 +40,12 @@ public final class Main {
         ServerConfig config = ServerConfig.loadOrCreate(root.resolve("config").resolve("server.properties"));
         YaPcoreServer server = new YaPcoreServer(root, config);
 
+        WebDashboard dashboard = WebDashboard.maybeStart(server);
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (dashboard != null) {
+                dashboard.stop();
+            }
             if (server.isRunning()) {
                 server.stop();
             }
@@ -50,21 +57,30 @@ public final class Main {
             useGui = false;
         }
 
-        if (useGui) {
-            launchGui(server);
-        } else {
-            launchHeadless(server);
+        try {
+            if (useGui) {
+                launchGui(server);
+            } else {
+                launchHeadless(server);
+            }
+        } finally {
+            if (dashboard != null) {
+                dashboard.stop();
+            }
         }
     }
 
     private static void launchHeadless(YaPcoreServer server) throws Exception {
-        LOG.info("Starting YaPcore in headless mode (type 'help' or 'stop')");
+        boolean bench = System.getProperty("yap.bench.scenario") != null
+                && !System.getProperty("yap.bench.scenario").isBlank();
+        LOG.info("Starting YaPcore in headless mode"
+                + (bench ? " (MSPT bench — no stdin)" : " (web dashboard + stdin; type 'help' or 'stop')"));
         server.start();
-        // Always attach stdin reader (TTY or pipe). EOF on /dev/null is fine —
-        // server stays up until stop command / SIGTERM.
-        Thread stdin = new Thread(server::runStdinLoop, "yap-stdin");
-        stdin.setDaemon(true);
-        stdin.start();
+        if (!bench) {
+            Thread stdin = new Thread(server::runStdinLoop, "yap-stdin");
+            stdin.setDaemon(true);
+            stdin.start();
+        }
         while (server.isRunning()) {
             Thread.sleep(250);
         }
@@ -93,7 +109,6 @@ public final class Main {
         }
     }
 
-    /** Avoid hard dependency issues when AWT reports headless. */
     private static final class GraphicsEnvironmentCheck {
         static boolean isHeadless() {
             try {

@@ -39,6 +39,7 @@ public final class PaperKernel {
     private final AtomicBoolean processRunning = new AtomicBoolean(false);
     private Process process;
     private Thread logPump;
+    private Writer processStdin;
     private boolean usingPhase3;
 
     public PaperKernel(Path rootDir, ServerConfig config, YapEngine yapEngine) {
@@ -52,7 +53,7 @@ public final class PaperKernel {
     }
 
     public int listenPort() {
-        return config.isPaperEmbed() ? config.getPort() : config.getPaperPort();
+        return config.paperListenPort();
     }
 
     public boolean isEmbedded() {
@@ -143,17 +144,19 @@ public final class PaperKernel {
         Path dir = paperDir();
         Files.createDirectories(dir);
         Files.deleteIfExists(dir.resolve("yap-paper-ready.marker"));
-        PaperPluginsLayout.ensureUnified(rootDir, dir);
+        PaperPluginsLayout.ensureUnifiedAndCompat(rootDir, dir, config);
         Path jar = PaperFiles.ensurePaperJar(rootDir, dir, config);
         PaperFiles.writeEula(dir);
-        PaperFiles.writeServerProperties(dir, config, port, bindIp, propsComment);
+        PaperFiles.writeServerProperties(rootDir, dir, config, port, bindIp, propsComment);
         PaperFiles.applyVelocitySupport(rootDir, dir, config);
+        PaperOps.ensure(dir, config);
         List<String> cmd = buildCommand(jar);
         LOG.info("Starting Paper " + config.getPaperVersion() + " port=" + port + " dir=" + dir);
         ProcessBuilder pb = new ProcessBuilder(cmd);
         pb.directory(dir.toFile());
         pb.redirectErrorStream(true);
         process = pb.start();
+        processStdin = new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8);
         logPump = new Thread(this::pumpLogs, "yap-paper-log");
         logPump.setDaemon(true);
         logPump.start();
@@ -161,6 +164,37 @@ public final class PaperKernel {
             stopProcess();
             throw new IOException("Paper did not become ready within "
                     + config.getPaperReadyTimeoutSec() + "s — check logs under " + dir);
+        }
+    }
+
+    /**
+     * Forward a console line to Paper (Phase 3 in-JVM or Phase 2 process stdin).
+     * Players already use Paper's full command graph in-game; this is for YaP GUI/stdin.
+     */
+    public String dispatchConsoleCommand(String line) {
+        if (!isRunning()) {
+            return "Paper is not running";
+        }
+        if (usingPhase3 && phase3 != null) {
+            return phase3.dispatchConsoleCommand(line);
+        }
+        if (process == null || !process.isAlive() || processStdin == null) {
+            return "Paper process not accepting commands";
+        }
+        try {
+            String cmd = line == null ? "" : line.trim();
+            if (cmd.startsWith("/")) {
+                cmd = cmd.substring(1);
+            }
+            synchronized (processStdin) {
+                processStdin.write(cmd);
+                processStdin.write('\n');
+                processStdin.flush();
+            }
+            return "Paper process: /" + cmd;
+        } catch (IOException e) {
+            LOG.log(Level.WARNING, "Paper stdin command failed", e);
+            return "Paper stdin error: " + e.getMessage();
         }
     }
 
@@ -174,9 +208,13 @@ public final class PaperKernel {
         }
         try {
             if (process.isAlive()) {
-                try (Writer w = new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8)) {
-                    w.write("stop\n");
-                    w.flush();
+                try {
+                    Writer w = processStdin != null ? processStdin
+                            : new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8);
+                    synchronized (w) {
+                        w.write("stop\n");
+                        w.flush();
+                    }
                 } catch (IOException ignored) {
                     // destroy
                 }
@@ -189,6 +227,7 @@ public final class PaperKernel {
             Thread.currentThread().interrupt();
             process.destroyForcibly();
         } finally {
+            processStdin = null;
             process = null;
             LOG.info("Paper process stopped");
         }

@@ -179,16 +179,39 @@ public final class YaPBukkitServer implements Server {
     @Override
     public boolean dispatchCommand(CommandSender sender, String commandLine) {
         LOG.info("dispatchCommand from " + sender.getName() + ": " + commandLine);
-        try {
-            int r = com.yapcore.command.BrigadierGateway.get().execute(sender, commandLine);
-            return r >= 0;
-        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
-            sender.sendMessage("§c" + e.getMessage());
-            return false;
-        } catch (Exception e) {
-            LOG.warning("Command failed: " + e.getMessage());
-            return false;
+        String line = commandLine == null ? "" : commandLine.trim();
+        if (line.startsWith("/")) {
+            line = line.substring(1).trim();
         }
+        String name = line.split("\\s+", 2)[0].toLowerCase(java.util.Locale.ROOT);
+        try {
+            int r = com.yapcore.command.BrigadierGateway.get().execute(sender, line);
+            if (r >= 0) {
+                return true;
+            }
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            // Fall through to PluginCommand map
+            LOG.fine("Brigadier miss: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.warning("Brigadier command failed: " + e.getMessage());
+        }
+        org.bukkit.command.PluginCommand pluginCmd = getPluginCommand(name);
+        if (pluginCmd != null) {
+            try {
+                String[] args = line.length() > name.length()
+                        ? line.substring(name.length()).trim().split("\\s+")
+                        : new String[0];
+                if (args.length == 1 && args[0].isEmpty()) {
+                    args = new String[0];
+                }
+                return pluginCmd.execute(sender, name, args);
+            } catch (Exception e) {
+                LOG.warning("Plugin command failed: " + e.getMessage());
+                sender.sendMessage("§cCommand error: " + e.getMessage());
+                return false;
+            }
+        }
+        return false;
     }
 
     @Override

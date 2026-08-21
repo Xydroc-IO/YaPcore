@@ -2,6 +2,9 @@ package com.yapcore.crossplay;
 
 import com.yapcore.client.ClientEdition;
 import com.yapcore.client.ClientSession;
+import com.yapcore.crossplay.floodgate.FloodgateAuth;
+import com.yapcore.crossplay.form.FormService;
+import com.yapcore.crossplay.skin.SkinService;
 import com.yaplabs.yapengine.YapEngine;
 import com.yaplabs.yapengine.core.spatial.BitwiseQuadrantIndex;
 import com.yaplabs.yapengine.core.spatial.SpatialQuadrant;
@@ -27,18 +30,51 @@ public final class CrossplayHub {
     private final GeyserStyleTranslator translator = new GeyserStyleTranslator();
     private final ConcurrentHashMap<String, UnifiedPlayer> byName = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, UnifiedPlayer> bySession = new ConcurrentHashMap<>();
+    private volatile FloodgateAuth floodgate;
+    private volatile SkinService skins;
+    private volatile FormService forms;
 
     public CrossplayHub(YapEngine engine) {
         this.engine = Objects.requireNonNull(engine);
+    }
+
+    public void attachFloodgate(FloodgateAuth floodgate, SkinService skins, FormService forms) {
+        this.floodgate = floodgate;
+        this.skins = skins;
+        this.forms = forms;
+        translator.attachUx(floodgate, skins, forms);
+        LOG.info("Crossplay Floodgate-class auth + skin/form UX attached");
+    }
+
+    public void attachPaperWorld(com.yapcore.crossplay.bedrock.BedrockPaperWorldSync paperWorld) {
+        translator.attachPaperWorld(paperWorld);
     }
 
     public GeyserStyleTranslator translator() {
         return translator;
     }
 
+    public FloodgateAuth floodgate() {
+        return floodgate;
+    }
+
+    public SkinService skins() {
+        return skins;
+    }
+
+    public FormService forms() {
+        return forms;
+    }
+
     public UnifiedPlayer join(ClientSession session) {
         Objects.requireNonNull(session);
         UnifiedPlayer player = new UnifiedPlayer(session);
+        if (floodgate != null && session.getEdition() == ClientEdition.BEDROCK) {
+            FloodgateAuth.Identity id = floodgate.get(session.getUsername());
+            if (id != null) {
+                player.setLinkedUuid(id.javaUuid());
+            }
+        }
         player.setPosition(8, 64, -8);
         player.setDimension("overworld");
         byName.put(player.getUsername().toLowerCase(), player);

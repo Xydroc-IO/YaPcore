@@ -8,6 +8,7 @@ import com.yapcore.gui.panels.ModulesPanel;
 import com.yapcore.gui.panels.NginxPanel;
 import com.yapcore.gui.panels.PacksPanel;
 import com.yapcore.gui.panels.PluginsPanel;
+import com.yapcore.gui.panels.TunePanel;
 import com.yapcore.gui.panels.SettingsPanel;
 import com.yapcore.gui.theme.GuiTheme;
 import com.yapcore.server.YaPcoreServer;
@@ -56,6 +57,7 @@ public final class ControlPanel extends JFrame {
     private final PacksPanel packsPanel;
     private final NetworkPanel networkPanel;
     private final SettingsPanel settingsPanel;
+    private final TunePanel tunePanel;
     private final NginxPanel nginxPanel;
     private final ConnectInfoPanel connectPanel;
     private final JTabbedPane sideTabs = new JTabbedPane();
@@ -71,6 +73,7 @@ public final class ControlPanel extends JFrame {
         this.packsPanel = new PacksPanel(server);
         this.networkPanel = new NetworkPanel(server);
         this.settingsPanel = new SettingsPanel(server);
+        this.tunePanel = new TunePanel(server);
         this.nginxPanel = new NginxPanel(server);
         this.connectPanel = new ConnectInfoPanel(server);
         this.networkPanel.setOnSaved(v -> SwingUtilities.invokeLater(this::refreshConnectionUi));
@@ -205,6 +208,7 @@ public final class ControlPanel extends JFrame {
         sideTabs.addTab("Access", networkPanel.component());
         sideTabs.addTab("nginx", nginxPanel.component());
         sideTabs.addTab("Settings", settingsPanel.component());
+        sideTabs.addTab("Tune", wrapScroll(tunePanel.component()));
         sideTabs.addTab("Status", wrapScroll(buildStatusTab()));
         sideTabs.addTab("Plugins", pluginsPanel.component());
         sideTabs.addTab("Modules", modulesPanel.component());

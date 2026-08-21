@@ -60,6 +60,11 @@ dependencies {
     implementation("com.mojang:brigadier:1.3.10")
     // POSIX chdir for Phase 2 Paper embed (Paperclip uses process cwd)
     implementation("net.java.dev.jna:jna:5.17.0")
+    // Protocol catalog JSON (item/block/entity band tables)
+    implementation("com.google.code.gson:gson:2.11.0")
+    // Plugin back-compat (1.20–1.21 → 26.2) light ASM rewrite
+    implementation("org.ow2.asm:asm:9.7.1")
+    implementation("org.ow2.asm:asm-commons:9.7.1")
 
     // JCIP / SpotBugs concurrency annotations (compile-time only)
     compileOnly("com.github.stephenc.jcip:jcip-annotations:1.0-1")
@@ -214,13 +219,333 @@ tasks.named<JavaExec>("run") {
     jvmArgs("-Xms512m", "-Xmx2048m")
 }
 
+// ---------------------------------------------------------------------------
+// Product defaults: vehicles + knobs plugins, modules, client resource pack
+// ---------------------------------------------------------------------------
+
+tasks.register("installProductDefaults") {
+    group = "distribution"
+    description = "Install YaP Vehicles + Knobs + PlaceholderAPI + PluginCompat + Pregen + Stacker + PlayerData into plugins/ and modules/"
+    dependsOn(
+        ":vehicles-plugin:installIntoPlugins",
+        ":vehicles-module:installIntoModules",
+        ":gameplay-knobs-plugin:installIntoPlugins",
+        ":placeholderapi-plugin:installIntoPlugins",
+        ":plugin-compat-plugin:installIntoPlugins",
+    )
+    if (findProject(":stacker-plugin") != null) {
+        dependsOn(":stacker-plugin:installIntoPlugins")
+    }
+    if (findProject(":pregen-plugin") != null) {
+        dependsOn(":pregen-plugin:installIntoPlugins")
+    }
+    if (findProject(":playerdata-plugin") != null) {
+        dependsOn(":playerdata-plugin:installIntoPlugins")
+    }
+}
+
+tasks.register<Exec>("prepareClientPack") {
+    group = "distribution"
+    description = "Merge Faithful + YaP Vehicles into resourcepacks/yapcore-default.zip"
+    workingDir = project.projectDir
+    commandLine("bash", "scripts/build-default-resourcepack.sh")
+    // Always rebuild so vehicles art updates land in the served pack
+    outputs.file(project.file("resourcepacks/yapcore-default.zip"))
+    inputs.dir(project.file("resourcepacks/yap-vehicles"))
+    inputs.file(project.file("resourcepacks/yap-vehicles.zip")).optional()
+    inputs.file(project.file("resourcepacks/faithful-64x.zip")).optional()
+}
+
+tasks.register("assembleRelease") {
+    group = "distribution"
+    description = "Release package with linux/ and windows/ trees (jar + plugins + packs + launchers)"
+    dependsOn(tasks.named("distJar"), "installProductDefaults", "prepareClientPack")
+
+    val releaseRoot = layout.buildDirectory.dir("dist/yapcore-release")
+
+    doLast {
+        val root = releaseRoot.get().asFile
+        root.mkdirs()
+        val jar = layout.buildDirectory.file("dist/yapcore.jar").get().asFile
+        require(jar.isFile) { "Missing $jar — run distJar first" }
+
+        val pluginJars = listOf(
+            "yap-vehicles.jar",
+            "yap-gameplay-knobs.jar",
+            "yap-placeholderapi.jar",
+            "yap-plugin-compat.jar",
+            "yap-pregen.jar",
+            "yap-stacker.jar",
+            "yap-playerdata.jar",
+        )
+        val packFiles = listOf(
+            "yapcore-default.zip",
+            "yap-vehicles.zip",
+            "faithful-64x.zip",
+            "CREDITS.md",
+            "FAITHFUL_LICENSE.txt",
+            "README.md",
+        )
+        val docFiles = listOf(
+            "VEHICLES.md", "CLIENTS_AND_PACKS.md", "WEB_DASHBOARD.md", "PREGEN.md",
+            "WINDOWS.md", "NGINX_AND_LOCALHOST.md",
+        )
+        val linuxScripts = listOf(
+            "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
+            "nginx-setup.sh", "heap-dump.sh", "build-default-resourcepack.sh", "fetch-faithful-64x.sh",
+            "vendor-paper.sh", "build-vendor-paper.sh", "apply-yap-paper-hooks.sh",
+        )
+
+        fun copyCommon(dest: File) {
+            dest.mkdirs()
+            jar.copyTo(dest.resolve("yapcore.jar"), overwrite = true)
+            project.copy {
+                from(project.file("config"))
+                into(dest.resolve("config"))
+            }
+            project.copy {
+                from(project.file("plugins"))
+                into(dest.resolve("plugins"))
+                include(*(pluginJars + "README.md").toTypedArray())
+            }
+            project.copy {
+                from(project.file("modules"))
+                into(dest.resolve("modules"))
+                include("yap-vehicles-module.jar", "README.md")
+            }
+            project.copy {
+                from(project.file("resourcepacks"))
+                into(dest.resolve("resourcepacks"))
+                include(*packFiles.toTypedArray())
+            }
+            project.copy {
+                from(project.file("docs"))
+                into(dest.resolve("docs"))
+                include(*docFiles.toTypedArray())
+            }
+            project.copy {
+                from(project.file("branding"))
+                into(dest.resolve("branding"))
+                include("*.png", "README.md")
+            }
+            project.copy {
+                from(project.file("deploy/nginx"))
+                into(dest.resolve("deploy/nginx"))
+                include("*.template", "README.md")
+                exclude("generated/**")
+            }
+            // Paper pin only (clone happens on the host)
+            project.copy {
+                from(project.file("vendor"))
+                into(dest.resolve("vendor"))
+                include("paper.pin", "yap-overlays/**", "README.md")
+            }
+            // Optional YaP Paperclip if present on builder host
+            val libDir = project.file("lib")
+            if (libDir.isDirectory) {
+                project.copy {
+                    from(libDir)
+                    into(dest.resolve("lib"))
+                    include("paper-*-yap.jar", "paper-*.jar")
+                }
+            }
+        }
+
+        fun writeLinuxWrappers(dest: File) {
+            listOf("start", "stop", "status", "gui", "nginx-setup").forEach { name ->
+                val wrapper = dest.resolve("$name.sh")
+                wrapper.writeText(
+                    """
+                    #!/usr/bin/env bash
+                    set -eu
+                    ROOT="${'$'}(CDPATH= cd -- "${'$'}(dirname -- "${'$'}0")" && pwd)"
+                    exec bash "${'$'}ROOT/scripts/$name.sh" "${'$'}@"
+                    """.trimIndent() + "\n"
+                )
+                wrapper.setExecutable(true)
+            }
+            dest.resolve("start-prod.sh").writeText(
+                """
+                #!/usr/bin/env bash
+                set -eu
+                ROOT="${'$'}(CDPATH= cd -- "${'$'}(dirname -- "${'$'}0")" && pwd)"
+                exec bash "${'$'}ROOT/scripts/start-prod.sh" "${'$'}@"
+                """.trimIndent() + "\n"
+            )
+            dest.resolve("start-prod.sh").setExecutable(true)
+            listOf("vendor-paper", "build-vendor-paper").forEach { name ->
+                val wrapper = dest.resolve("$name.sh")
+                wrapper.writeText(
+                    """
+                    #!/usr/bin/env bash
+                    set -eu
+                    ROOT="${'$'}(CDPATH= cd -- "${'$'}(dirname -- "${'$'}0")" && pwd)"
+                    exec bash "${'$'}ROOT/scripts/$name.sh" "${'$'}@"
+                    """.trimIndent() + "\n"
+                )
+                wrapper.setExecutable(true)
+            }
+            dest.resolve("scripts").listFiles()
+                ?.filter { it.name.endsWith(".sh") }
+                ?.forEach { it.setExecutable(true) }
+        }
+
+        fun writeWindowsCmdWrappers(dest: File) {
+            val map = mapOf(
+                "start.cmd" to "Start.ps1",
+                "stop.cmd" to "Stop.ps1",
+                "status.cmd" to "Status.ps1",
+                "gui.cmd" to "Gui.ps1",
+                "start-prod.cmd" to "Start-Prod.ps1",
+                "nginx-setup.cmd" to "Nginx-Setup.ps1",
+                "vendor-paper.cmd" to "Vendor-Paper.ps1",
+                "build-vendor-paper.cmd" to "Build-Vendor-Paper.ps1",
+            )
+            map.forEach { (cmdName, ps1) ->
+                dest.resolve(cmdName).writeText(
+                    """
+                    @echo off
+                    setlocal
+                    cd /d "%~dp0"
+                    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\%ps1%" %*
+                    """.trimIndent() + "\r\n"
+                )
+            }
+        }
+
+        val sharedNotes = """
+            Shared contents (both platforms)
+            --------------------------------
+            yapcore.jar
+            plugins/  (vehicles, knobs, placeholderapi, plugin-compat, pregen, …)
+            modules/
+            resourcepacks/yapcore-default.zip
+            config/
+            docs/
+            lib/  (YaP Paperclip if present on build host)
+
+            Web dashboard: http://127.0.0.1:8080/
+            Token: config/server.properties → web-dashboard-token
+
+            Requires Java 25+ on PATH (or JAVA_HOME).
+            Phase 3: build Paperclip on this host (vendor-paper + build-vendor-paper)
+            or ship lib/paper-*-yap.jar from the builder. See docs/WINDOWS.md.
+            """.trimIndent()
+
+        // --- linux ---
+        val linux = root.resolve("linux")
+        if (linux.exists()) linux.deleteRecursively()
+        copyCommon(linux)
+        project.copy {
+            from(project.file("scripts"))
+            into(linux.resolve("scripts"))
+            include(*linuxScripts.toTypedArray())
+        }
+        writeLinuxWrappers(linux)
+        linux.resolve("RELEASE.txt").writeText(
+            """
+            YaPcore — Linux release
+            =======================
+
+            Launch
+            ------
+              chmod +x *.sh scripts/*.sh
+              ./start.sh --fg
+              ./gui.sh
+              ./stop.sh
+              ./status.sh
+              ./start-prod.sh --fg
+
+            Paperclip (Phase 3)
+            -------------------
+              ./vendor-paper.sh
+              ./build-vendor-paper.sh
+
+            nginx edge
+            ----------
+              ./nginx-setup.sh --dry-run
+              sudo ./nginx-setup.sh
+              sudo ./nginx-setup.sh --install-pkg
+
+            $sharedNotes
+            """.trimIndent() + "\n"
+        )
+
+        // --- windows ---
+        val windows = root.resolve("windows")
+        if (windows.exists()) windows.deleteRecursively()
+        copyCommon(windows)
+        project.copy {
+            from(project.file("scripts/windows"))
+            into(windows.resolve("scripts"))
+            include("*.ps1", "README.md")
+        }
+        // Paper hooks script (bash) used by Build-Vendor-Paper.ps1 via Git Bash
+        project.copy {
+            from(project.file("scripts/apply-yap-paper-hooks.sh"))
+            into(windows.resolve("scripts"))
+        }
+        writeWindowsCmdWrappers(windows)
+        windows.resolve("RELEASE.txt").writeText(
+            """
+            YaPcore — Windows release
+            =========================
+
+            Launch
+            ------
+              start.cmd -Fg
+              gui.cmd
+              stop.cmd / status.cmd / start-prod.cmd
+
+            Paperclip (Phase 3) — native Windows
+            ------------------------------------
+              vendor-paper.cmd
+              build-vendor-paper.cmd
+              (needs Git + JDK 25+ + Git Bash)
+
+            nginx edge
+            ----------
+              nginx-setup.cmd -DryRun
+              set NGINX_HOME=C:\nginx
+              nginx-setup.cmd
+              (nginx must include stream module — see docs\WINDOWS.md)
+
+            $sharedNotes
+            """.trimIndent() + "\n"
+        )
+
+        root.resolve("README.txt").writeText(
+            """
+            YaPcore release
+            ===============
+
+            Pick your OS folder (each is a full self-contained server tree):
+
+              linux/     → bash: start, nginx-setup, vendor-paper, build-vendor-paper
+              windows/   → cmd:  start, nginx-setup, vendor-paper, build-vendor-paper
+
+            Both include deploy/nginx templates and vendor/paper.pin.
+            See linux/RELEASE.txt, windows/RELEASE.txt, and docs/WINDOWS.md.
+            """.trimIndent() + "\n"
+        )
+
+        println("Release package → ${root.absolutePath}")
+        println("  linux/   ${linux.absolutePath}")
+        println("  windows/ ${windows.absolutePath}")
+    }
+}
+
 // Phase 3 bridge plugin must be on the classpath before packaging
 tasks.named("processResources") {
     dependsOn(":phase3-plugin:installIntoResources")
 }
 
 tasks.shadowJar {
-    dependsOn(":phase3-plugin:installIntoResources")
+    dependsOn(
+        ":phase3-plugin:installIntoResources",
+        "installProductDefaults",
+        "prepareClientPack",
+    )
     archiveBaseName.set("yapcore")
     archiveClassifier.set("")
     archiveVersion.set(project.version.toString())
@@ -244,7 +569,7 @@ tasks.register<Copy>("distJar") {
 }
 
 tasks.named("build") {
-    dependsOn(tasks.shadowJar, tasks.named("distJar"))
+    dependsOn(tasks.shadowJar, tasks.named("distJar"), "assembleRelease")
 }
 
 tasks.named("shadowJar") {
@@ -259,4 +584,11 @@ tasks.register("verifyConcurrency") {
     group = "verification"
     description = "SpotBugs (sync packages) + unit tests + Fray interleaving tests"
     dependsOn("spotbugsMain", "test", "frayTest")
+}
+
+tasks.register<Exec>("verifyPaperApiCoverage") {
+    group = "verification"
+    description = "Assert embedded Paperclip paper-api matches published Paper 26.2 API"
+    workingDir = rootProject.projectDir
+    commandLine("bash", "scripts/verify-paper-api-coverage.sh")
 }

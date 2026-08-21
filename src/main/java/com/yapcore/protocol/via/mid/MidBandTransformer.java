@@ -1,0 +1,287 @@
+package com.yapcore.protocol.via.mid;
+
+import com.yapcore.protocol.java.ConnState;
+import com.yapcore.protocol.java.ProtocolBand;
+import com.yapcore.protocol.java.codec.McCodec;
+import com.yapcore.protocol.via.ViaDirection;
+import com.yapcore.protocol.via.ViaSession;
+import com.yapcore.protocol.via.id.PacketIdDump;
+import com.yapcore.protocol.via.remap.BlockRemapper;
+import com.yapcore.protocol.via.remap.ChunkRemapper;
+import com.yapcore.protocol.via.remap.EntityRemapper;
+import com.yapcore.protocol.via.remap.ItemRemapper;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+
+import java.util.UUID;
+import java.util.logging.Logger;
+
+/**
+ * Completes ViaBackwards-class paths for modern mid bands (766–775) ↔ Paper 776.
+ * Remaps <b>every</b> play packet ID by name via {@link PacketIdDump}; handles
+ * login session-UUID layout and join-critical body reshapes.
+ * <p>
+ * Applies when client &lt; server and dumps exist for both (covers 774→776).
+ */
+public final class MidBandTransformer {
+
+    private static final Logger LOG = Logger.getLogger("YaPcore.ViaMid");
+
+    private final ViaSession session;
+    private final PacketIdDump clientDump;
+    private final PacketIdDump serverDump;
+    private final ChunkRemapper chunks;
+    private final ItemRemapper items;
+    private final EntityRemapper entities;
+
+    public MidBandTransformer(ViaSession session) {
+        this.session = session;
+        this.clientDump = PacketIdDump.forProtocol(session.clientProtocol());
+        this.serverDump = PacketIdDump.forProtocol(session.serverProtocol());
+        ProtocolBand client = session.clientBand();
+        ProtocolBand server = session.serverBand();
+        BlockRemapper blocks = new BlockRemapper(server, client);
+        this.chunks = new ChunkRemapper(server, client, blocks);
+        this.items = new ItemRemapper(client, server);
+        this.entities = new EntityRemapper(client, server);
+    }
+
+    public static boolean applies(ViaSession session) {
+        if (!session.needsBackwards()) {
+            return false;
+        }
+        // Rewind owns ≤1.9; Mid owns dump-backed modern (and any band with dumps)
+        if (session.clientBand().ordinal() <= ProtocolBand.V1_9.ordinal()) {
+            return false;
+        }
+        PacketIdDump client = PacketIdDump.forProtocol(session.clientProtocol());
+        PacketIdDump server = PacketIdDump.forProtocol(session.serverProtocol());
+        return client.hasPlay() && server.hasPlay();
+    }
+
+    /**
+     * @return transformed packet, or {@code null} to fall through
+     */
+    public ByteBuf transform(ViaSession session, ViaDirection direction, int packetId, ByteBuf body) {
+        return switch (direction) {
+            case CLIENTBOUND_TO_SERVER -> transformC2S(packetId, body);
+            case SERVERBOUND_TO_CLIENT -> transformS2C(packetId, body);
+        };
+    }
+
+    /** LOGIN-state S2C (login_finished / success) session UUID strip when needed. */
+    public ByteBuf transformLoginS2C(int serverId, ByteBuf body) {
+        ProtocolBand client = session.clientBand();
+        ProtocolBand server = session.serverBand();
+        // login_finished is id 0x02 on both modern bands
+        if (serverId != 0x02) {
+            return null;
+        }
+        if (server.loginIncludesSessionId() == client.loginIncludesSessionId()) {
+            return rewriteId(body, 0x02);
+        }
+        if (server.loginIncludesSessionId() && !client.loginIncludesSessionId()) {
+            return stripLoginSessionUuid(body);
+        }
+        if (!server.loginIncludesSessionId() && client.loginIncludesSessionId()) {
+            return appendLoginSessionUuid(body);
+        }
+        return rewriteId(body, 0x02);
+    }
+
+    private ByteBuf transformC2S(int clientId, ByteBuf body) {
+        int serverId = PacketIdDump.remapPlayC2s(
+                session.clientProtocol(), session.serverProtocol(), clientId);
+        if (serverId < 0) {
+            LOG.fine(() -> "mid drop unknown C2S id=0x" + Integer.toHexString(clientId)
+                    + " " + session.clientBand() + "→" + session.serverBand());
+            return null; // drop — never same-ID passthrough across bands
+        }
+        String name = clientDump.playC2sName(clientId);
+        if (name != null && (name.contains("slot") || name.contains("click") || name.equals("set_slot"))) {
+            return remapItemTowardServer(body, serverId);
+        }
+        return rewriteId(body, serverId);
+    }
+
+    private ByteBuf transformS2C(int serverId, ByteBuf body) {
+        int clientId = PacketIdDump.remapPlayS2c(
+                session.serverProtocol(), session.clientProtocol(), serverId);
+        if (clientId < 0) {
+            LOG.fine(() -> "mid drop unknown S2C id=0x" + Integer.toHexString(serverId)
+                    + " " + session.serverBand() + "→" + session.clientBand());
+            return null;
+        }
+        String name = serverDump.playS2cName(serverId);
+        if (name == null) {
+            return rewriteId(body, clientId);
+        }
+        String n = PacketIdDump.canonicalize(name);
+        if (isChunk(n)) {
+            ByteBuf remapped = chunks.remapClientboundChunk(body);
+            ByteBuf out = Unpooled.buffer(remapped.readableBytes() + 5);
+            McCodec.writeVarInt(out, clientId);
+            out.writeBytes(remapped);
+            remapped.release();
+            return out;
+        }
+        if (isSpawn(n)) {
+            return remapSpawn(body, clientId);
+        }
+        if (isSlot(n)) {
+            return remapItemTowardClient(body, clientId);
+        }
+        return rewriteId(body, clientId);
+    }
+
+    private static boolean isChunk(String n) {
+        return n.contains("map_chunk") || n.contains("level_chunk") || n.equals("chunk_data");
+    }
+
+    private static boolean isSpawn(String n) {
+        return n.equals("spawn_entity") || n.equals("add_entity") || n.equals("named_entity_spawn");
+    }
+
+    private static boolean isSlot(String n) {
+        return n.equals("set_slot") || n.equals("container_set_slot")
+                || n.equals("window_items") || n.equals("container_set_content");
+    }
+
+    private ByteBuf remapSpawn(ByteBuf body, int outId) {
+        int mark = body.readerIndex();
+        try {
+            int eid = McCodec.readVarInt(body);
+            long uuidM = body.readLong();
+            long uuidL = body.readLong();
+            int type = McCodec.readVarInt(body);
+            int mapped = entities.toClientType(type);
+            ByteBuf out = Unpooled.buffer(body.readableBytes() + 32);
+            McCodec.writeVarInt(out, outId);
+            McCodec.writeVarInt(out, eid);
+            out.writeLong(uuidM);
+            out.writeLong(uuidL);
+            McCodec.writeVarInt(out, mapped);
+            out.writeBytes(body, body.readerIndex(), body.readableBytes());
+            return out;
+        } catch (Exception e) {
+            body.readerIndex(mark);
+            return rewriteId(body, outId);
+        }
+    }
+
+    private ByteBuf remapItemTowardServer(ByteBuf body, int outId) {
+        int mark = body.readerIndex();
+        try {
+            ByteBuf out = Unpooled.buffer(body.readableBytes() + 8);
+            McCodec.writeVarInt(out, outId);
+            if (body.readableBytes() >= 2) {
+                out.writeShort(body.readShort());
+            }
+            if (body.readableBytes() >= 2) {
+                int itemId = body.readShort() & 0xFFFF;
+                out.writeShort(items.remapToServer(itemId));
+            }
+            out.writeBytes(body, body.readerIndex(), body.readableBytes());
+            return out;
+        } catch (Exception e) {
+            body.readerIndex(mark);
+            return rewriteId(body, outId);
+        }
+    }
+
+    private ByteBuf remapItemTowardClient(ByteBuf body, int outId) {
+        int mark = body.readerIndex();
+        try {
+            ByteBuf out = Unpooled.buffer(body.readableBytes() + 8);
+            McCodec.writeVarInt(out, outId);
+            if (body.readableBytes() >= 2) {
+                out.writeShort(body.readShort());
+            }
+            if (body.readableBytes() >= 2) {
+                int itemId = body.readShort() & 0xFFFF;
+                out.writeShort(items.remapToClient(itemId));
+            }
+            out.writeBytes(body, body.readerIndex(), body.readableBytes());
+            return out;
+        } catch (Exception e) {
+            body.readerIndex(mark);
+            return rewriteId(body, outId);
+        }
+    }
+
+    private static ByteBuf stripLoginSessionUuid(ByteBuf body) {
+        int mark = body.readerIndex();
+        try {
+            UUID uuid = McCodec.readUuid(body);
+            String name = McCodec.readString(body, 16);
+            int props = McCodec.readVarInt(body);
+            ByteBuf out = Unpooled.buffer(body.readableBytes() + 32);
+            McCodec.writeVarInt(out, 0x02);
+            McCodec.writeUuid(out, uuid);
+            McCodec.writeString(out, name);
+            McCodec.writeVarInt(out, props);
+            for (int i = 0; i < props; i++) {
+                McCodec.writeString(out, McCodec.readString(body, 32767));
+                McCodec.writeString(out, McCodec.readString(body, 32767));
+                boolean sig = body.readBoolean();
+                out.writeBoolean(sig);
+                if (sig) {
+                    McCodec.writeString(out, McCodec.readString(body, 32767));
+                }
+            }
+            // skip session uuid on server body
+            if (body.readableBytes() >= 16) {
+                body.skipBytes(16);
+            }
+            out.writeBytes(body, body.readerIndex(), body.readableBytes());
+            return out;
+        } catch (Exception e) {
+            body.readerIndex(mark);
+            return rewriteId(body, 0x02);
+        }
+    }
+
+    private static ByteBuf appendLoginSessionUuid(ByteBuf body) {
+        int mark = body.readerIndex();
+        try {
+            ByteBuf out = Unpooled.buffer(body.readableBytes() + 24);
+            McCodec.writeVarInt(out, 0x02);
+            out.writeBytes(body, body.readerIndex(), body.readableBytes());
+            McCodec.writeUuid(out, UUID.randomUUID());
+            return out;
+        } catch (Exception e) {
+            body.readerIndex(mark);
+            return rewriteId(body, 0x02);
+        }
+    }
+
+    private static ByteBuf rewriteId(ByteBuf bodyAfterOldId, int newId) {
+        ByteBuf out = Unpooled.buffer(bodyAfterOldId.readableBytes() + 5);
+        McCodec.writeVarInt(out, newId);
+        out.writeBytes(bodyAfterOldId, bodyAfterOldId.readerIndex(), bodyAfterOldId.readableBytes());
+        return out;
+    }
+
+    public PacketIdDump clientDump() {
+        return clientDump;
+    }
+
+    public PacketIdDump serverDump() {
+        return serverDump;
+    }
+
+    /** Coverage: fraction of server S2C play packet <em>ids</em> that map to a client id. */
+    public double s2cCoverage() {
+        if (!serverDump.hasPlay() || !clientDump.hasPlay()) {
+            return 0;
+        }
+        java.util.HashSet<Integer> ids = new java.util.HashSet<>(serverDump.playS2cNames().values());
+        int ok = 0;
+        for (int id : ids) {
+            if (PacketIdDump.remapPlayS2c(session.serverProtocol(), session.clientProtocol(), id) >= 0) {
+                ok++;
+            }
+        }
+        return ids.isEmpty() ? 0 : (double) ok / ids.size();
+    }
+}

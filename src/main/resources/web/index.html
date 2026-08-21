@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>YaPcore Dashboard</title>
+  <link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+  <div id="login" class="login-wrap">
+    <div class="login-card">
+      <h1>YaPcore</h1>
+      <p class="muted">Headless control dashboard</p>
+      <label>Access token</label>
+      <input id="tokenInput" type="password" placeholder="web-dashboard-token" autocomplete="off"/>
+      <button id="loginBtn" class="primary">Open dashboard</button>
+      <p class="hint">Token is in <code>config/server.properties</code> → <code>web-dashboard-token</code> (also logged on server start).</p>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <header>
+      <div class="brand">
+        <strong>YaPcore</strong>
+        <span id="runBadge" class="badge">—</span>
+      </div>
+      <div class="header-actions">
+        <button id="btnStart" class="primary">Start</button>
+        <button id="btnStop" class="danger">Stop</button>
+        <button id="btnLogout" class="ghost">Logout</button>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button data-tab="status" class="active">Status</button>
+      <button data-tab="console">Console</button>
+      <button data-tab="connect">Connect</button>
+      <button data-tab="settings">Settings</button>
+      <button data-tab="plugins">Plugins</button>
+      <button data-tab="modules">Modules</button>
+      <button data-tab="packs">Packs</button>
+      <button data-tab="vehicles">Vehicles</button>
+      <button data-tab="pregen">Pregen</button>
+    </nav>
+
+    <main>
+      <section id="tab-status" class="panel active">
+        <div class="grid stats">
+          <div class="stat"><span>Players</span><strong id="stPlayers">0/0</strong></div>
+          <div class="stat"><span>Heap</span><strong id="stHeap">—</strong></div>
+          <div class="stat"><span>Java</span><strong id="stJava">0</strong></div>
+          <div class="stat"><span>Bedrock</span><strong id="stBe">0</strong></div>
+          <div class="stat"><span>Pack</span><strong id="stPack">none</strong></div>
+          <div class="stat"><span>Ports</span><strong id="stPorts">—</strong></div>
+        </div>
+        <pre id="stReport" class="report"></pre>
+      </section>
+
+      <section id="tab-console" class="panel">
+        <pre id="consoleOut" class="console"></pre>
+        <form id="cmdForm" class="cmd-row">
+          <input id="cmdInput" placeholder="server command (help, status, say …)" autocomplete="off"/>
+          <button type="submit" class="primary">Run</button>
+        </form>
+      </section>
+
+      <section id="tab-connect" class="panel">
+        <div class="card" id="connectCard">Loading…</div>
+      </section>
+
+      <section id="tab-settings" class="panel">
+        <form id="settingsForm" class="form-grid"></form>
+        <button id="saveSettings" class="primary">Save settings</button>
+      </section>
+
+      <section id="tab-plugins" class="panel">
+        <div class="toolbar">
+          <button id="refreshPlugins">Refresh</button>
+        </div>
+        <ul id="pluginList" class="list"></ul>
+        <div class="inline">
+          <input id="pluginPath" placeholder="Host path to .jar to install"/>
+          <button id="addPlugin" class="primary">Install</button>
+        </div>
+      </section>
+
+      <section id="tab-modules" class="panel">
+        <div class="toolbar"><button id="refreshModules">Refresh</button></div>
+        <ul id="moduleList" class="list"></ul>
+        <div class="inline">
+          <input id="modulePath" placeholder="Host path to module .jar"/>
+          <button id="addModule" class="primary">Install</button>
+        </div>
+      </section>
+
+      <section id="tab-packs" class="panel">
+        <div class="toolbar"><button id="refreshPacks">Refresh</button></div>
+        <ul id="packList" class="list"></ul>
+      </section>
+
+      <section id="tab-vehicles" class="panel">
+        <p class="muted">Requires <code>yap-vehicles</code> plugin (shipped by default).</p>
+        <div class="veh-grid" id="vehGrid"></div>
+        <div class="toolbar">
+          <button data-veh="shop">Open shop cmd</button>
+          <button data-veh="list">List vehicles</button>
+          <button data-veh="types">List types</button>
+          <button data-veh="upgrades">List upgrades</button>
+        </div>
+        <pre id="vehOut" class="report"></pre>
+      </section>
+
+      <section id="tab-pregen" class="panel">
+        <p class="muted">Requires <code>yap-pregen</code> (Chunky-class chunk pre-generator).</p>
+        <div class="form-grid">
+          <label>World <input id="pregenWorld" value="world"/></label>
+          <label>Shape
+            <select id="pregenShape">
+              <option value="radius">radius (spiral chunks)</option>
+              <option value="circle">circle (block radius)</option>
+              <option value="corners">corners</option>
+              <option value="worldborder">worldborder</option>
+            </select>
+          </label>
+          <label>Radius <input id="pregenRadius" type="number" value="8"/></label>
+          <label>Corners x1 z1 x2 z2 <input id="pregenCorners" value="0 0 128 128"/></label>
+        </div>
+        <div class="toolbar">
+          <button id="pregenStart" class="primary">Start</button>
+          <button id="pregenPause">Pause all</button>
+          <button id="pregenResume">Resume all</button>
+          <button id="pregenCancel" class="danger">Cancel all</button>
+          <button id="pregenStatus">Refresh status</button>
+        </div>
+        <pre id="pregenOut" class="report"></pre>
+      </section>
+    </main>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
