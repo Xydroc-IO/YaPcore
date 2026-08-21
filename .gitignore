@@ -137,6 +137,8 @@ forwarding.secret
 .env
 .env.*
 !.env.example
+!deploy/mariadb/.env.example
+!**/.env.example
 *.pem
 *.key
 !*.key.example
@@ -221,3 +223,6 @@ agent-transcripts/
 .turbo/
 .cache/
 *.sublime-*
+
+# Captured retail Xbox Login JWTs (never commit)
+src/test/resources/xbox/retail-chain.json

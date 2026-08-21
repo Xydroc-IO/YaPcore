@@ -12,8 +12,10 @@ Used by `gradle assembleRelease` → `build/dist/yapcore-release/windows/`.
 | `Start-Prod.ps1` | Large pinned heap + ZGC |
 | `Nginx-Setup.ps1` | Same nginx templates as Linux (`-DryRun`, `-Uninstall`) |
 | `Vendor-Paper.ps1` | Clone/pin `vendor/paper` |
-| `Build-Vendor-Paper.ps1` | Build YaP Paperclip → `lib\paper-*-yap.jar` |
+| `Start-MariaDB.ps1` | Docker MariaDB for YaPPlayerData |
+| `Stop-MariaDB.ps1` | Stop MariaDB container (keeps data) |
+| `Configure-PlayerData.ps1` | Patch `plugins/YaPPlayerData/config.yml` JDBC |
 
-Root wrappers: `start.cmd`, `nginx-setup.cmd`, `vendor-paper.cmd`, `build-vendor-paper.cmd`, …
+Root wrappers: `start.cmd`, `nginx-setup.cmd`, `start-mariadb.cmd`, `configure-playerdata.cmd`, …
 
-See [docs/WINDOWS.md](../../docs/WINDOWS.md).
+See [docs/WINDOWS.md](../../docs/WINDOWS.md) · [docs/MARIADB.md](../../docs/MARIADB.md).

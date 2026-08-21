@@ -1,0 +1,40 @@
+# YaPcore shared MariaDB for YaPPlayerData
+# Single server or multi-backend (Velocity): one DB, all backends use the same JDBC URL.
+#
+# Linux:   ./scripts/db/start-mariadb.sh
+# Windows: .\scripts\windows\Start-MariaDB.ps1
+#
+# Requires Docker Desktop (Windows/macOS) or Docker Engine (Linux).
+
+name: yapcore-mariadb
+
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: yapcore-mariadb
+    restart: unless-stopped
+    ports:
+      # Host 3306 → container 3306 (change host side if busy)
+      - "${YAP_DB_PORT:-3306}:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: ${YAP_DB_ROOT_PASSWORD:-yaproot}
+      MARIADB_DATABASE: ${YAP_DB_NAME:-yap_playerdata}
+      MARIADB_USER: ${YAP_DB_USER:-yap}
+      MARIADB_PASSWORD: ${YAP_DB_PASSWORD:-change-me}
+    volumes:
+      - yapcore_mariadb_data:/var/lib/mysql
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max-connections=200
+      - --innodb-buffer-pool-size=256M
+
+volumes:
+  yapcore_mariadb_data:
