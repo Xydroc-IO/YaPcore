@@ -107,12 +107,17 @@ See [docs/PLUGINS.md](docs/PLUGINS.md), [docs/PLUGIN_COMPAT.md](docs/PLUGIN_COMP
 [docs/YAPDB.md](docs/YAPDB.md), [docs/MARIADB.md](docs/MARIADB.md), and
 [docs/PERMISSIONS.md](docs/PERMISSIONS.md).
 
-**Tune everything in one place:** `config/` (Paper via `config/paper/`) + GUI **Tune** tab.
-**Shipped by default** on `gradle shadowJar` / `assembleRelease`:
-`yap-vehicles`, `yap-gameplay-knobs`, `yap-placeholderapi`, `yap-plugin-compat`,
-`yap-pregen`, `yap-stacker`, `yap-db`, `yap-playerdata`, `yap-packs`, `yap-chat`,
-`yap-floodgate`, `modules/yap-vehicles-module.jar`,
-and `resourcepacks/yapcore-default.zip`.
+**Tune everything:** `config/` (Paper via `config/paper/`) + GUI **Tune** + **Modules**
+(`modules/*.jar` packaging → `FINE_TUNE.txt`). See [docs/MODULES_AND_API.md](docs/MODULES_AND_API.md).
+
+**Shipped by default (CORE + NETWORK)** on `gradle shadowJar` / `assembleRelease`:
+`yap-placeholderapi`, `yap-plugin-compat`, `yap-pregen`, `yap-db`, `yap-playerdata`,
+`yap-packs`, `yap-chat`, `yap-floodgate`, CORE fine-tune modules under `modules/`,
+and `resourcepacks/yapcore-default.zip` (Faithful).
+
+**GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `assembleRelease -PyapGameplay=true`):
+`yap-vehicles`, `yap-gameplay-knobs`, `yap-stacker`, vehicles/stacker/knobs modules,
+vehicles overlay in the default pack.
 Release folder: `build/dist/yapcore-release/` with **`linux/`** and **`windows/`**
 trees (each self-contained). Linux: `./start.sh --fg`. Windows: `start.cmd -Fg`.
 Vehicles: `/yapvehicle spawn buggy` — [docs/VEHICLES.md](docs/VEHICLES.md).
@@ -135,6 +140,7 @@ Reports under `logs/crashes/` (gitignored contents): thread dumps, heap/JVM/OS, 
 | `scripts/nginx-setup.sh` | Optional nginx edge |
 | `scripts/db/start-mariadb.sh` / `configure-db.sh` | Docker MariaDB + JDBC into YapDb/playerdata |
 | `scripts/install-luckperms.sh` | Download LuckPerms + YaP rank pack ready |
+| `gradle assemblePluginDist` | All first-party jars → `build/dist/yap-plugins/` |
 | `./tests.sh` | Interactive test menu |
 | `./test-endurance.sh` | Long soak → `logs/endurance/` |
 

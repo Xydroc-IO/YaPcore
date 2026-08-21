@@ -1,11 +1,42 @@
-# Drop fine-tune modules here (.jar / .yapmod). See docs/MODULES_AND_API.md
+# Drop fine-tune modules here (`.jar` / `.yapmod`). See [docs/MODULES_AND_API.md](../docs/MODULES_AND_API.md).
 
-## Shipped by default
+Modules are **operator packaging**: they declare `provides` / `requires`, check that the
+matching Paper plugin is online (when applicable), and write `FINE_TUNE.txt` under
+`modules/<Name>/` pointing at the real config knobs. Engines stay in `plugins/`.
 
-`gradle shadowJar` / `assembleRelease` installs:
+## Install
 
-| Jar | Role |
-|-----|------|
-| `yap-vehicles-module.jar` | `provides: [vehicles]` (engine is still `plugins/yap-vehicles.jar`) |
+```bash
+gradle installProductDefaults      # CORE plugins + CORE fine-tune modules
+gradle installGameplayDefaults     # + vehicles/stacker/knobs plugins + modules
+gradle installFineTuneModules      # all fine-tune jars only → modules/
+gradle assemblePluginDist          # build/dist/yap-plugins/{…,modules/core,modules/gameplay}
+```
 
-See [docs/VEHICLES.md](../docs/VEHICLES.md).
+## CORE modules (default product)
+
+| Jar | `provides` | Points at |
+|-----|------------|-----------|
+| `yap-playerdata-module.jar` | `playerdata` | `plugins/YaPPlayerData/config.yml` |
+| `yap-economy-module.jar` | `economy` | money profile (`requires: [playerdata]`) |
+| `yap-packs-module.jar` | `packs` | `server.properties` + YaPPacks |
+| `yap-spatial-module.jar` | `spatial`, `phase3` | Phase 3 JVM / `paper-phase3-*` |
+| `yap-highpop-module.jar` | `highpop` | `config/templates/highpop` |
+| `yap-ops-dashboard-module.jar` | `web-dashboard` | `web-dashboard-*` |
+| `yap-pregen-module.jar` | `pregen` | YaPPregen |
+| `yap-chat-module.jar` | `chat` | YaPChat |
+| `yap-floodgate-module.jar` | `floodgate` | YaPFloodgate |
+| `yap-db-module.jar` | `yapdb` | YaPDB |
+
+## GAMEPLAY modules (opt-in)
+
+| Jar | `provides` | Points at |
+|-----|------------|-----------|
+| `yap-vehicles-module.jar` | `vehicles` | YaPVehicles engine |
+| `yap-stacker-module.jar` | `stacker` | YaPStacker |
+| `yap-gameplay-knobs-module.jar` | `gameplay-knobs` | `knobs.yml` encyclopedia |
+
+Remove a jar from `modules/` (and restart) to drop that packaging node from
+`provides` / Modules GUI — configs and Paper plugins remain until you remove those too.
+
+See [docs/TUNE.md](../docs/TUNE.md) · [docs/VEHICLES.md](../docs/VEHICLES.md).

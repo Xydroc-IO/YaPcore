@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "com.yapcore"
-version = "0.1.0"
+version = "1.0.0.0"
 
 val frayVersion = "0.9.0"
 val jcstressVersion = "0.16"
@@ -220,22 +220,25 @@ tasks.named<JavaExec>("run") {
 }
 
 // ---------------------------------------------------------------------------
-// Product defaults: vehicles + knobs plugins, modules, client resource pack
+// Product defaults — CORE+NETWORK (default) vs GAMEPLAY (opt-in)
+//   gradle installProductDefaults
+//   gradle installGameplayDefaults
+//   gradle assembleRelease -PyapGameplay=true
 // ---------------------------------------------------------------------------
+
+val yapGameplayProp: Provider<String> = providers.gradleProperty("yapGameplay").orElse("false")
+val yapGameplayEnabled: Boolean =
+    yapGameplayProp.get() == "true" || yapGameplayProp.get() == "1"
 
 tasks.register("installProductDefaults") {
     group = "distribution"
-    description = "Install YaP Vehicles + Knobs + PlaceholderAPI + PluginCompat + Pregen + Stacker + YapDb + PlayerData + Packs into plugins/ and modules/"
+    description =
+        "CORE+NETWORK plugins + CORE fine-tune modules"
     dependsOn(
-        ":vehicles-plugin:installIntoPlugins",
-        ":vehicles-module:installIntoModules",
-        ":gameplay-knobs-plugin:installIntoPlugins",
         ":placeholderapi-plugin:installIntoPlugins",
         ":plugin-compat-plugin:installIntoPlugins",
+        ":finetune-modules:installCoreIntoModules",
     )
-    if (findProject(":stacker-plugin") != null) {
-        dependsOn(":stacker-plugin:installIntoPlugins")
-    }
     if (findProject(":pregen-plugin") != null) {
         dependsOn(":pregen-plugin:installIntoPlugins")
     }
@@ -256,24 +259,178 @@ tasks.register("installProductDefaults") {
     }
 }
 
+tasks.register("installGameplayDefaults") {
+    group = "distribution"
+    description = "GAMEPLAY opt-in: Vehicles + Stacker + GameplayKnobs (+ fine-tune modules)"
+    dependsOn(
+        ":vehicles-plugin:installIntoPlugins",
+        ":vehicles-module:installIntoModules",
+        ":gameplay-knobs-plugin:installIntoPlugins",
+        ":finetune-modules:installGameplayIntoModules",
+    )
+    if (findProject(":stacker-plugin") != null) {
+        dependsOn(":stacker-plugin:installIntoPlugins")
+    }
+}
+
+tasks.register("installAllProductDefaults") {
+    group = "distribution"
+    description = "CORE+NETWORK + GAMEPLAY jars + all fine-tune modules"
+    dependsOn("installProductDefaults", "installGameplayDefaults")
+}
+
+tasks.register("installFineTuneModules") {
+    group = "distribution"
+    description = "Install all fine-tune packaging modules into modules/ (incl. vehicles)"
+    dependsOn(
+        ":finetune-modules:installIntoModules",
+        ":vehicles-module:installIntoModules",
+    )
+}
+/** Flat folder of every first-party product plugin jar for distribution / mirrors. */
+tasks.register("assemblePluginDist") {
+    group = "distribution"
+    description =
+        "Copy all YaP plugin + fine-tune module jars into build/dist/yap-plugins/"
+
+    dependsOn(
+        ":placeholderapi-plugin:shadowJar",
+        ":plugin-compat-plugin:jar",
+        ":pregen-plugin:jar",
+        ":yap-db-plugin:shadowJar",
+        ":playerdata-plugin:shadowJar",
+        ":packs-plugin:jar",
+        ":chat-plugin:jar",
+        ":floodgate-plugin:jar",
+        ":vehicles-plugin:jar",
+        ":vehicles-module:jar",
+        ":gameplay-knobs-plugin:jar",
+        ":stacker-plugin:jar",
+        ":phase3-plugin:jar",
+        ":yap-db-api:jar",
+        ":finetune-modules:buildAllFineTuneModules",
+    )
+
+    val outDir = layout.buildDirectory.dir("dist/yap-plugins")
+
+    doLast {
+        val dest = outDir.get().asFile
+        if (dest.exists()) {
+            dest.deleteRecursively()
+        }
+        val coreDir = dest.resolve("core-network")
+        val gameplayDir = dest.resolve("gameplay")
+        val apiDir = dest.resolve("api")
+        val engineDir = dest.resolve("engine")
+        val modulesCore = dest.resolve("modules/core")
+        val modulesGameplay = dest.resolve("modules/gameplay")
+        listOf(coreDir, gameplayDir, apiDir, engineDir, modulesCore, modulesGameplay).forEach { it.mkdirs() }
+
+        fun jarOf(path: String, taskName: String = "jar"): File {
+            return project.project(path).tasks.named(taskName, Jar::class.java).get().archiveFile.get().asFile
+        }
+
+        fun copyNamed(from: File, into: File, asName: String = from.name) {
+            require(from.isFile) { "Missing jar for plugin dist: $from" }
+            from.copyTo(into.resolve(asName), overwrite = true)
+        }
+
+        copyNamed(jarOf(":placeholderapi-plugin", "shadowJar"), coreDir)
+        copyNamed(jarOf(":plugin-compat-plugin"), coreDir)
+        copyNamed(jarOf(":pregen-plugin"), coreDir)
+        copyNamed(jarOf(":yap-db-plugin", "shadowJar"), coreDir)
+        copyNamed(jarOf(":playerdata-plugin", "shadowJar"), coreDir)
+        copyNamed(jarOf(":packs-plugin"), coreDir)
+        copyNamed(jarOf(":chat-plugin"), coreDir)
+        copyNamed(jarOf(":floodgate-plugin"), coreDir)
+
+        copyNamed(jarOf(":vehicles-plugin"), gameplayDir)
+        copyNamed(jarOf(":gameplay-knobs-plugin"), gameplayDir)
+        copyNamed(jarOf(":stacker-plugin"), gameplayDir)
+
+        copyNamed(jarOf(":yap-db-api"), apiDir)
+        copyNamed(jarOf(":phase3-plugin"), engineDir, "yap-spatial-tick.jar")
+
+        // Fine-tune modules (drop into server modules/)
+        val ft = project.project(":finetune-modules")
+        ft.tasks.withType(Jar::class.java).forEach { jarTask ->
+            if (!jarTask.enabled || jarTask.name == "jar") {
+                return@forEach
+            }
+            val f = jarTask.archiveFile.get().asFile
+            if (!f.isFile) {
+                return@forEach
+            }
+            val name = f.name
+            val gameplayModule = name.contains("stacker") || name.contains("gameplay-knobs")
+            copyNamed(f, if (gameplayModule) modulesGameplay else modulesCore)
+        }
+        copyNamed(jarOf(":vehicles-module"), modulesGameplay)
+
+        dest.resolve("README.txt").writeText(
+            """
+            YaPcore — first-party plugin + fine-tune module distribution
+            ===========================================================
+
+            plugins/  ← drop core-network/ and optionally gameplay/ jars
+            modules/  ← drop modules/core/ (and modules/gameplay/ when using GAMEPLAY)
+
+            Fine-tune modules do not replace configs — they declare provides/requires,
+            verify the Paper plugin is present, and write FINE_TUNE.txt under
+            modules/<Name>/ pointing at the real knobs.
+
+            core-network/     CORE plugins
+            gameplay/         GAMEPLAY plugins (opt-in)
+            modules/core/     CORE fine-tune modules
+            modules/gameplay/ vehicles + stacker + knobs modules
+            api/              yap-db-api.jar
+            engine/           yap-spatial-tick.jar
+
+            Rebuild:  gradle assemblePluginDist
+                      gradle installFineTuneModules
+            Full box: gradle assembleRelease
+            Full + gameplay: gradle assembleRelease -PyapGameplay=true
+
+            Docs: docs/MODULES_AND_API.md · docs/TUNE.md · plugins/README.md
+            """.trimIndent() + "\n"
+        )
+
+        println("Plugin dist → ${dest.absolutePath}")
+        dest.walkTopDown().filter { it.isFile }.sortedBy { it.path }.forEach {
+            println("  ${it.relativeTo(dest)}")
+        }
+    }
+}
+
 tasks.register<Exec>("prepareClientPack") {
     group = "distribution"
-    description = "Merge Faithful + YaP Vehicles into resourcepacks/yapcore-default.zip"
+    description =
+        "Build yapcore-default.zip (Faithful CORE; + vehicles when -PyapGameplay=true)"
     workingDir = project.projectDir
+    environment("YAP_INCLUDE_VEHICLES", if (yapGameplayEnabled) "1" else "0")
     commandLine("bash", "scripts/build-default-resourcepack.sh")
-    // Always rebuild so vehicles art updates land in the served pack
     outputs.file(project.file("resourcepacks/yapcore-default.zip"))
-    inputs.dir(project.file("resourcepacks/yap-vehicles"))
+    inputs.dir(project.file("resourcepacks/yap-vehicles")).optional()
     inputs.file(project.file("resourcepacks/yap-vehicles.zip")).optional()
     inputs.file(project.file("resourcepacks/faithful-64x.zip")).optional()
 }
 
 tasks.register("assembleRelease") {
     group = "distribution"
-    description = "Release package with linux/ and windows/ trees (jar + plugins + packs + launchers)"
-    dependsOn(tasks.named("distJar"), "installProductDefaults", "prepareClientPack")
+    description =
+        "Release package (CORE+NETWORK). Use -PyapGameplay=true for vehicles/stacker/knobs."
+    dependsOn(
+        tasks.named("distJar"),
+        "installProductDefaults",
+        "prepareClientPack",
+        "assemblePluginDist",
+    )
+    if (yapGameplayEnabled) {
+        dependsOn("installGameplayDefaults")
+    }
 
     val releaseRoot = layout.buildDirectory.dir("dist/yapcore-release")
+    val includeGameplay = yapGameplayEnabled
 
     doLast {
         val root = releaseRoot.get().asFile
@@ -281,30 +438,40 @@ tasks.register("assembleRelease") {
         val jar = layout.buildDirectory.file("dist/yapcore.jar").get().asFile
         require(jar.isFile) { "Missing $jar — run distJar first" }
 
-        val pluginJars = listOf(
-            "yap-vehicles.jar",
-            "yap-gameplay-knobs.jar",
+        val corePluginJars = listOf(
             "yap-placeholderapi.jar",
             "yap-plugin-compat.jar",
             "yap-pregen.jar",
-            "yap-stacker.jar",
             "yap-db.jar",
             "yap-playerdata.jar",
             "yap-packs.jar",
             "yap-chat.jar",
             "yap-floodgate.jar",
         )
-        val packFiles = listOf(
-            "yapcore-default.zip",
-            "yap-vehicles.zip",
-            "faithful-64x.zip",
-            "CREDITS.md",
-            "FAITHFUL_LICENSE.txt",
-            "README.md",
+        val gameplayPluginJars = listOf(
+            "yap-vehicles.jar",
+            "yap-gameplay-knobs.jar",
+            "yap-stacker.jar",
         )
+        val pluginJars = if (includeGameplay) {
+            corePluginJars + gameplayPluginJars
+        } else {
+            corePluginJars
+        }
+        val packFiles = buildList {
+            add("yapcore-default.zip")
+            add("faithful-64x.zip")
+            add("CREDITS.md")
+            add("FAITHFUL_LICENSE.txt")
+            add("README.md")
+            if (includeGameplay) {
+                add("yap-vehicles.zip")
+            }
+        }
         val docFiles = listOf(
             "VEHICLES.md", "CLIENTS_AND_PACKS.md", "WEB_DASHBOARD.md", "PREGEN.md",
             "WINDOWS.md", "NGINX_AND_LOCALHOST.md", "PLAYERDATA.md", "MARIADB.md", "YAPDB.md",
+            "STACKER.md", "PLUGINS.md", "MODULES_AND_API.md", "TUNE.md",
         )
         val linuxScripts = listOf(
             "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
@@ -327,7 +494,14 @@ tasks.register("assembleRelease") {
             project.copy {
                 from(project.file("modules"))
                 into(dest.resolve("modules"))
-                include("yap-vehicles-module.jar", "README.md")
+                include("*.jar", "README.md")
+                if (!includeGameplay) {
+                    exclude(
+                        "yap-vehicles-module.jar",
+                        "yap-stacker-module.jar",
+                        "yap-gameplay-knobs-module.jar",
+                    )
+                }
             }
             project.copy {
                 from(project.file("resourcepacks"))
@@ -444,8 +618,12 @@ tasks.register("assembleRelease") {
             Shared contents (both platforms)
             --------------------------------
             yapcore.jar
-            plugins/  (vehicles, knobs, placeholderapi, plugin-compat, pregen, …)
-            modules/
+            plugins/  CORE+NETWORK by default (db, playerdata, packs, chat, floodgate, …)
+                      GAMEPLAY (vehicles, stacker, knobs): rebuild with -PyapGameplay=true
+                      or run: gradle installGameplayDefaults
+            modules/  CORE fine-tune packaging modules by default;
+                      GAMEPLAY adds vehicles/stacker/knobs modules
+                      (gradle installFineTuneModules · docs/MODULES_AND_API.md)
             resourcepacks/yapcore-default.zip
             config/
             docs/
