@@ -7,7 +7,7 @@ version = "0.1.0"
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
 
@@ -17,7 +17,8 @@ repositories {
 }
 
 dependencies {
-    compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    val paperApi = providers.gradleProperty("paperApiVersion").getOrElse("26.2.build.112-stable")
+    compileOnly("io.papermc.paper:paper-api:$paperApi")
 }
 
 tasks.jar {

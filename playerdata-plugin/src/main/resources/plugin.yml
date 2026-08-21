@@ -1,0 +1,79 @@
+name: YaPPlayerData
+version: '0.2.0'
+main: com.yapcore.playerdata.PlayerDataPlugin
+api-version: '1.21'
+author: YapLabs
+description: Cross-server player data — inv profiles, economy, homes, warps, kits, mail, shops, jobs, auctions
+website: https://github.com/yaplabs
+softdepend: [Vault, PlaceholderAPI]
+commands:
+  bal:
+    description: Show your balance (or another player's)
+    usage: /bal [player]
+    aliases: [balance, money]
+  pay:
+    description: Pay another player
+    usage: /pay <player> <amount>
+  yapdata:
+    description: Admin reload / status / force-save
+    usage: /yapdata <reload|status|save>
+    permission: yapdata.admin
+  sethome:
+    description: Set a home
+    usage: /sethome [name]
+  home:
+    description: Teleport to a home
+    usage: /home [name]
+  delhome:
+    description: Delete a home
+    usage: /delhome <name>
+  homes:
+    description: List homes
+    usage: /homes
+  setwarp:
+    description: Set a server warp
+    usage: /setwarp <name>
+    permission: yapdata.warp.admin
+  delwarp:
+    description: Delete a warp
+    usage: /delwarp <name>
+    permission: yapdata.warp.admin
+  warp:
+    description: Teleport to a warp
+    usage: /warp <name>
+  warps:
+    description: List warps
+    usage: /warps
+  kit:
+    description: Claim a kit
+    usage: /kit <name>
+  kits:
+    description: List kits
+    usage: /kits
+  mail:
+    description: Player mail
+    usage: /mail <read|clear|send <player> <msg>>
+  shop:
+    description: Chest shops
+    usage: /shop <create <price>|remove|info>
+  jobs:
+    description: Join/leave jobs
+    usage: /jobs [join|leave|list] [name]
+    aliases: [job]
+  ah:
+    description: Auction house
+    usage: /ah [list|sell <price>|buy <id>|cancel <id>]
+    aliases: [auction, auctions]
+permissions:
+  yapdata.admin:
+    description: Reload, status, force-save, manage others' shops/auctions
+    default: op
+  yapdata.balance.others:
+    description: View other players' balances
+    default: op
+  yapdata.warp.admin:
+    description: Create/delete warps
+    default: op
+  yapdata.kit.*:
+    description: Access all kits
+    default: true

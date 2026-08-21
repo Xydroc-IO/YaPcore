@@ -1,0 +1,17 @@
+name: YaPPregen
+version: '0.1.0'
+main: com.yapcore.pregen.PregenPlugin
+api-version: '1.21'
+author: YapLabs
+description: First-party world chunk pre-generator (Chunky-class) for YaPcore / Paper
+softdepend: [WorldEdit]
+commands:
+  yappregen:
+    description: Pre-generate world chunks
+    usage: /yappregen <start|pause|resume|cancel|status|reload>
+    aliases: [pregen, yapchunky]
+    permission: yappregen.admin
+permissions:
+  yappregen.admin:
+    description: Run chunk pregen commands
+    default: op

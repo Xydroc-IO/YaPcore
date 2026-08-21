@@ -4,6 +4,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -78,6 +82,23 @@ public final class YapSpatialTickPlugin extends JavaPlugin {
             getLogger().log(Level.SEVERE, "Failed to link YapEngine Phase 3 bridge", e);
             Bukkit.getPluginManager().disablePlugin(this);
             return;
+        }
+
+        boolean autoOp = Boolean.getBoolean("yapcore.auto-op");
+        if (autoOp) {
+            Bukkit.getPluginManager().registerEvents(new Listener() {
+                @EventHandler
+                public void onJoin(PlayerJoinEvent event) {
+                    Player p = event.getPlayer();
+                    if (!p.isOp()) {
+                        p.setOp(true);
+                        getLogger().info("auto-op granted to " + p.getName()
+                                + " (set auto-op=false in config/server.properties to disable)");
+                        p.sendMessage("§aYou are OP — vanilla commands like /gamemode are available.");
+                    }
+                }
+            }, this);
+            getLogger().info("auto-op=true — joining players receive OP (vanilla command access)");
         }
 
         new BukkitRunnable() {

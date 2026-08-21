@@ -1,0 +1,16 @@
+name: YaPGameplayKnobs
+version: '0.1.0'
+main: com.yapcore.knobs.GameplayKnobsPlugin
+api-version: '1.21'
+author: YapLabs
+description: Purpur-inspired gameplay + mob encyclopedia for YaPcore (Paper plugin)
+website: https://github.com/yaplabs
+commands:
+  yapknobs:
+    description: Reload / status for YaP gameplay knobs
+    usage: /yapknobs <reload|status>
+    permission: yapknobs.reload
+permissions:
+  yapknobs.reload:
+    description: Reload knobs.yml
+    default: op

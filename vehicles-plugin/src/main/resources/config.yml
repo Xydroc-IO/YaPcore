@@ -1,0 +1,67 @@
+# YaP Vehicles — runtime config
+enabled: true
+
+tick-period: 1
+empty-despawn-seconds: 0
+drop-item-on-destroy: true
+fuel-enabled: true
+damage-enabled: true
+
+builtins:
+  buggy: true
+  hoverbike: true
+  # 4x4, monster, sport, hyper, lambo, ferrari, mclaren, porsche
+  fleet: true
+
+# High-res ItemDisplay body models (CustomModelData 77200+ in yap-vehicles pack)
+visuals:
+  high-res-models: true
+  # Also keep BlockDisplay paint panels under the HD model (usually leave false)
+  high-res-keep-block-body: false
+
+# ---------------------------------------------------------------------------
+# Fuel — coal by default; burn multiplier is global (upgrades stack on top)
+# ---------------------------------------------------------------------------
+fuel:
+  item: COAL
+  # Fuel units added per coal consumed
+  per-item: 200
+  # Global burn scale (1.0 = type default; 0.5 = half burn; 2.0 = thirsty)
+  burn-multiplier: 1.0
+  # Sneak + right-click vehicle with coal to refuel
+  require-sneak: true
+
+# ---------------------------------------------------------------------------
+# Upgrades — craftable / shoppable parts with CustomModelData icons
+# ---------------------------------------------------------------------------
+upgrades:
+  enabled: true
+  craft-enabled: true
+  shop-enabled: true
+
+# ---------------------------------------------------------------------------
+# Compat — remap other plugins' minecart/boat vehicles onto YaP chassis
+# ---------------------------------------------------------------------------
+compat:
+  enabled: true
+  claim-minecarts: true
+  claim-boats: true
+  claim-other-vehicles: false
+  require-marker: true
+  ignore-vanilla: true
+  preserve-model: true
+  default-type: chassis
+  name-map:
+    buggy: buggy
+    hover: hoverbike
+    bike: hoverbike
+    truck: chassis
+  tag-map:
+    yap_buggy: buggy
+    yap_hoverbike: hoverbike
+  known-plugins:
+    - Vehicles
+    - VehiclesPlus
+    - VC
+    - ModularVehicles
+    - MythicMobs

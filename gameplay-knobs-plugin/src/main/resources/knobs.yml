@@ -1,0 +1,1684 @@
+# YaP Gameplay Knobs — Purpur-inspired encyclopedia (original MIT code).
+# Not affiliated with PurpurMC.
+# Supported: WASD ridables (ridable+controllable), MobGoal AI, block patches.
+# Edit this file (or plugins/YaPGameplayKnobs/knobs.yml after first run).
+#
+# Per-mob AI example:
+#   ai:
+#     aware: true
+#     disable-ai: false
+#     disable-random-stroll: false
+#     disable-panic: false
+#     remove-goals: [CREEPER_SWELL, RANDOM_STROLL]   # VanillaGoal names
+#
+
+settings:
+  enabled: true
+  # Advertise a custom brand in server list (Paper may override)
+  server-mod-name: "YaPcore"
+  disable-give-dropping: false
+  projectiles-bypass-mob-griefing: false
+
+blocks:
+  anvil:
+    cumulative-cost: true
+  barrel:
+    rows: 3
+  beehive:
+    max-bees-inside: 3
+  bed:
+    explode: true
+  crying-obsidian:
+    valid-for-portal-frame: false
+  lightning-rod:
+    range: 128
+
+gameplay:
+  entity-blindness-multiplier: 1.0
+  tick-fluids: true
+  use-void-damage-fix: false
+  player:
+    netherite-fire-resistance: false
+    totem-of-undying-works-in-void: false
+
+mobs:
+  allay:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  armadillo:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 12
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  axolotl:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 14
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  bat:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 6
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  bee:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  blaze:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  bogged:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 16
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  breeze:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 30
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  camel:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 32
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  cat:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  cave_spider:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 12
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  chicken:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 4
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  cod:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 3
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  cow:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  creeper:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  dolphin:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  donkey:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 15
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  drowned:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  elder_guardian:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 80
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  ender_dragon:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 200
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  enderman:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 40
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  endermite:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 8
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  evoker:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 24
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  fox:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  frog:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  ghast:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  giant:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 100
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  glow_squid:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  goat:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  guardian:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 30
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  hoglin:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 40
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  horse:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 15
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  husk:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  illusioner:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 32
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  iron_golem:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 100
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  llama:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 15
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  magma_cube:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 16
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  mooshroom:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  mule:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 15
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  ocelot:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  panda:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  parrot:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 6
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  phantom:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  pig:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  piglin:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 16
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  piglin_brute:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 50
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  pillager:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 24
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  polar_bear:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 30
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  pufferfish:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 3
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  rabbit:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 3
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  ravager:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 100
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  salmon:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 3
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  sheep:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 8
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  shulker:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 30
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  silverfish:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 8
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  skeleton:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  skeleton_horse:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 15
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  slime:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 16
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  sniffer:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 14
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  snow_golem:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 4
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  spider:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 16
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  squid:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 10
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  stray:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  strider:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  tadpole:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 6
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  trader_llama:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 15
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  tropical_fish:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 3
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  turtle:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 30
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  vex:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 14
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  villager:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  vindicator:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 24
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  wandering_trader:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  warden:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 500
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  witch:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 26
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  wither:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 300
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  wither_skeleton:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  wolf:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 8
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  zoglin:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 40
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  zombie:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  zombie_horse:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 15
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  zombie_villager:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+
+  zombified_piglin:
+    enabled: true
+    ridable: false
+    controllable: true
+    ridable-in-water: false
+    takes-damage-from-water: false
+    always-drop-exp: false
+    can-pick-up-loot: default
+    breeding-delay-ticks: 6000
+    attributes:
+      max_health: 20
+      scale: 1.0
+    ridable-max-y: 320.0
+    ai:
+      aware: true
+      disable-ai: false
+      disable-random-stroll: false
+      disable-panic: false
+      remove-goals: []
+

@@ -1,0 +1,6 @@
+chunks-per-tick: 5
+max-mspt: 40.0
+broadcast-interval-sec: 30
+auto-resume: true
+max-worlds: 4
+max-inflight: 32

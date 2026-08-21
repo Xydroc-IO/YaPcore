@@ -1,0 +1,99 @@
+package com.yapcore.playerdata.cmd;
+
+import com.yapcore.playerdata.PlayerDataConfig;
+import com.yapcore.playerdata.db.KitRepository;
+import com.yapcore.playerdata.sync.SyncService;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+public final class KitCommands implements CommandExecutor, TabCompleter {
+    private final PlayerDataConfig config;
+    private final KitRepository kits;
+    private final SyncService sync;
+
+    public KitCommands(PlayerDataConfig config, KitRepository kits, SyncService sync) {
+        this.config = config;
+        this.kits = kits;
+        this.sync = sync;
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!sync.isReady(player.getUniqueId())) {
+            player.sendMessage("§cStill loading your data…");
+            return true;
+        }
+        String cmd = command.getName().toLowerCase(Locale.ROOT);
+        try {
+            if (cmd.equals("kits")) {
+                if (config.kits().isEmpty()) {
+                    player.sendMessage("§7No kits configured.");
+                } else {
+                    player.sendMessage("§aKits: §f" + String.join(", ", config.kits().keySet()));
+                }
+                return true;
+            }
+            if (args.length < 1) {
+                player.sendMessage("Usage: /kit <name>");
+                return true;
+            }
+            String id = args[0].toLowerCase(Locale.ROOT);
+            PlayerDataConfig.KitDef def = config.kits().get(id);
+            if (def == null) {
+                player.sendMessage("§cUnknown kit.");
+                return true;
+            }
+            if (!player.hasPermission("yapdata.kit." + id) && !player.hasPermission("yapdata.kit.*")) {
+                player.sendMessage("§cNo permission for that kit.");
+                return true;
+            }
+            var last = kits.lastClaim(player.getUniqueId(), id);
+            if (last.isPresent() && def.delaySeconds() > 0) {
+                Instant next = last.get().plusSeconds(def.delaySeconds());
+                if (Instant.now().isBefore(next)) {
+                    long secs = Duration.between(Instant.now(), next).getSeconds();
+                    player.sendMessage("§cKit on cooldown (" + secs + "s left).");
+                    return true;
+                }
+            }
+            for (ItemStack stack : def.items()) {
+                player.getInventory().addItem(stack.clone());
+            }
+            kits.markClaimed(player.getUniqueId(), id);
+            player.sendMessage("§aClaimed kit §f" + id);
+            return true;
+        } catch (Exception e) {
+            player.sendMessage("§cDatabase error: " + e.getMessage());
+            return true;
+        }
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if (args.length != 1 || command.getName().equalsIgnoreCase("kits")) {
+            return List.of();
+        }
+        String p = args[0].toLowerCase(Locale.ROOT);
+        List<String> out = new ArrayList<>();
+        for (String id : config.kits().keySet()) {
+            if (id.startsWith(p)) {
+                out.add(id);
+            }
+        }
+        return out;
+    }
+}

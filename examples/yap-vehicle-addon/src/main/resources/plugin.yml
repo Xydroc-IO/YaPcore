@@ -1,0 +1,8 @@
+name: YaPVehicleAddonExample
+version: '1.0.0'
+main: com.example.vehicles.CargoTruckAddonPlugin
+api-version: '1.21'
+author: Example
+description: Example third-party vehicle type using YaP Vehicles API
+softdepend:
+  - YaPVehicles

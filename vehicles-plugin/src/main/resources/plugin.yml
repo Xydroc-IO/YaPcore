@@ -1,0 +1,27 @@
+name: YaPVehicles
+version: '0.1.0'
+main: com.yapcore.vehicles.VehiclesPlugin
+api-version: '1.21'
+author: YapLabs
+description: Real vehicle mechanics API for Paper plugins (not minecarts/boats)
+website: https://github.com/yaplabs
+softdepend: []
+commands:
+  yapvehicle:
+    description: Spawn / list / destroy YaP vehicles
+    usage: /yapvehicle <spawn|list|destroy|types|give|adapt|shop|upgrades|reload> [args]
+    aliases: [yapv, vehicle]
+    permission: yapvehicles.command
+permissions:
+  yapvehicles.command:
+    description: Use /yapvehicle
+    default: op
+  yapvehicles.spawn:
+    description: Spawn vehicles
+    default: op
+  yapvehicles.destroy:
+    description: Destroy vehicles
+    default: op
+  yapvehicles.drive:
+    description: Enter and drive vehicles
+    default: true

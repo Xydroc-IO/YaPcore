@@ -1,0 +1,21 @@
+name: PlaceholderAPI
+version: '3.0.0-yap'
+main: me.clip.placeholderapi.PlaceholderAPIPlugin
+api-version: '1.21'
+load: STARTUP
+author: YapLabs
+description: YaPcore first-party PlaceholderAPI-compatible placeholder engine (clean-room)
+website: https://github.com/yaplabs
+commands:
+  placeholderapi:
+    description: YaP PlaceholderAPI admin / parse
+    usage: /papi <parse|list|reload|info> ...
+    aliases: [papi]
+    permission: placeholderapi.admin
+permissions:
+  placeholderapi.admin:
+    description: Use /papi admin commands
+    default: op
+  placeholderapi.parse:
+    description: Parse placeholders via /papi parse
+    default: op

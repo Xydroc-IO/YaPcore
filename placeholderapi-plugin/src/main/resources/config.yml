@@ -1,0 +1,10 @@
+# YaP PlaceholderAPI (clean-room, clip-compatible)
+boolean:
+  true: "yes"
+  false: "no"
+date-format: "MM/dd/yy HH:mm:ss"
+check-updates: true
+update-check-url: ""
+cloud-enabled: false
+dump-paste: true
+expansions: {}

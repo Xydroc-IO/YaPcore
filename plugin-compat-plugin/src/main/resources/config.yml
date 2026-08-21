@@ -1,0 +1,10 @@
+# Informational — rewrite is driven by YaPcore config/server.properties
+enabled: true
+target: "Paper 1.20-1.21 jars on Paper 26.2"
+notes: |
+  YaPcore rewrites eligible plugins/*.jar before Paper loads them:
+  - Enchantment DAMAGE_ALL → SHARPNESS (and related renames)
+  - PotionEffectType SLOW → SLOWNESS (and related)
+  - Particle REDSTONE → DUST (and related)
+  - org.bukkit.craftbukkit.v1_20_R* / v1_21_R* → org.bukkit.craftbukkit
+  Originals backed up under plugins/.yap-plugin-compat-backup/ when enabled.
