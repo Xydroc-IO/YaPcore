@@ -32,7 +32,9 @@ public final class ClaimListener implements Listener {
     public void onBreak(BlockBreakEvent event) {
         if (!claims.canBuild(event.getPlayer(), event.getBlock().getLocation())) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("§cClaimed land — you cannot build here.");
+            event.getPlayer().sendMessage("§cClaimed land — you cannot build here"
+                    + (claims.getAt(event.getBlock().getLocation()).map(c -> c.taxFrozen() ? " (tax frozen)" : "").orElse(""))
+                    + ".");
         }
     }
 
@@ -40,7 +42,9 @@ public final class ClaimListener implements Listener {
     public void onPlace(BlockPlaceEvent event) {
         if (!claims.canBuild(event.getPlayer(), event.getBlock().getLocation())) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("§cClaimed land — you cannot build here.");
+            event.getPlayer().sendMessage("§cClaimed land — you cannot build here"
+                    + (claims.getAt(event.getBlock().getLocation()).map(c -> c.taxFrozen() ? " (tax frozen)" : "").orElse(""))
+                    + ".");
         }
     }
 

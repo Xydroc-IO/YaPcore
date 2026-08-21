@@ -36,6 +36,9 @@ public final class WarpCommands implements CommandExecutor, TabCompleter {
                 case "delwarp" -> delWarp(sender, args);
                 case "warp" -> warp(sender, args);
                 case "warps" -> {
+                    if (!Perms.require(sender, "yapdata.warp")) {
+                        yield true;
+                    }
                     if (sender instanceof Player player) {
                         menus.openWarps(player);
                     } else {
@@ -89,6 +92,9 @@ public final class WarpCommands implements CommandExecutor, TabCompleter {
     private boolean warp(CommandSender sender, String[] args) throws Exception {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!Perms.require(sender, "yapdata.warp")) {
             return true;
         }
         if (args.length < 1) {

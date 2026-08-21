@@ -38,6 +38,9 @@ public final class ShopCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage("Players only.");
             return true;
         }
+        if (!Perms.require(sender, "yapdata.shop")) {
+            return true;
+        }
         if (!sync.isReady(player.getUniqueId())) {
             player.sendMessage("§cStill loading your data…");
             return true;
@@ -141,6 +144,10 @@ public final class ShopCommands implements CommandExecutor, TabCompleter {
 
     /** Called from listener when buyer left-clicks chest. */
     public boolean tryBuy(Player buyer, ShopRepository.Shop shop, Chest chest) throws Exception {
+        if (!buyer.hasPermission("yapdata.shop")) {
+            buyer.sendMessage("§cNo permission.");
+            return false;
+        }
         if (shop.owner().equals(buyer.getUniqueId())) {
             buyer.sendMessage("§7That's your shop.");
             return false;

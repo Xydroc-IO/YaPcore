@@ -39,6 +39,9 @@ public final class AuctionCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage("Players only.");
             return true;
         }
+        if (!Perms.require(sender, "yapdata.ah")) {
+            return true;
+        }
         if (!sync.isReady(player.getUniqueId())) {
             player.sendMessage("§cStill loading your data…");
             return true;

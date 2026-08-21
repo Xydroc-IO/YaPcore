@@ -36,6 +36,9 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage("Players only.");
             return true;
         }
+        if (!Perms.require(sender, "yapdata.kit")) {
+            return true;
+        }
         if (!sync.isReady(player.getUniqueId())) {
             player.sendMessage("§cStill loading your data…");
             return true;
@@ -56,7 +59,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
                 player.sendMessage("§cUnknown kit.");
                 return true;
             }
-            if (!player.hasPermission("yapdata.kit." + id) && !player.hasPermission("yapdata.kit.*")) {
+            if (!Perms.hasKit(player, id)) {
                 player.sendMessage("§cNo permission for that kit.");
                 return true;
             }
@@ -86,10 +89,13 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
         if (args.length != 1 || command.getName().equalsIgnoreCase("kits")) {
             return List.of();
         }
+        if (!(sender instanceof Player player)) {
+            return List.of();
+        }
         String p = args[0].toLowerCase(Locale.ROOT);
         List<String> out = new ArrayList<>();
         for (String id : config.kits().keySet()) {
-            if (id.startsWith(p)) {
+            if (id.startsWith(p) && Perms.hasKit(player, id)) {
                 out.add(id);
             }
         }

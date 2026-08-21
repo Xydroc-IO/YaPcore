@@ -1,9 +1,13 @@
 package com.yapcore.playerdata;
 
+import com.yapcore.playerdata.auth.AuthListener;
+import com.yapcore.playerdata.auth.AuthService;
 import com.yapcore.playerdata.claims.ClaimListener;
 import com.yapcore.playerdata.claims.ClaimService;
+import com.yapcore.playerdata.claims.TaxService;
 import com.yapcore.playerdata.cmd.AdminCommand;
 import com.yapcore.playerdata.cmd.AuctionCommands;
+import com.yapcore.playerdata.cmd.AuthCommands;
 import com.yapcore.playerdata.cmd.BalanceCommands;
 import com.yapcore.playerdata.cmd.ClaimCommands;
 import com.yapcore.playerdata.cmd.HomeCommands;
@@ -12,14 +16,17 @@ import com.yapcore.playerdata.cmd.KitCommands;
 import com.yapcore.playerdata.cmd.MailCommands;
 import com.yapcore.playerdata.cmd.MenuCommand;
 import com.yapcore.playerdata.cmd.ShopCommands;
+import com.yapcore.playerdata.cmd.TraderCommands;
 import com.yapcore.playerdata.cmd.WarpCommands;
 import com.yapcore.playerdata.db.AuctionRepository;
+import com.yapcore.playerdata.db.AuthRepository;
 import com.yapcore.playerdata.db.ClaimRepository;
 import com.yapcore.playerdata.db.Database;
 import com.yapcore.playerdata.db.HomesRepository;
 import com.yapcore.playerdata.db.JobRepository;
 import com.yapcore.playerdata.db.KitRepository;
 import com.yapcore.playerdata.db.MailRepository;
+import com.yapcore.playerdata.db.NpcTraderRepository;
 import com.yapcore.playerdata.db.PlayerRepository;
 import com.yapcore.playerdata.db.ShopRepository;
 import com.yapcore.playerdata.db.WarpsRepository;
@@ -29,6 +36,8 @@ import com.yapcore.playerdata.feature.JobListener;
 import com.yapcore.playerdata.feature.ShopListener;
 import com.yapcore.playerdata.gui.MenuListener;
 import com.yapcore.playerdata.gui.Menus;
+import com.yapcore.playerdata.npc.NpcTraderListener;
+import com.yapcore.playerdata.npc.NpcTraderService;
 import com.yapcore.playerdata.sync.JoinQuitListener;
 import com.yapcore.playerdata.sync.SessionLock;
 import com.yapcore.playerdata.sync.SyncService;
@@ -38,7 +47,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Cross-server player data + claims + fancy GUIs (first-party YaPcore).
+ * Cross-server player data + claims (subdivides/taxes) + NPC traders + fancy GUIs.
  */
 public final class PlayerDataPlugin extends JavaPlugin {
 
@@ -47,6 +56,8 @@ public final class PlayerDataPlugin extends JavaPlugin {
     private SyncService sync;
     private YaPEconomy economy;
     private ClaimService claims;
+    private TaxService taxes;
+    private NpcTraderService traders;
     private Menus menus;
 
     @Override
@@ -60,6 +71,9 @@ public final class PlayerDataPlugin extends JavaPlugin {
             database.open();
         } catch (Exception e) {
             getLogger().severe("Failed to open MariaDB/MySQL — disabling YaPPlayerData: " + e.getMessage());
+            getLogger().severe("Setup (Docker): Linux ./scripts/db/start-mariadb.sh && ./scripts/db/configure-db.sh");
+            getLogger().severe("         Windows: .\\scripts\\windows\\Start-MariaDB.ps1 ; Configure-Db.ps1");
+            getLogger().severe("Docs: docs/YAPDB.md · docs/MARIADB.md");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -67,6 +81,11 @@ public final class PlayerDataPlugin extends JavaPlugin {
         PlayerRepository repository = new PlayerRepository(database, config);
         SessionLock locks = new SessionLock(repository, config);
         sync = new SyncService(this, config, repository, locks);
+
+        AuthRepository authRepo = new AuthRepository(database);
+        AuthService auth = new AuthService(this, config, authRepo);
+        auth.bindSync(sync);
+        sync.bindAuth(auth);
         sync.startAutosave();
 
         BalanceStore balances = new BalanceStore(sync, repository, getLogger());
@@ -78,22 +97,37 @@ public final class PlayerDataPlugin extends JavaPlugin {
         JobRepository jobs = new JobRepository(database);
         AuctionRepository auctions = new AuctionRepository(database);
         ClaimRepository claimRepo = new ClaimRepository(database);
+        NpcTraderRepository traderRepo = new NpcTraderRepository(database);
 
         claims = new ClaimService(this, config, claimRepo);
         claims.start();
+        taxes = new TaxService(this, config, claims, balances);
+        taxes.start();
+
+        traders = new NpcTraderService(this, config, traderRepo, balances);
+        traders.start();
 
         menus = new Menus(this, config, sync, balances, homes, warps, kits, jobs, auctions, mail, claims);
 
         getServer().getPluginManager().registerEvents(new JoinQuitListener(this, sync, mail), this);
-        getServer().getPluginManager().registerEvents(new MenuListener(menus), this);
+        getServer().getPluginManager().registerEvents(new AuthListener(auth, repository, config), this);
+        getServer().getPluginManager().registerEvents(new MenuListener(menus, traders), this);
         getServer().getPluginManager().registerEvents(new ClaimListener(this, claims), this);
+        getServer().getPluginManager().registerEvents(new NpcTraderListener(traders), this);
 
         BalanceCommands balanceCommands = new BalanceCommands(balances);
         bind("bal", balanceCommands, balanceCommands);
         bind("pay", balanceCommands, balanceCommands);
 
-        AdminCommand admin = new AdminCommand(this, config, database, sync);
+        AdminCommand admin = new AdminCommand(this, config, database, sync, auth);
         bind("yapdata", admin, admin);
+
+        AuthCommands authCommands = new AuthCommands(auth, authRepo);
+        bind("register", authCommands, authCommands);
+        bind("login", authCommands, authCommands);
+        bind("changepassword", authCommands, authCommands);
+        bind("logout", authCommands, authCommands);
+        bind("unregister", authCommands, authCommands);
 
         MenuCommand menuCommand = new MenuCommand(menus, sync);
         bind("menu", menuCommand, menuCommand);
@@ -129,8 +163,11 @@ public final class PlayerDataPlugin extends JavaPlugin {
         AuctionCommands auctionCommands = new AuctionCommands(config, auctions, balances, sync, menus);
         bind("ah", auctionCommands, auctionCommands);
 
-        ClaimCommands claimCommands = new ClaimCommands(this, claims, sync, menus);
+        ClaimCommands claimCommands = new ClaimCommands(this, claims, taxes, sync, menus);
         bind("claim", claimCommands, claimCommands);
+
+        TraderCommands traderCommands = new TraderCommands(traders, sync);
+        bind("trader", traderCommands, traderCommands);
 
         if (config.syncEconomy() && Bukkit.getPluginManager().getPlugin("Vault") != null) {
             try {
@@ -145,15 +182,21 @@ public final class PlayerDataPlugin extends JavaPlugin {
             sync.beginJoin(online);
         }
 
-        getLogger().info("YaPPlayerData 0.3 — server-id=" + config.serverId()
+        getLogger().info("YaPPlayerData 0.5 — auth+session-lock · server-id=" + config.serverId()
                 + " profile=" + config.inventoryProfile()
-                + " claims=" + config.claimsEnabled()
-                + " kits=" + config.kits().size()
-                + " jobs=" + config.jobs().size());
+                + " auth=" + (auth.isActive() ? "on" : "off"));
     }
 
     @Override
     public void onDisable() {
+        if (traders != null) {
+            traders.stop();
+            traders = null;
+        }
+        if (taxes != null) {
+            taxes.stop();
+            taxes = null;
+        }
         if (claims != null) {
             claims.stop();
             claims = null;

@@ -1,13 +1,7 @@
-# Unique id for this backend (must differ on every Velocity backend)
-server-id: lobby
+# Shared MariaDB/MySQL — prefer YaPDB (yap-db.jar) when installed
+use-shared-yapdb: true
 
-# Inventory / XP / vitals profile key:
-#   global  — shared across all backends (default)
-#   server  — use server-id (per-server / minigame wipe)
-#   <name>  — custom shared group (e.g. survival-network)
-inventory-profile: global
-
-# Shared MariaDB/MySQL — all backends must use the same database
+# Used only when YaPDB is missing or use-shared-yapdb is false
 jdbc:
   url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
   user: yap
@@ -18,9 +12,29 @@ pool:
   minimum-idle: 2
   connection-timeout-ms: 10000
 
+# Unique id for this backend (must differ on every Velocity backend)
+server-id: lobby
+
+# Inventory / XP / vitals profile key:
+#   global  — shared across all backends (default)
+#   server  — use server-id (per-server / minigame wipe)
+#   <name>  — custom shared group (e.g. survival-network)
+inventory-profile: global
+
 autosave-seconds: 60
 starting-balance: 0.00
 lock-ttl-seconds: 120
+
+# Offline password auth (AuthMe-class). Session lock is separate (always on).
+auth:
+  enabled: true
+  # true = always require /login even on online-mode servers
+  force: false
+  # true = skip auth when online-mode=false (Velocity modern forwarding backends)
+  trust-velocity: false
+  min-password-length: 4
+  timeout-seconds: 60
+  max-attempts: 5
 
 sync:
   inventory: true
@@ -49,6 +63,13 @@ claims:
   min-area: 9
   max-area: 50000
   visual-seconds: 8
+  subdivide-min-area: 4
+  tax:
+    enabled: true
+    per-block-per-day: 0.01
+    tick-minutes: 60
+    freeze-at: 50.0
+    abandon-at: 200.0
 
 kits:
   starter:

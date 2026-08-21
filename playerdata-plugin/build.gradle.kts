@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.yapcore"
-version = "0.3.0"
+version = "0.6.0"
 
 java {
     toolchain {
@@ -27,6 +27,7 @@ dependencies {
 
     implementation("com.zaxxer:HikariCP:6.2.1")
     implementation("com.mysql:mysql-connector-j:9.1.0")
+    implementation("at.favre.lib:bcrypt:0.10.2")
 
     testImplementation("io.papermc.paper:paper-api:$paperApi")
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
@@ -43,6 +44,7 @@ tasks.shadowJar {
     archiveClassifier.set("")
     relocate("com.zaxxer.hikari", "com.yapcore.playerdata.libs.hikari")
     relocate("com.mysql", "com.yapcore.playerdata.libs.mysql")
+    relocate("at.favre.lib", "com.yapcore.playerdata.libs.favre")
     mergeServiceFiles()
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }

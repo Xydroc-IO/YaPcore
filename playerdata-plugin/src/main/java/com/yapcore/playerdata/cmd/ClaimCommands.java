@@ -3,6 +3,7 @@ package com.yapcore.playerdata.cmd;
 import com.yapcore.playerdata.claims.Claim;
 import com.yapcore.playerdata.claims.ClaimService;
 import com.yapcore.playerdata.claims.ClaimVisualizer;
+import com.yapcore.playerdata.claims.TaxService;
 import com.yapcore.playerdata.db.ClaimRepository;
 import com.yapcore.playerdata.gui.Menus;
 import com.yapcore.playerdata.sync.SyncService;
@@ -24,12 +25,15 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
 
     private final JavaPlugin plugin;
     private final ClaimService claims;
+    private final TaxService taxes;
     private final SyncService sync;
     private final Menus menus;
 
-    public ClaimCommands(JavaPlugin plugin, ClaimService claims, SyncService sync, Menus menus) {
+    public ClaimCommands(JavaPlugin plugin, ClaimService claims, TaxService taxes,
+                         SyncService sync, Menus menus) {
         this.plugin = plugin;
         this.claims = claims;
+        this.taxes = taxes;
         this.sync = sync;
         this.menus = menus;
     }
@@ -38,6 +42,9 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!Perms.require(sender, "yapdata.claim")) {
             return true;
         }
         if (!claims.config().claimsEnabled()) {
@@ -71,13 +78,36 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
                     menus.openClaims(player);
                     yield true;
                 }
+                case "subdivide", "sub" -> {
+                    claims.setMode(player.getUniqueId(), ClaimService.SelectMode.SUBDIVIDE);
+                    player.sendMessage("§aSubdivision mode ON. Mark two corners inside your claim with the shovel.");
+                    yield true;
+                }
+                case "mode" -> {
+                    claims.setMode(player.getUniqueId(), ClaimService.SelectMode.CLAIM);
+                    player.sendMessage("§aClaim mode (top-level) ON.");
+                    yield true;
+                }
+                case "tax" -> {
+                    player.sendMessage(taxes.status(player));
+                    yield true;
+                }
+                case "paytax" -> {
+                    player.sendMessage(taxes.payTax(player));
+                    yield true;
+                }
                 case "here", "info" -> {
                     var opt = claims.getAt(player.getLocation());
                     if (opt.isEmpty()) {
                         player.sendMessage("§7Wilderness.");
                     } else {
                         Claim c = opt.get();
-                        player.sendMessage("§aClaim §f#" + c.id() + " §7area §f" + c.area());
+                        String kind = c.isSubdivision() ? "subdivision" : "claim";
+                        player.sendMessage("§a" + kind + " §f#" + c.id()
+                                + (c.isSubdivision() ? " §7parent §f#" + c.parentId() : "")
+                                + " §7area §f" + c.area()
+                                + (c.taxFrozen() ? " §c[TAX FROZEN]" : "")
+                                + (c.isSubdivision() ? "" : " §7tax §f$" + String.format("%.2f", c.taxDue())));
                         ClaimVisualizer.show(plugin, player, c, claims.config().claimsVisualSeconds());
                     }
                     yield true;
@@ -119,7 +149,7 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
                     yield true;
                 }
                 default -> {
-                    player.sendMessage("Usage: /claim [tool|blocks|list|here|abandon|trust|untrust]");
+                    player.sendMessage("Usage: /claim [tool|blocks|list|subdivide|tax|paytax|here|abandon|trust|untrust]");
                     yield true;
                 }
             };
@@ -158,14 +188,16 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
         }
         claims.repo().setTrust(c.id(), target.getUniqueId(), level);
         claims.invalidateTrust(c.id());
-        player.sendMessage("§aTrusted §f" + args[1] + " §aas §f" + level);
+        player.sendMessage("§aTrusted §f" + args[1] + " §aas §f" + level
+                + (c.isSubdivision() ? " §7(on subdivision)" : ""));
         return true;
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(args[0], "tool", "blocks", "list", "here", "abandon", "trust", "untrust");
+            return filter(args[0], "tool", "blocks", "list", "subdivide", "mode", "tax", "paytax",
+                    "here", "abandon", "trust", "untrust");
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("trust")) {
             return filter(args[2], "access", "build", "manage");

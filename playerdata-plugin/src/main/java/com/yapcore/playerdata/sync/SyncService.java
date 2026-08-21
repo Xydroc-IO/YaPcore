@@ -1,6 +1,7 @@
 package com.yapcore.playerdata.sync;
 
 import com.yapcore.playerdata.PlayerDataConfig;
+import com.yapcore.playerdata.auth.AuthService;
 import com.yapcore.playerdata.db.PlayerRecord;
 import com.yapcore.playerdata.db.PlayerRepository;
 import org.bukkit.Bukkit;
@@ -13,13 +14,15 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 /**
- * Load / apply / save player profiles; freeze until ready; autosave.
+ * Load / apply / save player profiles; freeze until ready (+ auth); autosave.
+ * Session lock prevents double-login across Velocity backends.
  */
 public final class SyncService {
 
@@ -27,10 +30,12 @@ public final class SyncService {
     private final PlayerDataConfig config;
     private final PlayerRepository repository;
     private final SessionLock sessionLock;
+    private AuthService auth;
 
     private final Set<UUID> ready = ConcurrentHashMap.newKeySet();
     private final Set<UUID> loading = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Double> balances = new ConcurrentHashMap<>();
+    private final Map<UUID, PlayerRecord> pendingApply = new ConcurrentHashMap<>();
     private BukkitTask autosaveTask;
 
     public SyncService(JavaPlugin plugin, PlayerDataConfig config,
@@ -39,6 +44,14 @@ public final class SyncService {
         this.config = config;
         this.repository = repository;
         this.sessionLock = sessionLock;
+    }
+
+    public void bindAuth(AuthService auth) {
+        this.auth = auth;
+    }
+
+    public SessionLock sessionLock() {
+        return sessionLock;
     }
 
     public void startAutosave() {
@@ -69,23 +82,37 @@ public final class SyncService {
         balances.put(uuid, amount);
     }
 
+    public void revokeReady(UUID uuid) {
+        ready.remove(uuid);
+        pendingApply.remove(uuid);
+    }
+
     /**
-     * Async load + lock; then sync apply on main thread.
+     * Async load + session lock. Inventory apply waits for auth when auth is active.
      */
     public void beginJoin(Player player) {
         UUID uuid = player.getUniqueId();
         String name = player.getName();
         loading.add(uuid);
         ready.remove(uuid);
+        pendingApply.remove(uuid);
+
+        if (auth != null && auth.isActive()) {
+            player.getInventory().clear();
+            player.getEnderChest().clear();
+        }
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 repository.ensure(uuid, name);
-                if (!sessionLock.tryAcquire(uuid)) {
+                Optional<String> holder = sessionLock.tryAcquireOrHolder(uuid);
+                if (holder.isPresent()) {
+                    String server = holder.get();
                     Bukkit.getScheduler().runTask(plugin, () -> {
                         if (player.isOnline()) {
                             player.kick(net.kyori.adventure.text.Component.text(
-                                    "Your data is still locked on another server. Try again in a moment."));
+                                    "Already logged in on server '" + server
+                                            + "'. Wait a few seconds or ask staff to /yapdata unlock."));
                         }
                         loading.remove(uuid);
                     });
@@ -100,11 +127,17 @@ public final class SyncService {
                         return;
                     }
                     try {
-                        apply(player, record);
                         balances.put(uuid, record.balance());
-                        ready.add(uuid);
-                        player.sendMessage("§7Synced profile §f" + config.inventoryProfile()
-                                + " §7· balance §a$" + String.format("%.2f", record.balance()));
+                        boolean waitAuth = auth != null && auth.isActive() && !auth.isAuthenticated(uuid);
+                        if (waitAuth) {
+                            pendingApply.put(uuid, record);
+                            // keep not-ready until /login
+                        } else {
+                            apply(player, record);
+                            ready.add(uuid);
+                            player.sendMessage("§7Synced profile §f" + config.inventoryProfile()
+                                    + " §7· balance §a$" + String.format("%.2f", record.balance()));
+                        }
                     } catch (Exception e) {
                         plugin.getLogger().log(Level.SEVERE, "Failed to apply data for " + name, e);
                         player.kick(net.kyori.adventure.text.Component.text(
@@ -127,12 +160,61 @@ public final class SyncService {
         });
     }
 
-    public void handleQuit(Player player) {
+    /** Called after successful /login or /register. */
+    public void completeAfterAuth(Player player) {
         UUID uuid = player.getUniqueId();
-        if (!ready.contains(uuid) && !loading.contains(uuid)) {
+        PlayerRecord record = pendingApply.remove(uuid);
+        if (record == null) {
+            // Data may still be loading — wait briefly
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                if (!player.isOnline()) {
+                    return;
+                }
+                PlayerRecord again = pendingApply.remove(uuid);
+                if (again != null) {
+                    finishApply(player, again);
+                } else if (!ready.contains(uuid) && !loading.contains(uuid)) {
+                    // reload
+                    beginJoin(player);
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        if (player.isOnline() && auth != null && auth.isAuthenticated(uuid)) {
+                            PlayerRecord r = pendingApply.remove(uuid);
+                            if (r != null) {
+                                finishApply(player, r);
+                            }
+                        }
+                    }, 40L);
+                }
+            }, 10L);
             return;
         }
-        PlayerRecord snapshot = snapshot(player);
+        finishApply(player, record);
+    }
+
+    private void finishApply(Player player, PlayerRecord record) {
+        try {
+            apply(player, record);
+            balances.put(player.getUniqueId(), record.balance());
+            ready.add(player.getUniqueId());
+            player.sendMessage("§7Synced profile §f" + config.inventoryProfile()
+                    + " §7· balance §a$" + String.format("%.2f", record.balance()));
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "apply after auth", e);
+            player.kick(net.kyori.adventure.text.Component.text("Failed to apply synced data."));
+            releaseQuiet(player.getUniqueId());
+        }
+    }
+
+    public void handleQuit(Player player) {
+        UUID uuid = player.getUniqueId();
+        pendingApply.remove(uuid);
+        if (!ready.contains(uuid) && !loading.contains(uuid)) {
+            // still release lock if we held it while waiting for auth
+            releaseQuiet(uuid);
+            balances.remove(uuid);
+            return;
+        }
+        PlayerRecord snapshot = ready.contains(uuid) ? snapshot(player) : null;
         ready.remove(uuid);
         loading.remove(uuid);
 
@@ -145,6 +227,10 @@ public final class SyncService {
                 sessionLock.release(uuid);
             } catch (Exception e) {
                 plugin.getLogger().log(Level.SEVERE, "Failed to save data for " + player.getName(), e);
+                try {
+                    sessionLock.forceRelease(uuid);
+                } catch (SQLException ignored) {
+                }
             } finally {
                 balances.remove(uuid);
             }
@@ -156,11 +242,13 @@ public final class SyncService {
         for (Player player : Bukkit.getOnlinePlayers()) {
             UUID uuid = player.getUniqueId();
             if (!ready.contains(uuid) && !loading.contains(uuid)) {
+                releaseQuiet(uuid);
                 continue;
             }
             PlayerRecord snap = snapshot(player);
             ready.remove(uuid);
             loading.remove(uuid);
+            pendingApply.remove(uuid);
             try {
                 if (snap != null) {
                     mergeUnsyncedFields(snap);
@@ -169,6 +257,10 @@ public final class SyncService {
                 sessionLock.release(uuid);
             } catch (Exception e) {
                 plugin.getLogger().log(Level.SEVERE, "Shutdown save failed for " + player.getName(), e);
+                try {
+                    sessionLock.forceRelease(uuid);
+                } catch (SQLException ignored) {
+                }
             } finally {
                 balances.remove(uuid);
             }
@@ -322,6 +414,10 @@ public final class SyncService {
         try {
             sessionLock.release(uuid);
         } catch (SQLException e) {
+            try {
+                sessionLock.forceRelease(uuid);
+            } catch (SQLException ignored) {
+            }
             plugin.getLogger().log(Level.WARNING, "Failed to release lock for " + uuid, e);
         }
     }

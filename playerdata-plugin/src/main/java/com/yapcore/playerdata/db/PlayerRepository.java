@@ -196,6 +196,38 @@ public final class PlayerRepository {
         }
     }
 
+    public void forceReleaseLock(UUID uuid) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "UPDATE players SET lock_server = NULL, lock_until = NULL WHERE uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            ps.executeUpdate();
+        }
+    }
+
+    /** Read lock holder without profile join (pre-login). */
+    public Optional<String> lockHolder(UUID uuid) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT lock_server, lock_until FROM players WHERE uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
+                String server = rs.getString("lock_server");
+                Timestamp until = rs.getTimestamp("lock_until");
+                if (server == null || until == null) {
+                    return Optional.empty();
+                }
+                if (until.toInstant().isBefore(Instant.now())) {
+                    return Optional.empty();
+                }
+                return Optional.of(server);
+            }
+        }
+    }
+
     private static String truncateName(String name) {
         if (name == null || name.isEmpty()) {
             return "unknown";

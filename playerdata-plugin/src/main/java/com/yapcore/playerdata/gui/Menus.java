@@ -5,6 +5,7 @@ import com.yapcore.playerdata.PlayerDataPlugin;
 import com.yapcore.playerdata.claims.Claim;
 import com.yapcore.playerdata.claims.ClaimService;
 import com.yapcore.playerdata.claims.ClaimVisualizer;
+import com.yapcore.playerdata.cmd.Perms;
 import com.yapcore.playerdata.db.AuctionRepository;
 import com.yapcore.playerdata.db.HomesRepository;
 import com.yapcore.playerdata.db.JobRepository;
@@ -68,6 +69,9 @@ public final class Menus {
     }
 
     public void openHub(Player player) {
+        if (!Perms.require(player, "yapdata.menu")) {
+            return;
+        }
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.HUB);
         Inventory inv = Bukkit.createInventory(holder, 45, Component.text("YaP Menu", NamedTextColor.GOLD));
         holder.bind(inv);
@@ -89,6 +93,9 @@ public final class Menus {
     }
 
     public void openHomes(Player player) {
+        if (!Perms.require(player, "yapdata.home")) {
+            return;
+        }
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.HOMES);
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Homes", NamedTextColor.AQUA));
         holder.bind(inv);
@@ -120,6 +127,9 @@ public final class Menus {
     }
 
     public void openWarps(Player player) {
+        if (!Perms.require(player, "yapdata.warp")) {
+            return;
+        }
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.WARPS);
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Warps", NamedTextColor.LIGHT_PURPLE));
         holder.bind(inv);
@@ -148,6 +158,9 @@ public final class Menus {
     }
 
     public void openKits(Player player) {
+        if (!Perms.require(player, "yapdata.kit")) {
+            return;
+        }
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.KITS);
         Inventory inv = Bukkit.createInventory(holder, 45, Component.text("Kits", NamedTextColor.YELLOW));
         holder.bind(inv);
@@ -155,6 +168,9 @@ public final class Menus {
         Map<Integer, String> meta = new HashMap<>();
         int slot = 10;
         for (var entry : config.kits().entrySet()) {
+            if (!Perms.hasKit(player, entry.getKey())) {
+                continue;
+            }
             while (slot % 9 == 0 || slot % 9 == 8) {
                 slot++;
             }
@@ -177,6 +193,9 @@ public final class Menus {
     }
 
     public void openJobs(Player player) {
+        if (!Perms.require(player, "yapdata.jobs")) {
+            return;
+        }
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.JOBS);
         Inventory inv = Bukkit.createInventory(holder, 45, Component.text("Jobs", NamedTextColor.GREEN));
         holder.bind(inv);
@@ -190,6 +209,9 @@ public final class Menus {
             }
             int slot = 10;
             for (var entry : config.jobs().entrySet()) {
+                if (!Perms.hasJob(player, entry.getKey()) && !active.contains(entry.getKey())) {
+                    continue;
+                }
                 while (slot % 9 == 0 || slot % 9 == 8) {
                     slot++;
                 }
@@ -214,6 +236,9 @@ public final class Menus {
     }
 
     public void openAuctions(Player player) {
+        if (!Perms.require(player, "yapdata.ah")) {
+            return;
+        }
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.AUCTIONS);
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Auction House", NamedTextColor.GOLD));
         holder.bind(inv);
@@ -254,6 +279,9 @@ public final class Menus {
     }
 
     public void openMail(Player player) {
+        if (!Perms.require(player, "yapdata.mail")) {
+            return;
+        }
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.MAIL);
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Mail", NamedTextColor.WHITE));
         holder.bind(inv);
@@ -283,6 +311,9 @@ public final class Menus {
     }
 
     public void openClaims(Player player) {
+        if (!Perms.require(player, "yapdata.claim")) {
+            return;
+        }
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.CLAIMS);
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Claims", NamedTextColor.GREEN));
         holder.bind(inv);
@@ -302,11 +333,15 @@ public final class Menus {
                 if (slot >= 44) {
                     break;
                 }
-                inv.setItem(slot, YapMenuHolder.icon(Material.GRASS_BLOCK, "#" + c.id() + " " + c.name(),
+                inv.setItem(slot, YapMenuHolder.icon(
+                        c.isSubdivision() ? Material.OAK_FENCE : Material.GRASS_BLOCK,
+                        (c.isSubdivision() ? "Sub #" : "#") + c.id() + " " + c.name(),
                         "Server: " + c.serverId(),
-                        "Area: " + c.area(),
-                        "Click: visualize",
-                        "Shift-click: abandon"));
+                        "Area: " + c.area()
+                                + (c.isSubdivision() ? " · parent #" + c.parentId() : ""),
+                        c.isSubdivision() ? "Subdivision" : ("Tax: $" + String.format("%.2f", c.taxDue())
+                                + (c.taxFrozen() ? " FROZEN" : "")),
+                        "Click: visualize · Shift: abandon"));
                 meta.put(slot, String.valueOf(c.id()));
                 slot++;
             }
@@ -339,6 +374,14 @@ public final class Menus {
                 case AUCTIONS -> auctionsClick(player, slot, name);
                 case MAIL -> mailClick(player, name);
                 case CLAIMS -> claimsClick(player, slot, shift, name);
+                case NPC_TRADER -> {
+                    Long traderId = holder.context();
+                    if (traderId != null) {
+                        // routed via NpcTraderService from MenuListener
+                        yield false;
+                    }
+                    yield true;
+                }
                 default -> true;
             };
         } catch (Exception e) {
@@ -454,8 +497,13 @@ public final class Menus {
             return true;
         }
         if (action.startsWith("join:")) {
-            jobs.join(player.getUniqueId(), action.substring(5));
-            player.sendMessage("§aJoined §f" + action.substring(5));
+            String id = action.substring(5);
+            if (!Perms.hasJob(player, id)) {
+                player.sendMessage("§cNo permission for that job.");
+                return true;
+            }
+            jobs.join(player.getUniqueId(), id);
+            player.sendMessage("§aJoined §f" + id);
         } else if (action.startsWith("leave:")) {
             jobs.leave(player.getUniqueId(), action.substring(6));
             player.sendMessage("§aLeft §f" + action.substring(6));

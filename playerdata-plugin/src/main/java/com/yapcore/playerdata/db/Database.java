@@ -13,13 +13,16 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
- * HikariCP pool + schema migration for shared MariaDB/MySQL.
+ * Schema migration + connections. Prefers shared YaPDB ({@code yap-db.jar});
+ * falls back to an embedded Hikari pool when YaPDB is absent.
  */
 public final class Database implements AutoCloseable {
 
     private final JavaPlugin plugin;
     private final PlayerDataConfig config;
+    private YapDbBridge.Handle shared;
     private HikariDataSource dataSource;
+    private boolean usingShared;
 
     public Database(JavaPlugin plugin, PlayerDataConfig config) {
         this.plugin = plugin;
@@ -27,6 +30,20 @@ public final class Database implements AutoCloseable {
     }
 
     public void open() throws SQLException {
+        if (config.useSharedYapDb()) {
+            var opt = YapDbBridge.find(plugin.getLogger());
+            if (opt.isPresent()) {
+                shared = opt.get();
+                usingShared = true;
+                migrate();
+                plugin.getLogger().info("Using shared YaPDB pool (" + shared.url() + ")");
+                return;
+            }
+            plugin.getLogger().warning("use-shared-yapdb=true but YaPDB is not available — using embedded pool. "
+                    + "Install yap-db.jar for a shared MariaDB pool.");
+        }
+
+        usingShared = false;
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(config.jdbcUrl());
         hc.setUsername(config.jdbcUser());
@@ -40,11 +57,11 @@ public final class Database implements AutoCloseable {
         hc.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
         dataSource = new HikariDataSource(hc);
         migrate();
-        plugin.getLogger().info("MariaDB/MySQL pool ready (" + config.jdbcUrl() + ")");
+        plugin.getLogger().info("Embedded MariaDB/MySQL pool ready (" + config.jdbcUrl() + ")");
     }
 
     private void migrate() throws SQLException {
-        try (Connection c = dataSource.getConnection(); Statement st = c.createStatement()) {
+        try (Connection c = connection(); Statement st = c.createStatement()) {
             st.execute("""
                     CREATE TABLE IF NOT EXISTS players (
                       uuid CHAR(36) PRIMARY KEY,
@@ -169,8 +186,12 @@ public final class Database implements AutoCloseable {
                       min_z INT NOT NULL,
                       max_z INT NOT NULL,
                       name VARCHAR(32) NULL,
+                      parent_id BIGINT NULL,
+                      tax_due DECIMAL(20,2) NOT NULL DEFAULT 0,
+                      tax_frozen TINYINT(1) NOT NULL DEFAULT 0,
                       INDEX claims_server_world (server_id, world),
-                      INDEX claims_owner (owner_uuid)
+                      INDEX claims_owner (owner_uuid),
+                      INDEX claims_parent (parent_id)
                     )
                     """);
             st.execute("""
@@ -187,7 +208,54 @@ public final class Database implements AutoCloseable {
                       blocks INT NOT NULL DEFAULT 100
                     )
                     """);
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS npc_traders (
+                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      server_id VARCHAR(64) NOT NULL,
+                      world VARCHAR(64) NOT NULL,
+                      x DOUBLE NOT NULL,
+                      y DOUBLE NOT NULL,
+                      z DOUBLE NOT NULL,
+                      yaw FLOAT NOT NULL DEFAULT 0,
+                      name VARCHAR(64) NOT NULL,
+                      entity_uuid CHAR(36) NULL
+                    )
+                    """);
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS npc_offers (
+                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      trader_id BIGINT NOT NULL,
+                      mode VARCHAR(8) NOT NULL,
+                      material VARCHAR(64) NOT NULL,
+                      amount INT NOT NULL DEFAULT 1,
+                      price DECIMAL(20,2) NOT NULL,
+                      stock INT NOT NULL DEFAULT -1,
+                      INDEX (trader_id)
+                    )
+                    """);
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS auth_accounts (
+                      uuid CHAR(36) PRIMARY KEY,
+                      username VARCHAR(16) NOT NULL,
+                      password_hash VARCHAR(128) NOT NULL,
+                      registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      last_login TIMESTAMP NULL,
+                      last_ip VARCHAR(64) NULL,
+                      UNIQUE KEY auth_username (username)
+                    )
+                    """);
+            tryAlter(st, "ALTER TABLE claims ADD COLUMN parent_id BIGINT NULL");
+            tryAlter(st, "ALTER TABLE claims ADD COLUMN tax_due DECIMAL(20,2) NOT NULL DEFAULT 0");
+            tryAlter(st, "ALTER TABLE claims ADD COLUMN tax_frozen TINYINT(1) NOT NULL DEFAULT 0");
             migrateLegacyProfiles(c);
+        }
+    }
+
+    private static void tryAlter(Statement st, String sql) {
+        try {
+            st.execute(sql);
+        } catch (SQLException ignored) {
+            // column already exists
         }
     }
 
@@ -233,6 +301,12 @@ public final class Database implements AutoCloseable {
     }
 
     public Connection connection() throws SQLException {
+        if (usingShared) {
+            if (shared == null || !shared.open()) {
+                throw new SQLException("Shared YaPDB pool is not open");
+            }
+            return shared.borrow();
+        }
         if (dataSource == null || dataSource.isClosed()) {
             throw new SQLException("Database pool is not open");
         }
@@ -240,11 +314,20 @@ public final class Database implements AutoCloseable {
     }
 
     public boolean isOpen() {
+        if (usingShared) {
+            return shared != null && shared.open();
+        }
         return dataSource != null && !dataSource.isClosed();
+    }
+
+    public boolean usingSharedPool() {
+        return usingShared;
     }
 
     @Override
     public void close() {
+        shared = null;
+        usingShared = false;
         if (dataSource != null) {
             dataSource.close();
             dataSource = null;

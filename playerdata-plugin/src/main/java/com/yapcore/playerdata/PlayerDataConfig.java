@@ -60,6 +60,20 @@ public final class PlayerDataConfig {
     private int claimsMinArea = 9;
     private int claimsMaxArea = 50_000;
     private int claimsVisualSeconds = 8;
+    private int claimsSubMinArea = 4;
+    private boolean claimsTaxEnabled = true;
+    private double claimsTaxPerBlockPerDay = 0.01;
+    private int claimsTaxTickMinutes = 60;
+    private double claimsTaxFreezeAmount = 50.0;
+    private double claimsTaxAbandonAmount = 200.0;
+
+    private boolean authEnabled = true;
+    private boolean authForce = false;
+    private boolean authTrustVelocity = false;
+    private int authMinPasswordLength = 4;
+    private int authTimeoutSeconds = 60;
+    private int authMaxAttempts = 5;
+    private boolean useSharedYapDb = true;
 
     public PlayerDataConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -99,6 +113,20 @@ public final class PlayerDataConfig {
         claimsMinArea = Math.max(1, c.getInt("claims.min-area", 9));
         claimsMaxArea = Math.max(claimsMinArea, c.getInt("claims.max-area", 50_000));
         claimsVisualSeconds = Math.max(1, c.getInt("claims.visual-seconds", 8));
+        claimsSubMinArea = Math.max(1, c.getInt("claims.subdivide-min-area", 4));
+        claimsTaxEnabled = c.getBoolean("claims.tax.enabled", true);
+        claimsTaxPerBlockPerDay = Math.max(0, c.getDouble("claims.tax.per-block-per-day", 0.01));
+        claimsTaxTickMinutes = Math.max(1, c.getInt("claims.tax.tick-minutes", 60));
+        claimsTaxFreezeAmount = Math.max(0, c.getDouble("claims.tax.freeze-at", 50.0));
+        claimsTaxAbandonAmount = Math.max(claimsTaxFreezeAmount, c.getDouble("claims.tax.abandon-at", 200.0));
+
+        authEnabled = c.getBoolean("auth.enabled", true);
+        authForce = c.getBoolean("auth.force", false);
+        authTrustVelocity = c.getBoolean("auth.trust-velocity", false);
+        authMinPasswordLength = Math.max(1, c.getInt("auth.min-password-length", 4));
+        authTimeoutSeconds = Math.max(0, c.getInt("auth.timeout-seconds", 60));
+        authMaxAttempts = Math.max(1, c.getInt("auth.max-attempts", 5));
+        useSharedYapDb = c.getBoolean("use-shared-yapdb", true);
     }
 
     private static Material parseMaterial(String name, Material fallback) {
@@ -294,5 +322,57 @@ public final class PlayerDataConfig {
 
     public int claimsVisualSeconds() {
         return claimsVisualSeconds;
+    }
+
+    public int claimsSubMinArea() {
+        return claimsSubMinArea;
+    }
+
+    public boolean claimsTaxEnabled() {
+        return claimsTaxEnabled;
+    }
+
+    public double claimsTaxPerBlockPerDay() {
+        return claimsTaxPerBlockPerDay;
+    }
+
+    public int claimsTaxTickMinutes() {
+        return claimsTaxTickMinutes;
+    }
+
+    public double claimsTaxFreezeAmount() {
+        return claimsTaxFreezeAmount;
+    }
+
+    public double claimsTaxAbandonAmount() {
+        return claimsTaxAbandonAmount;
+    }
+
+    public boolean authEnabled() {
+        return authEnabled;
+    }
+
+    public boolean authForce() {
+        return authForce;
+    }
+
+    public boolean authTrustVelocity() {
+        return authTrustVelocity;
+    }
+
+    public int authMinPasswordLength() {
+        return authMinPasswordLength;
+    }
+
+    public int authTimeoutSeconds() {
+        return authTimeoutSeconds;
+    }
+
+    public int authMaxAttempts() {
+        return authMaxAttempts;
+    }
+
+    public boolean useSharedYapDb() {
+        return useSharedYapDb;
     }
 }

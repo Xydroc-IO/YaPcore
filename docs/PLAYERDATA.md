@@ -1,54 +1,75 @@
-# YaP PlayerData — cross-server sync, claims, fancy GUIs
+# YaP PlayerData — cross-server sync, offline auth, claims, taxes, NPC traders, GUIs
 
-First-party Paper plugin **`yap-playerdata.jar`** (`YaPPlayerData`) — **own YaPcore code**,
-not Essentials / GriefPrevention / ChestShop wrappers. Shared **MariaDB/MySQL** across
-Velocity backends. **No offline password auth.**
+First-party **`yap-playerdata.jar`** (`YaPPlayerData`) — shared MariaDB across Velocity.
 
-YaPcore’s Paper path gives us the full Bukkit API; this plugin uses inventory GUIs,
-particles, and a shared SQL schema so network-wide data stays consistent.
+## Database setup (required)
 
-## Features
+See **[MARIADB.md](MARIADB.md)** and **[YAPDB.md](YAPDB.md)** — Docker MariaDB + shared `yap-db.jar` pool:
+
+```bash
+# Linux
+./scripts/db/start-mariadb.sh && ./scripts/db/configure-db.sh --server-id lobby
+
+# Windows PowerShell
+.\scripts\windows\Start-MariaDB.ps1
+.\scripts\windows\Configure-Db.ps1 -ServerId lobby
+```
+
+YaPPlayerData prefers the shared YaPDB pool (`use-shared-yapdb: true`). Multi-backend: same JDBC, unique `server-id`.
+
+## Session lock (double-login)
+
+Always on. Prevents the same UUID being online on two backends at once:
+
+- Acquire `lock_server` / `lock_until` on join; refresh on autosave; release on quit
+- Contested lock → kick with holder server name
+- Async pre-login rejects early when another server holds a live lock
+- Stuck lock: `/yapdata unlock <player>`
+
+`lock-ttl-seconds` (default 120) auto-expires crashed holds.
+
+## Offline password auth (`/login`)
+
+AuthMe-class for cracked / offline-mode servers (BCrypt hashes in `auth_accounts`):
+
+| Command | Who | What |
+|---------|-----|------|
+| `/register <pass> <pass>` | player | create account |
+| `/login <pass>` | player | authenticate |
+| `/changepassword <old> <new>` | logged-in | change hash |
+| `/logout` | logged-in | clear session (must login again) |
+| `/unregister <player>` | admin | delete auth row |
+
+Until logged in: frozen (no move/interact), no chat, no commands except auth. Inventory apply waits until success. Login timeout / max attempts kick.
+
+### Config (`auth:`)
+
+```yaml
+auth:
+  enabled: true
+  force: false           # true = require /login even on online-mode
+  trust-velocity: false  # true = skip auth on Velocity modern-forwarding backends
+  min-password-length: 4
+  timeout-seconds: 60
+  max-attempts: 5
+```
+
+- **Cracked offline server:** `enabled: true`, `force: false`, `trust-velocity: false`
+- **Online-mode / Mojang:** auth auto-skips unless `force: true`
+- **Velocity + modern forwarding:** set `trust-velocity: true` to skip passwords, or leave false / `force: true` if you still want `/login`
+
+Session lock and password auth are independent: lock always runs; auth is optional via config.
+
+## Features (v0.6)
 
 | Area | What |
 |------|------|
-| Sync | Inv / ender / XP / vitals / economy · `inventory-profile: global` or `server` |
-| **Fancy GUIs** | `/menu` hub · homes · warps · kits · jobs · AH · mail · claims |
-| **Claims** | Golden shovel corners · stick inspect · trust · particle borders · claim blocks |
-| Homes / warps | Cross-server aware teleports |
-| Kits / mail | Config kits + cooldowns · mail send/read |
-| Shops | Chest shops · left-click buy |
-| Jobs | Config jobs · earn on break |
-| Auctions | GUI browse + `/ah sell\|buy` |
-| Vault | Soft-depend Economy |
+| Auth | `/register` `/login` · freeze until auth · BCrypt |
+| Session lock | Cross-server dual-login kick · `/yapdata unlock` |
+| Sync | Inv / XP / vitals / economy · profile `global` or `server` |
+| Fancy GUIs | `/menu` hub |
+| Claims | Shovel · subdivides · taxes |
+| NPC traders | `/trader` |
+| Homes/warps/kits/mail/shops/jobs/AH | As before |
 
-## Claims (quick start)
-
-1. `/claim tool` — golden shovel + stick  
-2. Right-click two opposite corners with the shovel  
-3. Stick right-click inspects + visualizes borders  
-4. `/claim trust <player> [access|build|manage]` while standing in your claim  
-5. `/claim` opens the claims GUI  
-
-Config: `claims.*` in `plugins/YaPPlayerData/config.yml`.
-
-## Install
-
-```bash
-gradle :playerdata-plugin:installIntoPlugins
-# or: gradle shadowJar / assembleRelease
-```
-
-Point every backend at the same MariaDB; unique `server-id` each. Schema auto-migrates
-(including `claims`, `claim_trust`, `claim_balances`).
-
-Docker one-liner: see earlier docs / `MARIADB_DATABASE=yap_playerdata`.
-
-## Commands
-
-`/menu` · `/bal` `/pay` · `/yapdata` · homes/warps · `/kit` · `/mail` · `/shop` · `/jobs` · `/ah` · `/claim`
-
-## Honest scope note
-
-This is a full first-party essentials+claims stack for YaPcore networks — not a line-for-line
-clone of every GriefPrevention / Jobs-Reborn edge case. Still omitted: offline `/login`,
-subdivision subdivides, tax systems, NPC traders. Those can extend this codebase next.
+Plugin jar: `gradle :playerdata-plugin:installIntoPlugins` (also in `assembleRelease`).

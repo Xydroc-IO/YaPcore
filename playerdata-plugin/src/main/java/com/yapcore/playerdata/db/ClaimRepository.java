@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,6 +30,9 @@ public final class ClaimRepository {
         }
     }
 
+    private static final String COLS =
+            "id, owner_uuid, server_id, world, min_x, max_x, min_z, max_z, name, parent_id, tax_due, tax_frozen";
+
     private final Database database;
 
     public ClaimRepository(Database database) {
@@ -38,10 +42,8 @@ public final class ClaimRepository {
     public List<Claim> listForServer(String serverId) throws SQLException {
         List<Claim> out = new ArrayList<>();
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, owner_uuid, server_id, world, min_x, max_x, min_z, max_z, name
-                     FROM claims WHERE server_id = ?
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT " + COLS + " FROM claims WHERE server_id = ?")) {
             ps.setString(1, serverId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -55,11 +57,24 @@ public final class ClaimRepository {
     public List<Claim> listOwned(UUID owner) throws SQLException {
         List<Claim> out = new ArrayList<>();
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, owner_uuid, server_id, world, min_x, max_x, min_z, max_z, name
-                     FROM claims WHERE owner_uuid = ? ORDER BY id
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT " + COLS + " FROM claims WHERE owner_uuid = ? ORDER BY parent_id IS NOT NULL, id")) {
             ps.setString(1, owner.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(map(rs));
+                }
+            }
+        }
+        return out;
+    }
+
+    public List<Claim> listChildren(long parentId) throws SQLException {
+        List<Claim> out = new ArrayList<>();
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT " + COLS + " FROM claims WHERE parent_id = ?")) {
+            ps.setLong(1, parentId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     out.add(map(rs));
@@ -71,10 +86,7 @@ public final class ClaimRepository {
 
     public Optional<Claim> get(long id) throws SQLException {
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, owner_uuid, server_id, world, min_x, max_x, min_z, max_z, name
-                     FROM claims WHERE id = ?
-                     """)) {
+             PreparedStatement ps = c.prepareStatement("SELECT " + COLS + " FROM claims WHERE id = ?")) {
             ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
@@ -88,8 +100,9 @@ public final class ClaimRepository {
     public long create(Claim claim) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO claims (owner_uuid, server_id, world, min_x, max_x, min_z, max_z, name)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                     INSERT INTO claims
+                     (owner_uuid, server_id, world, min_x, max_x, min_z, max_z, name, parent_id, tax_due, tax_frozen)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                      """, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, claim.owner().toString());
             ps.setString(2, claim.serverId());
@@ -99,6 +112,13 @@ public final class ClaimRepository {
             ps.setInt(6, claim.minZ());
             ps.setInt(7, claim.maxZ());
             ps.setString(8, claim.name());
+            if (claim.parentId() == null) {
+                ps.setNull(9, Types.BIGINT);
+            } else {
+                ps.setLong(9, claim.parentId());
+            }
+            ps.setDouble(10, claim.taxDue());
+            ps.setBoolean(11, claim.taxFrozen());
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -111,14 +131,27 @@ public final class ClaimRepository {
 
     public boolean delete(long id) throws SQLException {
         try (Connection c = database.connection()) {
-            try (PreparedStatement t = c.prepareStatement("DELETE FROM claim_trust WHERE claim_id = ?")) {
-                t.setLong(1, id);
-                t.executeUpdate();
+            // children first
+            try (PreparedStatement kids = c.prepareStatement("SELECT id FROM claims WHERE parent_id = ?")) {
+                kids.setLong(1, id);
+                try (ResultSet rs = kids.executeQuery()) {
+                    while (rs.next()) {
+                        deleteOne(c, rs.getLong(1));
+                    }
+                }
             }
-            try (PreparedStatement ps = c.prepareStatement("DELETE FROM claims WHERE id = ?")) {
-                ps.setLong(1, id);
-                return ps.executeUpdate() > 0;
-            }
+            return deleteOne(c, id);
+        }
+    }
+
+    private boolean deleteOne(Connection c, long id) throws SQLException {
+        try (PreparedStatement t = c.prepareStatement("DELETE FROM claim_trust WHERE claim_id = ?")) {
+            t.setLong(1, id);
+            t.executeUpdate();
+        }
+        try (PreparedStatement ps = c.prepareStatement("DELETE FROM claims WHERE id = ?")) {
+            ps.setLong(1, id);
+            return ps.executeUpdate() > 0;
         }
     }
 
@@ -129,6 +162,32 @@ public final class ClaimRepository {
             ps.setLong(2, id);
             ps.executeUpdate();
         }
+    }
+
+    public void setTax(long id, double due, boolean frozen) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "UPDATE claims SET tax_due = ?, tax_frozen = ? WHERE id = ?")) {
+            ps.setDouble(1, due);
+            ps.setBoolean(2, frozen);
+            ps.setLong(3, id);
+            ps.executeUpdate();
+        }
+    }
+
+    public List<Claim> listTopLevelForTax(String serverId) throws SQLException {
+        List<Claim> out = new ArrayList<>();
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT " + COLS + " FROM claims WHERE server_id = ? AND parent_id IS NULL")) {
+            ps.setString(1, serverId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(map(rs));
+                }
+            }
+        }
+        return out;
     }
 
     public Map<UUID, TrustLevel> trustMap(long claimId) throws SQLException {
@@ -204,6 +263,8 @@ public final class ClaimRepository {
     }
 
     private static Claim map(ResultSet rs) throws SQLException {
+        long parent = rs.getLong("parent_id");
+        Long parentId = rs.wasNull() ? null : parent;
         return new Claim(
                 rs.getLong("id"),
                 UUID.fromString(rs.getString("owner_uuid")),
@@ -213,6 +274,9 @@ public final class ClaimRepository {
                 rs.getInt("max_x"),
                 rs.getInt("min_z"),
                 rs.getInt("max_z"),
-                rs.getString("name"));
+                rs.getString("name"),
+                parentId,
+                rs.getDouble("tax_due"),
+                rs.getBoolean("tax_frozen"));
     }
 }

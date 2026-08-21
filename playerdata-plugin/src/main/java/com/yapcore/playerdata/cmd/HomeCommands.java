@@ -36,6 +36,9 @@ public final class HomeCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage("Players only.");
             return true;
         }
+        if (!Perms.require(sender, "yapdata.home")) {
+            return true;
+        }
         if (!sync.isReady(player.getUniqueId())) {
             player.sendMessage("§cStill loading your data…");
             return true;

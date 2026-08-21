@@ -37,6 +37,9 @@ public final class BalanceCommands implements CommandExecutor, TabCompleter {
     }
 
     private boolean bal(CommandSender sender, String[] args) {
+        if (!Perms.require(sender, "yapdata.balance")) {
+            return true;
+        }
         if (args.length == 0) {
             if (!(sender instanceof Player player)) {
                 sender.sendMessage("Usage: /bal <player>");
@@ -65,6 +68,9 @@ public final class BalanceCommands implements CommandExecutor, TabCompleter {
     private boolean pay(CommandSender sender, String[] args) {
         if (!(sender instanceof Player from)) {
             sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!Perms.require(sender, "yapdata.pay")) {
             return true;
         }
         if (args.length < 2) {

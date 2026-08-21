@@ -35,6 +35,9 @@ public final class JobCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage("Players only.");
             return true;
         }
+        if (!Perms.require(sender, "yapdata.jobs")) {
+            return true;
+        }
         if (!sync.isReady(player.getUniqueId())) {
             player.sendMessage("§cStill loading your data…");
             return true;
@@ -49,6 +52,10 @@ public final class JobCommands implements CommandExecutor, TabCompleter {
                 String id = args[1].toLowerCase(Locale.ROOT);
                 if (!config.jobs().containsKey(id)) {
                     player.sendMessage("§cUnknown job.");
+                    return true;
+                }
+                if (!Perms.hasJob(player, id)) {
+                    player.sendMessage("§cNo permission for that job.");
                     return true;
                 }
                 jobs.join(player.getUniqueId(), id);
