@@ -1,0 +1,13 @@
+# Shared MariaDB/MySQL for all YaP plugins that need SQL.
+# Point every backend at the SAME database (Docker: deploy/mariadb/).
+
+jdbc:
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
+  user: yap
+  password: change-me
+
+pool:
+  name: YaPDB
+  maximum-pool-size: 16
+  minimum-idle: 2
+  connection-timeout-ms: 10000

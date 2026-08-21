@@ -1,0 +1,17 @@
+name: YaPDB
+version: '1.0.0'
+main: com.yapcore.db.plugin.YapDbPlugin
+api-version: '1.21'
+author: YapLabs
+description: Shared MariaDB/MySQL Hikari pool for YaP plugins
+website: https://github.com/yaplabs
+load: STARTUP
+commands:
+  yapdb:
+    description: Shared DB status / reload
+    usage: /yapdb <status|reload>
+    permission: yapdb.admin
+permissions:
+  yapdb.admin:
+    description: Manage shared YapDb pool
+    default: op
