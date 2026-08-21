@@ -76,8 +76,16 @@ public final class ResourcePackManager {
         List<ResourcePackInfo> actives = getActivePacks();
         LOG.info("Active resource packs (" + actives.size() + "): "
                 + actives.stream().map(ResourcePackInfo::getFileName).collect(Collectors.joining(", ")));
-        for (ResourcePackInfo pack : actives) {
-            probePackUrl(buildPublicUrl(pack.getFileName()));
+        try {
+            String offer = ResourcePackBundler.ensureOfferFile(packsDir, config.getResourcePackFiles());
+            if (!offer.isBlank()) {
+                probePackUrl(buildPublicUrl(offer));
+            }
+        } catch (IOException e) {
+            LOG.warning("Offer pack prepare failed: " + e.getMessage());
+            for (ResourcePackInfo pack : actives) {
+                probePackUrl(buildPublicUrl(pack.getFileName()));
+            }
         }
     }
 
@@ -201,6 +209,14 @@ public final class ResourcePackManager {
         config.setResourcePackFiles(clean);
         config.save();
         LOG.info("Active resource packs → " + (clean.isEmpty() ? "(none)" : String.join(", ", clean)));
+        try {
+            String offer = ResourcePackBundler.ensureOfferFile(packsDir, clean);
+            if (!offer.isBlank()) {
+                LOG.info("Client offer pack → " + offer + " url=" + buildPublicUrl(offer));
+            }
+        } catch (IOException e) {
+            LOG.warning("Could not build multi-pack offer: " + e.getMessage());
+        }
         writePluginManifest();
         fireChanged();
     }

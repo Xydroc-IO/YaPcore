@@ -51,7 +51,10 @@ class PaperResourcePackSyncTest {
         try (var in = Files.newInputStream(paper.resolve("server.properties"))) {
             props.load(in);
         }
-        assertEquals("http://packs.example.com/pack/yap-hd.zip", props.getProperty("resource-pack"));
+        String packUrl = props.getProperty("resource-pack");
+        assertTrue(packUrl.startsWith("http://packs.example.com/pack/yap-active-bundle-"),
+                "expected merged bundle URL, got " + packUrl);
+        assertTrue(packUrl.endsWith(".zip"));
         assertFalse(props.getProperty("resource-pack-sha1", "").isBlank());
         assertEquals(40, props.getProperty("resource-pack-sha1").length());
         assertTrue(props.getProperty("resource-pack-prompt").contains("Accept HD textures"));
