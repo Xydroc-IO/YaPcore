@@ -70,21 +70,25 @@ without hopping to SYNC. Keep caches labeled by owning pool.
 
 ## API coverage (what authors can use)
 
-**Paper plugins (`plugin.yml`):** **complete Paper API** under legacy `game-authority=paper` —
-same `paper-api` 26.2 as stock Paper. **Folia product path** (`game-authority=folia`):
-Folia APIs (including region schedulers). Details: [PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md).
+**Paper / Folia plugins (`plugin.yml`):** **Folia-native first-party** under product
+`game-authority=folia` (`folia-supported` + [`YapSched`](YAP_SCHED.md)). Stock
+Paper jars are unsupported. Legacy `game-authority=paper` still exposes complete
+Paper API for benches — see [PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md).
 
 Runtime matrix: `com.yapcore.api.ApiCoverage`.
 
 **YaP plugins / modules:** Adventure, dual-pool schedulers, modules `provides`/`requires`.
 
-**Folia `RegionScheduler` APIs:** supported on the Folia product path; not on legacy Paper.
+**Folia `RegionScheduler` APIs:** supported on the Folia product path via Folia + YapSched.
 
 Verify:
 
 ```bash
-./scripts/verify-paper-api-coverage.sh
-./scripts/smoke-paper-plugins.sh
+./scripts/smoke-folia-plugins.sh
+./scripts/smoke-yap-link-folia.sh
+# Legacy Paper benches only:
+> **Retired (Folia product path):** Paperclip / Phase 3 vendor scripts (`vendor-paper.sh`, `build-vendor-paper.sh`, `apply-yap-paper-hooks.sh`, `smoke-paper-plugins.sh`, `verify-paper-api-coverage.sh`, Paper Phase 3 benches) were removed. Use `./scripts/fetch-folia.sh` / `smoke-folia.sh` instead.
+
 ```
 
 ## Author checklist
@@ -102,4 +106,4 @@ Verify:
 - `examples/yap-module-demo` — sample module
 - [VEHICLES.md](VEHICLES.md) — vehicle API for Paper plugins
 - `examples/yap-vehicle-addon` — sample third-party vehicle type
-- `finetune-modules/` — first-party packaging modules source
+- `yap-first-party/modules/finetune-modules/` — first-party packaging modules source

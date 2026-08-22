@@ -1,0 +1,15 @@
+# YaP native rank pack (yap-perms.jar)
+# Groups: default → vip → mod → admin · track: yap
+# Config: plugins/YaPPerms/config.yml · Docs: docs/PERMISSIONS.md
+#
+# Apply starter pack (groups, inheritance, grants, prefixes):
+yapperm applypack
+#
+# Assign players:
+yapperm user Steve parent set vip
+yapperm user Alex parent set mod
+yapperm user Admin parent set admin
+#
+# Track promote/demote:
+promote Steve
+demote Steve

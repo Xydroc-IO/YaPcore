@@ -33,7 +33,6 @@ $script:YapConfig.JvmThreadPriority = $true
 # Re-enter Start with updated config in this session by inlining call
 $Java = Require-YapJava
 Ensure-YapDirs $Root
-Require-YapPaperclip $Root
 
 if (Test-YapRunning $Root) {
     Write-Error "YaPcore is already running. Use .\Stop.ps1 first."
@@ -52,12 +51,8 @@ if ($Gui) { $AppArgs += "--gui" } else { $AppArgs += "--nogui" }
 
 $WorkDir = $Root
 $c = $script:YapConfig
-if ($c.GameAuthority -eq "paper" -and $c.PaperEmbed -and $c.PaperPhase3) {
-    $WorkDir = Join-Path $Root $c.PaperDir
-    if (-not (Test-Path $WorkDir)) { New-Item -ItemType Directory -Path $WorkDir | Out-Null }
-}
 
-Write-Host "Production start heap=${HeapGb}G ZGC"
+Write-Host "Production start heap=${HeapGb}G ZGC game-authority=$($c.GameAuthority) kernel=$(Get-YapActiveKernelDir)"
 $allArgs = @($Jvm) + @("-jar", $Jar) + $AppArgs
 
 if ($Fg -or $Gui) {

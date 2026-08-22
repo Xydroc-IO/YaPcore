@@ -17,6 +17,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -36,7 +37,7 @@ public final class NginxPanel {
     private final JSpinner publicPortSpinner;
     private final JSpinner packPortSpinner;
     private final JTextField domainField = new JTextField();
-    private final JTextArea log = new JTextArea(10, 28);
+    private final JTextArea log = new JTextArea(8, 20);
     private Consumer<Void> onSaved = v -> {
     };
 
@@ -49,11 +50,7 @@ public final class NginxPanel {
                 Math.max(1, cfg.getNginxPackPort()), 1, 65_535, 1));
         root.setOpaque(false);
         root.setBorder(new EmptyBorder(2, 2, 2, 2));
-        JScrollPane scroll = new JScrollPane(buildForm());
-        scroll.setBorder(null);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        root.add(scroll, BorderLayout.CENTER);
+        root.add(GuiTheme.verticalScroll(buildForm()), BorderLayout.CENTER);
         load();
     }
 
@@ -78,15 +75,10 @@ public final class NginxPanel {
 
         panel.add(GuiTheme.sectionTitle("Local + nginx"), c);
         c.gridy++;
-        JLabel blurb = new JLabel("<html><body style='width:250px'>"
-                + "<b>Same PC:</b> use <code>127.0.0.1:port</code> in Minecraft "
-                + "(Connect tab). Do not use your public IP from this machine.<br><br>"
-                + "<b>Domain:</b> <code>yapcoremc.yaplabs.us</code> — nginx stream for "
-                + "game TCP/UDP; Cloudflare may orange-cloud packs only (DNS-only for Minecraft)."
-                + "</body></html>");
-        blurb.setForeground(GuiTheme.MUTED);
-        blurb.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        panel.add(blurb, c);
+        panel.add(GuiTheme.tip(
+                "<b>Same PC:</b> use <code>127.0.0.1:port</code> in Minecraft (Connect tab).<br><br>"
+                        + "<b>Domain:</b> nginx stream for game TCP/UDP; Cloudflare orange-cloud "
+                        + "packs only (DNS-only for Minecraft)."), c);
 
         c.gridy++;
         allowLocalBox.setOpaque(false);
@@ -134,7 +126,13 @@ public final class NginxPanel {
         log.setForeground(GuiTheme.TEXT);
         log.setBackground(GuiTheme.BG);
         log.setLineWrap(true);
-        panel.add(labeled("Script output", log), c);
+        log.setWrapStyleWord(true);
+        JScrollPane logScroll = new JScrollPane(log);
+        logScroll.setPreferredSize(new Dimension(100, 140));
+        panel.add(labeled("Script output", logScroll), c);
+        c.gridy++;
+        c.weighty = 1;
+        panel.add(new JLabel(), c);
         return panel;
     }
 
@@ -175,7 +173,6 @@ public final class NginxPanel {
             protected String doInBackground() throws Exception {
                 ProcessBuilder pb;
                 if (extraArgs.contains("install-pkg") || extraArgs.isEmpty()) {
-                    // elevate when installing
                     pb = new ProcessBuilder("pkexec", "bash", script.toString());
                     if (!extraArgs.isBlank()) {
                         pb.command().add(extraArgs.trim());
@@ -201,7 +198,6 @@ public final class NginxPanel {
                 try {
                     log.setText(get());
                 } catch (Exception e) {
-                    // Fallback without pkexec
                     try {
                         ProcessBuilder pb = new ProcessBuilder("bash", script.toString(), "--dry-run");
                         pb.directory(server.getRootDir().toFile());

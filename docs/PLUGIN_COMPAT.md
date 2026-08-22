@@ -12,6 +12,8 @@ Drop **all** plugin jars into **[`plugins/`](../plugins/)** — one folder.
 
 `folia-kernel/plugins` (and legacy `paper-kernel/plugins`) is a **symlink** to `plugins/` so the game and YaP share the same directory. On first start, jars left under an old real kernel `plugins/` are migrated automatically.
 
+**Curated matrix (Phase 16):** [PLUGIN_COMPAT_MATRIX.md](PLUGIN_COMPAT_MATRIX.md) — 50+ plugins with native replacements and dashboard badges.
+
 ## Quick answer
 
 | Question | Answer |
@@ -37,19 +39,19 @@ Drop **all** plugin jars into **[`plugins/`](../plugins/)** — one folder.
 | First-party Folia plugins | `YapSched` + `folia-supported: true` | Folia |
 
 ```bash
-cp LuckPerms-Bukkit-*.jar plugins/   # prefer Folia-ready builds on product path
+gradle installProductDefaults   # includes yap-perms.jar
 ./scripts/start.sh --fg
 # Confirm enable in folia-kernel/logs/ or logs/server.log
 ```
 
-YaP command access is permission-node based. Install + apply ranks:
+YaP command access is permission-node based. Apply ranks:
 
 ```bash
-./scripts/install-luckperms.sh
-ranks apply   # after server start
+ranks apply   # after server start → yapperm applypack
+/yapperm user Steve parent set vip
 ```
 
-See [PERMISSIONS.md](PERMISSIONS.md) · [`examples/luckperms/`](../examples/luckperms/).
+See [PERMISSIONS.md](PERMISSIONS.md) · [`examples/yapperms/`](../examples/yapperms/).
 
 Layout check:
 
@@ -114,7 +116,8 @@ not “Paper incompatible.”
 ```bash
 ./scripts/check-plugin-layout.sh   # plugins/ unified; kernel plugins → symlink
 ./scripts/smoke-folia.sh           # Folia product smoke
-./scripts/smoke-paper-plugins.sh   # optional Paper-path enable smoke
+> **Retired (Folia product path):** Paperclip / Phase 3 vendor scripts (`vendor-paper.sh`, `build-vendor-paper.sh`, `apply-yap-paper-hooks.sh`, `smoke-paper-plugins.sh`, `verify-paper-api-coverage.sh`, Paper Phase 3 benches) were removed. Use `./scripts/fetch-folia.sh` / `smoke-folia.sh` instead.
+
 ```
 
 Also: [PLUGINS.md](PLUGINS.md) · [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md) · [WHAT_WE_ARE.md](WHAT_WE_ARE.md).

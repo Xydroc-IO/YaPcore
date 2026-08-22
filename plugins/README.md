@@ -1,12 +1,14 @@
 # plugins/
 
-**One folder for everything:** first-party Folia-native jars (`plugin.yml` with
+**Runtime folder** — drop built Folia-native jars (`plugin.yml` with
 `folia-supported: true`) and YaP jars (`yap.yml`).
+
+**Sources:** [`yap-first-party/`](../yap-first-party/README.md) (Gradle builds install here).
 
 `folia-kernel/plugins` (and legacy `paper-kernel/plugins`) symlink here.
 
 Product path: `game-authority=folia`. Schedule with `com.yapcore.sched.YapSched`.
-Stock Paper jars are unsupported. `yap-spatial-tick.jar` is Paper Phase 3 legacy only — do not ship on Folia.
+Stock Paper jars are unsupported on the Folia product path.
 
 See [docs/PLUGINS.md](../docs/PLUGINS.md) and [docs/PLUGIN_COMPAT.md](../docs/PLUGIN_COMPAT.md).
 
@@ -18,7 +20,7 @@ See [docs/PLUGINS.md](../docs/PLUGINS.md) and [docs/PLUGIN_COMPAT.md](../docs/PL
 | **GAMEPLAY** (opt-in) | `gradle installGameplayDefaults` or `assembleRelease -PyapGameplay=true` | Vehicles, stacker, knobs + fat pack |
 | **Both** | `gradle installAllProductDefaults` | CORE + GAMEPLAY |
 | **Fine-tune modules** | `gradle installFineTuneModules` | All packaging jars → `modules/` |
-| **Dist folder (all jars)** | `gradle assemblePluginDist` | `build/dist/yap-plugins/{core-network,gameplay,api,engine,modules/…}/` |
+| `Dist folder (all jars)` | `gradle assemblePluginDist` | `build/dist/yap-plugins/{core-network,gameplay,api,modules/…}/` |
 
 ### CORE + NETWORK (every release)
 
@@ -29,9 +31,12 @@ See [docs/PLUGINS.md](../docs/PLUGINS.md) and [docs/PLUGIN_COMPAT.md](../docs/PL
 | `yap-plugin-compat.jar` | 1.20–1.21 → 26.2 back-compat (`/yapcompat`) |
 | `yap-pregen.jar` | Chunk pre-generator (`/yappregen`) |
 | `yap-db.jar` | Shared MariaDB Hikari pool (`YaPDB`) — `docs/YAPDB.md` / `docs/MARIADB.md` |
+| `yap-perms.jar` | Native permissions — groups, tracks, prefixes (`/yapperm`, `/promote`) |
 | `yap-playerdata.jar` | Cross-server data + offline `/login` + session lock + modular features |
+| `yap-moderation.jar` | Ban/mute/warn/kick + history (`/ban`, `/modhistory`) |
+| `yap-essentials.jar` | Essentials-class QoL (`/spawn`, `/tpa`, `/fly`, `/vanish`, …) |
 | `yap-packs.jar` | Multi-active resource packs (`/yappacks`) |
-| `yap-chat.jar` | Unsigned system chat — clears “Chat messages cannot be verified” |
+| `yap-chat.jar` | Full chat suite + unsigned system chat fix |
 | `yap-floodgate.jar` | Velocity Bedrock identity without Floodgate jar |
 
 ### GAMEPLAY (opt-in)

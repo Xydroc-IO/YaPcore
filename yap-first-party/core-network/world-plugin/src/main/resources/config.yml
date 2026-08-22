@@ -1,0 +1,19 @@
+worlds:
+  allow-load: true
+  allow-unload: true
+
+selection:
+  enabled: true
+  max-volume: 1000000
+
+schematics:
+  enabled: true
+  folder: schematics
+
+brush:
+  max-radius: 16
+
+undo:
+  max-sessions: 10
+
+server-id: lobby

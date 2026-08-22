@@ -37,8 +37,6 @@ yap_load_config() {
   JVM_THREAD_PRIORITY=true
   GAME_AUTHORITY=folia
   PAPER_EMBED=true
-  PAPER_PHASE3=false
-  PAPER_PHASE3_NMS=false
   PAPER_DIR=paper-kernel
   PAPER_VERSION=26.2
   FOLIA_EMBED=true
@@ -65,8 +63,6 @@ yap_load_config() {
         jvm-thread-priority) JVM_THREAD_PRIORITY="$val" ;;
         game-authority) GAME_AUTHORITY="$val" ;;
         paper-embed) PAPER_EMBED="$val" ;;
-        paper-phase3-tick-bridge) PAPER_PHASE3="$val" ;;
-        paper-phase3-nms-tick) PAPER_PHASE3_NMS="$val" ;;
         paper-dir) PAPER_DIR="$val" ;;
         paper-version) PAPER_VERSION="$val" ;;
         folia-embed) FOLIA_EMBED="$val" ;;
@@ -88,8 +84,6 @@ yap_load_config() {
   [ -n "$JVM_NUMA_NODE" ] || JVM_NUMA_NODE=0
   GAME_AUTHORITY="$(echo "${GAME_AUTHORITY:-folia}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
   PAPER_EMBED="$(echo "${PAPER_EMBED:-true}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
-  PAPER_PHASE3="$(echo "${PAPER_PHASE3:-false}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
-  PAPER_PHASE3_NMS="$(echo "${PAPER_PHASE3_NMS:-false}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
   PAPER_DIR="$(echo "${PAPER_DIR:-paper-kernel}" | tr -d '[:space:]')"
   PAPER_VERSION="$(echo "${PAPER_VERSION:-26.2}" | tr -d '[:space:]')"
   FOLIA_EMBED="$(echo "${FOLIA_EMBED:-true}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
@@ -198,8 +192,16 @@ yap_apply_ulimits() {
   fi
 }
 
+# Active game kernel dir for product path (Folia default).
+yap_active_kernel_dir() {
+  case "${GAME_AUTHORITY:-folia}" in
+    paper) echo "${PAPER_DIR:-paper-kernel}" ;;
+    *) echo "${FOLIA_DIR:-folia-kernel}" ;;
+  esac
+}
+
 yap_ensure_dirs() {
-  mkdir -p "$ROOT/config" "$ROOT/plugins" "$ROOT/logs" "$ROOT/lib" "$ROOT/$PAPER_DIR"
+  mkdir -p "$ROOT/config" "$ROOT/plugins" "$ROOT/logs" "$ROOT/lib" "$ROOT/$FOLIA_DIR"
   yap_ensure_unified_plugins
   yap_ensure_config_hub
   if [ ! -f "$ROOT/config/server.properties" ]; then
@@ -211,7 +213,7 @@ max-players=100
 ram-mb=2048
 ram-min-mb=512
 view-distance=10
-motd=YaPcore 12-Thread Engine
+motd=YaPcore · Folia Game · Yap Edge
 plugins-dir=plugins
 logs-dir=logs
 online-mode=false
@@ -228,27 +230,79 @@ public-port=0
 public-bedrock-port=0
 public-pack-port=0
 srv-enabled=true
+game-authority=folia
+folia-embed=true
+folia-dir=folia-kernel
+folia-version=26.2
 EOF
   fi
 }
 
-# Central operator config: config/paper → paper-dir/config (+ optional file links).
+# Link kernel_dir/plugins → ../plugins (migrate jars out of a former real dir).
+yap_link_kernel_plugins() {
+  local kernel_dir="$1"
+  local unified="$ROOT/plugins"
+  local kernel_plugins="$ROOT/$kernel_dir/plugins"
+  mkdir -p "$unified" "$ROOT/$kernel_dir"
+
+  if [ -L "$kernel_plugins" ]; then
+    local target
+    target="$(readlink -f "$kernel_plugins" 2>/dev/null || readlink "$kernel_plugins" || true)"
+    local unified_real
+    unified_real="$(readlink -f "$unified" 2>/dev/null || echo "$unified")"
+    if [ -n "$target" ] && [ "$target" = "$unified_real" ]; then
+      return 0
+    fi
+    rm -f "$kernel_plugins"
+  fi
+  if [ -d "$kernel_plugins" ]; then
+    shopt -s nullglob
+    local f
+    for f in "$kernel_plugins"/*.jar "$kernel_plugins"/*.yap; do
+      [ -e "$f" ] || continue
+      mv -f "$f" "$unified/" 2>/dev/null || true
+      echo "Migrated $(basename "$f") → plugins/"
+    done
+    shopt -u nullglob
+    rmdir "$kernel_plugins" 2>/dev/null || rm -rf "$kernel_plugins"
+  fi
+  ln -sfn ../plugins "$kernel_plugins"
+}
+
+# Central operator config: config/folia → folia-dir/config (+ optional file links).
 yap_ensure_config_hub() {
   local hub="$ROOT/config"
-  local paper_cfg="$ROOT/$PAPER_DIR/config"
-  mkdir -p "$hub" "$paper_cfg"
-  if [ ! -e "$hub/paper" ]; then
-    ln -sfn "../$PAPER_DIR/config" "$hub/paper"
-  elif [ ! -L "$hub/paper" ]; then
-    echo "WARN: $hub/paper exists and is not a symlink — leave as-is" >&2
+  local kernel_dir
+  kernel_dir="$(yap_active_kernel_dir)"
+  local kernel_cfg="$ROOT/$kernel_dir/config"
+  mkdir -p "$hub" "$kernel_cfg"
+
+  # Product hub name follows active authority.
+  if [ "$GAME_AUTHORITY" = "folia" ]; then
+    if [ -L "$hub/folia" ] || [ ! -e "$hub/folia" ]; then
+      ln -sfn "../$kernel_dir/config" "$hub/folia"
+    elif [ ! -L "$hub/folia" ]; then
+      echo "WARN: $hub/folia exists and is not a symlink — leave as-is" >&2
+    fi
+    # Retarget stale config/paper symlink left from Paper-era trees.
+    if [ -L "$hub/paper" ]; then
+      ln -sfn "../$kernel_dir/config" "$hub/paper"
+    fi
+  else
+    if [ -L "$hub/paper" ] || [ ! -e "$hub/paper" ]; then
+      ln -sfn "../$kernel_dir/config" "$hub/paper"
+    elif [ ! -L "$hub/paper" ]; then
+      echo "WARN: $hub/paper exists and is not a symlink — leave as-is" >&2
+    fi
   fi
+
   for f in spigot.yml bukkit.yml commands.yml; do
-    if [ -f "$ROOT/$PAPER_DIR/$f" ] && [ ! -e "$hub/$f" ]; then
-      ln -sfn "../$PAPER_DIR/$f" "$hub/$f"
+    if [ -f "$ROOT/$kernel_dir/$f" ] && [ ! -e "$hub/$f" ]; then
+      ln -sfn "../$kernel_dir/$f" "$hub/$f"
     fi
   done
-  if [ -f "$ROOT/$PAPER_DIR/server.properties" ] && [ ! -e "$hub/paper-server.properties" ]; then
-    ln -sfn "../$PAPER_DIR/server.properties" "$hub/paper-server.properties"
+  if [ -f "$ROOT/$kernel_dir/server.properties" ] && [ ! -e "$hub/game-server.properties" ]; then
+    ln -sfn "../$kernel_dir/server.properties" "$hub/game-server.properties"
   fi
   if [ ! -f "$hub/README.md" ]; then
     cat >"$hub/README.md" <<'EOF'
@@ -258,9 +312,9 @@ Edit **here** for day-to-day tuning.
 
 | Path | What |
 |------|------|
-| `server.properties` | YaP product (ports, dual-stack, Phase 3, packs) |
-| `paper/` | Paper globals / world defaults |
-| `spigot.yml` / `bukkit.yml` | Classic Spigot/Bukkit (symlinks) |
+| `server.properties` | YaP product (ports, dual-stack, packs) |
+| `folia/` | Folia / Paper-family globals (product path) |
+| `spigot.yml` / `bukkit.yml` | Classic Spigot/Bukkit (symlinks when present) |
 
 Gameplay encyclopedia: `plugins/YaPGameplayKnobs/knobs.yml` (jar in `plugins/`).
 See `docs/TUNE.md`.
@@ -268,69 +322,18 @@ EOF
   fi
 }
 
-# One operator folder: $ROOT/plugins. paper-dir/plugins → symlink when paper-dir is a
-# direct child of ROOT (default paper-kernel). Migrates jars out of a former real dir.
+# One operator folder: $ROOT/plugins. folia-kernel/plugins → ../plugins (product path).
 yap_ensure_unified_plugins() {
-  local unified="$ROOT/plugins"
-  local paper_plugins="$ROOT/$PAPER_DIR/plugins"
-  mkdir -p "$unified" "$ROOT/$PAPER_DIR"
-
-  if [ -L "$paper_plugins" ]; then
-    return 0
+  yap_link_kernel_plugins "${FOLIA_DIR:-folia-kernel}"
+  # If a leftover paper-kernel tree exists, keep it unified too (no Paper product path).
+  if [ -d "$ROOT/${PAPER_DIR:-paper-kernel}" ]; then
+    yap_link_kernel_plugins "${PAPER_DIR:-paper-kernel}"
   fi
-  if [ -d "$paper_plugins" ]; then
-    shopt -s nullglob
-    local f
-    for f in "$paper_plugins"/*.jar "$paper_plugins"/*.yap; do
-      [ -e "$f" ] || continue
-      mv -f "$f" "$unified/" 2>/dev/null || true
-      echo "Migrated $(basename "$f") → plugins/"
-    done
-    shopt -u nullglob
-    # Remove leftover plugin data dirs under the old path (optional; keep if non-empty)
-    rmdir "$paper_plugins" 2>/dev/null || rm -rf "$paper_plugins"
-  fi
-  ln -sfn ../plugins "$paper_plugins"
 }
 
-# Phase 3 NMS tick requires lib/paper-${ver}-yap.jar — refuse silent accounting-only.
+# Retired: Paperclip / Phase 3 NMS is not on the product path.
 yap_require_yap_paperclip() {
-  local truthy=0
-  case "${PAPER_PHASE3_NMS:-true}" in
-    true|1|yes|on) truthy=1 ;;
-  esac
-  if [ "$truthy" -ne 1 ]; then
-    return 0
-  fi
-  if [ "$GAME_AUTHORITY" != "paper" ]; then
-    return 0
-  fi
-  case "${PAPER_EMBED:-true}" in
-    true|1|yes|on) ;;
-    *) return 0 ;;
-  esac
-  case "${PAPER_PHASE3:-true}" in
-    true|1|yes|on) ;;
-    *) return 0 ;;
-  esac
-  local yap="$ROOT/lib/paper-${PAPER_VERSION}-yap.jar"
-  if [ -f "$yap" ] && [ "$(wc -c <"$yap" | tr -d '[:space:]')" -gt 1000000 ]; then
-    echo "  yap-paperclip=$yap"
-    return 0
-  fi
-  echo "ERROR: Phase 3 NMS tick needs YaP Paperclip:" >&2
-  echo "  missing $yap" >&2
-  echo "  Refusing to start in silent accounting-only mode." >&2
-  echo "  Fix:  ./scripts/vendor-paper.sh && ./scripts/build-vendor-paper.sh" >&2
-  echo "  Or:   set paper-phase3-nms-tick=false for leases/accounting only" >&2
-  if [ "${YAPCORE_AUTO_BUILD_PAPER:-}" = "1" ] && [ -x "$ROOT/scripts/build-vendor-paper.sh" ]; then
-    echo "YAPCORE_AUTO_BUILD_PAPER=1 — building vendored Paper (long)…" >&2
-    "$ROOT/scripts/build-vendor-paper.sh" || exit 1
-    if [ -f "$yap" ]; then
-      return 0
-    fi
-  fi
-  exit 1
+  return 0
 }
 
 yap_find_jar() {
@@ -363,6 +366,41 @@ yap_read_pid() {
   fi
 }
 
+yap_root_real() {
+  if command -v readlink >/dev/null 2>&1; then
+    readlink -f "$ROOT" 2>/dev/null || echo "$ROOT"
+  else
+    echo "$ROOT"
+  fi
+}
+
+# True when pid's -Dyapcore.home resolves to this install (bench/workdir trees excluded).
+yap_pid_belongs_to_root() {
+  local pid="$1" cmd home root_real file_pid
+  [ -n "$pid" ] || return 1
+  [ -r "/proc/$pid/cmdline" ] || return 1
+  cmd="$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null || true)"
+  case "$cmd" in
+    *-Dyapcore.home=*)
+      home="${cmd#*-Dyapcore.home=}"
+      home="${home%% *}"
+      ;;
+    *)
+      home=""
+      ;;
+  esac
+  root_real="$(yap_root_real)"
+  if [ -n "$home" ]; then
+    if command -v readlink >/dev/null 2>&1; then
+      home="$(readlink -f "$home" 2>/dev/null || echo "$home")"
+    fi
+    [ "$home" = "$root_real" ]
+    return
+  fi
+  file_pid="$(yap_read_pid)"
+  [ -n "$file_pid" ] && [ "$file_pid" = "$pid" ]
+}
+
 # True if /proc/$1/cmdline looks like a YaPcore JVM (not a shell/IDE that merely mentions the path).
 yap_pid_is_yapcore() {
   local pid="$1" cmd=""
@@ -392,7 +430,8 @@ yap_find_pids() {
   local pid="" seen=" "
   if [ -f "$ROOT/yapcore.pid" ]; then
     pid="$(tr -d '[:space:]' <"$ROOT/yapcore.pid" || true)"
-    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && yap_pid_is_yapcore "$pid"; then
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null \
+        && yap_pid_is_yapcore "$pid" && yap_pid_belongs_to_root "$pid"; then
       echo "$pid"
       seen=" $pid "
     fi
@@ -404,7 +443,8 @@ yap_find_pids() {
       case "$seen" in
         *" $pid "*) continue ;;
       esac
-      if kill -0 "$pid" 2>/dev/null && yap_pid_is_yapcore "$pid"; then
+      if kill -0 "$pid" 2>/dev/null && yap_pid_is_yapcore "$pid" \
+          && yap_pid_belongs_to_root "$pid"; then
         echo "$pid"
         seen="$seen$pid "
       fi
@@ -425,12 +465,51 @@ yap_find_pids() {
   done
 }
 
+# True when pid is an MSPT bench JVM (must not block product start/gui).
+yap_pid_is_bench() {
+  local pid="$1" cmd=""
+  [ -n "$pid" ] || return 1
+  [ -r "/proc/$pid/cmdline" ] || return 1
+  cmd="$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null || true)"
+  case "$cmd" in
+    *-Dyap.bench.scenario=*|*bench/workdir-*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
 yap_find_pid() {
   yap_find_pids | head -n 1
 }
 
+yap_find_product_pids() {
+  local pid=""
+  while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    if yap_pid_is_bench "$pid"; then
+      continue
+    fi
+    echo "$pid"
+  done < <(yap_find_pids)
+}
+
+yap_find_product_pid() {
+  yap_find_product_pids | head -n 1
+}
+
+yap_find_bench_pids() {
+  local pid=""
+  while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    if yap_pid_is_bench "$pid"; then
+      echo "$pid"
+    fi
+  done < <(yap_find_pids)
+}
+
 yap_is_running() {
-  if [ -n "$(yap_find_pids | head -n 1)" ]; then
+  if [ -n "$(yap_find_product_pids | head -n 1)" ]; then
     return 0
   fi
   return 1

@@ -1,0 +1,13 @@
+webhooks:
+  moderation: ""
+  chat: ""
+
+relay:
+  mc-to-discord: false
+  discord-to-mc: false
+
+inbound:
+  enabled: true
+  port: 8765
+  secret: "change-me"
+  path: "/discord/inbound"

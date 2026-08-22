@@ -6,7 +6,8 @@
 param(
   [string]$HostAddress = "127.0.0.1",
   [string]$ServerId = "lobby",
-  [string]$Profile = "global"
+  [string]$Profile = "global",
+  [string]$Root = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,8 +23,9 @@ function Find-YapRoot {
   return (Get-Location).Path
 }
 
-$Root = Find-YapRoot
-$ComposeDir = Join-Path $Root "deploy\mariadb"
+$RepoRoot = Find-YapRoot
+if ([string]::IsNullOrWhiteSpace($Root)) { $Root = $RepoRoot }
+$ComposeDir = Join-Path $RepoRoot "deploy\mariadb"
 $PluginDir = Join-Path $Root "plugins\YaPPlayerData"
 $Config = Join-Path $PluginDir "config.yml"
 $EnvFile = Join-Path $ComposeDir ".env"
@@ -46,7 +48,7 @@ $pass = if ($vars.ContainsKey("YAP_DB_PASSWORD")) { $vars["YAP_DB_PASSWORD"] } e
 $jdbc = "jdbc:mysql://${HostAddress}:${port}/${db}?useSSL=false&allowPublicKeyRetrieval=true"
 
 New-Item -ItemType Directory -Force -Path $PluginDir | Out-Null
-$defaultCfg = Join-Path $Root "playerdata-plugin\src\main\resources\config.yml"
+$defaultCfg = Join-Path $RepoRoot "playerdata-plugin\src\main\resources\config.yml"
 if (-not (Test-Path $Config)) {
   if (Test-Path $defaultCfg) {
     Copy-Item $defaultCfg $Config
@@ -74,7 +76,7 @@ Set-Content -Encoding UTF8 -Path $Config -Value $text -NoNewline
 $yapDbDir = Join-Path $Root "plugins\YaPDB"
 $yapDbCfg = Join-Path $yapDbDir "config.yml"
 New-Item -ItemType Directory -Force -Path $yapDbDir | Out-Null
-$defaultYapDb = Join-Path $Root "yap-db-plugin\src\main\resources\config.yml"
+$defaultYapDb = Join-Path $RepoRoot "yap-db-plugin\src\main\resources\config.yml"
 if (-not (Test-Path $yapDbCfg) -and (Test-Path $defaultYapDb)) {
   Copy-Item $defaultYapDb $yapDbCfg
 }

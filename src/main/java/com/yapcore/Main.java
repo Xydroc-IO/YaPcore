@@ -2,6 +2,7 @@ package com.yapcore;
 
 import com.yapcore.config.ServerConfig;
 import com.yapcore.gui.ControlPanel;
+import com.yapcore.server.LinkEmbedService;
 import com.yapcore.server.YaPcoreServer;
 import com.yapcore.web.WebDashboard;
 
@@ -40,9 +41,22 @@ public final class Main {
         ServerConfig config = ServerConfig.loadOrCreate(root.resolve("config").resolve("server.properties"));
         YaPcoreServer server = new YaPcoreServer(root, config);
 
+        LinkEmbedService linkEmbed = null;
+        if (config.isLinkEmbed()) {
+            linkEmbed = new LinkEmbedService();
+            Path linkHome = root.resolve(config.getLinkEmbedHome()).normalize();
+            if (linkEmbed.start(linkHome)) {
+                LOG.info("Embedded YaP Link active at " + linkHome);
+            }
+        }
+        final LinkEmbedService embeddedLink = linkEmbed;
+
         WebDashboard dashboard = WebDashboard.maybeStart(server);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (embeddedLink != null) {
+                embeddedLink.stop();
+            }
             if (dashboard != null) {
                 dashboard.stop();
             }
@@ -51,10 +65,18 @@ public final class Main {
             }
         }, "yap-shutdown-hook"));
 
-        boolean useGui = forceGui || (!nogui && !GraphicsEnvironmentCheck.isHeadless());
-        if (useGui && GraphicsEnvironmentCheck.isHeadless()) {
-            LOG.warning("GUI requested but no display is available — falling back to headless mode");
+        boolean useGui;
+        if (nogui) {
             useGui = false;
+        } else if (forceGui) {
+            useGui = !GraphicsEnvironmentCheck.isHeadless();
+        } else {
+            useGui = config.isGuiEnabled() && !GraphicsEnvironmentCheck.isHeadless();
+        }
+        if ((forceGui || config.isGuiEnabled()) && !useGui && !nogui) {
+            LOG.warning("GUI enabled but no display is available — falling back to headless mode");
+        } else if (forceGui && !useGui) {
+            LOG.warning("GUI requested but no display is available — falling back to headless mode");
         }
 
         try {

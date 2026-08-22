@@ -60,7 +60,8 @@ public final class ControlPanel extends JFrame {
     private final TunePanel tunePanel;
     private final NginxPanel nginxPanel;
     private final ConnectInfoPanel connectPanel;
-    private final JTabbedPane sideTabs = new JTabbedPane();
+    private final JTabbedPane sideTabs = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+    private final JSplitPane split;
     private final Consumer<String> consoleListener;
     private Timer statsTimer;
 
@@ -92,21 +93,27 @@ public final class ControlPanel extends JFrame {
         }
 
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setMinimumSize(new Dimension(1100, 720));
-        setPreferredSize(new Dimension(1240, 800));
         getContentPane().setBackground(GuiTheme.BG);
 
-        JPanel root = new JPanel(new BorderLayout(12, 12));
-        root.setBorder(new EmptyBorder(14, 14, 14, 14));
+        JPanel root = new JPanel(new BorderLayout(10, 10));
+        root.setBorder(new EmptyBorder(12, 12, 12, 12));
         root.setBackground(GuiTheme.BG);
         root.add(buildHeader(), BorderLayout.NORTH);
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildConsolePanel(), buildSidePanel());
-        split.setResizeWeight(0.58);
+        split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildConsolePanel(), buildSidePanel());
+        split.setResizeWeight(0.55);
+        split.setContinuousLayout(true);
+        split.setOneTouchExpandable(true);
         split.setBorder(null);
+        split.setDividerSize(8);
         root.add(split, BorderLayout.CENTER);
         setContentPane(root);
-        pack();
-        setLocationRelativeTo(null);
+
+        // Fit usable screen — no pack() fight with preferred sizes
+        GuiTheme.fitWindow(this, 1280, 820, 920, 600);
+        SwingUtilities.invokeLater(() -> {
+            split.setDividerLocation(0.58);
+            revalidate();
+        });
 
         consoleListener = line -> SwingUtilities.invokeLater(() -> {
             console.append(line);
@@ -119,7 +126,6 @@ public final class ControlPanel extends JFrame {
         commandInput.addActionListener(e -> submitCommand());
         updateButtonState();
         refreshConnectionUi();
-        // Open on Connect so join addresses are the first thing you see
         sideTabs.setSelectedIndex(0);
         statsTimer = new Timer(500, e -> refreshStats());
         statsTimer.start();
@@ -135,16 +141,26 @@ public final class ControlPanel extends JFrame {
                 }
             }
         });
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            @Override
+            public void componentResized(java.awt.event.ComponentEvent e) {
+                // Keep side pane usable when the window shrinks
+                int w = getWidth();
+                if (w > 0 && split.getDividerLocation() > w - 280) {
+                    split.setDividerLocation(Math.max(360, w - 360));
+                }
+            }
+        });
     }
 
     private JPanel buildHeader() {
-        JPanel header = new JPanel(new BorderLayout());
+        JPanel header = new JPanel(new BorderLayout(12, 0));
         header.setOpaque(false);
         JLabel brand = new JLabel("YaPcore");
-        brand.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        brand.setFont(new Font("Segoe UI", Font.BOLD, 24));
         brand.setForeground(GuiTheme.ACCENT);
-        JLabel subtitle = new JLabel("Control · Connect · Access · nginx · Settings · Tests");
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        JLabel subtitle = new JLabel("Control · Connect · Access · Settings");
+        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         subtitle.setForeground(GuiTheme.MUTED);
         JPanel titles = new JPanel(new GridBagLayout());
         titles.setOpaque(false);
@@ -156,11 +172,13 @@ public final class ControlPanel extends JFrame {
         c.gridy = 1;
         titles.add(subtitle, c);
         c.gridy = 2;
-        c.insets = new Insets(6, 0, 0, 0);
-        javaJoinLabel.setFont(new Font(Font.MONOSPACED, Font.BOLD, 13));
+        c.insets = new Insets(4, 0, 0, 0);
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1;
+        javaJoinLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         javaJoinLabel.setForeground(GuiTheme.TEXT);
         titles.add(javaJoinLabel, c);
-        header.add(titles, BorderLayout.WEST);
+        header.add(titles, BorderLayout.CENTER);
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actions.setOpaque(false);
         JButton testLabBtn = new JButton("Test Lab");
@@ -180,6 +198,7 @@ public final class ControlPanel extends JFrame {
     private JPanel buildConsolePanel() {
         JPanel panel = GuiTheme.card();
         panel.setLayout(new BorderLayout(8, 8));
+        panel.setMinimumSize(new Dimension(360, 240));
         panel.add(GuiTheme.sectionTitle("Live Console"), BorderLayout.NORTH);
         console.setEditable(false);
         console.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
@@ -187,6 +206,7 @@ public final class ControlPanel extends JFrame {
         console.setForeground(GuiTheme.TEXT);
         console.setCaretColor(GuiTheme.ACCENT);
         console.setLineWrap(true);
+        console.setWrapStyleWord(true);
         panel.add(new JScrollPane(console), BorderLayout.CENTER);
         JPanel inputRow = new JPanel(new BorderLayout(8, 0));
         inputRow.setOpaque(false);
@@ -203,26 +223,19 @@ public final class ControlPanel extends JFrame {
     private JPanel buildSidePanel() {
         JPanel side = new JPanel(new BorderLayout());
         side.setOpaque(false);
-        side.setPreferredSize(new Dimension(420, 560));
-        sideTabs.addTab("Connect", wrapScroll(connectPanel.component()));
+        side.setMinimumSize(new Dimension(320, 240));
+        side.setPreferredSize(new Dimension(420, 600));
+        sideTabs.addTab("Connect", GuiTheme.verticalScroll(connectPanel.component()));
         sideTabs.addTab("Access", networkPanel.component());
         sideTabs.addTab("nginx", nginxPanel.component());
         sideTabs.addTab("Settings", settingsPanel.component());
-        sideTabs.addTab("Tune", wrapScroll(tunePanel.component()));
-        sideTabs.addTab("Status", wrapScroll(buildStatusTab()));
+        sideTabs.addTab("Tune", GuiTheme.verticalScroll(tunePanel.component()));
+        sideTabs.addTab("Status", GuiTheme.verticalScroll(buildStatusTab()));
         sideTabs.addTab("Plugins", pluginsPanel.component());
         sideTabs.addTab("Modules", modulesPanel.component());
         sideTabs.addTab("Packs", packsPanel.component());
         side.add(sideTabs, BorderLayout.CENTER);
         return side;
-    }
-
-    private static JScrollPane wrapScroll(JPanel inner) {
-        JScrollPane scroll = new JScrollPane(inner);
-        scroll.setBorder(null);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        return scroll;
     }
 
     private JPanel buildStatusTab() {
@@ -314,8 +327,17 @@ public final class ControlPanel extends JFrame {
     private void refreshConnectionUi() {
         connectPanel.refresh();
         networkPanel.refresh();
-        javaJoinLabel.setText("This PC: 127.0.0.1:" + server.getConfig().getPort()
-                + "   ·   Public: " + server.publicEndpoint().crossplayJoinAddress());
+        int port = server.getConfig().getPort();
+        String pub = server.publicEndpoint().crossplayJoinAddress();
+        javaJoinLabel.setText("<html>This PC: <b>127.0.0.1:" + port
+                + "</b> &nbsp;·&nbsp; Public: <b>" + escapeHtml(pub) + "</b></html>");
+    }
+
+    private static String escapeHtml(String s) {
+        if (s == null) {
+            return "";
+        }
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private void refreshStats() {

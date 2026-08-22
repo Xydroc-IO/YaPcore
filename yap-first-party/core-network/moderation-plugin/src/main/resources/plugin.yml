@@ -1,0 +1,94 @@
+name: YaPModeration
+version: '1.0.0.0'
+main: com.yapcore.moderation.ModerationPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Native moderation — ban, mute, warn, kick, history
+website: https://github.com/yaplabs
+load: STARTUP
+depend: [YaPDB]
+softdepend: [YaPPerms]
+commands:
+  ban:
+    description: Permanently ban a player
+    usage: /ban <player> [reason]
+    permission: yapmod.ban
+  tempban:
+    description: Temporarily ban a player
+    usage: /tempban <player> <duration> [reason]
+    permission: yapmod.ban
+    aliases: [tban]
+  unban:
+    description: Unban a player
+    usage: /unban <player> [reason]
+    permission: yapmod.ban
+  ipban:
+    description: Ban an IP address
+    usage: /ipban <player|ip> [reason]
+    permission: yapmod.ipban
+  unbanip:
+    description: Unban an IP address
+    usage: /unbanip <ip> [reason]
+    permission: yapmod.ipban
+  mute:
+    description: Permanently mute a player
+    usage: /mute <player> [reason]
+    permission: yapmod.mute
+  tempmute:
+    description: Temporarily mute a player
+    usage: /tempmute <player> <duration> [reason]
+    permission: yapmod.mute
+    aliases: [tmute]
+  unmute:
+    description: Unmute a player
+    usage: /unmute <player> [reason]
+    permission: yapmod.mute
+  warn:
+    description: Warn a player
+    usage: /warn <player> [reason]
+    permission: yapmod.warn
+  kick:
+    description: Kick a player
+    usage: /kick <player> [reason]
+    permission: yapmod.kick
+  modhistory:
+    description: View moderation history
+    usage: /modhistory <player> [limit]
+    permission: yapmod.history
+    aliases: [history, punishments]
+  modcheck:
+    description: Check player moderation status and alts
+    usage: /modcheck <player>
+    permission: yapmod.history
+    aliases: [check, alts]
+  banlist:
+    description: List active bans
+    usage: /banlist [limit]
+    permission: yapmod.history
+  yapmod:
+    description: Moderation admin
+    usage: /yapmod reload
+    permission: yapmod.admin
+permissions:
+  yapmod.ban:
+    description: Ban and unban players
+    default: op
+  yapmod.ipban:
+    description: IP ban management
+    default: op
+  yapmod.mute:
+    description: Mute management
+    default: op
+  yapmod.warn:
+    description: Warn players
+    default: op
+  yapmod.kick:
+    description: Kick players
+    default: op
+  yapmod.history:
+    description: View moderation history
+    default: op
+  yapmod.admin:
+    description: Reload moderation plugin
+    default: op

@@ -1,6 +1,7 @@
 package com.yapcore.gui.panels;
 
 import com.yapcore.gui.theme.GuiTheme;
+import com.yapcore.gui.theme.WrapLayout;
 import com.yapcore.server.YaPcoreServer;
 
 import javax.swing.BorderFactory;
@@ -35,7 +36,7 @@ public final class PacksPanel {
         this.server = server;
         root = GuiTheme.card();
         root.setLayout(new BorderLayout(8, 8));
-        root.add(GuiTheme.sectionTitle("Texture / Resource Packs (multi-active)"), BorderLayout.NORTH);
+        root.add(GuiTheme.sectionTitle("Resource Packs"), BorderLayout.NORTH);
 
         list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         list.setBackground(new java.awt.Color(0x0D, 0x11, 0x17));
@@ -44,14 +45,19 @@ public final class PacksPanel {
         scroll.setBorder(BorderFactory.createEmptyBorder());
         root.add(scroll, BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel south = new JPanel(new BorderLayout(4, 6));
+        south.setOpaque(false);
+        activeLabel.setForeground(GuiTheme.MUTED);
+        south.add(activeLabel, BorderLayout.NORTH);
+
+        JPanel buttons = new JPanel(new WrapLayout(FlowLayout.LEFT, 6, 6));
         buttons.setOpaque(false);
         JButton add = new JButton("Add…");
         JButton activate = new JButton("Add to Active");
-        JButton deactivate = new JButton("Remove from Active");
+        JButton deactivate = new JButton("Remove Active");
         JButton only = new JButton("Set Only Active");
         JButton remove = new JButton("Delete File");
-        JButton clear = new JButton("Clear All Active");
+        JButton clear = new JButton("Clear Active");
         GuiTheme.stylePrimary(add);
         GuiTheme.stylePrimary(activate);
         GuiTheme.stylePrimary(deactivate);
@@ -69,7 +75,8 @@ public final class PacksPanel {
         buttons.add(only);
         buttons.add(remove);
         buttons.add(clear);
-        root.add(buttons, BorderLayout.SOUTH);
+        south.add(buttons, BorderLayout.CENTER);
+        root.add(south, BorderLayout.SOUTH);
         refresh();
     }
 

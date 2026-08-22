@@ -95,6 +95,6 @@ echo "Automated soak gates: PASS"
 echo "Live ticks remain operator-owned until checked above."
 echo
 echo "Real-load pop ladder (bots 50→200 + denser heavypop MSPT):"
-echo "  ./scripts/bench/run-pop-ladder.sh"
-echo "  ./scripts/bench/run-pop-ladder.sh --tiers mid,heavy"
+echo "  ./scripts/bench/run-vs-folia.sh"
+echo "  ./scripts/bench/run-vs-folia.sh --tiers mid,heavy"
 echo "See docs/BENCH_VS_PAPER.md § Pop ladder."

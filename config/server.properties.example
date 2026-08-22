@@ -1,6 +1,6 @@
 # YaPcore — copy to server.properties (gitignored) and edit
 server-name=YaPcore
-motd=YaPcore 16-Thread Engine
+motd=YaPcore · Folia Game · Yap Edge
 port=25566
 bind-host=0.0.0.0
 allow-localhost=true

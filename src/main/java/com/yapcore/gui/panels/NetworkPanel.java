@@ -10,7 +10,6 @@ import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -29,7 +28,6 @@ import java.util.function.Consumer;
 public final class NetworkPanel {
 
     private final YaPcoreServer server;
-    private final ConnectInfoPanel connectInfo;
     private final JPanel root = new JPanel(new BorderLayout(8, 8));
     private final JCheckBox exposeBox = new JCheckBox("Allow internet connections (bind 0.0.0.0)");
     private final JTextField domainField = new JTextField();
@@ -38,13 +36,12 @@ public final class NetworkPanel {
     private final JSpinner publicBedrockSpinner;
     private final JSpinner publicPackSpinner;
     private final JCheckBox srvBox = new JCheckBox("Include Minecraft DNS SRV record hint");
-    private final JTextArea dnsHint = new JTextArea(3, 28);
+    private final JTextArea dnsHint = new JTextArea(3, 20);
     private Consumer<Void> onSaved = v -> {
     };
 
     public NetworkPanel(YaPcoreServer server) {
         this.server = server;
-        this.connectInfo = new ConnectInfoPanel(server);
         ServerConfig cfg = server.getConfig();
         publicPortSpinner = new JSpinner(new SpinnerNumberModel(
                 Math.max(0, cfg.getPublicPort()), 0, 65_535, 1));
@@ -55,17 +52,7 @@ public final class NetworkPanel {
 
         root.setOpaque(false);
         root.setBorder(new EmptyBorder(2, 2, 2, 2));
-
-        JPanel stack = new JPanel(new BorderLayout(8, 8));
-        stack.setOpaque(false);
-        stack.add(connectInfo.component(), BorderLayout.NORTH);
-        stack.add(buildForm(), BorderLayout.CENTER);
-
-        JScrollPane scroll = new JScrollPane(stack);
-        scroll.setBorder(null);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        root.add(scroll, BorderLayout.CENTER);
+        root.add(GuiTheme.verticalScroll(buildForm()), BorderLayout.CENTER);
 
         loadFromConfig();
         refresh();
@@ -81,7 +68,6 @@ public final class NetworkPanel {
     }
 
     public void refresh() {
-        connectInfo.refresh();
         PublicEndpoint ep = new PublicEndpoint(server.getConfig());
         dnsHint.setText(ep.srvRecordExample());
     }
@@ -98,11 +84,8 @@ public final class NetworkPanel {
         c.insets = new Insets(4, 4, 4, 4);
         panel.add(GuiTheme.sectionTitle("External access"), c);
         c.gridy++;
-        JLabel blurb = new JLabel("<html><body style='width:240px'>Point a domain at this machine, "
-                + "forward ports on your router, then save. Join addresses update above.</body></html>");
-        blurb.setForeground(GuiTheme.MUTED);
-        blurb.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        panel.add(blurb, c);
+        panel.add(GuiTheme.tip("Point a domain at this machine, forward ports on your router, "
+                + "then save. Join addresses live on the <b>Connect</b> tab."), c);
         c.gridy++;
         exposeBox.setOpaque(false);
         exposeBox.setForeground(GuiTheme.TEXT);
@@ -128,6 +111,9 @@ public final class NetworkPanel {
         GuiTheme.stylePrimary(save);
         save.addActionListener(e -> save());
         panel.add(save, c);
+        c.gridy++;
+        c.weighty = 1;
+        panel.add(new JLabel(), c);
         return panel;
     }
 
@@ -138,6 +124,7 @@ public final class NetworkPanel {
         dnsHint.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 10));
         dnsHint.setForeground(GuiTheme.TEXT);
         dnsHint.setBackground(GuiTheme.BG);
+        dnsHint.setRows(4);
         JPanel wrap = new JPanel(new BorderLayout());
         wrap.setOpaque(false);
         wrap.add(dnsHint, BorderLayout.CENTER);

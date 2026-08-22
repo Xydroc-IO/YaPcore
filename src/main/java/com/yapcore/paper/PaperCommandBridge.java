@@ -143,6 +143,6 @@ public final class PaperCommandBridge {
 
     private static boolean scheduleOnMain(Class<?> bukkit, Object server, ClassLoader cl, Runnable run) {
         // Folia: GlobalRegionScheduler first; Paper: BukkitScheduler; else NMS execute.
-        return com.yapcore.game.GameSchedulers.scheduleSync(bukkit, server, cl, run);
+        return com.yapcore.game.sched.GameSchedulers.scheduleSync(bukkit, server, cl, run);
     }
 }

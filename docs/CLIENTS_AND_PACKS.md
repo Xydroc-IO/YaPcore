@@ -34,8 +34,9 @@ paper-phase3-nms-tick=false
 Legacy Paperclip (Phase 3 benches only):
 
 ```bash
-./scripts/vendor-paper.sh
-./scripts/build-vendor-paper.sh   # → lib/paper-26.2-yap.jar
+> **Retired (Folia product path):** Paperclip / Phase 3 vendor scripts (`vendor-paper.sh`, `build-vendor-paper.sh`, `apply-yap-paper-hooks.sh`, `smoke-paper-plugins.sh`, `verify-paper-api-coverage.sh`, Paper Phase 3 benches) were removed. Use `./scripts/fetch-folia.sh` / `smoke-folia.sh` instead.
+
+./scripts/fetch-folia.sh   # → lib/folia-26.2.jar
 ```
 
 ## Built-in multi-version (Via-class — no Via* plugins)

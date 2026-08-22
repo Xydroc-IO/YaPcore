@@ -20,17 +20,21 @@ if [ ! -f "$ROOT/lib/folia-${VER}.jar" ]; then
   "$ROOT/scripts/fetch-folia.sh" "$VER"
 fi
 
-echo "Building YaPcore + YaP Link + Folia bridge…"
-gradle shadowJar :yap-link:shadowJar :folia-bridge-plugin:installIntoPlugins --no-daemon -q
+echo "Building YaPcore + Folia bridge…"
+gradle shadowJar :folia-bridge-plugin:installIntoPlugins --no-daemon -q || \
+  gradle shadowJar --no-daemon -q
 YAP_JAR="$(yap_find_jar)"
 case "$YAP_JAR" in /*) ;; *) YAP_JAR="$ROOT/$YAP_JAR" ;; esac
-LINK_JAR="$ROOT/yap-link/build/libs/yap-link.jar"
 if [ -z "$YAP_JAR" ] || [ ! -f "$YAP_JAR" ]; then
   echo "Missing yapcore jar" >&2
   exit 1
 fi
+
+echo "Building YaP Link (native)…"
+gradle :yap-link-native:shadowJar --no-daemon -q
+LINK_JAR="$ROOT/yap-first-party/link/native/build/libs/yap-link.jar"
 if [ ! -f "$LINK_JAR" ]; then
-  echo "Missing $LINK_JAR" >&2
+  echo "Missing native yap-link.jar" >&2
   exit 1
 fi
 
@@ -87,7 +91,14 @@ player-info-forwarding-mode=modern
 forwarding-secret-file=forwarding.secret
 servers.lobby=127.0.0.1:${FOLIA_PORT}
 try=lobby
-force-default-server=true
+enable-server-command=true
+public-host=127.0.0.1
+public-port=${LINK_PORT}
+ping-passthrough=true
+backend-probe-interval-sec=5
+backend-probe-timeout-ms=8000
+aggregate-player-count=true
+chat-relay-enabled=true
 EOF
 
 JAVA_BIN="$(yap_java_bin)"
@@ -132,9 +143,7 @@ if [ "$folia_ok" -ne 1 ]; then
 fi
 
 # Confirm velocity config was written
-if ! grep -q 'enabled: true' "$WORK/folia-kernel/config/paper-global.yml" 2>/dev/null \
-  && ! grep -q 'enabled: true' "$WORK/folia-kernel/config/paper-global.yml" 2>/dev/null; then
-  # yaml may dump as "enabled: true" under proxies.velocity
+if ! grep -q 'enabled: true' "$WORK/folia-kernel/config/paper-global.yml" 2>/dev/null; then
   if ! grep -A5 'velocity:' "$WORK/folia-kernel/config/paper-global.yml" 2>/dev/null | grep -q 'true'; then
     echo "FAIL: paper-global.yml missing velocity.enabled=true" >&2
     cat "$WORK/folia-kernel/config/paper-global.yml" >&2 || true
@@ -145,8 +154,8 @@ fi
 
 echo "Starting YaP Link on :${LINK_PORT} → Folia :${FOLIA_PORT}…"
 (
-  exec "$JAVA_BIN" -Xms128M -Xmx256M \
-    -jar "$LINK_JAR" --home "$WORK/link-data"
+  cd "$WORK/link-data"
+  exec "$JAVA_BIN" -Xms128M -Xmx256M -jar "$LINK_JAR" --home "$WORK/link-data"
 ) >>"$LINK_LOG" 2>&1 &
 LINK_PID=$!
 echo "  link pid=$LINK_PID"

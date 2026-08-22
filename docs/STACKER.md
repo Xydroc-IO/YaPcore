@@ -90,4 +90,4 @@ gradle shadowJar
 - [PLUGINS.md](PLUGINS.md) — plugin folder layout
 - [PLACEHOLDERAPI.md](PLACEHOLDERAPI.md) — built-in PAPI
 - [MODULES_AND_API.md](MODULES_AND_API.md) — plugin vs module
-- `stacker-plugin/` — source
+- `yap-first-party/gameplay/stacker-plugin/` — source

@@ -28,8 +28,7 @@ gradle shadowJar
 Optional YaP Paperclip (Phase 3 NMS interior tick):
 
 ```bash
-./scripts/vendor-paper.sh
-./scripts/build-vendor-paper.sh
+./scripts/fetch-folia.sh
 ```
 
 ## Pull requests
@@ -40,6 +39,7 @@ Optional YaP Paperclip (Phase 3 NMS interior tick):
 
 ## Modules & plugins
 
+First-party sources live under [`yap-first-party/`](yap-first-party/README.md) (by release tier).
 Do not vendor third-party plugins into this repository. Extend APIs so *others* can
 publish jars to the unified **`plugins/`** folder or to **`modules/`**.
 Gameplay encyclopedia: [docs/TUNE.md](docs/TUNE.md) (`yap-gameplay-knobs`).

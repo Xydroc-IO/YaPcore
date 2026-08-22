@@ -1,4 +1,5 @@
 # Shared helpers for YaPcore Windows release scripts (PowerShell 5+)
+# Product path: Folia (folia-kernel). Paperclip / Phase 3 tooling removed.
 
 function Get-YapRoot {
     param([string]$ScriptDir)
@@ -33,21 +34,24 @@ function Require-YapJava {
 function Read-YapConfig {
     param([string]$Root)
     $script:YapConfig = @{
-        RamMb            = 2048
-        RamMinMb         = 512
-        MaxPlayers       = 100
-        Port             = 25566
-        JvmGc            = "zgc"
-        JvmNuma          = $true
-        JvmHeapPin       = $true
-        JvmNumaNode      = 0
+        RamMb             = 2048
+        RamMinMb          = 512
+        MaxPlayers        = 100
+        Port              = 25566
+        JvmGc             = "zgc"
+        JvmNuma           = $true
+        JvmHeapPin        = $true
+        JvmNumaNode       = 0
         JvmThreadPriority = $true
-        GameAuthority    = "paper"
-        PaperEmbed       = $true
-        PaperPhase3      = $true
-        PaperPhase3Nms   = $true
-        PaperDir         = "paper-kernel"
-        PaperVersion     = "26.2"
+        GameAuthority     = "folia"
+        FoliaEmbed        = $true
+        FoliaDir          = "folia-kernel"
+        FoliaVersion      = "26.2"
+        PaperEmbed        = $false
+        PaperPhase3       = $false
+        PaperPhase3Nms    = $false
+        PaperDir          = "paper-kernel"
+        PaperVersion      = "26.2"
     }
     $cfg = Join-Path $Root "config\server.properties"
     if (-not (Test-Path $cfg)) { return }
@@ -69,6 +73,9 @@ function Read-YapConfig {
             "jvm-numa-node" { $script:YapConfig.JvmNumaNode = [int]($val -replace '[^\d]', '') }
             "jvm-thread-priority" { $script:YapConfig.JvmThreadPriority = ($val -match '^(true|1|yes)$') }
             "game-authority" { $script:YapConfig.GameAuthority = $val.ToLowerInvariant() }
+            "folia-embed" { $script:YapConfig.FoliaEmbed = ($val -match '^(true|1|yes)$') }
+            "folia-dir" { $script:YapConfig.FoliaDir = $val.Trim() }
+            "folia-version" { $script:YapConfig.FoliaVersion = $val.Trim() }
             "paper-embed" { $script:YapConfig.PaperEmbed = ($val -match '^(true|1|yes)$') }
             "paper-phase3-tick-bridge" { $script:YapConfig.PaperPhase3 = ($val -match '^(true|1|yes)$') }
             "paper-phase3-nms-tick" { $script:YapConfig.PaperPhase3Nms = ($val -match '^(true|1|yes)$') }
@@ -82,6 +89,12 @@ function Read-YapConfig {
     if ($script:YapConfig.RamMinMb -gt $script:YapConfig.RamMb) {
         $script:YapConfig.RamMinMb = $script:YapConfig.RamMb
     }
+}
+
+function Get-YapActiveKernelDir {
+    $c = $script:YapConfig
+    if ($c.GameAuthority -eq "paper") { return $c.PaperDir }
+    return $c.FoliaDir
 }
 
 function Get-YapJvmArgs {
@@ -132,8 +145,9 @@ function Find-YapJar {
 function Ensure-YapDirs {
     param([string]$Root)
     $c = $script:YapConfig
+    $kernel = Get-YapActiveKernelDir
     @(
-        "config", "plugins", "logs", "lib", $c.PaperDir
+        "config", "plugins", "logs", "lib", $kernel
     ) | ForEach-Object {
         $p = Join-Path $Root $_
         if (-not (Test-Path $p)) { New-Item -ItemType Directory -Path $p | Out-Null }
@@ -144,7 +158,11 @@ function Ensure-YapDirs {
 
 function New-YapJunction {
     param([string]$Link, [string]$Target)
-    if (Test-Path $Link) { return }
+    if (Test-Path $Link) {
+        $item = Get-Item $Link -Force
+        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return }
+        return
+    }
     $parent = Split-Path -Parent $Link
     if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent | Out-Null }
     if (-not (Test-Path $Target)) { New-Item -ItemType Directory -Path $Target | Out-Null }
@@ -156,42 +174,35 @@ function Ensure-YapConfigHub {
     param([string]$Root)
     $c = $script:YapConfig
     $hub = Join-Path $Root "config"
-    $paperCfg = Join-Path $Root "$($c.PaperDir)\config"
-    if (-not (Test-Path $paperCfg)) { New-Item -ItemType Directory -Path $paperCfg | Out-Null }
-    New-YapJunction (Join-Path $hub "paper") $paperCfg
+    $kernel = Get-YapActiveKernelDir
+    $kernelCfg = Join-Path $Root "$kernel\config"
+    if (-not (Test-Path $kernelCfg)) { New-Item -ItemType Directory -Path $kernelCfg | Out-Null }
+    if ($c.GameAuthority -eq "folia") {
+        New-YapJunction (Join-Path $hub "folia") $kernelCfg
+    } else {
+        New-YapJunction (Join-Path $hub "paper") $kernelCfg
+    }
 }
 
 function Ensure-YapPluginsJunction {
     param([string]$Root)
-    $c = $script:YapConfig
-    $paperPlugins = Join-Path $Root "$($c.PaperDir)\plugins"
+    $kernel = Get-YapActiveKernelDir
+    $kernelPlugins = Join-Path $Root "$kernel\plugins"
     $unified = Join-Path $Root "plugins"
-    if (Test-Path $paperPlugins) {
-        $item = Get-Item $paperPlugins -Force
+    if (-not (Test-Path $unified)) { New-Item -ItemType Directory -Path $unified | Out-Null }
+    if (Test-Path $kernelPlugins) {
+        $item = Get-Item $kernelPlugins -Force
         if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { return }
         # Real directory — leave alone (bench/isolated); release trees expect junction
         return
     }
-    New-YapJunction $paperPlugins $unified
+    New-YapJunction $kernelPlugins $unified
 }
 
+# Retired no-op: Paperclip / Phase 3 is not on the product path.
 function Require-YapPaperclip {
     param([string]$Root)
-    $c = $script:YapConfig
-    if ($c.GameAuthority -ne "paper") { return }
-    if (-not $c.PaperEmbed -or -not $c.PaperPhase3 -or -not $c.PaperPhase3Nms) { return }
-    $yap = Join-Path $Root "lib\paper-$($c.PaperVersion)-yap.jar"
-    if (-not (Test-Path $yap)) {
-        Write-Host ""
-        Write-Host "Missing YaP Paperclip: $yap" -ForegroundColor Yellow
-        Write-Host "On Windows (same as Linux), build it in this tree:"
-        Write-Host "  .\scripts\Vendor-Paper.ps1"
-        Write-Host "  .\scripts\Build-Vendor-Paper.ps1"
-        Write-Host "Requires: Git, JDK 25+, and Git Bash (for apply-yap-paper-hooks.sh)."
-        Write-Host ""
-        Write-Error "Phase 3 NMS tick requires lib\paper-$($c.PaperVersion)-yap.jar"
-        exit 1
-    }
+    return
 }
 
 function Get-YapPidFile {

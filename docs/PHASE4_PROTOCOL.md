@@ -27,8 +27,9 @@ Bedrock clients  ──► GeyserStyleTranslator (+ full RakNet/BE) ──► sh
 Modern JE        ──► passthrough ──► Folia JE
 ```
 
-Join/spawn is green; **play depth is deepening** — do not claim full Geyser play
-parity until live soaks close.
+Join/spawn and **core play depth** (break/place, inventory, combat, chat) are green via
+`./scripts/smoke-bedrock-play.sh` — see [VIA_GEYSER_PARITY.md](VIA_GEYSER_PARITY.md).
+Emotes, custom skulls, and Bedrock resource packs remain partial/gap rows.
 ## DoD — Via parity (own code)
 
 Parity target = what ViaVersion + ViaBackwards + ViaRewind provide for a modern

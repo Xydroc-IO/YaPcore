@@ -2,7 +2,7 @@
 # YaPcore start — portable across common Linux distros (bash 3.2+)
 # Usage: ./scripts/start.sh [--nogui|--gui] [--fg]
 # JVM: Generational ZGC + NUMA via scripts/lib.sh (config/server.properties)
-# Phase 3: cwd must be paper-dir (Paperclip Path cwd is fixed at JVM start).
+# Folia product path: YaP stays at $ROOT; Folia runs as a child JVM with cwd=folia-kernel.
 
 set -eu
 
@@ -34,8 +34,8 @@ for arg in "$@"; do
     -h|--help)
       echo "Usage: $0 [--gui|--nogui] [--fg]"
       echo "  Starts YaPcore with Generational ZGC / NUMA flags from config/server.properties"
-      echo "  Phase 3 (paper-phase3-tick-bridge): cds into paper-dir before java"
-      echo "  Phase 3 NMS (paper-phase3-nms-tick): requires lib/paper-*-yap.jar"
+      echo "  Product path: game-authority=folia (Folia child JVM under folia-dir)"
+      echo "  YaP process cwd stays at project root; Folia cwd is folia-kernel"
       exit 0
       ;;
   esac
@@ -45,14 +45,19 @@ yap_require_java
 yap_load_config
 yap_apply_ulimits
 yap_ensure_dirs
-yap_require_yap_paperclip
 yap_build_jvm_opts
 yap_filter_jvm_opts
 yap_numa_prefix
 
 if yap_is_running; then
-  echo "YaPcore is already running (pid $(yap_read_pid)). Use scripts/stop.sh first." >&2
+  RUN_PID="$(yap_find_product_pid)"
+  echo "YaPcore is already running for this install (pid ${RUN_PID:-?}, home=$ROOT)." >&2
+  echo "Use scripts/stop.sh first. (Bench runs under bench/workdir-* do not block start/gui.)" >&2
   exit 1
+fi
+BENCH_PID="$(yap_find_bench_pids | head -n 1 || true)"
+if [ -n "$BENCH_PID" ]; then
+  echo "Note: MSPT bench JVM still running (pid $BENCH_PID) — product start/gui is allowed." >&2
 fi
 
 JAR="$(yap_find_jar)"
@@ -65,7 +70,6 @@ if [ -z "$JAR" ]; then
   echo "Build failed: jar still missing under build/libs/" >&2
   exit 1
 fi
-# Absolute jar path — Phase 3 may chdir into paper-kernel
 case "$JAR" in
   /*) ;;
   *) JAR="$ROOT/$JAR" ;;
@@ -79,16 +83,6 @@ else
   APP_ARGS+=(--gui)
 fi
 
-# Phase 3 same-JVM Paperclip requires process cwd == paper-dir
-PHASE3_CWD=0
-if [ "$GAME_AUTHORITY" = "paper" ] \
-  && { [ "$PAPER_EMBED" = "true" ] || [ "$PAPER_EMBED" = "1" ] || [ "$PAPER_EMBED" = "yes" ]; } \
-  && { [ "$PAPER_PHASE3" = "true" ] || [ "$PAPER_PHASE3" = "1" ] || [ "$PAPER_PHASE3" = "yes" ]; }; then
-  mkdir -p "$ROOT/$PAPER_DIR"
-  cd "$ROOT/$PAPER_DIR"
-  PHASE3_CWD=1
-fi
-
 mkdir -p "$ROOT/logs"
 LOG_FILE="$ROOT/logs/server.log"
 PID_FILE="$ROOT/yapcore.pid"
@@ -96,9 +90,8 @@ PID_FILE="$ROOT/yapcore.pid"
 echo "Starting YaPcore"
 echo "  home=$ROOT"
 echo "  cwd=$(pwd)"
-if [ "$PHASE3_CWD" -eq 1 ]; then
-  echo "  phase3=true (cwd=paper-dir for Paperclip)"
-fi
+echo "  game-authority=${GAME_AUTHORITY:-folia}"
+echo "  folia-dir=${FOLIA_DIR:-folia-kernel}"
 echo "  java=$JAVA_BIN"
 echo "  jar=$JAR"
 echo "  heap=${RAM_MIN_MB}m–${RAM_MB}m (pin=$JVM_HEAP_PIN)"
@@ -113,7 +106,7 @@ fi
 if [ "$FOREGROUND" -eq 1 ] || [ "$MODE" = "gui" ]; then
   exec "${NUMA_PREFIX[@]}" "$JAVA_BIN" "${JVM_OPTS[@]}" -jar "$JAR" "${APP_ARGS[@]}"
 else
-  # Keep stdin open: Paper/JLine EOF on /dev/null shuts the dedicated server down.
+  # Keep stdin open: Folia/JLine EOF on /dev/null shuts the dedicated server down.
   STDIN_KEEPALIVE="$ROOT/logs/yap-stdin.keepalive"
   rm -f "$STDIN_KEEPALIVE"
   mkfifo "$STDIN_KEEPALIVE"

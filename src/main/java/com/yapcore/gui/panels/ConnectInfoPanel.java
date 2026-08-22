@@ -55,7 +55,7 @@ public final class ConnectInfoPanel {
                 + ":" + server.getConfig().getPort());
         crossplayField.setText(ep.crossplayJoinAddress());
         packField.setText(ep.packBaseUrl() + "/pack/…");
-        tipLabel.setText("<html><body style='width:240px'>" + local.tip() + "</body></html>");
+        tipLabel.setText("<html><body style='width:260px'>" + local.tip() + "</body></html>");
         if (server.getConfig().isAllowLocalhost()) {
             modeLabel.setText("Same-PC OK · 127.0.0.1");
             modeLabel.setForeground(GuiTheme.ACCENT);
@@ -140,7 +140,7 @@ public final class ConnectInfoPanel {
         f.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(0x2A, 0x35, 0x40)),
                 new EmptyBorder(4, 6, 4, 6)));
-        f.setPreferredSize(new Dimension(180, 28));
+        f.setMinimumSize(new Dimension(80, 28));
         return f;
     }
 }

@@ -19,7 +19,8 @@ import java.util.logging.Logger;
  *   <li>UI Sandboxes (2): menus / HUD</li>
  *   <li>Heavy I/O (4): DB, world, packs, Bedrock lanes</li>
  * </ul>
- * Primary 16-thread engine lives in {@link com.yaplabs.yapengine.YapEngine}.
+ * Primary YapEngine chassis lives in {@link com.yaplabs.yapengine.YapEngine}.
+ * Folia (embedded JVM) owns game tick on the product path.
  */
 public final class PluginSandboxPool {
 

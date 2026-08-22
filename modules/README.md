@@ -1,5 +1,7 @@
 # Drop fine-tune modules here (`.jar` / `.yapmod`). See [docs/MODULES_AND_API.md](../docs/MODULES_AND_API.md).
 
+**Sources:** [`yap-first-party/modules/`](../yap-first-party/README.md) (`finetune-modules/`, `vehicles-module/`).
+
 Modules are **operator packaging**: they declare `provides` / `requires`, check that the
 matching Paper plugin is online (when applicable), and write `FINE_TUNE.txt` under
 `modules/<Name>/` pointing at the real config knobs. Engines stay in `plugins/`.
@@ -20,7 +22,6 @@ gradle assemblePluginDist          # build/dist/yap-plugins/{…,modules/core,mo
 | `yap-playerdata-module.jar` | `playerdata` | `plugins/YaPPlayerData/config.yml` |
 | `yap-economy-module.jar` | `economy` | money profile (`requires: [playerdata]`) |
 | `yap-packs-module.jar` | `packs` | `server.properties` + YaPPacks |
-| `yap-spatial-module.jar` | `spatial`, `phase3` | Phase 3 JVM / `paper-phase3-*` |
 | `yap-highpop-module.jar` | `highpop` | `config/templates/highpop` |
 | `yap-ops-dashboard-module.jar` | `web-dashboard` | `web-dashboard-*` |
 | `yap-pregen-module.jar` | `pregen` | YaPPregen |

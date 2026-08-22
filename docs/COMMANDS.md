@@ -40,19 +40,20 @@ yapvehicle shop
 yappregen status
 yapstacker gui
 yapstacker give wand
-luckperms user Steve permission set example.perm true
+yapperm user Steve permission set example.perm true
 ```
 
-**Ranks / groups:** install LuckPerms, then apply the YaP pack:
+**Ranks / groups:** `yap-perms.jar` ships with the product install:
 
 ```bash
-./scripts/install-luckperms.sh
+gradle installProductDefaults
 # running server:
 ranks apply
-lp user Steve parent set vip
+/yapperm user Steve parent set vip
+/promote Steve
 ```
 
-See [PERMISSIONS.md](PERMISSIONS.md) · [`examples/luckperms/`](../examples/luckperms/) ·
+See [PERMISSIONS.md](PERMISSIONS.md) · [`examples/yapperms/`](../examples/yapperms/) ·
 dashboard **Ranks** tab.
 
 Leading `/` is optional. Feedback from Paper appears in Paper logs

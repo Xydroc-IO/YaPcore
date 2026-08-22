@@ -24,11 +24,15 @@ if [ -f "$ROOT/config/server.properties" ]; then
   done <"$ROOT/config/server.properties"
 fi
 if yap_is_running; then
-  PID="$(yap_find_pid || true)"
+  PID="$(yap_find_product_pid || true)"
   [ -n "$PID" ] || PID="$(yap_read_pid || true)"
   echo "YaPcore: RUNNING (pid ${PID:-unknown})"
 else
   echo "YaPcore: STOPPED"
+fi
+BENCH_PIDS="$(yap_find_bench_pids | tr '\n' ' ' | sed 's/ $//')"
+if [ -n "$BENCH_PIDS" ]; then
+  echo "Bench: RUNNING (pid(s) $BENCH_PIDS — does not block gui/start)"
 fi
 echo "Config: max-players=$MAX_PLAYERS ram=${RAM_MIN_MB}-${RAM_MB}MB port=$PORT"
 JOIN_HOST="${PUBLIC_HOST:-$SERVER_DOMAIN}"

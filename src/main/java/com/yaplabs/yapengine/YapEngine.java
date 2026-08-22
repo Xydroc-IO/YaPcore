@@ -16,7 +16,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 /**
- * YapEngine — 16-thread server core (YapLabs architecture v1.1).
+ * YapEngine — slim server chassis (YapLabs architecture v2.0).
+ * <p>
+ * Product path: Folia owns game tick; this process owns edge, bridge, and I/O sandboxes.
  */
 public final class YapEngine {
 
@@ -40,14 +42,14 @@ public final class YapEngine {
         if (!running.compareAndSet(false, true)) {
             return;
         }
-        LOG.info("=== YapEngine 16-thread boot (v1.1) ===");
+        LOG.info("=== YapEngine chassis boot (v2.0 — Folia owns game tick) ===");
         logAssignments();
         syncLayer.start();
         gameCore.start();
         bridge.start();
         trafficCop.start();
         controller.start();
-        LOG.info("All 16 logical execution channels online");
+        LOG.info("YapEngine chassis online — 16 logical channels (edge/I/O; not world tick)");
     }
 
     public void stop() {
@@ -89,15 +91,15 @@ public final class YapEngine {
     }
 
     private void logAssignments() {
-        LOG.info("Core assignment map (v1.1):");
+        LOG.info("Core assignment map (v2.0 — chassis only; Folia = game tick):");
         LOG.info("  Thread 1  → Controller / Watchdog");
         LOG.info("  Thread 2  → Traffic Cop + SequenceToken (Epoll/Zstd)");
-        LOG.info("  Thread 3  → Spatial Game Core 0 (NW)");
-        LOG.info("  Thread 4  → Spatial Game Core 1 (NE)");
-        LOG.info("  Thread 5  → Spatial Game Core 2 (SW)");
-        LOG.info("  Thread 6  → Spatial Game Core 3 (SE)");
-        LOG.info("  Thread 7  → Chunk Sync DLM & Lease Manager");
-        LOG.info("  Thread 8  → Boundary Sync & Entity Handoff");
+        LOG.info("  Thread 3  → Chassis worker quad 0 (NW) — legacy Phase 3 on Paper benches");
+        LOG.info("  Thread 4  → Chassis worker quad 1 (NE) — legacy Phase 3 on Paper benches");
+        LOG.info("  Thread 5  → Chassis worker quad 2 (SW) — legacy Phase 3 on Paper benches");
+        LOG.info("  Thread 6  → Chassis worker quad 3 (SE) — legacy Phase 3 on Paper benches");
+        LOG.info("  Thread 7  → Chunk Sync DLM (Paper Phase 3 legacy)");
+        LOG.info("  Thread 8  → Boundary Sync (Paper Phase 3 legacy)");
         LOG.info("  Thread 9  → Compatibility Bridge");
         LOG.info("  Thread 10 → UI Sandbox 0 (menus / inventory)");
         LOG.info("  Thread 11 → UI Sandbox 1 (scoreboard / bossbar)");

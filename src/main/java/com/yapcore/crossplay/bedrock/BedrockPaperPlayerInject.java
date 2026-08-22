@@ -307,7 +307,7 @@ public final class BedrockPaperPlayerInject {
     }
 
     private static void schedule(Class<?> bukkit, Object server, ClassLoader cl, Runnable task) {
-        if (com.yapcore.game.GameSchedulers.scheduleSync(bukkit, server, cl, task)) {
+        if (com.yapcore.game.sched.GameSchedulers.scheduleSync(bukkit, server, cl, task)) {
             return;
         }
         task.run();

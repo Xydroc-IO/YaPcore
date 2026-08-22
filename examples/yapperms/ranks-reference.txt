@@ -1,0 +1,10 @@
+# YaP native rank pack reference (yap-perms.jar)
+# Copied from src/main/resources/ranks/yap-ranks-reference.txt
+# Docs: docs/PERMISSIONS.md · Config: plugins/YaPPerms/config.yml
+
+yapperm applypack
+yapperm user Steve parent set vip
+yapperm user Alex parent set mod
+yapperm user Admin parent set admin
+promote Steve
+demote Steve

@@ -1,45 +1,19 @@
-# YaP LuckPerms group pack
+# Legacy LuckPerms group pack (deprecated)
 
-Starter ranks for YaP first-party plugins: groups, **track `yap`**, **weights**,
-**prefix/suffix meta**, and permission nodes.
+**Use native YaPPerms instead:** `yap-perms.jar` + `docs/PERMISSIONS.md`.
 
-Full map: [docs/PERMISSIONS.md](../../docs/PERMISSIONS.md).
-
-## Install LuckPerms
+This folder kept only for operators migrating from an older YaPcore tree that used
+LuckPerms. New installs should use:
 
 ```bash
-./scripts/install-luckperms.sh
-```
-
-(Downloads the Bukkit jar into `plugins/` — not vendored in-repo.)
-
-## Apply the pack
-
-With the server running and LuckPerms enabled:
-
-```text
+gradle installProductDefaults
 ranks apply
+/yapperm user Steve parent set vip
 ```
 
-Or: dashboard **Ranks** tab → Apply pack.  
-Or: paste [`apply-yap-ranks.txt`](apply-yap-ranks.txt) into the console.  
-Or: `yap-ranks-auto-apply=true` in `config/server.properties` (once).
+See [`examples/yapperms/`](../yapperms/) for the native reference commands.
 
-`ranks apply force` / dashboard **Force re-apply** re-runs after clearing the
-`config/yap-ranks-applied` marker (`ranks reset-marker`).
+## Legacy LP pack
 
-## Assign / promote
-
-```text
-lp user Steve parent set default
-lp user Steve parent set vip
-lp user Alex parent set mod
-lp user AdminName parent set admin
-
-lp user Steve promote yap
-lp user Steve demote yap
-```
-
-## Customize
-
-Edit `apply-yap-ranks.txt`, then `ranks apply force`. Or use `lp editor`.
+[`apply-yap-ranks.txt`](apply-yap-ranks.txt) was the old LuckPerms command list.
+Do not use unless you manually install LuckPerms yourself outside the product path.

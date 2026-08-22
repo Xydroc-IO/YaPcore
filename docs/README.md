@@ -12,14 +12,13 @@
 | [**COMPARE_ECOSYSTEM**](COMPARE_ECOSYSTEM.md) | **YaPcore vs Paper, Purpur, Pufferfish, Leaf, Folia** |
 | [**PDFs**](pdf/) | Printable PDFs of the identity + whitepaper + vehicles + web dashboard docs |
 | [VELOCITY](VELOCITY.md) | **Velocity proxy** — temporary stand-in; Folia/Paper backends with modern forwarding |
-| [**YAP_LINK**](YAP_LINK.md) | **YaP Link** — first-party complete Velocity fork |
+| [**YAP_LINK**](YAP_LINK.md) | **YaP Link** — first-party native network proxy |
 | [**YAP_SCHED**](YAP_SCHED.md) | **YapSched** — Folia-safe scheduler helper for YaP plugins |
 | [**PLAYERDATA**](PLAYERDATA.md) | **Cross-server inv / claims / GUIs** — `yap-playerdata` |
 | [**YAPDB**](YAPDB.md) | **Shared MariaDB Hikari pool** — `yap-db` for any SQL plugin |
 | [**MARIADB**](MARIADB.md) | **Easy MariaDB** — Docker package for Linux + Windows (single & multi) |
-| [YAPENGINE_16THREAD](YAPENGINE_16THREAD.md) | Thread roles 1–16 |
-| [PAPER_YAPENGINE_PORT](PAPER_YAPENGINE_PORT.md) | **Legacy Paper path:** Phases 3–3.7 done as code; **defaults off** (benches only). Product default is Folia — see [WHAT_WE_ARE.md](WHAT_WE_ARE.md) |
-| [BENCH_VS_PAPER](BENCH_VS_PAPER.md) | **MSPT scoreboard** — `heavypop` primary gate vs stock Paper |
+| [YAPENGINE_16THREAD](YAPENGINE_16THREAD.md) | **YapEngine chassis** — edge/I/O thread roles (v2.0); Folia owns game tick |
+| [BENCH_VS_FOLIA](BENCH_VS_FOLIA.md) | **MSPT product gate** — stock Folia vs YaP Folia chassis |
 | [PERF_AND_LAYOUT](PERF_AND_LAYOUT.md) | Performance layout & folder discipline |
 | [ZGC_NUMA](ZGC_NUMA.md) | Generational ZGC + NUMA launch flags |
 | [NETWORKING](NETWORKING.md) | Domain / public ports / boot banner (`yapcoremc.yaplabs.us`) |
@@ -48,6 +47,7 @@
 | [MODULES_AND_API](MODULES_AND_API.md) | Modules + API coverage + pools |
 | [BRIGADIER_NMS_EVENTS](BRIGADIER_NMS_EVENTS.md) | Brigadier, Craft/NMS, Paper event catalog |
 | [TESTING](TESTING.md) | Test lab, soak, Fray, JCStress |
+| [**RELEASES**](RELEASES.md) | **Linux/Windows boxes + standalone suite zips** (v1.0.0.0) |
 
 ## Branding
 

@@ -1,0 +1,20 @@
+name: YaPGuard
+version: '1.0.0.0'
+main: com.yapcore.guard.GuardPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Lightweight native anti-cheat (fly, speed, reach, scaffold)
+website: https://github.com/yaplabs
+commands:
+  yapguard:
+    description: Guard admin
+    usage: /yapguard status|reload|alerts
+    permission: yapguard.admin
+permissions:
+  yapguard.admin:
+    default: op
+  yapguard.bypass:
+    default: op
+  yapguard.alerts:
+    default: op

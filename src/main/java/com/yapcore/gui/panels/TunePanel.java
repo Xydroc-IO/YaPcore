@@ -7,7 +7,6 @@ import com.yapcore.server.YaPcoreServer;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
@@ -35,10 +34,11 @@ public final class TunePanel {
         hint.setOpaque(false);
         hint.setLineWrap(true);
         hint.setWrapStyleWord(true);
-        hint.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        hint.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
         hint.setText(buildHint());
+        hint.setRows(10);
 
-        JPanel buttons = new JPanel(new GridLayout(0, 1, 6, 6));
+        JPanel buttons = new JPanel(new GridLayout(0, 1, 4, 4));
         buttons.setOpaque(false);
         buttons.add(openBtn("YaP server.properties", hub().resolve("server.properties")));
         buttons.add(openBtn("Paper config folder", hub().resolve("paper")));
@@ -50,13 +50,13 @@ public final class TunePanel {
         buttons.add(folderBtn("Open config/ hub", hub()));
         buttons.add(folderBtn("Open plugins/", server.getRootDir().resolve("plugins")));
 
-        JPanel top = new JPanel(new BorderLayout(6, 6));
-        top.setOpaque(false);
-        top.add(GuiTheme.sectionTitle("Tune — one place for all knobs"), BorderLayout.NORTH);
-        top.add(new JScrollPane(hint), BorderLayout.CENTER);
+        JPanel body = new JPanel(new BorderLayout(6, 8));
+        body.setOpaque(false);
+        body.add(GuiTheme.sectionTitle("Tune — configs & knobs"), BorderLayout.NORTH);
+        body.add(hint, BorderLayout.CENTER);
+        body.add(buttons, BorderLayout.SOUTH);
 
-        root.add(top, BorderLayout.CENTER);
-        root.add(buttons, BorderLayout.SOUTH);
+        root.add(body, BorderLayout.NORTH);
     }
 
     public JPanel component() {
@@ -89,16 +89,15 @@ public final class TunePanel {
                 Paper worlds:   config/paper/paper-world-defaults.yml
                 Spigot/Bukkit:  config/spigot.yml · config/bukkit.yml
 
-                Gameplay encyclopedia (Purpur-class mob/gameplay knobs):
+                Gameplay encyclopedia:
                   jar:     plugins/yap-gameplay-knobs.jar  %s
                   config:  plugins/YaPGameplayKnobs/knobs.yml  %s
-                  features: WASD ridables · MobGoal AI · block patches
 
                 game-authority=%s  paper-dir=%s
 
                 Docs: docs/TUNE.md
                 """.formatted(
-                knobsJar ? "[installed]" : "[build: gradle :gameplay-knobs-plugin:installIntoPlugins]",
+                knobsJar ? "[installed]" : "[build knobs plugin]",
                 Files.isRegularFile(knobs) ? "[present]" : "[created on first enable]",
                 cfg.getGameAuthority(),
                 cfg.getPaperDir());

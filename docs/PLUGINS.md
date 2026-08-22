@@ -89,8 +89,13 @@ load `VehicleAPI` from `ServicesManager`.
 **`plugins/yap-pregen.jar`** ([PREGEN.md](PREGEN.md)),
 **`plugins/yap-plugin-compat.jar`** ([PLUGIN_BACKCOMPAT.md](PLUGIN_BACKCOMPAT.md)),
 **`plugins/yap-db.jar`** (shared MariaDB Hikari — [YAPDB.md](YAPDB.md) / [MARIADB.md](MARIADB.md)),
+**`plugins/yap-perms.jar`** (native permissions — groups/tracks/prefixes),
 **`plugins/yap-playerdata.jar`** (cross-server data, offline `/login`, modular features — [PLAYERDATA.md](PLAYERDATA.md)),
-**`plugins/yap-packs.jar`**, **`plugins/yap-chat.jar`**,
+**`plugins/yap-moderation.jar`** (ban/mute/warn/kick/history),
+**`plugins/yap-essentials.jar`** (Essentials-class QoL commands),
+**`plugins/yap-packs.jar`**, **`plugins/yap-chat.jar`**, **`plugins/yap-tab.jar`** (header/footer/sidebar/boss bar),
+**`plugins/yap-discord.jar`** (webhooks + Discord↔MC inbound),
+**`plugins/yap-protect.jar`**, **`plugins/yap-world.jar`**, **`plugins/yap-regions.jar`**, **`plugins/yap-guard.jar`**, **`plugins/yap-map.jar`**, **`plugins/yap-npcs.jar`**,
 and **`plugins/yap-floodgate.jar`** ([VELOCITY.md](VELOCITY.md)).
 
 **GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `-PyapGameplay=true`):

@@ -1,0 +1,16 @@
+quests:
+  starter:
+    name: "Getting Started"
+    description: "Break oak logs and slay a zombie."
+    objectives:
+      - id: break_oak
+        type: BREAK_BLOCK
+        material: OAK_LOG
+        amount: 5
+      - id: kill_zombie
+        type: KILL_MOB
+        entity: ZOMBIE
+        amount: 1
+    rewards:
+      - "give {player} diamond 1"
+      - "tell {player} Quest complete — welcome to YaP!"

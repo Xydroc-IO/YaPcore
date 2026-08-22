@@ -45,6 +45,10 @@ for j in yap-folia-bridge.jar yap-chat.jar yap-floodgate.jar yap-packs.jar \
   fi
 done
 
+# MariaDB must be up + JDBC written into THIS workdir (not only repo-root plugins/)
+echo "Ensuring MariaDB + workdir JDBC…"
+"$ROOT/scripts/db/ensure-db.sh" --root "$WORK" --server-id smoke-folia-plugins
+
 PORT=25578
 cat >"$WORK/config/server.properties" <<EOF
 server-name=YaP-Folia-Plugins-Smoke
@@ -87,7 +91,10 @@ echo "  pid=$PID port=$PORT"
 start_ts="$(date +%s)"
 ok=0
 bridge_ok=0
+db_ok=0
+playerdata_ok=0
 fail_plugin=0
+fail_db=0
 while kill -0 "$PID" 2>/dev/null; do
   now="$(date +%s)"
   if [ $((now - start_ts)) -ge "$WAIT_SECS" ]; then
@@ -96,12 +103,24 @@ while kill -0 "$PID" 2>/dev/null; do
   if grep -q 'YaP Folia bridge online\|Enabled — folia-supported' "$LOG" 2>/dev/null; then
     bridge_ok=1
   fi
+  if grep -q 'Shared YapDb pool ready' "$LOG" 2>/dev/null; then
+    db_ok=1
+  fi
+  if grep -q 'Using shared YaPDB\|YaPPlayerData 0\.6' "$LOG" 2>/dev/null; then
+    if ! grep -qiE '\[YaPPlayerData\].*(Failed to open|Access denied|disabling YaPPlayerData)' "$LOG" 2>/dev/null; then
+      playerdata_ok=1
+    fi
+  fi
   # Hard fail if Folia rejects a product jar or spatial tick somehow loads
   if grep -qiE 'UnsupportedOperationException|Not supported on Folia|YapSpatialTick.*(Enabling|online)' "$LOG" 2>/dev/null; then
     fail_plugin=1
     break
   fi
-  if [ "$bridge_ok" -eq 1 ] && grep -q 'Managed Folia online' "$LOG" 2>/dev/null \
+  if grep -qiE '\[YaPDB\].*(Failed to open|Access denied)|\[YaPPlayerData\].*(Failed to open|Access denied|disabling YaPPlayerData)' "$LOG" 2>/dev/null; then
+    fail_db=1
+    break
+  fi
+  if [ "$bridge_ok" -eq 1 ] && [ "$db_ok" -eq 1 ] && grep -q 'Managed Folia online' "$LOG" 2>/dev/null \
     && { [ -f "$WORK/folia-kernel/yap-folia-ready.marker" ] || grep -q '\[folia\].*Done (' "$LOG" 2>/dev/null; }; then
     if "$JAVA_BIN" -e 'try(var s=new java.net.Socket()){s.connect(new java.net.InetSocketAddress("127.0.0.1",'"$PORT"'),1500);System.exit(0);}catch(Exception e){System.exit(1);}' 2>/dev/null \
       || (exec 3<>/dev/tcp/127.0.0.1/"$PORT") 2>/dev/null; then
@@ -120,18 +139,29 @@ sleep 2
 
 # Summarize loaded YaP plugins
 echo "---- YaP plugin lines ----"
-grep -E '\[folia\].*YaP|\[YaP|folia-supported|YapSpatialTick' "$LOG" 2>/dev/null | head -40 || true
+grep -E '\[folia\].*YaP|\[YaP|folia-supported|YapSpatialTick|Shared YapDb|YaPPlayerData' "$LOG" 2>/dev/null | head -50 || true
 
 if [ "$fail_plugin" -eq 1 ]; then
   echo "FAIL: Folia scheduler / spatial-tick issue in logs" >&2
   tail -n 80 "$LOG" >&2 || true
   exit 1
 fi
-if [ "$ok" -eq 1 ] && [ "$bridge_ok" -eq 1 ]; then
-  echo "PASS: Folia ready with first-party Folia-native plugins on :${PORT}"
+if [ "$fail_db" -eq 1 ] || [ "$db_ok" -ne 1 ]; then
+  echo "FAIL: YaPDB did not open a shared pool (db_ok=$db_ok fail_db=$fail_db)" >&2
+  echo "  ensure: ./scripts/db/ensure-db.sh --root <home> --server-id <id>" >&2
+  echo "  workdir JDBC: $WORK/plugins/YaPDB/config.yml" >&2
+  tail -n 80 "$LOG" >&2 || true
+  exit 1
+fi
+if [ "$ok" -eq 1 ] && [ "$bridge_ok" -eq 1 ] && [ "$db_ok" -eq 1 ]; then
+  echo "PASS: Folia ready with first-party Folia-native plugins + YapDb on :${PORT}"
+  echo "  bridge_ok=$bridge_ok db_ok=$db_ok playerdata_ok=$playerdata_ok"
   echo "  log=$LOG"
+  if [ "$playerdata_ok" -ne 1 ]; then
+    echo "WARN: YaPPlayerData enable line not confirmed — check log for shared pool use" >&2
+  fi
   exit 0
 fi
-echo "FAIL: Folia plugin smoke did not become ready (bridge_ok=$bridge_ok)" >&2
+echo "FAIL: Folia plugin smoke did not become ready (bridge_ok=$bridge_ok db_ok=$db_ok)" >&2
 tail -n 80 "$LOG" >&2 || true
 exit 1

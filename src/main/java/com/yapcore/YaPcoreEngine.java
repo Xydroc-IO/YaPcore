@@ -19,7 +19,8 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 /**
- * YaPcore facade over the YapLabs 16-thread {@link YapEngine}.
+ * YaPcore facade over the YapLabs slim-chassis {@link YapEngine}.
+ * Folia (embedded child JVM) owns game tick on the product path.
  */
 public final class YaPcoreEngine {
 
@@ -74,14 +75,14 @@ public final class YaPcoreEngine {
     }
 
     public void start() {
-        LOG.info("=== YaPcore boot → YapEngine 16-thread architecture ===");
+        LOG.info("=== YaPcore boot → YapEngine chassis (Folia = game tick) ===");
         yapEngine.start();
         facadeBridge.start();
         trafficCop.start();
         relayThread = new Thread(this::relayLoop, "yap-event-relay");
         relayThread.setDaemon(true);
         relayThread.start();
-        LOG.info("YaPcore facade online (16-thread YapEngine + dual-stack relay)");
+        LOG.info("YaPcore facade online (YapEngine edge/I/O + dual-stack relay)");
     }
 
     public void stop() {

@@ -1,0 +1,7 @@
+{
+  "id": "yaplink-mod-sync",
+  "name": "YaP Link Mod Sync",
+  "version": "1.0.0.0",
+  "main": "com.yapcore.link.moderation.ModSyncPlugin",
+  "authors": ["YapLabs"]
+}

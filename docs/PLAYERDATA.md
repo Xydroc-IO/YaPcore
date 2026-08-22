@@ -1,14 +1,14 @@
 # YaP PlayerData — cross-server sync, offline auth, claims, taxes, NPC traders, GUIs
 
-First-party **`yap-playerdata.jar`** (`YaPPlayerData`) — shared MariaDB across Velocity.
+First-party **`yap-playerdata.jar`** (`YaPPlayerData`) — shared MariaDB across Velocity / YaP Link.
 
 ## Database setup (required)
 
 See **[MARIADB.md](MARIADB.md)** and **[YAPDB.md](YAPDB.md)** — Docker MariaDB + shared `yap-db.jar` pool:
 
 ```bash
-# Linux
-./scripts/db/start-mariadb.sh && ./scripts/db/configure-db.sh --server-id lobby
+# Linux (preferred one-shot)
+./scripts/db/ensure-db.sh --server-id lobby
 
 # Windows PowerShell
 .\scripts\windows\Start-MariaDB.ps1
@@ -92,7 +92,7 @@ features:
   traders: false
 ```
 
-**Freeze:** no new Essentials-class commands without product review. Prefer feature toggles over a separate `yap-essentials` jar unless a real install profile needs it.
+**Freeze lifted:** Essentials-class QoL lives in **`yap-essentials.jar`**. Playerdata stays the data/sync layer.
 
 | Area | What |
 |------|------|

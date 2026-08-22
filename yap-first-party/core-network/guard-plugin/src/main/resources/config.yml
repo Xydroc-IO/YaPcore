@@ -1,0 +1,21 @@
+checks:
+  fly:
+    enabled: true
+    sensitivity: 0.6
+  speed:
+    enabled: true
+    sensitivity: 0.7
+    max-blocks-per-tick: 0.85
+  reach:
+    enabled: true
+    sensitivity: 0.8
+    max-distance: 3.5
+  scaffold:
+    enabled: true
+    sensitivity: 0.7
+    max-places-per-second: 8
+    require-air-below: true
+
+max-violations-before-kick: 8
+violation-decay-seconds: 45
+alerts-enabled: true

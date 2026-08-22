@@ -7,9 +7,8 @@ Release trees: `build/dist/yapcore-release/linux/` and `…/windows/`.
 
 | Need | Notes |
 |------|--------|
-| **JDK 25+** | Paper 26.2 / Phase 3 |
-| **Git** | Vendor Paper |
-| **Git Bash** (Windows) | Runs `scripts/apply-yap-paper-hooks.sh` during Paperclip build |
+| **JDK 25+** | Folia 26.2 |
+| **Git** | Optional (checkout / contrib) |
 
 ## Launch
 
@@ -20,72 +19,36 @@ Release trees: `build/dist/yapcore-release/linux/` and `…/windows/`.
 | `./stop.sh` / `./status.sh` | `stop.cmd` / `status.cmd` |
 | `./start-prod.sh` | `start-prod.cmd` |
 
-## YaP Paperclip (Phase 3) — native on Windows
+Product path is **Folia** (`game-authority=folia`). YaP stays at the install root;
+the Folia child JVM uses `folia-kernel/`. Fetch with `./scripts/fetch-folia.sh`
+(Linux) before first boot if you want the jar pre-cached under `lib/`.
 
-Same pin as Linux (`vendor/paper.pin`):
-
-```powershell
-.\scripts\Vendor-Paper.ps1
-.\scripts\Build-Vendor-Paper.ps1
-# → lib\paper-26.2-yap.jar  (+ paper-kernel\paper-26.2.jar)
-```
-
-Linux equivalent: `./scripts/vendor-paper.sh` then `./scripts/build-vendor-paper.sh`.
-
-`Start.ps1` **fails closed** if Phase 3 NMS is on and the yap Paperclip jar is missing (same idea as Linux).
+> **Retired:** YaP Paperclip / Phase 3 vendor scripts (`Vendor-Paper.ps1`,
+> `Build-Vendor-Paper.ps1`, `vendor-paper.sh`, `apply-yap-paper-hooks.sh`) are
+> removed. Do not expect Paperclip build steps on Windows or Linux.
 
 ## nginx edge — both platforms
 
 Templates: `deploy/nginx/*.template` (shared).  
 Generated: `deploy/nginx/generated/`.
 
-| Linux | Windows |
-|-------|---------|
-| `sudo ./scripts/nginx-setup.sh` | `.\scripts\Nginx-Setup.ps1` (admin if writing under Program Files) |
-| `--dry-run` / `--uninstall` | `-DryRun` / `-Uninstall` |
-| `--install-pkg` | Install nginx yourself; set `NGINX_HOME` |
-
-### Windows nginx + stream
-
-Minecraft public proxy needs the **stream** module (TCP + UDP).  
-Many **nginx.org Windows** zip builds **omit stream**.
-
-Options that work:
-
-1. **nginx build with stream** under e.g. `C:\nginx`, then:
-   ```powershell
-   $env:NGINX_HOME = "C:\nginx"
-   .\scripts\Nginx-Setup.ps1
-   ```
-2. **WSL2** — install Linux nginx inside WSL and use `scripts/nginx-setup.sh` (edge on Windows host via WSL ports).
-3. **No nginx** — bind YaPcore directly (`port=25565` in `config/server.properties`) for a simple public listen (no 25565→25566 split).
-
-`Nginx-Setup.ps1` always writes generated configs; it only installs when `nginx.exe` is found and `-V` reports stream.
-
-## Config / plugins layout
-
-Windows start creates **directory junctions** (like Linux symlinks):
-
-- `config\paper` → `paper-kernel\config`
-- `paper-kernel\plugins` → `..\plugins` (when safe)
-
-## MariaDB (shared YapDb + PlayerData)
-
-Same Docker package as Linux — [MARIADB.md](MARIADB.md) / [YAPDB.md](YAPDB.md):
-
 ```powershell
-.\scripts\windows\Start-MariaDB.ps1
-.\scripts\windows\Configure-Db.ps1 -ServerId lobby
-# or both YaPDB + playerdata:
-.\scripts\windows\Configure-PlayerData.ps1 -ServerId lobby
-.\scripts\windows\Stop-MariaDB.ps1
+.\scripts\Nginx-Setup.ps1          # or nginx-setup.cmd in a release tree
 ```
 
-Release zip ships matching `start-mariadb.cmd` / `configure-db.cmd` / `configure-playerdata.cmd`.
+Linux: `./scripts/nginx-setup.sh`.
 
-## Docs
+## MariaDB
 
-- [NGINX_AND_LOCALHOST.md](NGINX_AND_LOCALHOST.md)
-- [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md)
-- [MARIADB.md](MARIADB.md) · [PLAYERDATA.md](PLAYERDATA.md)
-- [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md)
+```powershell
+.\scripts\Start-MariaDB.ps1
+.\scripts\Configure-Db.ps1
+.\scripts\Configure-PlayerData.ps1
+```
+
+See [MARIADB.md](MARIADB.md) · [PLAYERDATA.md](PLAYERDATA.md).
+
+## Release packaging
+
+`gradle assembleRelease` builds `build/dist/yapcore-release/windows/` with
+`scripts/*.ps1` and root `*.cmd` wrappers. No Paperclip wrappers are shipped.

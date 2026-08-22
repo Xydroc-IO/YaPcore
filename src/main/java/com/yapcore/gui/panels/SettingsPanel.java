@@ -9,13 +9,11 @@ import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.border.EmptyBorder;
 import java.awt.BorderLayout;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -63,11 +61,7 @@ public final class SettingsPanel {
 
         root.setOpaque(false);
         root.setBorder(new EmptyBorder(2, 2, 2, 2));
-        JScrollPane scroll = new JScrollPane(buildForm());
-        scroll.setBorder(null);
-        scroll.setOpaque(false);
-        scroll.getViewport().setOpaque(false);
-        root.add(scroll, BorderLayout.CENTER);
+        root.add(GuiTheme.verticalScroll(buildForm()), BorderLayout.CENTER);
         loadFromConfig();
     }
 
@@ -97,12 +91,9 @@ public final class SettingsPanel {
 
         panel.add(GuiTheme.sectionTitle("Settings"), c);
         c.gridy++;
-        JLabel tip = new JLabel("<html><body style='width:250px'>Server identity, listen ports, "
-                + "and editions. Domain / internet pointing is on the <b>Access</b> tab. "
-                + "Join addresses are on <b>Connect</b>.</body></html>");
-        tip.setForeground(GuiTheme.MUTED);
-        tip.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-        panel.add(tip, c);
+        panel.add(GuiTheme.tip("Server identity, listen ports, and editions. "
+                + "Domain / internet pointing is on the <b>Access</b> tab. "
+                + "Join addresses are on <b>Connect</b>."), c);
 
         c.gridy++;
         panel.add(GuiTheme.sectionTitle("Identity"), c);
@@ -165,6 +156,9 @@ public final class SettingsPanel {
         GuiTheme.stylePrimary(save);
         save.addActionListener(e -> save());
         panel.add(save, c);
+        c.gridy++;
+        c.weighty = 1;
+        panel.add(new JLabel(), c);
         return panel;
     }
 
@@ -234,7 +228,7 @@ public final class SettingsPanel {
                             + (sharedPortBox.isSelected()
                             ? "\n(Java TCP + Bedrock UDP on the same port)"
                             : "")
-                            + "\nPort / bind / edition changes apply on next Start.",
+                            + "\nMOTD / port / bind changes show in multiplayer after Stop → Start.",
                     "Saved", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(root, e.getMessage(), "Save Error",

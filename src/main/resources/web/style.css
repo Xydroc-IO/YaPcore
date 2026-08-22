@@ -81,6 +81,50 @@ header {
 }
 .badge.on { background: #143528; color: var(--ok); }
 .badge.off { background: #3a1c1c; color: #ffb4b4; }
+.badge.warn { background: #3a2e14; color: #ffd080; }
+
+.health-card { margin-top: 1rem; }
+.health-summary { font-size: 1.05rem; margin: 0.25rem 0 0.75rem; color: var(--text); }
+.health-grid { margin-top: 0.5rem; }
+
+.map-frame {
+  width: 100%;
+  min-height: 420px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 0.75rem;
+  background: #0a0c10;
+}
+.map-frame.hidden { display: none; }
+
+.button-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.button-link:hover { background: var(--border); }
+
+.table-wrap { overflow-x: auto; margin: 0.75rem 0; }
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.data-table th, .data-table td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.4rem 0.5rem;
+  text-align: left;
+}
+.data-table th { color: var(--muted); font-weight: 600; }
+.mono { font-family: ui-monospace, monospace; font-size: 0.8rem; }
+.muted-small { font-size: 0.8rem; opacity: 0.85; }
+.hidden { display: none !important; }
+.list.compact li { padding: 0.35rem 0; font-size: 0.9rem; }
 .tabs {
   display: flex;
   gap: 6px;
@@ -170,6 +214,43 @@ header {
   margin-bottom: 12px;
 }
 .veh-grid button { width: 100%; }
+.field-block {
+  display: block;
+  margin: 12px 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.field-block textarea {
+  width: 100%;
+  margin: 6px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  resize: vertical;
+}
+.feat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.feat-grid label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.feat-grid input { width: auto; }
 @media (max-width: 640px) {
   .header-actions { width: 100%; }
   .header-actions button { flex: 1; }

@@ -6,8 +6,8 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 /**
- * Standalone YapEngine bootstrap — initializes all 16 threads and runs the
- * High-Speed → Bridge → Game Core item-click simulation.
+ * Standalone YapEngine bootstrap — initializes chassis channels and runs the
+ * High-Speed → Bridge → worker-quad item-click simulation.
  */
 public final class Main {
 

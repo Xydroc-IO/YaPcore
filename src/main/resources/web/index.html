@@ -42,6 +42,20 @@
       <button data-tab="vehicles">Vehicles</button>
       <button data-tab="pregen">Pregen</button>
       <button data-tab="ranks">Ranks</button>
+      <button data-tab="essentials">Essentials</button>
+      <button data-tab="link">Link</button>
+      <button data-tab="protect">Protect</button>
+      <button data-tab="world">World</button>
+      <button data-tab="chat">Chat</button>
+      <button data-tab="mod">Mod</button>
+      <button data-tab="perms">Perms</button>
+      <button data-tab="data">Data</button>
+      <button data-tab="discord">Discord</button>
+      <button data-tab="tab">Tab</button>
+      <button data-tab="map">Map</button>
+      <button data-tab="guard">Guard</button>
+      <button data-tab="regions">Regions</button>
+      <button data-tab="npcs">NPCs</button>
     </nav>
 
     <main>
@@ -53,6 +67,18 @@
           <div class="stat"><span>Bedrock</span><strong id="stBe">0</strong></div>
           <div class="stat"><span>Pack</span><strong id="stPack">none</strong></div>
           <div class="stat"><span>Ports</span><strong id="stPorts">—</strong></div>
+        </div>
+        <div class="card health-card">
+          <h3>Network health</h3>
+          <p id="stNetworkSummary" class="health-summary">—</p>
+          <div class="grid stats health-grid">
+            <div class="stat"><span>Folia</span><strong id="nhFolia">—</strong></div>
+            <div class="stat"><span>Bedrock</span><strong id="nhBedrock">—</strong></div>
+            <div class="stat"><span>Link suite</span><strong id="nhLink">—</strong></div>
+            <div class="stat"><span>Plugins</span><strong id="nhPlugins">—</strong></div>
+            <div class="stat"><span>Compat warn</span><strong id="nhCompat">—</strong></div>
+            <div class="stat"><span>Last smoke</span><strong id="nhSmoke">—</strong></div>
+          </div>
         </div>
         <pre id="stReport" class="report"></pre>
       </section>
@@ -137,11 +163,11 @@
       </section>
 
       <section id="tab-ranks" class="panel">
-        <p class="muted">LuckPerms group pack — <code>default</code> / <code>vip</code> / <code>mod</code> / <code>admin</code>
-          with track, weights, and chat prefixes. Install LP first:
-          <code>scripts/install-luckperms.sh</code></p>
+        <p class="muted">YaPPerms rank pack — <code>default</code> / <code>vip</code> / <code>mod</code> / <code>admin</code>
+          with track <code>yap</code>, weights, prefixes, and permission grants. Shipped in <code>yap-perms.jar</code>
+          (<code>gradle installProductDefaults</code>).</p>
         <div class="grid stats" id="ranksStats">
-          <div class="stat"><span>LuckPerms</span><strong id="rkLp">—</strong></div>
+          <div class="stat"><span>YaPPerms</span><strong id="rkYapPerms">—</strong></div>
           <div class="stat"><span>Pack applied</span><strong id="rkApplied">—</strong></div>
           <div class="stat"><span>Commands</span><strong id="rkCmds">—</strong></div>
           <div class="stat"><span>Auto-apply</span><strong id="rkAuto">—</strong></div>
@@ -154,8 +180,302 @@
         </div>
         <pre id="ranksOut" class="report"></pre>
       </section>
+
+      <section id="tab-essentials" class="panel">
+        <p class="muted">Native <code>yap-essentials</code> — spawn, QoL commands, staff tools. Config:
+          <code>plugins/YaPEssentials/config.yml</code></p>
+        <div class="grid stats" id="essStats">
+          <div class="stat"><span>Plugin</span><strong id="essInstalled">—</strong></div>
+          <div class="stat"><span>Server ID</span><strong id="essServerId">—</strong></div>
+          <div class="stat"><span>Spawn scope</span><strong id="essSpawnScope">—</strong></div>
+          <div class="stat"><span>Spawn world</span><strong id="essSpawnWorld">—</strong></div>
+        </div>
+        <p class="muted" id="essSpawnCoords">—</p>
+        <div class="toolbar">
+          <button id="essRefresh">Refresh</button>
+          <button id="essReload" class="primary">Reload plugin</button>
+        </div>
+        <label class="field-block">Broadcast
+          <div class="inline">
+            <input id="essBroadcast" placeholder="Server announcement"/>
+            <button id="essBroadcastBtn" class="primary">Send</button>
+          </div>
+        </label>
+        <label class="field-block">MOTD lines (one per line, &amp; color codes OK)
+          <textarea id="essMotd" rows="3" placeholder="&amp;aWelcome!"></textarea>
+          <button id="essSaveMotd">Save MOTD</button>
+        </label>
+        <label class="field-block">Rules lines
+          <textarea id="essRules" rows="4" placeholder="&amp;61. Be respectful."></textarea>
+          <button id="essSaveRules">Save rules</button>
+        </label>
+        <p class="muted">Feature toggles (writes config + reload):</p>
+        <div class="feat-grid" id="essFeatures"></div>
+        <pre id="essOut" class="report"></pre>
+      </section>
+
+      <section id="tab-link" class="panel">
+        <p class="muted">YaP Link suite (Phase 5) — proxy plugins in <code>link-data/plugins/</code>.
+          Install: <code>gradle :yap-link-plugin-*:installIntoLinkPlugins</code></p>
+        <div class="grid stats" id="linkStats">
+          <div class="stat"><span>Link home</span><strong id="linkHome">—</strong></div>
+          <div class="stat"><span>Embedded</span><strong id="linkEmbed">—</strong></div>
+          <div class="stat"><span>Plugins ON</span><strong id="linkPluginsOn">—</strong></div>
+          <div class="stat"><span>Suite complete</span><strong id="linkSuite">—</strong></div>
+        </div>
+        <div class="card" id="linkServersCard">Loading servers…</div>
+        <ul id="linkPluginList" class="list"></ul>
+        <div class="form-grid">
+          <label>Hub server <input id="linkHub" value="lobby"/></label>
+          <label>Session lock
+            <select id="linkSessionLock">
+              <option value="true">enabled</option>
+              <option value="false">disabled</option>
+            </select>
+          </label>
+          <label>Proxy plugins
+            <select id="linkPluginsFlag">
+              <option value="true">enabled</option>
+              <option value="false">disabled</option>
+            </select>
+          </label>
+          <label>Chat relay
+            <select id="linkChatRelay">
+              <option value="true">enabled</option>
+              <option value="false">disabled</option>
+            </select>
+          </label>
+        </div>
+        <div class="toolbar">
+          <button id="linkRefresh">Refresh</button>
+          <button id="linkSaveSelector" class="primary">Save selector</button>
+          <button id="linkSaveFlags">Save link flags</button>
+        </div>
+        <pre id="linkOut" class="report"></pre>
+      </section>
+
+      <section id="tab-protect" class="panel">
+        <p class="muted"><code>yap-protect</code> — block/container audit + rollback</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="protInstalled">—</strong></div>
+          <div class="stat"><span>Logging</span><strong id="protLogging">—</strong></div>
+          <div class="stat"><span>Prune days</span><strong id="protPrune">—</strong></div>
+        </div>
+        <div class="toolbar">
+          <button id="protRefresh">Refresh</button>
+          <button id="protReload">Reload</button>
+          <button id="protPruneBtn" class="danger">Prune</button>
+        </div>
+        <div class="inline"><input id="protLookupPlayer" placeholder="lookup player"/><button id="protLookupBtn">Lookup</button></div>
+        <div class="table-wrap" id="protLookupTableWrap">
+          <table class="data-table" id="protLookupTable">
+            <thead><tr><th>ID</th><th>Type</th><th>Player</th><th>World</th><th>Pos</th><th>Change</th></tr></thead>
+            <tbody id="protLookupBody"></tbody>
+          </table>
+          <p id="protLookupEmpty" class="muted hidden">No rows — run lookup or game server may be offline.</p>
+        </div>
+        <pre id="protOut" class="report muted-small"></pre>
+      </section>
+
+      <section id="tab-world" class="panel">
+        <p class="muted"><code>yap-world</code> — worlds, schematics, brush/undo</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="wldInstalled">—</strong></div>
+          <div class="stat"><span>Schematics</span><strong id="wldSchems">—</strong></div>
+          <div class="stat"><span>Brush max</span><strong id="wldBrush">—</strong></div>
+        </div>
+        <div class="form-grid">
+          <label>World <input id="wldWorld" value="world_nether"/></label>
+        </div>
+        <div class="toolbar">
+          <button id="wldRefresh">Refresh</button>
+          <button id="wldLoad" class="primary">Load</button>
+          <button id="wldUnload">Unload</button>
+          <button id="wldReload">Reload plugin</button>
+        </div>
+        <pre id="wldOut" class="report"></pre>
+      </section>
+
+      <section id="tab-chat" class="panel">
+        <p class="muted"><code>yap-chat</code> — channels, filter, network relay</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="chtInstalled">—</strong></div>
+          <div class="stat"><span>Channel</span><strong id="chtDefault">—</strong></div>
+          <div class="stat"><span>Slow mode</span><strong id="chtSlow">—</strong></div>
+          <div class="stat"><span>Relay</span><strong id="chtRelay">—</strong></div>
+        </div>
+        <div class="toolbar">
+          <button id="chtRefresh">Refresh</button>
+          <button id="chtReload">Reload</button>
+          <button id="chtClear" class="danger">Clear chat</button>
+        </div>
+        <pre id="chtOut" class="report"></pre>
+      </section>
+
+      <section id="tab-mod" class="panel">
+        <p class="muted"><code>yap-moderation</code> — ban/mute/warn/kick/history</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="modInstalled">—</strong></div>
+          <div class="stat"><span>Server ID</span><strong id="modServer">—</strong></div>
+        </div>
+        <div class="inline"><input id="modPlayer" placeholder="player name"/><button id="modHistory">History</button><button id="modUnban">Unban</button></div>
+        <div class="toolbar"><button id="modRefresh">Refresh</button><button id="modReload">Reload</button></div>
+        <pre id="modOut" class="report"></pre>
+      </section>
+
+      <section id="tab-perms" class="panel">
+        <p class="muted"><code>yap-perms</code> — groups, tracks, prefixes (use <strong>Ranks</strong> tab for rank pack apply)</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="prmInstalled">—</strong></div>
+          <div class="stat"><span>Default group</span><strong id="prmDefault">—</strong></div>
+          <div class="stat"><span>Track</span><strong id="prmTrack">—</strong></div>
+        </div>
+        <p class="muted" id="prmGroups">—</p>
+        <div class="toolbar"><button id="prmRefresh">Refresh</button><button id="prmReload">Reload</button><button id="prmApplypack">Apply starter pack</button></div>
+        <pre id="prmOut" class="report"></pre>
+      </section>
+
+      <section id="tab-data" class="panel">
+        <p class="muted"><code>yap-playerdata</code> — homes, economy, claims, sync</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="datInstalled">—</strong></div>
+          <div class="stat"><span>Economy</span><strong id="datEco">—</strong></div>
+          <div class="stat"><span>Auth</span><strong id="datAuth">—</strong></div>
+        </div>
+        <div class="toolbar"><button id="datRefresh">Refresh</button><button id="datReload">Reload</button><button id="datSave">Force save</button></div>
+        <p class="muted">Feature toggles:</p>
+        <div class="feat-grid" id="datFeatures"></div>
+        <pre id="datOut" class="report"></pre>
+      </section>
+
+      <section id="tab-discord" class="panel">
+        <p class="muted"><code>yap-discord</code> — webhook mod-log, MC→Discord chat, Discord→MC inbound HTTP bridge</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="dscInstalled">—</strong></div>
+          <div class="stat"><span>Mod webhook</span><strong id="dscModHook">—</strong></div>
+          <div class="stat"><span>Chat webhook</span><strong id="dscChatHook">—</strong></div>
+          <div class="stat"><span>MC → Discord</span><strong id="dscRelay">—</strong></div>
+          <div class="stat"><span>Discord → MC</span><strong id="dscInbound">—</strong></div>
+        </div>
+        <label class="field-block">Moderation webhook URL
+          <input id="dscModUrl" placeholder="https://discord.com/api/webhooks/..."/>
+          <button id="dscSaveMod">Save mod webhook</button>
+          <button id="dscTestMod">Test mod webhook</button>
+        </label>
+        <label class="field-block">Chat webhook URL
+          <input id="dscChatUrl" placeholder="https://discord.com/api/webhooks/..."/>
+          <button id="dscSaveChat">Save chat webhook</button>
+          <button id="dscTestChat">Test chat webhook</button>
+        </label>
+        <label>MC → Discord chat
+          <select id="dscMcRelay"><option value="false">off</option><option value="true">on</option></select>
+        </label>
+        <label>Discord → MC inbound
+          <select id="dscDiscordMc"><option value="false">off</option><option value="true">on</option></select>
+          <button id="dscSaveRelay">Save relay toggles</button>
+        </label>
+        <div class="toolbar"><button id="dscRefresh">Refresh</button><button id="dscReload">Reload plugin</button></div>
+        <pre id="dscOut" class="report"></pre>
+      </section>
+
+      <section id="tab-tab" class="panel">
+        <p class="muted"><code>yap-tab</code> — header/footer, sidebar, nametag prefixes, optional welcome boss bar</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="tabInstalled">—</strong></div>
+          <div class="stat"><span>Sidebar</span><strong id="tabSidebar">—</strong></div>
+          <div class="stat"><span>Network sync</span><strong id="tabNetworkSync">—</strong></div>
+          <div class="stat"><span>Boss bar</span><strong id="tabBossBar">—</strong></div>
+          <div class="stat"><span>Refresh</span><strong id="tabRefreshSec">—</strong></div>
+        </div>
+        <label class="field-block">Header lines (one per line)
+          <textarea id="tabHeader" rows="3"></textarea>
+          <button id="tabSaveHeader">Save header</button>
+        </label>
+        <label class="field-block">Footer lines (one per line)
+          <textarea id="tabFooter" rows="3"></textarea>
+          <button id="tabSaveFooter">Save footer</button>
+        </label>
+        <label class="field-block">Sidebar lines (one per line)
+          <textarea id="tabSidebarLines" rows="5"></textarea>
+          <button id="tabSaveSidebar">Save sidebar</button>
+        </label>
+        <label>Boss bar title
+          <input id="tabBossTitle" placeholder="&amp;6&amp;lWelcome"/>
+        </label>
+        <label>Boss bar subtitle
+          <input id="tabBossSubtitle" placeholder="&amp;7Enjoy your stay"/>
+        </label>
+        <label>Boss bar enabled
+          <select id="tabBossEnabled"><option value="false">off</option><option value="true">on</option></select>
+        </label>
+        <button id="tabSaveBoss">Save boss bar</button>
+        <div class="toolbar"><button id="tabPanelRefresh">Refresh</button><button id="tabReload">Reload plugin</button></div>
+        <pre id="tabOut" class="report"></pre>
+      </section>
+
+      <section id="tab-map" class="panel">
+        <p class="muted"><code>yap-map</code> — web tiles + Leaflet UI (separate HTTP port)</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="mapInstalled">—</strong></div>
+          <div class="stat"><span>Tiles</span><strong id="mapTiles">—</strong></div>
+          <div class="stat"><span>Render</span><strong id="mapRender">—</strong></div>
+          <div class="stat"><span>Worlds</span><strong id="mapWorlds">—</strong></div>
+        </div>
+        <div class="toolbar">
+          <button id="mapRefresh">Refresh</button>
+          <button id="mapReload">Reload</button>
+          <button id="mapRenderBtn" class="primary">Render now</button>
+          <a id="mapOpenLink" class="button-link" href="#" target="_blank" rel="noopener">Open map ↗</a>
+        </div>
+        <iframe id="mapFrame" class="map-frame" title="YaP Map" sandbox="allow-scripts allow-same-origin"></iframe>
+        <pre id="mapOut" class="report muted-small"></pre>
+      </section>
+
+      <section id="tab-guard" class="panel">
+        <p class="muted"><code>yap-guard</code> — lightweight anti-cheat heuristics</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="grdInstalled">—</strong></div>
+          <div class="stat"><span>Fly</span><strong id="grdFly">—</strong></div>
+          <div class="stat"><span>Speed</span><strong id="grdSpeed">—</strong></div>
+          <div class="stat"><span>Reach</span><strong id="grdReach">—</strong></div>
+          <div class="stat"><span>Kick after</span><strong id="grdKick">—</strong></div>
+          <div class="stat"><span>Alerts</span><strong id="grdAlerts">—</strong></div>
+        </div>
+        <div class="inline"><input id="grdPlayer" placeholder="player for violation count"/><button id="grdPlayerBtn">Check</button></div>
+        <div class="toolbar">
+          <button id="grdRefresh">Refresh</button>
+          <button id="grdReload">Reload</button>
+          <button id="grdAlertsOn">Alerts on</button>
+          <button id="grdAlertsOff">Alerts off</button>
+        </div>
+        <pre id="grdOut" class="report"></pre>
+      </section>
+
+      <section id="tab-regions" class="panel">
+        <p class="muted"><code>yap-regions</code> — admin cuboids + WorldGuard-class flags</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="regInstalled">—</strong></div>
+          <div class="stat"><span>Server</span><strong id="regServer">—</strong></div>
+        </div>
+        <p class="muted" id="regFlags">—</p>
+        <div class="toolbar"><button id="regRefresh">Refresh list</button></div>
+        <ul id="regList" class="list compact"></ul>
+        <pre id="regOut" class="report muted-small"></pre>
+      </section>
+
+      <section id="tab-npcs" class="panel">
+        <p class="muted"><code>yap-npcs</code> — quest NPCs + dialogue packs</p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="npcInstalled">—</strong></div>
+          <div class="stat"><span>Quest packs</span><strong id="npcQuests">—</strong></div>
+          <div class="stat"><span>Server</span><strong id="npcServer">—</strong></div>
+        </div>
+        <div class="toolbar"><button id="npcRefresh">Refresh</button><button id="npcListBtn">List NPCs</button></div>
+        <pre id="npcOut" class="report"></pre>
+      </section>
     </main>
   </div>
-  <script src="/app.js"></script>
+  <script src="/app-core.js"></script>
+  <script src="/app-network-panels.js"></script>
 </body>
 </html>

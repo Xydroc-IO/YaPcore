@@ -1,7 +1,7 @@
 # Generational ZGC + NUMA for YapEngine
 
-YapEngine’s 16-thread layout (Traffic Cop + spatial cores + sandboxes) allocates
-huge numbers of **short-lived** packets/events each tick and a smaller set of
+YapEngine’s chassis layout (Traffic Cop + worker quads + sandboxes) allocates
+huge numbers of **short-lived** packets/events on the edge path and a smaller set of
 **long-lived** player/session objects. Generational ZGC matches that shape:
 young garbage is reclaimed without scanning the whole heap, while STW pauses
 stay sub-millisecond even on large heaps.

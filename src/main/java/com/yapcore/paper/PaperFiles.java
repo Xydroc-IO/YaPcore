@@ -40,19 +40,13 @@ public final class PaperFiles {
         String version = config.getPaperVersion();
         Files.createDirectories(paperDir);
 
-        // Prefer YaPcore-built Paperclip from vendor/paper (Phase 3)
+        // Prefer cached stock Paper jar under lib/
         Path yapCached = rootDir.resolve("lib").resolve("paper-" + version + "-yap.jar");
         Path jar = paperDir.resolve("paper-" + version + ".jar");
         if (Files.isRegularFile(yapCached) && Files.size(yapCached) > 1_000_000) {
             Files.copy(yapCached, jar, StandardCopyOption.REPLACE_EXISTING);
-            LOG.info("Using vendored YaP Paperclip → " + yapCached.getFileName());
+            LOG.info("Using cached Paper jar → " + yapCached.getFileName());
             return jar;
-        }
-        if (config.isPaperPhase3NmsTick() && config.isPaperPhase3TickBridge()
-                && config.isPaperEmbed() && config.isPaperAuthority()) {
-            throw new IOException("Missing YaP Paperclip " + yapCached
-                    + " — required when paper-phase3-nms-tick=true. "
-                    + "Run ./scripts/build-vendor-paper.sh (or disable NMS tick)");
         }
 
         if (Files.isRegularFile(jar) && Files.size(jar) > 1_000_000) {

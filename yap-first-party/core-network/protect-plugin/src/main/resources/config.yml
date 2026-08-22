@@ -1,0 +1,25 @@
+logging:
+  enabled: true
+  block-break: true
+  block-place: true
+  container-access: true
+  container-inventory: true
+  entity-change: true
+
+limits:
+  max-rollback-radius: 32
+  max-lookup-limit: 200
+
+database:
+  use-shared-yapdb: true
+  jdbc-url: "jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true"
+  user: yap
+  password: yap
+  pool-max: 6
+  pool-min-idle: 1
+  connection-timeout-ms: 10000
+
+retention:
+  prune-days: 30
+
+server-id: lobby

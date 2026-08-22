@@ -1,25 +1,23 @@
 # YaP Link
 
-**YaP Link** is YapLabs’ **complete Velocity-class proxy**: a first-party fork of
-[PaperMC Velocity](https://github.com/PaperMC/Velocity) living in [`yap-link/`](../yap-link/).
+**YaP Link** is YapLabs’ **native network proxy** — a first-party Netty implementation in
+[`yap-first-party/link/native/`](../../yap-first-party/link/native/) (`com.yapcore.link.*`), built to **Velocity-class**
+feature parity in phases.
 
-It is **not** a partial shim. You get the full Velocity feature set (modern forwarding,
-online-mode, compression, `/server`, plugin API, ping passthrough, forced hosts, etc.),
-branded as YaP Link. Packages stay `com.velocitypowered.*` so Velocity plugins load.
-
-GPL-3.0 (upstream). See `yap-link/LICENSE` and `yap-link/NOTICE`.
+It is **not** a Velocity fork. See the full roadmap:
+**[YAP_LINK_NATIVE.md](YAP_LINK_NATIVE.md)**.
 
 ## Architecture
 
 ```text
-Players → YaP Link (yap-link.jar) → Folia / Paper backends
-              ↑ full Velocity fork     ↑ velocity-enabled=true
+Players → YaP Link (yap-link.jar) → Folia / YaPcore backend(s)
+              ↑ native proxy              ↑ velocity-enabled=true
 ```
 
 | Path | Role |
 |------|------|
-| [`yap-link/`](../yap-link/) | **Product proxy** (full fork) |
-| [`yap-link-lite/`](../yap-link-lite/) | Archived experimental thin proxy — do not use for production |
+| [`yap-first-party/link/native/`](../../yap-first-party/link/native/) | **Product proxy** (native) |
+| [`yap-first-party/link/plugins/`](../../yap-first-party/link/plugins/) | Native Link plugins |
 
 ## Folia backend
 
@@ -32,28 +30,35 @@ online-mode=false
 game-authority=folia
 ```
 
-Same `forwarding.secret` next to Link’s `velocity.toml`.
+Same `forwarding.secret` next to Link’s `link.properties`.
 
 ## Run
 
 ```bash
 ./scripts/setup-velocity-forwarding.sh --enable
 ./scripts/start.sh              # Folia game
-./scripts/start-yap-link.sh     # full YaP Link
+./scripts/start-yap-link.sh     # native YaP Link
 # players → :25565
 ```
 
-Manual build:
+Build manually:
 
 ```bash
-cd yap-link && ./gradlew :velocity-proxy:shadowJar
-java -jar proxy/build/libs/yap-link.jar
+gradle :yap-link-native:shadowJar
+java -jar yap-first-party/link/native/build/libs/yap-link.jar --home link-data
 ```
 
-Config file remains **`velocity.toml`** (Velocity-compatible). Example seed is written on first
-`start-yap-link.sh` into `link-data/`.
+Config: **`link.properties`** in link home (not `velocity.toml`). Seeded on first start.
+
+Smoke: `./scripts/smoke-yap-link-folia.sh`
 
 ## Bedrock / Geyser
 
-Put **Geyser + Floodgate on YaP Link** (as Velocity plugins), same as a normal Velocity network.
-Backend uses `yap-floodgate` / modern forwarding — see [VELOCITY.md](VELOCITY.md).
+Phase 4 — Bedrock UDP routing at Link. Until then, use backend dual-stack or stock Velocity
+as a stand-in for BE-heavy networks.
+
+## Related
+
+- [YAP_LINK_NATIVE.md](YAP_LINK_NATIVE.md) — phased Velocity-class parity plan
+- [VELOCITY.md](VELOCITY.md) — modern forwarding on Folia backends
+- [yap-first-party/link/plugins/](../../yap-first-party/link/plugins/) — chat-bridge, mod-sync, server-selector

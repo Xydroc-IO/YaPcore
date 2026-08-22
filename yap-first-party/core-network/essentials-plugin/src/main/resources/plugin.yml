@@ -1,0 +1,212 @@
+name: YaPEssentials
+version: '1.0.0.0'
+main: com.yapcore.essentials.EssentialsPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Native Essentials-class QoL commands for YaPcore
+website: https://github.com/yaplabs
+softdepend: [YaPPerms, YaPPlayerData]
+commands:
+  spawn:
+    description: Teleport to spawn
+    usage: /spawn
+    permission: yapessentials.spawn
+  setspawn:
+    description: Set the server spawn
+    usage: /setspawn
+    permission: yapessentials.setspawn
+  back:
+    description: Return to previous location
+    usage: /back
+    permission: yapessentials.back
+  tpa:
+    description: Request teleport to a player
+    usage: /tpa <player>
+    permission: yapessentials.tpa
+  tpahere:
+    description: Request a player teleport to you
+    usage: /tpahere <player>
+    permission: yapessentials.tpa
+  tpaccept:
+    description: Accept a teleport request
+    usage: /tpaccept
+    aliases: [tpyes]
+    permission: yapessentials.tpa
+  tpdeny:
+    description: Deny a teleport request
+    usage: /tpdeny
+    aliases: [tpno]
+    permission: yapessentials.tpa
+  fly:
+    description: Toggle flight
+    usage: /fly [player]
+    permission: yapessentials.fly
+  god:
+    description: Toggle god mode
+    usage: /god [player]
+    permission: yapessentials.god
+  speed:
+    description: Set walk/fly speed
+    usage: /speed <0-10> [fly|walk]
+    permission: yapessentials.speed
+  heal:
+    description: Heal yourself or another player
+    usage: /heal [player]
+    permission: yapessentials.heal
+  feed:
+    description: Feed yourself or another player
+    usage: /feed [player]
+    permission: yapessentials.feed
+  repair:
+    description: Repair held items
+    usage: /repair [hand|all]
+    permission: yapessentials.repair
+  clear:
+    description: Clear inventory
+    usage: /clear [player]
+    permission: yapessentials.clear
+  vanish:
+    description: Toggle vanish
+    usage: /vanish [player]
+    aliases: [v]
+    permission: yapessentials.vanish
+  invsee:
+    description: Open another player's inventory
+    usage: /invsee <player>
+    permission: yapessentials.invsee
+  echest:
+    description: Open another player's ender chest
+    usage: /echest <player>
+    aliases: [enderchest, ec]
+    permission: yapessentials.echest
+  nick:
+    description: Change display name
+    usage: /nick <name|off> [player]
+    permission: yapessentials.nick
+  afk:
+    description: Toggle AFK status
+    usage: /afk
+    permission: yapessentials.afk
+  list:
+    description: List online players
+    usage: /list
+    aliases: [online, who]
+    permission: yapessentials.list
+  ptime:
+    description: Set personal client time
+    usage: /ptime <time|reset> [player]
+    permission: yapessentials.ptime
+  pweather:
+    description: Set personal client weather
+    usage: /pweather <weather|reset> [player]
+    permission: yapessentials.pweather
+  broadcast:
+    description: Broadcast a message
+    usage: /broadcast <message>
+    aliases: [bc, say]
+    permission: yapessentials.broadcast
+  rules:
+    description: Show server rules
+    usage: /rules
+    permission: yapessentials.rules
+  motd:
+    description: Show message of the day
+    usage: /motd
+    permission: yapessentials.motd
+  suicide:
+    description: Kill yourself
+    usage: /suicide
+    aliases: [kill]
+    permission: yapessentials.suicide
+  hat:
+    description: Wear item in hand as hat
+    usage: /hat
+    permission: yapessentials.hat
+  tp:
+    description: Teleport to a player
+    usage: /tp <player> [target]
+    permission: yapessentials.teleport
+  tphere:
+    description: Teleport a player to you
+    usage: /tphere <player>
+    aliases: [s]
+    permission: yapessentials.teleport
+  socialspy:
+    description: Toggle social spy
+    usage: /socialspy
+    aliases: [ss]
+    permission: yapessentials.staff.socialspy
+  freeze:
+    description: Freeze or unfreeze a player
+    usage: /freeze <player>
+    permission: yapessentials.staff.freeze
+  check:
+    description: Inspect a player
+    usage: /check <player>
+    permission: yapessentials.staff.check
+  yapess:
+    description: Essentials admin
+    usage: /yapess reload
+    permission: yapessentials.admin
+permissions:
+  yapessentials.spawn:
+    default: true
+  yapessentials.setspawn:
+    default: op
+  yapessentials.back:
+    default: true
+  yapessentials.tpa:
+    default: true
+  yapessentials.fly:
+    default: op
+  yapessentials.god:
+    default: op
+  yapessentials.speed:
+    default: op
+  yapessentials.heal:
+    default: op
+  yapessentials.feed:
+    default: op
+  yapessentials.repair:
+    default: op
+  yapessentials.clear:
+    default: op
+  yapessentials.vanish:
+    default: op
+  yapessentials.invsee:
+    default: op
+  yapessentials.echest:
+    default: op
+  yapessentials.nick:
+    default: op
+  yapessentials.nick.others:
+    default: op
+  yapessentials.afk:
+    default: true
+  yapessentials.list:
+    default: true
+  yapessentials.ptime:
+    default: op
+  yapessentials.pweather:
+    default: op
+  yapessentials.broadcast:
+    default: op
+  yapessentials.rules:
+    default: true
+  yapessentials.motd:
+    default: true
+  yapessentials.suicide:
+    default: true
+  yapessentials.hat:
+    default: op
+  yapessentials.teleport:
+    default: op
+  yapessentials.staff.socialspy:
+    default: op
+  yapessentials.staff.freeze:
+    default: op
+  yapessentials.staff.check:
+    default: op
+  yapessentials.admin:
+    default: op

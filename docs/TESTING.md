@@ -1,7 +1,11 @@
 # YaPcore concurrency & leak testing
 
-Layered strategy for the 16-thread YapEngine. Java hides raw pointers behind HotSpot,
-so we combine static analysis, deterministic interleaving, stress, and heap sampling.
+> **Commands below are retired.** Paper Phase 3 / Paperclip bench scripts were removed with the Folia product path. Prefer `./scripts/smoke-folia.sh`, `./scripts/bench/run-vs-folia.sh` (if present), and `./scripts/bench/fetch-competitors.sh`.
+
+
+Layered strategy for the YapEngine **chassis** (edge/I/O sandboxes). Folia owns
+game tick on the product path. Java hides raw pointers behind HotSpot, so we combine
+static analysis, deterministic interleaving, stress, and heap sampling.
 
 ## Quick commands
 
@@ -18,7 +22,7 @@ so we combine static analysis, deterministic interleaving, stress, and heap samp
 | `./scripts/test-jcstress.sh` | `gradle jcstress` |
 | `./scripts/test-stress.sh` | Boundary stress |
 | `./scripts/soak-jfr.sh` | Soak + JFR |
-| `./scripts/bench/run-pop-ladder.sh` | **Pop ladder** — play-soak + denser heavypop MSPT + bots 50/100/150/200 |
+| `(retired)` | **Pop ladder** — play-soak + denser heavypop MSPT + bots 50/100/150/200 |
 
 > **`build/reports/problems/problems-report.html`** is Gradle’s toolchain deprecation UI. It is **not** a server soak report. Use **`logs/endurance/latest.html`** for FAIL codes with fix hints aimed at months-long uptime.
 

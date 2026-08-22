@@ -1,0 +1,7 @@
+{
+  "id": "yaplink-tab-bridge",
+  "name": "YaP Link Tab Bridge",
+  "version": "1.0.0.0",
+  "main": "com.yapcore.link.tab.TabBridgePlugin",
+  "authors": ["YapLabs"]
+}

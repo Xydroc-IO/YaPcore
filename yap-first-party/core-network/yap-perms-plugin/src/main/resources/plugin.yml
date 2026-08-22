@@ -1,0 +1,38 @@
+name: YaPPerms
+version: '1.0.0.0'
+main: com.yapcore.perms.PermsPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Native first-party permissions — groups, inheritance, tracks, prefixes
+website: https://github.com/yaplabs
+load: STARTUP
+depend: [YaPDB]
+softdepend: [PlaceholderAPI]
+commands:
+  yapperm:
+    description: Manage YaP permissions
+    usage: /yapperm <user|group|track|reload|applypack> ...
+    permission: yapperm.admin
+    aliases: [yperms, perms]
+  promote:
+    description: Promote a player on the default track
+    usage: /promote <player> [track]
+    permission: yapperm.promote
+  demote:
+    description: Demote a player on the default track
+    usage: /demote <player> [track]
+    permission: yapperm.demote
+permissions:
+  yapperm.admin:
+    description: Full permission management
+    default: op
+  yapperm.promote:
+    description: Promote players on tracks
+    default: op
+  yapperm.demote:
+    description: Demote players on tracks
+    default: op
+  yapperm.user:
+    description: View own permission info
+    default: true

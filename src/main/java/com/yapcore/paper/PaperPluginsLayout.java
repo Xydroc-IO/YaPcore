@@ -39,6 +39,14 @@ public final class PaperPluginsLayout {
         // Bench/smoke workdirs stay isolated under their own plugins/.
         if (paper.getParent() == null || !paper.getParent().equals(root)) {
             Path local = paper.resolve("plugins");
+            if (Files.isSymbolicLink(local)) {
+                try {
+                    local.toRealPath();
+                } catch (IOException broken) {
+                    LOG.warning("Removing broken plugins symlink in isolated paper-dir: " + local);
+                    Files.deleteIfExists(local);
+                }
+            }
             Files.createDirectories(local);
             LOG.fine("Isolated paper-dir plugins (no root link): " + local);
             return local;

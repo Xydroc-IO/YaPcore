@@ -1,9 +1,14 @@
 package com.yapcore.crossplay.bedrock;
 
+import com.yapcore.crossplay.bedrock.inventory.BedrockInventoryLayout;
+import com.yapcore.crossplay.bedrock.inventory.InventoryCraftTrade;
+import com.yapcore.crossplay.bedrock.inventory.InventoryPaperMirror;
+import com.yapcore.crossplay.bedrock.inventory.InventorySlotOps;
+
 import java.util.Arrays;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Logger;
+import java.util.function.IntUnaryOperator;
 
 /**
  * Server-side Bedrock inventory authority: shadow 36 storage + cursor/offhand +
@@ -11,22 +16,20 @@ import java.util.logging.Logger;
  */
 public final class BedrockInventoryAuthority {
 
-    private static final Logger LOG = Logger.getLogger("YaPcore.BedrockInv");
-
-    public static final int SLOTS = 36;
-    public static final int CURSOR = 36;
-    public static final int OFFHAND = 37;
+    public static final int SLOTS = BedrockInventoryLayout.SLOTS;
+    public static final int CURSOR = BedrockInventoryLayout.CURSOR;
+    public static final int OFFHAND = BedrockInventoryLayout.OFFHAND;
     /** Armor: helmet, chest, legs, boots (Bedrock container id 6). */
-    public static final int ARMOR_BASE = 38;
-    public static final int ARMOR_SLOTS = 4;
+    public static final int ARMOR_BASE = BedrockInventoryLayout.ARMOR_BASE;
+    public static final int ARMOR_SLOTS = BedrockInventoryLayout.ARMOR_SLOTS;
     /** Player/workbench crafting grid (Bedrock container id 13). */
-    public static final int CRAFT_BASE = 42;
-    public static final int CRAFT_SLOTS = 9;
-    public static final int CRAFT_RESULT = 51;
+    public static final int CRAFT_BASE = BedrockInventoryLayout.CRAFT_BASE;
+    public static final int CRAFT_SLOTS = BedrockInventoryLayout.CRAFT_SLOTS;
+    public static final int CRAFT_RESULT = BedrockInventoryLayout.CRAFT_RESULT;
     /** First index of open-window container shadow (chest 27 / furnace 3 / …). */
-    public static final int CONTAINER_BASE = 52;
-    public static final int CONTAINER_MAX = 27;
-    private static final int TOTAL = CONTAINER_BASE + CONTAINER_MAX;
+    public static final int CONTAINER_BASE = BedrockInventoryLayout.CONTAINER_BASE;
+    public static final int CONTAINER_MAX = BedrockInventoryLayout.CONTAINER_MAX;
+    private static final int TOTAL = BedrockInventoryLayout.TOTAL;
 
     /** Packed slot from codec: (containerId &lt;&lt; 16) | slot. */
     public static int unpackContainerId(int packed) {
@@ -77,7 +80,7 @@ public final class BedrockInventoryAuthority {
         ensure(username);
         Slot[] slots = byUser.get(username.toLowerCase());
         Arrays.fill(slots, 0, SLOTS, Slot.AIR);
-        mirrorClearToPaper(username);
+        InventoryPaperMirror.mirrorClearToPaper(paperWorld, username);
     }
 
     /** Clear matching network-id stacks from storage only (G.28 /clear &lt;item&gt;). */
@@ -93,7 +96,7 @@ public final class BedrockInventoryAuthority {
                 slots[i] = Slot.AIR;
             }
         }
-        mirrorStorageToPaper(username);
+        InventoryPaperMirror.mirrorStorageToPaper(paperWorld, byUser, username);
     }
 
     public void give(String username, int networkId, int count) {
@@ -115,7 +118,7 @@ public final class BedrockInventoryAuthority {
                 remaining -= put;
             }
         }
-        mirrorGiveToPaper(username, networkId, count - remaining);
+        InventoryPaperMirror.mirrorGiveToPaper(paperWorld, username, networkId, count - remaining);
     }
 
     public int[] storageNetworkIds(String username) {
@@ -210,7 +213,7 @@ public final class BedrockInventoryAuthority {
      * Apply stack-request actions. Source/dest are packed (containerId&lt;&lt;16)|slot
      * from the codec (legacy absolute indices still accepted if &lt; TOTAL).
      */
-    public boolean applyActions(String username, java.util.List<BedrockPacketCodec.StackAction> actions) {
+    public boolean applyActions(String username, List<BedrockPacketCodec.StackAction> actions) {
         ensure(username);
         if (actions == null || actions.isEmpty()) {
             return false;
@@ -226,34 +229,34 @@ public final class BedrockInventoryAuthority {
             int to = resolvePacked(username, a.destSlot());
             switch (a.type()) {
                 case TAKE, PLACE -> {
-                    if (movePartial(username, from, to, a.count())) {
+                    if (InventorySlotOps.movePartial(byUser, username, from, to, a.count())) {
                         mutated = true;
-                        if (isContainerIndex(from) || isContainerIndex(to)) {
+                        if (InventorySlotOps.isContainerIndex(from) || InventorySlotOps.isContainerIndex(to)) {
                             touchedContainer = true;
                         }
-                        if (isArmorOrCraft(from) || isArmorOrCraft(to)) {
+                        if (InventorySlotOps.isArmorOrCraft(from) || InventorySlotOps.isArmorOrCraft(to)) {
                             touchedArmorOrCraft = true;
                         }
                     }
                 }
                 case SWAP -> {
-                    if (swap(username, from, to)) {
+                    if (InventorySlotOps.swap(byUser, username, from, to)) {
                         mutated = true;
-                        if (isContainerIndex(from) || isContainerIndex(to)) {
+                        if (InventorySlotOps.isContainerIndex(from) || InventorySlotOps.isContainerIndex(to)) {
                             touchedContainer = true;
                         }
-                        if (isArmorOrCraft(from) || isArmorOrCraft(to)) {
+                        if (InventorySlotOps.isArmorOrCraft(from) || InventorySlotOps.isArmorOrCraft(to)) {
                             touchedArmorOrCraft = true;
                         }
                     }
                 }
                 case DROP, DESTROY, CONSUME -> {
-                    if (consume(username, from, a.count())) {
+                    if (InventorySlotOps.consume(byUser, username, from, a.count())) {
                         mutated = true;
-                        if (isContainerIndex(from)) {
+                        if (InventorySlotOps.isContainerIndex(from)) {
                             touchedContainer = true;
                         }
-                        if (isArmorOrCraft(from)) {
+                        if (InventorySlotOps.isArmorOrCraft(from)) {
                             touchedArmorOrCraft = true;
                         }
                     }
@@ -261,22 +264,24 @@ public final class BedrockInventoryAuthority {
                 case CREATE -> {
                     if (a.creativeNetworkId() > 0) {
                         int dest = to >= 0 ? to : CURSOR;
-                        setSlot(username, dest, new Slot(a.creativeNetworkId(), Math.max(1, a.count())));
+                        InventorySlotOps.setSlot(byUser, username, dest,
+                                new Slot(a.creativeNetworkId(), Math.max(1, a.count())));
                         mutated = true;
-                        if (isArmorOrCraft(dest)) {
+                        if (InventorySlotOps.isArmorOrCraft(dest)) {
                             touchedArmorOrCraft = true;
                         }
                     }
                 }
                 case CRAFT_RECIPE, CRAFT_RECIPE_AUTO -> {
-                    if (applyCraftRecipe(username, a.creativeNetworkId(), Math.max(1, a.count()))) {
+                    if (InventoryCraftTrade.applyCraftRecipe(byUser, recipes, username,
+                            a.creativeNetworkId(), Math.max(1, a.count()))) {
                         mutated = true;
                         touchedArmorOrCraft = true;
                     }
                 }
                 case CRAFT_RECIPE_OPTIONAL -> {
-                    // Enchant table option net-id, or trade recipe index
-                    if (applyOptionalCraft(username, a.creativeNetworkId())) {
+                    if (InventoryCraftTrade.applyOptionalCraft(byUser, containers, recipes, username,
+                            a.creativeNetworkId())) {
                         mutated = true;
                         touchedContainer = true;
                         touchedArmorOrCraft = true;
@@ -284,7 +289,8 @@ public final class BedrockInventoryAuthority {
                 }
                 case CRAFT_CREATIVE -> {
                     if (a.creativeNetworkId() > 0) {
-                        setSlot(username, CURSOR, new Slot(a.creativeNetworkId(), Math.max(1, a.count())));
+                        InventorySlotOps.setSlot(byUser, username, CURSOR,
+                                new Slot(a.creativeNetworkId(), Math.max(1, a.count())));
                         mutated = true;
                     }
                 }
@@ -293,54 +299,18 @@ public final class BedrockInventoryAuthority {
             }
         }
         if (mutated) {
-            mirrorStorageToPaper(username);
+            InventoryPaperMirror.mirrorStorageToPaper(paperWorld, byUser, username);
             if (touchedArmorOrCraft) {
-                mirrorArmorCraftToPaper(username);
+                InventoryPaperMirror.mirrorArmorCraftToPaper(paperWorld, byUser, username);
             }
             if (touchedContainer) {
-                mirrorContainerToPaper(username);
-                maybeExecuteTradeOnResultTake(username, actions);
+                InventoryPaperMirror.mirrorContainerToPaper(paperWorld, containers, byUser, username);
+                IntUnaryOperator resolve = packed -> resolvePacked(username, packed);
+                InventoryCraftTrade.maybeExecuteTradeOnResultTake(byUser, containers, recipes, username,
+                        actions, resolve);
             }
         }
         return mutated;
-    }
-
-    /** After villager result TAKE, execute matching Paper merchant recipe. */
-    private void maybeExecuteTradeOnResultTake(String username,
-                                               java.util.List<BedrockPacketCodec.StackAction> actions) {
-        BedrockContainerBridge bridge = containers;
-        BedrockPaperRecipes r = recipes;
-        if (bridge == null || r == null) {
-            return;
-        }
-        BedrockContainerBridge.OpenWindow w = bridge.current(username);
-        if (w == null || w.type() != BedrockContainerBridge.TYPE_VILLAGER) {
-            return;
-        }
-        for (BedrockPacketCodec.StackAction a : actions) {
-            if (a == null || a.type() != BedrockPacketCodec.StackActionType.TAKE) {
-                continue;
-            }
-            int from = resolvePacked(username, a.sourceSlot());
-            // Villager result is typically container slot 2
-            if (from == CONTAINER_BASE + 2) {
-                // Prefer recipe index from CREATE/optional in same request; else 0
-                int idx = 0;
-                for (BedrockPacketCodec.StackAction b : actions) {
-                    if (b != null && b.type() == BedrockPacketCodec.StackActionType.CRAFT_RECIPE_OPTIONAL) {
-                        idx = Math.max(0, b.creativeNetworkId());
-                    }
-                }
-                int[] sell = r.executeTrade(username, idx);
-                if (sell != null && sell[0] > 0) {
-                    setSlot(username, CURSOR, new Slot(sell[0], sell[1]));
-                    // Clear trade inputs
-                    setSlot(username, CONTAINER_BASE, Slot.AIR);
-                    setSlot(username, CONTAINER_BASE + 1, Slot.AIR);
-                    setSlot(username, CONTAINER_BASE + 2, Slot.AIR);
-                }
-            }
-        }
     }
 
     public boolean setHeldHotbar(String username, int hotbarSlot) {
@@ -357,299 +327,16 @@ public final class BedrockInventoryAuthority {
         }
         int containerId = unpackContainerId(packedOrIndex);
         int slot = unpackSlot(packedOrIndex);
-        // Codec always packs (containerId<<16)|slot; containerId 0 + small index = legacy absolute
         if (containerId == 0 && packedOrIndex < TOTAL) {
             return packedOrIndex;
         }
         return mapContainerSlot(username, containerId, slot);
     }
 
-    private static boolean isContainerIndex(int idx) {
-        return idx >= CONTAINER_BASE && idx < TOTAL;
-    }
-
-    private static boolean isArmorOrCraft(int idx) {
-        return (idx >= ARMOR_BASE && idx < ARMOR_BASE + ARMOR_SLOTS)
-                || (idx >= CRAFT_BASE && idx <= CRAFT_RESULT);
-    }
-
-    /**
-     * JE recipe graph via Paper: match craft grid → result on cursor; consume one per cell.
-     * Falls back to client-supplied network id when Paper unavailable.
-     */
-    private boolean applyCraftRecipe(String username, int recipeOrResultNetId, int times) {
-        ensure(username);
-        Slot[] slots = byUser.get(username.toLowerCase());
-        String[] mats = new String[CRAFT_SLOTS];
-        int[] counts = new int[CRAFT_SLOTS];
-        boolean anyInput = false;
-        for (int i = 0; i < CRAFT_SLOTS; i++) {
-            Slot s = slots[CRAFT_BASE + i];
-            if (!s.isEmpty()) {
-                anyInput = true;
-                mats[i] = materialForNetworkId(s.networkId());
-                counts[i] = s.count();
-            }
-        }
-        int put = Math.max(1, times);
-        int resultId = 0;
-        int resultCount = put;
-        BedrockPaperRecipes r = recipes;
-        if (r != null && anyInput) {
-            int[] resolved = r.craftResultFromGrid(username, mats, counts);
-            if (resolved != null && resolved[0] > 0) {
-                resultId = resolved[0];
-                resultCount = Math.max(1, resolved[1]) * put;
-            }
-        }
-        if (resultId <= 0 && !anyInput && recipeOrResultNetId > 0) {
-            // Creative / empty-grid path only — recipe net id may be a creative item id
-            resultId = recipeOrResultNetId;
-            resultCount = put;
-        }
-        if (resultId <= 0) {
-            // Never treat JE recipe net-ids as item network ids when the grid has inputs
-            return false;
-        }
-        Slot result = new Slot(resultId, Math.min(64, resultCount));
-        slots[CRAFT_RESULT] = result;
-        Slot cur = slots[CURSOR];
-        if (cur.isEmpty()) {
-            slots[CURSOR] = result;
-        } else if (cur.networkId() == resultId) {
-            slots[CURSOR] = cur.withCount(Math.min(64, cur.count() + resultCount));
-        } else {
-            // Cursor busy — leave result on CRAFT_RESULT for a subsequent TAKE
-            for (int t = 0; t < put; t++) {
-                for (int i = 0; i < CRAFT_SLOTS; i++) {
-                    Slot s = slots[CRAFT_BASE + i];
-                    if (!s.isEmpty()) {
-                        slots[CRAFT_BASE + i] = s.withCount(s.count() - 1);
-                    }
-                }
-            }
-            return true;
-        }
-        for (int t = 0; t < put; t++) {
-            for (int i = 0; i < CRAFT_SLOTS; i++) {
-                Slot s = slots[CRAFT_BASE + i];
-                if (!s.isEmpty()) {
-                    slots[CRAFT_BASE + i] = s.withCount(s.count() - 1);
-                }
-            }
-        }
-        return true;
-    }
-
-    /** Enchant option net-id or villager recipe index. */
-    private boolean applyOptionalCraft(String username, int netId) {
-        BedrockContainerBridge bridge = containers;
-        BedrockPaperRecipes r = recipes;
-        if (bridge == null || r == null || netId <= 0) {
-            return false;
-        }
-        BedrockContainerBridge.OpenWindow w = bridge.current(username);
-        if (w == null) {
-            return false;
-        }
-        if (w.type() == BedrockContainerBridge.TYPE_ENCHANT) {
-            int[] result = r.applyEnchantOption(username, netId);
-            if (result != null && result[0] > 0) {
-                setSlot(username, CONTAINER_BASE, new Slot(result[0], result[1]));
-                return true;
-            }
-            return false;
-        }
-        if (w.type() == BedrockContainerBridge.TYPE_VILLAGER) {
-            int[] sell = r.executeTrade(username, Math.max(0, netId - 1));
-            if (sell != null && sell[0] > 0) {
-                setSlot(username, CONTAINER_BASE + 2, new Slot(sell[0], sell[1]));
-                setSlot(username, CURSOR, new Slot(sell[0], sell[1]));
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private void mirrorArmorCraftToPaper(String username) {
-        BedrockPaperWorldSync sync = paperWorld;
-        if (sync == null || !sync.isEnabled()) {
-            return;
-        }
-        Slot[] slots = byUser.get(username.toLowerCase());
-        for (int i = 0; i < ARMOR_SLOTS; i++) {
-            Slot s = slots[ARMOR_BASE + i];
-            if (s.isEmpty()) {
-                sync.setArmorSlot(username, i, "AIR", 0);
-            } else {
-                String mat = materialForNetworkId(s.networkId());
-                if (mat != null) {
-                    sync.setArmorSlot(username, i, mat, s.count());
-                }
-            }
-        }
-        for (int i = 0; i < CRAFT_SLOTS; i++) {
-            Slot s = slots[CRAFT_BASE + i];
-            if (s.isEmpty()) {
-                sync.setCraftSlot(username, i, "AIR", 0);
-            } else {
-                String mat = materialForNetworkId(s.networkId());
-                if (mat != null) {
-                    sync.setCraftSlot(username, i, mat, s.count());
-                }
-            }
-        }
-    }
-
-    private boolean movePartial(String username, int from, int to, int count) {
-        if (from < 0 || to < 0 || from >= TOTAL || to >= TOTAL || count <= 0) {
-            return false;
-        }
-        Slot[] slots = byUser.get(username.toLowerCase());
-        Slot src = slots[from];
-        if (src.isEmpty()) {
-            return false;
-        }
-        int move = Math.min(count, src.count());
-        Slot dst = slots[to];
-        if (dst.isEmpty()) {
-            slots[to] = new Slot(src.networkId(), move);
-            slots[from] = src.withCount(src.count() - move);
-            return true;
-        }
-        if (dst.networkId() != src.networkId()) {
-            return false;
-        }
-        int room = 64 - dst.count();
-        if (room <= 0) {
-            return false;
-        }
-        move = Math.min(move, room);
-        slots[to] = dst.withCount(dst.count() + move);
-        slots[from] = src.withCount(src.count() - move);
-        return true;
-    }
-
-    private boolean swap(String username, int from, int to) {
-        if (from < 0 || to < 0 || from >= TOTAL || to >= TOTAL) {
-            return false;
-        }
-        Slot[] slots = byUser.get(username.toLowerCase());
-        Slot a = slots[from];
-        slots[from] = slots[to];
-        slots[to] = a;
-        return true;
-    }
-
-    private boolean consume(String username, int from, int count) {
-        if (from < 0 || from >= TOTAL || count <= 0) {
-            return false;
-        }
-        Slot[] slots = byUser.get(username.toLowerCase());
-        Slot src = slots[from];
-        if (src.isEmpty()) {
-            return false;
-        }
-        slots[from] = src.withCount(src.count() - Math.min(count, src.count()));
-        return true;
-    }
-
-    private void setSlot(String username, int slot, Slot value) {
-        if (slot < 0 || slot >= TOTAL) {
-            return;
-        }
-        byUser.get(username.toLowerCase())[slot] = value == null ? Slot.AIR : value;
-    }
-
     private static Slot[] emptySlots() {
         Slot[] s = new Slot[TOTAL];
         Arrays.fill(s, Slot.AIR);
         return s;
-    }
-
-    private void mirrorClearToPaper(String username) {
-        BedrockPaperWorldSync sync = paperWorld;
-        if (sync != null && sync.isEnabled()) {
-            sync.clearInventory(username);
-        }
-    }
-
-    private void mirrorGiveToPaper(String username, int networkId, int count) {
-        BedrockPaperWorldSync sync = paperWorld;
-        if (sync == null || !sync.isEnabled() || count <= 0) {
-            return;
-        }
-        String mat = materialForNetworkId(networkId);
-        if (mat != null) {
-            sync.giveItem(username, mat, count);
-        }
-    }
-
-    private void mirrorStorageToPaper(String username) {
-        BedrockPaperWorldSync sync = paperWorld;
-        if (sync == null || !sync.isEnabled()) {
-            return;
-        }
-        Slot[] slots = byUser.get(username.toLowerCase());
-        for (int i = 0; i < SLOTS; i++) {
-            Slot s = slots[i];
-            if (s.isEmpty()) {
-                sync.setStorageSlot(username, i, "AIR", 0);
-            } else {
-                String mat = materialForNetworkId(s.networkId());
-                if (mat != null) {
-                    sync.setStorageSlot(username, i, mat, s.count());
-                }
-            }
-        }
-        // Offhand
-        Slot oh = slots[OFFHAND];
-        if (oh.isEmpty()) {
-            sync.setOffhand(username, "AIR", 0);
-        } else {
-            String mat = materialForNetworkId(oh.networkId());
-            if (mat != null) {
-                sync.setOffhand(username, mat, oh.count());
-            }
-        }
-    }
-
-    private void mirrorContainerToPaper(String username) {
-        BedrockPaperWorldSync sync = paperWorld;
-        BedrockContainerBridge bridge = containers;
-        if (sync == null || !sync.isEnabled() || bridge == null) {
-            return;
-        }
-        BedrockContainerBridge.OpenWindow w = bridge.current(username);
-        if (w == null) {
-            return;
-        }
-        int n = bridge.slotsForType(w.type());
-        Slot[] slots = byUser.get(username.toLowerCase());
-        for (int i = 0; i < n; i++) {
-            Slot s = slots[CONTAINER_BASE + i];
-            if (s.isEmpty()) {
-                sync.setBlockInventorySlot(w.x(), w.y(), w.z(), i, "AIR", 0);
-            } else {
-                String mat = materialForNetworkId(s.networkId());
-                if (mat != null) {
-                    sync.setBlockInventorySlot(w.x(), w.y(), w.z(), i, mat, s.count());
-                }
-            }
-        }
-    }
-
-    private static String materialForNetworkId(int networkId) {
-        for (BedrockItemStates.ItemState s : BedrockItemStates.all()) {
-            if ((s.runtimeId() & 0xFFFF) == networkId) {
-                String n = s.name();
-                if (n.startsWith("minecraft:")) {
-                    n = n.substring(10);
-                }
-                return n.toUpperCase(java.util.Locale.ROOT);
-            }
-        }
-        return null;
     }
 
     /**
@@ -665,8 +352,8 @@ public final class BedrockInventoryAuthority {
             case 34 -> OFFHAND;
             case 6 -> (slot >= 0 && slot < ARMOR_SLOTS) ? ARMOR_BASE + slot : -1;
             case 13 -> (slot >= 0 && slot < CRAFT_SLOTS) ? CRAFT_BASE + slot : -1;
-            case 50, 14 -> CRAFT_RESULT; // created output / craft result (protocol variants)
-            case 7 -> { // opened container (chest / furnace / hopper / villager / enchant …)
+            case 50, 14 -> CRAFT_RESULT;
+            case 7 -> {
                 int max = CONTAINER_MAX;
                 BedrockContainerBridge bridge = containers;
                 if (bridge != null) {
@@ -682,6 +369,7 @@ public final class BedrockInventoryAuthority {
     }
 
     /** @deprecated use {@link #mapContainerSlot(String, int, int)} */
+    @Deprecated
     public static int mapContainerSlot(int containerId, int slot) {
         return switch (containerId) {
             case 28 -> (slot >= 0 && slot <= 8) ? slot : -1;

@@ -43,8 +43,8 @@ Bedrock players also use a different connection style (UDP) than Java (TCP), but
 
 ### What YaPcore is trying to contribute
 
-1. **Sixteen named jobs** — everyone knows who owns networking, map areas, sync, menus, and heavy file/database work.  
-2. **Order tickets (SequenceToken)** — work can move between workers without everything sharing one giant lock.  
+1. **Three layers** — **Folia** runs the game; **YapEngine** runs edge/I/O; **YaP Link** fronts multi-backend networks.  
+2. **Order tickets (SequenceToken)** — work can move between chassis workers without everything sharing one giant lock.  
 3. **A Compatibility Bridge** — older plugins can still change the world safely by waiting for the right window.  
 4. **Java + Bedrock on one product story** — both can join; optionally even on the same port number.  
 5. **Three ways to extend the server** — Folia/Paper-style plugins, YaP plugins, and smaller “fine-tune” modules — all Folia/Paper/YaP jars drop into one `plugins/` folder.
@@ -55,8 +55,8 @@ We don’t claim “every Paper plugin works on Folia day one” (same as stock 
 
 ### Where the product is today (August 2026)
 
-We use **Folia** for the real Minecraft game by default. **YapEngine** keeps the
-sixteen worker roles around it. **YaP Link** is our Velocity-class front door for
+We use **Folia** for the real Minecraft game by default. **YapEngine** runs the
+**slim edge/I/O chassis** around it (not world tick). **YaP Link** is our Velocity-class front door for
 multi-backend networks (MVP: modern forwarding + offline; more features planned).
 Legacy **Paper + Phase 3** spatial tick (spreading interior work across four
 map-area workers) is **done as code** but **off by default** — benches only; Folia
@@ -80,21 +80,28 @@ Details: [PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md) ·
 
 YaPcore sits as:
 
-> Keep **Folia for the kitchen**, a **predictable chassis of sixteen roles**, and **YaP Link** at the front door for multi-backend networks.
+> Keep **Folia for the kitchen**, a **slim YapEngine edge/I/O chassis**, and **YaP Link** at the front door for multi-backend networks.
 
 ---
 
 ## 3. Architecture in plain English
 
-### 3.1 The sixteen jobs
+### 3.1 Three layers + chassis channels
+
+| Layer | Plain English |
+|-------|----------------|
+| **YaP Link** | Front door for big networks — sends players to the right backend |
+| **YapEngine chassis** | Netty edge, dual-stack, plugin bridge, menus, DB/HTTP — **not** world tick |
+| **Folia** | The actual game heartbeat — regions, mobs, redstone |
+
+Chassis still uses sixteen **logical channels** (T1–16) for edge/I/O work:
 
 | Workers | Job (plain English) |
 |---------|---------------------|
 | **1** | Watchdog — watches health and helps recover if something stalls |
 | **2** | Front door / traffic — players connecting, order tickets assigned |
-| **3–6** | Map cooks — four areas of the world (NW / NE / SW / SE) |
-| **7** | Chunk leases — who temporarily “owns” which chunk work |
-| **8** | Border referee — when two areas touch, resolve conflicts |
+| **3–6** | Chassis worker quads — sequenced bridge tasks (**legacy map-cook tick on Paper benches only**) |
+| **7–8** | Chunk leases / border referee — **Paper Phase 3 legacy only** |
 | **9** | Compatibility Bridge — stages older plugin world changes safely |
 | **10–11** | Menus / UI polish — clicks, HUD, menu feel |
 | **12–15** | Heavy chores — databases, HTTP, files, big saves |
@@ -204,7 +211,7 @@ Still ahead: richer registry sync, deeper world streaming, fuller command graphs
 
 ```bibtex
 @techreport{yapcore2026sixteen,
-  title       = {YaPcore: A Sixteen-Thread Architecture for Concurrent Minecraft-Class Game Servers},
+  title       = {YaPcore: Folia Game Authority with a Slim Edge Chassis for Minecraft-Class Servers},
   author      = {{YapLabs}},
   institution = {YapLabs},
   year        = {2026},

@@ -31,7 +31,7 @@ Think of it like this:
 
 Normal Minecraft servers (including classic Paper) do a lot of the “game tick” — the heartbeat that updates the world — on **one main thread**. That works, but when lots of players, farms, redstone, and plugins pile on, that one lane gets crowded and the server can lag.
 
-**Folia** spreads game work across **regions**. **YapEngine** keeps the rest of the product (network edge, dual-stack, plugins, ops) on a clear 16-role chassis. **YaP Link** lets you run **many** Folia boxes behind one public join address — the normal way big networks scale.
+**Folia** spreads game work across **regions** (that’s the game tick). **YapEngine** runs the **slim chassis** — network edge, dual-stack, plugins bridge, I/O, ops — **not** world tick. **YaP Link** lets you run **many** Folia boxes behind one public join address — the normal way big networks scale.
 
 We’re **not** optimizing for empty lobby servers. The product is aimed at
 **high-pop / heavy-load** networks. Fair bot cites focus on **~100 active players** per shard;
@@ -102,7 +102,7 @@ Install YaPcore expecting **Folia + YapEngine + (optionally) YaP Link**. We only
 See [WHAT_WE_ARE.md](WHAT_WE_ARE.md) and [FULL_RUNDOWN.md](FULL_RUNDOWN.md).
 
 **Elevator:**  
-“Multi-threaded Minecraft server on YapEngine, Folia for the game, YaP Link (full Velocity fork) for the network.”
+“Folia-backed Minecraft server with YapEngine edge/I/O chassis and YaP Link for the network.”
 
 ---
 

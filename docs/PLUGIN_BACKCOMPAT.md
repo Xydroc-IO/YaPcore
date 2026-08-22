@@ -47,5 +47,6 @@ Load order: `STARTUP`.
 
 ```bash
 gradle test --tests com.yapcore.plugincompat.PluginCompatRewriterTest
-./scripts/smoke-paper-plugins.sh
+> **Retired (Folia product path):** Paperclip / Phase 3 vendor scripts (`vendor-paper.sh`, `build-vendor-paper.sh`, `apply-yap-paper-hooks.sh`, `smoke-paper-plugins.sh`, `verify-paper-api-coverage.sh`, Paper Phase 3 benches) were removed. Use `./scripts/fetch-folia.sh` / `smoke-folia.sh` instead.
+
 ```

@@ -1,7 +1,0 @@
-# YaPcore-pinned Paper source tree
-# build=26.2-112  mc=26.2  commit=c9e894d3cc03f21f80de4f4061a795e11941e89a
-commit=c9e894d3cc03f21f80de4f4061a795e11941e89a
-build=112
-mc=26.2
-repo=https://github.com/PaperMC/Paper.git
-artifact=lib/paper-26.2-yap.jar

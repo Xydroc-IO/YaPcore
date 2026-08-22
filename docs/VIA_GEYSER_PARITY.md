@@ -188,10 +188,11 @@ the Geyser jar. Pin: **Bedrock 1.21.50**.
 | G.28 | `/give` `/clear` mirror hints | Inventory + Paper | **Done** | Auth-input fingerprint push; `@s`/`@p`/self forms; item-filter clear |
 | G.29 | Available commands rich + COMMAND_REQUEST | `BedrockAvailableCommands` | **Done** | |
 | G.30 | Containers / villager / enchanting UIs | `BedrockContainerBridge` | **Done** | Villager by actor type; trade refresh; furnace SET_DATA; enchant fail-closed |
-| G.31 | Scoring / boss bars / titles | Codec | **Partial** | |
+| G.31 | Scoring / boss bars / titles | `BedrockUiCodec` + `BedrockUiBridge` | **Done** | `BedrockUiCodecTest` + command mirror |
 | G.32 | Emotes | — | **Gap** (low) | Optional |
-| G.33 | Custom skulls / player heads display | — | **Partial** | |
-| G.34 | Bedrock resource packs (server-offered) | Packs path | **Partial** | JE pack story primary |
+| G.33 | Custom skulls / player heads display | `BedrockUiCodec.blockActorSkull` | **Partial** | Placed skull NBT; item texture v2 |
+| G.34 | Bedrock resource packs (server-offered) | `BedrockLoginCodec` + pack supplier | **Done** | Mirrors JE pack URL when enabled |
+| G.35 | Vehicles / boats / minecarts mount sync | — | **Out** | Not v1 scope — use JE for mounted travel; document explicitly |
 
 ### D4 — Floodgate-class auth (4.G3)
 
@@ -313,12 +314,9 @@ Via\* + Geyser + Floodgate on the product path for supported bands — subject t
 checklists in §E still recommended before marketing full play depth.
 
 Until live soaks close remaining edge cases, say: **join/spawn + inventory
-inject + containers/forms/skins/Xbox-shaped CI + Paper column stream green;
-G.25–G.30 play-depth (craft, /give fingerprint, furnace, villager, enchant
-fail-closed, SET_ACTOR_DATA) landed in code — tick §E live checklist before
-marketing full play depth.** Forward dumps for post-776 clients land via
-[PROTOCOL_DUMPS.md](PROTOCOL_DUMPS.md) when Mojang ships.
-Run `./scripts/protocol-matrix/play-soak.sh` before marketing full play depth.
+inject + containers/forms/skins/Xbox-shaped CI + Paper column stream + title/bossbar/scoreboard
+mirror + JE pack URL on BE login green; G.33 placed-skull texture depth remains partial —
+tick §E live checklist before marketing full play depth.**
 
 ---
 

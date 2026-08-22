@@ -48,8 +48,6 @@ public final class TestLab extends JFrame {
         this.root = root.toAbsolutePath().normalize();
         GuiTheme.install();
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setMinimumSize(new Dimension(960, 640));
-        setPreferredSize(new Dimension(1100, 720));
         getContentPane().setBackground(GuiTheme.BG);
 
         JPanel rootPanel = new JPanel(new BorderLayout(12, 12));
@@ -57,13 +55,17 @@ public final class TestLab extends JFrame {
         rootPanel.setBackground(GuiTheme.BG);
         rootPanel.add(buildHeader(), BorderLayout.NORTH);
 
-        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildButtonPanel(), buildConsolePanel());
-        split.setResizeWeight(0.32);
+        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                GuiTheme.verticalScroll(buildButtonPanel()), buildConsolePanel());
+        split.setResizeWeight(0.34);
+        split.setContinuousLayout(true);
+        split.setOneTouchExpandable(true);
         split.setBorder(null);
+        split.setDividerSize(8);
         rootPanel.add(split, BorderLayout.CENTER);
         setContentPane(rootPanel);
-        pack();
-        setLocationRelativeTo(null);
+        GuiTheme.fitWindow(this, 1180, 760, 880, 560);
+        SwingUtilities.invokeLater(() -> split.setDividerLocation(0.36));
 
         stopBtn.setEnabled(false);
         stopBtn.addActionListener(e -> stopRunning());
@@ -94,6 +96,7 @@ public final class TestLab extends JFrame {
     private JPanel buildButtonPanel() {
         JPanel card = GuiTheme.card();
         card.setLayout(new BorderLayout(8, 8));
+        card.setMinimumSize(new Dimension(280, 200));
         card.add(GuiTheme.sectionTitle("Suites"), BorderLayout.NORTH);
 
         JPanel grid = new JPanel(new GridLayout(0, 1, 8, 8));
@@ -171,6 +174,7 @@ public final class TestLab extends JFrame {
     private JPanel buildConsolePanel() {
         JPanel panel = GuiTheme.card();
         panel.setLayout(new BorderLayout(8, 8));
+        panel.setMinimumSize(new Dimension(360, 240));
         panel.add(GuiTheme.sectionTitle("Console"), BorderLayout.NORTH);
         console.setEditable(false);
         console.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));

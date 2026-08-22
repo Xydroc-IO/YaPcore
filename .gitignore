@@ -7,6 +7,7 @@
 # =============================================================================
 .gradle/
 **/build/
+build/dist/
 out/
 bin/
 target/
@@ -24,8 +25,7 @@ replay_*.log
 # Root / module fat jars (also covered by *.jar)
 /yapcore.jar
 /yapcore-*.jar
-phase3-plugin/build/
-bench-plugin/build/
+yap-first-party/dev/bench-plugin/build/
 
 # =============================================================================
 # Minecraft / Paper runtime caches (created next to the process cwd)
@@ -116,6 +116,7 @@ vendor/paper/
 bench/workdir-*/
 bench/workdir-stock/
 bench/workdir-yap/
+bench/link-plugins-smoke/
 bench/results/*
 !bench/results/README.md
 !bench/results/.gitkeep
@@ -123,6 +124,7 @@ bench/*.lock
 bench/*.port
 bench/highpop.lock
 bench/highpop-ready.port
+scripts/bench/bots/node_modules/
 
 # =============================================================================
 # Generated docs PDFs (regenerate: ./scripts/export-docs-pdf.sh)
@@ -157,6 +159,8 @@ plugins/**
 modules/**
 !modules/.gitkeep
 !modules/README.md
+link-data/plugins/*.jar
+!link-data/plugins/.gitkeep
 resourcepacks/**
 !resourcepacks/.gitkeep
 !resourcepacks/README.md

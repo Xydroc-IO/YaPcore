@@ -1,12 +1,9 @@
 # Velocity / YaP Link proxy support
 
-YaPcore (Folia/Paper) is a **game backend**. The public edge is a **full proxy**:
+YaPcore (Folia/Paper) is a **game backend**. The public edge is a **proxy**:
 
-- **[YaP Link](YAP_LINK.md)** — YapLabs’ **complete Velocity fork** (`yap-link/`, GPL-3.0)
-- Stock Velocity — same contract (optional stand-in only)
-
-Product Link is **not** a partial shim. Velocity plugins still load (`com.velocitypowered.*`).
-Backends use **modern player-info forwarding** for UUID / IP / skins.
+- **[YaP Link](YAP_LINK.md)** — YapLabs’ **native Velocity-class proxy** ([YAP_LINK_NATIVE.md](YAP_LINK_NATIVE.md), phased)
+- Stock Velocity — same forwarding contract (optional stand-in)
 
 ---
 

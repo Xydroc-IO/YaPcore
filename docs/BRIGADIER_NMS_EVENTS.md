@@ -51,7 +51,9 @@ Generated from **paper-api 26.2** sources into `org.bukkit.event.**`,
 Regenerate:
 
 ```bash
-./scripts/generate-paper-event-stubs.sh
+> **Retired (Folia product path):** Paperclip / Phase 3 vendor scripts (`vendor-paper.sh`, `build-vendor-paper.sh`, `apply-yap-paper-hooks.sh`, `smoke-paper-plugins.sh`, `verify-paper-api-coverage.sh`, Paper Phase 3 benches) were removed. Use `./scripts/fetch-folia.sh` / `smoke-folia.sh` instead.
+
+# Paper event stub generator removed with Paperclip tooling
 gradle compileJava
 ```
 

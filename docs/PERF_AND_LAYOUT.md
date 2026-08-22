@@ -1,7 +1,7 @@
 # Performance & domain layout
 
-**Product context:** Phase 3 tick uses `BitwiseQuadrantIndex` + DLM leases on
-spatial cores 3–6. See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md).
+**Product context:** Folia owns the game tick (`game-authority=folia`). YapEngine
+is chassis only (Netty / dual-stack / I/O / ops). Legacy Phase 3 Paper spatial tick is opt-in for benches — see [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md).
 
 ## SequenceToken (microsecond precision)
 
@@ -36,9 +36,9 @@ Used by YapEngine Traffic Cop bind path and YaPcore `DualStackGateway` Java list
 
 Deployment-only: see [ZGC_NUMA.md](ZGC_NUMA.md). Scripts use `-XX:+UseZGC`, pinned heap, `-XX:+UseNUMA`, and optional `numactl --cpunodebind=0 --membind=0` (`./scripts/start-prod.sh`).
 
-## Thread map v1.1
+## Chassis thread map (v2.0)
 
-See [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) — DLM (7) / Boundary (8), UI 10–11, Heavy I/O 12–15, Telemetry 16.
+See [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) — Folia owns game tick; chassis T1–16 cover edge/I/O.
 
 ## Package map (≤500 lines / file)
 
@@ -59,8 +59,35 @@ com.yaplabs.yapengine/
   bridge/              CompatibilityBridge (9)
   controller/          EngineController (1)
 
+com.yapcore/
+  folia/               FoliaKernel, FoliaFiles (orchestrators)
+  folia/process/       FoliaProcess (JVM lifecycle)
+  folia/surface/       FoliaSurface (product markers)
+  game/command/        GameCommandBridge (BE/console → game)
+  game/sched/          GameSchedulers (same-JVM GlobalRegion reflect)
+  config/              ServerConfig facade
+  config/authority/    FoliaAuthorityConfig, PaperAuthorityConfig, GameAuthorityConfig
+  config/proxy/        VelocityProxyConfig
+  config/protocol/     ProtocolEdgeConfig
+  server/              YaPcoreServer orchestrator
+  server/console/      ServerConsoleCommands
+  protocol/            DualStackGateway facade
+  protocol/gateway/    JavaListenerBoot, BedrockUdpBoot
+  protocol/via/proxy/  ViaProxyHandler helpers
+  crossplay/bedrock/bridge/    BedrockGameplayBridge helpers
+  crossplay/bedrock/paper/     BedrockPaperWorldSync helpers
+  crossplay/bedrock/codec/     BedrockPacketCodec helpers
+  crossplay/bedrock/inventory/ BedrockInventoryAuthority helpers
+  web/auth|http|api/   WebDashboard helpers
+  api/                 ApiCoverage (Folia product claim)
+
+com.yapcore.sched/     YapSched + YapTask (first-party plugin module :yap-sched)
+
 com.yapcore.gui/
   theme/GuiTheme
   panels/PluginsPanel, PacksPanel
   ControlPanel         (orchestrator only)
 ```
+
+**Rule:** prefer ≤500 lines per domain file; split by folder when a class grows
+(process vs surface vs orchestrator).

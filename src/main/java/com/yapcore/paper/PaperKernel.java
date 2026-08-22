@@ -1,7 +1,6 @@
 package com.yapcore.paper;
 
 import com.yapcore.config.ServerConfig;
-import com.yapcore.paper.phase3.Phase3PaperRuntime;
 import com.yaplabs.yapengine.YapEngine;
 
 import java.io.BufferedReader;
@@ -20,10 +19,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Paper game authority for YaPcore.
+ * Paper game authority for YaPcore (legacy benches only — product path is Folia).
  * <ul>
- *   <li>Phase 3 ({@code paper-phase3-tick-bridge=true} + embed): same-JVM Paperclip
- *       with YapEngine parent CL + spatial tick plugin</li>
  *   <li>Phase 2 embed: managed Paper process owns public JE port</li>
  *   <li>Phase 1: loopback Paper + TCP proxy</li>
  * </ul>
@@ -34,18 +31,14 @@ public final class PaperKernel {
 
     private final Path rootDir;
     private final ServerConfig config;
-    private final YapEngine yapEngine;
-    private Phase3PaperRuntime phase3;
     private final AtomicBoolean processRunning = new AtomicBoolean(false);
     private Process process;
     private Thread logPump;
     private Writer processStdin;
-    private boolean usingPhase3;
 
     public PaperKernel(Path rootDir, ServerConfig config, YapEngine yapEngine) {
         this.rootDir = rootDir;
         this.config = config;
-        this.yapEngine = yapEngine;
     }
 
     public Path paperDir() {
@@ -60,18 +53,7 @@ public final class PaperKernel {
         return config.isPaperEmbed();
     }
 
-    public boolean isPhase3() {
-        return usingPhase3;
-    }
-
-    public Phase3PaperRuntime phase3() {
-        return phase3;
-    }
-
     public boolean isRunning() {
-        if (usingPhase3 && phase3 != null) {
-            return phase3.isRunning();
-        }
         return processRunning.get() && process != null && process.isAlive();
     }
 
@@ -84,24 +66,6 @@ public final class PaperKernel {
             throw new IOException("Paper 26.2 requires Java 25+ (running " + Runtime.version() + ")");
         }
 
-        if (config.isPaperEmbed() && config.isPaperPhase3TickBridge()) {
-            Path cwd = Path.of("").toAbsolutePath().normalize();
-            Path dir = paperDir();
-            if (cwd.equals(dir)) {
-                LOG.warning("Phase 3 spatial tick is retired as product path — "
-                        + "prefer game-authority=folia. Starting legacy Phase 3 only because "
-                        + "paper-phase3-tick-bridge=true.");
-                usingPhase3 = true;
-                phase3 = new Phase3PaperRuntime(rootDir, config, yapEngine);
-                phase3.start();
-                return;
-            }
-            LOG.warning("Phase 3 requested but cwd=" + cwd + " ≠ paper-dir=" + dir
-                    + " — falling back to Phase 2 managed Paper. "
-                    + "scripts/start.sh should cd into paper-kernel for Phase 3.");
-        }
-
-        usingPhase3 = false;
         if (config.isPaperEmbed()) {
             startManagedPublic();
         } else {
@@ -110,12 +74,6 @@ public final class PaperKernel {
     }
 
     public synchronized void stop() {
-        if (usingPhase3 && phase3 != null) {
-            phase3.stop();
-            phase3 = null;
-            usingPhase3 = false;
-            return;
-        }
         stopProcess();
     }
 
@@ -141,7 +99,18 @@ public final class PaperKernel {
 
     private void startProcess(int port, String bindIp, String propsComment)
             throws IOException, InterruptedException {
+        if (process != null && process.isAlive()) {
+            LOG.info("Paper process already running (pid=" + process.pid() + ")");
+            return;
+        }
+        if (processRunning.get() && (process == null || !process.isAlive())) {
+            LOG.warning("Clearing stale Paper processRunning flag (process not alive)");
+            processRunning.set(false);
+            process = null;
+            processStdin = null;
+        }
         if (!processRunning.compareAndSet(false, true)) {
+            LOG.info("Paper process start already in progress");
             return;
         }
         Path dir = paperDir();
@@ -171,15 +140,12 @@ public final class PaperKernel {
     }
 
     /**
-     * Forward a console line to Paper (Phase 3 in-JVM or Phase 2 process stdin).
+     * Forward a console line to Paper process stdin.
      * Players already use Paper's full command graph in-game; this is for YaP GUI/stdin.
      */
     public String dispatchConsoleCommand(String line) {
         if (!isRunning()) {
             return "Paper is not running";
-        }
-        if (usingPhase3 && phase3 != null) {
-            return phase3.dispatchConsoleCommand(line);
         }
         if (process == null || !process.isAlive() || processStdin == null) {
             return "Paper process not accepting commands";
@@ -276,7 +242,7 @@ public final class PaperKernel {
             String line;
             while ((line = r.readLine()) != null) {
                 LOG.info("[paper] " + line);
-                if (line.contains("Done (") || line.contains("For help, type \"help\"")) {
+                if (line.contains("For help, type \"help\"")) {
                     try {
                         Files.writeString(paperDir().resolve("yap-paper-ready.marker"),
                                 "ready\n", StandardCharsets.UTF_8);
@@ -288,6 +254,10 @@ public final class PaperKernel {
         } catch (IOException e) {
             if (processRunning.get()) {
                 LOG.log(Level.WARNING, "Paper log pump ended: " + e.getMessage());
+            }
+        } finally {
+            if (process == null || !process.isAlive()) {
+                processRunning.set(false);
             }
         }
     }

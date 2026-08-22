@@ -1,4 +1,5 @@
 # YaPcore start (Windows) — Usage: .\Start.ps1 [-Gui] [-Fg]
+# Folia product path: YaP cwd stays at root; Folia child JVM uses folia-kernel.
 param(
     [switch]$Gui,
     [switch]$Fg,
@@ -12,6 +13,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 if ($Help) {
     Write-Host "Usage: .\Start.ps1 [-Gui] [-Fg]"
     Write-Host "  Headless by default. -Gui opens Swing control panel. -Fg runs in foreground."
+    Write-Host "  Product path: game-authority=folia (Folia under folia-dir)."
     exit 0
 }
 
@@ -22,7 +24,6 @@ Set-Location $Root
 $Java = Require-YapJava
 Read-YapConfig $Root
 Ensure-YapDirs $Root
-Require-YapPaperclip $Root
 
 if (Test-YapRunning $Root) {
     Write-Error "YaPcore is already running (pid $(Get-YapPid $Root)). Use .\Stop.ps1 first."
@@ -40,13 +41,8 @@ $AppArgs = @()
 if ($Gui) { $AppArgs += "--gui" } else { $AppArgs += "--nogui" }
 
 $WorkDir = $Root
-$Phase3 = $false
 $c = $script:YapConfig
-if ($c.GameAuthority -eq "paper" -and $c.PaperEmbed -and $c.PaperPhase3) {
-    $WorkDir = Join-Path $Root $c.PaperDir
-    if (-not (Test-Path $WorkDir)) { New-Item -ItemType Directory -Path $WorkDir | Out-Null }
-    $Phase3 = $true
-}
+$kernel = Get-YapActiveKernelDir
 
 $LogDir = Join-Path $Root "logs"
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
@@ -55,7 +51,8 @@ $LogFile = Join-Path $LogDir "server.log"
 Write-Host "Starting YaPcore"
 Write-Host "  home=$Root"
 Write-Host "  cwd=$WorkDir"
-if ($Phase3) { Write-Host "  phase3=true (cwd=paper-dir for Paperclip)" }
+Write-Host "  game-authority=$($c.GameAuthority)"
+Write-Host "  kernel-dir=$kernel"
 Write-Host "  java=$Java"
 Write-Host "  jar=$Jar"
 Write-Host "  heap=$($c.RamMinMb)m-$($c.RamMb)m"

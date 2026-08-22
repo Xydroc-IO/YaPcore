@@ -10,8 +10,7 @@ works for a single YaPcore instance or many backends behind Velocity.
 ### Linux / macOS
 
 ```bash
-./scripts/db/start-mariadb.sh
-./scripts/db/configure-db.sh --server-id lobby   # shared pool + playerdata
+./scripts/db/ensure-db.sh --server-id lobby   # start + configure + probe
 # multi-backend on LAN:
 ./scripts/db/configure-db.sh --host 192.168.1.10 --server-id lobby
 ```

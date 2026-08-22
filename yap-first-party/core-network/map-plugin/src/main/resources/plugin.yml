@@ -1,0 +1,16 @@
+name: YaPMap
+version: '1.0.0.0'
+main: com.yapcore.map.MapPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Flat web map with PNG tiles and Leaflet UI
+website: https://github.com/yaplabs
+commands:
+  yapmap:
+    description: Map admin
+    usage: /yapmap reload|render
+    permission: yapmap.admin
+permissions:
+  yapmap.admin:
+    default: op

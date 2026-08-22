@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fetch competitor jars for ecosystem MSPT bench (Paper / Purpur / Leaf @ PAPER_VERSION).
+# Fetch competitor jars for ecosystem MSPT benches (Paper / Purpur / Leaf).
 # Usage: ./scripts/bench/fetch-competitors.sh [version]
 # Env: YAP_BENCH_FORCE_FETCH=1 to re-download even if present
 set -euo pipefail
@@ -12,7 +12,7 @@ ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
 
 cd "$ROOT"
 yap_load_config
-VER="${1:-$PAPER_VERSION}"
+VER="${1:-${PAPER_VERSION:-26.2}}"
 UA="YaPcore/fetch-competitors"
 FORCE="${YAP_BENCH_FORCE_FETCH:-0}"
 mkdir -p "$ROOT/lib"
@@ -32,7 +32,19 @@ fetch_paper() {
     return
   fi
   echo "Downloading Paper ${VER}…"
-  "$ROOT/scripts/fetch-paper.sh" "$VER"
+  local json url
+  json="$(curl -fsSL -A "$UA" "https://fill.papermc.io/v3/projects/paper/versions/${VER}/builds")"
+  url="$(printf '%s' "$json" | python3 -c '
+import json,sys
+builds=json.load(sys.stdin)
+for b in builds:
+    if b.get("channel")=="STABLE":
+        print(b["downloads"]["server:default"]["url"]); break
+else:
+    print(builds[0]["downloads"]["server:default"]["url"])
+')"
+  curl -fL -A "$UA" -o "$out" "$url"
+  echo "OK paper $(wc -c <"$out") bytes → $out"
 }
 
 fetch_purpur() {

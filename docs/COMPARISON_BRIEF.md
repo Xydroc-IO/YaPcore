@@ -11,7 +11,7 @@ Tone rule for this document: **state what is true today, what is in progress, an
 
 | Fact | Status |
 |------|--------|
-| Product identity | **Folia** for the game + YapEngine 16-thread chassis + **YaP Link** — not a rename-only fork |
+| Product identity | **Folia** for game tick + YapEngine **slim chassis** (edge/I/O) + **YaP Link** — not a rename-only fork |
 | Game authority | Folia **26.2** (`game-authority=folia`, `folia-embed=true`) |
 | Phase 3 Paper spatial | **Done as code** — **defaults off**; legacy / opt-in for Paper benches only. Folia path has **no** Phase 3 spatial tick |
 | Folia-aware plugins | **Yes** on product path — same Folia ABI expectations as stock Folia |
@@ -19,10 +19,10 @@ Tone rule for this document: **state what is true today, what is in progress, an
 | Fair highpop MSPT cite | **~100 active bots** — [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md) |
 | 250 keepalive holds | **HOLD-ONLY** — not an MSPT win; do not market as such |
 | Dual-stack (JE + BE) | Join/spawn green; play depth deepening — **not** full Geyser play parity yet |
-| YaP Link | **Shipped** — complete Velocity fork (`yap-link/`); Velocity plugins load; stock Velocity optional |
+| YaP Link | **Shipped** — native proxy (`yap-first-party/link/`); stock Velocity optional stand-in |
 | Network stack shipped | `yap-db`, `yap-playerdata`, packs, chat, floodgate, vehicles, stacker, LuckPerms pack, web dashboard |
 
-**One sentence:** YaPcore is a high-pop–oriented Minecraft Java server product that uses Folia for gameplay, YapEngine for a fixed chassis, and YaP Link for multi-backend networks — with dual-stack and network-ops surface that DIY Folia+Velocity leave as glue work.
+**One sentence:** YaPcore is a high-pop–oriented Minecraft Java server product that uses **Folia for gameplay**, **YapEngine for the edge/I/O chassis**, and **YaP Link** for multi-backend networks — with dual-stack and network-ops surface that DIY Folia+Velocity leave as glue work.
 
 **What we are not claiming today**
 
@@ -77,7 +77,7 @@ Ranked by **how distinctive and shippable they are today** for someone evaluatin
 | Rank | Capability | Maturity | What it means in practice |
 |:----:|------------|----------|---------------------------|
 | **1** | **Folia** as default game authority | Shipped · default on | `game-authority=folia`, `folia-embed=true` — regionized world tick |
-| **2** | YapEngine **16-thread chassis** | Shipped · always on | Fixed roles for watchdog, traffic, spatial cores, DLM, bridge, UI, I/O, telemetry |
+| **2** | YapEngine **slim chassis** | Shipped · always on | Edge: watchdog, traffic, bridge, UI, Heavy I/O, telemetry — **not** game tick (Folia owns that) |
 | **3** | **YaP Link** (complete Velocity fork) | Shipped | Modern forwarding, online-mode, compression, `/server`, Velocity plugin API |
 | **4** | **Network product stack** (DB, playerdata, ranks, packs, chat, floodgate) | Shipped | One Hikari pool, offline `/login`, claims/traders, LuckPerms pack, multi-pack HTTP |
 | **5** | **Ops surface** (web dashboard, control GUI, crash tooling, release packaging) | Shipped | Headless browser ops on `:8080`; `assembleRelease` Linux/Windows |
@@ -154,7 +154,7 @@ Same-machine public harness (see [COMPARE_ECOSYSTEM.md](COMPARE_ECOSYSTEM.md) / 
 | YaPcore is only branding on Folia | **False** — YapEngine chassis + Link + dual-stack + YaP plugins |
 
 **Deck line (accurate):**  
-*YaPcore runs Folia’s game on YapEngine’s fixed 16-thread chassis, with YaP Link for multi-backend networks — Folia-aware plugins, dual-stack join green (play depth deepening), and honest highpop cites (~100 active; no 250 keepalive MSPT marketing).*
+*YaPcore runs **Folia’s game** on a **YapEngine edge/I/O chassis**, with YaP Link for multi-backend networks — Folia-aware plugins, dual-stack join green (play depth deepening), and honest highpop cites (~100 active; no 250 keepalive MSPT marketing).*
 
 ---
 

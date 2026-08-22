@@ -34,7 +34,7 @@ public final class ModulesPanel {
         this.server = server;
         root = GuiTheme.card();
         root.setLayout(new BorderLayout(8, 8));
-        root.add(GuiTheme.sectionTitle("Installed Modules (fine-tune)"), BorderLayout.NORTH);
+        root.add(GuiTheme.sectionTitle("Modules (fine-tune)"), BorderLayout.NORTH);
         list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         list.setBackground(new java.awt.Color(0x0D, 0x11, 0x17));
         list.setForeground(GuiTheme.TEXT);

@@ -1,4 +1,4 @@
-# YaPcore: A Sixteen-Thread Architecture for Concurrent Minecraft-Class Game Servers
+# YaPcore: Folia Game Authority with a Slim Edge Chassis for Minecraft-Class Servers
 
 **YapLabs Technical Whitepaper**  
 Version 0.1 · August 2026  
@@ -10,7 +10,7 @@ Document ID: `YAP-WP-16T-001`
 
 ## Abstract
 
-Minecraft-class game servers traditionally serialize world mutation, plugin callbacks, and network I/O onto a single “main” thread, trading simplicity for latency under load. YaPcore (YapEngine) proposes a **fixed sixteen-thread** partitioning of server work: watchdog control, traffic/sequencing, parallel spatial game cores, chunk synchronization with deferred lease management, a legacy **Compatibility Bridge**, UI sandboxes, and heavy I/O workers. A **SequenceToken** model provides per-stream and global ordering without requiring every subsystem to share one lock. Legacy Spigot/Paper/Folia plugins and first-party YaP plugins/modules execute under an explicit **SYNC / HEAVY / UI** pool contract so inventory and block mutations never race the spatial cores. The shipping product path uses **Folia as game authority**, with YapEngine as the fixed chassis and **YaP Link** for multi-backend networks. Phase 3–3.7 Paper spatial tick remains available as **legacy / opt-in** for Paperclip benches (defaults **off**; Folia path has no Phase 3 spatial tick).
+Minecraft-class game servers traditionally serialize world mutation, plugin callbacks, and network I/O onto a single “main” thread, trading simplicity for latency under load. YaPcore’s **shipping product** uses **Folia** for regionized game tick and a **YapEngine slim chassis** for the public edge: watchdog control, traffic/sequencing, Compatibility Bridge, UI sandboxes, and heavy I/O workers. A **SequenceToken** model provides per-stream and global ordering without requiring every subsystem to share one lock. Legacy Spigot/Paper/Folia plugins and first-party YaP plugins/modules execute under an explicit **SYNC / HEAVY / UI** pool contract so inventory and block mutations never race Folia region state. **YaP Link** (complete Velocity fork) fronts multi-backend networks. Phase 3–3.7 Paper spatial tick on chassis quads remains **legacy / opt-in** for Paperclip benches (defaults **off**).
 
 This paper describes the architecture, concurrency invariants, networking and crossplay stance, plugin/module surface, and evaluation methodology. It is intended for systems researchers, server operators, and plugin authors evaluating YaPcore as a research and production platform.
 
@@ -28,27 +28,27 @@ Vanilla and Paper-derived Java Edition servers concentrate authoritative world s
 
 YaPcore contributes:
 
-1. A **named 16-thread matrix** with clear ownership of networking, physics/spatial loops, sync, UI, and I/O.
-2. **SequenceToken** sequencing for ordered handoff across threads.
+1. A **three-layer product stack**: Folia game tick + YapEngine edge/I/O chassis + YaP Link proxy.
+2. **SequenceToken** sequencing for ordered handoff across chassis threads.
 3. A **Compatibility Bridge** that stages legacy Bukkit mutations onto the game-core drain window.
 4. Dual-stack **Java TCP + Bedrock UDP** ingress with optional shared listen port and Geyser-class crossplay hub.
 5. A **three-tier extension model**: Folia/Paper-style plugins, YaP plugins, and fine-tune modules.
 
 ### 1.3 Non-goals
 
-YaPcore uses **Folia as game authority** for the shipping product: Folia-aware plugins
-receive Folia API coverage from the embedded Folia clip (26.2). Legacy
-`game-authority=paper` still provides **complete Paper API coverage** from the
-embedded Paperclip (`paper-api` 26.2). YaPcore does not claim NeoForge
-dedicated-server semantics. The Compatibility Bridge facade (non-game authority)
-remains best-effort stubs only — see `ApiCoverage` and
-[PAPER_API_COVERAGE.md](../PAPER_API_COVERAGE.md).
+YaPcore uses **Folia as game authority** for the shipping product: Folia-aware
+first-party plugins receive Folia API coverage (region schedulers via Folia +
+[`YapSched`](../YAP_SCHED.md)). Legacy `game-authority=paper` still provides
+**complete Paper API coverage** from the embedded Paperclip (`paper-api` 26.2)
+for benches. Stock Paper jars on Folia are unsupported. The Compatibility Bridge
+facade (non-game authority) remains best-effort stubs only — see `ApiCoverage`
+and [PAPER_API_COVERAGE.md](../PAPER_API_COVERAGE.md).
 
 ### 1.4 Product status (August 2026)
 
 YaPcore’s shipping product path uses **Folia as game authority**
-(`game-authority=folia`, `folia-embed=true`). YapEngine’s 16-thread chassis always
-boots. **YaP Link** is a complete Velocity fork (modern forwarding, online-mode,
+(`game-authority=folia`, `folia-embed=true`). YapEngine’s **slim chassis** always
+boots (edge/I/O; **not** game tick). **YaP Link** is a complete Velocity fork (modern forwarding, online-mode,
 compression, transfers, Velocity plugin API). Phases
 3–3.7 Paper spatial tick are **complete as code** but **retired as product default**
 (opt-in for Paper benches only; Folia path has no Phase 3 spatial tick). The product
@@ -74,29 +74,42 @@ than requiring a clean-room rewrite onto a new ECS.
 
 ## 3. Architecture
 
-### 3.1 Thread matrix
+### 3.1 Three layers (product)
 
-| ID | Role | Responsibility |
-|----|------|----------------|
+| Layer | Game tick? | Notes |
+|-------|------------|-------|
+| YaP Link | No | Proxy JVM — multi-backend |
+| YapEngine chassis | No | Edge, bridge, UI/Heavy I/O, telemetry |
+| Folia | **Yes** | Region thread pool in embedded JVM |
+
+### 3.2 Chassis channel matrix (T1–16)
+
+| ID | Role | Responsibility (v2.0) |
+|----|------|------------------------|
 | 1 | Controller | Watchdog, recovery, process health |
 | 2 | Traffic Cop | Ingress shaping, SequenceToken assignment |
-| 3–6 | Game Core | Parallel spatial loops (quad / bitwise quadrant index) |
-| 7 | Chunk Sync DLM | Deferred lease / chunk ownership (T7) |
-| 8 | Boundary Arbitrator | Cross-quadrant conflict resolution (T8) |
-| 9 | Compatibility Bridge | Legacy SYNC mutation queue → tick drain |
+| 3–6 | Chassis worker quads | Sequenced bridge/plugin tasks; **legacy Phase 3 NMS tick on Paper benches only** |
+| 7 | Chunk Sync DLM | Deferred lease / chunk ownership (**Paper Phase 3 legacy**) |
+| 8 | Boundary Arbitrator | Cross-quadrant handoff (**Paper Phase 3 legacy**) |
+| 9 | Compatibility Bridge | Legacy SYNC mutation queue → Folia region APIs |
 | 10–11 | UI sandbox | Menu polish, click routing |
 | 12–15 | Heavy I/O | DB, HTTP, files, proxy sync |
 | 16 | Telemetry | Metrics / JFR hooks |
 
 See also [YAPENGINE_16THREAD.md](../YAPENGINE_16THREAD.md).
 
-### 3.2 Sequencing
+### 3.3 Sequencing
 
 Each logical stream (connection, chunk lease, plugin task) obtains a `SequenceToken` carrying a per-stream sequence and a global identifier with microsecond timestamp. Strict ordered queues refuse out-of-order commits within a stream while allowing cross-stream parallelism.
 
-### 3.3 Spatial model
+### 3.4 Spatial model (chassis quads + Folia regions)
 
-World interest is indexed with bitwise quadrant structures so cores 3–6 operate on disjoint regions when possible. Boundary packets cross T8 arbitration before becoming visible to other cores.
+**Folia** indexes world interest by region and runs authoritative tick on a dynamic
+region thread pool. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin
+work by bitwise quadrant — they do **not** replace Folia game tick on the product
+path. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (benches only).
+Boundary packets on the legacy path crossed T8 arbitration before becoming visible
+to other quads.
 
 ### 3.4 Memory & GC posture
 
@@ -166,7 +179,7 @@ YaPcore demonstrates a practical decomposition of Minecraft-class server work in
 2. OpenJDK — *ZGC* and *Generational ZGC* documentation.
 3. Netty project — asynchronous event-driven network application framework.
 4. PaperMC / Folia — regionized threading discussions for Bukkit servers.
-5. YapLabs — *YapEngine 16-thread architecture notes* (in-repo).
+5. YapLabs — *YapEngine chassis architecture notes* (in-repo).
 
 ---
 
@@ -184,7 +197,7 @@ YaPcore demonstrates a practical decomposition of Minecraft-class server work in
 
 ```bibtex
 @techreport{yapcore2026sixteen,
-  title       = {YaPcore: A Sixteen-Thread Architecture for Concurrent Minecraft-Class Game Servers},
+  title       = {YaPcore: Folia Game Authority with a Slim Edge Chassis for Minecraft-Class Servers},
   author      = {{YapLabs}},
   institution = {YapLabs},
   year        = {2026},

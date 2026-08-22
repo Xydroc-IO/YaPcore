@@ -1,0 +1,77 @@
+name: YaPChat
+version: '1.0.0.0'
+main: com.yapcore.chat.ChatPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Full first-party chat — channels, PM, mute integration, unsigned fix
+website: https://github.com/yaplabs
+softdepend: [YaPPerms, YaPModeration, PlaceholderAPI]
+commands:
+  msg:
+    description: Private message a player
+    usage: /msg <player> <message>
+    aliases: [m, tell, w, whisper, pm]
+    permission: yapchat.msg
+  reply:
+    description: Reply to last private message
+    usage: /reply <message>
+    aliases: [r]
+    permission: yapchat.msg
+  staffchat:
+    description: Staff-only chat channel
+    usage: /staffchat <message>
+    aliases: [sc, ac]
+    permission: yapchat.staff
+  yapchat:
+    description: Chat admin
+    usage: /yapchat reload
+    permission: yapchat.admin
+  channel:
+    description: Switch chat channel
+    usage: /channel <global|local|staff>
+    aliases: [ch]
+    permission: yapchat.use
+  clearchat:
+    description: Clear chat for everyone
+    usage: /clearchat
+    aliases: [cc]
+    permission: yapchat.admin
+  ignore:
+    description: Ignore a player's messages
+    usage: /ignore <player>
+    permission: yapchat.use
+  unignore:
+    description: Stop ignoring a player
+    usage: /unignore <player>
+    permission: yapchat.use
+  ignorelist:
+    description: List ignored players
+    usage: /ignorelist
+    aliases: [ignored]
+    permission: yapchat.use
+permissions:
+  yapchat.use:
+    description: Send public chat
+    default: true
+  yapchat.msg:
+    description: Private messages
+    default: true
+  yapchat.staff:
+    description: Staff chat
+    default: op
+  yapchat.socialspy:
+    description: See private messages
+    default: op
+  yapchat.admin:
+    description: Reload chat config
+    default: op
+  yapchat.color:
+    description: Use color codes in chat
+    default: op
+  yapchat.bypass.filter:
+    description: Bypass chat filter
+    default: op
+  yapchat.bypass.slow:
+    description: Bypass slow mode
+    default: op
