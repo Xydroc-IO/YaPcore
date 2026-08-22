@@ -1,0 +1,68 @@
+arenas:
+  ffa_pit:
+    world: world
+    min:
+      x: -20
+      y: 60
+      z: -20
+    max:
+      x: 20
+      y: 90
+      z: 20
+    spawns:
+      - x: -10.5
+        y: 65.0
+        z: -10.5
+        yaw: 45
+        pitch: 0
+      - x: 10.5
+        y: 65.0
+        z: 10.5
+        yaw: -135
+        pitch: 0
+      - x: -10.5
+        y: 65.0
+        z: 10.5
+        yaw: 135
+        pitch: 0
+      - x: 10.5
+        y: 65.0
+        z: -10.5
+        yaw: -45
+        pitch: 0
+    lobby:
+      world: world
+      x: 0.5
+      y: 100.0
+      z: 0.5
+      yaw: 0
+      pitch: 0
+
+  duel_ring:
+    world: world
+    min:
+      x: 40
+      y: 60
+      z: -10
+    max:
+      x: 60
+      y: 80
+      z: 10
+    spawns:
+      - x: 45.5
+        y: 65.0
+        z: 0.5
+        yaw: 90
+        pitch: 0
+      - x: 54.5
+        y: 65.0
+        z: 0.5
+        yaw: -90
+        pitch: 0
+    lobby:
+      world: world
+      x: 0.5
+      y: 100.0
+      z: 0.5
+      yaw: 0
+      pitch: 0

@@ -1,0 +1,56 @@
+# Block break tool requirements (tier: wooden=1 stone=2 iron=3 diamond=4 netherite=5)
+rules:
+  IRON_ORE:
+    tool: PICKAXE
+    min-tier: 1
+  DEEPSLATE_IRON_ORE:
+    tool: PICKAXE
+    min-tier: 1
+  GOLD_ORE:
+    tool: PICKAXE
+    min-tier: 2
+  DEEPSLATE_GOLD_ORE:
+    tool: PICKAXE
+    min-tier: 2
+  DIAMOND_ORE:
+    tool: PICKAXE
+    min-tier: 3
+  DEEPSLATE_DIAMOND_ORE:
+    tool: PICKAXE
+    min-tier: 3
+  EMERALD_ORE:
+    tool: PICKAXE
+    min-tier: 3
+  DEEPSLATE_EMERALD_ORE:
+    tool: PICKAXE
+    min-tier: 3
+  ANCIENT_DEBRIS:
+    tool: PICKAXE
+    min-tier: 4
+  OBSIDIAN:
+    tool: PICKAXE
+    min-tier: 3
+  OAK_LOG:
+    tool: AXE
+    min-tier: 1
+  BIRCH_LOG:
+    tool: AXE
+    min-tier: 1
+  SPRUCE_LOG:
+    tool: AXE
+    min-tier: 1
+  JUNGLE_LOG:
+    tool: AXE
+    min-tier: 1
+  ACACIA_LOG:
+    tool: AXE
+    min-tier: 1
+  DARK_OAK_LOG:
+    tool: AXE
+    min-tier: 1
+  CHERRY_LOG:
+    tool: AXE
+    min-tier: 1
+  MANGROVE_LOG:
+    tool: AXE
+    min-tier: 1

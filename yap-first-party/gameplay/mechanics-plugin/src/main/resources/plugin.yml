@@ -1,0 +1,20 @@
+name: YaPMechanics
+version: 1.0.0.0
+main: com.yapcore.mechanics.MechanicsPlugin
+api-version: '1.21'
+folia-supported: true
+description: MMO world mechanics — tools, stamina, resource nodes, farming, physics
+authors: [YapLabs]
+depend: []
+softdepend: [YaPSkills, YaPCombat]
+commands:
+  ymechanics:
+    description: Reload YaPMechanics
+    usage: /ymechanics reload|stamina [player]
+permissions:
+  yapmechanics.admin:
+    description: /ymechanics reload
+    default: op
+  yapmechanics.stamina.others:
+    description: View another player's stamina
+    default: op

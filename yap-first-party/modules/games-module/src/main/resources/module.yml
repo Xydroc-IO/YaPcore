@@ -1,0 +1,8 @@
+name: YaPGamesModule
+main: com.yapcore.games.module.GamesPackagingModule
+version: 1.0.0.0
+api: yap-module-1
+author: YapLabs
+description: Minigames kernel packaging (requires plugins/yap-games.jar)
+provides: [games]
+requires: []

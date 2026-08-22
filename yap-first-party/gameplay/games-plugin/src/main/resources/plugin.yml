@@ -1,0 +1,29 @@
+name: YaPGames
+version: 1.0.0.0
+main: com.yapcore.games.GamesPlugin
+api-version: '1.21'
+folia-supported: true
+description: YaP minigames — arenas, queue, kits, stats, rewards
+authors: [YapLabs]
+depend: []
+softdepend: [YaPCombat, YaPSkills, YaPPlayerData, PlaceholderAPI, YaPRegions]
+commands:
+  queue:
+    description: Join or leave a minigame queue
+    usage: /queue <ffa|duels|leave>
+  duel:
+    description: Challenge a player to a duel
+    usage: /duel <player>
+  game:
+    description: Match status, leave, and stats
+    usage: /game <leave|status|stats [mode]>
+  ygames:
+    description: YaPGames admin
+    usage: /ygames <reload|list|forcestart|info|snapshot json>
+permissions:
+  yapgames.use:
+    description: Join queues, duel, and use /game
+    default: true
+  yapgames.admin:
+    description: /ygames admin commands
+    default: op

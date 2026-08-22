@@ -1,0 +1,8 @@
+name: YaPGamesDuelsModule
+main: com.yapcore.games.module.DuelsPackagingModule
+version: 1.0.0.0
+api: yap-module-1
+author: YapLabs
+description: Duels minigame packaging for YaPGames (requires plugins/yap-games.jar)
+provides: [games-duels]
+requires: [games]
