@@ -1,14 +1,32 @@
-# Velocity proxy support
+# Velocity / YaP Link proxy support
 
-YaPcore is a **game server** (Paper + YapEngine). [Velocity](https://papermc.io/software/velocity)
-is a **proxy** in front of one or more backends. This doc makes YaPcore a clean Velocity backend.
+YaPcore (Folia/Paper) is a **game backend**. The public edge is a **full proxy**:
 
-We do **not** embed Velocity. We configure Paper for **modern player-info forwarding** so Velocity
-can hand off real UUID / IP / skin data safely.
+- **[YaP Link](YAP_LINK.md)** — YapLabs’ **complete Velocity fork** (`yap-link/`, GPL-3.0)
+- Stock Velocity — same contract (optional stand-in only)
+
+Product Link is **not** a partial shim. Velocity plugins still load (`com.velocitypowered.*`).
+Backends use **modern player-info forwarding** for UUID / IP / skins.
 
 ---
 
-## Quick setup
+## Quick setup (YaP Link)
+
+```bash
+./scripts/setup-velocity-forwarding.sh --enable
+# sets game-authority=folia, velocity-enabled=true, velocity-online-mode=false
+./scripts/start.sh
+./scripts/start-yap-link.sh
+# players → Link :25565 → Folia loopback
+```
+
+Smoke: `./scripts/smoke-yap-link-folia.sh`
+
+Full Link docs: [YAP_LINK.md](YAP_LINK.md).
+
+---
+
+## Quick setup (stock Velocity stand-in)
 
 ```bash
 # From YaPcore root — creates forwarding.secret, wires config (does not enable yet)
@@ -38,13 +56,13 @@ velocity-bind-localhost=true
 online-mode=false
 ```
 
-On boot, YaPcore writes:
+On boot, YaPcore writes (Folia or Paper kernel dir):
 
 | File | Change |
 |------|--------|
-| `paper-kernel/server.properties` | `online-mode=false`, `prevent-proxy-connections=false`, optional `server-ip=127.0.0.1` |
-| `paper-kernel/config/paper-global.yml` | `proxies.velocity.enabled=true` + matching `secret` + `online-mode` |
-| `paper-kernel/spigot.yml` | `settings.bungeecord=false` (required — Bungee + Velocity modern conflict) |
+| `folia-kernel/` or `paper-kernel/server.properties` | `online-mode=false`, `prevent-proxy-connections=false`, optional `server-ip=127.0.0.1` |
+| `…/config/paper-global.yml` | `proxies.velocity.enabled=true` + matching `secret` + `online-mode` |
+| `…/spigot.yml` | `settings.bungeecord=false` (required — Bungee + Velocity modern conflict) |
 
 ### 2. Velocity (`velocity.toml`)
 

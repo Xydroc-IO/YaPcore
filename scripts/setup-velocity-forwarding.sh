@@ -38,10 +38,13 @@ def setprop(t, k, v):
         return re.sub(rf'^{re.escape(k)}=.*$', f'{k}={v}', t, flags=re.M)
     return t + f'\n{k}={v}\n'
 text = setprop(text, 'velocity-secret-file', secret)
-text = setprop(text, 'velocity-online-mode', 'true')
+text = setprop(text, 'velocity-online-mode', 'false')  # match YaP Link default offline
 text = setprop(text, 'velocity-bind-localhost', 'true')
 text = setprop(text, 'online-mode', 'false')
+# Prefer Folia product path when enabling proxy
 if enable:
+    text = setprop(text, 'game-authority', 'folia')
+    text = setprop(text, 'folia-embed', 'true')
     text = setprop(text, 'velocity-enabled', 'true')
 else:
     # leave enabled as-is unless missing
@@ -50,10 +53,10 @@ else:
 cfg.write_text(text)
 print('Updated', cfg)
 print('velocity-enabled=', 'true' if enable else 'unchanged/false')
-print('Copy the same file to Velocity as forwarding.secret')
-print('See docs/VELOCITY.md and examples/velocity/')
+print('Copy the same file to YaP Link / Velocity as forwarding.secret')
+print('See docs/VELOCITY.md, docs/YAP_LINK.md, and examples/velocity/')
 PY
 
 if [ "$ENABLE" -eq 1 ]; then
-  echo "WARNING: velocity-enabled=true — Paper will bind localhost; players must join via Velocity."
+  echo "WARNING: velocity-enabled=true — Folia/Paper will bind localhost; players must join via YaP Link or Velocity."
 fi

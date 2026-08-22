@@ -1,0 +1,19 @@
+# Example YaP Link config (copy into link-data/link.properties)
+
+bind=0.0.0.0:25565
+motd=YaP Link
+max-players=500
+online-mode=false
+player-info-forwarding-mode=modern
+forwarding-secret-file=forwarding.secret
+
+servers.lobby=127.0.0.1:25566
+try=lobby
+force-default-server=true
+enable-server-command=true
+public-host=127.0.0.1
+public-port=25565
+
+bedrock-enabled=false
+bedrock-bind=0.0.0.0:19132
+bedrock-backend=127.0.0.1:25566
