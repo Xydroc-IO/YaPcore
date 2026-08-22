@@ -1,0 +1,9 @@
+name: YaPBedrockUI
+version: 1.0.0.0
+main: com.yapcore.bedrockui.BedrockUiPlugin
+api-version: '1.21'
+folia-supported: true
+description: Bedrock UI bridge — FormService + BedrockUiBridge delegation for Folia plugins
+authors: [YapLabs]
+softdepend: [YaPFloodgate]
+loadbefore: [YaPMmoBedrock]

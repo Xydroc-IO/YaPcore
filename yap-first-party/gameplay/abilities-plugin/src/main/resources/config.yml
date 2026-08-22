@@ -1,0 +1,5 @@
+abilities-directory: abilities
+effects-directory: effects
+enabled: true
+tick-interval: 10
+default-range: 20.0

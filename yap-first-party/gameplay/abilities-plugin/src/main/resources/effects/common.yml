@@ -1,0 +1,145 @@
+# Generated status effect definitions for yap-abilities
+effects:
+  poison:
+    name: Poison
+    kind: debuff
+    duration-ticks: 100
+    max-stacks: 3
+    group: dot
+    tick-interval: 20
+    tick:
+      - type: damage
+        style: magic
+        max-hit: 2
+      - type: vfx
+        particle: SPELL_MOB
+        count: 4
+    modifiers:
+      speed: 0.95
+
+  burn:
+    name: Burn
+    kind: debuff
+    duration-ticks: 80
+    max-stacks: 2
+    group: dot
+    tick-interval: 15
+    tick:
+      - type: damage
+        style: magic
+        max-hit: 3
+      - type: vfx
+        particle: FLAME
+        count: 6
+
+  slow:
+    name: Slow
+    kind: debuff
+    duration-ticks: 120
+    max-stacks: 1
+    modifiers:
+      speed: 0.7
+
+  weaken:
+    name: Weaken
+    kind: debuff
+    duration-ticks: 160
+    max-stacks: 2
+    modifiers:
+      attack: -5
+      strength: -5
+
+  thick_skin:
+    name: Thick Skin
+    kind: buff
+    duration-ticks: 600
+    max-stacks: 1
+    group: prayer_defence
+    modifiers:
+      defence: 5
+
+  burst_of_strength:
+    name: Burst of Strength
+    kind: buff
+    duration-ticks: 600
+    max-stacks: 1
+    group: prayer_strength
+    modifiers:
+      strength: 8
+
+  clarity:
+    name: Clarity
+    kind: buff
+    duration-ticks: 600
+    max-stacks: 1
+    group: prayer_attack
+    modifiers:
+      attack: 8
+
+  sharp_eye:
+    name: Sharp Eye
+    kind: buff
+    duration-ticks: 600
+    max-stacks: 1
+    group: prayer_ranged
+    modifiers:
+      ranged: 8
+
+  mystic_might:
+    name: Mystic Might
+    kind: buff
+    duration-ticks: 600
+    max-stacks: 1
+    group: prayer_magic
+    modifiers:
+      magic: 8
+
+  protect_melee:
+    name: Protect from Melee
+    kind: buff
+    duration-ticks: 600
+    max-stacks: 1
+    group: prayer_overhead
+    modifiers:
+      damage-taken: 0.6
+
+  protect_missiles:
+    name: Protect from Missiles
+    kind: buff
+    duration-ticks: 600
+    max-stacks: 1
+    group: prayer_overhead
+    modifiers:
+      damage-taken: 0.6
+
+  protect_magic:
+    name: Protect from Magic
+    kind: buff
+    duration-ticks: 600
+    max-stacks: 1
+    group: prayer_overhead
+    modifiers:
+      damage-taken: 0.6
+
+  berserk:
+    name: Berserk
+    kind: buff
+    duration-ticks: 200
+    max-stacks: 1
+    modifiers:
+      strength: 12
+      defence: -4
+      speed: 1.1
+
+  regen:
+    name: Regeneration
+    kind: buff
+    duration-ticks: 200
+    max-stacks: 1
+    tick-interval: 20
+    tick:
+      - type: heal
+        amount: 2
+      - type: vfx
+        particle: HEART
+        count: 2
