@@ -23,7 +23,7 @@ Think of it like this:
 | **YaP Link** | Our network front door (native Velocity-class proxy) — one public address, many backends |
 
 **Short pitch:**  
-*A Minecraft server that uses Folia for the game, YapEngine for the chassis, and YaP Link for the network — with Java and Bedrock players able to join the same place.*
+*Next-gen Minecraft server software — Folia for the game, built-in YaP plugins instead of Paper + ten jars, YaP Link for networks, Java and Bedrock on one product.*
 
 ---
 
@@ -36,20 +36,20 @@ Normal Minecraft servers (including classic Paper) do a lot of the “game tick�
 We’re **not** optimizing for empty lobby servers. The product is aimed at
 **high-pop / heavy-load** networks. Fair bot cites focus on **~100 active players** per shard;
 claiming “250 MSPT wins” from keepalive-only holds is not honest — see
-[BENCH_VS_PAPER.md](BENCH_VS_PAPER.md).
+[BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md).
 
 ---
 
 ## What you get as a player or server owner
 
-1. **A real Minecraft server** — powered by Folia by default (Paper path still exists for legacy benches).  
-2. **Java and Bedrock together** — toward the same shared world story (no Via\*/Geyser jars required for the product path).  
-3. **Familiar plugins** — Folia/Paper-class jars and YaP plugins in **one** `plugins/` folder; Folia-aware plugins are the product path.  
-4. **Network essentials shipped** — shared MariaDB pool (`yap-db`), cross-server player data with offline `/login`, claims/taxes/NPC traders, multi-pack helper, unsigned-chat fix, LuckPerms rank pack.  
-5. **YaP Link** — first-party native Velocity-class proxy for multi-backend networks ([YAP_LINK.md](YAP_LINK.md)).  
-6. **Day-to-day ops tools** — config, desktop control panel, **web dashboard** (browser, for headless — including Ranks), resource packs, crash reports.  
-7. **Vehicles built in** — real cars/trucks (not minecarts), fuel, upgrades, shop; HD models in the default pack.  
-8. **A clear design, not a rename** — Folia game + Yap chassis + Link + dual-stack are intentional.
+1. **A real Minecraft server** — **Folia by default** (multithreaded regions). Paper is legacy/benches only.  
+2. **Java and Bedrock together** — built-in dual-stack; no Via\*/Geyser jar stack.  
+3. **Plugins most servers need — shipped** — perms, essentials, protect, world tools, chat, moderation, map, tab, DB, playerdata, link — see [PLUGIN_COMPAT_MATRIX.md](PLUGIN_COMPAT_MATRIX.md). You don’t assemble the old Paper plugin pile.  
+4. **Network essentials** — shared MariaDB (`yap-db`), offline `/login`, claims, ranks pack, multi-pack HTTP.  
+5. **YaP Link** — native proxy for multi-backend networks ([YAP_LINK.md](YAP_LINK.md)).  
+6. **Ops** — control panel, **web dashboard**, resource packs, crash reports.  
+7. **Vehicles** (opt-in) — real cars/trucks, fuel, shop.  
+8. **Next-gen by design** — not “Paper + plugins”; one product for most survival/network ops.
 
 YaPcore does **not** embed a database. Owners run one Docker MariaDB (Linux + Windows scripts) and point every backend at it — see [MARIADB.md](MARIADB.md) / [PLAYERDATA.md](PLAYERDATA.md) / [PERMISSIONS.md](PERMISSIONS.md).
 
@@ -60,7 +60,7 @@ YaPcore does **not** embed a database. Owners run one Docker MariaDB (Linux + Wi
 Imagine a restaurant:
 
 - **Folia** is the **kitchen** that cooks different parts of the map on different stations (regions).  
-- **YapEngine** is the **building layout** — door staff, runners, storage, health checks (sixteen fixed jobs).  
+- **YapEngine** is the **front-of-house and back-office** — networking, plugin bridge, storage, health checks (not the kitchen).
 - **YaP Link** is the **host at the front door** who seats guests at the right dining room when you run more than one kitchen.
 
 Players still follow careful rules so plugins and inventory stay correct. Dual-stack means Java and Bedrock can share the same story without installing a pile of third-party protocol jars.
@@ -73,9 +73,9 @@ Players still follow careful rules so plugins and inventory stay correct. Dual-s
 |-------|------------------|--------|
 | Folia runs the game | Default product path | **Default on** |
 | YapEngine chassis | Fixed worker roles always boot | **Done** |
-| YaP Link proxy | Public join → Folia backends | **Shipped** (native Velocity-class proxy) |
+| YaP Link proxy | Public join → Folia backends | **Shipped** (native proxy, phases 0–6) |
 | Fair highpop cite | ~100 active bots MSPT | **Active gate** |
-| Phase 4 dual-stack join | First-party Via\* + Geyser parity for supported bands | **In progress** — JE matrix + Bedrock smoke green for join/spawn; play depth deepening |
+| Phase 4 dual-stack join | First-party Via\* + Geyser parity for supported bands | **Join DoD green** — JE matrix + play-depth smoke; optional fidelity soak |
 | Legacy Paper + Phase 3 spatial | Old four-map-cook path | **Opt-in / benches only** |
 
 **What that means for you:**  
@@ -138,7 +138,7 @@ See [WHAT_WE_ARE.md](WHAT_WE_ARE.md) and [FULL_RUNDOWN.md](FULL_RUNDOWN.md).
 | Shared MariaDB / YapDb | [MARIADB.md](MARIADB.md) · [YAPDB.md](YAPDB.md) |
 | Player data / offline auth | [PLAYERDATA.md](PLAYERDATA.md) |
 | Permissions / LuckPerms ranks | [PERMISSIONS.md](PERMISSIONS.md) |
-| Paper / Folia port plan | [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) |
+| Roadmap phases | [FULL_RUNDOWN.md](FULL_RUNDOWN.md) |
 | Docs index | [README.md](README.md) |
 | Deep architecture paper | [whitepaper/YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) |
 | Same paper, plain English | [whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md](whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) |

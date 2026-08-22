@@ -8,26 +8,30 @@
 
 ## Are we “a better version of Paper”?
 
-**Not that slogan — and not “faster everywhere.”** Default product path is **Folia for the game** + YapEngine for the chassis + YaP Link for the proxy edge. Legacy **Paper + Phase 3 spatial** remains available for benches and ops who need the old path.
+**No — and you usually don’t need Paper anymore.** YaPcore is **next-gen server software** for
+most survival and network operators: **Folia** for multithreaded gameplay, **first-party YaP
+plugins** for what people used to install separately (perms, essentials, protect, world edit,
+chat, moderation, map, tab, link, dual-stack, DB, playerdata), and **YaP Link** for the proxy
+edge. The old **Paper + ten plugins + Velocity + Geyser** assembly path is not the product story.
 
-| | Stock Paper | Stock Folia | YaPcore (today) |
-|--|-------------|-------------|-----------------|
-| Game (chunks, mobs, redstone, commands) | Paper | Folia | **Folia by default** (`game-authority=folia`) |
-| Multithreaded world tick | No (single main) | Yes (regions) | **Folia regions** on product path; Phase 3 Paper spatial is **legacy / opt-in** |
-| Thread / chassis design | Paper’s model | Folia region pool | **Folia regions** for game tick + YapEngine **chassis** (edge/I/O) always on |
-| Network front door | DIY Velocity | DIY Velocity | **YaP Link** (native proxy) — [YAP_LINK_NATIVE.md](YAP_LINK_NATIVE.md) |
-| Bedrock + Java same product | Usually Geyser stack | Usually Geyser stack | Built-in dual-stack / crossplay path |
-| Plugins | Bukkit/Spigot/Paper | Folia-aware | Folia product path; Paper path for legacy |
+Legacy **`game-authority=paper`** remains for benches only — not for new deployments.
+
+| | Paper + DIY plugins | Stock Folia + DIY | **YaPcore (default)** |
+|--|---------------------|-------------------|------------------------|
+| Game tick | Single main thread | Region threads | **Folia regions** |
+| Typical network stack | Install LP, Essentials, WE, Velocity, Geyser, … | Same glue work | **Shipped natives** — [PLUGIN_COMPAT_MATRIX.md](PLUGIN_COMPAT_MATRIX.md) |
+| Proxy / crossplay | DIY | DIY | **YaP Link** + built-in dual-stack |
+| Who it’s for | Exotic Paper-only plugin niche | Folia jar purists | **Most servers** — survival, networks, high-pop |
 
 So:
 
 - We are **not** “Paper but already faster everywhere.”
-- We are **not** “Folia but better” as a slogan — we **use Folia** as the game and add Yap’s edge.
-- We **are**: **Folia’s game + YapEngine’s chassis + YaPcore’s edge** (Link, dual-stack, packs, shared MariaDB, GUI + **web dashboard**, vehicles, network playerdata, YaP plugins).
+- We are **not** claiming every Paper plugin still runs — use **YaP natives** or Folia-aware jars.
+- We **are**: the **complete next-gen stack** — Folia game + YapEngine chassis + shipped plugin pool + Link + dual-stack so operators stop assembling Paper-era glue.
 
 **Honest pitch today:**
 
-> **High-pop Minecraft on YapEngine — Folia gameplay by default, YaP Link for multi-backend networks, fair highpop cite at ~100 active bots, Phase 4 first-party dual-stack (join green; play depth deepening) + shipped network plugins (YapDb, playerdata, ranks).**
+> **Next-gen Minecraft for most operators — Folia gameplay, shipped YaP plugin stack (~90% of what networks used to glue on), YaP Link for multi-backend networks, dual-stack join + play-depth smoke green.**
 
 ## What we do (product surface)
 
@@ -51,7 +55,7 @@ So:
 - Not a claim of “faster Paper/Leaf in every workload.”
 - Not a clean-room rewrite of all of Minecraft.
 - Not a claim that DIY Folia+Velocity is obsolete — Link is the product proxy; stock Velocity still works.
-- Not “full Geyser play parity” until live soaks close — join/spawn is green; play depth is deepening.
+- Not “full Geyser clone” marketing — join/spawn + play-depth smoke green; emotes/custom skulls partial.
 
 ## Architecture (three layers)
 
@@ -61,7 +65,7 @@ So:
 | **YapEngine chassis** | Edge + I/O + plugin sandboxes (16 logical channels; **not** game tick) |
 | **Folia** | Game — chunks, entities, redstone, commands (region thread pool) |
 
-Chassis channel map (T1–16): [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) · Legacy Paper spatial: [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md)
+Chassis channel map (T1–16): [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) · Legacy Paper spatial: [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md)
 
 ## Current phase (honest)
 
@@ -72,9 +76,9 @@ Chassis channel map (T1–16): [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) ·
 | 3 — Tick on YapEngine cores 3–6 | **Done as code** — **retired as product default** (opt-in for Paper benches) |
 | 3.5–3.7 — Interior / border world tick | **Done as code** — same: legacy Paper path only |
 | **Folia product path** | **Default** — `game-authority=folia`; fetch/smoke via `scripts/fetch-folia.sh` / `smoke-folia.sh` |
-| **YaP Link** | **Phases 0–2 shipped** — native proxy; plugin platform Phase 3+ — [YAP_LINK_NATIVE.md](YAP_LINK_NATIVE.md) |
-| **Fair highpop MSPT** | **Active** — cite **~100 active bots**; 250 keepalive holds are HOLD-ONLY — [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md) |
-| 4 — Dual-stack + **Via + Geyser parity** (own code) + YaP network plugins | **In progress** — JE matrix + BE smoke join/spawn green; BE play depth landing — [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md) |
+| **YaP Link** | **Phases 0–6 shipped** — native Velocity-class proxy (`0.6.0-phase6`): forwarding through plugin platform, Bedrock UDP edge, metrics, release bundle — [YAP_LINK_NATIVE.md](YAP_LINK_NATIVE.md) · Bedrock at Link: [YAP_LINK.md](YAP_LINK.md#bedrock--geyser) |
+| **Fair highpop MSPT** | **Active** — cite **~100 active bots**; 250 keepalive holds are HOLD-ONLY — [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md) |
+| 4 — Dual-stack + **Via + Geyser parity** (own code) + YaP network plugins | **Join DoD green** — JE matrix + BE play-depth smoke; optional fidelity soak — [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md) |
 
 ## How to say it out loud
 

@@ -4,8 +4,8 @@
 
 **Product path:** Folia game (`game-authority=folia`, `folia-embed=true`) + YapEngine chassis.  
 Phase 3 Paper spatial is **legacy / opt-in** (defaults off); Folia path has no Phase 3 spatial tick.  
-Phase 4: dual-stack join green; play depth deepening (not full Geyser play parity yet).  
-See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) · [WHAT_WE_ARE.md](WHAT_WE_ARE.md).
+Phase 4: dual-stack join + play-depth smoke green (not full Geyser clone yet).  
+See [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md) · [WHAT_WE_ARE.md](WHAT_WE_ARE.md).
 
 ```properties
 game-authority=folia
@@ -60,7 +60,7 @@ first-party Geyser parity (`GeyserStyleTranslator`), not the Geyser jar.
 | Native JE gateway | `ProtocolBand` + expanding `ViaStyleRemapper` |
 | Folia JE (product) | Phase 4: Via\* parity onto Folia 26.2 |
 | Paper JE (legacy) | Same remapper wiring on Paper authority |
-| Bedrock | Phase 4: Geyser parity via CrossplayHub (play depth deepening) |
+| Bedrock | Phase 4: Geyser parity via CrossplayHub (join + play-depth smoke green) |
 
 ```properties
 backwards-compatible=true

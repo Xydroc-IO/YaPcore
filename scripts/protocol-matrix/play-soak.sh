@@ -97,4 +97,4 @@ echo
 echo "Real-load pop ladder (bots 50→200 + denser heavypop MSPT):"
 echo "  ./scripts/bench/run-vs-folia.sh"
 echo "  ./scripts/bench/run-vs-folia.sh --tiers mid,heavy"
-echo "See docs/BENCH_VS_PAPER.md § Pop ladder."
+echo "See docs/TESTING.md and docs/VIA_GEYSER_PARITY.md for soak gates."

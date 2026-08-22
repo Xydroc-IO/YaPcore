@@ -11,7 +11,7 @@ until Folia fork work lands.
 
 **Peers:** stock **Folia** + **Canvas** (Folia fork @ 26.2). **Kaiiju** is not on
 this board (public releases are 1.20.x). Paper / Purpur / Leaf are Paper-line —
-use [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md) / `run-vs-ecosystem.sh`.
+use [COMPARE_ECOSYSTEM.md](COMPARE_ECOSYSTEM.md) (legacy Paper-path table) or `./scripts/bench/fetch-competitors.sh`.
 
 ## Fairness contract (do not game results)
 

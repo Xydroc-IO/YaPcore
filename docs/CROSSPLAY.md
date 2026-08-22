@@ -23,7 +23,7 @@ Bedrock terrain defaults to **column stream** from the game authority (P4.5); fl
 Phase 3 Paper spatial tick is **not** product default (opt-in for Paper benches only;
 Folia path has no Phase 3 spatial tick). Phase 4 finishes dual-stack depth —
 join/spawn green; core play depth via `smoke-bedrock-play.sh` (do not claim full Geyser play parity yet).
-See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) · [WHAT_WE_ARE.md](WHAT_WE_ARE.md).
+See [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md) · [WHAT_WE_ARE.md](WHAT_WE_ARE.md).
 
 ## Streamlined one-port join
 

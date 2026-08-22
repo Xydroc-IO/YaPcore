@@ -4,7 +4,7 @@
 protocol after boot. Legacy `game-authority=paper` uses Paper the same way.
 YaPcore’s native multi-version bands apply when `game-authority=native`.
 See [CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md) and
-[PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md).
+[PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md).
 
 YaPcore’s native path speaks **real Minecraft Java protocol** with **built-in multi-version bands**
 (`ProtocolBand`). Each client gets its own codec path — no external translators.

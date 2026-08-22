@@ -120,4 +120,4 @@ not “Paper incompatible.”
 
 ```
 
-Also: [PLUGINS.md](PLUGINS.md) · [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md) · [WHAT_WE_ARE.md](WHAT_WE_ARE.md).
+Also: [PLUGINS.md](PLUGINS.md) · [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md) · [WHAT_WE_ARE.md](WHAT_WE_ARE.md).

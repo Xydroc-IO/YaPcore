@@ -301,8 +301,7 @@ QuestService.progress(Player, QuestEvent);
 
 - `./scripts/smoke-bedrock-play.sh` — scripted break/place/chat/inventory
 - Update [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md) rows from Partial → Done
-- Remove “play depth deepening” language from [FULL_RUNDOWN.md](FULL_RUNDOWN.md)
-  when soak green
+- Remove “play depth deepening” language from identity docs when soak green — **done** (use “join + play-depth smoke green”)
 
 ---
 

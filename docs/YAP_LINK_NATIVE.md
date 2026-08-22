@@ -126,6 +126,13 @@ Shared wire code: [`yap-first-party/link/protocol/`](../../yap-first-party/link/
 
 ---
 
+## Bedrock / Geyser
+
+Phase 4 — Bedrock UDP routing at Link (`bedrock-enabled=false` by default). Until then, use backend dual-stack or stock Velocity
+as a stand-in for BE-heavy networks. See [YAP_LINK.md](YAP_LINK.md#bedrock--geyser).
+
+---
+
 ## Agent handoff (Phases 0–2 ↔ 3–5)
 
 **For the 0–2 agent:**

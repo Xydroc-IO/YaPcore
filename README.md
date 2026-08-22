@@ -8,11 +8,10 @@
   <img src="branding/yapcore-mark.png" alt="YaPcore mark" width="160"/>
 </p>
 
-**Folia-first** Minecraft server product (YapLabs **YaPcore**) for Linux —
-**Folia** runs the game, **YapEngine** runs the slim chassis (Netty, dual-stack,
-I/O, ops), **YaP Link** (native Velocity-class proxy) fronts multi-backend networks,
-Folia-aware plugins, YaP plugins & fine-tune modules, Java+Bedrock dual-stack,
-resource packs, control GUI, and deep crash diagnostics.
+**Folia-first** Minecraft **next-gen server product** (YapLabs **YaPcore**) —
+**Folia** runs the game, **shipped YaP plugins** cover what most operators used to install on Paper,
+**YapEngine** runs the slim chassis, **YaP Link** fronts multi-backend networks,
+Java+Bedrock dual-stack, resource packs, control GUI, web dashboard.
 
 > Not affiliated with Mojang / Microsoft. See [LICENSE](LICENSE).
 
@@ -67,8 +66,8 @@ main sources with JDK 21). The fat jar is built locally and is **not** committed
 Release packages include **linux/** and **windows/** trees with native launchers.
 Standalone zips: network suite, gameplay suite, addons — see [docs/RELEASES.md](docs/RELEASES.md).
 
-**Headless web dashboard** (default `:8080`): mirrors the control GUI in a browser —
-start/stop, console, settings, plugins, packs, vehicles. See
+**Admin web dashboard** (default `:8080`): browser control panel for operators —
+start/stop, console, network setup (nginx, public access, Link proxy), plugins, monitoring. See
 [docs/WEB_DASHBOARD.md](docs/WEB_DASHBOARD.md).
 
 ## Dual-stack + resource packs
@@ -88,6 +87,8 @@ See [docs/CLIENTS_AND_PACKS.md](docs/CLIENTS_AND_PACKS.md).
 compression, transfers, YaP Link plugins) —
 [docs/YAP_LINK.md](docs/YAP_LINK.md). Stock Velocity remains an optional stand-in
 ([docs/VELOCITY.md](docs/VELOCITY.md)). Folia backends: `velocity-enabled=true`.
+
+**Bedrock at Link:** Phase 4 — Bedrock UDP routing at Link (`bedrock-enabled=false` by default). Until then, use backend dual-stack or stock Velocity for BE-heavy networks — see [docs/YAP_LINK.md#bedrock--geyser](docs/YAP_LINK.md#bedrock--geyser).
 
 ## Plugins & modules
 

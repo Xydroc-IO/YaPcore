@@ -49,14 +49,14 @@ and [PAPER_API_COVERAGE.md](../PAPER_API_COVERAGE.md).
 YaPcore’s shipping product path uses **Folia as game authority**
 (`game-authority=folia`, `folia-embed=true`). YapEngine’s **slim chassis** always
 boots (edge/I/O; **not** game tick). **YaP Link** is a native Velocity-class proxy (modern forwarding, online-mode,
-compression, transfers, YaP Link plugin API). Phases
+compression, transfers, YaP Link plugin API; **phases 0–6 shipped**). Phases
 3–3.7 Paper spatial tick are **complete as code** but **retired as product default**
 (opt-in for Paper benches only; Folia path has no Phase 3 spatial tick). The product
 targets **high-population / heavy-load** networks; fair highpop cites focus on
 **~100 active bots** (250 keepalive = HOLD-ONLY) —
-([BENCH_VS_PAPER.md](../BENCH_VS_PAPER.md)). **Phase 4** (dual-stack + first-party
-Via/Geyser join/spawn + network plugins; play depth deepening) is in progress. See
-[PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md) · [YAP_LINK.md](../YAP_LINK.md).
+([BENCH_VS_FOLIA.md](../BENCH_VS_FOLIA.md)). **Phase 4** (dual-stack + first-party
+Via/Geyser join/spawn + network plugins; join DoD green, optional fidelity soak). See
+[FULL_RUNDOWN.md](../FULL_RUNDOWN.md) · [YAP_LINK.md](../YAP_LINK.md) · [YAP_LINK_NATIVE.md](../YAP_LINK_NATIVE.md).
 
 ---
 

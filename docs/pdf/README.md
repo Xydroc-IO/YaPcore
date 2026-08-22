@@ -10,6 +10,8 @@ Generated from the Markdown identity, ops, and whitepaper docs.
 | `FULL_RUNDOWN.pdf` | [../FULL_RUNDOWN.md](../FULL_RUNDOWN.md) |
 | `COMPARE_ECOSYSTEM.pdf` | [../COMPARE_ECOSYSTEM.md](../COMPARE_ECOSYSTEM.md) |
 | `COMPARISON_BRIEF.pdf` | [../COMPARISON_BRIEF.md](../COMPARISON_BRIEF.md) |
+| `YAP_LINK.pdf` | [../YAP_LINK.md](../YAP_LINK.md) |
+| `YAP_LINK_NATIVE.pdf` | [../YAP_LINK_NATIVE.md](../YAP_LINK_NATIVE.md) |
 | `VIA_GEYSER_PARITY.pdf` | [../VIA_GEYSER_PARITY.md](../VIA_GEYSER_PARITY.md) |
 | `VEHICLES.pdf` | [../VEHICLES.md](../VEHICLES.md) |
 | `STACKER.pdf` | [../STACKER.md](../STACKER.md) |

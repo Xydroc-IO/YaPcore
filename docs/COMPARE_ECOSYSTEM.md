@@ -19,7 +19,7 @@ Audience: operators choosing a Minecraft Java Edition server core.
 | ✗ | Not the model / not supported |
 
 MSPT numbers for YaPcore vs stock Paper are from our public harness only
-([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)). **Fair highpop cite ~100 active bots.**
+([BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md)). **Fair highpop cite ~100 active bots.**
 **250 keepalive holds = HOLD-ONLY**, not an MSPT win. Fork “performance” claims
 elsewhere are community/lab reports — treat them as directional, not identical hardware.
 
@@ -36,7 +36,7 @@ elsewhere are community/lab reports — treat them as directional, not identical
 | **Folia** | PaperMC | Regionized multi-thread tick; Folia-aware plugin ABI (`RegionScheduler`, etc.) |
 | **Folia forks** | Folia | Few mature public forks; most “Folia stacks” are Folia + careful plugin picks |
 | **Velocity** | PaperMC | Network proxy; DIY with Folia backends is the common scale path |
-| **YaPcore** | YapEngine chassis + **Folia as game** + **YaP Link** | **Folia regions** = world tick; chassis = edge/I/O (16 logical channels); Link = multi-backend; dual-stack; Folia-aware plugins; high-pop target. Legacy Paper + Phase 3 spatial = benches only |
+| **YaPcore** | YapEngine chassis + **Folia as game** + **YaP Link** | **Folia regions** = world tick; chassis = slim edge/I/O; Link = multi-backend; dual-stack; Folia-aware plugins; high-pop target. Legacy Paper + Phase 3 spatial = benches only |
 
 Historical notes (merged / superseded, not separate picks today): Tuinity → Paper; Airplane → Pufferfish.
 
@@ -51,9 +51,9 @@ Historical notes (merged / superseded, not separate picks today): Tuinity → Pa
 | Extra gameplay knobs | ~ | ✓ | ~ | ~ | ~ | ~ | ✓¶ |
 | Single main-thread tick | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ |
 | Multi-thread world tick | ✗ | ✗ | ~ async helpers | ~ | ✓ regions | ✓ regions | ✓ Folia regions |
-| Deterministic thread roles | ✗ | ✗ | ✗ | ✗ | ~ pools | ~ | ✓ 16 named roles |
-| Built-in JE + BE dual-stack | ✗ | ✗ | ✗ | ✗ | ✗ | DIY | ✓ (Phase 4; join green, play depth deepening) |
-| First-party proxy | ✗ | ✗ | ✗ | ✗ | ✗ | Velocity DIY | ✓ YaP Link (full fork) |
+| Deterministic thread roles | ✗ | ✗ | ✗ | ✗ | ~ pools | ~ | ✓ slim chassis + SYNC/HEAVY/UI pools (edge/I/O only) |
+| Built-in JE + BE dual-stack | ✗ | ✗ | ✗ | ✗ | ✗ | DIY | ✓ (Phase 4; join/spawn + play-depth smoke green) |
+| First-party proxy | ✗ | ✗ | ✗ | ✗ | ✗ | Velocity DIY | ✓ YaP Link (native proxy, phases 0–6) |
 | YaP SYNC/HEAVY/UI pools | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ |
 | Ops GUI / packs / crash tooling | ~ | ~ | ~ | ~ | ~ | ~ | ✓ product surface |
 | Web dashboard (headless browser ops) | ~ | ~ | ~ | ~ | ~ | ~ | ✓ `:8080` |
@@ -89,7 +89,7 @@ DIY Folia + Velocity
        good for: networks that already assemble their own edge
 
 YaPcore (YapEngine + Folia + YaP Link)
-  └─ Folia owns the game (regions); YapEngine fixed 16 roles for chassis;
+  └─ Folia owns the game (regions); YapEngine **slim edge/I/O chassis**;
      YaP Link fronts backends (native Velocity-class proxy)
        plugins = Folia-aware on product path
        Phase 3 Paper spatial quads = legacy / opt-in benches only (no Phase 3 on Folia path)
@@ -119,7 +119,7 @@ YaPcore is **not** “better Folia” as a slogan. Folia’s bet is region pools
 We do **not** claim “faster everywhere.” The product is aimed at **high-pop /
 heavy load**. Fair cites focus on **~100 active bots**. See
 [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md). Legacy Paper + Phase 3 spatial remains
-for benches only ([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)).
+for benches only ([YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md)).
 
 ### Local MSPT scoreboard (product — Folia)
 
@@ -147,11 +147,11 @@ Reproduce: Paper Phase 3 benches **retired** — Folia product path only. Compet
 
 ---
 
-## Public MSPT scoreboard
+## Public MSPT scoreboard (legacy Paper path)
 
-Fair `heavypop` vs **Paper / Purpur / Leaf / YaPcore**:
-[`scripts/bench/run-vs-ecosystem.sh`](.`(retired)`)
-([BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)).
+Fair `heavypop` vs **Paper / Purpur / Leaf / YaPcore** on the **retired Paper + Phase 3**
+bench path — see **Legacy MSPT scoreboard** above. Product MSPT gate today is
+[BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md) (`run-vs-folia.sh`).
 
 Latest fair mid-density (1200 TNT): **Leaf > Paper ≈ YaPcore > Purpur** on some
 Paper-path cites. Product claim stays “Folia game + chassis + Link,” not “fastest fork.”
@@ -234,9 +234,9 @@ If someone sells you “the best Folia fork,” demand: plugin list, region metr
 | | Stock Folia | DIY Folia + Velocity | YaPcore |
 |--|-------------|----------------------|---------|
 | Game | Folia regions | Folia regions | **Folia regions (default)** |
-| Chassis | Folia pools | Folia pools | YapEngine **edge/I/O chassis** (16 logical channels) |
+| Chassis | Folia pools | Folia pools | YapEngine **slim edge/I/O chassis** (not game tick) |
 | Proxy | DIY | Velocity | **YaP Link** (native Velocity-class proxy; YaP Link plugins) |
-| Dual-stack product path | DIY (Geyser etc.) | DIY | Built into product (join green; play depth deepening) |
+| Dual-stack product path | DIY (Geyser etc.) | DIY | Built-in (join/spawn + play-depth smoke green) |
 | Phase 3 Paper spatial | N/A | N/A | Legacy / opt-in only — **not** on Folia path |
 | Positioning | Game jar | Game + DIY edge | Folia game + Yap chassis + Link |
 
@@ -253,9 +253,9 @@ If someone sells you “the best Folia fork,” demand: plugin list, region metr
 | Chassis | YapEngine **edge/I/O** (always on; **not** Folia game tick) |
 | Phase 3 Paper spatial | **Defaults off** — legacy benches only; Folia path has **no** Phase 3 spatial tick |
 | Fair highpop cite | **~100 active bots**; 250 keepalive = HOLD-ONLY |
-| Proxy | **YaP Link** full fork — [YAP_LINK.md](YAP_LINK.md); stock Velocity optional stand-in |
+| Proxy | **YaP Link** native proxy (phases 0–6) — [YAP_LINK.md](YAP_LINK.md); stock Velocity optional stand-in |
 | Plugins | One `plugins/` folder — Folia-aware + YaP (`yap-db`, playerdata, packs, chat, floodgate, vehicles, …) |
-| Crossplay | JE TCP + BE UDP dual-stack — join/spawn green; play depth deepening (Phase 4) |
+| Crossplay | JE TCP + BE UDP dual-stack — join/spawn + play-depth smoke green (Phase 4) |
 | Network SQL | Docker MariaDB + shared `yap-db` Hikari; playerdata auth/lock/claims/traders |
 | Ranks | LuckPerms pack (`default`→`vip`→`mod`→`admin`) + dashboard Ranks tab |
 | Ops | Config, multi-pack HTTP, control GUI, **web dashboard**, crash dumps, ZGC/NUMA, `assembleRelease` |
@@ -320,10 +320,8 @@ Clients (JE TCP / BE UDP)
 | [WHAT_WE_ARE.md](WHAT_WE_ARE.md) | Identity |
 | [FULL_RUNDOWN.md](FULL_RUNDOWN.md) | Full product rundown |
 | [YAP_LINK.md](YAP_LINK.md) | YaP Link proxy |
-| [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md) | MSPT harness & results |
-| [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) | Thread matrix |
-| [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md) | Plugin compatibility |
-| [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) | Legacy Paper Phase 3 port plan |
+| [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md) | MSPT harness & results (product gate) |
+| [YAP_LINK_NATIVE.md](YAP_LINK_NATIVE.md) | YaP Link phased parity matrix |
 | [whitepaper/YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) | Technical whitepaper |
 
 *Not affiliated with Mojang, Microsoft, PaperMC, PurpurMC, or Pufferfish.*

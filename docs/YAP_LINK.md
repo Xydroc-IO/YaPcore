@@ -52,6 +52,23 @@ Config: **`link.properties`** in link home (not `velocity.toml`). Seeded on firs
 
 Smoke: `./scripts/smoke-yap-link-folia.sh`
 
+Requires `link-embed=false` (default). When `link-embed=true`, Link starts in-process at JVM boot and start/stop controls are disabled.
+
+## Web dashboard
+
+Open `http://127.0.0.1:8080/` → **Link** tab — start/stop, full proxy settings (backends, try order, forced hosts), dedicated console (SSE), backend forwarding setup. See [WEB_DASHBOARD.md](WEB_DASHBOARD.md).
+
+## Control GUI (Swing)
+
+Open `./scripts/gui.sh` → **Link** tab (same controls as web dashboard):
+
+- **Start Link / Stop Link** — runs `yap-link.jar` as its own JVM (like Velocity)
+- **Configure…** — backends (hub, survival, …), try order, forced hosts, bind/MOTD
+- **Link console** — `help`, `reload`, `list`, `servers`, `say …`, `stop`
+- **Enable backend forwarding** — runs `setup-velocity-forwarding.sh --enable`
+
+Requires `link-embed=false` (default).
+
 ## Bedrock / Geyser
 
 Phase 4 — Bedrock UDP routing at Link. Until then, use backend dual-stack or stock Velocity

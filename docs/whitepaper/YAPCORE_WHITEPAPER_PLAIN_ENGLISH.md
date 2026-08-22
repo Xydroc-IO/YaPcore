@@ -57,18 +57,18 @@ We don’t claim “every Paper plugin works on Folia day one” (same as stock 
 
 We use **Folia** for the real Minecraft game by default. **YapEngine** runs the
 **slim edge/I/O chassis** around it (not world tick). **YaP Link** is our Velocity-class front door for
-multi-backend networks (MVP: modern forwarding + offline; more features planned).
+multi-backend networks (**phases 0–6 shipped** — forwarding, plugins, Bedrock UDP edge, release bundle).
 Legacy **Paper + Phase 3** spatial tick (spreading interior work across four
 map-area workers) is **done as code** but **off by default** — benches only; Folia
 does not use that path. The product is aimed at **busy / high-pop** servers; fair
-cites focus on **~100 active bots** (250 keepalive holds are not MSPT wins). Next is
-Phase 4: polishing Java + Bedrock join (first-party Via/Geyser parity for supported bands;
-play depth deepening) and shipping network plugins — shared MariaDB (`yap-db`),
+cites focus on **~100 active bots** (250 keepalive holds are not MSPT wins). Phase 4
+dual-stack join DoD is green (JE matrix + play-depth smoke); optional fidelity soak
+remains — shared MariaDB (`yap-db`),
 playerdata (offline `/login`, claims), LuckPerms ranks, multi-pack helpers — on that
 Folia-backed world.
 
-Details: [PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md) ·
-[BENCH_VS_PAPER.md](../BENCH_VS_PAPER.md) · [YAP_LINK.md](../YAP_LINK.md).
+Details: [FULL_RUNDOWN.md](../FULL_RUNDOWN.md) ·
+[BENCH_VS_FOLIA.md](../BENCH_VS_FOLIA.md) · [YAP_LINK.md](../YAP_LINK.md) · [YAP_LINK_NATIVE.md](../YAP_LINK_NATIVE.md).
 
 ---
 

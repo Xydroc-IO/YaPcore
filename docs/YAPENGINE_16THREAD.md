@@ -13,7 +13,7 @@ Compatibility Bridge, UI/Heavy sandboxes, telemetry). YaP Link fronts multi-back
 networks. Do **not** run a second tick engine beside Folia.
 
 Legacy **Paper + Phase 3 spatial** (interior NMS tick on chassis cores 3–6) remains
-**opt-in for benches only** — defaults off. See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md).
+**opt-in for benches only** — defaults off. See [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) and [FULL_RUNDOWN.md](FULL_RUNDOWN.md).
 
 ---
 
@@ -134,4 +134,4 @@ Product boot: `./scripts/start.sh --fg` with `game-authority=folia`.
 - [WHAT_WE_ARE.md](WHAT_WE_ARE.md) — identity
 - [FULL_RUNDOWN.md](FULL_RUNDOWN.md) — full architecture rundown
 - [YAP_LINK.md](YAP_LINK.md) — proxy layer
-- [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) — legacy Phase 3 spatial (benches)
+- [FULL_RUNDOWN.md](FULL_RUNDOWN.md) — legacy Phase 3 spatial (benches)

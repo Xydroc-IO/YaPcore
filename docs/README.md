@@ -11,7 +11,8 @@
 | [WHAT_WE_ARE](WHAT_WE_ARE.md) | Short identity / are we better Paper? |
 | [**COMPARE_ECOSYSTEM**](COMPARE_ECOSYSTEM.md) | **YaPcore vs Paper, Purpur, Pufferfish, Leaf, Folia** |
 | [**PDFs**](pdf/) | Printable PDFs of the identity + whitepaper + vehicles + web dashboard docs |
-| [VELOCITY](VELOCITY.md) | **Velocity proxy** — temporary stand-in; Folia/Paper backends with modern forwarding |
+| [VELOCITY](VELOCITY.md) | **Velocity proxy** — optional stand-in; Folia/Paper backends with modern forwarding |
+| [**YAP_LINK_NATIVE**](YAP_LINK_NATIVE.md) | **YaP Link** phased Velocity-class parity matrix |
 | [**YAP_LINK**](YAP_LINK.md) | **YaP Link** — first-party native network proxy |
 | [**YAP_SCHED**](YAP_SCHED.md) | **YapSched** — Folia-safe scheduler helper for YaP plugins |
 | [**PLAYERDATA**](PLAYERDATA.md) | **Cross-server inv / claims / GUIs** — `yap-playerdata` |
