@@ -26,13 +26,15 @@ final class BenchWorldPrep {
     };
 
     /**
-     * Deep bot homes (block xz) — one per spatial quadrant, |xz|≥64 so chunk≥4.
-     * Matches swarm.js QUAD_WAYPOINTS; keeps bots off origin-border planes while
-     * still exercising all four MT owners (not SE-only).
+     * Deep bot homes — 32-cell spread grid (see {@link BenchSpreadGrid}).
+     * Matches swarm.js spread; |xz|≥64 so chunk≥4, off origin-border planes.
      */
-    static final int[][] BOT_HOME_XZ = {
-            {72, 72}, {-72, 72}, {72, -72}, {-72, -72}
-    };
+    static int[][] botHomeXz() {
+        return BenchSpreadGrid.homes();
+    }
+
+    /** @deprecated use {@link #botHomeXz()} */
+    static final int[][] BOT_HOME_XZ = BenchSpreadGrid.homes();
 
     /**
      * Heavypop TNT/hopper piles — deep interior, first pile is the classic winning
@@ -56,10 +58,6 @@ final class BenchWorldPrep {
 
     BenchWorldPrep(JavaPlugin plugin) {
         this.plugin = plugin;
-    }
-
-    static int[][] botHomeXz() {
-        return BOT_HOME_XZ;
     }
 
     int prepare(World world, String scenario) {
@@ -109,6 +107,10 @@ final class BenchWorldPrep {
             world.getChunkAt(c[0], c[1]).load(true);
             world.setChunkForceLoaded(c[0], c[1], true);
         }
+        for (int[] xz : BenchSpreadGrid.homes()) {
+            world.getChunkAt(xz[0] >> 4, xz[1] >> 4).load(true);
+            world.setChunkForceLoaded(xz[0] >> 4, xz[1] >> 4, true);
+        }
         for (Entity e : world.getEntities()) {
             if (!(e instanceof Player)) {
                 e.remove();
@@ -121,6 +123,7 @@ final class BenchWorldPrep {
         placeChestsAndVillagers(world);
         placeAnimals(world);
         placeRedstoneClocks(world);
+        BenchSpreadGrid.placeRedstoneAtHomes(world);
         placeBorderMarkers(world);
         plugin.getLogger().info("highpop world fixtures ready — waiting for bots "
                 + "(target players=" + Integer.getInteger("yap.bench.players", 100) + ")");

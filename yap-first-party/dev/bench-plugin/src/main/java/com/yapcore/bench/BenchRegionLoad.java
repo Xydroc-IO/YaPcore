@@ -52,9 +52,22 @@ final class BenchRegionLoad {
                         int players, int villagers, int loadedChunks, String entityTop) {
     }
 
-    static final int[][] DEEP_HOME_CHUNKS = {
-            {4, 4}, {-5, 4}, {4, -5}, {-5, -5}
-    };
+    static final int[][] DEEP_HOME_CHUNKS = spreadHomeChunks();
+
+    private static int[][] spreadHomeChunks() {
+        int[][] homes = BenchSpreadGrid.homes();
+        java.util.LinkedHashSet<String> seen = new java.util.LinkedHashSet<>();
+        java.util.ArrayList<int[]> chunks = new java.util.ArrayList<>();
+        for (int[] xz : homes) {
+            int cx = xz[0] >> 4;
+            int cz = xz[1] >> 4;
+            String key = cx + "," + cz;
+            if (seen.add(key)) {
+                chunks.add(new int[]{cx, cz});
+            }
+        }
+        return chunks.toArray(new int[0][]);
+    }
 
     /** Region-safe highpop/fullcite world fixtures + optional deep TNT (fullcite). */
     static void preparePopBench(JavaPlugin plugin, World world, String scenario,
@@ -88,6 +101,9 @@ final class BenchRegionLoad {
         }
         for (int[] c : DEEP_HOME_CHUNKS) {
             out.add(pack(c[0], c[1]));
+        }
+        for (int[] xz : BenchSpreadGrid.homes()) {
+            out.add(pack(xz[0] >> 4, xz[1] >> 4));
         }
         if (fullcite) {
             for (int[][] piles : HEAVY_PILES) {
@@ -170,6 +186,24 @@ final class BenchRegionLoad {
             int bz = (cz << 4) + 8;
             int y = Math.max(world.getHighestBlockYAt(bx, bz), 64) + 1;
             world.getBlockAt(bx, y, bz).setType(Material.CHEST);
+        }, () -> forEachChunk(plugin, world, deepSpreadChunks(), c -> {
+            int cx = (int) c[0];
+            int cz = (int) c[1];
+            for (int[] xz : BenchSpreadGrid.homes()) {
+                if ((xz[0] >> 4) != cx || (xz[1] >> 4) != cz) {
+                    continue;
+                }
+                int bx = xz[0];
+                int bz = xz[1];
+                int y = Math.max(world.getHighestBlockYAt(bx, bz), 64) + 2;
+                world.getBlockAt(bx, y, bz).setType(Material.OBSERVER);
+                world.getBlockAt(bx, y + 1, bz).setType(Material.OBSERVER);
+                world.getBlockAt(bx + 1, y, bz).setType(Material.REDSTONE_LAMP);
+                world.getBlockAt(bx + 1, y + 1, bz).setType(Material.REDSTONE_BLOCK);
+                world.getBlockAt(bx - 1, y, bz).setType(Material.STONE);
+                world.getBlockAt(bx - 1, y + 1, bz).setType(Material.HOPPER);
+                world.getBlockAt(bx, y, bz + 1).setType(Material.CHEST);
+            }
         }, () -> {
             plugin.getLogger().info("highpop world fixtures ready (region) — scenario=" + scenario);
             if ("fullcite".equals(scenario)) {
@@ -195,6 +229,14 @@ final class BenchRegionLoad {
 
     private static long[] pack(int cx, int cz) {
         return new long[]{cx, cz};
+    }
+
+    private static Set<long[]> deepSpreadChunks() {
+        Set<long[]> out = new LinkedHashSet<>();
+        for (int[] xz : BenchSpreadGrid.homes()) {
+            out.add(pack(xz[0] >> 4, xz[1] >> 4));
+        }
+        return out;
     }
 
     static void forEachChunk(JavaPlugin plugin, World world, Set<long[]> chunks,

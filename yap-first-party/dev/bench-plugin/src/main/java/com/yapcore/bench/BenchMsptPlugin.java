@@ -93,8 +93,7 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
         } catch (NumberFormatException e) {
             return;
         }
-        int[][] homes = BenchWorldPrep.botHomeXz();
-        int[] xz = homes[Math.floorMod(id, homes.length)];
+        int[] xz = BenchSpreadGrid.homeForBotId(id);
         World world = p.getWorld();
         int y = world.getHighestBlockYAt(xz[0], xz[1]) + 1;
         Location dest = new Location(world, xz[0] + 0.5, y, xz[1] + 0.5);

@@ -14,6 +14,7 @@
  * on single-thread Paper during the connect storm (Yap spatial survived; Paper did not).
  */
 import mineflayer from 'mineflayer'
+import { spreadTarget } from './spread-grid.js'
 
 const host = process.env.YAP_BOT_HOST || '127.0.0.1'
 const port = Number(process.env.YAP_BOT_PORT || '0')
@@ -24,11 +25,15 @@ const indexBase = Number(process.env.YAP_BOT_INDEX_BASE || '0')
 /** Full swarm size across workers — cite-stable uses this, not per-worker count. */
 const totalPlayers = Number(process.env.YAP_BOT_TOTAL || count)
 const holdNeed = Math.max(1, Math.ceil(count * 0.9))
+const forceActive = process.env.YAP_BOT_ACTIVE === '1'
+  || process.env.YAP_BOT_CITE_STABLE === '0'
+  || process.env.YAP_BOT_CITE_STABLE === 'false'
 // YAP_BOT_CITE_STABLE=0 forces active physics even at ≥150 (MSPT cite).
 const citeStableEnv = process.env.YAP_BOT_CITE_STABLE
-const citeStable = (citeStableEnv === '0' || citeStableEnv === 'false')
-  ? false
-  : (citeStableEnv === '1' || citeStableEnv === 'true' || totalPlayers >= 150)
+const citeStable = forceActive ? false
+  : (citeStableEnv === '0' || citeStableEnv === 'false')
+    ? false
+    : (citeStableEnv === '1' || citeStableEnv === 'true' || totalPlayers >= 150)
 
 if (!port) {
   console.error('YAP_BOT_PORT required')
@@ -47,20 +52,6 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (err) => {
   console.error('[swarm] unhandledRejection', err && err.message ? err.message : err)
 })
-
-// Four deep quadrants (|x|,|z| ≥ 64 → chunk ≥ 4). Spreads load across spatial MT owners.
-// Stay off origin-border planes (cx/cz ∈ {-1,0}) so bots don't force T8 barrier waits.
-// Each bot is pinned to ONE quadrant — cycling all waypoints would path across origin.
-const QUAD_WAYPOINTS = [
-  // SE
-  [{ x: 64, z: 64 }, { x: 80, z: 64 }, { x: 64, z: 80 }, { x: 80, z: 80 }],
-  // SW
-  [{ x: -64, z: 64 }, { x: -80, z: 64 }, { x: -64, z: 80 }, { x: -80, z: 80 }],
-  // NE
-  [{ x: 64, z: -64 }, { x: 80, z: -64 }, { x: 64, z: -80 }, { x: 80, z: -80 }],
-  // NW
-  [{ x: -64, z: -64 }, { x: -80, z: -64 }, { x: -64, z: -80 }, { x: -80, z: -80 }]
-]
 
 /** @type {import('mineflayer').Bot[]} */
 const bots = []
@@ -85,7 +76,6 @@ function drainPhysicsEnable() {
   if (physicsDrainTimer) return
   physicsDrainTimer = setInterval(() => {
     let n = 0
-    // Slow drain under active 250 — fast enable caused Yap warmup bleed 231→103.
     const batch = totalPlayers >= 150 ? 6 : 12
     while (n < batch && physicsEnableQueue.length) {
       const b = physicsEnableQueue.shift()
@@ -104,7 +94,6 @@ let holdAnnounced = false
 
 function maybeEndJoinQuiet() {
   if (online < holdNeed) return
-  // ≥150 total (across workers): stay keepalive-only for the whole sample.
   if (citeStable) {
     if (!holdAnnounced) {
       holdAnnounced = true
@@ -120,16 +109,16 @@ function maybeEndJoinQuiet() {
   }
 }
 
+// 32 spread homes (4 quads × 8 cells) — matches BenchSpreadGrid.java
 function behave(bot, id) {
   const globalId = indexBase + id
-  const quad = QUAD_WAYPOINTS[globalId % QUAD_WAYPOINTS.length]
-  let wp = Math.floor(globalId / QUAD_WAYPOINTS.length) % quad.length
-  // Heavy interact at 250 saturates one Node process → keepalive timeouts on Paper.
-  const light = totalPlayers >= 150
-  const period = light ? 1500 : 500
+  const { ring } = spreadTarget(globalId)
+  let wp = 0
+  const light = totalPlayers >= 200
+  const period = light ? 1800 : totalPlayers >= 150 ? 1200 : 500
   const tick = () => {
     if (joinQuiet || citeStable || !bot.entity || !bot.physicsEnabled) return
-    const target = quad[wp]
+    const target = ring[wp]
     const y = bot.entity.position.y
     bot.lookAt(target.x, y, target.z, true).catch(() => {})
     bot.setControlState('forward', true)
@@ -155,7 +144,7 @@ function behave(bot, id) {
     }
 
     if (bot.entity.position.distanceTo({ x: target.x, y, z: target.z }) < 3) {
-      wp = (wp + 1) % quad.length
+      wp = (wp + 1) % ring.length
     }
   }
   const iv = setInterval(tick, period)
@@ -316,7 +305,7 @@ function spawnOne(i) {
   tryConnect()
 }
 
-console.log(`Spawning ${count} bots → ${host}:${port} base=${indexBase} stagger=${stagger}ms version=${version || 'auto'} joinQuietUntil=${holdNeed} citeStable=${citeStable} total=${totalPlayers}`)
+console.log(`Spawning ${count} bots → ${host}:${port} base=${indexBase} stagger=${stagger}ms version=${version || 'auto'} joinQuietUntil=${holdNeed} citeStable=${citeStable} active=${forceActive} total=${totalPlayers}`)
 for (let i = 0; i < count; i++) {
   setTimeout(() => spawnOne(i), i * stagger)
 }
