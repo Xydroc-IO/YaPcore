@@ -56,7 +56,7 @@ public final class InteriorEntityTickDriver {
                     SKIPPED.incrementAndGet();
                     continue;
                 }
-                if (!isActive(handle)) {
+                if (!isActive(handle) && !isPhysicsCritical(handle)) {
                     inactiveTick(handle);
                     SKIPPED.incrementAndGet();
                     continue;
@@ -152,6 +152,25 @@ public final class InteriorEntityTickDriver {
         } catch (ReflectiveOperationException e) {
             return false;
         }
+    }
+
+    private static boolean isPhysicsCritical(Object nmsEntity) {
+        if (nmsEntity == null) {
+            return false;
+        }
+        for (Class<?> c = nmsEntity.getClass(); c != null; c = c.getSuperclass()) {
+            String n = c.getSimpleName();
+            if (n.equals("FallingBlockEntity")
+                    || n.equals("PrimedTnt")
+                    || n.equals("ItemEntity")
+                    || n.equals("ExperienceOrb")
+                    || n.equals("EyeOfEnder")
+                    || n.equals("ThrownEnderpearl")
+                    || n.equals("FireworkRocketEntity")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Object nmsHandle(Object bukkitEntity) throws ReflectiveOperationException {

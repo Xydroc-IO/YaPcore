@@ -146,6 +146,10 @@ public final class Phase3PaperRuntime {
             if (System.getProperty("yapcore.phase3.spatial-tracker-skip-clean") == null) {
                 System.setProperty("yapcore.phase3.spatial-tracker-skip-clean", "true");
             }
+            // Player sendChanges export on spatial (tick stays main) — kill: =false
+            if (System.getProperty("yapcore.phase3.spatial-tracker-players") == null) {
+                System.setProperty("yapcore.phase3.spatial-tracker-players", "true");
+            }
             if (System.getProperty("yapcore.phase3.spatial-coalesce-barriers") == null) {
                 System.setProperty("yapcore.phase3.spatial-coalesce-barriers", "true");
             }
@@ -164,6 +168,7 @@ public final class Phase3PaperRuntime {
                     + " borders=" + YapPhase3Flags.spatialBorders()
                     + " tracker=" + YapPhase3Flags.spatialTracker()
                     + " tracker-skip-clean=" + YapPhase3Flags.spatialTrackerSkipClean()
+                    + " tracker-players=" + YapPhase3Flags.spatialTrackerPlayers()
                     + " coalesce=" + YapPhase3Flags.spatialCoalesceBarriers()
                     + " ear=" + YapPhase3Flags.spatialEntityActivation()
                     + " distant-brain=" + YapPhase3Flags.spatialDistantBrain());

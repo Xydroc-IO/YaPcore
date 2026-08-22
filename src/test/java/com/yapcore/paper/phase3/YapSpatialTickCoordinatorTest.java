@@ -1,6 +1,7 @@
 package com.yapcore.paper.phase3;
 
 import com.yaplabs.yapengine.core.spatial.ParallelGameCore;
+import com.yaplabs.yapengine.core.spatial.SpatialSpawnRegion;
 import com.yaplabs.yapengine.sync.handoff.ChunkSyncLayer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,6 +23,7 @@ final class YapSpatialTickCoordinatorTest {
 
     @BeforeEach
     void setUp() {
+        SpatialSpawnRegion.configure(false, 8);
         sync = new ChunkSyncLayer();
         sync.start();
         core = new ParallelGameCore(sync,
@@ -36,6 +38,7 @@ final class YapSpatialTickCoordinatorTest {
         coord.stop();
         core.stop();
         sync.stop();
+        SpatialSpawnRegion.configure(false, 8);
     }
 
     @Test
@@ -47,6 +50,19 @@ final class YapSpatialTickCoordinatorTest {
         assertFalse(YapSpatialTickCoordinator.isBorderChunk(5, 5)); // deep SE interior
         assertFalse(YapSpatialTickCoordinator.isBorderChunk(-5, -5)); // deep NW
         assertFalse(YapSpatialTickCoordinator.isBorderChunk(1, 5));
+    }
+
+    @Test
+    void spawnBoxDeepInteriorNotBorder_perimeterIs() {
+        SpatialSpawnRegion.configure(true, 3);
+        // Deep spawn interior — all neighbors SPAWN
+        assertFalse(YapSpatialTickCoordinator.isBorderChunk(0, 0));
+        assertFalse(YapSpatialTickCoordinator.isBorderChunk(1, 1));
+        // Perimeter of box — neighbors leave SPAWN
+        assertTrue(YapSpatialTickCoordinator.isBorderChunk(3, 0));
+        assertTrue(YapSpatialTickCoordinator.isBorderChunk(0, -3));
+        // Outside spawn, deep SE still interior
+        assertFalse(YapSpatialTickCoordinator.isBorderChunk(8, 8));
     }
 
     @Test

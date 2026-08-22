@@ -3,6 +3,7 @@ package com.yapcore.paper.phase3.nms;
 import com.yapcore.paper.phase3.PaperTickBridgeHolder;
 import com.yapcore.paper.phase3.YapPhase3Flags;
 import com.yapcore.paper.phase3.YapSpatialTickCoordinator;
+import com.yaplabs.yapengine.core.spatial.BitwiseQuadrantIndex;
 import com.yaplabs.yapengine.core.spatial.SpatialQuadrant;
 
 import java.lang.invoke.MethodHandle;
@@ -100,6 +101,11 @@ public final class InteriorWorldTickBridge {
     /** Hot-path flag for ChunkMap (avoids synchronized {@code Boolean.getBoolean}). */
     public static boolean spatialTrackerEnabled() {
         return YapPhase3Flags.spatialTracker();
+    }
+
+    /** Phase 3.12 — player sendChanges export on spatial (tick stays main). */
+    public static boolean spatialTrackerPlayersEnabled() {
+        return YapPhase3Flags.spatialTracker() && YapPhase3Flags.spatialTrackerPlayers();
     }
 
     public static long faultCount() {
@@ -210,12 +216,17 @@ public final class InteriorWorldTickBridge {
 
     private static void tickNmsEntity(Object nmsEntity) {
         try {
-            if (YapPhase3Flags.spatialEntityActivation() && !isEntityActive(nmsEntity)) {
+            // FallingBlock / primed TNT / items must full-tick: Entity.inactiveTick() is empty,
+            // so distant-brain / EAR "inactive" left ~100 stuck FALLING_BLOCK entities on Yap.
+            final boolean physicsCritical = isPhysicsCriticalEntity(nmsEntity);
+            if (!physicsCritical
+                    && YapPhase3Flags.spatialEntityActivation()
+                    && !isEntityActive(nmsEntity)) {
                 inactiveTickEntity(nmsEntity);
                 ACTIVATION_SKIPS.incrementAndGet();
                 return;
             }
-            if (YapDistantBrain.shouldThrottleFullTick(nmsEntity)) {
+            if (!physicsCritical && YapDistantBrain.shouldThrottleFullTick(nmsEntity)) {
                 inactiveTickEntity(nmsEntity);
                 return;
             }
@@ -225,12 +236,45 @@ public final class InteriorWorldTickBridge {
             }
             tick.invoke(nmsEntity);
             ENTITIES.incrementAndGet();
+        } catch (java.lang.reflect.InvocationTargetException ite) {
+            Throwable cause = ite.getCause() != null ? ite.getCause() : ite;
+            // Do not swallow sendBlockUpdated / block-mutation faults: that aborted
+            // FallingBlockEntity mid-land and left stuck FALLING_BLOCK entities.
+            // ServerLevel nav guard is ThreadLocal + concurrent navigatingMobs now.
+            long n = FAULTS.incrementAndGet();
+            if (n <= 8 || (n % 500) == 0) {
+                LOG.log(Level.WARNING, "Interior entity tick fault #" + n, cause);
+            }
         } catch (Throwable t) {
             long n = FAULTS.incrementAndGet();
             if (n <= 8 || (n % 500) == 0) {
                 LOG.log(Level.WARNING, "Interior entity tick fault #" + n, t);
             }
         }
+    }
+
+    /**
+     * Entities whose correctness depends on running {@code tick()} every game tick.
+     * Paper EAR still moves/fuses these; Yap must not replace with empty {@code inactiveTick()}.
+     */
+    private static boolean isPhysicsCriticalEntity(Object nmsEntity) {
+        if (nmsEntity == null) {
+            return false;
+        }
+        // Walk superclasses — obfuscation-safe simple names from Mojang mappings in Paper.
+        for (Class<?> c = nmsEntity.getClass(); c != null; c = c.getSuperclass()) {
+            String n = c.getSimpleName();
+            if (n.equals("FallingBlockEntity")
+                    || n.equals("PrimedTnt")
+                    || n.equals("ItemEntity")
+                    || n.equals("ExperienceOrb")
+                    || n.equals("EyeOfEnder")
+                    || n.equals("ThrownEnderpearl")
+                    || n.equals("FireworkRocketEntity")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isEntityActive(Object nmsEntity) {
@@ -669,9 +713,7 @@ public final class InteriorWorldTickBridge {
     }
 
     private static int quadrantId(int chunkX, int chunkZ) {
-        int east = chunkX >= 0 ? 1 : 0;
-        int south = chunkZ >= 0 ? 1 : 0;
-        return east | (south << 1);
+        return BitwiseQuadrantIndex.quadrantId(chunkX, chunkZ);
     }
 
     private record PendingTick(Object level, Object pos, Object type, boolean fluid) {
@@ -1087,20 +1129,28 @@ public final class InteriorWorldTickBridge {
         });
     }
 
-    // --- Phase 3.8 / 3.9 / Leaf-gap: non-player tracker sendChanges on spatial cores / T8 ---
+    // --- Phase 3.8 / 3.9 / Leaf-gap: non-player moonrise$tick + sendChanges on spatial cores ---
 
     private static final ThreadLocal<List<PendingTrackerSend>> PENDING_TRACKER =
             ThreadLocal.withInitial(ArrayList::new);
-    private static final ThreadLocal<List<Object>> PENDING_BORDER_TRACKER =
+    private static final ThreadLocal<List<PendingTrackerSend>> PENDING_BORDER_TRACKER =
             ThreadLocal.withInitial(ArrayList::new);
 
     private static volatile MethodHandle sendChangesMh;
     private static volatile boolean sendChangesMhFailed;
+    private static volatile MethodHandle moonriseTickMh;
+    private static volatile Class<?> moonriseTickArgCl;
+    private static volatile boolean moonriseTickMhFailed;
+    private static volatile MethodHandle trackedServerEntityGetter;
+    private static volatile boolean trackedServerEntityFailed;
+    private static volatile MethodHandle yapIsCleanMh;
+    private static volatile MethodHandle yapBumpCleanMh;
 
     /**
-     * Queue non-player {@code ServerEntity.sendChanges} for spatial flush.
-     * Prefer {@link #offerTrackerSendChanges(Object, Object, int, int)} from ChunkMap
-     * (coords + no per-entity Runnable / chunkPosition reflect).
+     * Queue non-player {@code ServerEntity.sendChanges} for spatial flush (legacy).
+     * Prefer {@link #offerTrackerTickUnit} so moonrise$tick also leaves main.
+     * Players: use this after main-thread {@code moonrise$tick} when
+     * {@link YapPhase3Flags#spatialTrackerPlayers()} (Phase 3.12).
      */
     public static boolean offerTrackerSendChanges(Object nmsEntity, Runnable sendChanges) {
         return offerTrackerSendChanges(nmsEntity, null, sendChanges);
@@ -1109,28 +1159,6 @@ public final class InteriorWorldTickBridge {
     /** Legacy 3-arg path: resolves chunk via reflect; prefer the cx/cz overload. */
     public static boolean offerTrackerSendChanges(Object nmsEntity, Object serverEntity, Runnable sendChanges) {
         if (nmsEntity == null || !YapPhase3Flags.spatialTracker()) {
-            return false;
-        }
-        if (serverEntity != null) {
-            try {
-                int cx;
-                int cz;
-                if (entityChunkPos == null) {
-                    entityChunkPos = nmsEntity.getClass().getMethod("chunkPosition");
-                }
-                Object pos = entityChunkPos.invoke(nmsEntity);
-                if (chunkPosX == null) {
-                    chunkPosX = pos.getClass().getMethod("x");
-                    chunkPosZ = pos.getClass().getMethod("z");
-                }
-                cx = ((Number) chunkPosX.invoke(pos)).intValue();
-                cz = ((Number) chunkPosZ.invoke(pos)).intValue();
-                return offerTrackerSendChanges(nmsEntity, serverEntity, cx, cz);
-            } catch (Throwable t) {
-                return false;
-            }
-        }
-        if (sendChanges == null) {
             return false;
         }
         try {
@@ -1144,23 +1172,47 @@ public final class InteriorWorldTickBridge {
             }
             int cx = ((Number) chunkPosX.invoke(pos)).intValue();
             int cz = ((Number) chunkPosZ.invoke(pos)).intValue();
-            return queueTrackerSend(cx, cz, serverEntity, sendChanges);
+            if (serverEntity != null) {
+                return offerTrackerSendChanges(nmsEntity, serverEntity, cx, cz);
+            }
+            if (sendChanges == null) {
+                return false;
+            }
+            return queueTrackerSendLegacy(cx, cz, null, sendChanges);
         } catch (Throwable t) {
             return false;
         }
     }
 
     /**
-     * Leaf-gap hot path: ChunkMap passes chunk coords + ServerEntity (no Runnable alloc,
-     * no chunkPosition reflect). Clean skips happen in ChunkMap via NMS {@code yapIsCleanTrackerSend}.
+     * Full tracker unit: {@code moonrise$tick} + optional {@code sendChanges} on spatial cores.
+     * ChunkMap must not call moonrise$tick on main when this returns true.
      *
-     * @return false if the work should run on main (offer fail / borders off)
+     * @param trackedEntity {@code ChunkMap.TrackedEntity}
+     * @param nearbyPlayers {@code NearbyPlayers.TrackedChunk}
+     * @param sendChanges   true → invoke sendChanges after tick
+     * @param bumpIfNoSend  when {@code !sendChanges}: bump clean tickCount (skip empty packets);
+     *                      false = moonrise$tick only (entity not send-eligible this tick)
+     */
+    public static boolean offerTrackerTickUnit(Object nmsEntity, Object trackedEntity,
+                                               Object nearbyPlayers, int cx, int cz,
+                                               boolean sendChanges, boolean bumpIfNoSend) {
+        if (nmsEntity == null || trackedEntity == null || nearbyPlayers == null
+                || !YapPhase3Flags.spatialTracker()) {
+            return false;
+        }
+        return queueTrackerSend(cx, cz, nmsEntity, trackedEntity, nearbyPlayers,
+                sendChanges, bumpIfNoSend, null);
+    }
+
+    /**
+     * sendChanges-only offer (moonrise$tick already ran on main). Prefer tick-unit.
      */
     public static boolean offerTrackerSendChanges(Object nmsEntity, Object serverEntity, int cx, int cz) {
         if (nmsEntity == null || serverEntity == null || !YapPhase3Flags.spatialTracker()) {
             return false;
         }
-        return queueTrackerSend(cx, cz, serverEntity, null);
+        return queueTrackerSendLegacy(cx, cz, serverEntity, null);
     }
 
     /** Count a ChunkMap-side clean skip (NMS early-out mirrored before offer). */
@@ -1168,52 +1220,77 @@ public final class InteriorWorldTickBridge {
         TRACKER_SKIPPED.incrementAndGet();
     }
 
-    private static boolean queueTrackerSend(int cx, int cz, Object serverEntity, Runnable sendChanges) {
+    private static boolean queueTrackerSend(int cx, int cz,
+                                            Object nmsEntity, Object trackedEntity, Object nearby,
+                                            boolean sendChanges, boolean bumpIfNoSend, Runnable send) {
         try {
+            PendingTrackerSend pending = new PendingTrackerSend(
+                    null, nmsEntity, trackedEntity, nearby, sendChanges, bumpIfNoSend, send, null);
             if (YapSpatialTickCoordinator.isBorderChunk(cx, cz)) {
                 if (!YapPhase3Flags.spatialBorders()) {
                     return false;
                 }
-                PENDING_BORDER_TRACKER.get().add(serverEntity != null ? serverEntity : sendChanges);
+                PENDING_BORDER_TRACKER.get().add(pending);
                 return true;
             }
             SpatialQuadrant q = SpatialQuadrant.byId(quadrantId(cx, cz));
-            PENDING_TRACKER.get().add(new PendingTrackerSend(q, serverEntity, sendChanges));
+            PENDING_TRACKER.get().add(new PendingTrackerSend(
+                    q, nmsEntity, trackedEntity, nearby, sendChanges, bumpIfNoSend, send, null));
             return true;
         } catch (Throwable t) {
             return false;
         }
     }
 
-    /** Flush deferred non-player tracker sends onto cores 3–6 / T8 (Paper main waits). */
+    /** Legacy sendChanges-only with serverEntity (no moonrise$tick). */
+    private static boolean queueTrackerSendLegacy(int cx, int cz, Object serverEntity, Runnable send) {
+        try {
+            PendingTrackerSend pending = new PendingTrackerSend(
+                    null, null, null, null, true, false, send, serverEntity);
+            if (YapSpatialTickCoordinator.isBorderChunk(cx, cz)) {
+                if (!YapPhase3Flags.spatialBorders()) {
+                    return false;
+                }
+                PENDING_BORDER_TRACKER.get().add(pending);
+                return true;
+            }
+            SpatialQuadrant q = SpatialQuadrant.byId(quadrantId(cx, cz));
+            PENDING_TRACKER.get().add(new PendingTrackerSend(
+                    q, null, null, null, true, false, send, serverEntity));
+            return true;
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /** Flush deferred non-player tracker work onto cores 3–6 / T8 (Paper main waits). */
     public static void flushTrackerSendChanges() {
         YapDistantBrain.bumpTick();
         List<PendingTrackerSend> interior = PENDING_TRACKER.get();
-        List<Object> border = PENDING_BORDER_TRACKER.get();
+        List<PendingTrackerSend> border = PENDING_BORDER_TRACKER.get();
         if (interior.isEmpty() && border.isEmpty()) {
             return;
         }
         List<PendingTrackerSend> intCopy = new ArrayList<>(interior);
         interior.clear();
-        List<Object> borderCopy = new ArrayList<>(border);
+        List<PendingTrackerSend> borderCopy = new ArrayList<>(border);
         border.clear();
 
         YapSpatialTickCoordinator coord = PaperTickBridgeHolder.COORDINATOR;
-        // Tiny batches: run on main — latch wakeup often costs more than a few sendChanges.
-        final int tiny = 48;
+        final int tiny = Integer.getInteger("yapcore.phase3.tracker-tiny-batch", 8);
         boolean interiorSpatial = coord != null && coord.isOnline() && intCopy.size() > tiny;
         boolean borderSpatial = coord != null && coord.isOnline()
                 && YapPhase3Flags.spatialBorders() && !borderCopy.isEmpty();
 
         if (!intCopy.isEmpty() && !interiorSpatial) {
             for (PendingTrackerSend p : intCopy) {
-                runTrackerSend(p, false);
+                runTrackerUnit(p, false);
             }
             intCopy = List.of();
         }
         if (!borderCopy.isEmpty() && !borderSpatial) {
-            for (Object o : borderCopy) {
-                runTrackerTarget(o, true);
+            for (PendingTrackerSend p : borderCopy) {
+                runTrackerUnit(p, true);
             }
             borderCopy = List.of();
         }
@@ -1233,18 +1310,17 @@ public final class InteriorWorldTickBridge {
                 List<PendingTrackerSend> list = e.getValue();
                 work.put(e.getKey(), () -> coord.runOwned(() -> {
                     for (PendingTrackerSend p : list) {
-                        runTrackerSend(p, false);
+                        runTrackerUnit(p, false);
                     }
                 }));
             }
         }
 
-        // High-pop: one barrier when both interior + border tracker work exist
         if (work != null && !borderCopy.isEmpty()) {
-            List<Object> borderFinal = borderCopy;
+            List<PendingTrackerSend> borderFinal = borderCopy;
             coord.runParallelTickWithBorder(work, "border:tracker", () -> {
-                for (Object o : borderFinal) {
-                    runTrackerTarget(o, true);
+                for (PendingTrackerSend p : borderFinal) {
+                    runTrackerUnit(p, true);
                 }
             });
             return;
@@ -1254,29 +1330,40 @@ public final class InteriorWorldTickBridge {
             return;
         }
         if (!borderCopy.isEmpty()) {
-            List<Object> borderFinal = borderCopy;
+            List<PendingTrackerSend> borderFinal = borderCopy;
             coord.runBorderTickSync("border:tracker", () -> {
-                for (Object o : borderFinal) {
-                    runTrackerTarget(o, true);
+                for (PendingTrackerSend p : borderFinal) {
+                    runTrackerUnit(p, true);
                 }
             });
         }
     }
 
-    private static void runTrackerSend(PendingTrackerSend p, boolean border) {
-        if (p.serverEntity != null) {
-            runTrackerTarget(p.serverEntity, border);
-        } else if (p.send != null) {
-            runTrackerTarget(p.send, border);
-        }
-    }
-
-    private static void runTrackerTarget(Object target, boolean border) {
+    private static void runTrackerUnit(PendingTrackerSend p, boolean border) {
         try {
-            if (target instanceof Runnable r) {
-                r.run();
-            } else {
-                invokeSendChanges(target);
+            if (p.trackedEntity != null && p.nearbyPlayers != null) {
+                invokeMoonriseTick(p.trackedEntity, p.nearbyPlayers);
+                if (p.sendChanges) {
+                    Object serverEntity = resolveServerEntity(p.trackedEntity);
+                    if (serverEntity != null) {
+                        if (YapPhase3Flags.spatialTrackerSkipClean() && isCleanTrackerSend(serverEntity)) {
+                            bumpCleanTrackerTick(serverEntity);
+                            TRACKER_SKIPPED.incrementAndGet();
+                        } else {
+                            invokeSendChanges(serverEntity);
+                        }
+                    }
+                } else if (p.bumpIfNoSend) {
+                    Object serverEntity = resolveServerEntity(p.trackedEntity);
+                    if (serverEntity != null) {
+                        bumpCleanTrackerTick(serverEntity);
+                        TRACKER_SKIPPED.incrementAndGet();
+                    }
+                }
+            } else if (p.serverEntity != null) {
+                invokeSendChanges(p.serverEntity);
+            } else if (p.send != null) {
+                p.send.run();
             }
             if (border) {
                 BORDER_TRACKER_SENDS.incrementAndGet();
@@ -1286,8 +1373,97 @@ public final class InteriorWorldTickBridge {
         } catch (Throwable t) {
             long n = FAULTS.incrementAndGet();
             if (n <= 8 || (n % 500) == 0) {
-                LOG.log(Level.WARNING, "Tracker sendChanges fault #" + n, t);
+                LOG.log(Level.WARNING, "Tracker unit fault #" + n, t);
             }
+        }
+    }
+
+    private static void invokeMoonriseTick(Object trackedEntity, Object nearbyPlayers) throws Throwable {
+        MethodHandle mh = moonriseTickMh;
+        if (mh == null && !moonriseTickMhFailed) {
+            synchronized (InteriorWorldTickBridge.class) {
+                if (moonriseTickMh == null && !moonriseTickMhFailed) {
+                    try {
+                        Method tick = null;
+                        for (Method m : trackedEntity.getClass().getMethods()) {
+                            if ("moonrise$tick".equals(m.getName()) && m.getParameterCount() == 1
+                                    && m.getParameterTypes()[0].isInstance(nearbyPlayers)) {
+                                tick = m;
+                                break;
+                            }
+                        }
+                        if (tick == null) {
+                            for (Method m : trackedEntity.getClass().getMethods()) {
+                                if ("moonrise$tick".equals(m.getName()) && m.getParameterCount() == 1) {
+                                    tick = m;
+                                    break;
+                                }
+                            }
+                        }
+                        if (tick == null) {
+                            throw new NoSuchMethodException("moonrise$tick on " + trackedEntity.getClass());
+                        }
+                        moonriseTickArgCl = tick.getParameterTypes()[0];
+                        moonriseTickMh = MethodHandles.publicLookup().unreflect(tick);
+                    } catch (Throwable t) {
+                        moonriseTickMhFailed = true;
+                        throw t;
+                    }
+                }
+                mh = moonriseTickMh;
+            }
+        }
+        if (mh == null) {
+            throw new IllegalStateException("moonrise$tick MethodHandle unavailable");
+        }
+        mh.invoke(trackedEntity, nearbyPlayers);
+    }
+
+    private static Object resolveServerEntity(Object trackedEntity) {
+        try {
+            MethodHandle g = trackedServerEntityGetter;
+            if (g == null && !trackedServerEntityFailed) {
+                synchronized (InteriorWorldTickBridge.class) {
+                    if (trackedServerEntityGetter == null && !trackedServerEntityFailed) {
+                        try {
+                            var f = trackedEntity.getClass().getField("serverEntity");
+                            trackedServerEntityGetter = MethodHandles.lookup().unreflectGetter(f);
+                        } catch (Throwable t) {
+                            trackedServerEntityFailed = true;
+                            return null;
+                        }
+                    }
+                    g = trackedServerEntityGetter;
+                }
+            }
+            return g != null ? g.invoke(trackedEntity) : null;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static boolean isCleanTrackerSend(Object serverEntity) {
+        try {
+            if (yapIsCleanMh == null) {
+                yapIsCleanMh = MethodHandles.publicLookup().findVirtual(
+                        serverEntity.getClass(), "yapIsCleanTrackerSend",
+                        java.lang.invoke.MethodType.methodType(boolean.class));
+            }
+            return (boolean) yapIsCleanMh.invoke(serverEntity);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private static void bumpCleanTrackerTick(Object serverEntity) {
+        try {
+            if (yapBumpCleanMh == null) {
+                yapBumpCleanMh = MethodHandles.publicLookup().findVirtual(
+                        serverEntity.getClass(), "yapBumpCleanTrackerTick",
+                        java.lang.invoke.MethodType.methodType(void.class));
+            }
+            yapBumpCleanMh.invoke(serverEntity);
+        } catch (Throwable ignored) {
         }
     }
 
@@ -1315,6 +1491,14 @@ public final class InteriorWorldTickBridge {
         mh.invoke(serverEntity);
     }
 
-    private record PendingTrackerSend(SpatialQuadrant quad, Object serverEntity, Runnable send) {
+    private record PendingTrackerSend(
+            SpatialQuadrant quad,
+            Object nmsEntity,
+            Object trackedEntity,
+            Object nearbyPlayers,
+            boolean sendChanges,
+            boolean bumpIfNoSend,
+            Runnable send,
+            Object serverEntity) {
     }
 }

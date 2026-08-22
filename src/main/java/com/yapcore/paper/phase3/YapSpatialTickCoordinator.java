@@ -3,6 +3,7 @@ package com.yapcore.paper.phase3;
 import com.yaplabs.yapengine.core.spatial.BitwiseQuadrantIndex;
 import com.yaplabs.yapengine.core.spatial.ParallelGameCore;
 import com.yaplabs.yapengine.core.spatial.SpatialQuadrant;
+import com.yaplabs.yapengine.core.spatial.SpatialSpawnRegion;
 import com.yaplabs.yapengine.sequencing.SequenceToken;
 import com.yaplabs.yapengine.sync.handoff.ChunkSyncLayer;
 import com.yaplabs.yapengine.sync.lease.AtomicLeaseManager;
@@ -132,12 +133,23 @@ public final class YapSpatialTickCoordinator {
     }
 
     /**
-     * True when any of the 8 neighbors belongs to a different quadrant.
-     * With sign-bit quadrants this is exactly the chunks on the {@code x=0} or
-     * {@code z=0} plane ({@code chunkX/Z ∈ {-1, 0}}) — O(1), no 3×3 scan.
+     * True when any 4-neighbor belongs to a different spatial quadrant (needs T8).
+     * <p>
+     * Cardinals-only (spawn off): chunks on the {@code x=0} or {@code z=0} plane
+     * ({@code chunkX/Z ∈ {-1, 0}}) — O(1).
+     * <p>
+     * With spawn box: neighbor-diff check so the spawn perimeter hands off to T8
+     * while deep spawn interior stays on the SPAWN worker.
      */
     public static boolean isBorderChunk(int chunkX, int chunkZ) {
-        return chunkX == -1 || chunkX == 0 || chunkZ == -1 || chunkZ == 0;
+        if (!SpatialSpawnRegion.enabled()) {
+            return chunkX == -1 || chunkX == 0 || chunkZ == -1 || chunkZ == 0;
+        }
+        SpatialQuadrant here = BitwiseQuadrantIndex.fromChunk(chunkX, chunkZ);
+        return BitwiseQuadrantIndex.fromChunk(chunkX - 1, chunkZ) != here
+                || BitwiseQuadrantIndex.fromChunk(chunkX + 1, chunkZ) != here
+                || BitwiseQuadrantIndex.fromChunk(chunkX, chunkZ - 1) != here
+                || BitwiseQuadrantIndex.fromChunk(chunkX, chunkZ + 1) != here;
     }
 
     public void submitBorderHandoff(String entityId, String inventoryKey,

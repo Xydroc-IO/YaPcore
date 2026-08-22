@@ -1,12 +1,18 @@
-# Paper → YapEngine port
+# Paper → YapEngine port (legacy path)
 
-**Product path:** Paper is the game authority. **Phases 1–3 done.**  
+> **Product default is Folia**, not Paper.  
+> `game-authority=folia`, `folia-embed=true` — Folia owns the game; YapEngine is the chassis;
+> YaP Link fronts multi-backend networks. Phase 3 Paper spatial flags **default off**
+> and do **not** run on the Folia path.  
+> This document is the **legacy Paper + Phase 3 spatial** plan for benches and ops who
+> opt back into Paper authority. See [WHAT_WE_ARE.md](WHAT_WE_ARE.md) · [YAP_LINK.md](YAP_LINK.md).
+
+**Legacy path:** Paper is the game authority when `game-authority=paper`. **Phases 1–3 done as code.**  
 **Phases 3.5–3.7 shipped** (interior world ticks, block entities/redstone, border T8) —
-spatial flags **default on** for high-pop / heavy-load product.  
-**Active gate:** beat stock Paper on **`heavypop`** MSPT — [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)
-(not yet won; flush overhead still dominates at current density).  
-**Phase 4 (next):** dual-stack + YaP plugins polish (can proceed in parallel with
-scoreboard work).
+spatial flags **default off** on the product path; re-enable only for Paperclip benches.  
+**Active product gate:** fair highpop MSPT (~100 active bots) — [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md)
+(250 keepalive = HOLD-ONLY).  
+**Phase 4:** dual-stack + YaP plugins (join green; play depth deepening) on the **Folia** world.
 
 Not a from-scratch vanilla rewrite.
 
@@ -28,7 +34,7 @@ paper-version=26.2
 paper-dir=paper-kernel
 ```
 
-### Phase 3 — Tick → YapEngine cores 3–6 ✅
+### Phase 3 — Tick → YapEngine cores 3–6 ✅ (legacy / opt-in)
 
 ```properties
 game-authority=paper
@@ -39,7 +45,9 @@ paper-version=26.2
 paper-dir=paper-kernel
 ```
 
-**Java 25+.** Start via `./scripts/start.sh` — cds into `paper-dir` (Paperclip Path cwd is fixed at JVM start; `-Dyapcore.home` stays on the project root).
+**Product defaults keep these flags false.** Enable only for Paper spatial benches.
+
+**Java 25+.** Start via `./scripts/start.sh` — cds into `paper-dir` when Paper authority is set (Paperclip Path cwd is fixed at JVM start; `-Dyapcore.home` stays on the project root).
 
 | Milestone | Status |
 |-----------|--------|
@@ -54,18 +62,17 @@ paper-dir=paper-kernel
 | Interior random ticks on cores 3–6 | ✅ Phase 3.5 (`yapcore.phase3.spatial-random`) |
 | Public vs-Paper MSPT bench | ✅ `scripts/bench/run-vs-paper.sh` — see [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md) |
 | Light idle/entity/farm with lean flags | ✅ prior WIN row (deferral mostly off) |
-| Spatial world flags default **on** (3.5–3.7) | ✅ `Phase3PaperRuntime` sets if unset |
-| Beat stock Paper on **`heavypop`** (all-on) | ❌ LOSS −42% MSPT — still the product gate |
+| Spatial world flags **product default** | ❌ **Off** — retired as product default; opt-in for benches |
 | Interior **block entities** on quads | ✅ Phase 3.6 (`yapcore.phase3.spatial-blockentities`) |
 | Interior **redstone block events** on quads | ✅ Phase 3.6 (`yapcore.phase3.spatial-redstone`) |
 | **Border** entities / TE / block events on T8 + DLM | ✅ Phase 3.7 (`yapcore.phase3.spatial-borders`) |
 | Instant neighbor-update / cross-quad piston chains | Later hardening (still Paper main) |
 
 **Honest:** Authoritative interior tick (entities + Phase 3.5 world ticks)
-**requires** `lib/paper-26.2-yap.jar`. Defaults (`paper-phase3-nms-tick=true`)
-**fail closed** if that jar is missing — no silent accounting-only mode. Set
-`paper-phase3-nms-tick=false` only when you intentionally want leases/borders
-without NMS. **Players always stay on Paper main.**
+**requires** `lib/paper-26.2-yap.jar` when Phase 3 NMS is enabled.
+**Player tick + Bukkit events stay on Paper main**; Phase 3.12 may
+export player tracker `sendChanges` on spatial cores after that tick.
+Folia product path never uses this Phase 3 spatial tick.
 
 ### Vendor build
 
@@ -95,22 +102,21 @@ Rebuild YaP Paperclip after hooks: `./scripts/build-vendor-paper.sh`.
 
 ### Phase 3.6 — Block entities + redstone on quads
 
-**Default on** with Phase 3 NMS (high-pop product). `Phase3PaperRuntime` sets
-these if unset. To lean out for idle experiments, disable explicitly:
+**Opt-in** with Phase 3 NMS on the **legacy Paper** path (not product default).
+`Phase3PaperRuntime` may set these if you enable Phase 3 for benches. To lean out:
 
 ```bash
-# Default production / heavypop path (set automatically if unset):
+# Legacy Paper Phase 3 bench path (explicit):
 # -Dyapcore.phase3.spatial-blockfluid=true
 # -Dyapcore.phase3.spatial-random=true
 # -Dyapcore.phase3.spatial-blockentities=true
 # -Dyapcore.phase3.spatial-redstone=true
 # -Dyapcore.phase3.spatial-borders=true
 
-# Lean / idle experiments only:
+# Lean / idle experiments:
 -Dyapcore.phase3.spatial-blockentities=false
 -Dyapcore.phase3.spatial-redstone=false
 ```
-
 | Work | On quads (interior) | Border (`spatial-borders`) | Else |
 |------|---------------------|---------------------------|------|
 | Hoppers, furnaces, chests, … | ✅ DLM on 3–6 | ✅ T8 DLM | Paper main |
@@ -118,17 +124,19 @@ these if unset. To lean out for idle experiments, disable explicitly:
 | Scheduled redstone (`blockTicks`) | ✅ via blockfluid | ❌ still main | Paper main |
 | Instant neighbor wire updates | ❌ | ❌ | Always main |
 | Non-player entities | ✅ DLM on 3–6 | ✅ T8 DLM | Paper main |
-| Players | — | — | Always Paper main |
+| Players | — | — | Tick + events on Paper main; **sendChanges** may flush on spatial (3.12) |
 
 Rebuild YaP Paperclip after hooks: `./scripts/build-vendor-paper.sh`.
 
 Classes: `InteriorWorldTickBridge.offerBlockEntity` / `offerBlockEvent`, hooks in `scripts/apply-yap-paper-hooks.sh`.
 
-### Phase 4 — Dual-stack + **full Via + Geyser parity** (own code) + YaP plugins
+### Phase 4 — Dual-stack + **Via + Geyser parity** (own code) + YaP plugins
 
 **Product DoD:** first-party equivalents of **ViaVersion + ViaBackwards +
 ViaRewind** and **Geyser (+ Floodgate-class auth)** — no Via\*/Geyser jars.
-JE + BE on the Paper-backed world; YaP SYNC/HEAVY/UI pools under Phase 3 leases.
+JE + BE on the **Folia**-backed world (product default); YaP SYNC/HEAVY/UI pools
+on the chassis. Join/spawn green; play depth deepening — not full Geyser play
+parity yet.
 
 See **[PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)** for the slice matrix (4.V\* / 4.G\*).
 

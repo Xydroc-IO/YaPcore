@@ -40,6 +40,16 @@ public final class YapSpatialTickPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        // Folia product path must never run Phase 3 spatial tick.
+        try {
+            Class.forName("io.papermc.paper.threadedregions.RegionizedServer");
+            getLogger().severe("YapSpatialTick is Paper Phase 3 legacy only — refusing Folia. "
+                    + "Remove yap-spatial-tick.jar from plugins/ on Folia servers.");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        } catch (ClassNotFoundException ignored) {
+            // Paper / non-regionized — continue
+        }
         try {
             ClassLoader app = ClassLoader.getSystemClassLoader();
             Class<?> holder = Class.forName("com.yapcore.paper.phase3.PaperTickBridgeHolder", true, app);

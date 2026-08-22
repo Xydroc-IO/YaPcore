@@ -765,8 +765,10 @@ fi
 # --- ChunkMap: Phase 3.8/3.9/Leaf-gap spatial non-player tracker sendChanges ---
 CM="$ROOT/vendor/paper/paper-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java"
 if [[ -f "$CM" ]]; then
-  if grep -q 'yapOfferTrackerMh' "$CM"; then
-    echo "YaP ChunkMap Leaf-gap tracker MethodHandle hook already present"
+  if grep -q 'offerTrackerTickUnit' "$CM" && grep -q 'yapOfferTrackerTickUnit' "$CM"; then
+    echo "YaP ChunkMap moonrise\$tick offload already present"
+  elif grep -q 'yapOfferTrackerMh' "$CM"; then
+    echo "YaP ChunkMap Leaf-gap tracker MethodHandle hook present (will moonrise-offload below)"
   elif grep -q 'yapSpatialTrackerEnabledM\|yapOfferTrackerSendChanges' "$CM"; then
     echo "Upgrading YaP ChunkMap tracker → Leaf-gap MethodHandles + cx/cz…"
     python3 - <<'PYCMLEAF'
@@ -1344,7 +1346,15 @@ path.write_text(text)
 print("Patched ChunkMap trackerEntities lock + snapshot iteration")
 PYCMLOCK
   fi
+
+  # Leaf-gap: move non-player moonrise$tick off main onto spatial cores (idempotent).
+  python3 "$ROOT/scripts/patch-chunkmap-moonrise-offload.py"
 fi
+
+# --- ServerLevel / PathTypeCache / FallingBlock: spatial-safe block updates (FallingBlock land) ---
+python3 "$ROOT/scripts/patch-serverlevel-spatial-block-updates.py"
+python3 "$ROOT/scripts/patch-pathtypecache-spatial.py"
+python3 "$ROOT/scripts/patch-fallingblock-double-spawn.py"
 
 # --- ServerEntity: Phase 3.9 clean sendChanges early-out + Leaf-gap helpers ---
 SE="$ROOT/vendor/paper/paper-server/src/minecraft/java/net/minecraft/server/level/ServerEntity.java"

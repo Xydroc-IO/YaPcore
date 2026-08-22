@@ -18,15 +18,15 @@ Phase 3 / **3.5** / **3.6** / **3.7** hooks in the vendored Paper tree pinned by
 5. **Border TE / block events (Phase 3.7)** — border chunks flush on Thread 8
    under DLM (`spatial-borders`).
 6. **Tracker sendChanges (Phase 3.8)** — `ChunkMap.newTrackerTick` offers
-   non-player `sendChanges` by quadrant (`spatial-tracker`, **default on**);
-   `moonrise$tick` / players / track-untrack stay on Paper main.
+   non-player `sendChanges` (+ `moonrise$tick`) by quadrant (`spatial-tracker`,
+   **default on**); track/untrack stay on Paper main.
 7. **Tracker skip-clean + early-out (Phase 3.9)** — skip queueing empty
    `sendChanges` (`spatial-tracker-skip-clean`, **default on**); `ServerEntity`
    cheap early-out on main and spatial. Still **not** Folia player tick.
 8. **Tracker dirty-bit snapshot (high-pop)** — `ChunkMap` reuses
    `trackerEntities` array unless add/remove dirtied it (kills per-tick
-   `.clone()` tax that only YaP pays for spatial safety). Player-path skip-clean
-   before main `sendChanges` for bots. Passenger fast-path in `ServerEntity`.
+   `.clone()` tax that only YaP pays for spatial safety). Passenger fast-path
+   in `ServerEntity`.
 9. **Tracker interior+border single barrier** — `runParallelTickWithBorder`
    when both queues have work (avoids back-to-back waits).
 10. **Barrier coalesce + distant brain (Phase 3.10)** —
@@ -34,17 +34,21 @@ Phase 3 / **3.5** / **3.6** / **3.7** hooks in the vendored Paper tree pinned by
    `spatial-entity-activation` runs Paper EAR on spatial ticks;
    `spatial-distant-brain` throttles far path recomputes / full ticks
    (`YapDistantBrain` — YaP code, not Leaf).
-11. Rebuild → **`lib/paper-26.2-yap.jar`** (`scripts/build-vendor-paper.sh`).
+11. **Player sendChanges export (Phase 3.12)** — after `moonrise$tick` on Paper
+    main, player `ServerEntity.sendChanges` offers to spatial
+    (`spatial-tracker-players`, **default on**). Player entity tick + Bukkit
+    events stay on main. Kill: `-Dyapcore.phase3.spatial-tracker-players=false`.
+12. Rebuild → **`lib/paper-26.2-yap.jar`** (`scripts/build-vendor-paper.sh`).
 Stock Fill Paper is **not** used for default Phase 3 NMS: missing
 `lib/paper-*-yap.jar` fails boot. Set `paper-phase3-nms-tick=false` only for
 intentional leases/accounting without authoritative interior tick.
 
 **Defaults:** `Phase3PaperRuntime` turns spatial-blockfluid / random /
 blockentities / redstone / borders / **tracker** / **tracker-skip-clean** /
-**coalesce-barriers** / **entity-activation** / **distant-brain** **on**
-if unset (high-pop product). Set `yapcore.phase3.spatial-tracker=false` to leave
-`sendChanges` on Paper main. Disable spatial world flags explicitly for lean
-idle experiments.
+**tracker-players** / **coalesce-barriers** / **entity-activation** /
+**distant-brain** **on** if unset (high-pop product). Set
+`yapcore.phase3.spatial-tracker=false` to leave all `sendChanges` on Paper main;
+`spatial-tracker-players=false` to keep only **player** sendChanges on main.
 
 MSPT scoreboard (primary gate = `heavypop`):
 [docs/BENCH_VS_PAPER.md](../docs/BENCH_VS_PAPER.md).

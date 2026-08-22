@@ -2,5 +2,6 @@ name: YapSpatialTick
 version: '1.0.0.0'
 main: com.yapcore.phase3plugin.YapSpatialTickPlugin
 api-version: '1.21'
-description: Phase 3 — fan Paper tick accounting onto YapEngine spatial cores 3-6
+folia-supported: false
+description: LEGACY Paper Phase 3 only — not for Folia product path
 authors: [ YapLabs ]

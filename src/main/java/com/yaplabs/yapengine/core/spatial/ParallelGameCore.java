@@ -32,7 +32,10 @@ public final class ParallelGameCore {
         for (SpatialGameLoop loop : loops.values()) {
             loop.start();
         }
-        LOG.info("Parallel Game Core online — 4 spatial threads (bitwise quadrant index)");
+        LOG.info("Parallel Game Core online — " + loops.size()
+                + " spatial threads (cardinals"
+                + (SpatialSpawnRegion.enabled() ? " + SPAWN r=" + SpatialSpawnRegion.radiusChunks() : "")
+                + ")");
     }
 
     public void stop() {

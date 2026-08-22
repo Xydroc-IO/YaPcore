@@ -1,5 +1,7 @@
 package com.yapcore.paper.phase3;
 
+import com.yaplabs.yapengine.core.spatial.SpatialSpawnRegion;
+
 /**
  * Cached Phase 3 / 3.5 JVM flags — avoids synchronized {@code Boolean.getBoolean}
  * on every chunk/entity tick.
@@ -14,9 +16,12 @@ public final class YapPhase3Flags {
     private static volatile boolean spatialBorders;
     private static volatile boolean spatialTracker;
     private static volatile boolean spatialTrackerSkipClean;
+    private static volatile boolean spatialTrackerPlayers;
     private static volatile boolean spatialCoalesceBarriers;
     private static volatile boolean spatialEntityActivation;
     private static volatile boolean spatialDistantBrain;
+    private static volatile boolean spatialSpawn;
+    private static volatile int spawnRadiusChunks;
     private static volatile int distantBrainStartBlocks;
     private static volatile int distantBrainFarBlocks;
     private static volatile int distantBrainMaxInterval;
@@ -35,6 +40,9 @@ public final class YapPhase3Flags {
         spatialTracker = Boolean.getBoolean("yapcore.phase3.spatial-tracker");
         String skipClean = System.getProperty("yapcore.phase3.spatial-tracker-skip-clean");
         spatialTrackerSkipClean = skipClean == null || Boolean.parseBoolean(skipClean);
+        // Phase 3.12 — player sendChanges on spatial after main moonrise$tick (tick stays main).
+        String trackerPlayers = System.getProperty("yapcore.phase3.spatial-tracker-players");
+        spatialTrackerPlayers = trackerPlayers == null || Boolean.parseBoolean(trackerPlayers);
         String coalesce = System.getProperty("yapcore.phase3.spatial-coalesce-barriers");
         spatialCoalesceBarriers = coalesce == null || Boolean.parseBoolean(coalesce);
         String ear = System.getProperty("yapcore.phase3.spatial-entity-activation");
@@ -44,6 +52,10 @@ public final class YapPhase3Flags {
         distantBrainStartBlocks = intProp("yapcore.phase3.distant-brain-start", 24);
         distantBrainFarBlocks = intProp("yapcore.phase3.distant-brain-far", 80);
         distantBrainMaxInterval = intProp("yapcore.phase3.distant-brain-interval", 20);
+        // Opt-in: fifth SPAWN spatial worker for hub/spawn box (default off).
+        spatialSpawn = Boolean.getBoolean("yapcore.phase3.spatial-spawn");
+        spawnRadiusChunks = intProp("yapcore.phase3.spawn-radius-chunks", 8);
+        SpatialSpawnRegion.configure(spatialSpawn, spawnRadiusChunks);
         flushing = Boolean.getBoolean("yapcore.phase3.spatial-tick.flushing");
     }
 
@@ -85,8 +97,8 @@ public final class YapPhase3Flags {
     }
 
     /**
-     * Non-player {@code ServerEntity.sendChanges} on spatial cores / T8.
-     * Players and track/untrack stay on Paper main. Default on for high-pop product.
+     * Non-player {@code ServerEntity.sendChanges} (+ moonrise$tick) on spatial cores / T8.
+     * Track/untrack stay on Paper main. Default on for high-pop product.
      */
     public static boolean spatialTracker() {
         return spatialTracker;
@@ -99,6 +111,16 @@ public final class YapPhase3Flags {
      */
     public static boolean spatialTrackerSkipClean() {
         return spatialTrackerSkipClean;
+    }
+
+    /**
+     * Phase 3.12 — after {@code moonrise$tick} on Paper main, offer player
+     * {@code ServerEntity.sendChanges} to spatial cores (export only; tick + events stay main).
+     * Requires {@link #spatialTracker()}. Kill switch:
+     * {@code -Dyapcore.phase3.spatial-tracker-players=false}.
+     */
+    public static boolean spatialTrackerPlayers() {
+        return spatialTrackerPlayers;
     }
 
     /** Merge block-events into entity/BE flush — fewer {@code runParallelTick} barriers. */
@@ -114,6 +136,18 @@ public final class YapPhase3Flags {
     /** First-party distant path/AI throttle (Leaf DAB–class, YaP code). */
     public static boolean spatialDistantBrain() {
         return spatialDistantBrain;
+    }
+
+    /**
+     * Fifth spatial region: origin spawn/hub box on its own worker.
+     * Does not move players off Paper main — only non-player interior work in the box.
+     */
+    public static boolean spatialSpawn() {
+        return spatialSpawn;
+    }
+
+    public static int spawnRadiusChunks() {
+        return spawnRadiusChunks;
     }
 
     public static int distantBrainStartBlocks() {
