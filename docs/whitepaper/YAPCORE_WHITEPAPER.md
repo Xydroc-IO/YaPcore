@@ -10,9 +10,7 @@ Document ID: `YAP-WP-16T-001`
 
 ## Abstract
 
-Minecraft-class game servers traditionally serialize world mutation, plugin callbacks, and network I/O onto a single “main” thread, trading simplicity for latency under load. YaPcore (YapEngine) proposes a **fixed sixteen-thread** partitioning of server work: watchdog control, traffic/sequencing, parallel spatial game cores, chunk synchronization with deferred lease management, a legacy **Compatibility Bridge**, UI sandboxes, and heavy I/O workers. A **SequenceToken** model provides per-stream and global ordering without requiring every subsystem to share one lock. Legacy Spigot/Paper plugins and first-party YaP plugins/modules execute under an explicit **SYNC / HEAVY / UI** pool contract so inventory and block mutations never race the spatial cores. The shipping product path uses **Paper as game authority**, with Phase 3–3.7
-spatial tick (entities, block/fluid/random, block entities/redstone, border T8)
-on YapEngine under DLM leases — **default on** for high-pop product.
+Minecraft-class game servers traditionally serialize world mutation, plugin callbacks, and network I/O onto a single “main” thread, trading simplicity for latency under load. YaPcore (YapEngine) proposes a **fixed sixteen-thread** partitioning of server work: watchdog control, traffic/sequencing, parallel spatial game cores, chunk synchronization with deferred lease management, a legacy **Compatibility Bridge**, UI sandboxes, and heavy I/O workers. A **SequenceToken** model provides per-stream and global ordering without requiring every subsystem to share one lock. Legacy Spigot/Paper/Folia plugins and first-party YaP plugins/modules execute under an explicit **SYNC / HEAVY / UI** pool contract so inventory and block mutations never race the spatial cores. The shipping product path uses **Folia as game authority**, with YapEngine as the fixed chassis and **YaP Link** for multi-backend networks. Phase 3–3.7 Paper spatial tick remains available as **legacy / opt-in** for Paperclip benches (defaults **off**; Folia path has no Phase 3 spatial tick).
 
 This paper describes the architecture, concurrency invariants, networking and crossplay stance, plugin/module surface, and evaluation methodology. It is intended for systems researchers, server operators, and plugin authors evaluating YaPcore as a research and production platform.
 
@@ -34,34 +32,43 @@ YaPcore contributes:
 2. **SequenceToken** sequencing for ordered handoff across threads.
 3. A **Compatibility Bridge** that stages legacy Bukkit mutations onto the game-core drain window.
 4. Dual-stack **Java TCP + Bedrock UDP** ingress with optional shared listen port and Geyser-class crossplay hub.
-5. A **three-tier extension model**: Paper-style plugins, YaP plugins, and fine-tune modules.
+5. A **three-tier extension model**: Folia/Paper-style plugins, YaP plugins, and fine-tune modules.
 
 ### 1.3 Non-goals
 
-YaPcore uses **Paper as game authority** for the shipping product: Paper plugins
-receive **complete Paper API coverage** from the embedded Paperclip
-(`paper-api` 26.2), identical in surface to stock Paper. YaPcore does not claim
-NeoForge dedicated-server semantics. The Compatibility Bridge facade (non-Paper
-authority) remains best-effort stubs only — see `ApiCoverage` and
+YaPcore uses **Folia as game authority** for the shipping product: Folia-aware plugins
+receive Folia API coverage from the embedded Folia clip (26.2). Legacy
+`game-authority=paper` still provides **complete Paper API coverage** from the
+embedded Paperclip (`paper-api` 26.2). YaPcore does not claim NeoForge
+dedicated-server semantics. The Compatibility Bridge facade (non-game authority)
+remains best-effort stubs only — see `ApiCoverage` and
 [PAPER_API_COVERAGE.md](../PAPER_API_COVERAGE.md).
 
 ### 1.4 Product status (August 2026)
 
-YaPcore’s shipping product path uses **Paper as game authority**. Phases 1–2
-(wrap / Paper owns public JE) and **Phases 3–3.7** (interior entity + world ticks
-on spatial cores 3–6 under DLM leases, block entities/redstone, border tick on
-thread 8, vendored YaP Paperclip; spatial flags **default on**) are **complete**.
-The product targets **high-population / heavy-load** networks; the public
-beat-Paper gate is the **`heavypop`** MSPT scoreboard
-([BENCH_VS_PAPER.md](../BENCH_VS_PAPER.md)) — not yet won. **Phase 4**
-(dual-stack + first-party Via/Geyser join/spawn + network plugins) is in progress. See
-[PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md).
+YaPcore’s shipping product path uses **Folia as game authority**
+(`game-authority=folia`, `folia-embed=true`). YapEngine’s 16-thread chassis always
+boots. **YaP Link** is a complete Velocity fork (modern forwarding, online-mode,
+compression, transfers, Velocity plugin API). Phases
+3–3.7 Paper spatial tick are **complete as code** but **retired as product default**
+(opt-in for Paper benches only; Folia path has no Phase 3 spatial tick). The product
+targets **high-population / heavy-load** networks; fair highpop cites focus on
+**~100 active bots** (250 keepalive = HOLD-ONLY) —
+([BENCH_VS_PAPER.md](../BENCH_VS_PAPER.md)). **Phase 4** (dual-stack + first-party
+Via/Geyser join/spawn + network plugins; play depth deepening) is in progress. See
+[PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md) · [YAP_LINK.md](../YAP_LINK.md).
 
 ---
 
 ## 2. Related Work
 
-Paper/Purpur extend Bukkit with asynchronous events and regionized threading experiments (Folia). Netty-based proxies (Velocity) separate player routing from world authority. Academic engines (e.g., parallel ECS frameworks) demonstrate spatial sharding but rarely retain a Bukkit-compatible plugin ABI. YaPcore sits between: **deterministic thread roles** plus a **bridge** for legacy plugins, rather than requiring immediate rewrite onto a new ECS.
+Paper/Purpur extend Bukkit with asynchronous events. Folia provides regionized
+multithreading for Bukkit-class servers — YaPcore’s **default game authority**.
+Netty-based proxies (Velocity; YaP Link) separate player routing from world
+authority. Academic engines (e.g., parallel ECS frameworks) demonstrate spatial
+sharding but rarely retain a Bukkit-compatible plugin ABI. YaPcore sits as
+**Folia’s game + deterministic YapEngine thread roles + first-party Link**, rather
+than requiring a clean-room rewrite onto a new ECS.
 
 ---
 
@@ -109,7 +116,7 @@ Production launch scripts prefer **Generational ZGC** with optional **NUMA** pin
 
 Fine-tune **modules** (`module.yml`) share the same pools and may declare `provides`/`requires` for operator composition ([MODULES_AND_API.md](../MODULES_AND_API.md)). First-party defaults ship **YaP Vehicles**, gameplay knobs, **YapDb** (shared MariaDB pool), **YaPPlayerData**, packs/chat/floodgate helpers, and stacker/pregen into `plugins/` / `modules/` on product builds.
 
-**Operator layout:** Paper (`plugin.yml`) and YaP (`yap.yml`) jars share one folder, `plugins/`. Under Paper game authority, Paper loads legacy jars; YaP loads only `yap.yml` jars from that same directory (`paper-kernel/plugins` → symlink). See [PLUGIN_COMPAT.md](../PLUGIN_COMPAT.md). Product ops include a Swing control panel and a token-authenticated **web dashboard** (`:8080`) for headless hosts (Console, Packs, **Ranks**), plus resource-pack HTTP (default `yapcore-default.zip`, multi-active extras). LuckPerms starter ranks: [PERMISSIONS.md](../PERMISSIONS.md). MariaDB packaging: [MARIADB.md](../MARIADB.md).
+**Operator layout:** Folia/Paper (`plugin.yml`) and YaP (`yap.yml`) jars share one folder, `plugins/`. Under Folia game authority (default), Folia loads compatible jars; under legacy Paper authority, Paper loads legacy jars; YaP loads only `yap.yml` jars from that same directory (kernel `plugins` → symlink). See [PLUGIN_COMPAT.md](../PLUGIN_COMPAT.md). Product ops include a Swing control panel and a token-authenticated **web dashboard** (`:8080`) for headless hosts (Console, Packs, **Ranks**), plus resource-pack HTTP (default `yapcore-default.zip`, multi-active extras). LuckPerms starter ranks: [PERMISSIONS.md](../PERMISSIONS.md). MariaDB packaging: [MARIADB.md](../MARIADB.md).
 
 ---
 
@@ -140,7 +147,7 @@ Metrics of interest: tick time p99, bridge queue depth, cross-quadrant arbitrati
 
 ## 7. Threats to validity
 
-- Phase 3 spatial tick edge cases may still surprise plugins that assume a single-thread entity model (report vs stock Paper).
+- Phase 3 spatial tick edge cases (legacy Paper path only) may still surprise plugins that assume a single-thread entity model (report vs stock Paper).
 - Protocol version sprawl (1.21.x+) requires continuous registry/packet maintenance.
 - NUMA/ZGC gains are hardware-dependent.
 - Bedrock parity lags Java for some gameplay packets.

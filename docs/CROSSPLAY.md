@@ -8,21 +8,22 @@ YaPcore aims for **one shared world** and **full** protocol coverage:
 - **Floodgate-class auth:** first-party `FloodgateAuth` / Xbox chain in core; behind Velocity use
   **`yap-floodgate.jar`** (not the Floodgate jar) — [VELOCITY.md](VELOCITY.md)
 
-**Supported JE floor: 1.20.2+** onto Paper 26.2. Pre-1.19 / Rewind-depth is **best-effort**,
+**Supported JE floor: 1.20.2+** onto Folia/Paper 26.2. Pre-1.19 / Rewind-depth is **best-effort**,
 not product DoD for play remaps. Live matrix (2026-08-21): JE **7/7** join/spawn under zlib;
 Bedrock smoke `geyserParitySmoke=true` on 1.21.50 (~1599 itemstates).
 
-**Phase 4 DoD** is that parity on the Paper-backed world. Slice roll-up:
+**Phase 4 DoD** is that parity on the Folia-backed world (product default). Slice roll-up:
 [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md). Feature-by-feature checklist:
 [VIA_GEYSER_PARITY.md](VIA_GEYSER_PARITY.md).
-Bedrock terrain defaults to **Paper column stream** (P4.5); flat is opt-in
+Bedrock terrain defaults to **column stream** from the game authority (P4.5); flat is opt-in
 (`-Dyapcore.bedrock.flat-chunks=true`). Automated soak preamble:
 `./scripts/protocol-matrix/play-soak.sh`.
 
-**Product note:** With default `game-authority=paper`, Paper owns the JE game.
-Phases 3–3.7 spatial tick is live on YapEngine (default on; high-pop target).
-Phase 4 finishes dual-stack + full first-party Via/Geyser feature sets.
-See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md).
+**Product note:** With default `game-authority=folia`, **Folia** owns the JE game.
+Phase 3 Paper spatial tick is **not** product default (opt-in for Paper benches only;
+Folia path has no Phase 3 spatial tick). Phase 4 finishes dual-stack depth —
+join/spawn green; play depth deepening (do not claim full Geyser play parity yet).
+See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) · [WHAT_WE_ARE.md](WHAT_WE_ARE.md).
 
 ## Streamlined one-port join
 
@@ -50,15 +51,15 @@ Domain / Cloudflare: [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md).
 ## Architecture
 
 ```
-Java TCP  ──┐  ViaStyleRemapper (older JE)   ┌─ YapEngine spatial cores (same map)
+Java TCP  ──┐  ViaStyleRemapper (older JE)   ┌─ Folia regions (default game)
             ├─ DualStackGateway ─────────────┤
 Bedrock UDP─┘  CrossplayHub                  └─ UnifiedPlayer roster
                GeyserStyleTranslator
-               FloodgateAuth (core) / yap-floodgate (Velocity)
+               FloodgateAuth (core) / yap-floodgate (Velocity / YaP Link)
 ```
 
-On join, both editions register a `UnifiedPlayer` into the same spatial
-partition. Moves/chats/clicks are translated into shared engine ops.
+On join, both editions register a `UnifiedPlayer` into the same shared world.
+Moves/chats/clicks are translated into shared engine ops.
 
 ## Scope (Phase 4)
 

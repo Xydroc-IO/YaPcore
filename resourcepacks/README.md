@@ -2,9 +2,10 @@
 
 Drop a Java `.zip` (or Bedrock `.mcpack`) here, set it active, restart.
 
-With `game-authority=paper`, YaPcore syncs the active pack into Paper
-`server.properties`. On join, the client gets Minecraft’s resource-pack prompt
-and **downloads automatically** from the pack HTTP/edge URL.
+With `game-authority=folia` (default) or `game-authority=paper` (legacy), YaPcore
+syncs the active pack into the game’s `server.properties`. On join, the client gets
+Minecraft’s resource-pack prompt and **downloads automatically** from the pack
+HTTP/edge URL.
 
 ```properties
 resource-pack-enabled=true

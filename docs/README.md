@@ -11,12 +11,13 @@
 | [WHAT_WE_ARE](WHAT_WE_ARE.md) | Short identity / are we better Paper? |
 | [**COMPARE_ECOSYSTEM**](COMPARE_ECOSYSTEM.md) | **YaPcore vs Paper, Purpur, Pufferfish, Leaf, Folia** |
 | [**PDFs**](pdf/) | Printable PDFs of the identity + whitepaper + vehicles + web dashboard docs |
-| [VELOCITY](VELOCITY.md) | **Velocity proxy** — modern forwarding as a Paper backend |
+| [VELOCITY](VELOCITY.md) | **Velocity proxy** — temporary stand-in; Folia/Paper backends with modern forwarding |
+| [**YAP_LINK**](YAP_LINK.md) | **YaP Link** — first-party complete Velocity fork |
 | [**PLAYERDATA**](PLAYERDATA.md) | **Cross-server inv / claims / GUIs** — `yap-playerdata` |
 | [**YAPDB**](YAPDB.md) | **Shared MariaDB Hikari pool** — `yap-db` for any SQL plugin |
 | [**MARIADB**](MARIADB.md) | **Easy MariaDB** — Docker package for Linux + Windows (single & multi) |
 | [YAPENGINE_16THREAD](YAPENGINE_16THREAD.md) | Thread roles 1–16 |
-| [PAPER_YAPENGINE_PORT](PAPER_YAPENGINE_PORT.md) | **Product:** Phases 3–3.7 done (spatial default on); **`heavypop` MSPT gate** active; Phase 4 next |
+| [PAPER_YAPENGINE_PORT](PAPER_YAPENGINE_PORT.md) | **Legacy Paper path:** Phases 3–3.7 done as code; **defaults off** (benches only). Product default is Folia — see [WHAT_WE_ARE.md](WHAT_WE_ARE.md) |
 | [BENCH_VS_PAPER](BENCH_VS_PAPER.md) | **MSPT scoreboard** — `heavypop` primary gate vs stock Paper |
 | [PERF_AND_LAYOUT](PERF_AND_LAYOUT.md) | Performance layout & folder discipline |
 | [ZGC_NUMA](ZGC_NUMA.md) | Generational ZGC + NUMA launch flags |
@@ -31,15 +32,15 @@
 | [NGINX_AND_LOCALHOST](NGINX_AND_LOCALHOST.md) | Same-PC joins + nginx |
 | [**WINDOWS**](WINDOWS.md) | **Windows parity** — launchers, Paperclip, nginx stream |
 | [CLOUDFLARE_AND_NGINX](CLOUDFLARE_AND_NGINX.md) | **yapcoremc.yaplabs.us** + Cloudflare DNS / SSL |
-| [PLUGINS](PLUGINS.md) | Plugin API — Paper + YaP jars in one `plugins/` folder |
-| [PLUGIN_COMPAT](PLUGIN_COMPAT.md) | Paper plugin compat — unified `plugins/` + real Paper loader |
+| [PLUGINS](PLUGINS.md) | Plugin API — Folia/Paper + YaP jars in one `plugins/` folder |
+| [PLUGIN_COMPAT](PLUGIN_COMPAT.md) | Folia product path + unified `plugins/`; Paper path legacy |
 | [**PLUGIN_BACKCOMPAT**](PLUGIN_BACKCOMPAT.md) | **1.20–1.21 jars on 26.2** — Tier A + light ASM rewrite |
 | [**PREGEN**](PREGEN.md) | **Built-in chunk pregen** (Chunky-class) — `/yappregen` |
 | [**STACKER**](STACKER.md) | **PDC mob/item/spawner stacker** (no NMS) — `/yapstacker` |
 | [**PLACEHOLDERAPI**](PLACEHOLDERAPI.md) | **Built-in clip-compatible PlaceholderAPI** (no HelpChat jar) |
-| [**PAPER_API_COVERAGE**](PAPER_API_COVERAGE.md) | **Complete Paper API** on product path — verify script + pins |
+| [**PAPER_API_COVERAGE**](PAPER_API_COVERAGE.md) | Folia APIs on Folia path; complete Paper API on legacy Paper path |
 | [**WEB_DASHBOARD**](WEB_DASHBOARD.md) | **Headless browser control** — start/stop, console, packs, vehicles |
-| [**VEHICLES**](VEHICLES.md) | **Real vehicle API** (not minecarts) — Paper plugin + author guide |
+| [**VEHICLES**](VEHICLES.md) | **Real vehicle API** (not minecarts) — Folia/Paper plugin + author guide |
 | [TUNE](TUNE.md) | **Central config hub** + Purpur-class gameplay knobs module |
 | [COMMANDS](COMMANDS.md) | Vanilla / Paper / plugin commands from GUI + in-game |
 | [**PERMISSIONS**](PERMISSIONS.md) | **Node → role map** + LuckPerms pack, install script, dashboard Ranks |

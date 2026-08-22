@@ -70,14 +70,15 @@ without hopping to SYNC. Keep caches labeled by owning pool.
 
 ## API coverage (what authors can use)
 
-**Paper plugins (`plugin.yml`):** **complete Paper API** under `game-authority=paper` —
-same `paper-api` 26.2 as stock Paper. Details: [PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md).
+**Paper plugins (`plugin.yml`):** **complete Paper API** under legacy `game-authority=paper` —
+same `paper-api` 26.2 as stock Paper. **Folia product path** (`game-authority=folia`):
+Folia APIs (including region schedulers). Details: [PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md).
 
 Runtime matrix: `com.yapcore.api.ApiCoverage`.
 
 **YaP plugins / modules:** Adventure, dual-pool schedulers, modules `provides`/`requires`.
 
-**Not supported:** Folia `RegionScheduler` APIs.
+**Folia `RegionScheduler` APIs:** supported on the Folia product path; not on legacy Paper.
 
 Verify:
 

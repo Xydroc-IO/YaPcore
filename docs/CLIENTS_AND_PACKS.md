@@ -1,46 +1,55 @@
 # Dual-stack clients & resource packs
 
-## Game authority (Paper → YapEngine)
+## Game authority (Folia default)
 
-**Product path:** Paper game + Phase 3 tick on YapEngine cores 3–6 (**done**).  
-Phase 4: polish dual-stack + YaP plugins on that world.  
-See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md).
+**Product path:** Folia game (`game-authority=folia`, `folia-embed=true`) + YapEngine chassis.  
+Phase 3 Paper spatial is **legacy / opt-in** (defaults off); Folia path has no Phase 3 spatial tick.  
+Phase 4: dual-stack join green; play depth deepening (not full Geyser play parity yet).  
+See [PAPER_YAPENGINE_PORT.md](PAPER_YAPENGINE_PORT.md) · [WHAT_WE_ARE.md](WHAT_WE_ARE.md).
 
 ```properties
-game-authority=paper
-paper-embed=true
-paper-phase3-tick-bridge=true
-paper-phase3-nms-tick=true
-paper-version=26.2
-paper-dir=paper-kernel
+game-authority=folia
+folia-embed=true
+folia-version=26.2
+folia-dir=folia-kernel
+paper-phase3-tick-bridge=false
+paper-phase3-nms-tick=false
 ```
 
 | Value | Meaning |
 |-------|---------|
-| `paper` + `paper-embed=true` | Default — Paper owns JE; Phase 3 same-JVM when bridge on |
-| `paper-phase3-nms-tick=true` | Interior NMS entity tick on cores 3–6 (**requires** `lib/paper-*-yap.jar`; boot fails if missing) |
+| `folia` + `folia-embed=true` | **Default** — Folia owns JE |
+| `paper` + `paper-embed=true` | Legacy — Paper owns JE; Phase 3 opt-in for benches |
+| `paper-phase3-nms-tick=true` | Legacy only — interior NMS entity tick on cores 3–6 (**requires** `lib/paper-*-yap.jar`) |
 | `native` | Experimental YapEngine flat world |
 | `mojang` | Legacy Mojang wrap |
 
-**Java 25+** for Paper 26.2. Prefer YaP Paperclip:
+**Java 25+** for Folia/Paper 26.2. Folia product path:
+
+```bash
+./scripts/fetch-folia.sh
+./scripts/start.sh --fg           # cds into folia-kernel
+```
+
+Legacy Paperclip (Phase 3 benches only):
 
 ```bash
 ./scripts/vendor-paper.sh
 ./scripts/build-vendor-paper.sh   # → lib/paper-26.2-yap.jar
-./scripts/start.sh --fg           # cds into paper-kernel
 ```
 
 ## Built-in multi-version (Via-class — no Via* plugins)
 
-**Supported JE (product DoD):** **1.20.2 → current** onto Paper 26.2
+**Supported JE (product DoD):** **1.20.2 → current** onto Folia/Paper 26.2
 (first-party ViaBackwards-class remaps). **1.19.4** is an optional canary.
 
 **Best-effort:** pre-1.19 (incl. 1.8 Rewind) may still join for status/spawn
 checks (`MATRIX_FULL=1`); deep play remaps are **not** a Phase 4 blocker.
 
-**Phase 4 DoD:** first-party ViaVersion + ViaBackwards equivalents on the Paper
+**Phase 4 DoD:** first-party ViaVersion + ViaBackwards equivalents on the Folia
 JE path. ViaRewind-depth is best-effort only. See [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)
 and the full checklist [VIA_GEYSER_PARITY.md](VIA_GEYSER_PARITY.md).
+Join/spawn is green; **do not** claim full Geyser play parity yet.
 
 Scaffold: `ProtocolBand` / `ProtocolCompat` / `ViaStyleRemapper`. Bedrock uses
 first-party Geyser parity (`GeyserStyleTranslator`), not the Geyser jar.
@@ -48,8 +57,9 @@ first-party Geyser parity (`GeyserStyleTranslator`), not the Geyser jar.
 | Path | Who remaps |
 |------|------------|
 | Native JE gateway | `ProtocolBand` + expanding `ViaStyleRemapper` |
-| Paper JE (product) | Phase 4: full Via\* parity onto Paper 26.2 |
-| Bedrock | Phase 4: full Geyser parity via CrossplayHub |
+| Folia JE (product) | Phase 4: Via\* parity onto Folia 26.2 |
+| Paper JE (legacy) | Same remapper wiring on Paper authority |
+| Bedrock | Phase 4: Geyser parity via CrossplayHub (play depth deepening) |
 
 ```properties
 backwards-compatible=true
@@ -61,14 +71,14 @@ Do not copy `ViaVersion.jar` / Geyser jars into `plugins/` for YaPcore.
 
 | Edition | Who binds | Notes |
 |---------|-----------|--------|
-| Java | Paper (when embed / Phase 3) | Public `port` |
+| Java | Folia (default embed) or Paper (legacy) | Public `port` |
 | Bedrock | YaPcore gateway | UDP shared or separate |
 
 Shared listen port (`shared-listen-port=true`) uses the same number for JE TCP and BE UDP. See [CROSSPLAY.md](CROSSPLAY.md).
 
 ## Resource packs (auto-download on join)
 
-**Login prompt:** Active packs become **one** Paper download (Yes/No). Several actives are
+**Login prompt:** Active packs become **one** game download (Yes/No). Several actives are
 **merged** into `yap-active-bundle-<hash>.zip` (later packs win on path conflicts) so every
 active pack applies without play-phase `addResourcePack`.  
 `resource-pack-forced=false` (default) lets players decline without being kicked.
@@ -102,9 +112,10 @@ the bytes it fetched.
 curl -sL http://yapcoremc.yaplabs.us/pack/yapcore-default-<sha8>.zip | sha1sum
 ```
 
-**Yes — textures auto-download.** With Paper as game authority, YaPcore writes
-the active pack URL + SHA-1 into Paper `server.properties`. On join, the client
-shows Minecraft’s resource-pack prompt and downloads from that URL.
+**Yes — textures auto-download.** With Folia (default) or Paper (legacy) as game
+authority, YaPcore writes the active pack URL + SHA-1 into the game’s
+`server.properties`. On join, the client shows Minecraft’s resource-pack prompt
+and downloads from that URL.
 If `resource-pack-forced=true`, declining kicks the player.
 
 Refresh the zip: `./scripts/fetch-faithful-64x.sh` then
@@ -112,7 +123,7 @@ Refresh the zip: `./scripts/fetch-faithful-64x.sh` then
 
 | Client location | Pack URL offered |
 |-----------------|------------------|
-| All clients (Paper) | `resource-pack-url` / `public-pack-port` (one URL for everyone) |
+| All clients (Folia/Paper) | `resource-pack-url` / `public-pack-port` (one URL for everyone) |
 | Recommended public | `http://yapcoremc.yaplabs.us/pack/<file>` (`public-pack-port=80`) |
 
 YaPcore also serves files on `:8081` for local/edge proxy use. Operators can

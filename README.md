@@ -9,8 +9,9 @@
 </p>
 
 **16-thread** Minecraft-class server engine (YapLabs **YapEngine**) for Linux —
-Paper as the game, Spigot/Paper-compatible plugins, YaP plugins & fine-tune modules,
-Java+Bedrock dual-stack, resource packs, control GUI, and deep crash diagnostics.
+**Folia** as the default game, Folia-aware plugins, YaP plugins & fine-tune modules,
+**YaP Link** (complete Velocity fork), Java+Bedrock dual-stack, resource packs,
+control GUI, and deep crash diagnostics.
 
 > Not affiliated with Mojang / Microsoft. See [LICENSE](LICENSE).
 
@@ -28,7 +29,7 @@ Java+Bedrock dual-stack, resource packs, control GUI, and deep crash diagnostics
 |---------|-----------|
 | 1 | Controller (watchdog) |
 | 2 | Traffic Cop + SequenceToken |
-| 3–6 | Parallel Game Core (quad-tree spatial loops) — Phase 3 tick |
+| 3–6 | Spatial game cores (chassis; Phase 3 tick only on legacy Paper path) |
 | 7–8 | Chunk Sync DLM + Boundary Arbitrator |
 | 9 | Compatibility Bridge |
 | 10–11 | High-Speed UI sandbox |
@@ -37,11 +38,14 @@ Java+Bedrock dual-stack, resource packs, control GUI, and deep crash diagnostics
 
 See [docs/YAPENGINE_16THREAD.md](docs/YAPENGINE_16THREAD.md).
 
-**Game path:** **Paper** authority · **Phases 3–3.7 done** (spatial tick **default on**) ·
-**Active:** beat Paper on **`heavypop`** MSPT · **Phase 4 next** (full Via + Geyser
-parity in our code + YaP plugins) —
-[docs/PAPER_YAPENGINE_PORT.md](docs/PAPER_YAPENGINE_PORT.md) · [docs/BENCH_VS_PAPER.md](docs/BENCH_VS_PAPER.md).  
-Default: `game-authority=paper`, `paper-embed=true`, `paper-phase3-tick-bridge=true`.  
+**Game path:** **Folia** authority (default) · YapEngine chassis · **YaP Link** (full Velocity fork) for
+multi-backend networks · Phase 3 Paper spatial **retired as product default**
+(opt-in benches only; Folia path has no Phase 3 spatial tick) · fair highpop cite
+**~100 active bots** (250 keepalive = HOLD-ONLY) · Phase 4 dual-stack (join green;
+play depth deepening) —
+[docs/PAPER_YAPENGINE_PORT.md](docs/PAPER_YAPENGINE_PORT.md) ·
+[docs/YAP_LINK.md](docs/YAP_LINK.md) · [docs/BENCH_VS_PAPER.md](docs/BENCH_VS_PAPER.md).  
+Default: `game-authority=folia`, `folia-embed=true`; Phase 3 flags **off**.  
 Product target: **high-pop / heavy load** (not empty lobbies).
 
 ## Quick start
@@ -50,18 +54,21 @@ Product target: **high-pop / heavy load** (not empty lobbies).
 git clone https://github.com/<you>/YaPcore.git
 cd YaPcore
 chmod +x scripts/*.sh
-# Paper 26.2 / Phase 3 needs Java 25+
-./scripts/vendor-paper.sh && ./scripts/build-vendor-paper.sh   # optional YaP Paperclip
+# Folia / Paper 26.2 needs Java 25+
+./scripts/fetch-folia.sh          # Folia product path
+# Legacy Paper + Phase 3 benches only:
+# ./scripts/vendor-paper.sh && ./scripts/build-vendor-paper.sh
 gradle shadowJar          # jar + default plugins/packs; release → build/dist/yapcore-release/
 ./scripts/gui.sh          # control panel
 # or
-./scripts/start.sh --fg   # headless (cds into paper-kernel for Phase 3)
+./scripts/start.sh --fg   # headless (cds into folia-kernel by default)
+# YaP Link (optional multi-backend): see docs/YAP_LINK.md
 # Release tree: cd build/dist/yapcore-release/linux && ./start.sh --fg
 # Windows release: build\dist\yapcore-release\windows\start.cmd -Fg
 ./scripts/stop.sh
 ```
 
-Requires **Java 25+** for Paper 26.2 / Phase 3 (project toolchain may still compile
+Requires **Java 25+** for Folia/Paper 26.2 (project toolchain may still compile
 main sources with JDK 21). The fat jar is built locally and is **not** committed.
 Release packages include **linux/** and **windows/** trees with native launchers.
 
@@ -82,18 +89,20 @@ Public edge: **`yapcoremc.yaplabs.us`** via nginx + Cloudflare — see
 [docs/CLOUDFLARE_AND_NGINX.md](docs/CLOUDFLARE_AND_NGINX.md) and [docs/NETWORKING.md](docs/NETWORKING.md).
 See [docs/CLIENTS_AND_PACKS.md](docs/CLIENTS_AND_PACKS.md).
 
-**Velocity:** YaPcore is a Paper backend with modern forwarding — set `velocity-enabled=true`
-(see [docs/VELOCITY.md](docs/VELOCITY.md)). We do not embed Velocity.
+**YaP Link:** first-party complete Velocity fork (forwarding, online-mode,
+compression, transfers, Velocity plugins) —
+[docs/YAP_LINK.md](docs/YAP_LINK.md). Stock Velocity remains a temporary stand-in
+([docs/VELOCITY.md](docs/VELOCITY.md)). Folia backends: `velocity-enabled=true`.
 
 ## Plugins & modules
 
-**One folder for jars:** drop Paper/Spigot and YaP plugins into **`plugins/`**.
-`paper-kernel/plugins` is a symlink to that folder so real Paper loads the same jars.
-Fine-tune modules stay in `modules/`.
+**One folder for jars:** drop Folia/Paper and YaP plugins into **`plugins/`**.
+Product path is Folia (`folia-kernel/plugins` → symlink). Legacy Paper path uses
+`paper-kernel/plugins` the same way. Fine-tune modules stay in `modules/`.
 
 | Type | Folder | Manifest | Base class |
 |------|--------|----------|------------|
-| Legacy Spigot/Paper | `plugins/` | `plugin.yml` | `JavaPlugin` |
+| Folia / Paper | `plugins/` | `plugin.yml` | `JavaPlugin` |
 | YaP plugin | `plugins/` | `yap.yml` | `YaPPlugin` |
 | Fine-tune module | `modules/` | `module.yml` | `YaPModule` |
 
@@ -134,9 +143,10 @@ Reports under `logs/crashes/` (gitignored contents): thread dumps, heap/JVM/OS, 
 | Script | Purpose |
 |--------|---------|
 | `scripts/gui.sh` | Control GUI (Linux/dev) |
-| `scripts/start.sh` / `stop.sh` / `status.sh` | Lifecycle (Phase 3 cds into `paper-kernel`) |
+| `scripts/start.sh` / `stop.sh` / `status.sh` | Lifecycle (cds into `folia-kernel` by default) |
 | `scripts/windows/*.ps1` + release `*.cmd` | Windows launchers in `yapcore-release/windows/` |
-| `scripts/vendor-paper.sh` / `build-vendor-paper.sh` | Vendor Paper 26.2 → `lib/paper-*-yap.jar` |
+| `scripts/fetch-folia.sh` / `smoke-folia.sh` | Folia product path fetch + smoke |
+| `scripts/vendor-paper.sh` / `build-vendor-paper.sh` | Legacy YaP Paperclip for Phase 3 benches |
 | `scripts/nginx-setup.sh` | Optional nginx edge |
 | `scripts/db/start-mariadb.sh` / `configure-db.sh` | Docker MariaDB + JDBC into YapDb/playerdata |
 | `scripts/install-luckperms.sh` | Download LuckPerms + YaP rank pack ready |
@@ -153,7 +163,7 @@ This tree is meant to stay **GitHub-clean**. `.gitignore` excludes:
 | Ignored | Why |
 |---------|-----|
 | `build/`, `.gradle/`, `*.jar`, `yapcore.jar` | Build outputs — run `gradle shadowJar` locally |
-| `paper-kernel/`, `game-kernel/`, `lib/*` jars | Live Paper trees + downloaded Paperclips |
+| `folia-kernel/`, `paper-kernel/`, `game-kernel/`, `lib/*` jars | Live Folia/Paper trees + downloaded clips |
 | `libraries/`, `versions/`, `cache/` | Minecraft/Paper dependency caches |
 | `bench/workdir-*`, `bench/results/*` | Bench lab state (keep `bench/results/README.md`) |
 | `logs/`, `world*/`, `config/*` | Runtime / operator state (keep `.gitkeep` / `*.example`) |

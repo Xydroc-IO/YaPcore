@@ -47,38 +47,40 @@ Bedrock players also use a different connection style (UDP) than Java (TCP), but
 2. **Order tickets (SequenceToken)** — work can move between workers without everything sharing one giant lock.  
 3. **A Compatibility Bridge** — older plugins can still change the world safely by waiting for the right window.  
 4. **Java + Bedrock on one product story** — both can join; optionally even on the same port number.  
-5. **Three ways to extend the server** — familiar Paper-style plugins, YaP plugins, and smaller “fine-tune” modules — all Paper/YaP jars drop into one `plugins/` folder.
+5. **Three ways to extend the server** — Folia/Paper-style plugins, YaP plugins, and smaller “fine-tune” modules — all Folia/Paper/YaP jars drop into one `plugins/` folder.
 
 ### What we are *not* promising
 
-We don’t claim “every Paper plugin works perfectly on day one,” and we’re not trying to be a full NeoForge dedicated-server clone. We grow compatibility based on what people actually need.
+We don’t claim “every Paper plugin works on Folia day one” (same as stock Folia), and we’re not trying to be a full NeoForge dedicated-server clone. We grow compatibility based on what people actually need.
 
 ### Where the product is today (August 2026)
 
-We use **Paper** for the real Minecraft game. Getting Paper to own the public
-join path is done. Spreading **interior** entity, farm, hopper, and redstone work
-across the four map-area workers — plus border work on a dedicated border worker —
-is also **done** (Phases 3–3.7; those switches are **on by default**). The product
-is aimed at **busy / high-pop** servers; we measure beat-Paper on a heavy
-`heavypop` scoreboard and are **honest when we haven’t won yet**. Next is
-Phase 4: polishing Java + Bedrock join (first-party Via/Geyser parity for supported bands)
-and shipping network plugins — shared MariaDB (`yap-db`), playerdata (offline `/login`, claims),
-LuckPerms ranks, multi-pack helpers — on that Paper-backed world.
+We use **Folia** for the real Minecraft game by default. **YapEngine** keeps the
+sixteen worker roles around it. **YaP Link** is our Velocity-class front door for
+multi-backend networks (MVP: modern forwarding + offline; more features planned).
+Legacy **Paper + Phase 3** spatial tick (spreading interior work across four
+map-area workers) is **done as code** but **off by default** — benches only; Folia
+does not use that path. The product is aimed at **busy / high-pop** servers; fair
+cites focus on **~100 active bots** (250 keepalive holds are not MSPT wins). Next is
+Phase 4: polishing Java + Bedrock join (first-party Via/Geyser parity for supported bands;
+play depth deepening) and shipping network plugins — shared MariaDB (`yap-db`),
+playerdata (offline `/login`, claims), LuckPerms ranks, multi-pack helpers — on that
+Folia-backed world.
 
 Details: [PAPER_YAPENGINE_PORT.md](../PAPER_YAPENGINE_PORT.md) ·
-[BENCH_VS_PAPER.md](../BENCH_VS_PAPER.md).
+[BENCH_VS_PAPER.md](../BENCH_VS_PAPER.md) · [YAP_LINK.md](../YAP_LINK.md).
 
 ---
 
 ## 2. How this compares to other approaches
 
-- **Paper / Purpur** improve the classic Bukkit model; Folia experiments with region-based multithreading.  
-- **Proxies** (like Velocity) route players but don’t usually *own* the world.  
+- **Paper / Purpur** improve the classic Bukkit model; **Folia** provides region-based multithreading — and is YaPcore’s default game.  
+- **Proxies** (Velocity; YaP Link) route players but don’t usually *own* the world.  
 - **Research engines** often prove fancy parallel designs but drop familiar plugin support.
 
-YaPcore sits in the middle:
+YaPcore sits as:
 
-> Keep a **predictable kitchen of sixteen roles**, and keep a **bridge** so older plugins don’t all have to be rewritten overnight.
+> Keep **Folia for the kitchen**, a **predictable chassis of sixteen roles**, and **YaP Link** at the front door for multi-backend networks.
 
 ---
 
@@ -171,10 +173,10 @@ See [TESTING.md](../TESTING.md).
 
 ## 7. Caveats (what could make results misleading)
 
-- Rare Phase 3 threading edge cases can still surprise plugins that assume one entity thread (same “try it on Paper” discipline).  
+- Rare Phase 3 threading edge cases (legacy Paper path only) can still surprise plugins that assume one entity thread.  
 - Minecraft versions keep changing; packet/registry work is ongoing.  
 - NUMA / ZGC benefits depend on the machine.  
-- Bedrock feature parity can lag Java for some gameplay packets.
+- Bedrock join/spawn is green; full play-depth parity can still lag Java for some gameplay packets.
 
 ---
 
@@ -182,7 +184,7 @@ See [TESTING.md](../TESTING.md).
 
 YaPcore’s bet is practical:
 
-> Split Minecraft-class server work into **sixteen specialized jobs**, give plugins **clear lanes**, and keep a **Compatibility Bridge** so the ecosystem isn’t thrown away.
+> Run **Folia** for the game, split the rest of the product across **sixteen specialized jobs**, give plugins **clear lanes**, and use **YaP Link** when you need a multi-backend front door.
 
 Still ahead: richer registry sync, deeper world streaming, fuller command graphs, and stronger formal checks on the order-ticket queues.
 
