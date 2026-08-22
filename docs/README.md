@@ -2,9 +2,16 @@
 
 ![YaPcore](../branding/yapcore-banner.png)
 
+**New here?** Start with [**Quick Start**](QUICK_START.md), then browse the [**Wiki**](WIKI.md).
+
 | Document | Description |
 |----------|-------------|
-| [**Whitepaper**](whitepaper/YAPCORE_WHITEPAPER.md) | Academic / technical architecture paper |
+| [**Quick Start**](QUICK_START.md) | **10-minute setup** — release zip or source |
+| [**Wiki**](WIKI.md) | Full operator doc index |
+| [**Licensing**](LICENSING.md) | MIT + third-party (Folia, Mojang EULA, packs) |
+| [**Commands**](COMMANDS.md) | Console + in-game command reference |
+| [**Permissions**](PERMISSIONS.md) | Permission nodes + YaPPerms rank ladder |
+| [**Releases**](RELEASES.md) | Downloadable zips, build commands |
 | [**Whitepaper (plain English)**](whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) | Same whitepaper story for non-tech readers |
 | [**PLAIN_ENGLISH**](PLAIN_ENGLISH.md) | **Non-tech overview** — what we are / what we’re into, in plain English |
 | [**FULL_RUNDOWN**](FULL_RUNDOWN.md) | **Full “what we are / what we do” rundown** |
@@ -44,11 +51,23 @@
 | [**VEHICLES**](VEHICLES.md) | **Real vehicle API** (not minecarts) — Folia/Paper plugin + author guide |
 | [TUNE](TUNE.md) | **Central config hub** + Purpur-class gameplay knobs module |
 | [COMMANDS](COMMANDS.md) | Vanilla / Paper / plugin commands from GUI + in-game |
-| [**PERMISSIONS**](PERMISSIONS.md) | **Node → role map** + LuckPerms pack, install script, dashboard Ranks |
+| [**PERMISSIONS**](PERMISSIONS.md) | **Permission nodes** + YaPPerms rank ladder |
 | [MODULES_AND_API](MODULES_AND_API.md) | Modules + API coverage + pools |
 | [BRIGADIER_NMS_EVENTS](BRIGADIER_NMS_EVENTS.md) | Brigadier, Craft/NMS, Paper event catalog |
 | [TESTING](TESTING.md) | Test lab, soak, Fray, JCStress |
 | [**RELEASES**](RELEASES.md) | **Linux/Windows boxes + standalone suite zips** (v1.0.0.0) |
+
+## MMO gameplay (opt-in)
+
+`gradle installGameplayDefaults` or `-PyapGameplay=true`. Plan: [MMO_PHASES.md](MMO_PHASES.md).
+
+| Page | Description |
+|------|-------------|
+| [MMO_PHASES.md](MMO_PHASES.md) | M0–M7 milestones + smoke checklist |
+| [MMO_SKILLS.md](MMO_SKILLS.md) | 13 RS skills |
+| [MMO_COMBAT.md](MMO_COMBAT.md) | Custom combat |
+| [MMO_ABILITIES.md](MMO_ABILITIES.md) | 233 combat abilities |
+| [MMO_BEDROCK_UI.md](MMO_BEDROCK_UI.md) | Bedrock MMO UI |
 
 ## Branding
 

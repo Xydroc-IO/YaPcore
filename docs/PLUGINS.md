@@ -101,7 +101,24 @@ and **`plugins/yap-floodgate.jar`** ([VELOCITY.md](VELOCITY.md)).
 **GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `-PyapGameplay=true`):
 `plugins/yap-vehicles.jar`, `modules/yap-vehicles-module.jar`,
 **`plugins/yap-stacker.jar`** ([STACKER.md](STACKER.md)),
-**`plugins/yap-gameplay-knobs.jar`**, vehicles overlay in the default pack.
+**`plugins/yap-gameplay-knobs.jar`**, vehicles + **abilities** overlays in the default pack.
+
+**MMO stack** (same gameplay tier — see [MMO_PHASES.md](MMO_PHASES.md)):
+
+| Jar | Plugin |
+|-----|--------|
+| `yap-skills.jar` | YaPSkills — 13 RS skills |
+| `yap-combat.jar` | YaPCombat — custom combat |
+| `yap-crafting.jar` | YaPCrafting — recipes |
+| `yap-mmo-content.jar` | YaPMmoContent — quests/bosses |
+| `yap-abilities.jar` | YaPAbilities — 233 combat abilities |
+| `yap-mmo-bedrock.jar` | YaPMmoBedrock — Bedrock forms |
+| `yap-bedrock-ui.jar` | YaPBedrockUI — Bedrock UI bridge |
+| `yap-mechanics.jar` | YaPMechanics — stamina/nodes |
+| `yap-games.jar` | YaPGames — minigames |
+| `yap-guilds.jar` | YaPGuilds — guilds |
+
+API jars in `plugins/` or release `api/`: `yap-mmo-api.jar`, `yap-abilities-api.jar`, `yap-bedrock-ui-api.jar`, …
 
 SQL plugin authors: `compileOnly(project(":yap-db-api"))` and soft-depend `YaPDB`
 ([YAPDB.md](YAPDB.md)). Ranks: [PERMISSIONS.md](PERMISSIONS.md).

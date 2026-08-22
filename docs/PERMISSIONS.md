@@ -19,13 +19,13 @@ ranks apply
 Starter pack (`default` → `vip` → `mod` → `admin` + track `yap`) applies automatically
 on first boot, or via `ranks apply` / `/yapperm applypack`.
 
-Optional auto-apply on boot (once):
+Optional auto-apply on boot (default **on** for new installs):
 
 ```properties
 yap-ranks-auto-apply=true
 ```
 
-in `config/server.properties` (requires `yap-perms.jar`; waits ~8s after start).
+Set `false` to disable. Requires `yap-perms.jar`; waits ~8s after start.
 
 | Surface | How |
 |---------|-----|
@@ -161,6 +161,92 @@ Dashboard: `POST /api/protect`, `POST /api/world`.
 | `yapdata.admin` | op | `/yapdata`, override shops/AH/claims |
 
 Auth (`/register` `/login` …) stays ungated so offline login always works.
+
+## YaPSkills (`yap-skills.jar`, gameplay opt-in)
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapskills.use` | true | `/skills`, gain skill XP |
+| `yapskills.others` | op | `/skills <player>` |
+| `yapskills.admin` | op | `/skill addxp`, `/skill set`, `/yskills reload` |
+
+Placeholders (PlaceholderAPI): `%yapskill_<skill>_level%`, `%yapskill_<skill>_xp%`, `%yapskill_total_level%`, `%yapskill_combat_level%`.
+
+Public leaderboard: `/skill top <skill> [page]` (no extra permission).
+
+Bedrock MMO UI (`yap-mmo-bedrock.jar`, gameplay opt-in):
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapmmo.bedrock.use` | true | `/mmoui`, Bedrock `/skills` form redirect |
+
+## YaPFactions (`yap-factions.jar`)
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapfactions.use` | true | `/f` commands |
+| `yapfactions.create` | true | `/f create` |
+| `yapfactions.officer` | true | Officer actions (invite, claim, bank withdraw) |
+| `yapfactions.leader` | true | Leader actions (disband, transfer, join mode) |
+| `yapfactions.admin` | op | `/yapfactions` admin commands |
+
+Dashboard: `GET /api/factions` (read-only snapshot).
+
+## YaPGuilds (`yap-guilds.jar`, gameplay opt-in)
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapguilds.use` | true | `/g` commands |
+| `yapguilds.create` | true | `/g create` |
+| `yapguilds.admin` | op | `/yapguilds` admin commands |
+
+Dashboard: `GET /api/guilds` (read-only snapshot).
+
+## YaPCombat (`yap-combat.jar`, gameplay opt-in)
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapcombat.use` | true | `/combat stats` |
+| `yapcombat.cast` | true | `/cast <spell>` |
+| `yapcombat.prayer` | true | `/prayer on/off/list` |
+| `yapcombat.admin` | op | `/combat reload`, `/yapcombat admin sethp` |
+
+See [MMO_RS_SKILLS.md](MMO_RS_SKILLS.md) for spell book, prayer drain, and ranged accuracy.
+
+## YaPCrafting (`yap-crafting.jar`, gameplay opt-in)
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapcraft.use` | true | Station crafting, `/recipe list` |
+| `yapcraft.sell` | true | `/sell` when economy enabled |
+| `yapcraft.admin` | op | `/ycraft reload` |
+
+## YaPGames (`yap-games.jar`, gameplay opt-in)
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapgames.use` | true | `/queue`, `/duel`, `/game` |
+| `yapgames.admin` | op | `/ygames reload`, `list`, `forcestart`, `info`, `snapshot json` |
+
+Requires `yap-combat.jar` for custom PvP in arenas (global `pvp: false` is overridden in active matches).
+
+## YaPMmoContent (`yap-mmo-content.jar`, gameplay opt-in)
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapmmo.hiscores` | true | `/hiscores <skill>` |
+| `yapmmo.admin` | op | `/yapmmo reload`, `/yapmmo snapshot`, quest reward hooks |
+
+Content packs: `plugins/yap-mmo-content/quests/starter_chain.yml`
+
+## YaPAbilities (`yap-abilities.jar`, gameplay opt-in)
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapabilities.use` | true | `/ability list`, `/ability cast`, shorthand `/ability <id>` |
+| `yapabilities.admin` | op | `/yapabilities reload` |
+
+233 combat abilities ship in YAML packs; `/cast` delegates when yap-abilities is loaded.
 
 ## See also
 

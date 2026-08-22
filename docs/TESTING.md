@@ -157,3 +157,20 @@ Requires an experimental OpenJDK build with `-XX:+ThreadSanitizer`.
 - Fray found a real lease race: `expireIfStale` could free a lock between CAS and lease
   publish when `grantedAtNanos` was still `0`. Fixed by publishing TTL immediately after CAS
   and skipping expiry while `lease == null`.
+
+## MMO smoke scripts (gameplay tier)
+
+Run with `SKIP_LIVE=1` for compile/unit-only (no Folia boot):
+
+```bash
+./scripts/smoke-mmo-m0.sh   # skill kernel
+./scripts/smoke-mmo-m1.sh   # 13 skills + GUI
+./scripts/smoke-mmo-m2.sh   # combat
+./scripts/smoke-mmo-m3.sh   # crafting
+./scripts/smoke-mmo-m4.sh   # content
+./scripts/smoke-mmo-m5.sh   # Bedrock MMO UI
+./scripts/smoke-mmo-m6.sh   # ability engine (≥200 abilities)
+./scripts/smoke-mmo-m7.sh   # AoE/homing + spell icons
+```
+
+Requires `gradle installGameplayDefaults` or `-PyapGameplay=true` first. See [MMO_PHASES.md](MMO_PHASES.md).

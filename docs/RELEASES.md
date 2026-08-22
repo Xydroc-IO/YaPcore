@@ -8,6 +8,7 @@ All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `p
 |------|--------|
 | `gradle assembleRelease` | `build/dist/yapcore-release/` — **linux/** + **windows/** full server trees |
 | `gradle assembleRelease -PyapGameplay=true` | Same + vehicles, stacker, gameplay-knobs jars & modules |
+| Git tag `v*` push | GitHub Actions → `yapcore-release-linux.zip` + `-windows.zip` |
 | `gradle assembleNetworkSuite` | `build/dist/yap-network-suite.zip` — YaP Link + native link plugins |
 | `gradle assembleGameplaySuite` | `build/dist/yap-gameplay-suite.zip` — GAMEPLAY plugins/modules (standalone) |
 | `gradle assembleAddonsRelease` | `build/dist/yap-addons-release.zip` — example vehicle addon |

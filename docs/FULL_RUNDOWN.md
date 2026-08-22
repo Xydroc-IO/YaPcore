@@ -41,7 +41,7 @@
 7. **Plugins** — all jars in `plugins/` (Folia/Paper + YaP); kernel `plugins` → symlink.
    **CORE+NETWORK (default):** PlaceholderAPI, pregen, plugin-compat, **yap-db**, **playerdata**,
    **packs**, **chat**, **floodgate**.
-   **GAMEPLAY (opt-in):** vehicles, stacker, knobs — `gradle installGameplayDefaults` / `-PyapGameplay=true`.
+   **GAMEPLAY (opt-in):** vehicles, stacker, knobs, **MMO stack** (skills, combat, crafting, content, abilities, bedrock UI, mechanics, games, guilds) — `gradle installGameplayDefaults` / `-PyapGameplay=true`.
    See [PLUGINS.md](PLUGINS.md) / [PLAYERDATA.md](PLAYERDATA.md) / [YAPDB.md](YAPDB.md).
 8. **Ops** — `config/server.properties`, Generational ZGC + NUMA, control panel, **browser dashboard** (`:8080` — Packs + **Ranks**), LuckPerms pack ([PERMISSIONS.md](PERMISSIONS.md)), Docker MariaDB ([MARIADB.md](MARIADB.md)), `logs/crashes/`, `gradle assembleRelease`.
 9. **Vehicles** — real cars/trucks/exotics, fuel, upgrades, shop, HD models — [VEHICLES.md](VEHICLES.md).
@@ -163,7 +163,7 @@ See [PLUGINS.md](PLUGINS.md), [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md), [MODULES_AND
 
 ### Packs & ops
 
-- Default client pack: `resourcepacks/yapcore-default.zip` (Faithful 64x + YaP Vehicles) — HTTP `:8081` (or public `:80` / nginx)
+- Default client pack: `resourcepacks/yapcore-default.zip` (Faithful 64x + YaP Vehicles + **Abilities icons** when gameplay build) — HTTP `:8081`
 - Multi-active extras via `yap-packs` + Packs panel / dashboard
 - Public pack edge: `https://yapcoremc.yaplabs.us/pack/`
 - nginx edge: `scripts/nginx-setup.sh` · [NGINX_AND_LOCALHOST.md](NGINX_AND_LOCALHOST.md)
