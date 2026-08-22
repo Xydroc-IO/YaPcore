@@ -2,6 +2,7 @@ package com.yapcore.gui;
 
 import com.yapcore.client.ClientEdition;
 import com.yapcore.console.ConsoleBus;
+import com.yapcore.gui.panels.LinkPanel;
 import com.yapcore.gui.panels.ConnectInfoPanel;
 import com.yapcore.gui.panels.NetworkPanel;
 import com.yapcore.gui.panels.ModulesPanel;
@@ -59,6 +60,7 @@ public final class ControlPanel extends JFrame {
     private final SettingsPanel settingsPanel;
     private final TunePanel tunePanel;
     private final NginxPanel nginxPanel;
+    private final LinkPanel linkPanel;
     private final ConnectInfoPanel connectPanel;
     private final JTabbedPane sideTabs = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
     private final JSplitPane split;
@@ -76,6 +78,7 @@ public final class ControlPanel extends JFrame {
         this.settingsPanel = new SettingsPanel(server);
         this.tunePanel = new TunePanel(server);
         this.nginxPanel = new NginxPanel(server);
+        this.linkPanel = new LinkPanel(server);
         this.connectPanel = new ConnectInfoPanel(server);
         this.networkPanel.setOnSaved(v -> SwingUtilities.invokeLater(this::refreshConnectionUi));
         this.settingsPanel.setOnSaved(v -> SwingUtilities.invokeLater(() -> {
@@ -136,6 +139,7 @@ public final class ControlPanel extends JFrame {
                     statsTimer.stop();
                 }
                 ConsoleBus.get().removeListener(consoleListener);
+                linkPanel.shutdown();
                 if (server.isRunning()) {
                     server.stop();
                 }
@@ -228,6 +232,7 @@ public final class ControlPanel extends JFrame {
         sideTabs.addTab("Connect", GuiTheme.verticalScroll(connectPanel.component()));
         sideTabs.addTab("Access", networkPanel.component());
         sideTabs.addTab("nginx", nginxPanel.component());
+        sideTabs.addTab("Link", linkPanel.component());
         sideTabs.addTab("Settings", settingsPanel.component());
         sideTabs.addTab("Tune", GuiTheme.verticalScroll(tunePanel.component()));
         sideTabs.addTab("Status", GuiTheme.verticalScroll(buildStatusTab()));

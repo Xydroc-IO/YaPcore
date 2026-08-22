@@ -35,13 +35,33 @@ public final class DashboardGameplayOpsApi {
             String status = server.executeCommand("yapprotect status");
             snap.put("ok", true);
             snap.put("status", status == null ? "" : status);
-            snap.put("hint", "POST reload | prune | lookup | rollback");
+            snap.put("hint", "POST reload | prune | lookup | rollback | save-settings");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
         if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
             String action = body.getOrDefault("action", "status").toLowerCase();
+            if ("save-settings".equals(action)) {
+                try {
+                    Boolean logging = body.containsKey("loggingEnabled")
+                            ? !"false".equalsIgnoreCase(body.get("loggingEnabled")) : null;
+                    Boolean blocks = body.containsKey("logBlocks")
+                            ? !"false".equalsIgnoreCase(body.get("logBlocks")) : null;
+                    Boolean containers = body.containsKey("logContainers")
+                            ? !"false".equalsIgnoreCase(body.get("logContainers")) : null;
+                    Integer prune = null;
+                    if (body.containsKey("pruneDays")) {
+                        prune = Integer.parseInt(body.get("pruneDays"));
+                    }
+                    DashboardNetworkSnapshotWriters.saveProtectSettings(root, logging, blocks, containers, prune);
+                    server.executeCommand("yapprotect reload");
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "action", action));
+                } catch (Exception e) {
+                    DashboardHttp.json(ex, 500, Map.of("error", e.getMessage()));
+                }
+                return;
+            }
             String cmd = switch (action) {
                 case "reload" -> "yapprotect reload";
                 case "prune" -> "yapprotect prune " + body.getOrDefault("days", "30");
@@ -82,11 +102,24 @@ public final class DashboardGameplayOpsApi {
             Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
             String action = body.getOrDefault("action", "status").toLowerCase();
             String world = body.getOrDefault("world", "world");
+            if ("save-brush".equals(action)) {
+                try {
+                    int max = Integer.parseInt(body.getOrDefault("maxRadius", "16"));
+                    DashboardNetworkSnapshotWriters.saveWorldBrushMax(root, max);
+                    server.executeCommand("yapworld reload");
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "maxRadius", max));
+                } catch (Exception e) {
+                    DashboardHttp.json(ex, 500, Map.of("error", e.getMessage()));
+                }
+                return;
+            }
             String cmd = switch (action) {
                 case "reload" -> "yapworld reload";
                 case "load" -> "yapworld load " + world;
                 case "unload" -> "yapworld unload " + world;
                 case "pregen-status" -> "yapworld pregen status";
+                case "status" -> "yapworld status";
+                case "schem-list" -> "yapworld schem list";
                 default -> "yapworld status";
             };
             String result = server.executeCommand(cmd);
@@ -111,6 +144,23 @@ public final class DashboardGameplayOpsApi {
         if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
             String action = body.getOrDefault("action", "").toLowerCase();
+            if ("save-settings".equals(action)) {
+                try {
+                    DashboardNetworkSnapshotWriters.saveChatSettings(root,
+                            body.get("defaultChannel"),
+                            body.containsKey("slowModeSeconds")
+                                    ? Integer.parseInt(body.get("slowModeSeconds")) : null,
+                            body.containsKey("filterEnabled")
+                                    ? !"false".equalsIgnoreCase(body.get("filterEnabled")) : null,
+                            body.containsKey("networkEnabled")
+                                    ? !"false".equalsIgnoreCase(body.get("networkEnabled")) : null);
+                    server.executeCommand("yapchat reload");
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "action", action));
+                } catch (Exception e) {
+                    DashboardHttp.json(ex, 500, Map.of("error", e.getMessage()));
+                }
+                return;
+            }
             String cmd = switch (action) {
                 case "reload" -> "yapchat reload";
                 case "clearchat" -> "clearchat";
@@ -135,7 +185,7 @@ public final class DashboardGameplayOpsApi {
         if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, Object> snap = new LinkedHashMap<>(DashboardNetworkSnapshots.moderation(root));
             snap.put("ok", true);
-            snap.put("hint", "POST reload | history | unban");
+            snap.put("hint", "POST kick | ban | tempban | ipban | mute | tempmute | warn | kick | tp | tp-to | tp-spawn | set-group | promote | history | check | banlist");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -146,6 +196,50 @@ public final class DashboardGameplayOpsApi {
                 case "reload" -> "yapmod reload";
                 case "history" -> "history " + body.getOrDefault("player", "Steve");
                 case "unban" -> "unban " + body.getOrDefault("player", "Steve");
+                case "kick" -> {
+                    String p = body.getOrDefault("player", "");
+                    String r = body.getOrDefault("reason", "Kicked via dashboard");
+                    yield p.isBlank() ? null : "kick " + p + " " + r;
+                }
+                case "ban" -> {
+                    String p = body.getOrDefault("player", "");
+                    String r = body.getOrDefault("reason", "Banned via dashboard");
+                    yield p.isBlank() ? null : "ban " + p + " " + r;
+                }
+                case "tempban", "timeout" -> {
+                    String p = body.getOrDefault("player", "");
+                    String d = body.getOrDefault("duration", "1d");
+                    String r = body.getOrDefault("reason", "Timed ban via dashboard");
+                    yield p.isBlank() ? null : "tempban " + p + " " + d + " " + r;
+                }
+                case "ipban" -> {
+                    String t = body.getOrDefault("ip", body.getOrDefault("player", ""));
+                    String r = body.getOrDefault("reason", "IP banned via dashboard");
+                    yield t.isBlank() ? null : "ipban " + t + " " + r;
+                }
+                case "unbanip" -> {
+                    String ip = body.getOrDefault("ip", body.getOrDefault("player", ""));
+                    yield ip.isBlank() ? null : "unbanip " + ip;
+                }
+                case "mute" -> {
+                    String p = body.getOrDefault("player", "");
+                    String r = body.getOrDefault("reason", "Muted via dashboard");
+                    yield p.isBlank() ? null : "mute " + p + " " + r;
+                }
+                case "tempmute" -> {
+                    String p = body.getOrDefault("player", "");
+                    String d = body.getOrDefault("duration", "1h");
+                    String r = body.getOrDefault("reason", "Timed mute via dashboard");
+                    yield p.isBlank() ? null : "tempmute " + p + " " + d + " " + r;
+                }
+                case "unmute" -> "unmute " + body.getOrDefault("player", "Steve");
+                case "warn" -> {
+                    String p = body.getOrDefault("player", "");
+                    String r = body.getOrDefault("reason", "Warned via dashboard");
+                    yield p.isBlank() ? null : "warn " + p + " " + r;
+                }
+                case "check", "modcheck" -> "modcheck " + body.getOrDefault("player", "Steve");
+                case "banlist" -> "banlist " + body.getOrDefault("limit", "25");
                 default -> null;
             };
             if (cmd == null) {
@@ -167,7 +261,7 @@ public final class DashboardGameplayOpsApi {
         if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, Object> snap = new LinkedHashMap<>(DashboardNetworkSnapshots.perms(root));
             snap.put("ok", true);
-            snap.put("hint", "POST reload | applypack (see Ranks tab for rank pack)");
+            snap.put("hint", "POST reload | applypack | user-info | set-group | promote | demote");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -177,6 +271,23 @@ public final class DashboardGameplayOpsApi {
             String cmd = switch (action) {
                 case "reload" -> "yapperm reload";
                 case "applypack" -> "yapperm applypack";
+                case "user-info" -> {
+                    String p = body.getOrDefault("player", "");
+                    yield p.isBlank() ? null : "yapperm user " + p + " info";
+                }
+                case "set-group" -> {
+                    String p = body.getOrDefault("player", "");
+                    String g = body.getOrDefault("group", "default");
+                    yield p.isBlank() ? null : "yapperm user " + p + " parent set " + g;
+                }
+                case "promote" -> {
+                    String p = body.getOrDefault("player", "");
+                    yield p.isBlank() ? null : "promote " + p;
+                }
+                case "demote" -> {
+                    String p = body.getOrDefault("player", "");
+                    yield p.isBlank() ? null : "demote " + p;
+                }
                 default -> null;
             };
             if (cmd == null) {

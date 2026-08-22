@@ -77,7 +77,44 @@ public final class DashboardNetworkSnapshots {
         out.put("defaultGroup", str(yaml.get("default-group"), "default"));
         out.put("defaultTrack", str(yaml.get("default-track"), "yap"));
         out.put("useSharedYapdb", bool(yaml.get("use-shared-yapdb"), true));
-        out.put("groups", groupNames(yaml.get("groups")));
+        out.put("groups", parseGroupDetails(yaml.get("groups")));
+        out.put("groupNames", groupNames(yaml.get("groups")));
+        out.put("tracks", parseTracks(yaml.get("tracks")));
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> parseGroupDetails(Object groupsObj) {
+        List<Map<String, Object>> out = new ArrayList<>();
+        if (!(groupsObj instanceof Map<?, ?> map)) {
+            return out;
+        }
+        map.entrySet().stream()
+                .sorted((a, b) -> String.valueOf(a.getKey()).compareToIgnoreCase(String.valueOf(b.getKey())))
+                .forEach(e -> {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("name", String.valueOf(e.getKey()));
+                    if (e.getValue() instanceof Map<?, ?> g) {
+                        Map<String, Object> gm = (Map<String, Object>) g;
+                        row.put("weight", intVal(gm.get("weight"), 0));
+                        row.put("prefix", str(gm.get("prefix"), ""));
+                        row.put("suffix", str(gm.get("suffix"), ""));
+                        row.put("parents", stringList(gm.get("parents"), List.of()));
+                    }
+                    out.add(row);
+                });
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, List<String>> parseTracks(Object tracksObj) {
+        Map<String, List<String>> out = new LinkedHashMap<>();
+        if (!(tracksObj instanceof Map<?, ?> map)) {
+            return out;
+        }
+        for (var e : map.entrySet()) {
+            out.put(String.valueOf(e.getKey()), stringList(e.getValue(), List.of()));
+        }
         return out;
     }
 
@@ -180,7 +217,35 @@ public final class DashboardNetworkSnapshots {
         out.put("defaultDialogue", str(dialogue.get("default"), "&7Hello, traveler!"));
         Path questDir = root.resolve("plugins").resolve("YaPNpcs").resolve("quests");
         out.put("questPackCount", countFiles(questDir, ".yml", ".yaml"));
+        out.put("questIds", listQuestIds(questDir));
         return out;
+    }
+
+    private static List<String> listQuestIds(Path questDir) {
+        List<String> ids = new ArrayList<>();
+        if (!Files.isDirectory(questDir)) {
+            return ids;
+        }
+        try (var stream = Files.list(questDir)) {
+            stream.filter(p -> {
+                String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
+                return n.endsWith(".yml") || n.endsWith(".yaml");
+            }).forEach(path -> {
+                try {
+                    Map<String, Object> doc = loadYaml(path);
+                    Object quests = doc.get("quests");
+                    if (quests instanceof Map<?, ?> map) {
+                        map.keySet().forEach(k -> ids.add(String.valueOf(k)));
+                    }
+                } catch (Exception ignored) {
+                    /* skip bad pack */
+                }
+            });
+        } catch (IOException ignored) {
+            return ids;
+        }
+        ids.sort(String.CASE_INSENSITIVE_ORDER);
+        return ids;
     }
 
     private static boolean checkEnabled(Map<String, Object> checks, String key) {
@@ -306,8 +371,27 @@ public final class DashboardNetworkSnapshots {
         return count;
     }
 
-    @SuppressWarnings("unchecked")
-    static Map<String, Object> loadYaml(Path file) throws IOException {
+    public static Map<String, Object> essentialsSpawn(Path root) {
+        try {
+            Map<String, Object> yaml = loadYaml(root.resolve("plugins").resolve("YaPEssentials").resolve("config.yml"));
+            Map<String, Object> spawn = map(yaml.get("spawn"));
+            Map<String, Object> out = new LinkedHashMap<>();
+            out.put("world", str(spawn.get("world"), "world"));
+            out.put("x", spawn.getOrDefault("x", 0.5));
+            out.put("y", spawn.getOrDefault("y", 80));
+            out.put("z", spawn.getOrDefault("z", 0.5));
+            return out;
+        } catch (IOException e) {
+            Map<String, Object> out = new LinkedHashMap<>();
+            out.put("world", "world");
+            out.put("x", 0.5);
+            out.put("y", 80);
+            out.put("z", 0.5);
+            return out;
+        }
+    }
+
+    public static Map<String, Object> loadYaml(Path file) throws IOException {
         Yaml yaml = new Yaml();
         try (InputStream in = Files.newInputStream(file)) {
             Object loaded = yaml.load(in);

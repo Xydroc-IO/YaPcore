@@ -108,5 +108,118 @@ public final class DashboardNetworkSnapshotWriters {
         DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }
 
+    public static void savePermsDefaultGroup(Path root, String group) throws IOException {
+        Path file = root.resolve("plugins").resolve("YaPPerms").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        yaml.put("default-group", group == null ? "default" : group.trim().toLowerCase());
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    public static void saveChatSettings(Path root, String defaultChannel, Integer slowModeSeconds,
+                                        Boolean filterEnabled, Boolean networkEnabled) throws IOException {
+        Path file = root.resolve("plugins").resolve("YaPChat").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        if (defaultChannel != null && !defaultChannel.isBlank()) {
+            yaml.put("default-channel", defaultChannel.trim());
+        }
+        if (slowModeSeconds != null) {
+            yaml.put("slow-mode-seconds", Math.max(0, slowModeSeconds));
+        }
+        if (filterEnabled != null) {
+            DashboardNetworkSnapshots.mapOrCreate(yaml, "filter").put("enabled", filterEnabled);
+        }
+        if (networkEnabled != null) {
+            DashboardNetworkSnapshots.mapOrCreate(yaml, "network").put("enabled", networkEnabled);
+        }
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    public static void saveGuardSettings(Path root, Boolean fly, Boolean speed, Boolean reach, Boolean scaffold,
+                                         Integer maxViolations, Integer decaySeconds, Boolean alerts)
+            throws IOException {
+        Path file = root.resolve("plugins").resolve("YaPGuard").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        Map<String, Object> checks = DashboardNetworkSnapshots.mapOrCreate(yaml, "checks");
+        if (fly != null) {
+            DashboardNetworkSnapshots.mapOrCreate(checks, "fly").put("enabled", fly);
+        }
+        if (speed != null) {
+            DashboardNetworkSnapshots.mapOrCreate(checks, "speed").put("enabled", speed);
+        }
+        if (reach != null) {
+            DashboardNetworkSnapshots.mapOrCreate(checks, "reach").put("enabled", reach);
+        }
+        if (scaffold != null) {
+            DashboardNetworkSnapshots.mapOrCreate(checks, "scaffold").put("enabled", scaffold);
+        }
+        if (maxViolations != null) {
+            yaml.put("max-violations-before-kick", Math.max(1, maxViolations));
+        }
+        if (decaySeconds != null) {
+            yaml.put("violation-decay-seconds", Math.max(5, decaySeconds));
+        }
+        if (alerts != null) {
+            yaml.put("alerts-enabled", alerts);
+        }
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    public static void saveProtectSettings(Path root, Boolean loggingEnabled, Boolean logBlocks,
+                                           Boolean logContainers, Integer pruneDays) throws IOException {
+        Path file = root.resolve("plugins").resolve("YaPProtect").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        Map<String, Object> logging = DashboardNetworkSnapshots.mapOrCreate(yaml, "logging");
+        if (loggingEnabled != null) {
+            logging.put("enabled", loggingEnabled);
+        }
+        if (logBlocks != null) {
+            logging.put("block-break", logBlocks);
+        }
+        if (logContainers != null) {
+            logging.put("container-inventory", logContainers);
+        }
+        if (pruneDays != null) {
+            DashboardNetworkSnapshots.mapOrCreate(yaml, "retention").put("prune-days", Math.max(1, pruneDays));
+        }
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    public static void saveMapSettings(Path root, Integer renderIntervalMinutes, List<String> worlds)
+            throws IOException {
+        Path file = root.resolve("plugins").resolve("YaPMap").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        if (renderIntervalMinutes != null) {
+            yaml.put("render-interval-minutes", Math.max(1, renderIntervalMinutes));
+        }
+        if (worlds != null && !worlds.isEmpty()) {
+            yaml.put("worlds", worlds);
+        }
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    public static void saveWorldBrushMax(Path root, int maxRadius) throws IOException {
+        Path file = root.resolve("plugins").resolve("YaPWorld").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        DashboardNetworkSnapshots.mapOrCreate(yaml, "brush").put("max-radius", Math.max(1, maxRadius));
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    public static void saveDiscordInbound(Path root, Boolean enabled, Integer port, String secret)
+            throws IOException {
+        Path file = root.resolve("plugins").resolve("YaPDiscord").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        Map<String, Object> inbound = DashboardNetworkSnapshots.mapOrCreate(yaml, "inbound");
+        if (enabled != null) {
+            inbound.put("enabled", enabled);
+        }
+        if (port != null) {
+            inbound.put("port", port);
+        }
+        if (secret != null) {
+            inbound.put("secret", secret.trim());
+        }
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
 
 }

@@ -3,63 +3,55 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>YaPcore Dashboard</title>
+  <title>YaPcore Admin</title>
   <link rel="stylesheet" href="/style.css"/>
 </head>
 <body>
   <div id="login" class="login-wrap">
     <div class="login-card">
-      <h1>YaPcore</h1>
-      <p class="muted">Headless control dashboard</p>
+      <div class="login-brand">
+        <div class="login-logo">Y</div>
+        <div>
+          <h1>YaPcore Admin</h1>
+          <p class="muted" style="margin:0;font-size:13px">Network control panel</p>
+        </div>
+      </div>
       <label>Access token</label>
-      <input id="tokenInput" type="password" placeholder="web-dashboard-token" autocomplete="off"/>
-      <button id="loginBtn" class="primary">Open dashboard</button>
-      <p class="hint">Token is in <code>config/server.properties</code> → <code>web-dashboard-token</code> (also logged on server start).</p>
+      <input id="tokenInput" type="password" placeholder="Paste web-dashboard-token" autocomplete="off"/>
+      <button id="loginBtn" class="primary block" style="margin-top:16px">Sign in</button>
+      <p class="hint">Find your token in <code>config/server.properties</code> → <code>web-dashboard-token</code></p>
     </div>
   </div>
 
-  <div id="app" class="app hidden">
-    <header>
-      <div class="brand">
+  <div id="app" class="shell hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="login-logo" style="width:32px;height:32px;font-size:14px;border-radius:8px">Y</div>
         <strong>YaPcore</strong>
-        <span id="runBadge" class="badge">—</span>
       </div>
-      <div class="header-actions">
-        <button id="btnStart" class="primary">Start</button>
-        <button id="btnStop" class="danger">Stop</button>
-        <button id="btnLogout" class="ghost">Logout</button>
+      <nav class="sidebar-nav" id="sidebarNav"></nav>
+      <div class="sidebar-footer">
+        <button id="btnLogout" class="ghost">Sign out</button>
       </div>
-    </header>
-
-    <nav class="tabs">
-      <button data-tab="status" class="active">Status</button>
-      <button data-tab="console">Console</button>
-      <button data-tab="connect">Connect</button>
-      <button data-tab="settings">Settings</button>
-      <button data-tab="plugins">Plugins</button>
-      <button data-tab="modules">Modules</button>
-      <button data-tab="packs">Packs</button>
-      <button data-tab="vehicles">Vehicles</button>
-      <button data-tab="pregen">Pregen</button>
-      <button data-tab="ranks">Ranks</button>
-      <button data-tab="essentials">Essentials</button>
-      <button data-tab="link">Link</button>
-      <button data-tab="protect">Protect</button>
-      <button data-tab="world">World</button>
-      <button data-tab="chat">Chat</button>
-      <button data-tab="mod">Mod</button>
-      <button data-tab="perms">Perms</button>
-      <button data-tab="data">Data</button>
-      <button data-tab="discord">Discord</button>
-      <button data-tab="tab">Tab</button>
-      <button data-tab="map">Map</button>
-      <button data-tab="guard">Guard</button>
-      <button data-tab="regions">Regions</button>
-      <button data-tab="npcs">NPCs</button>
-    </nav>
-
-    <main>
+    </aside>
+    <div class="shell-body">
+      <header class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button id="menuToggle" class="ghost" style="display:none">☰</button>
+          <span class="topbar-title" id="topbarTitle">Dashboard</span>
+          <span id="runBadge" class="badge">—</span>
+        </div>
+        <div class="topbar-actions">
+          <button id="btnStart" class="primary"><span class="label">Start</span></button>
+          <button id="btnStop" class="danger"><span class="label">Stop</span></button>
+        </div>
+      </header>
+      <main class="content-area">
       <section id="tab-status" class="panel active">
+        <div class="page-header">
+          <h2>Dashboard</h2>
+          <p>Live server health, players, and network status at a glance.</p>
+        </div>
         <div class="grid stats">
           <div class="stat"><span>Players</span><strong id="stPlayers">0/0</strong></div>
           <div class="stat"><span>Heap</span><strong id="stHeap">—</strong></div>
@@ -67,6 +59,9 @@
           <div class="stat"><span>Bedrock</span><strong id="stBe">0</strong></div>
           <div class="stat"><span>Pack</span><strong id="stPack">none</strong></div>
           <div class="stat"><span>Ports</span><strong id="stPorts">—</strong></div>
+          <div class="stat"><span>Ticks</span><strong id="stTicks">—</strong></div>
+          <div class="stat"><span>Link</span><strong id="stLinkProc">—</strong></div>
+          <div class="stat"><span>PID</span><strong id="stPid">—</strong></div>
         </div>
         <div class="card health-card">
           <h3>Network health</h3>
@@ -81,6 +76,177 @@
           </div>
         </div>
         <pre id="stReport" class="report"></pre>
+      </section>
+
+      <section id="tab-access" class="panel">
+        <div class="page-header">
+          <h2>Access & ranks</h2>
+          <p>Minecraft operators, default rank for new players, permission groups, and per-player rank assignment.</p>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Default rank</span><strong id="accDefault">—</strong></div>
+          <div class="stat"><span>Auto-op</span><strong id="accAutoOp">—</strong></div>
+          <div class="stat"><span>Operators</span><strong id="accOpCount">—</strong></div>
+          <div class="stat"><span>YaPPerms</span><strong id="accPermsOk">—</strong></div>
+        </div>
+
+        <div class="card">
+          <h3>Minecraft operators (OP)</h3>
+          <p class="muted hint">Operators get full in-game admin commands. Saved to <code>config/server.properties</code> and applied with <code>/op</code>.</p>
+          <div class="chip-list" id="accOpsList"></div>
+          <div class="inline">
+            <input id="accOpAdd" placeholder="Player name to OP"/>
+            <button id="accOpAddBtn" class="primary">Add operator</button>
+          </div>
+          <label style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--muted)">
+            <input type="checkbox" id="accAutoOpBox" style="width:auto"/>
+            Auto-op new players on first join
+          </label>
+          <div class="toolbar" style="margin-top:12px">
+            <button id="accSaveOps">Save operators</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Default rank for new players</h3>
+          <div class="form-grid">
+            <label>Default group
+              <select id="accDefaultGroup"></select>
+            </label>
+          </div>
+          <button id="accSaveDefault" class="primary">Save default rank</button>
+        </div>
+
+        <div class="card">
+          <h3>Permission groups</h3>
+          <div class="group-cards" id="accGroupCards"></div>
+          <pre id="accGroupDetail" class="report muted-small" style="max-height:120px"></pre>
+        </div>
+
+        <div class="card">
+          <h3>Assign rank to player</h3>
+          <div class="form-grid">
+            <label>Player <input id="accPlayer" placeholder="Steve"/></label>
+            <label>Rank
+              <select id="accPlayerGroup"></select>
+            </label>
+          </div>
+          <div class="btn-row">
+            <button id="accLookup" class="primary">Look up</button>
+            <button id="accSetGroup">Set rank</button>
+            <button id="accPromote">Promote ↑</button>
+            <button id="accDemote">Demote ↓</button>
+          </div>
+          <div class="form-grid" style="margin-top:14px">
+            <label>Permission node <input id="accPermNode" placeholder="yapmod.ban"/></label>
+            <label>Value
+              <select id="accPermVal"><option value="true">true</option><option value="false">false</option></select>
+            </label>
+          </div>
+          <div class="btn-row">
+            <button id="accUserPerm">Set on player</button>
+            <button id="accGroupPerm">Set on selected group</button>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button id="accRefresh">Refresh</button>
+          <button id="accReload">Reload YaPPerms</button>
+          <button id="accApplypack">Install starter rank pack</button>
+        </div>
+        <pre id="accOut" class="report"></pre>
+      </section>
+
+      <section id="tab-admin" class="panel">
+        <div class="page-header">
+          <h2>Network setup</h2>
+          <p>Public access, nginx, proxy settings, and release checks.</p>
+        </div>
+        <div class="grid stats" id="adminStats">
+          <div class="stat"><span>Authority</span><strong id="admAuthority">—</strong></div>
+          <div class="stat"><span>Link process</span><strong id="admLink">—</strong></div>
+          <div class="stat"><span>Last smoke</span><strong id="admSmoke">—</strong></div>
+          <div class="stat"><span>Token</span><strong id="admToken">—</strong></div>
+        </div>
+
+        <h3>Monitoring</h3>
+        <div class="toolbar">
+          <button id="adminRefresh">Refresh</button>
+          <button id="adminCrashdump">Crash dump</button>
+          <button id="adminRunSmoke">Run network smoke</button>
+        </div>
+
+        <h3>Dashboard access</h3>
+        <div class="form-grid">
+          <label>Port <input id="admDashPort" type="number" min="1" max="65535"/></label>
+          <label>Bind <input id="admDashBind" placeholder="0.0.0.0"/></label>
+          <label>Localhost only
+            <select id="admDashLocal"><option value="false">false</option><option value="true">true</option></select>
+          </label>
+          <label>Enabled
+            <select id="admDashEnabled"><option value="true">true</option><option value="false">false</option></select>
+          </label>
+        </div>
+        <div class="toolbar">
+          <button id="admSaveDashboard" class="primary">Save dashboard</button>
+          <button id="admRotateToken" class="danger">Rotate token</button>
+        </div>
+
+        <h3>External access</h3>
+        <p class="muted hint">Domain, NAT ports, internet expose — join addresses update on the Connect tab.</p>
+        <div class="form-grid">
+          <label>Internet exposed
+            <select id="admExpose"><option value="false">false</option><option value="true">true</option></select>
+          </label>
+          <label>Domain <input id="admDomain" placeholder="play.example.com"/></label>
+          <label>Public host <input id="admPublicHost" placeholder="optional IP override"/></label>
+          <label>Public Java port <input id="admPublicPort" type="number" min="0" placeholder="0 = listen"/></label>
+          <label>Public Bedrock port <input id="admPublicBePort" type="number" min="0" placeholder="0 = listen"/></label>
+          <label>Public pack port <input id="admPublicPackPort" type="number" min="0" placeholder="0 = listen"/></label>
+          <label>DNS SRV hint
+            <select id="admSrv"><option value="false">off</option><option value="true">on</option></select>
+          </label>
+        </div>
+        <pre id="admSrvExample" class="report muted-small"></pre>
+        <div class="toolbar">
+          <button id="admSaveAccess" class="primary">Save external access</button>
+        </div>
+
+        <h3>nginx</h3>
+        <div class="form-grid">
+          <label>Allow localhost clients
+            <select id="admAllowLocal"><option value="true">true</option><option value="false">false</option></select>
+          </label>
+          <label>nginx game port <input id="admNginxGame" type="number" min="1"/></label>
+          <label>nginx pack port <input id="admNginxPack" type="number" min="1"/></label>
+          <label>nginx domain <input id="admNginxDomain" placeholder="play.example.com"/></label>
+        </div>
+        <div class="toolbar">
+          <button id="admSaveNginx">Save nginx settings</button>
+          <button id="admNginxDryRun">Generate configs (dry-run)</button>
+        </div>
+
+        <h3>Proxy / authority</h3>
+        <div class="form-grid">
+          <label>Velocity forwarding
+            <select id="admVelocity"><option value="false">disabled</option><option value="true">enabled</option></select>
+          </label>
+          <label>Velocity online mode
+            <select id="admVelocityOnline"><option value="true">true</option><option value="false">false</option></select>
+          </label>
+          <label>Backend bind localhost
+            <select id="admVelocityLocal"><option value="true">true</option><option value="false">false</option></select>
+          </label>
+          <label>Secret file <input id="admVelocitySecret" placeholder="forwarding.secret"/></label>
+          <label>Link embed (in-process)
+            <select id="admLinkEmbed"><option value="false">false</option><option value="true">true</option></select>
+          </label>
+          <label>Link home <input id="admLinkHome" placeholder="link-data"/></label>
+        </div>
+        <div class="toolbar">
+          <button id="admSaveProxy" class="primary">Save proxy settings</button>
+        </div>
+
+        <pre id="adminOut" class="report muted-small"></pre>
       </section>
 
       <section id="tab-console" class="panel">
@@ -215,16 +381,93 @@
       </section>
 
       <section id="tab-link" class="panel">
-        <p class="muted">YaP Link suite (Phase 5) — proxy plugins in <code>link-data/plugins/</code>.
-          Install: <code>gradle :yap-link-plugin-*:installIntoLinkPlugins</code></p>
+        <p class="muted">YaP Link — native network proxy (separate JVM, like Velocity). Configure backends (hub, survival, …), try order, and forced hosts here. Requires <code>link-embed=false</code>.</p>
         <div class="grid stats" id="linkStats">
+          <div class="stat"><span>Process</span><strong id="linkRunning">—</strong></div>
           <div class="stat"><span>Link home</span><strong id="linkHome">—</strong></div>
           <div class="stat"><span>Embedded</span><strong id="linkEmbed">—</strong></div>
           <div class="stat"><span>Plugins ON</span><strong id="linkPluginsOn">—</strong></div>
           <div class="stat"><span>Suite complete</span><strong id="linkSuite">—</strong></div>
         </div>
-        <div class="card" id="linkServersCard">Loading servers…</div>
-        <ul id="linkPluginList" class="list"></ul>
+        <div class="toolbar">
+          <button id="linkStart" class="primary">Start Link</button>
+          <button id="linkStop" class="danger">Stop Link</button>
+          <button id="linkEnableForwarding">Enable backend forwarding</button>
+          <button id="linkRefresh">Refresh</button>
+        </div>
+
+        <h3>Proxy settings</h3>
+        <div class="form-grid">
+          <label>Bind <input id="linkBind" placeholder="0.0.0.0:25565"/></label>
+          <label>MOTD <input id="linkMotd" placeholder="YaP Link"/></label>
+          <label>Max players <input id="linkMaxPlayers" type="number" min="1" value="500"/></label>
+          <label>Online mode
+            <select id="linkOnlineMode">
+              <option value="false">false (offline/cracked)</option>
+              <option value="true">true (Mojang auth)</option>
+            </select>
+          </label>
+          <label>Public host <input id="linkPublicHost" placeholder="127.0.0.1"/></label>
+          <label>Public port <input id="linkPublicPort" placeholder="0 = bind port"/></label>
+          <label>Ping passthrough
+            <select id="linkPingPassthrough"><option value="true">true</option><option value="false">false</option></select>
+          </label>
+          <label>Aggregate player count
+            <select id="linkAggregateCount"><option value="true">true</option><option value="false">false</option></select>
+          </label>
+          <label>Global tab list
+            <select id="linkGlobalTab"><option value="false">false</option><option value="true">true</option></select>
+          </label>
+          <label>Proxy plugins
+            <select id="linkPluginsFlag"><option value="true">enabled</option><option value="false">disabled</option></select>
+          </label>
+          <label>Chat relay
+            <select id="linkChatRelay"><option value="true">enabled</option><option value="false">disabled</option></select>
+          </label>
+          <label>Chat channel <input id="linkChatChannel" placeholder="network"/></label>
+          <label>Chat format <input id="linkChatFormat" placeholder="[{server}] {name}: {message}"/></label>
+          <label>Join announce
+            <select id="linkJoinAnnounce"><option value="false">false</option><option value="true">true</option></select>
+          </label>
+          <label>Bedrock enabled
+            <select id="linkBedrockEnabled"><option value="false">false</option><option value="true">true</option></select>
+          </label>
+          <label>Bedrock bind <input id="linkBedrockBind" placeholder="0.0.0.0:19132"/></label>
+          <label>Bedrock backend <input id="linkBedrockBackend" placeholder="127.0.0.1:25566"/></label>
+        </div>
+        <div class="toolbar">
+          <button id="linkSaveProxy" class="primary">Save proxy settings</button>
+        </div>
+
+        <h3>Backends</h3>
+        <p class="muted hint">Each row is a Folia/Paper backend Link forwards to. Use names like <code>hub</code>, <code>lobby</code>, <code>survival</code>.</p>
+        <div class="table-wrap">
+          <table class="data-table" id="linkServersTable">
+            <thead><tr><th>Name</th><th>Address (host:port)</th><th>Bedrock (optional)</th><th></th></tr></thead>
+            <tbody id="linkServersBody"></tbody>
+          </table>
+        </div>
+        <div class="toolbar">
+          <button id="linkAddServer" type="button">Add backend</button>
+        </div>
+        <div class="form-grid">
+          <label>Try order <input id="linkTryOrder" placeholder="hub, survival, creative"/></label>
+        </div>
+
+        <h3>Forced hosts</h3>
+        <p class="muted hint">Route players by hostname (e.g. <code>hub.yourdomain.com</code> → <code>hub</code> backend).</p>
+        <div class="table-wrap">
+          <table class="data-table" id="linkForcedTable">
+            <thead><tr><th>Hostname</th><th>Backend</th><th></th></tr></thead>
+            <tbody id="linkForcedBody"></tbody>
+          </table>
+        </div>
+        <div class="toolbar">
+          <button id="linkAddForced" type="button">Add forced host</button>
+          <button id="linkSaveServers" class="primary">Save backends</button>
+        </div>
+
+        <h3>Hub / server selector</h3>
         <div class="form-grid">
           <label>Hub server <input id="linkHub" value="lobby"/></label>
           <label>Session lock
@@ -233,76 +476,114 @@
               <option value="false">disabled</option>
             </select>
           </label>
-          <label>Proxy plugins
-            <select id="linkPluginsFlag">
-              <option value="true">enabled</option>
-              <option value="false">disabled</option>
-            </select>
-          </label>
-          <label>Chat relay
-            <select id="linkChatRelay">
-              <option value="true">enabled</option>
-              <option value="false">disabled</option>
-            </select>
-          </label>
         </div>
         <div class="toolbar">
-          <button id="linkRefresh">Refresh</button>
-          <button id="linkSaveSelector" class="primary">Save selector</button>
-          <button id="linkSaveFlags">Save link flags</button>
+          <button id="linkSaveSelector">Save selector</button>
         </div>
-        <pre id="linkOut" class="report"></pre>
+
+        <h3>Link plugins</h3>
+        <ul id="linkPluginList" class="list"></ul>
+
+        <h3>Link console</h3>
+        <pre id="linkConsoleOut" class="console"></pre>
+        <form id="linkCmdForm" class="inline">
+          <input id="linkCmdInput" placeholder="help · reload · list · servers · say … · stop" autocomplete="off"/>
+          <button type="submit" class="primary">Send</button>
+        </form>
+        <pre id="linkOut" class="report muted-small"></pre>
       </section>
 
       <section id="tab-protect" class="panel">
-        <p class="muted"><code>yap-protect</code> — block/container audit + rollback</p>
+        <div class="page-header">
+          <h2>Protect</h2>
+          <p>Block and container audit log — lookup changes and rollback by ID.</p>
+        </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="protInstalled">—</strong></div>
           <div class="stat"><span>Logging</span><strong id="protLogging">—</strong></div>
           <div class="stat"><span>Prune days</span><strong id="protPrune">—</strong></div>
         </div>
+        <div class="card">
+          <h3>Logging settings</h3>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="protLogBox"/> Logging enabled</label>
+            <label><input type="checkbox" id="protBlocksBox"/> Log block breaks</label>
+            <label><input type="checkbox" id="protContainersBox"/> Log containers</label>
+          </div>
+          <label>Retention (days) <input id="protPruneInput" type="number" min="1" value="30"/></label>
+          <button id="protSaveSettings" class="primary">Save settings</button>
+        </div>
         <div class="toolbar">
           <button id="protRefresh">Refresh</button>
           <button id="protReload">Reload</button>
-          <button id="protPruneBtn" class="danger">Prune</button>
+          <button id="protPruneBtn" class="danger">Prune now</button>
         </div>
-        <div class="inline"><input id="protLookupPlayer" placeholder="lookup player"/><button id="protLookupBtn">Lookup</button></div>
-        <div class="table-wrap" id="protLookupTableWrap">
-          <table class="data-table" id="protLookupTable">
-            <thead><tr><th>ID</th><th>Type</th><th>Player</th><th>World</th><th>Pos</th><th>Change</th></tr></thead>
+        <div class="inline"><input id="protLookupPlayer" placeholder="Player name"/><button id="protLookupBtn">Lookup</button></div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Type</th><th>Player</th><th>World</th><th>Pos</th><th>Change</th><th></th></tr></thead>
             <tbody id="protLookupBody"></tbody>
           </table>
-          <p id="protLookupEmpty" class="muted hidden">No rows — run lookup or game server may be offline.</p>
+          <p id="protLookupEmpty" class="muted hint hidden">No rows — run lookup or start the game server.</p>
         </div>
         <pre id="protOut" class="report muted-small"></pre>
       </section>
 
       <section id="tab-world" class="panel">
-        <p class="muted"><code>yap-world</code> — worlds, schematics, brush/undo</p>
+        <div class="page-header">
+          <h2>World editor</h2>
+          <p>World load/unload, schematics, and brush limits via <code>yap-world</code>.</p>
+        </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="wldInstalled">—</strong></div>
           <div class="stat"><span>Schematics</span><strong id="wldSchems">—</strong></div>
           <div class="stat"><span>Brush max</span><strong id="wldBrush">—</strong></div>
+          <div class="stat"><span>Load</span><strong id="wldAllowLoad">—</strong></div>
+          <div class="stat"><span>Unload</span><strong id="wldAllowUnload">—</strong></div>
         </div>
-        <div class="form-grid">
-          <label>World <input id="wldWorld" value="world_nether"/></label>
+        <div class="card">
+          <h3>World management</h3>
+          <div class="form-grid">
+            <label>World name <input id="wldWorld" value="world"/></label>
+            <label>Brush max radius <input id="wldBrushInput" type="number" min="1" max="128" value="16"/></label>
+          </div>
+          <div class="btn-row">
+            <button id="wldLoad" class="primary">Load world</button>
+            <button id="wldUnload">Unload world</button>
+            <button id="wldSchemList">List schematics</button>
+            <button id="wldSaveBrush">Save brush limit</button>
+          </div>
         </div>
         <div class="toolbar">
           <button id="wldRefresh">Refresh</button>
-          <button id="wldLoad" class="primary">Load</button>
-          <button id="wldUnload">Unload</button>
           <button id="wldReload">Reload plugin</button>
         </div>
         <pre id="wldOut" class="report"></pre>
       </section>
 
       <section id="tab-chat" class="panel">
-        <p class="muted"><code>yap-chat</code> — channels, filter, network relay</p>
+        <div class="page-header">
+          <h2>Chat</h2>
+          <p>Channels, slow mode, profanity filter, and cross-server relay.</p>
+        </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="chtInstalled">—</strong></div>
-          <div class="stat"><span>Channel</span><strong id="chtDefault">—</strong></div>
+          <div class="stat"><span>Default channel</span><strong id="chtDefault">—</strong></div>
           <div class="stat"><span>Slow mode</span><strong id="chtSlow">—</strong></div>
-          <div class="stat"><span>Relay</span><strong id="chtRelay">—</strong></div>
+          <div class="stat"><span>Network relay</span><strong id="chtRelay">—</strong></div>
+        </div>
+        <div class="card">
+          <h3>Settings</h3>
+          <div class="form-grid">
+            <label>Default channel <select id="chtDefaultSel"></select></label>
+            <label>Slow mode (seconds) <input id="chtSlowInput" type="number" min="0" value="0"/></label>
+          </div>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="chtFilterBox"/> Profanity filter</label>
+            <label><input type="checkbox" id="chtRelayBox"/> Network relay</label>
+          </div>
+          <p class="muted hint">Channels: <span id="chtChannels">—</span></p>
+          <button id="chtSaveSettings" class="primary">Save settings</button>
         </div>
         <div class="toolbar">
           <button id="chtRefresh">Refresh</button>
@@ -312,27 +593,100 @@
         <pre id="chtOut" class="report"></pre>
       </section>
 
-      <section id="tab-mod" class="panel">
-        <p class="muted"><code>yap-moderation</code> — ban/mute/warn/kick/history</p>
-        <div class="grid stats">
-          <div class="stat"><span>Plugin</span><strong id="modInstalled">—</strong></div>
-          <div class="stat"><span>Server ID</span><strong id="modServer">—</strong></div>
+      <section id="tab-players" class="panel">
+        <div class="page-header">
+          <h2>Players</h2>
+          <p>Kick, ban, mute, teleport, and rank tools — by username, UUID, or IP.</p>
         </div>
-        <div class="inline"><input id="modPlayer" placeholder="player name"/><button id="modHistory">History</button><button id="modUnban">Unban</button></div>
-        <div class="toolbar"><button id="modRefresh">Refresh</button><button id="modReload">Reload</button></div>
-        <pre id="modOut" class="report"></pre>
-      </section>
+        <div class="grid stats">
+          <div class="stat"><span>Online</span><strong id="plCount">0</strong></div>
+          <div class="stat"><span>Max</span><strong id="plMax">—</strong></div>
+          <div class="stat"><span>Moderation</span><strong id="plModOk">—</strong></div>
+        </div>
+        <div class="players-layout">
+          <div>
+            <div class="toolbar">
+              <button id="plRefresh" class="primary">Refresh list</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table" id="plTable">
+                <thead><tr><th>Name</th><th>UUID</th><th>IP</th><th>Location</th></tr></thead>
+                <tbody id="plBody"></tbody>
+              </table>
+            </div>
+            <p id="plEmpty" class="muted hint hidden">No players online — server may be stopped or Folia not ready.</p>
+          </div>
+          <div class="card player-actions">
+            <h3>Actions</h3>
+            <label>Player, UUID, or IP
+              <input id="plTarget" placeholder="Steve or uuid or 203.0.113.5"/>
+            </label>
+            <p id="plSelectedMeta" class="muted hint"></p>
+            <label>Reason
+              <input id="plReason" placeholder="Rule broken — be specific"/>
+            </label>
+            <label>Duration <span class="muted">(timeout / temp ban / temp mute)</span>
+              <input id="plDuration" value="1d" placeholder="30m, 1h, 7d"/>
+            </label>
 
-      <section id="tab-perms" class="panel">
-        <p class="muted"><code>yap-perms</code> — groups, tracks, prefixes (use <strong>Ranks</strong> tab for rank pack apply)</p>
-        <div class="grid stats">
-          <div class="stat"><span>Plugin</span><strong id="prmInstalled">—</strong></div>
-          <div class="stat"><span>Default group</span><strong id="prmDefault">—</strong></div>
-          <div class="stat"><span>Track</span><strong id="prmTrack">—</strong></div>
+            <h3>Teleport</h3>
+            <div class="form-grid compact">
+              <label>X <input id="plTpX" type="number" step="0.1"/></label>
+              <label>Y <input id="plTpY" type="number" step="0.1"/></label>
+              <label>Z <input id="plTpZ" type="number" step="0.1"/></label>
+              <label>TP to player
+                <select id="plTpDest"><option value="">—</option></select>
+              </label>
+            </div>
+            <div class="toolbar player-btns">
+              <button id="plTpCoords">TP to coords</button>
+              <button id="plTpTo">TP to player</button>
+              <button id="plTpSpawn">TP to spawn</button>
+            </div>
+
+            <h3>Moderation</h3>
+            <div class="toolbar player-btns">
+              <button id="plKick" class="warn">Kick</button>
+              <button id="plWarn">Warn</button>
+              <button id="plMute">Mute</button>
+              <button id="plTempMute">Temp mute</button>
+              <button id="plTimeout" class="warn">Timeout</button>
+              <button id="plBan" class="danger">Ban</button>
+              <button id="plIpBan" class="danger">IP ban</button>
+            </div>
+            <div class="toolbar player-btns">
+              <button id="plUnban">Unban</button>
+              <button id="plUnmute">Unmute</button>
+              <button id="plUnbanIp">Unban IP</button>
+            </div>
+
+            <h3>Rank</h3>
+            <div class="form-grid compact">
+              <label>Group
+                <select id="plGroup">
+                  <option value="default">default</option>
+                  <option value="vip">vip</option>
+                  <option value="mod">mod</option>
+                  <option value="admin">admin</option>
+                </select>
+              </label>
+            </div>
+            <div class="toolbar player-btns">
+              <button id="plSetRank" class="primary">Set rank</button>
+              <button id="plPromote">Promote</button>
+              <button id="plDemote">Demote</button>
+            </div>
+
+            <h3>Lookup</h3>
+            <div class="toolbar player-btns">
+              <button id="plHistory">History</button>
+              <button id="plCheck">Check</button>
+              <button id="plBanList">Active bans</button>
+              <button id="plPermInfo">Perm info</button>
+            </div>
+          </div>
         </div>
-        <p class="muted" id="prmGroups">—</p>
-        <div class="toolbar"><button id="prmRefresh">Refresh</button><button id="prmReload">Reload</button><button id="prmApplypack">Apply starter pack</button></div>
-        <pre id="prmOut" class="report"></pre>
+        <pre id="plOut" class="report"></pre>
       </section>
 
       <section id="tab-data" class="panel">
@@ -414,69 +768,195 @@
       </section>
 
       <section id="tab-map" class="panel">
-        <p class="muted"><code>yap-map</code> — web tiles + Leaflet UI (separate HTTP port)</p>
+        <div class="page-header">
+          <h2>Map</h2>
+          <p>Web map tiles and render schedule via <code>yap-map</code>.</p>
+        </div>
         <div class="grid stats">
-          <div class="stat"><span>Plugin</span><strong id="mapInstalled">—</strong></div>
+          <div class="stat"><span>URL</span><strong id="mapUrl" style="font-size:11px">—</strong></div>
           <div class="stat"><span>Tiles</span><strong id="mapTiles">—</strong></div>
-          <div class="stat"><span>Render</span><strong id="mapRender">—</strong></div>
           <div class="stat"><span>Worlds</span><strong id="mapWorlds">—</strong></div>
+        </div>
+        <div class="card">
+          <h3>Settings</h3>
+          <div class="form-grid">
+            <label>Render interval (minutes) <input id="mapInterval" type="number" min="1" value="15"/></label>
+          </div>
+          <label class="field-block">Worlds (one per line)
+            <textarea id="mapWorldsInput" rows="2">world</textarea>
+          </label>
+          <button id="mapSaveSettings" class="primary">Save settings</button>
         </div>
         <div class="toolbar">
           <button id="mapRefresh">Refresh</button>
           <button id="mapReload">Reload</button>
-          <button id="mapRenderBtn" class="primary">Render now</button>
-          <a id="mapOpenLink" class="button-link" href="#" target="_blank" rel="noopener">Open map ↗</a>
+          <button id="mapRender" class="primary">Render now</button>
         </div>
         <iframe id="mapFrame" class="map-frame" title="YaP Map" sandbox="allow-scripts allow-same-origin"></iframe>
         <pre id="mapOut" class="report muted-small"></pre>
       </section>
 
       <section id="tab-guard" class="panel">
-        <p class="muted"><code>yap-guard</code> — lightweight anti-cheat heuristics</p>
+        <div class="page-header">
+          <h2>Guard</h2>
+          <p>Anti-cheat heuristics — fly, speed, reach, scaffold detection.</p>
+        </div>
         <div class="grid stats">
-          <div class="stat"><span>Plugin</span><strong id="grdInstalled">—</strong></div>
           <div class="stat"><span>Fly</span><strong id="grdFly">—</strong></div>
           <div class="stat"><span>Speed</span><strong id="grdSpeed">—</strong></div>
           <div class="stat"><span>Reach</span><strong id="grdReach">—</strong></div>
+          <div class="stat"><span>Scaffold</span><strong id="grdScaffold">—</strong></div>
           <div class="stat"><span>Kick after</span><strong id="grdKick">—</strong></div>
+          <div class="stat"><span>Decay</span><strong id="grdDecay">—</strong></div>
           <div class="stat"><span>Alerts</span><strong id="grdAlerts">—</strong></div>
         </div>
-        <div class="inline"><input id="grdPlayer" placeholder="player for violation count"/><button id="grdPlayerBtn">Check</button></div>
+        <div class="card">
+          <h3>Check settings</h3>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="grdFlyBox"/> Fly detection</label>
+            <label><input type="checkbox" id="grdSpeedBox"/> Speed detection</label>
+            <label><input type="checkbox" id="grdReachBox"/> Reach detection</label>
+            <label><input type="checkbox" id="grdScaffoldBox"/> Scaffold detection</label>
+            <label><input type="checkbox" id="grdAlertsBox"/> Staff alerts</label>
+          </div>
+          <div class="form-grid">
+            <label>Max violations before kick <input id="grdKickInput" type="number" min="1" value="8"/></label>
+            <label>Violation decay (seconds) <input id="grdDecayInput" type="number" min="5" value="45"/></label>
+          </div>
+          <button id="grdSaveSettings" class="primary">Save settings</button>
+        </div>
+        <div class="inline"><input id="grdPlayer" placeholder="Player name"/><button id="grdPlayerBtn">Check violations</button></div>
         <div class="toolbar">
           <button id="grdRefresh">Refresh</button>
           <button id="grdReload">Reload</button>
-          <button id="grdAlertsOn">Alerts on</button>
-          <button id="grdAlertsOff">Alerts off</button>
         </div>
         <pre id="grdOut" class="report"></pre>
       </section>
 
       <section id="tab-regions" class="panel">
-        <p class="muted"><code>yap-regions</code> — admin cuboids + WorldGuard-class flags</p>
+        <div class="page-header">
+          <h2>Regions</h2>
+          <p>Admin cuboids with WorldGuard-style flags via <code>yap-regions</code>.</p>
+        </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="regInstalled">—</strong></div>
           <div class="stat"><span>Server</span><strong id="regServer">—</strong></div>
+          <div class="stat"><span>Regions</span><strong id="regCount">—</strong></div>
         </div>
-        <p class="muted" id="regFlags">—</p>
-        <div class="toolbar"><button id="regRefresh">Refresh list</button></div>
-        <ul id="regList" class="list compact"></ul>
+        <div class="card">
+          <h3>Define region</h3>
+          <div class="form-grid">
+            <label>Name <input id="regDefineName" placeholder="spawn"/></label>
+            <label>World <input id="regDefineWorld" value="world"/></label>
+            <label>Min X <input id="regX1" type="number" value="0"/></label>
+            <label>Min Y <input id="regY1" type="number" value="0"/></label>
+            <label>Min Z <input id="regZ1" type="number" value="0"/></label>
+            <label>Max X <input id="regX2" type="number" value="100"/></label>
+            <label>Max Y <input id="regY2" type="number" value="255"/></label>
+            <label>Max Z <input id="regZ2" type="number" value="100"/></label>
+          </div>
+          <button id="regDefineBtn" class="primary">Define cuboid</button>
+        </div>
+        <div class="card">
+          <h3>Set flag on region</h3>
+          <div class="form-grid">
+            <label>Region <input id="regFlagName" placeholder="spawn"/></label>
+            <label>Flag <select id="regFlags"></select></label>
+            <label>Value
+              <select id="regFlagVal"><option value="allow">allow</option><option value="deny">deny</option></select>
+            </label>
+          </div>
+          <button id="regFlagBtn">Apply flag</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>World</th><th>Bounds</th><th>Flags</th></tr></thead>
+            <tbody id="regBody"></tbody>
+          </table>
+          <p id="regEmpty" class="muted hint hidden">No regions — define one above.</p>
+        </div>
+        <div class="toolbar"><button id="regRefresh">Refresh</button></div>
         <pre id="regOut" class="report muted-small"></pre>
       </section>
 
       <section id="tab-npcs" class="panel">
-        <p class="muted"><code>yap-npcs</code> — quest NPCs + dialogue packs</p>
+        <div class="page-header">
+          <h2>NPCs</h2>
+          <p>Quest NPCs powered by <code>yap-npcs</code> — create, place, assign quests, and edit dialogue.</p>
+        </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="npcInstalled">—</strong></div>
+          <div class="stat"><span>NPC count</span><strong id="npcCount">—</strong></div>
           <div class="stat"><span>Quest packs</span><strong id="npcQuests">—</strong></div>
-          <div class="stat"><span>Server</span><strong id="npcServer">—</strong></div>
+          <div class="stat"><span>Server id</span><strong id="npcServer">—</strong></div>
         </div>
-        <div class="toolbar"><button id="npcRefresh">Refresh</button><button id="npcListBtn">List NPCs</button></div>
+
+        <div class="card">
+          <h3>Create NPC</h3>
+          <div class="form-grid">
+            <label>Id <input id="npcNewId" placeholder="shop_keeper"/></label>
+            <label>Display name <input id="npcNewName" placeholder="Shop Keeper"/></label>
+            <label>World <input id="npcNewWorld" value="world"/></label>
+            <label>X <input id="npcNewX" type="number" step="0.1" value="0"/></label>
+            <label>Y <input id="npcNewY" type="number" step="0.1" value="64"/></label>
+            <label>Z <input id="npcNewZ" type="number" step="0.1" value="0"/></label>
+            <label>Yaw <input id="npcNewYaw" type="number" step="1" value="0"/></label>
+            <label>Quest
+              <select id="npcNewQuest"><option value="">— none —</option></select>
+            </label>
+          </div>
+          <button id="npcCreateBtn" class="primary">Create NPC</button>
+          <p class="muted hint">Tip: stand where you want an NPC in-game and copy coords from F3, or pick an online player’s location from the Players tab.</p>
+        </div>
+
+        <div class="card">
+          <h3>NPC list</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Id</th><th>Name</th><th>World</th><th>Location</th><th>Quest</th><th></th></tr></thead>
+              <tbody id="npcBody"></tbody>
+            </table>
+          </div>
+          <p id="npcEmpty" class="muted hint hidden">No NPCs yet — create one above or use <code>/npc create</code> in-game.</p>
+        </div>
+
+        <div class="card">
+          <h3>Edit selected · <span id="npcEditId" class="muted">—</span></h3>
+          <div class="form-grid">
+            <label>Display name <input id="npcEditName"/></label>
+            <label>World <input id="npcEditWorld"/></label>
+            <label>X <input id="npcEditX" type="number" step="0.1"/></label>
+            <label>Y <input id="npcEditY" type="number" step="0.1"/></label>
+            <label>Z <input id="npcEditZ" type="number" step="0.1"/></label>
+            <label>Yaw <input id="npcEditYaw" type="number" step="1"/></label>
+            <label>Quest
+              <select id="npcEditQuest"><option value="">— none —</option></select>
+            </label>
+          </div>
+          <label class="field-block">Dialogue <span class="muted">(use &amp; color codes; blank = default)</span>
+            <textarea id="npcEditDialogue" rows="2" placeholder="&6Hello! &7Can I help you?"></textarea>
+          </label>
+          <button id="npcSaveEdit" class="primary">Save changes</button>
+        </div>
+
+        <div class="toolbar">
+          <button id="npcRefresh">Refresh</button>
+          <button id="npcReload">Reload plugin config</button>
+          <button id="npcRespawn">Respawn all</button>
+        </div>
         <pre id="npcOut" class="report"></pre>
       </section>
-    </main>
+      </main>
+    </div>
   </div>
+  <script src="/app-shell.js"></script>
+  <script src="/app-access-panels.js"></script>
+  <script src="/app-players-panels.js"></script>
+  <script src="/app-admin-panels.js"></script>
   <script src="/app-ops-panels.js"></script>
   <script src="/app-network-panels.js"></script>
+  <script src="/app-full-panels.js"></script>
+  <script src="/app-npcs-panels.js"></script>
   <script src="/app-core.js"></script>
 </body>
 </html>

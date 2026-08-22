@@ -31,6 +31,23 @@
     return data;
   }
 
+  function bindClick(id, fn) {
+    const el = $(id);
+    if (el) el.onclick = fn;
+  }
+
+  function activateTab(tab) {
+    if (window.YapShell?.switchTab) {
+      window.YapShell.switchTab(tab);
+      return;
+    }
+    document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
+    const panel = $("tab-" + tab);
+    if (panel) panel.classList.add("active");
+    const load = window.YapDash?.tabLoads?.[tab];
+    if (load) Promise.resolve(load()).catch((e) => console.error("tab load " + tab, e));
+  }
+
   function showApp() {
     $("login").classList.add("hidden");
     $("app").classList.remove("hidden");
@@ -58,19 +75,13 @@
   });
   $("btnLogout").onclick = () => logout(true);
 
-  document.querySelectorAll(".tabs button").forEach((btn) => {
-    btn.onclick = () => {
-      document.querySelectorAll(".tabs button").forEach((b) => b.classList.remove("active"));
-      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
-      btn.classList.add("active");
-      $("tab-" + btn.dataset.tab).classList.add("active");
-      if (btn.dataset.tab === "connect") loadConnect();
-    };
-  });
+  const menuToggle = $("menuToggle");
+  if (menuToggle) {
+    menuToggle.onclick = () => $("sidebar")?.classList.toggle("open");
+  }
 
   async function netPost(path, body) {
-    const r = await api(path, { method: "POST", body: JSON.stringify(body) });
-    return r;
+    return api(path, { method: "POST", body: JSON.stringify(body) });
   }
 
   async function refreshStatus() {
@@ -84,6 +95,9 @@
     $("stBe").textContent = s.bedrockClients;
     $("stPack").textContent = s.activePack || "none";
     $("stPorts").textContent = "JE " + s.port + " · BE " + s.bedrockPort;
+    $("stTicks").textContent = s.ticks != null ? String(s.ticks) : "—";
+    $("stLinkProc").textContent = s.linkProcessRunning ? "running" : "stopped";
+    $("stPid").textContent = s.pid != null ? String(s.pid) : "—";
     $("stReport").textContent = s.statusText || "";
     const nh = s.networkHealth || {};
     $("stNetworkSummary").textContent = nh.summary || "—";
@@ -94,6 +108,17 @@
     $("nhCompat").textContent = nh.compatWarnings != null ? String(nh.compatWarnings) : "0";
     const smoke = nh.lastNetworkSmoke && nh.lastNetworkSmoke !== "never" ? nh.lastNetworkSmoke : nh.lastBedrockPlaySmoke;
     $("nhSmoke").textContent = smoke && smoke !== "never" ? smoke.replace("T", " ").slice(0, 19) : "never";
+  }
+
+  async function loadConnect() {
+    const c = await api("/api/connect");
+    $("connectCard").innerHTML = `
+      <div><strong>Java</strong><br/><code>${c.javaJoin || "—"}</code></div>
+      <div style="margin-top:10px"><strong>Bedrock</strong><br/><code>${c.bedrockJoin || "—"}</code></div>
+      <div style="margin-top:10px"><strong>Crossplay</strong><br/><code>${c.crossplayJoin || "—"}</code></div>
+      <div style="margin-top:10px"><strong>Local</strong><br/><code>${c.localhost || "—"}</code></div>
+      <div style="margin-top:10px"><strong>Packs</strong><br/><code>${c.packUrl || "—"}</code></div>
+      <div style="margin-top:10px" class="muted">Exposed: ${c.exposed ? "yes" : "no"} · host ${c.publicHost || "—"}</div>`;
   }
 
   function connectConsole() {
@@ -127,38 +152,37 @@
     }
   };
 
-  $("btnStart").onclick = async () => {
+  bindClick("btnStart", async () => {
     try { await api("/api/server/start", { method: "POST", body: "{}" }); await refreshStatus(); }
     catch (e) { alert(e.message); }
-  };
-  $("btnStop").onclick = async () => {
+  });
+  bindClick("btnStop", async () => {
     if (!confirm("Stop the server?")) return;
     try { await api("/api/server/stop", { method: "POST", body: "{}" }); await refreshStatus(); }
     catch (e) { alert(e.message); }
+  });
+
+  window.YapDash = {
+    $, api, netPost, bindClick, TYPES,
+    tabLoads: { connect: loadConnect },
+    refreshStatus, connectConsole, activateTab,
   };
 
-  async function loadConnect() {
-    const c = await api("/api/connect");
-    $("connectCard").innerHTML = `
-      <div><strong>Java</strong><br/><code>${c.javaJoin || "—"}</code></div>
-      <div style="margin-top:10px"><strong>Bedrock</strong><br/><code>${c.bedrockJoin || "—"}</code></div>
-      <div style="margin-top:10px"><strong>Crossplay</strong><br/><code>${c.crossplayJoin || "—"}</code></div>
-      <div style="margin-top:10px"><strong>Local</strong><br/><code>${c.localhost || "—"}</code></div>
-      <div style="margin-top:10px"><strong>Packs</strong><br/><code>${c.packUrl || "—"}</code></div>
-      <div style="margin-top:10px" class="muted">Exposed: ${c.exposed ? "yes" : "no"} · host ${c.publicHost || "—"}</div>`;
-  }
-
-
-  window.YapDash = { $, api, netPost };
+  if (window.YapDashRegisterAccessPanels) window.YapDashRegisterAccessPanels(window.YapDash);
+  if (window.YapDashRegisterPlayersPanels) window.YapDashRegisterPlayersPanels(window.YapDash);
+  if (window.YapDashRegisterAdminPanels) window.YapDashRegisterAdminPanels(window.YapDash);
   if (window.YapDashRegisterOpsPanels) window.YapDashRegisterOpsPanels(window.YapDash);
   if (window.YapDashRegisterNetworkPanels) window.YapDashRegisterNetworkPanels(window.YapDash);
+  if (window.YapDashRegisterFullPanels) window.YapDashRegisterFullPanels(window.YapDash);
+  if (window.YapDashRegisterNpcPanels) window.YapDashRegisterNpcPanels(window.YapDash);
+  window.YapDashTabLoads = window.YapDash.tabLoads;
 
   async function boot() {
     try {
       await refreshStatus();
       connectConsole();
       pollTimer = setInterval(() => refreshStatus().catch(() => {}), 2000);
-      if (window.YapDash.onBoot) window.YapDash.onBoot();
+      if (window.YapDash.onBoot) await window.YapDash.onBoot();
     } catch (e) {
       alert("Login failed: " + e.message);
       logout(true);

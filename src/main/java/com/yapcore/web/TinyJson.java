@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 /** Minimal JSON encode/decode — no extra dependencies. */
 public final class TinyJson {
 
-    private static final Pattern ENTRY = Pattern.compile(
+    static final Pattern ENTRY = Pattern.compile(
             "\"([^\"]+)\"\\s*:\\s*(null|true|false|-?\\d+(?:\\.\\d+)?|\"(?:\\\\.|[^\"\\\\])*\")");
 
     private TinyJson() {
@@ -87,6 +87,33 @@ public final class TinyJson {
             return arr(l);
         }
         return str(v.toString());
+    }
+
+    public static Object parseValue(String raw) {
+        if ("null".equals(raw)) {
+            return null;
+        }
+        if ("true".equals(raw)) {
+            return true;
+        }
+        if ("false".equals(raw)) {
+            return false;
+        }
+        if (raw.startsWith("\"")) {
+            return unescape(raw.substring(1, raw.length() - 1));
+        }
+        if (raw.contains(".")) {
+            try {
+                return Double.parseDouble(raw);
+            } catch (NumberFormatException ignored) {
+                return raw;
+            }
+        }
+        try {
+            return Long.parseLong(raw);
+        } catch (NumberFormatException ignored) {
+            return raw;
+        }
     }
 
     /** Flat string-valued object parser (enough for dashboard POSTs). */

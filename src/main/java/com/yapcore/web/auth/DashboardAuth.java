@@ -34,6 +34,10 @@ public final class DashboardAuth {
         }
     }
 
+    public void setToken(String newToken) {
+        this.token = newToken == null ? "" : newToken.trim();
+    }
+
     public boolean authorized(HttpExchange ex) {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         if (auth != null && auth.regionMatches(true, 0, "Bearer ", 0, 7)) {

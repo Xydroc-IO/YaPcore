@@ -58,7 +58,7 @@
     try {
       await api("/api/config", { method: "POST", body: JSON.stringify(body) });
       alert("Settings saved");
-      await refreshStatus();
+      await YapDash.refreshStatus();
     } catch (e) { alert(e.message); }
   };
 
@@ -160,7 +160,7 @@
   function renderVehicles() {
     const grid = $("vehGrid");
     grid.innerHTML = "";
-    TYPES.forEach((t) => {
+    YapDash.TYPES.forEach((t) => {
       const b = document.createElement("button");
       b.textContent = t;
       b.onclick = () => veh("spawn", t);
@@ -311,26 +311,102 @@
   $("essSaveMotd").onclick = () => essAction({ action: "save-motd", text: $("essMotd").value });
   $("essSaveRules").onclick = () => essAction({ action: "save-rules", text: $("essRules").value });
 
+  function linkServerRow(name, address, bedrock) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input class="link-srv-name" value="${escHtml(name || "")}" placeholder="hub"/></td>
+      <td><input class="link-srv-addr" value="${escHtml(address || "")}" placeholder="127.0.0.1:25566"/></td>
+      <td><input class="link-srv-bedrock" value="${escHtml(bedrock || "")}" placeholder="optional"/></td>
+      <td class="row-actions"><button type="button" class="link-srv-remove danger">Remove</button></td>`;
+    tr.querySelector(".link-srv-remove").onclick = () => tr.remove();
+    return tr;
+  }
+
+  function linkForcedRow(host, server) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input class="link-fh-host" value="${escHtml(host || "")}" placeholder="hub.example.com"/></td>
+      <td><input class="link-fh-server" value="${escHtml(server || "")}" placeholder="hub"/></td>
+      <td class="row-actions"><button type="button" class="link-fh-remove danger">Remove</button></td>`;
+    tr.querySelector(".link-fh-remove").onclick = () => tr.remove();
+    return tr;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  }
+
+  function renderLinkServers(servers) {
+    const body = $("linkServersBody");
+    body.innerHTML = "";
+    const list = servers && servers.length ? servers : [{ name: "hub", address: "127.0.0.1:25566", bedrock: "" }];
+    list.forEach((s) => body.appendChild(linkServerRow(s.name, s.address, s.bedrock || "")));
+  }
+
+  function renderLinkForced(forced) {
+    const body = $("linkForcedBody");
+    body.innerHTML = "";
+    (forced || []).forEach((f) => body.appendChild(linkForcedRow(f.host, f.server)));
+  }
+
+  function collectLinkServers() {
+    return [...document.querySelectorAll("#linkServersBody tr")].map((tr) => ({
+      name: tr.querySelector(".link-srv-name").value.trim(),
+      address: tr.querySelector(".link-srv-addr").value.trim(),
+      bedrock: tr.querySelector(".link-srv-bedrock").value.trim(),
+    })).filter((s) => s.name || s.address);
+  }
+
+  function collectLinkForced() {
+    return [...document.querySelectorAll("#linkForcedBody tr")].map((tr) => ({
+      host: tr.querySelector(".link-fh-host").value.trim(),
+      server: tr.querySelector(".link-fh-server").value.trim(),
+    })).filter((f) => f.host);
+  }
+
+  function collectLinkTry() {
+    const raw = $("linkTryOrder").value.trim();
+    if (!raw) return [];
+    return raw.split(/[,\s]+/).map((s) => s.trim()).filter(Boolean);
+  }
+
   async function refreshLink() {
     try {
       const r = await api("/api/link");
+      const running = r.linkRunning ? "running" : "stopped";
+      $("linkRunning").textContent = r.linkEmbed ? "embedded" : running;
       $("linkHome").textContent = r.linkHomeExists ? "ok" : "missing";
       $("linkEmbed").textContent = r.linkEmbed ? "yes" : "no";
       $("linkPluginsOn").textContent = r.pluginsEnabled ? "yes" : "no";
       $("linkSuite").textContent = r.suiteComplete ? "yes" : "partial";
+      $("linkStart").disabled = r.linkEmbed || r.linkRunning;
+      $("linkStop").disabled = r.linkEmbed || !r.linkRunning;
+
+      $("linkBind").value = r.bind || "0.0.0.0:25565";
+      $("linkMotd").value = r.motd || "YaP Link";
+      $("linkMaxPlayers").value = r.maxPlayers || "500";
+      $("linkOnlineMode").value = r.onlineMode ? "true" : "false";
+      $("linkPublicHost").value = r.publicHost || "127.0.0.1";
+      $("linkPublicPort").value = r.publicPort || "0";
+      $("linkPingPassthrough").value = r.pingPassthrough !== false ? "true" : "false";
+      $("linkAggregateCount").value = r.aggregatePlayerCount !== false ? "true" : "false";
+      $("linkGlobalTab").value = r.globalTabList ? "true" : "false";
+      $("linkPluginsFlag").value = r.pluginsEnabled ? "true" : "false";
+      $("linkChatRelay").value = r.chatRelayEnabled ? "true" : "false";
+      $("linkChatChannel").value = r.chatRelayChannel || "network";
+      $("linkChatFormat").value = r.chatRelayFormat || "[{server}] {name}: {message}";
+      $("linkJoinAnnounce").value = r.chatJoinAnnounce ? "true" : "false";
+      $("linkBedrockEnabled").value = r.bedrockEnabled ? "true" : "false";
+      $("linkBedrockBind").value = r.bedrockBind || "0.0.0.0:19132";
+      $("linkBedrockBackend").value = r.bedrockBackend || "127.0.0.1:25566";
+
       const sel = r.selector || {};
       $("linkHub").value = sel.hubServer || "lobby";
       $("linkSessionLock").value = sel.sessionLockEnabled ? "true" : "false";
-      $("linkPluginsFlag").value = r.pluginsEnabled ? "true" : "false";
-      $("linkChatRelay").value = r.chatRelayEnabled ? "true" : "false";
 
-      const servers = r.servers || [];
-      const tryList = (r.tryServers || []).join(", ") || "—";
-      $("linkServersCard").innerHTML = servers.length
-        ? `<strong>Backends</strong> (try: ${tryList})<br/>`
-          + servers.map((s) => `<code>${s.name}</code> → ${s.address}`).join("<br/>")
-          + `<div class="muted" style="margin-top:8px">bind ${r.bind || "—"} · chat relay ${r.chatRelayEnabled ? "on" : "off"}</div>`
-        : `<span class="muted">No link.properties yet — copy link-data/link.properties.example</span>`;
+      renderLinkServers(r.servers);
+      $("linkTryOrder").value = (r.tryServers || []).join(", ");
+      renderLinkForced(r.forcedHosts);
 
       const ul = $("linkPluginList");
       ul.innerHTML = "";
@@ -342,44 +418,107 @@
       });
       if (!(r.plugins || []).length) {
         const li = document.createElement("li");
-        li.innerHTML = `<div class="muted">No jars in link-data/plugins/ — run installIntoLinkPlugins tasks</div>`;
+        li.innerHTML = `<div class="muted">No jars in link-data/plugins/</div>`;
         ul.appendChild(li);
       }
 
       const mod = r.modSync || {};
       $("linkOut").textContent = [
-        r.installHint || "",
+        r.hint || "",
+        r.linkConsoleHint || "",
         "",
+        `Jar: ${r.linkJarPresent ? "ok" : "missing"}`,
         `Mod sync DB: ${mod.jdbcConfigured ? mod.jdbcUrl : "not configured"}`,
         `Selector hub: ${sel.hubServer || "lobby"} · session lock ${sel.sessionLockEnabled ? "on" : "off"}`,
-        r.hint || "",
       ].join("\n");
     } catch (e) {
       $("linkOut").textContent = e.message;
     }
   }
 
+  let linkEs = null;
+
+  function connectLinkConsole() {
+    if (linkEs) linkEs.close();
+    const token = localStorage.getItem("yap_token") || "";
+    const url = "/api/link/console/stream?token=" + encodeURIComponent(token);
+    linkEs = new EventSource(url);
+    const out = $("linkConsoleOut");
+    linkEs.onmessage = (ev) => {
+      if (!ev.data) return;
+      out.textContent += (out.textContent ? "\n" : "") + ev.data;
+      out.scrollTop = out.scrollHeight;
+    };
+    api("/api/link/console").then((d) => {
+      if (d.text) out.textContent = d.text;
+      out.scrollTop = out.scrollHeight;
+    }).catch(() => {});
+  }
+
   async function linkPost(body) {
     try {
       const r = await api("/api/link", { method: "POST", body: JSON.stringify(body) });
-      $("linkOut").textContent = (r.note || "") + "\n" + JSON.stringify(r, null, 2);
+      if (r.output) {
+        $("linkConsoleOut").textContent += "\n" + r.output;
+      }
+      $("linkOut").textContent = (r.note || r.result || "") + "\n" + JSON.stringify(r, null, 2);
       await refreshLink();
     } catch (e) { alert(e.message); }
   }
 
-  $("linkRefresh").onclick = () => refreshLink();
+  $("linkRefresh").onclick = () => { refreshLink(); connectLinkConsole(); };
+  $("linkStart").onclick = () => linkPost({ action: "start" });
+  $("linkStop").onclick = () => {
+    if (!confirm("Stop YaP Link?")) return;
+    linkPost({ action: "stop" });
+  };
+  $("linkEnableForwarding").onclick = () => linkPost({ action: "enable-backend-forwarding" });
+  $("linkAddServer").onclick = () => $("linkServersBody").appendChild(linkServerRow("", "", ""));
+  $("linkAddForced").onclick = () => $("linkForcedBody").appendChild(linkForcedRow("", ""));
+  $("linkSaveProxy").onclick = () => linkPost({
+    action: "save-proxy",
+    bind: $("linkBind").value.trim(),
+    motd: $("linkMotd").value.trim(),
+    maxPlayers: $("linkMaxPlayers").value.trim(),
+    onlineMode: $("linkOnlineMode").value,
+    publicHost: $("linkPublicHost").value.trim(),
+    publicPort: $("linkPublicPort").value.trim(),
+    pingPassthrough: $("linkPingPassthrough").value,
+    aggregatePlayerCount: $("linkAggregateCount").value,
+    globalTabList: $("linkGlobalTab").value,
+    pluginsEnabled: $("linkPluginsFlag").value,
+    chatRelayEnabled: $("linkChatRelay").value,
+    chatRelayChannel: $("linkChatChannel").value.trim(),
+    chatRelayFormat: $("linkChatFormat").value.trim(),
+    chatJoinAnnounce: $("linkJoinAnnounce").value,
+    bedrockEnabled: $("linkBedrockEnabled").value,
+    bedrockBind: $("linkBedrockBind").value.trim(),
+    bedrockBackend: $("linkBedrockBackend").value.trim(),
+  });
+  $("linkSaveServers").onclick = () => linkPost({
+    action: "save-servers",
+    servers: collectLinkServers(),
+    try: collectLinkTry(),
+    forcedHosts: collectLinkForced(),
+  });
   $("linkSaveSelector").onclick = () => linkPost({
     action: "save-selector",
     hubServer: $("linkHub").value.trim(),
     sessionLock: $("linkSessionLock").value,
   });
-  $("linkSaveFlags").onclick = () => linkPost({
-    action: "save-flags",
-    pluginsEnabled: $("linkPluginsFlag").value,
-    chatRelayEnabled: $("linkChatRelay").value,
-  });
+  $("linkCmdForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const cmd = $("linkCmdInput").value.trim();
+    if (!cmd) return;
+    $("linkCmdInput").value = "";
+    try {
+      await linkPost({ action: "command", command: cmd });
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
-  const tabLoads = {
+  Object.assign(YapDash.tabLoads, {
     plugins: loadPlugins,
     modules: loadModules,
     packs: loadPacks,
@@ -388,25 +527,8 @@
     pregen: refreshPregen,
     ranks: refreshRanks,
     essentials: refreshEssentials,
-    link: refreshLink,
-    protect: refreshProtect,
-    world: refreshWorld,
-    chat: refreshChat,
-    mod: refreshMod,
-    perms: refreshPerms,
-    data: refreshData,
-    discord: refreshDiscord,
-    tab: refreshTabPanel,
-    map: refreshMap,
-    guard: refreshGuard,
-    regions: refreshRegions,
-    npcs: refreshNpcs,
-  };
-  document.querySelectorAll(".tabs button").forEach((btn) => {
-    const tab = btn.dataset.tab;
-    const load = tabLoads[tab];
-    if (!load) return;
-    btn.addEventListener("click", () => load());
+    link: () => { refreshLink(); connectLinkConsole(); },
+    players: () => { if (YapDash.refreshPlayers) YapDash.refreshPlayers(); },
   });
   YapDash.onBoot = () => renderVehicles();
 

@@ -53,6 +53,9 @@ public final class DashboardStatusApi {
                 .map(p -> p.getFileName()).orElse("none"));
         m.put("javaClients", server.getGateway().getClients().countEdition(ClientEdition.JAVA));
         m.put("bedrockClients", server.getGateway().getClients().countEdition(ClientEdition.BEDROCK));
+        m.put("ticks", server.getEngine().gameCore().getTickCounter());
+        m.put("linkProcessRunning", server.getLinkProcess().isRunning());
+        m.put("pid", ProcessHandle.current().pid());
         m.put("statusText", server.statusReport());
         m.put("networkHealth", buildNetworkHealth(cfg));
         DashboardHttp.json(ex, 200, m);
@@ -105,6 +108,8 @@ public final class DashboardStatusApi {
             m.put("public-port", cfg.getPublicPort());
             m.put("web-dashboard-port", cfg.getWebDashboardPort());
             m.put("yap-ranks-auto-apply", cfg.isYapRanksAutoApply());
+            m.put("ops", cfg.getOps());
+            m.put("auto-op", cfg.isAutoOp());
             DashboardHttp.json(ex, 200, m);
             return;
         }
@@ -174,6 +179,7 @@ public final class DashboardStatusApi {
         h.put("linkEmbed", cfg.isLinkEmbed());
         var link = DashboardLinkSnapshot.snapshot(
                 root, cfg.getLinkEmbedHome(), cfg.isLinkEmbed(), cfg.isVelocityEnabled());
+        h.put("linkProcessRunning", server.getLinkProcess().isRunning());
         h.put("linkConfigPresent", link.get("configPresent"));
         h.put("linkSuiteComplete", link.get("suiteComplete"));
         h.put("linkServers", link.get("servers"));
@@ -197,6 +203,16 @@ public final class DashboardStatusApi {
             return "Running — " + warnings + " plugin compat warning(s)";
         }
         return "Running — network stack OK";
+    }
+
+    private static List<String> parseOpsList(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
     }
 
     private static String smokeArtifactTime(Path file) {
@@ -235,6 +251,8 @@ public final class DashboardStatusApi {
                 case "server-domain" -> cfg.setServerDomain(v);
                 case "public-port" -> cfg.setPublicPort(DashboardHttp.parseInt(v, 0));
                 case "web-dashboard-port" -> cfg.setWebDashboardPort(DashboardHttp.parseInt(v, cfg.getWebDashboardPort()));
+                case "auto-op" -> cfg.setAutoOp(DashboardHttp.bool(v));
+                case "ops" -> cfg.setOps(parseOpsList(v));
                 default -> {
                     if (k != null && !k.isBlank()) {
                         cfg.set(k, v);

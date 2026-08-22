@@ -1,110 +1,53 @@
-window.YapDashRegisterNetworkPanels = function ({ $, api, netPost }) {
-  function renderProtectLookup(rows) {
-    const tbody = $("protLookupBody");
-    const empty = $("protLookupEmpty");
-    tbody.innerHTML = "";
-    if (!rows || !rows.length) {
-      empty.classList.remove("hidden");
-      return;
-    }
-    empty.classList.add("hidden");
-    rows.forEach((row) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${row.id ?? ""}</td><td>${row.changeType ?? ""}</td><td>${row.actorName ?? ""}</td>`
-        + `<td>${row.world ?? ""}</td><td>${row.x ?? ""},${row.y ?? ""},${row.z ?? ""}</td>`
-        + `<td><span class="mono">${row.blockBefore ?? ""}</span> → <span class="mono">${row.blockAfter ?? ""}</span></td>`;
-      tbody.appendChild(tr);
-    });
-  }
-
-  async function refreshProtect() {
-    try {
-      const r = await api("/api/protect");
-      $("protInstalled").textContent = r.installed ? "yes" : "no";
-      $("protLogging").textContent = r.loggingEnabled ? "on" : "off";
-      $("protPrune").textContent = String(r.pruneDays || "—");
-      $("protOut").textContent = r.status || "";
-    } catch (e) { $("protOut").textContent = e.message; }
-  }
-  $("protRefresh").onclick = () => refreshProtect();
-  $("protReload").onclick = async () => { $("protOut").textContent = (await netPost("/api/protect", { action: "reload" })).result || "ok"; refreshProtect(); };
-  $("protPruneBtn").onclick = async () => {
-    if (!confirm("Prune old protect rows?")) return;
-    $("protOut").textContent = (await netPost("/api/protect", { action: "prune", days: "30" })).result || "ok";
-  };
-  $("protLookupBtn").onclick = async () => {
-    const p = $("protLookupPlayer").value.trim() || "Steve";
-    try {
-      const r = await netPost("/api/protect", { action: "lookup", player: p, limit: "25" });
-      renderProtectLookup(r.lookupRows || []);
-      $("protOut").textContent = r.result || (r.lookupRows?.length ? `${r.lookupRows.length} row(s)` : "No rows");
-    } catch (e) {
-      renderProtectLookup([]);
-      $("protOut").textContent = e.message;
-    }
-  };
-
-  async function refreshWorld() {
-    try {
-      const r = await api("/api/world");
-      $("wldInstalled").textContent = r.installed ? "yes" : "no";
-      $("wldSchems").textContent = String(r.schematicCount ?? "—");
-      $("wldBrush").textContent = String(r.brushMaxRadius ?? "—");
-      $("wldOut").textContent = r.status || "";
-    } catch (e) { $("wldOut").textContent = e.message; }
-  }
-  $("wldRefresh").onclick = () => refreshWorld();
-  $("wldReload").onclick = async () => { $("wldOut").textContent = (await netPost("/api/world", { action: "reload" })).result || "ok"; refreshWorld(); };
-  $("wldLoad").onclick = async () => {
-    $("wldOut").textContent = (await netPost("/api/world", { action: "load", world: $("wldWorld").value.trim() })).result || "";
-  };
-  $("wldUnload").onclick = async () => {
-    $("wldOut").textContent = (await netPost("/api/world", { action: "unload", world: $("wldWorld").value.trim() })).result || "";
-  };
-
-  async function refreshChat() {
-    try {
-      const r = await api("/api/chat");
-      $("chtInstalled").textContent = r.installed ? "yes" : "no";
-      $("chtDefault").textContent = r.defaultChannel || "—";
-      $("chtSlow").textContent = String(r.slowModeSeconds ?? 0) + "s";
-      $("chtRelay").textContent = r.networkEnabled ? "on" : "off";
-      $("chtOut").textContent = (r.channels || []).join(", ");
-    } catch (e) { $("chtOut").textContent = e.message; }
-  }
-  $("chtRefresh").onclick = () => refreshChat();
-  $("chtReload").onclick = async () => { $("chtOut").textContent = (await netPost("/api/chat", { action: "reload" })).result || "ok"; refreshChat(); };
-  $("chtClear").onclick = async () => { $("chtOut").textContent = (await netPost("/api/chat", { action: "clearchat" })).result || "ok"; };
-
-  async function refreshMod() {
-    try {
-      const r = await api("/api/moderation");
-      $("modInstalled").textContent = r.installed ? "yes" : "no";
-      $("modServer").textContent = r.serverId || "—";
-      $("modOut").textContent = r.hint || "";
-    } catch (e) { $("modOut").textContent = e.message; }
-  }
-  $("modRefresh").onclick = () => refreshMod();
-  $("modReload").onclick = async () => { $("modOut").textContent = (await netPost("/api/moderation", { action: "reload" })).result || "ok"; };
-  $("modHistory").onclick = async () => {
-    $("modOut").textContent = (await netPost("/api/moderation", { action: "history", player: $("modPlayer").value.trim() || "Steve" })).result || "";
-  };
-  $("modUnban").onclick = async () => {
-    $("modOut").textContent = (await netPost("/api/moderation", { action: "unban", player: $("modPlayer").value.trim() })).result || "";
-  };
+window.YapDashRegisterNetworkPanels = function (YapDash) {
+  const { $, api, netPost } = YapDash;
 
   async function refreshPerms() {
+    if (!$("prmInstalled")) return;
     try {
       const r = await api("/api/perms");
       $("prmInstalled").textContent = r.installed ? "yes" : "no";
       $("prmDefault").textContent = r.defaultGroup || "—";
       $("prmTrack").textContent = r.defaultTrack || "—";
-      $("prmGroups").textContent = "Groups: " + (r.groups || []).join(" → ");
+      $("prmGroups").textContent = (r.groups || []).join(", ") || "default, vip, mod, admin";
+      if (r.groups && r.groups.length) {
+        const sel = $("prmGroup");
+        const cur = sel.value;
+        sel.innerHTML = "";
+        r.groups.forEach((g) => {
+          const o = document.createElement("option");
+          o.value = g;
+          o.textContent = g;
+          sel.appendChild(o);
+        });
+        if (cur) sel.value = cur;
+      }
     } catch (e) { $("prmOut").textContent = e.message; }
   }
-  $("prmRefresh").onclick = () => refreshPerms();
-  $("prmReload").onclick = async () => { $("prmOut").textContent = (await netPost("/api/perms", { action: "reload" })).result || "ok"; refreshPerms(); };
-  $("prmApplypack").onclick = async () => { $("prmOut").textContent = (await netPost("/api/perms", { action: "applypack" })).result || "ok"; };
+  if ($("prmRefresh")) {
+    $("prmRefresh").onclick = () => refreshPerms();
+    $("prmReload").onclick = async () => { $("prmOut").textContent = (await netPost("/api/perms", { action: "reload" })).result || "ok"; refreshPerms(); };
+    $("prmApplypack").onclick = async () => { $("prmOut").textContent = (await netPost("/api/perms", { action: "applypack" })).result || "ok"; };
+    $("prmLookup").onclick = async () => {
+      const p = $("prmPlayer").value.trim();
+      if (!p) return;
+      $("prmOut").textContent = (await netPost("/api/perms", { action: "user-info", player: p })).result || "";
+    };
+    $("prmSetGroup").onclick = async () => {
+      const p = $("prmPlayer").value.trim();
+      if (!p) { alert("Enter player name."); return; }
+      $("prmOut").textContent = (await netPost("/api/perms", { action: "set-group", player: p, group: $("prmGroup").value })).result || "ok";
+    };
+    $("prmPromote").onclick = async () => {
+      const p = $("prmPlayer").value.trim();
+      if (!p) return;
+      $("prmOut").textContent = (await netPost("/api/perms", { action: "promote", player: p })).result || "ok";
+    };
+    $("prmDemote").onclick = async () => {
+      const p = $("prmPlayer").value.trim();
+      if (!p) return;
+      $("prmOut").textContent = (await netPost("/api/perms", { action: "demote", player: p })).result || "ok";
+    };
+  }
 
   function renderDataFeatures(features) {
     const grid = $("datFeatures");
@@ -213,101 +156,10 @@ window.YapDashRegisterNetworkPanels = function ({ $, api, netPost }) {
     refreshTabPanel();
   };
 
-  async function refreshMap() {
-    try {
-      const r = await api("/api/map");
-      $("mapInstalled").textContent = r.installed ? "yes" : "no";
-      $("mapTiles").textContent = String(r.tileCount ?? 0);
-      $("mapRender").textContent = String(r.renderIntervalMinutes ?? "—") + "m";
-      $("mapWorlds").textContent = (r.worlds || []).join(", ") || "—";
-      const url = r.mapUrl || "#";
-      $("mapOpenLink").href = url;
-      const frame = $("mapFrame");
-      if (r.installed && url !== "#") {
-        frame.src = url;
-        frame.classList.remove("hidden");
-      } else {
-        frame.removeAttribute("src");
-        frame.classList.add("hidden");
-      }
-      $("mapOut").textContent = r.hint || "";
-    } catch (e) { $("mapOut").textContent = e.message; }
-  }
-  $("mapRefresh").onclick = () => refreshMap();
-  $("mapReload").onclick = async () => { $("mapOut").textContent = (await netPost("/api/map", { action: "reload" })).result || "ok"; refreshMap(); };
-  $("mapRenderBtn").onclick = async () => { $("mapOut").textContent = (await netPost("/api/map", { action: "render" })).result || "queued"; setTimeout(refreshMap, 2000); };
-
-  async function refreshGuard() {
-    try {
-      const r = await api("/api/guard");
-      $("grdInstalled").textContent = r.installed ? "yes" : "no";
-      $("grdFly").textContent = r.flyEnabled ? "on" : "off";
-      $("grdSpeed").textContent = r.speedEnabled ? "on" : "off";
-      $("grdReach").textContent = r.reachEnabled ? "on" : "off";
-      $("grdKick").textContent = String(r.maxViolationsBeforeKick ?? "—");
-      $("grdAlerts").textContent = r.alertsEnabled ? "on" : "off";
-      $("grdOut").textContent = r.status || r.hint || "";
-    } catch (e) { $("grdOut").textContent = e.message; }
-  }
-  $("grdRefresh").onclick = () => refreshGuard();
-  $("grdReload").onclick = async () => { $("grdOut").textContent = (await netPost("/api/guard", { action: "reload" })).result || "ok"; refreshGuard(); };
-  $("grdAlertsOn").onclick = async () => { $("grdOut").textContent = (await netPost("/api/guard", { action: "alerts-on" })).result || "ok"; refreshGuard(); };
-  $("grdAlertsOff").onclick = async () => { $("grdOut").textContent = (await netPost("/api/guard", { action: "alerts-off" })).result || "ok"; refreshGuard(); };
-  $("grdPlayerBtn").onclick = async () => {
-    const p = $("grdPlayer").value.trim();
-    if (!p) return;
-    $("grdOut").textContent = (await netPost("/api/guard", { action: "player-status", player: p })).result || "";
-  };
-
-  async function refreshRegions() {
-    try {
-      const r = await api("/api/regions");
-      $("regInstalled").textContent = r.installed ? "yes" : "no";
-      $("regServer").textContent = r.serverId || "—";
-      $("regFlags").textContent = "Flags: " + (r.flags || []).join(", ");
-      const ul = $("regList");
-      ul.innerHTML = "";
-      (r.regionLines || []).forEach((line) => {
-        if (!line || line.startsWith("Admin regions")) return;
-        const li = document.createElement("li");
-        li.textContent = line.replace(/\u00a7./g, "");
-        ul.appendChild(li);
-      });
-      $("regOut").textContent = r.status || "";
-    } catch (e) { $("regOut").textContent = e.message; }
-  }
-  $("regRefresh").onclick = () => refreshRegions();
-
-  async function refreshNpcs() {
-    try {
-      const r = await api("/api/npcs");
-      $("npcInstalled").textContent = r.installed ? "yes" : "no";
-      $("npcQuests").textContent = String(r.questPackCount ?? 0);
-      $("npcServer").textContent = r.serverId || "—";
-      $("npcOut").textContent = r.npcList || r.hint || "";
-    } catch (e) { $("npcOut").textContent = e.message; }
-  }
-  $("npcRefresh").onclick = () => refreshNpcs();
-  $("npcListBtn").onclick = async () => {
-    $("npcOut").textContent = (await netPost("/api/npcs", { action: "list" })).result || "";
-  };
-
-  async function boot() {
-    try {
-      await refreshStatus();
-      connectConsole();
-      pollTimer = setInterval(() => refreshStatus().catch(() => {}), 2000);
-      renderVehicles();
-    } catch (e) {
-      alert("Login failed: " + e.message);
-      logout(true);
-    }
-  }
-
-  if (token) {
-    $("tokenInput").value = token;
-    showApp();
-  }
-
-
+  Object.assign(YapDash.tabLoads, {
+    perms: refreshPerms,
+    data: refreshData,
+    discord: refreshDiscord,
+    tab: refreshTabPanel,
+  });
 };

@@ -57,6 +57,7 @@ public final class YaPcoreServer {
     private final GameKernel gameKernel;
     private final FoliaKernel foliaKernel;
     private final PaperKernel paperKernel;
+    private final LinkProcessManager linkProcess;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicInteger onlinePlayers = new AtomicInteger(0);
     private final Path pidFile;
@@ -107,6 +108,7 @@ public final class YaPcoreServer {
         this.gameKernel = new GameKernel(rootDir, config);
         this.foliaKernel = new FoliaKernel(rootDir, config);
         this.paperKernel = new PaperKernel(rootDir, config, engine.yapEngine());
+        this.linkProcess = new LinkProcessManager(rootDir, config);
 
         CrashLogger.get().configure(
                 rootDir.resolve(config.getLogsDir()).resolve("crashes"),
@@ -146,6 +148,10 @@ public final class YaPcoreServer {
 
     public PaperKernel paperKernel() {
         return paperKernel;
+    }
+
+    public LinkProcessManager getLinkProcess() {
+        return linkProcess;
     }
 
     GameKernel gameKernel() {
@@ -249,6 +255,7 @@ public final class YaPcoreServer {
             CrashLogger.get().dump("plugin-shutdown", e);
         }
         gateway.stop();
+        linkProcess.stop();
         paperKernel.stop();
         foliaKernel.stop();
         gameKernel.stop();

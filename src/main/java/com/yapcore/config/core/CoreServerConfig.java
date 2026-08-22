@@ -138,6 +138,22 @@ public final class CoreServerConfig {
         return out;
     }
 
+    public void setAutoOp(boolean autoOp) {
+        props.setProperty("auto-op", Boolean.toString(autoOp));
+    }
+
+    public void setOps(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            props.setProperty("ops", "");
+            return;
+        }
+        props.setProperty("ops", names.stream()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .reduce((a, b) -> a + "," + b)
+                .orElse(""));
+    }
+
     public boolean isBackwardsCompatible() {
         return Boolean.parseBoolean(props.getProperty("backwards-compatible", "true"));
     }

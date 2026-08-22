@@ -152,7 +152,9 @@ public final class ServerConfig {
     public boolean isOnlineMode() { return core.isOnlineMode(); }
     public void setOnlineMode(boolean online) { core.setOnlineMode(online); }
     public boolean isAutoOp() { return core.isAutoOp(); }
+    public void setAutoOp(boolean autoOp) { core.setAutoOp(autoOp); }
     public List<String> getOps() { return core.getOps(); }
+    public void setOps(List<String> ops) { core.setOps(ops); }
     public boolean isBackwardsCompatible() { return core.isBackwardsCompatible(); }
     public void setBackwardsCompatible(boolean enabled) { core.setBackwardsCompatible(enabled); }
     public boolean isGuiEnabled() { return core.isGuiEnabled(); }

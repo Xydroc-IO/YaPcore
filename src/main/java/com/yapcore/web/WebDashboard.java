@@ -6,8 +6,12 @@ import com.sun.net.httpserver.HttpServer;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.console.ConsoleBus;
 import com.yapcore.server.YaPcoreServer;
+import com.yapcore.web.api.DashboardAccessApi;
+import com.yapcore.web.api.DashboardAdminApi;
 import com.yapcore.web.api.DashboardConsoleApi;
 import com.yapcore.web.api.DashboardGameplayApi;
+import com.yapcore.web.api.DashboardLinkConsoleApi;
+import com.yapcore.web.api.DashboardPlayersApi;
 import com.yapcore.web.api.DashboardPluginsApi;
 import com.yapcore.web.api.DashboardStatusApi;
 import com.yapcore.web.auth.DashboardAuth;
@@ -22,7 +26,7 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**
- * Headless control dashboard — mirrors Swing {@code ControlPanel} over HTTP.
+ * Admin web dashboard — set up and monitor YaPcore over HTTP (Swing GUI parity + plugin ops).
  * Default port {@code 8080} (pack HTTP stays on 8081).
  */
 public final class WebDashboard {
@@ -31,20 +35,30 @@ public final class WebDashboard {
 
     private final YaPcoreServer server;
     private final DashboardAuth auth = new DashboardAuth();
+    private final DashboardAccessApi accessApi;
+    private final DashboardAdminApi adminApi;
+    private final DashboardPlayersApi playersApi;
     private final DashboardStatusApi statusApi;
     private final DashboardPluginsApi pluginsApi;
     private final DashboardConsoleApi consoleApi;
+    private final DashboardLinkConsoleApi linkConsoleApi;
     private final DashboardGameplayApi gameplayApi;
     private final Consumer<String> consoleListener;
+    private final Consumer<String> linkConsoleListener;
     private HttpServer http;
 
     public WebDashboard(YaPcoreServer server) {
         this.server = server;
+        this.accessApi = new DashboardAccessApi(server, auth);
+        this.playersApi = new DashboardPlayersApi(server, auth);
+        this.adminApi = new DashboardAdminApi(server, auth);
         this.statusApi = new DashboardStatusApi(server, auth);
         this.pluginsApi = new DashboardPluginsApi(server, auth);
         this.consoleApi = new DashboardConsoleApi(auth);
+        this.linkConsoleApi = new DashboardLinkConsoleApi(auth, server.getLinkProcess());
         this.gameplayApi = new DashboardGameplayApi(server, auth);
         this.consoleListener = line -> consoleApi.broadcastSse(line);
+        this.linkConsoleListener = line -> linkConsoleApi.broadcastSse(line.trim());
     }
 
     public static WebDashboard maybeStart(YaPcoreServer server) {
@@ -79,6 +93,9 @@ public final class WebDashboard {
         http = HttpServer.create(addr, 0);
 
         http.createContext("/", this::serveStatic);
+        http.createContext("/api/players", playersApi::apiPlayers);
+        http.createContext("/api/access", accessApi::apiAccess);
+        http.createContext("/api/admin", adminApi::apiAdmin);
         http.createContext("/api/status", statusApi::apiStatus);
         http.createContext("/api/connect", statusApi::apiConnect);
         http.createContext("/api/config", statusApi::apiConfig);
@@ -95,6 +112,8 @@ public final class WebDashboard {
         http.createContext("/api/ranks", gameplayApi::apiRanks);
         http.createContext("/api/essentials", gameplayApi::apiEssentials);
         http.createContext("/api/link", gameplayApi::apiLink);
+        http.createContext("/api/link/console", linkConsoleApi::apiLinkConsole);
+        http.createContext("/api/link/console/stream", linkConsoleApi::apiLinkConsoleStream);
         http.createContext("/api/protect", gameplayApi::apiProtect);
         http.createContext("/api/world", gameplayApi::apiWorld);
         http.createContext("/api/chat", gameplayApi::apiChat);
@@ -116,14 +135,17 @@ public final class WebDashboard {
         }));
         http.start();
         ConsoleBus.get().addListener(consoleListener);
-        LOG.info("Web dashboard http://" + ("0.0.0.0".equals(bind) ? "127.0.0.1" : bind)
+        server.getLinkProcess().addLogListener(linkConsoleListener);
+        LOG.info("Web admin dashboard http://" + ("0.0.0.0".equals(bind) ? "127.0.0.1" : bind)
                 + ":" + port + "/  (token required — see web-dashboard-token in config)");
         LOG.info("Dashboard login token: " + auth.getToken());
     }
 
     public synchronized void stop() {
         ConsoleBus.get().removeListener(consoleListener);
+        server.getLinkProcess().removeLogListener(linkConsoleListener);
         consoleApi.closeAllClients();
+        linkConsoleApi.closeAllClients();
         if (http != null) {
             http.stop(0);
             http = null;
