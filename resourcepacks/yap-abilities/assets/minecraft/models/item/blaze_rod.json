@@ -1,0 +1,68 @@
+{
+  "parent": "item/handheld",
+  "textures": {
+    "layer0": "item/blaze_rod"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 78010
+      },
+      "model": "yapabilities:item/fireball_splash"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78011
+      },
+      "model": "yapabilities:item/homing_arc"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78012
+      },
+      "model": "yapabilities:item/chain_lightning"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78013
+      },
+      "model": "yapabilities:item/ground_slam"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78014
+      },
+      "model": "yapabilities:item/aerial_strike"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78020
+      },
+      "model": "yapabilities:item/magic"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78021
+      },
+      "model": "yapabilities:item/melee"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78022
+      },
+      "model": "yapabilities:item/ranged"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78023
+      },
+      "model": "yapabilities:item/prayer"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78024
+      },
+      "model": "yapabilities:item/utility"
+    }
+  ]
+}
