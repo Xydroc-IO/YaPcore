@@ -22,6 +22,7 @@ dependencies {
     implementation(project(":yap-sched"))
     compileOnly(project(":yap-tab-api"))
     compileOnly(project(":yap-perms-api"))
+    compileOnly(project(":yap-mmo-api"))
 }
 
 tasks.jar {

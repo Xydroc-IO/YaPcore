@@ -1,5 +1,7 @@
 package com.yapcore.playerdata.claims;
 
+import com.yapcore.factions.FactionService;
+import com.yapcore.factions.FactionServices;
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.ClaimRepository;
 import com.yapcore.regions.FlagValue;
@@ -130,6 +132,16 @@ public final class ClaimService {
         return Optional.ofNullable(best);
     }
 
+    /** Claims owned by or manageable by the player on this server. */
+    public List<Claim> manageableBy(Player player) {
+        UUID id = player.getUniqueId();
+        synchronized (local) {
+            return local.stream()
+                    .filter(c -> c.owner().equals(id) || hasTrust(c, id, ClaimRepository.TrustLevel.MANAGE))
+                    .toList();
+        }
+    }
+
     public Optional<Claim> getTopLevelAt(Location loc) {
         Optional<Claim> at = getAt(loc);
         if (at.isEmpty()) {
@@ -178,6 +190,10 @@ public final class ClaimService {
             return !config.claimsRequireClaimToBuild() || player.hasPermission("yapdata.claims.wilderness");
         }
         Claim c = claim.get();
+        Optional<Boolean> factionBuild = factionBuildOverride(player, c);
+        if (factionBuild.isPresent()) {
+            return factionBuild.get();
+        }
         if (!flagAllowsBuild(c, player)) {
             return false;
         }
@@ -238,12 +254,32 @@ public final class ClaimService {
         if (claim.isEmpty()) {
             return true;
         }
+        Optional<Boolean> factionPvp = factionPvpOverride(attacker, victim, claim.get().id());
+        if (factionPvp.isPresent()) {
+            return factionPvp.get();
+        }
         FlagValue pvp = flags.resolveOrDefault(claim.get().id(), RegionFlag.PVP);
         if (pvp == FlagValue.DENY) {
             return attacker.hasPermission("yapdata.claims.admin")
                     || hasTrust(claim.get(), attacker.getUniqueId(), ClaimRepository.TrustLevel.BUILD);
         }
         return true;
+    }
+
+    private Optional<Boolean> factionBuildOverride(Player player, Claim claim) {
+        Optional<FactionService> factions = FactionServices.find();
+        if (factions.isEmpty()) {
+            return Optional.empty();
+        }
+        return factions.get().evaluateBuild(player, claim.id(), claim.owner());
+    }
+
+    private Optional<Boolean> factionPvpOverride(Player attacker, Player victim, long claimId) {
+        Optional<FactionService> factions = FactionServices.find();
+        if (factions.isEmpty()) {
+            return Optional.empty();
+        }
+        return factions.get().evaluatePvp(attacker, victim, claimId);
     }
 
     public boolean isMobDamageAllowed(org.bukkit.entity.Player victim) {

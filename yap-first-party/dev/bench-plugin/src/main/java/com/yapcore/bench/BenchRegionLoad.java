@@ -211,7 +211,7 @@ final class BenchRegionLoad {
             } else {
                 YapSched.global(plugin, () -> onReady.accept(0));
             }
-        }));
+        })));
     }
 
     static Set<long[]> interestChunks() {

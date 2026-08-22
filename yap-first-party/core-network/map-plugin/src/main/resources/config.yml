@@ -1,6 +1,9 @@
 http:
   bind: 127.0.0.1
-  port: 8081
+  # Dedicated map port when use-yapcore-server is false (8081 is used by YaPcore pack HTTP)
+  port: 8082
+  # Serve /map/ and /tiles/ from YaPcore resource-pack-http-port (recommended)
+  use-yapcore-server: true
 
 worlds:
   - world

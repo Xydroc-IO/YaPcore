@@ -7,7 +7,7 @@
 
   var world = new URLSearchParams(window.location.search).get('world') || 'world';
   var tileSize = 256;
-  var sampleRadius = 8;
+  var sampleRadius = (window.YAP_MAP_CONFIG && window.YAP_MAP_CONFIG.sampleChunkRadius) || 8;
   var bounds = [[0, 0], [sampleRadius * tileSize, sampleRadius * tileSize]];
   map.setMaxBounds(bounds);
   map.fitBounds(bounds);

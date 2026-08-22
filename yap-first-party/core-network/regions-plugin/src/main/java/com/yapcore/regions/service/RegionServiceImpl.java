@@ -96,6 +96,16 @@ public final class RegionServiceImpl implements RegionService {
     }
 
     @Override
+    public Optional<AdminRegion> named(String name) {
+        if (name == null || name.isBlank()) {
+            return Optional.empty();
+        }
+        return regions.stream()
+                .filter(r -> r.name().equalsIgnoreCase(name.trim()))
+                .findFirst();
+    }
+
+    @Override
     public FlagValue flagAt(Location location, RegionFlag flag) {
         return at(location).map(r -> resolve(r, flag)).orElse(FlagValue.ALLOW);
     }

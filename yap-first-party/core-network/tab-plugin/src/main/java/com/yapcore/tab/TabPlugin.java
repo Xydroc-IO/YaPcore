@@ -25,6 +25,7 @@ public final class TabPlugin extends JavaPlugin {
 
         listener = new TabListener(this);
         getServer().getPluginManager().registerEvents(listener, this);
+        getServer().getPluginManager().registerEvents(new TabSkillListener(this), this);
         listener.startRefreshTask(config);
 
         networkSync = new TabNetworkSync(this, config, networkState);

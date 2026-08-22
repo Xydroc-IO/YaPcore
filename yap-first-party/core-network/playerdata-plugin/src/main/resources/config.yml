@@ -32,6 +32,7 @@ economy:
 
 # Feature modules (freeze: no new Essentials-class commands without product review).
 # shops / jobs / auctions default off — highest EssentialsX overlap.
+# When yap-skills is enabled, keep jobs: false to avoid double mining payouts.
 # Money features also require economy.enabled=true.
 features:
   homes: true

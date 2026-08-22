@@ -9,12 +9,17 @@ public record QuestDefinition(
         String id,
         String name,
         String description,
+        String requiresQuest,
         List<Objective> objectives,
         List<String> rewards
 ) {
     public enum ObjectiveType {
         BREAK_BLOCK,
-        KILL_MOB
+        GATHER,
+        KILL_MOB,
+        SKILL_LEVEL,
+        CRAFT_ITEM,
+        KILL_BOSS
     }
 
     public record Objective(
@@ -22,7 +27,15 @@ public record QuestDefinition(
             ObjectiveType type,
             Material material,
             EntityType entityType,
-            int amount
+            int amount,
+            String skillId,
+            int minLevel,
+            String recipeId,
+            String bossId
     ) {
+        /** Legacy constructor for break/kill objectives. */
+        public Objective(String id, ObjectiveType type, Material material, EntityType entityType, int amount) {
+            this(id, type, material, entityType, amount, "", 0, "", "");
+        }
     }
 }

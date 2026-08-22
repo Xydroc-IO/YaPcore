@@ -28,6 +28,8 @@ dependencies {
     implementation(project(":yap-playerdata-api"))
     implementation(project(":yap-regions-api"))
 
+    compileOnly(project(":yap-factions-api"))
+
     implementation("com.zaxxer:HikariCP:6.2.1")
     implementation("com.mysql:mysql-connector-j:9.1.0")
     implementation("at.favre.lib:bcrypt:0.10.2")

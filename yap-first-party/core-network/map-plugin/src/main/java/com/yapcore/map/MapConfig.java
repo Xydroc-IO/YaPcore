@@ -10,7 +10,8 @@ public final class MapConfig {
 
     private final JavaPlugin plugin;
     private String bindHost = "127.0.0.1";
-    private int port = 8081;
+    private int port = 8082;
+    private boolean useYapcoreServer = true;
     private List<String> worlds = List.of("world");
     private int renderIntervalMinutes = 15;
     private int maxHeight = 320;
@@ -28,6 +29,7 @@ public final class MapConfig {
         FileConfiguration c = plugin.getConfig();
         bindHost = c.getString("http.bind", bindHost);
         port = Math.max(1, Math.min(65535, c.getInt("http.port", port)));
+        useYapcoreServer = c.getBoolean("http.use-yapcore-server", useYapcoreServer);
         List<String> configured = c.getStringList("worlds");
         if (configured == null || configured.isEmpty()) {
             worlds = List.of("world");
@@ -45,6 +47,10 @@ public final class MapConfig {
 
     public int port() {
         return port;
+    }
+
+    public boolean useYapcoreServer() {
+        return useYapcoreServer;
     }
 
     public List<String> worlds() {

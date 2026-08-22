@@ -103,6 +103,8 @@ public final class NpcsPlugin extends JavaPlugin {
             getLogger().warning("Could not create quests dir: " + e.getMessage());
         }
         questLoader = new QuestPackLoader(questsDir);
+        Path mmoQuests = getDataFolder().getParentFile().toPath().resolve("yap-mmo-content/quests");
+        questLoader.registerDirectory(mmoQuests);
         questLoader.reload();
 
         npcService = new NpcServiceImpl(this, config, npcRepository);

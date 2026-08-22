@@ -155,8 +155,17 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length >= 4 && "meta".equalsIgnoreCase(args[1]) && "set".equalsIgnoreCase(args[2])) {
-            String prefix = args.length >= 4 ? args[3] : "";
-            String suffix = args.length >= 5 ? args[4] : "";
+            String combined = joinFrom(args, 3);
+            String prefix;
+            String suffix;
+            int sep = combined.indexOf('\u001E');
+            if (sep >= 0) {
+                prefix = combined.substring(0, sep);
+                suffix = combined.substring(sep + 1);
+            } else {
+                prefix = combined;
+                suffix = "";
+            }
             YapSched.async(plugin, () -> {
                 try {
                     plugin.repository().setUserMeta(uuid, playerName, prefix, suffix);
@@ -292,7 +301,25 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
             });
             return true;
         }
-        sender.sendMessage("§e/yapperm group create|delete|list|info|setprefix|permission set …");
+        if (args.length >= 3 && "setsuffix".equalsIgnoreCase(args[0])) {
+            var row = plugin.resolver().groups().get(args[1].toLowerCase(Locale.ROOT));
+            if (row == null) {
+                sender.sendMessage("§cUnknown group.");
+                return true;
+            }
+            String suffix = joinFrom(args, 2);
+            YapSched.async(plugin, () -> {
+                try {
+                    plugin.repository().upsertGroup(row.name(), row.weight(), row.prefix(), suffix);
+                    YapSched.global(plugin, plugin::reloadAll);
+                    YapSched.global(plugin, () -> sender.sendMessage("§aUpdated suffix for §f" + row.name()));
+                } catch (Exception e) {
+                    YapSched.global(plugin, () -> sender.sendMessage("§cFailed: " + e.getMessage()));
+                }
+            });
+            return true;
+        }
+        sender.sendMessage("§e/yapperm group create|delete|list|info|setprefix|setsuffix|permission set …");
         return true;
     }
 
@@ -408,7 +435,7 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
             return partial(args[0], List.of("user", "group", "track", "reload", "applypack"));
         }
         if ("group".equalsIgnoreCase(args[0]) && args.length == 2) {
-            return partial(args[1], List.of("list", "info", "permission"));
+            return partial(args[1], List.of("list", "info", "create", "delete", "setprefix", "setsuffix", "permission"));
         }
         if ("track".equalsIgnoreCase(args[0]) && args.length == 2) {
             return partial(args[1], List.of("list", "info"));

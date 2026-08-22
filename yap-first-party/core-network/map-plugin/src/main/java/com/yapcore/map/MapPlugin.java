@@ -8,7 +8,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public final class MapPlugin extends JavaPlugin implements CommandExecutor {
 
@@ -21,14 +25,16 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor {
     public void onEnable() {
         saveDefaultConfig();
         reloadMap();
-
         try {
-            httpServer = new MapHttpServer(config.bindHost(), config.port(), tilesRoot());
-            httpServer.start();
+            extractWebAssets();
         } catch (IOException e) {
-            getLogger().severe("Map HTTP server failed — disabling: " + e.getMessage());
-            getServer().getPluginManager().disablePlugin(this);
-            return;
+            getLogger().warning("Could not extract map web assets: " + e.getMessage());
+        }
+
+        if (config.useYapcoreServer()) {
+            getLogger().info("Map HTTP served by YaPcore pack server — use /map/ on resource-pack-http-port");
+        } else {
+            startEmbeddedHttp();
         }
 
         long periodTicks = Math.max(20L, config.renderIntervalMinutes() * 60L * 20L);
@@ -41,7 +47,30 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor {
             cmd.setExecutor(this);
         }
 
-        getLogger().info("YaPMap ready — http://" + config.bindHost() + ":" + config.port() + "/map/");
+        getLogger().info("YaPMap ready — tiles in " + tilesRoot().toAbsolutePath());
+    }
+
+    private void startEmbeddedHttp() {
+        int port = config.port();
+        try {
+            httpServer = new MapHttpServer(config.bindHost(), port, tilesRoot());
+            httpServer.start();
+            getLogger().info("Map HTTP on http://" + config.bindHost() + ":" + port + "/map/");
+        } catch (IOException e) {
+            if (port == 8081) {
+                try {
+                    httpServer = new MapHttpServer(config.bindHost(), 8082, tilesRoot());
+                    httpServer.start();
+                    getLogger().warning("Port 8081 in use (YaPcore pack HTTP?) — map HTTP on :8082 instead. "
+                            + "Set http.use-yapcore-server: true to share the pack port.");
+                    return;
+                } catch (IOException retry) {
+                    e = retry;
+                }
+            }
+            getLogger().severe("Map HTTP server failed (rendering still active): " + e.getMessage()
+                    + " — set http.use-yapcore-server: true in config.yml");
+        }
     }
 
     public void reloadMap() {
@@ -50,10 +79,49 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor {
         }
         config.reload();
         renderer = new TileRenderer(config, tilesRoot());
+        try {
+            extractWebAssets();
+        } catch (IOException e) {
+            getLogger().warning("Could not refresh map web assets: " + e.getMessage());
+        }
+        if (!config.useYapcoreServer()) {
+            restartEmbeddedHttp();
+        }
+    }
+
+    private void restartEmbeddedHttp() {
+        if (httpServer != null) {
+            httpServer.stop();
+            httpServer = null;
+        }
+        startEmbeddedHttp();
+    }
+
+    private void extractWebAssets() throws IOException {
+        Path web = webRoot();
+        Files.createDirectories(web);
+        copyResource("index.html", web.resolve("index.html"));
+        copyResource("map.js", web.resolve("map.js"));
+        String cfg = "window.YAP_MAP_CONFIG={sampleChunkRadius:" + config.sampleChunkRadius() + "};\n";
+        Files.writeString(web.resolve("map-config.js"), cfg, StandardCharsets.UTF_8);
+    }
+
+    private void copyResource(String name, Path dest) throws IOException {
+        try (InputStream in = MapPlugin.class.getResourceAsStream("/map/" + name)) {
+            if (in == null) {
+                getLogger().warning("Missing map resource /map/" + name);
+                return;
+            }
+            Files.copy(in, dest, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     public Path tilesRoot() {
         return getDataFolder().toPath().resolve("map/tiles");
+    }
+
+    public Path webRoot() {
+        return getDataFolder().toPath().resolve("web");
     }
 
     @Override
