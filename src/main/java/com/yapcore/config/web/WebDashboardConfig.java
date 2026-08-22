@@ -16,9 +16,9 @@ public final class WebDashboardConfig {
     public static void applyDefaults(Properties props) {
         props.setProperty("web-dashboard-enabled", "true");
         props.setProperty("web-dashboard-port", "8080");
-        props.setProperty("web-dashboard-bind", "0.0.0.0");
+        props.setProperty("web-dashboard-bind", "127.0.0.1");
         props.setProperty("web-dashboard-token", "");
-        props.setProperty("web-dashboard-localhost-only", "false");
+        props.setProperty("web-dashboard-localhost-only", "true");
     }
 
     public boolean isWebDashboardEnabled() {
@@ -43,11 +43,11 @@ public final class WebDashboardConfig {
     }
 
     public String getWebDashboardBind() {
-        return props.getProperty("web-dashboard-bind", "0.0.0.0");
+        return props.getProperty("web-dashboard-bind", "127.0.0.1");
     }
 
     public void setWebDashboardBind(String bind) {
-        props.setProperty("web-dashboard-bind", bind == null ? "0.0.0.0" : bind);
+        props.setProperty("web-dashboard-bind", bind == null ? "127.0.0.1" : bind);
     }
 
     public String getWebDashboardToken() {
@@ -59,7 +59,7 @@ public final class WebDashboardConfig {
     }
 
     public boolean isWebDashboardLocalhostOnly() {
-        return Boolean.parseBoolean(props.getProperty("web-dashboard-localhost-only", "false"));
+        return Boolean.parseBoolean(props.getProperty("web-dashboard-localhost-only", "true"));
     }
 
     public void setWebDashboardLocalhostOnly(boolean localhostOnly) {

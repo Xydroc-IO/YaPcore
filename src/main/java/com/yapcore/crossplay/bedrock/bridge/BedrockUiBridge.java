@@ -1,6 +1,7 @@
 package com.yapcore.crossplay.bedrock.bridge;
 
 import com.yapcore.crossplay.bedrock.BedrockPacketCodec;
+import com.yapcore.crossplay.bedrock.BedrockSessionManager;
 import com.yapcore.crossplay.bedrock.codec.BedrockUiCodec;
 import io.netty.buffer.ByteBuf;
 
@@ -18,9 +19,50 @@ public final class BedrockUiBridge {
     private final BedrockBridgeContext ctx;
     private final Map<String, Long> bossIds = new ConcurrentHashMap<>();
     private final Map<String, Integer> titleTimes = new ConcurrentHashMap<>();
+    private final Map<String, String> sidebarObjective = new ConcurrentHashMap<>();
 
     public BedrockUiBridge(BedrockBridgeContext ctx) {
         this.ctx = ctx;
+    }
+
+    /** Push action bar text directly to a connected Bedrock session (M5 MMO UI). */
+    public void pushActionBar(String username, String text) {
+        BedrockSessionManager.BedrockSession session = ctx.sessions.byUsername(username);
+        if (session == null || text == null) {
+            return;
+        }
+        ctx.send(session.guid(), BedrockPacketCodec.setTitle(
+                BedrockUiCodec.TITLE_ACTIONBAR, text, 0, 0, 0));
+    }
+
+    /** Mirror a sidebar scoreboard to Bedrock (newest line = highest score value). */
+    public void pushSidebar(String username, String objectiveId, String displayName, List<String> lines) {
+        BedrockSessionManager.BedrockSession session = ctx.sessions.byUsername(username);
+        if (session == null || lines == null || lines.isEmpty()) {
+            return;
+        }
+        String obj = objectiveId == null || objectiveId.isBlank() ? "yapmmo" : objectiveId;
+        String title = displayName == null || displayName.isBlank() ? "YaP MMO" : displayName;
+        sidebarObjective.put(username.toLowerCase(Locale.ROOT), obj);
+        List<ByteBuf> packets = new ArrayList<>();
+        packets.add(BedrockPacketCodec.setDisplayObjective("sidebar", obj, title, "dummy", 0));
+        int score = lines.size();
+        for (String line : lines) {
+            if (line == null || line.isBlank()) {
+                score--;
+                continue;
+            }
+            long entryId = (username + score).hashCode() & 0xFFFFFFFFL;
+            packets.add(BedrockPacketCodec.setScore(
+                    0, entryId, obj, score, BedrockUiCodec.SCORE_TYPE_FAKE, 0L, trimLine(line)));
+            score--;
+        }
+        ctx.send(session.guid(), packets);
+    }
+
+    private static String trimLine(String line) {
+        String plain = line.replaceAll("§.", "");
+        return plain.length() > 40 ? plain.substring(0, 40) : plain;
     }
 
     void applyCommandUiHints(long guid, String username, String line) {

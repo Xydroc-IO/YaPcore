@@ -7,6 +7,7 @@ import com.yapcore.config.ServerConfig;
 import com.yapcore.crossplay.CrossplayHub;
 import com.yapcore.crossplay.bedrock.BedrockSessionManager;
 import com.yapcore.crossplay.bedrock.BedrockGameplayBridge;
+import com.yapcore.crossplay.bedrock.BedrockUiGatewayHolder;
 import com.yapcore.crossplay.floodgate.FloodgateAuth;
 import com.yapcore.crossplay.form.FormService;
 import com.yapcore.crossplay.raknet.RakNetSessionManager;
@@ -176,6 +177,7 @@ public final class DualStackGateway {
         }
         JavaListenerBoot.start(this);
         BedrockUdpBoot.start(this);
+        BedrockUiGatewayHolder.attach(this);
         LOG.info("Dual-stack gateway ready — Java=" + config.isJavaEnabled()
                 + " Bedrock=" + config.isBedrockEnabled()
                 + " shared-port=" + config.isSharedListenPort()
@@ -189,6 +191,7 @@ public final class DualStackGateway {
         }
         JavaListenerBoot.shutdown(this);
         BedrockUdpBoot.shutdown(this);
+        BedrockUiGatewayHolder.detach();
         clients.clear();
         if (crossplay != null) {
             crossplay.clear();

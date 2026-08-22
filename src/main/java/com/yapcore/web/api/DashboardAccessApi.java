@@ -19,6 +19,8 @@ import java.util.Map;
 /** Operators, default rank, and permission group management. */
 public final class DashboardAccessApi {
 
+    private static final char META_SEP = '\u001E';
+
     private final YaPcoreServer server;
     private final DashboardAuth auth;
 
@@ -40,7 +42,7 @@ public final class DashboardAccessApi {
             snap.put("autoOp", cfg.isAutoOp());
             snap.put("onlineMode", cfg.isOnlineMode());
             snap.putAll(DashboardNetworkSnapshots.perms(root));
-            snap.put("hint", "POST save-ops | save-auto-op | set-default-group | op | deop | set-group | promote | demote | user-info | group-info | group-perm | user-perm");
+            snap.put("hint", "POST create-group | save-group | delete-group | user-meta-set | user-meta-clear | save-ops | set-default-group | set-group | …");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -68,6 +70,18 @@ public final class DashboardAccessApi {
                     DashboardNetworkSnapshotWriters.savePermsDefaultGroup(root, group);
                     server.executeCommand("yapperm reload");
                     DashboardHttp.json(ex, 200, Map.of("ok", true, "defaultGroup", group));
+                }
+                case "create-group", "save-group" -> handleSaveGroup(ex, root, body, action);
+                case "delete-group" -> handleDeleteGroup(ex, root, body);
+                case "user-meta-set" -> handleUserMetaSet(ex, body);
+                case "user-meta-clear" -> {
+                    String player = body.getOrDefault("player", "").trim();
+                    if (player.isEmpty()) {
+                        DashboardHttp.json(ex, 400, Map.of("error", "player required"));
+                        return;
+                    }
+                    String result = server.executeCommand("yapperm user " + player + " meta clear");
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result));
                 }
                 case "op" -> {
                     String p = body.getOrDefault("player", "").trim();
@@ -110,6 +124,78 @@ public final class DashboardAccessApi {
             return;
         }
         ex.sendResponseHeaders(405, -1);
+    }
+
+    private void handleSaveGroup(HttpExchange ex, Path root, Map<String, String> body, String action) throws IOException {
+        String name = body.getOrDefault("name", body.getOrDefault("group", "")).trim().toLowerCase();
+        if (name.isEmpty()) {
+            DashboardHttp.json(ex, 400, Map.of("error", "group name required"));
+            return;
+        }
+        try {
+            Integer weight = body.containsKey("weight") ? parseInt(body.get("weight"), 0) : null;
+            String prefix = body.containsKey("prefix") ? body.get("prefix") : null;
+            String suffix = body.containsKey("suffix") ? body.get("suffix") : null;
+            List<String> parents = body.containsKey("parents") ? parseList(body.get("parents")) : null;
+            if ("create-group".equals(action) && weight == null && prefix == null && suffix == null && parents == null) {
+                weight = 0;
+                prefix = "";
+                suffix = "";
+                parents = List.of();
+            }
+            DashboardNetworkSnapshotWriters.savePermsGroup(root, name, weight, prefix, suffix, parents);
+            if ("true".equalsIgnoreCase(body.getOrDefault("addToTrack", "false"))) {
+                String track = body.getOrDefault("track", "yap");
+                DashboardNetworkSnapshotWriters.appendGroupToTrack(root, track, name);
+            }
+            String apply = server.executeCommand("yapperm applypack");
+            String reload = server.executeCommand("yapperm reload");
+            DashboardHttp.json(ex, 200, Map.of(
+                    "ok", true,
+                    "group", name,
+                    "applypack", apply == null ? "" : apply,
+                    "reload", reload == null ? "" : reload));
+        } catch (Exception e) {
+            DashboardHttp.json(ex, 500, Map.of("error", e.getMessage()));
+        }
+    }
+
+    private void handleDeleteGroup(HttpExchange ex, Path root, Map<String, String> body) throws IOException {
+        String name = body.getOrDefault("name", body.getOrDefault("group", "")).trim().toLowerCase();
+        if (name.isEmpty()) {
+            DashboardHttp.json(ex, 400, Map.of("error", "group name required"));
+            return;
+        }
+        if ("default".equals(name)) {
+            DashboardHttp.json(ex, 400, Map.of("error", "cannot delete the default group"));
+            return;
+        }
+        try {
+            DashboardNetworkSnapshotWriters.deletePermsGroup(root, name);
+            String deleted = server.executeCommand("yapperm group delete " + name);
+            String reload = server.executeCommand("yapperm reload");
+            DashboardHttp.json(ex, 200, Map.of(
+                    "ok", true,
+                    "group", name,
+                    "delete", deleted == null ? "" : deleted,
+                    "reload", reload == null ? "" : reload));
+        } catch (Exception e) {
+            DashboardHttp.json(ex, 500, Map.of("error", e.getMessage()));
+        }
+    }
+
+    private void handleUserMetaSet(HttpExchange ex, Map<String, String> body) throws IOException {
+        String player = body.getOrDefault("player", "").trim();
+        if (player.isEmpty()) {
+            DashboardHttp.json(ex, 400, Map.of("error", "player required"));
+            return;
+        }
+        String prefix = body.getOrDefault("prefix", "");
+        String suffix = body.getOrDefault("suffix", "");
+        String payload = prefix + META_SEP + suffix;
+        String cmd = "yapperm user " + player + " meta set " + payload;
+        String result = server.executeCommand(cmd);
+        DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result));
     }
 
     private static String permsCommand(String action, Map<String, String> body) {
@@ -160,11 +246,22 @@ public final class DashboardAccessApi {
             return out;
         }
         for (String part : raw.split("[,\\n]")) {
-            String t = part.trim();
+            String t = part.trim().toLowerCase();
             if (!t.isEmpty()) {
                 out.add(t);
             }
         }
         return out;
+    }
+
+    private static int parseInt(String raw, int fallback) {
+        if (raw == null || raw.isBlank()) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(raw.trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
     }
 }

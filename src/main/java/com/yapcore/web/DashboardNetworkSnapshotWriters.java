@@ -2,6 +2,8 @@ package com.yapcore.web;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -112,6 +114,111 @@ public final class DashboardNetworkSnapshotWriters {
         Path file = root.resolve("plugins").resolve("YaPPerms").resolve("config.yml");
         Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
         yaml.put("default-group", group == null ? "default" : group.trim().toLowerCase());
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void savePermsGroup(Path root, String name, Integer weight, String prefix, String suffix,
+                                      List<String> parents) throws IOException {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("group name required");
+        }
+        String key = name.trim().toLowerCase();
+        Path file = root.resolve("plugins").resolve("YaPPerms").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        Map<String, Object> groups = DashboardNetworkSnapshots.mapOrCreate(yaml, "groups");
+        Map<String, Object> group = new LinkedHashMap<>();
+        if (groups.get(key) instanceof Map<?, ?> existing) {
+            group.putAll((Map<String, Object>) existing);
+        } else {
+            group.put("weight", 0);
+            group.put("prefix", "");
+            group.put("suffix", "");
+            group.put("parents", new ArrayList<String>());
+        }
+        if (weight != null) {
+            group.put("weight", weight);
+        }
+        if (prefix != null) {
+            group.put("prefix", prefix);
+        }
+        if (suffix != null) {
+            group.put("suffix", suffix);
+        }
+        if (parents != null) {
+            group.put("parents", new ArrayList<>(parents));
+        }
+        groups.put(key, group);
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void deletePermsGroup(Path root, String name) throws IOException {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("group name required");
+        }
+        String key = name.trim().toLowerCase();
+        Path file = root.resolve("plugins").resolve("YaPPerms").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        Object groupsObj = yaml.get("groups");
+        if (groupsObj instanceof Map<?, ?> groups) {
+            ((Map<String, Object>) groups).remove(key);
+        }
+        Object tracksObj = yaml.get("tracks");
+        if (tracksObj instanceof Map<?, ?> tracks) {
+            Map<String, Object> trackMap = (Map<String, Object>) tracks;
+            for (Map.Entry<String, Object> entry : trackMap.entrySet()) {
+                if (entry.getValue() instanceof List<?> list) {
+                    List<Object> kept = new ArrayList<>();
+                    for (Object item : list) {
+                        if (!key.equalsIgnoreCase(String.valueOf(item))) {
+                            kept.add(item);
+                        }
+                    }
+                    trackMap.put(entry.getKey(), kept);
+                }
+            }
+        }
+        Object grantsObj = yaml.get("starter-grants");
+        if (grantsObj instanceof Map<?, ?> grants) {
+            ((Map<String, Object>) grants).remove(key);
+        }
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void appendGroupToTrack(Path root, String track, String groupName) throws IOException {
+        if (track == null || track.isBlank() || groupName == null || groupName.isBlank()) {
+            return;
+        }
+        String group = groupName.trim().toLowerCase();
+        String trackKey = track.trim().toLowerCase();
+        Path file = root.resolve("plugins").resolve("YaPPerms").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        Map<String, Object> tracks = DashboardNetworkSnapshots.mapOrCreate(yaml, "tracks");
+        List<String> order = new ArrayList<>();
+        Object existing = tracks.get(trackKey);
+        if (existing instanceof List<?> list) {
+            for (Object item : list) {
+                order.add(String.valueOf(item).toLowerCase());
+            }
+        }
+        if (!order.contains(group)) {
+            order.add(group);
+        }
+        tracks.put(trackKey, order);
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    public static void saveChatChannelFormat(Path root, String channel, String format) throws IOException {
+        if (channel == null || channel.isBlank()) {
+            throw new IllegalArgumentException("channel required");
+        }
+        Path file = root.resolve("plugins").resolve("YaPChat").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        Map<String, Object> channels = DashboardNetworkSnapshots.mapOrCreate(yaml, "channels");
+        Map<String, Object> ch = DashboardNetworkSnapshots.mapOrCreate(channels, channel.trim());
+        ch.put("format", format == null ? "" : format);
         DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }
 

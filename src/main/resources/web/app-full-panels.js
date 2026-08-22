@@ -40,9 +40,41 @@ window.YapDashRegisterFullPanels = function (YapDash) {
       if ($("chtFilterBox")) $("chtFilterBox").checked = !!r.filterEnabled;
       if ($("chtRelayBox")) $("chtRelayBox").checked = !!r.networkEnabled;
       $("chtChannels").textContent = (r.channels || []).join(", ") || "—";
+      const formats = r.channelFormats || {};
+      const chList = r.channels || Object.keys(formats);
+      if ($("chtFormatChannel")) {
+        $("chtFormatChannel").innerHTML = "";
+        chList.forEach((c) => {
+          const o = document.createElement("option");
+          o.value = c;
+          o.textContent = c;
+          $("chtFormatChannel").appendChild(o);
+        });
+        const pick = $("chtFormatChannel").value || chList[0];
+        if (pick && $("chtFormatInput")) $("chtFormatInput").value = formats[pick] || "";
+      }
       setOut("chtOut", "");
     } catch (e) { setOut("chtOut", e.message); }
   }
+  $("chtFormatChannel")?.addEventListener("change", async () => {
+    try {
+      const r = await api("/api/chat");
+      const formats = r.channelFormats || {};
+      const ch = $("chtFormatChannel")?.value;
+      if (ch && $("chtFormatInput")) $("chtFormatInput").value = formats[ch] || "";
+    } catch { /* ignore */ }
+  });
+  $("chtSaveFormat")?.addEventListener("click", async () => {
+    try {
+      await netPost("/api/chat", {
+        action: "save-channel-format",
+        channel: $("chtFormatChannel")?.value || "global",
+        format: $("chtFormatInput")?.value || "",
+      });
+      setOut("chtOut", "Channel format saved.");
+      refreshChat();
+    } catch (e) { setOut("chtOut", e.message); }
+  });
   $("chtSaveSettings")?.addEventListener("click", async () => {
     try {
       await netPost("/api/chat", {
@@ -300,11 +332,40 @@ window.YapDashRegisterFullPanels = function (YapDash) {
   async function refreshMap() {
     try {
       const r = await api("/api/map");
-      $("mapUrl").textContent = r.mapUrl || "—";
-      $("mapTiles").textContent = String(r.tileCount ?? "—");
+      $("mapInstalled").textContent = r.installed ? "yes" : "no";
+      const tiles = r.tileCount ?? 0;
+      $("mapTiles").textContent = String(tiles);
       $("mapWorlds").textContent = (r.worlds || []).join(", ") || "world";
+      $("mapUrl").textContent = r.mapUrl || "—";
       if ($("mapInterval")) $("mapInterval").value = r.renderIntervalMinutes ?? 15;
       if ($("mapWorldsInput")) $("mapWorldsInput").value = (r.worlds || []).join("\n");
+      const statusEl = $("mapStatus");
+      const hintEl = $("mapHint");
+      if (statusEl) {
+        if (!r.installed) {
+          statusEl.textContent = "missing";
+        } else if (tiles === 0) {
+          statusEl.textContent = "no tiles";
+        } else if (r.mapReady) {
+          statusEl.textContent = "ready";
+        } else {
+          statusEl.textContent = "starting";
+        }
+      }
+      if (hintEl) {
+        if (!r.installed) {
+          hintEl.textContent = "Install yap-map.jar and restart Folia.";
+          hintEl.style.display = "block";
+        } else if (tiles === 0) {
+          hintEl.textContent = "Click Render now — tiles generate after Folia loads the world (may take a minute).";
+          hintEl.style.display = "block";
+        } else if (r.usePackServer) {
+          hintEl.textContent = "Map loads through this dashboard (same port). Click Render now if tiles are empty.";
+          hintEl.style.display = "block";
+        } else {
+          hintEl.style.display = "none";
+        }
+      }
       const iframe = $("mapFrame");
       if (iframe && r.mapUrl) iframe.src = r.mapUrl;
       setOut("mapOut", "");

@@ -2,9 +2,61 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
   const { $, api, netPost } = YapDash;
   let state = { ops: [], groups: [], groupNames: [], selectedGroup: "" };
 
+  const MC_COLORS = {
+    "0": "#000000", "1": "#0000AA", "2": "#00AA00", "3": "#00AAAA",
+    "4": "#AA0000", "5": "#AA00AA", "6": "#FFAA00", "7": "#AAAAAA",
+    "8": "#555555", "9": "#5555FF", a: "#55FF55", b: "#55FFFF",
+    c: "#FF5555", d: "#FF55FF", e: "#FFFF55", f: "#FFFFFF",
+  };
+
   function setOut(text) {
     const el = $("accOut");
     if (el) el.textContent = text || "";
+  }
+
+  function mcColorHtml(raw, sampleName) {
+    if (!raw) return sampleName || "Player";
+    let html = "";
+    let color = "#AAAAAA";
+    let bold = false;
+    let italic = false;
+    const push = (text) => {
+      if (!text) return;
+      const style = [];
+      if (color) style.push("color:" + color);
+      if (bold) style.push("font-weight:700");
+      if (italic) style.push("font-style:italic");
+      html += `<span style="${style.join(";")}">${text.replace(/</g, "&lt;")}</span>`;
+    };
+    let buf = "";
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i];
+      if (ch === "&" && i + 1 < raw.length) {
+        push(buf);
+        buf = "";
+        const code = raw[i + 1].toLowerCase();
+        i++;
+        if (code === "r") {
+          color = "#AAAAAA";
+          bold = false;
+          italic = false;
+        } else if (code === "l") bold = true;
+        else if (code === "o") italic = true;
+        else if (MC_COLORS[code]) color = MC_COLORS[code];
+        continue;
+      }
+      buf += ch;
+    }
+    push(buf);
+    return html + (sampleName ? `<span style="color:#fff">${sampleName.replace(/</g, "&lt;")}</span>` : "");
+  }
+
+  function updatePrefixPreview() {
+    const el = $("accPrefixPreview");
+    if (!el) return;
+    const prefix = $("accEditGroupPrefix")?.value || "";
+    const suffix = $("accEditGroupSuffix")?.value || "";
+    el.innerHTML = mcColorHtml(prefix + "Steve" + suffix);
   }
 
   function fillSelect(sel, names, current) {
@@ -18,6 +70,22 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
     });
     if (current && names.includes(current)) sel.value = current;
     else if (names.length) sel.value = names[0];
+  }
+
+  function groupByName(name) {
+    return (state.groups || []).find((g) => g.name === name);
+  }
+
+  function loadEditGroup(name) {
+    const g = groupByName(name);
+    if (!g) return;
+    if ($("accEditGroupName")) $("accEditGroupName").value = g.name;
+    if ($("accEditGroupWeight")) $("accEditGroupWeight").value = g.weight ?? 0;
+    if ($("accEditGroupPrefix")) $("accEditGroupPrefix").value = g.prefix || "";
+    if ($("accEditGroupSuffix")) $("accEditGroupSuffix").value = g.suffix || "";
+    if ($("accEditGroupParents")) $("accEditGroupParents").value = (g.parents || []).join(", ");
+    if ($("accGroupDetail")) $("accGroupDetail").textContent = JSON.stringify(g, null, 2);
+    updatePrefixPreview();
   }
 
   function renderOps() {
@@ -50,13 +118,14 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
       card.type = "button";
       card.className = "group-card" + (g.name === state.selectedGroup ? " selected" : "");
       const parents = (g.parents || []).join(", ") || "—";
+      const tagPreview = (g.prefix || "") + g.name + (g.suffix || "");
       card.innerHTML = `<strong>${g.name}</strong><span class="muted">weight ${g.weight ?? 0}</span>`
-        + `<span class="muted">${g.prefix || ""}${g.suffix ? " " + g.suffix : ""}</span>`
+        + `<span class="prefix">${tagPreview.replace(/</g, "&lt;")}</span>`
         + `<span class="muted-small">inherits: ${parents}</span>`;
       card.onclick = async () => {
         state.selectedGroup = g.name;
         renderGroupCards();
-        $("accGroupDetail").textContent = JSON.stringify(g, null, 2);
+        loadEditGroup(g.name);
         try {
           const r = await netPost("/api/access", { action: "group-info", group: g.name });
           if (r.result) $("accGroupDetail").textContent = r.result;
@@ -66,8 +135,10 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
     });
     if (!state.selectedGroup && state.groups.length) {
       state.selectedGroup = state.groups[0].name;
-      $("accGroupDetail").textContent = JSON.stringify(state.groups[0], null, 2);
+      loadEditGroup(state.selectedGroup);
       renderGroupCards();
+    } else if (state.selectedGroup) {
+      loadEditGroup(state.selectedGroup);
     }
   }
 
@@ -90,6 +161,10 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
       fillSelect($("accDefaultGroup"), state.groupNames, r.defaultGroup);
       fillSelect($("accPlayerGroup"), state.groupNames, r.defaultGroup);
 
+      if (state.selectedGroup && !state.groupNames.includes(state.selectedGroup)) {
+        state.selectedGroup = state.groupNames[0] || "";
+      }
+
       renderOps();
       renderGroupCards();
       setOut("");
@@ -97,6 +172,9 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
       setOut(e.message);
     }
   }
+
+  $("accEditGroupPrefix")?.addEventListener("input", updatePrefixPreview);
+  $("accEditGroupSuffix")?.addEventListener("input", updatePrefixPreview);
 
   $("accOpAdd")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") $("accOpAddBtn")?.click();
@@ -141,6 +219,56 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
     } catch (e) { setOut(e.message); }
   });
 
+  $("accCreateGroup")?.addEventListener("click", async () => {
+    const name = $("accNewGroupName")?.value.trim().toLowerCase();
+    if (!name) { alert("Enter a rank id (e.g. helper)."); return; }
+    try {
+      const r = await netPost("/api/access", {
+        action: "create-group",
+        name,
+        weight: $("accNewGroupWeight")?.value || "0",
+        prefix: $("accNewGroupPrefix")?.value ?? "",
+        suffix: $("accNewGroupSuffix")?.value ?? "",
+        parents: $("accNewGroupParents")?.value ?? "",
+        addToTrack: $("accNewGroupTrack")?.checked ? "true" : "false",
+      });
+      state.selectedGroup = name;
+      setOut("Created rank " + name + ". " + (r.applypack || ""));
+      $("accNewGroupName").value = "";
+      refreshAccess();
+    } catch (e) { setOut(e.message); }
+  });
+
+  $("accSaveGroup")?.addEventListener("click", async () => {
+    const name = ($("accEditGroupName")?.value || state.selectedGroup || "").trim().toLowerCase();
+    if (!name) { alert("Select a rank first."); return; }
+    try {
+      const r = await netPost("/api/access", {
+        action: "save-group",
+        name,
+        weight: $("accEditGroupWeight")?.value || "0",
+        prefix: $("accEditGroupPrefix")?.value ?? "",
+        suffix: $("accEditGroupSuffix")?.value ?? "",
+        parents: $("accEditGroupParents")?.value ?? "",
+      });
+      setOut("Saved rank " + name + ". " + (r.reload || ""));
+      refreshAccess();
+    } catch (e) { setOut(e.message); }
+  });
+
+  $("accDeleteGroup")?.addEventListener("click", async () => {
+    const name = ($("accEditGroupName")?.value || state.selectedGroup || "").trim().toLowerCase();
+    if (!name) return;
+    if (name === "default") { alert("Cannot delete the default rank."); return; }
+    if (!confirm("Delete rank '" + name + "'? Players on this rank may need reassignment.")) return;
+    try {
+      await netPost("/api/access", { action: "delete-group", name });
+      state.selectedGroup = "";
+      setOut("Deleted rank " + name + ".");
+      refreshAccess();
+    } catch (e) { setOut(e.message); }
+  });
+
   $("accLookup")?.addEventListener("click", async () => {
     const p = $("accPlayer")?.value.trim();
     if (!p) return;
@@ -157,6 +285,31 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
     try {
       const r = await netPost("/api/access", { action: "set-group", player: p, group: g });
       setOut(r.result || "Rank set to " + g + ".");
+    } catch (e) { setOut(e.message); }
+  });
+
+  $("accSetMeta")?.addEventListener("click", async () => {
+    const p = $("accPlayer")?.value.trim();
+    if (!p) { alert("Enter a player name."); return; }
+    try {
+      const r = await netPost("/api/access", {
+        action: "user-meta-set",
+        player: p,
+        prefix: $("accMetaPrefix")?.value ?? "",
+        suffix: $("accMetaSuffix")?.value ?? "",
+      });
+      setOut(r.result || "Name tags updated for " + p + ".");
+    } catch (e) { setOut(e.message); }
+  });
+
+  $("accClearMeta")?.addEventListener("click", async () => {
+    const p = $("accPlayer")?.value.trim();
+    if (!p) { alert("Enter a player name."); return; }
+    try {
+      const r = await netPost("/api/access", { action: "user-meta-clear", player: p });
+      $("accMetaPrefix").value = "";
+      $("accMetaSuffix").value = "";
+      setOut(r.result || "Cleared name override for " + p + ".");
     } catch (e) { setOut(e.message); }
   });
 

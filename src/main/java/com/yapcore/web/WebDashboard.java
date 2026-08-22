@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -91,7 +92,10 @@ public final class WebDashboard {
         InetSocketAddress addr = new InetSocketAddress(
                 "0.0.0.0".equals(bind) ? "0.0.0.0" : bind, port);
         http = HttpServer.create(addr, 0);
+        Path rootDir = server.getRootDir();
 
+        http.createContext("/map/", DashboardMapServe.mapStatic(rootDir));
+        http.createContext("/tiles/", DashboardMapServe.mapTiles(rootDir));
         http.createContext("/", this::serveStatic);
         http.createContext("/api/players", playersApi::apiPlayers);
         http.createContext("/api/access", accessApi::apiAccess);
@@ -126,6 +130,10 @@ public final class WebDashboard {
         http.createContext("/api/guard", gameplayApi::apiGuard);
         http.createContext("/api/regions", gameplayApi::apiRegions);
         http.createContext("/api/npcs", gameplayApi::apiNpcs);
+        http.createContext("/api/mmo", gameplayApi::apiMmo);
+        http.createContext("/api/games", gameplayApi::apiGames);
+        http.createContext("/api/factions", gameplayApi::apiFactions);
+        http.createContext("/api/guilds", gameplayApi::apiGuilds);
         http.createContext("/health", ex -> DashboardHttp.text(ex, 200, "ok"));
 
         http.setExecutor(Executors.newCachedThreadPool(r -> {

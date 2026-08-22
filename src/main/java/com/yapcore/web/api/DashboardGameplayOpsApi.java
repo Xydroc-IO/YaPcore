@@ -161,6 +161,18 @@ public final class DashboardGameplayOpsApi {
                 }
                 return;
             }
+            if ("save-channel-format".equals(action)) {
+                try {
+                    String channel = body.getOrDefault("channel", "global");
+                    String format = body.getOrDefault("format", "");
+                    DashboardNetworkSnapshotWriters.saveChatChannelFormat(root, channel, format);
+                    server.executeCommand("yapchat reload");
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "channel", channel));
+                } catch (Exception e) {
+                    DashboardHttp.json(ex, 500, Map.of("error", e.getMessage()));
+                }
+                return;
+            }
             String cmd = switch (action) {
                 case "reload" -> "yapchat reload";
                 case "clearchat" -> "clearchat";

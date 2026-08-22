@@ -118,9 +118,39 @@
         </div>
 
         <div class="card">
+          <h3>Create rank</h3>
+          <p class="muted hint">Use <code>&amp;</code> color codes in prefix/suffix (e.g. <code>&amp;a[VIP] </code>, <code>&amp;c[Admin] </code>). Chat and tab names use these tags.</p>
+          <div class="form-grid">
+            <label>Rank id <input id="accNewGroupName" placeholder="helper"/></label>
+            <label>Weight <input id="accNewGroupWeight" type="number" value="5"/></label>
+            <label>Prefix <input id="accNewGroupPrefix" placeholder="&amp;a[Helper] "/></label>
+            <label>Suffix <input id="accNewGroupSuffix" placeholder=""/></label>
+            <label>Inherits (comma) <input id="accNewGroupParents" placeholder="default"/></label>
+          </div>
+          <label class="inline-check" style="display:flex;align-items:center;gap:10px;margin:12px 0;font-size:13px;color:var(--muted)">
+            <input type="checkbox" id="accNewGroupTrack" style="width:auto"/>
+            Add to promotion track (yap)
+          </label>
+          <button id="accCreateGroup" class="primary">Create rank</button>
+        </div>
+
+        <div class="card">
           <h3>Permission groups</h3>
+          <p class="muted hint">Click a rank to edit prefix, suffix, weight, and inheritance.</p>
           <div class="group-cards" id="accGroupCards"></div>
-          <pre id="accGroupDetail" class="report muted-small" style="max-height:120px"></pre>
+          <div class="form-grid" style="margin-top:16px">
+            <label>Selected rank <input id="accEditGroupName" readonly placeholder="—"/></label>
+            <label>Weight <input id="accEditGroupWeight" type="number" value="0"/></label>
+            <label>Prefix <input id="accEditGroupPrefix" placeholder="&amp;7"/></label>
+            <label>Suffix <input id="accEditGroupSuffix" placeholder=""/></label>
+            <label>Inherits (comma) <input id="accEditGroupParents" placeholder="default"/></label>
+          </div>
+          <p class="muted-small">Preview: <span id="accPrefixPreview" class="mc-preview">—</span></p>
+          <div class="btn-row">
+            <button id="accSaveGroup" class="primary">Save rank</button>
+            <button id="accDeleteGroup" class="danger">Delete rank</button>
+          </div>
+          <pre id="accGroupDetail" class="report muted-small" style="max-height:100px;margin-top:12px"></pre>
         </div>
 
         <div class="card">
@@ -136,6 +166,16 @@
             <button id="accSetGroup">Set rank</button>
             <button id="accPromote">Promote ↑</button>
             <button id="accDemote">Demote ↓</button>
+          </div>
+          <h4 style="margin:18px 0 8px;font-size:14px;color:var(--text)">Player name override</h4>
+          <p class="muted hint">Override prefix/suffix for one player (overrides rank tags in chat and tab).</p>
+          <div class="form-grid">
+            <label>Prefix override <input id="accMetaPrefix" placeholder="&amp;d★ "/></label>
+            <label>Suffix override <input id="accMetaSuffix" placeholder=""/></label>
+          </div>
+          <div class="btn-row">
+            <button id="accSetMeta">Apply name tags</button>
+            <button id="accClearMeta">Clear override</button>
           </div>
           <div class="form-grid" style="margin-top:14px">
             <label>Permission node <input id="accPermNode" placeholder="yapmod.ban"/></label>
@@ -583,6 +623,16 @@
             <label><input type="checkbox" id="chtRelayBox"/> Network relay</label>
           </div>
           <p class="muted hint">Channels: <span id="chtChannels">—</span></p>
+          <div class="form-grid" style="margin-top:12px">
+            <label>Format channel
+              <select id="chtFormatChannel"></select>
+            </label>
+            <label>Format string
+              <input id="chtFormatInput" placeholder="{prefix}{player}{suffix}&amp;7: &amp;f{message}"/>
+            </label>
+          </div>
+          <p class="muted-small">Use <code>{prefix}</code>, <code>{player}</code>, <code>{suffix}</code>, <code>{message}</code> — prefix/suffix come from YaPPerms ranks.</p>
+          <button id="chtSaveFormat" class="primary">Save channel format</button>
           <button id="chtSaveSettings" class="primary">Save settings</button>
         </div>
         <div class="toolbar">
@@ -773,10 +823,13 @@
           <p>Web map tiles and render schedule via <code>yap-map</code>.</p>
         </div>
         <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="mapInstalled">—</strong></div>
+          <div class="stat"><span>Status</span><strong id="mapStatus">—</strong></div>
           <div class="stat"><span>URL</span><strong id="mapUrl" style="font-size:11px">—</strong></div>
           <div class="stat"><span>Tiles</span><strong id="mapTiles">—</strong></div>
           <div class="stat"><span>Worlds</span><strong id="mapWorlds">—</strong></div>
         </div>
+        <p id="mapHint" class="muted hint" style="display:none"></p>
         <div class="card">
           <h3>Settings</h3>
           <div class="form-grid">
@@ -946,6 +999,42 @@
         </div>
         <pre id="npcOut" class="report"></pre>
       </section>
+
+      <section id="tab-mmo" class="panel">
+        <div class="page-header">
+          <h2>MMO</h2>
+          <p>Skills progression, hiscore preview, boss kill totals, and content pack status.</p>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Skills</span><strong id="mmoSkillsInstalled">—</strong></div>
+          <div class="stat"><span>Content</span><strong id="mmoContentInstalled">—</strong></div>
+          <div class="stat"><span>Skills loaded</span><strong id="mmoSkillCount">—</strong></div>
+          <div class="stat"><span>Bosses</span><strong id="mmoBossCount">—</strong></div>
+          <div class="stat"><span>Skill areas</span><strong id="mmoAreaCount">—</strong></div>
+        </div>
+        <div class="card">
+          <h3>Hiscore preview · <span id="mmoHiscoreSkill" class="muted">mining</span></h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>XP</th></tr></thead>
+              <tbody id="mmoHiscoreBody"></tbody>
+            </table>
+          </div>
+          <p id="mmoHiscoreEmpty" class="muted hint hidden">No hiscore rows — play in-game or check DB connectivity.</p>
+        </div>
+        <div class="card">
+          <h3>Boss kill totals</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Boss</th><th>Kills</th></tr></thead>
+              <tbody id="mmoBossBody"></tbody>
+            </table>
+          </div>
+          <p id="mmoBossEmpty" class="muted hint hidden">No boss kills recorded yet.</p>
+        </div>
+        <div class="toolbar"><button id="mmoRefresh">Refresh</button></div>
+        <pre id="mmoOut" class="report muted-small"></pre>
+      </section>
       </main>
     </div>
   </div>
@@ -957,6 +1046,7 @@
   <script src="/app-network-panels.js"></script>
   <script src="/app-full-panels.js"></script>
   <script src="/app-npcs-panels.js"></script>
+  <script src="/app-mmo-panels.js"></script>
   <script src="/app-core.js"></script>
 </body>
 </html>

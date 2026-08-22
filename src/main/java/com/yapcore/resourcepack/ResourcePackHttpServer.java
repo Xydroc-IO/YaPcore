@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 /**
  * Lightweight HTTP host so Java and Bedrock clients can download the active pack
  * directly from the YaPcore process (seamless, no external CDN required).
+ * Also serves YaPMap tiles and UI at {@code /map/} and {@code /tiles/} when configured.
  */
 public final class ResourcePackHttpServer {
 
@@ -24,12 +25,21 @@ public final class ResourcePackHttpServer {
     private final String bindHost;
     private final int port;
     private final Path packsDir;
+    private final Path mapWebDir;
+    private final Path mapTilesDir;
     private HttpServer http;
 
     public ResourcePackHttpServer(String bindHost, int port, Path packsDir) {
+        this(bindHost, port, packsDir, null, null);
+    }
+
+    public ResourcePackHttpServer(String bindHost, int port, Path packsDir,
+                                  Path mapWebDir, Path mapTilesDir) {
         this.bindHost = bindHost == null || bindHost.isBlank() ? "0.0.0.0" : bindHost;
         this.port = port;
         this.packsDir = packsDir;
+        this.mapWebDir = mapWebDir;
+        this.mapTilesDir = mapTilesDir;
     }
 
     public int getPort() {
@@ -45,6 +55,13 @@ public final class ResourcePackHttpServer {
                 "0.0.0.0".equals(bindHost) ? "0.0.0.0" : bindHost, port);
         http = HttpServer.create(addr, 0);
         http.createContext("/pack/", this::servePack);
+        if (mapWebDir != null) {
+            http.createContext("/map/", this::serveMapStatic);
+        }
+        if (mapTilesDir != null) {
+            Files.createDirectories(mapTilesDir);
+            http.createContext("/tiles/", this::serveMapTiles);
+        }
         http.createContext("/health", ex -> {
             byte[] ok = "ok".getBytes();
             ex.sendResponseHeaders(200, ok.length);
@@ -59,6 +76,9 @@ public final class ResourcePackHttpServer {
         }));
         http.start();
         LOG.info("Resource pack HTTP server on :" + port + " (dir=" + packsDir.toAbsolutePath() + ")");
+        if (mapWebDir != null) {
+            LOG.info("YaPMap UI at http://127.0.0.1:" + port + "/map/ (web=" + mapWebDir.toAbsolutePath() + ")");
+        }
     }
 
     public synchronized void stop() {
@@ -107,5 +127,88 @@ public final class ResourcePackHttpServer {
         } finally {
             exchange.close();
         }
+    }
+
+    private void serveMapStatic(HttpExchange exchange) throws IOException {
+        try {
+            String path = exchange.getRequestURI().getPath();
+            String rel = path.substring("/map/".length());
+            if (rel.isBlank()) {
+                rel = "index.html";
+            }
+            if (rel.contains("..") || rel.startsWith("/") || rel.contains("\\")) {
+                exchange.sendResponseHeaders(400, -1);
+                return;
+            }
+            Path file = mapWebDir.resolve(rel).normalize();
+            Path root = mapWebDir.toAbsolutePath().normalize();
+            if (!file.startsWith(root)) {
+                exchange.sendResponseHeaders(403, -1);
+                return;
+            }
+            if (!Files.isRegularFile(file)) {
+                exchange.sendResponseHeaders(404, -1);
+                return;
+            }
+            Headers headers = exchange.getResponseHeaders();
+            headers.add("Content-Type", contentType(rel));
+            headers.add("Cache-Control", "no-cache");
+            long size = Files.size(file);
+            exchange.sendResponseHeaders(200, size);
+            try (InputStream in = Files.newInputStream(file);
+                 OutputStream out = exchange.getResponseBody()) {
+                in.transferTo(out);
+            }
+        } finally {
+            exchange.close();
+        }
+    }
+
+    private void serveMapTiles(HttpExchange exchange) throws IOException {
+        try {
+            String path = exchange.getRequestURI().getPath();
+            String rel = path.substring("/tiles/".length());
+            if (rel.contains("..") || rel.startsWith("/") || rel.contains("\\") || rel.isBlank()) {
+                exchange.sendResponseHeaders(400, -1);
+                return;
+            }
+            Path file = mapTilesDir.resolve(rel).normalize();
+            Path root = mapTilesDir.toAbsolutePath().normalize();
+            if (!file.startsWith(root)) {
+                exchange.sendResponseHeaders(403, -1);
+                return;
+            }
+            if (!Files.isRegularFile(file)) {
+                exchange.sendResponseHeaders(404, -1);
+                return;
+            }
+            Headers headers = exchange.getResponseHeaders();
+            headers.add("Content-Type", "image/png");
+            headers.add("Cache-Control", "public, max-age=60");
+            long size = Files.size(file);
+            exchange.sendResponseHeaders(200, size);
+            try (InputStream in = Files.newInputStream(file);
+                 OutputStream out = exchange.getResponseBody()) {
+                in.transferTo(out);
+            }
+        } finally {
+            exchange.close();
+        }
+    }
+
+    private static String contentType(String name) {
+        if (name.endsWith(".html")) {
+            return "text/html; charset=utf-8";
+        }
+        if (name.endsWith(".js")) {
+            return "application/javascript; charset=utf-8";
+        }
+        if (name.endsWith(".css")) {
+            return "text/css; charset=utf-8";
+        }
+        if (name.endsWith(".json")) {
+            return "application/json; charset=utf-8";
+        }
+        return "application/octet-stream";
     }
 }

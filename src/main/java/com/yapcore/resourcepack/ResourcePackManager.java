@@ -48,6 +48,19 @@ public final class ResourcePackManager {
         return packsDir;
     }
 
+    private Path gameRoot() {
+        Path parent = packsDir.toAbsolutePath().normalize().getParent();
+        return parent != null ? parent : packsDir;
+    }
+
+    private Path mapWebDir() {
+        return gameRoot().resolve("plugins").resolve("YaPMap").resolve("web");
+    }
+
+    private Path mapTilesDir() {
+        return gameRoot().resolve("plugins").resolve("YaPMap").resolve("map/tiles");
+    }
+
     public void addListener(Consumer<List<ResourcePackInfo>> listener) {
         listeners.add(listener);
     }
@@ -69,7 +82,9 @@ public final class ResourcePackManager {
         httpServer = new ResourcePackHttpServer(
                 config.getBindHost(),
                 config.getResourcePackHttpPort(),
-                packsDir
+                packsDir,
+                mapWebDir(),
+                mapTilesDir()
         );
         httpServer.start();
         writePluginManifest();

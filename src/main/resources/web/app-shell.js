@@ -30,6 +30,7 @@
       { tab: "data", icon: "💾", label: "Player data" },
       { tab: "chat", icon: "💬", label: "Chat" },
       { tab: "tab", icon: "📋", label: "Tab list" },
+      { tab: "mmo", icon: "⚔", label: "MMO" },
       { tab: "map", icon: "🗺", label: "Map" },
       { tab: "guard", icon: "🛡", label: "Guard" },
       { tab: "protect", icon: "🔒", label: "Protect" },

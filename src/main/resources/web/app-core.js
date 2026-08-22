@@ -175,6 +175,7 @@
   if (window.YapDashRegisterNetworkPanels) window.YapDashRegisterNetworkPanels(window.YapDash);
   if (window.YapDashRegisterFullPanels) window.YapDashRegisterFullPanels(window.YapDash);
   if (window.YapDashRegisterNpcPanels) window.YapDashRegisterNpcPanels(window.YapDash);
+  if (window.YapDashRegisterMmoPanels) window.YapDashRegisterMmoPanels(window.YapDash);
   window.YapDashTabLoads = window.YapDash.tabLoads;
 
   async function boot() {

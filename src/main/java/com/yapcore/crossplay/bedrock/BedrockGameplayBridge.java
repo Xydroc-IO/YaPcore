@@ -23,6 +23,7 @@ public final class BedrockGameplayBridge {
 
     private final BedrockBridgeContext ctx;
     private final BedrockPacketDispatch dispatch;
+    private final BedrockUiBridge ui;
 
     public BedrockGameplayBridge(BedrockSessionManager sessions,
                                  FloodgateAuth floodgate,
@@ -32,9 +33,13 @@ public final class BedrockGameplayBridge {
         BedrockWorldPush world = new BedrockWorldPush(ctx);
         BedrockInventoryPush inventory = new BedrockInventoryPush(ctx, world);
         BedrockCommandHints commands = new BedrockCommandHints(ctx);
-        BedrockUiBridge ui = new BedrockUiBridge(ctx);
+        this.ui = new BedrockUiBridge(ctx);
         BedrockLoginFlow login = new BedrockLoginFlow(ctx, world, inventory);
         this.dispatch = new BedrockPacketDispatch(ctx, login, world, inventory, commands, ui);
+    }
+
+    public BedrockUiBridge ui() {
+        return ui;
     }
 
     public void setResourcePackOfferSupplier(java.util.function.Supplier<java.util.Optional<com.yapcore.resourcepack.ResourcePackOffer>> supplier) {

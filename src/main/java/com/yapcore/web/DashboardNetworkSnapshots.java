@@ -57,6 +57,7 @@ public final class DashboardNetworkSnapshots {
         Map<String, Object> filter = map(yaml.get("filter"));
         out.put("filterEnabled", bool(filter.get("enabled"), true));
         out.put("channels", channelNames(yaml.get("channels")));
+        out.put("channelFormats", parseChannelFormats(yaml.get("channels")));
         out.put("serverId", str(yaml.get("server-id"), "default"));
         return out;
     }
@@ -171,18 +172,55 @@ public final class DashboardNetworkSnapshots {
         Map<String, Object> out = base(root, "yap-map", "YaPMap");
         Map<String, Object> yaml = yaml(root, "YaPMap", "config.yml");
         Map<String, Object> http = map(yaml.get("http"));
+        boolean usePackServer = bool(http.get("use-yapcore-server"), true);
+        Map<String, String> serverProps = loadServerProperties(root);
+        int packPort = intVal(serverProps.get("resource-pack-http-port"), 8081);
+        int dashPort = intVal(serverProps.get("web-dashboard-port"), 8080);
         String bind = str(http.get("bind"), "127.0.0.1");
-        int port = intVal(http.get("port"), 8081);
+        int port = intVal(http.get("port"), 8082);
+        if (usePackServer) {
+            port = packPort;
+            bind = "127.0.0.1";
+        }
         out.put("bindHost", bind);
         out.put("httpPort", port);
-        out.put("mapUrl", "http://" + bind + ":" + port + "/map/");
+        out.put("dashboardPort", dashPort);
+        out.put("usePackServer", usePackServer);
+        // Same-origin path — works locally and when dashboard is accessed remotely
+        out.put("mapUrl", "/map/");
+        out.put("packMapUrl", "http://127.0.0.1:" + packPort + "/map/");
         out.put("worlds", stringList(yaml.get("worlds"), List.of("world")));
         out.put("renderIntervalMinutes", intVal(yaml.get("render-interval-minutes"), 15));
         out.put("maxHeight", intVal(yaml.get("max-height"), 320));
         out.put("sampleChunkRadius", intVal(yaml.get("sample-chunk-radius"), 8));
         Path tiles = root.resolve("plugins").resolve("YaPMap").resolve("map/tiles");
-        out.put("tileCount", countFilesRecursive(tiles, ".png"));
+        int tileCount = countFilesRecursive(tiles, ".png");
+        out.put("tileCount", tileCount);
         out.put("tilesDir", tiles.toString());
+        out.put("webReady", Files.isRegularFile(root.resolve("plugins").resolve("YaPMap").resolve("web/index.html")));
+        out.put("mapReady", tileCount > 0 && bool(out.get("webReady"), false));
+        return out;
+    }
+
+    private static Map<String, String> loadServerProperties(Path root) {
+        Map<String, String> out = new LinkedHashMap<>();
+        Path file = root.resolve("config").resolve("server.properties");
+        if (!Files.isRegularFile(file)) {
+            return out;
+        }
+        try {
+            for (String line : Files.readAllLines(file)) {
+                String t = line.trim();
+                if (t.isEmpty() || t.startsWith("#")) {
+                    continue;
+                }
+                int eq = t.indexOf('=');
+                if (eq > 0) {
+                    out.put(t.substring(0, eq).trim(), t.substring(eq + 1).trim());
+                }
+            }
+        } catch (IOException ignored) {
+        }
         return out;
     }
 
@@ -314,6 +352,22 @@ public final class DashboardNetworkSnapshots {
         }
         names.sort(String::compareToIgnoreCase);
         return names;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, String> parseChannelFormats(Object channels) {
+        Map<String, String> out = new LinkedHashMap<>();
+        if (!(channels instanceof Map<?, ?> map)) {
+            return out;
+        }
+        map.entrySet().stream()
+                .sorted((a, b) -> String.valueOf(a.getKey()).compareToIgnoreCase(String.valueOf(b.getKey())))
+                .forEach(e -> {
+                    if (e.getValue() instanceof Map<?, ?> ch) {
+                        out.put(String.valueOf(e.getKey()), str(((Map<String, Object>) ch).get("format"), ""));
+                    }
+                });
+        return out;
     }
 
     private static List<String> groupNames(Object groups) {

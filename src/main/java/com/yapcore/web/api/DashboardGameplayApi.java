@@ -5,7 +5,11 @@ import com.yapcore.plugin.PluginManager;
 import com.yapcore.ranks.YapRanks;
 import com.yapcore.server.YaPcoreServer;
 import com.yapcore.web.DashboardEssentialsSnapshot;
+import com.yapcore.web.DashboardFactionsSnapshot;
+import com.yapcore.web.DashboardGuildsSnapshot;
+import com.yapcore.web.DashboardGamesSnapshot;
 import com.yapcore.web.DashboardLinkSnapshot;
+import com.yapcore.web.DashboardMmoSnapshot;
 import com.yapcore.web.DashboardNetworkSnapshots;
 import com.yapcore.web.DashboardProtectLookup;
 import com.yapcore.web.TinyJson;
@@ -364,6 +368,117 @@ public final class DashboardGameplayApi {
     public void apiRegions(HttpExchange ex) throws IOException { network.apiRegions(ex); }
 
     public void apiNpcs(HttpExchange ex) throws IOException { network.apiNpcs(ex); }
+
+    public void apiMmo(HttpExchange ex) throws IOException {
+        if (!auth.requireAuth(ex)) {
+            return;
+        }
+        if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            ex.sendResponseHeaders(405, -1);
+            return;
+        }
+        Path root = server.getRootDir();
+        Map<String, Object> snap = new LinkedHashMap<>(DashboardMmoSnapshot.snapshot(root));
+        snap.put("onlinePlayers", server.getOnlinePlayers());
+        if (server.isRunning()) {
+            String live = server.executeCommand("yapmmo snapshot json");
+            if (live != null && live.contains("YAPMMO_JSON:")) {
+                int idx = live.indexOf("YAPMMO_JSON:");
+                String json = live.substring(idx + "YAPMMO_JSON:".length()).trim();
+                Map<String, String> liveSnap = TinyJson.parseFlatObject(json);
+                if (!liveSnap.isEmpty()) {
+                    snap.put("live", new LinkedHashMap<>(liveSnap));
+                    if (liveSnap.containsKey("bossKills")) {
+                        snap.put("bossKillTotals", liveSnap.get("bossKills"));
+                    }
+                    if (liveSnap.containsKey("hiscorePreview")) {
+                        snap.put("hiscorePreview", liveSnap.get("hiscorePreview"));
+                    }
+                }
+            }
+        }
+        if (server.isRunning() && server.getBukkitServer() != null) {
+            List<Map<String, Object>> sample = new ArrayList<>();
+            var bukkit = server.getBukkitServer();
+            for (org.bukkit.entity.Player player : bukkit.getOnlinePlayers()) {
+                if (sample.size() >= 5) {
+                    break;
+                }
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("name", player.getName());
+                row.put("uuid", player.getUniqueId().toString());
+                sample.add(row);
+            }
+            DashboardMmoSnapshot.enrichOnlineSample(snap, sample);
+        }
+        DashboardHttp.json(ex, 200, snap);
+    }
+
+    public void apiFactions(HttpExchange ex) throws IOException {
+        if (!auth.requireAuth(ex)) {
+            return;
+        }
+        if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            ex.sendResponseHeaders(405, -1);
+            return;
+        }
+        Path root = server.getRootDir();
+        Map<String, Object> snap = new LinkedHashMap<>(DashboardFactionsSnapshot.snapshot(root));
+        snap.put("onlinePlayers", server.getOnlinePlayers());
+        if (server.isRunning()) {
+            String live = server.executeCommand("yapfactions snapshot json");
+            if (live != null && live.contains("YAPFACTIONS_JSON:")) {
+                int idx = live.indexOf("YAPFACTIONS_JSON:");
+                String payload = live.substring(idx + "YAPFACTIONS_JSON:".length()).trim();
+                snap.put("live", payload);
+            }
+        }
+        DashboardHttp.json(ex, 200, snap);
+    }
+
+    public void apiGuilds(HttpExchange ex) throws IOException {
+        if (!auth.requireAuth(ex)) {
+            return;
+        }
+        if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            ex.sendResponseHeaders(405, -1);
+            return;
+        }
+        Path root = server.getRootDir();
+        Map<String, Object> snap = new LinkedHashMap<>(DashboardGuildsSnapshot.snapshot(root));
+        snap.put("onlinePlayers", server.getOnlinePlayers());
+        if (server.isRunning()) {
+            String live = server.executeCommand("yapguilds snapshot json");
+            if (live != null && live.contains("YAPGUILDS_JSON:")) {
+                int idx = live.indexOf("YAPGUILDS_JSON:");
+                String payload = live.substring(idx + "YAPGUILDS_JSON:".length()).trim();
+                snap.put("live", payload);
+            }
+        }
+        DashboardHttp.json(ex, 200, snap);
+    }
+
+    public void apiGames(HttpExchange ex) throws IOException {
+        if (!auth.requireAuth(ex)) {
+            return;
+        }
+        if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            ex.sendResponseHeaders(405, -1);
+            return;
+        }
+        Path root = server.getRootDir();
+        Map<String, Object> snap = new LinkedHashMap<>(DashboardGamesSnapshot.snapshot(root));
+        snap.put("onlinePlayers", server.getOnlinePlayers());
+        if (server.isRunning()) {
+            String live = server.executeCommand("ygames snapshot json");
+            if (live != null && live.contains("YAPGAMES_JSON:")) {
+                int idx = live.indexOf("YAPGAMES_JSON:");
+                String payload = live.substring(idx + "YAPGAMES_JSON:".length()).trim();
+                snap.put("live", payload);
+            }
+        }
+        DashboardHttp.json(ex, 200, snap);
+    }
 
     private Map<String, Object> linkSaveResponse(String action, Path root, String linkHome) {
         Map<String, Object> resp = new LinkedHashMap<>();
