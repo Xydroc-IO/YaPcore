@@ -7,7 +7,7 @@ Compatibility matrix: [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md).
 **One folder:** drop first-party Folia-native jars into **`plugins/`**.
 `folia-kernel/plugins` (and legacy `paper-kernel/plugins`) symlink to that folder.
 
-Product path is **`game-authority=folia`**. First-party plugins use `YapSched`
+Product path is **`game-authority=folia`**. First-party plugins use [`YapSched`](YAP_SCHED.md)
 (Folia `GlobalRegionScheduler` / entity / region affinity) and declare
 `folia-supported: true`. Stock Paper jars are **unsupported**.
 

@@ -1,8 +1,12 @@
 # plugins/
 
-**One folder for everything:** Paper/Spigot jars (`plugin.yml`) and YaP jars (`yap.yml`).
+**One folder for everything:** first-party Folia-native jars (`plugin.yml` with
+`folia-supported: true`) and YaP jars (`yap.yml`).
 
-`paper-kernel/plugins` is a symlink here so real Paper loads the same jars.
+`folia-kernel/plugins` (and legacy `paper-kernel/plugins`) symlink here.
+
+Product path: `game-authority=folia`. Schedule with `com.yapcore.sched.YapSched`.
+Stock Paper jars are unsupported. `yap-spatial-tick.jar` is Paper Phase 3 legacy only — do not ship on Folia.
 
 See [docs/PLUGINS.md](../docs/PLUGINS.md) and [docs/PLUGIN_COMPAT.md](../docs/PLUGIN_COMPAT.md).
 
@@ -20,6 +24,7 @@ See [docs/PLUGINS.md](../docs/PLUGINS.md) and [docs/PLUGIN_COMPAT.md](../docs/PL
 
 | Jar | Role |
 |-----|------|
+| `yap-folia-bridge.jar` | Folia surface / GlobalRegionScheduler smoke (`/yapbridge`) |
 | `yap-placeholderapi.jar` | Clip-compatible PlaceholderAPI (plugin name `PlaceholderAPI`) |
 | `yap-plugin-compat.jar` | 1.20–1.21 → 26.2 back-compat (`/yapcompat`) |
 | `yap-pregen.jar` | Chunk pre-generator (`/yappregen`) |
