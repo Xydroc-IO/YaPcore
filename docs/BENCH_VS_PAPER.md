@@ -8,11 +8,17 @@ lobby boxes. Spatial tick (entities, block entities, redstone, block/fluid) stay
 `heavypop` (or agreed heavy) row in [`bench/results/`](../bench/results/) from
 [`scripts/bench/run-vs-paper.sh`](../scripts/bench/run-vs-paper.sh).
 
+**Product cite (combined):** bots + deep-interior TNT/hoppers/redstone + heavy
+plugin tax in one stamp — [`scripts/bench/run-fullcite.sh`](../scripts/bench/run-fullcite.sh).
+Highpop-only wins are necessary but not sufficient for “dominate high pop + load.”
+
 ## What we measure
 
 | Scenario | Load | Role |
 |----------|------|------|
-| `heavypop` | Dense primed TNT + hoppers across 4 interior quads | **Primary beat-Paper gate** |
+| `heavypop` | Dense primed TNT + hoppers across 4 interior quads | **Primary beat-Paper gate** (no bots) |
+| `highpop` | Mineflayer bots + light fixtures + plugin tax | Pop / network path |
+| `fullcite` | Bots + heavypop piles + redstone + heavy plugins | **Product cite** vs Leaf under combined pressure |
 | `entity` | 120 primed TNT × 4 quads | Mid load / entity path |
 | `farm` | Wheat on farmland × 4 quads | Block/random stress |
 | `idle` | Empty-ish world | Regression guard only — overhead OK to lose slightly |
@@ -41,6 +47,32 @@ Default: **500** Mineflayer clients. Not TNT-only.
 ```
 
 Fairness: `compare-highpop.py` rejects insufficient / mismatched online counts.
+
+### Fullcite (bots + farms + plugins — product lock)
+
+One stamp that combines what marketing claims separately:
+
+| Piece | Default |
+|-------|---------|
+| Bots | 100 (raise to 250 when green) |
+| Deep-interior TNT | `YAP_BENCH_ENTITIES=600` / quad (2400 total) |
+| Heavy hoppers | `YAP_BENCH_HEAVY_HOPPERS=128` / quad |
+| Plugins (all forks) | PAPI, knobs, vehicles, pop-sim, compat, chat, packs, pregen, stacker |
+| YaP only | spatial Phase 3 ON |
+| Fairness | `players_ok` + TNT `fuse_ticking_ok` |
+
+```bash
+# After borderfix highpop is green — do not run overlapping with highpop.lock
+YAP_BENCH_COMPETITORS=paper,leaf,yapcore \
+  ./scripts/bench/run-fullcite.sh 100 45
+
+# Denser tick-budget fight
+YAP_BENCH_ENTITIES=1200 YAP_BENCH_HEAVY_HOPPERS=256 \
+  YAP_BENCH_COMPETITORS=paper,leaf,yapcore \
+  ./scripts/bench/run-fullcite.sh 100 45
+```
+
+Compare: `scripts/bench/compare-fullcite.py`. Results: `bench/results/<stamp>-fullcite-*.json`.
 
 ### Pop ladder (low → heavy, 50–200 bots)
 
@@ -166,9 +198,10 @@ the expense of loaded ones.
 | **3.6** | Interior block entities + redstone block events on quads (**default on**) |
 | **3.7** | Border entities / TE / events on T8 under DLM (**default on**) |
 | **3.8** | Non-player tracker `sendChanges` by quad / T8 (**default on**) |
-| **3.9** | Skip-clean tracker + `ServerEntity` early-out (**default on**); players/track-untrack stay on main |
+| **3.9** | Skip-clean tracker + `ServerEntity` early-out (**default on**); track-untrack stay on main |
 | **3.10** | Coalesce entity+BE+events barriers; Paper EAR on spatial tick; first-party distant brain/path throttle (**default on**) |
 | **3.11** | Deepen distant AI: `createPath` + `Mob.serverAiStep` + `Brain.tick`; no-players=far; tinier tracker barrier; start=24/far=80 |
+| **3.12** | Player `sendChanges` export on spatial after main `moonrise$tick` (**default on**; kill `spatial-tracker-players=false`) |
 | 4 | Dual-stack + YaP plugins polish |
 
 ## Results table
@@ -192,9 +225,10 @@ offer/flush tax. With **spatial-tracker**, both orders win ~20%+ MSPT — produc
 gate for beating Paper under this density. Tracker remains players-on-main;
 `moonrise$tick` / track-untrack stay on Paper main.
 
-**Product bar:** beat Paper + Leaf at **250+ bots** fair highpop (MSPT under both,
-TPS ~20). Dirty-bit / skip-clean / tracker barrier merges reduce YaP-only tax;
-player tick stays on main (Paper ABI). Cite only `players_ok` JSON.
+**Product bar (MSPT):** beat Paper + Leaf under **active** bot load (move/combat —
+not cite-stable). Today’s fair MSPT cite is **100 bots** (`borderfix100-…T221720Z`).
+**250+ active** MSPT is still open: default ≥150 uses cite-stable (physics OFF) so
+forks can hold connections; that is a **hold check**, not an MSPT win.
 
 ### Border T7/T8 poll-gap fix — 2026-08-21 ~15:17 (highpop unblocked)
 
@@ -209,9 +243,19 @@ lost). **Fix:** wait/unpark on grant (deny→requeue wakes too); DLM `submit` un
 |-------|--------:|-----:|------:|--------:|---------|
 | pre-fix `…T212607Z` | 50 | 11.2 | 15.8 | **65.7** | LOSS (pathology) |
 | `borderfix-…T221314Z` | 50 | 12.0 | 14.2 | **5.81** | **WIN #1** |
-| `borderfix100-…T221720Z` | 100 | 16.0 | 18.1 | **8.96** | **WIN #1** |
+| `borderfix100-…T221720Z` | 100 | 16.0 | 18.1 | **8.96** | **WIN #1 (active bots)** |
 
-Still need **250+** fair cite before claiming the full product bar.
+**MSPT cite to keep:** fair **100-bot active** row above (chunks/entities move; same stamp).
+
+**250 cite-stable = HOLD-ONLY (not MSPT):** when `totalPlayers ≥ 150`, swarm keeps
+physics OFF (keepalive only). Paper can look “faster” at 250 than at 100 because
+bots are not working the world (frozen chunks). `compare-highpop.py` returns
+`VERDICT: HOLD-ONLY` and exit 4 — do not market as beating Leaf/Paper under load.
+To attempt a real 250 MSPT cite: `YAP_BOT_CITE_STABLE=0` (expect Paper keepalive
+pressure again until multi-worker/client capacity catches up).
+
+Join/hold harness fixes that made 250 *connections* citeable: honest online count,
+reconnect, 2 Node workers, 15s stable join gate, `timeout-time: 180`.
 
 **Phase 3.9 (follow-on):** `spatial-tracker-skip-clean` + `ServerEntity` early-out
 cut empty packet work on main (players) and spatial (mobs) without Folia-style

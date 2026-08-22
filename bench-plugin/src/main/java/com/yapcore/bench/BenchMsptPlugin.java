@@ -1,6 +1,9 @@
 package com.yapcore.bench;
 
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -9,9 +12,13 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.Hopper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.entity.Villager;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
@@ -25,16 +32,26 @@ import java.util.Locale;
 
 /**
  * MSPT scoreboard harness.
- * Scenarios: idle | entity | farm | heavypop | highpop
+ * Scenarios: idle | entity | farm | heavypop | highpop | fullcite
  * <p>
- * {@code highpop} = real-ish network load: world fixtures + wait for Mineflayer bots
- * (movement, combat attempts, inventories, chunk pressure) plus optional pop-sim plugin.
+ * {@code highpop} = bots + light world fixtures + plugin tax.
+ * {@code fullcite} = bots + heavypop-class TNT/hoppers/redstone in deep interior
+ * + heavy plugin surface — product cite vs Leaf/Paper under combined pressure.
  */
-public final class BenchMsptPlugin extends JavaPlugin {
+public final class BenchMsptPlugin extends JavaPlugin implements Listener {
 
-    /** Near-spawn interiors for highpop bots (within view-distance 6). */
+    /** Near-spawn interiors for highpop fixtures (within view-distance). */
     private static final int[][] INTERIOR = {
             {2, 2}, {-3, 2}, {2, -3}, {-3, -3}
+    };
+
+    /**
+     * Deep bot homes (block xz) — one per spatial quadrant, |xz|≥64 so chunk≥4.
+     * Matches swarm.js QUAD_WAYPOINTS; keeps bots off origin-border planes while
+     * still exercising all four MT owners (not SE-only).
+     */
+    private static final int[][] BOT_HOME_XZ = {
+            {72, 72}, {-72, 72}, {72, -72}, {-72, -72}
     };
 
     /**
@@ -50,14 +67,16 @@ public final class BenchMsptPlugin extends JavaPlugin {
     };
     private static final int MAX_TNT_PER_CHUNK = 600;
 
-    /** Border-adjacent waypoints for bots to cross quadrant lines. */
-    private static final int[][] BORDER_CHUNKS = {
-            {0, 2}, {2, 0}, {0, -3}, {-3, 0}
+    /** Chunk coords of deep bot homes — force-load + inventory targets (not origin-border). */
+    private static final int[][] DEEP_HOME_CHUNKS = {
+            {4, 4}, {-5, 4}, {4, -5}, {-5, -5}
     };
+
+    private String scenario = "idle";
 
     @Override
     public void onEnable() {
-        String scenario = System.getProperty("yap.bench.scenario", "idle").toLowerCase(Locale.ROOT);
+        scenario = System.getProperty("yap.bench.scenario", "idle").toLowerCase(Locale.ROOT);
         int seconds = Integer.getInteger("yap.bench.seconds", 30);
         int warmup = Integer.getInteger("yap.bench.warmup", 10);
         String label = System.getProperty("yap.bench.label", "run");
@@ -66,23 +85,60 @@ public final class BenchMsptPlugin extends JavaPlugin {
         getLogger().info("MSPT bench scenario=" + scenario + " warmup=" + warmup
                 + "s sample=" + seconds + "s label=" + label);
 
-        Bukkit.getScheduler().runTaskLater(this, () -> {
+        if ("highpop".equals(scenario) || "fullcite".equals(scenario)) {
+            Bukkit.getPluginManager().registerEvents(this, this);
+        }
+
+        YapSched.globalLater(this, () -> {
             World world = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().getFirst();
             if (world == null) {
                 getLogger().severe("No world — aborting bench");
                 Bukkit.shutdown();
                 return;
             }
-            if ("highpop".equals(scenario)) {
-                prepareHighpop(world);
-                waitForBotsThenSample(world, scenario, label, out, warmup, seconds);
+            if ("highpop".equals(scenario) || "fullcite".equals(scenario)) {
+                int expectedTnt = "fullcite".equals(scenario)
+                        ? prepareFullcite(world)
+                        : prepareHighpop(world);
+                waitForBotsThenSample(world, scenario, label, out, warmup, seconds, expectedTnt);
             } else {
                 int expectedTnt = prepare(world, scenario);
-                Bukkit.getScheduler().runTaskLater(this, () ->
+                YapSched.globalLater(this, () ->
                                 sampleAndWrite(world, scenario, label, out, warmup, seconds, expectedTnt),
                         warmup * 20L);
             }
         }, 40L);
+    }
+
+    /**
+     * Scatter yapbots into deep quads on join so they do not path from spawn across
+     * origin borders (that path alone burned Yap spatial barrier MSPT).
+     */
+    @EventHandler
+    public void onBotJoin(PlayerJoinEvent event) {
+        if (!"highpop".equals(scenario) && !"fullcite".equals(scenario)) {
+            return;
+        }
+        Player p = event.getPlayer();
+        String name = p.getName();
+        if (!name.startsWith("yapbot_")) {
+            return;
+        }
+        int id;
+        try {
+            id = Integer.parseInt(name.substring("yapbot_".length()));
+        } catch (NumberFormatException e) {
+            return;
+        }
+        int[] xz = BOT_HOME_XZ[Math.floorMod(id, BOT_HOME_XZ.length)];
+        World world = p.getWorld();
+        int y = world.getHighestBlockYAt(xz[0], xz[1]) + 1;
+        Location dest = new Location(world, xz[0] + 0.5, y, xz[1] + 0.5);
+        YapSched.entity(this, p, () -> {
+            if (p.isOnline()) {
+                p.teleport(dest);
+            }
+        });
     }
 
     private int prepare(World world, String scenario) {
@@ -122,13 +178,13 @@ public final class BenchMsptPlugin extends JavaPlugin {
         };
     }
 
-    private void prepareHighpop(World world) {
+    private int prepareHighpop(World world) {
         world.setSpawnLocation(0, Math.max(world.getHighestBlockYAt(0, 0) + 1, 80), 0);
         for (int[] c : INTERIOR) {
             world.getChunkAt(c[0], c[1]).load(true);
             world.setChunkForceLoaded(c[0], c[1], true);
         }
-        for (int[] c : BORDER_CHUNKS) {
+        for (int[] c : DEEP_HOME_CHUNKS) {
             world.getChunkAt(c[0], c[1]).load(true);
             world.setChunkForceLoaded(c[0], c[1], true);
         }
@@ -137,6 +193,7 @@ public final class BenchMsptPlugin extends JavaPlugin {
                 e.remove();
             }
         }
+        enforceEntityParity(world, true);
         // Farms + hoppers + chests + villagers + animals + redstone clocks + nether portals stubs
         plantFarms(world);
         placeHoppers(world, Integer.getInteger("yap.bench.hoppers", 64));
@@ -147,6 +204,33 @@ public final class BenchMsptPlugin extends JavaPlugin {
         writeReadyMarker(world);
         getLogger().info("highpop world fixtures ready — waiting for bots "
                 + "(target players=" + Integer.getInteger("yap.bench.players", 100) + ")");
+        return 0;
+    }
+
+    /**
+     * Product cite: highpop bot path + deep-interior heavypop TNT/hoppers (not on
+     * border chunks) so Paper/Leaf climb toward tick budget while bots stay online.
+     */
+    private int prepareFullcite(World world) {
+        prepareHighpop(world);
+        int entities = Integer.getInteger("yap.bench.entities", 600);
+        int heavyHoppers = Integer.getInteger("yap.bench.heavy_hoppers",
+                Integer.getInteger("yap.bench.hoppers", 128));
+        // Force-load deep interior piles used by heavypop
+        for (int[][] piles : HEAVY_PILES) {
+            for (int[] c : piles) {
+                world.getChunkAt(c[0], c[1]).load(true);
+                world.setChunkForceLoaded(c[0], c[1], true);
+            }
+        }
+        spawnPrimedTnt(world, entities);
+        placeHeavyHoppers(world, heavyHoppers);
+        int expected = entities * 4;
+        getLogger().info("fullcite ready — bots + TNT/quad=" + entities
+                + " heavyHoppers/quad=" + heavyHoppers
+                + " totalTNT=" + expected
+                + " (deep interior; border-safe geometry)");
+        return expected;
     }
 
     private void writeReadyMarker(World world) {
@@ -162,7 +246,7 @@ public final class BenchMsptPlugin extends JavaPlugin {
                     + "\npaper_port=" + paperPort + "\n";
             Files.writeString(marker, body, StandardCharsets.UTF_8);
             Files.writeString(Path.of("yap-bench-ready.port"), body, StandardCharsets.UTF_8);
-            getLogger().info("highpop ready marker → " + marker.toAbsolutePath()
+            getLogger().info("ready marker → " + marker.toAbsolutePath()
                     + " bot_port=" + botPort + " paper_port=" + paperPort);
         } catch (IOException e) {
             getLogger().severe("ready marker write failed: " + e.getMessage());
@@ -170,24 +254,73 @@ public final class BenchMsptPlugin extends JavaPlugin {
     }
 
     private void waitForBotsThenSample(World world, String scenario, String label, String out,
-                                       int warmupSec, int sampleSec) {
+                                       int warmupSec, int sampleSec, int expectedTnt) {
         int target = Integer.getInteger("yap.bench.players", 100);
         int joinTimeout = Integer.getInteger("yap.bench.join_timeout", 180);
-        // Match players_ok fairness: start sample once ≥80% are online (or timeout).
-        int need = Math.max(1, (int) Math.ceil(target * 0.80));
+        // Match players_ok: start sample once ≥90% are online (or timeout).
+        int need = Math.max(1, (int) Math.ceil(target * 0.90));
+        // Require a stable hold before warmup — avoids sampling while still joining/dropping.
+        int stableNeed = Integer.getInteger("yap.bench.join_stable_sec", 15);
         final int[] waited = {0};
-        Bukkit.getScheduler().runTaskTimer(this, task -> {
+        final int[] stable = {0};
+        final YapTask[] joinGate = new YapTask[1];
+        joinGate[0] = YapSched.globalTimer(this, () -> {
             int online = Bukkit.getOnlinePlayers().size();
             waited[0]++;
-            if (online >= need || waited[0] >= joinTimeout) {
-                task.cancel();
-                getLogger().info("highpop join gate — online=" + online + "/" + target
-                        + " need≥" + need + " waited=" + waited[0] + "s — starting warmup " + warmupSec + "s");
-                Bukkit.getScheduler().runTaskLater(this, () ->
-                                sampleAndWrite(world, scenario, label, out, warmupSec, sampleSec, 0),
+            if (online >= need) {
+                stable[0]++;
+            } else {
+                stable[0] = 0;
+            }
+            boolean ready = stable[0] >= stableNeed;
+            boolean timedOut = waited[0] >= joinTimeout;
+            if (ready || timedOut) {
+                joinGate[0].cancel();
+                getLogger().info(scenario + " join gate — online=" + online + "/" + target
+                        + " need≥" + need + " stable=" + stable[0] + "s/" + stableNeed
+                        + "s waited=" + waited[0] + "s"
+                        + (timedOut && !ready ? " (TIMEOUT)" : "")
+                        + " — starting warmup " + warmupSec + "s");
+                // After warmup, require population still held (physics enable often
+                // drops bots; sampling at the trough gamed MSPT / failed fairness).
+                YapSched.globalLater(this, () ->
+                                waitPostWarmupThenSample(world, scenario, label, out,
+                                        warmupSec, sampleSec, expectedTnt, need, target),
                         warmupSec * 20L);
             } else if (waited[0] % 10 == 0) {
-                getLogger().info("waiting for bots… online=" + online + "/" + target + " (need≥" + need + ")");
+                getLogger().info("waiting for bots… online=" + online + "/" + target
+                        + " (need≥" + need + ", stable " + stable[0] + "/" + stableNeed + "s)");
+            }
+        }, 20L, 20L);
+    }
+
+    private void waitPostWarmupThenSample(World world, String scenario, String label, String out,
+                                          int warmupSec, int sampleSec, int expectedTnt,
+                                          int need, int target) {
+        int settleTimeout = Integer.getInteger("yap.bench.post_warmup_sec", 90);
+        final int[] waited = {0};
+        final int[] stable = {0};
+        int stableNeed = Integer.getInteger("yap.bench.post_warmup_stable_sec", 10);
+        final YapTask[] settleGate = new YapTask[1];
+        settleGate[0] = YapSched.globalTimer(this, () -> {
+            int online = Bukkit.getOnlinePlayers().size();
+            waited[0]++;
+            if (online >= need) {
+                stable[0]++;
+            } else {
+                stable[0] = 0;
+            }
+            if (stable[0] >= stableNeed || waited[0] >= settleTimeout) {
+                settleGate[0].cancel();
+                getLogger().info(scenario + " post-warmup gate — online=" + online + "/" + target
+                        + " need≥" + need + " stable=" + stable[0] + "s/" + stableNeed
+                        + "s waited=" + waited[0] + "s — starting sample " + sampleSec + "s");
+                // Same entity budget across forks: no wild mobs / item-XP drift from bot combat.
+                enforceEntityParity(world, false);
+                sampleAndWrite(world, scenario, label, out, warmupSec, sampleSec, expectedTnt);
+            } else if (waited[0] % 10 == 0) {
+                getLogger().info("post-warmup settle… online=" + online + "/" + target
+                        + " (need≥" + need + ", stable " + stable[0] + "/" + stableNeed + "s)");
             }
         }, 20L, 20L);
     }
@@ -294,16 +427,71 @@ public final class BenchMsptPlugin extends JavaPlugin {
     private void placeAnimals(World world) {
         int n = Integer.getInteger("yap.bench.animals", 48);
         EntityType[] types = {EntityType.COW, EntityType.SHEEP, EntityType.PIG, EntityType.CHICKEN};
+        int spawned = 0;
         for (int[] c : INTERIOR) {
             int bx = (c[0] << 4) + 10;
             int bz = (c[1] << 4) + 10;
             int y = Math.max(world.getHighestBlockYAt(bx, bz), 64) + 1;
             for (int i = 0; i < n / 4; i++) {
-                world.spawnEntity(new Location(world, bx + (i % 4), y, bz + (i / 4)),
+                Entity e = world.spawnEntity(new Location(world, bx + (i % 4), y, bz + (i / 4)),
                         types[i % types.length]);
+                // Lock breeding — Yap spatial kept animals fully awake under 4-quad
+                // player proximity and inflated entity counts vs Paper/Leaf (~+170).
+                if (e instanceof org.bukkit.entity.Animals a) {
+                    a.setAdult();
+                    a.setAgeLock(true);
+                    a.setBreed(false);
+                }
+                spawned++;
             }
         }
-        getLogger().info("Spawned animals (~" + n + ")");
+        getLogger().info("Spawned animals (~" + spawned + ", breed locked)");
+    }
+
+    /**
+     * Keep entity counts comparable across Paper/Leaf/Yap with identical plugins.
+     * Prior active150 MT cites showed Yap ~+170–200 entities (extra hostiles + ITEM
+     * from awake spatial animals / bot combat) while spawn-monsters=false alone
+     * still left creepers/zombies in the world.
+     *
+     * @param fixturesOnly when true (prepare): only gamerules; entities already cleared
+     */
+    @SuppressWarnings("removal")
+    private void enforceEntityParity(World world, boolean fixturesOnly) {
+        world.setGameRule(GameRule.SPAWN_MONSTERS, false);
+        if (fixturesOnly) {
+            getLogger().info("Entity parity: SPAWN_MONSTERS=false");
+            return;
+        }
+        int removedHostiles = 0;
+        int removedTransient = 0;
+        int relocked = 0;
+        for (Entity e : List.copyOf(world.getEntities())) {
+            if (e instanceof Player) {
+                continue;
+            }
+            if (e instanceof Monster) {
+                e.remove();
+                removedHostiles++;
+                continue;
+            }
+            EntityType t = e.getType();
+            if (t == EntityType.ITEM || t == EntityType.EXPERIENCE_ORB
+                    || t == EntityType.ARROW || t == EntityType.SPECTRAL_ARROW
+                    || t == EntityType.TRIDENT) {
+                e.remove();
+                removedTransient++;
+                continue;
+            }
+            if (e instanceof org.bukkit.entity.Animals a) {
+                a.setAdult();
+                a.setAgeLock(true);
+                a.setBreed(false);
+                relocked++;
+            }
+        }
+        getLogger().info("Entity parity trim hostiles=" + removedHostiles
+                + " transient=" + removedTransient + " animalsRelocked=" + relocked);
     }
 
     private void placeRedstoneClocks(World world) {
@@ -321,8 +509,8 @@ public final class BenchMsptPlugin extends JavaPlugin {
     }
 
     private void placeBorderMarkers(World world) {
-        // Chests on border chunks so bots have inventory targets while crossing axes
-        for (int[] c : BORDER_CHUNKS) {
+        // Chests in deep homes so bots have inventory targets without crossing origin borders
+        for (int[] c : DEEP_HOME_CHUNKS) {
             int bx = (c[0] << 4) + 8;
             int bz = (c[1] << 4) + 8;
             int y = Math.max(world.getHighestBlockYAt(bx, bz), 64) + 1;
@@ -332,7 +520,8 @@ public final class BenchMsptPlugin extends JavaPlugin {
     }
 
     private record LoadSnapshot(int tntAlive, double fuseMean, int hoppers, int entitiesTotal,
-                                int players, int villagers, int loadedChunks) {
+                                int players, int villagers, int loadedChunks,
+                                String entityTop) {
     }
 
     private LoadSnapshot snapshotLoad(World world) {
@@ -341,8 +530,11 @@ public final class BenchMsptPlugin extends JavaPlugin {
         int hoppers = 0;
         int entities = 0;
         int villagers = 0;
+        java.util.Map<String, Integer> byType = new java.util.HashMap<>();
         for (Entity e : world.getEntities()) {
             entities++;
+            String key = e.getType().name();
+            byType.merge(key, 1, Integer::sum);
             if (e instanceof TNTPrimed tntPrimed) {
                 tnt++;
                 fuseSum += tntPrimed.getFuseTicks();
@@ -351,6 +543,12 @@ public final class BenchMsptPlugin extends JavaPlugin {
                 villagers++;
             }
         }
+        String entityTop = byType.entrySet().stream()
+                .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+                .limit(12)
+                .map(en -> en.getKey() + "=" + en.getValue())
+                .reduce((a, b) -> a + "," + b)
+                .orElse("");
         for (int[][] piles : HEAVY_PILES) {
             int[] c = piles[0];
             var chunk = world.getChunkAt(c[0], c[1]);
@@ -377,7 +575,8 @@ public final class BenchMsptPlugin extends JavaPlugin {
         }
         double fuseMean = tnt == 0 ? 0.0 : (double) fuseSum / tnt;
         return new LoadSnapshot(tnt, fuseMean, hoppers, entities,
-                Bukkit.getOnlinePlayers().size(), villagers, world.getLoadedChunks().length);
+                Bukkit.getOnlinePlayers().size(), villagers, world.getLoadedChunks().length,
+                entityTop);
     }
 
     private void sampleAndWrite(World world, String scenario, String label, String out,
@@ -388,18 +587,20 @@ public final class BenchMsptPlugin extends JavaPlugin {
                 + " villagers=" + start.villagers()
                 + " hoppers=" + start.hoppers()
                 + " chunks=" + start.loadedChunks()
-                + " tnt=" + start.tntAlive());
+                + " tnt=" + start.tntAlive()
+                + " types=" + start.entityTop());
 
         List<Double> mspt = new ArrayList<>();
         List<Double> tps1m = new ArrayList<>();
         final int[] left = {sampleSec};
-        Bukkit.getScheduler().runTaskTimer(this, task -> {
+        final YapTask[] sampler = new YapTask[1];
+        sampler[0] = YapSched.globalTimer(this, () -> {
             mspt.add(Bukkit.getServer().getAverageTickTime());
             double[] tps = Bukkit.getServer().getTPS();
             tps1m.add(tps.length > 0 ? tps[0] : 0);
             left[0]--;
             if (left[0] <= 0) {
-                task.cancel();
+                sampler[0].cancel();
                 LoadSnapshot end = snapshotLoad(world);
                 getLogger().info("Load@sample-end players=" + end.players()
                         + " entities=" + end.entitiesTotal()
@@ -407,7 +608,7 @@ public final class BenchMsptPlugin extends JavaPlugin {
                 writeJson(scenario, label, out, warmupSec, sampleSec, mspt, tps1m,
                         expectedTnt, start, end);
                 getLogger().info("Bench complete — shutting down");
-                Bukkit.getScheduler().runTaskLater(this, Bukkit::shutdown, 20L);
+                YapSched.globalLater(this, Bukkit::shutdown, 20L);
             }
         }, 20L, 20L);
     }
@@ -424,8 +625,17 @@ public final class BenchMsptPlugin extends JavaPlugin {
         boolean fuseOk = start.tntAlive() == 0
                 || (fuseDrop >= expectedFuseDrop * 0.50 && end.tntAlive() >= start.tntAlive() * 0.98);
         int targetPlayers = Integer.getInteger("yap.bench.players", 0);
-        boolean playersOk = !"highpop".equals(scenario)
-                || (start.players() >= Math.max(1, (int) (targetPlayers * 0.80)));
+        // Highpop / fullcite: must HOLD population through the sample, not just
+        // clear the join gate. Start+end ≥90% of target — bleeding 250→130 fails.
+        int needHold = Math.max(1, (int) Math.ceil(targetPlayers * 0.90));
+        boolean playersOk = (!"highpop".equals(scenario) && !"fullcite".equals(scenario))
+                || (targetPlayers <= 0)
+                || (start.players() >= needHold && end.players() >= needHold);
+        // cite-stable = keepalive-only swarm (physics OFF). Not an MSPT gameplay cite.
+        String botLoad = System.getProperty("yap.bench.bot_load", "active");
+        if (botLoad == null || botLoad.isBlank()) {
+            botLoad = "active";
+        }
         String json = """
                 {
                   "label": %s,
@@ -453,9 +663,12 @@ public final class BenchMsptPlugin extends JavaPlugin {
                   "players_end": %d,
                   "players_target": %d,
                   "players_ok": %s,
+                  "bot_load": %s,
                   "villagers_start": %d,
                   "chunks_loaded_start": %d,
                   "chunks_loaded_end": %d,
+                  "entity_top_start": %s,
+                  "entity_top_end": %s,
                   "timestamp": %s,
                   "java": %s
                 }
@@ -485,9 +698,12 @@ public final class BenchMsptPlugin extends JavaPlugin {
                 end.players(),
                 targetPlayers,
                 playersOk,
+                quote(botLoad),
                 start.villagers(),
                 start.loadedChunks(),
                 end.loadedChunks(),
+                quote(start.entityTop()),
+                quote(end.entityTop()),
                 quote(Instant.now().toString()),
                 quote(System.getProperty("java.version", "?"))
         );

@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
-# High-pop proof: 500-player-class Mineflayer load + fair plugin surface vs Paper/Purpur/Leaf/YaP.
+# Full product cite: bots + deep-interior TNT/hoppers/redstone + heavy plugin tax
+# vs Paper/Leaf/Purpur/YaP. One stamp that fights Leaf near tick budget under pop.
 #
-# Fairness rule — match what YaPcore offers *natively*:
-#   • All sides: yap-mspt-bench, yap-pop-sim, yap-placeholderapi, yap-gameplay-knobs, yap-vehicles
-#   • Stock forks only: ViaVersion + ViaBackwards + ViaRewind  (YaP uses built-in ProtocolCompat)
-#   • YaP only: yap-spatial-tick (the product under test — not mirrored onto forks)
+# Fairness:
+#   • All sides: mspt-bench, pop-sim, PAPI, knobs, vehicles, plugin-compat, chat, packs, pregen, stacker
+#   • Stock forks only: Via*
+#   • YaP only: yap-spatial-tick
+#   • World: highpop fixtures + heavypop piles (HEAVY_PILES interior — not border pathology)
 #
-# Usage: ./scripts/bench/run-highpop.sh [player_count] [sample_seconds]
-# Default: 500 players / 45s sample
-# Env: YAP_BENCH_COMPETITORS, YAP_BENCH_WARMUP, YAP_BOT_VERSION, YAP_BENCH_XMS, YAP_BENCH_XMX
-#      YAP_BENCH_JFR=1 → write bench/profiles/<stamp>-highpop-<id>.jfr (Leaf-gap / player-path)
+# Usage: ./scripts/bench/run-fullcite.sh [player_count] [sample_seconds]
+# Default: 100 players / 45s sample (raise to 250 after green)
+# Env: YAP_BENCH_COMPETITORS, YAP_BENCH_ENTITIES (TNT/quad, default 600),
+#      YAP_BENCH_HOPPERS / YAP_BENCH_HEAVY_HOPPERS, YAP_BENCH_XMS/XMX
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
@@ -18,49 +20,28 @@ ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)"
 # shellcheck disable=SC1091
 . "$ROOT/scripts/lib.sh"
 
-PLAYERS="${1:-500}"
+PLAYERS="${1:-100}"
 SECONDS_N="${2:-45}"
 WARMUP="${YAP_BENCH_WARMUP:-25}"
 # ~stagger*players + login headroom
 JOIN_TIMEOUT="${YAP_BENCH_JOIN_TIMEOUT:-$(( 180 + PLAYERS ))}"
 COMPETITORS_CSV="${YAP_BENCH_COMPETITORS:-paper,purpur,leaf,yapcore}"
 STAMP="${YAP_BENCH_STAMP:-$(date -u +%Y%m%dT%H%M%SZ)}"
-SCENARIO=highpop
+SCENARIO=fullcite
+YAP_BENCH_ENTITIES="${YAP_BENCH_ENTITIES:-600}"
+YAP_BENCH_HEAVY_HOPPERS="${YAP_BENCH_HEAVY_HOPPERS:-${YAP_BENCH_HOPPERS:-128}}"
 XMS="${YAP_BENCH_XMS:-8G}"
 XMX="${YAP_BENCH_XMX:-12G}"
 RESULTS="$ROOT/bench/results"
-PROFILES="$ROOT/bench/profiles"
 BOTS_DIR="$SCRIPT_DIR/bots"
 START_BOTS_PID=""
-LOCK="$ROOT/bench/highpop.lock"
-# ≥150 defaults to cite-stable (keepalive hold). Set YAP_BOT_CITE_STABLE=0 for active physics MSPT.
-if [ -n "${YAP_BOT_CITE_STABLE:-}" ]; then
-  if [ "$YAP_BOT_CITE_STABLE" = "0" ] || [ "$YAP_BOT_CITE_STABLE" = "false" ]; then
-    BOT_LOAD=active
-  else
-    BOT_LOAD=cite-stable
-  fi
-elif [ "$PLAYERS" -ge 150 ]; then
-  BOT_LOAD=cite-stable
-else
-  BOT_LOAD=active
-fi
-mkdir -p "$RESULTS" "$PROFILES" "$ROOT/logs/bench"
-
-# Optional JFR for held active cites (compare Leaf vs Yap main-thread tops).
-jfr_jvm_args() {
-  local id="$1"
-  if [[ "${YAP_BENCH_JFR:-}" == "1" ]]; then
-    local jfr="$PROFILES/${STAMP}-${SCENARIO}-${id}.jfr"
-    echo "JFR → $jfr" >&2
-    printf '%s\n' "-XX:StartFlightRecording=filename=${jfr},settings=profile,maxsize=256m,dumponexit=true"
-  fi
-}
+LOCK="$ROOT/bench/fullcite.lock"
+mkdir -p "$RESULTS" "$ROOT/logs/bench"
 
 # Single-flight: overlapping highpop runs OOM the host and duplicate_login bots.
 exec 9>"$LOCK"
 if ! flock -n 9; then
-  echo "Another highpop run holds $LOCK — aborting" >&2
+  echo "Another fullcite/highpop run holds $LOCK — aborting" >&2
   exit 4
 fi
 
@@ -90,6 +71,11 @@ echo "Building bench + shipped product plugins…"
   :placeholderapi-plugin:jar \
   :gameplay-knobs-plugin:jar \
   :vehicles-plugin:jar \
+  :plugin-compat-plugin:jar \
+  :chat-plugin:jar \
+  :packs-plugin:jar \
+  :pregen-plugin:jar \
+  :stacker-plugin:jar \
   --no-daemon -q)
 if [[ "$COMPETITORS_CSV" == *yapcore* ]]; then
   (cd "$ROOT" && gradle :phase3-plugin:installIntoResources shadowJar --no-daemon -q)
@@ -100,11 +86,17 @@ POP_JAR="$(ls -1 "$ROOT/bench-plugin/build/libs"/yap-pop-sim.jar | head -n 1)"
 PAPI_JAR="$(ls -1 "$ROOT/placeholderapi-plugin/build/libs"/yap-placeholderapi.jar | head -n 1)"
 KNOBS_JAR="$(ls -1 "$ROOT/gameplay-knobs-plugin/build/libs"/yap-gameplay-knobs.jar | head -n 1)"
 VEHICLES_JAR="$(ls -1 "$ROOT/vehicles-plugin/build/libs"/yap-vehicles.jar | head -n 1)"
+COMPAT_JAR="$(ls -1 "$ROOT/plugin-compat-plugin/build/libs"/yap-plugin-compat.jar | head -n 1)"
+CHAT_JAR="$(ls -1 "$ROOT/chat-plugin/build/libs"/yap-chat.jar | head -n 1)"
+PACKS_JAR="$(ls -1 "$ROOT/packs-plugin/build/libs"/yap-packs.jar | head -n 1)"
+PREGEN_JAR="$(ls -1 "$ROOT/pregen-plugin/build/libs"/yap-pregen.jar | head -n 1)"
+STACKER_JAR="$(ls -1 "$ROOT/stacker-plugin/build/libs"/yap-stacker.jar | head -n 1)"
 YAP_JAR="$(yap_find_jar)"
 case "$YAP_JAR" in /*) ;; *) YAP_JAR="$ROOT/$YAP_JAR" ;; esac
 YAP_PAPER="$ROOT/lib/paper-${PAPER_VERSION}-yap.jar"
 
-for need in "$BENCH_JAR" "$POP_JAR" "$PAPI_JAR" "$KNOBS_JAR" "$VEHICLES_JAR"; do
+for need in "$BENCH_JAR" "$POP_JAR" "$PAPI_JAR" "$KNOBS_JAR" "$VEHICLES_JAR" \
+  "$COMPAT_JAR" "$CHAT_JAR" "$PACKS_JAR" "$PREGEN_JAR" "$STACKER_JAR"; do
   if [ ! -f "$need" ]; then
     echo "Missing built jar: $need" >&2
     exit 1
@@ -114,11 +106,6 @@ done
 write_spigot_yml() {
   local dest="$1"
   cat >"$dest" <<'EOF'
-settings:
-  # Highpop join storms: default 60s keepalive was kicking Mineflayer bots on
-  # single-thread Paper before ≥90% could hold (Yap spatial survived the same swarm).
-  timeout-time: 180
-  restart-on-crash: false
 world-settings:
   default:
     max-tnt-per-tick: 0
@@ -182,6 +169,11 @@ install_common_plugins() {
   /bin/cp -f "$PAPI_JAR" "$work/plugins/yap-placeholderapi.jar"
   /bin/cp -f "$KNOBS_JAR" "$work/plugins/yap-gameplay-knobs.jar"
   /bin/cp -f "$VEHICLES_JAR" "$work/plugins/yap-vehicles.jar"
+  /bin/cp -f "$COMPAT_JAR" "$work/plugins/yap-plugin-compat.jar"
+  /bin/cp -f "$CHAT_JAR" "$work/plugins/yap-chat.jar"
+  /bin/cp -f "$PACKS_JAR" "$work/plugins/yap-packs.jar"
+  /bin/cp -f "$PREGEN_JAR" "$work/plugins/yap-pregen.jar"
+  /bin/cp -f "$STACKER_JAR" "$work/plugins/yap-stacker.jar"
 }
 
 install_stock_parity_plugins() {
@@ -280,79 +272,28 @@ start_bots() {
     sleep 5
     export YAP_BOT_HOST=127.0.0.1
     export YAP_BOT_PORT="$port"
-    # Ramp: ~100s connect window at 250. Floor 150ms; ceiling 500ms.
-    export YAP_BOT_STAGGER_MS="${YAP_BOT_STAGGER_MS:-$(( 100000 / PLAYERS ))}"
-    if [ "${YAP_BOT_STAGGER_MS}" -lt 150 ]; then YAP_BOT_STAGGER_MS=150; fi
-    if [ "${YAP_BOT_STAGGER_MS}" -gt 500 ]; then YAP_BOT_STAGGER_MS=500; fi
+    export YAP_BOT_COUNT="$PLAYERS"
+    # Keep total connect ramp ~40s even at 500
+    export YAP_BOT_STAGGER_MS="${YAP_BOT_STAGGER_MS:-$(( 90000 / PLAYERS ))}"
+    if [ "${YAP_BOT_STAGGER_MS}" -lt 100 ]; then YAP_BOT_STAGGER_MS=100; fi
+    if [ "${YAP_BOT_STAGGER_MS}" -gt 250 ]; then YAP_BOT_STAGGER_MS=250; fi
     export YAP_BOT_VERSION="${YAP_BOT_VERSION:-1.21.11}"
-    export YAP_BOT_TOTAL="$PLAYERS"
-    export YAP_BOT_CITE_STABLE="${YAP_BOT_CITE_STABLE:-}"
-    # Active 250 needs more Node event loops than hold-only.
-    if [ "$BOT_LOAD" = "active" ] && [ "$PLAYERS" -ge 150 ] && [ -z "${YAP_BOT_WORKERS:-}" ]; then
-      export YAP_BOT_WORKERS=4
-    fi
-    export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=4096}"
-    # ≥150 bots: split across Node processes so keepalives survive on Paper.
-    local workers="${YAP_BOT_WORKERS:-1}"
-    if [ -z "${YAP_BOT_WORKERS:-}" ] && [ "$PLAYERS" -ge 150 ]; then
-      workers=2
-    fi
-    if [ "$PLAYERS" -ge 300 ] && [ -z "${YAP_BOT_WORKERS:-}" ]; then
-      workers=3
-    fi
-    echo "bot stagger=${YAP_BOT_STAGGER_MS}ms count=$PLAYERS workers=$workers version=$YAP_BOT_VERSION node_opts=$NODE_OPTIONS" >>"$log"
+    echo "bot stagger=${YAP_BOT_STAGGER_MS}ms count=$PLAYERS version=$YAP_BOT_VERSION" >>"$log"
     cd "$BOTS_DIR"
-    local pids=()
-    local base=0
-    local w per n
-    per=$(( (PLAYERS + workers - 1) / workers ))
-    for ((w = 0; w < workers; w++)); do
-      n=$per
-      if [ $((base + n)) -gt "$PLAYERS" ]; then
-        n=$((PLAYERS - base))
-      fi
-      if [ "$n" -le 0 ]; then
-        break
-      fi
-      (
-        export YAP_BOT_COUNT="$n"
-        export YAP_BOT_INDEX_BASE="$base"
-        exec node swarm.js
-      ) >>"$log" 2>&1 &
-      local wpid=$!
-      pids+=("$wpid")
-      echo "worker $w pid=$wpid bots=$n base=$base" >>"$log"
-      base=$((base + n))
-    done
-    local fail=0
-    local pid
-    for pid in "${pids[@]}"; do
-      wait "$pid" || fail=1
-    done
-    exit "$fail"
+    node swarm.js >>"$log" 2>&1
   ) &
   START_BOTS_PID=$!
 }
 
 stop_bots() {
   local pid="${1:-}"
-  # Kill swarm workers first — parent may be blocked in wait().
-  pkill -INT -f 'scripts/bench/bots/swarm.js' 2>/dev/null || true
-  sleep 1
-  pkill -9 -f 'scripts/bench/bots/swarm.js' 2>/dev/null || true
   if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
     kill -INT "$pid" 2>/dev/null || true
+    sleep 2
     kill -9 "$pid" 2>/dev/null || true
-    wait "$pid" 2>/dev/null || true
   fi
   pkill -f 'yapbot_' 2>/dev/null || true
-}
-
-cooldown_between_competitors() {
-  echo "Cooldown between competitors (free RAM for next JVM + swarm)…"
-  stop_bots ""
-  sync || true
-  sleep "${YAP_BENCH_COOLDOWN_SEC:-25}"
+  pkill -f 'scripts/bench/bots/swarm.js' 2>/dev/null || true
 }
 
 run_plain() {
@@ -363,26 +304,20 @@ run_plain() {
   local out="$RESULTS/${STAMP}-${SCENARIO}-${id}.json"
   local work="$ROOT/bench/workdir-${id}"
   local botlog="$ROOT/logs/bench/bots-${STAMP}-${id}.log"
-  prepare_workdir "$work" "$jar" "$port" "YaP highpop $id" stock
-  echo "=== $id highpop players=$PLAYERS → $out (stock+Via* parity) ==="
+  prepare_workdir "$work" "$jar" "$port" "YaP fullcite $id" stock
+  echo "=== $id fullcite players=$PLAYERS → $out (stock+Via* parity) ==="
   local botpid=""
   start_bots "$port" "$botlog"
   botpid="$START_BOTS_PID"
-  local jfr_args=()
-  local jfr_line
-  jfr_line="$(jfr_jvm_args "$id" || true)"
-  if [ -n "${jfr_line:-}" ]; then
-    jfr_args=("$jfr_line")
-  fi
   (
     cd "$work"
     "$JAVA_BIN" -Xms"$XMS" -Xmx"$XMX" \
-      "${jfr_args[@]}" \
-      -Dyap.bench.scenario=highpop \
+      -Dyap.bench.scenario=fullcite \
+      -Dyap.bench.entities="$YAP_BENCH_ENTITIES" \
+      -Dyap.bench.heavy_hoppers="$YAP_BENCH_HEAVY_HOPPERS" \
       -Dyap.bench.seconds="$SECONDS_N" \
       -Dyap.bench.warmup="$WARMUP" \
       -Dyap.bench.players="$PLAYERS" \
-      -Dyap.bench.bot_load="$BOT_LOAD" \
       -Dyap.bench.join_timeout="$JOIN_TIMEOUT" \
       -Dyap.bench.label="$label" \
       -Dyap.bench.out="$out" \
@@ -404,7 +339,7 @@ run_yap() {
   local cfg="$ROOT/config/server.properties"
   local cfg_bak="$ROOT/config/server.properties.highpop.bak"
   # Paper owns loopback paper_port; YaP native Via front owns public_port (bots join here).
-  prepare_workdir "$work" "$YAP_PAPER" "$paper_port" "YaP highpop yapcore" yap
+  prepare_workdir "$work" "$YAP_PAPER" "$paper_port" "YaP fullcite yapcore" yap
   /bin/cp -f "$YAP_PAPER" "$work/paper-${PAPER_VERSION}.jar"
   if [ -f "$ROOT/src/main/resources/phase3/yap-spatial-tick.jar" ]; then
     /bin/cp -f "$ROOT/src/main/resources/phase3/yap-spatial-tick.jar" "$work/plugins/" || true
@@ -447,20 +382,13 @@ PY
     fi
   }
   trap restore_yap_cfg RETURN
-  echo "=== yapcore highpop players=$PLAYERS → $out (native Via front :$public_port → Paper :$paper_port) ==="
+  echo "=== yapcore fullcite players=$PLAYERS → $out (native Via front :$public_port → Paper :$paper_port) ==="
   local botpid=""
   start_bots "$public_port" "$botlog"
   botpid="$START_BOTS_PID"
-  local jfr_args=()
-  local jfr_line
-  jfr_line="$(jfr_jvm_args yapcore || true)"
-  if [ -n "${jfr_line:-}" ]; then
-    jfr_args=("$jfr_line")
-  fi
   (
     cd "$work"
     "$JAVA_BIN" -Xms"$XMS" -Xmx"$XMX" \
-      "${jfr_args[@]}" \
       -Dyapcore.home="$ROOT" \
       -Dyapcore.paper.dir=bench/workdir-yap \
       -Dyapcore.phase3.spatial-tick=true \
@@ -468,13 +396,12 @@ PY
       -Dyapcore.phase3.spatial-random=true \
       -Dyapcore.phase3.spatial-blockentities=true \
       -Dyapcore.phase3.spatial-redstone=true \
-      -Dyapcore.via.netty.workers=4 \
-      -Dyapcore.phase3.tracker-tiny-batch=8 \
-      -Dyap.bench.scenario=highpop \
+      -Dyap.bench.scenario=fullcite \
+      -Dyap.bench.entities="$YAP_BENCH_ENTITIES" \
+      -Dyap.bench.heavy_hoppers="$YAP_BENCH_HEAVY_HOPPERS" \
       -Dyap.bench.seconds="$SECONDS_N" \
       -Dyap.bench.warmup="$WARMUP" \
       -Dyap.bench.players="$PLAYERS" \
-      -Dyap.bench.bot_load="$BOT_LOAD" \
       -Dyap.bench.join_timeout="$JOIN_TIMEOUT" \
       -Dyap.bench.bot_port="$public_port" \
       -Dyap.bench.label=yapcore-phase3 \
@@ -490,13 +417,13 @@ PY
 }
 
 IFS=',' read -r -a COMPETITORS <<<"$COMPETITORS_CSV"
-echo "Highpop competitors=${COMPETITORS[*]} players=$PLAYERS heap=${XMS}/${XMX} join_timeout=${JOIN_TIMEOUT}s bot_load=$BOT_LOAD stamp=$STAMP"
-echo "Parity: all=PAPI+knobs+vehicles+pop-sim; stock+=Via*; yap+=spatial-tick (native Via)"
+echo "Highpop competitors=${COMPETITORS[*]} players=$PLAYERS heap=${XMS}/${XMX} join_timeout=${JOIN_TIMEOUT}s stamp=$STAMP"
+echo "Parity: fullcite plugins + bots + interior TNT/hoppers; stock+=Via*; yap+=spatial-tick (native Via)"
 
 for c in "${COMPETITORS[@]}"; do
   c="$(echo "$c" | tr -d '[:space:]')"
-  cooldown_between_competitors
   wait_ports_free
+  stop_bots ""
   case "$c" in
     paper|stock) run_plain paper "$ROOT/lib/paper-${PAPER_VERSION}.jar" 25570 stock-paper ;;
     purpur) run_plain purpur "$ROOT/lib/purpur-${PAPER_VERSION}.jar" 25572 purpur ;;
@@ -507,5 +434,5 @@ for c in "${COMPETITORS[@]}"; do
 done
 
 echo
-python3 "$SCRIPT_DIR/compare-highpop.py" "$RESULTS" "$STAMP" || true
+python3 "$SCRIPT_DIR/compare-fullcite.py" "$RESULTS" "$STAMP" || true
 ls -1 "$RESULTS"/${STAMP}-${SCENARIO}-*.json 2>/dev/null || true
