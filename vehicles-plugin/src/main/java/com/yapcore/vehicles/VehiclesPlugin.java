@@ -1,5 +1,7 @@
 package com.yapcore.vehicles;
 
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import com.yapcore.vehicles.api.VehicleAPI;
 import com.yapcore.vehicles.builtin.BuiltinTypes;
 import com.yapcore.vehicles.command.VehiclesCommand;
@@ -15,7 +17,6 @@ import com.yapcore.vehicles.upgrades.UpgradeShop;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 
 /**
  * YaP Vehicles — real vehicle mechanics API for Paper plugins (not minecarts/boats).
@@ -27,7 +28,7 @@ public final class VehiclesPlugin extends JavaPlugin {
     private VehicleServiceImpl api;
     private VehicleCompatBridge compat;
     private UpgradeService upgrades;
-    private BukkitTask tickTask;
+    private YapTask tickTask;
 
     @Override
     public void onEnable() {
@@ -96,7 +97,7 @@ public final class VehiclesPlugin extends JavaPlugin {
 
     private void startTicker() {
         long period = config.tickPeriod();
-        tickTask = Bukkit.getScheduler().runTaskTimer(this, () -> api.tickAll(), 1L, period);
+        tickTask = YapSched.globalTimer(this, () -> api.tickAll(), 1L, period);
     }
 
     public VehiclesConfig config() {

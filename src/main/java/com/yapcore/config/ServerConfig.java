@@ -116,8 +116,15 @@ public final class ServerConfig {
         props.setProperty("resource-pack-forced", "false");
         props.setProperty("resource-pack-prompt",
                 "This server offers a resource pack. Click Yes to download, or No to play without it.");
-        // Product path: Paper → YapEngine Phase 3 (tick on cores 3–6).
-        props.setProperty("game-authority", "paper");
+        // Product path: Folia owns game tick; YapEngine is chassis only.
+        props.setProperty("game-authority", "folia");
+        props.setProperty("folia-embed", "true");
+        props.setProperty("folia-dir", "folia-kernel");
+        props.setProperty("folia-port", "25567");
+        props.setProperty("folia-version", "26.2");
+        props.setProperty("folia-jar-url", "");
+        props.setProperty("folia-ready-timeout-sec", "180");
+        // Legacy Paper path (game-authority=paper)
         props.setProperty("paper-embed", "true");
         props.setProperty("paper-same-jvm", "false");
         props.setProperty("paper-dir", "paper-kernel");
@@ -125,8 +132,8 @@ public final class ServerConfig {
         props.setProperty("paper-version", "26.2");
         props.setProperty("paper-jar-url", "");
         props.setProperty("paper-ready-timeout-sec", "180");
-        props.setProperty("paper-phase3-tick-bridge", "true");
-        props.setProperty("paper-phase3-nms-tick", "true");
+        props.setProperty("paper-phase3-tick-bridge", "false");
+        props.setProperty("paper-phase3-nms-tick", "false");
         // Phase 4: first-party Via\* + Geyser parity (no plugin jars)
         props.setProperty("protocol-via-enabled", "true");
         props.setProperty("protocol-geyser-enabled", "true");
@@ -689,14 +696,14 @@ public final class ServerConfig {
         props.setProperty("resource-pack-prompt", prompt == null ? "" : prompt);
     }
 
-    /** Product path: Paper → YapEngine. See docs/PAPER_YAPENGINE_PORT.md */
+    /** Product path: Folia game + YapEngine chassis. See Folia plan. */
     public GameAuthority getGameAuthority() {
         String raw = props.getProperty("game-authority");
         if (raw == null || raw.isBlank()) {
             if (Boolean.parseBoolean(props.getProperty("game-kernel-enabled", "false"))) {
                 return GameAuthority.MOJANG;
             }
-            return GameAuthority.PAPER;
+            return GameAuthority.FOLIA;
         }
         return GameAuthority.parse(raw);
     }
@@ -705,8 +712,55 @@ public final class ServerConfig {
         props.setProperty("game-authority", authority.name().toLowerCase());
     }
 
+    public boolean isFoliaAuthority() {
+        return getGameAuthority() == GameAuthority.FOLIA;
+    }
+
     public boolean isPaperAuthority() {
         return getGameAuthority() == GameAuthority.PAPER;
+    }
+
+    public boolean isFoliaEmbed() {
+        return Boolean.parseBoolean(props.getProperty("folia-embed", "true"));
+    }
+
+    public void setFoliaEmbed(boolean embed) {
+        props.setProperty("folia-embed", Boolean.toString(embed));
+    }
+
+    public String getFoliaDir() {
+        String override = System.getProperty("yapcore.folia.dir");
+        if (override != null && !override.isBlank()) {
+            return override.trim();
+        }
+        return props.getProperty("folia-dir", "folia-kernel");
+    }
+
+    public int getFoliaPort() {
+        return parseInt("folia-port", 25567);
+    }
+
+    public String getFoliaVersion() {
+        return props.getProperty("folia-version", "26.2");
+    }
+
+    public String getFoliaJarUrl() {
+        return props.getProperty("folia-jar-url", "");
+    }
+
+    public int getFoliaReadyTimeoutSec() {
+        return parseInt("folia-ready-timeout-sec", 180);
+    }
+
+    /**
+     * Port Folia binds. Via front + Folia authority → loopback {@link #getFoliaPort()};
+     * otherwise public {@link #getPort()} when embed.
+     */
+    public int foliaListenPort() {
+        if (isFoliaAuthority() && isProtocolViaEnabled()) {
+            return getFoliaPort();
+        }
+        return isFoliaEmbed() ? getPort() : getFoliaPort();
     }
 
     /** Phase 2 Paper: owns public JE port when authority=paper. */
@@ -722,23 +776,22 @@ public final class ServerConfig {
         return Boolean.parseBoolean(props.getProperty("paper-same-jvm", "false"));
     }
 
-    /** Phase 3: register spatial tick bridge hooks while Paper still owns the game thread. */
+    /** Phase 3 spatial tick — retired as product path (defaults off). Legacy benches may re-enable. */
     public boolean isPaperPhase3TickBridge() {
-        return Boolean.parseBoolean(props.getProperty("paper-phase3-tick-bridge", "true"));
+        return Boolean.parseBoolean(props.getProperty("paper-phase3-tick-bridge", "false"));
     }
 
     /**
-     * Phase 3: interior entity tick under DLM leases on spatial cores (plugin/NMS driver).
-     * Requires {@link #isPaperPhase3TickBridge()} and {@code lib/paper-*-yap.jar};
-     * boot fails closed if the jar is missing (no silent accounting-only).
+     * Phase 3 NMS spatial tick — retired as product path (defaults off).
+     * Requires {@link #isPaperPhase3TickBridge()} and {@code lib/paper-*-yap.jar}.
      */
     public boolean isPaperPhase3NmsTick() {
-        return Boolean.parseBoolean(props.getProperty("paper-phase3-nms-tick", "true"));
+        return Boolean.parseBoolean(props.getProperty("paper-phase3-nms-tick", "false"));
     }
 
     /**
-     * Phase 4 Via\* parity front door. When true under Paper authority, YaPcore owns
-     * the public JE port and proxies (with remap) to Paper on {@link #getPaperPort()}.
+     * Phase 4 Via\* parity front door. When true under Folia/Paper authority, YaPcore owns
+     * the public JE port and proxies (with remap) to the game on folia-port / paper-port.
      * <p>
      * Disabled under most MSPT benches so stock Paper and YaP hit the same socket path.
      * <strong>Exception: {@code highpop}</strong> — keep native Via front so forks pay
@@ -809,6 +862,7 @@ public final class ServerConfig {
 
     public int getWrappedGamePort() {
         return switch (getGameAuthority()) {
+            case FOLIA -> getFoliaPort();
             case PAPER -> getPaperPort();
             case MOJANG -> getGameKernelPort();
             case NATIVE -> getPort();
@@ -819,16 +873,18 @@ public final class ServerConfig {
     public boolean isWrappedGameProxy() {
         return switch (getGameAuthority()) {
             case MOJANG -> true;
+            case FOLIA -> !isFoliaEmbed() || isProtocolViaEnabled();
             case PAPER -> !isPaperEmbed() || isProtocolViaEnabled();
             case NATIVE -> false;
         };
     }
 
-    /** YaPcore binds JE TCP for native, wrap proxy, or Via front of Paper. */
+    /** YaPcore binds JE TCP for native, wrap proxy, or Via front of Folia/Paper. */
     public boolean isYaPcoreJavaListener() {
         return switch (getGameAuthority()) {
             case NATIVE -> true;
             case MOJANG -> true;
+            case FOLIA -> !isFoliaEmbed() || isProtocolViaEnabled();
             case PAPER -> !isPaperEmbed() || isProtocolViaEnabled();
         };
     }

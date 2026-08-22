@@ -4,9 +4,15 @@ YaPcore supports **three** extension kinds: Paper/Spigot plugins, YaP plugins, a
 **modules**. See [MODULES_AND_API.md](MODULES_AND_API.md) for modules + coverage.
 Compatibility matrix: [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md).
 
-**One folder:** drop Paper/Spigot and YaP (`yap.yml`) jars into **`plugins/`**.
-`paper-kernel/plugins` is a symlink to that folder. The Phase 3 bridge
-`yap-spatial-tick.jar` is installed there automatically.
+**One folder:** drop first-party Folia-native jars into **`plugins/`**.
+`folia-kernel/plugins` (and legacy `paper-kernel/plugins`) symlink to that folder.
+
+Product path is **`game-authority=folia`**. First-party plugins use `YapSched`
+(Folia `GlobalRegionScheduler` / entity / region affinity) and declare
+`folia-supported: true`. Stock Paper jars are **unsupported**.
+
+`yap-spatial-tick.jar` is **not** a product plugin — Paper Phase 3 legacy only
+(benches). Folia refuses it (`folia-supported: false`).
 
 ```bash
 cp MyPlugin.jar plugins/
@@ -16,14 +22,17 @@ cp MyPlugin.jar plugins/
 
 ## 1. Legacy Spigot / Paper / Purpur (`plugin.yml`)
 
-### On Paper (default — production path)
+### On Folia (default — production path)
+
+Put first-party jars in **`plugins/`**. They must declare `folia-supported: true`
+and schedule via `com.yapcore.sched.YapSched` (or Folia region APIs directly).
+
+Optional smoke: `./scripts/smoke-folia-plugins.sh`
+
+### On Paper (legacy benches)
 
 Put jars in **`plugins/`**. Within reason, anything that works on stock
-Paper 26.2 works here — **complete Paper API** from the embedded Paperclip
-([PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md)). Folia-only plugins do **not**.
-
-Optional smoke: `./scripts/smoke-paper-plugins.sh` ·
-`./scripts/verify-paper-api-coverage.sh`
+Paper 26.2 works here when `game-authority=paper`. Folia-only plugins may not.
 
 ### YaP Compatibility Bridge (non-Paper authority only)
 

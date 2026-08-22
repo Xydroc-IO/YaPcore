@@ -9,7 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * PaperMC Fill v3 — resolve server jar URL for {@code paper}.
+ * PaperMC Fill v3 — resolve server jar URL for {@code paper} / {@code folia}.
  */
 public final class FillClient {
 

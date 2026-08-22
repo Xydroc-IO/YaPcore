@@ -2,6 +2,7 @@ name: PlaceholderAPI
 version: '1.0.0.0'
 main: me.clip.placeholderapi.PlaceholderAPIPlugin
 api-version: '1.21'
+folia-supported: true
 load: STARTUP
 author: YapLabs
 description: YaPcore first-party PlaceholderAPI-compatible placeholder engine (clean-room)

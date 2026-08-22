@@ -1,11 +1,12 @@
 package com.yapcore.stacker;
 
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitTask;
 
 /** Periodic wander merge + kill-aura pulses. */
 public final class StackerTasks {
@@ -14,8 +15,8 @@ public final class StackerTasks {
     private final StackService stacks;
     private final ItemStackService items;
     private final ToolListener tools;
-    private BukkitTask wanderTask;
-    private BukkitTask auraTask;
+    private YapTask wanderTask;
+    private YapTask auraTask;
 
     public StackerTasks(
             StackerPlugin plugin,
@@ -31,9 +32,9 @@ public final class StackerTasks {
     public void start() {
         stop();
         long wander = stacks.config().wanderMergeIntervalTicks();
-        wanderTask = Bukkit.getScheduler().runTaskTimer(plugin, this::wanderMerge, wander, wander);
+        wanderTask = YapSched.globalTimer(plugin, this::wanderMerge, wander, wander);
         long aura = stacks.config().killAuraIntervalTicks();
-        auraTask = Bukkit.getScheduler().runTaskTimer(plugin, this::auraPulse, aura, aura);
+        auraTask = YapSched.globalTimer(plugin, this::auraPulse, aura, aura);
     }
 
     public void stop() {

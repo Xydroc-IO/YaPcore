@@ -4,6 +4,7 @@ import at.favre.lib.crypto.bcrypt.BCrypt;
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.AuthRepository;
 import com.yapcore.playerdata.sync.SyncService;
+import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -80,10 +81,10 @@ public final class AuthService {
         authenticated.remove(player.getUniqueId());
         loginAttempts.put(player.getUniqueId(), 0);
         joinAt.put(player.getUniqueId(), System.currentTimeMillis());
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        YapSched.async(plugin, () -> {
             try {
                 boolean registered = repo.findByUuid(player.getUniqueId()).isPresent();
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                YapSched.entity(plugin, player, () -> {
                     if (!player.isOnline()) {
                         return;
                     }
@@ -95,7 +96,7 @@ public final class AuthService {
                 });
             } catch (SQLException e) {
                 plugin.getLogger().log(Level.SEVERE, "auth join lookup", e);
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                YapSched.entity(plugin, player, () -> {
                     if (player.isOnline()) {
                         player.kick(net.kyori.adventure.text.Component.text("Auth database error."));
                     }
@@ -105,7 +106,7 @@ public final class AuthService {
 
         int timeout = config.authTimeoutSeconds();
         if (timeout > 0) {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            YapSched.entityLater(plugin, player, () -> {
                 if (player.isOnline() && needsAuth(player)) {
                     player.kick(net.kyori.adventure.text.Component.text(
                             "Login timed out. Please reconnect and /login."));
@@ -168,7 +169,7 @@ public final class AuthService {
             if (!result.verified) {
                 int attempts = loginAttempts.merge(player.getUniqueId(), 1, Integer::sum);
                 if (attempts >= config.authMaxAttempts()) {
-                    Bukkit.getScheduler().runTask(plugin, () -> player.kick(
+                    YapSched.entity(plugin, player, () -> player.kick(
                             net.kyori.adventure.text.Component.text("Too many failed login attempts.")));
                     return "§cToo many failed attempts.";
                 }

@@ -4,6 +4,7 @@ import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.NpcTraderRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
 import com.yapcore.playerdata.gui.YapMenuHolder;
+import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -54,7 +55,7 @@ public final class NpcTraderService {
     }
 
     public void start() {
-        Bukkit.getScheduler().runTask(plugin, this::respawnAll);
+        YapSched.global(plugin, this::respawnAll);
     }
 
     public void stop() {

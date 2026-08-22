@@ -1,5 +1,6 @@
 package com.yapcore.stacker;
 
+import com.yapcore.sched.YapSched;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -36,7 +37,7 @@ public final class SpawnerListener implements Listener {
         if (event.getBlockPlaced().getType() != Material.SPAWNER) {
             return;
         }
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
+        YapSched.region(plugin, event.getBlockPlaced().getLocation(), () -> {
             if (spawners.tryAbsorbIntoNearby(event.getBlockPlaced())) {
                 // item already consumed by place; block removed into host
             }

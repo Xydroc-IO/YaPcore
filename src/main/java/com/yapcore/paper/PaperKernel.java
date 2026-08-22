@@ -88,6 +88,9 @@ public final class PaperKernel {
             Path cwd = Path.of("").toAbsolutePath().normalize();
             Path dir = paperDir();
             if (cwd.equals(dir)) {
+                LOG.warning("Phase 3 spatial tick is retired as product path — "
+                        + "prefer game-authority=folia. Starting legacy Phase 3 only because "
+                        + "paper-phase3-tick-bridge=true.");
                 usingPhase3 = true;
                 phase3 = new Phase3PaperRuntime(rootDir, config, yapEngine);
                 phase3.start();

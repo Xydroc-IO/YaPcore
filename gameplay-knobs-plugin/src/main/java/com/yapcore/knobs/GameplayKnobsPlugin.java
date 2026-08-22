@@ -1,12 +1,13 @@
 package com.yapcore.knobs;
 
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 
 /**
  * Purpur-inspired gameplay + mob encyclopedia for YaPcore (Paper plugin).
@@ -15,7 +16,7 @@ import org.bukkit.scheduler.BukkitTask;
 public final class GameplayKnobsPlugin extends JavaPlugin {
 
     private KnobsConfig knobs;
-    private BukkitTask ridableTask;
+    private YapTask ridableTask;
 
     @Override
     public void onEnable() {
@@ -23,7 +24,7 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
         knobs.reload();
         getServer().getPluginManager().registerEvents(new KnobsListener(this, knobs), this);
         getServer().getPluginManager().registerEvents(new BlockKnobsListener(knobs), this);
-        ridableTask = Bukkit.getScheduler().runTaskTimer(this, this::tickRidables, 1L, 1L);
+        ridableTask = YapSched.globalTimer(this, this::tickRidables, 1L, 1L);
         getLogger().info("YaP Gameplay Knobs online — WASD ridables + AI + block patches");
         getLogger().info("Edit plugins/YaPGameplayKnobs/knobs.yml · /yapknobs reload");
     }
@@ -46,7 +47,7 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
             }
             KnobsConfig.MobKnobs mk = knobs.mob(mount.getType().name());
             if (mk != null && mk.ridable() && mk.controllable()) {
-                RidableController.tickMount(mount, player, mk);
+                YapSched.entity(this, mount, () -> RidableController.tickMount(mount, player, mk));
             }
         }
     }

@@ -4,6 +4,7 @@ import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.JobRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
 import com.yapcore.playerdata.sync.SyncService;
+import com.yapcore.sched.YapSched;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -33,7 +34,7 @@ public final class JobListener implements Listener {
         if (!sync.isReady(player.getUniqueId())) {
             return;
         }
-        plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+        YapSched.async(plugin, () -> {
             try {
                 var progress = jobs.list(player.getUniqueId());
                 if (progress.isEmpty()) {
@@ -60,7 +61,7 @@ public final class JobListener implements Listener {
                 }
                 double finalPay = Math.round(pay * 100.0) / 100.0;
                 String jobName = gainedJob;
-                plugin.getServer().getScheduler().runTask(plugin, () -> {
+                YapSched.entity(plugin, player, () -> {
                     if (!player.isOnline()) {
                         return;
                     }

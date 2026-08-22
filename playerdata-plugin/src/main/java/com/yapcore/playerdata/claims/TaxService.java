@@ -3,10 +3,11 @@ package com.yapcore.playerdata.claims;
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.ClaimRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.sql.SQLException;
 import java.util.logging.Level;
@@ -21,7 +22,7 @@ public final class TaxService {
     private final ClaimService claims;
     private final ClaimRepository repo;
     private final BalanceStore balances;
-    private BukkitTask task;
+    private YapTask task;
 
     public TaxService(JavaPlugin plugin, PlayerDataConfig config, ClaimService claims,
                       BalanceStore balances) {
@@ -37,7 +38,7 @@ public final class TaxService {
             return;
         }
         long period = 20L * 60L * Math.max(1, config.claimsTaxTickMinutes());
-        task = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::tick, period, period);
+        task = YapSched.asyncTimer(plugin, this::tick, period, period);
         plugin.getLogger().info("Claim taxes enabled: $"
                 + config.claimsTaxPerBlockPerDay() + "/block/day");
     }
@@ -72,7 +73,7 @@ public final class TaxService {
                 if (frozen) {
                     Player owner = Bukkit.getPlayer(claim.owner());
                     if (owner != null) {
-                        Bukkit.getScheduler().runTask(plugin, () -> owner.sendMessage(
+                        YapSched.entity(plugin, owner, () -> owner.sendMessage(
                                 "§cClaim #" + claim.id() + " is tax-frozen ($"
                                         + String.format("%.2f", due) + " due). §e/claim paytax"));
                     }
@@ -89,7 +90,7 @@ public final class TaxService {
             claims.reloadLocal();
             Player owner = Bukkit.getPlayer(claim.owner());
             if (owner != null) {
-                Bukkit.getScheduler().runTask(plugin, () -> owner.sendMessage(
+                YapSched.entity(plugin, owner, () -> owner.sendMessage(
                         "§cClaim #" + claim.id() + " was auto-abandoned for unpaid taxes."));
             }
             plugin.getLogger().info("Auto-abandoned claim #" + claim.id() + " for taxes");

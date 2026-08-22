@@ -4,13 +4,14 @@ import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.auth.AuthService;
 import com.yapcore.playerdata.db.PlayerRecord;
 import com.yapcore.playerdata.db.PlayerRepository;
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.sql.SQLException;
 import java.util.Map;
@@ -18,6 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 
 /**
@@ -36,7 +38,7 @@ public final class SyncService {
     private final Set<UUID> loading = ConcurrentHashMap.newKeySet();
     private final Map<UUID, Double> balances = new ConcurrentHashMap<>();
     private final Map<UUID, PlayerRecord> pendingApply = new ConcurrentHashMap<>();
-    private BukkitTask autosaveTask;
+    private YapTask autosaveTask;
 
     public SyncService(JavaPlugin plugin, PlayerDataConfig config,
                        PlayerRepository repository, SessionLock sessionLock) {
@@ -56,7 +58,7 @@ public final class SyncService {
 
     public void startAutosave() {
         long period = config.autosaveSeconds() * 20L;
-        autosaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, this::autosaveAll, period, period);
+        autosaveTask = YapSched.asyncTimer(plugin, this::autosaveAll, period, period);
     }
 
     public void stopAutosave() {
@@ -102,13 +104,13 @@ public final class SyncService {
             player.getEnderChest().clear();
         }
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        YapSched.async(plugin, () -> {
             try {
                 repository.ensure(uuid, name);
                 Optional<String> holder = sessionLock.tryAcquireOrHolder(uuid);
                 if (holder.isPresent()) {
                     String server = holder.get();
-                    Bukkit.getScheduler().runTask(plugin, () -> {
+                    YapSched.entity(plugin, player, () -> {
                         if (player.isOnline()) {
                             player.kick(net.kyori.adventure.text.Component.text(
                                     "Already logged in on server '" + server
@@ -120,7 +122,7 @@ public final class SyncService {
                 }
                 PlayerRecord record = repository.find(uuid, config.inventoryProfile())
                         .orElseThrow(() -> new SQLException("Missing row after ensure"));
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                YapSched.entity(plugin, player, () -> {
                     if (!player.isOnline()) {
                         releaseQuiet(uuid);
                         loading.remove(uuid);
@@ -149,7 +151,7 @@ public final class SyncService {
                 });
             } catch (Exception e) {
                 plugin.getLogger().log(Level.SEVERE, "Failed to load data for " + name, e);
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                YapSched.entity(plugin, player, () -> {
                     if (player.isOnline()) {
                         player.kick(net.kyori.adventure.text.Component.text(
                                 "Database unavailable. Try again later."));
@@ -166,7 +168,7 @@ public final class SyncService {
         PlayerRecord record = pendingApply.remove(uuid);
         if (record == null) {
             // Data may still be loading — wait briefly
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            YapSched.entityLater(plugin, player, () -> {
                 if (!player.isOnline()) {
                     return;
                 }
@@ -176,7 +178,7 @@ public final class SyncService {
                 } else if (!ready.contains(uuid) && !loading.contains(uuid)) {
                     // reload
                     beginJoin(player);
-                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    YapSched.entityLater(plugin, player, () -> {
                         if (player.isOnline() && auth != null && auth.isAuthenticated(uuid)) {
                             PlayerRecord r = pendingApply.remove(uuid);
                             if (r != null) {
@@ -218,7 +220,7 @@ public final class SyncService {
         ready.remove(uuid);
         loading.remove(uuid);
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        YapSched.async(plugin, () -> {
             try {
                 if (snapshot != null) {
                     mergeUnsyncedFields(snapshot);
@@ -288,7 +290,7 @@ public final class SyncService {
 
     public void saveBalanceAsync(UUID uuid, double balance) {
         balances.put(uuid, balance);
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+        YapSched.async(plugin, () -> {
             try {
                 repository.saveBalance(uuid, balance);
             } catch (SQLException e) {
@@ -299,19 +301,24 @@ public final class SyncService {
 
     private void autosaveAll() {
         java.util.List<PlayerRecord> snaps = new java.util.ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
         try {
-            Bukkit.getScheduler().callSyncMethod(plugin, () -> {
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    if (!ready.contains(player.getUniqueId())) {
-                        continue;
+            YapSched.global(plugin, () -> {
+                try {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        if (!ready.contains(player.getUniqueId())) {
+                            continue;
+                        }
+                        PlayerRecord snap = snapshot(player);
+                        if (snap != null) {
+                            snaps.add(snap);
+                        }
                     }
-                    PlayerRecord snap = snapshot(player);
-                    if (snap != null) {
-                        snaps.add(snap);
-                    }
+                } finally {
+                    latch.countDown();
                 }
-                return null;
-            }).get();
+            });
+            latch.await();
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Autosave snapshot failed", e);
             return;

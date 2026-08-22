@@ -19,9 +19,16 @@ repositories {
 dependencies {
     val paperApi = providers.gradleProperty("paperApiVersion").getOrElse("26.2.build.112-stable")
     compileOnly("io.papermc.paper:paper-api:$paperApi")
+    implementation(project(":yap-sched"))
 }
 
 tasks.jar {
+    from({
+        configurations.runtimeClasspath.get()
+            .filter { it.name.startsWith("yap-sched") || it.name.contains("yap-sched") }
+            .map { zipTree(it) }
+    })
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("yap-packs.jar")
 }
 

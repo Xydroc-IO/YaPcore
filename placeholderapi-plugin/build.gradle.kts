@@ -20,6 +20,7 @@ repositories {
 dependencies {
     val paperApi = providers.gradleProperty("paperApiVersion").getOrElse("26.2.build.112-stable")
     compileOnly("io.papermc.paper:paper-api:$paperApi")
+    implementation(project(":yap-sched"))
     testImplementation("io.papermc.paper:paper-api:$paperApi")
 
     // Bundled into yap-placeholderapi.jar for getAdventure() / Metrics parity

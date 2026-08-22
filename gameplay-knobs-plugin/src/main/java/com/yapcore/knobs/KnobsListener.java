@@ -1,5 +1,6 @@
 package com.yapcore.knobs;
 
+import com.yapcore.sched.YapSched;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Entity;
@@ -178,7 +179,7 @@ public final class KnobsListener implements Listener {
         KnobsConfig.MobKnobs knobs = config.mob(mob.getType().name());
         if (knobs != null) {
             // Restore configured AI after ride
-            plugin.getServer().getScheduler().runTask(plugin, () -> AiController.apply(mob, knobs, plugin.getLogger()));
+            YapSched.entity(plugin, mob, () -> AiController.apply(mob, knobs, plugin.getLogger()));
         }
     }
 

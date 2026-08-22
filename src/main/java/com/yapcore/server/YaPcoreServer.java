@@ -19,6 +19,7 @@ import com.yapcore.protocol.DualStackGateway;
 import com.yapcore.protocol.ProtocolVersionRegistry;
 import com.yapcore.protocol.compat.ProtocolCompat;
 import com.yapcore.kernel.GameKernel;
+import com.yapcore.folia.FoliaKernel;
 import com.yapcore.paper.PaperKernel;
 import com.yapcore.paper.PaperPluginsLayout;
 import com.yapcore.paper.phase3.PaperTickBridge;
@@ -61,6 +62,7 @@ public final class YaPcoreServer {
     private final ResourcePackManager resourcePacks;
     private final DualStackGateway gateway;
     private final GameKernel gameKernel;
+    private final FoliaKernel foliaKernel;
     private final PaperKernel paperKernel;
     private final PaperTickBridge paperTickBridge;
     private final AtomicBoolean running = new AtomicBoolean(false);
@@ -83,7 +85,14 @@ public final class YaPcoreServer {
         engine.setPlayerCountSupplier(onlinePlayers::get);
 
         this.bukkitServer = new YaPBukkitServer(config, engine.bridge(), engine.pluginPool());
-        if (config.isPaperAuthority()) {
+        if (config.isFoliaAuthority()) {
+            try {
+                PaperPluginsLayout.ensureUnified(rootDir, rootDir.resolve(config.getFoliaDir()));
+                ConfigHub.ensure(rootDir, rootDir.resolve(config.getFoliaDir()));
+            } catch (IOException e) {
+                LOG.log(Level.WARNING, "Could not unify plugins/config hub for Folia", e);
+            }
+        } else if (config.isPaperAuthority()) {
             try {
                 PaperPluginsLayout.ensureUnified(rootDir, rootDir.resolve(config.getPaperDir()));
                 ConfigHub.ensure(rootDir, rootDir.resolve(config.getPaperDir()));
@@ -101,7 +110,7 @@ public final class YaPcoreServer {
                 pluginManager.getPluginsDir(),
                 bukkitServer,
                 bukkitServer.bridgedScheduler(),
-                config.isPaperAuthority()
+                config.isPaperAuthority() || config.isFoliaAuthority()
         );
         this.moduleRuntime = new ModuleRuntime(
                 moduleManager.getModulesDir(),
@@ -124,6 +133,7 @@ public final class YaPcoreServer {
         this.gateway = new DualStackGateway(
                 config, engine.trafficCop(), clients, protocols, resourcePacks, crossplay);
         this.gameKernel = new GameKernel(rootDir, config);
+        this.foliaKernel = new FoliaKernel(rootDir, config);
         this.paperKernel = new PaperKernel(rootDir, config, engine.yapEngine());
         this.paperTickBridge = new PaperTickBridge(engine.parallelGameCore());
 
@@ -211,6 +221,11 @@ public final class YaPcoreServer {
         }
         try {
             switch (config.getGameAuthority()) {
+                case FOLIA -> {
+                    foliaKernel.start();
+                    gateway.setProxyToGameKernel(config.isWrappedGameProxy());
+                    com.yapcore.game.GameCommandBridge.setProcessDispatch(foliaKernel::dispatchConsoleCommand);
+                }
                 case PAPER -> {
                     paperKernel.start();
                     gateway.setProxyToGameKernel(config.isWrappedGameProxy());
@@ -219,6 +234,7 @@ public final class YaPcoreServer {
                     if (config.isPaperPhase3TickBridge() && !paperKernel.isPhase3()) {
                         paperTickBridge.start();
                     }
+                    com.yapcore.game.GameCommandBridge.setProcessDispatch(paperKernel::dispatchConsoleCommand);
                     attachBedrockPaperWorldSync();
                 }
                 case MOJANG -> {
@@ -241,6 +257,7 @@ public final class YaPcoreServer {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             paperKernel.stop();
+            foliaKernel.stop();
             gameKernel.stop();
             throw new IOException("Gateway start interrupted", e);
         }
@@ -254,14 +271,22 @@ public final class YaPcoreServer {
                 + " | packs HTTP :" + config.getResourcePackHttpPort()
                 + " | max-players=" + config.getMaxPlayers()
                 + " | game-authority=" + config.getGameAuthority()
+                + " | folia-embed=" + (config.isFoliaAuthority() && config.isFoliaEmbed())
                 + " | paper-embed=" + (config.isPaperAuthority() && config.isPaperEmbed())
                 + " | phase3=" + (config.isPaperAuthority() && paperKernel.isPhase3())
                 + " | phase3-bridge=" + (config.isPaperAuthority() && phase3BridgeOnline())
                 + " | wrapped-proxy=" + (config.isWrappedGameProxy()
-                    && (paperKernel.isRunning() || gameKernel.isRunning()))
+                    && (foliaKernel.isRunning() || paperKernel.isRunning() || gameKernel.isRunning()))
                 + " | multi-version=" + ProtocolCompat.isOnline()
                 + " | backwards-compat=" + config.isBackwardsCompatible());
-        if (config.isPaperAuthority() && paperKernel.isRunning()) {
+        if (config.isFoliaAuthority() && foliaKernel.isRunning()) {
+            if (config.isFoliaEmbed()) {
+                LOG.info("Folia: owns JE :" + config.foliaListenPort()
+                        + " | plugins → " + config.getFoliaDir() + "/plugins");
+            } else {
+                LOG.info("Folia wrap :" + config.getFoliaPort());
+            }
+        } else if (config.isPaperAuthority() && paperKernel.isRunning()) {
             if (paperKernel.isPhase3()) {
                 LOG.info("Paper Phase 3: same-JVM + leased spatial tick on JE :" + config.getPort()
                         + " | nms=" + (paperKernel.phase3() != null
@@ -286,7 +311,9 @@ public final class YaPcoreServer {
         moduleRuntime.loadAll();
         LOG.info("Plugins folder: " + pluginManager.getPluginsDir().toAbsolutePath()
                 + " (" + pluginManager.listPlugins().size() + " jars on disk)"
-                + (config.isPaperAuthority()
+                + (config.isFoliaAuthority()
+                ? " — Folia + YaP share this folder"
+                : config.isPaperAuthority()
                 ? " — Paper + YaP share this folder" : ""));
         LOG.info("Modules folder: " + moduleManager.getModulesDir().toAbsolutePath()
                 + " (" + moduleManager.listModules().size() + " jars on disk)");
@@ -300,9 +327,17 @@ public final class YaPcoreServer {
             return;
         }
         if (!config.isPaperAuthority() || !paperKernel.isRunning()) {
-            LOG.warning("yap-ranks-auto-apply ignored — Paper not running");
+            if (config.isFoliaAuthority() && foliaKernel.isRunning()) {
+                scheduleRanks(foliaKernel::dispatchConsoleCommand);
+                return;
+            }
+            LOG.warning("yap-ranks-auto-apply ignored — Folia/Paper not running");
             return;
         }
+        scheduleRanks(paperKernel::dispatchConsoleCommand);
+    }
+
+    private void scheduleRanks(java.util.function.Function<String, String> dispatch) {
         if (!YapRanks.luckPermsInstalled(pluginManager.getPluginsDir())) {
             LOG.warning("yap-ranks-auto-apply set but LuckPerms jar not found in plugins/ — "
                     + "run scripts/install-luckperms.sh");
@@ -315,10 +350,10 @@ public final class YaPcoreServer {
         Thread t = new Thread(() -> {
             try {
                 Thread.sleep(8_000L);
-                if (!running.get() || !paperKernel.isRunning()) {
+                if (!running.get()) {
                     return;
                 }
-                var result = YapRanks.apply(rootDir, paperKernel::dispatchConsoleCommand, false);
+                var result = YapRanks.apply(rootDir, dispatch, false);
                 LOG.info(result.summary());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -351,13 +386,19 @@ public final class YaPcoreServer {
                 }
                 case "apply" -> {
                     boolean force = parts.length > 2 && "force".equalsIgnoreCase(parts[2]);
-                    if (!paperKernel.isRunning()) {
-                        yield "Paper must be running to apply LuckPerms commands.";
+                    java.util.function.Function<String, String> dispatch = null;
+                    if (config.isFoliaAuthority() && foliaKernel.isRunning()) {
+                        dispatch = foliaKernel::dispatchConsoleCommand;
+                    } else if (paperKernel.isRunning()) {
+                        dispatch = paperKernel::dispatchConsoleCommand;
+                    }
+                    if (dispatch == null) {
+                        yield "Folia/Paper must be running to apply LuckPerms commands.";
                     }
                     if (!YapRanks.luckPermsInstalled(pluginManager.getPluginsDir())) {
                         yield "LuckPerms not found in plugins/. Run: scripts/install-luckperms.sh";
                     }
-                    var result = YapRanks.apply(rootDir, paperKernel::dispatchConsoleCommand, force);
+                    var result = YapRanks.apply(rootDir, dispatch, force);
                     yield result.summary();
                 }
                 case "reset-marker" -> {
@@ -392,6 +433,7 @@ public final class YaPcoreServer {
             return;
         }
         LOG.info("Stopping YaPcore…");
+        com.yapcore.game.GameCommandBridge.clearProcessDispatch();
         try {
             pluginRuntime.disableAll();
             moduleRuntime.disableAll();
@@ -403,6 +445,7 @@ public final class YaPcoreServer {
             paperTickBridge.stop();
         }
         paperKernel.stop();
+        foliaKernel.stop();
         gameKernel.stop();
         resourcePacks.stopHttp();
         ProtocolCompat.stop();
@@ -554,8 +597,11 @@ public final class YaPcoreServer {
                 if (publicity.isPresent()) {
                     yield publicity.get();
                 }
+                if (config.isFoliaAuthority() && foliaKernel.isRunning()) {
+                    yield com.yapcore.game.GameCommandBridge.dispatch(line);
+                }
                 if (config.isPaperAuthority() && paperKernel.isRunning()) {
-                    yield paperKernel.dispatchConsoleCommand(line);
+                    yield com.yapcore.game.GameCommandBridge.dispatch(line);
                 }
                 yield "Unknown command: " + cmd + " (type 'help')";
             }

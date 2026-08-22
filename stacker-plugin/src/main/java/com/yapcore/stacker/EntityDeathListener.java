@@ -1,5 +1,6 @@
 package com.yapcore.stacker;
 
+import com.yapcore.sched.YapSched;
 import org.bukkit.Location;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -62,7 +63,7 @@ public final class EntityDeathListener implements Listener {
         }
 
         RemainderSpec spec = RemainderSpec.capture(entity, size - 1);
-        plugin.getServer().getScheduler().runTask(plugin, () -> spawnRemainder(spec));
+        YapSched.region(plugin, entity.getLocation(), () -> spawnRemainder(spec));
     }
 
     private void multiplyDrops(EntityDeathEvent event, int stackFactor, double lootMul) {

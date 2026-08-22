@@ -152,7 +152,11 @@ public final class PaperFiles {
                 p.setProperty("simulation-distance", p.getProperty("view-distance", "6"));
             }
         }
-        p.setProperty("spawn-protection", "0");
+        if (!bench) {
+            // Product: open spawn for ops tooling. Bench: leave Paper default (16) so
+            // dig/grief parity matches stock Paper competitors.
+            p.setProperty("spawn-protection", "0");
+        }
         p.setProperty("enable-command-block", "true");
         applyResourcePack(p, rootDir, config);
         try (var out = Files.newOutputStream(file)) {
@@ -257,8 +261,8 @@ public final class PaperFiles {
         if (config.isVelocityEnabled() && config.isVelocityBindLocalhost()) {
             return "127.0.0.1";
         }
-        // Via front: Paper stays on loopback; public JE is YaPcore's ViaProxyHandler.
-        if (config.isPaperAuthority() && config.isProtocolViaEnabled()) {
+        // Via front: game stays on loopback; public JE is YaPcore's ViaProxyHandler.
+        if ((config.isPaperAuthority() || config.isFoliaAuthority()) && config.isProtocolViaEnabled()) {
             return "127.0.0.1";
         }
         if (requestedBind == null || requestedBind.isBlank() || "0.0.0.0".equals(requestedBind)) {
@@ -288,11 +292,12 @@ public final class PaperFiles {
         }
         writePaperVelocityGlobal(paperDir, true, config.isVelocityOnlineMode(), secret);
         ensureSpigotBungeeOff(paperDir);
-        LOG.info("Velocity modern forwarding enabled for Paper (online-mode="
+        String game = config.isFoliaAuthority() ? "Folia" : "Paper";
+        LOG.info("Velocity/YaP Link modern forwarding enabled for " + game + " (online-mode="
                 + config.isVelocityOnlineMode()
                 + ", bind="
                 + (config.isVelocityBindLocalhost() ? "127.0.0.1" : "config bind")
-                + ") — players must join via Velocity");
+                + ") — players must join via YaP Link or Velocity");
     }
 
     static String resolveVelocitySecret(Path rootDir, ServerConfig config) throws IOException {

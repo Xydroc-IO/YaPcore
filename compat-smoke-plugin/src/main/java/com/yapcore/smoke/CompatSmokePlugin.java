@@ -1,5 +1,6 @@
 package com.yapcore.smoke;
 
+import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -35,7 +36,7 @@ public final class CompatSmokePlugin extends JavaPlugin {
         getLogger().info("YaP-COMPAT-SMOKE craftserver-ok");
 
         // Common API surfaces plugins rely on
-        Bukkit.getScheduler().runTask(this, () ->
+        YapSched.global(this, () ->
                 getLogger().info("YaP-COMPAT-SMOKE scheduler-ok"));
 
         Bukkit.getPluginManager().registerEvents(new Listener() {

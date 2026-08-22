@@ -35,12 +35,15 @@ yap_load_config() {
   JVM_HEAP_PIN=true
   JVM_NUMA_NODE=0
   JVM_THREAD_PRIORITY=true
-  GAME_AUTHORITY=paper
+  GAME_AUTHORITY=folia
   PAPER_EMBED=true
-  PAPER_PHASE3=true
-  PAPER_PHASE3_NMS=true
+  PAPER_PHASE3=false
+  PAPER_PHASE3_NMS=false
   PAPER_DIR=paper-kernel
   PAPER_VERSION=26.2
+  FOLIA_EMBED=true
+  FOLIA_DIR=folia-kernel
+  FOLIA_VERSION=26.2
   if [ -f "$CFG" ]; then
     # portable key=value parse (ignore comments / blanks)
     while IFS= read -r line || [ -n "$line" ]; do
@@ -66,6 +69,9 @@ yap_load_config() {
         paper-phase3-nms-tick) PAPER_PHASE3_NMS="$val" ;;
         paper-dir) PAPER_DIR="$val" ;;
         paper-version) PAPER_VERSION="$val" ;;
+        folia-embed) FOLIA_EMBED="$val" ;;
+        folia-dir) FOLIA_DIR="$val" ;;
+        folia-version) FOLIA_VERSION="$val" ;;
       esac
     done <"$CFG"
   fi
@@ -80,14 +86,19 @@ yap_load_config() {
   [ -n "$MAX_PLAYERS" ] || MAX_PLAYERS=100
   [ -n "$PORT" ] || PORT=25566
   [ -n "$JVM_NUMA_NODE" ] || JVM_NUMA_NODE=0
-  GAME_AUTHORITY="$(echo "${GAME_AUTHORITY:-paper}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+  GAME_AUTHORITY="$(echo "${GAME_AUTHORITY:-folia}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
   PAPER_EMBED="$(echo "${PAPER_EMBED:-true}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
-  PAPER_PHASE3="$(echo "${PAPER_PHASE3:-true}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
-  PAPER_PHASE3_NMS="$(echo "${PAPER_PHASE3_NMS:-true}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+  PAPER_PHASE3="$(echo "${PAPER_PHASE3:-false}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+  PAPER_PHASE3_NMS="$(echo "${PAPER_PHASE3_NMS:-false}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
   PAPER_DIR="$(echo "${PAPER_DIR:-paper-kernel}" | tr -d '[:space:]')"
   PAPER_VERSION="$(echo "${PAPER_VERSION:-26.2}" | tr -d '[:space:]')"
+  FOLIA_EMBED="$(echo "${FOLIA_EMBED:-true}" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
+  FOLIA_DIR="$(echo "${FOLIA_DIR:-folia-kernel}" | tr -d '[:space:]')"
+  FOLIA_VERSION="$(echo "${FOLIA_VERSION:-26.2}" | tr -d '[:space:]')"
   [ -n "$PAPER_DIR" ] || PAPER_DIR=paper-kernel
   [ -n "$PAPER_VERSION" ] || PAPER_VERSION=26.2
+  [ -n "$FOLIA_DIR" ] || FOLIA_DIR=folia-kernel
+  [ -n "$FOLIA_VERSION" ] || FOLIA_VERSION=26.2
   JVM_GC="$(echo "${JVM_GC:-zgc}" | tr '[:upper:]' '[:lower:]')"
   JVM_NUMA="$(echo "${JVM_NUMA:-true}" | tr '[:upper:]' '[:lower:]')"
   JVM_HEAP_PIN="$(echo "${JVM_HEAP_PIN:-true}" | tr '[:upper:]' '[:lower:]')"

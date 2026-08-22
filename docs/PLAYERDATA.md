@@ -25,6 +25,7 @@ Always on. Prevents the same UUID being online on two backends at once:
 - Contested lock → kick with holder server name
 - Async pre-login rejects early when another server holds a live lock
 - Stuck lock: `/yapdata unlock <player>`
+- **Save path:** snapshot profile on main (or quit), `repository.saveProfile` on Bukkit async — I/O off main, apply stays sync
 
 `lock-ttl-seconds` (default 120) auto-expires crashed holds.
 

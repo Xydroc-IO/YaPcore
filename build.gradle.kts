@@ -257,6 +257,9 @@ tasks.register("installProductDefaults") {
     if (findProject(":floodgate-plugin") != null) {
         dependsOn(":floodgate-plugin:installIntoPlugins")
     }
+    if (findProject(":folia-bridge-plugin") != null) {
+        dependsOn(":folia-bridge-plugin:installIntoPlugins")
+    }
 }
 
 tasks.register("installGameplayDefaults") {
@@ -302,6 +305,7 @@ tasks.register("assemblePluginDist") {
         ":packs-plugin:jar",
         ":chat-plugin:jar",
         ":floodgate-plugin:jar",
+        ":folia-bridge-plugin:jar",
         ":vehicles-plugin:jar",
         ":vehicles-module:jar",
         ":gameplay-knobs-plugin:jar",
@@ -343,6 +347,9 @@ tasks.register("assemblePluginDist") {
         copyNamed(jarOf(":packs-plugin"), coreDir)
         copyNamed(jarOf(":chat-plugin"), coreDir)
         copyNamed(jarOf(":floodgate-plugin"), coreDir)
+        if (findProject(":folia-bridge-plugin") != null) {
+            copyNamed(jarOf(":folia-bridge-plugin"), coreDir)
+        }
 
         copyNamed(jarOf(":vehicles-plugin"), gameplayDir)
         copyNamed(jarOf(":gameplay-knobs-plugin"), gameplayDir)

@@ -1,5 +1,7 @@
 package com.yapcore.playerdata.claims;
 
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -17,17 +19,18 @@ public final class ClaimVisualizer {
             return;
         }
         final int[] left = {Math.max(2, seconds * 2)}; // every 10 ticks
-        plugin.getServer().getScheduler().runTaskTimer(plugin, task -> {
+        final YapTask[] handle = new YapTask[1];
+        handle[0] = YapSched.globalTimer(plugin, () -> YapSched.entity(plugin, player, () -> {
             if (!player.isOnline() || left[0]-- <= 0) {
-                task.cancel();
+                handle[0].cancel();
                 return;
             }
             if (!player.getWorld().getName().equals(claim.world())) {
-                task.cancel();
+                handle[0].cancel();
                 return;
             }
             draw(player, claim);
-        }, 0L, 10L);
+        }), 1L, 10L);
     }
 
     private static void draw(Player player, Claim claim) {

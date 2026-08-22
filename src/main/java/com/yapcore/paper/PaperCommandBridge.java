@@ -142,55 +142,7 @@ public final class PaperCommandBridge {
     }
 
     private static boolean scheduleOnMain(Class<?> bukkit, Object server, ClassLoader cl, Runnable run) {
-        try {
-            Object pm = server.getClass().getMethod("getPluginManager").invoke(server);
-            Object[] plugins = (Object[]) pm.getClass().getMethod("getPlugins").invoke(pm);
-            Object plugin = null;
-            for (Object p : plugins) {
-                if (p == null) {
-                    continue;
-                }
-                if (Boolean.TRUE.equals(p.getClass().getMethod("isEnabled").invoke(p))) {
-                    plugin = p;
-                    break;
-                }
-            }
-            if (plugin == null) {
-                return executeOnMinecraftServer(cl, run);
-            }
-            Class<?> pluginCl = Class.forName("org.bukkit.plugin.Plugin", true, cl);
-            Object scheduler = server.getClass().getMethod("getScheduler").invoke(server);
-            scheduler.getClass()
-                    .getMethod("runTask", pluginCl, Runnable.class)
-                    .invoke(scheduler, plugin, run);
-            return true;
-        } catch (Throwable t) {
-            LOG.log(Level.FINE, "scheduleOnMain", t);
-            return executeOnMinecraftServer(cl, run);
-        }
-    }
-
-    private static boolean executeOnMinecraftServer(ClassLoader cl, Runnable run) {
-        try {
-            Class<?> ms = Class.forName("net.minecraft.server.MinecraftServer", true, cl);
-            Object server = ms.getMethod("getServer").invoke(null);
-            if (server == null) {
-                return false;
-            }
-            // DedicatedServer / MinecraftServer implement execute(Runnable) via tick thread
-            for (String name : new String[]{"execute", "scheduleOnMain", "tell"}) {
-                try {
-                    Method m = server.getClass().getMethod(name, Runnable.class);
-                    m.invoke(server, run);
-                    return true;
-                } catch (NoSuchMethodException ignored) {
-                }
-            }
-            // CraftServer path
-            return false;
-        } catch (Throwable t) {
-            LOG.log(Level.FINE, "executeOnMinecraftServer", t);
-            return false;
-        }
+        // Folia: GlobalRegionScheduler first; Paper: BukkitScheduler; else NMS execute.
+        return com.yapcore.game.GameSchedulers.scheduleSync(bukkit, server, cl, run);
     }
 }

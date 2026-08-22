@@ -1,6 +1,7 @@
 package com.yapcore.playerdata.sync;
 
 import com.yapcore.playerdata.db.MailRepository;
+import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -36,14 +37,14 @@ public final class JoinQuitListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         sync.beginJoin(player);
-        Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+        YapSched.asyncLater(plugin, () -> {
             if (!player.isOnline() || mail == null) {
                 return;
             }
             try {
                 int unread = mail.unreadCount(player.getUniqueId());
                 if (unread > 0) {
-                    Bukkit.getScheduler().runTask(plugin, () -> {
+                    YapSched.entity(plugin, player, () -> {
                         if (player.isOnline()) {
                             player.sendMessage("§eYou have §f" + unread + " §eunread mail. §7/mail read");
                         }

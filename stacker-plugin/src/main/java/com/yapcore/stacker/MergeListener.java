@@ -1,5 +1,6 @@
 package com.yapcore.stacker;
 
+import com.yapcore.sched.YapSched;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -56,7 +57,7 @@ public final class MergeListener implements Listener {
         Item target = event.getTarget();
         Item source = event.getEntity();
         int combined = items.getCount(target) + items.getCount(source);
-        stacks.plugin().getServer().getScheduler().runTask(stacks.plugin(), () -> {
+        YapSched.entity(stacks.plugin(), target, () -> {
             if (target.isValid()) {
                 items.setCount(target, Math.min(combined, stacks.config().itemMaxStack()));
             }
@@ -99,7 +100,8 @@ public final class MergeListener implements Listener {
         if (!stacks.config().remergeOnChunkLoad()) {
             return;
         }
-        stacks.plugin().getServer().getScheduler().runTask(stacks.plugin(), () -> {
+        var chunk = event.getChunk();
+        YapSched.region(stacks.plugin(), chunk.getWorld(), chunk.getX() << 4, chunk.getZ() << 4, () -> {
             for (var entity : event.getEntities()) {
                 if (entity instanceof LivingEntity living && living.isValid()) {
                     if (stacks.tryMergeAway(living)) {

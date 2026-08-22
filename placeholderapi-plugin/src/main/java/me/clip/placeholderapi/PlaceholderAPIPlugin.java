@@ -10,6 +10,7 @@ import me.clip.placeholderapi.expansion.manager.CloudExpansionManager;
 import me.clip.placeholderapi.expansion.manager.LocalExpansionManager;
 import me.clip.placeholderapi.metrics.MetricsBridge;
 import me.clip.placeholderapi.update.UpdateChecker;
+import com.yapcore.sched.YapSched;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
@@ -113,7 +114,7 @@ public final class PlaceholderAPIPlugin extends JavaPlugin {
         new PlayerExpansion().register();
         new ServerExpansion().register();
 
-        Bukkit.getScheduler().runTaskLater(this,
+        YapSched.globalLater(this,
                 () -> localExpansionManager.load(Bukkit.getConsoleSender()), 1L);
 
         if (config.isCloudEnabled()) {

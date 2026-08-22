@@ -19,6 +19,7 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import me.clip.placeholderapi.PlaceholderAPIPlugin;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
 import me.clip.placeholderapi.util.Msg;
+import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -178,7 +179,7 @@ public final class PapiCommand implements CommandExecutor, TabCompleter {
         if (plugin.getConfig().getBoolean("dump-paste", true)) {
             Msg.msg(sender, "&7Uploading dump…");
             CompletableFuture.supplyAsync(() -> paste(body)).whenComplete((key, err) -> {
-                Bukkit.getScheduler().runTask(plugin, () -> {
+                YapSched.global(plugin, () -> {
                     if (err != null || key == null) {
                         Msg.msg(sender, "&cPaste upload failed (local dump still saved).");
                     } else {

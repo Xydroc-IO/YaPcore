@@ -2,10 +2,11 @@ package com.yapcore.pregen;
 
 import com.yapcore.pregen.shape.ChunkPos;
 import com.yapcore.pregen.shape.ChunkShape;
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,8 +24,8 @@ public final class PregenService {
     private final ProgressStore store;
     private final Logger log;
     private final Map<String, PregenJob> jobs = new ConcurrentHashMap<>();
-    private BukkitTask pump;
-    private BukkitTask persistTask;
+    private YapTask pump;
+    private YapTask persistTask;
 
     public PregenService(JavaPlugin plugin, PregenConfig config, ProgressStore store) {
         this.plugin = plugin;
@@ -34,8 +35,8 @@ public final class PregenService {
     }
 
     public void start() {
-        pump = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 1L, 1L);
-        persistTask = Bukkit.getScheduler().runTaskTimer(plugin, this::persistRunning, 20L * 15, 20L * 15);
+        pump = YapSched.globalTimer(plugin, this::tick, 1L, 1L);
+        persistTask = YapSched.globalTimer(plugin, this::persistRunning, 20L * 15, 20L * 15);
         if (config.autoResume()) {
             for (ProgressStore.SavedJob saved : store.loadAll()) {
                 World w = Bukkit.getWorld(saved.world());
@@ -221,7 +222,7 @@ public final class PregenService {
             final ChunkPos pos = next;
             final PregenJob j = job;
             world.getChunkAtAsync(pos.x(), pos.z(), true, chunk ->
-                    Bukkit.getScheduler().runTask(plugin, () -> {
+                    YapSched.region(plugin, world, pos.x() << 4, pos.z() << 4, () -> {
                         j.endInflightSuccess();
                         if (j.isQueueEmpty() && j.state() == PregenJob.State.RUNNING) {
                             finish(j);

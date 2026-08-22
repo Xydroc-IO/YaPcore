@@ -1,5 +1,6 @@
 package com.yapcore.packs;
 
+import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -71,7 +72,7 @@ public final class PacksPlugin extends JavaPlugin implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(this, () -> pushPacks(player, true), pushDelayTicks);
+        YapSched.entityLater(this, player, () -> pushPacks(player, true), pushDelayTicks);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

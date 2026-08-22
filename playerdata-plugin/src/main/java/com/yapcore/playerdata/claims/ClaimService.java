@@ -2,11 +2,12 @@ package com.yapcore.playerdata.claims;
 
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.ClaimRepository;
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -37,7 +38,7 @@ public final class ClaimService {
     private final Map<UUID, Corner> pending = new ConcurrentHashMap<>();
     private final Map<UUID, SelectMode> modes = new ConcurrentHashMap<>();
     private final Map<Long, Map<UUID, ClaimRepository.TrustLevel>> trustCache = new ConcurrentHashMap<>();
-    private BukkitTask accrualTask;
+    private YapTask accrualTask;
 
     public ClaimService(JavaPlugin plugin, PlayerDataConfig config, ClaimRepository repo) {
         this.plugin = plugin;
@@ -49,7 +50,7 @@ public final class ClaimService {
         reloadLocal();
         if (config.claimsBlocksPerHour() > 0) {
             long period = 20L * 60L;
-            accrualTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            accrualTask = YapSched.asyncTimer(plugin, () -> {
                 int perMin = Math.max(1, config.claimsBlocksPerHour() / 60);
                 for (Player p : Bukkit.getOnlinePlayers()) {
                     try {

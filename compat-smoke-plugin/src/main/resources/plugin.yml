@@ -2,5 +2,6 @@ name: YaP-Compat-Smoke
 version: 1.0.0.0
 main: com.yapcore.smoke.CompatSmokePlugin
 api-version: '1.21'
+folia-supported: true
 description: Minimal Paper enable smoke for YaPcore plugin compatibility
 author: YapLabs
