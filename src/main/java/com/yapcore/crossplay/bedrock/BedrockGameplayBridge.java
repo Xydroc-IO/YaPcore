@@ -38,6 +38,8 @@ public final class BedrockGameplayBridge {
     private final Map<Long, Integer> pendingProtocol = new ConcurrentHashMap<>();
     /** P4.5 — continuous Paper column stream (flat only via -Dyapcore.bedrock.flat-chunks). */
     private final BedrockColumnStreamer columns = new BedrockColumnStreamer();
+    /** G.28 — last pushed Paper storage fingerprint per user (external /give detect). */
+    private final ConcurrentHashMap<String, Long> inventoryFingerprint = new ConcurrentHashMap<>();
     private BiConsumer<Long, List<ByteBuf>> outbound = (guid, packets) -> {
     };
     private volatile BedrockPaperWorldSync paperWorld;
@@ -167,6 +169,11 @@ public final class BedrockGameplayBridge {
                         entities.move(runtime, auth.x(), auth.y(), auth.z(), auth.yaw(), auth.pitch());
                     }
                     streamColumnsAround(guid, (int) auth.x(), (int) auth.y(), (int) auth.z(), false);
+                    maybePushPaperInventory(guid, user);
+                    pushOpenContainerProgress(guid, user);
+                    if ((auth.tick() & 7L) == 0L) {
+                        mirrorPaperPlayers();
+                    }
                 }
             }
             case TEXT -> {
@@ -256,16 +263,18 @@ public final class BedrockGameplayBridge {
                                 "action", Byte.toString(act)
                         )));
                     } else {
-                        // Interact / open — try villager entity, else block container at player feet
-                        String targetName = nameForRuntime(interact.targetRuntimeId());
-                        if (targetName != null && targetName.contains("villager")) {
+                        // Interact / open — villager by actor type (not display-name substring)
+                        BedrockEntityTracker.Tracked target = entities.get(interact.targetRuntimeId());
+                        String targetName = target != null ? target.name() : nameForRuntime(interact.targetRuntimeId());
+                        String actorType = target != null ? target.actorType() : "";
+                        if (isVillagerActor(actorType, targetName)) {
                             long trader = interact.targetRuntimeId();
                             BedrockContainerBridge.OpenWindow w = containers.openVillager(
                                     user, trader, targetName);
                             pushVillagerTrade(guid, user, w, trader);
                             actions.add(new GameAction("OPEN_CONTAINER", user, Map.of(
                                     "type", Integer.toString(BedrockContainerBridge.TYPE_VILLAGER),
-                                    "target", targetName,
+                                    "target", targetName == null ? "" : targetName,
                                     "runtime", Long.toString(trader)
                             )));
                         } else {
@@ -314,6 +323,12 @@ public final class BedrockGameplayBridge {
                         if (ow != null && ow.type() == BedrockContainerBridge.TYPE_ENCHANT) {
                             pushEnchantOptions(guid, user);
                         }
+                        if (ow != null && ow.type() == BedrockContainerBridge.TYPE_VILLAGER) {
+                            pushVillagerTrade(guid, user, ow, ow.entityRuntimeId());
+                        }
+                        if (ow != null && ow.type() == BedrockContainerBridge.TYPE_FURNACE) {
+                            pushFurnaceProgress(guid, ow);
+                        }
                     }
                     actions.add(new GameAction("INV", user, Map.of(
                             "requestId", Integer.toString(req.requestId()),
@@ -335,9 +350,14 @@ public final class BedrockGameplayBridge {
                         line = "/" + line;
                     }
                 }
-                String result = com.yapcore.paper.PaperCommandBridge.dispatchToPaper(line, null);
-                boolean ok = result != null && !result.startsWith("Paper not") && !result.startsWith("Could not")
-                        && !result.startsWith("Paper command error");
+                String result = com.yapcore.game.GameCommandBridge.dispatch(line, null);
+                boolean ok = result != null
+                        && !result.startsWith("Paper not")
+                        && !result.startsWith("Game not ready")
+                        && !result.startsWith("Folia is not")
+                        && !result.startsWith("Could not")
+                        && !result.startsWith("Paper command error")
+                        && !result.startsWith("Folia stdin error");
                 // Local shadow give/clear for BE-only sessions (no Bukkit player)
                 applyCommandInventoryHints(user, line);
                 outbound.accept(guid, List.of(
@@ -593,12 +613,10 @@ public final class BedrockGameplayBridge {
         if (sync != null && sync.isEnabled()) {
             opts = new BedrockPaperRecipes(sync).enchantOptionsFor(user);
         }
+        // Fail closed when Paper has no offers — do not ship fake Protection/Unbreaking
         if (opts.isEmpty()) {
-            opts = java.util.List.of(
-                    new BedrockPaperRecipes.EnchantOption(1, 1, "PROTECTION", 0, 1),
-                    new BedrockPaperRecipes.EnchantOption(2, 5, "UNBREAKING", 17, 1),
-                    new BedrockPaperRecipes.EnchantOption(3, 10, "EFFICIENCY", 15, 2)
-            );
+            outbound.accept(guid, List.of(BedrockPacketCodec.playerEnchantOptions(java.util.List.of())));
+            return;
         }
         java.util.List<ByteBuf> pkts = new java.util.ArrayList<>();
         pkts.add(BedrockPacketCodec.playerEnchantOptions(opts));
@@ -662,6 +680,10 @@ public final class BedrockGameplayBridge {
             if (entities.runtimeFor(p.name()) != null) {
                 Long rt = entities.runtimeFor(p.name());
                 entities.move(rt, (float) p.x(), (float) p.y(), (float) p.z(), 0f, 0f);
+                float[] hp = sync.snapshotPlayerHealth(p.name());
+                if (hp != null && rt != null) {
+                    entities.updateData(rt, hp[0], p.name(), false);
+                }
                 continue;
             }
             long runtime = runtimeIds.getAndIncrement();
@@ -676,6 +698,7 @@ public final class BedrockGameplayBridge {
             Long existing = entities.runtimeForUuid(e.uuid());
             if (existing != null) {
                 entities.move(existing, (float) e.x(), (float) e.y(), (float) e.z(), 0f, 0f);
+                entities.updateData(existing, e.health(), e.name(), false);
                 continue;
             }
             long runtime = runtimeIds.getAndIncrement();
@@ -759,6 +782,9 @@ public final class BedrockGameplayBridge {
         sessions.close(guid);
         chunkRadius.remove(guid);
         columns.clear(guid);
+        if (session != null && session.username() != null) {
+            inventoryFingerprint.remove(session.username().toLowerCase());
+        }
     }
 
     private String paperBlockHint(int x, int y, int z) {
@@ -777,12 +803,49 @@ public final class BedrockGameplayBridge {
             int[][] paper = sync.snapshotInventoryStacksLiveOnly(username, 36);
             if (paper != null) {
                 inventory.seedStorage(username, paper[0], paper[1]);
+                inventoryFingerprint.put(username.toLowerCase(), fingerprintStacks(paper[0], paper[1]));
                 outbound.accept(guid, List.of(BedrockPacketCodec.inventoryContent(0, paper[0], paper[1])));
                 return;
             }
         }
-        outbound.accept(guid, List.of(BedrockPacketCodec.inventoryContent(
-                0, inventory.storageNetworkIds(username), inventory.storageCounts(username))));
+        int[] ids = inventory.storageNetworkIds(username);
+        int[] counts = inventory.storageCounts(username);
+        inventoryFingerprint.put(username.toLowerCase(), fingerprintStacks(ids, counts));
+        outbound.accept(guid, List.of(BedrockPacketCodec.inventoryContent(0, ids, counts)));
+    }
+
+    /**
+     * G.28 — when Paper inventory changes externally (JE/console /give), push to BE
+     * without waiting for a BE stack-request.
+     */
+    private void maybePushPaperInventory(long guid, String username) {
+        BedrockPaperWorldSync sync = paperWorld;
+        if (sync == null || !sync.isEnabled() || !sync.hasInjectedPlayer(username)) {
+            return;
+        }
+        int[][] paper = sync.snapshotInventoryStacksLiveOnly(username, 36);
+        if (paper == null) {
+            return;
+        }
+        long fp = fingerprintStacks(paper[0], paper[1]);
+        Long prev = inventoryFingerprint.get(username.toLowerCase());
+        if (prev != null && prev == fp) {
+            return;
+        }
+        inventory.seedStorage(username, paper[0], paper[1]);
+        inventoryFingerprint.put(username.toLowerCase(), fp);
+        outbound.accept(guid, List.of(BedrockPacketCodec.inventoryContent(0, paper[0], paper[1])));
+    }
+
+    private static long fingerprintStacks(int[] ids, int[] counts) {
+        long h = 1125899906842597L;
+        int n = ids == null ? 0 : ids.length;
+        for (int i = 0; i < n; i++) {
+            h = 31 * h + (ids[i] & 0xffffffffL);
+            int c = counts != null && i < counts.length ? counts[i] : 0;
+            h = 31 * h + (c & 0xffffffffL);
+        }
+        return h;
     }
 
     private void pushOpenContainer(long guid, String username) {
@@ -793,6 +856,43 @@ public final class BedrockGameplayBridge {
         int n = containers.slotsForType(w.type());
         int[][] snap = inventory.containerSnapshot(username, n);
         outbound.accept(guid, List.of(BedrockPacketCodec.inventoryContent(w.windowId(), snap[0], snap[1])));
+    }
+
+    private void pushOpenContainerProgress(long guid, String username) {
+        BedrockContainerBridge.OpenWindow w = containers.current(username);
+        if (w == null) {
+            return;
+        }
+        if (w.type() == BedrockContainerBridge.TYPE_FURNACE) {
+            pushFurnaceProgress(guid, w);
+        }
+    }
+
+    private void pushFurnaceProgress(long guid, BedrockContainerBridge.OpenWindow w) {
+        BedrockPaperWorldSync sync = paperWorld;
+        if (sync == null || !sync.isEnabled() || w == null) {
+            return;
+        }
+        int[] prog = sync.snapshotFurnaceProgress(w.x(), w.y(), w.z());
+        if (prog == null || prog.length < 4) {
+            return;
+        }
+        // Bedrock furnace properties: 0=cook tick, 1=cook total, 2=burn remaining, 3=burn max
+        outbound.accept(guid, List.of(
+                BedrockPacketCodec.containerSetData(w.windowId(), 0, prog[0]),
+                BedrockPacketCodec.containerSetData(w.windowId(), 1, prog[1]),
+                BedrockPacketCodec.containerSetData(w.windowId(), 2, prog[2]),
+                BedrockPacketCodec.containerSetData(w.windowId(), 3, prog[3])
+        ));
+    }
+
+    private static boolean isVillagerActor(String actorType, String name) {
+        String a = actorType == null ? "" : actorType.toLowerCase(java.util.Locale.ROOT);
+        if (a.contains("villager") || a.contains("wandering_trader")) {
+            return true;
+        }
+        String n = name == null ? "" : name.toLowerCase(java.util.Locale.ROOT);
+        return n.contains("villager") || n.contains("wandering");
     }
 
     /** Best-effort /give and /clear into shadow — skip when live Paper player owns inventory. */
@@ -809,21 +909,71 @@ public final class BedrockGameplayBridge {
         String lower = cmd.toLowerCase(java.util.Locale.ROOT);
         inventory.ensure(username);
         if (lower.equals("clear") || lower.startsWith("clear ")) {
-            inventory.clear(username);
+            String[] parts = cmd.split("\\s+");
+            // /clear [player] [item] — filter clear only when item token present and no player, or player is self
+            if (parts.length >= 2 && !isSelfSelector(parts[1], username) && !looksLikeItemToken(parts[1])) {
+                // Targeting another player — ignore for local shadow
+                return;
+            }
+            if (parts.length >= 3 || (parts.length == 2 && looksLikeItemToken(parts[1]))) {
+                String itemTok = parts.length >= 3 ? parts[2] : parts[1];
+                int nid = networkIdForItemName(itemTok);
+                if (nid > 0) {
+                    inventory.clearItem(username, nid);
+                } else {
+                    inventory.clear(username);
+                }
+            } else {
+                inventory.clear(username);
+            }
             return;
         }
         if (lower.startsWith("give ")) {
             String[] parts = cmd.split("\\s+");
-            // /give <player> <item> [count]
-            if (parts.length >= 3) {
-                String item = parts[2];
-                int count = parts.length >= 4 ? parseIntSafe(parts[3], 1) : 1;
+            // Forms: /give <player> <item> [count] | /give <item> [count] | /give @s/@p <item> [count]
+            if (parts.length >= 2) {
+                String item;
+                int count;
+                if (parts.length >= 3 && (isSelfSelector(parts[1], username) || !looksLikeItemToken(parts[1]))) {
+                    if (!isSelfSelector(parts[1], username) && !parts[1].equalsIgnoreCase(username)) {
+                        return; // other player target
+                    }
+                    item = parts[2];
+                    count = parts.length >= 4 ? parseIntSafe(parts[3], 1) : 1;
+                } else {
+                    item = parts[1];
+                    count = parts.length >= 3 ? parseIntSafe(parts[2], 1) : 1;
+                }
                 int nid = networkIdForItemName(item);
                 if (nid > 0) {
                     inventory.give(username, nid, count);
                 }
             }
         }
+    }
+
+    private static boolean isSelfSelector(String token, String username) {
+        if (token == null) {
+            return false;
+        }
+        String t = token.toLowerCase(java.util.Locale.ROOT);
+        return t.equals("@s") || t.equals("@p") || t.equalsIgnoreCase(username);
+    }
+
+    private static boolean looksLikeItemToken(String token) {
+        if (token == null || token.isBlank()) {
+            return false;
+        }
+        if (token.startsWith("@")) {
+            return false;
+        }
+        // Numeric count alone is not an item
+        try {
+            Integer.parseInt(token);
+            return false;
+        } catch (NumberFormatException ignored) {
+        }
+        return true;
     }
 
     private static int networkIdForItemName(String raw) {
@@ -835,6 +985,15 @@ public final class BedrockGameplayBridge {
             name = "minecraft:" + name.toLowerCase(java.util.Locale.ROOT);
         } else {
             name = name.toLowerCase(java.util.Locale.ROOT);
+        }
+        // Strip trailing NBT / components for simple name match
+        int brace = name.indexOf('{');
+        if (brace > 0) {
+            name = name.substring(0, brace);
+        }
+        int bracket = name.indexOf('[');
+        if (bracket > 0) {
+            name = name.substring(0, bracket);
         }
         for (BedrockItemStates.ItemState s : BedrockItemStates.all()) {
             if (s.name().equals(name)) {

@@ -194,4 +194,103 @@ class BedrockPacketCodecGameplayTest {
         inv.clear("Alex");
         assertEquals(0, inv.storageNetworkIds("Alex")[1]);
     }
+
+    @Test
+    void craftWithoutPaperDoesNotTreatRecipeNetAsItem() {
+        BedrockInventoryAuthority inv = new BedrockInventoryAuthority();
+        inv.ensure("Crafty");
+        // Seed craft grid with stone-ish ids but no Paper recipes attached
+        inv.give("Crafty", 1, 2);
+        // Manually place into craft slots via absolute indices (container 13 → CRAFT_BASE)
+        var place = java.util.List.of(
+                new BedrockPacketCodec.StackAction(
+                        BedrockPacketCodec.StackActionType.PLACE,
+                        0, BedrockInventoryAuthority.CRAFT_BASE, 1, 0),
+                new BedrockPacketCodec.StackAction(
+                        BedrockPacketCodec.StackActionType.PLACE,
+                        0, BedrockInventoryAuthority.CRAFT_BASE + 1, 1, 0)
+        );
+        inv.applyActions("Crafty", place);
+        // Huge recipe net-id must not become a fake item when Paper can't resolve
+        boolean crafted = inv.applyActions("Crafty", java.util.List.of(
+                new BedrockPacketCodec.StackAction(
+                        BedrockPacketCodec.StackActionType.CRAFT_RECIPE, -1, -1, 1, 999999)));
+        assertTrue(!crafted || inv.storageCounts("Crafty") != null);
+        // Cursor should not hold 999999 as an item id
+        int[] ids = inv.storageNetworkIds("Crafty");
+        for (int id : ids) {
+            assertTrue(id != 999999);
+        }
+    }
+
+    @Test
+    void clearItemRemovesOnlyMatchingNetworkId() {
+        BedrockInventoryAuthority inv = new BedrockInventoryAuthority();
+        inv.ensure("ClearMe");
+        inv.give("ClearMe", 1, 8);
+        inv.give("ClearMe", 2, 4);
+        inv.clearItem("ClearMe", 1);
+        int[] ids = inv.storageNetworkIds("ClearMe");
+        int ones = 0;
+        int twos = 0;
+        for (int id : ids) {
+            if (id == 1) {
+                ones++;
+            }
+            if (id == 2) {
+                twos++;
+            }
+        }
+        assertEquals(0, ones);
+        assertTrue(twos > 0);
+    }
+
+    @Test
+    void setActorDataEncodesAndAabbVariesByType() {
+        ByteBuf pig = BedrockPacketCodec.setActorData(42L, "minecraft:pig", "Pig", 10f);
+        assertEquals(BedrockPacketIds.SET_ACTOR_DATA.id, BedrockPacketCodec.decode(pig).id());
+        assertTrue(pig.readableBytes() > 40);
+        pig.release();
+
+        ByteBuf enderman = BedrockPacketCodec.setActorData(7L, "minecraft:enderman", "Enderman", 40f);
+        assertEquals(BedrockPacketIds.SET_ACTOR_DATA.id, BedrockPacketCodec.decode(enderman).id());
+        enderman.release();
+
+        float[] chicken = BedrockPacketCodec.aabbForActor("minecraft:chicken");
+        float[] player = BedrockPacketCodec.aabbForActor("minecraft:player");
+        assertTrue(chicken[1] < player[1]);
+    }
+
+    @Test
+    void entityTrackerPushesSetActorDataOnHealthChange() {
+        java.util.concurrent.atomic.AtomicReference<java.util.List<ByteBuf>> last =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        BedrockEntityTracker tracker = new BedrockEntityTracker();
+        tracker.setBroadcast((except, pkts) -> last.set(pkts));
+        tracker.addActor(9L, 9L, "minecraft:zombie", 0f, 64f, 0f, false);
+        tracker.updateData(9L, 8f, "Zombie", true);
+        assertNotNull(last.get());
+        assertEquals(1, last.get().size());
+        assertEquals(BedrockPacketIds.SET_ACTOR_DATA.id,
+                BedrockPacketCodec.decode(last.get().get(0)).id());
+        last.get().get(0).release();
+    }
+
+    @Test
+    void playerEnchantOptionsEmptyEncodes() {
+        ByteBuf empty = BedrockPacketCodec.playerEnchantOptions(java.util.List.of());
+        assertEquals(BedrockPacketIds.PLAYER_ENCHANT_OPTIONS.id,
+                BedrockPacketCodec.decode(empty).id());
+        empty.release();
+    }
+
+    @Test
+    void containerOpenWindowStoresTraderRuntime() {
+        BedrockContainerBridge bridge = new BedrockContainerBridge();
+        bridge.setSender((u, b) -> b.release());
+        var w = bridge.openVillager("Trader", 12345L, "Farmer");
+        assertEquals(12345L, w.entityRuntimeId());
+        assertEquals(BedrockContainerBridge.TYPE_VILLAGER, w.type());
+        bridge.close("Trader", true);
+    }
 }

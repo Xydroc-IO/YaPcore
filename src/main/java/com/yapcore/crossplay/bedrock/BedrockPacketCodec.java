@@ -778,56 +778,117 @@ public final class BedrockPacketCodec {
         return out;
     }
 
-    /**
-     * Dense player MetadataDictionary: flags, health, nametag, air, scale, AABB.
-     * Key/type ids match bedrock 1.21.50 protocol.json.
-     */
     static void writePlayerMetadata(ByteBuf out, String nametag) {
-        writeUnsignedVarInt(out, 7);
-        writeUnsignedVarInt(out, 0); // flags
-        writeUnsignedVarInt(out, 7); // long
-        writeZigZag64(out, (1L << 14) | (1L << 15) | (1L << 19) | (1L << 22));
-        writeUnsignedVarInt(out, 1); // health
-        writeUnsignedVarInt(out, 3); // float
-        out.writeFloatLE(20f);
-        writeUnsignedVarInt(out, 4); // nametag
-        writeUnsignedVarInt(out, 4); // string
-        writeString(out, nametag == null ? "" : nametag);
-        writeUnsignedVarInt(out, 7); // air
-        writeUnsignedVarInt(out, 1); // short
-        out.writeShortLE(300);
-        writeUnsignedVarInt(out, 38); // scale
-        writeUnsignedVarInt(out, 3);
-        out.writeFloatLE(1f);
-        writeUnsignedVarInt(out, 53); // boundingbox_width
-        writeUnsignedVarInt(out, 3);
-        out.writeFloatLE(0.6f);
-        writeUnsignedVarInt(out, 54); // boundingbox_height
-        writeUnsignedVarInt(out, 3);
-        out.writeFloatLE(1.8f);
+        writeDenseMetadata(out, nametag, 20f, 0.6f, 1.8f, true);
     }
 
-    static void writeActorMetadata(ByteBuf out, String nametag) {
-        // G.25 — dense actor metadata (flags, health, nametag, scale, AABB)
-        writeUnsignedVarInt(out, 6);
+    static void writeActorMetadata(ByteBuf out, String actorTypeOrNametag) {
+        float[] aabb = aabbForActor(actorTypeOrNametag);
+        writeDenseMetadata(out, actorTypeOrNametag, 20f, aabb[0], aabb[1], false);
+    }
+
+    /** G.25 — SET_ACTOR_DATA live update (health / nametag / AABB). */
+    public static ByteBuf setActorData(long runtimeId, String nametag, float health,
+                                       float width, float height) {
+        ByteBuf out = Unpooled.buffer(96);
+        writeUnsignedVarInt(out, BedrockPacketIds.SET_ACTOR_DATA.id);
+        writeUnsignedVarLong(out, runtimeId);
+        writeDenseMetadata(out, nametag, health, width, height, false);
+        writeUnsignedVarInt(out, 0); // property sync ints
+        writeUnsignedVarInt(out, 0); // property sync floats
+        writeUnsignedVarLong(out, 0L); // tick
+        return out;
+    }
+
+    public static ByteBuf setActorData(long runtimeId, String actorType, String nametag, float health) {
+        float[] aabb = aabbForActor(actorType);
+        return setActorData(runtimeId, nametag == null || nametag.isBlank() ? actorType : nametag,
+                health, aabb[0], aabb[1]);
+    }
+
+    /**
+     * Dense MetadataDictionary: flags, health, nametag, optional air, scale, AABB.
+     * Key/type ids match bedrock 1.21.50 protocol.json.
+     */
+    static void writeDenseMetadata(ByteBuf out, String nametag, float health,
+                                   float width, float height, boolean includeAir) {
+        writeUnsignedVarInt(out, includeAir ? 7 : 6);
         writeUnsignedVarInt(out, 0); // flags
         writeUnsignedVarInt(out, 7); // long
         writeZigZag64(out, (1L << 14) | (1L << 15) | (1L << 19) | (1L << 22));
         writeUnsignedVarInt(out, 1); // health
         writeUnsignedVarInt(out, 3); // float
-        out.writeFloatLE(20f);
+        out.writeFloatLE(Math.max(0f, health));
         writeUnsignedVarInt(out, 4); // nametag
         writeUnsignedVarInt(out, 4); // string
         writeString(out, nametag == null ? "" : nametag);
+        if (includeAir) {
+            writeUnsignedVarInt(out, 7); // air
+            writeUnsignedVarInt(out, 1); // short
+            out.writeShortLE(300);
+        }
         writeUnsignedVarInt(out, 38); // scale
         writeUnsignedVarInt(out, 3);
         out.writeFloatLE(1f);
         writeUnsignedVarInt(out, 53); // boundingbox_width
         writeUnsignedVarInt(out, 3);
-        out.writeFloatLE(0.6f);
+        out.writeFloatLE(width);
         writeUnsignedVarInt(out, 54); // boundingbox_height
         writeUnsignedVarInt(out, 3);
-        out.writeFloatLE(1.8f);
+        out.writeFloatLE(height);
+    }
+
+    /** Approx Bedrock AABB by entity identifier (player default 0.6×1.8). */
+    static float[] aabbForActor(String actorType) {
+        if (actorType == null) {
+            return new float[]{0.6f, 1.8f};
+        }
+        String t = actorType.toLowerCase(java.util.Locale.ROOT);
+        if (t.contains("player")) {
+            return new float[]{0.6f, 1.8f};
+        }
+        if (t.contains("enderman")) {
+            return new float[]{0.6f, 2.9f};
+        }
+        if (t.contains("iron_golem")) {
+            return new float[]{1.4f, 2.7f};
+        }
+        if (t.contains("villager") || t.contains("zombie") || t.contains("skeleton")
+                || t.contains("creeper") || t.contains("witch") || t.contains("pillager")) {
+            return new float[]{0.6f, 1.95f};
+        }
+        if (t.contains("spider") || t.contains("cave_spider")) {
+            return new float[]{1.4f, 0.9f};
+        }
+        if (t.contains("chicken") || t.contains("bat") || t.contains("parrot") || t.contains("bee")) {
+            return new float[]{0.4f, 0.7f};
+        }
+        if (t.contains("cow") || t.contains("pig") || t.contains("sheep") || t.contains("wolf")
+                || t.contains("fox") || t.contains("goat")) {
+            return new float[]{0.9f, 0.9f};
+        }
+        if (t.contains("horse") || t.contains("donkey") || t.contains("mule") || t.contains("camel")) {
+            return new float[]{1.4f, 1.6f};
+        }
+        if (t.contains("slime") || t.contains("magma")) {
+            return new float[]{0.51f, 0.51f};
+        }
+        if (t.contains("ghast")) {
+            return new float[]{4f, 4f};
+        }
+        if (t.contains("wither")) {
+            return new float[]{0.9f, 3.5f};
+        }
+        if (t.contains("dragon")) {
+            return new float[]{16f, 8f};
+        }
+        if (t.contains("armor_stand")) {
+            return new float[]{0.5f, 1.975f};
+        }
+        if (t.contains("item") || t.contains("xp_orb") || t.contains("experience")) {
+            return new float[]{0.25f, 0.25f};
+        }
+        return new float[]{0.6f, 1.8f};
     }
 
     public static ByteBuf updateBlock(int x, int y, int z, int runtimeId, int flags, int layer) {

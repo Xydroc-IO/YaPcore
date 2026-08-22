@@ -30,7 +30,10 @@ public final class BedrockContainerBridge {
     private volatile BedrockPaperWorldSync paperWorld;
     private volatile BedrockInventoryAuthority inventory;
 
-    public record OpenWindow(int windowId, int type, int x, int y, int z) {
+    public record OpenWindow(int windowId, int type, int x, int y, int z, long entityRuntimeId) {
+        public OpenWindow(int windowId, int type, int x, int y, int z) {
+            this(windowId, type, x, y, z, -1L);
+        }
     }
 
     public void setSender(BiConsumer<String, ByteBuf> sender) {
@@ -97,7 +100,7 @@ public final class BedrockContainerBridge {
         if (id == 0) {
             id = nextWindow.getAndIncrement() & 0x7F;
         }
-        OpenWindow w = new OpenWindow(id, TYPE_VILLAGER, 0, 0, 0);
+        OpenWindow w = new OpenWindow(id, TYPE_VILLAGER, 0, 0, 0, entityRuntimeId);
         openByUser.put(username.toLowerCase(), w);
         sender.accept(username, BedrockPacketCodec.containerOpen(id, TYPE_VILLAGER, 0, 0, 0, entityRuntimeId));
         int[] ids = new int[3];

@@ -4,7 +4,7 @@
 and Bedrock crossplay **in our own code**. Operators must **not** install
 ViaVersion, ViaBackwards, ViaRewind, Geyser, or Floodgate to make the product work.
 
-**Supported JE floor: 1.20.2+** (config-era clients) onto Paper 26.2.
+**Supported JE floor: 1.20.2+** (config-era clients) onto Folia/Paper 26.2.
 Pre-1.19 / Rewind-depth is **best-effort** (join matrix optional via
 `MATRIX_FULL=1`), not a Phase 4 play-remap blocker.
 
@@ -17,15 +17,18 @@ status, gates, and remaining delivery steps live in
 
 ## Authority
 
-Paper remains the game (`game-authority=paper`). Translators sit on the public
-edge and speak Paper’s current protocol (26.2 / ~776) inward.
+**Folia** remains the game on the product path (`game-authority=folia`). Translators
+sit on the public edge and speak the current protocol (26.2 / ~776) inward.
+Legacy Paper authority uses the same edge wiring when `game-authority=paper`.
 
 ```
-Older JE clients ──► ViaStyleRemapper (+ full remap pipeline) ──► Paper JE
-Bedrock clients  ──► GeyserStyleTranslator (+ full RakNet/BE) ──► shared world / Paper
-Modern JE        ──► passthrough ──► Paper JE
+Older JE clients ──► ViaStyleRemapper (+ full remap pipeline) ──► Folia JE (default)
+Bedrock clients  ──► GeyserStyleTranslator (+ full RakNet/BE) ──► shared world / Folia
+Modern JE        ──► passthrough ──► Folia JE
 ```
 
+Join/spawn is green; **play depth is deepening** — do not claim full Geyser play
+parity until live soaks close.
 ## DoD — Via parity (own code)
 
 Parity target = what ViaVersion + ViaBackwards + ViaRewind provide for a modern
@@ -35,9 +38,9 @@ Paper backend:
 |-------|--------|--------|
 | **4.V0** | Bands registry, join accounting, no Via\* jars in product path | **Done** |
 | **4.V1** | ViaVersion-equivalent: newer JE clients → server protocol (when server lags a build) | **Landed** — dump-backed `ForwardTransformer` when packet dumps exist; else keepalive/chunk/spawn layouts |
-| **4.V2** | ViaBackwards-equivalent: older JE (1.9+) → Paper 26.2 — packets, items, blocks, entities, chunks | **Landed (modern mid)** — `PacketIdDump` + `MidBandTransformer` remap **all** play IDs by name (774/775/769/…→776); login session-UUID strip; legacy bands still catalog+PlayRemapper |
+| **4.V2** | ViaBackwards-equivalent: older JE (1.9+) → Folia/Paper 26.2 — packets, items, blocks, entities, chunks | **Landed (modern mid)** — `PacketIdDump` + `MidBandTransformer` remap **all** play IDs by name (774/775/769/…→776); login session-UUID strip; legacy bands still catalog+PlayRemapper |
 | **4.V3** | ViaRewind-equivalent: 1.8.x / early 1.9 deep remaps | **Best-effort** — join may work; **not** product DoD for play depth (floor is 1.20.2+) |
-| **4.V4** | Paper JE port path — remapper in front of embed Paper | **Done (wiring)** — public JE → `ViaProxyHandler` → Paper on `paper-port` (`protocol-via-enabled=true`) |
+| **4.V4** | Game JE port path — remapper in front of embed Folia/Paper | **Done (wiring)** — public JE → `ViaProxyHandler` → game on loopback (`protocol-via-enabled=true`) |
 
 Classes: `ProtocolCompat`, `ViaStyleRemapper`, `ViaBootstrap`, `ViaProxyHandler`,
 `ViaSession`, `PacketTransformer`, `ForwardTransformer`, `PacketIdTable`, `PlayPacketRemapper`,
@@ -69,9 +72,9 @@ protocol-geyser-enabled=true
 paper-port=25567
 ```
 
-With Via on + Paper authority: Paper listens on `127.0.0.1:paper-port`; YaPcore
-owns public `port` with Via proxy. MSPT benches auto-disable Via front
-(`yap.bench.scenario` set).
+With Via on + Folia/Paper authority: the game listens on loopback (`paper-port` /
+equivalent); YaPcore owns public `port` with Via proxy. MSPT benches auto-disable
+Via front (`yap.bench.scenario` set).
 
 ## Explicit non-goals (plugins)
 
@@ -90,10 +93,11 @@ Bench/scripts must not copy those jars into `plugins/` for the product path.
 multi-version JE join or Bedrock join/spawn.
 
 **Full play parity:** Claim after soak checklists in §E. **P4.1–P4.11** are
-**closed in code/docs** (dumps, click bodies, Paper inject, metadata/light,
-containers, combat split, forms/skins, Xbox-shaped CI, next-protocol dump
-plumbing, ViaBackwards honesty, **Paper column stream default**). Remaining:
-operator live soak ticks (§E) and denser G.25 metadata from retail clients.
+**closed in code/docs**. BE play-depth pass landed: craft without fake recipe
+net-ids, Paper inventory fingerprint push (G.28), furnace CONTAINER_SET_DATA,
+villager-by-type + trade refresh, enchant fail-closed, SET_ACTOR_DATA health
+updates (G.25), JE entity stand-ins (VB.22). Remaining: operator live soak ticks
+(§E) and soft rows (boss bars/titles, signed chat, smithing honesty).
 
 Catalogs (items/blocks/entities per band) and Xbox ES384 chain validation are
 **in-tree**. Soft BE depth rows and Mid deepen rows are enumerated in the

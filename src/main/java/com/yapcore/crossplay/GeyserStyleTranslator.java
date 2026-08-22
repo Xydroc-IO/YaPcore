@@ -18,9 +18,10 @@ import java.util.logging.Logger;
  * Phase 4 DoD: full Geyser (+ Floodgate-class auth) feature parity in YaP code —
  * not the Geyser jar. See {@code docs/PHASE4_PROTOCOL.md}.
  * <p>
- * When {@code game-authority=paper}, BREAK/PLACE also hit Paper via
- * {@link com.yapcore.crossplay.bedrock.BedrockPaperWorldSync} (BE still joins
- * through DualStack/YapEngine for roster; world mutation is Paper-backed).
+ * When {@code game-authority=paper} (Phase 3 same-JVM), BREAK/PLACE also hit Paper via
+ * {@link com.yapcore.crossplay.bedrock.BedrockPaperWorldSync}. Under Folia (managed process),
+ * BE commands go through {@link com.yapcore.game.GameCommandBridge} (stdin); prefer Geyser on
+ * YaP Link for full BE join. See {@code docs/VELOCITY.md}.
  */
 public final class GeyserStyleTranslator {
 
@@ -93,7 +94,7 @@ public final class GeyserStyleTranslator {
                 String msg = payload.getOrDefault("msg", payload.getOrDefault("text", ""));
                 // Slash chat from BE TEXT also runs on Paper (COMMAND_REQUEST is primary)
                 if (msg.startsWith("/") && player.getEdition() == ClientEdition.BEDROCK) {
-                    String result = com.yapcore.paper.PaperCommandBridge.dispatchToPaper(msg, null);
+                    String result = com.yapcore.game.GameCommandBridge.dispatch(msg, null);
                     LOG.info("BE chat-command " + player.getUsername() + " → " + result);
                 }
                 engine.trafficCop().ingest("CHAT", player.getUsername(), Map.of(

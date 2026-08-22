@@ -517,7 +517,7 @@ public final class BedrockPaperWorldSync {
     }
 
     public record NearbyLiving(String name, java.util.UUID uuid, String entityType,
-                               double x, double y, double z) {
+                               double x, double y, double z, float health, float maxHealth) {
     }
 
     /** Nearby non-player living entities around a point (for BE entity mirror + combat). */
@@ -565,7 +565,14 @@ public final class BedrockPaperWorldSync {
                 double ex = ((Number) el.getClass().getMethod("getX").invoke(el)).doubleValue();
                 double ey = ((Number) el.getClass().getMethod("getY").invoke(el)).doubleValue();
                 double ez = ((Number) el.getClass().getMethod("getZ").invoke(el)).doubleValue();
-                out.add(new NearbyLiving(name, uuid, type, ex, ey, ez));
+                float health = 20f;
+                float maxHealth = 20f;
+                try {
+                    health = ((Number) e.getClass().getMethod("getHealth").invoke(e)).floatValue();
+                    maxHealth = ((Number) e.getClass().getMethod("getMaxHealth").invoke(e)).floatValue();
+                } catch (Exception ignored) {
+                }
+                out.add(new NearbyLiving(name, uuid, type, ex, ey, ez, health, maxHealth));
             }
         } catch (Exception e) {
             LOG.log(Level.FINE, "listNearbyLiving failed", e);
@@ -753,6 +760,70 @@ public final class BedrockPaperWorldSync {
             return new int[][]{ids, counts};
         } catch (Exception e) {
             LOG.log(Level.FINE, "block inventory snapshot failed @" + x + "," + y + "," + z, e);
+            return null;
+        }
+    }
+
+    /**
+     * Furnace / smoker / blast cook+fuel progress for CONTAINER_SET_DATA.
+     * Returns {@code [cookTime, cookTimeTotal, burnTime, burnTimeTotal]} or null.
+     */
+    public int[] snapshotFurnaceProgress(int x, int y, int z) {
+        if (!isEnabled()) {
+            return null;
+        }
+        try {
+            Object block = blockAt(x, y, z);
+            if (block == null) {
+                return null;
+            }
+            Object state = block.getClass().getMethod("getState").invoke(block);
+            if (state == null) {
+                return null;
+            }
+            ClassLoader cl = liveLoader();
+            Class<?> furnaceCl = Class.forName("org.bukkit.block.Furnace", true, cl);
+            if (!furnaceCl.isInstance(state)) {
+                return null;
+            }
+            short cook = ((Number) state.getClass().getMethod("getCookTime").invoke(state)).shortValue();
+            short cookTotal = 200;
+            try {
+                cookTotal = ((Number) state.getClass().getMethod("getCookTimeTotal").invoke(state)).shortValue();
+            } catch (NoSuchMethodException ignored) {
+            }
+            short burn = ((Number) state.getClass().getMethod("getBurnTime").invoke(state)).shortValue();
+            short burnTotal = burn;
+            try {
+                Object inv = state.getClass().getMethod("getInventory").invoke(state);
+                // Bedrock property scale: cook 0..200-ish, fuel remaining ticks
+                if (inv != null) {
+                    // keep burn as remaining; total ≈ max(burn, 1) for bar fill
+                    burnTotal = (short) Math.max(burn, 1);
+                }
+            } catch (Exception ignored) {
+            }
+            return new int[]{cook & 0xffff, cookTotal & 0xffff, burn & 0xffff, burnTotal & 0xffff};
+        } catch (Exception e) {
+            LOG.log(Level.FINE, "furnace progress snapshot failed @" + x + "," + y + "," + z, e);
+            return null;
+        }
+    }
+
+    /** Online player health for BE metadata mirror (null if unavailable). */
+    public float[] snapshotPlayerHealth(String username) {
+        if (!isEnabled() || username == null) {
+            return null;
+        }
+        try {
+            Object player = findOnlinePlayer(username);
+            if (player == null) {
+                return null;
+            }
+            float health = ((Number) player.getClass().getMethod("getHealth").invoke(player)).floatValue();
+            float max = ((Number) player.getClass().getMethod("getMaxHealth").invoke(player)).floatValue();
+            return new float[]{health, max};
+        } catch (Exception e) {
             return null;
         }
     }

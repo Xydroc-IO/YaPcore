@@ -172,7 +172,7 @@ public final class BedrockPaperRecipes {
 
     /**
      * Build up to 3 enchant options for the item currently in enchant slot 0.
-     * Uses Paper EnchantingInventory offers when available; else heuristic.
+     * Uses Paper EnchantingInventory offers when available; empty when none (fail closed).
      */
     public List<EnchantOption> enchantOptionsFor(String username) {
         List<EnchantOption> out = new ArrayList<>();
@@ -192,7 +192,7 @@ public final class BedrockPaperRecipes {
             Object top = open.getClass().getMethod("getTopInventory").invoke(open);
             Class<?> enchInv = Class.forName("org.bukkit.inventory.EnchantingInventory", true, cl);
             if (top == null || !enchInv.isInstance(top)) {
-                return heuristicOptions();
+                return out;
             }
             Object item = top.getClass().getMethod("getItem").invoke(top);
             if (item == null) {
@@ -222,10 +222,11 @@ public final class BedrockPaperRecipes {
                 }
             } catch (NoSuchMethodException ignored) {
             }
-            return heuristicOptions();
+            // Fail closed — no Paper offers → empty (do not ship fake Protection/etc.)
+            return out;
         } catch (Exception e) {
             LOG.log(Level.FINE, "enchantOptionsFor failed", e);
-            return heuristicOptions();
+            return out;
         }
     }
 
@@ -326,7 +327,8 @@ public final class BedrockPaperRecipes {
         }
     }
 
-    private static List<EnchantOption> heuristicOptions() {
+    /** Offline / no-Paper soak stand-in — not used when Paper enchant view is available. */
+    public static List<EnchantOption> soakHeuristicOptions() {
         List<EnchantOption> out = new ArrayList<>();
         out.add(new EnchantOption(1, 1, "PROTECTION", 0, 1));
         out.add(new EnchantOption(2, 5, "UNBREAKING", 17, 1));

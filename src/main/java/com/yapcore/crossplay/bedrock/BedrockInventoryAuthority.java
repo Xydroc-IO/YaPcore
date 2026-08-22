@@ -80,6 +80,22 @@ public final class BedrockInventoryAuthority {
         mirrorClearToPaper(username);
     }
 
+    /** Clear matching network-id stacks from storage only (G.28 /clear &lt;item&gt;). */
+    public void clearItem(String username, int networkId) {
+        if (networkId <= 0) {
+            clear(username);
+            return;
+        }
+        ensure(username);
+        Slot[] slots = byUser.get(username.toLowerCase());
+        for (int i = 0; i < SLOTS; i++) {
+            if (!slots[i].isEmpty() && slots[i].networkId() == networkId) {
+                slots[i] = Slot.AIR;
+            }
+        }
+        mirrorStorageToPaper(username);
+    }
+
     public void give(String username, int networkId, int count) {
         if (networkId <= 0 || count <= 0) {
             return;
@@ -386,29 +402,33 @@ public final class BedrockInventoryAuthority {
                 resultCount = Math.max(1, resolved[1]) * put;
             }
         }
-        if (resultId <= 0 && recipeOrResultNetId > 0) {
-            // Client recipe net id is not a network item id — only use as result when grid empty creative path
-            resultId = anyInput ? 0 : recipeOrResultNetId;
+        if (resultId <= 0 && !anyInput && recipeOrResultNetId > 0) {
+            // Creative / empty-grid path only — recipe net id may be a creative item id
+            resultId = recipeOrResultNetId;
             resultCount = put;
         }
-        if (resultId <= 0 && anyInput) {
-            // Last resort: keep prior best-effort using creativeNet as item id if it looks like one
-            if (recipeOrResultNetId > 0 && recipeOrResultNetId < 10000) {
-                resultId = recipeOrResultNetId;
-            } else {
-                return false;
-            }
-        }
         if (resultId <= 0) {
+            // Never treat JE recipe net-ids as item network ids when the grid has inputs
             return false;
         }
+        Slot result = new Slot(resultId, Math.min(64, resultCount));
+        slots[CRAFT_RESULT] = result;
         Slot cur = slots[CURSOR];
         if (cur.isEmpty()) {
-            slots[CURSOR] = new Slot(resultId, Math.min(64, resultCount));
+            slots[CURSOR] = result;
         } else if (cur.networkId() == resultId) {
             slots[CURSOR] = cur.withCount(Math.min(64, cur.count() + resultCount));
         } else {
-            return false;
+            // Cursor busy — leave result on CRAFT_RESULT for a subsequent TAKE
+            for (int t = 0; t < put; t++) {
+                for (int i = 0; i < CRAFT_SLOTS; i++) {
+                    Slot s = slots[CRAFT_BASE + i];
+                    if (!s.isEmpty()) {
+                        slots[CRAFT_BASE + i] = s.withCount(s.count() - 1);
+                    }
+                }
+            }
+            return true;
         }
         for (int t = 0; t < put; t++) {
             for (int i = 0; i < CRAFT_SLOTS; i++) {

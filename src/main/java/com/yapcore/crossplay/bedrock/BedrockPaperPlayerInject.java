@@ -307,35 +307,10 @@ public final class BedrockPaperPlayerInject {
     }
 
     private static void schedule(Class<?> bukkit, Object server, ClassLoader cl, Runnable task) {
-        try {
-            Object pm = server.getClass().getMethod("getPluginManager").invoke(server);
-            Object[] plugins = (Object[]) pm.getClass().getMethod("getPlugins").invoke(pm);
-            Object plugin = null;
-            if (plugins != null) {
-                for (Object p : plugins) {
-                    if (p != null && Boolean.TRUE.equals(p.getClass().getMethod("isEnabled").invoke(p))) {
-                        plugin = p;
-                        break;
-                    }
-                }
-            }
-            if (plugin != null) {
-                Object scheduler = server.getClass().getMethod("getScheduler").invoke(server);
-                Class<?> pluginCl = Class.forName("org.bukkit.plugin.Plugin", true, cl);
-                scheduler.getClass().getMethod("runTask", pluginCl, Runnable.class)
-                        .invoke(scheduler, plugin, task);
-                return;
-            }
-        } catch (Exception e) {
-            LOG.log(Level.FINE, "schedule via plugin", e);
+        if (com.yapcore.game.GameSchedulers.scheduleSync(bukkit, server, cl, task)) {
+            return;
         }
-        try {
-            Class<?> ms = Class.forName("net.minecraft.server.MinecraftServer", true, cl);
-            Object nms = ms.getMethod("getServer").invoke(null);
-            nms.getClass().getMethod("execute", Runnable.class).invoke(nms, task);
-        } catch (Exception e) {
-            task.run();
-        }
+        task.run();
     }
 
     private static void installDiscardOutbound(ClassLoader cl, Object pipeline) throws Exception {

@@ -108,7 +108,7 @@ Target: what **ViaBackwards** does for older JE on a modern Paper backend.
 |---|---------|-----------|--------|------|
 | VB.20 | Item name ↔ id catalogs per band | `CatalogStore` | **Done** | `CatalogStoreTest` |
 | VB.21 | Block name / state bridge | `BlockRemapper` | **Partial** | Flat-state best-effort |
-| VB.22 | Entity type bridge + substitute display | `EntityRemapper` | **Partial** | Newer mobs → older stand-in |
+| VB.22 | Entity type bridge + substitute display | `EntityRemapper` | **Done** | Unknown → pig / armor_stand stand-in |
 | VB.23 | Placeholder policy (unknown → safe id) | remappers | **Partial** | Document + enforce |
 | VB.24 | World height &lt;1.17 on 1.18+ maps | — | **Out** for floor 1.20.2+ (clients already 1.18+) | N/A |
 | VB.25 | Smithing / new UI screens on older mid | Mid | **Partial** | Same ViaBackwards caveats |
@@ -182,12 +182,12 @@ the Geyser jar. Pin: **Bedrock 1.21.50**.
 | G.22 | BREAK / PLACE → Paper main | `BedrockPaperWorldSync` | **Done** | Live dig/place |
 | G.23 | Attack / interact intents | Translator + INTERACT action split | **Done** | action 1/4 → ATTACK; else INTERACT / container |
 | G.24 | ADD / REMOVE / MOVE players + actors | `BedrockEntityTracker` | **Done** | Fanout |
-| G.25 | Dense entity metadata / abilities | Codec / tracker | **Done** (harden) | Player + actor dense metadata; live soak remaining |
-| G.26 | Inventory authority (shadow + stack response) | `BedrockInventoryAuthority` | **Partial** | JE recipe craft via Paper; armor/craft slots; creative craft |
+| G.25 | Dense entity metadata / abilities | Codec / tracker | **Done** | SET_ACTOR_DATA live health/nametag; per-type AABB; spawn dense |
+| G.26 | Inventory authority (shadow + stack response) | `BedrockInventoryAuthority` | **Done** | Paper craft only (no recipe-net→item); CRAFT_RESULT; armor/craft mirror |
 | G.27 | Full Paper inventory inject for **pure BE** players | `BedrockPaperPlayerInject` + vault fallback | **Done** | placeNewPlayer on login; vault if inject fails |
-| G.28 | `/give` `/clear` mirror hints | Inventory + Paper | **Partial** | |
+| G.28 | `/give` `/clear` mirror hints | Inventory + Paper | **Done** | Auth-input fingerprint push; `@s`/`@p`/self forms; item-filter clear |
 | G.29 | Available commands rich + COMMAND_REQUEST | `BedrockAvailableCommands` | **Done** | |
-| G.30 | Containers / villager / enchanting UIs | `BedrockContainerBridge` | **Partial** | Trade execute + PLAYER_ENCHANT_OPTIONS apply; chest/workbench mutate |
+| G.30 | Containers / villager / enchanting UIs | `BedrockContainerBridge` | **Done** | Villager by actor type; trade refresh; furnace SET_DATA; enchant fail-closed |
 | G.31 | Scoring / boss bars / titles | Codec | **Partial** | |
 | G.32 | Emotes | — | **Gap** (low) | Optional |
 | G.33 | Custom skulls / player heads display | — | **Partial** | |
@@ -314,8 +314,10 @@ checklists in §E still recommended before marketing full play depth.
 
 Until live soaks close remaining edge cases, say: **join/spawn + inventory
 inject + containers/forms/skins/Xbox-shaped CI + Paper column stream green;
-denser live metadata still hardening from retail clients.** Forward dumps for
-post-776 clients land via [PROTOCOL_DUMPS.md](PROTOCOL_DUMPS.md) when Mojang ships.
+G.25–G.30 play-depth (craft, /give fingerprint, furnace, villager, enchant
+fail-closed, SET_ACTOR_DATA) landed in code — tick §E live checklist before
+marketing full play depth.** Forward dumps for post-776 clients land via
+[PROTOCOL_DUMPS.md](PROTOCOL_DUMPS.md) when Mojang ships.
 Run `./scripts/protocol-matrix/play-soak.sh` before marketing full play depth.
 
 ---

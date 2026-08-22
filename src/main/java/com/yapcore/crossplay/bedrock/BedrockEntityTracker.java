@@ -16,7 +16,12 @@ import java.util.function.BiConsumer;
 public final class BedrockEntityTracker {
 
     public record Tracked(long uniqueId, long runtimeId, UUID uuid, String name,
-                          String actorType, float x, float y, float z, boolean player) {
+                          String actorType, float x, float y, float z, boolean player,
+                          float health) {
+        public Tracked(long uniqueId, long runtimeId, UUID uuid, String name,
+                       String actorType, float x, float y, float z, boolean player) {
+            this(uniqueId, runtimeId, uuid, name, actorType, x, y, z, player, 20f);
+        }
     }
 
     private final ConcurrentHashMap<Long, Tracked> byRuntime = new ConcurrentHashMap<>();
@@ -36,7 +41,7 @@ public final class BedrockEntityTracker {
 
     public Tracked addPlayer(long uniqueId, long runtimeId, UUID uuid, String name,
                              float x, float y, float z, boolean announce) {
-        Tracked t = new Tracked(uniqueId, runtimeId, uuid, name, "minecraft:player", x, y, z, true);
+        Tracked t = new Tracked(uniqueId, runtimeId, uuid, name, "minecraft:player", x, y, z, true, 20f);
         byRuntime.put(runtimeId, t);
         runtimeByName.put(name.toLowerCase(), runtimeId);
         if (announce) {
@@ -58,7 +63,7 @@ public final class BedrockEntityTracker {
 
     public Tracked addActor(long uniqueId, long runtimeId, UUID uuid, String type,
                             float x, float y, float z, boolean announce) {
-        Tracked t = new Tracked(uniqueId, runtimeId, uuid, type, type, x, y, z, false);
+        Tracked t = new Tracked(uniqueId, runtimeId, uuid, type, type, x, y, z, false, 20f);
         byRuntime.put(runtimeId, t);
         if (uuid != null) {
             runtimeByName.put("uuid:" + uuid, runtimeId);
@@ -104,10 +109,30 @@ public final class BedrockEntityTracker {
             return;
         }
         Tracked next = new Tracked(prev.uniqueId(), prev.runtimeId(), prev.uuid(), prev.name(),
-                prev.actorType(), x, y, z, prev.player());
+                prev.actorType(), x, y, z, prev.player(), prev.health());
         byRuntime.put(runtimeId, next);
         broadcast.accept(-1L, List.of(
                 BedrockPacketCodec.movePlayer(runtimeId, x, y, z, pitch, yaw, yaw, (byte) 0, true)
+        ));
+    }
+
+    /** G.25 — push SET_ACTOR_DATA when health/nametag changes (or force). */
+    public void updateData(long runtimeId, float health, String nametag, boolean force) {
+        Tracked prev = byRuntime.get(runtimeId);
+        if (prev == null) {
+            return;
+        }
+        float h = health > 0 ? health : prev.health();
+        String tag = nametag != null ? nametag : prev.name();
+        if (!force && Math.abs(h - prev.health()) < 0.05f
+                && java.util.Objects.equals(tag, prev.name())) {
+            return;
+        }
+        Tracked next = new Tracked(prev.uniqueId(), prev.runtimeId(), prev.uuid(), tag,
+                prev.actorType(), prev.x(), prev.y(), prev.z(), prev.player(), h);
+        byRuntime.put(runtimeId, next);
+        broadcast.accept(-1L, List.of(
+                BedrockPacketCodec.setActorData(runtimeId, prev.actorType(), tag, h)
         ));
     }
 
