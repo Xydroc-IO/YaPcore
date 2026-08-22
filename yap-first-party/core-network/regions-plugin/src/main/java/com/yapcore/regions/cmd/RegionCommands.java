@@ -33,14 +33,15 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            sender.sendMessage("§e/region define <name> §7· §e/region flag set <name> <flag> <allow|deny> §7· §e/region list");
+            sender.sendMessage("§e/region define <name> §7· §e/region define <name> at <world> <x1> <y1> <z1> <x2> <y2> <z2>");
+            sender.sendMessage("§e/region flag set <name> <flag> <allow|deny> §7· §e/region list [json]");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
         return switch (sub) {
             case "define" -> handleDefine(sender, args);
             case "flag" -> handleFlag(sender, args);
-            case "list" -> handleList(sender);
+            case "list" -> handleList(sender, args);
             default -> {
                 sender.sendMessage("§cUnknown subcommand. Use define, flag, or list.");
                 yield true;
@@ -49,15 +50,39 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleDefine(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
-            return true;
-        }
         if (args.length < 2) {
-            sender.sendMessage("§cUsage: /region define <name>");
+            sender.sendMessage("§cUsage: /region define <name> [at <world> <x1> <y1> <z1> <x2> <y2> <z2>]");
             return true;
         }
         String name = args[1];
+        int atIdx = indexOf(args, "at", 2);
+        if (atIdx >= 0) {
+            if (args.length < atIdx + 8) {
+                sender.sendMessage("§cUsage: /region define <name> at <world> <x1> <y1> <z1> <x2> <y2> <z2>");
+                return true;
+            }
+            String world = args[atIdx + 1];
+            int x1 = parseInt(args[atIdx + 2], sender);
+            int y1 = parseInt(args[atIdx + 3], sender);
+            int z1 = parseInt(args[atIdx + 4], sender);
+            int x2 = parseInt(args[atIdx + 5], sender);
+            int y2 = parseInt(args[atIdx + 6], sender);
+            int z2 = parseInt(args[atIdx + 7], sender);
+            if (x1 == Integer.MIN_VALUE) {
+                return true;
+            }
+            try {
+                var region = regions.defineAt(name, world, x1, y1, z1, x2, y2, z2);
+                sender.sendMessage("§aDefined admin region §f" + region.name() + " §7in §f" + region.world());
+            } catch (Exception e) {
+                sender.sendMessage("§cFailed: " + e.getMessage());
+            }
+            return true;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cConsole: use /region define <name> at <world> <x1> <y1> <z1> <x2> <y2> <z2>");
+            return true;
+        }
         var selectionOpt = WorldServices.selection();
         if (selectionOpt.isEmpty()) {
             sender.sendMessage("§cYaPWorld selection service unavailable. Use //wand pos1/pos2 first.");
@@ -103,8 +128,13 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    private boolean handleList(CommandSender sender) {
+    private boolean handleList(CommandSender sender, String[] args) {
+        boolean json = args.length >= 2 && "json".equalsIgnoreCase(args[1]);
         var list = regions.listRegions();
+        if (json) {
+            sender.sendMessage("YAPREGION_JSON:" + toJson(list));
+            return true;
+        }
         if (list.isEmpty()) {
             sender.sendMessage("§7No admin regions on this server.");
             return true;
@@ -116,6 +146,54 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
                     + " · flags=" + region.flags().size());
         }
         return true;
+    }
+
+    private static String toJson(List<com.yapcore.regions.AdminRegion> list) {
+        StringBuilder sb = new StringBuilder("[");
+        for (int i = 0; i < list.size(); i++) {
+            if (i > 0) {
+                sb.append(',');
+            }
+            var r = list.get(i);
+            sb.append('{')
+                    .append("\"name\":").append(q(r.name())).append(',')
+                    .append("\"id\":").append(r.id()).append(',')
+                    .append("\"world\":").append(q(r.world())).append(',')
+                    .append("\"minX\":").append(r.minX()).append(',')
+                    .append("\"minY\":").append(r.minY()).append(',')
+                    .append("\"minZ\":").append(r.minZ()).append(',')
+                    .append("\"maxX\":").append(r.maxX()).append(',')
+                    .append("\"maxY\":").append(r.maxY()).append(',')
+                    .append("\"maxZ\":").append(r.maxZ()).append(',')
+                    .append("\"flagCount\":").append(r.flags().size())
+                    .append('}');
+        }
+        return sb.append(']').toString();
+    }
+
+    private static String q(String s) {
+        if (s == null) {
+            return "null";
+        }
+        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    }
+
+    private static int indexOf(String[] args, String needle, int from) {
+        for (int i = from; i < args.length; i++) {
+            if (needle.equalsIgnoreCase(args[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private static int parseInt(String raw, CommandSender sender) {
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            sender.sendMessage("§cInvalid integer: " + raw);
+            return Integer.MIN_VALUE;
+        }
     }
 
     @Override

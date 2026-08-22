@@ -59,6 +59,11 @@ public final class RegionServiceImpl implements RegionService {
                 .orElseThrow(() -> new SQLException("Region not found after create"));
     }
 
+    public AdminRegion defineAt(String name, String world, int x1, int y1, int z1, int x2, int y2, int z2)
+            throws SQLException {
+        return define(name, new CuboidSelection(world, x1, y1, z1, x2, y2, z2));
+    }
+
     public void setFlag(String name, RegionFlag flag, FlagValue value) throws SQLException {
         AdminRegion region = repository.findByName(config.serverId(), name)
                 .orElseThrow(() -> new SQLException("Unknown region: " + name));

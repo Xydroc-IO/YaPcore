@@ -16,4 +16,11 @@ brush:
 undo:
   max-sessions: 10
 
+editor:
+  enabled: true
+  port: 8092
+  bind: "0.0.0.0"
+  # Hostname/IP players use in the browser (set to your server address)
+  public-host: "127.0.0.1"
+
 server-id: lobby

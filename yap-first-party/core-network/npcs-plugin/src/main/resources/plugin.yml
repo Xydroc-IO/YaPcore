@@ -10,7 +10,7 @@ softdepend: [YaPDB, YaPPlayerdata]
 commands:
   npc:
     description: Quest NPC admin
-    usage: /npc create <id> [name]|remove <id>|list
+    usage: /npc create <id> [name]|create <id> at <world> <x> <y> <z> [yaw] [name]|remove <id>|list [json]|setquest|setdialogue|respawn|reload|info
     permission: yapnpcs.admin
   quests:
     description: View quest progress

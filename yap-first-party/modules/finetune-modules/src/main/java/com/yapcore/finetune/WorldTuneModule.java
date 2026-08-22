@@ -19,6 +19,7 @@ public final class WorldTuneModule extends FineTuneModule {
                 "Config: plugins/YaPWorld/config.yml",
                 "World load/unload/teleport (Multiverse-class)",
                 "Region selection + schematic paste (WorldEdit-class, Folia-safe)",
+                "In-game editor: /yapworld gui — golden axe tool with shift+right-click",
                 "Integrates with yap-pregen for bulk generation"
         );
     }

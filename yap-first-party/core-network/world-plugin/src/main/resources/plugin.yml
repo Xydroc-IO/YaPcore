@@ -10,7 +10,7 @@ softdepend: [YaPPerms, YaPPregen]
 commands:
   yapworld:
     description: World admin
-    usage: /yapworld load|unload|tp|wand|pos1|pos2|schem|brush|undo|redo|pregen|status|reload
+    usage: /yapworld tool|gui|load|unload|tp|pos1|pos2|schem|brush|undo|redo|pregen|status|reload
     permission: yapworld.admin
     aliases: [mv, worldedit]
 permissions:
@@ -24,6 +24,9 @@ permissions:
     default: op
   yapworld.selection:
     default: op
+  yapworld.editor:
+    default: op
+    description: Open the browser world edit studio (/yapworld editor)
   yapworld.schematic:
     default: op
   yapworld.brush:

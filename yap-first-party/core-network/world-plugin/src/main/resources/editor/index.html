@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>YaP World Edit Studio</title>
+  <link rel="stylesheet" href="editor.css"/>
+</head>
+<body>
+  <div id="gate" class="gate">
+    <div class="gate-card">
+      <div class="gate-brand">
+        <div class="logo-mark">W</div>
+        <div>
+          <h1>World Edit Studio</h1>
+          <p class="muted">In-game session required</p>
+        </div>
+      </div>
+      <p>Run <code>/yapworld editor</code> in Minecraft, then open the private link from chat.</p>
+      <p id="gate-error" class="error hidden"></p>
+    </div>
+  </div>
+
+  <div id="app" class="shell hidden">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="logo-mark sm">W</div>
+        <strong>World Edit</strong>
+      </div>
+      <nav class="sidebar-nav" id="nav">
+        <button class="nav-item active" data-tab="overview">Overview</button>
+        <button class="nav-item" data-tab="selection">Selection</button>
+        <button class="nav-item" data-tab="operations">Operations</button>
+        <button class="nav-item" data-tab="brush">Brush</button>
+        <button class="nav-item" data-tab="schematics">Schematics</button>
+        <button class="nav-item" data-tab="worlds">Worlds</button>
+        <button class="nav-item" data-tab="history">History</button>
+        <button class="nav-item" data-tab="pregen">Pregen</button>
+        <button class="nav-item" data-tab="tools">Tools</button>
+      </nav>
+      <div class="sidebar-foot muted">Keep Minecraft open</div>
+    </aside>
+
+    <div class="shell-body">
+      <header class="topbar">
+        <div class="topbar-left">
+          <span id="player-name" class="topbar-player">—</span>
+          <span id="online-badge" class="badge off">offline</span>
+        </div>
+        <div class="topbar-right">
+          <span id="live-coords" class="mono muted">—</span>
+          <span id="sync-dot" class="sync-dot" title="Live sync"></span>
+        </div>
+      </header>
+
+      <main class="content">
+        <!-- Overview -->
+        <section id="tab-overview" class="tab active">
+          <div class="page-head">
+            <h2>Overview</h2>
+            <p>Live session status and quick actions while you build in-game.</p>
+          </div>
+          <div class="stat-grid" id="overview-stats"></div>
+          <div class="card">
+            <h3>Quick actions</h3>
+            <div class="action-grid">
+              <button class="action-card" data-action="pos1"><span class="ac-icon">①</span><span>Set Pos1</span></button>
+              <button class="action-card" data-action="pos2"><span class="ac-icon">②</span><span>Set Pos2</span></button>
+              <button class="action-card primary" data-action="fill"><span class="ac-icon">▣</span><span>Fill</span></button>
+              <button class="action-card" data-action="undo"><span class="ac-icon">↩</span><span>Undo</span></button>
+              <button class="action-card" data-action="brush-apply"><span class="ac-icon">◎</span><span>Brush here</span></button>
+              <button class="action-card" data-action="give-tool"><span class="ac-icon">🪓</span><span>Get axe</span></button>
+            </div>
+          </div>
+          <div class="card" id="selection-preview-card">
+            <h3>Selection preview</h3>
+            <div id="selection-preview" class="selection-preview muted">No selection yet</div>
+          </div>
+        </section>
+
+        <!-- Selection -->
+        <section id="tab-selection" class="tab">
+          <div class="page-head">
+            <h2>Selection</h2>
+            <p>Set corners in-game with the golden axe or enter coordinates manually.</p>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <h3>Pos1 <span class="tag">corner A</span></h3>
+              <div class="coord-grid">
+                <label>X <input id="p1x" type="number"/></label>
+                <label>Y <input id="p1y" type="number"/></label>
+                <label>Z <input id="p1z" type="number"/></label>
+                <label class="full">World <input id="p1w" type="text"/></label>
+              </div>
+              <div class="btn-row">
+                <button class="primary" id="btn-set-pos1-manual">Apply Pos1</button>
+                <button data-action="pos1">Use my position</button>
+              </div>
+            </div>
+            <div class="card">
+              <h3>Pos2 <span class="tag">corner B</span></h3>
+              <div class="coord-grid">
+                <label>X <input id="p2x" type="number"/></label>
+                <label>Y <input id="p2y" type="number"/></label>
+                <label>Z <input id="p2z" type="number"/></label>
+                <label class="full">World <input id="p2w" type="text"/></label>
+              </div>
+              <div class="btn-row">
+                <button class="primary" id="btn-set-pos2-manual">Apply Pos2</button>
+                <button data-action="pos2">Use my position</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="btn-row">
+              <button class="danger ghost" data-action="clear">Clear selection</button>
+            </div>
+            <p id="selection-status" class="hint muted"></p>
+          </div>
+        </section>
+
+        <!-- Operations -->
+        <section id="tab-operations" class="tab">
+          <div class="page-head">
+            <h2>Operations</h2>
+            <p>Region edits use your current material and selection.</p>
+          </div>
+          <div class="card">
+            <h3>Active material</h3>
+            <div class="material-bar">
+              <span id="op-material" class="material-chip">STONE</span>
+              <input id="op-material-input" type="text" placeholder="Block id e.g. STONE_BRICKS"/>
+              <button id="op-material-apply">Set</button>
+            </div>
+          </div>
+          <div class="action-grid ops-grid">
+            <button class="action-card primary" data-action="fill"><span class="ac-icon">▣</span><span>Fill</span><small>All blocks</small></button>
+            <button class="action-card" data-action="walls"><span class="ac-icon">▢</span><span>Walls</span><small>4 vertical faces</small></button>
+            <button class="action-card" data-action="shell"><span class="ac-icon">▤</span><span>Shell</span><small>All 6 faces</small></button>
+            <button class="action-card" data-action="hollow"><span class="ac-icon">▫</span><span>Hollow</span><small>Clear interior</small></button>
+            <button class="action-card" data-action="outline"><span class="ac-icon">⌜</span><span>Outline</span><small>Edge frame</small></button>
+          </div>
+          <div class="card">
+            <h3>Replace</h3>
+            <div class="inline-row">
+              <input id="replace-from" type="text" placeholder="From block"/>
+              <span class="muted">→</span>
+              <input id="replace-to" type="text" placeholder="To block"/>
+              <button class="primary" id="btn-replace">Replace in selection</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Brush -->
+        <section id="tab-brush" class="tab">
+          <div class="page-head">
+            <h2>Brush</h2>
+            <p>Sphere brush at your feet or in-game with the golden axe in brush mode.</p>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <h3>Mode</h3>
+              <div class="segmented" id="mode-segment">
+                <button data-mode="select">Select</button>
+                <button data-mode="brush">Brush</button>
+              </div>
+              <p class="hint muted">Select: axe sets pos1/pos2. Brush: right-click places sphere.</p>
+            </div>
+            <div class="card">
+              <h3>Radius <strong id="brush-radius-label">3</strong></h3>
+              <input id="brush-radius" type="range" min="1" max="16" value="3" class="range"/>
+              <div class="btn-row">
+                <button id="radius-minus">−</button>
+                <button id="radius-plus">+</button>
+                <button class="primary" data-action="brush-apply">Apply at my position</button>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Material palette</h3>
+            <div id="palette" class="palette"></div>
+            <div class="material-bar">
+              <input id="brush-material-input" type="text" placeholder="Custom block id"/>
+              <button id="brush-material-apply">Apply</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Schematics -->
+        <section id="tab-schematics" class="tab">
+          <div class="page-head">
+            <h2>Schematic library</h2>
+            <p>Create, import, manage, and paste schematics — full control from the browser.</p>
+          </div>
+
+          <div class="schem-layout">
+            <div class="schem-main">
+              <div class="card">
+                <h3>Create from selection</h3>
+                <p class="hint">Set pos1 + pos2 in-game, then save the region as a <code>.yschem</code> file.</p>
+                <div class="inline-row">
+                  <input id="schem-save-name" type="text" placeholder="my-castle"/>
+                  <button class="primary" id="btn-save-schem">Save schematic</button>
+                </div>
+              </div>
+
+              <div class="card">
+                <h3>Import schematic</h3>
+                <p class="hint">Upload WorldEdit <code>.schem</code> or YaP <code>.yschem</code> files (max 8 MB).</p>
+                <div id="schem-drop" class="drop-zone">
+                  <input id="schem-file-input" type="file" accept=".schem,.yschem" hidden/>
+                  <p><strong>Drop file here</strong> or <button type="button" class="ghost" id="schem-browse">browse</button></p>
+                  <p class="hint">Imported .schem files are also converted to .yschem</p>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-head-row">
+                  <h3>Library</h3>
+                  <input id="schem-search" type="search" placeholder="Search schematics…" class="search-input"/>
+                </div>
+                <div class="table-wrap">
+                  <table class="data-table" id="schem-table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Size</th>
+                        <th>Blocks</th>
+                        <th>Format</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="schem-table-body"></tbody>
+                  </table>
+                </div>
+                <p id="schem-empty" class="hint muted hidden">No schematics yet — save or import one above.</p>
+              </div>
+            </div>
+
+            <aside class="schem-detail card" id="schem-detail">
+              <h3>Schematic details</h3>
+              <p class="hint muted" id="schem-detail-empty">Select a schematic from the library.</p>
+              <div id="schem-detail-body" class="hidden">
+                <dl class="detail-dl" id="schem-detail-meta"></dl>
+                <h4>Paste options</h4>
+                <div class="segmented paste-anchor" id="paste-anchor">
+                  <button type="button" data-anchor="player" class="active">At me</button>
+                  <button type="button" data-anchor="selection">Selection min</button>
+                  <button type="button" data-anchor="custom">Custom XYZ</button>
+                </div>
+                <div id="paste-custom-coords" class="coord-grid hidden">
+                  <label>X <input id="paste-x" type="number"/></label>
+                  <label>Y <input id="paste-y" type="number"/></label>
+                  <label>Z <input id="paste-z" type="number"/></label>
+                </div>
+                <button class="primary block" id="btn-paste-selected">Paste schematic</button>
+                <div class="btn-row">
+                  <button id="btn-download-schem">Download</button>
+                  <button id="btn-duplicate-schem">Duplicate</button>
+                  <button class="danger ghost" id="btn-delete-schem">Delete</button>
+                </div>
+                <div class="inline-row mt">
+                  <input id="schem-rename-to" type="text" placeholder="new-name"/>
+                  <button id="btn-rename-schem">Rename</button>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- Worlds -->
+        <section id="tab-worlds" class="tab">
+          <div class="page-head">
+            <h2>Worlds</h2>
+            <p>Load, unload, and teleport between server worlds.</p>
+          </div>
+          <div class="grid-2">
+            <div class="card">
+              <h3>Loaded worlds</h3>
+              <div id="worlds-loaded" class="world-list"></div>
+            </div>
+            <div class="card">
+              <h3>Available on disk</h3>
+              <p class="hint">Worlds with a <code>level.dat</code> folder on the server.</p>
+              <div id="worlds-discovered" class="world-list"></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Load world</h3>
+            <div class="inline-row">
+              <input id="world-load-name" type="text" placeholder="world_name"/>
+              <button class="primary" id="btn-world-load">Load</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- History -->
+        <section id="tab-history" class="tab">
+          <div class="page-head">
+            <h2>History</h2>
+            <p>Undo and redo block changes from this session.</p>
+          </div>
+          <div class="stat-grid compact" id="history-stats"></div>
+          <div class="card">
+            <div class="btn-row lg">
+              <button class="primary lg" data-action="undo">↩ Undo</button>
+              <button class="lg" data-action="redo">↪ Redo</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Pregen -->
+        <section id="tab-pregen" class="tab">
+          <div class="page-head">
+            <h2>Chunk pregen</h2>
+            <p>Requires YaPPregen plugin on the server.</p>
+          </div>
+          <div id="pregen-status" class="card muted">Checking…</div>
+          <div class="grid-2">
+            <div class="card">
+              <h3>From selection</h3>
+              <p class="hint">Pregenerates chunks inside pos1–pos2.</p>
+              <button class="primary block" data-action="pregen-start-selection">Start selection pregen</button>
+            </div>
+            <div class="card">
+              <h3>Radius around you</h3>
+              <label>Radius (blocks) <input id="pregen-radius" type="number" value="128" min="16"/></label>
+              <button class="primary block" id="btn-pregen-radius">Start radius pregen</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Control</h3>
+            <div class="btn-row">
+              <button data-action="pregen-pause">Pause</button>
+              <button data-action="pregen-resume">Resume</button>
+              <button class="danger ghost" data-action="pregen-cancel">Cancel</button>
+              <button data-action="pregen-status">Status</button>
+            </div>
+            <input id="pregen-world" type="text" placeholder="World name or 'all'" class="mt"/>
+            <p id="pregen-msg" class="hint muted"></p>
+          </div>
+        </section>
+
+        <!-- Tools -->
+        <section id="tab-tools" class="tab">
+          <div class="page-head">
+            <h2>Tools</h2>
+            <p>Get in-game items linked to this studio session.</p>
+          </div>
+          <div class="action-grid">
+            <button class="action-card" data-action="give-tool">
+              <span class="ac-icon">🪓</span>
+              <span>Golden axe</span>
+              <small>Pos1 left · Pos2 right · Shift+RMB = studio</small>
+            </button>
+            <button class="action-card" data-action="give-brush">
+              <span class="ac-icon">🔥</span>
+              <span>Blaze rod brush</span>
+              <small>Legacy brush tool</small>
+            </button>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div id="toast-stack" class="toast-stack"></div>
+  <div id="busy-overlay" class="busy-overlay hidden"><div class="spinner"></div></div>
+
+  <script src="editor.js"></script>
+</body>
+</html>

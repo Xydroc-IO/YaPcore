@@ -48,15 +48,31 @@ public final class NpcServiceImpl implements NpcService {
             return false;
         }
         Location loc = player.getLocation();
+        if (createAt(id, displayName, loc.getWorld().getName(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw())) {
+            player.sendMessage("§aCreated NPC §f" + id + " §aat your location.");
+            return true;
+        }
+        player.sendMessage("§cDatabase error creating NPC.");
+        return false;
+    }
+
+    @Override
+    public boolean createAt(String id, String displayName, String world, double x, double y, double z, float yaw) {
+        if (id == null || !id.matches("[A-Za-z0-9_-]{1,32}")) {
+            return false;
+        }
+        if (world == null || world.isBlank()) {
+            return false;
+        }
         var record = new NpcRepository.NpcRecord(
                 id,
                 config.serverId(),
                 displayName == null || displayName.isBlank() ? id : displayName,
-                loc.getWorld().getName(),
-                loc.getX(),
-                loc.getY(),
-                loc.getZ(),
-                loc.getYaw(),
+                world,
+                x,
+                y,
+                z,
+                yaw,
                 null,
                 null,
                 null);
@@ -66,8 +82,65 @@ public final class NpcServiceImpl implements NpcService {
             return true;
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "npc create", e);
-            player.sendMessage("§cDatabase error: " + e.getMessage());
             return false;
+        }
+    }
+
+    @Override
+    public boolean setQuestId(String id, String questId) {
+        try {
+            var opt = repository.get(config.serverId(), id);
+            if (opt.isEmpty()) {
+                return false;
+            }
+            var old = opt.get();
+            String q = questId == null || questId.isBlank() ? null : questId.trim();
+            var updated = new NpcRepository.NpcRecord(
+                    old.id(), old.serverId(), old.displayName(), old.world(),
+                    old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
+                    old.dialogue(), q);
+            repository.upsert(updated);
+            spawnOrRefresh(updated);
+            return true;
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "npc setquest", e);
+            return false;
+        }
+    }
+
+    @Override
+    public boolean setDialogue(String id, String dialogue) {
+        try {
+            var opt = repository.get(config.serverId(), id);
+            if (opt.isEmpty()) {
+                return false;
+            }
+            var old = opt.get();
+            String d = dialogue == null || dialogue.isBlank() ? null : dialogue;
+            var updated = new NpcRepository.NpcRecord(
+                    old.id(), old.serverId(), old.displayName(), old.world(),
+                    old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
+                    d, old.questId());
+            repository.upsert(updated);
+            spawnOrRefresh(updated);
+            return true;
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "npc setdialogue", e);
+            return false;
+        }
+    }
+
+    @Override
+    public void reloadConfig() {
+        config.reload();
+    }
+
+    public List<NpcRepository.NpcRecord> listRecords() {
+        try {
+            return repository.listForServer(config.serverId());
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "npc list", e);
+            return List.of();
         }
     }
 
