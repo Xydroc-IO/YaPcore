@@ -76,12 +76,34 @@ public final class CatalogStore {
             return modern.entitiesByName.getOrDefault(name, legacyType);
         }
 
+        /**
+         * Map a modern entity type onto this (older) catalog.
+         * Unknown names → documented stand-in ({@code pig}, else {@code armor_stand}, else 0)
+         * so mid clients never see a modern type id they cannot spawn.
+         */
         public int entityToLegacy(int modernType, BandCatalog modern) {
             String name = modern.entities.get(modernType);
             if (name == null) {
-                return modernType;
+                return standInEntityType();
             }
-            return entitiesByName.getOrDefault(name, modernType);
+            Integer mapped = entitiesByName.get(name);
+            if (mapped != null) {
+                return mapped;
+            }
+            return standInEntityType();
+        }
+
+        /** VB.22 placeholder when the client catalog lacks the modern entity name. */
+        public int standInEntityType() {
+            Integer pig = entitiesByName.get("pig");
+            if (pig != null) {
+                return pig;
+            }
+            Integer stand = entitiesByName.get("armor_stand");
+            if (stand != null) {
+                return stand;
+            }
+            return 0;
         }
     }
 

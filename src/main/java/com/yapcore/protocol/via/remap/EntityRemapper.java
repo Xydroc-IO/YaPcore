@@ -3,7 +3,10 @@ package com.yapcore.protocol.via.remap;
 import com.yapcore.protocol.java.ProtocolBand;
 import com.yapcore.protocol.via.catalog.CatalogStore;
 
-/** Entity type id remaps across bands via catalog name bridges. */
+/**
+ * Entity type id remaps across bands via catalog name bridges.
+ * Missing names use {@link CatalogStore.BandCatalog#standInEntityType()} (pig / armor_stand).
+ */
 public final class EntityRemapper {
 
     private final ProtocolBand from;

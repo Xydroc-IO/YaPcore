@@ -6,6 +6,7 @@ import com.yapcore.protocol.java.codec.McCompressionCodec;
 import com.yapcore.protocol.java.codec.McFrameCodec;
 import com.yapcore.protocol.via.transform.LoginSuccessRewriter;
 import com.yapcore.protocol.via.transform.PacketTransformer;
+import com.yapcore.protocol.via.id.PacketIdDump;
 import com.yapcore.protocol.java.ConnState;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -33,6 +34,9 @@ import java.util.logging.Logger;
 public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger LOG = Logger.getLogger("YaPcore.ViaProxy");
+    /** Reuse Deflater per Netty worker — new Deflater() per packet stalls keepalives. */
+    private static final ThreadLocal<java.util.zip.Deflater> DEFLATER =
+            ThreadLocal.withInitial(java.util.zip.Deflater::new);
 
     private final String backendHost;
     private final int backendPort;
@@ -47,7 +51,7 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
     private final Queue<ByteBuf> pendingS2C = new ArrayDeque<>();
     /** Serialize C2S writes so login_start never races ahead of handshake on Paper. */
     private boolean c2sWriteInFlight;
-    private final Queue<ByteBuf> pendingC2S = new ArrayDeque<>();
+    private final ArrayDeque<ByteBuf> pendingC2S = new ArrayDeque<>();
     private ChannelHandlerContext inboundCtx;
 
     public ViaProxyHandler(String backendHost, int backendPort, int serverProtocol) {
@@ -109,17 +113,22 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
                 handshakeDone = true;
             }
             if (session == null || transformer == null || backend == null || !backend.isActive()) {
-                LOG.warning("Via C2S dropped — backend not ready yet");
+                // WARN storm on 2 workers after Paper kicks stalls survivors — FINE only.
+                LOG.fine("Via C2S dropped — backend not ready yet");
                 packet.release();
+                if (backend != null && !backend.isActive()) {
+                    ctx.close();
+                }
                 return;
             }
+            boolean keepAlive = isPlayKeepAliveC2S(packet);
             session.bumpC2S();
             ByteBuf out = transformer.transform(session, ViaDirection.CLIENTBOUND_TO_SERVER, packet);
             packet.release();
             if (out == null) {
                 return;
             }
-            enqueueC2S(out);
+            enqueueC2S(out, keepAlive);
         } catch (Exception e) {
             packet.release();
             LOG.log(Level.WARNING, "Via C2S failed", e);
@@ -127,9 +136,29 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    private void enqueueC2S(ByteBuf out) {
+    /** Peek play keep_alive before transform — must not lose to position FIFO under load. */
+    private boolean isPlayKeepAliveC2S(ByteBuf packet) {
+        if (session == null || session.state() != ConnState.PLAY) {
+            return false;
+        }
+        int mark = packet.readerIndex();
+        try {
+            int id = McCodec.readVarInt(packet);
+            return id == session.clientBand().keepAliveSbId();
+        } catch (Exception e) {
+            return false;
+        } finally {
+            packet.readerIndex(mark);
+        }
+    }
+
+    private void enqueueC2S(ByteBuf out, boolean keepAlive) {
         if (c2sWriteInFlight) {
-            pendingC2S.add(out);
+            if (keepAlive) {
+                pendingC2S.addFirst(out);
+            } else {
+                pendingC2S.addLast(out);
+            }
             return;
         }
         writeC2S(out);
@@ -138,18 +167,26 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
     private void writeC2S(ByteBuf out) {
         if (backend == null || !backend.isActive()) {
             out.release();
+            if (inboundCtx != null) {
+                inboundCtx.close();
+            }
             return;
         }
         c2sWriteInFlight = true;
-        if (out.readableBytes() > 9 || (out.getByte(out.readerIndex()) & 0xff) != 0x04) {
-            LOG.info("Via C2S → Paper bytes=" + out.readableBytes()
+        // Never INFO-log per-packet C2S: under active bot physics this stalls the Netty
+        // event loop → client Timed outs while Paper MSPT stays fine (active150 148→62).
+        if (LOG.isLoggable(Level.FINE)) {
+            LOG.fine("Via C2S → Paper bytes=" + out.readableBytes()
                     + " hex=" + hexPrefix(out, 24));
         }
         backendWrite(backend, out).addListener((ChannelFutureListener) f -> {
             c2sWriteInFlight = false;
             if (!f.isSuccess()) {
-                LOG.warning("Via C2S write to Paper failed: " + f.cause());
+                LOG.fine("Via C2S write to Paper failed: " + f.cause());
                 f.channel().close();
+                if (inboundCtx != null) {
+                    inboundCtx.close();
+                }
                 return;
             }
             ByteBuf next = pendingC2S.poll();
@@ -207,7 +244,8 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
         byte[] input = new byte[readable];
         packet.getBytes(packet.readerIndex(), input);
         packet.release();
-        java.util.zip.Deflater deflater = new java.util.zip.Deflater();
+        java.util.zip.Deflater deflater = DEFLATER.get();
+        deflater.reset();
         try {
             deflater.setInput(input);
             deflater.finish();
@@ -227,7 +265,7 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
             out.writeBytes(compressed);
             return out;
         } finally {
-            deflater.end();
+            deflater.reset();
         }
     }
 
@@ -434,8 +472,8 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
                 }
                 transformedS2C.readerIndex(mark);
                 // Paper expects ACCEPTED then SUCCESSFULLY_LOADED for forced packs
-                enqueueC2S(resourcePackStatus(uuid, 3, playPhase)); // ACCEPTED
-                enqueueC2S(resourcePackStatus(uuid, 0, playPhase)); // SUCCESSFULLY_LOADED
+                enqueueC2S(resourcePackStatus(uuid, 3, playPhase), false); // ACCEPTED
+                enqueueC2S(resourcePackStatus(uuid, 0, playPhase), false); // SUCCESSFULLY_LOADED
                 LOG.info("Via " + (playPhase ? "play" : "config")
                         + ": auto-accepted resource pack (accepted+loaded)");
             } catch (Exception e) {
@@ -443,15 +481,22 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter {
             }
         }
 
+        private PacketIdDump serverPlayDump;
+
         /** Paper 776 play S2C resource_pack_push = 81 (also accept dump-resolved ids). */
         private boolean isPlayResourcePackPush(int serverPacketId) {
             if (serverPacketId == 81) {
                 return true;
             }
             try {
-                var dump = com.yapcore.protocol.via.id.PacketIdDump.forProtocol(
-                        session.serverProtocol());
-                String name = dump.playS2cName(serverPacketId);
+                if (serverPlayDump == null && session != null) {
+                    serverPlayDump = com.yapcore.protocol.via.id.PacketIdDump.forProtocol(
+                            session.serverProtocol());
+                }
+                if (serverPlayDump == null) {
+                    return false;
+                }
+                String name = serverPlayDump.playS2cName(serverPacketId);
                 if (name == null) {
                     return false;
                 }

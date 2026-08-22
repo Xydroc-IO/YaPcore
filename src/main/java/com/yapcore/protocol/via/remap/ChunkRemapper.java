@@ -28,12 +28,16 @@ public final class ChunkRemapper {
         }
         String fromFmt = catalogs.sectionFormat(from);
         String toFmt = catalogs.sectionFormat(to);
-        // Mid-modern paletted↔paletted (1.20.2+ ↔ 26.2): section layout matches —
-        // do NOT scan the packet as packed block shorts (corrupts heightmaps/light).
+        // Mid-modern paletted↔paletted: never blind-passthrough across layout eras.
+        // 26.1+ inserts a fluid-count short per section; 1.21.11 mineflayer lacks it →
+        // "Bits per biome/block is too big" and Timed outs under active bots.
         if ("paletted".equals(fromFmt) && "paletted".equals(toFmt)
                 && from.ordinal() >= ProtocolBand.V1_20_2.ordinal()
                 && to.ordinal() >= ProtocolBand.V1_20_2.ordinal()) {
-            return body.retainedDuplicate();
+            if (sameSectionWireLayout(from, to)) {
+                return body.retainedDuplicate();
+            }
+            return remapMidModernColumn(body);
         }
         if ("legacy".equals(fromFmt) || from.ordinal() <= ProtocolBand.V1_8.ordinal()) {
             return legacyColumnToModern(body);
@@ -42,6 +46,173 @@ public final class ChunkRemapper {
             return modernToLegacy(body);
         }
         return remapPackedBlockShorts(body);
+    }
+
+    /** 26.1+ (proto ≥775) — ChunkSection gains fluid-count short. */
+    static boolean hasFluidCount(ProtocolBand band) {
+        return band.ordinal() >= ProtocolBand.V26_1.ordinal();
+    }
+
+    /** 1.21.5+ (proto ≥770) — paletted data-array length is computed, not on wire. */
+    static boolean noSizePrefix(ProtocolBand band) {
+        return band.minProtocol() >= 770
+                || band == ProtocolBand.V1_21_6
+                || band == ProtocolBand.V1_21_11
+                || band.ordinal() >= ProtocolBand.V26_1.ordinal();
+    }
+
+    static boolean sameSectionWireLayout(ProtocolBand a, ProtocolBand b) {
+        return hasFluidCount(a) == hasFluidCount(b) && noSizePrefix(a) == noSizePrefix(b);
+    }
+
+    /**
+     * Reshape mid-modern {@code level_chunk_with_light} body (no packet id) between
+     * fluid-count / size-prefix eras. Heightmaps + light copied; section containers rewritten.
+     */
+    private ByteBuf remapMidModernColumn(ByteBuf body) {
+        int mark = body.readerIndex();
+        try {
+            int chunkX = body.readInt();
+            int chunkZ = body.readInt();
+            ByteBuf out = Unpooled.buffer(Math.max(256, body.readableBytes() + 64));
+            out.writeInt(chunkX);
+            out.writeInt(chunkZ);
+            copyHeightmaps(body, out);
+            int dataSize = McCodec.readVarInt(body);
+            if (dataSize < 0 || dataSize > body.readableBytes()) {
+                body.readerIndex(mark);
+                return body.retainedDuplicate();
+            }
+            ByteBuf sectionIn = body.readSlice(dataSize);
+            ByteBuf sectionOut = Unpooled.buffer(dataSize + 128);
+            boolean fromFluid = hasFluidCount(from);
+            boolean toFluid = hasFluidCount(to);
+            boolean fromNoPrefix = noSizePrefix(from);
+            boolean toNoPrefix = noSizePrefix(to);
+            // Overworld caves-and-cliffs: 24 sections; stop early if buffer ends.
+            for (int s = 0; s < 32 && sectionIn.isReadable(); s++) {
+                if (!remapOneSection(sectionIn, sectionOut, fromFluid, toFluid, fromNoPrefix, toNoPrefix)) {
+                    break;
+                }
+            }
+            // Trailing unread section bytes (partial/corrupt) — drop rather than misalign light.
+            McCodec.writeVarInt(out, sectionOut.readableBytes());
+            out.writeBytes(sectionOut);
+            sectionOut.release();
+            // Block entities + light: remainder of packet
+            out.writeBytes(body, body.readerIndex(), body.readableBytes());
+            return out;
+        } catch (Exception e) {
+            body.readerIndex(mark);
+            return body.retainedDuplicate();
+        }
+    }
+
+    private static void copyHeightmaps(ByteBuf in, ByteBuf out) {
+        // Prefixed Array of Heightmap (1.21.5+): VarInt count + (type + long[])*
+        // Older NBT compound starts with 0x0a — copy via NBT skip.
+        if (!in.isReadable()) {
+            return;
+        }
+        int peek = in.getByte(in.readerIndex()) & 0xff;
+        if (peek == 0x0a) {
+            int start = in.readerIndex();
+            skipNbt(in);
+            out.writeBytes(in, start, in.readerIndex() - start);
+            return;
+        }
+        int count = McCodec.readVarInt(in);
+        McCodec.writeVarInt(out, count);
+        for (int i = 0; i < count; i++) {
+            int type = McCodec.readVarInt(in);
+            McCodec.writeVarInt(out, type);
+            int longs = McCodec.readVarInt(in);
+            McCodec.writeVarInt(out, longs);
+            out.writeBytes(in, longs * 8);
+        }
+    }
+
+    /**
+     * @return false if the buffer cannot hold another section
+     */
+    private boolean remapOneSection(ByteBuf in, ByteBuf out,
+                                    boolean fromFluid, boolean toFluid,
+                                    boolean fromNoPrefix, boolean toNoPrefix) {
+        if (in.readableBytes() < 3) {
+            return false;
+        }
+        short blockCount = in.readShort();
+        out.writeShort(blockCount);
+        if (fromFluid) {
+            if (in.readableBytes() < 2) {
+                return false;
+            }
+            short fluid = in.readShort();
+            if (toFluid) {
+                out.writeShort(fluid);
+            }
+        } else if (toFluid) {
+            out.writeShort(0);
+        }
+        // Block states (4096) then biomes (64)
+        if (!copyPalettedContainer(in, out, 4096, fromNoPrefix, toNoPrefix, 8)) {
+            return false;
+        }
+        return copyPalettedContainer(in, out, 64, fromNoPrefix, toNoPrefix, 3);
+    }
+
+    /**
+     * Copy one paletted container, converting size-prefix presence when eras differ.
+     * {@code maxIndirectBits} is 8 for blocks, 3 for biomes (prismarine-chunk).
+     */
+    private static boolean copyPalettedContainer(ByteBuf in, ByteBuf out, int entries,
+                                                 boolean fromNoPrefix, boolean toNoPrefix,
+                                                 int maxIndirectBits) {
+        if (!in.isReadable()) {
+            return false;
+        }
+        int bits = in.readUnsignedByte();
+        out.writeByte(bits);
+        if (bits == 0) {
+            int value = McCodec.readVarInt(in);
+            McCodec.writeVarInt(out, value);
+            if (!fromNoPrefix) {
+                int n = McCodec.readVarInt(in);
+                if (!toNoPrefix) {
+                    McCodec.writeVarInt(out, n);
+                    out.writeBytes(in, n * 8);
+                } else {
+                    in.skipBytes(Math.min(n * 8, in.readableBytes()));
+                }
+            } else if (!toNoPrefix) {
+                McCodec.writeVarInt(out, 0);
+            }
+            return true;
+        }
+        if (bits > 16) {
+            return false;
+        }
+        boolean indirect = bits <= maxIndirectBits;
+        if (indirect) {
+            int paletteSize = McCodec.readVarInt(in);
+            McCodec.writeVarInt(out, paletteSize);
+            for (int i = 0; i < paletteSize; i++) {
+                McCodec.writeVarInt(out, McCodec.readVarInt(in));
+            }
+        }
+        int valuesPerLong = Math.max(1, 64 / Math.max(bits, 1));
+        int longCount = fromNoPrefix
+                ? (entries + valuesPerLong - 1) / valuesPerLong
+                : McCodec.readVarInt(in);
+        if (!toNoPrefix) {
+            McCodec.writeVarInt(out, longCount);
+        }
+        int bytes = longCount * 8;
+        if (bytes < 0 || bytes > in.readableBytes()) {
+            return false;
+        }
+        out.writeBytes(in, bytes);
+        return true;
     }
 
     private ByteBuf legacyColumnToModern(ByteBuf body) {

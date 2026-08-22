@@ -35,6 +35,7 @@ echo "-- Bedrock column stream (P4.5) + containers/forms/skins --"
 gradle :test --tests 'com.yapcore.crossplay.bedrock.BedrockColumnStreamerTest' \
   --tests 'com.yapcore.crossplay.bedrock.BedrockContainerBridgeTest' \
   --tests 'com.yapcore.crossplay.bedrock.BedrockPacketCodecGameplayTest' \
+  --tests 'com.yapcore.protocol.via.CatalogStoreTest' \
   --tests 'com.yapcore.crossplay.form.FormServiceTest' \
   --tests 'com.yapcore.crossplay.skin.SkinServiceTest' -q
 

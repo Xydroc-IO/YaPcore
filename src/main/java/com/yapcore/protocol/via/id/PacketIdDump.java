@@ -451,10 +451,24 @@ public final class PacketIdDump {
         return null;
     }
 
-    /** Remap S2C play id from {@code fromProto} dump → {@code toProto} dump by packet name. */
+    /**
+     * Remap S2C play id from {@code fromProto} → {@code toProto} by packet name.
+     * Uses a cached {@link PacketIdRemapTable} (hot path = array index).
+     */
     public static int remapPlayS2c(int fromProto, int toProto, int fromId) {
-        PacketIdDump from = forProtocol(fromProto);
-        PacketIdDump to = forProtocol(toProto);
+        return PacketIdRemapTable.playS2c(fromProto, toProto).remap(fromId);
+    }
+
+    /**
+     * Remap C2S play id from client proto → server proto by name.
+     * Uses a cached {@link PacketIdRemapTable} (hot path = array index).
+     */
+    public static int remapPlayC2s(int fromProto, int toProto, int fromId) {
+        return PacketIdRemapTable.playC2s(fromProto, toProto).remap(fromId);
+    }
+
+    /** Name-scan remap used to build {@link PacketIdRemapTable} (not on the packet hot path). */
+    public static int remapPlayS2c(PacketIdDump from, PacketIdDump to, int fromId) {
         if (!from.hasPlay() || !to.hasPlay()) {
             return -1;
         }
@@ -472,10 +486,8 @@ public final class PacketIdDump {
         return name == null ? -1 : to.playS2cId(name);
     }
 
-    /** Remap C2S play id from client proto → server proto by name. */
-    public static int remapPlayC2s(int fromProto, int toProto, int fromId) {
-        PacketIdDump from = forProtocol(fromProto);
-        PacketIdDump to = forProtocol(toProto);
+    /** Name-scan remap used to build {@link PacketIdRemapTable} (not on the packet hot path). */
+    public static int remapPlayC2s(PacketIdDump from, PacketIdDump to, int fromId) {
         if (!from.hasPlay() || !to.hasPlay()) {
             return -1;
         }

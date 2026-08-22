@@ -144,7 +144,17 @@ public final class DualStackGateway {
 
         // Java Edition TCP (also used by TrafficCop's primary bind — gateway owns dual-stack extras)
         if (config.isJavaEnabled() && config.isYaPcoreJavaListener()) {
-            javaTransport = NativeEventLoops.create(1, 2);
+            // Via MidBand chunk reshape + zlib run on these workers. create(1,2) starved
+            // keepalives under active 1.21.11 bots (Timed outs while Paper MSPT stayed fine).
+            int viaWorkers = Math.max(8, Runtime.getRuntime().availableProcessors());
+            String viaWorkersProp = System.getProperty("yapcore.via.netty.workers");
+            if (viaWorkersProp != null && !viaWorkersProp.isBlank()) {
+                try {
+                    viaWorkers = Math.max(2, Integer.parseInt(viaWorkersProp.trim()));
+                } catch (NumberFormatException ignored) {
+                }
+            }
+            javaTransport = NativeEventLoops.create(1, viaWorkers);
             final boolean kernelProxy = proxyToGameKernel;
             ServerBootstrap boot = new ServerBootstrap();
             boot.group(javaTransport.boss(), javaTransport.worker())
@@ -157,10 +167,14 @@ public final class DualStackGateway {
                         @Override
                         protected void initChannel(SocketChannel ch) {
                             if (kernelProxy) {
-                                if (config.isProtocolViaEnabled() && config.isPaperAuthority()) {
+                                if (config.isProtocolViaEnabled()
+                                        && (config.isPaperAuthority() || config.isFoliaAuthority())) {
+                                    int gamePort = config.isFoliaAuthority()
+                                            ? config.foliaListenPort()
+                                            : config.paperListenPort();
                                     ch.pipeline().addLast("via-proxy", new ViaProxyHandler(
                                             "127.0.0.1",
-                                            config.paperListenPort(),
+                                            gamePort,
                                             ProtocolCompat.SERVER_PROTOCOL));
                                 } else {
                                     ch.pipeline().addLast("kernel-proxy", new JavaKernelProxyHandler(
@@ -182,11 +196,15 @@ public final class DualStackGateway {
                 javaChannel = boot.bind(config.getBindHost().equals("0.0.0.0") ? "0.0.0.0" : config.getBindHost(),
                         javaPort).sync().channel();
                 if (kernelProxy) {
-                    boolean via = config.isProtocolViaEnabled() && config.isPaperAuthority();
+                    boolean via = config.isProtocolViaEnabled()
+                            && (config.isPaperAuthority() || config.isFoliaAuthority());
+                    int viaPort = config.isFoliaAuthority()
+                            ? config.foliaListenPort()
+                            : config.paperListenPort();
                     LOG.info("Java Edition listener on :" + javaPort
                             + " transport=" + javaTransport.kind()
                             + (via
-                            ? " | mode=VIA_PROXY → 127.0.0.1:" + config.paperListenPort()
+                            ? " | mode=VIA_PROXY → 127.0.0.1:" + viaPort
                             + " (Via parity, serverProto=" + ProtocolCompat.SERVER_PROTOCOL + ")"
                             : " | mode=WRAPPED_GAME_PROXY → 127.0.0.1:" + config.getWrappedGamePort()
                             + " (authority=" + config.getGameAuthority() + ")"));
@@ -208,6 +226,9 @@ public final class DualStackGateway {
                 }
             }
             ThreadMetrics.record("Gateway", "java-online");
+        } else if (config.isJavaEnabled() && config.isFoliaAuthority() && config.isFoliaEmbed()) {
+            LOG.info("Java Edition TCP owned by Folia on :" + config.foliaListenPort()
+                    + " (YaPcore JE listener/proxy retired — use YaP Link/Velocity for public JE)");
         } else if (config.isJavaEnabled() && config.isPaperAuthority() && config.isPaperEmbed()) {
             LOG.info("Java Edition TCP owned by Paper on :" + config.getPort()
                     + " (YaPcore JE listener/proxy retired)");

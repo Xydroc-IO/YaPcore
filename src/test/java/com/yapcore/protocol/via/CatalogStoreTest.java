@@ -53,4 +53,30 @@ class CatalogStoreTest {
         assertEquals("legacy", blocks.sectionFormatFrom());
         assertEquals("paletted", blocks.sectionFormatTo());
     }
+
+    @Test
+    void unknownModernEntityUsesStandInOnLegacyClient() {
+        CatalogStore.BandCatalog legacy = CatalogStore.get().band(ProtocolBand.V1_8);
+        CatalogStore.BandCatalog modern = CatalogStore.get().band(ProtocolBand.V26_2);
+        assertNotNull(legacy);
+        assertNotNull(modern);
+        int fakeModernType = 999_999;
+        int mapped = legacy.entityToLegacy(fakeModernType, modern);
+        int standIn = legacy.standInEntityType();
+        assertEquals(standIn, mapped);
+        assertTrue(standIn >= 0);
+        // Known entity still bridges by name
+        EntityRemapper mid = new EntityRemapper(ProtocolBand.V1_20_2, ProtocolBand.V26_2);
+        CatalogStore.BandCatalog midCat = CatalogStore.get().band(ProtocolBand.V1_20_2);
+        Integer pigModern = null;
+        for (var e : modern.entities().entrySet()) {
+            if ("pig".equals(e.getValue())) {
+                pigModern = e.getKey();
+                break;
+            }
+        }
+        assertNotNull(pigModern);
+        int clientType = mid.toClientType(pigModern);
+        assertEquals(midCat.entitiesByName().get("pig").intValue(), clientType);
+    }
 }

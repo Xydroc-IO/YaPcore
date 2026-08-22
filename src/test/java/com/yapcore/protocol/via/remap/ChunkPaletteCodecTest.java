@@ -62,4 +62,49 @@ class ChunkPaletteCodecTest {
         modern.release();
         legacy.release();
     }
+
+    @Test
+    void midModernStripsFluidCount776to774() {
+        // Minimal 26.2-ish section: blockCount + fluidCount + single-valued blocks + biomes
+        ByteBuf section = Unpooled.buffer();
+        section.writeShort(0); // non-air
+        section.writeShort(0); // fluid (776 only)
+        section.writeByte(0); // blocks single
+        com.yapcore.protocol.java.codec.McCodec.writeVarInt(section, 0);
+        section.writeByte(0); // biomes single
+        com.yapcore.protocol.java.codec.McCodec.writeVarInt(section, 40);
+
+        ByteBuf body = Unpooled.buffer();
+        body.writeInt(5);
+        body.writeInt(6);
+        com.yapcore.protocol.java.codec.McCodec.writeVarInt(body, 0); // empty heightmaps array
+        com.yapcore.protocol.java.codec.McCodec.writeVarInt(body, section.readableBytes());
+        body.writeBytes(section);
+        section.release();
+        com.yapcore.protocol.java.codec.McCodec.writeVarInt(body, 0); // block entities
+        // no light — remap copies remainder
+
+        BlockRemapper blocks = new BlockRemapper(ProtocolBand.V26_2, ProtocolBand.V1_21_11);
+        ChunkRemapper remapper = new ChunkRemapper(ProtocolBand.V26_2, ProtocolBand.V1_21_11, blocks);
+        ByteBuf out = remapper.remapClientboundChunk(body);
+        assertEquals(5, out.readInt());
+        assertEquals(6, out.readInt());
+        assertEquals(0, com.yapcore.protocol.java.codec.McCodec.readVarInt(out)); // heightmaps
+        int dataSize = com.yapcore.protocol.java.codec.McCodec.readVarInt(out);
+        assertTrue(dataSize > 0);
+        // 774 section: blockCount, NO fluid, two single-valued containers
+        assertEquals(0, out.readShort());
+        assertEquals(0, out.readUnsignedByte()); // bits blocks
+        assertEquals(0, com.yapcore.protocol.java.codec.McCodec.readVarInt(out));
+        assertEquals(0, out.readUnsignedByte()); // bits biomes
+        assertEquals(40, com.yapcore.protocol.java.codec.McCodec.readVarInt(out));
+        body.release();
+        out.release();
+    }
+
+    @Test
+    void sameLayoutBandsStillPassthrough() {
+        assertTrue(ChunkRemapper.sameSectionWireLayout(ProtocolBand.V26_1, ProtocolBand.V26_2));
+        assertTrue(!ChunkRemapper.sameSectionWireLayout(ProtocolBand.V26_2, ProtocolBand.V1_21_11));
+    }
 }

@@ -6,6 +6,7 @@ import com.yapcore.protocol.java.codec.McCodec;
 import com.yapcore.protocol.via.ViaDirection;
 import com.yapcore.protocol.via.ViaSession;
 import com.yapcore.protocol.via.id.PacketIdDump;
+import com.yapcore.protocol.via.id.PacketIdRemapTable;
 import com.yapcore.protocol.via.remap.BlockRemapper;
 import com.yapcore.protocol.via.remap.ChunkLightCodec;
 import com.yapcore.protocol.via.remap.ChunkRemapper;
@@ -32,6 +33,10 @@ public final class MidBandTransformer {
     private final ViaSession session;
     private final PacketIdDump clientDump;
     private final PacketIdDump serverDump;
+    /** server play S2C id → client play S2C id */
+    private final PacketIdRemapTable s2cServerToClient;
+    /** client play C2S id → server play C2S id */
+    private final PacketIdRemapTable c2sClientToServer;
     private final ChunkRemapper chunks;
     private final ItemRemapper items;
     private final EntityRemapper entities;
@@ -40,6 +45,8 @@ public final class MidBandTransformer {
         this.session = session;
         this.clientDump = PacketIdDump.forProtocol(session.clientProtocol());
         this.serverDump = PacketIdDump.forProtocol(session.serverProtocol());
+        this.s2cServerToClient = PacketIdRemapTable.playS2c(serverDump, clientDump);
+        this.c2sClientToServer = PacketIdRemapTable.playC2s(clientDump, serverDump);
         ProtocolBand client = session.clientBand();
         ProtocolBand server = session.serverBand();
         BlockRemapper blocks = new BlockRemapper(server, client);
@@ -92,8 +99,7 @@ public final class MidBandTransformer {
     }
 
     private ByteBuf transformC2S(int clientId, ByteBuf body) {
-        int serverId = PacketIdDump.remapPlayC2s(
-                session.clientProtocol(), session.serverProtocol(), clientId);
+        int serverId = c2sClientToServer.remap(clientId);
         if (serverId < 0) {
             LOG.fine(() -> "mid drop unknown C2S id=0x" + Integer.toHexString(clientId)
                     + " " + session.clientBand() + "→" + session.serverBand());
@@ -110,8 +116,7 @@ public final class MidBandTransformer {
     }
 
     private ByteBuf transformS2C(int serverId, ByteBuf body) {
-        int clientId = PacketIdDump.remapPlayS2c(
-                session.serverProtocol(), session.clientProtocol(), serverId);
+        int clientId = s2cServerToClient.remap(serverId);
         if (clientId < 0) {
             LOG.fine(() -> "mid drop unknown S2C id=0x" + Integer.toHexString(serverId)
                     + " " + session.serverBand() + "→" + session.clientBand());
@@ -287,7 +292,7 @@ public final class MidBandTransformer {
         java.util.HashSet<Integer> ids = new java.util.HashSet<>(serverDump.playS2cNames().values());
         int ok = 0;
         for (int id : ids) {
-            if (PacketIdDump.remapPlayS2c(session.serverProtocol(), session.clientProtocol(), id) >= 0) {
+            if (s2cServerToClient.remap(id) >= 0) {
                 ok++;
             }
         }

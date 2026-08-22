@@ -5,6 +5,7 @@ import com.yapcore.protocol.java.codec.McCodec;
 import com.yapcore.protocol.via.ViaDirection;
 import com.yapcore.protocol.via.ViaSession;
 import com.yapcore.protocol.via.id.PacketIdDump;
+import com.yapcore.protocol.via.id.PacketIdRemapTable;
 import com.yapcore.protocol.via.remap.BlockRemapper;
 import com.yapcore.protocol.via.remap.ChunkRemapper;
 import com.yapcore.protocol.via.remap.EntityRemapper;
@@ -21,6 +22,8 @@ public final class ForwardTransformer {
     private final ViaSession session;
     private final PacketIdDump clientDump;
     private final PacketIdDump serverDump;
+    private final PacketIdRemapTable s2cServerToClient;
+    private final PacketIdRemapTable c2sClientToServer;
     private final ChunkRemapper chunks;
     private final ItemRemapper items;
     private final EntityRemapper entities;
@@ -31,6 +34,10 @@ public final class ForwardTransformer {
         this.clientDump = PacketIdDump.forProtocol(session.clientProtocol());
         this.serverDump = PacketIdDump.forProtocol(session.serverProtocol());
         this.dumpBacked = clientDump.hasPlay() && serverDump.hasPlay();
+        this.s2cServerToClient = dumpBacked
+                ? PacketIdRemapTable.playS2c(serverDump, clientDump) : null;
+        this.c2sClientToServer = dumpBacked
+                ? PacketIdRemapTable.playC2s(clientDump, serverDump) : null;
         ProtocolBand client = session.clientBand();
         ProtocolBand server = session.serverBand();
         BlockRemapper blocks = new BlockRemapper(server, client);
@@ -59,8 +66,7 @@ public final class ForwardTransformer {
     }
 
     private ByteBuf transformC2SDump(int clientId, ByteBuf body) {
-        int serverId = PacketIdDump.remapPlayC2s(
-                session.clientProtocol(), session.serverProtocol(), clientId);
+        int serverId = c2sClientToServer.remap(clientId);
         if (serverId < 0) {
             return null;
         }
@@ -68,8 +74,7 @@ public final class ForwardTransformer {
     }
 
     private ByteBuf transformS2CDump(int serverId, ByteBuf body) {
-        int clientId = PacketIdDump.remapPlayS2c(
-                session.serverProtocol(), session.clientProtocol(), serverId);
+        int clientId = s2cServerToClient.remap(serverId);
         if (clientId < 0) {
             return null;
         }
