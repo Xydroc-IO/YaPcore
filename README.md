@@ -4,170 +4,164 @@
   <img src="branding/yapcore-banner.png" alt="YaPcore banner" width="100%"/>
 </p>
 
-<p align="center">
-  <img src="branding/yapcore-mark.png" alt="YaPcore mark" width="160"/>
-</p>
-
-**Folia-first** Minecraft **next-gen server product** (YapLabs **YaPcore**) —
-**Folia** runs the game, **shipped YaP plugins** cover what most operators used to install on Paper,
-**YapEngine** runs the slim chassis, **YaP Link** fronts multi-backend networks,
-Java+Bedrock dual-stack, resource packs, control GUI, web dashboard.
-
-> Not affiliated with Mojang / Microsoft. See [LICENSE](LICENSE).
+**Folia-first Minecraft server product** — game tick on **Folia**, edge on **YapEngine**,
+network on **YaP Link**, with **first-party plugins** that replace what most operators
+used to install separately (perms, chat, moderation, essentials, playerdata, packs).
 
 | | |
 |--|--|
-| **What we are** | [docs/WHAT_WE_ARE.md](docs/WHAT_WE_ARE.md) · [plain English](docs/PLAIN_ENGLISH.md) |
-| **Full rundown** | [docs/FULL_RUNDOWN.md](docs/FULL_RUNDOWN.md) |
-| **Whitepaper** | [docs/whitepaper/YAPCORE_WHITEPAPER.md](docs/whitepaper/YAPCORE_WHITEPAPER.md) · [plain English](docs/whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) |
-| **Docs index** | [docs/README.md](docs/README.md) |
-| **Branding** | [branding/](branding/README.md) |
+| **Quick Start** | [**docs/QUICK_START.md**](docs/QUICK_START.md) — running in ~10 minutes |
+| **Wiki** | [**docs/WIKI.md**](docs/WIKI.md) — full operator documentation |
+| **Commands & perms** | [COMMANDS.md](docs/COMMANDS.md) · [PERMISSIONS.md](docs/PERMISSIONS.md) |
+| **Download** | [GitHub Releases](https://github.com/yaplabs/YaPcore/releases) · [RELEASES.md](docs/RELEASES.md) |
+| **License** | [MIT](LICENSE) · [LICENSING.md](docs/LICENSING.md) (third-party notes) |
 
-## Architecture (three layers)
+> Not affiliated with Mojang / Microsoft.
 
-| Layer | Role |
-|-------|------|
-| **YaP Link** | Multi-backend proxy (separate JVM) — [docs/YAP_LINK.md](docs/YAP_LINK.md) |
-| **YapEngine chassis** | Edge, dual-stack, bridge, UI/Heavy I/O, telemetry (16 logical channels) |
-| **Folia** | **Game tick** — regionized world/entity/redstone (embedded JVM) |
+---
 
-Chassis thread map: [docs/YAPENGINE_16THREAD.md](docs/YAPENGINE_16THREAD.md).
+## What makes YaPcore different
 
-**Game path:** **Folia** authority (default) · YapEngine **slim chassis** (not game tick) · **YaP Link** (native Velocity-class proxy) for
-multi-backend networks · Phase 3 Paper spatial **retired as product default**
-(opt-in benches only; Folia path has no Phase 3 spatial tick) · fair highpop cite
-**~100 active bots** (250 keepalive = HOLD-ONLY) · Phase 4 dual-stack (join green;
-play depth smoke green) —
-[docs/BENCH_VS_FOLIA.md](docs/BENCH_VS_FOLIA.md) ·
-[docs/YAP_LINK.md](docs/YAP_LINK.md) · [docs/BENCH_VS_FOLIA.md](docs/BENCH_VS_FOLIA.md).
-Default: `game-authority=folia`, `folia-embed=true`; Phase 3 flags **off**.  
-Product target: **high-pop / heavy load** (not empty lobbies).
+| Feature | YaPcore | Typical Paper stack |
+|---------|---------|---------------------|
+| **Game authority** | **Folia** (regionized tick) by default | Single main thread |
+| **Shipped plugins** | Perms, chat, mod, essentials, DB, packs, floodgate | Install 10+ jars yourself |
+| **Dual-stack** | Java + Bedrock on one port (built-in) | Geyser + Floodgate + config |
+| **Multi-version JE** | Built-in protocol bands | ViaVersion + ViaBackwards + … |
+| **Ops UI** | Swing GUI + web dashboard (`:8080`) | Console only or third-party panels |
+| **Network proxy** | **YaP Link** (native Velocity-class) | Stock Velocity + DIY plugins |
+| **MariaDB** | Docker one-liner + shared `yap-db` pool | Bring your own |
+
+One `gradle installProductDefaults` (or a release zip) gives you a network-ready
+server — not an empty Paper jar and a shopping list.
+
+---
 
 ## Quick start
 
+### Download (easiest)
+
+1. Get **`yapcore-release-linux.zip`** or **`-windows.zip`** from
+   [Releases](https://github.com/yaplabs/YaPcore/releases).
+2. Extract → `echo eula=true > eula.txt`
+3. `./configure-db.sh --server-id lobby && ./start.sh --fg`
+4. Console: `op YourName` · `ranks apply`
+5. Join: `127.0.0.1:25566` (Java + Bedrock)
+
+Full walkthrough: [**docs/QUICK_START.md**](docs/QUICK_START.md).
+
+### Build from source
+
 ```bash
-git clone https://github.com/<you>/YaPcore.git
-cd YaPcore
+git clone https://github.com/yaplabs/YaPcore.git && cd YaPcore
 chmod +x scripts/*.sh
-# Folia 26.2 needs Java 25+
-./scripts/fetch-folia.sh          # Folia product path
-gradle shadowJar          # jar + default plugins/packs; release → build/dist/yapcore-release/
-./scripts/gui.sh          # control panel
-# or
-./scripts/start.sh --fg   # headless (YaP stays at repo root; Folia child uses folia-kernel)
-# YaP Link (optional multi-backend): see docs/YAP_LINK.md
-# Release tree: cd build/dist/yapcore-release/linux && ./start.sh --fg
-# Windows release: build\dist\yapcore-release\windows\start.cmd -Fg
-./scripts/stop.sh
+./scripts/fetch-folia.sh
+gradle installProductDefaults shadowJar
+./scripts/db/ensure-db.sh --server-id lobby
+./scripts/start.sh --fg
 ```
 
-Requires **Java 25+** for Folia/Paper 26.2 (project toolchain may still compile
-main sources with JDK 21). The fat jar is built locally and is **not** committed.
-Release packages include **linux/** and **windows/** trees with native launchers.
-Standalone zips: network suite, gameplay suite, addons — see [docs/RELEASES.md](docs/RELEASES.md).
+**Release package** (pre-built tree for distribution):
 
-**Admin web dashboard** (default `:8080`): browser control panel for operators —
-start/stop, console, network setup (nginx, public access, Link proxy), plugins, monitoring. See
-[docs/WEB_DASHBOARD.md](docs/WEB_DASHBOARD.md).
+```bash
+gradle assembleRelease
+# → build/dist/yapcore-release/linux/  and  .../windows/
+```
 
-## Dual-stack + resource packs
+Requires **Java 25+** for Folia 26.2. See [docs/QUICK_START.md](docs/QUICK_START.md).
 
-Java **and** Bedrock are enabled by default. **JE multi-version is built in**
-(`ProtocolBand` / `ViaStyleRemapper` / `backwards-compatible=true`) — **full Via\*
-parity** and **full Geyser parity** as Phase 4 DoD (own code). **Do not** install
-ViaVersion / ViaBackwards / ViaRewind / Geyser. See [docs/PHASE4_PROTOCOL.md](docs/PHASE4_PROTOCOL.md).
-Texture/resource packs in `resourcepacks/` download over the built-in HTTP host (default `:8081`).
-Default: **`yapcore-default.zip`** (Faithful 64x + YaP Vehicles HD models) — built on
-`gradle shadowJar` / `assembleRelease`; credit in `resourcepacks/CREDITS.md`.
-Public edge: **`yapcoremc.yaplabs.us`** via nginx + Cloudflare — see
-[docs/CLOUDFLARE_AND_NGINX.md](docs/CLOUDFLARE_AND_NGINX.md) and [docs/NETWORKING.md](docs/NETWORKING.md).
-See [docs/CLIENTS_AND_PACKS.md](docs/CLIENTS_AND_PACKS.md).
+---
 
-**YaP Link:** first-party **native Velocity-class proxy** (forwarding, online-mode,
-compression, transfers, YaP Link plugins) —
-[docs/YAP_LINK.md](docs/YAP_LINK.md). Stock Velocity remains an optional stand-in
-([docs/VELOCITY.md](docs/VELOCITY.md)). Folia backends: `velocity-enabled=true`.
+## Shipped plugins (CORE + NETWORK)
 
-**Bedrock at Link:** Phase 4 — Bedrock UDP routing at Link (`bedrock-enabled=false` by default). Until then, use backend dual-stack or stock Velocity for BE-heavy networks — see [docs/YAP_LINK.md#bedrock--geyser](docs/YAP_LINK.md#bedrock--geyser).
+Installed by `gradle installProductDefaults` or included in release zips:
 
-## Plugins & modules
+| Jar | Role |
+|-----|------|
+| `yap-perms.jar` | Native ranks — groups, tracks, prefixes (`/yapperm`, `/promote`) |
+| `yap-chat.jar` | Channels, PM, filter, staff chat, mute integration |
+| `yap-moderation.jar` | Ban/mute/warn/kick, history, alts (`/ban`, `/modhistory`) |
+| `yap-essentials.jar` | Spawn, tpa, fly, vanish, staff tools |
+| `yap-playerdata.jar` | Cross-server data, offline `/login`, claims |
+| `yap-db.jar` | Shared MariaDB Hikari pool |
+| `yap-packs.jar` | Multi-active resource packs |
+| `yap-floodgate.jar` | Bedrock identity (no Floodgate jar) |
+| `yap-placeholderapi.jar` | Built-in PlaceholderAPI |
+| `yap-pregen.jar` | Chunk pre-generator |
+| `yap-plugin-compat.jar` | 1.20–1.21 jar back-compat |
 
-**Source tree:** first-party plugin/module/Link sources live under [`yap-first-party/`](yap-first-party/README.md)
-(labeled by release tier: `core-network/`, `gameplay/`, `api/`, `link/`, …).  
-**Runtime:** drop built jars into **`plugins/`** and fine-tune packaging into **`modules/`**.
+**Gameplay opt-in:** `gradle installGameplayDefaults` — vehicles, stacker, knobs.
 
-| Type | Folder | Manifest | Base class |
-|------|--------|----------|------------|
-| Folia / Paper | `plugins/` | `plugin.yml` | `JavaPlugin` |
-| YaP plugin | `plugins/` | `yap.yml` | `YaPPlugin` |
-| Fine-tune module | `modules/` | `module.yml` | `YaPModule` |
+Details: [plugins/README.md](plugins/README.md) · [docs/PLUGINS.md](docs/PLUGINS.md).
 
-World/inventory → **SYNC** · DB/HTTP → **HEAVY** · menus → **UI**.  
-See [docs/PLUGINS.md](docs/PLUGINS.md), [docs/PLUGIN_COMPAT.md](docs/PLUGIN_COMPAT.md),
-[docs/PLUGIN_BACKCOMPAT.md](docs/PLUGIN_BACKCOMPAT.md),
-[docs/PAPER_API_COVERAGE.md](docs/PAPER_API_COVERAGE.md), [docs/TUNE.md](docs/TUNE.md),
-[docs/MODULES_AND_API.md](docs/MODULES_AND_API.md), [docs/VEHICLES.md](docs/VEHICLES.md),
-[docs/STACKER.md](docs/STACKER.md), [docs/PREGEN.md](docs/PREGEN.md),
-[docs/PLACEHOLDERAPI.md](docs/PLACEHOLDERAPI.md), [docs/PLAYERDATA.md](docs/PLAYERDATA.md),
-[docs/YAPDB.md](docs/YAPDB.md), [docs/MARIADB.md](docs/MARIADB.md), and
-[docs/PERMISSIONS.md](docs/PERMISSIONS.md).
+---
 
-**Tune everything:** `config/` (Paper via `config/paper/`) + GUI **Tune** + **Modules**
-(`modules/*.jar` packaging → `FINE_TUNE.txt`). See [docs/MODULES_AND_API.md](docs/MODULES_AND_API.md).
+## Architecture
 
-**Shipped by default (CORE + NETWORK)** on `gradle shadowJar` / `assembleRelease`:
-`yap-placeholderapi`, `yap-plugin-compat`, `yap-pregen`, `yap-db`, `yap-playerdata`,
-`yap-packs`, `yap-chat`, `yap-floodgate`, CORE fine-tune modules under `modules/`,
-and `resourcepacks/yapcore-default.zip` (Faithful).
+| Layer | Role |
+|-------|------|
+| **YaP Link** | Multi-backend proxy — [YAP_LINK.md](docs/YAP_LINK.md) |
+| **YapEngine** | Edge, dual-stack, I/O, GUI/dashboard — [YAPENGINE_16THREAD.md](docs/YAPENGINE_16THREAD.md) |
+| **Folia** | Game tick (embedded JVM) |
 
-**GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `assembleRelease -PyapGameplay=true`):
-`yap-vehicles`, `yap-gameplay-knobs`, `yap-stacker`, vehicles/stacker/knobs modules,
-vehicles overlay in the default pack.
-Release folder: `build/dist/yapcore-release/` with **`linux/`** and **`windows/`**
-trees (each self-contained). Linux: `./start.sh --fg`. Windows: `start.cmd -Fg`.
-Vehicles: `/yapvehicle spawn buggy` — [docs/VEHICLES.md](docs/VEHICLES.md).
-Stacker: `/yapstacker gui` — [docs/STACKER.md](docs/STACKER.md).
-MariaDB / playerdata: [docs/MARIADB.md](docs/MARIADB.md) · [docs/PLAYERDATA.md](docs/PLAYERDATA.md).
-Ranks: [docs/PERMISSIONS.md](docs/PERMISSIONS.md).
+Default: `game-authority=folia`, dual-stack Java+Bedrock, built-in resource pack HTTP.
 
-## Crash logger
+---
 
-Reports under `logs/crashes/` (gitignored contents): thread dumps, heap/JVM/OS, config, bridge stats, plugins/modules, console tail.
+## Configuration
+
+| File | Purpose |
+|------|---------|
+| `config/server.properties` | Server identity, ports, RAM, dashboard, ranks auto-apply |
+| `plugins/YaPPerms/config.yml` | Rank ladder, starter grants |
+| `plugins/YaP*/config.yml` | Per-plugin tuning |
+| `config/server.properties.example` | Template — copy and edit |
+
+Sensible defaults work for **local/LAN** out of the box. For public production, set
+`online-mode=true` and `internet-exposed=true` — see profiles in
+[QUICK_START.md](docs/QUICK_START.md).
+
+**Web dashboard:** http://127.0.0.1:8080/ — [WEB_DASHBOARD.md](docs/WEB_DASHBOARD.md)
+
+**MariaDB (Docker):** `./scripts/db/ensure-db.sh` — [MARIADB.md](docs/MARIADB.md)
+
+---
+
+## Documentation
+
+| Audience | Start here |
+|----------|------------|
+| **Server admins** | [QUICK_START.md](docs/QUICK_START.md) → [WIKI.md](docs/WIKI.md) |
+| **Commands & permissions** | [COMMANDS.md](docs/COMMANDS.md) · [PERMISSIONS.md](docs/PERMISSIONS.md) |
+| **Architecture / whitepaper** | [FULL_RUNDOWN.md](docs/FULL_RUNDOWN.md) · [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
+| **Releases & zips** | [RELEASES.md](docs/RELEASES.md) |
+| **Contributors** | [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md) |
+
+---
 
 ## Scripts
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/gui.sh` | Control GUI (Linux/dev) |
-| `scripts/start.sh` / `stop.sh` / `status.sh` | Lifecycle (YaP at repo root; Folia child under `folia-kernel`) |
-| `scripts/windows/*.ps1` + release `*.cmd` | Windows launchers in `yapcore-release/windows/` |
-| `scripts/fetch-folia.sh` / `smoke-folia.sh` | Folia product path fetch + smoke |
-| `scripts/nginx-setup.sh` | Optional nginx edge |
-| `scripts/db/start-mariadb.sh` / `configure-db.sh` | Docker MariaDB + JDBC into YapDb/playerdata |
-| `gradle assemblePluginDist` | All first-party jars → `build/dist/yap-plugins/` |
-| `./tests.sh` | Interactive test menu |
-| `./test-endurance.sh` | Long soak → `logs/endurance/` |
+| `scripts/start.sh` / `stop.sh` | Server lifecycle |
+| `scripts/gui.sh` | Swing control panel |
+| `scripts/db/ensure-db.sh` | Docker MariaDB + JDBC wiring |
+| `scripts/fetch-folia.sh` | Download Folia 26.2 |
+| `gradle assembleRelease` | Full release zip (linux + windows) |
+| `gradle assemblePluginDist` | All plugin jars → `build/dist/yap-plugins/` |
 
-Full strategy: [docs/TESTING.md](docs/TESTING.md).
+Full list: [docs/TESTING.md](docs/TESTING.md).
 
-## Repository hygiene
+---
 
-This tree is meant to stay **GitHub-clean**. `.gitignore` excludes:
+## License
 
-| Ignored | Why |
-|---------|-----|
-| `build/`, `.gradle/`, `*.jar`, `yapcore.jar` | Build outputs — run `gradle shadowJar` locally |
-| `folia-kernel/`, `game-kernel/`, `lib/*` jars | Live Folia tree + downloaded clips |
-| `libraries/`, `versions/`, `cache/` | Minecraft dependency caches |
-| `bench/workdir-*`, `bench/results/*` | Bench lab state (keep `bench/results/README.md`) |
-| `logs/`, `world*/`, `config/*` | Runtime / operator state (keep `.gitkeep` / `*.example`) |
-| `/server.properties`, `/eula.txt` | Accidental root cwd leftovers |
-| `docs/pdf/*.pdf` | Regenerated via `./scripts/export-docs-pdf.sh` |
-| secrets (`forwarding.secret`, `.env`, keys) | Never commit |
+**YaPcore** first-party source is **[MIT](LICENSE)**.
 
-**Tracked:** source, docs, whitepaper Markdown, branding, scripts, examples, GitHub templates, `vendor/yap-overlays/`.
+Folia/Paper (GPLv3), Minecraft (Mojang EULA), and bundled resource packs have
+separate terms — see **[docs/LICENSING.md](docs/LICENSING.md)**.
 
-See [.gitignore](.gitignore), [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md).
+---
 
 ## Citation
 

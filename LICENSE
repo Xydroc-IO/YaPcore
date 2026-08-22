@@ -22,6 +22,18 @@ SOFTWARE.
 
 ---
 
+## Third-party notices
+
+YaPcore integrates with components under other licenses:
+
+- **Folia / Paper** — GPLv3 (downloaded separately; see `scripts/fetch-folia.sh`)
+- **Minecraft** — Mojang EULA (not open source)
+- **Bundled resource packs** — see `resourcepacks/CREDITS.md`
+
+Full details: [docs/LICENSING.md](docs/LICENSING.md)
+
+---
+
 **Note:** Minecraft is a trademark of Mojang Studios / Microsoft. YaPcore is an
 independent server engine and is not affiliated with or endorsed by Mojang or
 Microsoft.

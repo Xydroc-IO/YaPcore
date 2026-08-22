@@ -1,41 +1,80 @@
-# YaPcore — copy to server.properties (gitignored) and edit
+# YaPcore — copy to config/server.properties (gitignored) and edit
+#
+# Sensible defaults for local/LAN. See docs/QUICK_START.md for production profile.
+
 server-name=YaPcore
 motd=YaPcore · Folia Game · Yap Edge
 port=25566
 bind-host=0.0.0.0
+max-players=300
+ram-mb=2048
+ram-min-mb=512
+view-distance=10
+
+# Local/LAN — set online-mode=true before going public
+online-mode=false
+auto-op=false
+ops=
 allow-localhost=true
-internet-exposed=true
+internet-exposed=false
 
-# Public domain (Cloudflare DNS + nginx edge)
-server-domain=yapcoremc.yaplabs.us
-public-host=yapcoremc.yaplabs.us
-# Advertised join ports = nginx stream front (not the local bind port)
-public-port=25565
-public-bedrock-port=25565
-# Packs: Cloudflare orange-cloud only proxies 80/443 (not :8081).
-# HTTPS :443 currently returns CF 526 (origin SSL) — advertise HTTP :80.
-public-pack-port=80
-resource-pack-enabled=true
-resource-pack-file=yapcore-default-155d5f4f.zip
-resource-pack-files=yapcore-default-155d5f4f.zip
-resource-pack-forced=false
-resource-pack-prompt=This server offers a resource pack (Faithful 64x + YaP Vehicles). Click Yes to download, or No to play without it.
-resource-pack-public-host=yapcoremc.yaplabs.us
-resource-pack-http-port=8081
-# Served from nginx docroot /var/www/html/pack/ (see scripts/publish-resourcepack-www.sh)
-resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
-# Add more actives (comma-separated). Later packs win on conflicts:
-# resource-pack-files=yapcore-default.zip,custom-overlay.zip
+# Public join (leave blank for LAN; set when internet-exposed=true)
+server-domain=
+public-host=
+public-port=0
+public-bedrock-port=0
+public-pack-port=0
 
-# nginx (scripts/nginx-setup.sh + GUI nginx tab)
-nginx-domain=yapcoremc.yaplabs.us
-nginx-public-port=25565
-nginx-pack-port=80
-
+# Editions & crossplay
+java-enabled=true
+bedrock-enabled=true
 shared-listen-port=true
 crossplay-enabled=true
-bedrock-enabled=true
-java-enabled=true
+backwards-compatible=true
+
+# Game authority (product default)
+game-authority=folia
+folia-embed=true
+folia-dir=folia-kernel
+folia-port=25567
+folia-version=26.2
+
+# Resource pack (built-in HTTP on :8081)
+resource-pack-enabled=true
+resource-pack-file=yapcore-default.zip
+resource-pack-files=yapcore-default.zip
+resource-pack-http-port=8081
+resource-pack-public-host=
+resource-pack-url=
+resource-pack-forced=false
+resource-pack-prompt=This server offers a resource pack. Click Yes to download, or No to play without it.
+
+# Web dashboard (token auto-generated on first boot if empty)
+web-dashboard-enabled=true
+web-dashboard-port=8080
+web-dashboard-bind=127.0.0.1
+web-dashboard-localhost-only=true
+web-dashboard-token=
+
+# Native ranks — auto-apply starter pack ~8s after first boot
+yap-ranks-auto-apply=true
+
+# GUI
+gui-enabled=true
+
+# nginx (optional public edge — see docs/NGINX_AND_LOCALHOST.md)
+nginx-domain=
+nginx-public-port=25565
+nginx-pack-port=80
 srv-enabled=true
 srv-priority=0
 srv-weight=5
+
+# Proxy (optional multi-backend)
+velocity-enabled=false
+velocity-online-mode=true
+
+# JVM tuning
+jvm-gc=zgc
+jvm-numa=true
+jvm-heap-pin=true

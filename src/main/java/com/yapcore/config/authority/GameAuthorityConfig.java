@@ -15,7 +15,7 @@ public final class GameAuthorityConfig {
 
     public static void applyDefaults(Properties props) {
         props.setProperty("game-authority", "folia");
-        props.setProperty("yap-ranks-auto-apply", "false");
+        props.setProperty("yap-ranks-auto-apply", "true");
     }
 
     public GameAuthority getGameAuthority() {
