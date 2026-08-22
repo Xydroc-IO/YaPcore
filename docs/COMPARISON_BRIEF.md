@@ -78,7 +78,7 @@ Ranked by **how distinctive and shippable they are today** for someone evaluatin
 |:----:|------------|----------|---------------------------|
 | **1** | **Folia** as default game authority | Shipped · default on | `game-authority=folia`, `folia-embed=true` — regionized world tick |
 | **2** | YapEngine **slim chassis** | Shipped · always on | Edge: watchdog, traffic, bridge, UI, Heavy I/O, telemetry — **not** game tick (Folia owns that) |
-| **3** | **YaP Link** (complete Velocity fork) | Shipped | Modern forwarding, online-mode, compression, `/server`, Velocity plugin API |
+| **3** | **YaP Link** (native Velocity-class proxy) | Shipped | Modern forwarding, online-mode, compression, `/server`, YaP Link plugin API |
 | **4** | **Network product stack** (DB, playerdata, ranks, packs, chat, floodgate) | Shipped | One Hikari pool, offline `/login`, claims/traders, LuckPerms pack, multi-pack HTTP |
 | **5** | **Ops surface** (web dashboard, control GUI, crash tooling, release packaging) | Shipped | Headless browser ops on `:8080`; `assembleRelease` Linux/Windows |
 | **6** | **Gameplay modules** (vehicles, stacker, gameplay knobs, pregen, PlaceholderAPI) | Shipped | First-party jars — not required to use, but part of the product box |
@@ -91,7 +91,7 @@ Ranked by **how distinctive and shippable they are today** for someone evaluatin
 ```
 Folia game              →  regionized world tick (product default)
 Chassis                 →  named 16 roles around the game
-YaP Link                →  multi-backend front door (full Velocity fork)
+YaP Link                →  multi-backend front door (native Velocity-class proxy)
 Network + ops stack     →  multi-server / headless / cross-platform ops
 Dual-stack              →  one world story for JE + Bedrock (join green; play deepening)
 ~100 active cite        →  honest highpop MSPT; not 250 keepalive marketing
@@ -116,7 +116,7 @@ Minecraft JE server cores (operator view)
 │
 └── Proxies
       ├── Velocity          — DIY edge for Folia/Paper backends
-      └── YaP Link          — first-party complete Velocity fork
+      └── YaP Link          — first-party native Velocity-class proxy
 ```
 
 | Slot | YaPcore position |

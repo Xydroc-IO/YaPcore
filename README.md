@@ -10,7 +10,7 @@
 
 **Folia-first** Minecraft server product (YapLabs **YaPcore**) for Linux —
 **Folia** runs the game, **YapEngine** runs the slim chassis (Netty, dual-stack,
-I/O, ops), **YaP Link** (complete Velocity fork) fronts multi-backend networks,
+I/O, ops), **YaP Link** (native Velocity-class proxy) fronts multi-backend networks,
 Folia-aware plugins, YaP plugins & fine-tune modules, Java+Bedrock dual-stack,
 resource packs, control GUI, and deep crash diagnostics.
 
@@ -34,7 +34,7 @@ resource packs, control GUI, and deep crash diagnostics.
 
 Chassis thread map: [docs/YAPENGINE_16THREAD.md](docs/YAPENGINE_16THREAD.md).
 
-**Game path:** **Folia** authority (default) · YapEngine **slim chassis** (not game tick) · **YaP Link** (full Velocity fork) for
+**Game path:** **Folia** authority (default) · YapEngine **slim chassis** (not game tick) · **YaP Link** (native Velocity-class proxy) for
 multi-backend networks · Phase 3 Paper spatial **retired as product default**
 (opt-in benches only; Folia path has no Phase 3 spatial tick) · fair highpop cite
 **~100 active bots** (250 keepalive = HOLD-ONLY) · Phase 4 dual-stack (join green;
@@ -84,9 +84,9 @@ Public edge: **`yapcoremc.yaplabs.us`** via nginx + Cloudflare — see
 [docs/CLOUDFLARE_AND_NGINX.md](docs/CLOUDFLARE_AND_NGINX.md) and [docs/NETWORKING.md](docs/NETWORKING.md).
 See [docs/CLIENTS_AND_PACKS.md](docs/CLIENTS_AND_PACKS.md).
 
-**YaP Link:** first-party complete Velocity fork (forwarding, online-mode,
-compression, transfers, Velocity plugins) —
-[docs/YAP_LINK.md](docs/YAP_LINK.md). Stock Velocity remains a temporary stand-in
+**YaP Link:** first-party **native Velocity-class proxy** (forwarding, online-mode,
+compression, transfers, YaP Link plugins) —
+[docs/YAP_LINK.md](docs/YAP_LINK.md). Stock Velocity remains an optional stand-in
 ([docs/VELOCITY.md](docs/VELOCITY.md)). Folia backends: `velocity-enabled=true`.
 
 ## Plugins & modules

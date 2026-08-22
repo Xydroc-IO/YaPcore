@@ -20,7 +20,7 @@ Think of it like this:
 | **YaPcore** | The product you install and run — the “server in a box” |
 | **Folia** | The actual Minecraft gameplay (the world and rules), multi-threaded by region |
 | **YapEngine** | Our engine that organizes networking, plugins, and heavy lifting across fixed worker roles |
-| **YaP Link** | Our network front door (full Velocity fork) — one public address, many backends |
+| **YaP Link** | Our network front door (native Velocity-class proxy) — one public address, many backends |
 
 **Short pitch:**  
 *A Minecraft server that uses Folia for the game, YapEngine for the chassis, and YaP Link for the network — with Java and Bedrock players able to join the same place.*
@@ -46,7 +46,7 @@ claiming “250 MSPT wins” from keepalive-only holds is not honest — see
 2. **Java and Bedrock together** — toward the same shared world story (no Via\*/Geyser jars required for the product path).  
 3. **Familiar plugins** — Folia/Paper-class jars and YaP plugins in **one** `plugins/` folder; Folia-aware plugins are the product path.  
 4. **Network essentials shipped** — shared MariaDB pool (`yap-db`), cross-server player data with offline `/login`, claims/taxes/NPC traders, multi-pack helper, unsigned-chat fix, LuckPerms rank pack.  
-5. **YaP Link** — first-party full Velocity fork for multi-backend networks ([YAP_LINK.md](YAP_LINK.md)).  
+5. **YaP Link** — first-party native Velocity-class proxy for multi-backend networks ([YAP_LINK.md](YAP_LINK.md)).  
 6. **Day-to-day ops tools** — config, desktop control panel, **web dashboard** (browser, for headless — including Ranks), resource packs, crash reports.  
 7. **Vehicles built in** — real cars/trucks (not minecarts), fuel, upgrades, shop; HD models in the default pack.  
 8. **A clear design, not a rename** — Folia game + Yap chassis + Link + dual-stack are intentional.
@@ -73,7 +73,7 @@ Players still follow careful rules so plugins and inventory stay correct. Dual-s
 |-------|------------------|--------|
 | Folia runs the game | Default product path | **Default on** |
 | YapEngine chassis | Fixed worker roles always boot | **Done** |
-| YaP Link proxy | Public join → Folia backends | **Shipped** (full Velocity fork) |
+| YaP Link proxy | Public join → Folia backends | **Shipped** (native Velocity-class proxy) |
 | Fair highpop cite | ~100 active bots MSPT | **Active gate** |
 | Phase 4 dual-stack join | First-party Via\* + Geyser parity for supported bands | **In progress** — JE matrix + Bedrock smoke green for join/spawn; play depth deepening |
 | Legacy Paper + Phase 3 spatial | Old four-map-cook path | **Opt-in / benches only** |
@@ -88,7 +88,7 @@ Install YaPcore expecting **Folia + YapEngine + (optionally) YaP Link**. We only
 - **Not** “Paper, but already faster in every situation.”  
 - **Not** “Folia, but already better in every situation.”  
 - **Not** a from-scratch rewrite of all of Minecraft.  
-- **Not** “you must abandon Velocity plugins” — Link keeps the Velocity plugin API.  
+- **Not** “you must abandon Link plugins” — Link has its own plugin API (`yap-link-api`).  
 - **Not** just Mojang’s plain `server.jar` with a new name.
 
 ---
@@ -113,7 +113,7 @@ See [WHAT_WE_ARE.md](WHAT_WE_ARE.md) and [FULL_RUNDOWN.md](FULL_RUNDOWN.md).
 | Real Minecraft gameplay? | Yes | Yes | Yes — we **use Folia** by default |
 | World update on many workers? | Mostly one main thread | Yes — regions | Yes — Folia regions + Yap chassis |
 | Built for empty lobbies or busy worlds? | Either | Busy | **Busy / high-pop** first |
-| Network front door? | DIY Velocity | DIY Velocity | **YaP Link** (full Velocity fork) |
+| Network front door? | DIY Velocity | DIY Velocity | **YaP Link** (native Velocity-class proxy) |
 | Java + Bedrock in one product? | Usually needs extra tools | Usually needs extra tools | Built into our story |
 | Plugins? | Paper plugins | Folia-aware plugins | Folia path + YaP jars — **one** `plugins/` folder |
 | Browser ops without a desktop? | Usually third-party panels | Usually third-party | **Built-in web dashboard** (`:8080`) |

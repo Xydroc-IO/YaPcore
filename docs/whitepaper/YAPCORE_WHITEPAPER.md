@@ -10,7 +10,7 @@ Document ID: `YAP-WP-16T-001`
 
 ## Abstract
 
-Minecraft-class game servers traditionally serialize world mutation, plugin callbacks, and network I/O onto a single “main” thread, trading simplicity for latency under load. YaPcore’s **shipping product** uses **Folia** for regionized game tick and a **YapEngine slim chassis** for the public edge: watchdog control, traffic/sequencing, Compatibility Bridge, UI sandboxes, and heavy I/O workers. A **SequenceToken** model provides per-stream and global ordering without requiring every subsystem to share one lock. Legacy Spigot/Paper/Folia plugins and first-party YaP plugins/modules execute under an explicit **SYNC / HEAVY / UI** pool contract so inventory and block mutations never race Folia region state. **YaP Link** (complete Velocity fork) fronts multi-backend networks. Phase 3–3.7 Paper spatial tick on chassis quads remains **legacy / opt-in** for Paperclip benches (defaults **off**).
+Minecraft-class game servers traditionally serialize world mutation, plugin callbacks, and network I/O onto a single “main” thread, trading simplicity for latency under load. YaPcore’s **shipping product** uses **Folia** for regionized game tick and a **YapEngine slim chassis** for the public edge: watchdog control, traffic/sequencing, Compatibility Bridge, UI sandboxes, and heavy I/O workers. A **SequenceToken** model provides per-stream and global ordering without requiring every subsystem to share one lock. Legacy Spigot/Paper/Folia plugins and first-party YaP plugins/modules execute under an explicit **SYNC / HEAVY / UI** pool contract so inventory and block mutations never race Folia region state. **YaP Link** (native Velocity-class proxy) fronts multi-backend networks. Phase 3–3.7 Paper spatial tick on chassis quads remains **legacy / opt-in** for Paperclip benches (defaults **off**).
 
 This paper describes the architecture, concurrency invariants, networking and crossplay stance, plugin/module surface, and evaluation methodology. It is intended for systems researchers, server operators, and plugin authors evaluating YaPcore as a research and production platform.
 
@@ -48,8 +48,8 @@ and [PAPER_API_COVERAGE.md](../PAPER_API_COVERAGE.md).
 
 YaPcore’s shipping product path uses **Folia as game authority**
 (`game-authority=folia`, `folia-embed=true`). YapEngine’s **slim chassis** always
-boots (edge/I/O; **not** game tick). **YaP Link** is a complete Velocity fork (modern forwarding, online-mode,
-compression, transfers, Velocity plugin API). Phases
+boots (edge/I/O; **not** game tick). **YaP Link** is a native Velocity-class proxy (modern forwarding, online-mode,
+compression, transfers, YaP Link plugin API). Phases
 3–3.7 Paper spatial tick are **complete as code** but **retired as product default**
 (opt-in for Paper benches only; Folia path has no Phase 3 spatial tick). The product
 targets **high-population / heavy-load** networks; fair highpop cites focus on

@@ -57,7 +57,7 @@ So:
 
 | Layer | What it does |
 |-------|----------------|
-| **YaP Link** | Proxy — forwarding, compression, `/server`, Velocity plugins ([YAP_LINK.md](YAP_LINK.md)) |
+| **YaP Link** | Proxy — forwarding, compression, `/server`, YaP Link plugins ([YAP_LINK.md](YAP_LINK.md)) |
 | **YapEngine chassis** | Edge + I/O + plugin sandboxes (16 logical channels; **not** game tick) |
 | **Folia** | Game — chunks, entities, redstone, commands (region thread pool) |
 

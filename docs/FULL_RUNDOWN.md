@@ -8,7 +8,7 @@
 
 ## One sentence
 
-**YaPcore** is a Minecraft server product with **three layers**: **Folia** runs the game (world, entities, redstone, commands), **YapEngine** runs the slim chassis (Netty, dual-stack, I/O, ops — not world tick), and **YaP Link** (complete Velocity fork) fronts multi-backend networks — plus Java + Bedrock on one join story, Folia/Paper-class plugins, and YaP all-in-one plugin pools. Legacy **Paper + Phase 3 spatial** remains opt-in for benches.
+**YaPcore** is a Minecraft server product with **three layers**: **Folia** runs the game (world, entities, redstone, commands), **YapEngine** runs the slim chassis (Netty, dual-stack, I/O, ops — not world tick), and **YaP Link** (native Velocity-class proxy) fronts multi-backend networks — plus Java + Bedrock on one join story, Folia/Paper-class plugins, and YaP all-in-one plugin pools. Legacy **Paper + Phase 3 spatial** remains opt-in for benches.
 
 ---
 
@@ -19,7 +19,7 @@
 | **YaPcore** | The product / server you run (`yapcore.jar`, scripts, GUI + web dashboard, config, packs, shipped vehicles) |
 | **YapEngine** | Slim **chassis** in the YaPcore parent process — watchdog, Netty traffic, bridge, UI/Heavy I/O, telemetry (**not** game tick) |
 | **Folia** | The **default game authority** — regionized Minecraft gameplay |
-| **YaP Link** | First-party complete Velocity fork — [YAP_LINK.md](YAP_LINK.md) |
+| **YaP Link** | First-party native Velocity-class proxy — [YAP_LINK.md](YAP_LINK.md) |
 | **Paper (legacy)** | Alternate game authority for Phase 3 spatial benches (`game-authority=paper`) |
 
 **Brand pitch (short):**  
@@ -36,7 +36,7 @@
 2. **Boot YapEngine’s 16 logical threads** every start — chassis is always on.
 3. **Delegate the Minecraft game to Folia** (`game-authority=folia`, `folia-embed=true`).
 4. **Own the public edge** — dual-stack gateway, sequencing (`SequenceToken`), multi-version JE bands, resource-pack HTTP, ops GUI + **web dashboard**, crash dumps.
-5. **YaP Link** — complete Velocity fork (forwarding, online-mode, compression, transfers, Velocity plugins); stock Velocity remains optional.
+5. **YaP Link** — native Velocity-class proxy (forwarding, online-mode, compression, transfers, YaP Link plugins); stock Velocity remains optional.
 6. **Dual-stack / crossplay** — first-party Via\* + Geyser feature parity on one shared world ([PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)); JE product floor **1.20.2+**; Bedrock join/spawn + play-depth smoke green (`smoke-bedrock-play.sh`).
 7. **Plugins** — all jars in `plugins/` (Folia/Paper + YaP); kernel `plugins` → symlink.
    **CORE+NETWORK (default):** PlaceholderAPI, pregen, plugin-compat, **yap-db**, **playerdata**,
@@ -135,7 +135,7 @@ Requires YaP Paperclip (`lib/paper-26.2-yap.jar`). See [PAPER_YAPENGINE_PORT.md]
 | **2** | Game owns public JE | Done (Folia default) |
 | **3–3.7** | Paper spatial on cores 3–6 / T8 | **Done as code** — **retired as product default** |
 | **Folia product path** | Managed Folia embed | **Default** |
-| **YaP Link** | Complete Velocity fork | **Shipped** |
+| **YaP Link** | Native Velocity-class proxy | **Shipped** |
 | **Gate** | Fair highpop MSPT (~100 active bots) | **Active** — [BENCH_VS_PAPER.md](BENCH_VS_PAPER.md) |
 | **4** | Dual-stack + YaP network plugins | **In progress** — JE matrix + BE smoke; play depth landing ([PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md)) |
 
@@ -219,7 +219,7 @@ gradle assembleRelease             # jar + default plugins/packs + release folde
 “Multi-threaded Minecraft server on YapEngine, Folia for the game, YaP Link for the network.”
 
 **Technical:**  
-“Folia is the default game authority. YapEngine’s slim chassis (edge/I/O) is always on. YaP Link fronts Folia backends as a complete Velocity fork. Phase 4 ships first-party Via\* + Geyser join/spawn parity and network plugins on that Folia-backed world. Phase 3 Paper spatial remains for legacy benches.”
+“Folia is the default game authority. YapEngine’s slim chassis (edge/I/O) is always on. YaP Link fronts Folia backends as a native Velocity-class proxy. Phase 4 ships first-party Via\* + Geyser join/spawn parity and network plugins on that Folia-backed world. Phase 3 Paper spatial remains for legacy benches.”
 
 ---
 

@@ -90,7 +90,7 @@ DIY Folia + Velocity
 
 YaPcore (YapEngine + Folia + YaP Link)
   └─ Folia owns the game (regions); YapEngine fixed 16 roles for chassis;
-     YaP Link fronts backends (complete Velocity fork)
+     YaP Link fronts backends (native Velocity-class proxy)
        plugins = Folia-aware on product path
        Phase 3 Paper spatial quads = legacy / opt-in benches only (no Phase 3 on Folia path)
 ```
@@ -235,7 +235,7 @@ If someone sells you “the best Folia fork,” demand: plugin list, region metr
 |--|-------------|----------------------|---------|
 | Game | Folia regions | Folia regions | **Folia regions (default)** |
 | Chassis | Folia pools | Folia pools | YapEngine **edge/I/O chassis** (16 logical channels) |
-| Proxy | DIY | Velocity | **YaP Link** (complete Velocity fork; Velocity plugins load) |
+| Proxy | DIY | Velocity | **YaP Link** (native Velocity-class proxy; YaP Link plugins) |
 | Dual-stack product path | DIY (Geyser etc.) | DIY | Built into product (join green; play depth deepening) |
 | Phase 3 Paper spatial | N/A | N/A | Legacy / opt-in only — **not** on Folia path |
 | Positioning | Game jar | Game + DIY edge | Folia game + Yap chassis + Link |
@@ -267,7 +267,7 @@ Architecture sketch:
 Clients (JE TCP / BE UDP)
         │
         ▼
- YaP Link (optional) :25565     ← complete Velocity fork
+ YaP Link (optional) :25565     ← native Velocity-class proxy
         │
  DualStackGateway + Traffic Cop (2)
         │
