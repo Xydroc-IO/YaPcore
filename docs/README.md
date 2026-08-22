@@ -13,6 +13,7 @@
 | [**PDFs**](pdf/) | Printable PDFs of the identity + whitepaper + vehicles + web dashboard docs |
 | [VELOCITY](VELOCITY.md) | **Velocity proxy** — temporary stand-in; Folia/Paper backends with modern forwarding |
 | [**YAP_LINK**](YAP_LINK.md) | **YaP Link** — first-party complete Velocity fork |
+| [**YAP_SCHED**](YAP_SCHED.md) | **YapSched** — Folia-safe scheduler helper for YaP plugins |
 | [**PLAYERDATA**](PLAYERDATA.md) | **Cross-server inv / claims / GUIs** — `yap-playerdata` |
 | [**YAPDB**](YAPDB.md) | **Shared MariaDB Hikari pool** — `yap-db` for any SQL plugin |
 | [**MARIADB**](MARIADB.md) | **Easy MariaDB** — Docker package for Linux + Windows (single & multi) |
