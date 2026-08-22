@@ -21,27 +21,27 @@ import java.util.UUID;
 
 public final class VehicleInstance implements Vehicle {
 
-    private final VehicleServiceImpl service;
+    final VehicleServiceImpl service;
     private final UUID id;
-    private final VehicleType type;
-    private final ArmorStand chassis;
-    private final List<ArmorStand> seats;
-    private final List<Display> displays;
+    final VehicleType type;
+    final ArmorStand chassis;
+    final List<ArmorStand> seats;
+    final List<Display> displays;
     private final @Nullable UUID ownerId;
 
-    private float yaw;
+    float yaw;
     private double speed;
     private double lateralSpeed;
     private double yawRate;
     private double verticalSpeed;
-    private double fuel;
-    private double health;
-    private boolean alive = true;
+    double fuel;
+    double health;
+    boolean alive = true;
     private boolean fuelEmptyFired;
-    private long emptySinceTick = -1;
-    private final Player[] occupants;
-    private final java.util.List<Entity> foreignVisuals = new java.util.ArrayList<>();
-    private final java.util.EnumMap<com.yapcore.vehicles.api.UpgradeSlot, String> installedUpgrades =
+    long emptySinceTick = -1;
+    final Player[] occupants;
+    final java.util.List<Entity> foreignVisuals = new java.util.ArrayList<>();
+    final java.util.EnumMap<com.yapcore.vehicles.api.UpgradeSlot, String> installedUpgrades =
             new java.util.EnumMap<>(com.yapcore.vehicles.api.UpgradeSlot.class);
 
     public VehicleInstance(
@@ -360,53 +360,12 @@ public final class VehicleInstance implements Vehicle {
 
     @Override
     public boolean enter(Player player, int seatIndex) {
-        if (!alive || player == null || !player.isOnline()) {
-            return false;
-        }
-        if (player.getWorld() != chassis.getWorld()) {
-            return false;
-        }
-        if (seatOf(player).isPresent()) {
-            return true;
-        }
-        int idx = seatIndex;
-        if (idx < 0) {
-            idx = findFreeSeatPreferDriver();
-        }
-        if (idx < 0 || idx >= occupants.length || occupants[idx] != null) {
-            return false;
-        }
-        if (!service.tryEnter(this, player, idx)) {
-            return false;
-        }
-        // Dismount anything else
-        if (player.isInsideVehicle()) {
-            player.leaveVehicle();
-        }
-        ArmorStand seat = seats.get(idx);
-        seat.addPassenger(player);
-        occupants[idx] = player;
-        clearEmptyTimer();
-        return true;
+        return VehicleInstanceLifecycle.enter(this, player, seatIndex);
     }
 
     @Override
     public boolean exit(Player player) {
-        Optional<Integer> seat = seatOf(player);
-        if (seat.isEmpty()) {
-            return false;
-        }
-        if (!service.tryExit(this, player)) {
-            return false;
-        }
-        int idx = seat.get();
-        occupants[idx] = null;
-        if (player.isInsideVehicle()) {
-            player.leaveVehicle();
-        }
-        Location exit = chassis.getLocation().clone().add(0, 0.5, 0);
-        player.teleport(exit);
-        return true;
+        return VehicleInstanceLifecycle.exit(this, player);
     }
 
     @Override
@@ -459,131 +418,22 @@ public final class VehicleInstance implements Vehicle {
     }
 
     void syncTransforms() {
-        Location base = chassis.getLocation();
-        base.setYaw(yaw);
-        base.setPitch(0);
-        chassis.teleport(base);
-        chassis.setRotation(yaw, 0);
-
-        List<VehicleSeat> defs = type.seats();
-        for (int i = 0; i < seats.size(); i++) {
-            ArmorStand seat = seats.get(i);
-            VehicleSeat def = defs.get(i);
-            Location seatLoc = VehicleServiceImpl.localToWorld(base, yaw, def.offset());
-            seatLoc.setYaw(yaw + def.yawOffset());
-            seatLoc.setPitch(0);
-            seat.teleport(seatLoc);
-            seat.setRotation(yaw + def.yawOffset(), 0);
-            Player p = occupants[i];
-            if (p != null && p.isOnline()) {
-                if (!seat.getPassengers().contains(p)) {
-                    seat.addPassenger(p);
-                }
-            } else if (p != null) {
-                occupants[i] = null;
-            }
-        }
-
-        var visuals = type.visuals();
-        double tireScale = effTireScale();
-        for (int i = 0; i < displays.size() && i < visuals.size(); i++) {
-            Display d = displays.get(i);
-            var vis = visuals.get(i);
-            Location loc = VehicleServiceImpl.localToWorld(base, yaw, vis.offset());
-            loc.setYaw(yaw + vis.yawOffset());
-            loc.setPitch(vis.pitchOffset());
-            d.teleport(loc);
-            d.setRotation(yaw + vis.yawOffset(), vis.pitchOffset());
-            if (vis.role() == com.yapcore.vehicles.api.VehicleVisual.Role.WHEEL) {
-                vis.applyTransform(d, tireScale);
-            }
-        }
-
-        // Keep foreign plugin models glued to chassis (compat layer)
-        for (Entity foreign : List.copyOf(foreignVisuals)) {
-            if (!foreign.isValid()) {
-                foreignVisuals.remove(foreign);
-                service.untrackForeignVisual(foreign.getUniqueId());
-                continue;
-            }
-            Location fl = base.clone();
-            fl.setYaw(yaw);
-            fl.setPitch(0);
-            foreign.teleport(fl);
-            foreign.setVelocity(new Vector());
-            if (foreign instanceof org.bukkit.entity.Minecart cart) {
-                cart.setMaxSpeed(0);
-            }
-        }
+        VehicleInstanceLifecycle.syncTransforms(this);
     }
 
     void destroyInternal(boolean dropItem) {
-        if (!alive) {
-            return;
-        }
-        alive = false;
-        for (Player p : List.copyOf(getOccupants())) {
-            if (p.isInsideVehicle()) {
-                p.leaveVehicle();
-            }
-            p.teleport(chassis.getLocation().clone().add(0, 1, 0));
-        }
-        for (int i = 0; i < occupants.length; i++) {
-            occupants[i] = null;
-        }
-        if (dropItem) {
-            chassis.getWorld().dropItemNaturally(chassis.getLocation(), service.createSpawnItem(type));
-        }
-        for (Entity foreign : List.copyOf(foreignVisuals)) {
-            service.untrackForeignVisual(foreign.getUniqueId());
-            service.unregisterEntity(foreign.getUniqueId());
-            foreign.remove();
-        }
-        foreignVisuals.clear();
-        for (Display d : displays) {
-            service.unregisterEntity(d.getUniqueId());
-            d.remove();
-        }
-        for (ArmorStand s : seats) {
-            service.unregisterEntity(s.getUniqueId());
-            s.remove();
-        }
-        service.unregisterEntity(chassis.getUniqueId());
-        chassis.remove();
-    }
-
-    private int findFreeSeatPreferDriver() {
-        for (int i = 0; i < type.seats().size(); i++) {
-            if (type.seats().get(i).driver() && occupants[i] == null) {
-                return i;
-            }
-        }
-        for (int i = 0; i < occupants.length; i++) {
-            if (occupants[i] == null) {
-                return i;
-            }
-        }
-        return -1;
+        VehicleInstanceLifecycle.destroyInternal(this, dropItem);
     }
 
     boolean noteEmptyTick(int despawnSeconds) {
-        long now = chassis.getWorld().getFullTime();
-        if (emptySinceTick < 0) {
-            emptySinceTick = now;
-            return false;
-        }
-        return (now - emptySinceTick) >= despawnSeconds * 20L;
+        return VehicleInstanceLifecycle.noteEmptyTick(this, despawnSeconds);
     }
 
     void clearEmptyTimer() {
-        emptySinceTick = -1;
+        VehicleInstanceLifecycle.clearEmptyTimer(this);
     }
 
     void clearOccupant(Player player) {
-        for (int i = 0; i < occupants.length; i++) {
-            if (occupants[i] != null && occupants[i].getUniqueId().equals(player.getUniqueId())) {
-                occupants[i] = null;
-            }
-        }
+        VehicleInstanceLifecycle.clearOccupant(this, player);
     }
 }

@@ -36,20 +36,20 @@ import java.util.logging.Level;
  */
 public final class Menus {
 
-    private final PlayerDataPlugin plugin;
-    private final PlayerDataConfig config;
-    private final SyncService sync;
+    final PlayerDataPlugin plugin;
+    final PlayerDataConfig config;
+    final SyncService sync;
     private final BalanceStore balances;
-    private final HomesRepository homes;
-    private final WarpsRepository warps;
-    private final KitRepository kits;
-    private final JobRepository jobs;
-    private final AuctionRepository auctions;
-    private final MailRepository mail;
-    private final ClaimService claims;
+    final HomesRepository homes;
+    final WarpsRepository warps;
+    final KitRepository kits;
+    final JobRepository jobs;
+    final AuctionRepository auctions;
+    final MailRepository mail;
+    final ClaimService claims;
 
     /** slot → auction id / home name / etc for click routing */
-    private final Map<java.util.UUID, Map<Integer, String>> clickMeta = new HashMap<>();
+    final Map<java.util.UUID, Map<Integer, String>> clickMeta = new HashMap<>();
 
     public Menus(PlayerDataPlugin plugin, PlayerDataConfig config, SyncService sync,
                  BalanceStore balances, HomesRepository homes, WarpsRepository warps,
@@ -384,258 +384,10 @@ public final class Menus {
         player.openInventory(inv);
     }
 
+    private final MenuClickHandler clicks = new MenuClickHandler(this);
+
     public boolean handleClick(Player player, YapMenuHolder holder, int slot, boolean shift) {
-        if (!sync.isReady(player.getUniqueId()) && holder.kind() != YapMenuHolder.Kind.HUB) {
-            player.sendMessage("§cStill loading…");
-            return true;
-        }
-        ItemStack clicked = holder.getInventory().getItem(slot);
-        if (clicked == null || clicked.getType() == Material.GRAY_STAINED_GLASS_PANE) {
-            return true;
-        }
-        String name = plainName(clicked);
-
-        try {
-            return switch (holder.kind()) {
-                case HUB -> hubClick(player, name);
-                case HOMES -> homesClick(player, slot, shift, name);
-                case WARPS -> warpsClick(player, slot, name);
-                case KITS -> kitsClick(player, slot, name);
-                case JOBS -> jobsClick(player, slot, name);
-                case AUCTIONS -> auctionsClick(player, slot, name);
-                case MAIL -> mailClick(player, name);
-                case CLAIMS -> claimsClick(player, slot, shift, name);
-                case NPC_TRADER -> {
-                    Long traderId = holder.context();
-                    if (traderId != null) {
-                        // routed via NpcTraderService from MenuListener
-                        yield false;
-                    }
-                    yield true;
-                }
-                default -> true;
-            };
-        } catch (Exception e) {
-            player.sendMessage("§cError: " + e.getMessage());
-            plugin.getLogger().log(Level.WARNING, "menu click", e);
-            return true;
-        }
-    }
-
-    private boolean hubClick(Player player, String name) {
-        return switch (name) {
-            case "Homes" -> {
-                if (config.featureHomes()) {
-                    openHomes(player);
-                }
-                yield true;
-            }
-            case "Warps" -> {
-                if (config.featureWarps()) {
-                    openWarps(player);
-                }
-                yield true;
-            }
-            case "Kits" -> {
-                if (config.featureKits()) {
-                    openKits(player);
-                }
-                yield true;
-            }
-            case "Jobs" -> {
-                if (config.featureJobs()) {
-                    openJobs(player);
-                }
-                yield true;
-            }
-            case "Auctions" -> {
-                if (config.featureAuctions()) {
-                    openAuctions(player);
-                }
-                yield true;
-            }
-            case "Mail" -> {
-                if (config.featureMail()) {
-                    openMail(player);
-                }
-                yield true;
-            }
-            case "Claims" -> {
-                if (config.featureClaims()) {
-                    openClaims(player);
-                }
-                yield true;
-            }
-            case "Close" -> {
-                player.closeInventory();
-                yield true;
-            }
-            default -> true;
-        };
-    }
-
-    private boolean homesClick(Player player, int slot, boolean shift, String name) throws Exception {
-        if ("Back".equals(name)) {
-            openHub(player);
-            return true;
-        }
-        Map<Integer, String> meta = clickMeta.getOrDefault(player.getUniqueId(), Map.of());
-        String home = meta.get(slot);
-        if (home == null) {
-            return true;
-        }
-        if (shift) {
-            homes.delete(player.getUniqueId(), home);
-            player.sendMessage("§aDeleted home §f" + home);
-            openHomes(player);
-            return true;
-        }
-        var opt = homes.get(player.getUniqueId(), home);
-        player.closeInventory();
-        if (opt.isPresent() && Teleports.tryTeleport(player, opt.get(), config.serverId())) {
-            player.sendMessage("§aTeleported to §f" + home);
-        }
-        return true;
-    }
-
-    private boolean warpsClick(Player player, int slot, String name) throws Exception {
-        if ("Back".equals(name)) {
-            openHub(player);
-            return true;
-        }
-        Map<Integer, String> meta = clickMeta.getOrDefault(player.getUniqueId(), Map.of());
-        String warp = meta.get(slot);
-        if (warp == null) {
-            return true;
-        }
-        var opt = warps.get(warp);
-        player.closeInventory();
-        if (opt.isPresent() && Teleports.tryTeleport(player, opt.get(), config.serverId())) {
-            player.sendMessage("§aWarped to §f" + warp);
-        }
-        return true;
-    }
-
-    private boolean kitsClick(Player player, int slot, String name) throws Exception {
-        if ("Back".equals(name)) {
-            openHub(player);
-            return true;
-        }
-        Map<Integer, String> meta = clickMeta.getOrDefault(player.getUniqueId(), Map.of());
-        String kit = meta.get(slot);
-        if (kit == null) {
-            return true;
-        }
-        player.closeInventory();
-        player.performCommand("kit " + kit);
-        return true;
-    }
-
-    private boolean jobsClick(Player player, int slot, String name) throws Exception {
-        if ("Back".equals(name)) {
-            openHub(player);
-            return true;
-        }
-        Map<Integer, String> meta = clickMeta.getOrDefault(player.getUniqueId(), Map.of());
-        String action = meta.get(slot);
-        if (action == null) {
-            return true;
-        }
-        if (action.startsWith("join:")) {
-            String id = action.substring(5);
-            if (!Perms.hasJob(player, id)) {
-                player.sendMessage("§cNo permission for that job.");
-                return true;
-            }
-            jobs.join(player.getUniqueId(), id);
-            player.sendMessage("§aJoined §f" + id);
-        } else if (action.startsWith("leave:")) {
-            jobs.leave(player.getUniqueId(), action.substring(6));
-            player.sendMessage("§aLeft §f" + action.substring(6));
-        }
-        openJobs(player);
-        return true;
-    }
-
-    private boolean auctionsClick(Player player, int slot, String name) throws Exception {
-        if ("Back".equals(name)) {
-            openHub(player);
-            return true;
-        }
-        if (name.startsWith("Sell")) {
-            player.closeInventory();
-            player.sendMessage("§7Hold an item and use §f/ah sell <price>");
-            return true;
-        }
-        Map<Integer, String> meta = clickMeta.getOrDefault(player.getUniqueId(), Map.of());
-        String action = meta.get(slot);
-        if (action == null || !action.startsWith("buy:")) {
-            return true;
-        }
-        long id = Long.parseLong(action.substring(4));
-        player.closeInventory();
-        player.performCommand("ah buy " + id);
-        return true;
-    }
-
-    private boolean mailClick(Player player, String name) throws Exception {
-        if ("Back".equals(name)) {
-            openHub(player);
-            return true;
-        }
-        if ("Clear all".equals(name)) {
-            mail.clear(player.getUniqueId());
-            player.sendMessage("§aMail cleared.");
-            openMail(player);
-        }
-        return true;
-    }
-
-    private boolean claimsClick(Player player, int slot, boolean shift, String name) throws Exception {
-        if (claims == null) {
-            return true;
-        }
-        if ("Back".equals(name)) {
-            openHub(player);
-            return true;
-        }
-        Map<Integer, String> meta = clickMeta.getOrDefault(player.getUniqueId(), Map.of());
-        String idStr = meta.get(slot);
-        if (idStr == null) {
-            return true;
-        }
-        long id = Long.parseLong(idStr);
-        var opt = claims.repo().get(id);
-        if (opt.isEmpty()) {
-            openClaims(player);
-            return true;
-        }
-        Claim c = opt.get();
-        if (shift) {
-            if (claims.abandon(player, c)) {
-                player.sendMessage("§aAbandoned claim §f#" + id);
-            } else {
-                player.sendMessage("§cCannot abandon.");
-            }
-            openClaims(player);
-            return true;
-        }
-        player.closeInventory();
-        if (c.serverId().equals(config.serverId()) && player.getWorld().getName().equals(c.world())) {
-            ClaimVisualizer.show(plugin, player, c, config.claimsVisualSeconds());
-            player.sendMessage("§aShowing claim §f#" + id);
-        } else {
-            player.sendMessage("§cClaim is on §f" + c.serverId() + "/" + c.world());
-        }
-        return true;
-    }
-
-    private static String plainName(ItemStack stack) {
-        if (stack.getItemMeta() == null || stack.getItemMeta().displayName() == null) {
-            return "";
-        }
-        return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText()
-                .serialize(stack.getItemMeta().displayName());
+        return clicks.handleClick(player, holder, slot, shift);
     }
 
     public void clearMeta(Player player) {
