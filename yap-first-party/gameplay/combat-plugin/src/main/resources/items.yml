@@ -1,0 +1,92 @@
+# Material or tier (PDC yap_gear_tier) → combat bonuses
+tiers:
+  bronze:
+    attack-bonus: 4
+    strength-bonus: 3
+    defence-bonus: 2
+  iron:
+    attack-bonus: 5
+    strength-bonus: 5
+    defence-bonus: 5
+  steel:
+    attack-bonus: 8
+    strength-bonus: 10
+    defence-bonus: 8
+  mithril:
+    attack-bonus: 10
+    strength-bonus: 12
+    defence-bonus: 10
+  diamond:
+    attack-bonus: 10
+    strength-bonus: 12
+    defence-bonus: 10
+  leather:
+    defence-bonus: 3
+    ranged-bonus: 4
+  mystic:
+    magic-bonus: 8
+    prayer-bonus: 2
+
+items:
+  WOODEN_SWORD:
+    attack-bonus: 2
+    strength-bonus: 3
+  STONE_SWORD:
+    attack-bonus: 3
+    strength-bonus: 4
+  IRON_SWORD:
+    attack-bonus: 5
+    strength-bonus: 8
+    tier: iron
+  DIAMOND_SWORD:
+    attack-bonus: 8
+    strength-bonus: 12
+    tier: diamond
+  IRON_HELMET:
+    defence-bonus: 4
+    tier: iron
+  IRON_CHESTPLATE:
+    defence-bonus: 8
+    tier: iron
+  IRON_LEGGINGS:
+    defence-bonus: 6
+    tier: iron
+  IRON_BOOTS:
+    defence-bonus: 3
+    tier: iron
+  DIAMOND_HELMET:
+    defence-bonus: 6
+    tier: diamond
+  DIAMOND_CHESTPLATE:
+    defence-bonus: 12
+    tier: diamond
+  DIAMOND_LEGGINGS:
+    defence-bonus: 9
+    tier: diamond
+  DIAMOND_BOOTS:
+    defence-bonus: 5
+    tier: diamond
+  SHIELD:
+    defence-bonus: 5
+  BOW:
+    ranged-bonus: 8
+  CROSSBOW:
+    ranged-bonus: 10
+  ARROW:
+    ranged-bonus: 2
+  LEATHER_HELMET:
+    tier: leather
+  LEATHER_CHESTPLATE:
+    tier: leather
+  LEATHER_LEGGINGS:
+    tier: leather
+  LEATHER_BOOTS:
+    tier: leather
+  STICK:
+    magic-bonus: 2
+  BLAZE_ROD:
+    magic-bonus: 10
+    tier: mystic
+  GOLDEN_HELMET:
+    prayer-bonus: 3
+    defence-bonus: 2

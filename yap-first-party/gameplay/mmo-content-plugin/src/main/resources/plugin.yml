@@ -1,0 +1,24 @@
+name: yap-mmo-content
+version: '1.0.0.0'
+main: com.yapcore.mmocontent.MmoContentPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: MMO content layer — quests v2 packs, bosses, skill areas, hiscores (Folia-safe)
+website: https://github.com/yaplabs
+depend: [YaPSkills]
+softdepend: [YaPDB, YaPNpcs, YaPCombat, YaPCrafting, YaPPlayerdata]
+commands:
+  hiscores:
+    description: Global skill hiscores
+    usage: /hiscores <skill> [page]
+    permission: yapmmo.hiscores
+  yapmmo:
+    description: YaP MMO content admin
+    usage: /yapmmo reload|snapshot [json]|givemoney|unlockteleport
+    permission: yapmmo.admin
+permissions:
+  yapmmo.hiscores:
+    default: true
+  yapmmo.admin:
+    default: op

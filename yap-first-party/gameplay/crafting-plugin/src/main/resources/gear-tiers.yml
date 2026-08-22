@@ -1,0 +1,23 @@
+# Gear tier bonuses — consumed by yap-combat items.yml when present.
+# Crafted items receive PDC yapcombat:yap_gear_tier matching tier id.
+tiers:
+  bronze:
+    attack-bonus: 4
+    strength-bonus: 3
+    defence-bonus: 2
+    display-prefix: Bronze
+  iron:
+    attack-bonus: 10
+    strength-bonus: 7
+    defence-bonus: 5
+    display-prefix: Iron
+  steel:
+    attack-bonus: 18
+    strength-bonus: 12
+    defence-bonus: 10
+    display-prefix: Steel
+  mithril:
+    attack-bonus: 30
+    strength-bonus: 22
+    defence-bonus: 18
+    display-prefix: Mithril

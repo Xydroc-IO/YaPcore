@@ -1,0 +1,38 @@
+id: woodcutting
+display: Woodcutting
+enabled: true
+icon: IRON_AXE
+break:
+  OAK_LOG:
+    xp: 25
+    min-level: 1
+  SPRUCE_LOG:
+    xp: 25
+    min-level: 1
+  BIRCH_LOG:
+    xp: 25
+    min-level: 1
+  JUNGLE_LOG:
+    xp: 30
+    min-level: 1
+  ACACIA_LOG:
+    xp: 30
+    min-level: 1
+  DARK_OAK_LOG:
+    xp: 35
+    min-level: 15
+  MANGROVE_LOG:
+    xp: 35
+    min-level: 15
+  CHERRY_LOG:
+    xp: 35
+    min-level: 15
+  OAK_WOOD:
+    xp: 25
+    min-level: 1
+  SPRUCE_WOOD:
+    xp: 25
+    min-level: 1
+  BIRCH_WOOD:
+    xp: 25
+    min-level: 1

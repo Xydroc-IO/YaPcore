@@ -1,0 +1,6 @@
+id: defence
+display: Defence
+enabled: true
+icon: IRON_CHESTPLATE
+combat-taken:
+  xp-per-damage: 2.0

@@ -1,0 +1,7 @@
+id: ranged
+display: Ranged
+enabled: true
+icon: BOW
+ranged-dealt:
+  xp-per-damage: 2.0
+  share: 1.0

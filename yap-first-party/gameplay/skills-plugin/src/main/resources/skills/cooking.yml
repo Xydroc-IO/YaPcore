@@ -1,0 +1,32 @@
+id: cooking
+display: Cooking
+enabled: true
+icon: COOKED_BEEF
+smelt:
+  COOKED_BEEF:
+    xp: 30
+    min-level: 1
+  COOKED_PORKCHOP:
+    xp: 30
+    min-level: 1
+  COOKED_CHICKEN:
+    xp: 30
+    min-level: 1
+  COOKED_MUTTON:
+    xp: 30
+    min-level: 1
+  COOKED_RABBIT:
+    xp: 30
+    min-level: 1
+  COOKED_COD:
+    xp: 35
+    min-level: 5
+  COOKED_SALMON:
+    xp: 40
+    min-level: 10
+  BAKED_POTATO:
+    xp: 15
+    min-level: 1
+  DRIED_KELP:
+    xp: 10
+    min-level: 1

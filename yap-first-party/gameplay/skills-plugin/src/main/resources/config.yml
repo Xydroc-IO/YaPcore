@@ -1,0 +1,35 @@
+enabled: true
+
+# Shared MariaDB via YaPDB when available
+use-shared-yapdb: true
+
+jdbc:
+  url: jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true
+  user: yap
+  password: change-me
+
+pool:
+  maximum-pool-size: 6
+  minimum-idle: 1
+  connection-timeout-ms: 10000
+
+xp-table:
+  max-level: 99
+  multiplier: 1.0
+
+feedback:
+  action-bar-xp: true
+  level-up-title: true
+  level-up-chat: true
+
+# When true, legacy playerdata jobs should stay disabled (features.jobs: false)
+prefer-over-jobs: true
+
+skills-directory: skills
+
+# Display-only combat level: floor((attack+strength+defence+hitpoints)/4)
+combat-level:
+  attack-skill: attack
+  strength-skill: strength
+  defence-skill: defence
+  hitpoints-skill: hitpoints

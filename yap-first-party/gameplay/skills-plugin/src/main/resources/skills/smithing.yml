@@ -1,0 +1,17 @@
+id: smithing
+display: Smithing
+enabled: true
+icon: IRON_INGOT
+smelt:
+  IRON_INGOT:
+    xp: 25
+    min-level: 15
+  GOLD_INGOT:
+    xp: 35
+    min-level: 40
+  COPPER_INGOT:
+    xp: 15
+    min-level: 1
+  NETHERITE_SCRAP:
+    xp: 100
+    min-level: 75

@@ -1,0 +1,7 @@
+id: attack
+display: Attack
+enabled: true
+icon: DIAMOND_SWORD
+combat-dealt:
+  xp-per-damage: 2.0
+  share: 0.5

@@ -1,0 +1,35 @@
+areas:
+  mining_guild:
+    type: MINING_GUILD
+    world: world
+    min-x: 0
+    min-y: 60
+    min-z: 0
+    max-x: 32
+    max-y: 80
+    max-z: 32
+    respawn-seconds: 30
+    nodes:
+      - x: 8
+        y: 65
+        z: 8
+        ore: IRON_ORE
+      - x: 12
+        y: 64
+        z: 14
+        ore: COAL_ORE
+      - x: 20
+        y: 66
+        z: 10
+        ore: COPPER_ORE
+
+  fishing_spot:
+    type: FISHING
+    world: world
+    min-x: 100
+    min-y: 58
+    min-z: 100
+    max-x: 120
+    max-y: 70
+    max-z: 120
+    xp-multiplier: 1.5

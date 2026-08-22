@@ -1,0 +1,7 @@
+id: strength
+display: Strength
+enabled: true
+icon: NETHERITE_AXE
+combat-dealt:
+  xp-per-damage: 2.0
+  share: 0.5

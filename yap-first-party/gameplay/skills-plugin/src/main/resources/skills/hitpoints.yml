@@ -1,0 +1,6 @@
+id: hitpoints
+display: Hitpoints
+enabled: true
+icon: RED_DYE
+combat-hitpoints:
+  ratio-of-combat-xp: 0.333333

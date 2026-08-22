@@ -1,0 +1,29 @@
+name: YaPCrafting
+version: 1.0.0.0
+main: com.yapcore.crafting.CraftingPlugin
+api-version: '1.21'
+folia-supported: true
+description: YaP MMO crafting — recipes, stations, economy sell (M3)
+authors: [YapLabs]
+depend: []
+softdepend: [YaPSkills, YaPPlayerData, Vault]
+commands:
+  recipe:
+    description: List unlocked recipes for a skill
+    usage: /recipe list <skill>
+  sell:
+    description: Sell held item to the server
+    usage: /sell [amount]
+  ycraft:
+    description: Reload YaPCrafting
+    usage: /ycraft reload
+permissions:
+  yapcraft.use:
+    description: Use crafting stations and /recipe list
+    default: true
+  yapcraft.sell:
+    description: Use /sell when economy is enabled
+    default: true
+  yapcraft.admin:
+    description: /ycraft reload
+    default: op

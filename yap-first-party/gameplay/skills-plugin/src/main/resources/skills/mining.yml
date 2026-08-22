@@ -1,0 +1,62 @@
+id: mining
+display: Mining
+enabled: true
+icon: IRON_PICKAXE
+break:
+  STONE:
+    xp: 5
+    min-level: 1
+  DEEPSLATE:
+    xp: 5
+    min-level: 1
+  COAL_ORE:
+    xp: 50
+    min-level: 1
+  DEEPSLATE_COAL_ORE:
+    xp: 50
+    min-level: 1
+  COPPER_ORE:
+    xp: 35
+    min-level: 1
+  DEEPSLATE_COPPER_ORE:
+    xp: 35
+    min-level: 1
+  IRON_ORE:
+    xp: 70
+    min-level: 15
+  DEEPSLATE_IRON_ORE:
+    xp: 70
+    min-level: 15
+  GOLD_ORE:
+    xp: 90
+    min-level: 40
+  DEEPSLATE_GOLD_ORE:
+    xp: 90
+    min-level: 40
+  REDSTONE_ORE:
+    xp: 45
+    min-level: 30
+  DEEPSLATE_REDSTONE_ORE:
+    xp: 45
+    min-level: 30
+  LAPIS_ORE:
+    xp: 55
+    min-level: 30
+  DEEPSLATE_LAPIS_ORE:
+    xp: 55
+    min-level: 30
+  DIAMOND_ORE:
+    xp: 120
+    min-level: 55
+  DEEPSLATE_DIAMOND_ORE:
+    xp: 120
+    min-level: 55
+  EMERALD_ORE:
+    xp: 130
+    min-level: 55
+  DEEPSLATE_EMERALD_ORE:
+    xp: 130
+    min-level: 55
+  ANCIENT_DEBRIS:
+    xp: 200
+    min-level: 75

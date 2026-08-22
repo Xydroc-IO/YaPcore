@@ -1,0 +1,11 @@
+prices:
+  IRON_INGOT: 5.0
+  COPPER_INGOT: 3.0
+  GOLD_INGOT: 12.0
+  COOKED_SALMON: 12.0
+  COOKED_COD: 10.0
+tier-prices:
+  bronze: 25.0
+  iron: 50.0
+  steel: 120.0
+  mithril: 300.0

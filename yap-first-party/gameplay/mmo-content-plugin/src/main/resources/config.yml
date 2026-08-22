@@ -1,0 +1,20 @@
+enabled: true
+use-shared-yapdb: true
+jdbc-url: jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true
+jdbc-user: yap
+jdbc-password: yap
+pool-max: 4
+pool-min: 1
+pool-timeout-ms: 10000
+
+hiscores:
+  page-size: 50
+  preview-limit: 10
+
+link:
+  level-99-broadcast: true
+
+content:
+  bosses-dir: bosses
+  areas-file: areas.yml
+  quests-dir: quests

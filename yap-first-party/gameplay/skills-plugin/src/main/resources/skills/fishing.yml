@@ -1,0 +1,20 @@
+id: fishing
+display: Fishing
+enabled: true
+icon: FISHING_ROD
+fish:
+  CAUGHT:
+    xp: 40
+    min-level: 1
+  COD:
+    xp: 45
+    min-level: 1
+  SALMON:
+    xp: 50
+    min-level: 1
+  TROPICAL_FISH:
+    xp: 55
+    min-level: 20
+  PUFFERFISH:
+    xp: 60
+    min-level: 25

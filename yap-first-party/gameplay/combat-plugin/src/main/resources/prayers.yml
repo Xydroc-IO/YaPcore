@@ -1,0 +1,64 @@
+prayers:
+  thick_skin:
+    name: "Thick Skin"
+    min-prayer-level: 1
+    drain-per-tick: 1
+    group: defence_boost
+    effect: defence_boost
+    boost: 5
+
+  burst_of_strength:
+    name: "Burst of Strength"
+    min-prayer-level: 4
+    drain-per-tick: 1
+    group: strength_boost
+    effect: strength_boost
+    boost: 5
+
+  clarity_of_thought:
+    name: "Clarity of Thought"
+    min-prayer-level: 7
+    drain-per-tick: 1
+    group: attack_boost
+    effect: attack_boost
+    boost: 5
+
+  hawk_eye:
+    name: "Hawk Eye"
+    min-prayer-level: 26
+    drain-per-tick: 2
+    group: ranged_boost
+    effect: ranged_boost
+    boost: 8
+
+  mystic_might:
+    name: "Mystic Might"
+    min-prayer-level: 45
+    drain-per-tick: 3
+    group: magic_boost
+    effect: magic_boost
+    boost: 8
+
+  protect_from_melee:
+    name: "Protect from Melee"
+    min-prayer-level: 43
+    drain-per-tick: 3
+    group: overhead
+    effect: protect_melee
+    reduction: 0.4
+
+  protect_from_missiles:
+    name: "Protect from Missiles"
+    min-prayer-level: 40
+    drain-per-tick: 3
+    group: overhead
+    effect: protect_missiles
+    reduction: 0.4
+
+  protect_from_magic:
+    name: "Protect from Magic"
+    min-prayer-level: 37
+    drain-per-tick: 3
+    group: overhead
+    effect: protect_magic
+    reduction: 0.4
