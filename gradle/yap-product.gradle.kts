@@ -56,6 +56,9 @@ tasks.register("installProductDefaults") {
     if (findProject(":floodgate-plugin") != null) {
         dependsOn(":floodgate-plugin:installIntoPlugins")
     }
+    if (findProject(":bedrock-ui-plugin") != null) {
+        dependsOn(":bedrock-ui-plugin:installIntoPlugins")
+    }
     if (findProject(":folia-bridge-plugin") != null) {
         dependsOn(":folia-bridge-plugin:installIntoPlugins")
     }
@@ -71,6 +74,9 @@ tasks.register("installProductDefaults") {
     if (findProject(":map-plugin") != null) {
         dependsOn(":map-plugin:installIntoPlugins")
     }
+    if (findProject(":factions-plugin") != null) {
+        dependsOn(":factions-plugin:installIntoPlugins")
+    }
 }
 
 tasks.register("installGameplayDefaults") {
@@ -82,6 +88,39 @@ tasks.register("installGameplayDefaults") {
         ":gameplay-knobs-plugin:installIntoPlugins",
         ":finetune-modules:installGameplayIntoModules",
     )
+    if (findProject(":skills-plugin") != null) {
+        dependsOn(":skills-plugin:installIntoPlugins")
+    }
+    if (findProject(":combat-plugin") != null) {
+        dependsOn(":combat-plugin:installIntoPlugins")
+    }
+    if (findProject(":crafting-plugin") != null) {
+        dependsOn(":crafting-plugin:installIntoPlugins")
+    }
+    if (findProject(":mmo-content-plugin") != null) {
+        dependsOn(":mmo-content-plugin:installIntoPlugins")
+    }
+    if (findProject(":games-plugin") != null) {
+        dependsOn(":games-plugin:installIntoPlugins")
+    }
+    if (findProject(":floodgate-plugin") != null) {
+        dependsOn(":floodgate-plugin:installIntoPlugins")
+    }
+    if (findProject(":bedrock-ui-plugin") != null) {
+        dependsOn(":bedrock-ui-plugin:installIntoPlugins")
+    }
+    if (findProject(":mmo-bedrock-plugin") != null) {
+        dependsOn(":mmo-bedrock-plugin:installIntoPlugins")
+    }
+    if (findProject(":guilds-plugin") != null) {
+        dependsOn(":guilds-plugin:installIntoPlugins")
+    }
+    if (findProject(":mechanics-plugin") != null) {
+        dependsOn(":mechanics-plugin:installIntoPlugins")
+    }
+    if (findProject(":abilities-plugin") != null) {
+        dependsOn(":abilities-plugin:installIntoPlugins")
+    }
     if (findProject(":stacker-plugin") != null) {
         dependsOn(":stacker-plugin:installIntoPlugins")
     }
@@ -128,10 +167,26 @@ tasks.register("assemblePluginDist") {
         ":npcs-plugin:shadowJar",
         ":guard-plugin:shadowJar",
         ":map-plugin:shadowJar",
+        ":factions-plugin:shadowJar",
         ":vehicles-plugin:jar",
         ":vehicles-module:jar",
         ":gameplay-knobs-plugin:jar",
         ":stacker-plugin:jar",
+        ":yap-mmo-api:jar",
+        ":skills-plugin:shadowJar",
+        ":combat-plugin:shadowJar",
+        ":crafting-plugin:shadowJar",
+        ":mmo-content-plugin:shadowJar",
+        ":guilds-plugin:shadowJar",
+        ":bedrock-ui-plugin:jar",
+        ":mmo-bedrock-plugin:jar",
+        ":games-plugin:shadowJar",
+        ":mechanics-plugin:jar",
+        ":yap-mechanics-api:jar",
+        ":yap-abilities-api:jar",
+        ":abilities-plugin:shadowJar",
+        ":yap-games-api:jar",
+        ":yap-bedrock-ui-api:jar",
         ":yap-db-api:jar",
         ":yap-perms-api:jar",
         ":yap-moderation-api:jar",
@@ -202,10 +257,37 @@ tasks.register("assemblePluginDist") {
         if (findProject(":map-plugin") != null) {
             copyNamed(jarOf(":map-plugin", "shadowJar"), coreDir)
         }
+        if (findProject(":factions-plugin") != null) {
+            copyNamed(jarOf(":factions-plugin", "shadowJar"), coreDir)
+        }
 
         copyNamed(jarOf(":vehicles-plugin"), gameplayDir)
         copyNamed(jarOf(":gameplay-knobs-plugin"), gameplayDir)
         copyNamed(jarOf(":stacker-plugin"), gameplayDir)
+        if (findProject(":skills-plugin") != null) {
+            copyNamed(jarOf(":skills-plugin", "shadowJar"), gameplayDir)
+        }
+        if (findProject(":combat-plugin") != null) {
+            copyNamed(jarOf(":combat-plugin", "shadowJar"), gameplayDir)
+        }
+        if (findProject(":crafting-plugin") != null) {
+            copyNamed(jarOf(":crafting-plugin", "shadowJar"), gameplayDir)
+        }
+        if (findProject(":mmo-content-plugin") != null) {
+            copyNamed(jarOf(":mmo-content-plugin", "shadowJar"), gameplayDir)
+        }
+        if (findProject(":guilds-plugin") != null) {
+            copyNamed(jarOf(":guilds-plugin", "shadowJar"), gameplayDir)
+        }
+        if (findProject(":games-plugin") != null) {
+            copyNamed(jarOf(":games-plugin", "shadowJar"), gameplayDir)
+        }
+        if (findProject(":mechanics-plugin") != null) {
+            copyNamed(jarOf(":mechanics-plugin"), gameplayDir)
+        }
+        if (findProject(":abilities-plugin") != null) {
+            copyNamed(jarOf(":abilities-plugin", "shadowJar"), gameplayDir)
+        }
 
         copyNamed(jarOf(":yap-db-api"), apiDir)
         copyNamed(jarOf(":yap-perms-api"), apiDir)
@@ -221,6 +303,24 @@ tasks.register("assemblePluginDist") {
         }
         if (findProject(":yap-tab-api") != null) {
             copyNamed(jarOf(":yap-tab-api"), apiDir)
+        }
+        if (findProject(":yap-mmo-api") != null) {
+            copyNamed(jarOf(":yap-mmo-api"), apiDir)
+        }
+        if (findProject(":yap-mechanics-api") != null) {
+            copyNamed(jarOf(":yap-mechanics-api"), apiDir)
+        }
+        if (findProject(":yap-abilities-api") != null) {
+            copyNamed(jarOf(":yap-abilities-api"), apiDir)
+        }
+        if (findProject(":yap-games-api") != null) {
+            copyNamed(jarOf(":yap-games-api"), apiDir)
+        }
+        if (findProject(":yap-factions-api") != null) {
+            copyNamed(jarOf(":yap-factions-api"), apiDir)
+        }
+        if (findProject(":yap-guilds-api") != null) {
+            copyNamed(jarOf(":yap-guilds-api"), apiDir)
         }
 
         // Fine-tune modules (drop into server modules/)

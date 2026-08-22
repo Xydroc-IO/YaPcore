@@ -150,5 +150,71 @@ project(":finetune-modules").projectDir = file("yap-first-party/modules/finetune
 include("vehicles-module")
 project(":vehicles-module").projectDir = file("yap-first-party/modules/vehicles-module")
 
+include("yap-mmo-api")
+project(":yap-mmo-api").projectDir = file("yap-first-party/api/yap-mmo-api")
+
+include("yap-abilities-api")
+project(":yap-abilities-api").projectDir = file("yap-first-party/api/yap-abilities-api")
+
+include("abilities-plugin")
+project(":abilities-plugin").projectDir = file("yap-first-party/gameplay/abilities-plugin")
+
+include("yap-bedrock-ui-api")
+project(":yap-bedrock-ui-api").projectDir = file("yap-first-party/api/yap-bedrock-ui-api")
+
+include("bedrock-ui-plugin")
+project(":bedrock-ui-plugin").projectDir = file("yap-first-party/core-network/bedrock-ui-plugin")
+
+include("mmo-bedrock-plugin")
+project(":mmo-bedrock-plugin").projectDir = file("yap-first-party/gameplay/mmo-bedrock-plugin")
+
+include("skills-plugin")
+project(":skills-plugin").projectDir = file("yap-first-party/gameplay/skills-plugin")
+
+include("crafting-plugin")
+project(":crafting-plugin").projectDir = file("yap-first-party/gameplay/crafting-plugin")
+
+include("combat-plugin")
+project(":combat-plugin").projectDir = file("yap-first-party/gameplay/combat-plugin")
+
+include("mmo-content-plugin")
+project(":mmo-content-plugin").projectDir = file("yap-first-party/gameplay/mmo-content-plugin")
+
+include("games-plugin")
+project(":games-plugin").projectDir = file("yap-first-party/gameplay/games-plugin")
+
+include("yap-games-api")
+project(":yap-games-api").projectDir = file("yap-first-party/api/yap-games-api")
+
+include("yap-abilities-api")
+project(":yap-abilities-api").projectDir = file("yap-first-party/api/yap-abilities-api")
+
+include("games-module")
+project(":games-module").projectDir = file("yap-first-party/modules/games-module")
+
+include("games-ffa-module")
+project(":games-ffa-module").projectDir = file("yap-first-party/modules/games-ffa-module")
+
+include("games-duels-module")
+project(":games-duels-module").projectDir = file("yap-first-party/modules/games-duels-module")
+
+include("yap-factions-api")
+project(":yap-factions-api").projectDir = file("yap-first-party/api/yap-factions-api")
+
+include("factions-plugin")
+project(":factions-plugin").projectDir = file("yap-first-party/core-network/factions-plugin")
+
+include("yap-mechanics-api")
+project(":yap-mechanics-api").projectDir = file("yap-first-party/api/yap-mechanics-api")
+
+include("mechanics-plugin")
+project(":mechanics-plugin").projectDir = file("yap-first-party/gameplay/mechanics-plugin")
+
+include("yap-guilds-api")
+project(":yap-guilds-api").projectDir = file("yap-first-party/api/yap-guilds-api")
+
+include("guilds-plugin")
+project(":guilds-plugin").projectDir = file("yap-first-party/gameplay/guilds-plugin")
+
 include("yap-vehicle-addon")
 project(":yap-vehicle-addon").projectDir = file("examples/yap-vehicle-addon")

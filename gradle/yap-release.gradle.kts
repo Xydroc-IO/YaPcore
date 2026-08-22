@@ -60,16 +60,27 @@ tasks.register("assembleRelease") {
             "yap-npcs.jar",
             "yap-guard.jar",
             "yap-map.jar",
+            "yap-factions.jar",
             "yap-packs.jar",
             "yap-chat.jar",
             "yap-tab.jar",
             "yap-discord.jar",
             "yap-floodgate.jar",
+            "yap-bedrock-ui.jar",
         )
         val gameplayPluginJars = listOf(
             "yap-vehicles.jar",
             "yap-gameplay-knobs.jar",
             "yap-stacker.jar",
+            "yap-skills.jar",
+            "yap-combat.jar",
+            "yap-crafting.jar",
+            "yap-mmo-content.jar",
+            "yap-mmo-bedrock.jar",
+            "yap-guilds.jar",
+            "yap-games.jar",
+            "yap-mechanics.jar",
+            "yap-abilities.jar",
         )
         val pluginJars = if (includeGameplay) {
             corePluginJars + gameplayPluginJars
@@ -87,6 +98,7 @@ tasks.register("assembleRelease") {
             }
         }
         val docFiles = listOf(
+            "QUICK_START.md", "WIKI.md", "LICENSING.md", "COMMANDS.md",
             "VEHICLES.md", "CLIENTS_AND_PACKS.md", "WEB_DASHBOARD.md", "PREGEN.md",
             "WINDOWS.md", "NGINX_AND_LOCALHOST.md", "PLAYERDATA.md", "MARIADB.md", "YAPDB.md",
             "STACKER.md", "PLUGINS.md", "MODULES_AND_API.md", "TUNE.md", "PERMISSIONS.md",

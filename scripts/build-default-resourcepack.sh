@@ -8,6 +8,8 @@ PACKS="$ROOT/resourcepacks"
 OUT="$PACKS/yapcore-default.zip"
 VEH_DIR="$PACKS/yap-vehicles"
 VEH_ZIP="$PACKS/yap-vehicles.zip"
+ABIL_DIR="$PACKS/yap-abilities"
+ABIL_ZIP="$PACKS/yap-abilities.zip"
 FAITHFUL="$PACKS/faithful-64x.zip"
 INCLUDE_VEHICLES="${YAP_INCLUDE_VEHICLES:-0}"
 STAGE="$(mktemp -d)"
@@ -29,6 +31,13 @@ fi
 
 DESC="YaPcore default — Faithful 64x (CORE)"
 if [ "$want_vehicles" -eq 1 ]; then
+  if [ -d "$ABIL_DIR" ]; then
+    python3 "$ROOT/scripts/generate-ability-icons.py" 2>/dev/null || true
+    (cd "$ABIL_DIR" && zip -qr "$ABIL_ZIP" .)
+  fi
+  if [ -f "$ABIL_ZIP" ]; then
+    unzip -q -o "$ABIL_ZIP" -d "$STAGE"
+  fi
   if [ -d "$VEH_DIR" ]; then
     (cd "$VEH_DIR" && zip -qr "$VEH_ZIP" .)
   fi
@@ -37,7 +46,7 @@ if [ "$want_vehicles" -eq 1 ]; then
     exit 1
   fi
   unzip -q -o "$VEH_ZIP" -d "$STAGE"
-  DESC="YaPcore default — Faithful 64x + YaP Vehicles (GAMEPLAY)"
+  DESC="YaPcore default — Faithful 64x + YaP Vehicles + Abilities (GAMEPLAY)"
 fi
 
 python3 - <<PY "$STAGE" "$DESC" "$want_vehicles"
@@ -59,6 +68,18 @@ if want_vehicles:
         if "parent" not in data:
             data["parent"] = "item/generated"
         paper.write_text(json.dumps(data, indent=2) + "\n")
+
+    rod = stage / "assets/minecraft/models/item/blaze_rod.json"
+    if rod.exists():
+        data = json.loads(rod.read_text())
+        overs = data.get("overrides") or []
+        overs.sort(key=lambda o: o.get("predicate", {}).get("custom_model_data", 0))
+        data["overrides"] = overs
+        if "textures" not in data:
+            data["textures"] = {"layer0": "item/blaze_rod"}
+        if "parent" not in data:
+            data["parent"] = "item/handheld"
+        rod.write_text(json.dumps(data, indent=2) + "\n")
 
 meta = stage / "pack.mcmeta"
 meta.write_text(json.dumps({
