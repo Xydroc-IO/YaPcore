@@ -17,3 +17,17 @@ public-port=25565
 bedrock-enabled=false
 bedrock-bind=0.0.0.0:19132
 bedrock-backend=127.0.0.1:25566
+
+# Edge rate limits — docs/EDGE_RATE_LIMIT.md (defaults ON; loopback exempt)
+connect-rate-limit-enabled=true
+connect-rate-per-ip=20
+connect-rate-window-ms=10000
+handshake-rate-limit-enabled=true
+handshake-rate-per-ip=40
+handshake-rate-window-ms=10000
+login-rate-limit-enabled=true
+login-rate-per-ip=10
+login-rate-window-ms=10000
+metrics-http-enabled=true
+metrics-http-bind=127.0.0.1
+metrics-http-port=9091

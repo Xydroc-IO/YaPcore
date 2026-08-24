@@ -124,6 +124,12 @@ public final class ClientSession extends ChannelInboundHandlerAdapter {
     }
 
     private void handleHandshake(ChannelHandlerContext ctx, ByteBuf buf) {
+        LinkConfig cfg = server.config();
+        if (!server.rateGuard().allowHandshake(clientAddress, cfg)) {
+            buf.release();
+            ctx.close();
+            return;
+        }
         int packetId = McCodec.readVarInt(buf);
         if (packetId != 0x00) {
             buf.release();
@@ -143,6 +149,10 @@ public final class ClientSession extends ChannelInboundHandlerAdapter {
         if (intent == 1) {
             phase = Phase.STATUS;
         } else if (intent == 2) {
+            if (!server.rateGuard().allowLogin(clientAddress, cfg)) {
+                ctx.close();
+                return;
+            }
             phase = Phase.LOGIN_CLIENT;
         } else {
             ctx.close();

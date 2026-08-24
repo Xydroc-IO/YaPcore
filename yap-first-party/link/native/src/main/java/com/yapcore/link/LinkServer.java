@@ -9,6 +9,8 @@ import com.yapcore.link.floodgate.FloodgateForwarder;
 import com.yapcore.link.plugin.LinkMetricsImpl;
 import com.yapcore.link.plugin.LinkPluginManager;
 import com.yapcore.link.protocol.McFrameCodec;
+import com.yapcore.link.ratelimit.ConnectRateGuard;
+import com.yapcore.link.metrics.LinkMetricsHttp;
 import com.yapcore.link.session.PlayerHub;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -53,6 +55,8 @@ public final class LinkServer {
     private final LinkPluginManager pluginManager;
     private final FloodgateForwarder floodgate;
     private final LinkMetricsImpl metrics = new LinkMetricsImpl();
+    private final ConnectRateGuard rateGuard = new ConnectRateGuard(metrics);
+    private LinkMetricsHttp metricsHttp;
 
     private EventLoopGroup boss;
     private EventLoopGroup worker;
@@ -103,6 +107,10 @@ public final class LinkServer {
 
     public LinkMetricsImpl metrics() {
         return metrics;
+    }
+
+    public ConnectRateGuard rateGuard() {
+        return rateGuard;
     }
 
     public Map<UUID, ClientSession> sessions() {
@@ -163,7 +171,16 @@ public final class LinkServer {
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel ch) {
-                        int readTimeout = configRef.get().readTimeoutSec();
+                        String ip = "unknown";
+                        if (ch.remoteAddress() instanceof java.net.InetSocketAddress isa) {
+                            ip = isa.getAddress().getHostAddress();
+                        }
+                        LinkConfig live = configRef.get();
+                        if (!rateGuard.allowConnect(ip, live)) {
+                            ch.close();
+                            return;
+                        }
+                        int readTimeout = live.readTimeoutSec();
                         if (readTimeout > 0) {
                             ch.pipeline().addLast("read-timeout",
                                     new ReadTimeoutHandler(readTimeout));
@@ -179,7 +196,17 @@ public final class LinkServer {
                 + " online-mode=" + cfg.onlineMode()
                 + " ping-passthrough=" + cfg.pingPassthrough()
                 + " floodgate=" + floodgate.enabled()
-                + " plugins=" + pluginManager.loadedCount());
+                + " plugins=" + pluginManager.loadedCount()
+                + " rate-limit=" + cfg.connectRateLimitEnabled());
+
+        if (cfg.metricsHttpEnabled() && cfg.metricsHttpPort() > 0) {
+            try {
+                metricsHttp = new LinkMetricsHttp(this);
+                metricsHttp.start(cfg.metricsHttpBind(), cfg.metricsHttpPort());
+            } catch (IOException e) {
+                LOG.log(Level.WARNING, "metrics HTTP failed: " + e.getMessage(), e);
+            }
+        }
 
         if (cfg.bedrockEnabled()) {
             bedrock = new BedrockUdpForwarder(cfg);
@@ -202,6 +229,10 @@ public final class LinkServer {
     }
 
     public synchronized void stop() {
+        if (metricsHttp != null) {
+            metricsHttp.stop();
+            metricsHttp = null;
+        }
         if (console != null) {
             console.stop();
             console = null;

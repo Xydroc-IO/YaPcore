@@ -1,0 +1,22 @@
+# YaP LagGuard — per-chunk lag-machine budgets (Folia-safe)
+enabled: true
+
+# Soft entity density per loaded chunk (living + items + projectiles counted)
+max-entities-per-chunk: 80
+
+# Primed TNT entities allowed in one chunk at once
+max-primed-tnt-per-chunk: 12
+
+# Hopper transfers cancelled per chunk per window when over budget
+max-hopper-transfers-per-window: 64
+hopper-window-ticks: 20
+
+# Redstone current-change events cancelled per chunk per window
+max-redstone-events-per-window: 128
+redstone-window-ticks: 20
+
+# Write plugins/YaPLagGuard/stats.json for dashboard / Prometheus
+stats-write-interval-ticks: 100
+
+# Log when a budget trips (rate-limited internally)
+log-trips: true

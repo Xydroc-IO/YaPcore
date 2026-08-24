@@ -71,6 +71,9 @@ tasks.register("installProductDefaults") {
     if (findProject(":guard-plugin") != null) {
         dependsOn(":guard-plugin:installIntoPlugins")
     }
+    if (findProject(":lagguard-plugin") != null) {
+        dependsOn(":lagguard-plugin:installIntoPlugins")
+    }
     if (findProject(":map-plugin") != null) {
         dependsOn(":map-plugin:installIntoPlugins")
     }
@@ -166,6 +169,7 @@ tasks.register("assemblePluginDist") {
         ":regions-plugin:shadowJar",
         ":npcs-plugin:shadowJar",
         ":guard-plugin:shadowJar",
+        ":lagguard-plugin:shadowJar",
         ":map-plugin:shadowJar",
         ":factions-plugin:shadowJar",
         ":vehicles-plugin:jar",
@@ -254,6 +258,9 @@ tasks.register("assemblePluginDist") {
         if (findProject(":guard-plugin") != null) {
             copyNamed(jarOf(":guard-plugin", "shadowJar"), coreDir)
         }
+        if (findProject(":lagguard-plugin") != null) {
+            copyNamed(jarOf(":lagguard-plugin", "shadowJar"), coreDir)
+        }
         if (findProject(":map-plugin") != null) {
             copyNamed(jarOf(":map-plugin", "shadowJar"), coreDir)
         }
@@ -300,6 +307,9 @@ tasks.register("assemblePluginDist") {
         copyNamed(jarOf(":yap-npcs-api"), apiDir)
         if (findProject(":yap-guard-api") != null) {
             copyNamed(jarOf(":yap-guard-api"), apiDir)
+        }
+        if (findProject(":yap-lagguard-api") != null) {
+            copyNamed(jarOf(":yap-lagguard-api"), apiDir)
         }
         if (findProject(":yap-tab-api") != null) {
             copyNamed(jarOf(":yap-tab-api"), apiDir)
