@@ -110,6 +110,8 @@ tasks.register("assembleRelease") {
             "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
             "nginx-setup.sh", "heap-dump.sh", "build-default-resourcepack.sh", "fetch-faithful-64x.sh",
             "fetch-folia.sh",
+            "vendor-folia.sh", "folia-patch.sh", "build-yap-folia.sh", "verify-yap-folia.sh",
+            "smoke-folia.sh",
         )
 
         fun copyCommon(dest: File) {

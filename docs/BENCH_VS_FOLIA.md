@@ -78,8 +78,9 @@ python3 scripts/bench/compare-folia.py --rank \
 
 ## If we lose (expected)
 
-Honest chassis overhead vs stock Folia / Canvas → next epic is **fork Folia (or
-adopt Canvas patches)** and ship perf tweaks in-tree — **not** revive Paper
+Honest chassis overhead vs stock Folia / Canvas → **YaP Folia fork bootstrap is in-tree**
+([FOLIA_FORK.md](FOLIA_FORK.md)); Phase 1 is branding-only parity. Citeable beat-Folia
+claims still need fresh bench rows after Agent 2/3 patches land — not a revive of Paper
 spatial tick as the product path.
 
 ## Related

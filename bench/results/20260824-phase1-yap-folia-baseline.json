@@ -1,0 +1,27 @@
+{
+  "schema": "yap-bench-baseline/v1",
+  "stamp": "20260824Tphase1-fork-bootstrap",
+  "phase": "M1.4",
+  "note": "Phase 1 fork bootstrap — branding only. Expect MSPT parity with stock Folia, not faster. Fill real mspt_* after run-vs-folia.sh.",
+  "folia_upstream": {
+    "branch": "ver/26.2.x",
+    "commit": "68b2af18edf378b89dfbef1d86bd21759cb81aad",
+    "mc_version": "26.2"
+  },
+  "competitors": {
+    "stock_folia": {
+      "jar": "lib/folia-26.2.jar",
+      "source": "fetch"
+    },
+    "yap_folia": {
+      "jar": "lib/yap-folia-26.2.jar",
+      "source": "build",
+      "brand": "YaP-Folia",
+      "patches": ["0000-yap-branding.patch"]
+    }
+  },
+  "expectation": "parity",
+  "citeable": false,
+  "mspt_mean": null,
+  "howto": "./scripts/bench/run-vs-folia.sh with YAP_BENCH_COMPETITORS=folia,yapcore after build-yap-folia.sh"
+}

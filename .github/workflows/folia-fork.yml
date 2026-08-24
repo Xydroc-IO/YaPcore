@@ -1,0 +1,46 @@
+# Optional Folia fork checks — runs when vendor/folia or fork scripts change.
+# Full jar build is expensive (JDK 25 + Paperweight); default job only validates patches.
+name: Folia fork
+
+on:
+  pull_request:
+    paths:
+      - "vendor/folia/**"
+      - "scripts/vendor-folia.sh"
+      - "scripts/folia-patch.sh"
+      - "scripts/build-yap-folia.sh"
+      - "scripts/verify-yap-folia.sh"
+      - "src/main/java/com/yapcore/folia/**"
+      - "src/main/java/com/yapcore/config/authority/FoliaAuthorityConfig.java"
+      - "docs/FOLIA_FORK.md"
+  push:
+    branches: [main]
+    paths:
+      - "vendor/folia/**"
+      - "scripts/vendor-folia.sh"
+      - "scripts/folia-patch.sh"
+      - "scripts/build-yap-folia.sh"
+
+jobs:
+  patch-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Vendor Folia pin + check YaP patches
+        run: |
+          ./scripts/vendor-folia.sh
+          ./scripts/folia-patch.sh --check
+      - name: Compile chassis FoliaFiles (no full Folia build)
+        run: gradle compileJava --no-daemon -q
+
+  # Enable manually / on nightly when runners can afford Paperweight:
+  # build-yap-folia:
+  #   needs: patch-check
+  #   if: github.event_name == 'workflow_dispatch'
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 180
+  #   steps: ... ./scripts/build-yap-folia.sh

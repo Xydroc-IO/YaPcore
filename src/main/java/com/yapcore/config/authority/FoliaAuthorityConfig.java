@@ -23,6 +23,8 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-port", "25567");
         props.setProperty("folia-version", "26.2");
         props.setProperty("folia-jar-url", "");
+        props.setProperty("folia-jar-source", "fetch");
+        props.setProperty("folia-jar-path", "");
         props.setProperty("folia-ready-timeout-sec", "180");
     }
 
@@ -56,6 +58,19 @@ public final class FoliaAuthorityConfig {
 
     public String getFoliaJarUrl() {
         return props.getProperty("folia-jar-url", "");
+    }
+
+    /**
+     * Jar resolution mode: {@code build} (prefer {@code lib/yap-folia-*}),
+     * {@code fetch} (Fill / folia-jar-url), {@code path} (folia-jar-path only),
+     * or {@code auto} (yap-folia if present, else cache/Fill).
+     */
+    public String getFoliaJarSource() {
+        return props.getProperty("folia-jar-source", "fetch");
+    }
+
+    public String getFoliaJarPath() {
+        return props.getProperty("folia-jar-path", "");
     }
 
     public int getFoliaReadyTimeoutSec() {

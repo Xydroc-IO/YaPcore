@@ -1,0 +1,8 @@
+# YaP Folia upstream pin — Phase 1 bootstrap
+# Do not edit by hand; refresh with: ./scripts/vendor-folia.sh --update-lock
+REPO=https://github.com/PaperMC/Folia.git
+BRANCH=ver/26.2.x
+COMMIT=68b2af18edf378b89dfbef1d86bd21759cb81aad
+MC_VERSION=26.2
+PINNED_AT=2026-08-24
+NOTE=HEAD of ver/26.2.x at pin time (Update Paper)

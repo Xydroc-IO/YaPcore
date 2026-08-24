@@ -110,6 +110,10 @@ lib/*
 # Vendored Paper checkout (clone via scripts/vendor-paper.sh)
 vendor/paper/
 
+# Folia vendor clone/build (Agent 1); keep lock + patches + README tracked
+vendor/folia/work/
+vendor/folia/*.tmp
+
 # =============================================================================
 # Bench lab (scripts regenerate workdirs + results)
 # =============================================================================
@@ -120,6 +124,7 @@ bench/link-plugins-smoke/
 bench/results/*
 !bench/results/README.md
 !bench/results/.gitkeep
+!bench/results/20260824-phase1-yap-folia-baseline.json
 bench/*.lock
 bench/*.port
 bench/highpop.lock

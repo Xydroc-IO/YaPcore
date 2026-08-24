@@ -14,7 +14,16 @@ yap_require_java
 yap_load_config
 
 VER="${FOLIA_VERSION:-26.2}"
-if [ ! -f "$ROOT/lib/folia-${VER}.jar" ]; then
+FOLIA_SRC="${FOLIA_JAR_SOURCE:-${YAP_FOLIA_JAR_SOURCE:-fetch}}"
+YAP_JAR_CAND="$ROOT/lib/yap-folia-${VER}.jar"
+STOCK_JAR_CAND="$ROOT/lib/folia-${VER}.jar"
+
+if [ "$FOLIA_SRC" = "build" ]; then
+  if [ ! -f "$YAP_JAR_CAND" ]; then
+    echo "folia-jar-source=build requires $YAP_JAR_CAND — run ./scripts/build-yap-folia.sh" >&2
+    exit 1
+  fi
+elif [ ! -f "$STOCK_JAR_CAND" ] && [ ! -f "$YAP_JAR_CAND" ]; then
   echo "Fetching Folia ${VER}…"
   "$ROOT/scripts/fetch-folia.sh" "$VER"
 fi
@@ -31,7 +40,12 @@ fi
 WORK="$ROOT/bench/workdir-folia-smoke"
 rm -rf "$WORK"
 mkdir -p "$WORK/config" "$WORK/lib" "$WORK/plugins" "$WORK/logs"
-/bin/cp -f "$ROOT/lib/folia-${VER}.jar" "$WORK/lib/"
+if [ "$FOLIA_SRC" = "build" ] || { [ "$FOLIA_SRC" = "auto" ] && [ -f "$YAP_JAR_CAND" ]; }; then
+  /bin/cp -f "$YAP_JAR_CAND" "$WORK/lib/yap-folia-${VER}.jar"
+  /bin/cp -f "$YAP_JAR_CAND" "$WORK/lib/folia-${VER}.jar"
+else
+  /bin/cp -f "$STOCK_JAR_CAND" "$WORK/lib/folia-${VER}.jar"
+fi
 PORT=25575
 cat >"$WORK/config/server.properties" <<EOF
 server-name=YaP-Folia-Smoke
@@ -51,6 +65,7 @@ folia-embed=true
 folia-dir=folia-kernel
 folia-port=${PORT}
 folia-version=${VER}
+folia-jar-source=${FOLIA_SRC}
 folia-ready-timeout-sec=180
 velocity-enabled=false
 web-dashboard-enabled=false

@@ -12,6 +12,8 @@ game-authority=folia
 folia-embed=true
 folia-version=26.2
 folia-dir=folia-kernel
+# Prefer built fork after ./scripts/build-yap-folia.sh :
+# folia-jar-source=build
 paper-phase3-tick-bridge=false
 paper-phase3-nms-tick=false
 ```
@@ -19,6 +21,8 @@ paper-phase3-nms-tick=false
 | Value | Meaning |
 |-------|---------|
 | `folia` + `folia-embed=true` | **Default** — Folia owns JE |
+| `folia-jar-source=build` | Use `lib/yap-folia-{ver}.jar` (YaP Folia fork) |
+| `folia-jar-source=fetch` | Stock Fill jar (`lib/folia-{ver}.jar`) |
 | `paper` + `paper-embed=true` | Legacy — Paper owns JE; Phase 3 opt-in for benches |
 | `paper-phase3-nms-tick=true` | Legacy only — interior NMS entity tick on cores 3–6 (**requires** `lib/paper-*-yap.jar`) |
 | `native` | Experimental YapEngine flat world |
@@ -27,10 +31,12 @@ paper-phase3-nms-tick=false
 **Java 25+** for Folia/Paper 26.2. Folia product path:
 
 ```bash
-./scripts/fetch-folia.sh
+./scripts/fetch-folia.sh          # stock Fill → lib/folia-26.2.jar
+# or: ./scripts/build-yap-folia.sh  # fork → lib/yap-folia-26.2.jar (folia-jar-source=build)
 ./scripts/start.sh --fg           # cds into folia-kernel
 ```
 
+See [FOLIA_FORK.md](FOLIA_FORK.md) for vendor/patch/build pipeline.
 Legacy Paperclip (Phase 3 benches only):
 
 ```bash

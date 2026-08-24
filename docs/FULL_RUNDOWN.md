@@ -111,7 +111,8 @@ paper-phase3-nms-tick=false
 | **Phase 3 spatial tick** | **Off** on product path (Folia does not use it) |
 | **Folia / YaP plugins** | `plugins/` (unified) |
 
-Fetch / smoke: `scripts/fetch-folia.sh`, `scripts/smoke-folia.sh`.
+Fetch / smoke: `scripts/fetch-folia.sh`, `scripts/smoke-folia.sh`.  
+Fork build: `scripts/build-yap-folia.sh` → `lib/yap-folia-26.2.jar` (`folia-jar-source=build`). See [FOLIA_FORK.md](FOLIA_FORK.md).
 
 ### Legacy Paper + Phase 3 (opt-in)
 

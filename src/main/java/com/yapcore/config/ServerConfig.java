@@ -266,6 +266,8 @@ public final class ServerConfig {
     public int getFoliaPort() { return folia.getFoliaPort(); }
     public String getFoliaVersion() { return folia.getFoliaVersion(); }
     public String getFoliaJarUrl() { return folia.getFoliaJarUrl(); }
+    public String getFoliaJarSource() { return folia.getFoliaJarSource(); }
+    public String getFoliaJarPath() { return folia.getFoliaJarPath(); }
     public int getFoliaReadyTimeoutSec() { return folia.getFoliaReadyTimeoutSec(); }
     public int foliaListenPort() { return folia.foliaListenPort(); }
 

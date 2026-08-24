@@ -38,6 +38,15 @@ folia-embed=true
 folia-dir=folia-kernel
 folia-port=25567
 folia-version=26.2
+# Legacy BukkitScheduler → Folia region schedulers (yap-sched-agent)
+folia-sched-compat=true
+folia-sched-compat-warn=true
+# Cross-region teleport two-phase commit (requires patched yap-folia)
+folia-teleport-transactions=true
+# folia-jar-source=fetch|build|path|auto  (build → lib/yap-folia-{ver}.jar)
+folia-jar-source=fetch
+# folia-jar-path=
+# folia-jar-url=
 
 # Resource pack (built-in HTTP on :8081)
 resource-pack-enabled=true
