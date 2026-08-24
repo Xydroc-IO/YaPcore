@@ -129,9 +129,11 @@ public final class FoliaKernel {
             cmd.add("-Djava.awt.headless=true");
             cmd.add("--enable-native-access=ALL-UNNAMED");
         }
-        // Forward MSPT bench / home props into the managed Folia JVM (chassis ≠ tick JVM).
+        // Forward MSPT bench / home / YaP Folia knobs into the managed Folia JVM.
         for (String name : System.getProperties().stringPropertyNames()) {
-            if (name.startsWith("yap.bench.") || "yapcore.home".equals(name)) {
+            if (name.startsWith("yap.bench.")
+                    || name.startsWith("yap.folia.")
+                    || "yapcore.home".equals(name)) {
                 String value = System.getProperty(name);
                 if (value != null && !value.isBlank()) {
                     cmd.add("-D" + name + "=" + value);

@@ -21,7 +21,7 @@ import java.util.Locale;
 
 /**
  * MSPT scoreboard harness.
- * Scenarios: idle | entity | farm | heavypop | highpop | fullcite
+ * Scenarios: idle | entity | farm | heavypop | spawncollapse | highpop | fullcite
  */
 public final class BenchMsptPlugin extends JavaPlugin implements Listener {
 

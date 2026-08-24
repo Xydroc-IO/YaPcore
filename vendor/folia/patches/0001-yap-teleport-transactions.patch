@@ -2,17 +2,10 @@ From: YaPcore Agent 2 <agent-2@yapcore>
 Date: Mon, 24 Aug 2026 15:40:00 -0700
 Subject: [PATCH] YaP teleport transactions (cross-region PREPARE/COMMIT/CONFIRM)
 
-Two-phase cross-region teleport integrity for players/portals.
-Gated by -Dyap.folia.teleport-transactions=true.
-See docs/FOLIA_TELEPORT_TRANSACTIONS.md.
-
-Agent 2 ownership — Agent 3 clear for region work after this lands.
+Gated by -Dyap.folia.teleport-transactions=true. Post-applyAllPatches.
 ---
-diff --git a/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportTransaction.java b/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportTransaction.java
-new file mode 100644
-index 0000000000000000000000000000000000000000..1111111111111111111111111111111111111111
---- /dev/null
-+++ b/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportTransaction.java
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportTransaction.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportTransaction.java
 @@ -0,0 +1,163 @@
 +package io.papermc.paper.threadedregions;
 +
@@ -89,7 +82,7 @@ index 0000000000000000000000000000000000000000..11111111111111111111111111111111
 +        OPEN.put(id, tx);
 +        PREPARE.incrementAndGet();
 +        if (tx.player) {
-+            LOG.info("YaP-TP-TX prepare id=" + id + " player=" + entityId
++            LOG.info("YaP-TP-TX prepare id=" + id + " player=" + tx.entityId
 +                    + " " + tx.origin + " -> " + tx.destination
 +                    + " to=" + fmt(to));
 +        }
@@ -177,10 +170,8 @@ index 0000000000000000000000000000000000000000..11111111111111111111111111111111
 +        return String.format("%.1f,%.1f,%.1f", v.x, v.y, v.z);
 +    }
 +}
-
-diff --git a/src/minecraft/java/net/minecraft/world/entity/Entity.java b/src/minecraft/java/net/minecraft/world/entity/Entity.java
---- a/src/minecraft/java/net/minecraft/world/entity/Entity.java
-+++ b/src/minecraft/java/net/minecraft/world/entity/Entity.java
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
 @@ -4316,8 +4316,17 @@
              ca.spottedleaf.moonrise.patches.chunk_system.scheduling.ChunkHolderManager.MAX_TICKET_LEVEL,
              teleportHoldId
@@ -199,3 +190,35 @@ diff --git a/src/minecraft/java/net/minecraft/world/entity/Entity.java b/src/min
  
          Runnable scheduleEntityJoin = () -> {
              io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(
+@@ -4327,8 +4336,18 @@
+                     if (!destination.removePendingTeleport(pendingTeleport)) {
+                         // shutdown logic placed the entity already, and we are shutting down - do nothing to ensure
+                         // we do not produce any errors here
++                        // YaP start - teleport transactions
++                        if (yapTx != null) {
++                            yapTx.rollback("pending-missing");
++                        }
++                        // YaP end - teleport transactions
+                         return;
+                     }
++                    // YaP start - teleport transactions
++                    if (yapTx != null) {
++                        yapTx.commit();
++                    }
++                    // YaP end - teleport transactions
+                     originWorld.moonrise$getChunkTaskScheduler().chunkHolderManager.removeTicketAtLevel(
+                         TicketType.TELEPORT_HOLD_TICKET, posChunk,
+                         ca.spottedleaf.moonrise.patches.chunk_system.scheduling.ChunkHolderManager.MAX_TICKET_LEVEL,
+@@ -4348,6 +4367,12 @@
+                         node.root.postChangeDimension();
+                     }
+ 
++                    // YaP start - teleport transactions
++                    if (yapTx != null) {
++                        yapTx.confirm();
++                    }
++                    // YaP end - teleport transactions
++
+                     if (teleportComplete != null) {
+                         teleportComplete.accept(Entity.this);
+                     }

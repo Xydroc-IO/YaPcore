@@ -11,9 +11,14 @@ VER="${VER:-26.2}"
 
 echo "== patch check =="
 "$ROOT/scripts/vendor-folia.sh"
-git -C "$ROOT/vendor/folia/work" reset --hard "$(grep -E '^COMMIT=' "$ROOT/vendor/folia/UPSTREAM.lock" | cut -d= -f2-)"
-"$ROOT/scripts/folia-patch.sh" --check
-git -C "$ROOT/vendor/folia/work" reset --hard "$(grep -E '^COMMIT=' "$ROOT/vendor/folia/UPSTREAM.lock" | cut -d= -f2-)"
+WANT="$(grep -E '^COMMIT=' "$ROOT/vendor/folia/UPSTREAM.lock" | cut -d= -f2-)"
+git -C "$ROOT/vendor/folia/work" reset --hard "$WANT"
+"$ROOT/scripts/folia-patch.sh" pre --check
+# post patches need generated sources
+./gradlew --no-daemon -p "$ROOT/vendor/folia/work" applyAllPatches -q
+"$ROOT/scripts/folia-patch.sh" post --check
+git -C "$ROOT/vendor/folia/work" reset --hard "$WANT"
+git -C "$ROOT/vendor/folia/work" clean -fd
 
 echo "== build yap-folia =="
 "$ROOT/scripts/build-yap-folia.sh"

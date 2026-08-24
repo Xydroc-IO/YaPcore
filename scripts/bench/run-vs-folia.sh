@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # vs-Folia MSPT scoreboard — stock Folia + Canvas (± forks) vs YaP Folia chassis (M5).
 # Usage: ./scripts/bench/run-vs-folia.sh [scenario] [seconds]
-# Scenarios: heavypop (default, no bots) | highpop | fullcite (bots + fixtures + load)
+# Scenarios: heavypop (default, no bots) | spawncollapse (single-region overload) |
+#            highpop | fullcite (bots + fixtures + load)
 # Env: YAP_BENCH_WARMUP, YAP_BENCH_ENTITIES, YAP_BENCH_HOPPERS, YAP_BENCH_HEAVY_HOPPERS,
+#      YAP_BENCH_MOBS (spawncollapse mob count),
 #      YAP_BENCH_PLAYERS (default 100 for highpop/fullcite),
 #      YAP_BENCH_COMPETITORS=folia,canvas,yapcore (comma list; default all)
 #      YAP_BENCH_GAME_XMS=2G YAP_BENCH_GAME_XMX=4G  (8G/12G default for bot scenarios)
@@ -25,7 +27,8 @@ WARMUP="${YAP_BENCH_WARMUP:-15}"
 ENTITIES="${YAP_BENCH_ENTITIES:-}"
 HOPPERS="${YAP_BENCH_HOPPERS:-}"
 HEAVY_HOPPERS="${YAP_BENCH_HEAVY_HOPPERS:-}"
-COMPETITORS_CSV="${YAP_BENCH_COMPETITORS:-folia,canvas,yapcore}"
+MOBS="${YAP_BENCH_MOBS:-}"
+COMPETITORS_CSV="${YAP_BENCH_COMPETITORS:-folia,canvas,yapfolia,yapcore}"
 SHUFFLE="${YAP_BENCH_SHUFFLE:-1}"
 STAMP="${YAP_BENCH_STAMP:-$(date -u +%Y%m%dT%H%M%SZ)}"
 RESULTS="$ROOT/bench/results"
@@ -55,6 +58,13 @@ fi
 if [ "$SCENARIO" = "fullcite" ]; then
   ENTITIES="${ENTITIES:-600}"
   HEAVY_HOPPERS="${HEAVY_HOPPERS:-128}"
+fi
+
+if [ "$SCENARIO" = "spawncollapse" ]; then
+  # Single-region overload defaults — tune until mspt_mean ≥ ~2 for citeable rows.
+  ENTITIES="${ENTITIES:-800}"
+  HOPPERS="${HOPPERS:-256}"
+  MOBS="${MOBS:-200}"
 fi
 
 if [ "$NEEDS_BOTS" = "1" ]; then
@@ -135,6 +145,16 @@ case "$YAP_JAR" in /*) ;; *) YAP_JAR="$ROOT/$YAP_JAR" ;; esac
 
 STOCK_FOLIA="$ROOT/lib/folia-${VER}.jar"
 STOCK_CANVAS="$ROOT/lib/canvas-${VER}.jar"
+YAP_FOLIA="$ROOT/lib/yap-folia-${VER}.jar"
+# Phase 3 knobs (YaP-Folia only) — stock Folia ignores unknown -D props
+ENTITY_TICK_BUDGET="${YAP_FOLIA_ENTITY_TICK_BUDGET:-}"
+ASYNC_CHUNK_SAVE="${YAP_FOLIA_ASYNC_CHUNK_SAVE:-}"
+if [ "$SCENARIO" = "spawncollapse" ] && [ -z "$ENTITY_TICK_BUDGET" ]; then
+  ENTITY_TICK_BUDGET="${YAP_FOLIA_ENTITY_TICK_BUDGET:-400}"
+fi
+if [ -z "$ASYNC_CHUNK_SAVE" ]; then
+  ASYNC_CHUNK_SAVE="${YAP_FOLIA_ASYNC_CHUNK_SAVE:-true}"
+fi
 
 write_server_props() {
   local dest="$1"
@@ -231,10 +251,12 @@ install_parity_plugins() {
 
 bench_jvm_extra() {
   local port="$1"
+  local yap_knobs="${2:-0}"
   local extra=()
   [[ -n "$ENTITIES" ]] && extra+=(-Dyap.bench.entities="$ENTITIES")
   [[ -n "$HOPPERS" ]] && extra+=(-Dyap.bench.hoppers="$HOPPERS")
     [[ -n "$HEAVY_HOPPERS" ]] && extra+=(-Dyap.bench.heavy_hoppers="$HEAVY_HOPPERS")
+    [[ -n "$MOBS" ]] && extra+=(-Dyap.bench.mobs="$MOBS")
     extra+=(-Dyap.bench.root="$ROOT")
   if [ "$NEEDS_BOTS" = "1" ]; then
     extra+=(
@@ -243,6 +265,10 @@ bench_jvm_extra() {
       -Dyap.bench.join_timeout="$JOIN_TIMEOUT"
       -Dyap.bench.bot_port="$port"
     )
+  fi
+  if [ "$yap_knobs" = "1" ]; then
+    [[ -n "$ENTITY_TICK_BUDGET" ]] && extra+=(-Dyap.folia.entity-tick-budget="$ENTITY_TICK_BUDGET")
+    [[ -n "$ASYNC_CHUNK_SAVE" ]] && extra+=(-Dyap.folia.async-chunk-save="$ASYNC_CHUNK_SAVE")
   fi
   printf '%s\0' "${extra[@]}"
 }
@@ -380,7 +406,7 @@ run_plain() {
     start_bots "$port" "$botlog"
     botpid="$START_BOTS_PID"
   fi
-  mapfile -d '' -t extra < <(bench_jvm_extra "$port")
+  mapfile -d '' -t extra < <(bench_jvm_extra "$port" 0)
   (
     cd "$work"
     "$JAVA_BIN" -Xms"$GAME_XMS" -Xmx"$GAME_XMX" \
@@ -407,9 +433,14 @@ run_yap() {
   local out="$RESULTS/${STAMP}-${SCENARIO}-yapcore.json"
   local work="$ROOT/bench/workdir-yap-folia"
   local botlog="$ROOT/logs/bench/bots-${STAMP}-yapcore.log"
+  if [ ! -f "$YAP_FOLIA" ]; then
+    echo "WARN: missing $YAP_FOLIA — skip yapcore (run ./scripts/build-yap-folia.sh)" >&2
+    return
+  fi
   rm -rf "$work"
   mkdir -p "$work/config" "$work/lib" "$work/plugins" "$work/logs"
-  /bin/cp -f "$STOCK_FOLIA" "$work/lib/folia-${VER}.jar"
+  /bin/cp -f "$YAP_FOLIA" "$work/lib/yap-folia-${VER}.jar"
+  /bin/cp -f "$YAP_FOLIA" "$work/lib/folia-${VER}.jar"
   install_parity_plugins "$work"
   rm -f "$work/plugins/yap-spatial-tick.jar"
 
@@ -437,6 +468,7 @@ folia-embed=true
 folia-dir=folia-kernel
 folia-port=${port}
 folia-version=${VER}
+folia-jar-source=build
 folia-ready-timeout-sec=180
 velocity-enabled=false
 web-dashboard-enabled=false
@@ -451,12 +483,13 @@ EOF
   rm -rf "$work/folia-kernel/world" "$work/folia-kernel/world_nether" "$work/folia-kernel/world_the_end"
 
   echo "=== yapcore (YaP Folia chassis) scenario=$SCENARIO → $out ==="
+  echo "    knobs: entity-tick-budget=${ENTITY_TICK_BUDGET:-off} async-chunk-save=${ASYNC_CHUNK_SAVE:-off}"
   local botpid=""
   if [ "$NEEDS_BOTS" = "1" ]; then
     start_bots "$port" "$botlog"
     botpid="$START_BOTS_PID"
   fi
-  mapfile -d '' -t extra < <(bench_jvm_extra "$port")
+  mapfile -d '' -t extra < <(bench_jvm_extra "$port" 1)
   (
     cd "$work"
     "$JAVA_BIN" -Xms"$CHASSIS_XMS" -Xmx"$CHASSIS_XMX" \
@@ -477,6 +510,40 @@ EOF
   if [ "$NEEDS_BOTS" = "1" ]; then stop_bots "$botpid"; fi
   if [ ! -f "$out" ]; then
     echo "WARN: yap Folia run did not write $out" >&2
+  fi
+}
+
+run_yapfolia_plain() {
+  # YaP-Folia paperclip without chassis — fair game-tick MSPT vs stock Folia.
+  if [ ! -f "$YAP_FOLIA" ]; then
+    echo "WARN: missing $YAP_FOLIA — skip yapfolia" >&2
+    return
+  fi
+  local out="$RESULTS/${STAMP}-${SCENARIO}-yapfolia.json"
+  local work="$ROOT/bench/workdir-folia-yapfolia"
+  local port=25683
+  prepare_plain "$work" "$YAP_FOLIA" "$port" "YaP MSPT bench yap-folia-plain"
+  echo "=== yapfolia (plain) scenario=$SCENARIO → $out ==="
+  echo "    knobs: entity-tick-budget=${ENTITY_TICK_BUDGET:-off} async-chunk-save=${ASYNC_CHUNK_SAVE:-off}"
+  mapfile -d '' -t extra < <(bench_jvm_extra "$port" 1)
+  (
+    cd "$work"
+    "$JAVA_BIN" -Xms"$GAME_XMS" -Xmx"$GAME_XMX" \
+      -Dyap.bench.scenario="$SCENARIO" \
+      -Dyap.bench.seconds="$SECONDS_N" \
+      -Dyap.bench.warmup="$WARMUP" \
+      -Dyap.bench.label=yap-folia-plain \
+      -Dyap.bench.out="$out" \
+      -Dyap.bench.game_xms="$GAME_XMS" \
+      -Dyap.bench.game_xmx="$GAME_XMX" \
+      -Dyap.bench.measurement_scope=game_tick_mspt \
+      -Dyap.bench.root="$ROOT" \
+      -Dyapcore.home="$ROOT" \
+      "${extra[@]}" \
+      -jar server.jar --nogui </dev/null
+  ) || true
+  if [ ! -f "$out" ]; then
+    echo "WARN: yapfolia run did not write $out" >&2
   fi
 }
 
@@ -504,10 +571,11 @@ for id in "${COMPETITORS[@]}"; do
   fi
   id="$(echo "$id" | tr -d '[:space:]')"
   case "$id" in
-    folia)   run_plain folia "$STOCK_FOLIA" 25680 stock-folia ;;
-    canvas)  run_plain canvas "$STOCK_CANVAS" 25682 stock-canvas ;;
-    yapcore) run_yap ;;
-    *) echo "WARN: unknown competitor '$id' (want folia|canvas|yapcore)" >&2 ;;
+    folia)     run_plain folia "$STOCK_FOLIA" 25680 stock-folia ;;
+    canvas)    run_plain canvas "$STOCK_CANVAS" 25682 stock-canvas ;;
+    yapfolia)  run_yapfolia_plain ;;
+    yapcore)   run_yap ;;
+    *) echo "WARN: unknown competitor '$id' (want folia|canvas|yapfolia|yapcore)" >&2 ;;
   esac
 done
 
@@ -515,7 +583,11 @@ echo
 echo "Results under $RESULTS"
 ls -1 "$RESULTS"/${STAMP}-${SCENARIO}-*.json 2>/dev/null || true
 
-if [ -f "$RESULTS/${STAMP}-${SCENARIO}-folia.json" ] && [ -f "$RESULTS/${STAMP}-${SCENARIO}-yapcore.json" ]; then
+if [ -f "$RESULTS/${STAMP}-${SCENARIO}-folia.json" ] && [ -f "$RESULTS/${STAMP}-${SCENARIO}-yapfolia.json" ]; then
+  python3 "$SCRIPT_DIR/compare-folia.py" \
+    "$RESULTS/${STAMP}-${SCENARIO}-folia.json" \
+    "$RESULTS/${STAMP}-${SCENARIO}-yapfolia.json" || true
+elif [ -f "$RESULTS/${STAMP}-${SCENARIO}-folia.json" ] && [ -f "$RESULTS/${STAMP}-${SCENARIO}-yapcore.json" ]; then
   python3 "$SCRIPT_DIR/compare-folia.py" \
     "$RESULTS/${STAMP}-${SCENARIO}-folia.json" \
     "$RESULTS/${STAMP}-${SCENARIO}-yapcore.json" || true

@@ -96,7 +96,6 @@ public final class FoliaAuthorityConfig {
         return Boolean.parseBoolean(props.getProperty("folia-teleport-transactions", "true"));
     }
 
-
     /**
      * Port Folia binds. Via front + Folia authority → loopback {@link #getFoliaPort()};
      * otherwise public {@link ServerConfig#getPort()} when embed.

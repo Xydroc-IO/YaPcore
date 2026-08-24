@@ -1,0 +1,110 @@
+From: YaPcore Agent 3 <agent-3@yapcore>
+Subject: [PATCH] YaP async chunk save (Moonrise flush off region thread)
+
+Gated by -Dyap.folia.async-chunk-save=true. Post-applyAllPatches.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapAsyncChunkSave.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapAsyncChunkSave.java
+@@ -0,0 +1,66 @@
++package io.papermc.paper.threadedregions;
++
++import ca.spottedleaf.moonrise.patches.chunk_system.io.MoonriseRegionFileIO;
++import net.minecraft.server.level.ServerLevel;
++
++import java.io.IOException;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++import java.util.concurrent.ThreadFactory;
++import java.util.concurrent.atomic.AtomicInteger;
++import java.util.logging.Level;
++import java.util.logging.Logger;
++
++/**
++ * YaP Phase 3.3 — offload blocking Moonrise region-file flush from region/tick threads.
++ *
++ * <p>Gated by {@code -Dyap.folia.async-chunk-save=true} (default false).
++ */
++public final class YapAsyncChunkSave {
++
++    private static final Logger LOG = Logger.getLogger("YaP.AsyncChunkSave");
++    private static final AtomicInteger THREAD_SEQ = new AtomicInteger();
++    private static final ExecutorService IO = Executors.newFixedThreadPool(
++            Math.max(1, Integer.getInteger("yap.folia.async-chunk-save.threads", 2)),
++            (ThreadFactory) r -> {
++                Thread t = new Thread(r, "yap-async-chunk-save-" + THREAD_SEQ.incrementAndGet());
++                t.setDaemon(true);
++                return t;
++            });
++
++    private YapAsyncChunkSave() {
++    }
++
++    public static boolean enabled() {
++        return Boolean.parseBoolean(System.getProperty("yap.folia.async-chunk-save", "false"));
++    }
++
++    /**
++     * When enabled, enqueue flush work and return immediately; otherwise run {@code sync} on caller.
++     */
++    public static void flushOrEnqueue(final ServerLevel world, final Runnable sync) {
++        if (!enabled()) {
++            sync.run();
++            return;
++        }
++        IO.execute(() -> {
++            try {
++                sync.run();
++            } catch (final Throwable t) {
++                LOG.log(Level.SEVERE, "Async chunk flush failed for world '"
++                        + world.getWorld().getName() + "'", t);
++            }
++        });
++    }
++
++    public static void flushWorld(final ServerLevel world) {
++        flushOrEnqueue(world, () -> {
++            MoonriseRegionFileIO.flush(world);
++            try {
++                MoonriseRegionFileIO.flushRegionStorages(world);
++            } catch (final IOException ex) {
++                throw new RuntimeException(ex);
++            }
++        });
++    }
++}
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
+@@ -447,12 +447,18 @@
+             }
+         }
+         if (last && flush) { // Folia - region threading
++            // YaP start - async chunk save
++            if (io.papermc.paper.threadedregions.YapAsyncChunkSave.enabled()) {
++                io.papermc.paper.threadedregions.YapAsyncChunkSave.flushWorld(this.world);
++            } else {
++            // YaP end - async chunk save
+             MoonriseRegionFileIO.flush(this.world);
+             try {
+                 MoonriseRegionFileIO.flushRegionStorages(this.world);
+             } catch (final IOException ex) {
+                 LOGGER.error("Exception when flushing regions in world '" + WorldUtil.getWorldName(this.world) + "'", ex);
+             }
++            } // YaP - async chunk save
+         }
+         if (logProgress) {
+             LOGGER.info(
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java
+@@ -598,6 +598,12 @@
+     @Override
+     public CompletableFuture<Void> synchronize(final boolean flush) {
+         try {
++            // YaP start - async chunk save
++            if (io.papermc.paper.threadedregions.YapAsyncChunkSave.enabled() && flush) {
++                io.papermc.paper.threadedregions.YapAsyncChunkSave.flushWorld(this.level);
++                return CompletableFuture.completedFuture(null);
++            }
++            // YaP end - async chunk save
+             ca.spottedleaf.moonrise.patches.chunk_system.io.MoonriseRegionFileIO.flush(this.level);
+             if (flush) {
+                 ca.spottedleaf.moonrise.patches.chunk_system.io.MoonriseRegionFileIO.flushRegionStorages(this.level);

@@ -127,10 +127,37 @@ final class BenchSampler {
         List<Double> tps1m = new ArrayList<>();
         final int[] left = {sampleSec};
         final YapTask[] sampler = new YapTask[1];
-        sampler[0] = YapSched.globalTimer(plugin, () -> {
-            mspt.add(Bukkit.getServer().getAverageTickTime());
-            double[] tps = Bukkit.getServer().getTPS();
-            tps1m.add(tps.length > 0 ? tps[0] : 0);
+        // Folia: sample on the spawn/hot-region thread — getAverageTickTime() is region-local.
+        // spawncollapse / heavypop load lives around chunk (0,0); global-region MSPT is near-empty.
+        final int sampleCx = 0;
+        final int sampleCz = 0;
+        Runnable tick = () -> {
+            try {
+                mspt.add(Bukkit.getServer().getAverageTickTime());
+            } catch (UnsupportedOperationException uoe) {
+                // Not on a region thread somehow — skip sample
+                return;
+            }
+            double regionTps = Double.NaN;
+            try {
+                double[] rt = Bukkit.getServer().getTPS();
+                if (YapSched.isRegionized()) {
+                    try {
+                        java.lang.reflect.Method m = Bukkit.getServer().getClass()
+                                .getMethod("getRegionTPS", org.bukkit.World.class, int.class, int.class);
+                        Object regObj = m.invoke(Bukkit.getServer(), world, sampleCx, sampleCz);
+                        if (regObj instanceof double[] reg && reg.length > 0) {
+                            regionTps = reg[0];
+                        }
+                    } catch (ReflectiveOperationException ignored) {
+                        // Paper API without Folia region TPS
+                    }
+                }
+                tps1m.add(!Double.isNaN(regionTps) ? regionTps : (rt.length > 0 ? rt[0] : 0));
+            } catch (Throwable t) {
+                double[] tps = Bukkit.getServer().getTPS();
+                tps1m.add(tps.length > 0 ? tps[0] : 0);
+            }
             left[0]--;
             if (left[0] <= 0) {
                 sampler[0].cancel();
@@ -156,7 +183,14 @@ final class BenchSampler {
                     YapSched.globalLater(plugin, Bukkit::shutdown, 20L);
                 }
             }
-        }, 20L, 20L);
+        };
+        if (YapSched.isRegionized()) {
+            plugin.getLogger().info("MSPT sampler on region chunk (" + sampleCx + "," + sampleCz
+                    + ") — Folia region-local getAverageTickTime()");
+            sampler[0] = YapSched.regionChunkTimer(plugin, world, sampleCx, sampleCz, tick, 20L, 20L);
+        } else {
+            sampler[0] = YapSched.globalTimer(plugin, tick, 20L, 20L);
+        }
     }
 
     void writeJson(String scenario, String label, String outPath,

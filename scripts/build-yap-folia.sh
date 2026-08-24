@@ -36,10 +36,10 @@ git -C "$WORK" clean -fd
 
 cd "$WORK"
 
-# YaP patches modify Folia's tracked patch files BEFORE paperweight runs.
+# YaP branding modifies Folia's tracked patch files BEFORE paperweight runs.
 if [ "${YAP_FOLIA_SKIP_PATCH:-0}" != "1" ]; then
   echo "== YaP patches (pre-applyAllPatches) =="
-  "$ROOT/scripts/folia-patch.sh"
+  "$ROOT/scripts/folia-patch.sh" pre
 fi
 
 echo "== Folia applyAllPatches =="
@@ -47,6 +47,12 @@ if [ "${YAP_FOLIA_CLEAN:-0}" = "1" ]; then
   ./gradlew --no-daemon clean
 fi
 ./gradlew --no-daemon applyAllPatches
+
+# Teleport / async-save / scoreboard / entity-budget target generated sources.
+if [ "${YAP_FOLIA_SKIP_PATCH:-0}" != "1" ]; then
+  echo "== YaP patches (post-applyAllPatches) =="
+  "$ROOT/scripts/folia-patch.sh" post
+fi
 
 echo "== Folia createPaperclipJar / createBundlerJar =="
 ./gradlew --no-daemon :folia-server:createPaperclipJar :folia-server:createBundlerJar || \
