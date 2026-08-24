@@ -109,6 +109,12 @@ project(":discord-plugin").projectDir = file("yap-first-party/core-network/disco
 include("yap-sched")
 project(":yap-sched").projectDir = file("yap-first-party/engine/yap-sched")
 
+include("yap-sched-agent")
+project(":yap-sched-agent").projectDir = file("yap-first-party/engine/yap-sched-agent")
+
+include("legacy-sched-smoke-plugin")
+project(":legacy-sched-smoke-plugin").projectDir = file("yap-first-party/dev/legacy-sched-smoke-plugin")
+
 include("yap-guard-api")
 project(":yap-guard-api").projectDir = file("yap-first-party/api/yap-guard-api")
 

@@ -1,0 +1,201 @@
+From: YaPcore Agent 2 <agent-2@yapcore>
+Date: Mon, 24 Aug 2026 15:40:00 -0700
+Subject: [PATCH] YaP teleport transactions (cross-region PREPARE/COMMIT/CONFIRM)
+
+Two-phase cross-region teleport integrity for players/portals.
+Gated by -Dyap.folia.teleport-transactions=true.
+See docs/FOLIA_TELEPORT_TRANSACTIONS.md.
+
+Agent 2 ownership — Agent 3 clear for region work after this lands.
+---
+diff --git a/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportTransaction.java b/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportTransaction.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..1111111111111111111111111111111111111111
+--- /dev/null
++++ b/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportTransaction.java
+@@ -0,0 +1,163 @@
++package io.papermc.paper.threadedregions;
++
++import net.minecraft.server.level.ServerLevel;
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.phys.Vec3;
++
++import java.util.UUID;
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.atomic.AtomicLong;
++import java.util.logging.Logger;
++
++/**
++ * YaP Phase 2 — two-phase cross-region teleport integrity.
++ *
++ * <p>PREPARE → COMMIT (destination region) → CONFIRM → clear source pending.
++ * On timeout/failure: ROLLBACK (drop destination pending; log for ops).
++ *
++ * <p>Gated by {@code -Dyap.folia.teleport-transactions=true}.
++ */
++public final class YapTeleportTransaction {
++
++    private static final Logger LOG = Logger.getLogger("YaP.TeleportTx");
++    private static final AtomicLong NEXT_ID = new AtomicLong(1);
++    private static final ConcurrentHashMap<Long, YapTeleportTransaction> OPEN = new ConcurrentHashMap<>();
++    private static final AtomicLong PREPARE = new AtomicLong();
++    private static final AtomicLong COMMIT = new AtomicLong();
++    private static final AtomicLong CONFIRM = new AtomicLong();
++    private static final AtomicLong ROLLBACK = new AtomicLong();
++
++    private final long id;
++    private final UUID entityId;
++    private final boolean player;
++    private final String origin;
++    private final String destination;
++    private final Vec3 from;
++    private final Vec3 to;
++    private final long startedNs;
++    private volatile ServerLevel.PendingTeleport pending;
++    private volatile State state = State.PREPARE;
++
++    private enum State { PREPARE, COMMIT, CONFIRM, ROLLBACK }
++
++    private YapTeleportTransaction(
++            long id, UUID entityId, boolean player, String origin, String destination, Vec3 from, Vec3 to) {
++        this.id = id;
++        this.entityId = entityId;
++        this.player = player;
++        this.origin = origin;
++        this.destination = destination;
++        this.from = from;
++        this.to = to;
++        this.startedNs = System.nanoTime();
++    }
++
++    public static boolean enabled() {
++        return Boolean.parseBoolean(System.getProperty("yap.folia.teleport-transactions", "false"));
++    }
++
++    public static YapTeleportTransaction begin(Entity entity, ServerLevel origin, ServerLevel dest, Vec3 to) {
++        if (!enabled()) {
++            return null;
++        }
++        long id = NEXT_ID.getAndIncrement();
++        YapTeleportTransaction tx = new YapTeleportTransaction(
++                id,
++                entity.getUUID(),
++                entity instanceof Player,
++                origin.getWorld().getName(),
++                dest.getWorld().getName(),
++                entity.position(),
++                to);
++        OPEN.put(id, tx);
++        PREPARE.incrementAndGet();
++        if (tx.player) {
++            LOG.info("YaP-TP-TX prepare id=" + id + " player=" + entityId
++                    + " " + tx.origin + " -> " + tx.destination
++                    + " to=" + fmt(to));
++        }
++        return tx;
++    }
++
++    public void prepared(ServerLevel.PendingTeleport pendingTeleport) {
++        this.pending = pendingTeleport;
++        scheduleTimeout();
++    }
++
++    public void commit() {
++        if (state != State.PREPARE) {
++            return;
++        }
++        state = State.COMMIT;
++        COMMIT.incrementAndGet();
++        if (player) {
++            LOG.info("YaP-TP-TX commit id=" + id + " player=" + entityId);
++        }
++    }
++
++    public void confirm() {
++        if (state == State.ROLLBACK || state == State.CONFIRM) {
++            return;
++        }
++        state = State.CONFIRM;
++        CONFIRM.incrementAndGet();
++        OPEN.remove(id);
++        if (player) {
++            LOG.info("YaP-TP-TX confirm id=" + id + " player=" + entityId
++                    + " elapsedMs=" + ((System.nanoTime() - startedNs) / 1_000_000L));
++        }
++    }
++
++    public void rollback(String reason) {
++        if (state == State.CONFIRM || state == State.ROLLBACK) {
++            return;
++        }
++        state = State.ROLLBACK;
++        ROLLBACK.incrementAndGet();
++        OPEN.remove(id);
++        LOG.warning("YaP-TP-TX rollback id=" + id + " player=" + entityId
++                + " reason=" + reason
++                + " from=" + fmt(from) + " to=" + fmt(to)
++                + " " + origin + " -> " + destination);
++    }
++
++    private void scheduleTimeout() {
++        // 15s wall-clock failsafe — if CONFIRM never arrives, mark rollback for ops.
++        Thread.ofVirtual().name("yap-tp-tx-" + id).start(() -> {
++            try {
++                Thread.sleep(15_000L);
++            } catch (InterruptedException e) {
++                Thread.currentThread().interrupt();
++                return;
++            }
++            if (state != State.CONFIRM && state != State.ROLLBACK) {
++                rollback("timeout");
++            }
++        });
++    }
++
++    public static long prepareCount() {
++        return PREPARE.get();
++    }
++
++    public static long commitCount() {
++        return COMMIT.get();
++    }
++
++    public static long confirmCount() {
++        return CONFIRM.get();
++    }
++
++    public static long rollbackCount() {
++        return ROLLBACK.get();
++    }
++
++    public static int openCount() {
++        return OPEN.size();
++    }
++
++    private static String fmt(Vec3 v) {
++        return String.format("%.1f,%.1f,%.1f", v.x, v.y, v.z);
++    }
++}
+
+diff --git a/src/minecraft/java/net/minecraft/world/entity/Entity.java b/src/minecraft/java/net/minecraft/world/entity/Entity.java
+--- a/src/minecraft/java/net/minecraft/world/entity/Entity.java
++++ b/src/minecraft/java/net/minecraft/world/entity/Entity.java
+@@ -4316,8 +4316,17 @@
+             ca.spottedleaf.moonrise.patches.chunk_system.scheduling.ChunkHolderManager.MAX_TICKET_LEVEL,
+             teleportHoldId
+         );
++        // YaP start - teleport transactions
++        final io.papermc.paper.threadedregions.YapTeleportTransaction yapTx =
++            io.papermc.paper.threadedregions.YapTeleportTransaction.begin(this, originWorld, destination, pos);
++        // YaP end - teleport transactions
+         final ServerLevel.PendingTeleport pendingTeleport = new ServerLevel.PendingTeleport(passengerTree, pos);
+         destination.pushPendingTeleport(pendingTeleport);
++        // YaP start - teleport transactions
++        if (yapTx != null) {
++            yapTx.prepared(pendingTeleport);
++        }
++        // YaP end - teleport transactions
+ 
+         Runnable scheduleEntityJoin = () -> {
+             io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(

@@ -138,9 +138,46 @@ public final class FoliaKernel {
                 }
             }
         }
+        appendSchedCompatAgent(cmd);
+        if (config.isFoliaTeleportTransactions()) {
+            cmd.add("-Dyap.folia.teleport-transactions=true");
+        }
         cmd.add("-jar");
         cmd.add(jar.toAbsolutePath().toString());
         cmd.add("--nogui");
         return cmd;
+    }
+
+    private void appendSchedCompatAgent(List<String> cmd) {
+        if (!config.isFoliaSchedCompat()) {
+            return;
+        }
+        Path agent = resolveSchedAgentJar();
+        if (agent == null || !Files.isRegularFile(agent)) {
+            LOG.warning("folia-sched-compat=true but yap-sched-agent.jar not found under server/lib or lib/");
+            return;
+        }
+        cmd.add("--add-opens=java.base/java.lang=ALL-UNNAMED");
+        StringBuilder arg = new StringBuilder("-javaagent:");
+        arg.append(agent.toAbsolutePath());
+        arg.append('=');
+        arg.append("warn=").append(config.isFoliaSchedCompatWarn());
+        arg.append(",metrics=true");
+        cmd.add(arg.toString());
+        LOG.info("Folia sched-compat agent: " + agent.getFileName());
+    }
+
+    private Path resolveSchedAgentJar() {
+        Path[] candidates = {
+                rootDir.resolve("server/lib/yap-sched-agent.jar"),
+                rootDir.resolve("lib/yap-sched-agent.jar"),
+                rootDir.resolve("yap-first-party/engine/yap-sched-agent/build/libs/yap-sched-agent.jar")
+        };
+        for (Path pth : candidates) {
+            if (Files.isRegularFile(pth)) {
+                return pth.toAbsolutePath().normalize();
+            }
+        }
+        return null;
     }
 }

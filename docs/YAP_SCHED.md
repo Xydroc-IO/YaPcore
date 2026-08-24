@@ -21,3 +21,6 @@ YapSched.entity(this, player, () -> player.sendMessage("hi"));
 ```
 
 Smoke: `./scripts/smoke-folia-plugins.sh`
+
+Legacy third-party plugins that still call `Bukkit.getScheduler()` sync APIs:
+see [FOLIA_SCHED_COMPAT.md](FOLIA_SCHED_COMPAT.md) (`yap-sched-agent` javaagent).

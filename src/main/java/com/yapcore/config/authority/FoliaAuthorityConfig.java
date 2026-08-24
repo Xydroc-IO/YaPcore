@@ -26,6 +26,9 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-jar-source", "fetch");
         props.setProperty("folia-jar-path", "");
         props.setProperty("folia-ready-timeout-sec", "180");
+        props.setProperty("folia-sched-compat", "true");
+        props.setProperty("folia-sched-compat-warn", "true");
+        props.setProperty("folia-teleport-transactions", "true");
     }
 
     public boolean isFoliaAuthority() {
@@ -76,6 +79,23 @@ public final class FoliaAuthorityConfig {
     public int getFoliaReadyTimeoutSec() {
         return ConfigSupport.parseInt(props, "folia-ready-timeout-sec", 180);
     }
+
+    public boolean isFoliaSchedCompat() {
+        return Boolean.parseBoolean(props.getProperty("folia-sched-compat", "true"));
+    }
+
+    public void setFoliaSchedCompat(boolean enabled) {
+        props.setProperty("folia-sched-compat", Boolean.toString(enabled));
+    }
+
+    public boolean isFoliaSchedCompatWarn() {
+        return Boolean.parseBoolean(props.getProperty("folia-sched-compat-warn", "true"));
+    }
+
+    public boolean isFoliaTeleportTransactions() {
+        return Boolean.parseBoolean(props.getProperty("folia-teleport-transactions", "true"));
+    }
+
 
     /**
      * Port Folia binds. Via front + Folia authority → loopback {@link #getFoliaPort()};

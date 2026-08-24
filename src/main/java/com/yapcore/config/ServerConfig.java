@@ -269,6 +269,10 @@ public final class ServerConfig {
     public String getFoliaJarSource() { return folia.getFoliaJarSource(); }
     public String getFoliaJarPath() { return folia.getFoliaJarPath(); }
     public int getFoliaReadyTimeoutSec() { return folia.getFoliaReadyTimeoutSec(); }
+    public boolean isFoliaSchedCompat() { return folia.isFoliaSchedCompat(); }
+    public void setFoliaSchedCompat(boolean enabled) { folia.setFoliaSchedCompat(enabled); }
+    public boolean isFoliaSchedCompatWarn() { return folia.isFoliaSchedCompatWarn(); }
+    public boolean isFoliaTeleportTransactions() { return folia.isFoliaTeleportTransactions(); }
     public int foliaListenPort() { return folia.foliaListenPort(); }
 
     public boolean isPaperEmbed() { return paper.isPaperEmbed(); }
