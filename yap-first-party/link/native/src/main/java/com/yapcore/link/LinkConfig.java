@@ -82,6 +82,19 @@ public final class LinkConfig {
         // Phase 3+ — default OFF in code; first run / release seed sets plugins-enabled=true
         props.setProperty("plugins-enabled", "false");
         props.setProperty("floodgate-key-file", "floodgate-key.pem");
+        // Phase 0 — edge rate limits (defaults ON; loopback exempt)
+        props.setProperty("connect-rate-limit-enabled", "true");
+        props.setProperty("connect-rate-per-ip", "20");
+        props.setProperty("connect-rate-window-ms", "10000");
+        props.setProperty("handshake-rate-limit-enabled", "true");
+        props.setProperty("handshake-rate-per-ip", "40");
+        props.setProperty("handshake-rate-window-ms", "10000");
+        props.setProperty("login-rate-limit-enabled", "true");
+        props.setProperty("login-rate-per-ip", "10");
+        props.setProperty("login-rate-window-ms", "10000");
+        props.setProperty("metrics-http-enabled", "true");
+        props.setProperty("metrics-http-bind", "127.0.0.1");
+        props.setProperty("metrics-http-port", "9091");
     }
 
     private void applyMissingDefaults() {
@@ -346,6 +359,55 @@ public final class LinkConfig {
 
     public Path floodgateKeyFile() {
         return home.resolve(props.getProperty("floodgate-key-file", "floodgate-key.pem").trim());
+    }
+
+    public boolean connectRateLimitEnabled() {
+        return bool("connect-rate-limit-enabled", true);
+    }
+
+    public int connectRatePerIp() {
+        return Math.max(1, intProp("connect-rate-per-ip", 20));
+    }
+
+    public long connectRateWindowMs() {
+        return Math.max(100L, intProp("connect-rate-window-ms", 10_000));
+    }
+
+    public boolean handshakeRateLimitEnabled() {
+        return bool("handshake-rate-limit-enabled", true);
+    }
+
+    public int handshakeRatePerIp() {
+        return Math.max(1, intProp("handshake-rate-per-ip", 40));
+    }
+
+    public long handshakeRateWindowMs() {
+        return Math.max(100L, intProp("handshake-rate-window-ms", 10_000));
+    }
+
+    public boolean loginRateLimitEnabled() {
+        return bool("login-rate-limit-enabled", true);
+    }
+
+    public int loginRatePerIp() {
+        return Math.max(1, intProp("login-rate-per-ip", 10));
+    }
+
+    public long loginRateWindowMs() {
+        return Math.max(100L, intProp("login-rate-window-ms", 10_000));
+    }
+
+    public boolean metricsHttpEnabled() {
+        return bool("metrics-http-enabled", true);
+    }
+
+    public String metricsHttpBind() {
+        String h = props.getProperty("metrics-http-bind", "127.0.0.1").trim();
+        return h.isEmpty() ? "127.0.0.1" : h;
+    }
+
+    public int metricsHttpPort() {
+        return intProp("metrics-http-port", 9091);
     }
 
     /** Per-backend Bedrock Geyser target; falls back to global {@code bedrock-backend}. */

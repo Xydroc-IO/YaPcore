@@ -59,6 +59,7 @@ tasks.register("assembleRelease") {
             "yap-regions.jar",
             "yap-npcs.jar",
             "yap-guard.jar",
+            "yap-lagguard.jar",
             "yap-map.jar",
             "yap-factions.jar",
             "yap-packs.jar",

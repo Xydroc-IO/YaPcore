@@ -32,7 +32,8 @@ See also: [`yap-first-party/link/api/`](../../yap-first-party/link/api/) · [`ya
 | chat-bridge / mod-sync / server-selector | Velocity plugins | ✓ `yap-first-party/link/plugins/` | **3** ✓ |
 | Bedrock UDP edge + per-backend routing | Geyser on proxy | ✓ `BedrockUdpForwarder` | **4** ✓ |
 | Floodgate key forwarding | Floodgate on proxy | ✓ `floodgate-key.pem` | **4** ✓ |
-| Metrics hooks | partial | ✓ `LinkMetrics` | **5** ✓ |
+| Metrics hooks | partial | ✓ `LinkMetrics` + `/metrics` | **5** ✓ / **Edge** ✓ |
+| Connect / handshake rate limit | plugins | ✓ per-IP (default ON) | **Edge** ✓ |
 | `link-embed` in YaPcore | — | ✓ `link-embed=true` | **5** ✓ |
 | Release bundle | — | ✓ `yap-link.jar` in `assembleRelease` | **5** ✓ |
 | Velocity fork retired | — | ✓ archived | **5** ✓ |
@@ -155,6 +156,7 @@ Full play-phase plugin-message wire sniffing (all channels) is **optional future
 
 ## Related
 
+- [EDGE_RATE_LIMIT.md](EDGE_RATE_LIMIT.md) — Link connect/handshake rate limits + Prometheus `/metrics`
 - [YAP_LINK.md](YAP_LINK.md) — operator entry
 - [VELOCITY.md](VELOCITY.md) — Folia backend forwarding
 - [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) — chassis vs Link process boundaries

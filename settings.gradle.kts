@@ -115,6 +115,12 @@ project(":yap-guard-api").projectDir = file("yap-first-party/api/yap-guard-api")
 include("guard-plugin")
 project(":guard-plugin").projectDir = file("yap-first-party/core-network/guard-plugin")
 
+include("yap-lagguard-api")
+project(":yap-lagguard-api").projectDir = file("yap-first-party/api/yap-lagguard-api")
+
+include("lagguard-plugin")
+project(":lagguard-plugin").projectDir = file("yap-first-party/core-network/lagguard-plugin")
+
 include("map-plugin")
 project(":map-plugin").projectDir = file("yap-first-party/core-network/map-plugin")
 

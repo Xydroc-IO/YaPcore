@@ -16,6 +16,7 @@ import com.yapcore.web.api.DashboardPluginsApi;
 import com.yapcore.web.api.DashboardStatusApi;
 import com.yapcore.web.auth.DashboardAuth;
 import com.yapcore.web.http.DashboardHttp;
+import com.yapcore.web.metrics.ChassisMetricsHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,6 +45,7 @@ public final class WebDashboard {
     private final DashboardConsoleApi consoleApi;
     private final DashboardLinkConsoleApi linkConsoleApi;
     private final DashboardGameplayApi gameplayApi;
+    private final ChassisMetricsHandler metricsHandler;
     private final Consumer<String> consoleListener;
     private final Consumer<String> linkConsoleListener;
     private HttpServer http;
@@ -58,6 +60,7 @@ public final class WebDashboard {
         this.consoleApi = new DashboardConsoleApi(auth);
         this.linkConsoleApi = new DashboardLinkConsoleApi(auth, server.getLinkProcess());
         this.gameplayApi = new DashboardGameplayApi(server, auth);
+        this.metricsHandler = new ChassisMetricsHandler(server);
         this.consoleListener = line -> consoleApi.broadcastSse(line);
         this.linkConsoleListener = line -> linkConsoleApi.broadcastSse(line.trim());
     }
@@ -134,6 +137,7 @@ public final class WebDashboard {
         http.createContext("/api/games", gameplayApi::apiGames);
         http.createContext("/api/factions", gameplayApi::apiFactions);
         http.createContext("/api/guilds", gameplayApi::apiGuilds);
+        http.createContext("/metrics", metricsHandler::handle);
         http.createContext("/health", ex -> DashboardHttp.text(ex, 200, "ok"));
 
         http.setExecutor(Executors.newCachedThreadPool(r -> {

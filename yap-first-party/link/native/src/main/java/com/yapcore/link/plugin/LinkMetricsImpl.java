@@ -31,4 +31,16 @@ public final class LinkMetricsImpl implements LinkMetrics {
         AtomicLong v = gauges.get(name);
         return v == null ? 0L : v.get();
     }
+
+    public java.util.Map<String, Long> counterSnapshot() {
+        java.util.LinkedHashMap<String, Long> map = new java.util.LinkedHashMap<>();
+        counters.forEach((k, v) -> map.put(k, v.get()));
+        return java.util.Collections.unmodifiableMap(map);
+    }
+
+    public java.util.Map<String, Long> gaugeSnapshot() {
+        java.util.LinkedHashMap<String, Long> map = new java.util.LinkedHashMap<>();
+        gauges.forEach((k, v) -> map.put(k, v.get()));
+        return java.util.Collections.unmodifiableMap(map);
+    }
 }

@@ -9,6 +9,7 @@ import com.yapcore.web.PluginCompatMatrix;
 import com.yapcore.web.TinyJson;
 import com.yapcore.web.auth.DashboardAuth;
 import com.yapcore.web.http.DashboardHttp;
+import com.yapcore.web.metrics.ChassisMetricsHandler;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -22,10 +23,12 @@ public final class DashboardStatusApi {
 
     private final YaPcoreServer server;
     private final DashboardAuth auth;
+    private final ChassisMetricsHandler metricsHandler;
 
     public DashboardStatusApi(YaPcoreServer server, DashboardAuth auth) {
         this.server = server;
         this.auth = auth;
+        this.metricsHandler = new ChassisMetricsHandler(server);
     }
 
     public void apiStatus(HttpExchange ex) throws IOException {
@@ -58,6 +61,7 @@ public final class DashboardStatusApi {
         m.put("pid", ProcessHandle.current().pid());
         m.put("statusText", server.statusReport());
         m.put("networkHealth", buildNetworkHealth(cfg));
+        m.put("observability", metricsHandler.statusSnippet());
         DashboardHttp.json(ex, 200, m);
     }
 
