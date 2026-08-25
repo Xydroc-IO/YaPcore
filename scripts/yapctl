@@ -39,8 +39,8 @@ yapctl — thin wrapper over YaPcore scripts
   yapctl soak-compat      → scripts/soak-yap-folia.sh compat
   yapctl soak-perf        → scripts/soak-yap-folia.sh perf
 
-Recommended product jar: ./scripts/build-yap-folia.sh then folia-jar-source=build
-(see docs/YAP_FOLIA_SOAK.md — default stays fetch until soak-compat green).
+Recommended product jar: ./scripts/build-yap-folia.sh (default folia-jar-source=build).
+Stock Fill: folia-jar-source=fetch — see docs/YAP_FOLIA_SOAK.md.
 EOF
     ;;
   *)

@@ -77,9 +77,11 @@ hook scripts rather than forking a second Folia life-cycle.
 | State | Default in example / `FoliaAuthorityConfig` |
 |-------|-----------------------------------------------|
 | Until A2 reports **soak-compat green** | `fetch` (stock Fill) — **recommended: build** |
-| After A2 soak-compat green | Agent 1 flips example + defaults to `build` |
+| After A2 soak-compat green | **`build`** (YaP-Folia) — Agent 1 flipped |
 
-Do **not** flip product default to `build` from A2/A3 branches — Agent 1 owns that change.
+Shipped default is **`build`**. Stock Fill: set `folia-jar-source=fetch`.
+
+Do **not** change this default from A2/A3 branches — Agent 1 owns it.
 
 ## Operator path
 
@@ -105,5 +107,4 @@ Agent 2 verified on `FOLIA_JAR_SOURCE=build` with `folia-sched-compat=true`,
 - `./scripts/smoke-folia-cross-region-tp.sh` live PASS (`fetch` hard-FAIL)
 - `./scripts/smoke-folia.sh` / soak-compat hold PASS
 
-Agent 1 may flip `folia-jar-source` example + `FoliaAuthorityConfig` default to
-`build`. Do **not** flip from A2/A3 branches.
+**Done (Agent 1):** `folia-jar-source` example + `FoliaAuthorityConfig` default → `build`.

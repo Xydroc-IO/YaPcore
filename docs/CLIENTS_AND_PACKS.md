@@ -12,11 +12,9 @@ game-authority=folia
 folia-embed=true
 folia-version=26.2
 folia-dir=folia-kernel
-# RECOMMENDED product jar: YaP-Folia
-#   ./scripts/build-yap-folia.sh
-#   folia-jar-source=build
-# Default remains fetch until soak-compat green (docs/YAP_FOLIA_SOAK.md).
-folia-jar-source=fetch
+# Default product jar: YaP-Folia (./scripts/build-yap-folia.sh)
+folia-jar-source=build
+# Stock Fill: folia-jar-source=fetch + ./scripts/fetch-folia.sh
 paper-phase3-tick-bridge=false
 paper-phase3-nms-tick=false
 ```
@@ -24,8 +22,8 @@ paper-phase3-nms-tick=false
 | Value | Meaning |
 |-------|---------|
 | `folia` + `folia-embed=true` | **Default** — Folia owns JE |
-| `folia-jar-source=build` | **Recommended** — `lib/yap-folia-{ver}.jar` (YaP Folia fork) |
-| `folia-jar-source=fetch` | Stock Fill jar (`lib/folia-{ver}.jar`) — current shipped default |
+| `folia-jar-source=build` | **Default** — `lib/yap-folia-{ver}.jar` (YaP Folia fork) |
+| `folia-jar-source=fetch` | Stock Fill jar (`lib/folia-{ver}.jar`) — opt-in fallback |
 | `paper` + `paper-embed=true` | Legacy — Paper owns JE; Phase 3 opt-in for benches |
 | `paper-phase3-nms-tick=true` | Legacy only — interior NMS entity tick on cores 3–6 (**requires** `lib/paper-*-yap.jar`) |
 | `native` | Experimental YapEngine flat world |
@@ -35,7 +33,6 @@ paper-phase3-nms-tick=false
 
 ```bash
 ./scripts/build-yap-folia.sh          # → lib/yap-folia-26.2.jar
-# set folia-jar-source=build
 ./scripts/soak-yap-folia.sh compat    # shared soak (Agents 2/3 plug in)
 ./scripts/start.sh --fg
 ```

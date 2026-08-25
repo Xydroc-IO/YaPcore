@@ -119,7 +119,7 @@ public final class FoliaFiles {
 
     private static String normalizeSource(String raw) {
         if (raw == null || raw.isBlank()) {
-            return "fetch";
+            return "build";
         }
         return raw.trim().toLowerCase(Locale.ROOT);
     }

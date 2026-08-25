@@ -29,9 +29,8 @@ folia-jar-source=build
 
 or keep the stock path (`folia-jar-source=fetch` + `./scripts/fetch-folia.sh`).
 
-**Recommended product path = YaP-Folia (`build`)** after soak-compat is green —
-today the shipped default is still `fetch` until that gate; see
-[YAP_FOLIA_SOAK.md](YAP_FOLIA_SOAK.md) · [FOLIA_FORK.md](FOLIA_FORK.md).
+**Default product path = YaP-Folia (`folia-jar-source=build`)** after soak-compat
+green — see [YAP_FOLIA_SOAK.md](YAP_FOLIA_SOAK.md) · [FOLIA_FORK.md](FOLIA_FORK.md).
 
 1. Download **`yapcore-release-linux.zip`** or **`yapcore-release-windows.zip`**
    from [GitHub Releases](https://github.com/yaplabs/YaPcore/releases) (or run

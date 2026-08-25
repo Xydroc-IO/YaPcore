@@ -23,7 +23,7 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-port", "25567");
         props.setProperty("folia-version", "26.2");
         props.setProperty("folia-jar-url", "");
-        props.setProperty("folia-jar-source", "fetch");
+        props.setProperty("folia-jar-source", "build");
         props.setProperty("folia-jar-path", "");
         props.setProperty("folia-ready-timeout-sec", "180");
         props.setProperty("folia-sched-compat", "true");
@@ -69,7 +69,7 @@ public final class FoliaAuthorityConfig {
      * or {@code auto} (yap-folia if present, else cache/Fill).
      */
     public String getFoliaJarSource() {
-        return props.getProperty("folia-jar-source", "fetch");
+        return props.getProperty("folia-jar-source", "build");
     }
 
     public String getFoliaJarPath() {
