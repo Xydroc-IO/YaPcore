@@ -75,6 +75,7 @@ public final class LinkMetricsHttp {
         counters.put("yap_link_players_left", m.counter("players.left"));
         counters.put("yap_link_connect_throttled", m.counter("connect.throttled"));
         counters.put("yap_link_connect_accepted", m.counter("connect.accepted"));
+        counters.put("yap_link_connect_concurrent_dropped", m.counter("connect.concurrent_dropped"));
         counters.put("yap_link_handshake_dropped", m.counter("handshake.dropped"));
         counters.put("yap_link_login_dropped", m.counter("login.dropped"));
         counters.put("yap_link_login_attempts", m.counter("login.attempts"));
@@ -83,6 +84,11 @@ public final class LinkMetricsHttp {
         Map<String, Long> gauges = new LinkedHashMap<>();
         gauges.put("yap_link_players_online", m.gauge("players.online"));
         gauges.put("yap_link_sessions", (long) server.sessions().size());
+        // Explicit throttle gauges (same values as counters) for dashboards that prefer gauges
+        gauges.put("yap_link_throttle_connect_drops", m.counter("connect.throttled"));
+        gauges.put("yap_link_throttle_handshake_drops", m.counter("handshake.dropped"));
+        gauges.put("yap_link_throttle_login_drops", m.counter("login.dropped"));
+        gauges.put("yap_link_throttle_concurrent_drops", m.counter("connect.concurrent_dropped"));
         if (server.rateGuard() != null) {
             server.rateGuard().snapshot().forEach((k, v) -> gauges.put("yap_link_rate_" + k, v));
         }

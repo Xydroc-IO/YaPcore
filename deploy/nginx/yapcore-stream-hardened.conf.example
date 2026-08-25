@@ -1,0 +1,34 @@
+# YaPcore nginx stream — hardened example (conn limits)
+#
+# Copy ideas into your generated stream conf or merge with
+# yapcore-stream.conf.template after nginx-setup.sh.
+# Requires: ngx_stream_limit_conn_module (usually built-in).
+#
+# Players → :25565 → 127.0.0.1:__YAP_JAVA_PORT__ (Link or Folia)
+
+stream {
+    limit_conn_zone $binary_remote_addr zone=yap_addr:10m;
+
+    upstream yapcore_java {
+        server 127.0.0.1:__YAP_JAVA_PORT__;
+    }
+
+    server {
+        listen 25565;
+        listen [::]:25565;
+        # Soft per-IP concurrent TCP sessions at the edge (in addition to Link max-concurrent-per-ip)
+        limit_conn yap_addr 16;
+        proxy_pass yapcore_java;
+        proxy_timeout 1h;
+        proxy_connect_timeout 10s;
+        proxy_socket_keepalive on;
+    }
+
+    server {
+        listen 25565 udp reuseport;
+        listen [::]:25565 udp reuseport;
+        proxy_pass 127.0.0.1:__YAP_BEDROCK_PORT__;
+        proxy_timeout 1h;
+        proxy_responses 1;
+    }
+}

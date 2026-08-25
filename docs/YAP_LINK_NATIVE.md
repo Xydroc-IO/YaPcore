@@ -156,7 +156,7 @@ Full play-phase plugin-message wire sniffing (all channels) is **optional future
 
 ## Related
 
-- [EDGE_RATE_LIMIT.md](EDGE_RATE_LIMIT.md) — Link connect/handshake rate limits + Prometheus `/metrics`
+- [EDGE_RATE_LIMIT.md](EDGE_RATE_LIMIT.md) · [EDGE_HARDEN.md](EDGE_HARDEN.md) — rate limits, Prometheus, public edge harden
 - [YAP_LINK.md](YAP_LINK.md) — operator entry
 - [VELOCITY.md](VELOCITY.md) — Folia backend forwarding
 - [YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md) — chassis vs Link process boundaries

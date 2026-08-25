@@ -41,3 +41,8 @@ login-rate-window-ms=10000
 metrics-http-enabled=true
 metrics-http-bind=127.0.0.1
 metrics-http-port=9091
+
+# Concurrent sessions per IP (Phase 4 lite)
+max-concurrent-per-ip-enabled=true
+max-concurrent-per-ip=8
+rate-limit-exempt-loopback=true
