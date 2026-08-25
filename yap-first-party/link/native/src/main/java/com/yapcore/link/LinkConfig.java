@@ -92,6 +92,9 @@ public final class LinkConfig {
         props.setProperty("login-rate-limit-enabled", "true");
         props.setProperty("login-rate-per-ip", "10");
         props.setProperty("login-rate-window-ms", "10000");
+        props.setProperty("rate-limit-exempt-loopback", "true");
+        props.setProperty("max-concurrent-per-ip-enabled", "true");
+        props.setProperty("max-concurrent-per-ip", "8");
         props.setProperty("metrics-http-enabled", "true");
         props.setProperty("metrics-http-bind", "127.0.0.1");
         props.setProperty("metrics-http-port", "9091");
@@ -395,6 +398,20 @@ public final class LinkConfig {
 
     public long loginRateWindowMs() {
         return Math.max(100L, intProp("login-rate-window-ms", 10_000));
+    }
+
+    /** When true (default), 127.0.0.1 / ::1 skip rate + concurrent limits (smokes / local ops). */
+    public boolean rateLimitExemptLoopback() {
+        return bool("rate-limit-exempt-loopback", true);
+    }
+
+    public boolean maxConcurrentPerIpEnabled() {
+        return bool("max-concurrent-per-ip-enabled", true);
+    }
+
+    /** Max simultaneous TCP sessions per remote IP; {@code 0} disables. */
+    public int maxConcurrentPerIp() {
+        return Math.max(0, intProp("max-concurrent-per-ip", 8));
     }
 
     public boolean metricsHttpEnabled() {

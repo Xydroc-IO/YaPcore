@@ -1,18 +1,22 @@
 # YaP LagGuard — per-chunk lag-machine budgets (Folia-safe)
+#
+# Defaults target public survival (dense farms OK; lag-machines get cancelled).
+# Creative / redstone labs: raise redstone + hopper windows. See docs/LAGGUARD.md.
 enabled: true
 
 # Soft entity density per loaded chunk (living + items + projectiles counted)
-max-entities-per-chunk: 80
+# Survival: 64–100. Mega farms: 120+. Do not set below ~32 on busy hubs.
+max-entities-per-chunk: 72
 
-# Primed TNT entities allowed in one chunk at once
-max-primed-tnt-per-chunk: 12
+# Primed TNT entities allowed in one chunk at once (dupe/lag cannons)
+max-primed-tnt-per-chunk: 8
 
 # Hopper transfers cancelled per chunk per window when over budget
-max-hopper-transfers-per-window: 64
+max-hopper-transfers-per-window: 48
 hopper-window-ticks: 20
 
 # Redstone current-change events cancelled per chunk per window
-max-redstone-events-per-window: 128
+max-redstone-events-per-window: 96
 redstone-window-ticks: 20
 
 # Write plugins/YaPLagGuard/stats.json for dashboard / Prometheus

@@ -180,6 +180,12 @@ public final class LinkServer {
                             ch.close();
                             return;
                         }
+                        if (!rateGuard.tryAcquireConcurrent(ip, live)) {
+                            ch.close();
+                            return;
+                        }
+                        final String trackedIp = ip;
+                        ch.closeFuture().addListener(f -> rateGuard.releaseConcurrent(trackedIp));
                         int readTimeout = live.readTimeoutSec();
                         if (readTimeout > 0) {
                             ch.pipeline().addLast("read-timeout",

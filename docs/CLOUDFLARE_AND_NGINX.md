@@ -46,6 +46,7 @@ port=25566
 | Example properties | [`config/server.properties.example`](../config/server.properties.example) |
 | DNS checklist | [`deploy/cloudflare/dns-records.example`](../deploy/cloudflare/dns-records.example) |
 | nginx templates | `deploy/nginx/*.template` |
+| Hardened stream example | `deploy/nginx/yapcore-stream-hardened.conf.example` |
 | Generated configs | `deploy/nginx/generated/` |
 
 ## Install nginx on the origin
@@ -77,8 +78,20 @@ boot banner advertises `:25565` / HTTPS packs (not the raw bind `:25566` / `:808
 | Packs (public) | `https://yapcoremc.yaplabs.us/pack/<file>` |
 | Packs (same-PC client) | `http://127.0.0.1:8081/pack/<file>` |
 
+## Dashboard & metrics (keep private)
+
+```properties
+web-dashboard-bind=127.0.0.1
+web-dashboard-localhost-only=true
+```
+
+Link metrics (when using YaP Link): `metrics-http-bind=127.0.0.1` in `link.properties`.
+Do not orange-cloud or publish `:8080` / `:9091`. See [EDGE_HARDEN.md](EDGE_HARDEN.md).
+
 ## Related
 
+- [EDGE_HARDEN.md](EDGE_HARDEN.md) — public edge checklist, fail-closed, nftables/fail2ban examples
 - [NETWORKING.md](NETWORKING.md) — publicity keys + boot banner
 - [NGINX_AND_LOCALHOST.md](NGINX_AND_LOCALHOST.md) — localhost + script flags + STATUS vs LOGIN
+- [EDGE_RATE_LIMIT.md](EDGE_RATE_LIMIT.md) — Link rate limits + Prometheus
 - GUI Connect / nginx tabs — live endpoints after save

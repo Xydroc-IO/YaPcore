@@ -41,6 +41,11 @@ public final class ChassisMetricsHandler {
         m.put("ticks", server.getEngine().gameCore().getTickCounter());
         m.put("threadMetricKeys", ThreadMetrics.keyCount());
         m.put("lagguard", readLagGuardStats());
+        m.put("metricsPath", "/metrics");
+        m.put("linkMetricsHint",
+                "Scrape YaP Link GET :9091/metrics for yap_link_connect_throttled / "
+                        + "yap_link_handshake_dropped / yap_link_login_dropped / "
+                        + "yap_link_connect_concurrent_dropped");
         return m;
     }
 

@@ -7,11 +7,11 @@ public final class LagGuardConfig {
 
     private final JavaPlugin plugin;
     private boolean enabled = true;
-    private int maxEntitiesPerChunk = 80;
-    private int maxPrimedTntPerChunk = 12;
-    private int maxHopperTransfersPerWindow = 64;
+    private int maxEntitiesPerChunk = 72;
+    private int maxPrimedTntPerChunk = 8;
+    private int maxHopperTransfersPerWindow = 48;
     private int hopperWindowTicks = 20;
-    private int maxRedstoneEventsPerWindow = 128;
+    private int maxRedstoneEventsPerWindow = 96;
     private int redstoneWindowTicks = 20;
     private int statsWriteIntervalTicks = 100;
     private boolean logTrips = true;
@@ -24,11 +24,11 @@ public final class LagGuardConfig {
         plugin.reloadConfig();
         FileConfiguration c = plugin.getConfig();
         enabled = c.getBoolean("enabled", true);
-        maxEntitiesPerChunk = Math.max(8, c.getInt("max-entities-per-chunk", 80));
-        maxPrimedTntPerChunk = Math.max(1, c.getInt("max-primed-tnt-per-chunk", 12));
-        maxHopperTransfersPerWindow = Math.max(1, c.getInt("max-hopper-transfers-per-window", 64));
+        maxEntitiesPerChunk = Math.max(8, c.getInt("max-entities-per-chunk", 72));
+        maxPrimedTntPerChunk = Math.max(1, c.getInt("max-primed-tnt-per-chunk", 8));
+        maxHopperTransfersPerWindow = Math.max(1, c.getInt("max-hopper-transfers-per-window", 48));
         hopperWindowTicks = Math.max(1, c.getInt("hopper-window-ticks", 20));
-        maxRedstoneEventsPerWindow = Math.max(1, c.getInt("max-redstone-events-per-window", 128));
+        maxRedstoneEventsPerWindow = Math.max(1, c.getInt("max-redstone-events-per-window", 96));
         redstoneWindowTicks = Math.max(1, c.getInt("redstone-window-ticks", 20));
         statsWriteIntervalTicks = Math.max(20, c.getInt("stats-write-interval-ticks", 100));
         logTrips = c.getBoolean("log-trips", true);
