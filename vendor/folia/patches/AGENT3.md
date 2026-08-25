@@ -27,3 +27,10 @@ Stamp **`20260824T234919Z`** spawncollapse (region MSPT @ chunk 0,0):
 | YaP-Folia | 21.4509 | yes |
 
 **−15.0%** with `-Dyap.folia.entity-tick-budget=300`. See `docs/BENCH_VS_FOLIA.md`.
+
+## Perf soak (Next Wave)
+
+- `./scripts/smoke-folia-async-save.sh` — stamp `20260825T014032Z` (**missed ≤50% spike target**; load floor ~6 ms)
+- `./scripts/smoke-folia-scoreboard.sh` — SWMR live PASS (`EXPECT_FAIL=0`)
+- Operator knobs: `folia-async-chunk-save` / `folia-entity-tick-budget` / `folia-scoreboard-swmr` in `server.properties` (**defaults OFF**)
+- Profiles: `docs/YAP_FOLIA_SOAK.md`

@@ -13,6 +13,9 @@ project(":bench-plugin").projectDir = file("yap-first-party/dev/bench-plugin")
 include("compat-smoke-plugin")
 project(":compat-smoke-plugin").projectDir = file("yap-first-party/dev/compat-smoke-plugin")
 
+include("scoreboard-smoke-plugin")
+project(":scoreboard-smoke-plugin").projectDir = file("yap-first-party/dev/scoreboard-smoke-plugin")
+
 include("gameplay-knobs-plugin")
 project(":gameplay-knobs-plugin").projectDir = file("yap-first-party/gameplay/gameplay-knobs-plugin")
 

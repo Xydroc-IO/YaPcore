@@ -127,11 +127,34 @@ final class BenchSampler {
         List<Double> tps1m = new ArrayList<>();
         final int[] left = {sampleSec};
         final YapTask[] sampler = new YapTask[1];
+        // Seconds into sample when to fire /save-all once (−1 = disabled). Used by async-save smoke.
+        final int saveAllAt = Integer.getInteger("yap.bench.save_all_at", -1);
+        final int[] saveFiredAt = {-1}; // sample index when save-all ran
         // Folia: sample on the spawn/hot-region thread — getAverageTickTime() is region-local.
         // spawncollapse / heavypop load lives around chunk (0,0); global-region MSPT is near-empty.
         final int sampleCx = 0;
         final int sampleCz = 0;
         Runnable tick = () -> {
+            int elapsed = sampleSec - left[0];
+            if (saveAllAt >= 0 && saveFiredAt[0] < 0 && elapsed >= saveAllAt) {
+                try {
+                    // Dirty a few blocks so save-all has real Moonrise flush work.
+                    int y = world.getMinHeight() + 4;
+                    for (int dx = 0; dx < 8; dx++) {
+                        for (int dz = 0; dz < 8; dz++) {
+                            var block = world.getBlockAt(dx, y, dz);
+                            block.setType(block.getType(), false);
+                        }
+                    }
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "save-all");
+                    saveFiredAt[0] = mspt.size();
+                    plugin.getLogger().info("Bench save-all at sample_elapsed=" + elapsed
+                            + "s index=" + saveFiredAt[0]);
+                } catch (Throwable t) {
+                    plugin.getLogger().warning("save-all failed: " + t.getMessage());
+                    saveFiredAt[0] = mspt.size();
+                }
+            }
             try {
                 mspt.add(Bukkit.getServer().getAverageTickTime());
             } catch (UnsupportedOperationException uoe) {
@@ -168,7 +191,7 @@ final class BenchSampler {
                                 + " entities=" + end.entitiesTotal()
                                 + " chunks=" + end.loadedChunks());
                         writeJson(scenario, label, out, warmupSec, sampleSec, mspt, tps1m,
-                                expectedTnt, start, end);
+                                expectedTnt, start, end, saveAllAt, saveFiredAt[0]);
                         plugin.getLogger().info("Bench complete — shutting down");
                         YapSched.globalLater(plugin, Bukkit::shutdown, 20L);
                     });
@@ -178,7 +201,7 @@ final class BenchSampler {
                             + " entities=" + end.entitiesTotal()
                             + " chunks=" + end.loadedChunks());
                     writeJson(scenario, label, out, warmupSec, sampleSec, mspt, tps1m,
-                            expectedTnt, start, end);
+                            expectedTnt, start, end, saveAllAt, saveFiredAt[0]);
                     plugin.getLogger().info("Bench complete — shutting down");
                     YapSched.globalLater(plugin, Bukkit::shutdown, 20L);
                 }
@@ -196,10 +219,38 @@ final class BenchSampler {
     void writeJson(String scenario, String label, String outPath,
                            int warmup, int sampleSec, List<Double> mspt, List<Double> tps,
                            int expectedTnt, LoadSnapshot start, LoadSnapshot end) {
+        writeJson(scenario, label, outPath, warmup, sampleSec, mspt, tps,
+                expectedTnt, start, end, -1, -1);
+    }
+
+    void writeJson(String scenario, String label, String outPath,
+                           int warmup, int sampleSec, List<Double> mspt, List<Double> tps,
+                           int expectedTnt, LoadSnapshot start, LoadSnapshot end,
+                           int saveAllAt, int saveFiredAt) {
         double mean = mean(mspt);
         double p50 = percentile(mspt, 0.50);
         double p95 = percentile(mspt, 0.95);
         double tpsMean = mean(tps);
+        double msptPreSave = Double.NaN;
+        double msptSaveSpike = Double.NaN;
+        if (saveFiredAt >= 0 && saveFiredAt < mspt.size()) {
+            List<Double> before = mspt.subList(0, Math.max(0, saveFiredAt));
+            // Spike window: up to 8s after save-all (sampler is 1 Hz).
+            int endIdx = Math.min(mspt.size(), saveFiredAt + 8);
+            List<Double> after = mspt.subList(saveFiredAt, endIdx);
+            if (!before.isEmpty()) {
+                msptPreSave = mean(before);
+            }
+            if (!after.isEmpty()) {
+                double max = after.getFirst();
+                for (double d : after) {
+                    if (d > max) {
+                        max = d;
+                    }
+                }
+                msptSaveSpike = max;
+            }
+        }
         double fuseDrop = start.fuseMean() - end.fuseMean();
         double expectedFuseDrop = sampleSec * 20.0;
         boolean fuseOk = start.tntAlive() == 0
@@ -259,6 +310,10 @@ final class BenchSampler {
                   "chunks_loaded_end": %d,
                   "entity_top_start": %s,
                   "entity_top_end": %s,
+                  "save_all_at": %s,
+                  "save_fired_at_index": %s,
+                  "mspt_pre_save_mean": %s,
+                  "mspt_save_spike": %s,
                   "timestamp": %s,
                   "java": %s
                 }
@@ -299,6 +354,10 @@ final class BenchSampler {
                 end.loadedChunks(),
                 quote(start.entityTop()),
                 quote(end.entityTop()),
+                saveAllAt >= 0 ? Integer.toString(saveAllAt) : "null",
+                saveFiredAt >= 0 ? Integer.toString(saveFiredAt) : "null",
+                Double.isNaN(msptPreSave) ? "null" : String.format(Locale.ROOT, "%.4f", msptPreSave),
+                Double.isNaN(msptSaveSpike) ? "null" : String.format(Locale.ROOT, "%.4f", msptSaveSpike),
                 quote(Instant.now().toString()),
                 quote(System.getProperty("java.version", "?"))
         );

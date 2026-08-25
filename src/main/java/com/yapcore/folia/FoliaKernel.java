@@ -153,6 +153,17 @@ public final class FoliaKernel {
             }
             cmd.add("-Dyap.folia.teleport-transactions=true");
         }
+        // Product path: server.properties → Folia JVM (smoke may also set -Dyap.folia.* on chassis).
+        if (config.isFoliaAsyncChunkSave()) {
+            cmd.add("-Dyap.folia.async-chunk-save=true");
+        }
+        int entityTickBudget = config.getFoliaEntityTickBudget();
+        if (entityTickBudget > 0) {
+            cmd.add("-Dyap.folia.entity-tick-budget=" + entityTickBudget);
+        }
+        if (config.isFoliaScoreboardSwmr()) {
+            cmd.add("-Dyap.folia.scoreboard-swmr=true");
+        }
         cmd.add("-jar");
         cmd.add(jar.toAbsolutePath().toString());
         cmd.add("--nogui");

@@ -273,6 +273,9 @@ public final class ServerConfig {
     public void setFoliaSchedCompat(boolean enabled) { folia.setFoliaSchedCompat(enabled); }
     public boolean isFoliaSchedCompatWarn() { return folia.isFoliaSchedCompatWarn(); }
     public boolean isFoliaTeleportTransactions() { return folia.isFoliaTeleportTransactions(); }
+    public boolean isFoliaAsyncChunkSave() { return folia.isFoliaAsyncChunkSave(); }
+    public int getFoliaEntityTickBudget() { return folia.getFoliaEntityTickBudget(); }
+    public boolean isFoliaScoreboardSwmr() { return folia.isFoliaScoreboardSwmr(); }
     public int foliaListenPort() { return folia.foliaListenPort(); }
 
     public boolean isPaperEmbed() { return paper.isPaperEmbed(); }
