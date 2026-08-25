@@ -215,6 +215,13 @@ final class BenchRegionLoad {
     }
 
     static Set<long[]> interestChunks() {
+        return interestChunks(System.getProperty("yap.bench.scenario", ""));
+    }
+
+    static Set<long[]> interestChunks(String scenario) {
+        if ("spawncollapse".equals(scenario)) {
+            return spawnCollapseChunks();
+        }
         Set<long[]> out = new LinkedHashSet<>();
         for (int[] c : INTERIOR) {
             out.add(pack(c[0], c[1]));
@@ -262,7 +269,10 @@ final class BenchRegionLoad {
     }
 
     static void clearInterest(JavaPlugin plugin, World world, Runnable onDone) {
-        Set<long[]> chunks = interestChunks();
+        clearInterest(plugin, world, interestChunks(), onDone);
+    }
+
+    static void clearInterest(JavaPlugin plugin, World world, Set<long[]> chunks, Runnable onDone) {
         // Folia: force-load flags are global-region only; chunk load/spawn is region-owned.
         YapSched.global(plugin, () -> {
             for (long[] c : chunks) {
@@ -281,8 +291,29 @@ final class BenchRegionLoad {
         });
     }
 
-    /** Region-safe prepare for idle|entity|farm|heavypop. {@code onReady} gets expected TNT. */
+    /**
+     * Spawn-collapse interest: a single Folia region around spawn (chunks in one
+     * contiguous 3×3 block) so all load shares one tick runner.
+     */
+    static final int[][] SPAWN_COLLAPSE_CHUNKS = {
+            {0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+            {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
+    };
+
+    static Set<long[]> spawnCollapseChunks() {
+        Set<long[]> out = new LinkedHashSet<>();
+        for (int[] c : SPAWN_COLLAPSE_CHUNKS) {
+            out.add(pack(c[0], c[1]));
+        }
+        return out;
+    }
+
+    /** Region-safe prepare for idle|entity|farm|heavypop|spawncollapse. {@code onReady} gets expected TNT. */
     static void prepare(JavaPlugin plugin, World world, String scenario, Consumer<Integer> onReady) {
+        if ("spawncollapse".equals(scenario)) {
+            prepareSpawnCollapse(plugin, world, onReady);
+            return;
+        }
         clearInterest(plugin, world, () -> {
             switch (scenario) {
                 case "entity", "heavypop" -> injectTntAndHoppers(plugin, world, scenario, onReady);
@@ -293,6 +324,102 @@ final class BenchRegionLoad {
                 }
             }
         });
+    }
+
+    /**
+     * Dense primed TNT + hoppers + hostile/passive mobs inside one region so stock
+     * Folia shows TPS collapse; gates entity-offload / hot-region work (Phase 3.2).
+     */
+    static void prepareSpawnCollapse(JavaPlugin plugin, World world, Consumer<Integer> onReady) {
+        int entities = Integer.getInteger("yap.bench.entities", 800);
+        int hoppers = Integer.getInteger("yap.bench.hoppers", 256);
+        int mobs = Integer.getInteger("yap.bench.mobs", 200);
+        Set<long[]> chunks = spawnCollapseChunks();
+        YapSched.global(plugin, () -> {
+            world.setSpawnLocation(0, 80, 0);
+            world.setGameRule(GameRule.SPAWN_MONSTERS, false);
+            for (long[] c : chunks) {
+                world.setChunkForceLoaded((int) c[0], (int) c[1], true);
+            }
+            forEachChunk(plugin, world, chunks, c -> {
+                int cx = (int) c[0];
+                int cz = (int) c[1];
+                world.getChunkAt(cx, cz).load(true);
+                for (Entity e : world.getChunkAt(cx, cz).getEntities()) {
+                    if (!(e instanceof Player)) {
+                        e.remove();
+                    }
+                }
+            }, () -> injectSpawnCollapseLoad(plugin, world, chunks, entities, hoppers, mobs, onReady));
+        });
+    }
+
+    private static void injectSpawnCollapseLoad(
+            JavaPlugin plugin,
+            World world,
+            Set<long[]> chunks,
+            int totalTnt,
+            int totalHoppers,
+            int totalMobs,
+            Consumer<Integer> onReady) {
+        List<long[]> list = new java.util.ArrayList<>(chunks);
+        int n = Math.max(1, list.size());
+        AtomicInteger left = new AtomicInteger(n);
+        AtomicInteger spawnedTnt = new AtomicInteger();
+        for (int i = 0; i < n; i++) {
+            long[] c = list.get(i);
+            int cx = (int) c[0];
+            int cz = (int) c[1];
+            int tntHere = totalTnt / n + (i < totalTnt % n ? 1 : 0);
+            int hopHere = totalHoppers / n + (i < totalHoppers % n ? 1 : 0);
+            int mobHere = totalMobs / n + (i < totalMobs % n ? 1 : 0);
+            YapSched.regionChunk(plugin, world, cx, cz, () -> {
+                try {
+                    int bx = (cx << 4) + 8;
+                    int bz = (cz << 4) + 8;
+                    int y = Math.max(world.getHighestBlockYAt(bx, bz) + 2, 80);
+                    for (int t = 0; t < tntHere; t++) {
+                        TNTPrimed tnt = world.spawn(
+                                new Location(world,
+                                        bx + (t % 8) * 0.1,
+                                        y + (t / 64) * 0.2,
+                                        bz + (t / 8) * 0.1),
+                                TNTPrimed.class);
+                        tnt.setFuseTicks(20 * 60 * 10);
+                        tnt.setYield(0f);
+                        tnt.setIsIncendiary(false);
+                        spawnedTnt.incrementAndGet();
+                    }
+                    int ox = cx << 4;
+                    int oz = cz << 4;
+                    int hy = Math.max(world.getHighestBlockYAt(ox + 2, oz + 2), 64);
+                    for (int h = 0; h < hopHere; h++) {
+                        int x = ox + (h % 16);
+                        int z = oz + ((h / 16) % 16);
+                        int yy = hy + (h / 256);
+                        world.getBlockAt(x, yy, z).setType(Material.STONE);
+                        world.getBlockAt(x, yy + 1, z).setType(Material.HOPPER);
+                    }
+                    EntityType[] types = {
+                            EntityType.ZOMBIE, EntityType.SKELETON, EntityType.CREEPER,
+                            EntityType.COW, EntityType.SHEEP, EntityType.PIG
+                    };
+                    for (int m = 0; m < mobHere; m++) {
+                        world.spawnEntity(
+                                new Location(world, bx + (m % 4) * 0.5, y, bz + (m / 4) * 0.5),
+                                types[m % types.length]);
+                    }
+                } finally {
+                    if (left.decrementAndGet() == 0) {
+                        int expected = spawnedTnt.get();
+                        plugin.getLogger().info("spawncollapse region-ready — TNT=" + expected
+                                + " hoppers≈" + totalHoppers + " mobs≈" + totalMobs
+                                + " chunks=" + n + " (single-region overload)");
+                        YapSched.global(plugin, () -> onReady.accept(expected));
+                    }
+                }
+            });
+        }
     }
 
     private static void injectFarm(JavaPlugin plugin, World world, Runnable onDone) {
@@ -406,7 +533,8 @@ final class BenchRegionLoad {
         AtomicInteger entities = new AtomicInteger();
         AtomicInteger villagers = new AtomicInteger();
 
-        forEachChunk(plugin, world, interestChunks(), c -> {
+        String scenario = System.getProperty("yap.bench.scenario", "");
+        forEachChunk(plugin, world, interestChunks(scenario), c -> {
             int cx = (int) c[0];
             int cz = (int) c[1];
             var chunk = world.getChunkAt(cx, cz);

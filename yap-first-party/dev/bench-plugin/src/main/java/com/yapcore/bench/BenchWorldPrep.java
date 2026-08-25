@@ -90,11 +90,54 @@ final class BenchWorldPrep {
                         + " totalTNT=" + (entities * 4) + " totalHoppers=" + (hoppers * 4));
                 yield entities * 4;
             }
+            case "spawncollapse" -> prepareSpawnCollapse(world);
             default -> {
                 plugin.getLogger().info("Idle scenario — no load injected (regression guard only)");
                 yield 0;
             }
         };
+    }
+
+    /**
+     * Single-region overload (Paper / non-regionized path): pack TNT+hoppers+mobs near spawn.
+     */
+    int prepareSpawnCollapse(World world) {
+        int entities = Integer.getInteger("yap.bench.entities", 800);
+        int hoppers = Integer.getInteger("yap.bench.hoppers", 256);
+        int mobs = Integer.getInteger("yap.bench.mobs", 200);
+        for (int[] c : new int[][]{{0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+            world.getChunkAt(c[0], c[1]).load(true);
+            world.setChunkForceLoaded(c[0], c[1], true);
+        }
+        int spawned = 0;
+        int y = Math.max(world.getHighestBlockYAt(0, 0) + 2, 80);
+        for (int i = 0; i < entities; i++) {
+            TNTPrimed tnt = world.spawn(
+                    new Location(world, (i % 16) * 0.2, y + (i / 128) * 0.2, (i / 16) * 0.2),
+                    TNTPrimed.class);
+            tnt.setFuseTicks(20 * 60 * 10);
+            tnt.setYield(0f);
+            tnt.setIsIncendiary(false);
+            spawned++;
+        }
+        int hy = Math.max(world.getHighestBlockYAt(2, 2), 64);
+        for (int i = 0; i < hoppers; i++) {
+            int x = i % 16;
+            int z = (i / 16) % 16;
+            int yy = hy + (i / 256);
+            world.getBlockAt(x, yy, z).setType(Material.STONE);
+            world.getBlockAt(x, yy + 1, z).setType(Material.HOPPER);
+        }
+        EntityType[] types = {
+                EntityType.ZOMBIE, EntityType.SKELETON, EntityType.CREEPER,
+                EntityType.COW, EntityType.SHEEP, EntityType.PIG
+        };
+        for (int i = 0; i < mobs; i++) {
+            world.spawnEntity(new Location(world, (i % 8), y, (i / 8)), types[i % types.length]);
+        }
+        plugin.getLogger().info("spawncollapse ready — TNT=" + spawned
+                + " hoppers=" + hoppers + " mobs=" + mobs);
+        return spawned;
     }
 
     int prepareHighpop(World world) {

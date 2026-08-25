@@ -1,0 +1,154 @@
+From: YaPcore Agent 3 <agent-3@yapcore>
+Subject: [PATCH] YaP scoreboard SWMR restore
+
+Gated by -Dyap.folia.scoreboard-swmr=true. Post-applyAllPatches.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapScoreboardSwmr.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapScoreboardSwmr.java
+@@ -0,0 +1,34 @@
++package io.papermc.paper.threadedregions;
++
++import java.util.concurrent.locks.ReentrantReadWriteLock;
++
++/**
++ * YaP Phase 3.4 — restore Folia-disabled scoreboard mutations behind SWMR lock.
++ *
++ * <p>Gated by {@code -Dyap.folia.scoreboard-swmr=true} (default false).
++ * Writers take the write lock; readers are unchanged (existing Folia read paths).
++ */
++public final class YapScoreboardSwmr {
++
++    private static final ReentrantReadWriteLock LOCK = new ReentrantReadWriteLock();
++
++    private YapScoreboardSwmr() {
++    }
++
++    public static boolean enabled() {
++        return Boolean.parseBoolean(System.getProperty("yap.folia.scoreboard-swmr", "false"));
++    }
++
++    /** @return true if mutations are allowed (flag on); caller must still use {@link #writeLock} */
++    public static boolean allowMutation() {
++        return enabled();
++    }
++
++    public static void writeLock() {
++        LOCK.writeLock().lock();
++    }
++
++    public static void writeUnlock() {
++        LOCK.writeLock().unlock();
++    }
++}
+--- a/paper-server/src/main/java/org/bukkit/craftbukkit/scoreboard/CraftScoreboard.java
++++ b/paper-server/src/main/java/org/bukkit/craftbukkit/scoreboard/CraftScoreboard.java
+@@ -32,7 +32,11 @@
+ 
+     @Override
+     public Objective registerNewObjective(String name, Criteria criteria, net.kyori.adventure.text.Component displayName, RenderType renderType) throws IllegalArgumentException {
+-        if (true) throw new UnsupportedOperationException(); // Folia - not supported yet
++        // YaP start - scoreboard SWMR
++        if (!io.papermc.paper.threadedregions.YapScoreboardSwmr.allowMutation()) throw new UnsupportedOperationException(); // Folia - not supported yet
++        io.papermc.paper.threadedregions.YapScoreboardSwmr.writeLock();
++        try {
++        // YaP end - scoreboard SWMR
+         if (displayName == null) {
+             displayName = net.kyori.adventure.text.Component.empty();
+         }
+@@ -49,6 +53,9 @@
+         // Paper end - lazily track plugin scoreboards
+         net.minecraft.world.scores.Objective objective = this.getHandle().addObjective(name, ((CraftCriteria) criteria).criteria, io.papermc.paper.adventure.PaperAdventure.asVanilla(displayName), CraftScoreboardTranslations.fromBukkitRender(renderType), true, null);
+         return new CraftObjective(this, objective);
++        } finally { // YaP - scoreboard SWMR
++            io.papermc.paper.threadedregions.YapScoreboardSwmr.writeUnlock();
++        }
+     }
+ 
+     @Override
+@@ -178,12 +185,19 @@
+ 
+     @Override
+     public Team registerNewTeam(String name) {
+-        if (true) throw new UnsupportedOperationException(); // Folia - not supported yet
++        // YaP start - scoreboard SWMR
++        if (!io.papermc.paper.threadedregions.YapScoreboardSwmr.allowMutation()) throw new UnsupportedOperationException(); // Folia - not supported yet
++        io.papermc.paper.threadedregions.YapScoreboardSwmr.writeLock();
++        try {
++        // YaP end - scoreboard SWMR
+         Preconditions.checkArgument(name != null, "Team name cannot be null");
+         Preconditions.checkArgument(name.length() <= Short.MAX_VALUE, "Team name '%s' is longer than the limit of 32767 characters (%s)", name, name.length());
+         Preconditions.checkArgument(this.getHandle().getPlayerTeam(name) == null, "Team name '%s' is already in use", name);
+ 
+         return new CraftTeam(this, this.getHandle().addPlayerTeam(name));
++        } finally { // YaP - scoreboard SWMR
++            io.papermc.paper.threadedregions.YapScoreboardSwmr.writeUnlock();
++        }
+     }
+ 
+     @Override
+@@ -206,9 +220,16 @@
+ 
+     @Override
+     public void clearSlot(DisplaySlot slot) {
+-        if (true) throw new UnsupportedOperationException(); // Folia - not supported yet
++        // YaP start - scoreboard SWMR
++        if (!io.papermc.paper.threadedregions.YapScoreboardSwmr.allowMutation()) throw new UnsupportedOperationException(); // Folia - not supported yet
++        io.papermc.paper.threadedregions.YapScoreboardSwmr.writeLock();
++        try {
++        // YaP end - scoreboard SWMR
+         Preconditions.checkArgument(slot != null, "Slot cannot be null");
+         this.getHandle().setDisplayObjective(CraftScoreboardTranslations.fromBukkitSlot(slot), null);
++        } finally { // YaP - scoreboard SWMR
++            io.papermc.paper.threadedregions.YapScoreboardSwmr.writeUnlock();
++        }
+     }
+ 
+     @Override
+--- a/paper-server/src/main/java/org/bukkit/craftbukkit/scoreboard/CraftScoreboardManager.java
++++ b/paper-server/src/main/java/org/bukkit/craftbukkit/scoreboard/CraftScoreboardManager.java
+@@ -38,7 +38,11 @@
+ 
+     @Override
+     public CraftScoreboard getNewScoreboard() {
+-        if (true) throw new UnsupportedOperationException(); // Folia - not supported yet
++        // YaP start - scoreboard SWMR
++        if (!io.papermc.paper.threadedregions.YapScoreboardSwmr.allowMutation()) throw new UnsupportedOperationException(); // Folia - not supported yet
++        io.papermc.paper.threadedregions.YapScoreboardSwmr.writeLock();
++        try {
++        // YaP end - scoreboard SWMR
+         org.spigotmc.AsyncCatcher.catchOp("scoreboard creation"); // Spigot
+         CraftScoreboard scoreboard = new CraftScoreboard(new ServerScoreboard(this.server));
+         if (io.papermc.paper.configuration.GlobalConfiguration.get().scoreboards.trackPluginScoreboards) {
+@@ -46,6 +50,9 @@
+             this.scoreboards.add(scoreboard);
+         }
+         return scoreboard;
++        } finally { // YaP - scoreboard SWMR
++            io.papermc.paper.threadedregions.YapScoreboardSwmr.writeUnlock();
++        }
+     }
+ 
+     public void registerScoreboardForVanilla(CraftScoreboard scoreboard) {
+@@ -59,7 +66,11 @@
+     }
+ 
+     public void setPlayerBoard(CraftPlayer player, CraftScoreboard scoreboard) {
+-        if (true) throw new UnsupportedOperationException(); // Folia - not supported yet
++        // YaP start - scoreboard SWMR
++        if (!io.papermc.paper.threadedregions.YapScoreboardSwmr.allowMutation()) throw new UnsupportedOperationException(); // Folia - not supported yet
++        io.papermc.paper.threadedregions.YapScoreboardSwmr.writeLock();
++        try {
++        // YaP end - scoreboard SWMR
+         net.minecraft.world.scores.Scoreboard oldBoard = this.getPlayerBoard(player).getHandle();
+         net.minecraft.world.scores.Scoreboard newBoard = scoreboard.getHandle();
+         if (oldBoard == newBoard) {
+@@ -91,6 +102,9 @@
+ 
+         // The above is the reverse of the below method.
+         this.server.getPlayerList().updateEntireScoreboard((ServerScoreboard) newBoard, player.getHandle());
++        } finally { // YaP - scoreboard SWMR
++            io.papermc.paper.threadedregions.YapScoreboardSwmr.writeUnlock();
++        }
+     }
+ 
+     // CraftBukkit method

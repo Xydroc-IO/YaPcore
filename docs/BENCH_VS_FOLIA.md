@@ -31,6 +31,7 @@ use [COMPARE_ECOSYSTEM.md](COMPARE_ECOSYSTEM.md) (legacy Paper-path table) or `.
 | Scenario | Load | Role |
 |----------|------|------|
 | `heavypop` | Dense primed TNT + hoppers | **Primary Folia gate** (no bots) — increase entities/hoppers for citeable MSPT |
+| `spawncollapse` | Single-region 3×3 chunks: TNT + hoppers + mobs | **Phase 3.1 gate** — stock Folia TPS collapse; entity-offload / hot-region target |
 | `highpop` | Mineflayer bots + fixtures | Pop / network (extend later) |
 | `idle` | Empty-ish world | Regression — chassis overhead OK to lose slightly |
 
@@ -46,6 +47,11 @@ Same seed (`yap-bench-1`). Metrics: `Server.getAverageTickTime()` (MSPT) and TPS
 ./scripts/bench/run-vs-folia.sh
 ./scripts/bench/run-vs-folia.sh heavypop 45
 
+# Phase 3.1 — single-region overload (defaults: 800 TNT / 256 hoppers / 200 mobs)
+./scripts/bench/run-vs-folia.sh spawncollapse 45
+YAP_BENCH_ENTITIES=1200 YAP_BENCH_HOPPERS=384 YAP_BENCH_MOBS=400 \
+  ./scripts/bench/run-vs-folia.sh spawncollapse 45
+
 # Heavier load (citeable MSPT — tune until mspt_mean ≥ ~2 ms or compare exits 0/1 not 4)
 YAP_BENCH_ENTITIES=600 YAP_BENCH_HOPPERS=128 ./scripts/bench/run-vs-folia.sh heavypop 45
 
@@ -57,16 +63,23 @@ python3 scripts/bench/compare-folia.py \
   bench/results/<stamp>-heavypop-folia.json \
   bench/results/<stamp>-heavypop-yapcore.json
 python3 scripts/bench/compare-folia.py --rank \
-  bench/results/<stamp>-heavypop-*.json
+  bench/results/<stamp>-spawncollapse-*.json
 ```
 
 | Side | How it runs |
 |------|-------------|
 | **Stock Folia** | Direct `java -jar folia.jar` + `yap-mspt-bench` |
 | **Canvas** | Direct `java -jar canvas.jar` + same bench plugin |
-| **YaP Folia** | YaPcore `game-authority=folia` managed Folia + same bench plugin |
+| **yapfolia** | Direct `java -jar yap-folia.jar` + same bench (Phase 3 knobs) |
+| **yapcore** | YaPcore chassis + `folia-jar-source=build` managed YaP-Folia |
+
+**MSPT sampling (Folia):** `getAverageTickTime()` is **region-local**. The bench
+plugin samples on the hot region at chunk `(0,0)` via `YapSched.regionChunkTimer`
+— not the near-empty global region.
 
 ## Results table (fill after runs)
+
+### heavypop
 
 | Stamp | Folia MSPT | Canvas MSPT | YaP Folia+chassis | Notes |
 |-------|-----------:|------------:|------------------:|-------|
@@ -74,18 +87,55 @@ python3 scripts/bench/compare-folia.py --rank \
 | `20260822T053225Z` | 0.0742 | 0.0888 | 0.0710 | **NOT CITEABLE** — pre-fairness-JVM (YaP child 2G vs stock 4G); MSPT &lt;2 |
 | `20260822T051035Z` | 0.0738 | 0.0809 | 0.0664 | **INVALID** — YaP fuse bug mid-stamp; do not use |
 
+### spawncollapse (Phase 3.1+) — citeable
+
+| Stamp | Folia MSPT | YaP-Folia plain | Delta | Notes |
+|-------|-----------:|----------------:|------:|-------|
+| `20260824T234919Z` | **25.2466** | **21.4509** | **−15.0%** | **CITEABLE** — region MSPT @ (0,0); 8k TNT / 1024 hoppers / 2500 mobs; JVM 4G/8G; fuse_ok both; YaP knobs: `-Dyap.folia.entity-tick-budget=300` (Mob AI only; TNT always ticks), `-Dyap.folia.async-chunk-save=true`. Files: `bench/results/20260824T234919Z-spawncollapse-{folia,yapfolia}.json` |
+
+Reproduce:
+
+```bash
+YAP_BENCH_SHUFFLE=0 YAP_BENCH_COMPETITORS=folia,yapfolia \
+  YAP_BENCH_ENTITIES=8000 YAP_BENCH_HOPPERS=1024 YAP_BENCH_MOBS=2500 \
+  YAP_FOLIA_ENTITY_TICK_BUDGET=300 \
+  YAP_BENCH_GAME_XMS=4G YAP_BENCH_GAME_XMX=8G \
+  YAP_BENCH_WARMUP=15 \
+  ./scripts/bench/run-vs-folia.sh spawncollapse 40
+python3 scripts/bench/compare-folia.py \
+  bench/results/<stamp>-spawncollapse-folia.json \
+  bench/results/<stamp>-spawncollapse-yapfolia.json
+```
+
+### Async save spike (Phase 3.3)
+
+| Stamp | Stock save spike | YaP async-save spike | Notes |
+|-------|-----------------:|---------------------:|-------|
+| _(pending)_ | — | — | `./scripts/smoke-folia-async-save.sh` — target ≤50% of stock |
+
 **Do not** publish rankings from rows marked NOT CITEABLE or INVALID.
 
-## If we lose (expected)
+## Phase 3 product path (YaP-Folia)
 
-Honest chassis overhead vs stock Folia / Canvas → **YaP Folia fork bootstrap is in-tree**
-([FOLIA_FORK.md](FOLIA_FORK.md)); Phase 1 is branding-only parity. Citeable beat-Folia
-claims still need fresh bench rows after Agent 2/3 patches land — not a revive of Paper
-spatial tick as the product path.
+Version branding: **YaP-Folia 26.2-yap.N**. Patches:
+`vendor/folia/patches/0010`–`0012` (post-`applyAllPatches`). Build:
+`./scripts/build-yap-folia.sh`. Verify: `./scripts/verify-yap-folia.sh`.
+
+**Citeable claim (spawncollapse):** YaP-Folia with entity-tick-budget beats stock
+Folia on region MSPT — see `20260824T234919Z` row above. Do not claim wins
+without a fresh citeable JSON pair.
+
+## If we lose
+
+Honest chassis overhead vs stock Folia / Canvas remains possible on idle/low load.
+**Spawn-collapse citeable win** is documented above (`20260824T234919Z`). Do not
+revive Paper spatial tick as the product path.
 
 ## Related
 
 - [COMPARE_ECOSYSTEM.md](COMPARE_ECOSYSTEM.md) — Folia vs YaP Folia section
+- [FOLIA_FORK.md](FOLIA_FORK.md) · [FOLIA_FORK_AGENT_HANDOFF.md](FOLIA_FORK_AGENT_HANDOFF.md)
 - [YAP_SCHED.md](YAP_SCHED.md) — first-party Folia scheduling
 - [PERF_AND_LAYOUT.md](PERF_AND_LAYOUT.md) — ≤500-line domain map
 - Smoke: `./scripts/smoke-folia.sh` · `./scripts/smoke-folia-plugins.sh`
+- Verify: `./scripts/verify-yap-folia.sh`

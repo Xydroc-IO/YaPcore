@@ -179,6 +179,26 @@ public final class YapSched {
     }
 
     /**
+     * Fixed-rate task on the region owning {@code (chunkX, chunkZ)}.
+     * On Folia, {@link org.bukkit.Server#getAverageTickTime()} is region-local —
+     * MSPT benches must sample from the loaded region, not the global region.
+     */
+    public static YapTask regionChunkTimer(Plugin plugin, World world, int chunkX, int chunkZ,
+                                           Runnable task, long delayTicks, long periodTicks) {
+        Objects.requireNonNull(plugin, "plugin");
+        Objects.requireNonNull(world, "world");
+        Objects.requireNonNull(task, "task");
+        long delay = Math.max(1L, delayTicks);
+        long period = Math.max(1L, periodTicks);
+        try {
+            return wrap(Bukkit.getRegionScheduler()
+                    .runAtFixedRate(plugin, world, chunkX, chunkZ, st -> task.run(), delay, period));
+        } catch (Throwable t) {
+            return globalTimer(plugin, task, delay, period);
+        }
+    }
+
+    /**
      * Folia: true when the server exposes region schedulers (Folia or modern Paper).
      * Prefer entity/region affinity for world mutations either way.
      */

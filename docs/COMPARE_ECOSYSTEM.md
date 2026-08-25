@@ -123,14 +123,29 @@ for benches only ([YAPENGINE_16THREAD.md](YAPENGINE_16THREAD.md)).
 
 ### Local MSPT scoreboard (product — Folia)
 
-Primary gate: stock Folia vs YaP Folia chassis —
+Primary gate: stock Folia vs Canvas vs YaP Folia chassis —
 
 ```bash
 ./scripts/bench/run-vs-folia.sh heavypop 40
+./scripts/bench/run-vs-folia.sh spawncollapse 45   # Phase 3.1 single-region overload
 ```
 
-Fill [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md) after runs. No day-one beat-Folia claim.
+Fill [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md) after runs. **No day-one beat-Folia claim**
+until a citeable row (`mspt_mean ≥ ~2`) shows YaP-Folia ahead.
 
+**Phase 3 (YaP-Folia 26.2-yap.N) status:**
+
+| Workstream | Status |
+|------------|--------|
+| Canvas audit | Prefer [FOLIA_FORK_AGENT_HANDOFF.md](FOLIA_FORK_AGENT_HANDOFF.md) + Canvas docs |
+| `spawncollapse` bench | **Citeable win** `20260824T234919Z` — stock 25.25 ms → YaP-Folia 21.45 ms (−15%) with `-Dyap.folia.entity-tick-budget=300` |
+| Hot-region entity budget | `0012-yap-entity-tick-budget.patch` (Mob AI only; TNT always ticks) |
+| Async chunk save | `0010-yap-async-chunk-save.patch` |
+| Scoreboard SWMR | `0011-yap-scoreboard-swmr.patch` |
+| Citeable MSPT win | **Yes** — see [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md) spawncollapse row |
+
+YaP Tab covers sidebar/nametag/bossbar UX; SWMR restores vanilla scoreboard API when
+`-Dyap.folia.scoreboard-swmr=true`.
 ### Legacy MSPT scoreboard (Paper + Phase 3)
 
 Java 26, Paper 26.2 stock vs YaPcore **legacy Phase 3.6 all-on** (2026-08-21) —
