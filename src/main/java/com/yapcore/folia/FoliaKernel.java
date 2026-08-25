@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Logger;
 
 /**
@@ -142,6 +143,14 @@ public final class FoliaKernel {
         }
         appendSchedCompatAgent(cmd);
         if (config.isFoliaTeleportTransactions()) {
+            String jarSource = config.getFoliaJarSource() == null
+                    ? "fetch"
+                    : config.getFoliaJarSource().trim().toLowerCase(Locale.ROOT);
+            if ("fetch".equals(jarSource) || "stock".equals(jarSource)) {
+                LOG.severe("folia-teleport-transactions=true requires YaP-Folia (folia-jar-source=build). "
+                        + "Stock Fill Folia has no YapTeleportTransaction — run ./scripts/build-yap-folia.sh "
+                        + "or set folia-teleport-transactions=false.");
+            }
             cmd.add("-Dyap.folia.teleport-transactions=true");
         }
         cmd.add("-jar");

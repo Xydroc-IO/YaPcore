@@ -53,7 +53,8 @@ Results JSON: `bench/results/<stamp>-yap-folia-soak-<profile>.json`.
 | `SKIP_VERIFY=1` | both | Skip rebuild; require existing `yap-folia` jar |
 | `FORCE_REBUILD=1` | both | Always run `verify-yap-folia.sh` (build only) |
 | `SKIP_HOOKS=1` | both | Skip A2/A3 hook scripts |
-| `SKIP_LIVE=1` | compat hook | sched-compat unit path only (default in soak) |
+| `SKIP_LIVE=1` | compat hook | unit path only (**soak default is live `0`**) |
+| `SOAK_HOOK_SECS` | compat | Seconds for A2 hook smokes (default 300 / 180) |
 | `YAP_FOLIA_ENTITY_TICK_BUDGET` | **perf** | → `-Dyap.folia.entity-tick-budget` (A3) |
 | `YAP_FOLIA_ASYNC_CHUNK_SAVE` | **perf** | → `-Dyap.folia.async-chunk-save` (A3) |
 
@@ -92,3 +93,17 @@ If `folia-jar-source=build` and the jar is missing, YaPcore fails with a clear
 error pointing at `./scripts/build-yap-folia.sh`. Stock fallback: `folia-jar-source=fetch`.
 
 See [FOLIA_FORK.md](FOLIA_FORK.md) · [CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md).
+
+## Agent 2 sign-off — soak-compat
+
+> **compat soak GREEN — clear to flip build default**
+
+Agent 2 verified on `FOLIA_JAR_SOURCE=build` with `folia-sched-compat=true`,
+`folia-teleport-transactions=true`, and A3 perf knobs **OFF**:
+
+- `./scripts/smoke-folia-sched-compat.sh` live PASS (300s soak hold)
+- `./scripts/smoke-folia-cross-region-tp.sh` live PASS (`fetch` hard-FAIL)
+- `./scripts/smoke-folia.sh` / soak-compat hold PASS
+
+Agent 1 may flip `folia-jar-source` example + `FoliaAuthorityConfig` default to
+`build`. Do **not** flip from A2/A3 branches.

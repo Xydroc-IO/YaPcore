@@ -35,9 +35,13 @@ gradle :yap-sched-agent:installAgent
 |---------|--------|
 | `SchedCompatContext.setEntity(entity)` | `EntityScheduler` |
 | `SchedCompatContext.setLocation(loc)` | `RegionScheduler` (chunk of location) |
-| else | `GlobalRegionScheduler` + one-time warning |
+| else | `GlobalRegionScheduler` + **one warning per plugin** |
 
 Async `runTaskAsynchronously*` is unchanged (Folia already allows the async CraftScheduler path).
+
+Warn hygiene: with `folia-sched-compat-warn=true`, each plugin gets a single
+`routed to GlobalRegionScheduler` warning; further fires for that plugin are
+suppressed (soak-safe — not spam).
 
 First-party plugins should still prefer [`YapSched`](YAP_SCHED.md). This agent is for **third-party jars** that never call YapSched.
 
@@ -50,15 +54,24 @@ First-party plugins should still prefer [`YapSched`](YAP_SCHED.md). This agent i
 
 Smoke logs look for `yap-sched-agent: rewritten CraftScheduler.handle`.
 
-## Smoke
+## Smoke / soak
 
 ```bash
-./scripts/smoke-folia-sched-compat.sh
-# SKIP_LIVE=1 ./scripts/smoke-folia-sched-compat.sh   # unit + jar only
+FOLIA_JAR_SOURCE=build ./scripts/smoke-folia-sched-compat.sh 300
+SKIP_LIVE=1 ./scripts/smoke-folia-sched-compat.sh
+./scripts/soak-yap-folia.sh compat
 ```
 
-Synthetic plugin: `yap-legacy-sched-smoke.jar` (`legacy-sched-smoke-plugin`) — must print
-`YaP-LEGACY-SCHED-SMOKE all-ok` without `UnsupportedOperationException`.
+Synthetic plugin: `yap-legacy-sched-smoke.jar` — must print `YaP-LEGACY-SCHED-SMOKE all-ok`
+without `UnsupportedOperationException`.
+
+### Soak results (Agent 2 — compat soak)
+
+| Gate | Result |
+|------|--------|
+| Unit (`:yap-sched-agent:test`) | PASS |
+| Live on `FOLIA_JAR_SOURCE=build` (300s hold after markers) | PASS |
+| Warn spam under load | 1 GlobalRegionScheduler warning (per-plugin cap) |
 
 ## Limits
 
@@ -71,3 +84,4 @@ Synthetic plugin: `yap-legacy-sched-smoke.jar` (`legacy-sched-smoke-plugin`) —
 - [YAP_SCHED.md](YAP_SCHED.md) — first-party API
 - [FOLIA_PLUGIN_COMPAT_MATRIX.md](FOLIA_PLUGIN_COMPAT_MATRIX.md) — Works / Shimmed / Broken
 - [PLUGIN_BACKCOMPAT.md](PLUGIN_BACKCOMPAT.md) — ASM field renames (not Folia sched)
+- [YAP_FOLIA_SOAK.md](YAP_FOLIA_SOAK.md) — soak-compat profile

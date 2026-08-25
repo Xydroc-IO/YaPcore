@@ -110,6 +110,15 @@ if [ ! -f "$OUT_STOCK_ALIAS" ]; then
   echo "Created stock alias $OUT_STOCK_ALIAS (from yap-folia)"
 fi
 
+# Patch inventory stamp for smokes (paperclip binary deltas hide class names).
+STAMP="$ROOT/lib/yap-folia-${VER}.patches.txt"
+{
+  echo "# YaP-Folia patches applied at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo "# upstream=$(git -C "$WORK" rev-parse HEAD)"
+  find "$ROOT/vendor/folia/patches" -maxdepth 1 -type f -name '*.patch' -printf '%f\n' | sort
+} >"$STAMP"
+echo "Wrote $STAMP"
+
 # Stamp YaP metadata on thin/server jars only. Paperclip outer manifests are
 # minimal (Main-Class: paperclip); jar ufm rewrites them and drops attributes.
 case "$(basename "$CANDIDATE")" in

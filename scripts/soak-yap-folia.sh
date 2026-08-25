@@ -147,11 +147,11 @@ run_hook() {
 }
 
 if [ "$PROFILE" = "compat" ]; then
-  # Unit/agent path — do not require full Folia live if agent jars missing
-  SKIP_LIVE="${SKIP_LIVE:-1}" run_hook smoke-folia-sched-compat.sh 60 || true
-  # Cross-region TP smoke is A2-owned; run when present (needs yap-folia)
+  # Live A2 gates on build jar (override with SKIP_LIVE=1 for unit-only CI)
+  SKIP_LIVE="${SKIP_LIVE:-0}" run_hook smoke-folia-sched-compat.sh "${SOAK_HOOK_SECS:-300}"
   if [ -f "$ROOT/scripts/smoke-folia-cross-region-tp.sh" ]; then
-    run_hook smoke-folia-cross-region-tp.sh 90
+    TP_CYCLES="${TP_CYCLES:-100}" SKIP_LIVE="${SKIP_LIVE:-0}" \
+      run_hook smoke-folia-cross-region-tp.sh "${SOAK_HOOK_SECS:-180}"
   fi
 elif [ "$PROFILE" = "perf" ]; then
   if [ -f "$ROOT/scripts/smoke-folia-async-save.sh" ]; then

@@ -4,7 +4,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,7 +23,8 @@ public final class SchedCompatRouter {
 
     private static final Logger LOG = Logger.getLogger("YaP.SchedCompat");
     private static final long NO_REPEATING = -1L;
-    private static final AtomicBoolean WARNED_GLOBAL = new AtomicBoolean();
+    /** One warning per plugin name — useful without spam under soak load. */
+    private static final ConcurrentHashMap<String, Boolean> WARNED_PLUGINS = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, Object> FOLIA_TASKS = new ConcurrentHashMap<>();
 
     private static volatile Boolean warnGlobal = Boolean.TRUE;
@@ -83,12 +83,14 @@ public final class SchedCompatRouter {
         if (!Boolean.TRUE.equals(warnGlobal)) {
             return;
         }
-        if (WARNED_GLOBAL.compareAndSet(false, true)) {
-            String name = plugin != null ? String.valueOf(invokeQuiet(plugin, "getName")) : "unknown";
-            LOG.warning("yap-sched-agent: legacy sync scheduler from plugin '" + name
-                    + "' routed to GlobalRegionScheduler (no entity/location context). "
-                    + "Prefer EntityScheduler / RegionScheduler / YapSched. Further warnings suppressed.");
+        String name = plugin != null ? String.valueOf(invokeQuiet(plugin, "getName")) : "unknown";
+        if (WARNED_PLUGINS.putIfAbsent(name, Boolean.TRUE) != null) {
+            return;
         }
+        LOG.warning("yap-sched-agent: legacy sync scheduler from plugin '" + name
+                + "' routed to GlobalRegionScheduler (no entity/location context). "
+                + "Prefer EntityScheduler / RegionScheduler / YapSched. "
+                + "Further warnings for this plugin suppressed.");
     }
 
     private static void runCraftTask(Object craftTask) {

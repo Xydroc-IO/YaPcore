@@ -19,6 +19,16 @@ Status of common plugin patterns on YaP-Folia 26.2 with YaPcore product defaults
 | yap-stacker / yap-vehicles | Folia-safe |
 | yap-plugin-compat | STARTUP rewrite helper |
 
+## Synthetic / soak cases (Agent 2)
+
+| Case | Status | Evidence |
+|------|--------|----------|
+| `yap-legacy-sched-smoke` — `runTask` / `runTaskLater` / `runTaskTimer` / `scheduleSyncDelayedTask` | **Shimmed** | `./scripts/smoke-folia-sched-compat.sh` → `YaP-LEGACY-SCHED-SMOKE all-ok` |
+| Legacy sync schedule with **no** entity/location context | **Shimmed** | Agent → `GlobalRegionScheduler` + one warn per plugin |
+| Rapid cross-region teleport + `folia-teleport-transactions=true` on **yap-folia** | **Shimmed → Works** | patch `0001` + `smoke-folia-cross-region-tp.sh` on `FOLIA_JAR_SOURCE=build` |
+| Same teleport flag on **stock Fill** (`folia-jar-source=fetch`) | **Broken** (misconfig) | smoke hard-FAIL; FoliaKernel severe log |
+| Plugin missing `folia-supported: true` | **Broken** | Folia refuses load (not sched-agent) |
+
 ## Scheduler patterns
 
 | Pattern | Status | Helper |

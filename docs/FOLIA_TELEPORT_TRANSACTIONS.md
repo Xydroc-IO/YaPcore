@@ -30,13 +30,18 @@ JVM flag (injected by `FoliaKernel` when enabled):
 -Dyap.folia.teleport-transactions=true
 ```
 
+**Requires YaP-Folia build jar** (`folia-jar-source=build`). Stock Fill Folia has no
+`YapTeleportTransaction`. With `folia-teleport-transactions=true` and
+`folia-jar-source=fetch`, `FoliaKernel` logs a **severe** error pointing at
+`./scripts/build-yap-folia.sh`. The live smoke **hard-fails** on `FOLIA_JAR_SOURCE=fetch`.
+
 ## Scope (Phase 2)
 
 1. Player `/tp` and plugin `teleportAsync` for players
 2. Nether/end portal transitions
 3. Vehicles: best-effort via Folia `0009-Teleport-desynced-passengers-to-root-vehicle` + CONFIRM; full vehicle trees are stretch
 
-## Metrics (folia-bridge / agent)
+## Metrics
 
 When patched jar + flag are active, expect log lines:
 
@@ -45,20 +50,31 @@ When patched jar + flag are active, expect log lines:
 - `YaP-TP-TX confirm`
 - `YaP-TP-TX rollback`
 
-## Smoke
+## Smoke / soak
 
 ```bash
-./scripts/smoke-folia-cross-region-tp.sh
-# SKIP_LIVE=1 — validates patch file + docs present without boot
+FOLIA_JAR_SOURCE=build ./scripts/smoke-folia-cross-region-tp.sh 180
+# SKIP_LIVE=1 — patch + docs only
+# FOLIA_JAR_SOURCE=fetch → FAIL (intentional)
 ```
 
-Live gate: **100** rapid cross-region teleports, **0** inventory loss / duplicate UUID errors in log.
+Class presence: paperclip binary deltas hide class names; smokes accept sibling
+`folia-server-*.jar` / bundler embed, or `lib/yap-folia-{ver}.patches.txt` listing
+`0001-yap-teleport-transactions.patch` (written by `build-yap-folia.sh`).
+
+### Soak results (Agent 2 — compat soak)
+
+| Gate | Result |
+|------|--------|
+| Patch file + docs | PASS |
+| Stock `fetch` jar | FAIL (intentional hard fail) |
+| Boot + flag on `FOLIA_JAR_SOURCE=build` | PASS |
 
 ## Ownership
 
-- **Agent 2** owns this patch and smoke (ship before Agent 3 regionizer edits).
+- **Agent 2** owns this patch and smoke.
 - Do **not** co-edit `TickRegionScheduler` / region merge with Agent 3 in the same PR.
-- Apply via Agent 1 pipeline: `./scripts/folia-patch.sh` / `./scripts/build-yap-folia.sh` when present.
+- Apply via `./scripts/folia-patch.sh` / `./scripts/build-yap-folia.sh`.
 
 ## PR note
 
