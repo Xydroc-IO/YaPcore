@@ -29,6 +29,10 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-sched-compat", "true");
         props.setProperty("folia-sched-compat-warn", "true");
         props.setProperty("folia-teleport-transactions", "true");
+        // Phase 3 perf knobs — product defaults OFF (safe). Enable for soak-perf / hot spawn.
+        props.setProperty("folia-async-chunk-save", "false");
+        props.setProperty("folia-entity-tick-budget", "0");
+        props.setProperty("folia-scoreboard-swmr", "false");
     }
 
     public boolean isFoliaAuthority() {
@@ -94,6 +98,24 @@ public final class FoliaAuthorityConfig {
 
     public boolean isFoliaTeleportTransactions() {
         return Boolean.parseBoolean(props.getProperty("folia-teleport-transactions", "true"));
+    }
+
+    /** Offload Moonrise flush off region thread ({@code -Dyap.folia.async-chunk-save}). Default off. */
+    public boolean isFoliaAsyncChunkSave() {
+        return Boolean.parseBoolean(props.getProperty("folia-async-chunk-save", "false"));
+    }
+
+    /**
+     * Max Mob AI ticks per region tick ({@code -Dyap.folia.entity-tick-budget}).
+     * {@code 0} = off. TNT/players/vehicles always tick.
+     */
+    public int getFoliaEntityTickBudget() {
+        return ConfigSupport.parseInt(props, "folia-entity-tick-budget", 0);
+    }
+
+    /** Allow Bukkit scoreboard mutations under SWMR ({@code -Dyap.folia.scoreboard-swmr}). Default off. */
+    public boolean isFoliaScoreboardSwmr() {
+        return Boolean.parseBoolean(props.getProperty("folia-scoreboard-swmr", "false"));
     }
 
     /**

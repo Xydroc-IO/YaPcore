@@ -111,7 +111,14 @@ python3 scripts/bench/compare-folia.py \
 
 | Stamp | Stock save spike | YaP async-save spike | Notes |
 |-------|-----------------:|---------------------:|-------|
-| _(pending)_ | — | — | `./scripts/smoke-folia-async-save.sh` — target ≤50% of stock |
+| `20260825T014032Z` | **6.0712** | **5.8788** | **MISS ≤50% target** (ratio 96.8%). Smoke PASS; mid-sample `/save-all` (`-Dyap.bench.save_all_at=5`) under heavypop (600 TNT / 192 hoppers) did **not** produce a flush spike above the ~6 ms load floor on either side — region MSPT rolling average dilutes short I/O. YaP knobs: `-Dyap.folia.async-chunk-save=true`. Files: `bench/results/20260825T014032Z-asyncsave-{stock,yapfolia,compare}.json`. Follow-up: quieter baseline + dirtier region files, or wall-clock flush metric. |
+
+Reproduce:
+
+```bash
+./scripts/smoke-folia-async-save.sh
+# or SKIP_LIVE=1 for compile-only gate
+```
 
 **Do not** publish rankings from rows marked NOT CITEABLE or INVALID.
 

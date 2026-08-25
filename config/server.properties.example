@@ -43,6 +43,11 @@ folia-sched-compat=true
 folia-sched-compat-warn=true
 # Cross-region teleport two-phase commit (requires patched yap-folia)
 folia-teleport-transactions=true
+# Phase 3 perf knobs (YaP-Folia patches 0010–0012) — product defaults OFF / safe
+# Enable for soak-perf or spawn-hot; see docs/YAP_FOLIA_SOAK.md knob profiles
+folia-async-chunk-save=false
+folia-entity-tick-budget=0
+folia-scoreboard-swmr=false
 # folia-jar-source=fetch|build|path|auto
 # Default: build (YaP-Folia) after ./scripts/build-yap-folia.sh — see docs/YAP_FOLIA_SOAK.md
 # Stock Fill fallback: folia-jar-source=fetch + ./scripts/fetch-folia.sh

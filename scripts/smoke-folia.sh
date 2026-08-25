@@ -78,6 +78,9 @@ folia-jar-source=${FOLIA_SRC}
 folia-sched-compat=${SCHED_COMPAT}
 folia-teleport-transactions=${TP_TX}
 folia-ready-timeout-sec=180
+folia-async-chunk-save=${YAP_FOLIA_ASYNC_CHUNK_SAVE:-false}
+folia-entity-tick-budget=${YAP_FOLIA_ENTITY_TICK_BUDGET:-0}
+folia-scoreboard-swmr=${YAP_FOLIA_SCOREBOARD_SWMR:-false}
 velocity-enabled=false
 web-dashboard-enabled=false
 resource-pack-enabled=false
@@ -93,6 +96,7 @@ echo "  java=$JAVA_BIN"
 echo "  jar=$YAP_JAR"
 echo "  port=$PORT"
 echo "  folia-jar-source=$FOLIA_SRC sched-compat=$SCHED_COMPAT teleport=$TP_TX"
+echo "  perf: async-save=${YAP_FOLIA_ASYNC_CHUNK_SAVE:-off} budget=${YAP_FOLIA_ENTITY_TICK_BUDGET:-off} swmr=${YAP_FOLIA_SCOREBOARD_SWMR:-off}"
 
 # Optional A3 perf knobs forwarded into chassis → FoliaKernel → Folia JVM
 EXTRA_D=()
@@ -101,6 +105,9 @@ if [ -n "${YAP_FOLIA_ENTITY_TICK_BUDGET:-}" ]; then
 fi
 if [ -n "${YAP_FOLIA_ASYNC_CHUNK_SAVE:-}" ]; then
   EXTRA_D+=("-Dyap.folia.async-chunk-save=${YAP_FOLIA_ASYNC_CHUNK_SAVE}")
+fi
+if [ "${YAP_FOLIA_SCOREBOARD_SWMR:-}" = "true" ]; then
+  EXTRA_D+=("-Dyap.folia.scoreboard-swmr=true")
 fi
 if [ "${YAP_FOLIA_SOAK_PROFILE:-}" = "compat" ]; then
   # Compat soak: never enable perf knobs even if env leaked

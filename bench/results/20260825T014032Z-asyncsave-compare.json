@@ -1,0 +1,16 @@
+{
+  "stamp": "20260825T014032Z",
+  "stock_spike": 6.0712,
+  "yap_spike": 5.8788,
+  "ratio": 0.9683,
+  "target": "yap <= 50% stock",
+  "target_met": false,
+  "stock_file": "/home/xydroc/Desktop/YaPcore/bench/results/20260825T014032Z-asyncsave-stock.json",
+  "yap_file": "/home/xydroc/Desktop/YaPcore/bench/results/20260825T014032Z-asyncsave-yapfolia.json",
+  "entities": 600,
+  "hoppers": 192,
+  "save_all_at": 5,
+  "knobs": {
+    "async-chunk-save": true
+  }
+}

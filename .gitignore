@@ -127,6 +127,9 @@ bench/results/*
 !bench/results/20260824-phase1-yap-folia-baseline.json
 !bench/results/20260824T234919Z-spawncollapse-folia.json
 !bench/results/20260824T234919Z-spawncollapse-yapfolia.json
+!bench/results/20260825T014032Z-asyncsave-stock.json
+!bench/results/20260825T014032Z-asyncsave-yapfolia.json
+!bench/results/20260825T014032Z-asyncsave-compare.json
 bench/*.lock
 bench/*.port
 bench/highpop.lock
