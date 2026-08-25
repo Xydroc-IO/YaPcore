@@ -8,12 +8,25 @@ All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `p
 |------|--------|
 | `gradle assembleRelease` | `build/dist/yapcore-release/` — **linux/** + **windows/** full server trees |
 | `gradle assembleRelease -PyapGameplay=true` | Same + vehicles, stacker, gameplay-knobs jars & modules |
+| `gradle publishReleasesFolder` | **`releases/<version>/`** — trees + linux/windows zips + suite zips |
 | Git tag `v*` push | GitHub Actions → `yapcore-release-linux.zip` + `-windows.zip` |
 | `gradle assembleNetworkSuite` | `build/dist/yap-network-suite.zip` — YaP Link + native link plugins |
 | `gradle assembleGameplaySuite` | `build/dist/yap-gameplay-suite.zip` — GAMEPLAY plugins/modules (standalone) |
 | `gradle assembleAddonsRelease` | `build/dist/yap-addons-release.zip` — example vehicle addon |
 | `gradle assemblePluginDist` | `build/dist/yap-plugins/` — flat jar mirror by tier |
-| `gradle assembleAllReleases` | Full box + all standalone zips |
+| `gradle assembleAllReleases` | Full box + all standalone zips (under `build/dist/`) |
+
+## Durable release folder
+
+```bash
+gradle publishReleasesFolder
+# → releases/1.0.0.0/
+#      yapcore-release/linux/   yapcore-release/windows/
+#      yapcore-release-linux.zip  yapcore-release-windows.zip
+#      yap-network-suite.zip  yap-gameplay-suite.zip  yap-addons-release.zip
+```
+
+Binaries under `releases/` are gitignored; rebuild anytime with the same task.
 
 ## Linux / Windows full box
 

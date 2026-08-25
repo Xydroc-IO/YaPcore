@@ -216,7 +216,7 @@ tasks.register("assembleRelease") {
             )
             dest.resolve("start-prod.sh").setExecutable(true)
             dest.resolve("scripts").listFiles()
-                ?.filter { it.name.endsWith(".sh") }
+                ?.filter { it.name.endsWith(".sh") || it.name == "yapctl" }
                 ?.forEach { it.setExecutable(true) }
         }
 
@@ -313,7 +313,7 @@ tasks.register("assembleRelease") {
 
             Launch
             ------
-              chmod +x *.sh scripts/*.sh scripts/db/*.sh
+              chmod +x *.sh scripts/*.sh scripts/db/*.sh scripts/yapctl
               ./start.sh --fg
               ./gui.sh
               ./stop.sh

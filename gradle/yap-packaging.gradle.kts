@@ -143,3 +143,140 @@ tasks.register("assembleAllReleases") {
         "assembleAddonsRelease",
     )
 }
+
+/**
+ * Copy full release trees + zips into a durable top-level folder:
+ *   releases/<version>/
+ *     linux/  windows/
+ *     yapcore-release-linux.zip  yapcore-release-windows.zip
+ *     yap-network-suite.zip  yap-gameplay-suite.zip  yap-addons-release.zip
+ */
+tasks.register("publishReleasesFolder") {
+    group = "distribution"
+    description =
+        "Publish full release packages into releases/<version>/ (trees + zip archives)"
+    dependsOn("assembleAllReleases")
+
+    val ver = project.version.toString()
+    val destRoot = project.layout.projectDirectory.dir("releases/$ver")
+    val distDir = layout.buildDirectory.dir("dist")
+
+    doLast {
+        val dest = destRoot.asFile
+        if (dest.exists()) dest.deleteRecursively()
+        dest.mkdirs()
+
+        val dist = distDir.get().asFile
+        val box = dist.resolve("yapcore-release")
+        require(box.resolve("linux").isDirectory) {
+            "Missing ${box.resolve("linux")} — assembleRelease failed?"
+        }
+        require(box.resolve("windows").isDirectory) {
+            "Missing ${box.resolve("windows")} — assembleRelease failed?"
+        }
+
+        project.copy {
+            from(box.resolve("linux"))
+            into(dest.resolve("linux"))
+        }
+        project.copy {
+            from(box.resolve("windows"))
+            into(dest.resolve("windows"))
+        }
+        box.resolve("README.txt").takeIf { it.isFile }?.copyTo(
+            dest.resolve("README-box.txt"),
+            overwrite = true,
+        )
+
+        // Match CI / QUICK_START layout: yapcore-release/{linux,windows}/…
+        val staging = dest.resolve("yapcore-release")
+        staging.mkdirs()
+        dest.resolve("linux").renameTo(staging.resolve("linux"))
+        dest.resolve("windows").renameTo(staging.resolve("windows"))
+
+        val linuxZip = dest.resolve("yapcore-release-linux.zip")
+        val windowsZip = dest.resolve("yapcore-release-windows.zip")
+        // Ant's plain basedir zip stores Unix entries as 0644 and drops +x — break ./gui.sh → start.sh.
+        // Split zipfilesets: scripts + yapctl → 0755; everything else → 0644.
+        fun zipLinuxTree(zipFile: File, includesPrefix: String) {
+            project.ant.withGroovyBuilder {
+                "zip"("destfile" to zipFile) {
+                    "zipfileset"(
+                        "dir" to dest,
+                        "includes" to
+                            "$includesPrefix/**/*.sh,$includesPrefix/**/yapctl",
+                        "filemode" to "755",
+                        "dirmode" to "755",
+                    )
+                    "zipfileset"(
+                        "dir" to dest,
+                        "includes" to "$includesPrefix/**",
+                        "excludes" to
+                            "$includesPrefix/**/*.sh,$includesPrefix/**/yapctl",
+                        "filemode" to "644",
+                        "dirmode" to "755",
+                    )
+                }
+            }
+        }
+        zipLinuxTree(linuxZip, "yapcore-release/linux")
+        // Windows tree has no +x requirement; keep simple zip.
+        project.ant.withGroovyBuilder {
+            "zip"(
+                "destfile" to windowsZip,
+                "basedir" to dest,
+                "includes" to "yapcore-release/windows/**",
+            )
+        }
+
+        listOf(
+            "yap-network-suite.zip",
+            "yap-gameplay-suite.zip",
+            "yap-addons-release.zip",
+        ).forEach { name ->
+            val src = dist.resolve(name)
+            if (src.isFile) {
+                src.copyTo(dest.resolve(name), overwrite = true)
+            } else {
+                logger.warn("Suite zip missing (skipped): $src")
+            }
+        }
+
+        dest.resolve("README.txt").writeText(
+            """
+            YaPcore $ver — release folder
+            =============================
+
+            Full server trees (self-contained):
+              yapcore-release/linux/     → ./start.sh --fg
+              yapcore-release/windows/   → start.cmd -Fg
+
+            Zip archives (same trees; unzip then cd yapcore-release/linux):
+              yapcore-release-linux.zip
+              yapcore-release-windows.zip
+
+            Standalone suites:
+              yap-network-suite.zip
+              yap-gameplay-suite.zip
+              yap-addons-release.zip
+
+            Rebuild:  gradle publishReleasesFolder
+            Gameplay in the full box:  gradle assembleRelease -PyapGameplay=true
+                                       && gradle publishReleasesFolder
+
+            Docs: docs/RELEASES.md · docs/QUICK_START.md
+            """.trimIndent() + "\n"
+        )
+
+        logger.lifecycle("Release folder → ${dest.absolutePath}")
+        dest.walkTopDown().maxDepth(2).sortedBy { it.path }.forEach { f ->
+            if (f == dest) return@forEach
+            val rel = f.relativeTo(dest).path
+            if (f.isFile) {
+                logger.lifecycle("  $rel (${f.length() / (1024 * 1024)} MiB)")
+            } else if (f.isDirectory && f.parentFile == dest) {
+                logger.lifecycle("  $rel/")
+            }
+        }
+    }
+}

@@ -50,4 +50,5 @@ elif [ ! -f "$ROOT/yapcore.jar" ]; then
   exit 1
 fi
 
-exec "$SCRIPT_DIR/start.sh" --gui --fg
+# Use bash so release zips that lost +x still launch (Ant zip historically stored 0644).
+exec bash "$SCRIPT_DIR/start.sh" --gui --fg
