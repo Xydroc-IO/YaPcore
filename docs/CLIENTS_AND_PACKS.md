@@ -12,8 +12,11 @@ game-authority=folia
 folia-embed=true
 folia-version=26.2
 folia-dir=folia-kernel
-# Prefer built fork after ./scripts/build-yap-folia.sh :
-# folia-jar-source=build
+# RECOMMENDED product jar: YaP-Folia
+#   ./scripts/build-yap-folia.sh
+#   folia-jar-source=build
+# Default remains fetch until soak-compat green (docs/YAP_FOLIA_SOAK.md).
+folia-jar-source=fetch
 paper-phase3-tick-bridge=false
 paper-phase3-nms-tick=false
 ```
@@ -21,22 +24,30 @@ paper-phase3-nms-tick=false
 | Value | Meaning |
 |-------|---------|
 | `folia` + `folia-embed=true` | **Default** — Folia owns JE |
-| `folia-jar-source=build` | Use `lib/yap-folia-{ver}.jar` (YaP Folia fork) |
-| `folia-jar-source=fetch` | Stock Fill jar (`lib/folia-{ver}.jar`) |
+| `folia-jar-source=build` | **Recommended** — `lib/yap-folia-{ver}.jar` (YaP Folia fork) |
+| `folia-jar-source=fetch` | Stock Fill jar (`lib/folia-{ver}.jar`) — current shipped default |
 | `paper` + `paper-embed=true` | Legacy — Paper owns JE; Phase 3 opt-in for benches |
 | `paper-phase3-nms-tick=true` | Legacy only — interior NMS entity tick on cores 3–6 (**requires** `lib/paper-*-yap.jar`) |
 | `native` | Experimental YapEngine flat world |
 | `mojang` | Legacy Mojang wrap |
 
-**Java 25+** for Folia/Paper 26.2. Folia product path:
+**Java 25+** for Folia/Paper 26.2. Recommended Folia product path:
 
 ```bash
-./scripts/fetch-folia.sh          # stock Fill → lib/folia-26.2.jar
-# or: ./scripts/build-yap-folia.sh  # fork → lib/yap-folia-26.2.jar (folia-jar-source=build)
-./scripts/start.sh --fg           # cds into folia-kernel
+./scripts/build-yap-folia.sh          # → lib/yap-folia-26.2.jar
+# set folia-jar-source=build
+./scripts/soak-yap-folia.sh compat    # shared soak (Agents 2/3 plug in)
+./scripts/start.sh --fg
 ```
 
-See [FOLIA_FORK.md](FOLIA_FORK.md) for vendor/patch/build pipeline.
+Stock Fill fallback:
+
+```bash
+./scripts/fetch-folia.sh              # → lib/folia-26.2.jar
+# folia-jar-source=fetch
+```
+
+See [FOLIA_FORK.md](FOLIA_FORK.md) · [YAP_FOLIA_SOAK.md](YAP_FOLIA_SOAK.md).
 Legacy Paperclip (Phase 3 benches only):
 
 ```bash

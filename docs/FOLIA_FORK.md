@@ -48,7 +48,25 @@ Resolution order in `FoliaFiles.ensureFoliaJar()`:
 3. existing `folia-kernel/folia-{version}.jar` / `lib/folia-{version}.jar`
 4. Fill download (`folia-jar-url` or PaperMC Fill)
 
-Default remains `fetch` so stock installs keep working without a local Folia build.
+Default remains **`fetch`** until Agent 2 reports **soak-compat green**, then Agent 1
+flips example + `FoliaAuthorityConfig` to **`build`**. Until then, **recommended
+product path is still YaP-Folia**:
+
+```bash
+./scripts/build-yap-folia.sh
+# then set folia-jar-source=build
+./scripts/soak-yap-folia.sh compat
+```
+
+See [YAP_FOLIA_SOAK.md](YAP_FOLIA_SOAK.md).
+
+## Changelog (default jar source)
+
+| When | Default |
+|------|---------|
+| Phase 1 bootstrap | `fetch` (stock Fill) |
+| Next wave (this doc) | still `fetch` + loud **recommended: `build`** until soak-compat green |
+| After A2 soak-compat green | `build` (YaP-Folia) — Agent 1 owns the flip |
 
 ## Adding a patch (Agents 2 / 3)
 
@@ -87,6 +105,7 @@ Commit the updated `UPSTREAM.lock` + any patch rebases together.
 ```bash
 ./scripts/verify-yap-folia.sh             # build + smoke with source=build
 SKIP_SMOKE=1 ./scripts/verify-yap-folia.sh
+./scripts/soak-yap-folia.sh compat       # shared soak (docs/YAP_FOLIA_SOAK.md)
 ```
 
 ## License

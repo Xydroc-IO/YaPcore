@@ -53,8 +53,9 @@ public final class FoliaFiles {
                 copyIfNeeded(yapBuilt, jar, "yap-folia build");
                 return jar;
             }
-            LOG.warning("folia-jar-source=build but missing " + yapBuilt.getFileName()
-                    + " — falling back to stock cache / Fill. Run ./scripts/build-yap-folia.sh");
+            LOG.warning("folia-jar-source=build but missing usable "
+                    + yapBuilt + " — falling back to stock cache / Fill if available. "
+                    + "Run: ./scripts/build-yap-folia.sh");
         } else if ("path".equals(source)) {
             throw new IOException("folia-jar-source=path requires folia-jar-path=");
         }
@@ -72,8 +73,9 @@ public final class FoliaFiles {
         }
 
         if ("build".equals(source)) {
-            throw new IOException("folia-jar-source=build and no usable jar at " + yapBuilt
-                    + " (run ./scripts/build-yap-folia.sh)");
+            throw new IOException("folia-jar-source=build but missing usable jar at "
+                    + yapBuilt + " — run ./scripts/build-yap-folia.sh "
+                    + "(or set folia-jar-source=fetch for stock Folia)");
         }
 
         String url = config.getFoliaJarUrl();

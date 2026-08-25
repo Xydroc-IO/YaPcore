@@ -18,6 +18,21 @@ plugin hunting — everything you need ships in the box.
 
 Pre-built jars, plugins, packs, and launch scripts — no Gradle required.
 
+**Game jar:** releases may include `lib/yap-folia-*.jar` when the builder ran
+`./scripts/build-yap-folia.sh`. If missing, either:
+
+```bash
+./scripts/build-yap-folia.sh    # requires JDK 25+, Git, network (source tree)
+# config/server.properties:
+folia-jar-source=build
+```
+
+or keep the stock path (`folia-jar-source=fetch` + `./scripts/fetch-folia.sh`).
+
+**Recommended product path = YaP-Folia (`build`)** after soak-compat is green —
+today the shipped default is still `fetch` until that gate; see
+[YAP_FOLIA_SOAK.md](YAP_FOLIA_SOAK.md) · [FOLIA_FORK.md](FOLIA_FORK.md).
+
 1. Download **`yapcore-release-linux.zip`** or **`yapcore-release-windows.zip`**
    from [GitHub Releases](https://github.com/yaplabs/YaPcore/releases) (or run
    `gradle assembleRelease` locally — output in `build/dist/yapcore-release/`).

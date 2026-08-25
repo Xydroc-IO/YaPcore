@@ -106,13 +106,15 @@ tasks.register("assembleRelease") {
             "REGIONS.md", "RELEASES.md",
             "PLUGIN_COMPAT_MATRIX.md", "YAP_LINK_NATIVE.md", "PHASE4_PROTOCOL.md",
             "ROADMAP_COMPLETION_PHASES.md", "VIA_GEYSER_PARITY.md",
+            "FOLIA_FORK.md", "YAP_FOLIA_SOAK.md",
         )
         val linuxScripts = listOf(
             "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
             "nginx-setup.sh", "heap-dump.sh", "build-default-resourcepack.sh", "fetch-faithful-64x.sh",
             "fetch-folia.sh",
             "vendor-folia.sh", "folia-patch.sh", "build-yap-folia.sh", "verify-yap-folia.sh",
-            "smoke-folia.sh",
+            "soak-yap-folia.sh", "smoke-folia.sh",
+            "yapctl",
         )
 
         fun copyCommon(dest: File) {
@@ -179,13 +181,14 @@ tasks.register("assembleRelease") {
                 // .env is gitignored; ship example only
                 exclude(".env")
             }
-            // Optional Folia jar cache if present on builder host
+            // Optional Folia jar cache if present on builder host.
+            // Prefer shipping yap-folia when built; stock folia-* remains fallback.
             val libDir = project.file("lib")
             if (libDir.isDirectory) {
                 project.copy {
                     from(libDir)
                     into(dest.resolve("lib"))
-                    include("folia-*.jar")
+                    include("yap-folia-*.jar", "folia-*.jar")
                 }
             }
         }
@@ -257,13 +260,15 @@ tasks.register("assembleRelease") {
             resourcepacks/yapcore-default.zip
             config/
             docs/
-            lib/  (Folia jar cache if present on build host)
+            lib/  (yap-folia-*.jar when built on host; else stock folia-*.jar — see FOLIA_FORK.md)
 
             Web dashboard: http://127.0.0.1:8080/
             Token: config/server.properties → web-dashboard-token
 
             Requires Java 25+ on PATH (or JAVA_HOME).
-            Product path: Folia (fetch-folia / smoke-folia). See docs/WINDOWS.md.
+            Product path: YaP-Folia recommended (./scripts/build-yap-folia.sh +
+            folia-jar-source=build). Stock Fill: fetch-folia / folia-jar-source=fetch.
+            Soak: ./scripts/soak-yap-folia.sh compat — docs/YAP_FOLIA_SOAK.md.
             """.trimIndent()
 
         // --- linux ---

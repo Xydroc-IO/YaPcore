@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# Minimal operator control stub for YaPcore (Phase 5 lite).
+# Usage: ./scripts/yapctl start|stop|status|soak-compat|soak-perf|help
+set -euo pipefail
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+# shellcheck disable=SC1091
+. "$ROOT/scripts/lib.sh"
+
+CMD="${1:-help}"
+shift || true
+
+case "$CMD" in
+  start)
+    exec "$ROOT/scripts/start.sh" "$@"
+    ;;
+  stop)
+    exec "$ROOT/scripts/stop.sh" "$@"
+    ;;
+  status)
+    exec "$ROOT/scripts/status.sh" "$@"
+    ;;
+  soak-compat|soak)
+    exec "$ROOT/scripts/soak-yap-folia.sh" compat "$@"
+    ;;
+  soak-perf)
+    exec "$ROOT/scripts/soak-yap-folia.sh" perf "$@"
+    ;;
+  build-folia)
+    exec "$ROOT/scripts/build-yap-folia.sh" "$@"
+    ;;
+  help|-h|--help)
+    cat <<'EOF'
+yapctl — thin wrapper over YaPcore scripts
+
+  yapctl start [--fg]     → scripts/start.sh
+  yapctl stop             → scripts/stop.sh
+  yapctl status           → scripts/status.sh
+  yapctl build-folia      → scripts/build-yap-folia.sh
+  yapctl soak-compat      → scripts/soak-yap-folia.sh compat
+  yapctl soak-perf        → scripts/soak-yap-folia.sh perf
+
+Recommended product jar: ./scripts/build-yap-folia.sh then folia-jar-source=build
+(see docs/YAP_FOLIA_SOAK.md — default stays fetch until soak-compat green).
+EOF
+    ;;
+  *)
+    echo "Unknown command: $CMD (try: yapctl help)" >&2
+    exit 2
+    ;;
+esac

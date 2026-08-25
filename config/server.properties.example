@@ -43,7 +43,9 @@ folia-sched-compat=true
 folia-sched-compat-warn=true
 # Cross-region teleport two-phase commit (requires patched yap-folia)
 folia-teleport-transactions=true
-# folia-jar-source=fetch|build|path|auto  (build → lib/yap-folia-{ver}.jar)
+# folia-jar-source=fetch|build|path|auto
+# RECOMMENDED: build (YaP-Folia) after ./scripts/build-yap-folia.sh + soak-compat green
+# Default stays fetch until Agent 1 flips post A2 soak — see docs/YAP_FOLIA_SOAK.md
 folia-jar-source=fetch
 # folia-jar-path=
 # folia-jar-url=
