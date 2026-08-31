@@ -21,7 +21,8 @@ Smoke: `./scripts/smoke-yap-link-folia.sh`
 
 When Folia `proxies.velocity.enabled` is **false** (local default in some trees), Link
 still completes login without `velocity:player_info`. Enable forwarding for production
-multi-proxy as above.
+multi-proxy as above. Game jar remains **YaP-Folia** (`folia-jar-source=build`) unless
+you explicitly switch to stock Fill (`fetch`).
 
 Full Link docs: [YAP_LINK.md](YAP_LINK.md).
 

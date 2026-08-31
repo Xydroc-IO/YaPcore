@@ -1,7 +1,10 @@
 # Performance & domain layout
 
-**Product context:** Folia owns the game tick (`game-authority=folia`). YapEngine
-is chassis only (Netty / dual-stack / I/O / ops). Legacy Phase 3 Paper spatial tick is opt-in for benches — see [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md).
+**Product context:** **YaP-Folia** owns the game tick (`game-authority=folia`,
+`folia-jar-source=build`). YapEngine is chassis only (Netty / dual-stack / I/O / ops).
+Stock Fill Folia is a fetch fallback for benches — see [FOLIA_FORK.md](FOLIA_FORK.md)
+and [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md). Legacy Phase 3 Paper spatial tick is opt-in
+for benches — see [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md).
 
 ## SequenceToken (microsecond precision)
 

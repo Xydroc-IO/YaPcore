@@ -10,8 +10,8 @@ It is **not** a Velocity fork. See the full roadmap:
 ## Architecture
 
 ```text
-Players → YaP Link (:25565) → YaPcore Via (:25566) → Folia (:25567)
-              ↑ yap-link.jar              ↑ protocol edge         ↑ game
+Players → YaP Link (:25565) → YaPcore Via (:25566) → YaP-Folia (:25567)
+              ↑ yap-link.jar              ↑ protocol edge         ↑ game (fork)
 ```
 
 | Path | Role |
@@ -32,9 +32,12 @@ the Gradle shadow jar. After Link protocol changes run
 `gradle :yap-link-native:shadowJar` and copy/publish so the root jar stays current
 (`gradle publishReleasesFolder`).
 
-## Folia backend
+## Folia backend (YaP-Folia fork)
 
-Two supported modes:
+Product default: **`folia-jar-source=build`** (YaP-Folia under `lib/yap-folia-*.jar`),
+not stock Fill Folia. See [FOLIA_FORK.md](FOLIA_FORK.md).
+
+Two forwarding modes:
 
 1. **Velocity modern forwarding** (recommended for production multi-proxy):
 
@@ -49,7 +52,7 @@ game-authority=folia
 
 Same `forwarding.secret` next to Link’s `link.properties`.
 
-2. **Forwarding disabled** (common local Link → Via → Folia): Folia
+2. **Forwarding disabled** (common local Link → Via → YaP-Folia): Folia
 `proxies.velocity.enabled=false`. Link still bridges on Login Success; it does
 **not** require `velocity:player_info` when the backend never asks for it.
 
