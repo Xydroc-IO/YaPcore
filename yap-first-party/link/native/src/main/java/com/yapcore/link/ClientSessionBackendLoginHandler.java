@@ -3,6 +3,7 @@ package com.yapcore.link;
 import com.yapcore.link.forwarding.ModernForwarding;
 import com.yapcore.link.protocol.McCodec;
 import com.yapcore.link.protocol.McCompressionCodec;
+import com.yapcore.link.protocol.McFrameCodec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -21,9 +22,7 @@ final class ClientSessionBackendLoginHandler extends ChannelInboundHandlerAdapte
     private final Channel client;
     private boolean forwarded;
     private McCompressionCodec.Decoder clientCompDec;
-    private McCompressionCodec.Encoder clientCompEnc;
     private McCompressionCodec.Decoder backendCompDec;
-    private McCompressionCodec.Encoder backendCompEnc;
 
     ClientSessionBackendLoginHandler(ClientSession session, Channel client) {
         this.session = session;
@@ -47,8 +46,9 @@ final class ClientSessionBackendLoginHandler extends ChannelInboundHandlerAdapte
             if (packetId == 0x03) {
                 int threshold = McCodec.readVarInt(buf);
                 buf.release();
-                enableCompression(client, ctx.channel(), threshold);
+                // Set Compression must reach the client uncompressed. Enable codecs after.
                 forwardSetCompression(threshold);
+                enableCompression(client, ctx.channel(), threshold);
                 return;
             }
             if (packetId == 0x04) {
@@ -56,14 +56,13 @@ final class ClientSessionBackendLoginHandler extends ChannelInboundHandlerAdapte
                 return;
             }
             if (packetId == 0x02) {
+                // Modern forwarding is optional: backends with velocity disabled (common for
+                // Link → Via → Folia) never send velocity:player_info; still bridge.
                 if (!forwarded) {
-                    buf.release();
-                    session.kickChannel(client, "Backend did not request modern forwarding");
-                    ctx.close();
-                    return;
+                    LOG.info("Login success without modern forwarding — bridging anyway");
                 }
                 buf.resetReaderIndex();
-                client.writeAndFlush(buf.retain());
+                client.writeAndFlush(buf); // ownership transferred to pipeline
                 session.beginBridge(client, ctx.channel());
                 return;
             }
@@ -120,23 +119,34 @@ final class ClientSessionBackendLoginHandler extends ChannelInboundHandlerAdapte
         if (threshold < 0) {
             return;
         }
+        // Inbound decompress only. Outbound zlib+length is owned by McFrameCodec.Encoder
+        // (stacking MessageToMessageEncoder + frame-enc emits empty/corrupt frames).
         if (backendCompDec == null) {
             backendCompDec = new McCompressionCodec.Decoder();
-            backendCompEnc = new McCompressionCodec.Encoder();
             backendCh.pipeline().addAfter("frame-dec", "comp-dec", backendCompDec);
-            backendCh.pipeline().addAfter("frame-enc", "comp-enc", backendCompEnc);
         }
         backendCompDec.setThreshold(threshold);
-        backendCompEnc.setThreshold(threshold);
+        Object backendEnc = backendCh.pipeline().get("frame-enc");
+        if (backendEnc instanceof McFrameCodec.Encoder enc) {
+            enc.setCompressionThreshold(threshold);
+        }
 
         if (clientCompDec == null) {
             clientCompDec = new McCompressionCodec.Decoder();
-            clientCompEnc = new McCompressionCodec.Encoder();
             clientCh.pipeline().addAfter("frame-dec", "comp-dec", clientCompDec);
-            clientCh.pipeline().addBefore("frame-enc", "comp-enc", clientCompEnc);
         }
         clientCompDec.setThreshold(threshold);
-        clientCompEnc.setThreshold(threshold);
+        Object clientEnc = clientCh.pipeline().get("frame-enc");
+        if (clientEnc instanceof McFrameCodec.Encoder enc) {
+            enc.setCompressionThreshold(threshold);
+        }
+        // Drop any leftover outbound compress handlers from older Link builds
+        if (clientCh.pipeline().get("comp-enc") != null) {
+            clientCh.pipeline().remove("comp-enc");
+        }
+        if (backendCh.pipeline().get("comp-enc") != null) {
+            backendCh.pipeline().remove("comp-enc");
+        }
     }
 
     @Override

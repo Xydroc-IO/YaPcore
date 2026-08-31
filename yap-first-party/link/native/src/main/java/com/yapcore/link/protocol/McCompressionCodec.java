@@ -78,6 +78,9 @@ public final class McCompressionCodec {
         @Override
         protected void encode(ChannelHandlerContext ctx, ByteBuf msg, List<Object> out) {
             int readable = msg.readableBytes();
+            if (readable == 0) {
+                return; // never emit empty compressed frames (outer length 0 / client CorruptedFrame)
+            }
             ByteBuf outBuf = ctx.alloc().buffer(readable + 5);
             try {
                 if (threshold < 0 || readable < threshold) {

@@ -22,6 +22,10 @@ final class ClientSessionPlayRelay extends ChannelInboundHandlerAdapter {
         if (!(msg instanceof ByteBuf buf)) {
             return;
         }
+        if (!buf.isReadable()) {
+            buf.release();
+            return;
+        }
         if (fromClient) {
             if (session.server.config().enableServerCommand()) {
                 String cmd = ClientSessionRouting.extractServerCommand(buf);
