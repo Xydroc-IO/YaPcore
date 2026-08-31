@@ -10,16 +10,33 @@ It is **not** a Velocity fork. See the full roadmap:
 ## Architecture
 
 ```text
-Players → YaP Link (yap-link.jar) → Folia / YaPcore backend(s)
-              ↑ native proxy              ↑ velocity-enabled=true
+Players → YaP Link (:25565) → YaPcore Via (:25566) → Folia (:25567)
+              ↑ yap-link.jar              ↑ protocol edge         ↑ game
 ```
 
 | Path | Role |
 |------|------|
 | [`yap-first-party/link/native/`](../../yap-first-party/link/native/) | **Product proxy** (native) |
+| [`yap-first-party/link/protocol/`](../../yap-first-party/link/protocol/) | Shared JE frame / zlib / forwarding wire |
 | [`yap-first-party/link/plugins/`](../../yap-first-party/link/plugins/) | Native Link plugins |
 
+**Join wire (important):** Outbound packets use a **single** handler
+(`McOutboundPacketEncoder`) that applies optional zlib + length framing — the same
+idea as chassis `ViaProxyPipeline.writeFramed`. Do **not** stack a Netty
+`MessageToMessageEncoder` compress handler before a frame encoder; that path can
+emit `VarInt(0)` frames and vanilla clients die with
+`CorruptedFrameException: Frame length cannot be zero`.
+
+**GUI / process jar:** `LinkProcessManager` prefers repo-root `yap-link.jar`, then
+the Gradle shadow jar. After Link protocol changes run
+`gradle :yap-link-native:shadowJar` and copy/publish so the root jar stays current
+(`gradle publishReleasesFolder`).
+
 ## Folia backend
+
+Two supported modes:
+
+1. **Velocity modern forwarding** (recommended for production multi-proxy):
 
 ```properties
 velocity-enabled=true
@@ -31,6 +48,10 @@ game-authority=folia
 ```
 
 Same `forwarding.secret` next to Link’s `link.properties`.
+
+2. **Forwarding disabled** (common local Link → Via → Folia): Folia
+`proxies.velocity.enabled=false`. Link still bridges on Login Success; it does
+**not** require `velocity:player_info` when the backend never asks for it.
 
 ## Run
 
@@ -45,7 +66,9 @@ Build manually:
 
 ```bash
 gradle :yap-link-native:shadowJar
-java -jar yap-first-party/link/native/build/libs/yap-link.jar --home link-data
+# GUI resolves root jar first — keep it in sync:
+cp -f yap-first-party/link/native/build/libs/yap-link.jar yap-link.jar
+java -jar yap-link.jar --home link-data
 ```
 
 Config: **`link.properties`** in link home (not `velocity.toml`). Seeded on first start.

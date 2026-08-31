@@ -34,8 +34,10 @@ backwards-compatible=true
 port=25566
 ```
 
-1. Start (`./scripts/gui.sh` or `./scripts/start.sh`)
-2. Connect to `127.0.0.1:25566` (same PC) or `yapcoremc.yaplabs.us:25565` (public/nginx)
+1. Start (`./scripts/gui.sh` or `./scripts/start.sh`) — **you** start Link from the GUI/dashboard when using the proxy path
+2. Connect:
+   - **Through Link (product path):** `127.0.0.1:25565`
+   - **Direct Via edge:** `127.0.0.1:25566`
 3. MOTD / player counts should appear in the server list
 
 ### Logs: STATUS ping vs join
@@ -43,6 +45,14 @@ port=25566
 Server-list refreshes use handshake **intent=1** (STATUS). The client closes after
 the ping — that is normal and is **not** logged as `JE JOIN FAILED` anymore.
 Actual joins use **intent=2** (LOGIN) and should reach PLAY.
+
+### Link join: `Frame length cannot be zero`
+
+Vanilla rejects outer frames whose length VarInt is `0`. Link must send Set Compression
+**uncompressed**, then enable zlib on the **same** outbound handler that adds length
+prefixes (`McOutboundPacketEncoder`). After Link protocol changes, refresh
+**repo-root** `yap-link.jar` (GUI preference) via shadowJar + copy or
+`gradle publishReleasesFolder`.
 
 Public domain / nginx: [NETWORKING.md](NETWORKING.md), [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md).
 
@@ -68,7 +78,10 @@ Threading does not affect this path — join is protocol content, not YapEngine 
 
 ## Pipeline
 
-`McFrameCodec` → `JavaProtocolHandler` (client `ProtocolBand`) → `CrossplayHub`.
+Native YaPcore JE: `McFrameCodec` → `JavaProtocolHandler` (client `ProtocolBand`) → `CrossplayHub`.
+
+YaP Link JE: `McFrameCodec.Decoder` → (optional) `McCompressionCodec.Decoder` → session;
+outbound `McOutboundPacketEncoder` (zlib+length). See [YAP_LINK.md](YAP_LINK.md).
 
 ## Honest limits
 

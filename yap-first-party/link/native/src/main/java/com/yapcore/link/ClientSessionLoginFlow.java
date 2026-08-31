@@ -10,6 +10,7 @@ import com.yapcore.link.api.event.LoginEvent;
 import com.yapcore.link.api.event.PreConnectEvent;
 import com.yapcore.link.protocol.McCodec;
 import com.yapcore.link.protocol.McFrameCodec;
+import com.yapcore.link.protocol.McOutboundPacketEncoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -153,7 +154,7 @@ final class ClientSessionLoginFlow {
                     protected void initChannel(SocketChannel ch) {
                         ch.pipeline()
                                 .addLast("frame-dec", new McFrameCodec.Decoder())
-                                .addLast("frame-enc", new McFrameCodec.Encoder())
+                                .addLast("frame-enc", new McOutboundPacketEncoder())
                                 .addLast("backend", new ClientSessionBackendLoginHandler(session, clientCtx.channel()));
                     }
                 });

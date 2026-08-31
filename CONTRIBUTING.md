@@ -4,11 +4,13 @@ Thanks for helping build a clean, professional Minecraft-class server engine.
 
 ## Ground rules
 
-1. **Keep the repo clean** — never commit build outputs, live Paper trees, worlds, logs,
-   plugin jars, bench workdirs, or secrets. `.gitignore` enforces this; see the hygiene
-   table in [README.md](README.md).
+1. **Keep the repo clean** — never commit build outputs, live Paper/Folia trees, worlds, logs,
+   plugin jars, bench workdirs, Link `link.properties`, or secrets. `.gitignore` enforces this;
+   see the hygiene table in [README.md](README.md) and [docs/RELEASES.md](docs/RELEASES.md).
 2. **Threading** — world / inventory / block changes on **SYNC**; DB/HTTP on **HEAVY**; menu polish on **UI**.
-3. **Size** — prefer ≤500 lines per domain file.
+3. **Size** — prefer ≤500 lines per domain file; split by package when a class grows
+   (see [docs/PERF_AND_LAYOUT.md](docs/PERF_AND_LAYOUT.md)). Link JE outbound framing belongs in
+   `McOutboundPacketEncoder`, not a stacked compress+frame Netty pair.
 4. **Docs** — API or architecture changes update `docs/` and, when substantial, the [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md).
    Regenerated PDFs under `docs/pdf/` are gitignored — commit Markdown, run `./scripts/export-docs-pdf.sh` locally.
 

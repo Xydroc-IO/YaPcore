@@ -3,6 +3,7 @@ package com.yapcore.link.status;
 import com.yapcore.link.LinkConfig;
 import com.yapcore.link.protocol.McCodec;
 import com.yapcore.link.protocol.McFrameCodec;
+import com.yapcore.link.protocol.McOutboundPacketEncoder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -43,7 +44,7 @@ public final class StatusPing {
                         protected void initChannel(SocketChannel ch) {
                             ch.pipeline()
                                     .addLast("frame-dec", new McFrameCodec.Decoder())
-                                    .addLast("frame-enc", new McFrameCodec.Encoder())
+                                    .addLast("frame-enc", new McOutboundPacketEncoder())
                                     .addLast("ping", new PingHandler(backend, promise));
                         }
                     });

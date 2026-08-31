@@ -87,7 +87,17 @@ com.yapcore.gui/
   theme/GuiTheme
   panels/PluginsPanel, PacksPanel
   ControlPanel         (orchestrator only)
+
+com.yapcore.link/          (yap-first-party/link/native — own JVM)
+  protocol/                McCodec, McFrameCodec (inbound), McOutboundPacketEncoder,
+                           McCompressionCodec (inbound + wrapOutbound)
+  forwarding/              ModernForwarding (velocity:player_info)
+  status/                  StatusPing
+  …                        ClientSession* login/bridge/relay (split by phase)
+
+com.yapcore.protocol/      (yap-first-party/link/protocol — shared wire, no Netty server)
 ```
 
 **Rule:** prefer ≤500 lines per domain file; split by folder when a class grows
-(process vs surface vs orchestrator).
+(process vs surface vs orchestrator). Link outbound framing+zlib stays in
+`McOutboundPacketEncoder` — do not reintroduce stacked Netty compress+frame encoders.

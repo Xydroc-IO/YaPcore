@@ -2,20 +2,11 @@ package com.yapcore.protocol;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
-import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.ByteToMessageDecoder;
-import io.netty.handler.codec.EncoderException;
-import io.netty.util.ReferenceCountUtil;
 
 import java.util.List;
-import java.util.zip.Deflater;
 
-/**
- * Length-prefixed Minecraft packet framing.
- * Outbound also applies optional Minecraft zlib compression in one handler —
- * do not stack a separate MessageToMessageEncoder before this.
- */
+/** Length-prefixed Minecraft packet framing (inbound). Outbound: {@link McOutboundPacketEncoder}. */
 public final class McFrameCodec {
 
     private McFrameCodec() {
@@ -57,92 +48,6 @@ public final class McFrameCodec {
                 }
             }
             return false;
-        }
-    }
-
-    public static final class Encoder extends ChannelOutboundHandlerAdapter {
-        private volatile int compressionThreshold = -1;
-        private final Deflater deflater = new Deflater();
-        private final byte[] encodeBuf = new byte[8192];
-
-        public void setCompressionThreshold(int threshold) {
-            this.compressionThreshold = threshold;
-        }
-
-        public int compressionThreshold() {
-            return compressionThreshold;
-        }
-
-        @Override
-        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-            if (!(msg instanceof ByteBuf packet)) {
-                ctx.write(msg, promise);
-                return;
-            }
-            if (!packet.isReadable()) {
-                packet.release();
-                promise.setSuccess();
-                return;
-            }
-            ByteBuf payload = null;
-            try {
-                if (compressionThreshold >= 0) {
-                    payload = zlibWrap(ctx, packet, compressionThreshold); // consumes packet
-                } else {
-                    payload = packet;
-                }
-                int body = payload.readableBytes();
-                if (body <= 0) {
-                    payload.release();
-                    promise.setSuccess();
-                    return;
-                }
-                ByteBuf framed = ctx.alloc().buffer(body + 5);
-                McCodec.writeVarInt(framed, body);
-                framed.writeBytes(payload, payload.readerIndex(), body);
-                payload.release();
-                payload = null;
-                ctx.write(framed, promise);
-            } catch (Throwable t) {
-                ReferenceCountUtil.release(payload);
-                promise.setFailure(t instanceof EncoderException ? t : new EncoderException(t));
-            }
-        }
-
-        private ByteBuf zlibWrap(ChannelHandlerContext ctx, ByteBuf packet, int threshold) {
-            int readable = packet.readableBytes();
-            if (readable < threshold) {
-                ByteBuf out = ctx.alloc().buffer(readable + 5);
-                McCodec.writeVarInt(out, 0);
-                out.writeBytes(packet, packet.readerIndex(), readable);
-                packet.release();
-                return out;
-            }
-            byte[] input = new byte[readable];
-            packet.getBytes(packet.readerIndex(), input);
-            packet.release();
-            deflater.reset();
-            deflater.setInput(input);
-            deflater.finish();
-            ByteBuf out = ctx.alloc().buffer(readable + 5);
-            McCodec.writeVarInt(out, readable);
-            while (!deflater.finished()) {
-                int n = deflater.deflate(encodeBuf);
-                if (n <= 0) {
-                    break;
-                }
-                out.writeBytes(encodeBuf, 0, n);
-            }
-            if (!deflater.finished()) {
-                out.release();
-                throw new EncoderException("zlib deflate did not finish");
-            }
-            return out;
-        }
-
-        @Override
-        public void handlerRemoved(ChannelHandlerContext ctx) {
-            deflater.end();
         }
     }
 }

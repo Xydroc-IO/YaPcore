@@ -19,6 +19,10 @@ YaPcore (Folia/Paper) is a **game backend**. The public edge is a **proxy**:
 
 Smoke: `./scripts/smoke-yap-link-folia.sh`
 
+When Folia `proxies.velocity.enabled` is **false** (local default in some trees), Link
+still completes login without `velocity:player_info`. Enable forwarding for production
+multi-proxy as above.
+
 Full Link docs: [YAP_LINK.md](YAP_LINK.md).
 
 ---

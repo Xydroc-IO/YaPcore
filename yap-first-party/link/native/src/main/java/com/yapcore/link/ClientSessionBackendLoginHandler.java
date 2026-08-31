@@ -3,7 +3,7 @@ package com.yapcore.link;
 import com.yapcore.link.forwarding.ModernForwarding;
 import com.yapcore.link.protocol.McCodec;
 import com.yapcore.link.protocol.McCompressionCodec;
-import com.yapcore.link.protocol.McFrameCodec;
+import com.yapcore.link.protocol.McOutboundPacketEncoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -119,7 +119,7 @@ final class ClientSessionBackendLoginHandler extends ChannelInboundHandlerAdapte
         if (threshold < 0) {
             return;
         }
-        // Inbound decompress only. Outbound zlib+length is owned by McFrameCodec.Encoder
+        // Inbound decompress only. Outbound zlib+length is owned by McOutboundPacketEncoder
         // (stacking MessageToMessageEncoder + frame-enc emits empty/corrupt frames).
         if (backendCompDec == null) {
             backendCompDec = new McCompressionCodec.Decoder();
@@ -127,7 +127,7 @@ final class ClientSessionBackendLoginHandler extends ChannelInboundHandlerAdapte
         }
         backendCompDec.setThreshold(threshold);
         Object backendEnc = backendCh.pipeline().get("frame-enc");
-        if (backendEnc instanceof McFrameCodec.Encoder enc) {
+        if (backendEnc instanceof McOutboundPacketEncoder enc) {
             enc.setCompressionThreshold(threshold);
         }
 
@@ -137,7 +137,7 @@ final class ClientSessionBackendLoginHandler extends ChannelInboundHandlerAdapte
         }
         clientCompDec.setThreshold(threshold);
         Object clientEnc = clientCh.pipeline().get("frame-enc");
-        if (clientEnc instanceof McFrameCodec.Encoder enc) {
+        if (clientEnc instanceof McOutboundPacketEncoder enc) {
             enc.setCompressionThreshold(threshold);
         }
         // Drop any leftover outbound compress handlers from older Link builds

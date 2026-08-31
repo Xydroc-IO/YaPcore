@@ -9,6 +9,7 @@ import com.yapcore.link.floodgate.FloodgateForwarder;
 import com.yapcore.link.plugin.LinkMetricsImpl;
 import com.yapcore.link.plugin.LinkPluginManager;
 import com.yapcore.link.protocol.McFrameCodec;
+import com.yapcore.link.protocol.McOutboundPacketEncoder;
 import com.yapcore.link.ratelimit.ConnectRateGuard;
 import com.yapcore.link.metrics.LinkMetricsHttp;
 import com.yapcore.link.session.PlayerHub;
@@ -193,7 +194,7 @@ public final class LinkServer {
                         }
                         ch.pipeline()
                                 .addLast("frame-dec", new McFrameCodec.Decoder())
-                                .addLast("frame-enc", new McFrameCodec.Encoder())
+                                .addLast("frame-enc", new McOutboundPacketEncoder())
                                 .addLast("client", new ClientSession(LinkServer.this));
                     }
                 });

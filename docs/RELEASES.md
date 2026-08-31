@@ -28,6 +28,10 @@ gradle publishReleasesFolder
 
 Binaries under `releases/` are gitignored; rebuild anytime with the same task.
 
+**After Link wire fixes:** `publishReleasesFolder` refreshes `yap-link.jar` inside the
+trees/zips. Also copy the shadow jar to **repo-root** `yap-link.jar` — the Swing/web
+GUI `LinkProcessManager` prefers that path over `build/libs`.
+
 ## Linux / Windows full box
 
 Each OS folder is self-contained:
@@ -67,6 +71,7 @@ Operators can drop standalone zips onto an existing tree without rebuilding the 
 - First-party code: [`yap-first-party/`](../yap-first-party/README.md)
 - Gradle split: `build.gradle.kts` + `gradle/yap-product.gradle.kts`, `yap-release.gradle.kts`, `yap-packaging.gradle.kts`
 - **≤500 lines per domain file** — see [PERF_AND_LAYOUT.md](PERF_AND_LAYOUT.md) and [CONTRIBUTING.md](../CONTRIBUTING.md)
+- **Do not commit** Folia/Link live state (`folia-kernel/logs`, `usercache`, `ops`, `link-data/link.properties`, plugin config dirs) — enforced by `.gitignore`
 
 ## Version bump checklist
 

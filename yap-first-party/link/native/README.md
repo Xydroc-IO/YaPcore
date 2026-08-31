@@ -15,6 +15,25 @@ gradle :yap-link-plugin-server-selector:installIntoLinkPlugins
 
 Jar: `yap-first-party/link/native/build/libs/yap-link.jar`
 
+**GUI:** copies/prefers repo-root `yap-link.jar`. After protocol changes:
+
+```bash
+gradle :yap-link-native:shadowJar
+cp -f yap-first-party/link/native/build/libs/yap-link.jar yap-link.jar
+# or: gradle publishReleasesFolder
+```
+
+## Wire codecs (`protocol/`)
+
+| Type | Role |
+|------|------|
+| `McFrameCodec.Decoder` | Inbound length framing (skips length-0 junk) |
+| `McOutboundPacketEncoder` | Outbound zlib (optional) + length — **only** outbound path |
+| `McCompressionCodec.Decoder` | Inbound decompress after Set Compression |
+| `McCompressionCodec.wrapOutbound` | Shared zlib body helper used by the outbound encoder |
+
+Never stack a compress `MessageToMessageEncoder` before a frame encoder.
+
 ## Run
 
 ```bash

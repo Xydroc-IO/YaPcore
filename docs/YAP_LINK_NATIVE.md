@@ -111,19 +111,36 @@ Players (JE TCP / optional BE UDP)
         │
         ▼
 ┌───────────────────────────────────────┐
-│  YaP Link (native JVM)                │
+│  YaP Link (native JVM) :25565         │
 │  yap-link.jar · link.properties       │
 │  LinkPluginManager · FloodgateForwarder│
 │  BedrockUdpForwarder (per-backend)    │
 └───────────────┬───────────────────────┘
-                │ velocity:player_info
+                │ optional velocity:player_info
                 ▼
 ┌───────────────────────────────────────┐
-│  YaPcore + Folia backend(s)           │
+│  YaPcore Via edge :25566              │
+└───────────────┬───────────────────────┘
+                ▼
+┌───────────────────────────────────────┐
+│  Folia game :25567                    │
 └───────────────────────────────────────┘
 ```
 
-Shared wire code: [`yap-first-party/link/protocol/`](../../yap-first-party/link/protocol/) (`McCodec`, modern forwarding, Floodgate cipher).
+Shared wire code: [`yap-first-party/link/protocol/`](../../yap-first-party/link/protocol/)
+(`McCodec`, `McFrameCodec` inbound, `McOutboundPacketEncoder` outbound zlib+frame,
+`McCompressionCodec` inbound decompress + `wrapOutbound`, modern forwarding, Floodgate).
+
+**Outbound rule:** one handler for zlib+length (`McOutboundPacketEncoder`). Stacking
+compress `MessageToMessageEncoder` + frame encoder caused vanilla
+`CorruptedFrameException: Frame length cannot be zero` after Set Compression.
+
+**Login Success:** if the backend never sends `velocity:player_info` (Folia velocity
+disabled), Link still bridges — forwarding is optional unless the backend requests it.
+
+**Jar the GUI starts:** repo-root `yap-link.jar` (preferred) or
+`yap-first-party/link/native/build/libs/yap-link.jar`. Always republish/copy after
+protocol fixes so operators are not on a stale root jar.
 
 ---
 
