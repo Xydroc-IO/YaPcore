@@ -1,7 +1,6 @@
 package com.yapcore.kernel;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -111,7 +110,9 @@ public final class JavaKernelProxyHandler extends ChannelInboundHandlerAdapter {
 
     private static void closeOnFlush(Channel ch) {
         if (ch.isActive()) {
-            ch.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
+            // Do not write EMPTY_BUFFER — framed pipelines emit VarInt(0) and
+            // vanilla clients throw CorruptedFrameException: Frame length cannot be zero.
+            ch.close();
         }
     }
 

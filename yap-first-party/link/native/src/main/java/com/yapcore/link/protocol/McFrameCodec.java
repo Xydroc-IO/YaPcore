@@ -22,7 +22,10 @@ public final class McFrameCodec {
                 return;
             }
             int len = McCodec.readVarInt(in);
-            if (len < 0 || len > 2_097_152) {
+            if (len <= 0 || len > 2_097_152) {
+                if (len == 0) {
+                    return; // Skip empty frames (client/backend CorruptedFrameException)
+                }
                 throw new IllegalArgumentException("Bad packet length " + len);
             }
             if (in.readableBytes() < len) {
@@ -53,6 +56,9 @@ public final class McFrameCodec {
         @Override
         protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) {
             int body = msg.readableBytes();
+            if (body == 0) {
+                return; // Never emit VarInt(0) frames — vanilla client rejects them
+            }
             McCodec.writeVarInt(out, body);
             out.writeBytes(msg, msg.readerIndex(), body);
         }

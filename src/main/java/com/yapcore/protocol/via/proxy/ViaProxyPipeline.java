@@ -34,9 +34,14 @@ public final class ViaProxyPipeline {
 
     /** Set Compression — raw length frame, never zlib-wrapped. */
     public static io.netty.channel.ChannelFuture writeUncompressedFramed(Channel ch, ByteBuf packet) {
-        ByteBuf framed = ch.alloc().buffer(packet.readableBytes() + 5);
-        McCodec.writeVarInt(framed, packet.readableBytes());
-        framed.writeBytes(packet, packet.readerIndex(), packet.readableBytes());
+        int body = packet.readableBytes();
+        if (body <= 0) {
+            packet.release();
+            return ch.newSucceededFuture();
+        }
+        ByteBuf framed = ch.alloc().buffer(body + 5);
+        McCodec.writeVarInt(framed, body);
+        framed.writeBytes(packet, packet.readerIndex(), body);
         packet.release();
         return ch.writeAndFlush(framed);
     }
@@ -47,14 +52,23 @@ public final class ViaProxyPipeline {
      */
     public static io.netty.channel.ChannelFuture writeFramed(
             Channel ch, ByteBuf packet, ViaSession session, boolean compressionInstalled) {
+        if (packet.readableBytes() <= 0) {
+            packet.release();
+            return ch.newSucceededFuture();
+        }
         int threshold = session != null ? session.compressionThreshold() : -1;
         ByteBuf payload = packet;
         if (compressionInstalled && threshold >= 0) {
             payload = zlibWrap(ch, packet, threshold);
         }
-        ByteBuf framed = ch.alloc().buffer(payload.readableBytes() + 5);
-        McCodec.writeVarInt(framed, payload.readableBytes());
-        framed.writeBytes(payload, payload.readerIndex(), payload.readableBytes());
+        int body = payload.readableBytes();
+        if (body <= 0) {
+            payload.release();
+            return ch.newSucceededFuture();
+        }
+        ByteBuf framed = ch.alloc().buffer(body + 5);
+        McCodec.writeVarInt(framed, body);
+        framed.writeBytes(payload, payload.readerIndex(), body);
         payload.release();
         return ch.writeAndFlush(framed);
     }
