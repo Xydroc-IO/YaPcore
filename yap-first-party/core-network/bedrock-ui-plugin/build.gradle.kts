@@ -26,6 +26,15 @@ dependencies {
 }
 
 tasks.jar {
+    from({
+        configurations.runtimeClasspath.get()
+            .filter { f ->
+                val n = f.name
+                n.contains("yap-sched") || n.contains("yap-bedrock-ui-api")
+            }
+            .map { zipTree(it) }
+    })
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName.set("yap-bedrock-ui.jar")
 }
 

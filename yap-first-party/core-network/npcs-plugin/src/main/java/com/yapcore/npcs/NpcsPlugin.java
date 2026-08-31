@@ -32,7 +32,12 @@ public final class NpcsPlugin extends JavaPlugin {
         saveDefaultConfig();
         reloadNpcs();
 
-        getServer().getPluginManager().registerEvents(new QuestListener(questService), this);
+        try {
+            Class.forName("com.yapcore.mmo.event.BossKillEvent", false, getClass().getClassLoader());
+            getServer().getPluginManager().registerEvents(new QuestListener(questService), this);
+        } catch (ClassNotFoundException | NoClassDefFoundError e) {
+            getLogger().info("YaP MMO not installed — boss-kill quest progress hook skipped");
+        }
         getServer().getPluginManager().registerEvents(new NpcInteractListener(this, config, npcService, questService),
                 this);
 

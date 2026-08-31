@@ -25,7 +25,12 @@ public final class TabPlugin extends JavaPlugin {
 
         listener = new TabListener(this);
         getServer().getPluginManager().registerEvents(listener, this);
-        getServer().getPluginManager().registerEvents(new TabSkillListener(this), this);
+        try {
+            Class.forName("com.yapcore.mmo.event.SkillLevelUpEvent", false, getClass().getClassLoader());
+            getServer().getPluginManager().registerEvents(new TabSkillListener(this), this);
+        } catch (ClassNotFoundException | NoClassDefFoundError e) {
+            getLogger().info("YaP skills/MMO not installed — skill level-up TAB refresh skipped");
+        }
         listener.startRefreshTask(config);
 
         networkSync = new TabNetworkSync(this, config, networkState);

@@ -44,11 +44,31 @@ abstract class FineTuneModule extends YaPModule {
             Plugin p = Bukkit.getPluginManager().getPlugin(name);
             if (p != null && p.isEnabled()) {
                 getLogger().info(guideTitle() + " OK — Paper plugin " + name + " is online");
-            } else {
-                getLogger().warning(
-                        guideTitle() + ": Paper plugin " + name
-                                + " missing or disabled. Install the matching jar into plugins/.");
+                return;
             }
+            // Folia game-authority: Paper plugins run in the Folia JVM, not chassis Bukkit.
+            String home = System.getProperty("yapcore.home", ".");
+            java.io.File pluginsDir = new java.io.File(home, "plugins");
+            // YaPDB → yap-db.jar; YaPChat → yap-chat.jar; YaPPlayerData → yap-playerdata.jar
+            String jarHint = switch (name) {
+                case "YaPDB" -> "yap-db.jar";
+                case "YaPPlayerData" -> "yap-playerdata.jar";
+                case "YaPPerms" -> "yap-perms.jar";
+                case "YaPChat" -> "yap-chat.jar";
+                case "YaPModeration" -> "yap-moderation.jar";
+                case "YaPEssentials" -> "yap-essentials.jar";
+                case "YaPProtect" -> "yap-protect.jar";
+                case "YaPWorld" -> "yap-world.jar";
+                default -> null;
+            };
+            if (jarHint != null && new java.io.File(pluginsDir, jarHint).isFile()) {
+                getLogger().info(guideTitle() + " OK — " + jarHint
+                        + " present (Folia hosts the Paper plugin)");
+                return;
+            }
+            getLogger().warning(
+                    guideTitle() + ": Paper plugin " + name
+                            + " missing or disabled. Install the matching jar into plugins/.");
         } catch (NoClassDefFoundError | ExceptionInInitializerError e) {
             getLogger().warning(
                     guideTitle() + ": Bukkit not available — drop the Paper plugin into plugins/ "

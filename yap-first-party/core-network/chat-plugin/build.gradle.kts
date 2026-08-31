@@ -26,9 +26,13 @@ dependencies {
 }
 
 tasks.jar {
+    // Folia plugin classloaders are isolated — ship API + sched inside the jar.
     from({
         configurations.runtimeClasspath.get()
-            .filter { it.name.startsWith("yap-sched") || it.name.contains("yap-sched") }
+            .filter { f ->
+                val n = f.name
+                n.contains("yap-sched") || n.contains("yap-chat-api")
+            }
             .map { zipTree(it) }
     })
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
