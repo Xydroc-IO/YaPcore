@@ -55,6 +55,19 @@ class CatalogStoreTest {
     }
 
     @Test
+    void unknownModernBlockUsesStandInOnLegacyClient() {
+        CatalogStore.BandCatalog legacy = CatalogStore.get().band(ProtocolBand.V1_20_2);
+        CatalogStore.BandCatalog modern = CatalogStore.get().band(ProtocolBand.V26_2);
+        assertNotNull(legacy);
+        assertNotNull(modern);
+        int fakeModernBlock = 999_999;
+        int mapped = legacy.blockToLegacy(fakeModernBlock, modern);
+        int standIn = legacy.standInBlockState();
+        assertEquals(standIn, mapped);
+        assertTrue(standIn >= 0);
+    }
+
+    @Test
     void unknownModernEntityUsesStandInOnLegacyClient() {
         CatalogStore.BandCatalog legacy = CatalogStore.get().band(ProtocolBand.V1_8);
         CatalogStore.BandCatalog modern = CatalogStore.get().band(ProtocolBand.V26_2);
