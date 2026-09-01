@@ -59,6 +59,19 @@ HOST=127.0.0.1 PORT=25566 ./scripts/protocol-matrix/run-bedrock-smoke.sh
 Baseline artifact: `build/tier4-4a-baseline.json`. Phased plan:
 [TIER4_PHASES.md](../overview/TIER4_PHASES.md).
 
+**Production battery** (release gate + stress):
+
+```bash
+gradle verifyConcurrency
+./scripts/smoke-network-full.sh
+HOST=127.0.0.1 PORT=25566 ./scripts/protocol-matrix/run-matrix.sh
+HOST=127.0.0.1 PORT=25566 ./scripts/protocol-matrix/run-bedrock-smoke.sh
+./scripts/smoke-bedrock-play.sh
+SOAK_SECS=300 ./scripts/soak-yap-folia.sh compat   # 5 min hold; perf profile = 600s
+```
+
+Summary artifact: `build/production-test-battery-latest.json`.
+
 ## Endurance FAIL codes (chassis harness)
 
 If you run the Gradle endurance harness and see FAIL codes:

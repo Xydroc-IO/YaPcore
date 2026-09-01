@@ -240,7 +240,7 @@ validated at least once in CI or recorded soak; no Geyser/Floodgate jars require
 
 **JE mid (1.20.4 and 1.21.1 minimum):**
 
-- [ ] Join under compression + optional forced pack
+- [x] Join under compression + optional forced pack — matrix 4/4 spawn automated 2026-09-01
 - [ ] Walk 200+ blocks across chunk borders
 - [ ] Open chest / furnace / crafting; shift-click stack
 - [ ] Hotbar select + place/break 32 blocks
@@ -254,6 +254,7 @@ validated at least once in CI or recorded soak; no Geyser/Floodgate jars require
 - [ ] Move across chunk borders — terrain matches Paper (**P4.5**, not flat void)
 - [ ] Move, jump, sprint; chat visible to JE
 - [ ] Break/place mirrored on Paper; column refreshes
+- [x] Chat + break + `/help` command packets (`bedrock-play-smoke`) — automated 2026-09-01
 - [ ] Inventory open; take/place; `/give` appears (**G.27**)
 - [ ] Command from BE → Paper executes
 - [ ] Form opens and returns (if UI used)

@@ -40,7 +40,7 @@ Phased plan: **[TIER4_PHASES.md](TIER4_PHASES.md)** — do **4A → 4F** in orde
 
 | Phase | Focus | Status |
 |-------|--------|--------|
-| **4A** | Baseline gates — matrix, bedrock smoke, play-soak, record §E | **Done** — automated + baseline JSON; live §E partial |
+| **4A** | Baseline gates — matrix, bedrock smoke, play-soak, record §E | **Done** — production battery green; operator §E partial |
 | **4B** | Bedrock play depth — G.33 skulls, inv, columns, UI, combat | **Done** (code); live soak operator-owned |
 | **4C** | JE backwards 1.20.2+ — inventory, blocks, spawn, chat | **Done** — matrix 4/4; optional pack auto-ack |
 | **4D** | JE forward + protocol dumps | **Done** |
