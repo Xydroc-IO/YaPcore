@@ -96,6 +96,4 @@ rm -f "$OUT"
 echo "Wrote $OUT ($(du -h "$OUT" | awk '{print $1}')) vehicles=$want_vehicles"
 
 # Mirror into nginx docroot for Cloudflare :80 /pack/ (when available)
-if [ -x "$ROOT/scripts/publish-resourcepack-www.sh" ]; then
-  "$ROOT/scripts/publish-resourcepack-www.sh" "$OUT" || true
-fi
+# Optional: copy "$OUT" into your nginx/www root when publishing packs.

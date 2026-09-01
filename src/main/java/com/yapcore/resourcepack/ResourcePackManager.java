@@ -121,7 +121,7 @@ public final class ResourcePackManager {
                     LOG.info("Pack URL probe OK (" + code + "): " + url);
                 } else {
                     LOG.severe("Pack URL probe FAILED (" + code + "): " + url
-                            + " — fix nginx/Cloudflare or resource-pack-url / publish-resourcepack-www.sh");
+                            + " — fix nginx/Cloudflare or resource-pack-url");
                 }
             } catch (Exception e) {
                 LOG.severe("Pack URL probe FAILED: " + url + " (" + e.getMessage() + ")");

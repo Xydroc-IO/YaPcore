@@ -30,7 +30,7 @@ gradle publishReleasesFolder
 #      yap-network-suite.zip  yap-gameplay-suite.zip  yap-addons-release.zip
 ```
 
-Binaries under `releases/` are gitignored; rebuild anytime with the same task.
+The entire `releases/` directory is **gitignored** (local artifacts only). Rebuild anytime with the same task.
 
 **After Link wire fixes:** `publishReleasesFolder` refreshes `yap-link.jar` inside the
 trees/zips. Also copy the shadow jar to **repo-root** `yap-link.jar` — the Swing/web

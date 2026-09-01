@@ -1,7 +1,7 @@
 {
   "paperPinProtocol": 776,
   "generatedAt": "2026-08-21T18:50:08Z",
-  "note": "P4.10 \u2014 PacketIdDump prefers this index. Add future protocols via scripts/generate-protocol-dump.mjs.",
+  "note": "P4.10 \u2014 PacketIdDump prefers this index. Add future protocols by committing new dumps + index entries (see docs/PROTOCOL_DUMPS.md).",
   "dumps": {
     "764": {
       "label": "1.20.2",
@@ -98,10 +98,9 @@
   "pendingNext": {
     "status": "awaiting Mojang / minecraft-data release beyond Paper pin 776",
     "whenShipped": [
-      "node scripts/generate-protocol-dump.mjs latest",
-      "or: node scripts/generate-protocol-dump.mjs --protocol <N>",
-      "commit packets.json + index.json",
-      "re-run scripts/protocol-matrix/run-matrix.sh against newer client"
+      "Regenerate dumps offline with minecraft-data / Mojang specs",
+      "Commit packets.json + update index.json",
+      "Re-run scripts/protocol-matrix/run-matrix.sh against newer client"
     ]
   }
 }

@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.LongAdder;
  *
  * <pre>
  *   gradle endurance -Dyap.endurance.seconds=300 -Dyap.endurance.bots=64
- *   ./scripts/test-endurance.sh
+ *   gradle endurance / chassis harness (see docs/TESTING.md)
  * </pre>
  */
 public final class EnduranceHarness {

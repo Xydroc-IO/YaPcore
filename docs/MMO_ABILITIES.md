@@ -135,8 +135,8 @@ AbilityCombatServices.find(); // registered by yap-combat
 ## Smoke
 
 ```bash
-SKIP_LIVE=1 ./scripts/smoke-mmo-m6.sh
-SKIP_LIVE=1 ./scripts/smoke-mmo-m7.sh
+./scripts/validate-mmo-content.sh
+# optional live: ./scripts/smoke-folia-plugins.sh
 ```
 
 ---

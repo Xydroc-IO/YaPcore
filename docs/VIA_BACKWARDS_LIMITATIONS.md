@@ -44,7 +44,7 @@ YaP-only bugs:
 | Area | Honest behavior |
 |------|-----------------|
 | **No Via\* plugin API** | Plugins that *require* ViaVersion/ViaBackwards APIs will not see those jars. Use YaP FormService / FloodgateAuth / Paper APIs instead. |
-| **Dump lag behind Mojang** | Until `scripts/generate-protocol-dump.mjs` lands the next protocol in `index.json`, brand-new clients use nearest-dump + heuristics ([PROTOCOL_DUMPS.md](PROTOCOL_DUMPS.md)). |
+| **Dump lag behind Mojang** | Until a new dump lands in `index.json`, brand-new clients use nearest-dump + heuristics ([PROTOCOL_DUMPS.md](PROTOCOL_DUMPS.md)). |
 | **Rewind play depth** | Explicitly out of product DoD — do not market 1.8 PvP parity. |
 | **Bit-identical packets** | Out of scope — we remap by name/layout, not via Via’s exact transformers. |
 

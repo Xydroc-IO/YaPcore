@@ -8,9 +8,8 @@
 .gradle/
 **/build/
 build/dist/
-# Durable local release packages (gradle publishReleasesFolder)
-/releases/*/
-!/releases/README.md
+# Local release packages (gradle publishReleasesFolder) — never commit
+/releases/
 out/
 bin/
 target/

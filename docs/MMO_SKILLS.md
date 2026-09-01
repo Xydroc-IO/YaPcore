@@ -54,8 +54,7 @@ Each action in a skill YAML may set `min-level`. Blocked actions show a chat mes
 ## Smoke
 
 ```bash
-SKIP_LIVE=1 ./scripts/smoke-mmo-m0.sh
-SKIP_LIVE=1 ./scripts/smoke-mmo-m1.sh
+./scripts/validate-mmo-content.sh
 ```
 
 ## See also

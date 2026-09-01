@@ -358,7 +358,7 @@ Dashboard Phase 8 (full Protect/World/Chat/Moderation/Perms/Playerdata mutating 
 Recommended harness — [TESTING.md](../TESTING.md) · [BENCH_VS_FOLIA.md](../BENCH_VS_FOLIA.md):
 
 1. Unit tests (JUnit) per plugin / API.
-2. Milestone smokes: `scripts/smoke-mmo-m{0..7}.sh`, `smoke-factions-m6.sh`, `smoke-guilds-m7.sh`, `smoke-games-m7.sh`, `smoke-playerdata-shops-ah.sh`, `smoke-folia-plugins.sh`, `smoke-yap-link-*.sh`.
+2. Product gates: `./scripts/validate-mmo-content.sh`, `smoke-playerdata-shops-ah.sh`, `smoke-folia-plugins.sh`, `smoke-yap-link-*.sh`, `smoke-network-full.sh`.
 3. Folia product smoke / soak: `FOLIA_JAR_SOURCE=build ./scripts/smoke-folia.sh`, `./scripts/soak-yap-folia.sh`.
 4. Stock Folia vs YaP-Folia MSPT: `./scripts/bench/run-vs-folia.sh`.
 5. Optional: Fray concurrency, JCStress / TSan / Infer RacerD.

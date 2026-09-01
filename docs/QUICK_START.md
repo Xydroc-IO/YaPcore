@@ -31,8 +31,8 @@ folia-jar-source=build
 Stock Folia fallback (benches only): `folia-jar-source=fetch` + `./scripts/fetch-folia.sh`.
 
 1. Download **`yapcore-release-linux.zip`** or **`yapcore-release-windows.zip`**
-   from [GitHub Releases](https://github.com/yaplabs/YaPcore/releases) (or run
-   `gradle assembleRelease` locally — output in `build/dist/yapcore-release/`).
+   built locally with `gradle publishReleasesFolder` (gitignored under `releases/`)
+   or `gradle assembleRelease` → `build/dist/yapcore-release/`.
 
 2. Extract and enter the folder:
 
@@ -89,7 +89,7 @@ ranks apply
 ## Path B — Build from source (developers)
 
 ```bash
-git clone https://github.com/yaplabs/YaPcore.git
+git clone https://github.com/Xydroc-IO/YaPcore.git
 cd YaPcore
 chmod +x scripts/*.sh
 

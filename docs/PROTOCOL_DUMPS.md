@@ -18,25 +18,16 @@ mid/forward ID remaps — no Java switch edit required for P4.10 future protocol
 
 ## Add the next Mojang protocol (when shipped)
 
+Protocol dumps under `src/main/resources/protocol/vanilla/` are **checked in**.
+When Mojang ships past the pin, regenerate dumps with `minecraft-data` (or Mojang’s
+packet specs), commit the new `packets.json` + `index.json` entry, then verify:
+
 ```bash
-cd scripts/bench/bots && npm i minecraft-data
-cd ../../..
-
-# After minecraft-data (or Mojang) publishes the new PC version:
-node scripts/generate-protocol-dump.mjs latest
-# or explicit:
-node scripts/generate-protocol-dump.mjs --protocol 778
-node scripts/generate-protocol-dump.mjs 26.3
-
-# Verify Forward path (newer client → Paper 776):
 HOST=127.0.0.1 PORT=25566 ./scripts/protocol-matrix/run-matrix.sh
-
-# Catalogs (items/blocks/entities) if the band needs name bridges:
-node scripts/generate-protocol-catalogs.mjs
 ```
 
-Commit `packets.json` + updated `index.json`. Optional: add a `companions` entry in the index
-when two dumps share a protocol but use different packet names (see 775/776 merge).
+Optional: add a `companions` entry in the index when two dumps share a protocol but
+use different packet names (see 775/776 merge).
 
 ## Until the next protocol exists
 

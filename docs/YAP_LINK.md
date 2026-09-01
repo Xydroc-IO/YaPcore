@@ -59,6 +59,7 @@ Same `forwarding.secret` next to Link’s `link.properties`.
 ## Run
 
 ```bash
+# Enable Velocity modern forwarding on the Folia backend (shared secret)
 ./scripts/setup-velocity-forwarding.sh --enable
 ./scripts/start.sh              # Folia game
 ./scripts/start-yap-link.sh     # native YaP Link

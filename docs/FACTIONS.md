@@ -90,6 +90,6 @@ When a claim has a faction overlay:
 ## Smoke
 
 ```bash
-./scripts/smoke-factions-m6.sh
-SKIP_LIVE=1 ./scripts/smoke-factions-m6.sh
+./scripts/smoke-network-full.sh
+SKIP_LIVE=1 ./scripts/smoke-folia-plugins.sh
 ```

@@ -27,6 +27,6 @@ Native YaPcore Bedrock sessions use chassis `FormService` + `BedrockUiBridge.pus
 ## Smoke
 
 ```bash
-SKIP_LIVE=1 ./scripts/smoke-mmo-m5.sh
-./scripts/smoke-mmo-m5.sh
+./scripts/validate-mmo-content.sh
+# Bedrock UI: ./scripts/smoke-bedrock-play.sh
 ```

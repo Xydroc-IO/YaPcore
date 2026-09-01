@@ -115,16 +115,15 @@ Publish the **offer** zip (single file or `yap-active-bundle-*.zip`) to the edge
 `gradle prepareClientPack`. Credit / license: `resourcepacks/CREDITS.md`,
 `FAITHFUL_LICENSE.txt`.
 
-**Publish for Cloudflare:** after rebuilding the zip, mirror it into nginx’s docroot.
-The publish script also writes a **hash-suffixed** name (`yapcore-default-<sha8>.zip`) —
-use that as `resource-pack-files` so Cloudflare cannot serve a stale zip. Minecraft
+**Publish for Cloudflare:** after rebuilding the zip, copy it into nginx’s docroot
+(and optionally a hash-suffixed name so CF cannot serve a stale zip). Minecraft
 reports “failed to download” when the SHA-1 in `server.properties` does not match
 the bytes it fetched.
 
 ```bash
-./scripts/build-default-resourcepack.sh          # also calls publish when possible
-./scripts/publish-resourcepack-www.sh            # → …/yapcore-default.zip + …-<sha8>.zip
-curl -sL http://yapcoremc.yaplabs.us/pack/yapcore-default-<sha8>.zip | sha1sum
+./scripts/build-default-resourcepack.sh
+# then copy resourcepacks/yapcore-default.zip into your pack www root
+curl -sL http://127.0.0.1:8081/pack/yapcore-default.zip | sha1sum
 ```
 
 **Yes — textures auto-download.** With Folia (default) or Paper (legacy) as game

@@ -17,7 +17,7 @@ import java.util.logging.Logger;
  *   <li>{@code registryEntries.json} — synchronized registry entry ID lists</li>
  *   <li>{@code networkTags.nbt} — full Update Tags (gzip NBT)</li>
  * </ul>
- * Generate 26.2 with {@code scripts/generate-vanilla-protocol-26.2.py}.
+ * Checked-in 26.2 dumps under {@code src/main/resources/protocol/vanilla/}.
  * Other releases: same script pattern against that version's server jar + registries.json.
  */
 public final class VanillaProtocolData {

@@ -111,8 +111,8 @@ distance drop-off, and headshot multiplier. Routed through the same hit pipeline
 ## Smoke
 
 ```bash
-./scripts/smoke-mmo-m2.sh
-SKIP_LIVE=1 ./scripts/smoke-mmo-m2.sh
+./scripts/validate-mmo-content.sh
+# combat units also covered by gradle test
 ```
 
 ## See also

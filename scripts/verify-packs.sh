@@ -53,7 +53,7 @@ if [ -n "$pack_url" ]; then
   if [ "$pub_code" = "200" ]; then
     echo "OK  public URL $pub ($pub_code)"
   else
-    echo "WARN public URL probe $pub_code — run ./scripts/publish-resourcepack-www.sh if using nginx/CF"
+    echo "WARN public URL probe $pub_code — publish the pack via nginx/CF if needed"
   fi
 fi
 

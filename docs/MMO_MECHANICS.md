@@ -38,8 +38,7 @@ Load **before or with** `yap-skills` — both listen on `BlockBreakEvent` at HIG
 ## Smoke
 
 ```bash
-chmod +x scripts/smoke-mmo-m8.sh
-./scripts/smoke-mmo-m8.sh
+./scripts/validate-mmo-content.sh
 ```
 
 ## Content scale (recipes)
