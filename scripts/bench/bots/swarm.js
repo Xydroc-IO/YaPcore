@@ -6,7 +6,7 @@
  *   YAP_BOT_HOST (default 127.0.0.1)
  *   YAP_BOT_PORT (required)
  *   YAP_BOT_COUNT (default 100)
- *   YAP_BOT_VERSION (default 1.21.11)
+ *   YAP_BOT_VERSION (default 26.2 — Paper/Folia bench server version)
  *   YAP_BOT_STAGGER_MS (default 150)
  *
  * Hold rule: "online" = currently spawned. Disconnect decrements + reconnects.
@@ -20,7 +20,9 @@ const host = process.env.YAP_BOT_HOST || '127.0.0.1'
 const port = Number(process.env.YAP_BOT_PORT || '0')
 const count = Number(process.env.YAP_BOT_COUNT || '100')
 const stagger = Number(process.env.YAP_BOT_STAGGER_MS || '150')
-const version = process.env.YAP_BOT_VERSION || '1.21.11'
+const versionRaw = process.env.YAP_BOT_VERSION || '26.2'
+// Accept Paper build labels (26.2) and classic semver (1.21.4).
+const version = versionRaw.trim() || '26.2'
 const indexBase = Number(process.env.YAP_BOT_INDEX_BASE || '0')
 /** Full swarm size across workers — cite-stable uses this, not per-worker count. */
 const totalPlayers = Number(process.env.YAP_BOT_TOTAL || count)

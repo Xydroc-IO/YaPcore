@@ -31,7 +31,8 @@ until Folia fork work lands.
 |----------|------|------|
 | `heavypop` | Dense primed TNT + hoppers | **Primary Folia gate** (no bots) — increase entities/hoppers for citeable MSPT |
 | `spawncollapse` | Single-region 3×3 chunks: TNT + hoppers + mobs | **Phase 3.1 gate** — stock Folia TPS collapse; entity-offload / hot-region target |
-| `highpop` | Mineflayer bots + fixtures | Pop / network (extend later) |
+| `highpop` | Mineflayer bots + fixtures | Pop / network — see [BENCH_BOTS.md](BENCH_BOTS.md) |
+| `fullcite` | Bots + entities + heavy hoppers | Full population cite — requires `players_ok: true` |
 | `idle` | Empty-ish world | Regression — chassis overhead OK to lose slightly |
 
 Same seed (`yap-bench-1`). Metrics: `Server.getAverageTickTime()` (MSPT) and TPS.
@@ -98,6 +99,45 @@ plugin samples on the hot region at chunk `(0,0)` via `YapSched.regionChunkTimer
 | `20260824T234919Z` | **25.2466** | **21.4509** | **−15.0%** | Prior citeable (same load profile). |
 
 Folia-fork peers: see [FOLIA_FORKS_COMPARE.md](../folia/FOLIA_FORKS_COMPARE.md). Canvas has no citeable spawncollapse three-way yet; Kaiiju skipped on 26.2.
+
+### highpop (Mineflayer bots) — citeable
+
+| Stamp | Bots | Peer | Mode | Players | `players_ok` | MSPT mean | Notes |
+|-------|-----:|------|------|--------:|:------------:|----------:|-------|
+| `20260901T232100Z-bots100` | 100 | stock Folia | active | 100 / 100 | **true** | 10.87 | Post `patch-minecraft-data.sh`; 30s sample |
+| `20260901T232700Z-bots200` | 200 | stock Folia | cite-stable | 200 / 200 | **true** | 14.04 | 2 workers; physics OFF |
+
+### fullcite (100 bots + fixtures) — citeable
+
+| Stamp | Peer | Players | `players_ok` | MSPT mean | Entities | Heavy hoppers |
+|-------|------|--------:|:------------:|----------:|---------:|--------------:|
+| `20260901T235600Z-fullcite` | stock Folia | 100 / 100 | **true** | 19.18 | 600 | 128 |
+| `20260901T235600Z-fullcite` | yap-folia-chassis | 100 / 100 | **true** | 18.62 | 600 | 128 |
+| `20260901T235600Z-fullcite` | stock Paper | 100 / 100 | **true** | 28.94 | 600 | 128 |
+
+JSON: `bench/results/20260901T235600Z-fullcite-fullcite-{folia,yapcore,paper}.json`
+
+Reproduce:
+
+```bash
+YAP_BENCH_STAMP=$(date -u +%Y%m%dT%H%M%SZ)-fullcite \
+  YAP_BENCH_PLAYERS=100 YAP_BENCH_COMPETITORS=folia,yapcore,paper \
+  NODE_OPTIONS="--max-old-space-size=8192" \
+  ./scripts/bench/run-vs-folia.sh fullcite 40
+```
+
+**INVALID:** `20260901T210712Z-speedtest` fullcite (`players_end: 0`) — pre-fix bot protocol.
+
+Reproduce 100-bot gate:
+
+```bash
+cd scripts/bench/bots && npm install
+YAP_BENCH_STAMP=$(date -u +%Y%m%dT%H%M%SZ)-bots100 \
+  YAP_BENCH_PLAYERS=100 YAP_BENCH_COMPETITORS=folia \
+  ./scripts/bench/run-vs-folia.sh highpop 30
+```
+
+Full bot doc: [BENCH_BOTS.md](BENCH_BOTS.md).
 
 ### Parallel sub-regions + budget (P1)
 
@@ -200,6 +240,7 @@ revive Paper spatial tick as the product path.
 - [COMPARE_ECOSYSTEM.md](../overview/COMPARE_ECOSYSTEM.md) — Folia vs YaP Folia section
 - [FOLIA_FORK.md](../folia/FOLIA_FORK.md) · [FOLIA_FORK_AGENT_HANDOFF.md](../folia/FOLIA_FORK_AGENT_HANDOFF.md)
 - [YAP_SCHED.md](../folia/YAP_SCHED.md) — first-party Folia scheduling
+- [BENCH_BOTS.md](BENCH_BOTS.md) — Mineflayer swarm, 26.2 protocol patch, join results
 - [PERF_AND_LAYOUT.md](PERF_AND_LAYOUT.md) — ≤500-line domain map
 - Smoke: `./scripts/smoke-folia.sh` · `./scripts/smoke-folia-plugins.sh`
 - Verify: `./scripts/verify-yap-folia.sh`

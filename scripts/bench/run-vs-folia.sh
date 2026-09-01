@@ -395,6 +395,8 @@ start_bots() {
     export YAP_BOT_STAGGER_MS="${YAP_BOT_STAGGER_MS:-$((100000 / PLAYERS))}"
     if [ "${YAP_BOT_STAGGER_MS}" -lt 150 ]; then YAP_BOT_STAGGER_MS=150; fi
     if [ "${YAP_BOT_STAGGER_MS}" -gt 500 ]; then YAP_BOT_STAGGER_MS=500; fi
+    # Paper/Folia 26.2 — patch-minecraft-data.sh adds protocol 776 support.
+    "$BOTS_DIR/patch-minecraft-data.sh" >>"$log" 2>&1 || true
     export YAP_BOT_VERSION="${YAP_BOT_VERSION:-26.2}"
     export YAP_BOT_TOTAL="$PLAYERS"
     export YAP_BOT_CITE_STABLE="${YAP_BOT_CITE_STABLE:-}"

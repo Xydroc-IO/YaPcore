@@ -1,8 +1,9 @@
 # YaPcore — project status (complete rundown)
 
-**As of:** 2026-09-01  
-**Branch:** `main` (1 commit ahead of `origin/main`; push needs `gh auth login`)  
-**Last production battery:** `build/production-test-battery-latest.json` — **all gates PASS**
+**As of:** 2026-09-01 (evening)  
+**Branch:** `main` (commits ahead of `origin/main`; push needs `gh auth login`)  
+**Last production battery:** `build/production-test-battery-latest.json` — **all gates PASS**  
+**Bot swarm:** **100 / 200 join verified** — see [BENCH_BOTS.md](../performance/BENCH_BOTS.md)
 
 This is the honest operator view: what exists, what automated CI proves, what still needs human soak, and what is explicitly out of scope. For architecture and pitch, see [FULL_RUNDOWN.md](FULL_RUNDOWN.md). For phased backlog ticks, see [COMPLETION_BACKLOG.md](COMPLETION_BACKLOG.md).
 
@@ -183,7 +184,11 @@ API routes exist for Protect, World, Chat, etc.; some tabs are **polish-level** 
 |------|--------|
 | Compat soak 300s | **PASS** |
 | Perf soak 600s (`SOAK_SECS=600 ./scripts/soak-yap-folia.sh perf`) | **Not run** in last battery |
-| High-pop MSPT gate (~100 bots) | Documented gate; run when benchmarking releases |
+| Spawncollapse MSPT (8k TNT / 1024 hoppers / 2500 mobs) | **CITEABLE** — YaP-Folia −22% to −26% vs stock; `20260901T210712Z-speedtest` |
+| High-pop bot join (100 / 200) | **PASS** — `players_ok: true` on stock Folia (`20260901T232100Z`, `20260901T232700Z`) |
+| High-pop **fullcite** multi-peer (100 bots + fixtures) | **PASS** — folia / yapcore / paper `players_ok: true` (`20260901T235600Z-fullcite`) |
+
+Bot bench doc: [BENCH_BOTS.md](../performance/BENCH_BOTS.md). MSPT tables: [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md).
 
 ---
 
@@ -206,9 +211,9 @@ API routes exist for Protect, World, Chat, etc.; some tabs are **polish-level** 
 
 | Item | State |
 |------|-------|
-| Local commits | `main` **1 commit ahead** of `origin/main` (Tier 4 + production battery docs) |
+| Local commits | `main` **ahead** of `origin/main` (Tier 4, cleanup, bench, bot-fix docs) |
 | Push | Blocked until `gh auth login` |
-| Uncommitted noise | `folia-kernel/server.properties` (timestamp); ephemeral `bench/link-*-smoke-test/` dirs |
+| Uncommitted | Abilities/vehicles WIP (separate from bot bench commit) |
 | Verify locally | `./scripts/smoke-network-full.sh` or full battery in [TESTING.md](../start/TESTING.md) |
 
 ---
@@ -251,6 +256,8 @@ Summary written to `build/production-test-battery-latest.json`.
 | [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md) | Every parity row + §E checklist |
 | [ROADMAP_COMPLETION_PHASES.md](ROADMAP_COMPLETION_PHASES.md) | Phases 8–17 agent roadmap |
 | [TESTING.md](../start/TESTING.md) | All smoke commands |
+| [BENCH_BOTS.md](../performance/BENCH_BOTS.md) | Mineflayer swarm + join verification |
+| [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md) | MSPT scoreboard |
 | [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) | Dashboard tabs and API |
 | [YAP_LINK.md](../network/YAP_LINK.md) | Multi-backend proxy |
 
@@ -263,6 +270,7 @@ Summary written to `build/production-test-battery-latest.json`.
 - “First-party ViaBackwards-class for **1.20.2+**; no Via\* jars on the product path.”  
 - “First-party Geyser-class Bedrock join on shared YaP-Folia world.”  
 - “JE matrix 4/4 spawn; Bedrock smoke + play-depth smoke green; network full 9/9.”  
+- “Mineflayer highpop: 100 active + 200 cite-stable bots join verified on Folia 26.2 (bench harness).”  
 - “Native plugin stack replaces LuckPerms/EssentialsX/TAB/DiscordSRV-class setups for typical SMP.”  
 
 **Say with caveats until §E live soak closes:**

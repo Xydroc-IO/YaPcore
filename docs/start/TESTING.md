@@ -14,6 +14,7 @@ Paper chassis lab. Script index: [scripts/README.md](../../scripts/README.md).
 | `./scripts/soak-yap-folia.sh compat` | Compat soak profile |
 | `./scripts/smoke-network-full.sh` | Full release gate |
 | `./scripts/bench/run-vs-folia.sh` | Stock Folia vs YaP-Folia MSPT |
+| `./scripts/bench/run-vs-all.sh` | Full ecosystem speedtest (Folia + Paper line) |
 | `./scripts/validate-mmo-content.sh` | MMO quest/content validation |
 | `./scripts/heap-dump.sh` | Heap dump for MAT |
 
@@ -71,6 +72,28 @@ SOAK_SECS=300 ./scripts/soak-yap-folia.sh compat   # 5 min hold; perf profile = 
 ```
 
 Summary artifact: `build/production-test-battery-latest.json`.
+
+## MSPT benches (Folia / bots)
+
+Spawncollapse (no bots): [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md).
+
+**Mineflayer bot swarm** (`highpop` / `fullcite`): [BENCH_BOTS.md](../performance/BENCH_BOTS.md).
+
+```bash
+# Install bots + Paper 26.2 protocol patch
+cd scripts/bench/bots && npm install
+
+# 100 active bots — stock Folia
+YAP_BENCH_PLAYERS=100 YAP_BENCH_COMPETITORS=folia \
+  ./scripts/bench/run-vs-folia.sh highpop 30
+
+# 200 bots (cite-stable: keepalive only)
+YAP_BENCH_PLAYERS=200 NODE_OPTIONS="--max-old-space-size=8192" \
+  YAP_BENCH_COMPETITORS=folia ./scripts/bench/run-vs-folia.sh highpop 30
+```
+
+Gate: JSON must show `players_ok: true` and `players_end` ≥ 90% of target.
+Stop live YaPcore (`./scripts/stop.sh`) before bot benches.
 
 ## Endurance FAIL codes (chassis harness)
 
