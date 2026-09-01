@@ -1,0 +1,21 @@
+Tebex Minecraft plugin (Folia build)
+====================================
+
+Component: tebex-folia-*.jar (installed as plugins/tebex.jar)
+Upstream:  https://github.com/tebexio/Tebex-Minecraft
+License:   GNU General Public License v3.0 (see LICENSE-GPLv3.txt)
+Copyright: Tebex Ltd and contributors
+
+YaPcore does not modify this jar. It is an optional third-party plugin for
+web-store command delivery on Hub (YaP-Folia). Fetch with:
+
+  ./scripts/fetch-tebex.sh
+
+Source code corresponding to the binary is available from the upstream GitHub
+repository and release tags. If you redistribute a YaPcore package that includes
+this jar, you must also provide recipients with GPLv3 rights to the Tebex plugin
+(include this NOTICE + LICENSE, and a pointer to source).
+
+YaPcore first-party code is GPLv3 — same license family as this Tebex plugin.
+See docs/start/LICENSING.md and third-party/tebex/LICENSE-GPLv3.txt.
+

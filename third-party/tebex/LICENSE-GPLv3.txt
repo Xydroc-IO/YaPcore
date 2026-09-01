@@ -1,23 +1,3 @@
-Copyright (c) 2026 YapLabs / YaPcore contributors
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-Full license text follows. Third-party notices are at the end of this file
-and in docs/start/LICENSING.md.
-
-================================================================================
-
                     GNU GENERAL PUBLIC LICENSE
                        Version 3, 29 June 2007
 
@@ -692,20 +672,3 @@ may consider it more useful to permit linking proprietary applications with
 the library.  If this is what you want to do, use the GNU Lesser General
 Public License instead of this License.  But first, please read
 <http://www.gnu.org/philosophy/why-not-lgpl.html>.
-================================================================================
-Third-party notices
-================================================================================
-
-YaPcore integrates with components under other licenses:
-
-- Folia / Paper — GPLv3 (downloaded separately; see scripts/fetch-folia.sh)
-- Tebex (optional) — GPLv3 (see scripts/fetch-tebex.sh · third-party/tebex/)
-- Minecraft — Mojang EULA (not open source)
-- Bundled resource packs — see resourcepacks/CREDITS.md
-- MariaDB Docker image — GPLv2 (optional; deploy/mariadb/)
-
-Full details: docs/start/LICENSING.md
-
-Note: Minecraft is a trademark of Mojang Studios / Microsoft. YaPcore is an
-independent server engine and is not affiliated with or endorsed by Mojang or
-Microsoft.

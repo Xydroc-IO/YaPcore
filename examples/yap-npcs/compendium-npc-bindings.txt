@@ -1,0 +1,20 @@
+# YaP NPC quest bindings — run in-game or paste into console after placing NPCs.
+# Requires yap-npcs + yap-mmo-content. See docs/mmo/MMO_QUESTS.md.
+
+# --- Tutorial chain (starter_chain.yml) ---
+/npc create quest_smith at world 0 64 0 180 Smithmaster
+/npc setquest quest_smith starter_mine
+
+/npc create quest_boss at world 120 64 -40 90 Goblin Hunter
+/npc setquest quest_boss starter_boss
+
+# --- Compendium tier 1 (compendium_tier_01.yml) ---
+/npc create mayor at world 0 64 0 180 Mayor
+/npc setquest mayor t1_first_steps
+
+/npc create quest_board at world 2 64 0 180 Quest Board
+/npc setdialogue quest_board &7Right-click NPCs with quests to turn in progress.
+
+# --- Key bosses (optional turn-in / lore NPCs near spawn coords in bosses/pack_*.yml) ---
+/npc create goblin_herald at world 120 64 -40 270 Goblin Herald
+/npc setdialogue goblin_herald &cThe Goblin King lurks nearby. Slay him for &6starter_boss&c.

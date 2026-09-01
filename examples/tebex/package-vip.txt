@@ -1,0 +1,5 @@
+# Copy into Tebex package "Commands" (execute as console on Hub).
+# Placeholder: {username}
+
+yapperm user {username} parent set vip
+kit grant {username} vip

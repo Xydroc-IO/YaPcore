@@ -1,0 +1,21 @@
+Grim Anticheat (Bukkit / Folia build)
+=====================================
+
+Component: grimac-bukkit-*.jar (installed as plugins/grim.jar)
+Upstream:  https://github.com/GrimAnticheat/Grim
+Modrinth:   https://modrinth.com/plugin/grimac
+License:    GNU General Public License v3.0 (see LICENSE-GPLv3.txt)
+Copyright:  GrimAnticheat contributors
+
+YaPcore does not modify this jar. It is an optional third-party anti-cheat for
+YaP-Folia backends. Fetch with:
+
+  ./scripts/fetch-grim.sh
+
+Source code corresponding to the binary is available from the upstream GitHub
+repository and Modrinth release files. If you redistribute a YaPcore package that
+includes this jar, you must also provide recipients with GPLv3 rights to Grim
+(include this NOTICE + LICENSE, and a pointer to source).
+
+YaPcore first-party code is GPLv3 — same license family as Grim.
+See docs/start/LICENSING.md and third-party/grim/LICENSE-GPLv3.txt.

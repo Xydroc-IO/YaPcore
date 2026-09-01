@@ -1,0 +1,5 @@
+# Unlock + deliver adventurer kit (playerdata — not essentials).
+# Placeholder: {username}
+
+yapperm user {username} permission set yapdata.kit.adventurer true
+kit grant {username} adventurer

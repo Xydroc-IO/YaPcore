@@ -209,6 +209,8 @@ local.properties
 plugins/**
 !plugins/.gitkeep
 !plugins/README.md
+third-party/tebex/FETCHED.txt
+third-party/grim/FETCHED.txt
 modules/**
 !modules/.gitkeep
 !modules/README.md
