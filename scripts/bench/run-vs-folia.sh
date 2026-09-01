@@ -6,7 +6,7 @@
 # Env: YAP_BENCH_WARMUP, YAP_BENCH_ENTITIES, YAP_BENCH_HOPPERS, YAP_BENCH_HEAVY_HOPPERS,
 #      YAP_BENCH_MOBS (spawncollapse mob count),
 #      YAP_BENCH_PLAYERS (default 100 for highpop/fullcite),
-#      YAP_BENCH_COMPETITORS=folia,canvas,yapcore (comma list; default all)
+#      YAP_BENCH_COMPETITORS=folia,canvas,yapfolia,yapcore,paper,purpur,leaf (comma list; default all Folia-side)
 #      YAP_BENCH_GAME_XMS=2G YAP_BENCH_GAME_XMX=4G  (8G/12G default for bot scenarios)
 #      YAP_BENCH_CHASSIS_XMS=256m YAP_BENCH_CHASSIS_XMX=512m  (YaP parent only)
 #      YAP_BENCH_SHUFFLE=1  (randomize competitor order — default on)
@@ -154,6 +154,9 @@ case "$YAP_JAR" in /*) ;; *) YAP_JAR="$ROOT/$YAP_JAR" ;; esac
 
 STOCK_FOLIA="$ROOT/lib/folia-${VER}.jar"
 STOCK_CANVAS="$ROOT/lib/canvas-${VER}.jar"
+STOCK_PAPER="$ROOT/lib/paper-${VER}.jar"
+STOCK_PURPUR="$ROOT/lib/purpur-${VER}.jar"
+STOCK_LEAF="$ROOT/lib/leaf-${VER}.jar"
 YAP_FOLIA="$ROOT/lib/yap-folia-${VER}.jar"
 # Phase 3–5 knobs (YaP-Folia only) — stock Folia ignores unknown -D props
 ENTITY_TICK_BUDGET="${YAP_FOLIA_ENTITY_TICK_BUDGET:-}"
@@ -438,7 +441,7 @@ stop_bots() {
 }
 
 wait_ports_free() {
-  local ports=(25680 25681 25682)
+  local ports=(25680 25681 25682 25683 25684 25685 25686)
   local i p
   for i in $(seq 1 30); do
     local busy=0
@@ -664,7 +667,10 @@ for id in "${COMPETITORS[@]}"; do
     canvas)    run_plain canvas "$STOCK_CANVAS" 25682 stock-canvas ;;
     yapfolia)  run_yapfolia_plain ;;
     yapcore)   run_yap ;;
-    *) echo "WARN: unknown competitor '$id' (want folia|canvas|yapfolia|yapcore)" >&2 ;;
+    paper)     run_plain paper "$STOCK_PAPER" 25684 stock-paper ;;
+    purpur)    run_plain purpur "$STOCK_PURPUR" 25685 stock-purpur ;;
+    leaf)      run_plain leaf "$STOCK_LEAF" 25686 stock-leaf ;;
+    *) echo "WARN: unknown competitor '$id' (want folia|canvas|yapfolia|yapcore|paper|purpur|leaf)" >&2 ;;
   esac
 done
 

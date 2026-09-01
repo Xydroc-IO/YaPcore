@@ -9,9 +9,8 @@ chassis only. **No** Phase 3 spatial tick. **No** `yap-spatial-tick.jar`.
 M5 explicitly forbids day-one beat-Folia marketing — chassis overhead is expected
 until Folia fork work lands.
 
-**Peers:** stock **Folia** + **Canvas** (Folia fork @ 26.2). **Kaiiju** is not on
-this board (public releases are 1.20.x). Paper / Purpur / Leaf are Paper-line —
-use [COMPARE_ECOSYSTEM.md](../overview/COMPARE_ECOSYSTEM.md) (legacy Paper-path table) or `./scripts/bench/fetch-competitors.sh`.
+**Peers:** stock **Folia** + **Canvas** (Folia fork @ 26.2) + **Paper / Purpur / Leaf** (Paper line @ 26.2).
+**Kaiiju** is not on this board (public releases are 1.20.x). See `./scripts/bench/run-vs-all.sh` for one-shot full compare.
 
 ## Fairness contract (do not game results)
 
@@ -92,6 +91,7 @@ plugin samples on the hot region at chunk `(0,0)` via `YapSched.regionChunkTimer
 | Stamp | Folia MSPT | YaP-Folia plain | Delta | Notes |
 |-------|-----------:|----------------:|------:|-------|
 | `20260901T010804Z-budget` | **26.5446** | **20.5415** | **−22.6%** | **CITEABLE** — 8k TNT / 1024 hoppers / 2500 mobs; fuse_ok both; knobs: `entity-tick-budget=300`, `async-chunk-save=true`. Files: `bench/results/20260901T010804Z-budget-spawncollapse-{folia,yapfolia}.json` |
+| `20260901T210712Z-speedtest` | **30.8734** | **22.8167** (chassis) / **23.6768** (plain) | **−26.1% / −23.3%** | **CITEABLE** — full ecosystem run (`run-vs-all.sh`): 7 peers, same 8k load; Canvas 30.42, Paper 31.32, Purpur 31.80, Leaf 25.12 (Paper-line). JSON: `bench/results/20260901T210712Z-speedtest-spawncollapse-*.json` |
 | `20260901T075602Z-fullstack` (1/3) | **30.3333** | **23.9128** | **−21.2%** | Full-stack phase 1: budget+async; fuse_ok; chunks 819→819 |
 | `20260901T075602Z-fullstack` (2/3) | **30.3671** | **23.3475** | **−23.1%** | + microtick 8ms + partition, carve OFF, lobe; fuse_ok |
 | `20260901T075602Z-fullstack` (3/3) | **28.9300** | **23.9174** | **−17.3%** | Contiguous carve+partition; fuse_ok; experimental |

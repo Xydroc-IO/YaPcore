@@ -60,7 +60,7 @@ Optional standalone: `smoke-folia-scoreboard.sh` (not part of default soak profi
 
 | Path | Purpose |
 |------|---------|
-| `bench/run-vs-folia.sh` · `run-full-stack.sh` | MSPT / stack benches |
+| `bench/run-vs-folia.sh` · `run-vs-all.sh` | MSPT / stack benches (Folia + forks + Paper/Purpur/Leaf) |
 | `bench/fetch-*.sh` · `compare-folia.py` | Competitor jars + compare |
 | `protocol-matrix/` | JE/BE protocol matrix (Via/Geyser parity) |
 | `test-unit.sh` · `test-fray.sh` · `test-all.sh` | `gradle test` / Fray / verify |
