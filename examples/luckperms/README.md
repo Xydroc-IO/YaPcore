@@ -1,6 +1,6 @@
 # Legacy LuckPerms group pack (deprecated)
 
-**Use native YaPPerms instead:** `yap-perms.jar` + `docs/PERMISSIONS.md`.
+**Use native YaPPerms instead:** `yap-perms.jar` + `docs/ops/PERMISSIONS.md`.
 
 This folder kept only for operators migrating from an older YaPcore tree that used
 LuckPerms. New installs should use:

@@ -16,4 +16,9 @@ Official YaPcore visual identity — **Minecraft-inspired** (voxels / blocks / e
 
 ## License of assets
 
-Branding images are © YapLabs / YaPcore contributors and may be used to identify this project. Third-party forks should replace marks if rebranding.
+Branding images are © YapLabs / YaPcore contributors and may be used to identify this project.
+Third-party forks should replace marks if rebranding.
+
+YaPcore **source code** is **[GPLv3](../LICENSE)** — see [docs/start/LICENSING.md](../docs/start/LICENSING.md).
+Branding artwork itself is not dual-licensed for commercial rebrand kits; ask before
+shipping YaP marks on an unrelated product.

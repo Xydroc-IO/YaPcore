@@ -2,76 +2,91 @@
 
 ![YaPcore](../branding/yapcore-banner.png)
 
-**New here?** Start with [**Quick Start**](QUICK_START.md), then browse the [**Wiki**](WIKI.md).
+**New here?** Start with [**Quick Start**](start/QUICK_START.md), then browse the [**Wiki**](WIKI.md).
+
+Docs are grouped by topic:
+
+| Folder | What’s in it |
+|--------|----------------|
+| [**start/**](start/) | Quick start, defaults, releases, licensing, Windows, testing |
+| [**overview/**](overview/) | What we are, plain English, ecosystem compare, roadmap |
+| [**ops/**](ops/) | Commands, permissions, web dashboard, tune |
+| [**network/**](network/) | Ports, clients, crossplay, nginx, Cloudflare, YaP Link, Velocity |
+| [**protocol/**](protocol/) | Via/Geyser parity, protocol dumps, Xbox capture |
+| [**plugins/**](plugins/) | Plugin API, compat, pregen, stacker, vehicles, world edit |
+| [**data/**](data/) | YaPDB, MariaDB, playerdata |
+| [**mmo/**](mmo/) | Opt-in MMO (skills, combat, quests, abilities) |
+| [**gameplay/**](gameplay/) | Factions, guilds, regions |
+| [**folia/**](folia/) | YaP-Folia fork, scheduler, soak, teleport |
+| [**performance/**](performance/) | Bench gates, ZGC/NUMA, YapEngine threads |
+| [**whitepaper/**](whitepaper/) | Technical + plain-English whitepapers |
+| [**pdf/**](pdf/) | Printable PDFs |
+
+---
+
+## Start here
 
 | Document | Description |
 |----------|-------------|
-| [**Quick Start**](QUICK_START.md) | **10-minute setup** — release zip or source |
-| [**Defaults**](DEFAULTS.md) | **Shipped first-boot configs** — `config/defaults/` + seed script |
+| [**Quick Start**](start/QUICK_START.md) | **10-minute setup** — release zip or source |
+| [**Defaults**](start/DEFAULTS.md) | Shipped first-boot configs — `config/defaults/` |
 | [**Wiki**](WIKI.md) | Full operator doc index |
-| [**Licensing**](LICENSING.md) | MIT + third-party (YaP-Folia/Folia, Mojang EULA, packs) |
-| [**Commands**](COMMANDS.md) | Console + in-game command reference |
-| [**Permissions**](PERMISSIONS.md) | Permission nodes + YaPPerms rank ladder |
-| [**Releases**](RELEASES.md) | Downloadable zips, build commands |
-| [**Whitepaper (plain English)**](whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) | Same whitepaper story for non-tech readers |
-| [**PLAIN_ENGLISH**](PLAIN_ENGLISH.md) | **Non-tech overview** — what we are / what we’re into, in plain English |
-| [**FULL_RUNDOWN**](FULL_RUNDOWN.md) | **Full “what we are / what we do” rundown** |
-| [WHAT_WE_ARE](WHAT_WE_ARE.md) | Short identity / are we better Paper? |
-| [**COMPARE_ECOSYSTEM**](COMPARE_ECOSYSTEM.md) | **YaPcore vs Paper, Purpur, Pufferfish, Leaf, Folia / YaP-Folia** |
-| [**FOLIA_FORK**](FOLIA_FORK.md) | **YaP-Folia** — our Folia 26.2 fork (product game jar) |
-| [**PDFs**](pdf/) | Printable PDFs of the identity + whitepaper + vehicles + web dashboard docs |
-| [VELOCITY](VELOCITY.md) | **Velocity proxy** — optional stand-in; YaP-Folia backends with modern forwarding |
-| [**YAP_LINK_NATIVE**](YAP_LINK_NATIVE.md) | **YaP Link** phased Velocity-class parity matrix |
-| [**YAP_LINK**](YAP_LINK.md) | **YaP Link** — first-party native network proxy |
-| [**YAP_SCHED**](YAP_SCHED.md) | **YapSched** — Folia-safe scheduler helper for YaP plugins |
-| [**PLAYERDATA**](PLAYERDATA.md) | **Cross-server inv / claims / GUIs** — `yap-playerdata` |
-| [**YAPDB**](YAPDB.md) | **Shared MariaDB Hikari pool** — `yap-db` for any SQL plugin |
-| [**MARIADB**](MARIADB.md) | **Easy MariaDB** — Docker package for Linux + Windows (single & multi) |
-| [YAPENGINE_16THREAD](YAPENGINE_16THREAD.md) | **YapEngine chassis** — edge/I/O thread roles (v2.0); YaP-Folia owns game tick |
-| [BENCH_VS_FOLIA](BENCH_VS_FOLIA.md) | **MSPT product gate** — stock Folia vs YaP-Folia |
-| [PERF_AND_LAYOUT](PERF_AND_LAYOUT.md) | Performance layout & folder discipline |
-| [ZGC_NUMA](ZGC_NUMA.md) | Generational ZGC + NUMA launch flags |
-| [NETWORKING](NETWORKING.md) | Domain / public ports / boot banner (`yapcoremc.yaplabs.us`) |
-| [VANILLA_CLIENTS](VANILLA_CLIENTS.md) | Java Edition join + built-in multi-version bands |
-| [PHASE4_PROTOCOL](PHASE4_PROTOCOL.md) | **Phase 4:** full Via\* + Geyser parity in first-party code |
-| [**VIA_GEYSER_PARITY**](VIA_GEYSER_PARITY.md) | **Feature checklist** — ViaVersion / Backwards / Rewind / Geyser / Floodgate rows + gates |
-| [**PROTOCOL_DUMPS**](PROTOCOL_DUMPS.md) | **P4.10** — add next Mojang protocol dump (`index.json` + generator) |
-| [**VIA_BACKWARDS_LIMITATIONS**](VIA_BACKWARDS_LIMITATIONS.md) | **P4.11** — honesty notes (smithing, sounds, placeholders, claim language) |
-| [XBOX_RETAIL_CAPTURE](XBOX_RETAIL_CAPTURE.md) | Optional live Mojang Xbox JWT capture → soak |
-| [CLIENTS_AND_PACKS](CLIENTS_AND_PACKS.md) | Multi-version matrix, dual-stack, resource packs |
-| [NGINX_AND_LOCALHOST](NGINX_AND_LOCALHOST.md) | Same-PC joins + nginx |
-| [**WINDOWS**](WINDOWS.md) | **Windows parity** — launchers, Paperclip, nginx stream |
-| [CLOUDFLARE_AND_NGINX](CLOUDFLARE_AND_NGINX.md) | **yapcoremc.yaplabs.us** + Cloudflare DNS / SSL |
-| [PLUGINS](PLUGINS.md) | Plugin API — YaP-Folia + YaP jars in one `plugins/` folder |
-| [PLUGIN_COMPAT](PLUGIN_COMPAT.md) | YaP-Folia product path + unified `plugins/`; Paper path legacy |
-| [**PLUGIN_BACKCOMPAT**](PLUGIN_BACKCOMPAT.md) | **1.20–1.21 jars on 26.2** — Tier A + light ASM rewrite |
-| [**PREGEN**](PREGEN.md) | **Built-in chunk pregen** (Chunky-class) — `/yappregen` |
-| [**STACKER**](STACKER.md) | **PDC mob/item/spawner stacker** (no NMS) — `/yapstacker` |
-| [**PLACEHOLDERAPI**](PLACEHOLDERAPI.md) | **Built-in clip-compatible PlaceholderAPI** (no HelpChat jar) |
-| [**PAPER_API_COVERAGE**](PAPER_API_COVERAGE.md) | Folia APIs on YaP-Folia path; complete Paper API on legacy Paper path |
-| [**WEB_DASHBOARD**](WEB_DASHBOARD.md) | **Headless browser control** — start/stop, console, packs, vehicles |
-| [**VEHICLES**](VEHICLES.md) | **Real vehicle API** (not minecarts) — YaP-Folia plugin + author guide |
-| [TUNE](TUNE.md) | **Central config hub** + Purpur-class gameplay knobs module |
-| [COMMANDS](COMMANDS.md) | Vanilla / Paper / plugin commands from GUI + in-game |
-| [**PERMISSIONS**](PERMISSIONS.md) | **Permission nodes** + YaPPerms rank ladder |
-| [MODULES_AND_API](MODULES_AND_API.md) | Modules + API coverage + pools |
-| [BRIGADIER_NMS_EVENTS](BRIGADIER_NMS_EVENTS.md) | Brigadier, Craft/NMS, Paper event catalog |
-| [TESTING](TESTING.md) | Test lab, soak, Fray, JCStress |
-| [**RELEASES**](RELEASES.md) | **Linux/Windows boxes + standalone suite zips** (v1.0.0.0) |
+| [**Releases**](start/RELEASES.md) | Downloadable zips, build commands |
+| [**Licensing**](start/LICENSING.md) | GPLv3 + third-party notices |
+
+## Overview
+
+| Document | Description |
+|----------|-------------|
+| [PLAIN_ENGLISH](overview/PLAIN_ENGLISH.md) | Non-tech overview |
+| [FULL_RUNDOWN](overview/FULL_RUNDOWN.md) | Full product rundown |
+| [WHAT_WE_ARE](overview/WHAT_WE_ARE.md) | Short identity |
+| [COMPARE_ECOSYSTEM](overview/COMPARE_ECOSYSTEM.md) | vs Paper, Purpur, Folia, … |
+| [Whitepaper](whitepaper/YAPCORE_WHITEPAPER.md) | Technical architecture |
+| [Whitepaper (plain English)](whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) | Same story for non-tech readers |
+
+## Ops & network
+
+| Document | Description |
+|----------|-------------|
+| [COMMANDS](ops/COMMANDS.md) | Console + in-game commands |
+| [PERMISSIONS](ops/PERMISSIONS.md) | Permission nodes + YaPPerms |
+| [ADMIN_MENU](ops/ADMIN_MENU.md) | In-game staff super menu (`/yapadmin`) |
+| [ANTICHEAT](ops/ANTICHEAT.md) | YaPGuard vs regions; optional Grim AC |
+| [COMPLETION_BACKLOG](overview/COMPLETION_BACKLOG.md) | What is shipped vs still thin |
+| [TEBEX](ops/TEBEX.md) | Store / Tebex → Hub console cmds |
+| [WEB_DASHBOARD](ops/WEB_DASHBOARD.md) | Browser control (`:8080`) |
+| [TUNE](ops/TUNE.md) | Central config hub |
+| [NETWORKING](network/NETWORKING.md) | Domain / ports / boot banner |
+| [YAP_LINK](network/YAP_LINK.md) | Native multi-backend proxy |
+| [CROSSPLAY](network/CROSSPLAY.md) | Java + Bedrock dual-stack |
+
+## Plugins, data & Folia
+
+| Document | Description |
+|----------|-------------|
+| [PLUGINS](plugins/PLUGINS.md) | Plugin folders + load order |
+| [PREGEN](plugins/PREGEN.md) | Chunk pre-generator |
+| [VEHICLES](plugins/VEHICLES.md) | Vehicle API |
+| [YAPWORLD](plugins/YAPWORLD.md) | World / selection / edit |
+| [YAPDB](data/YAPDB.md) · [MARIADB](data/MARIADB.md) | Shared DB pool + Docker |
+| [PLAYERDATA](data/PLAYERDATA.md) | Cross-server player data |
+| [FOLIA_FORK](folia/FOLIA_FORK.md) | YaP-Folia product game jar |
+| [BENCH_VS_FOLIA](performance/BENCH_VS_FOLIA.md) | MSPT product gate |
 
 ## MMO gameplay (opt-in)
 
-`gradle installGameplayDefaults` or `-PyapGameplay=true`. Plan: [MMO_PHASES.md](MMO_PHASES.md).
+`gradle installGameplayDefaults` or `-PyapGameplay=true`. Plan: [mmo/MMO_PHASES.md](mmo/MMO_PHASES.md).
 
 | Page | Description |
 |------|-------------|
-| [MMO_PHASES.md](MMO_PHASES.md) | M0–M7 milestones + smoke checklist |
-| [MMO_QUESTS.md](MMO_QUESTS.md) | **100-quest compendium** — kits, skills, bosses, ranks |
-| [MMO_CONTENT.md](MMO_CONTENT.md) | Quest/boss/recipe packs |
-| [MMO_SKILLS.md](MMO_SKILLS.md) | 13 RS skills |
-| [MMO_COMBAT.md](MMO_COMBAT.md) | Custom combat |
-| [MMO_ABILITIES.md](MMO_ABILITIES.md) | 233 combat abilities |
-| [MMO_BEDROCK_UI.md](MMO_BEDROCK_UI.md) | Bedrock MMO UI |
+| [MMO_PHASES](mmo/MMO_PHASES.md) | M0–M7 milestones |
+| [MMO_QUESTS](mmo/MMO_QUESTS.md) | 100-quest compendium |
+| [MMO_SKILLS](mmo/MMO_SKILLS.md) | Skills |
+| [MMO_COMBAT](mmo/MMO_COMBAT.md) | Custom combat |
+| [MMO_ABILITIES](mmo/MMO_ABILITIES.md) | Combat abilities |
+| [MMO_BEDROCK_UI](mmo/MMO_BEDROCK_UI.md) | Bedrock MMO UI |
+| [MMO_CONTENT](mmo/MMO_CONTENT.md) | Quests / bosses / recipes |
 
 ## Branding
 

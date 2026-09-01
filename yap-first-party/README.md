@@ -28,8 +28,10 @@ gradle assemblePluginDist              # build/dist/yap-plugins/{core-network,ga
 gradle assembleRelease                 # full linux/windows release trees
 ```
 
+**License:** first-party sources here are **[GPLv3](../LICENSE)** — [docs/start/LICENSING.md](../docs/start/LICENSING.md).
+
 See [`plugins/README.md`](../plugins/README.md) for jar names and tiers.
-See [`docs/MODULES_AND_API.md`](../docs/MODULES_AND_API.md) for module packaging.
+See [`docs/plugins/MODULES_AND_API.md`](../docs/plugins/MODULES_AND_API.md) for module packaging.
 
 ## YaP Link
 
@@ -41,4 +43,4 @@ See [`docs/MODULES_AND_API.md`](../docs/MODULES_AND_API.md) for module packaging
 | `link/plugins/*` | `:yap-link-plugin-*` |
 
 Jar: `yap-first-party/link/native/build/libs/yap-link.jar`  
-Docs: [`docs/YAP_LINK_NATIVE.md`](../docs/YAP_LINK_NATIVE.md)
+Docs: [`docs/network/YAP_LINK_NATIVE.md`](../docs/network/YAP_LINK_NATIVE.md)

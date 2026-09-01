@@ -59,8 +59,8 @@ CORE+NETWORK plugins ship by default; GAMEPLAY/MMO is opt-in. Playerdata **shops
 The product is aimed at **busy / high-pop** servers; fair cites focus on **~100 active bots**.
 Phase 4 dual-stack join DoD is green.
 
-Details: [FULL_RUNDOWN.md](../FULL_RUNDOWN.md) · [FOLIA_FORK.md](../FOLIA_FORK.md) ·
-[BENCH_VS_FOLIA.md](../BENCH_VS_FOLIA.md) · [YAP_LINK.md](../YAP_LINK.md) ·
+Details: [FULL_RUNDOWN.md](../overview/FULL_RUNDOWN.md) · [FOLIA_FORK.md](../folia/FOLIA_FORK.md) ·
+[BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md) · [YAP_LINK.md](../network/YAP_LINK.md) ·
 [technical whitepaper §6–13](YAPCORE_WHITEPAPER.md).
 
 ---
@@ -159,11 +159,11 @@ For the full engineering write-up, tables, and status matrix, read [YAPCORE_WHIT
 
 | If you are… | Start here |
 |-------------|------------|
-| Non-tech / just curious | [PLAIN_ENGLISH.md](../PLAIN_ENGLISH.md) |
+| Non-tech / just curious | [PLAIN_ENGLISH.md](../overview/PLAIN_ENGLISH.md) |
 | Reading the engineer paper | [YAPCORE_WHITEPAPER.md](YAPCORE_WHITEPAPER.md) |
-| Running a server | [QUICK_START](../QUICK_START.md), [FOLIA_FORK](../FOLIA_FORK.md), [WEB_DASHBOARD](../WEB_DASHBOARD.md) |
-| Writing plugins | [PLUGINS](../PLUGINS.md), [VEHICLES](../VEHICLES.md) |
-| Working on the fork | [FOLIA_FORK](../FOLIA_FORK.md), [YAPENGINE_16THREAD](../YAPENGINE_16THREAD.md) |
+| Running a server | [QUICK_START](../start/QUICK_START.md), [FOLIA_FORK](../folia/FOLIA_FORK.md), [WEB_DASHBOARD](../ops/WEB_DASHBOARD.md) |
+| Writing plugins | [PLUGINS](../plugins/PLUGINS.md), [VEHICLES](../plugins/VEHICLES.md) |
+| Working on the fork | [FOLIA_FORK](../folia/FOLIA_FORK.md), [YAPENGINE_16THREAD](../performance/YAPENGINE_16THREAD.md) |
 
 ### Citation (technical paper)
 
@@ -178,3 +178,7 @@ For the full engineering write-up, tables, and status matrix, read [YAPCORE_WHIT
   note        = {Technical whitepaper, YaPcore 0.3}
 }
 ```
+
+### License
+
+YaPcore is free software under the **GNU GPLv3** — [LICENSING.md](../start/LICENSING.md).

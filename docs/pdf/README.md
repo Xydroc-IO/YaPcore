@@ -4,32 +4,36 @@ Generated from the Markdown identity, ops, and whitepaper docs.
 **PDFs are gitignored** — regenerate locally; commit Markdown sources only.
 
 All sources below are written for the **current product path**: **YaP-Folia**
-(`folia-jar-source=build`), not stock PaperMC Folia. See [../FOLIA_FORK.md](../FOLIA_FORK.md).
+(`folia-jar-source=build`), not stock PaperMC Folia. See [../folia/FOLIA_FORK.md](../folia/FOLIA_FORK.md).
 
 | PDF | Source |
 |-----|--------|
-| `PLAIN_ENGLISH.pdf` | [../PLAIN_ENGLISH.md](../PLAIN_ENGLISH.md) |
-| `WHAT_WE_ARE.pdf` | [../WHAT_WE_ARE.md](../WHAT_WE_ARE.md) |
-| `FULL_RUNDOWN.pdf` | [../FULL_RUNDOWN.md](../FULL_RUNDOWN.md) |
-| `COMPARE_ECOSYSTEM.pdf` | [../COMPARE_ECOSYSTEM.md](../COMPARE_ECOSYSTEM.md) |
-| `FOLIA_FORKS_COMPARE.pdf` | [../FOLIA_FORKS_COMPARE.md](../FOLIA_FORKS_COMPARE.md) |
-| `COMPARISON_BRIEF.pdf` | [../COMPARISON_BRIEF.md](../COMPARISON_BRIEF.md) |
-| `QUICK_START.pdf` | [../QUICK_START.md](../QUICK_START.md) |
-| `DEFAULTS.pdf` | [../DEFAULTS.md](../DEFAULTS.md) |
-| `RELEASES.pdf` | [../RELEASES.md](../RELEASES.md) |
-| `PLUGINS.pdf` | [../PLUGINS.md](../PLUGINS.md) |
-| `YAPDB.pdf` | [../YAPDB.md](../YAPDB.md) |
-| `MARIADB.pdf` | [../MARIADB.md](../MARIADB.md) |
-| `PLAYERDATA.pdf` | [../PLAYERDATA.md](../PLAYERDATA.md) |
-| `EDGE_HARDEN.pdf` | [../EDGE_HARDEN.md](../EDGE_HARDEN.md) |
-| `LAGGUARD.pdf` | [../LAGGUARD.md](../LAGGUARD.md) |
-| `FOLIA_FORK.pdf` | [../FOLIA_FORK.md](../FOLIA_FORK.md) |
-| `YAP_LINK.pdf` | [../YAP_LINK.md](../YAP_LINK.md) |
-| `YAP_LINK_NATIVE.pdf` | [../YAP_LINK_NATIVE.md](../YAP_LINK_NATIVE.md) |
-| `VIA_GEYSER_PARITY.pdf` | [../VIA_GEYSER_PARITY.md](../VIA_GEYSER_PARITY.md) |
-| `VEHICLES.pdf` | [../VEHICLES.md](../VEHICLES.md) |
-| `STACKER.pdf` | [../STACKER.md](../STACKER.md) |
-| `WEB_DASHBOARD.pdf` | [../WEB_DASHBOARD.md](../WEB_DASHBOARD.md) |
+| `PLAIN_ENGLISH.pdf` | [../overview/PLAIN_ENGLISH.md](../overview/PLAIN_ENGLISH.md) |
+| `WHAT_WE_ARE.pdf` | [../overview/WHAT_WE_ARE.md](../overview/WHAT_WE_ARE.md) |
+| `FULL_RUNDOWN.pdf` | [../overview/FULL_RUNDOWN.md](../overview/FULL_RUNDOWN.md) |
+| `COMPARE_ECOSYSTEM.pdf` | [../overview/COMPARE_ECOSYSTEM.md](../overview/COMPARE_ECOSYSTEM.md) |
+| `FOLIA_FORKS_COMPARE.pdf` | [../folia/FOLIA_FORKS_COMPARE.md](../folia/FOLIA_FORKS_COMPARE.md) |
+| `COMPARISON_BRIEF.pdf` | [../overview/COMPARISON_BRIEF.md](../overview/COMPARISON_BRIEF.md) |
+| `QUICK_START.pdf` | [../start/QUICK_START.md](../start/QUICK_START.md) |
+| `DEFAULTS.pdf` | [../start/DEFAULTS.md](../start/DEFAULTS.md) |
+| `RELEASES.pdf` | [../start/RELEASES.md](../start/RELEASES.md) |
+| `PLUGINS.pdf` | [../plugins/PLUGINS.md](../plugins/PLUGINS.md) |
+| `YAPDB.pdf` | [../data/YAPDB.md](../data/YAPDB.md) |
+| `MARIADB.pdf` | [../data/MARIADB.md](../data/MARIADB.md) |
+| `PLAYERDATA.pdf` | [../data/PLAYERDATA.md](../data/PLAYERDATA.md) |
+| `EDGE_HARDEN.pdf` | [../network/EDGE_HARDEN.md](../network/EDGE_HARDEN.md) |
+| `LAGGUARD.pdf` | [../plugins/LAGGUARD.md](../plugins/LAGGUARD.md) |
+| `FOLIA_FORK.pdf` | [../folia/FOLIA_FORK.md](../folia/FOLIA_FORK.md) |
+| `YAP_LINK.pdf` | [../network/YAP_LINK.md](../network/YAP_LINK.md) |
+| `YAP_LINK_NATIVE.pdf` | [../network/YAP_LINK_NATIVE.md](../network/YAP_LINK_NATIVE.md) |
+| `VIA_GEYSER_PARITY.pdf` | [../protocol/VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md) |
+| `VEHICLES.pdf` | [../plugins/VEHICLES.md](../plugins/VEHICLES.md) |
+| `STACKER.pdf` | [../plugins/STACKER.md](../plugins/STACKER.md) |
+| `WEB_DASHBOARD.pdf` | [../ops/WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
+| `MMO_SKILLS.pdf` | [../mmo/MMO_SKILLS.md](../mmo/MMO_SKILLS.md) |
+| `MMO_COMBAT.pdf` | [../mmo/MMO_COMBAT.md](../mmo/MMO_COMBAT.md) |
+| `MMO_ABILITIES.pdf` | [../mmo/MMO_ABILITIES.md](../mmo/MMO_ABILITIES.md) |
+| `MMO_PHASES.pdf` | [../mmo/MMO_PHASES.md](../mmo/MMO_PHASES.md) |
 | `YAPCORE_WHITEPAPER.pdf` | [../whitepaper/YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) |
 | `YAPCORE_WHITEPAPER_PLAIN_ENGLISH.pdf` | [../whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md](../whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) |
 

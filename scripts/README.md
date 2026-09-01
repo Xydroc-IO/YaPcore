@@ -1,7 +1,7 @@
 # YaPcore scripts
 
 Operator and maintainer helpers. Prefer this short list; see
-[docs/RELEASES.md](../docs/RELEASES.md) and [docs/QUICK_START.md](../docs/QUICK_START.md).
+[docs/start/RELEASES.md](../docs/start/RELEASES.md) and [docs/start/QUICK_START.md](../docs/start/QUICK_START.md).
 
 ## Everyday (ship in release zips)
 
@@ -24,6 +24,8 @@ Operator and maintainer helpers. Prefer this short list; see
 | `verify-yap-folia.sh` | Sanity-check the fork jar |
 | `vendor-folia.sh` · `folia-patch.sh` | Vendor + apply patches |
 | `fetch-folia.sh` | Stock Fill Folia (bench / fallback only) |
+| `fetch-tebex.sh` | Official Tebex Folia plugin → `plugins/tebex.jar` (GPLv3) |
+| `fetch-grim.sh` | Official Grim AC Folia jar → `plugins/grim.jar` (GPLv3) |
 | `soak-yap-folia.sh` | Compat / perf soak profiles |
 | `smoke-folia.sh` | Boot + ready hold |
 
@@ -50,7 +52,7 @@ Soak hooks (called by `soak-yap-folia.sh`): `smoke-folia-sched-compat.sh`,
 | `content/generate-mmo-quest-compendium.py` | Tiered quest YAML |
 | `content/generate-mmo-baseline-pack.py` | Recipes / bosses |
 | `validate-mmo-content.sh` | Manifest + quest validation |
-| `generate-ability-pack.py` · `generate-ability-icons.py` | Abilities content / icons |
+| `generate-ability-pack.py` · `generate-mmo-icons.py` | Abilities YAML + CLAY_BALL icon pack |
 | `build-default-resourcepack.sh` · `fetch-faithful-64x.sh` · `verify-packs.sh` | Client packs |
 
 ## Bench / protocol / tests

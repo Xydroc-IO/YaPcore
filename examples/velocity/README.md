@@ -48,4 +48,4 @@ cd /path/to/velocity && java -jar velocity.jar
 
 Players connect to `your.domain:25565` (Velocity). YaPcore stays on loopback `:25566`.
 
-See [docs/VELOCITY.md](../../docs/VELOCITY.md).
+See [docs/network/VELOCITY.md](../../docs/network/VELOCITY.md).

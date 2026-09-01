@@ -12,7 +12,7 @@ on:
       - "scripts/verify-yap-folia.sh"
       - "src/main/java/com/yapcore/folia/**"
       - "src/main/java/com/yapcore/config/authority/FoliaAuthorityConfig.java"
-      - "docs/FOLIA_FORK.md"
+      - "docs/folia/FOLIA_FORK.md"
   push:
     branches: [main]
     paths:

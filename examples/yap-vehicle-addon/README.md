@@ -32,4 +32,4 @@ Soft-depend:
 softdepend: [YaPVehicles]
 ```
 
-See [docs/VEHICLES.md](../../docs/VEHICLES.md).
+See [docs/plugins/VEHICLES.md](../../docs/plugins/VEHICLES.md).

@@ -10,7 +10,7 @@
 Product path: `game-authority=folia`. Schedule with `com.yapcore.sched.YapSched`.
 Stock Paper jars are unsupported on the Folia product path.
 
-See [docs/PLUGINS.md](../docs/PLUGINS.md) and [docs/PLUGIN_COMPAT.md](../docs/PLUGIN_COMPAT.md).
+See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUGIN_COMPAT.md](../docs/plugins/PLUGIN_COMPAT.md).
 
 ## Install tiers
 
@@ -30,11 +30,12 @@ See [docs/PLUGINS.md](../docs/PLUGINS.md) and [docs/PLUGIN_COMPAT.md](../docs/PL
 | `yap-placeholderapi.jar` | Clip-compatible PlaceholderAPI (plugin name `PlaceholderAPI`) |
 | `yap-plugin-compat.jar` | 1.20–1.21 → 26.2 back-compat (`/yapcompat`) |
 | `yap-pregen.jar` | Chunk pre-generator (`/yappregen`) |
-| `yap-db.jar` | Shared MariaDB Hikari pool (`YaPDB`) — `docs/YAPDB.md` / `docs/MARIADB.md` |
+| `yap-db.jar` | Shared MariaDB Hikari pool (`YaPDB`) — `docs/data/YAPDB.md` / `docs/data/MARIADB.md` |
 | `yap-perms.jar` | Native permissions — groups, tracks, prefixes (`/yapperm`, `/promote`) |
 | `yap-playerdata.jar` | Cross-server data + offline `/login` + session lock + modular features |
 | `yap-moderation.jar` | Ban/mute/warn/kick + history (`/ban`, `/modhistory`) |
 | `yap-essentials.jar` | Essentials-class QoL (`/spawn`, `/tpa`, `/fly`, `/vanish`, …) |
+| `yap-admin.jar` | In-game staff super menu (`/yapadmin`, `/staff`) — [ADMIN_MENU.md](../docs/ops/ADMIN_MENU.md) |
 | `yap-packs.jar` | Multi-active resource packs (`/yappacks`) |
 | `yap-chat.jar` | Full chat suite + unsigned system chat fix |
 | `yap-floodgate.jar` | Velocity Bedrock identity without Floodgate jar |
@@ -52,10 +53,17 @@ Plus GAMEPLAY fine-tune modules (`yap-vehicles-module`, `yap-stacker-module`,
 `-PyapGameplay=true`. CORE fine-tune modules install with `installProductDefaults`
 (see [modules/README.md](../modules/README.md)).
 
-See [docs/VEHICLES.md](../docs/VEHICLES.md) · [docs/MODULES_AND_API.md](../docs/MODULES_AND_API.md) ·
-[docs/PLACEHOLDERAPI.md](../docs/PLACEHOLDERAPI.md) ·
-[docs/PLUGIN_BACKCOMPAT.md](../docs/PLUGIN_BACKCOMPAT.md) · [docs/PREGEN.md](../docs/PREGEN.md) ·
-[docs/STACKER.md](../docs/STACKER.md) · [docs/YAPDB.md](../docs/YAPDB.md) ·
-[docs/PLAYERDATA.md](../docs/PLAYERDATA.md) · [docs/MARIADB.md](../docs/MARIADB.md) ·
-[docs/PERMISSIONS.md](../docs/PERMISSIONS.md) ·
-[docs/CLIENTS_AND_PACKS.md](../docs/CLIENTS_AND_PACKS.md) · [docs/VELOCITY.md](../docs/VELOCITY.md).
+### Optional third-party (not in git)
+
+| Jar | How | Notes |
+|-----|-----|-------|
+| `tebex.jar` | `./scripts/fetch-tebex.sh` or `gradle fetchTebex` | Official **GPLv3** Folia store plugin — Hub only · [TEBEX.md](../docs/ops/TEBEX.md) |
+| `grim.jar` | `./scripts/fetch-grim.sh` or `gradle fetchGrim` | Official **GPLv3** Grim AC (Folia) · [GRIM.md](../docs/ops/GRIM.md) |
+
+See [docs/plugins/VEHICLES.md](../docs/plugins/VEHICLES.md) · [docs/plugins/MODULES_AND_API.md](../docs/plugins/MODULES_AND_API.md) ·
+[docs/plugins/PLACEHOLDERAPI.md](../docs/plugins/PLACEHOLDERAPI.md) ·
+[docs/plugins/PLUGIN_BACKCOMPAT.md](../docs/plugins/PLUGIN_BACKCOMPAT.md) · [docs/plugins/PREGEN.md](../docs/plugins/PREGEN.md) ·
+[docs/plugins/STACKER.md](../docs/plugins/STACKER.md) · [docs/data/YAPDB.md](../docs/data/YAPDB.md) ·
+[docs/data/PLAYERDATA.md](../docs/data/PLAYERDATA.md) · [docs/data/MARIADB.md](../docs/data/MARIADB.md) ·
+[docs/ops/PERMISSIONS.md](../docs/ops/PERMISSIONS.md) ·
+[docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md) · [docs/network/VELOCITY.md](../docs/network/VELOCITY.md).

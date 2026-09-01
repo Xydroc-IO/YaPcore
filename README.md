@@ -11,11 +11,11 @@ playerdata, packs).
 
 | | |
 |--|--|
-| **Quick Start** | [**docs/QUICK_START.md**](docs/QUICK_START.md) |
+| **Quick Start** | [**docs/start/QUICK_START.md**](docs/start/QUICK_START.md) |
 | **Wiki** | [**docs/WIKI.md**](docs/WIKI.md) |
-| **Releases** | [docs/RELEASES.md](docs/RELEASES.md) · build locally with `gradle publishReleasesFolder` |
+| **Releases** | [docs/start/RELEASES.md](docs/start/RELEASES.md) · build locally with `gradle publishReleasesFolder` |
 | **Scripts** | [scripts/README.md](scripts/README.md) |
-| **License** | [MIT](LICENSE) · [LICENSING.md](docs/LICENSING.md) |
+| **License** | [GPLv3](LICENSE) · [LICENSING.md](docs/start/LICENSING.md) |
 
 > Not affiliated with Mojang / Microsoft.
 
@@ -53,7 +53,7 @@ gradle installProductDefaults shadowJar
 
 Join `127.0.0.1:25566` (Java + Bedrock). Dashboard: http://127.0.0.1:8080/
 
-Requires **Java 25+**. Full walkthrough: [docs/QUICK_START.md](docs/QUICK_START.md).
+Requires **Java 25+**. Full walkthrough: [docs/start/QUICK_START.md](docs/start/QUICK_START.md).
 
 ### Release packages (local)
 
@@ -67,7 +67,7 @@ gradle publishReleasesFolder
 
 Also: `gradle assembleRelease` → `build/dist/yapcore-release/`.
 
-Details: [docs/RELEASES.md](docs/RELEASES.md).
+Details: [docs/start/RELEASES.md](docs/start/RELEASES.md).
 
 ---
 
@@ -87,7 +87,7 @@ Details: [docs/RELEASES.md](docs/RELEASES.md).
 
 **Gameplay opt-in:** `gradle installGameplayDefaults` — vehicles, stacker, MMO, knobs.
 
-[plugins/README.md](plugins/README.md) · [docs/PLUGINS.md](docs/PLUGINS.md)
+[plugins/README.md](plugins/README.md) · [docs/plugins/PLUGINS.md](docs/plugins/PLUGINS.md)
 
 ---
 
@@ -95,9 +95,9 @@ Details: [docs/RELEASES.md](docs/RELEASES.md).
 
 | Layer | Role |
 |-------|------|
-| **YaP-Folia** | Game tick — [FOLIA_FORK.md](docs/FOLIA_FORK.md) |
+| **YaP-Folia** | Game tick — [FOLIA_FORK.md](docs/folia/FOLIA_FORK.md) |
 | **YapEngine** | Edge, dual-stack, I/O, GUI/dashboard |
-| **YaP Link** | Multi-backend proxy — [YAP_LINK.md](docs/YAP_LINK.md) |
+| **YaP Link** | Multi-backend proxy — [YAP_LINK.md](docs/network/YAP_LINK.md) |
 
 Default: `game-authority=folia`, `folia-jar-source=build`, dual-stack Java+Bedrock.
 
@@ -107,16 +107,16 @@ Default: `game-authority=folia`, `folia-jar-source=build`, dual-stack Java+Bedro
 
 | Audience | Start here |
 |----------|------------|
-| **Admins** | [QUICK_START.md](docs/QUICK_START.md) → [WIKI.md](docs/WIKI.md) · [DEFAULTS.md](docs/DEFAULTS.md) |
-| **Commands / perms** | [COMMANDS.md](docs/COMMANDS.md) · [PERMISSIONS.md](docs/PERMISSIONS.md) |
-| **Architecture** | [WHAT_WE_ARE.md](docs/WHAT_WE_ARE.md) · [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
+| **Admins** | [QUICK_START.md](docs/start/QUICK_START.md) → [WIKI.md](docs/WIKI.md) · [DEFAULTS.md](docs/start/DEFAULTS.md) |
+| **Commands / perms** | [COMMANDS.md](docs/ops/COMMANDS.md) · [PERMISSIONS.md](docs/ops/PERMISSIONS.md) |
+| **Architecture** | [WHAT_WE_ARE.md](docs/overview/WHAT_WE_ARE.md) · [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
 | **Contributors** | [CONTRIBUTING.md](CONTRIBUTING.md) · [scripts/README.md](scripts/README.md) |
 
 ---
 
 ## License
 
-**YaPcore** first-party source is **[MIT](LICENSE)**.
+**YaPcore** first-party source is **[GPLv3](LICENSE)** (same family as Paper/Folia).
 
-Folia/Paper (GPLv3), Minecraft (Mojang EULA), and bundled packs have separate terms —
-see **[docs/LICENSING.md](docs/LICENSING.md)**.
+Minecraft (Mojang EULA) and bundled packs have separate terms —
+see **[docs/start/LICENSING.md](docs/start/LICENSING.md)**.

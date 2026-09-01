@@ -36,4 +36,4 @@ Stock Fill download remains available via `folia-jar-source=fetch` and `./script
 
 Distributing `yap-folia-*.jar` (a Folia derivative) requires GPL compliance:
 provide corresponding source (this vendor tree + patches + build scripts) and
-license notices. See Folia’s `LICENSE` and YaPcore `docs/LICENSING.md`.
+license notices. See Folia’s `LICENSE` and YaPcore [`docs/start/LICENSING.md`](../../docs/start/LICENSING.md).

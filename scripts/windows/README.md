@@ -18,4 +18,4 @@ Used by `gradle assembleRelease` → `build/dist/yapcore-release/windows/`.
 
 Root wrappers: `start.cmd`, `nginx-setup.cmd`, `start-mariadb.cmd`, `configure-playerdata.cmd`, …
 
-See [docs/WINDOWS.md](../../docs/WINDOWS.md) · [docs/MARIADB.md](../../docs/MARIADB.md).
+See [docs/start/WINDOWS.md](../../docs/start/WINDOWS.md) · [docs/data/MARIADB.md](../../docs/data/MARIADB.md).

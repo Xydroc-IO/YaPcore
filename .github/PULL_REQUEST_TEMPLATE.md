@@ -18,3 +18,4 @@ assignees: []
 ## Notes
 - Keep domain folders ≤500 lines where practical
 - World/inventory mutations must stay on SYNC
+- Contributions are **GPLv3** (see [LICENSE](../LICENSE) · [LICENSING.md](../docs/start/LICENSING.md))

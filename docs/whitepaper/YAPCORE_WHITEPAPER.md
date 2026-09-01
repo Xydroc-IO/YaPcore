@@ -6,7 +6,7 @@ Document ID: `YAP-WP-16T-001`
 Supersedes: v0.2 (August 2026)
 
 > Prefer plain English? See [YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md](YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md).  
-> Operator rundown: [FULL_RUNDOWN.md](../FULL_RUNDOWN.md) · Identity: [WHAT_WE_ARE.md](../WHAT_WE_ARE.md).
+> Operator rundown: [FULL_RUNDOWN.md](../overview/FULL_RUNDOWN.md) · Identity: [WHAT_WE_ARE.md](../overview/WHAT_WE_ARE.md).
 
 ---
 
@@ -18,7 +18,7 @@ Minecraft-class game servers traditionally serialize world mutation, plugin call
 2. **YapEngine** — a slim chassis in the YaPcore parent process — owns the public edge: watchdog, Netty traffic/sequencing, Compatibility Bridge, UI sandboxes, and heavy I/O workers (**not** world tick).
 3. **YaP Link** — a first-party Velocity-class proxy (`0.6.0-phase6`) — fronts multi-backend networks.
 
-A **SequenceToken** model orders work across chassis streams. Folia-aware first-party plugins use an explicit **SYNC / HEAVY / UI** contract via [`YapSched`](../YAP_SCHED.md). The product ships a **CORE+NETWORK** plugin suite (permissions, chat, moderation, playerdata/economy, protect, world, regions, map, …) and an opt-in **GAMEPLAY** tier (vehicles, stacker, knobs, and a full **MMO** stack M0–M7). Dual-stack **Java TCP + Bedrock UDP** is first-party (no Via\*/Geyser jars). Stock Fill Folia and Paper + Phase 3 spatial tick remain **legacy / bench** paths only.
+A **SequenceToken** model orders work across chassis streams. Folia-aware first-party plugins use an explicit **SYNC / HEAVY / UI** contract via [`YapSched`](../folia/YAP_SCHED.md). The product ships a **CORE+NETWORK** plugin suite (permissions, chat, moderation, playerdata/economy, protect, world, regions, map, …) and an opt-in **GAMEPLAY** tier (vehicles, stacker, knobs, and a full **MMO** stack M0–M7). Dual-stack **Java TCP + Bedrock UDP** is first-party (no Via\*/Geyser jars). Stock Fill Folia and Paper + Phase 3 spatial tick remain **legacy / bench** paths only.
 
 This paper describes architecture, concurrency invariants, networking/crossplay, the shipped plugin and data plane, evaluation methodology, and honest product status as of September 2026.
 
@@ -58,21 +58,21 @@ Vanilla and Paper-derived Java Edition servers concentrate authoritative world u
 YaPcore contributes:
 
 1. A **three-layer product stack**: YaP-Folia game tick + YapEngine edge/I/O chassis + YaP Link proxy.
-2. A **maintained Folia fork** (branding, teleport transactions, optional hot-region budgets / partition) — [FOLIA_FORK.md](../FOLIA_FORK.md).
-3. **SequenceToken** sequencing for ordered handoff across chassis threads — [PERF_AND_LAYOUT.md](../PERF_AND_LAYOUT.md).
+2. A **maintained Folia fork** (branding, teleport transactions, optional hot-region budgets / partition) — [FOLIA_FORK.md](../folia/FOLIA_FORK.md).
+3. **SequenceToken** sequencing for ordered handoff across chassis threads — [PERF_AND_LAYOUT.md](../performance/PERF_AND_LAYOUT.md).
 4. A **Compatibility Bridge** that stages legacy Bukkit mutations onto the game-core drain window (non-product Paper path; best-effort on Folia via Folia APIs + `YapSched`).
-5. Dual-stack **Java TCP + Bedrock UDP** ingress with optional shared listen port — first-party code, not Via\*/Geyser jars — [VIA_GEYSER_PARITY.md](../VIA_GEYSER_PARITY.md).
-6. A **three-tier extension model**: Folia-aware plugins (`plugin.yml`), YaP plugins (`yap.yml`), and fine-tune modules (`module.yml`) — [PLUGINS.md](../PLUGINS.md) · [MODULES_AND_API.md](../MODULES_AND_API.md).
+5. Dual-stack **Java TCP + Bedrock UDP** ingress with optional shared listen port — first-party code, not Via\*/Geyser jars — [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
+6. A **three-tier extension model**: Folia-aware plugins (`plugin.yml`), YaP plugins (`yap.yml`), and fine-tune modules (`module.yml`) — [PLUGINS.md](../plugins/PLUGINS.md) · [MODULES_AND_API.md](../plugins/MODULES_AND_API.md).
 7. A **shipped first-party plugin suite** that replaces the common DIY glue stack for ~90% of survival/network operators — §6.
-8. An opt-in **RuneScape-style MMO progression stack** (skills, combat, crafting, quests, abilities, Bedrock UI) — [MMO_PHASES.md](../MMO_PHASES.md).
+8. An opt-in **RuneScape-style MMO progression stack** (skills, combat, crafting, quests, abilities, Bedrock UI) — [MMO_PHASES.md](../mmo/MMO_PHASES.md).
 
 ### 1.3 Non-goals
 
-- **Stock Paper plugins on YaP-Folia** are unsupported (same reality as upstream Folia). Prefer Folia-aware jars or YaP natives — [PLUGIN_COMPAT_MATRIX.md](../PLUGIN_COMPAT_MATRIX.md).
+- **Stock Paper plugins on YaP-Folia** are unsupported (same reality as upstream Folia). Prefer Folia-aware jars or YaP natives — [PLUGIN_COMPAT_MATRIX.md](../plugins/PLUGIN_COMPAT_MATRIX.md).
 - YaPcore is **not** a clean-room rewrite of Minecraft; it **forks Folia on purpose**.
-- We do **not** claim “faster than Paper/Leaf on every workload.” Fair high-pop cites focus on **~100 active bots** (250 keepalive = HOLD-ONLY) — [BENCH_VS_FOLIA.md](../BENCH_VS_FOLIA.md).
-- Bedrock play-depth is **join/spawn + play-depth smoke green**; some fidelity rows remain partial — [VIA_GEYSER_PARITY.md](../VIA_GEYSER_PARITY.md).
-- The Compatibility Bridge facade (non-game authority) remains **best-effort stubs** — [PAPER_API_COVERAGE.md](../PAPER_API_COVERAGE.md).
+- We do **not** claim “faster than Paper/Leaf on every workload.” Fair high-pop cites focus on **~100 active bots** (250 keepalive = HOLD-ONLY) — [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md).
+- Bedrock play-depth is **join/spawn + play-depth smoke green**; some fidelity rows remain partial — [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
+- The Compatibility Bridge facade (non-game authority) remains **best-effort stubs** — [PAPER_API_COVERAGE.md](../plugins/PAPER_API_COVERAGE.md).
 
 ### 1.4 Audience
 
@@ -91,7 +91,7 @@ YaPcore contributes:
 
 **Netty-based proxies** (Velocity; YaP Link) separate player routing from world authority. **Geyser / Via\*** stacks provide dual-stack crossplay as separate jars; YaPcore embeds Via-class and Geyser-class code in chassis/`crossplay` packages.
 
-YaPcore sits as: **YaP-Folia’s game + deterministic YapEngine thread roles + first-party Link + shipped plugin/data plane**, rather than “DIY Folia + Velocity + ten community plugins.” Comparison matrix: [COMPARE_ECOSYSTEM.md](../COMPARE_ECOSYSTEM.md).
+YaPcore sits as: **YaP-Folia’s game + deterministic YapEngine thread roles + first-party Link + shipped plugin/data plane**, rather than “DIY Folia + Velocity + ten community plugins.” Comparison matrix: [COMPARE_ECOSYSTEM.md](../overview/COMPARE_ECOSYSTEM.md).
 
 ---
 
@@ -145,11 +145,11 @@ paper-phase3-nms-tick=false
 | 12–15 | Heavy I/O | DB, HTTP, files, proxy sync |
 | 16 | Telemetry | Metrics / JFR hooks |
 
-See [YAPENGINE_16THREAD.md](../YAPENGINE_16THREAD.md).
+See [YAPENGINE_16THREAD.md](../performance/YAPENGINE_16THREAD.md).
 
 ### 3.3 Sequencing
 
-Each logical stream obtains a `SequenceToken` carrying a per-stream sequence and a global identifier. Strict ordered queues refuse out-of-order commits within a stream while allowing cross-stream parallelism — [PERF_AND_LAYOUT.md](../PERF_AND_LAYOUT.md).
+Each logical stream obtains a `SequenceToken` carrying a per-stream sequence and a global identifier. Strict ordered queues refuse out-of-order commits within a stream while allowing cross-stream parallelism — [PERF_AND_LAYOUT.md](../performance/PERF_AND_LAYOUT.md).
 
 ### 3.4 Spatial model
 
@@ -157,7 +157,7 @@ Each logical stream obtains a `SequenceToken` carrying a per-stream sequence and
 
 ### 3.5 Memory & GC posture
 
-Production launch scripts prefer **Generational ZGC** with optional **NUMA** pinning — [ZGC_NUMA.md](../ZGC_NUMA.md). **Java 25+** is required.
+Production launch scripts prefer **Generational ZGC** with optional **NUMA** pinning — [ZGC_NUMA.md](../performance/ZGC_NUMA.md). **Java 25+** is required.
 
 ---
 
@@ -178,7 +178,7 @@ YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream 
 
 Build: `./scripts/build-yap-folia.sh` → `lib/yap-folia-26.2.jar`.  
 Verify: `./scripts/verify-yap-folia.sh` · Soak: `./scripts/soak-yap-folia.sh`.  
-Docs: [FOLIA_FORK.md](../FOLIA_FORK.md) · [YAP_FOLIA_SOAK.md](../YAP_FOLIA_SOAK.md).
+Docs: [FOLIA_FORK.md](../folia/FOLIA_FORK.md) · [YAP_FOLIA_SOAK.md](../folia/YAP_FOLIA_SOAK.md).
 
 Stock Folia fallback: `folia-jar-source=fetch` + `./scripts/fetch-folia.sh` (bench / comparison only).
 
@@ -199,7 +199,7 @@ Rules for every first-party jar:
 - Shared persistence via **YaPDB** when MariaDB is required
 - Public APIs registered on Bukkit `ServicesManager`
 
-Operator layout: all jars drop into **`plugins/`** (symlinked into `folia-kernel/plugins`). Fine-tune packaging modules drop into **`modules/`**. See [PLUGINS.md](../PLUGINS.md) · [PLUGIN_COMPAT.md](../PLUGIN_COMPAT.md).
+Operator layout: all jars drop into **`plugins/`** (symlinked into `folia-kernel/plugins`). Fine-tune packaging modules drop into **`modules/`**. See [PLUGINS.md](../plugins/PLUGINS.md) · [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md).
 
 ---
 
@@ -259,7 +259,7 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-guilds.jar` | YaPGuilds | MMO guilds |
 | `yap-mmo-bedrock.jar` | YaPMmoBedrock | Bedrock MMO forms UI |
 
-**MMO milestones M0–M7** are shipped — [MMO_PHASES.md](../MMO_PHASES.md). Combat skill XP is owned by **YaPCombat** when loaded; YaPSkills provides a vanilla-damage fallback when combat is absent.
+**MMO milestones M0–M7** are shipped — [MMO_PHASES.md](../mmo/MMO_PHASES.md). Combat skill XP is owned by **YaPCombat** when loaded; YaPSkills provides a vanilla-damage fallback when combat is absent.
 
 ### 6.3 APIs & modules
 
@@ -288,7 +288,7 @@ Nineteen `yap-*-api` jars under `yap-first-party/api/` for soft-depend authors. 
 
 ### 7.1 YaPDB
 
-`yap-db.jar` exposes a shared Hikari pool. Prefer `use-shared-yapdb: true` in consumers. Setup: `./scripts/db/ensure-db.sh --server-id lobby` — [YAPDB.md](../YAPDB.md) · [MARIADB.md](../MARIADB.md).
+`yap-db.jar` exposes a shared Hikari pool. Prefer `use-shared-yapdb: true` in consumers. Setup: `./scripts/db/ensure-db.sh --server-id lobby` — [YAPDB.md](../data/YAPDB.md) · [MARIADB.md](../data/MARIADB.md).
 
 ### 7.2 YaPPlayerData
 
@@ -305,11 +305,11 @@ Cross-server inventory / XP / vitals sync, session lock (always on), optional of
 | Jobs | **off** (keep off when YaPSkills is enabled — avoids double mining payouts) |
 | NPC traders | **off** (opt-in) |
 
-Smoke: `./scripts/smoke-playerdata-shops-ah.sh`. Docs: [PLAYERDATA.md](../PLAYERDATA.md).
+Smoke: `./scripts/smoke-playerdata-shops-ah.sh`. Docs: [PLAYERDATA.md](../data/PLAYERDATA.md).
 
 ### 7.3 Permissions
 
-Native ranks/groups/tracks — [PERMISSIONS.md](../PERMISSIONS.md). Soft integration with TAB prefixes and dashboard ranks APIs.
+Native ranks/groups/tracks — [PERMISSIONS.md](../ops/PERMISSIONS.md). Soft integration with TAB prefixes and dashboard ranks APIs.
 
 ---
 
@@ -317,7 +317,7 @@ Native ranks/groups/tracks — [PERMISSIONS.md](../PERMISSIONS.md). Soft integra
 
 First-party **Velocity-class** proxy — **not** a Velocity fork. Phases **0–6 shipped** (`0.6.0-phase6`): passthrough ping, forced hosts, health failover, chat relay, system chat, Link plugin loader, edge rate limits, metrics hooks, two-backend smoke.
 
-Link plugins (`link-plugin.json`): chat-bridge, mod-sync, server-selector, tab-bridge, discord. Docs: [YAP_LINK.md](../YAP_LINK.md) · [YAP_LINK_NATIVE.md](../YAP_LINK_NATIVE.md). Stock Velocity remains optional for migration — [VELOCITY.md](../VELOCITY.md).
+Link plugins (`link-plugin.json`): chat-bridge, mod-sync, server-selector, tab-bridge, discord. Docs: [YAP_LINK.md](../network/YAP_LINK.md) · [YAP_LINK_NATIVE.md](../network/YAP_LINK_NATIVE.md). Stock Velocity remains optional for migration — [VELOCITY.md](../network/VELOCITY.md).
 
 ---
 
@@ -330,11 +330,11 @@ Link plugins (`link-plugin.json`): chat-bridge, mod-sync, server-selector, tab-b
 | **Shared listen** | Optional same port for JE+BE (`shared-listen-port=true`). |
 | **YaP Link** | Optional JE front + optional Bedrock UDP forwarder. |
 | **Packs HTTP** | Default pack `resourcepacks/yapcore-default.zip` on `:8081`. |
-| **Publicity** | Domain / SRV / nginx + Cloudflare — [NETWORKING.md](../NETWORKING.md). |
+| **Publicity** | Domain / SRV / nginx + Cloudflare — [NETWORKING.md](../network/NETWORKING.md). |
 
-Same-machine clients must use `127.0.0.1` (hairpin NAT) — [NGINX_AND_LOCALHOST.md](../NGINX_AND_LOCALHOST.md).
+Same-machine clients must use `127.0.0.1` (hairpin NAT) — [NGINX_AND_LOCALHOST.md](../network/NGINX_AND_LOCALHOST.md).
 
-Phase 4 dual-stack **join DoD is green**; play-depth smoke green; remaining fidelity rows tracked in [VIA_GEYSER_PARITY.md](../VIA_GEYSER_PARITY.md).
+Phase 4 dual-stack **join DoD is green**; play-depth smoke green; remaining fidelity rows tracked in [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
 
 ---
 
@@ -344,18 +344,18 @@ Phase 4 dual-stack **join DoD is green**; play-depth smoke green; remaining fide
 |---------|--------|
 | Config | `config/server.properties` + hub under `config/` |
 | Control GUI | Desktop Swing panel |
-| Web dashboard | Token-auth browser UI `:8080` — [WEB_DASHBOARD.md](../WEB_DASHBOARD.md) |
+| Web dashboard | Token-auth browser UI `:8080` — [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
 | Crash dumps | `logs/crashes/crash-<ts>-<kind>.log` |
 | Release | `gradle assembleRelease` → `build/dist/yapcore-release/{linux,windows}/` |
-| Windows | Parity launchers — [WINDOWS.md](../WINDOWS.md) |
+| Windows | Parity launchers — [WINDOWS.md](../start/WINDOWS.md) |
 
-Dashboard Phase 8 (full Protect/World/Chat/Moderation/Perms/Playerdata mutating tabs) remains a **completion roadmap** item — APIs partial; see [ROADMAP_COMPLETION_PHASES.md](../ROADMAP_COMPLETION_PHASES.md).
+Dashboard Phase 8 (full Protect/World/Chat/Moderation/Perms/Playerdata mutating tabs) remains a **completion roadmap** item — APIs partial; see [ROADMAP_COMPLETION_PHASES.md](../overview/ROADMAP_COMPLETION_PHASES.md).
 
 ---
 
 ## 11. Evaluation methodology
 
-Recommended harness — [TESTING.md](../TESTING.md) · [BENCH_VS_FOLIA.md](../BENCH_VS_FOLIA.md):
+Recommended harness — [TESTING.md](../start/TESTING.md) · [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md):
 
 1. Unit tests (JUnit) per plugin / API.
 2. Product gates: `./scripts/validate-mmo-content.sh`, `smoke-playerdata-shops-ah.sh`, `smoke-folia-plugins.sh`, `smoke-yap-link-*.sh`, `smoke-network-full.sh`.
@@ -398,7 +398,7 @@ Recommended harness — [TESTING.md](../TESTING.md) · [BENCH_VS_FOLIA.md](../BE
 | PAPI eCloud | **Intentionally stubbed** |
 | Stock Paper jars on Folia | **Unsupported** |
 
-Roadmap phases for remaining ops polish: [ROADMAP_COMPLETION_PHASES.md](../ROADMAP_COMPLETION_PHASES.md).
+Roadmap phases for remaining ops polish: [ROADMAP_COMPLETION_PHASES.md](../overview/ROADMAP_COMPLETION_PHASES.md).
 
 ---
 
@@ -417,7 +417,7 @@ Future work emphasizes deeper dual-stack fidelity, hot-region partition soak und
 3. Netty project.
 4. PaperMC Folia — regionized threading for Bukkit servers.
 5. YapLabs — YaP-Folia patches (`vendor/folia/patches/`), YapEngine chassis notes, YaP Link native suite.
-6. YapLabs docs — [FULL_RUNDOWN.md](../FULL_RUNDOWN.md), [COMPARE_ECOSYSTEM.md](../COMPARE_ECOSYSTEM.md), [MMO_PHASES.md](../MMO_PHASES.md).
+6. YapLabs docs — [FULL_RUNDOWN.md](../overview/FULL_RUNDOWN.md), [COMPARE_ECOSYSTEM.md](../overview/COMPARE_ECOSYSTEM.md), [MMO_PHASES.md](../mmo/MMO_PHASES.md).
 
 ---
 
@@ -427,14 +427,14 @@ Future work emphasizes deeper dual-stack fidelity, hot-region partition soak und
 
 | Audience | Start here |
 |----------|------------|
-| Non-tech readers | [Plain English whitepaper](YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md), [PLAIN_ENGLISH.md](../PLAIN_ENGLISH.md) |
-| Operators | [QUICK_START.md](../QUICK_START.md), [FOLIA_FORK.md](../FOLIA_FORK.md), [PLUGINS.md](../PLUGINS.md) |
-| Plugin authors | [PLUGINS.md](../PLUGINS.md), [MODULES_AND_API.md](../MODULES_AND_API.md), [YAP_SCHED.md](../YAP_SCHED.md) |
-| Engine contributors | [PERF_AND_LAYOUT.md](../PERF_AND_LAYOUT.md), [YAPENGINE_16THREAD.md](../YAPENGINE_16THREAD.md), [FOLIA_FORK.md](../FOLIA_FORK.md) |
-| Network / crossplay | [YAP_LINK.md](../YAP_LINK.md), [VIA_GEYSER_PARITY.md](../VIA_GEYSER_PARITY.md), [CROSSPLAY.md](../CROSSPLAY.md) |
-| Data | [YAPDB.md](../YAPDB.md), [PLAYERDATA.md](../PLAYERDATA.md), [PERMISSIONS.md](../PERMISSIONS.md) |
-| MMO | [MMO_PHASES.md](../MMO_PHASES.md), [MMO_SKILLS.md](../MMO_SKILLS.md), [MMO_COMBAT.md](../MMO_COMBAT.md) |
-| Comparison | [COMPARE_ECOSYSTEM.md](../COMPARE_ECOSYSTEM.md), [COMPARISON_BRIEF.md](../COMPARISON_BRIEF.md) |
+| Non-tech readers | [Plain English whitepaper](YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md), [PLAIN_ENGLISH.md](../overview/PLAIN_ENGLISH.md) |
+| Operators | [QUICK_START.md](../start/QUICK_START.md), [FOLIA_FORK.md](../folia/FOLIA_FORK.md), [PLUGINS.md](../plugins/PLUGINS.md) |
+| Plugin authors | [PLUGINS.md](../plugins/PLUGINS.md), [MODULES_AND_API.md](../plugins/MODULES_AND_API.md), [YAP_SCHED.md](../folia/YAP_SCHED.md) |
+| Engine contributors | [PERF_AND_LAYOUT.md](../performance/PERF_AND_LAYOUT.md), [YAPENGINE_16THREAD.md](../performance/YAPENGINE_16THREAD.md), [FOLIA_FORK.md](../folia/FOLIA_FORK.md) |
+| Network / crossplay | [YAP_LINK.md](../network/YAP_LINK.md), [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md), [CROSSPLAY.md](../network/CROSSPLAY.md) |
+| Data | [YAPDB.md](../data/YAPDB.md), [PLAYERDATA.md](../data/PLAYERDATA.md), [PERMISSIONS.md](../ops/PERMISSIONS.md) |
+| MMO | [MMO_PHASES.md](../mmo/MMO_PHASES.md), [MMO_SKILLS.md](../mmo/MMO_SKILLS.md), [MMO_COMBAT.md](../mmo/MMO_COMBAT.md) |
+| Comparison | [COMPARE_ECOSYSTEM.md](../overview/COMPARE_ECOSYSTEM.md), [COMPARISON_BRIEF.md](../overview/COMPARISON_BRIEF.md) |
 
 ### Appendix B — Quick install
 
@@ -471,3 +471,8 @@ gradle assembleRelease
 |-----|------|-------|
 | 0.2 | Aug 2026 | Three-layer architecture; chassis T1–16; Link phase6; Folia product path |
 | **0.3** | **Sep 2026** | Comprehensive plugin catalog; MMO M0–M7; data plane (shops/AH defaults); Link/crossplay/ops status; evaluation smokes; honest roadmap gaps |
+
+### Appendix E — License
+
+YaPcore first-party code is **GNU GPLv3** (or later). See root [`LICENSE`](../../LICENSE) and
+[LICENSING.md](../start/LICENSING.md). YaP-Folia derivatives inherit Folia/Paper GPLv3 obligations.
