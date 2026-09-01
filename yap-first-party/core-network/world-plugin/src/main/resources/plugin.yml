@@ -9,10 +9,10 @@ website: https://github.com/yaplabs
 softdepend: [YaPPerms, YaPPregen]
 commands:
   yapworld:
-    description: World admin
-    usage: /yapworld tool|gui|load|unload|tp|pos1|pos2|schem|brush|undo|redo|pregen|status|reload
-    permission: yapworld.admin
-    aliases: [mv, worldedit]
+    description: World edit + world admin (Folia-safe WorldEdit-class)
+    usage: /yapworld help|gui|tool|editor|pos1|pos2|fill|walls|undo|…
+    # Per-subcommand permissions — do not require admin for basic editing
+    aliases: [mv, worldedit, we]
 permissions:
   yapworld.admin:
     default: op
@@ -24,6 +24,7 @@ permissions:
     default: op
   yapworld.selection:
     default: op
+    description: Wand, pos1/pos2, in-game GUI, fill/walls/shell
   yapworld.editor:
     default: op
     description: Open the browser world edit studio (/yapworld editor)

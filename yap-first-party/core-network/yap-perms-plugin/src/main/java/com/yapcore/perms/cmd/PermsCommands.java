@@ -43,11 +43,23 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
 
     private boolean yapperm(CommandSender sender, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("§e/yapperm user|group|track|reload|applypack");
+            if (sender instanceof Player player) {
+                plugin.ranksGui().openHub(player);
+                return true;
+            }
+            sender.sendMessage("§e/yapperm gui|user|group|track|reload|applypack");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
         return switch (sub) {
+            case "gui", "menu", "ranks" -> {
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage("Players only.");
+                    yield true;
+                }
+                plugin.ranksGui().openHub(player);
+                yield true;
+            }
             case "reload" -> {
                 if (!sender.hasPermission("yapperm.admin")) {
                     sender.sendMessage("§cNo permission.");
@@ -80,7 +92,7 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
             case "group" -> groupCmd(sender, Arrays.copyOfRange(args, 1, args.length));
             case "track" -> trackCmd(sender, Arrays.copyOfRange(args, 1, args.length));
             default -> {
-                sender.sendMessage("§e/yapperm user|group|track|reload|applypack");
+                sender.sendMessage("§e/yapperm gui|user|group|track|reload|applypack");
                 yield true;
             }
         };
@@ -432,7 +444,7 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return partial(args[0], List.of("user", "group", "track", "reload", "applypack"));
+            return partial(args[0], List.of("gui", "menu", "ranks", "user", "group", "track", "reload", "applypack"));
         }
         if ("group".equalsIgnoreCase(args[0]) && args.length == 2) {
             return partial(args[1], List.of("list", "info", "create", "delete", "setprefix", "setsuffix", "permission"));

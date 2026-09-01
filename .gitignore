@@ -89,12 +89,27 @@ spark/
 **/plugins/spark/tmp/
 **/plugins/bStats/
 
-# Worlds & schematics
+# Worlds (Minecraft world folders — NOT Java packages like com.yapcore.world)
 worlds/
-world/
-world_nether/
-world_the_end/
-**/world/
+/world/
+/world_nether/
+/world_the_end/
+folia-kernel/world/
+folia-kernel/world_nether/
+folia-kernel/world_the_end/
+bench/**/world/
+bench/**/world_nether/
+bench/**/world_the_end/
+**/world/region/
+**/world/entities/
+**/world/poi/
+**/world/data/
+**/world/DIM-1/
+**/world/DIM1/
+**/world/level.dat
+**/world/level.dat_old
+**/world/session.lock
+**/world/uid.dat
 **/world_nether/
 **/world_the_end/
 *.mschem

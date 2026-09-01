@@ -12,9 +12,9 @@ softdepend: [PlaceholderAPI]
 commands:
   yapperm:
     description: Manage YaP permissions
-    usage: /yapperm <user|group|track|reload|applypack> ...
-    permission: yapperm.admin
-    aliases: [yperms, perms]
+    usage: /yapperm [gui|user|group|track|reload|applypack] ...
+    permission: yapperm.user
+    aliases: [yperms, perms, ranks]
   promote:
     description: Promote a player on the default track
     usage: /promote <player> [track]
@@ -34,5 +34,5 @@ permissions:
     description: Demote players on tracks
     default: op
   yapperm.user:
-    description: View own permission info
+    description: View own permission info and open ranks GUI
     default: true

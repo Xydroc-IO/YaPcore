@@ -5,6 +5,8 @@ import com.yapcore.perms.db.PermsDatabase;
 import com.yapcore.perms.db.PermsRepository;
 import com.yapcore.perms.engine.PermissionApplicator;
 import com.yapcore.perms.engine.PermissionResolver;
+import com.yapcore.perms.gui.RanksGui;
+import com.yapcore.perms.gui.RanksGuiListener;
 import com.yapcore.perms.hook.PermsPlaceholders;
 import com.yapcore.perms.listener.JoinListener;
 import com.yapcore.sched.YapSched;
@@ -27,6 +29,7 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
     private PermsRepository repository;
     private PermissionResolver resolver;
     private PermissionApplicator applicator;
+    private RanksGui ranksGui;
 
     @Override
     public void onEnable() {
@@ -63,6 +66,9 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
         getServer().getServicesManager().register(YaPPerms.class, this, this, ServicePriority.Normal);
         getServer().getPluginManager().registerEvents(new JoinListener(this), this);
 
+        ranksGui = new RanksGui(this);
+        getServer().getPluginManager().registerEvents(new RanksGuiListener(this, ranksGui), this);
+
         PermsCommands commands = new PermsCommands(this);
         bind("yapperm", commands);
         bind("promote", commands);
@@ -72,7 +78,11 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
             refresh(player);
         }
         PermsPlaceholders.registerIfPresent(this);
-        getLogger().info("YaPPerms ready — native permissions online.");
+        getLogger().info("YaPPerms ready — /yapperm gui for in-game ranks.");
+    }
+
+    public RanksGui ranksGui() {
+        return ranksGui;
     }
 
     private void bind(String name, PermsCommands commands) {

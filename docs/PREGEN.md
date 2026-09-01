@@ -47,7 +47,14 @@ Tab **Pregen** at `http://127.0.0.1:8080/` — or:
 
 ## WorldEdit
 
-Optional. Soft-depend; `selection` fails with a clear message if WorldEdit is missing or `//sel` is empty.
+Prefer **YaPWorld** on Folia: select with `/yapworld tool`, then:
+
+```bash
+/yappregen start <world> selection
+# aliases: sel | we | yapworld
+```
+
+Falls back to stock WorldEdit `//sel` when YaPWorld is not installed (Paper benches only).
 
 ## Example
 

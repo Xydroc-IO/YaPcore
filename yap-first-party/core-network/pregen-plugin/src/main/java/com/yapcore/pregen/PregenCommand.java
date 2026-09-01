@@ -8,6 +8,7 @@ import com.yapcore.pregen.shape.RectShape;
 import com.yapcore.pregen.shape.SpiralShape;
 import com.yapcore.pregen.shape.WorldBorderShape;
 import com.yapcore.pregen.shape.WorldEditShape;
+import com.yapcore.pregen.shape.YapWorldShape;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -121,9 +122,12 @@ public final class PregenCommand implements CommandExecutor, TabCompleter {
                     yield new PolygonShape(xz);
                 }
                 case "worldborder", "border" -> new WorldBorderShape(world);
-                case "selection", "sel", "we" -> {
+                case "selection", "sel", "we", "yapworld" -> {
                     if (!(sender instanceof Player player)) {
                         throw new IllegalArgumentException("selection requires a player");
+                    }
+                    if (Bukkit.getPluginManager().getPlugin("YaPWorld") != null) {
+                        yield YapWorldShape.fromPlayer(player, plugin.getLogger());
                     }
                     yield WorldEditShape.fromPlayer(player, plugin.getLogger());
                 }
