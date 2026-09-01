@@ -21,6 +21,9 @@ import com.yapcore.mmo.SkillService;
 import com.yapcore.mmo.SkillServices;
 import com.yapcore.mmo.XpTable;
 import com.yapcore.mmobedrock.MmoBedrockConfig;
+import com.yapcore.npcs.QuestProgress;
+import com.yapcore.npcs.QuestService;
+import com.yapcore.npcs.QuestServices;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -51,6 +54,7 @@ public final class MmoBedrockUi {
                 "Choose a panel:",
                 result -> handleHub(player, result),
                 "Skills",
+                "Quests",
                 "Abilities",
                 "Recipes",
                 "Hiscores",
@@ -64,12 +68,110 @@ public final class MmoBedrockUi {
         YapSched.entity(plugin, player, () -> {
             switch (result.buttonIndex()) {
                 case 0 -> openSkills(player);
-                case 1 -> openAbilities(player, null, 1);
-                case 2 -> openRecipes(player, SkillId.of("smithing"), 1);
-                case 3 -> openHiscores(player, SkillId.of("mining"), 1);
+                case 1 -> openQuests(player);
+                case 2 -> openAbilities(player, null, 1);
+                case 3 -> openSkillPicker(player, "recipes");
+                case 4 -> openSkillPicker(player, "hiscores");
                 default -> { }
             }
         });
+    }
+
+    private void openSkillPicker(Player player, String target) {
+        SkillService skills = SkillServices.find().orElse(null);
+        if (skills == null) {
+            bedrock.sendSimpleForm(player, "Skills", "Skills system not loaded.", null, "Back");
+            return;
+        }
+        List<SkillDefinition> defs = skills.definitions().stream()
+                .filter(SkillDefinition::enabled)
+                .sorted(Comparator.comparing(d -> d.display().toLowerCase(Locale.ROOT)))
+                .toList();
+        List<String> buttons = new ArrayList<>();
+        for (SkillDefinition def : defs) {
+            buttons.add(def.display());
+        }
+        buttons.add("Back");
+        String title = "recipes".equals(target) ? "Recipe skill" : "Hiscore skill";
+        bedrock.sendSimpleForm(
+                player,
+                title,
+                "Pick a skill:",
+                result -> {
+                    if (result.cancelled()) {
+                        return;
+                    }
+                    YapSched.entity(plugin, player, () -> {
+                        int idx = result.buttonIndex();
+                        if (idx < 0 || idx >= buttons.size() || "Back".equals(buttons.get(idx))) {
+                            openHub(player);
+                            return;
+                        }
+                        SkillId skill = defs.get(idx).id();
+                        if ("recipes".equals(target)) {
+                            openRecipes(player, skill, 1);
+                        } else {
+                            openHiscores(player, skill, 1);
+                        }
+                    });
+                },
+                buttons.toArray(new String[0]));
+    }
+
+    public void openQuests(Player player) {
+        QuestService quests = QuestServices.find().orElse(null);
+        if (quests == null) {
+            bedrock.sendSimpleForm(player, "Quests", "Quest system not loaded (yap-npcs).", r -> openHub(player), "Back");
+            return;
+        }
+        StringBuilder body = new StringBuilder();
+        List<String> lines = new ArrayList<>();
+        for (String questId : quests.questIds()) {
+            if (quests.isQuestComplete(player, questId)) {
+                lines.add(formatQuestId(questId) + " — ready to turn in");
+                continue;
+            }
+            List<QuestProgress> progress = quests.progressFor(player).stream()
+                    .filter(p -> p.questId().equals(questId))
+                    .filter(p -> p.required() > 0)
+                    .toList();
+            if (progress.isEmpty()) {
+                continue;
+            }
+            boolean anyOpen = progress.stream().anyMatch(p -> !p.completed());
+            if (!anyOpen) {
+                continue;
+            }
+            lines.add(formatQuestId(questId) + ":");
+            for (QuestProgress p : progress) {
+                if (p.completed()) {
+                    continue;
+                }
+                lines.add("  " + p.objectiveId() + " " + p.progress() + "/" + p.required());
+            }
+            if (lines.size() >= 12) {
+                break;
+            }
+        }
+        if (lines.isEmpty()) {
+            body.append("No active objectives.\nTalk to quest NPCs to start or turn in.");
+        } else {
+            for (String line : lines) {
+                body.append(line).append('\n');
+            }
+        }
+        bedrock.sendSimpleForm(player, "Quests", body.toString(), r -> {
+            if (!r.cancelled() && r.buttonIndex() == 0) {
+                YapSched.entity(plugin, player, () -> openHub(player));
+            }
+        }, "Back");
+    }
+
+    private static String formatQuestId(String questId) {
+        if (questId == null || questId.isBlank()) {
+            return "Quest";
+        }
+        return questId.replace('_', ' ');
     }
 
     public void openAbilities(Player player, AbilityCategory category, int page) {
@@ -147,46 +249,65 @@ public final class MmoBedrockUi {
             bedrock.sendSimpleForm(player, "Skills", "Skills system not loaded.", null, "OK");
             return;
         }
-        skills.getAll(player.getUniqueId()).thenAccept(all -> YapSched.entity(plugin, player, () -> {
+        List<SkillDefinition> defs = skills.definitions().stream()
+                .filter(SkillDefinition::enabled)
+                .sorted(Comparator.comparing(d -> d.display().toLowerCase(Locale.ROOT)))
+                .toList();
+        List<String> buttons = new ArrayList<>();
+        for (SkillDefinition def : defs) {
+            buttons.add(def.display());
+        }
+        buttons.add("Back");
+        bedrock.sendSimpleForm(
+                player,
+                "Skills",
+                "Combat level: " + combatLevel(skills, player) + "\nTap a skill for details.",
+                result -> {
+                    if (result.cancelled()) {
+                        return;
+                    }
+                    YapSched.entity(plugin, player, () -> {
+                        int idx = result.buttonIndex();
+                        if (idx < 0 || idx >= buttons.size() || "Back".equals(buttons.get(idx))) {
+                            openHub(player);
+                            return;
+                        }
+                        openSkillDetail(player, defs.get(idx).id());
+                    });
+                },
+                buttons.toArray(new String[0]));
+    }
+
+    private void openSkillDetail(Player player, SkillId skillId) {
+        SkillService skills = SkillServices.find().orElse(null);
+        if (skills == null) {
+            openHub(player);
+            return;
+        }
+        skills.get(player.getUniqueId(), skillId).thenAccept(progress -> YapSched.entity(plugin, player, () -> {
             if (!player.isOnline()) {
                 return;
             }
-            StringBuilder body = new StringBuilder();
-            int combat = combatLevel(skills, player);
-            body.append("Combat level: ").append(combat).append("\n\n");
+            SkillDefinition def = skills.definitions().stream()
+                    .filter(d -> d.id().equals(skillId))
+                    .findFirst()
+                    .orElse(null);
+            String name = def != null ? def.display() : capitalize(skillId.id());
             XpTable table = skills.xpTable();
-            List<SkillDefinition> defs = skills.definitions().stream()
-                    .filter(SkillDefinition::enabled)
-                    .sorted(Comparator.comparing(d -> d.display().toLowerCase(Locale.ROOT)))
-                    .toList();
-            for (SkillDefinition def : defs) {
-                SkillProgress progress = all.stream()
-                        .filter(p -> p.skillId().equals(def.id()))
-                        .findFirst()
-                        .orElse(new SkillProgress(player.getUniqueId(), def.id(), 0, 1));
-                body.append(def.display())
-                        .append(": Lv ")
-                        .append(progress.level())
-                        .append(" / ")
-                        .append(table.maxLevel());
-                if (progress.level() < table.maxLevel()) {
-                    double into = table.xpIntoLevel(progress.xp(), progress.level());
-                    double need = table.xpBetweenLevels(progress.level());
-                    body.append(" (").append((int) into).append('/').append((int) need).append(')');
-                }
-                body.append('\n');
+            StringBuilder body = new StringBuilder();
+            body.append(name).append("\n\n");
+            body.append("Level: ").append(progress.level()).append(" / ").append(table.maxLevel()).append('\n');
+            if (progress.level() < table.maxLevel()) {
+                double into = table.xpIntoLevel(progress.xp(), progress.level());
+                double need = table.xpBetweenLevels(progress.level());
+                body.append("XP: ").append((int) into).append(" / ").append((int) need).append('\n');
+                body.append("Total XP: ").append((int) progress.xp());
             }
-            bedrock.sendSimpleForm(
-                    player,
-                    "Skills",
-                    body.toString(),
-                    r -> {
-                        if (r.cancelled() || r.buttonIndex() != 0) {
-                            return;
-                        }
-                        YapSched.entity(plugin, player, () -> openHub(player));
-                    },
-                    "Back");
+            bedrock.sendSimpleForm(player, name, body.toString(), r -> {
+                if (!r.cancelled() && r.buttonIndex() == 0) {
+                    YapSched.entity(plugin, player, () -> openSkills(player));
+                }
+            }, "Back");
         }));
     }
 
@@ -248,25 +369,21 @@ public final class MmoBedrockUi {
             } else if ("Next".equals(picked)) {
                 openRecipes(player, skill, slice.page() + 1);
             } else {
-                openHub(player);
+                openSkillPicker(player, "recipes");
             }
         });
     }
 
     public void openHiscores(Player player, SkillId skill, int page) {
         MmoServices.snapshot().ifPresentOrElse(snap -> YapSched.async(plugin, () -> {
-            List<HiscoreEntry> rows = snap.hiscorePage(skill, config.hiscorePageSize(), page);
-            YapSched.entity(plugin, player, () -> renderHiscores(player, skill, page, rows));
-        }), () -> bedrock.sendSimpleForm(player, "Hiscores", "MMO content not loaded.", null, "Back"));
+            int pageSize = config.hiscorePageSize();
+            List<HiscoreEntry> rows = snap.hiscorePage(skill, pageSize, page);
+            boolean hasNext = rows.size() >= pageSize;
+            YapSched.entity(plugin, player, () -> renderHiscores(player, skill, page, hasNext, rows));
+        }), () -> bedrock.sendSimpleForm(player, "Hiscores", "MMO content not loaded.", r -> openHub(player), "Back"));
     }
 
-    private void renderHiscores(Player player, SkillId skill, int page, List<HiscoreEntry> rows) {
-        Pagination.Page<HiscoreEntry> slice = new Pagination.Page<>(
-                rows,
-                page,
-                rows.size() < config.hiscorePageSize() && page == 1 ? 1 : page + (rows.size() >= config.hiscorePageSize() ? 1 : 0),
-                page > 1,
-                rows.size() >= config.hiscorePageSize());
+    private void renderHiscores(Player player, SkillId skill, int page, boolean hasNext, List<HiscoreEntry> rows) {
         StringBuilder body = new StringBuilder();
         body.append("Skill: ").append(capitalize(skill.id())).append('\n');
         body.append("Page ").append(page).append('\n');
@@ -285,7 +402,7 @@ public final class MmoBedrockUi {
         if (page > 1) {
             buttons.add("Prev");
         }
-        if (rows.size() >= config.hiscorePageSize()) {
+        if (hasNext) {
             buttons.add("Next");
         }
         buttons.add("Back");
@@ -293,7 +410,7 @@ public final class MmoBedrockUi {
                 player,
                 "Hiscores",
                 body.toString(),
-                result -> handleHiscoreNav(player, skill, page, rows.size() >= config.hiscorePageSize(), result, buttons),
+                result -> handleHiscoreNav(player, skill, page, hasNext, result, buttons),
                 buttons.toArray(String[]::new));
     }
 
@@ -318,7 +435,7 @@ public final class MmoBedrockUi {
             } else if ("Next".equals(picked)) {
                 openHiscores(player, skill, page + 1);
             } else {
-                openHub(player);
+                openSkillPicker(player, "hiscores");
             }
         });
     }

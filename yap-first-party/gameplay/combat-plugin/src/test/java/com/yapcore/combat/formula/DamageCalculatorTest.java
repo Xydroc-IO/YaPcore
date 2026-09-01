@@ -13,6 +13,22 @@ class DamageCalculatorTest {
     private static final DamageCalculator.Params PARAMS = new DamageCalculator.Params(0.5, 1);
 
     @Test
+    void levelOneUnarmedStillHasPositiveMaxHit() {
+        var fists = new DamageCalculator.Attacker(1, 1, 0, 0, 0, 0);
+        assertTrue(DamageCalculator.maxHit(fists, PARAMS) >= 1);
+        var defender = new DamageCalculator.Defender(1, 0, 0);
+        Random alwaysHigh = new Random(1L) {
+            @Override
+            public int nextInt(int bound) {
+                return bound > 0 ? bound - 1 : 0;
+            }
+        };
+        DamageCalculator.Result result = DamageCalculator.roll(fists, defender, PARAMS, alwaysHigh);
+        assertTrue(result.hit());
+        assertTrue(result.damage() >= 1);
+    }
+
+    @Test
     void maxHitScalesWithStrengthAndGear() {
         var low = new DamageCalculator.Attacker(1, 10, 0, 0, 0, 0);
         var high = new DamageCalculator.Attacker(1, 50, 0, 20, 0, 5);

@@ -20,6 +20,7 @@ import com.yapcore.combat.listener.PrayerDrainListener;
 import com.yapcore.combat.listener.StatusEffectTicker;
 import com.yapcore.combat.prayer.PrayerBookLoader;
 import com.yapcore.combat.projectile.CombatProjectileKeys;
+import com.yapcore.combat.service.CombatEntityDamager;
 import com.yapcore.combat.service.CombatHitPipeline;
 import com.yapcore.combat.service.CombatServiceImpl;
 import com.yapcore.combat.service.CombatXpAwarder;
@@ -53,6 +54,7 @@ public final class CombatPlugin extends JavaPlugin {
     private CombatServiceImpl combatService;
     private CombatXpAwarder xpAwarder;
     private CombatHitPipeline hitPipeline;
+    private CombatEntityDamager entityDamager;
     private SpellBookService spellBook;
     private PrayerService prayerService;
     private PrayerDrainListener prayerDrainTask;
@@ -98,11 +100,16 @@ public final class CombatPlugin extends JavaPlugin {
         prayerDrainTask.start();
 
         getServer().getServicesManager().register(CombatService.class, combatService, this, ServicePriority.Normal);
-        getServer().getServicesManager().register(
-                com.yapcore.abilities.AbilityCombatBridge.class,
-                new com.yapcore.combat.integration.CombatAbilityBridge(this, combatService, xpAwarder),
-                this,
-                ServicePriority.Normal);
+        try {
+            getServer().getServicesManager().register(
+                    com.yapcore.abilities.AbilityCombatBridge.class,
+                    new com.yapcore.combat.integration.CombatAbilityBridge(
+                            this, combatService, xpAwarder, entityDamager),
+                    this,
+                    ServicePriority.Normal);
+        } catch (Throwable t) {
+            getLogger().warning("AbilityCombatBridge not registered: " + t.getMessage());
+        }
         getLogger().info("YaPCombat ready — pvp=" + config.pvp()
                 + ", spells=" + spellLoader.spells().size()
                 + ", prayers=" + prayerLoader.prayers().size()
@@ -178,6 +185,9 @@ public final class CombatPlugin extends JavaPlugin {
 
         statusService = new StatusEffectService(statusRegistry);
         comboService = new ComboService(config.combo());
+        if (entityDamager == null) {
+            entityDamager = new CombatEntityDamager();
+        }
 
         var sm = getServer().getServicesManager();
         if (combatService != null) {
@@ -186,8 +196,8 @@ public final class CombatPlugin extends JavaPlugin {
         combatService = new CombatServiceImpl(this, config, repository, gearLoader, prayerLoader);
         xpAwarder = new CombatXpAwarder(this, config);
         hitPipeline = new CombatHitPipeline(
-                this, config, combatService, xpAwarder, statusService, comboService, attackGate);
-        spellBook = new SpellBookService(this, combatService, xpAwarder, spellLoader, statusService);
+                this, config, combatService, xpAwarder, statusService, comboService, attackGate, entityDamager);
+        spellBook = new SpellBookService(this, combatService, xpAwarder, spellLoader, statusService, entityDamager);
         prayerService = new PrayerService(this, config, combatService, prayerLoader);
         if (isEnabled()) {
             sm.register(CombatService.class, combatService, this, ServicePriority.Normal);
@@ -196,6 +206,10 @@ public final class CombatPlugin extends JavaPlugin {
 
     public CombatConfig combatConfig() {
         return config;
+    }
+
+    public CombatEntityDamager entityDamager() {
+        return entityDamager;
     }
 
     public CombatServiceImpl combatService() {

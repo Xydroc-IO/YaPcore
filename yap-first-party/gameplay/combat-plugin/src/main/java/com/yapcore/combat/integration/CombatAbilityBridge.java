@@ -6,6 +6,7 @@ import com.yapcore.combat.formula.CombatPhysics;
 import com.yapcore.combat.formula.DamageCalculator;
 import com.yapcore.combat.integration.CombatPvpGate;
 import com.yapcore.combat.prayer.PrayerModifiers;
+import com.yapcore.combat.service.CombatEntityDamager;
 import com.yapcore.combat.service.CombatServiceImpl;
 import com.yapcore.combat.service.CombatXpAwarder;
 import com.yapcore.mmo.CombatStats;
@@ -21,11 +22,17 @@ public final class CombatAbilityBridge implements AbilityCombatBridge {
     private final JavaPlugin plugin;
     private final CombatServiceImpl combat;
     private final CombatXpAwarder xp;
+    private final CombatEntityDamager entityDamager;
 
-    public CombatAbilityBridge(JavaPlugin plugin, CombatServiceImpl combat, CombatXpAwarder xp) {
+    public CombatAbilityBridge(
+            JavaPlugin plugin,
+            CombatServiceImpl combat,
+            CombatXpAwarder xp,
+            CombatEntityDamager entityDamager) {
         this.plugin = plugin;
         this.combat = combat;
         this.xp = xp;
+        this.entityDamager = entityDamager;
     }
 
     @Override
@@ -143,8 +150,8 @@ public final class CombatAbilityBridge implements AbilityCombatBridge {
             });
         } else {
             YapSched.entity(plugin, target, () -> {
-                double next = Math.max(0, target.getHealth() - result.damage());
-                target.setHealth(next);
+                entityDamager.applyToMob(
+                        target, attacker, Math.max(1, result.damage()), combat.config().pveHealthPerPoint());
                 CombatPhysics.applyKnockback(target, attacker, result, combat.config().physics());
             });
             xpAward.run();
@@ -164,7 +171,8 @@ public final class CombatAbilityBridge implements AbilityCombatBridge {
                     gear.defenceBonus(),
                     stats.buffs().defenceBoost() + prayers.defenceBoost());
         }
-        int defence = Math.max(1, (int) (target.getMaxHealth() / 8));
+        int defence = Math.max(1, (int) Math.ceil(
+                target.getMaxHealth() / Math.max(4.0, combat.config().mobDefenceHealthDivisor())));
         return new DamageCalculator.Defender(defence, 0, 0);
     }
 

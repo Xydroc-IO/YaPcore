@@ -12,7 +12,7 @@ pool:
   minimum-idle: 1
   connection-timeout-ms: 10000
 
-# Custom HP model: internal integer HP with vanilla hearts scaled to ratio (see docs/MMO_COMBAT.md).
+# Custom HP model: internal integer HP with vanilla hearts scaled to ratio (see docs/mmo/MMO_COMBAT.md).
 custom-hp:
   enabled: true
   hearts-display: 10
@@ -30,6 +30,12 @@ formula:
   min-damage-on-hit: 1
   crit-chance: 0.05
   crit-multiplier: 1.5
+
+# PvE: RS-style hit points → vanilla mob HP. Without this, "Hit 1" removes 1/20 of a zombie.
+pve:
+  health-per-combat-point: 2.0
+  # Mob defence ≈ ceil(maxHealth / divisor). Was hard-coded /8 (too tanky).
+  mob-defence-health-divisor: 20.0
 
 combat:
   attack-cooldown-ticks: 4

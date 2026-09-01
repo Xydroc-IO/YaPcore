@@ -28,12 +28,22 @@ tiers:
     prayer-bonus: 2
 
 items:
+  # Unarmed / fallback when hand is empty (applied via CombatService when main hand is air)
+  AIR:
+    attack-bonus: 1
+    strength-bonus: 1
   WOODEN_SWORD:
     attack-bonus: 2
     strength-bonus: 3
+  WOODEN_AXE:
+    attack-bonus: 1
+    strength-bonus: 4
   STONE_SWORD:
     attack-bonus: 3
     strength-bonus: 4
+  STONE_AXE:
+    attack-bonus: 2
+    strength-bonus: 5
   IRON_SWORD:
     attack-bonus: 5
     strength-bonus: 8

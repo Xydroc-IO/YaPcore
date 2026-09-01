@@ -337,19 +337,15 @@ public final class CombatServiceImpl implements CombatService {
 
     private int skillLevel(UUID playerId, SkillId skillId) {
         SkillSnapshot cached = skillSnapshots.get(playerId);
-        if (cached != null && cached.fresh(config.skillCacheTtlMs())) {
+        if (cached != null) {
+            if (!cached.fresh(config.skillCacheTtlMs())) {
+                warmSkillCache(playerId);
+            }
             return cached.level(skillId);
         }
+        // Never block the region/entity thread on SkillService futures (DB).
         warmSkillCache(playerId);
-        Optional<SkillService> skills = SkillServices.find();
-        if (skills.isEmpty()) {
-            return 1;
-        }
-        try {
-            return skills.get().get(playerId, skillId).join().level();
-        } catch (Exception e) {
-            return 1;
-        }
+        return 1;
     }
 
     private static SkillSnapshot loadSkillSnapshot(SkillService skills, UUID playerId) {

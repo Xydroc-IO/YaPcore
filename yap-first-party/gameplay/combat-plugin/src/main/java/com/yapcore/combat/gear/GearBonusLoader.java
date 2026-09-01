@@ -111,7 +111,14 @@ public final class GearBonusLoader {
             total = total.add(bonusFor(piece).orElse(GearBonus.ZERO));
         }
         ItemStack main = player.getInventory().getItemInMainHand();
-        total = total.add(bonusFor(main).orElse(GearBonus.ZERO));
+        if (main == null || main.getType().isAir()) {
+            ItemDef fists = byMaterial.get(Material.AIR);
+            if (fists != null) {
+                total = total.add(fists.bonus());
+            }
+        } else {
+            total = total.add(bonusFor(main).orElse(GearBonus.ZERO));
+        }
         ItemStack off = player.getInventory().getItemInOffHand();
         total = total.add(bonusFor(off).orElse(GearBonus.ZERO));
         return total;

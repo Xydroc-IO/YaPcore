@@ -29,6 +29,7 @@ public final class CombatHitPipeline {
     private final StatusEffectService status;
     private final ComboService combo;
     private final CombatAttackGate attackGate;
+    private final CombatEntityDamager entityDamager;
 
     public CombatHitPipeline(
             JavaPlugin plugin,
@@ -37,7 +38,8 @@ public final class CombatHitPipeline {
             CombatXpAwarder xp,
             StatusEffectService status,
             ComboService combo,
-            CombatAttackGate attackGate) {
+            CombatAttackGate attackGate,
+            CombatEntityDamager entityDamager) {
         this.plugin = plugin;
         this.config = config;
         this.combat = combat;
@@ -45,6 +47,7 @@ public final class CombatHitPipeline {
         this.status = status;
         this.combo = combo;
         this.attackGate = attackGate;
+        this.entityDamager = entityDamager;
     }
 
     public void beginPlayerAttack(
@@ -131,11 +134,11 @@ public final class CombatHitPipeline {
             });
         } else {
             YapSched.entity(plugin, victim, () -> {
-                double next = Math.max(0, victim.getHealth() - finalDamage);
-                victim.setHealth(next);
-                if (next <= 0 && !victim.isDead()) {
-                    victim.setHealth(0);
+                if (!victim.isValid() || victim.isDead()) {
+                    return;
                 }
+                int applied = Math.max(1, finalDamage);
+                entityDamager.applyToMob(victim, attacker, applied, config.pveHealthPerPoint());
                 CombatPhysics.applyKnockback(victim, attacker, result, config.physics());
             });
         }
@@ -160,7 +163,7 @@ public final class CombatHitPipeline {
             PrayerModifiers prayers = combat.prayerModifiers(player);
             return toDefender(stats, prayers, status.modifiers(player));
         }
-        return mobDefender(victim);
+        return mobDefender(victim, config.mobDefenceHealthDivisor());
     }
 
     private static DamageCalculator.Result roll(
@@ -252,8 +255,9 @@ public final class CombatHitPipeline {
                 buffs.defenceBoost() + prayers.defenceBoost() + status.defenceBoost());
     }
 
-    private static DamageCalculator.Defender mobDefender(LivingEntity mob) {
-        int defence = Math.max(1, (int) (mob.getMaxHealth() / 8));
+    private static DamageCalculator.Defender mobDefender(LivingEntity mob, double healthDivisor) {
+        // Soft curve: zombie (~20 HP) → defence 1; iron golem (~100) → 5 — not /8 tank walls.
+        int defence = Math.max(1, (int) Math.ceil(mob.getMaxHealth() / Math.max(4.0, healthDivisor)));
         return new DamageCalculator.Defender(defence, 0, 0);
     }
 

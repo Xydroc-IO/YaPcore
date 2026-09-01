@@ -11,7 +11,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /**
  * Purpur-inspired gameplay + mob encyclopedia for YaPcore (Paper plugin).
- * Original MIT implementation — WASD ridables, MobGoal AI, and block knobs.
+ * Original YaP implementation — WASD ridables, MobGoal AI, and block knobs.
  */
 public final class GameplayKnobsPlugin extends JavaPlugin {
 

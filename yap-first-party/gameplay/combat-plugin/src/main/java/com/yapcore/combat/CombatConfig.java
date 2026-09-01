@@ -31,6 +31,10 @@ public final class CombatConfig {
     private int minDamageOnHit = 1;
     private double critChance = 0.05;
     private double critMultiplier = 1.5;
+    /** Vanilla HP removed per combat damage point against mobs (2 ≈ one heart). */
+    private double pveHealthPerPoint = 2.0;
+    /** Mob defence ≈ ceil(maxHealth / this). Higher = easier hits. */
+    private double mobDefenceHealthDivisor = 20.0;
 
     private int attackCooldownTicks = 4;
     private int rangedCooldownTicks = 8;
@@ -84,6 +88,7 @@ public final class CombatConfig {
     public void reload() {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
+        mergePveDefaults(plugin.getConfig());
         FileConfiguration c = plugin.getConfig();
         enabled = c.getBoolean("enabled", true);
         useSharedYapdb = c.getBoolean("use-shared-yapdb", true);
@@ -107,6 +112,8 @@ public final class CombatConfig {
         minDamageOnHit = c.getInt("formula.min-damage-on-hit", 1);
         critChance = c.getDouble("formula.crit-chance", 0.05);
         critMultiplier = c.getDouble("formula.crit-multiplier", 1.5);
+        pveHealthPerPoint = Math.max(0.25, c.getDouble("pve.health-per-combat-point", 2.0));
+        mobDefenceHealthDivisor = Math.max(4.0, c.getDouble("pve.mob-defence-health-divisor", 20.0));
 
         attackCooldownTicks = Math.max(0, c.getInt("combat.attack-cooldown-ticks", 4));
         rangedCooldownTicks = Math.max(0, c.getInt("combat.ranged-cooldown-ticks", 8));
@@ -184,6 +191,23 @@ public final class CombatConfig {
             }
         }
         onHitProcs = java.util.List.copyOf(procs);
+    }
+
+    /** Upgrades older configs that predate the pve.* tuning block. */
+    private void mergePveDefaults(FileConfiguration c) {
+        boolean changed = false;
+        if (!c.contains("pve.health-per-combat-point")) {
+            c.set("pve.health-per-combat-point", 2.0);
+            changed = true;
+        }
+        if (!c.contains("pve.mob-defence-health-divisor")) {
+            c.set("pve.mob-defence-health-divisor", 20.0);
+            changed = true;
+        }
+        if (changed) {
+            plugin.saveConfig();
+            plugin.getLogger().info("Merged PvE tuning defaults into config (pve.*).");
+        }
     }
 
     public record OnHitProc(String id, String trigger, String effectId, double chance, int stacks) {
@@ -298,6 +322,14 @@ public final class CombatConfig {
 
     public double critMultiplier() {
         return critMultiplier;
+    }
+
+    public double pveHealthPerPoint() {
+        return pveHealthPerPoint;
+    }
+
+    public double mobDefenceHealthDivisor() {
+        return mobDefenceHealthDivisor;
     }
 
     public int attackCooldownTicks() {

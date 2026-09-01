@@ -31,6 +31,10 @@ public final class CombatDamageListener implements Listener {
         if (!plugin.combatConfig().enabled()) {
             return;
         }
+        if (plugin.entityDamager() != null && plugin.entityDamager().isBypassing(event.getEntity())) {
+            // Custom combat already decided damage — let vanilla apply it.
+            return;
+        }
         if (event.getDamager() instanceof Projectile projectile
                 && plugin.projectileKeys() != null
                 && ProjectilePhysics.isManaged(projectile, plugin.projectileKeys())

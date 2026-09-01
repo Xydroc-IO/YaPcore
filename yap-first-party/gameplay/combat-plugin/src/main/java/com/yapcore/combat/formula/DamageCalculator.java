@@ -66,7 +66,10 @@ public final class DamageCalculator {
         if (effectiveStrength < 0) {
             effectiveStrength = 0;
         }
-        return (int) Math.floor(effectiveStrength * params.levelFactor());
+        int raw = (int) Math.floor(effectiveStrength * params.levelFactor());
+        // Level-1 unarmed used to floor to 0 → cancel vanilla + deal no damage (mobs look immortal).
+        int floor = Math.max(1, params.minDamageOnHit());
+        return Math.max(floor, raw);
     }
 
     public static int rangedMaxHit(RangedAttacker attacker, Params params) {
@@ -74,7 +77,9 @@ public final class DamageCalculator {
         if (effective < 0) {
             effective = 0;
         }
-        return (int) Math.floor(effective * params.levelFactor());
+        int raw = (int) Math.floor(effective * params.levelFactor());
+        int floor = Math.max(1, params.minDamageOnHit());
+        return Math.max(floor, raw);
     }
 
     public static int magicMaxHit(MagicAttacker attacker, int spellBaseMaxHit, Params params) {
@@ -141,17 +146,21 @@ public final class DamageCalculator {
 
         int attackRoll = effectiveAttack + rollInclusive(random, effectiveAttack);
         int defenceRoll = effectiveDefence + rollInclusive(random, effectiveDefence);
-        if (attackRoll <= defenceRoll) {
-            return new Result(false, 0, maxHit);
+        // Ties count as hits so level-1 vs weak mobs (chicken def=1) are not soft-locked.
+        if (attackRoll < defenceRoll) {
+            return new Result(false, 0, Math.max(maxHit, Math.max(1, params.minDamageOnHit())));
         }
 
         if (maxHit <= 0) {
-            return new Result(true, 0, 0);
+            maxHit = Math.max(1, params.minDamageOnHit());
         }
 
         int damage = random.nextInt(maxHit + 1);
         if (damage < params.minDamageOnHit()) {
             damage = params.minDamageOnHit();
+        }
+        if (damage < 1) {
+            damage = 1;
         }
         if (damage > maxHit) {
             damage = maxHit;

@@ -1,6 +1,7 @@
 # One resource path per line (relative to plugin jar root)
 DIR quests
 DIR bosses
+quests/starter_chain.yml
 quests/compendium_tier_01.yml
 quests/compendium_tier_02.yml
 quests/compendium_tier_03.yml
