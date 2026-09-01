@@ -107,7 +107,7 @@ tasks.register("assembleRelease") {
             "**/WINDOWS.md", "**/NGINX_AND_LOCALHOST.md", "**/PLAYERDATA.md", "**/MARIADB.md", "**/YAPDB.md",
             "**/STACKER.md", "**/PLUGINS.md", "**/MODULES_AND_API.md", "**/TUNE.md", "**/PERMISSIONS.md",
             "**/TEBEX.md",
-            "**/REGIONS.md", "**/RELEASES.md", "**/DEFAULTS.md", "**/SECRETS.md", "**/TESTING.md",
+            "**/REGIONS.md", "**/RELEASES.md", "**/RELEASE_NOTES.md", "**/DEFAULTS.md", "**/SECRETS.md", "**/TESTING.md",
             "**/PROJECT_STATUS.md", "**/COMPLETION_BACKLOG.md",
             "**/PLUGIN_COMPAT_MATRIX.md", "**/YAP_LINK_NATIVE.md", "**/PHASE4_PROTOCOL.md",
             "**/ROADMAP_COMPLETION_PHASES.md", "**/VIA_GEYSER_PARITY.md",

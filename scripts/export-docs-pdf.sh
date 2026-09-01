@@ -22,6 +22,7 @@ DOC_LIST=(
   "TERMS_OF_USE|docs/start/TERMS_OF_USE.md"
   "TESTING|docs/start/TESTING.md"
   "RELEASES|docs/start/RELEASES.md"
+  "RELEASE_NOTES|docs/start/RELEASE_NOTES.md"
   "PRIVACY_POLICY|docs/start/PRIVACY_POLICY.md"
   "TERMS_OF_USE|docs/start/TERMS_OF_USE.md"
   "PLUGINS|docs/plugins/PLUGINS.md"

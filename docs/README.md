@@ -33,6 +33,7 @@ Docs are grouped by topic:
 | [**Secrets**](start/SECRETS.md) | Passwords, tokens, webhooks (operator-owned) |
 | [**Wiki**](WIKI.md) | Full operator doc index |
 | [**Releases**](start/RELEASES.md) | Downloadable zips, build commands |
+| [**Release notes**](start/RELEASE_NOTES.md) | v1.0.0.0 changelog and known limitations |
 | [**Licensing**](start/LICENSING.md) | GPLv3 + third-party notices |
 | [**Privacy Policy**](start/PRIVACY_POLICY.md) | Data handling (software + operator guidance) |
 | [**Terms of Use**](start/TERMS_OF_USE.md) | Acceptable use, disclaimers, operator duties |

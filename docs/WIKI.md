@@ -13,6 +13,7 @@ Browse by folder: [docs/README.md](README.md).
 |------|-------------|
 | [**Quick Start**](start/QUICK_START.md) | **10-minute setup** — release zip or source build |
 | [RELEASES.md](start/RELEASES.md) | Downloadable zips, `assembleRelease`, version bumps |
+| [RELEASE_NOTES.md](start/RELEASE_NOTES.md) | Version changelog and upgrade notes |
 | [DEFAULTS.md](start/DEFAULTS.md) | First-boot configs + seed script |
 | [SECRETS.md](start/SECRETS.md) | Passwords, tokens, webhooks (operator-owned) |
 | [LICENSING.md](start/LICENSING.md) | GPLv3 (YaPcore) + third-party notices |

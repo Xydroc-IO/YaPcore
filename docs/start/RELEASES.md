@@ -2,6 +2,7 @@
 
 All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `plugin.yml`, Link `link-plugin.json`).
 
+**Release notes:** [RELEASE_NOTES.md](RELEASE_NOTES.md)  
 **License:** release trees include root **`LICENSE`** (GNU GPLv3). See [LICENSING.md](LICENSING.md).
 
 **Game jar:** product path expects **YaP-Folia** (`lib/yap-folia-26.2.jar`) built via `./scripts/build-yap-folia.sh`. Stock Fill Folia is not the release default. See [FOLIA_FORK.md](../folia/FOLIA_FORK.md).
