@@ -18,7 +18,7 @@ public final class HighpopTuneModule extends FineTuneModule {
                 "GUI Tune tab opens the same paths.",
                 "Fair MSPT benches keep EAR uncapped (0) — do not copy highpop-ear for scoreboards.",
                 "",
-                "Docs: docs/TUNE.md"
+                "Docs: docs/ops/TUNE.md"
         );
     }
 }

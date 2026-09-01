@@ -54,6 +54,7 @@ tasks.register("assembleRelease") {
             "yap-playerdata.jar",
             "yap-moderation.jar",
             "yap-essentials.jar",
+            "yap-admin.jar",
             "yap-protect.jar",
             "yap-world.jar",
             "yap-regions.jar",
@@ -100,19 +101,22 @@ tasks.register("assembleRelease") {
             }
         }
         val docFiles = listOf(
-            "QUICK_START.md", "WIKI.md", "LICENSING.md", "COMMANDS.md",
-            "VEHICLES.md", "CLIENTS_AND_PACKS.md", "WEB_DASHBOARD.md", "PREGEN.md",
-            "WINDOWS.md", "NGINX_AND_LOCALHOST.md", "PLAYERDATA.md", "MARIADB.md", "YAPDB.md",
-            "STACKER.md", "PLUGINS.md", "MODULES_AND_API.md", "TUNE.md", "PERMISSIONS.md",
-            "REGIONS.md", "RELEASES.md", "DEFAULTS.md",
-            "PLUGIN_COMPAT_MATRIX.md", "YAP_LINK_NATIVE.md", "PHASE4_PROTOCOL.md",
-            "ROADMAP_COMPLETION_PHASES.md", "VIA_GEYSER_PARITY.md",
-            "FOLIA_FORK.md", "YAP_FOLIA_SOAK.md",
+            // Prefer **/ so docs under start/, ops/, … are included after the docs/ regroup.
+            "**/QUICK_START.md", "**/WIKI.md", "**/LICENSING.md", "**/COMMANDS.md",
+            "**/VEHICLES.md", "**/CLIENTS_AND_PACKS.md", "**/WEB_DASHBOARD.md", "**/PREGEN.md",
+            "**/WINDOWS.md", "**/NGINX_AND_LOCALHOST.md", "**/PLAYERDATA.md", "**/MARIADB.md", "**/YAPDB.md",
+            "**/STACKER.md", "**/PLUGINS.md", "**/MODULES_AND_API.md", "**/TUNE.md", "**/PERMISSIONS.md",
+            "**/TEBEX.md",
+            "**/REGIONS.md", "**/RELEASES.md", "**/DEFAULTS.md",
+            "**/PLUGIN_COMPAT_MATRIX.md", "**/YAP_LINK_NATIVE.md", "**/PHASE4_PROTOCOL.md",
+            "**/ROADMAP_COMPLETION_PHASES.md", "**/VIA_GEYSER_PARITY.md",
+            "**/FOLIA_FORK.md", "**/YAP_FOLIA_SOAK.md",
+            "README.md",
         )
         val linuxScripts = listOf(
             "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
             "nginx-setup.sh", "heap-dump.sh", "build-default-resourcepack.sh", "fetch-faithful-64x.sh",
-            "fetch-folia.sh",
+            "fetch-folia.sh", "fetch-tebex.sh", "fetch-grim.sh",
             "vendor-folia.sh", "folia-patch.sh", "build-yap-folia.sh", "verify-yap-folia.sh",
             "soak-yap-folia.sh", "smoke-folia.sh",
             "seed-defaults.sh",
@@ -121,6 +125,7 @@ tasks.register("assembleRelease") {
 
         fun copyCommon(dest: File) {
             dest.mkdirs()
+            project.file("LICENSE").copyTo(dest.resolve("LICENSE"), overwrite = true)
             jar.copyTo(dest.resolve("yapcore.jar"), overwrite = true)
             val linkJar = project.file("yap-first-party/link/native/build/libs/yap-link.jar")
             if (linkJar.isFile) {
@@ -142,6 +147,38 @@ tasks.register("assembleRelease") {
                 from(project.file("plugins"))
                 into(dest.resolve("plugins"))
                 include(*(pluginJars + "README.md").toTypedArray())
+            }
+            // Optional Tebex Folia plugin (GPLv3) — run ./scripts/fetch-tebex.sh before assemble
+            val tebexJar = project.file("plugins/tebex.jar")
+            if (tebexJar.isFile) {
+                tebexJar.copyTo(dest.resolve("plugins/tebex.jar"), overwrite = true)
+                listOf("tebex-NOTICE.txt", "tebex-LICENSE-GPLv3.txt").forEach { name ->
+                    val f = project.file("plugins/$name")
+                    if (f.isFile) {
+                        f.copyTo(dest.resolve("plugins/$name"), overwrite = true)
+                    }
+                }
+            }
+            // Optional Grim AC (GPLv3) — run ./scripts/fetch-grim.sh before assemble
+            val grimJar = project.file("plugins/grim.jar")
+            if (grimJar.isFile) {
+                grimJar.copyTo(dest.resolve("plugins/grim.jar"), overwrite = true)
+                listOf("grim-NOTICE.txt", "grim-LICENSE-GPLv3.txt").forEach { name ->
+                    val f = project.file("plugins/$name")
+                    if (f.isFile) {
+                        f.copyTo(dest.resolve("plugins/$name"), overwrite = true)
+                    }
+                }
+            }
+            project.copy {
+                from(project.file("third-party/tebex"))
+                into(dest.resolve("third-party/tebex"))
+                include("NOTICE.txt", "LICENSE-GPLv3.txt", "README.md")
+            }
+            project.copy {
+                from(project.file("third-party/grim"))
+                into(dest.resolve("third-party/grim"))
+                include("NOTICE.txt", "LICENSE-GPLv3.txt", "README.md")
             }
             project.copy {
                 from(project.file("modules"))
@@ -250,15 +287,18 @@ tasks.register("assembleRelease") {
         val sharedNotes = """
             Shared contents (both platforms)
             --------------------------------
+            LICENSE                 GNU GPLv3 (YaPcore first-party) — docs/start/LICENSING.md
             yapcore.jar
-            yap-link.jar          native network proxy (see docs/YAP_LINK_NATIVE.md)
+            yap-link.jar          native network proxy (see docs/network/YAP_LINK_NATIVE.md)
             link-data/            Link config + plugins (link.properties, plugins/*.jar)
             plugins/  CORE+NETWORK by default (db, playerdata, packs, chat, floodgate, …)
                       GAMEPLAY (vehicles, stacker, knobs): rebuild with -PyapGameplay=true
                       or run: gradle installGameplayDefaults
+                      Optional: tebex.jar (GPLv3) via ./scripts/fetch-tebex.sh — Hub store
+                      Optional: grim.jar (GPLv3) via ./scripts/fetch-grim.sh — heavy AC
             modules/  CORE fine-tune packaging modules by default;
                       GAMEPLAY adds vehicles/stacker/knobs modules
-                      (gradle installFineTuneModules · docs/MODULES_AND_API.md)
+                      (gradle installFineTuneModules · docs/plugins/MODULES_AND_API.md)
             resourcepacks/yapcore-default.zip
             config/
             docs/
@@ -270,7 +310,7 @@ tasks.register("assembleRelease") {
             Requires Java 25+ on PATH (or JAVA_HOME).
             Product path: YaP-Folia recommended (./scripts/build-yap-folia.sh +
             folia-jar-source=build). Stock Fill: fetch-folia / folia-jar-source=fetch.
-            Soak: ./scripts/soak-yap-folia.sh compat — docs/YAP_FOLIA_SOAK.md.
+            Soak: ./scripts/soak-yap-folia.sh compat — docs/folia/YAP_FOLIA_SOAK.md.
             """.trimIndent()
 
         // --- linux ---
@@ -327,7 +367,7 @@ tasks.register("assembleRelease") {
             Defaults
             --------
               config/defaults/ is copied into place on first start (never overwrites).
-              See docs/DEFAULTS.md
+              See docs/start/DEFAULTS.md
 
             MariaDB (YaPPlayerData — single or multi-backend)
             -------------------------------------------------
@@ -336,7 +376,7 @@ tasks.register("assembleRelease") {
               ./configure-db.sh --server-id lobby
               # multi-backend: ./configure-db.sh --host <db-ip> --server-id survival
               ./stop-mariadb.sh
-              See docs/MARIADB.md
+              See docs/data/MARIADB.md
 
             Folia (product game authority)
             ------------------------------
@@ -409,7 +449,7 @@ tasks.register("assembleRelease") {
               windows/   → cmd:  start, nginx-setup, start-mariadb, configure-db, configure-playerdata
 
             Both include deploy/nginx and deploy/mariadb.
-            See linux/RELEASE.txt, windows/RELEASE.txt, docs/RELEASES.md, docs/WINDOWS.md, docs/MARIADB.md.
+            See linux/RELEASE.txt, windows/RELEASE.txt, docs/start/RELEASES.md, docs/start/WINDOWS.md, docs/data/MARIADB.md.
 
             Standalone zips (also in build/dist/):
               yap-network-suite.zip   YaP Link + link plugins

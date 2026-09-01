@@ -1,6 +1,6 @@
 # YaP first-party LuckPerms starter pack
 # Applied via: ranks apply  |  dashboard Ranks tab  |  paste into console
-# Docs: docs/PERMISSIONS.md
+# Docs: docs/ops/PERMISSIONS.md
 #
 # Groups: default → vip → mod → admin (inheritance + track "yap")
 # Weights / prefixes / suffixes for chat & tab list meta

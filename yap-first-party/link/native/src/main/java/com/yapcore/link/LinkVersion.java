@@ -2,7 +2,7 @@ package com.yapcore.link;
 
 /**
  * Native YaP Link release metadata. Bump {@link #PHASE} when a roadmap phase gate passes.
- * See docs/YAP_LINK_NATIVE.md.
+ * See docs/network/YAP_LINK_NATIVE.md.
  */
 public final class LinkVersion {
 

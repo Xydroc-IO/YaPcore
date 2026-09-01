@@ -95,7 +95,7 @@ public final class TunePanel {
 
                 game-authority=%s  paper-dir=%s
 
-                Docs: docs/TUNE.md
+                Docs: docs/ops/TUNE.md
                 """.formatted(
                 knobsJar ? "[installed]" : "[build knobs plugin]",
                 Files.isRegularFile(knobs) ? "[present]" : "[created on first enable]",

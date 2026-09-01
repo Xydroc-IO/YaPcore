@@ -224,6 +224,70 @@ public final class DashboardNetworkSnapshots {
         return out;
     }
 
+    /** Compact Phase 8 ops-plugin readiness for the dashboard status tab. */
+    public static Map<String, Object> opsPhase8Summary(Path root) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        List<Map<String, Object>> rows = new ArrayList<>();
+        rows.add(opsRow("Protect", protect(root), snap -> {
+            if (!bool(snap.get("installed"), false)) {
+                return "missing";
+            }
+            return bool(snap.get("loggingEnabled"), true) ? "logging on" : "logging off";
+        }));
+        rows.add(opsRow("Chat", chat(root), snap -> {
+            if (!bool(snap.get("installed"), false)) {
+                return "missing";
+            }
+            int channels = snap.get("channels") instanceof List<?> list ? list.size() : 0;
+            return channels + " ch · slow " + intVal(snap.get("slowModeSeconds"), 0) + "s";
+        }));
+        rows.add(opsRow("Moderation", moderation(root), snap ->
+                bool(snap.get("installed"), false) ? "ready" : "missing"));
+        rows.add(opsRow("Player data", playerdata(root), snap -> {
+            if (!bool(snap.get("installed"), false)) {
+                return "missing";
+            }
+            return bool(snap.get("economyEnabled"), true) ? "economy on" : "economy off";
+        }));
+        rows.add(opsRow("Map", map(root), snap -> {
+            if (!bool(snap.get("installed"), false)) {
+                return "missing";
+            }
+            return bool(snap.get("mapReady"), false)
+                    ? intVal(snap.get("tileCount"), 0) + " tiles"
+                    : "awaiting render";
+        }));
+        rows.add(opsRow("Discord", discord(root), snap -> {
+            if (!bool(snap.get("installed"), false)) {
+                return "missing";
+            }
+            boolean hooks = bool(snap.get("moderationConfigured"), false)
+                    || bool(snap.get("chatConfigured"), false);
+            if (hooks) {
+                return "webhooks set";
+            }
+            return "webhooks empty";
+        }));
+        long installed = rows.stream().filter(r -> Boolean.TRUE.equals(r.get("installed"))).count();
+        out.put("plugins", rows);
+        out.put("installedCount", installed);
+        out.put("totalCount", rows.size());
+        out.put("summary", installed == rows.size()
+                ? "All Phase 8 ops plugins present"
+                : installed + " / " + rows.size() + " ops plugins installed");
+        return out;
+    }
+
+    private static Map<String, Object> opsRow(String label, Map<String, Object> snap,
+                                              java.util.function.Function<Map<String, Object>, String> detailFn) {
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("label", label);
+        row.put("installed", bool(snap.get("installed"), false));
+        row.put("configPresent", bool(snap.get("configPresent"), false));
+        row.put("detail", detailFn.apply(snap));
+        return row;
+    }
+
     public static Map<String, Object> guard(Path root) {
         Map<String, Object> out = base(root, "yap-guard", "YaPGuard");
         Map<String, Object> yaml = yaml(root, "YaPGuard", "config.yml");
@@ -235,6 +299,12 @@ public final class DashboardNetworkSnapshots {
         out.put("maxViolationsBeforeKick", intVal(yaml.get("max-violations-before-kick"), 8));
         out.put("alertsEnabled", bool(yaml.get("alerts-enabled"), true));
         out.put("violationDecaySeconds", intVal(yaml.get("violation-decay-seconds"), 45));
+        Path pluginsDir = root.resolve("plugins");
+        boolean grim = jarPresent(pluginsDir, "grim");
+        out.put("grimInstalled", grim);
+        if (grim) {
+            out.put("acHint", "Grim AC (grim.jar) is installed — disable YaPGuard checks or remove yap-guard.jar to avoid double punishment. See docs/ops/GRIM.md");
+        }
         return out;
     }
 

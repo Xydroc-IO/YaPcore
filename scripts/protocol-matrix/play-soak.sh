@@ -59,7 +59,7 @@ fi
 
 echo
 echo "== Live soak checklist (tick on a running server) =="
-echo "See docs/VIA_GEYSER_PARITY.md §E — mark Done only when passed."
+echo "See docs/protocol/VIA_GEYSER_PARITY.md §E — mark Done only when passed."
 echo
 cat <<'EOF'
 JE mid (1.20.4 and 1.21.1 minimum):
@@ -97,4 +97,4 @@ echo
 echo "Real-load pop ladder (bots 50→200 + denser heavypop MSPT):"
 echo "  ./scripts/bench/run-vs-folia.sh"
 echo "  ./scripts/bench/run-vs-folia.sh --tiers mid,heavy"
-echo "See docs/TESTING.md and docs/VIA_GEYSER_PARITY.md for soak gates."
+echo "See docs/start/TESTING.md and docs/protocol/VIA_GEYSER_PARITY.md for soak gates."

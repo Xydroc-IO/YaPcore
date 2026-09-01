@@ -8,6 +8,10 @@ http:
 worlds:
   - world
 
+# Full re-render cadence. First render runs ~2s after plugin enable.
 render-interval-minutes: 15
+# Lower max-height on low-CPU hosts (e.g. 128 for overworld surface focus).
 max-height: 320
+# Chunk grid sampled per world (radius² tiles). Use 4–6 on small VPS; 8–12 on dedicated boxes.
 sample-chunk-radius: 8
+# Tiles land in plugins/YaPMap/map/tiles/ — prune old PNGs manually if disk is tight.

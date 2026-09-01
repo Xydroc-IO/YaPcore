@@ -35,6 +35,9 @@ tasks.register("installProductDefaults") {
     if (findProject(":essentials-plugin") != null) {
         dependsOn(":essentials-plugin:installIntoPlugins")
     }
+    if (findProject(":admin-plugin") != null) {
+        dependsOn(":admin-plugin:installIntoPlugins")
+    }
     if (findProject(":protect-plugin") != null) {
         dependsOn(":protect-plugin:installIntoPlugins")
     }
@@ -176,6 +179,7 @@ tasks.register("assemblePluginDist") {
         ":playerdata-plugin:shadowJar",
         ":moderation-plugin:shadowJar",
         ":essentials-plugin:shadowJar",
+        ":admin-plugin:jar",
         ":protect-plugin:shadowJar",
         ":world-plugin:shadowJar",
         ":packs-plugin:jar",
@@ -256,6 +260,9 @@ tasks.register("assemblePluginDist") {
         copyNamed(jarOf(":playerdata-plugin", "shadowJar"), coreDir)
         copyNamed(jarOf(":moderation-plugin", "shadowJar"), coreDir)
         copyNamed(jarOf(":essentials-plugin", "shadowJar"), coreDir)
+        if (findProject(":admin-plugin") != null) {
+            copyNamed(jarOf(":admin-plugin"), coreDir)
+        }
         copyNamed(jarOf(":protect-plugin", "shadowJar"), coreDir)
         copyNamed(jarOf(":world-plugin", "shadowJar"), coreDir)
         copyNamed(jarOf(":packs-plugin"), coreDir)
@@ -402,7 +409,7 @@ tasks.register("assemblePluginDist") {
             Full box: gradle assembleRelease
             Full + gameplay: gradle assembleRelease -PyapGameplay=true
 
-            Docs: docs/MODULES_AND_API.md · docs/TUNE.md · plugins/README.md
+            Docs: docs/plugins/MODULES_AND_API.md · docs/ops/TUNE.md · plugins/README.md
             """.trimIndent() + "\n"
         )
 
@@ -411,5 +418,21 @@ tasks.register("assemblePluginDist") {
             println("  ${it.relativeTo(dest)}")
         }
     }
+}
+
+tasks.register<Exec>("fetchTebex") {
+    group = "distribution"
+    description =
+        "Download official Tebex Folia plugin (GPLv3) into plugins/tebex.jar"
+    workingDir = project.projectDir
+    commandLine("bash", "scripts/fetch-tebex.sh")
+}
+
+tasks.register<Exec>("fetchGrim") {
+    group = "distribution"
+    description =
+        "Download official Grim Anticheat Folia jar (GPLv3) into plugins/grim.jar"
+    workingDir = project.projectDir
+    commandLine("bash", "scripts/fetch-grim.sh")
 }
 

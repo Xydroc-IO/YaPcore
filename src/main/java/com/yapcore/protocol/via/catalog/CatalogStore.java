@@ -55,17 +55,25 @@ public final class CatalogStore {
         public int blockToModern(int legacyId, BandCatalog modern) {
             String name = blocks.get(legacyId);
             if (name == null) {
-                return legacyId;
+                return modern.standInBlockState();
             }
-            return modern.blocksByName.getOrDefault(name, legacyId);
+            Integer mapped = modern.blocksByName.get(name);
+            if (mapped != null) {
+                return mapped;
+            }
+            return modern.standInBlockState();
         }
 
         public int blockToLegacy(int modernId, BandCatalog modern) {
             String name = modern.blocks.get(modernId);
             if (name == null) {
-                return modernId;
+                return standInBlockState();
             }
-            return blocksByName.getOrDefault(name, modernId);
+            Integer mapped = blocksByName.get(name);
+            if (mapped != null) {
+                return mapped;
+            }
+            return standInBlockState();
         }
 
         public int entityToModern(int legacyType, BandCatalog modern) {
@@ -102,6 +110,19 @@ public final class CatalogStore {
             Integer stand = entitiesByName.get("armor_stand");
             if (stand != null) {
                 return stand;
+            }
+            return 0;
+        }
+
+        /** VB.23 placeholder when the client catalog lacks the modern block name. */
+        public int standInBlockState() {
+            Integer stone = blocksByName.get("stone");
+            if (stone != null) {
+                return stone;
+            }
+            Integer air = blocksByName.get("air");
+            if (air != null) {
+                return air;
             }
             return 0;
         }

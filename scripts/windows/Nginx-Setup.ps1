@@ -6,7 +6,7 @@
 #   .\Nginx-Setup.ps1 -NginxHome C:\nginx
 #
 # Needs nginx WITH the stream module (official nginx.org Windows zip often lacks stream).
-# See docs/WINDOWS.md for install options.
+# See docs/start/WINDOWS.md for install options.
 
 param(
     [switch]$DryRun,

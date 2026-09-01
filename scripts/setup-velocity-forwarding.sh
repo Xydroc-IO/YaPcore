@@ -54,7 +54,7 @@ cfg.write_text(text)
 print('Updated', cfg)
 print('velocity-enabled=', 'true' if enable else 'unchanged/false')
 print('Copy the same file to YaP Link / Velocity as forwarding.secret')
-print('See docs/VELOCITY.md, docs/YAP_LINK.md, and examples/velocity/')
+print('See docs/network/VELOCITY.md, docs/network/YAP_LINK.md, and examples/velocity/')
 PY
 
 if [ "$ENABLE" -eq 1 ]; then

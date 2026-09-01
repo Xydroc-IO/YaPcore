@@ -18,6 +18,7 @@ tasks.register("assembleNetworkSuite") {
         val linkJar = project.file("yap-first-party/link/native/build/libs/yap-link.jar")
         require(linkJar.isFile) { "Missing $linkJar" }
         linkJar.copyTo(outDir.resolve("yap-link.jar"), overwrite = true)
+        project.file("LICENSE").copyTo(outDir.resolve("LICENSE"), overwrite = true)
         val plugins = project.file("link-data/plugins")
         if (plugins.isDirectory) {
             project.copy {
@@ -91,7 +92,7 @@ tasks.register("assembleGameplaySuite") {
             =================================
             Drop plugins/ and modules/ into your YaPcore server tree.
             Requires CORE+NETWORK release (yapcore.jar + yap-db + playerdata).
-            Docs: docs/VEHICLES.md · docs/STACKER.md · docs/TUNE.md
+            Docs: docs/plugins/VEHICLES.md · docs/plugins/STACKER.md · docs/ops/TUNE.md
             Rebuild: gradle assembleGameplaySuite
             """.trimIndent() + "\n"
         )
@@ -123,7 +124,7 @@ tasks.register("assembleAddonsRelease") {
             ==========================
             plugins/     example vehicle addon jar (requires yap-vehicles)
             examples/    source + README for authors
-            Docs: docs/VEHICLES.md · examples/yap-vehicle-addon/README.md
+            Docs: docs/plugins/VEHICLES.md · examples/yap-vehicle-addon/README.md
             Rebuild: gradle assembleAddonsRelease
             """.trimIndent() + "\n"
         )
@@ -264,7 +265,7 @@ tasks.register("publishReleasesFolder") {
             Gameplay in the full box:  gradle assembleRelease -PyapGameplay=true
                                        && gradle publishReleasesFolder
 
-            Docs: docs/RELEASES.md · docs/QUICK_START.md
+            Docs: docs/start/RELEASES.md · docs/start/QUICK_START.md
             """.trimIndent() + "\n"
         )
 

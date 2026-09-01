@@ -37,6 +37,10 @@ tasks.jar {
     archiveFileName.set("yap-link.jar")
     manifest {
         attributes["Main-Class"] = "com.yapcore.link.LinkMain"
+        attributes["Implementation-Title"] = "YaP Link"
+        attributes["Implementation-Version"] = version
+        attributes["Implementation-Vendor"] = "YapLabs"
+        attributes["Bundle-License"] = "GPL-3.0-or-later"
     }
 }
 

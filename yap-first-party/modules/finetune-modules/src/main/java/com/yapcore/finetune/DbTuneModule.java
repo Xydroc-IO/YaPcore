@@ -20,7 +20,7 @@ public final class DbTuneModule extends FineTuneModule {
                 "Docker: ./scripts/db/start-mariadb.sh && ./scripts/db/configure-db.sh",
                 "Commands: /yapdb status|reload",
                 "API: yap-db-api.jar for plugin authors",
-                "Docs: docs/YAPDB.md · docs/MARIADB.md"
+                "Docs: docs/data/YAPDB.md · docs/data/MARIADB.md"
         );
     }
 }

@@ -23,7 +23,7 @@ public final class PacksTuneModule extends FineTuneModule {
                 "Plugin: plugins/YaPPacks/config.yml (extras push on join)",
                 "GAMEPLAY fat pack: gradle assembleRelease -PyapGameplay=true",
                 "",
-                "Docs: docs/CLIENTS_AND_PACKS.md"
+                "Docs: docs/network/CLIENTS_AND_PACKS.md"
         );
     }
 }

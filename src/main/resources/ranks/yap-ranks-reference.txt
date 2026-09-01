@@ -1,6 +1,6 @@
 # YaP native rank pack (yap-perms.jar)
 # Groups: default → vip → mod → admin · track: yap
-# Config: plugins/YaPPerms/config.yml · Docs: docs/PERMISSIONS.md
+# Config: plugins/YaPPerms/config.yml · Docs: docs/ops/PERMISSIONS.md
 #
 # Apply starter pack (groups, inheritance, grants, prefixes):
 yapperm applypack

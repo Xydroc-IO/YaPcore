@@ -60,7 +60,7 @@ if [ -f "$MATRIX" ]; then
   done
   shopt -u nullglob
   if [ "$WARN" -gt 0 ]; then
-    echo "  compat warnings:   $WARN (see docs/PLUGIN_COMPAT_MATRIX.md)"
+    echo "  compat warnings:   $WARN (see docs/plugins/PLUGIN_COMPAT_MATRIX.md)"
   fi
 fi
 

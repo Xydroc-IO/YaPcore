@@ -19,7 +19,7 @@ export ROOT
 
 PATCH_A="$ROOT/vendor/folia/patches/0001-yap-teleport-transactions.patch"
 PATCH_B="$ROOT/vendor/folia/work/folia-server/minecraft-patches/features/0012-yap-teleport-transactions.patch"
-DOC="$ROOT/docs/FOLIA_TELEPORT_TRANSACTIONS.md"
+DOC="$ROOT/docs/folia/FOLIA_TELEPORT_TRANSACTIONS.md"
 SERVER_JAR_GLOB="$ROOT/vendor/folia/work/folia-server/build/libs/folia-server-*.jar"
 BUNDLER_JAR="$ROOT/vendor/folia/work/folia-server/build/libs/folia-bundler-26.2.local-SNAPSHOT.jar"
 

@@ -141,6 +141,7 @@ public final class BedrockPacketDispatch {
             )));
             world.sendBlockUpdate(guid, act.x(), act.y(), act.z(), 0);
             world.resendColumn(guid, act.x() >> 4, act.z() >> 4);
+            world.maybeSyncSkull(guid, act.x(), act.y(), act.z());
         } else if (act != null) {
             actions.add(new BedrockGameplayBridge.GameAction("PLACE", user, Map.of(
                     "x", Integer.toString(act.x()),
@@ -150,6 +151,7 @@ public final class BedrockPacketDispatch {
                     "action", Integer.toString(act.action())
             )));
             world.resendColumn(guid, act.x() >> 4, act.z() >> 4);
+            world.maybeSyncSkull(guid, act.x(), act.y(), act.z());
         } else {
             actions.add(new BedrockGameplayBridge.GameAction("BREAK", user, Map.of("pkt", "PLAYER_ACTION")));
         }
@@ -187,6 +189,8 @@ public final class BedrockPacketDispatch {
                         "z", Integer.toString(tx.z()),
                         "tx", Integer.toString(tx.transactionType())
                 )));
+                world.resendColumn(guid, tx.x() >> 4, tx.z() >> 4);
+                world.maybeSyncSkull(guid, tx.x(), tx.y(), tx.z());
             }
         } else if (tx != null && tx.hasPos()) {
             actions.add(new BedrockGameplayBridge.GameAction("BREAK", user, Map.of(
@@ -195,6 +199,8 @@ public final class BedrockPacketDispatch {
                     "z", Integer.toString(tx.z())
             )));
             world.sendBlockUpdate(guid, tx.x(), tx.y(), tx.z(), 0);
+            world.resendColumn(guid, tx.x() >> 4, tx.z() >> 4);
+            world.maybeSyncSkull(guid, tx.x(), tx.y(), tx.z());
         } else {
             actions.add(new BedrockGameplayBridge.GameAction("BREAK", user, Map.of("pkt", "INVENTORY_TRANSACTION")));
         }

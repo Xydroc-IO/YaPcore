@@ -335,7 +335,7 @@ Edit **here** for day-to-day tuning.
 | `spigot.yml` / `bukkit.yml` | Classic Spigot/Bukkit (symlinks when present) |
 
 Gameplay encyclopedia: `plugins/YaPGameplayKnobs/knobs.yml` (jar in `plugins/`).
-See `docs/TUNE.md`.
+See `docs/ops/TUNE.md`.
 EOF
   fi
 }

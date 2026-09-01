@@ -78,6 +78,21 @@ public final class BedrockPaperWorldSync {
         return backend.materialAt(x, y, z);
     }
 
+    /** Owner name for player skull / head blocks, or null if not a skull or unavailable. */
+    public String skullOwnerAt(int x, int y, int z) {
+        return backend.skullOwnerAt(x, y, z);
+    }
+
+    /** Skull blocks discovered during the last column snapshot for a chunk. */
+    public List<SkullBlock> skullsInColumn(int chunkX, int chunkZ) {
+        return backend.skullsInColumn(chunkX, chunkZ).stream()
+                .map(s -> new SkullBlock(s.x(), s.y(), s.z(), s.owner()))
+                .toList();
+    }
+
+    public record SkullBlock(int x, int y, int z, String owner) {
+    }
+
     /** Paper overworld spawn (block coords), or null if unavailable. */
     public double[] spawnPosition() {
         return backend.spawnPosition();

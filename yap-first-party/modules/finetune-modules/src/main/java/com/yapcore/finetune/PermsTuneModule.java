@@ -19,7 +19,7 @@ public final class PermsTuneModule extends FineTuneModule {
                 "Config: plugins/YaPPerms/config.yml",
                 "Native groups/tracks — /yapperm, /promote, /demote",
                 "Starter pack: /yapperm applypack",
-                "Docs: docs/PERMISSIONS.md"
+                "Docs: docs/ops/PERMISSIONS.md"
         );
     }
 }

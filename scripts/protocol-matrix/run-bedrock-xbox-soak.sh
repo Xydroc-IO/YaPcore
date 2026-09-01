@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Live Mojang/Xbox Bedrock soak wrapper.
-# See bedrock-xbox-soak.mjs and docs/XBOX_RETAIL_CAPTURE.md.
+# See bedrock-xbox-soak.mjs and docs/protocol/XBOX_RETAIL_CAPTURE.md.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"

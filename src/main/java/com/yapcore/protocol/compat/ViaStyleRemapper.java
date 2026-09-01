@@ -11,7 +11,7 @@ import java.util.logging.Logger;
  * <p>
  * Phase 4 DoD: full feature parity with those plugins — <strong>not</strong> a
  * “good enough” subset. Operators must not install Via\* jars. See
- * {@code docs/PHASE4_PROTOCOL.md}.
+ * {@code docs/protocol/PHASE4_PROTOCOL.md}.
  */
 public final class ViaStyleRemapper {
 

@@ -17,7 +17,7 @@ public final class FloodgateTuneModule extends FineTuneModule {
     protected List<String> guideLines() {
         return List.of(
                 "Config: plugins/YaPFloodgate/config.yml + key.pem from Velocity Floodgate",
-                "Docs: docs/VELOCITY.md · docs/CROSSPLAY.md"
+                "Docs: docs/network/VELOCITY.md · docs/network/CROSSPLAY.md"
         );
     }
 }

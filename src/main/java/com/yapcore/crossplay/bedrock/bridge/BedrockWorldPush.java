@@ -16,6 +16,43 @@ public final class BedrockWorldPush {
         this.ctx = ctx;
     }
 
+    static boolean isSkullMaterial(String material) {
+        if (material == null || material.isBlank()) {
+            return false;
+        }
+        String m = material.toUpperCase(Locale.ROOT);
+        return m.contains("SKULL") || m.equals("PLAYER_HEAD") || m.equals("DRAGON_HEAD")
+                || m.equals("ZOMBIE_HEAD") || m.equals("CREEPER_HEAD")
+                || m.equals("PIGLIN_HEAD") || m.equals("WITHER_SKELETON_SKULL");
+    }
+
+    void maybeSyncSkull(long guid, int x, int y, int z) {
+        String mat = paperBlockHint(x, y, z);
+        if (!isSkullMaterial(mat)) {
+            return;
+        }
+        BedrockPaperWorldSync sync = ctx.paperWorld;
+        String owner = sync != null ? sync.skullOwnerAt(x, y, z) : null;
+        ctx.send(guid, BedrockPacketCodec.blockActorSkull(x, y, z, owner != null ? owner : ""));
+    }
+
+    void syncSkullsForChunk(long guid, int cx, int cz) {
+        BedrockPaperWorldSync sync = ctx.paperWorld;
+        if (sync == null || !sync.isEnabled()) {
+            return;
+        }
+        List<BedrockPaperWorldSync.SkullBlock> skulls = sync.skullsInColumn(cx, cz);
+        if (skulls.isEmpty()) {
+            return;
+        }
+        List<ByteBuf> packets = new ArrayList<>(skulls.size());
+        for (BedrockPaperWorldSync.SkullBlock skull : skulls) {
+            String owner = skull.owner() != null ? skull.owner() : "";
+            packets.add(BedrockPacketCodec.blockActorSkull(skull.x(), skull.y(), skull.z(), owner));
+        }
+        ctx.send(guid, packets);
+    }
+
     double[] paperSpawnOrDefault() {
         BedrockPaperWorldSync sync = ctx.paperWorld;
         if (sync != null && sync.isEnabled()) {
@@ -82,6 +119,7 @@ public final class BedrockWorldPush {
         ctx.columns.invalidateAllSessions(cx, cz);
         ctx.send(guid, chunkFor(cx, cz));
         ctx.columns.markSent(guid, cx, cz);
+        syncSkullsForChunk(guid, cx, cz);
     }
 
     void streamColumnsAround(long guid, int blockX, int blockY, int blockZ, boolean force) {
@@ -105,6 +143,9 @@ public final class BedrockWorldPush {
                 }
                 if (!paper.isEmpty()) {
                     ctx.send(g, paper);
+                    for (BedrockColumnStreamer.Column c : need) {
+                        syncSkullsForChunk(g, c.cx(), c.cz());
+                    }
                 }
             } catch (Exception e) {
                 BedrockBridgeContext.LOG.fine("paper stream: " + e.getMessage());

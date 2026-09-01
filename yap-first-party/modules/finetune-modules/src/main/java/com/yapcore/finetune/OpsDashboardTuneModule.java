@@ -20,7 +20,7 @@ public final class OpsDashboardTuneModule extends FineTuneModule {
                 "  yap-ranks-auto-apply=false",
                 "",
                 "Open http://127.0.0.1:8080/ — Console, Packs, Ranks tabs.",
-                "Docs: docs/WEB_DASHBOARD.md · docs/PERMISSIONS.md"
+                "Docs: docs/ops/WEB_DASHBOARD.md · docs/ops/PERMISSIONS.md"
         );
     }
 }

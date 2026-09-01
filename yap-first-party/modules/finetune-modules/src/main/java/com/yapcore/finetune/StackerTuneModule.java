@@ -21,7 +21,7 @@ public final class StackerTuneModule extends FineTuneModule {
                 "  mobs.* / items.* / spawners.* radii & caps",
                 "  kill-mode, tools, PlaceholderAPI hooks",
                 "Command: /yapstacker",
-                "Docs: docs/STACKER.md"
+                "Docs: docs/plugins/STACKER.md"
         );
     }
 }

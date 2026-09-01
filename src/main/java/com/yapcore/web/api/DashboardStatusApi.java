@@ -5,6 +5,7 @@ import com.yapcore.client.ClientEdition;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.server.YaPcoreServer;
 import com.yapcore.web.DashboardLinkSnapshot;
+import com.yapcore.web.DashboardNetworkSnapshots;
 import com.yapcore.web.PluginCompatMatrix;
 import com.yapcore.web.TinyJson;
 import com.yapcore.web.auth.DashboardAuth;
@@ -194,6 +195,7 @@ public final class DashboardStatusApi {
         h.put("lastBedrockPlaySmoke", smokeArtifactTime(root.resolve("build/bedrock-play-smoke-latest.json")));
         h.put("lastNetworkSmoke", smokeArtifactTime(root.resolve("build/smoke-network-full-latest.json")));
         h.put("summary", networkHealthSummary(h));
+        h.put("opsPlugins", DashboardNetworkSnapshots.opsPhase8Summary(root));
         return h;
     }
 

@@ -20,7 +20,7 @@
 #   YAP_FOLIA_STEAL_THRESHOLD_MS / YAP_FOLIA_TASK_SLICE_MS (WORK_STEALING only)
 #   YAP_FOLIA_GRID_EXPONENT       (optional override of paper-global grid-exponent)
 #
-# Pass: managed Folia stays ready for the full soak window (see docs/YAP_FOLIA_SOAK.md).
+# Pass: managed Folia stays ready for the full soak window (see docs/folia/YAP_FOLIA_SOAK.md).
 set -euo pipefail
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 # shellcheck disable=SC1091
@@ -37,7 +37,7 @@ Usage: ./scripts/soak-yap-folia.sh <compat|perf|list> [seconds]
   perf    compat + optional -Dyap.folia.entity-tick-budget / async-chunk-save / microtick
   list    print profiles and env knobs
 
-Docs: docs/YAP_FOLIA_SOAK.md
+Docs: docs/folia/YAP_FOLIA_SOAK.md
 EOF
 }
 
@@ -198,4 +198,4 @@ PY
 
 echo "PASS: soak-$PROFILE (${SOAK_SECS}s)"
 echo "  result=$OUT"
-echo "Announce: Agents 2/3 — soak-$PROFILE profile is ready (docs/YAP_FOLIA_SOAK.md)."
+echo "Announce: Agents 2/3 — soak-$PROFILE profile is ready (docs/folia/YAP_FOLIA_SOAK.md)."

@@ -36,7 +36,7 @@ if [ ! -f "$HOME_DIR/link.properties" ]; then
     cp -n "$ROOT/link-data/plugins/"*.jar "$HOME_DIR/plugins/" 2>/dev/null || true
   fi
   cat >"$HOME_DIR/link.properties" <<EOF
-# YaP Link — native proxy (see docs/YAP_LINK_NATIVE.md)
+# YaP Link — native proxy (see docs/network/YAP_LINK_NATIVE.md)
 bind=0.0.0.0:25565
 motd=YaP Link
 max-players=500

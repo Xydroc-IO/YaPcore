@@ -16,12 +16,12 @@ import java.util.logging.Logger;
  * First-party Geyser parity translator: Bedrock (and Java) intents → shared world.
  * <p>
  * Phase 4 DoD: full Geyser (+ Floodgate-class auth) feature parity in YaP code —
- * not the Geyser jar. See {@code docs/PHASE4_PROTOCOL.md}.
+ * not the Geyser jar. See {@code docs/protocol/PHASE4_PROTOCOL.md}.
  * <p>
  * When {@code game-authority=paper} (Phase 3 same-JVM), BREAK/PLACE also hit Paper via
  * {@link com.yapcore.crossplay.bedrock.BedrockPaperWorldSync}. Under Folia (managed process),
  * BE commands go through {@link com.yapcore.game.command.GameCommandBridge} (stdin); prefer Geyser on
- * YaP Link for full BE join. See {@code docs/VELOCITY.md}.
+ * YaP Link for full BE join. See {@code docs/network/VELOCITY.md}.
  */
 public final class GeyserStyleTranslator {
 

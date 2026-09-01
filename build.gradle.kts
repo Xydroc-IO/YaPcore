@@ -220,6 +220,7 @@ tasks.named<JavaExec>("run") {
 }
 
 
+apply(from = "gradle/yap-license.gradle.kts")
 apply(from = "gradle/yap-product.gradle.kts")
 apply(from = "gradle/yap-release.gradle.kts")
 apply(from = "gradle/yap-packaging.gradle.kts")
@@ -242,6 +243,9 @@ tasks.shadowJar {
         attributes["Main-Class"] = "com.yapcore.Main"
         attributes["Implementation-Title"] = "YaPcore"
         attributes["Implementation-Version"] = project.version.toString()
+        attributes["Implementation-Vendor"] = "YapLabs"
+        attributes["Bundle-License"] = "GPL-3.0-or-later"
+        attributes["Specification-Vendor"] = "https://www.gnu.org/licenses/gpl-3.0.html"
     }
     finalizedBy(tasks.named("distJar"))
 }

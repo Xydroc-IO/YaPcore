@@ -195,4 +195,4 @@ sys.exit(0)
 PY
 
 echo "smoke-folia-async-save PASS (stamp=$STAMP)"
-echo "  fill docs/BENCH_VS_FOLIA.md async-save row from $SUMMARY"
+echo "  fill docs/performance/BENCH_VS_FOLIA.md async-save row from $SUMMARY"

@@ -25,7 +25,10 @@ public final class PaperWorldSyncBackend {
     final BedrockPaperPlayerInject playerInject = new BedrockPaperPlayerInject(paperLoader);
     final BedrockPaperInventoryInject inventoryInject = new BedrockPaperInventoryInject();
     volatile boolean enabled;
-    final ConcurrentHashMap<Long, int[][]> columnCache = new ConcurrentHashMap<>();
+    record ColumnCache(int[][] states, List<PaperWorldBlocks.SkullBlock> skulls) {
+    }
+
+    final ConcurrentHashMap<Long, ColumnCache> columnCache = new ConcurrentHashMap<>();
 
     final PaperWorldMainThread mainThread = new PaperWorldMainThread(this);
     final PaperWorldBlocks blocks = new PaperWorldBlocks(this);
@@ -130,20 +133,33 @@ public final class PaperWorldSyncBackend {
     }
 
     public int[][] snapshotColumnHashedStates(int chunkX, int chunkZ) {
+        ColumnCache cached = snapshotColumn(chunkX, chunkZ);
+        return cached == null ? null : cached.states();
+    }
+
+    public List<PaperWorldBlocks.SkullBlock> skullsInColumn(int chunkX, int chunkZ) {
+        ColumnCache cached = snapshotColumn(chunkX, chunkZ);
+        return cached == null ? List.of() : cached.skulls();
+    }
+
+    private ColumnCache snapshotColumn(int chunkX, int chunkZ) {
         if (!isEnabled()) {
             return null;
         }
         long key = columnKey(chunkX, chunkZ);
-        int[][] cached = columnCache.get(key);
+        ColumnCache cached = columnCache.get(key);
         if (cached != null) {
             return cached;
         }
         try {
-            int[][] column = blocks.readColumnHashedStates(chunkX, chunkZ);
+            List<PaperWorldBlocks.SkullBlock> skulls = new java.util.ArrayList<>();
+            int[][] column = blocks.readColumnHashedStates(chunkX, chunkZ, skulls);
             if (column != null) {
-                columnCache.put(key, column);
+                ColumnCache bundle = new ColumnCache(column, List.copyOf(skulls));
+                columnCache.put(key, bundle);
+                return bundle;
             }
-            return column;
+            return null;
         } catch (Exception e) {
             LOG.log(Level.FINE, "column snapshot failed", e);
             return null;
@@ -164,6 +180,10 @@ public final class PaperWorldSyncBackend {
 
     public String materialAt(int x, int y, int z) {
         return blocks.materialAt(x, y, z);
+    }
+
+    public String skullOwnerAt(int x, int y, int z) {
+        return blocks.skullOwnerAt(x, y, z);
     }
 
     public double[] spawnPosition() {

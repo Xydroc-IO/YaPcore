@@ -2,7 +2,7 @@ package com.yapcore.protocol.java;
 
 /**
  * Full synchronized-registry entry IDs for Minecraft 26.2 (from official server jar).
- * Dumps live under {@code src/main/resources/protocol/vanilla/} (see docs/PROTOCOL_DUMPS.md).
+ * Dumps live under {@code src/main/resources/protocol/vanilla/} (see docs/protocol/PROTOCOL_DUMPS.md).
  */
 public final class VanillaRegistryCatalog {
 

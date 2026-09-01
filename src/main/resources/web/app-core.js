@@ -108,6 +108,21 @@
     $("nhCompat").textContent = nh.compatWarnings != null ? String(nh.compatWarnings) : "0";
     const smoke = nh.lastNetworkSmoke && nh.lastNetworkSmoke !== "never" ? nh.lastNetworkSmoke : nh.lastBedrockPlaySmoke;
     $("nhSmoke").textContent = smoke && smoke !== "never" ? smoke.replace("T", " ").slice(0, 19) : "never";
+    const ops = nh.opsPlugins || {};
+    $("stOpsSummary").textContent = ops.summary || "—";
+    const opIds = {
+      Protect: "opProtect",
+      Chat: "opChat",
+      Moderation: "opModeration",
+      "Player data": "opPlayerdata",
+      Map: "opMap",
+      Discord: "opDiscord",
+    };
+    (ops.plugins || []).forEach((p) => {
+      const id = opIds[p.label];
+      if (!id || !$(id)) return;
+      $(id).textContent = p.installed ? (p.detail || "ready") : "missing";
+    });
   }
 
   async function loadConnect() {

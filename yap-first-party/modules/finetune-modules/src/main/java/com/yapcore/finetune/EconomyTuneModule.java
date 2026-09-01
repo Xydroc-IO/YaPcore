@@ -24,7 +24,7 @@ public final class EconomyTuneModule extends FineTuneModule {
                 "sync.economy: true for cross-server balance",
                 "Vault: soft-depend — YaPEconomy registers when Vault is present",
                 "",
-                "Docs: docs/PLAYERDATA.md"
+                "Docs: docs/data/PLAYERDATA.md"
         );
     }
 }

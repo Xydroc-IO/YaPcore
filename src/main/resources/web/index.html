@@ -31,6 +31,7 @@
       </div>
       <nav class="sidebar-nav" id="sidebarNav"></nav>
       <div class="sidebar-footer">
+        <p class="muted" style="font-size:11px;margin:0 0 8px;line-height:1.35">GPLv3 · <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">License</a></p>
         <button id="btnLogout" class="ghost">Sign out</button>
       </div>
     </aside>
@@ -73,6 +74,18 @@
             <div class="stat"><span>Plugins</span><strong id="nhPlugins">—</strong></div>
             <div class="stat"><span>Compat warn</span><strong id="nhCompat">—</strong></div>
             <div class="stat"><span>Last smoke</span><strong id="nhSmoke">—</strong></div>
+          </div>
+        </div>
+        <div class="card health-card">
+          <h3>Ops plugins</h3>
+          <p id="stOpsSummary" class="health-summary">—</p>
+          <div class="grid stats health-grid">
+            <div class="stat"><span>Protect</span><strong id="opProtect">—</strong></div>
+            <div class="stat"><span>Chat</span><strong id="opChat">—</strong></div>
+            <div class="stat"><span>Moderation</span><strong id="opModeration">—</strong></div>
+            <div class="stat"><span>Player data</span><strong id="opPlayerdata">—</strong></div>
+            <div class="stat"><span>Map</span><strong id="opMap">—</strong></div>
+            <div class="stat"><span>Discord</span><strong id="opDiscord">—</strong></div>
           </div>
         </div>
         <pre id="stReport" class="report"></pre>
@@ -754,6 +767,7 @@
 
       <section id="tab-discord" class="panel">
         <p class="muted"><code>yap-discord</code> — webhook mod-log, MC→Discord chat, Discord→MC inbound HTTP bridge</p>
+        <p class="muted hint">Setup order: save moderation + chat webhook URLs → test each → enable MC→Discord relay. Keep Discord→MC off until you set a strong inbound secret. See <code>docs/ops/DISCORD_RELAY.md</code>.</p>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="dscInstalled">—</strong></div>
           <div class="stat"><span>Mod webhook</span><strong id="dscModHook">—</strong></div>
@@ -852,9 +866,11 @@
       <section id="tab-guard" class="panel">
         <div class="page-header">
           <h2>Guard</h2>
-          <p>Anti-cheat heuristics — fly, speed, reach, scaffold detection.</p>
+          <p>Anti-cheat heuristics — fly, speed, reach, scaffold detection. Heavy AC: optional <code>grim.jar</code> — <a href="docs/ops/GRIM.md">GRIM.md</a>.</p>
         </div>
+        <p id="grdAcHint" class="muted hint hidden"></p>
         <div class="grid stats">
+          <div class="stat"><span>Grim AC</span><strong id="grdGrim">—</strong></div>
           <div class="stat"><span>Fly</span><strong id="grdFly">—</strong></div>
           <div class="stat"><span>Speed</span><strong id="grdSpeed">—</strong></div>
           <div class="stat"><span>Reach</span><strong id="grdReach">—</strong></div>

@@ -33,7 +33,9 @@ tasks.jar {
             "Can-Redefine-Classes" to "true",
             "Can-Retransform-Classes" to "true",
             "Implementation-Title" to "yap-sched-agent",
-            "Implementation-Version" to version
+            "Implementation-Version" to version,
+            "Implementation-Vendor" to "YapLabs",
+            "Bundle-License" to "GPL-3.0-or-later"
         )
     }
     from({

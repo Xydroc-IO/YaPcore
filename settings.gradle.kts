@@ -70,6 +70,9 @@ project(":moderation-plugin").projectDir = file("yap-first-party/core-network/mo
 include("essentials-plugin")
 project(":essentials-plugin").projectDir = file("yap-first-party/core-network/essentials-plugin")
 
+include("admin-plugin")
+project(":admin-plugin").projectDir = file("yap-first-party/core-network/admin-plugin")
+
 include("yap-chat-api")
 project(":yap-chat-api").projectDir = file("yap-first-party/api/yap-chat-api")
 

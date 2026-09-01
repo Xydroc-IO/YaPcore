@@ -103,6 +103,13 @@ window.YapDashRegisterFullPanels = function (YapDash) {
     try {
       const r = await api("/api/guard");
       $("grdFly").textContent = r.flyEnabled ? "on" : "off";
+      $("grdGrim").textContent = r.grimInstalled ? "installed" : "none";
+      const hint = $("grdAcHint");
+      if (hint) {
+        const msg = r.acHint || "";
+        hint.textContent = msg;
+        hint.classList.toggle("hidden", !msg);
+      }
       $("grdSpeed").textContent = r.speedEnabled ? "on" : "off";
       $("grdReach").textContent = r.reachEnabled ? "on" : "off";
       $("grdScaffold").textContent = r.scaffoldEnabled ? "on" : "off";

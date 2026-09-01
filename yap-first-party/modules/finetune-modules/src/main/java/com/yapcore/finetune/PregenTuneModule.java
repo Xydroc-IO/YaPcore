@@ -18,7 +18,7 @@ public final class PregenTuneModule extends FineTuneModule {
         return List.of(
                 "Config: plugins/YaPPregen/config.yml",
                 "Command: /yappregen",
-                "Docs: docs/PREGEN.md"
+                "Docs: docs/plugins/PREGEN.md"
         );
     }
 }

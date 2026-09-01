@@ -20,7 +20,7 @@ public final class GameplayKnobsTuneModule extends FineTuneModule {
                 "Config: plugins/YaPGameplayKnobs/knobs.yml",
                 "  settings.* / blocks.* / gameplay.* / mobs.<type>.*",
                 "Command: /yapknobs reload",
-                "Docs: docs/TUNE.md"
+                "Docs: docs/ops/TUNE.md"
         );
     }
 }

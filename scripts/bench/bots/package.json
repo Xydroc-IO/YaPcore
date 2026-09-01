@@ -2,6 +2,7 @@
   "name": "yap-highpop-bots",
   "version": "0.1.0",
   "private": true,
+  "license": "GPL-3.0-or-later",
   "description": "Mineflayer swarm for YaPcore highpop MSPT benches",
   "type": "module",
   "dependencies": {

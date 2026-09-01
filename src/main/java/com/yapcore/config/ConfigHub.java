@@ -94,6 +94,6 @@ public final class ConfigHub {
             `yap-gameplay-knobs.jar` into `plugins/` and edit
             `plugins/YaPGameplayKnobs/knobs.yml` (or GUI → Tune).
 
-            See `docs/TUNE.md`.
+            See `docs/ops/TUNE.md`.
             """;
 }

@@ -30,7 +30,7 @@ public final class YapDbPlugin extends JavaPlugin implements YapDb {
             getLogger().severe("Attempted JDBC: " + attempted + " (user=" + user + ")");
             getLogger().severe("Jar defaults use :3306 — if Docker remapped the port (often 3316 when host 3306 is busy),");
             getLogger().severe("run: ./scripts/db/ensure-db.sh --server-id <id>   then restart.");
-            getLogger().severe("Status: ./scripts/db/status-mariadb.sh · Docs: docs/MARIADB.md · docs/YAPDB.md");
+            getLogger().severe("Status: ./scripts/db/status-mariadb.sh · Docs: docs/data/MARIADB.md · docs/data/YAPDB.md");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }

@@ -5,9 +5,23 @@ import com.yapcore.crossplay.bedrock.BedrockPacketCodec;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 
 final class PaperWorldBlocks {
+
+    record SkullBlock(int x, int y, int z, String owner) {
+    }
+
+    static boolean isSkullMaterial(String material) {
+        if (material == null || material.isBlank()) {
+            return false;
+        }
+        String m = material.toUpperCase(Locale.ROOT);
+        return m.contains("SKULL") || m.equals("PLAYER_HEAD") || m.equals("DRAGON_HEAD")
+                || m.equals("ZOMBIE_HEAD") || m.equals("CREEPER_HEAD")
+                || m.equals("PIGLIN_HEAD") || m.equals("WITHER_SKELETON_SKULL");
+    }
 
     private final PaperWorldSyncBackend backend;
 
@@ -87,6 +101,11 @@ final class PaperWorldBlocks {
     }
 
     int[][] readColumnHashedStates(int chunkX, int chunkZ) throws ReflectiveOperationException {
+        return readColumnHashedStates(chunkX, chunkZ, null);
+    }
+
+    int[][] readColumnHashedStates(int chunkX, int chunkZ, List<SkullBlock> skullsOut)
+            throws ReflectiveOperationException {
         final int sections = 24;
         final int minY = -64;
         int[][] out = new int[sections][4096];
@@ -99,10 +118,19 @@ final class PaperWorldBlocks {
                 int y = y0 + ly;
                 for (int z = 0; z < 16; z++) {
                     for (int x = 0; x < 16; x++) {
-                        int state = materialToHashedState(blockAt(baseX + x, y, baseZ + z));
+                        int wx = baseX + x;
+                        int wz = baseZ + z;
+                        Object block = blockAt(wx, y, wz);
+                        int state = materialToHashedState(block);
                         out[s][(x << 8) | (z << 4) | ly] = state;
                         if (state != BedrockPacketCodec.hashedAir()) {
                             anyNonAir = true;
+                        }
+                        if (skullsOut != null && block != null) {
+                            String material = materialFromBlock(block);
+                            if (isSkullMaterial(material)) {
+                                skullsOut.add(new SkullBlock(wx, y, wz, skullOwnerFromBlock(block)));
+                            }
                         }
                     }
                 }
@@ -112,6 +140,69 @@ final class PaperWorldBlocks {
             }
         }
         return out;
+    }
+
+    String skullOwnerAt(int x, int y, int z) {
+        if (!backend.isEnabled()) {
+            return null;
+        }
+        try {
+            Object block = blockAt(x, y, z);
+            if (block == null || !isSkullMaterial(materialFromBlock(block))) {
+                return null;
+            }
+            return skullOwnerFromBlock(block);
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
+    }
+
+    private String materialFromBlock(Object block) throws ReflectiveOperationException {
+        Object type = block.getClass().getMethod("getType").invoke(block);
+        return type == null ? null : String.valueOf(type);
+    }
+
+    private String skullOwnerFromBlock(Object block) {
+        try {
+            Object state = block.getClass().getMethod("getState").invoke(block);
+            if (state == null) {
+                return null;
+            }
+            ClassLoader cl = backend.liveLoader();
+            if (cl == null) {
+                cl = backend.paperLoader.get();
+            }
+            if (cl == null) {
+                return null;
+            }
+            Class<?> skull = Class.forName("org.bukkit.block.Skull", true, cl);
+            if (!skull.isInstance(state)) {
+                return null;
+            }
+            try {
+                Object offline = skull.getMethod("getOwningPlayer").invoke(state);
+                if (offline != null) {
+                    Object name = offline.getClass().getMethod("getName").invoke(offline);
+                    if (name != null) {
+                        return String.valueOf(name);
+                    }
+                }
+            } catch (NoSuchMethodException ignored) {
+            }
+            try {
+                Object profile = skull.getMethod("getPlayerProfile").invoke(state);
+                if (profile != null) {
+                    Object name = profile.getClass().getMethod("getName").invoke(profile);
+                    if (name != null) {
+                        return String.valueOf(name);
+                    }
+                }
+            } catch (NoSuchMethodException ignored) {
+            }
+        } catch (Exception e) {
+            PaperWorldSyncBackend.LOG.log(Level.FINE, "skull owner read failed", e);
+        }
+        return null;
     }
 
     private int materialToHashedState(Object block) throws ReflectiveOperationException {
