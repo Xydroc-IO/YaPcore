@@ -74,6 +74,8 @@ config/*
 !config/.gitkeep
 !config/*.example
 !config/README.md
+!config/defaults/
+!config/defaults/**
 
 deploy/nginx/generated/
 
@@ -106,8 +108,11 @@ uid.dat
 paper-kernel/
 game-kernel/
 
+# Nested local server cwd (smoke/soak/deploy scratch — never publish)
+/server/
+
 # Folia live cwd — keep seeded yml / eula / config / server.properties in git;
-# ignore operator-generated state and rotated logs
+# ignore operator-generated state, jars, caches, worlds, and rotated logs
 folia-kernel/logs/
 folia-kernel/crash-reports/
 folia-kernel/usercache.json
@@ -117,6 +122,15 @@ folia-kernel/banned-players.json
 folia-kernel/whitelist.json
 folia-kernel/*.log
 folia-kernel/*.log.gz
+folia-kernel/*.jar
+folia-kernel/*.marker
+folia-kernel/libraries/
+folia-kernel/cache/
+folia-kernel/versions/
+folia-kernel/.paper/
+folia-kernel/world/
+folia-kernel/world_nether/
+folia-kernel/world_the_end/
 
 # Downloaded / built server jars in lib/ (keep folder via .gitkeep)
 lib/*
