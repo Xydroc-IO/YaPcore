@@ -1,7 +1,8 @@
 id: strength
 display: Strength
 enabled: true
-icon: NETHERITE_AXE
+icon: CLAY_BALL
+icon-cmd: 79002
 combat-dealt:
   xp-per-damage: 2.0
   share: 0.5

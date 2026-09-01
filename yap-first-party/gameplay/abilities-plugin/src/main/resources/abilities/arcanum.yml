@@ -2,6 +2,7 @@
 abilities:
   arcanum_01:
     name: "Arcanum 1"
+    icon-cmd: 78200
     category: magic
     min-level:
       magic: 42
@@ -14,12 +15,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: END_ROD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: END_ROD
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 21
@@ -27,22 +45,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: END_ROD
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 8
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FLASH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_02:
     name: "Arcanum 2"
+    icon-cmd: 78201
     category: magic
     min-level:
       magic: 44
@@ -55,12 +84,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SOUL_FIRE_FLAME
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SOUL_FIRE_FLAME
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 22
@@ -68,22 +114,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SOUL_FIRE_FLAME
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SOUL
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_03:
     name: "Arcanum 3"
+    icon-cmd: 78202
     category: magic
     min-level:
       magic: 46
@@ -96,12 +153,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 23
@@ -109,25 +183,36 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: WITCH
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: burn
         stacks: 1
   arcanum_04:
     name: "Arcanum 4"
+    icon-cmd: 78203
     category: magic
     min-level:
       magic: 48
@@ -140,12 +225,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: DRAGON_BREATH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: DRAGON_BREATH
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 24
@@ -153,22 +255,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: DRAGON_BREATH
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 10
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: DRAGON_BREATH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_05:
     name: "Arcanum 5"
+    icon-cmd: 78204
     category: magic
     min-level:
       magic: 50
@@ -181,12 +294,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: TOTEM
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: TOTEM
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 25
@@ -194,22 +324,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: TOTEM
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 10
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: TOTEM
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_06:
     name: "Arcanum 6"
+    icon-cmd: 78205
     category: magic
     min-level:
       magic: 52
@@ -222,12 +363,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANT
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 26
@@ -235,25 +393,36 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANT
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: END_ROD
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: burn
         stacks: 1
   arcanum_07:
     name: "Arcanum 7"
+    icon-cmd: 78206
     category: magic
     min-level:
       magic: 54
@@ -266,12 +435,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: END_ROD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: END_ROD
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 27
@@ -279,22 +465,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: END_ROD
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FLASH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_08:
     name: "Arcanum 8"
+    icon-cmd: 78207
     category: magic
     min-level:
       magic: 56
@@ -307,12 +504,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SOUL_FIRE_FLAME
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SOUL_FIRE_FLAME
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 28
@@ -320,22 +534,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SOUL_FIRE_FLAME
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 12
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SOUL
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_09:
     name: "Arcanum 9"
+    icon-cmd: 78208
     category: magic
     min-level:
       magic: 58
@@ -348,12 +573,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 29
@@ -361,25 +603,36 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: WITCH
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 12
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: burn
         stacks: 1
   arcanum_10:
     name: "Arcanum 10"
+    icon-cmd: 78209
     category: magic
     min-level:
       magic: 60
@@ -392,12 +645,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: DRAGON_BREATH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: DRAGON_BREATH
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 30
@@ -405,22 +675,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: DRAGON_BREATH
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: DRAGON_BREATH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_11:
     name: "Arcanum 11"
+    icon-cmd: 78210
     category: magic
     min-level:
       magic: 62
@@ -433,12 +714,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: TOTEM
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: TOTEM
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 31
@@ -446,22 +744,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: TOTEM
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: TOTEM
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_12:
     name: "Arcanum 12"
+    icon-cmd: 78211
     category: magic
     min-level:
       magic: 64
@@ -474,12 +783,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANT
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 32
@@ -487,25 +813,36 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANT
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 14
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: END_ROD
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: burn
         stacks: 1
   arcanum_13:
     name: "Arcanum 13"
+    icon-cmd: 78212
     category: magic
     min-level:
       magic: 66
@@ -518,12 +855,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: END_ROD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: END_ROD
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 33
@@ -531,22 +885,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: END_ROD
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 14
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FLASH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_14:
     name: "Arcanum 14"
+    icon-cmd: 78213
     category: magic
     min-level:
       magic: 68
@@ -559,12 +924,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SOUL_FIRE_FLAME
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SOUL_FIRE_FLAME
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 34
@@ -572,22 +954,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SOUL_FIRE_FLAME
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SOUL
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_15:
     name: "Arcanum 15"
+    icon-cmd: 78214
     category: magic
     min-level:
       magic: 70
@@ -600,12 +993,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 35
@@ -613,25 +1023,36 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: WITCH
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: burn
         stacks: 1
   arcanum_16:
     name: "Arcanum 16"
+    icon-cmd: 78215
     category: magic
     min-level:
       magic: 72
@@ -644,12 +1065,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: DRAGON_BREATH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: DRAGON_BREATH
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 36
@@ -657,22 +1095,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: DRAGON_BREATH
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 16
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: DRAGON_BREATH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_17:
     name: "Arcanum 17"
+    icon-cmd: 78216
     category: magic
     min-level:
       magic: 74
@@ -685,12 +1134,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: TOTEM
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: TOTEM
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 37
@@ -698,22 +1164,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: TOTEM
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 16
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: TOTEM
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_18:
     name: "Arcanum 18"
+    icon-cmd: 78217
     category: magic
     min-level:
       magic: 76
@@ -726,12 +1203,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANT
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 38
@@ -739,25 +1233,36 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANT
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: END_ROD
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: burn
         stacks: 1
   arcanum_19:
     name: "Arcanum 19"
+    icon-cmd: 78218
     category: magic
     min-level:
       magic: 78
@@ -770,12 +1275,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: END_ROD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: END_ROD
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 39
@@ -783,22 +1305,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: END_ROD
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FLASH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_20:
     name: "Arcanum 20"
+    icon-cmd: 78219
     category: magic
     min-level:
       magic: 80
@@ -811,12 +1344,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SOUL_FIRE_FLAME
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SOUL_FIRE_FLAME
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 40
@@ -824,22 +1374,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SOUL_FIRE_FLAME
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 18
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SOUL
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_21:
     name: "Arcanum 21"
+    icon-cmd: 78220
     category: magic
     min-level:
       magic: 82
@@ -852,12 +1413,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 41
@@ -865,25 +1443,36 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: WITCH
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 18
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: burn
         stacks: 1
   arcanum_22:
     name: "Arcanum 22"
+    icon-cmd: 78221
     category: magic
     min-level:
       magic: 84
@@ -896,12 +1485,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: DRAGON_BREATH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: DRAGON_BREATH
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 42
@@ -909,22 +1515,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: DRAGON_BREATH
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: DRAGON_BREATH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_23:
     name: "Arcanum 23"
+    icon-cmd: 78222
     category: magic
     min-level:
       magic: 86
@@ -937,12 +1554,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: TOTEM
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: TOTEM
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 43
@@ -950,22 +1584,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: TOTEM
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: TOTEM
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_24:
     name: "Arcanum 24"
+    icon-cmd: 78223
     category: magic
     min-level:
       magic: 88
@@ -978,12 +1623,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANT
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 44
@@ -991,25 +1653,36 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANT
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 20
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: END_ROD
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: burn
         stacks: 1
   arcanum_25:
     name: "Arcanum 25"
+    icon-cmd: 78224
     category: magic
     min-level:
       magic: 90
@@ -1022,12 +1695,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: END_ROD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: END_ROD
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 45
@@ -1035,22 +1725,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: END_ROD
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 20
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FLASH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_26:
     name: "Arcanum 26"
+    icon-cmd: 78225
     category: magic
     min-level:
       magic: 92
@@ -1063,12 +1764,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SOUL_FIRE_FLAME
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SOUL_FIRE_FLAME
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 46
@@ -1076,22 +1794,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SOUL_FIRE_FLAME
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SOUL
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_27:
     name: "Arcanum 27"
+    icon-cmd: 78226
     category: magic
     min-level:
       magic: 94
@@ -1104,12 +1833,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 47
@@ -1117,25 +1863,36 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: WITCH
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: burn
         stacks: 1
   arcanum_28:
     name: "Arcanum 28"
+    icon-cmd: 78227
     category: magic
     min-level:
       magic: 96
@@ -1148,12 +1905,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: DRAGON_BREATH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: DRAGON_BREATH
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 48
@@ -1161,22 +1935,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: DRAGON_BREATH
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 22
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: DRAGON_BREATH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_29:
     name: "Arcanum 29"
+    icon-cmd: 78228
     category: magic
     min-level:
       magic: 98
@@ -1189,12 +1974,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: TOTEM
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: TOTEM
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 49
@@ -1202,22 +2004,33 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: TOTEM
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 22
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: TOTEM
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   arcanum_30:
     name: "Arcanum 30"
+    icon-cmd: 78229
     category: magic
     min-level:
       magic: 100
@@ -1230,12 +2043,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ILLUSIONER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANT
+        shape: nova
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 160,60,255
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 160,60,255
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 50
@@ -1243,20 +2073,30 @@ abilities:
     projectile:
       entity: FIREBALL
       speed: 1.25
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANT
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: END_ROD
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 160,60,255
+      - type: sound
+        sound: ENTITY_EVOKER_PREPARE_SUMMON
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: burn
         stacks: 1

@@ -66,10 +66,11 @@ public final class SkillPackLoader {
             SkillId id = SkillId.of(idRaw);
             String display = yaml.getString("display", id.id());
             boolean enabled = yaml.getBoolean("enabled", true);
-            Material icon = Material.matchMaterial(yaml.getString("icon", "BOOK"));
+            Material icon = Material.matchMaterial(yaml.getString("icon", "CLAY_BALL"));
             if (icon == null) {
-                icon = Material.BOOK;
+                icon = Material.CLAY_BALL;
             }
+            int iconCmd = yaml.getInt("icon-cmd", yaml.getInt("icon_cmd", 0));
             Map<Material, SkillDefinition.BreakAction> breakActions = parseBreak(yaml.getConfigurationSection("break"));
             Map<String, SkillDefinition.FishAction> fishActions = parseFish(yaml.getConfigurationSection("fish"));
             Map<Material, SkillDefinition.SmeltAction> smeltActions = parseSmelt(yaml.getConfigurationSection("smelt"));
@@ -80,7 +81,7 @@ public final class SkillPackLoader {
             SkillDefinition.HitpointsRatio hitpointsRatio = parseHitpoints(yaml.getConfigurationSection("combat-hitpoints"));
             SkillDefinition.PrayerDrainAction prayerDrain = parsePrayerDrain(yaml.getConfigurationSection("prayer-drain"));
             return java.util.Optional.of(new SkillDefinition(
-                    id, display, icon, enabled, breakActions, fishActions, smeltActions,
+                    id, display, icon, iconCmd, enabled, breakActions, fishActions, smeltActions,
                     combatDealt, rangedDealt, magicDealt, combatTaken, hitpointsRatio, prayerDrain));
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to load skill " + path.getFileName(), e);

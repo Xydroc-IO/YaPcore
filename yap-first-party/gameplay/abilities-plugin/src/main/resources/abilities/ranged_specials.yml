@@ -2,6 +2,7 @@
 abilities:
   ranged_shot_1:
     name: "Shot 1"
+    icon-cmd: 78362
     category: ranged
     min-level:
       ranged: 11
@@ -14,12 +15,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 11
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 11
@@ -27,22 +36,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_shot_2:
     name: "Shot 2"
+    icon-cmd: 78364
     category: ranged
     min-level:
       ranged: 17
@@ -55,12 +74,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 12
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 14
@@ -68,22 +95,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_shot_3:
     name: "Shot 3"
+    icon-cmd: 78365
     category: ranged
     min-level:
       ranged: 24
@@ -96,12 +133,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 13
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 17
@@ -109,22 +154,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 11
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_shot_4:
     name: "Shot 4"
+    icon-cmd: 78366
     category: ranged
     min-level:
       ranged: 30
@@ -137,12 +192,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 20
@@ -150,22 +213,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_shot_5:
     name: "Shot 5"
+    icon-cmd: 78367
     category: ranged
     min-level:
       ranged: 36
@@ -178,12 +251,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 15
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 23
@@ -191,22 +272,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 13
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_shot_6:
     name: "Shot 6"
+    icon-cmd: 78368
     category: ranged
     min-level:
       ranged: 43
@@ -219,12 +310,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 16
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 26
@@ -232,22 +331,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 14
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_shot_7:
     name: "Shot 7"
+    icon-cmd: 78369
     category: ranged
     min-level:
       ranged: 49
@@ -260,12 +369,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 17
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 29
@@ -273,22 +390,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 15
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_shot_8:
     name: "Shot 8"
+    icon-cmd: 78370
     category: ranged
     min-level:
       ranged: 55
@@ -301,12 +428,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 18
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 32
@@ -314,22 +449,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 16
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_shot_9:
     name: "Shot 9"
+    icon-cmd: 78371
     category: ranged
     min-level:
       ranged: 62
@@ -342,12 +487,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 19
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 35
@@ -355,22 +508,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 17
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_shot_10:
     name: "Shot 10"
+    icon-cmd: 78363
     category: ranged
     min-level:
       ranged: 68
@@ -383,12 +546,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 20
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 38
@@ -396,22 +567,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 18
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_volley_1:
     name: "Volley 1"
+    icon-cmd: 78372
     category: ranged
     min-level:
       ranged: 14
@@ -424,12 +605,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: FIREWORK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: FIREWORK
+        shape: beam
+        count: 11
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 11
@@ -437,22 +626,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: FIREWORK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FIREWORK
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_volley_2:
     name: "Volley 2"
+    icon-cmd: 78374
     category: ranged
     min-level:
       ranged: 21
@@ -465,12 +664,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: FIREWORK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: FIREWORK
+        shape: beam
+        count: 12
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 14
@@ -478,22 +685,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: FIREWORK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FIREWORK
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_volley_3:
     name: "Volley 3"
+    icon-cmd: 78375
     category: ranged
     min-level:
       ranged: 27
@@ -506,12 +723,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: FIREWORK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: FIREWORK
+        shape: beam
+        count: 13
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 17
@@ -519,22 +744,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: FIREWORK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FIREWORK
+        shape: nova
+        count: 11
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_volley_4:
     name: "Volley 4"
+    icon-cmd: 78376
     category: ranged
     min-level:
       ranged: 33
@@ -547,12 +782,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: FIREWORK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: FIREWORK
+        shape: beam
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 20
@@ -560,22 +803,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: FIREWORK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FIREWORK
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_volley_5:
     name: "Volley 5"
+    icon-cmd: 78377
     category: ranged
     min-level:
       ranged: 40
@@ -588,12 +841,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: FIREWORK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: FIREWORK
+        shape: beam
+        count: 15
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 23
@@ -601,22 +862,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: FIREWORK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FIREWORK
+        shape: nova
+        count: 13
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_volley_6:
     name: "Volley 6"
+    icon-cmd: 78378
     category: ranged
     min-level:
       ranged: 46
@@ -629,12 +900,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: FIREWORK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: FIREWORK
+        shape: beam
+        count: 16
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 26
@@ -642,22 +921,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: FIREWORK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FIREWORK
+        shape: nova
+        count: 14
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_volley_7:
     name: "Volley 7"
+    icon-cmd: 78379
     category: ranged
     min-level:
       ranged: 52
@@ -670,12 +959,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: FIREWORK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: FIREWORK
+        shape: beam
+        count: 17
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 29
@@ -683,22 +980,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: FIREWORK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FIREWORK
+        shape: nova
+        count: 15
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_volley_8:
     name: "Volley 8"
+    icon-cmd: 78380
     category: ranged
     min-level:
       ranged: 59
@@ -711,12 +1018,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: FIREWORK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: FIREWORK
+        shape: beam
+        count: 18
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 32
@@ -724,22 +1039,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: FIREWORK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FIREWORK
+        shape: nova
+        count: 16
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_volley_9:
     name: "Volley 9"
+    icon-cmd: 78381
     category: ranged
     min-level:
       ranged: 65
@@ -752,12 +1077,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: FIREWORK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: FIREWORK
+        shape: beam
+        count: 19
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 35
@@ -765,22 +1098,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: FIREWORK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FIREWORK
+        shape: nova
+        count: 17
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_volley_10:
     name: "Volley 10"
+    icon-cmd: 78373
     category: ranged
     min-level:
       ranged: 71
@@ -793,12 +1136,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: FIREWORK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_FIREWORK_ROCKET_LAUNCH
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: FIREWORK
+        shape: beam
+        count: 20
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 38
@@ -806,22 +1157,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: FIREWORK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: FIREWORK
+        shape: nova
+        count: 18
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_pierce_1:
     name: "Pierce 1"
+    icon-cmd: 78352
     category: ranged
     min-level:
       ranged: 18
@@ -834,12 +1195,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_HIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 11
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 11
@@ -847,22 +1216,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: ENCHANTED_HIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_pierce_2:
     name: "Pierce 2"
+    icon-cmd: 78354
     category: ranged
     min-level:
       ranged: 24
@@ -875,12 +1254,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_HIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 12
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 14
@@ -888,22 +1275,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: ENCHANTED_HIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_pierce_3:
     name: "Pierce 3"
+    icon-cmd: 78355
     category: ranged
     min-level:
       ranged: 30
@@ -916,12 +1313,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_HIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 13
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 17
@@ -929,22 +1334,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: ENCHANTED_HIT
+        shape: nova
+        count: 11
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_pierce_4:
     name: "Pierce 4"
+    icon-cmd: 78356
     category: ranged
     min-level:
       ranged: 37
@@ -957,12 +1372,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_HIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 20
@@ -970,22 +1393,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: ENCHANTED_HIT
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_pierce_5:
     name: "Pierce 5"
+    icon-cmd: 78357
     category: ranged
     min-level:
       ranged: 43
@@ -998,12 +1431,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_HIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 15
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 23
@@ -1011,22 +1452,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: ENCHANTED_HIT
+        shape: nova
+        count: 13
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_pierce_6:
     name: "Pierce 6"
+    icon-cmd: 78358
     category: ranged
     min-level:
       ranged: 49
@@ -1039,12 +1490,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_HIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 16
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 26
@@ -1052,22 +1511,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: ENCHANTED_HIT
+        shape: nova
+        count: 14
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_pierce_7:
     name: "Pierce 7"
+    icon-cmd: 78359
     category: ranged
     min-level:
       ranged: 56
@@ -1080,12 +1549,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_HIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 17
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 29
@@ -1093,22 +1570,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: ENCHANTED_HIT
+        shape: nova
+        count: 15
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_pierce_8:
     name: "Pierce 8"
+    icon-cmd: 78360
     category: ranged
     min-level:
       ranged: 62
@@ -1121,12 +1608,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_HIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 18
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 32
@@ -1134,22 +1629,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: ENCHANTED_HIT
+        shape: nova
+        count: 16
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_pierce_9:
     name: "Pierce 9"
+    icon-cmd: 78361
     category: ranged
     min-level:
       ranged: 68
@@ -1162,12 +1667,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_HIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 19
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 35
@@ -1175,22 +1688,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: ENCHANTED_HIT
+        shape: nova
+        count: 17
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_pierce_10:
     name: "Pierce 10"
+    icon-cmd: 78353
     category: ranged
     min-level:
       ranged: 75
@@ -1203,12 +1726,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ARROW_HIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: beam
+        count: 20
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 38
@@ -1216,22 +1747,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: ENCHANTED_HIT
+        shape: nova
+        count: 18
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_bind_1:
     name: "Bind 1"
+    icon-cmd: 78342
     category: ranged
     min-level:
       ranged: 21
@@ -1244,12 +1785,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_VEX_CHARGE
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: beam
+        count: 11
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 11
@@ -1257,22 +1806,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_bind_2:
     name: "Bind 2"
+    icon-cmd: 78344
     category: ranged
     min-level:
       ranged: 27
@@ -1285,12 +1844,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_VEX_CHARGE
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: beam
+        count: 12
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 14
@@ -1298,22 +1865,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_bind_3:
     name: "Bind 3"
+    icon-cmd: 78345
     category: ranged
     min-level:
       ranged: 34
@@ -1326,12 +1903,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_VEX_CHARGE
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: beam
+        count: 13
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 17
@@ -1339,22 +1924,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 11
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_bind_4:
     name: "Bind 4"
+    icon-cmd: 78346
     category: ranged
     min-level:
       ranged: 40
@@ -1367,12 +1962,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_VEX_CHARGE
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: beam
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 20
@@ -1380,22 +1983,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_bind_5:
     name: "Bind 5"
+    icon-cmd: 78347
     category: ranged
     min-level:
       ranged: 46
@@ -1408,12 +2021,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_VEX_CHARGE
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: beam
+        count: 15
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 23
@@ -1421,22 +2042,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 13
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_bind_6:
     name: "Bind 6"
+    icon-cmd: 78348
     category: ranged
     min-level:
       ranged: 53
@@ -1449,12 +2080,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_VEX_CHARGE
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: beam
+        count: 16
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 26
@@ -1462,22 +2101,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 14
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_bind_7:
     name: "Bind 7"
+    icon-cmd: 78349
     category: ranged
     min-level:
       ranged: 59
@@ -1490,12 +2139,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_VEX_CHARGE
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: beam
+        count: 17
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 29
@@ -1503,22 +2160,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 15
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_bind_8:
     name: "Bind 8"
+    icon-cmd: 78350
     category: ranged
     min-level:
       ranged: 65
@@ -1531,12 +2198,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_VEX_CHARGE
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: beam
+        count: 18
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 32
@@ -1544,22 +2219,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 16
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_bind_9:
     name: "Bind 9"
+    icon-cmd: 78351
     category: ranged
     min-level:
       ranged: 72
@@ -1572,12 +2257,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_VEX_CHARGE
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: beam
+        count: 19
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 35
@@ -1585,22 +2278,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 17
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_bind_10:
     name: "Bind 10"
+    icon-cmd: 78343
     category: ranged
     min-level:
       ranged: 78
@@ -1613,12 +2316,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_VEX_CHARGE
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: beam
+        count: 20
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 38
@@ -1626,22 +2337,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: WITCH
+        shape: nova
+        count: 18
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_barrage_1:
     name: "Barrage 1"
+    icon-cmd: 78332
     category: ranged
     min-level:
       ranged: 24
@@ -1654,12 +2375,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SMOKE
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_SKELETON_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SMOKE
+        shape: beam
+        count: 11
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 11
@@ -1667,22 +2396,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SMOKE
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_barrage_2:
     name: "Barrage 2"
+    icon-cmd: 78334
     category: ranged
     min-level:
       ranged: 31
@@ -1695,12 +2434,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SMOKE
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_SKELETON_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SMOKE
+        shape: beam
+        count: 12
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 14
@@ -1708,22 +2455,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SMOKE
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_barrage_3:
     name: "Barrage 3"
+    icon-cmd: 78335
     category: ranged
     min-level:
       ranged: 37
@@ -1736,12 +2493,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SMOKE
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_SKELETON_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SMOKE
+        shape: beam
+        count: 13
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 17
@@ -1749,22 +2514,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SMOKE
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 11
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_barrage_4:
     name: "Barrage 4"
+    icon-cmd: 78336
     category: ranged
     min-level:
       ranged: 43
@@ -1777,12 +2552,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SMOKE
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_SKELETON_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SMOKE
+        shape: beam
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 20
@@ -1790,22 +2573,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SMOKE
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_barrage_5:
     name: "Barrage 5"
+    icon-cmd: 78337
     category: ranged
     min-level:
       ranged: 50
@@ -1818,12 +2611,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SMOKE
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_SKELETON_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SMOKE
+        shape: beam
+        count: 15
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 23
@@ -1831,22 +2632,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SMOKE
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 13
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_barrage_6:
     name: "Barrage 6"
+    icon-cmd: 78338
     category: ranged
     min-level:
       ranged: 56
@@ -1859,12 +2670,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SMOKE
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_SKELETON_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SMOKE
+        shape: beam
+        count: 16
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 26
@@ -1872,22 +2691,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SMOKE
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 14
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_barrage_7:
     name: "Barrage 7"
+    icon-cmd: 78339
     category: ranged
     min-level:
       ranged: 62
@@ -1900,12 +2729,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SMOKE
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_SKELETON_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SMOKE
+        shape: beam
+        count: 17
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 29
@@ -1913,22 +2750,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SMOKE
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 15
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_barrage_8:
     name: "Barrage 8"
+    icon-cmd: 78340
     category: ranged
     min-level:
       ranged: 69
@@ -1941,12 +2788,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SMOKE
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_SKELETON_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SMOKE
+        shape: beam
+        count: 18
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 32
@@ -1954,22 +2809,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SMOKE
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 16
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_barrage_9:
     name: "Barrage 9"
+    icon-cmd: 78341
     category: ranged
     min-level:
       ranged: 75
@@ -1982,12 +2847,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SMOKE
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_SKELETON_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SMOKE
+        shape: beam
+        count: 19
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 35
@@ -1995,22 +2868,32 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SMOKE
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 17
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   ranged_barrage_10:
     name: "Barrage 10"
+    icon-cmd: 78333
     category: ranged
     min-level:
       ranged: 81
@@ -2023,12 +2906,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SMOKE
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_SKELETON_SHOOT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SMOKE
+        shape: beam
+        count: 20
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: ranged
         amount: 38
@@ -2036,17 +2927,26 @@ abilities:
     projectile:
       entity: ARROW
       speed: 2.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SMOKE
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: ranged
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 18
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28

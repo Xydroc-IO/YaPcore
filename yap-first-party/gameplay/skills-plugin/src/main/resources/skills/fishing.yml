@@ -1,7 +1,8 @@
 id: fishing
 display: Fishing
 enabled: true
-icon: FISHING_ROD
+icon: CLAY_BALL
+icon-cmd: 79010
 fish:
   CAUGHT:
     xp: 40

@@ -2,6 +2,7 @@
 abilities:
   melee_slash_1:
     name: "Slash 1"
+    icon-cmd: 78307
     category: melee
     min-level:
       attack: 11
@@ -13,12 +14,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SWEEP_ATTACK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_SWEEP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: burst
+        count: 11
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 11
@@ -26,22 +35,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SWEEP_ATTACK
         count: 3
-        interval: 2
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_slash_2:
     name: "Slash 2"
+    icon-cmd: 78309
     category: melee
     min-level:
       attack: 17
@@ -53,12 +72,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SWEEP_ATTACK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_SWEEP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: burst
+        count: 12
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 14
@@ -66,22 +93,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SWEEP_ATTACK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_slash_3:
     name: "Slash 3"
+    icon-cmd: 78310
     category: melee
     min-level:
       attack: 24
@@ -93,12 +130,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SWEEP_ATTACK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_SWEEP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: burst
+        count: 13
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 17
@@ -106,22 +151,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SWEEP_ATTACK
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 11
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_slash_4:
     name: "Slash 4"
+    icon-cmd: 78311
     category: melee
     min-level:
       attack: 30
@@ -133,12 +188,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SWEEP_ATTACK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_SWEEP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: burst
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 20
@@ -146,22 +209,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SWEEP_ATTACK
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_slash_5:
     name: "Slash 5"
+    icon-cmd: 78312
     category: melee
     min-level:
       attack: 36
@@ -173,12 +246,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SWEEP_ATTACK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_SWEEP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: burst
+        count: 15
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 23
@@ -186,22 +267,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SWEEP_ATTACK
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 13
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_slash_6:
     name: "Slash 6"
+    icon-cmd: 78313
     category: melee
     min-level:
       attack: 43
@@ -213,12 +304,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SWEEP_ATTACK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_SWEEP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: burst
+        count: 16
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 26
@@ -226,22 +325,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SWEEP_ATTACK
-        count: 3
-        interval: 2
+        count: 6
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 14
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_slash_7:
     name: "Slash 7"
+    icon-cmd: 78314
     category: melee
     min-level:
       attack: 49
@@ -253,12 +362,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SWEEP_ATTACK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_SWEEP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: burst
+        count: 17
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 29
@@ -266,22 +383,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SWEEP_ATTACK
-        count: 3
-        interval: 2
+        count: 6
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 15
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_slash_8:
     name: "Slash 8"
+    icon-cmd: 78315
     category: melee
     min-level:
       attack: 55
@@ -293,12 +420,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SWEEP_ATTACK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_SWEEP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: burst
+        count: 18
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 32
@@ -306,22 +441,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SWEEP_ATTACK
-        count: 3
-        interval: 2
+        count: 7
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 16
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_slash_9:
     name: "Slash 9"
+    icon-cmd: 78316
     category: melee
     min-level:
       attack: 62
@@ -333,12 +478,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SWEEP_ATTACK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_SWEEP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: burst
+        count: 19
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 35
@@ -346,22 +499,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SWEEP_ATTACK
-        count: 3
-        interval: 2
+        count: 7
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 17
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_slash_10:
     name: "Slash 10"
+    icon-cmd: 78308
     category: melee
     min-level:
       attack: 68
@@ -373,12 +536,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SWEEP_ATTACK
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_SWEEP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: burst
+        count: 20
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 38
@@ -386,22 +557,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: SWEEP_ATTACK
-        count: 3
-        interval: 2
+        count: 8
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 18
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_cleave_1:
     name: "Cleave 1"
+    icon-cmd: 78287
     category: melee
     min-level:
       attack: 14
@@ -413,12 +594,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_CRIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 11
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 11
@@ -426,22 +615,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
         count: 3
-        interval: 2
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_cleave_2:
     name: "Cleave 2"
+    icon-cmd: 78289
     category: melee
     min-level:
       attack: 21
@@ -453,12 +652,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_CRIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 12
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 14
@@ -466,22 +673,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_cleave_3:
     name: "Cleave 3"
+    icon-cmd: 78290
     category: melee
     min-level:
       attack: 27
@@ -493,12 +710,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_CRIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 13
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 17
@@ -506,22 +731,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 11
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_cleave_4:
     name: "Cleave 4"
+    icon-cmd: 78291
     category: melee
     min-level:
       attack: 33
@@ -533,12 +768,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_CRIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 20
@@ -546,22 +789,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_cleave_5:
     name: "Cleave 5"
+    icon-cmd: 78292
     category: melee
     min-level:
       attack: 40
@@ -573,12 +826,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_CRIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 15
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 23
@@ -586,22 +847,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 13
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_cleave_6:
     name: "Cleave 6"
+    icon-cmd: 78293
     category: melee
     min-level:
       attack: 46
@@ -613,12 +884,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_CRIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 16
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 26
@@ -626,22 +905,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 6
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 14
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_cleave_7:
     name: "Cleave 7"
+    icon-cmd: 78294
     category: melee
     min-level:
       attack: 52
@@ -653,12 +942,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_CRIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 17
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 29
@@ -666,22 +963,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 6
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 15
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_cleave_8:
     name: "Cleave 8"
+    icon-cmd: 78295
     category: melee
     min-level:
       attack: 59
@@ -693,12 +1000,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_CRIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 18
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 32
@@ -706,22 +1021,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 7
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 16
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_cleave_9:
     name: "Cleave 9"
+    icon-cmd: 78296
     category: melee
     min-level:
       attack: 65
@@ -733,12 +1058,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_CRIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 19
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 35
@@ -746,22 +1079,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 7
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 17
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_cleave_10:
     name: "Cleave 10"
+    icon-cmd: 78288
     category: melee
     min-level:
       attack: 71
@@ -773,12 +1116,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CRIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_CRIT
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 20
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 38
@@ -786,22 +1137,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CRIT
-        count: 3
-        interval: 2
+        count: 8
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 18
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_bash_1:
     name: "Bash 1"
+    icon-cmd: 78277
     category: melee
     min-level:
       attack: 18
@@ -813,12 +1174,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: EXPLOSION
-        count: 10
+      - type: animation
+        style: slam
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_IRON_GOLEM_ATTACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: EXPLOSION
+        shape: burst
+        count: 11
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 11
@@ -826,22 +1195,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: EXPLOSION
         count: 3
-        interval: 2
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_bash_2:
     name: "Bash 2"
+    icon-cmd: 78279
     category: melee
     min-level:
       attack: 24
@@ -853,12 +1232,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: EXPLOSION
-        count: 10
+      - type: animation
+        style: slam
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_IRON_GOLEM_ATTACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: EXPLOSION
+        shape: burst
+        count: 12
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 14
@@ -866,22 +1253,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: EXPLOSION
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_bash_3:
     name: "Bash 3"
+    icon-cmd: 78280
     category: melee
     min-level:
       attack: 30
@@ -893,12 +1290,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: EXPLOSION
-        count: 10
+      - type: animation
+        style: slam
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_IRON_GOLEM_ATTACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: EXPLOSION
+        shape: burst
+        count: 13
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 17
@@ -906,22 +1311,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: EXPLOSION
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 11
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_bash_4:
     name: "Bash 4"
+    icon-cmd: 78281
     category: melee
     min-level:
       attack: 37
@@ -933,12 +1348,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: EXPLOSION
-        count: 10
+      - type: animation
+        style: slam
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_IRON_GOLEM_ATTACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: EXPLOSION
+        shape: burst
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 20
@@ -946,22 +1369,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: EXPLOSION
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_bash_5:
     name: "Bash 5"
+    icon-cmd: 78282
     category: melee
     min-level:
       attack: 43
@@ -973,12 +1406,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: EXPLOSION
-        count: 10
+      - type: animation
+        style: slam
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_IRON_GOLEM_ATTACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: EXPLOSION
+        shape: burst
+        count: 15
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 23
@@ -986,22 +1427,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: EXPLOSION
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 13
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_bash_6:
     name: "Bash 6"
+    icon-cmd: 78283
     category: melee
     min-level:
       attack: 49
@@ -1013,12 +1464,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: EXPLOSION
-        count: 10
+      - type: animation
+        style: slam
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_IRON_GOLEM_ATTACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: EXPLOSION
+        shape: burst
+        count: 16
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 26
@@ -1026,22 +1485,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: EXPLOSION
-        count: 3
-        interval: 2
+        count: 6
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 14
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_bash_7:
     name: "Bash 7"
+    icon-cmd: 78284
     category: melee
     min-level:
       attack: 56
@@ -1053,12 +1522,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: EXPLOSION
-        count: 10
+      - type: animation
+        style: slam
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_IRON_GOLEM_ATTACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: EXPLOSION
+        shape: burst
+        count: 17
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 29
@@ -1066,22 +1543,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: EXPLOSION
-        count: 3
-        interval: 2
+        count: 6
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 15
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_bash_8:
     name: "Bash 8"
+    icon-cmd: 78285
     category: melee
     min-level:
       attack: 62
@@ -1093,12 +1580,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: EXPLOSION
-        count: 10
+      - type: animation
+        style: slam
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_IRON_GOLEM_ATTACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: EXPLOSION
+        shape: burst
+        count: 18
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 32
@@ -1106,22 +1601,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: EXPLOSION
-        count: 3
-        interval: 2
+        count: 7
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 16
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_bash_9:
     name: "Bash 9"
+    icon-cmd: 78286
     category: melee
     min-level:
       attack: 68
@@ -1133,12 +1638,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: EXPLOSION
-        count: 10
+      - type: animation
+        style: slam
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_IRON_GOLEM_ATTACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: EXPLOSION
+        shape: burst
+        count: 19
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 35
@@ -1146,22 +1659,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: EXPLOSION
-        count: 3
-        interval: 2
+        count: 7
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 17
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_bash_10:
     name: "Bash 10"
+    icon-cmd: 78278
     category: melee
     min-level:
       attack: 75
@@ -1173,12 +1696,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: EXPLOSION
-        count: 10
+      - type: animation
+        style: slam
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_IRON_GOLEM_ATTACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: EXPLOSION
+        shape: burst
+        count: 20
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 38
@@ -1186,22 +1717,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: EXPLOSION
-        count: 3
-        interval: 2
+        count: 8
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 18
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_riposte_1:
     name: "Riposte 1"
+    icon-cmd: 78297
     category: melee
     min-level:
       attack: 21
@@ -1213,12 +1754,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANTED_HIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 11
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 11
@@ -1226,22 +1775,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANTED_HIT
         count: 3
-        interval: 2
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_riposte_2:
     name: "Riposte 2"
+    icon-cmd: 78299
     category: melee
     min-level:
       attack: 27
@@ -1253,12 +1812,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANTED_HIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 12
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 14
@@ -1266,22 +1833,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANTED_HIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_riposte_3:
     name: "Riposte 3"
+    icon-cmd: 78300
     category: melee
     min-level:
       attack: 34
@@ -1293,12 +1870,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANTED_HIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 13
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 17
@@ -1306,22 +1891,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANTED_HIT
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 11
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_riposte_4:
     name: "Riposte 4"
+    icon-cmd: 78301
     category: melee
     min-level:
       attack: 40
@@ -1333,12 +1928,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANTED_HIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 20
@@ -1346,22 +1949,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANTED_HIT
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_riposte_5:
     name: "Riposte 5"
+    icon-cmd: 78302
     category: melee
     min-level:
       attack: 46
@@ -1373,12 +1986,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANTED_HIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 15
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 23
@@ -1386,22 +2007,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANTED_HIT
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 13
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_riposte_6:
     name: "Riposte 6"
+    icon-cmd: 78303
     category: melee
     min-level:
       attack: 53
@@ -1413,12 +2044,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANTED_HIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 16
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 26
@@ -1426,22 +2065,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANTED_HIT
-        count: 3
-        interval: 2
+        count: 6
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 14
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_riposte_7:
     name: "Riposte 7"
+    icon-cmd: 78304
     category: melee
     min-level:
       attack: 59
@@ -1453,12 +2102,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANTED_HIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 17
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 29
@@ -1466,22 +2123,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANTED_HIT
-        count: 3
-        interval: 2
+        count: 6
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 15
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_riposte_8:
     name: "Riposte 8"
+    icon-cmd: 78305
     category: melee
     min-level:
       attack: 65
@@ -1493,12 +2160,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANTED_HIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 18
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 32
@@ -1506,22 +2181,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANTED_HIT
-        count: 3
-        interval: 2
+        count: 7
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 16
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_riposte_9:
     name: "Riposte 9"
+    icon-cmd: 78306
     category: melee
     min-level:
       attack: 72
@@ -1533,12 +2218,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANTED_HIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 19
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 35
@@ -1546,22 +2239,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANTED_HIT
-        count: 3
-        interval: 2
+        count: 7
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 17
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_riposte_10:
     name: "Riposte 10"
+    icon-cmd: 78298
     category: melee
     min-level:
       attack: 78
@@ -1573,12 +2276,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: ENCHANTED_HIT
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 20
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 38
@@ -1586,22 +2297,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: ENCHANTED_HIT
-        count: 3
-        interval: 2
+        count: 8
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: CRIT
+        shape: nova
+        count: 18
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_KNOCKBACK
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_whirlwind_1:
     name: "Whirlwind 1"
+    icon-cmd: 78317
     category: melee
     min-level:
       attack: 24
@@ -1613,12 +2334,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CLOUD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ENDER_DRAGON_FLAP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CLOUD
+        shape: burst
+        count: 11
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 11
@@ -1626,22 +2355,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CLOUD
         count: 3
-        interval: 2
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_FLAP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_whirlwind_2:
     name: "Whirlwind 2"
+    icon-cmd: 78319
     category: melee
     min-level:
       attack: 31
@@ -1653,12 +2392,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CLOUD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ENDER_DRAGON_FLAP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CLOUD
+        shape: burst
+        count: 12
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 14
@@ -1666,22 +2413,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CLOUD
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 10
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_FLAP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_whirlwind_3:
     name: "Whirlwind 3"
+    icon-cmd: 78320
     category: melee
     min-level:
       attack: 37
@@ -1693,12 +2450,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CLOUD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ENDER_DRAGON_FLAP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CLOUD
+        shape: burst
+        count: 13
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 17
@@ -1706,22 +2471,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CLOUD
-        count: 3
-        interval: 2
+        count: 4
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 11
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_FLAP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_whirlwind_4:
     name: "Whirlwind 4"
+    icon-cmd: 78321
     category: melee
     min-level:
       attack: 43
@@ -1733,12 +2508,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CLOUD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ENDER_DRAGON_FLAP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CLOUD
+        shape: burst
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 20
@@ -1746,22 +2529,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CLOUD
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_FLAP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_whirlwind_5:
     name: "Whirlwind 5"
+    icon-cmd: 78322
     category: melee
     min-level:
       attack: 50
@@ -1773,12 +2566,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CLOUD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ENDER_DRAGON_FLAP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CLOUD
+        shape: burst
+        count: 15
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 23
@@ -1786,22 +2587,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CLOUD
-        count: 3
-        interval: 2
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 13
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_FLAP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_whirlwind_6:
     name: "Whirlwind 6"
+    icon-cmd: 78323
     category: melee
     min-level:
       attack: 56
@@ -1813,12 +2624,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CLOUD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ENDER_DRAGON_FLAP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CLOUD
+        shape: burst
+        count: 16
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 26
@@ -1826,22 +2645,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CLOUD
-        count: 3
-        interval: 2
+        count: 6
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 14
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_FLAP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_whirlwind_7:
     name: "Whirlwind 7"
+    icon-cmd: 78324
     category: melee
     min-level:
       attack: 62
@@ -1853,12 +2682,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CLOUD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ENDER_DRAGON_FLAP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CLOUD
+        shape: burst
+        count: 17
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 29
@@ -1866,22 +2703,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CLOUD
-        count: 3
-        interval: 2
+        count: 6
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 15
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_FLAP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_whirlwind_8:
     name: "Whirlwind 8"
+    icon-cmd: 78325
     category: melee
     min-level:
       attack: 69
@@ -1893,12 +2740,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CLOUD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ENDER_DRAGON_FLAP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CLOUD
+        shape: burst
+        count: 18
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 32
@@ -1906,22 +2761,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CLOUD
-        count: 3
-        interval: 2
+        count: 7
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 16
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_FLAP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_whirlwind_9:
     name: "Whirlwind 9"
+    icon-cmd: 78326
     category: melee
     min-level:
       attack: 75
@@ -1933,12 +2798,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CLOUD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ENDER_DRAGON_FLAP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CLOUD
+        shape: burst
+        count: 19
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 35
@@ -1946,22 +2819,32 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CLOUD
-        count: 3
-        interval: 2
+        count: 7
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 21
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 17
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_FLAP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
   melee_whirlwind_10:
     name: "Whirlwind 10"
+    icon-cmd: 78318
     category: melee
     min-level:
       attack: 81
@@ -1973,12 +2856,20 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: CLOUD
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_ENDER_DRAGON_FLAP
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: CLOUD
+        shape: burst
+        count: 20
+        offset-y: 0.2
+        radius: 1.1
       - type: xp
         skill: attack
         amount: 38
@@ -1986,17 +2877,26 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
         particle: CLOUD
-        count: 3
-        interval: 2
+        count: 8
+        interval: 1
     on-hit:
       - type: damage
         style: melee
         max-hit: 23
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SWEEP_ATTACK
+        shape: nova
+        count: 18
+        radius: 1.25
+        offset-y: 0.3
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_FLAP
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28

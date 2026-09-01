@@ -1,6 +1,7 @@
 id: defence
 display: Defence
 enabled: true
-icon: IRON_CHESTPLATE
+icon: CLAY_BALL
+icon-cmd: 79003
 combat-taken:
   xp-per-damage: 2.0

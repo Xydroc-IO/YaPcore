@@ -1,7 +1,8 @@
 id: smithing
 display: Smithing
 enabled: true
-icon: IRON_INGOT
+icon: CLAY_BALL
+icon-cmd: 79012
 smelt:
   IRON_INGOT:
     xp: 25

@@ -1,6 +1,7 @@
 id: prayer
 display: Prayer
 enabled: true
-icon: GLOWSTONE_DUST
+icon: CLAY_BALL
+icon-cmd: 79006
 prayer-drain:
   xp-per-point: 0.5

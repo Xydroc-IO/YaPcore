@@ -1,7 +1,8 @@
 id: magic
 display: Magic
 enabled: true
-icon: BOOK
+icon: CLAY_BALL
+icon-cmd: 79007
 magic-dealt:
   xp-per-damage: 2.0
   share: 1.0

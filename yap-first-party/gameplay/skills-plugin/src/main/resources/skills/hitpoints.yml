@@ -1,6 +1,7 @@
 id: hitpoints
 display: Hitpoints
 enabled: true
-icon: RED_DYE
+icon: CLAY_BALL
+icon-cmd: 79004
 combat-hitpoints:
   ratio-of-combat-xp: 0.333333

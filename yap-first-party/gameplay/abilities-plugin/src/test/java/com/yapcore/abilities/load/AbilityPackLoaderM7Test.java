@@ -45,5 +45,33 @@ class AbilityPackLoaderM7Test {
         assertTrue(def.hasProjectile());
         assertTrue(def.projectile().isHoming());
         assertTrue(def.projectile().hasSplash());
+        assertTrue(def.projectile().hideEntity());
+        assertEquals(0.85f, def.projectile().displayScale(), 0.001f);
+    }
+
+    @Test
+    void loadsHideAndScaleOverrides(@TempDir Path dir) throws Exception {
+        Files.writeString(dir.resolve("display.yml"), """
+                abilities:
+                  fancy_bolt:
+                    name: Fancy Bolt
+                    category: magic
+                    target: raycast
+                    projectile:
+                      entity: SNOWBALL
+                      hide: false
+                      scale: 1.4
+                      trail:
+                        particle: FLAME
+                        count: 5
+                """);
+
+        AbilityPackLoader loader = new AbilityPackLoader();
+        loader.loadDirectory(dir);
+        var def = loader.get("fancy_bolt");
+        assertNotNull(def);
+        assertTrue(def.hasProjectile());
+        assertTrue(!def.projectile().hideEntity());
+        assertEquals(1.4f, def.projectile().displayScale(), 0.001f);
     }
 }

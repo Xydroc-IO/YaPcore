@@ -72,6 +72,7 @@ public final class SkillsMenu {
             double xpToNext = table.xpBetweenLevels(progress.level());
             inv.setItem(SKILL_SLOTS[slotIndex], SkillsMenuHolder.skillIcon(
                     def.icon(),
+                    def.iconCmd(),
                     def.display(),
                     progress.level(),
                     progress.xp(),

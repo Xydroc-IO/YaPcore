@@ -1,4 +1,5 @@
+icon-cmd: 79013
 id: crafting
 display: Crafting
 enabled: true
-icon: CRAFTING_TABLE
+icon: CLAY_BALL

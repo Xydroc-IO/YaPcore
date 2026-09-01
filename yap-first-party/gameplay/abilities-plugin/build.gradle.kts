@@ -23,6 +23,7 @@ dependencies {
     implementation(project(":yap-sched"))
     implementation(project(":yap-abilities-api"))
     compileOnly(project(":yap-mmo-api"))
+    compileOnly(project(":yap-bedrock-ui-api"))
 
     testImplementation("io.papermc.paper:paper-api:$paperApi")
     testImplementation(project(":yap-abilities-api"))

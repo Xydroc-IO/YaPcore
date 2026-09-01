@@ -2,6 +2,7 @@
 abilities:
   curse_01:
     name: "Curse 1"
+    icon-cmd: 78235
     category: magic
     min-level:
       magic: 21
@@ -14,12 +15,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 16
@@ -27,25 +45,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 5
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_02:
     name: "Curse 2"
+    icon-cmd: 78236
     category: magic
     min-level:
       magic: 22
@@ -58,12 +87,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 17
@@ -71,25 +117,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 6
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_03:
     name: "Curse 3"
+    icon-cmd: 78237
     category: magic
     min-level:
       magic: 23
@@ -102,12 +159,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 18
@@ -115,25 +189,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 6
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_04:
     name: "Curse 4"
+    icon-cmd: 78238
     category: magic
     min-level:
       magic: 24
@@ -146,12 +231,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 19
@@ -159,25 +261,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_05:
     name: "Curse 5"
+    icon-cmd: 78239
     category: magic
     min-level:
       magic: 25
@@ -190,12 +303,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 20
@@ -203,25 +333,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 7
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_06:
     name: "Curse 6"
+    icon-cmd: 78240
     category: magic
     min-level:
       magic: 26
@@ -234,12 +375,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 21
@@ -247,25 +405,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 8
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_07:
     name: "Curse 7"
+    icon-cmd: 78241
     category: magic
     min-level:
       magic: 27
@@ -278,12 +447,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 22
@@ -291,25 +477,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 8
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_08:
     name: "Curse 8"
+    icon-cmd: 78242
     category: magic
     min-level:
       magic: 28
@@ -322,12 +519,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 23
@@ -335,25 +549,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_09:
     name: "Curse 9"
+    icon-cmd: 78243
     category: magic
     min-level:
       magic: 29
@@ -366,12 +591,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 24
@@ -379,25 +621,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 9
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_10:
     name: "Curse 10"
+    icon-cmd: 78244
     category: magic
     min-level:
       magic: 30
@@ -410,12 +663,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 25
@@ -423,25 +693,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 10
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_11:
     name: "Curse 11"
+    icon-cmd: 78245
     category: magic
     min-level:
       magic: 31
@@ -454,12 +735,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 26
@@ -467,25 +765,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 10
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_12:
     name: "Curse 12"
+    icon-cmd: 78246
     category: magic
     min-level:
       magic: 32
@@ -498,12 +807,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 27
@@ -511,25 +837,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_13:
     name: "Curse 13"
+    icon-cmd: 78247
     category: magic
     min-level:
       magic: 33
@@ -542,12 +879,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 28
@@ -555,25 +909,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 11
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_14:
     name: "Curse 14"
+    icon-cmd: 78248
     category: magic
     min-level:
       magic: 34
@@ -586,12 +951,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 29
@@ -599,25 +981,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 12
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_15:
     name: "Curse 15"
+    icon-cmd: 78249
     category: magic
     min-level:
       magic: 35
@@ -630,12 +1023,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 30
@@ -643,25 +1053,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 12
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_16:
     name: "Curse 16"
+    icon-cmd: 78250
     category: magic
     min-level:
       magic: 36
@@ -674,12 +1095,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 31
@@ -687,25 +1125,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_17:
     name: "Curse 17"
+    icon-cmd: 78251
     category: magic
     min-level:
       magic: 37
@@ -718,12 +1167,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 32
@@ -731,25 +1197,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 13
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_18:
     name: "Curse 18"
+    icon-cmd: 78252
     category: magic
     min-level:
       magic: 38
@@ -762,12 +1239,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 33
@@ -775,25 +1269,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 14
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_19:
     name: "Curse 19"
+    icon-cmd: 78253
     category: magic
     min-level:
       magic: 39
@@ -806,12 +1311,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 34
@@ -819,25 +1341,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 14
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_20:
     name: "Curse 20"
+    icon-cmd: 78254
     category: magic
     min-level:
       magic: 40
@@ -850,12 +1383,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 35
@@ -863,25 +1413,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_21:
     name: "Curse 21"
+    icon-cmd: 78255
     category: magic
     min-level:
       magic: 41
@@ -894,12 +1455,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 36
@@ -907,25 +1485,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 15
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_22:
     name: "Curse 22"
+    icon-cmd: 78256
     category: magic
     min-level:
       magic: 42
@@ -938,12 +1527,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 37
@@ -951,25 +1557,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 16
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_23:
     name: "Curse 23"
+    icon-cmd: 78257
     category: magic
     min-level:
       magic: 43
@@ -982,12 +1599,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 38
@@ -995,25 +1629,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 16
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_24:
     name: "Curse 24"
+    icon-cmd: 78258
     category: magic
     min-level:
       magic: 44
@@ -1026,12 +1671,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 39
@@ -1039,25 +1701,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_25:
     name: "Curse 25"
+    icon-cmd: 78259
     category: magic
     min-level:
       magic: 45
@@ -1070,12 +1743,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 40
@@ -1083,25 +1773,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 17
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_26:
     name: "Curse 26"
+    icon-cmd: 78260
     category: magic
     min-level:
       magic: 46
@@ -1114,12 +1815,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 41
@@ -1127,25 +1845,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 18
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_27:
     name: "Curse 27"
+    icon-cmd: 78261
     category: magic
     min-level:
       magic: 47
@@ -1158,12 +1887,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 42
@@ -1171,25 +1917,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 18
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_28:
     name: "Curse 28"
+    icon-cmd: 78262
     category: magic
     min-level:
       magic: 48
@@ -1202,12 +1959,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 43
@@ -1215,25 +1989,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1
   curse_29:
     name: "Curse 29"
+    icon-cmd: 78263
     category: magic
     min-level:
       magic: 49
@@ -1246,12 +2031,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 44
@@ -1259,25 +2061,36 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 19
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: slow
         stacks: 1
   curse_30:
     name: "Curse 30"
+    icon-cmd: 78264
     category: magic
     min-level:
       magic: 50
@@ -1290,12 +2103,29 @@ abilities:
     range: 20
     target: raycast
     cast:
-      - type: vfx
-        particle: SPELL_WITCH
-        count: 10
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
       - type: sound
         sound: ENTITY_EVOKER_CAST_SPELL
-        volume: 0.9
+        volume: 1.0
+        pitch: 1.05
+      - type: vfx
+        particle: WITCH
+        shape: helix
+        count: 14
+        offset-y: 0.2
+        radius: 1.1
+        color: 120,40,160
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 120,40,160
+        size: 1.15
+        radius: 0.85
+        offset-y: 0.15
       - type: xp
         skill: magic
         amount: 45
@@ -1303,20 +2133,30 @@ abilities:
     projectile:
       entity: EGG
       speed: 1.0
-      max-ticks: 45
+      max-ticks: 50
+      hide: true
+      scale: 0.95
       trail:
-        particle: SPELL_WITCH
-        count: 3
-        interval: 2
+        particle: WITCH
+        count: 5
+        interval: 1
     on-hit:
       - type: damage
         style: magic
         max-hit: 20
       - type: vfx
-        particle: EXPLOSION
-        count: 6
+        particle: SMOKE
+        shape: nova
+        count: 12
+        radius: 1.25
+        offset-y: 0.3
+        color: 120,40,160
+      - type: sound
+        sound: ENTITY_WITHER_AMBIENT
+        volume: 0.85
+        pitch: 1.15
       - type: knockback
-        power: 0.25
+        power: 0.28
       - type: debuff
         id: poison
         stacks: 1

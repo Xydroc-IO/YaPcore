@@ -31,9 +31,11 @@ fi
 
 DESC="YaPcore default — Faithful 64x (CORE)"
 if [ "$want_vehicles" -eq 1 ]; then
-  if [ -d "$ABIL_DIR" ]; then
-    python3 "$ROOT/scripts/generate-ability-icons.py" 2>/dev/null || true
-    (cd "$ABIL_DIR" && zip -qr "$ABIL_ZIP" .)
+  if [ -d "$ABIL_DIR" ] || [ -f "$ROOT/scripts/generate-mmo-icons.py" ]; then
+    python3 "$ROOT/scripts/generate-mmo-icons.py" 2>/dev/null || python3 "$ROOT/scripts/generate-ability-icons.py" 2>/dev/null || true
+    if [ -d "$ABIL_DIR" ]; then
+      (cd "$ABIL_DIR" && zip -qr "$ABIL_ZIP" .)
+    fi
   fi
   if [ -f "$ABIL_ZIP" ]; then
     unzip -q -o "$ABIL_ZIP" -d "$STAGE"
@@ -46,7 +48,7 @@ if [ "$want_vehicles" -eq 1 ]; then
     exit 1
   fi
   unzip -q -o "$VEH_ZIP" -d "$STAGE"
-  DESC="YaPcore default — Faithful 64x + YaP Vehicles + Abilities (GAMEPLAY)"
+  DESC="YaPcore default — Faithful 64x + YaP Vehicles + MMO icons (GAMEPLAY)"
 fi
 
 python3 - <<PY "$STAGE" "$DESC" "$want_vehicles"
@@ -69,17 +71,30 @@ if want_vehicles:
             data["parent"] = "item/generated"
         paper.write_text(json.dumps(data, indent=2) + "\n")
 
-    rod = stage / "assets/minecraft/models/item/blaze_rod.json"
-    if rod.exists():
-        data = json.loads(rod.read_text())
+    clay = stage / "assets/minecraft/models/item/clay_ball.json"
+    if clay.exists():
+        data = json.loads(clay.read_text())
         overs = data.get("overrides") or []
         overs.sort(key=lambda o: o.get("predicate", {}).get("custom_model_data", 0))
         data["overrides"] = overs
         if "textures" not in data:
-            data["textures"] = {"layer0": "item/blaze_rod"}
+            data["textures"] = {"layer0": "item/clay_ball"}
         if "parent" not in data:
-            data["parent"] = "item/handheld"
-        rod.write_text(json.dumps(data, indent=2) + "\n")
+            data["parent"] = "item/generated"
+        clay.write_text(json.dumps(data, indent=2) + "\n")
+
+    # Strip legacy ability overrides from blaze_rod so staffs stay vanilla
+    rod = stage / "assets/minecraft/models/item/blaze_rod.json"
+    if rod.exists():
+        data = json.loads(rod.read_text())
+        overs = [o for o in (data.get("overrides") or [])
+                 if not str(o.get("model", "")).startswith("yapabilities:")]
+        if overs:
+            data["overrides"] = sorted(
+                overs, key=lambda o: o.get("predicate", {}).get("custom_model_data", 0))
+            rod.write_text(json.dumps(data, indent=2) + "\n")
+        else:
+            rod.unlink(missing_ok=True)
 
 meta = stage / "pack.mcmeta"
 meta.write_text(json.dumps({

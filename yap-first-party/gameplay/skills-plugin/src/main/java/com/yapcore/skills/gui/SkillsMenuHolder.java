@@ -41,8 +41,9 @@ public final class SkillsMenuHolder implements InventoryHolder {
     }
 
     public static ItemStack combatLevelIcon(int combatLevel, int maxLevel) {
-        ItemStack stack = new ItemStack(Material.NETHER_STAR);
+        ItemStack stack = new ItemStack(Material.CLAY_BALL);
         stack.editMeta(meta -> {
+            meta.setCustomModelData(79000);
             meta.displayName(Component.text("Combat Level")
                     .color(NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
             List<Component> lore = new ArrayList<>();
@@ -59,14 +60,18 @@ public final class SkillsMenuHolder implements InventoryHolder {
 
     public static ItemStack skillIcon(
             Material icon,
+            int iconCmd,
             String name,
             int level,
             double xp,
             double xpIntoLevel,
             double xpToNext,
             int maxLevel) {
-        ItemStack stack = new ItemStack(icon);
+        ItemStack stack = new ItemStack(icon == null ? Material.CLAY_BALL : icon);
         stack.editMeta(meta -> {
+            if (iconCmd > 0) {
+                meta.setCustomModelData(iconCmd);
+            }
             meta.displayName(Component.text(name).color(NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
             List<Component> lore = new ArrayList<>();
             lore.add(Component.text("Level " + level + " / " + maxLevel)

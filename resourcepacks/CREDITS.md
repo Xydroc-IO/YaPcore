@@ -20,3 +20,6 @@ Built by `scripts/build-default-resourcepack.sh` on every product build:
 
 YaPcore redistributes this pack as a **server resource pack** under the terms of
 the Faithful License (credit + license link required; no paywall).
+
+YaP-authored overlays in this tree (vehicles, abilities, etc.) follow YaPcore’s
+**[GPLv3](../LICENSE)** — [docs/start/LICENSING.md](../docs/start/LICENSING.md).

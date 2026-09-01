@@ -2,6 +2,7 @@
 abilities:
   thick_skin:
     name: "Thick Skin"
+    icon-cmd: 78387
     category: prayer
     min-level:
       prayer: 5
@@ -10,11 +11,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: thick_skin
         stacks: 1
@@ -24,6 +39,7 @@ abilities:
         on-cast: true
   burst_of_strength:
     name: "Burst Of Strength"
+    icon-cmd: 78231
     category: prayer
     min-level:
       prayer: 8
@@ -32,11 +48,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: burst_of_strength
         stacks: 1
@@ -46,6 +76,7 @@ abilities:
         on-cast: true
   clarity:
     name: "Clarity"
+    icon-cmd: 78233
     category: prayer
     min-level:
       prayer: 8
@@ -54,11 +85,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: clarity
         stacks: 1
@@ -68,6 +113,7 @@ abilities:
         on-cast: true
   sharp_eye:
     name: "Sharp Eye"
+    icon-cmd: 78385
     category: prayer
     min-level:
       prayer: 8
@@ -76,11 +122,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: sharp_eye
         stacks: 1
@@ -90,6 +150,7 @@ abilities:
         on-cast: true
   mystic_might:
     name: "Mystic Might"
+    icon-cmd: 78327
     category: prayer
     min-level:
       prayer: 8
@@ -98,11 +159,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: mystic_might
         stacks: 1
@@ -112,6 +187,7 @@ abilities:
         on-cast: true
   protect_melee:
     name: "Protect Melee"
+    icon-cmd: 78330
     category: prayer
     min-level:
       prayer: 12
@@ -120,11 +196,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: protect_melee
         stacks: 1
@@ -134,6 +224,7 @@ abilities:
         on-cast: true
   protect_missiles:
     name: "Protect Missiles"
+    icon-cmd: 78331
     category: prayer
     min-level:
       prayer: 12
@@ -142,11 +233,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: protect_missiles
         stacks: 1
@@ -156,6 +261,7 @@ abilities:
         on-cast: true
   protect_magic:
     name: "Protect Magic"
+    icon-cmd: 78329
     category: prayer
     min-level:
       prayer: 12
@@ -164,11 +270,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: protect_magic
         stacks: 1
@@ -178,6 +298,7 @@ abilities:
         on-cast: true
   retribution:
     name: "Retribution"
+    icon-cmd: 78383
     category: prayer
     min-level:
       prayer: 15
@@ -186,11 +307,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: retribution
         stacks: 1
@@ -200,6 +335,7 @@ abilities:
         on-cast: true
   redemption:
     name: "Redemption"
+    icon-cmd: 78382
     category: prayer
     min-level:
       prayer: 20
@@ -208,11 +344,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: redemption
         stacks: 1
@@ -222,6 +372,7 @@ abilities:
         on-cast: true
   smite:
     name: "Smite"
+    icon-cmd: 78386
     category: prayer
     min-level:
       prayer: 25
@@ -230,11 +381,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: smite
         stacks: 1
@@ -244,6 +409,7 @@ abilities:
         on-cast: true
   chivalry:
     name: "Chivalry"
+    icon-cmd: 78232
     category: prayer
     min-level:
       prayer: 30
@@ -252,11 +418,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: chivalry
         stacks: 1
@@ -266,6 +446,7 @@ abilities:
         on-cast: true
   piety:
     name: "Piety"
+    icon-cmd: 78328
     category: prayer
     min-level:
       prayer: 35
@@ -274,11 +455,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: piety
         stacks: 1
@@ -288,6 +483,7 @@ abilities:
         on-cast: true
   rigour:
     name: "Rigour"
+    icon-cmd: 78384
     category: prayer
     min-level:
       prayer: 40
@@ -296,11 +492,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: rigour
         stacks: 1
@@ -310,6 +520,7 @@ abilities:
         on-cast: true
   augury:
     name: "Augury"
+    icon-cmd: 78230
     category: prayer
     min-level:
       prayer: 45
@@ -318,11 +529,25 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: both
+        pose: glow
       - type: vfx
         particle: ENCHANT
-        count: 20
+        shape: helix
+        count: 28
+        radius: 1.0
+        ticks: 12
+        interval: 2
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 255,230,120
+        size: 1.2
       - type: sound
         sound: BLOCK_ENCHANTMENT_TABLE_USE
+        volume: 1.0
       - type: buff
         id: augury
         stacks: 1

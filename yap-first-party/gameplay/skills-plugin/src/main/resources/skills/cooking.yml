@@ -1,7 +1,8 @@
 id: cooking
 display: Cooking
 enabled: true
-icon: COOKED_BEEF
+icon: CLAY_BALL
+icon-cmd: 79011
 smelt:
   COOKED_BEEF:
     xp: 30

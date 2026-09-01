@@ -175,7 +175,9 @@ public final class AbilityPackLoader {
                 section.getBoolean("homing", false),
                 section.getDouble("turn-rate", 0.15),
                 section.getDouble("splash-radius", section.getDouble("splash", 0)),
-                section.getInt("icon-cmd", 0));
+                section.getInt("icon-cmd", 0),
+                section.getBoolean("hide", section.getBoolean("hide-entity", true)),
+                (float) section.getDouble("scale", section.getDouble("display-scale", 0.85)));
     }
 
     private static Material parseMaterial(String raw) {

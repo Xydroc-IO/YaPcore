@@ -2,6 +2,7 @@
 abilities:
   utility_phase_1:
     name: "Phase Step 1"
+    icon-cmd: 78388
     category: utility
     min-level:
       magic: 13
@@ -10,17 +11,32 @@ abilities:
     cooldown: 21
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 4
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 11
         on-cast: true
   utility_phase_2:
     name: "Phase Step 2"
+    icon-cmd: 78399
     category: utility
     min-level:
       magic: 16
@@ -29,17 +45,32 @@ abilities:
     cooldown: 22
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 5
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 12
         on-cast: true
   utility_phase_3:
     name: "Phase Step 3"
+    icon-cmd: 78405
     category: utility
     min-level:
       magic: 19
@@ -48,17 +79,32 @@ abilities:
     cooldown: 23
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 5
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 13
         on-cast: true
   utility_phase_4:
     name: "Phase Step 4"
+    icon-cmd: 78406
     category: utility
     min-level:
       magic: 22
@@ -67,17 +113,32 @@ abilities:
     cooldown: 24
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 6
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 14
         on-cast: true
   utility_phase_5:
     name: "Phase Step 5"
+    icon-cmd: 78407
     category: utility
     min-level:
       magic: 25
@@ -86,17 +147,32 @@ abilities:
     cooldown: 25
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 6
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 15
         on-cast: true
   utility_phase_6:
     name: "Phase Step 6"
+    icon-cmd: 78408
     category: utility
     min-level:
       magic: 28
@@ -105,17 +181,32 @@ abilities:
     cooldown: 26
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 7
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 16
         on-cast: true
   utility_phase_7:
     name: "Phase Step 7"
+    icon-cmd: 78409
     category: utility
     min-level:
       magic: 31
@@ -124,17 +215,32 @@ abilities:
     cooldown: 27
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 7
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 17
         on-cast: true
   utility_phase_8:
     name: "Phase Step 8"
+    icon-cmd: 78410
     category: utility
     min-level:
       magic: 34
@@ -143,17 +249,32 @@ abilities:
     cooldown: 28
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 8
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 18
         on-cast: true
   utility_phase_9:
     name: "Phase Step 9"
+    icon-cmd: 78411
     category: utility
     min-level:
       magic: 37
@@ -162,17 +283,32 @@ abilities:
     cooldown: 29
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 8
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 19
         on-cast: true
   utility_phase_10:
     name: "Phase Step 10"
+    icon-cmd: 78389
     category: utility
     min-level:
       magic: 40
@@ -181,17 +317,32 @@ abilities:
     cooldown: 30
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 9
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 20
         on-cast: true
   utility_phase_11:
     name: "Phase Step 11"
+    icon-cmd: 78390
     category: utility
     min-level:
       magic: 43
@@ -200,17 +351,32 @@ abilities:
     cooldown: 31
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 9
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 21
         on-cast: true
   utility_phase_12:
     name: "Phase Step 12"
+    icon-cmd: 78391
     category: utility
     min-level:
       magic: 46
@@ -219,17 +385,32 @@ abilities:
     cooldown: 32
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 10
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 22
         on-cast: true
   utility_phase_13:
     name: "Phase Step 13"
+    icon-cmd: 78392
     category: utility
     min-level:
       magic: 49
@@ -238,17 +419,32 @@ abilities:
     cooldown: 33
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 10
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 23
         on-cast: true
   utility_phase_14:
     name: "Phase Step 14"
+    icon-cmd: 78393
     category: utility
     min-level:
       magic: 52
@@ -257,17 +453,32 @@ abilities:
     cooldown: 34
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 11
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 24
         on-cast: true
   utility_phase_15:
     name: "Phase Step 15"
+    icon-cmd: 78394
     category: utility
     min-level:
       magic: 55
@@ -276,17 +487,32 @@ abilities:
     cooldown: 35
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 11
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 25
         on-cast: true
   utility_phase_16:
     name: "Phase Step 16"
+    icon-cmd: 78395
     category: utility
     min-level:
       magic: 58
@@ -295,17 +521,32 @@ abilities:
     cooldown: 36
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 12
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 26
         on-cast: true
   utility_phase_17:
     name: "Phase Step 17"
+    icon-cmd: 78396
     category: utility
     min-level:
       magic: 61
@@ -314,17 +555,32 @@ abilities:
     cooldown: 37
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 12
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 27
         on-cast: true
   utility_phase_18:
     name: "Phase Step 18"
+    icon-cmd: 78397
     category: utility
     min-level:
       magic: 64
@@ -333,17 +589,32 @@ abilities:
     cooldown: 38
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 13
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 28
         on-cast: true
   utility_phase_19:
     name: "Phase Step 19"
+    icon-cmd: 78398
     category: utility
     min-level:
       magic: 67
@@ -352,17 +623,32 @@ abilities:
     cooldown: 39
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 13
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 29
         on-cast: true
   utility_phase_20:
     name: "Phase Step 20"
+    icon-cmd: 78400
     category: utility
     min-level:
       magic: 70
@@ -371,17 +657,32 @@ abilities:
     cooldown: 40
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 14
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 30
         on-cast: true
   utility_phase_21:
     name: "Phase Step 21"
+    icon-cmd: 78401
     category: utility
     min-level:
       magic: 73
@@ -390,17 +691,32 @@ abilities:
     cooldown: 41
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 14
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 31
         on-cast: true
   utility_phase_22:
     name: "Phase Step 22"
+    icon-cmd: 78402
     category: utility
     min-level:
       magic: 76
@@ -409,17 +725,32 @@ abilities:
     cooldown: 42
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 15
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 32
         on-cast: true
   utility_phase_23:
     name: "Phase Step 23"
+    icon-cmd: 78403
     category: utility
     min-level:
       magic: 79
@@ -428,17 +759,32 @@ abilities:
     cooldown: 43
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 15
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 33
         on-cast: true
   utility_phase_24:
     name: "Phase Step 24"
+    icon-cmd: 78404
     category: utility
     min-level:
       magic: 82
@@ -447,11 +793,25 @@ abilities:
     cooldown: 44
     target: self
     cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 8
       - type: vfx
         particle: PORTAL
-        count: 24
+        shape: helix
+        count: 28
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 3
       - type: teleport
         distance: 16
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: nova
+        count: 18
       - type: xp
         skill: magic
         amount: 34

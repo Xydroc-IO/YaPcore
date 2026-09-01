@@ -5,14 +5,12 @@ import com.yapcore.abilities.AbilityDefinition;
 import com.yapcore.abilities.AbilityEffect;
 import com.yapcore.abilities.EffectKind;
 import com.yapcore.abilities.StatusEffectService;
-import com.yapcore.abilities.TargetMode;
 import com.yapcore.mmo.CombatServices;
 import com.yapcore.mmo.CombatStats;
 import com.yapcore.mmo.SkillId;
 import com.yapcore.mmo.SkillServices;
 import com.yapcore.mmo.XpSource;
 import com.yapcore.sched.YapSched;
-import com.yapcore.abilities.TargetMode;
 import org.bukkit.Location;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -39,21 +37,38 @@ public final class EffectRunner {
     }
 
     public void runCast(Player caster, List<AbilityEffect> effects, AbilityDefinition ability) {
-        for (AbilityEffect effect : effects) {
-            runSingle(caster, caster, effect, true, ability);
-        }
+        runSequence(caster, caster, effects, 0, true, ability);
     }
 
     public void runHit(Player caster, LivingEntity target, List<AbilityEffect> effects, AbilityDefinition ability) {
-        for (AbilityEffect effect : effects) {
-            runSingle(caster, target, effect, false, ability);
-        }
+        runSequence(caster, target, effects, 0, false, ability);
     }
 
     public void runAmbient(LivingEntity target, List<AbilityEffect> effects, AbilityDefinition ability) {
-        for (AbilityEffect effect : effects) {
-            runSingle(null, target, effect, false, ability);
+        runSequence(null, target, effects, 0, false, ability);
+    }
+
+    /** Sequential effects with DELAY support (ticks before continuing the list). */
+    private void runSequence(
+            Player caster,
+            LivingEntity target,
+            List<AbilityEffect> effects,
+            int index,
+            boolean castPhase,
+            AbilityDefinition ability) {
+        if (effects == null || index >= effects.size()) {
+            return;
         }
+        AbilityEffect effect = effects.get(index);
+        if (effect.kind() == EffectKind.DELAY) {
+            long ticks = Math.max(1, effect.intParam("ticks", 5));
+            YapSched.globalLater(plugin,
+                    () -> runSequence(caster, target, effects, index + 1, castPhase, ability),
+                    ticks);
+            return;
+        }
+        runSingle(caster, target, effect, castPhase, ability);
+        runSequence(caster, target, effects, index + 1, castPhase, ability);
     }
 
     private void runSingle(
@@ -117,6 +132,7 @@ public final class EffectRunner {
             case AOE -> applyAoe(caster, target, effect, ability);
             case CHAIN -> applyChain(caster, target, effect);
             case DELAY -> {
+                // Handled by runSequence
             }
         }
     }
@@ -138,9 +154,11 @@ public final class EffectRunner {
         for (LivingEntity victim : targets) {
             runHit(caster, victim, nested, ability);
         }
-        VfxEmitter.emitAt(center, new AbilityEffect(EffectKind.VFX, java.util.Map.of(
+        VfxEmitter.emitAt(plugin, center, new AbilityEffect(EffectKind.VFX, java.util.Map.of(
                 "particle", effect.param("particle", "EXPLOSION"),
-                "count", String.valueOf(effect.intParam("count", 12)),
+                "shape", effect.param("shape", "nova"),
+                "count", String.valueOf(effect.intParam("count", 16)),
+                "radius", String.valueOf(radius),
                 "spread", String.valueOf(effect.doubleParam("spread", radius * 0.35)))));
     }
 

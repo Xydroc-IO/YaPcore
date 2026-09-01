@@ -1,43 +1,48 @@
 #!/usr/bin/env python3
-"""Generate 200+ YaP ability YAML packs for yap-abilities."""
+"""Generate 200+ YaP ability YAML packs for yap-abilities (with rich VFX)."""
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "yap-first-party/gameplay/abilities-plugin/src/main/resources/abilities"
 
+# element, cast particle, hit particle, sound, impact sound, rune, dust color, block (earth)
 ELEMENTS = [
-    ("wind", "CLOUD", "ENTITY_BREEZE_WIND_CHARGE_BURST", "FEATHER"),
-    ("water", "DRIPPING_WATER", "ENTITY_PLAYER_SPLASH", "PRISMARINE_SHARD"),
-    ("earth", "BLOCK_CRACK", "BLOCK_STONE_BREAK", "COBBLESTONE"),
-    ("fire", "FLAME", "ENTITY_BLAZE_SHOOT", "BLAZE_POWDER"),
+    ("wind", "CLOUD", "GUST", "ENTITY_BREEZE_WIND_CHARGE_BURST", "ENTITY_BREEZE_WIND_BURST",
+     "FEATHER", "220,240,255", ""),
+    ("water", "DRIPPING_WATER", "BUBBLE_POP", "ENTITY_PLAYER_SPLASH", "ENTITY_GENERIC_SPLASH",
+     "PRISMARINE_SHARD", "40,120,255", ""),
+    ("earth", "BLOCK", "BLOCK", "BLOCK_STONE_BREAK", "ENTITY_IRON_GOLEM_ATTACK",
+     "COBBLESTONE", "120,80,40", "DIRT"),
+    ("fire", "FLAME", "LAVA", "ENTITY_BLAZE_SHOOT", "ENTITY_GENERIC_EXPLODE",
+     "BLAZE_POWDER", "255,80,20", ""),
 ]
 
+# tier, base_level, max_hit, xp, entity, speed, cast_count, trail_count, shape
 TIERS = [
-    ("strike", 1, 4, 12, "SNOWBALL", 1.2),
-    ("bolt", 15, 10, 28, "ARROW", 1.6),
-    ("blast", 30, 16, 42, "FIREBALL", 1.3),
-    ("wave", 45, 22, 55, "DRAGON_FIREBALL", 1.1),
-    ("surge", 60, 28, 68, "SMALL_FIREBALL", 1.4),
-    ("storm", 75, 34, 80, "WITHER_SKULL", 1.5),
+    ("strike", 1, 4, 12, "SNOWBALL", 1.2, 12, 4, "burst"),
+    ("bolt", 15, 10, 28, "ARROW", 1.6, 16, 5, "helix"),
+    ("blast", 30, 16, 42, "FIREBALL", 1.3, 20, 6, "ring"),
+    ("wave", 45, 22, 55, "DRAGON_FIREBALL", 1.1, 24, 8, "nova"),
+    ("surge", 60, 28, 68, "SMALL_FIREBALL", 1.4, 28, 8, "helix"),
+    ("storm", 75, 34, 80, "WITHER_SKULL", 1.5, 32, 10, "nova"),
 ]
 
 MELEE_STYLES = [
-    ("slash", "SWEEP_ATTACK", "ENTITY_PLAYER_ATTACK_SWEEP"),
-    ("cleave", "CRIT", "ENTITY_PLAYER_ATTACK_CRIT"),
-    ("bash", "EXPLOSION", "ENTITY_IRON_GOLEM_ATTACK"),
-    ("riposte", "ENCHANTED_HIT", "ENTITY_PLAYER_ATTACK_KNOCKBACK"),
-    ("whirlwind", "CLOUD", "ENTITY_ENDER_DRAGON_FLAP"),
+    ("slash", "SWEEP_ATTACK", "ENTITY_PLAYER_ATTACK_SWEEP", "CRIT"),
+    ("cleave", "CRIT", "ENTITY_PLAYER_ATTACK_CRIT", "SWEEP_ATTACK"),
+    ("bash", "EXPLOSION", "ENTITY_IRON_GOLEM_ATTACK", "CRIT"),
+    ("riposte", "ENCHANTED_HIT", "ENTITY_PLAYER_ATTACK_KNOCKBACK", "CRIT"),
+    ("whirlwind", "CLOUD", "ENTITY_ENDER_DRAGON_FLAP", "SWEEP_ATTACK"),
 ]
 
 RANGED_STYLES = [
-    ("shot", "CRIT", "ENTITY_ARROW_SHOOT"),
-    ("volley", "FIREWORK", "ENTITY_FIREWORK_ROCKET_LAUNCH"),
-    ("pierce", "CRIT", "ENTITY_ARROW_HIT"),
-    ("bind", "SPELL_WITCH", "ENTITY_VEX_CHARGE"),
-    ("barrage", "SMOKE", "ENTITY_SKELETON_SHOOT"),
+    ("shot", "CRIT", "ENTITY_ARROW_SHOOT", "CRIT"),
+    ("volley", "FIREWORK", "ENTITY_FIREWORK_ROCKET_LAUNCH", "FIREWORK"),
+    ("pierce", "CRIT", "ENTITY_ARROW_HIT", "ENCHANTED_HIT"),
+    ("bind", "WITCH", "ENTITY_VEX_CHARGE", "WITCH"),
+    ("barrage", "SMOKE", "ENTITY_SKELETON_SHOOT", "CRIT"),
 ]
 
 PRAYER_BUFFS = [
@@ -73,14 +78,22 @@ def ability_block(
     max_hit: int,
     xp: int,
     particle: str,
+    hit_particle: str,
     sound: str,
+    impact_sound: str,
     rune: str,
     entity: str,
     speed: float,
+    cast_count: int = 14,
+    trail_count: int = 5,
+    shape: str = "burst",
+    color: str = "",
+    block: str = "",
     style: str = "magic",
     target_filter: str = "",
     cooldown: int = 0,
     debuff: str = "",
+    anim: str = "cast",
 ) -> str:
     lines = [
         f"  {aid}:",
@@ -101,15 +114,41 @@ def ability_block(
         f"    target: raycast",
     ])
     if target_filter:
-        lines.append(f'    target-filter: {target_filter}')
+        lines.append(f"    target-filter: {target_filter}")
     lines.extend([
         "    cast:",
-        "      - type: vfx",
-        f"        particle: {particle}",
-        "        count: 10",
+        "      - type: animation",
+        f"        style: {anim}",
+        "        pulses: 2",
+        "        pose: glow",
         "      - type: sound",
         f"        sound: {sound}",
-        "        volume: 0.9",
+        "        volume: 1.0",
+        "        pitch: 1.05",
+        "      - type: vfx",
+        f"        particle: {particle}",
+        f"        shape: {shape}",
+        f"        count: {cast_count}",
+        "        offset-y: 0.2",
+        "        radius: 1.1",
+    ])
+    if color:
+        lines.append(f"        color: {color}")
+    if block:
+        lines.append(f"        block: {block}")
+    # Dust accent for non-dust particles
+    if color and particle not in ("DUST", "BLOCK"):
+        lines.extend([
+            "      - type: vfx",
+            "        particle: DUST",
+            "        shape: ring",
+            "        count: 12",
+            f"        color: {color}",
+            "        size: 1.15",
+            "        radius: 0.85",
+            "        offset-y: 0.15",
+        ])
+    lines.extend([
         "      - type: xp",
         f"        skill: {skill}",
         f"        amount: {xp}",
@@ -117,20 +156,35 @@ def ability_block(
         "    projectile:",
         f"      entity: {entity}",
         f"      speed: {speed}",
-        "      max-ticks: 45",
+        "      max-ticks: 50",
+        "      hide: true",
+        "      scale: 0.95",
         "      trail:",
         f"        particle: {particle}",
-        "        count: 3",
-        "        interval: 2",
+        f"        count: {trail_count}",
+        "        interval: 1",
         "    on-hit:",
         "      - type: damage",
         f"        style: {style}",
         f"        max-hit: {max_hit}",
         "      - type: vfx",
-        "        particle: EXPLOSION",
-        "        count: 6",
+        f"        particle: {hit_particle}",
+        "        shape: nova",
+        f"        count: {max(10, cast_count - 2)}",
+        "        radius: 1.25",
+        "        offset-y: 0.3",
+    ])
+    if color:
+        lines.append(f"        color: {color}")
+    if block:
+        lines.append(f"        block: {block}")
+    lines.extend([
+        "      - type: sound",
+        f"        sound: {impact_sound}",
+        "        volume: 0.85",
+        "        pitch: 1.15",
         "      - type: knockback",
-        "        power: 0.25",
+        "        power: 0.28",
     ])
     if debuff:
         lines.extend([
@@ -143,17 +197,20 @@ def ability_block(
 
 def gen_magic() -> dict[str, str]:
     packs: dict[str, list[str]] = {}
-    for element, particle, sound, rune in ELEMENTS:
+    for ei, (element, particle, hit_p, sound, impact, rune, color, block) in enumerate(ELEMENTS):
         bucket = f"magic_{element}.yml"
         packs.setdefault(bucket, [])
-        for tier, base_level, max_hit, xp, entity, speed in TIERS:
+        for tier, base_level, max_hit, xp, entity, speed, cast_n, trail_n, shape in TIERS:
             aid = f"{element}_{tier}"
-            level = base_level + ELEMENTS.index((element, particle, sound, rune)) * 2
+            level = base_level + ei * 2
             name = f"{element.title()} {tier.title()}"
             packs[bucket].append(
                 ability_block(
                     aid, name, "magic", "magic", level,
-                    max(1, level // 8), max_hit, xp, particle, sound, rune, entity, speed,
+                    max(1, level // 8), max_hit, xp,
+                    particle, hit_p, sound, impact, rune, entity, speed,
+                    cast_count=cast_n, trail_count=trail_n, shape=shape,
+                    color=color, block=block,
                 )
             )
     return {k: yaml_header() + "abilities:\n" + "".join(v) for k, v in packs.items()}
@@ -162,7 +219,7 @@ def gen_magic() -> dict[str, str]:
 def gen_melee() -> str:
     chunks = []
     idx = 0
-    for style, particle, sound in MELEE_STYLES:
+    for style, particle, sound, hit_p in MELEE_STYLES:
         for tier in range(1, 11):
             idx += 1
             level = 5 + tier * 6 + idx // 3
@@ -171,8 +228,11 @@ def gen_melee() -> str:
             chunks.append(
                 ability_block(
                     aid, name, "melee", "attack", level,
-                    0, 3 + tier * 2, 8 + tier * 3, particle, sound, "",
-                    "EGG", 1.0, style="melee", cooldown=15 + tier * 2,
+                    0, 3 + tier * 2, 8 + tier * 3,
+                    particle, hit_p, sound, sound, "",
+                    "EGG", 1.0,
+                    cast_count=10 + tier, trail_count=3 + tier // 2, shape="burst",
+                    style="melee", cooldown=15 + tier * 2, anim="slam" if style == "bash" else "cast",
                 )
             )
     return yaml_header() + "abilities:\n" + "".join(chunks)
@@ -181,7 +241,7 @@ def gen_melee() -> str:
 def gen_ranged() -> str:
     chunks = []
     idx = 0
-    for style, particle, sound in RANGED_STYLES:
+    for style, particle, sound, hit_p in RANGED_STYLES:
         for tier in range(1, 11):
             idx += 1
             level = 5 + tier * 6 + idx // 3
@@ -190,8 +250,11 @@ def gen_ranged() -> str:
             chunks.append(
                 ability_block(
                     aid, name, "ranged", "ranged", level,
-                    0, 3 + tier * 2, 8 + tier * 3, particle, sound, "ARROW",
-                    "ARROW", 2.0, style="ranged", cooldown=10 + tier,
+                    0, 3 + tier * 2, 8 + tier * 3,
+                    particle, hit_p, sound, "ENTITY_ARROW_HIT", "ARROW",
+                    "ARROW", 2.0,
+                    cast_count=10 + tier, trail_count=4, shape="beam",
+                    style="ranged", cooldown=10 + tier, anim="cast",
                 )
             )
     return yaml_header() + "abilities:\n" + "".join(chunks)
@@ -199,7 +262,7 @@ def gen_ranged() -> str:
 
 def gen_prayer() -> str:
     chunks = []
-    for idx, (aid, stat, level) in enumerate(PRAYER_BUFFS):
+    for idx, (aid, _stat, level) in enumerate(PRAYER_BUFFS):
         chunks.append(
             f"  {aid}:\n"
             f'    name: "{aid.replace("_", " ").title()}"\n'
@@ -211,11 +274,25 @@ def gen_prayer() -> str:
             f"    cooldown: 40\n"
             f"    target: self\n"
             f"    cast:\n"
+            f"      - type: animation\n"
+            f"        style: both\n"
+            f"        pose: glow\n"
             f"      - type: vfx\n"
             f"        particle: ENCHANT\n"
-            f"        count: 20\n"
+            f"        shape: helix\n"
+            f"        count: 28\n"
+            f"        radius: 1.0\n"
+            f"        ticks: 12\n"
+            f"        interval: 2\n"
+            f"      - type: vfx\n"
+            f"        particle: DUST\n"
+            f"        shape: ring\n"
+            f"        count: 16\n"
+            f"        color: 255,230,120\n"
+            f"        size: 1.2\n"
             f"      - type: sound\n"
             f"        sound: BLOCK_ENCHANTMENT_TABLE_USE\n"
+            f"        volume: 1.0\n"
             f"      - type: buff\n"
             f"        id: {aid}\n"
             f"        stacks: 1\n"
@@ -242,11 +319,25 @@ def gen_utility() -> str:
             f"    cooldown: {20 + i}\n"
             f"    target: self\n"
             f"    cast:\n"
+            f"      - type: animation\n"
+            f"        style: cast\n"
+            f"        pose: levitate\n"
+            f"        pose-ticks: 8\n"
             f"      - type: vfx\n"
             f"        particle: PORTAL\n"
-            f"        count: 24\n"
+            f"        shape: helix\n"
+            f"        count: 28\n"
+            f"        radius: 0.9\n"
+            f"      - type: sound\n"
+            f"        sound: ENTITY_ENDERMAN_TELEPORT\n"
+            f"      - type: delay\n"
+            f"        ticks: 3\n"
             f"      - type: teleport\n"
             f"        distance: {4 + i // 2}\n"
+            f"      - type: vfx\n"
+            f"        particle: REVERSE_PORTAL\n"
+            f"        shape: nova\n"
+            f"        count: 18\n"
             f"      - type: xp\n"
             f"        skill: magic\n"
             f"        amount: {10 + i}\n"
@@ -257,15 +348,24 @@ def gen_utility() -> str:
 
 def gen_legacy() -> str:
     return yaml_header() + "abilities:\n" + "".join([
-        ability_block("wind_strike", "Wind Strike", "magic", "magic", 1, 1, 4, 12,
-                      "CLOUD", "ENTITY_BREEZE_WIND_CHARGE_BURST", "FEATHER", "SNOWBALL", 1.2),
-        ability_block("water_strike", "Water Strike", "magic", "magic", 5, 2, 6, 18,
-                      "DRIPPING_WATER", "ENTITY_PLAYER_SPLASH", "PRISMARINE_SHARD", "SNOWBALL", 1.2),
-        ability_block("fire_bolt", "Fire Bolt", "magic", "magic", 15, 3, 10, 28,
-                      "FLAME", "ENTITY_BLAZE_SHOOT", "BLAZE_POWDER", "FIREBALL", 1.4),
-        ability_block("crumble", "Crumble Undead", "magic", "magic", 25, 4, 14, 35,
-                      "SMOKE", "ENTITY_WITHER_SHOOT", "BONE", "WITHER_SKULL", 1.3,
-                      target_filter="undead"),
+        ability_block(
+            "wind_strike", "Wind Strike", "magic", "magic", 1, 1, 4, 12,
+            "CLOUD", "GUST", "ENTITY_BREEZE_WIND_CHARGE_BURST", "ENTITY_BREEZE_WIND_BURST",
+            "FEATHER", "SNOWBALL", 1.2, color="220,240,255", shape="burst"),
+        ability_block(
+            "water_strike", "Water Strike", "magic", "magic", 5, 2, 6, 18,
+            "DRIPPING_WATER", "BUBBLE_POP", "ENTITY_PLAYER_SPLASH", "ENTITY_GENERIC_SPLASH",
+            "PRISMARINE_SHARD", "SNOWBALL", 1.2, color="40,120,255", shape="helix"),
+        ability_block(
+            "fire_bolt", "Fire Bolt", "magic", "magic", 15, 3, 10, 28,
+            "FLAME", "LAVA", "ENTITY_BLAZE_SHOOT", "ENTITY_GENERIC_EXPLODE",
+            "BLAZE_POWDER", "FIREBALL", 1.4, color="255,80,20", shape="helix",
+            debuff="burn"),
+        ability_block(
+            "crumble", "Crumble Undead", "magic", "magic", 25, 4, 14, 35,
+            "SMOKE", "SOUL", "ENTITY_WITHER_SHOOT", "ENTITY_WITHER_BREAK_BLOCK",
+            "BONE", "WITHER_SKULL", 1.3, color="80,80,90", shape="nova",
+            target_filter="undead"),
     ])
 
 
@@ -276,8 +376,11 @@ def gen_curses() -> str:
         chunks.append(
             ability_block(
                 aid, f"Curse {i}", "magic", "magic", 20 + i,
-                max(1, i // 4), 5 + i // 2, 15 + i, "SPELL_WITCH", "ENTITY_EVOKER_CAST_SPELL",
-                "FERMENTED_SPIDER_EYE", "EGG", 1.0, debuff="poison" if i % 2 == 0 else "slow",
+                max(1, i // 4), 5 + i // 2, 15 + i,
+                "WITCH", "SMOKE", "ENTITY_EVOKER_CAST_SPELL", "ENTITY_WITHER_AMBIENT",
+                "FERMENTED_SPIDER_EYE", "EGG", 1.0,
+                color="120,40,160", shape="helix",
+                debuff="poison" if i % 2 == 0 else "slow",
             )
         )
     return yaml_header() + "abilities:\n" + "".join(chunks)
@@ -286,14 +389,19 @@ def gen_curses() -> str:
 def gen_arcanum() -> str:
     chunks = []
     particles = ["ENCHANT", "END_ROD", "SOUL_FIRE_FLAME", "WITCH", "DRAGON_BREATH", "TOTEM"]
+    hit = ["END_ROD", "FLASH", "SOUL", "WITCH", "DRAGON_BREATH", "TOTEM"]
     for i in range(1, 31):
         p = particles[i % len(particles)]
+        h = hit[i % len(hit)]
         aid = f"arcanum_{i:02d}"
         chunks.append(
             ability_block(
                 aid, f"Arcanum {i}", "magic", "magic", 40 + i * 2,
-                max(2, i // 3), 8 + i // 2, 20 + i, p, "ENTITY_ILLUSIONER_CAST_SPELL",
-                "GLOWSTONE_DUST", "FIREBALL", 1.25, debuff="burn" if i % 3 == 0 else "",
+                max(2, i // 3), 8 + i // 2, 20 + i,
+                p, h, "ENTITY_ILLUSIONER_CAST_SPELL", "ENTITY_EVOKER_PREPARE_SUMMON",
+                "GLOWSTONE_DUST", "FIREBALL", 1.25,
+                color="160,60,255", shape="helix" if i % 2 else "nova",
+                debuff="burn" if i % 3 == 0 else "",
             )
         )
     return yaml_header() + "abilities:\n" + "".join(chunks)
@@ -315,9 +423,10 @@ def main() -> None:
     for name, content in sorted(files.items()):
         path = OUT / name
         path.write_text(content, encoding="utf-8")
-        count = content.count("\n  ") - content.count("\n    ")
-        # rough count via id lines
-        count = sum(1 for line in content.splitlines() if line.startswith("  ") and line.endswith(":") and not line.startswith("    "))
+        count = sum(
+            1 for line in content.splitlines()
+            if line.startswith("  ") and line.endswith(":") and not line.startswith("    ")
+        )
         total += count
         print(f"wrote {path.name}: ~{count} abilities")
 

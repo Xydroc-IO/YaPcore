@@ -2,12 +2,14 @@ package com.yapcore.abilities.exec;
 
 import com.yapcore.abilities.AbilityDefinition;
 import com.yapcore.abilities.AbilityEffect;
+import com.yapcore.abilities.EffectKind;
 import com.yapcore.abilities.ProjectileSpec;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -59,12 +61,16 @@ public final class ProjectileTracker {
             } else {
                 entity.setVelocity(velocity);
             }
+            // Hide vanilla projectile body — ItemDisplay spell model replaces it.
+            if (spec.hideEntity()) {
+                entity.setVisibleByDefault(false);
+                entity.setSilent(true);
+            }
+            ItemDisplay body = AbilityGraphics.attachProjectileBody(
+                    plugin, entity, ability, spec.displayScale());
             UUID lockId = initialTarget != null ? initialTarget.getUniqueId() : null;
             active.put(entity.getUniqueId(), new Tracked(
-                    caster.getUniqueId(), ability, spec, onHit, 0, lockId));
-            if (spec.iconCmd() > 0 || ability.resolvedIconCmd() > 0) {
-                AbilityGraphics.spawnCastIcon(plugin, caster, ability);
-            }
+                    caster.getUniqueId(), ability, spec, onHit, 0, lockId, body));
             track(entity);
         });
     }
@@ -76,18 +82,19 @@ public final class ProjectileTracker {
     private void tick(Entity projectile) {
         Tracked tracked = active.get(projectile.getUniqueId());
         if (tracked == null || !projectile.isValid()) {
-            active.remove(projectile.getUniqueId());
+            cleanup(projectile.getUniqueId(), tracked);
             return;
         }
         Tracked current = tracked.nextTick();
         active.put(projectile.getUniqueId(), current);
+        AbilityGraphics.tickProjectileBody(current.body, projectile, current.ticks);
         if (current.spec.hasTrail() && current.ticks % current.spec.trailInterval() == 0) {
             spawnTrail(projectile.getLocation(), current.spec);
         }
         Player caster = plugin.getServer().getPlayer(current.casterId);
         if (caster == null) {
+            cleanup(projectile.getUniqueId(), current);
             projectile.remove();
-            active.remove(projectile.getUniqueId());
             return;
         }
         if (current.spec.isHoming()) {
@@ -102,7 +109,8 @@ public final class ProjectileTracker {
             if (current.spec.hasSplash()) {
                 splash(projectile.getLocation(), caster, current, null);
             }
-            active.remove(projectile.getUniqueId());
+            impactBurst(projectile.getLocation(), current);
+            cleanup(projectile.getUniqueId(), current);
             projectile.remove();
             return;
         }
@@ -112,6 +120,9 @@ public final class ProjectileTracker {
     private void finishHit(Entity projectile, Player caster, Tracked current, LivingEntity hit) {
         active.remove(projectile.getUniqueId());
         var onHit = current.onHit;
+        Location impact = hit.getLocation().add(0, hit.getHeight() * 0.5, 0);
+        impactBurst(impact, current);
+        AbilityGraphics.removeDisplay(current.body);
         YapSched.entity(plugin, hit, () -> {
             onHit.accept(caster, hit);
             if (current.spec.hasSplash()) {
@@ -131,8 +142,35 @@ public final class ProjectileTracker {
         }
         Particle particle = parseParticle(current.spec.trailParticle());
         if (particle != null) {
-            center.getWorld().spawnParticle(particle, center, 16, current.spec.splashRadius() * 0.4, 0.2,
-                    current.spec.splashRadius() * 0.4, 0.01);
+            center.getWorld().spawnParticle(particle, center, 24, current.spec.splashRadius() * 0.45, 0.35,
+                    current.spec.splashRadius() * 0.45, 0.02);
+        }
+        VfxEmitter.emitAt(plugin, center, new AbilityEffect(EffectKind.VFX, java.util.Map.of(
+                "particle", current.spec.trailParticle().isBlank() ? "EXPLOSION" : current.spec.trailParticle(),
+                "shape", "nova",
+                "count", "18",
+                "radius", String.valueOf(Math.max(1.0, current.spec.splashRadius())),
+                "offset-y", "0.2")));
+    }
+
+    private void impactBurst(Location at, Tracked current) {
+        String particle = current.spec.hasTrail() ? current.spec.trailParticle() : "CRIT";
+        VfxEmitter.emitAt(plugin, at, new AbilityEffect(EffectKind.VFX, java.util.Map.of(
+                "particle", particle,
+                "shape", "nova",
+                "count", "14",
+                "radius", "0.9",
+                "offset-y", "0.1")));
+        VfxEmitter.emitAt(plugin, at, new AbilityEffect(EffectKind.SOUND, java.util.Map.of(
+                "sound", "ENTITY_GENERIC_EXPLODE",
+                "volume", "0.45",
+                "pitch", "1.35")));
+    }
+
+    private void cleanup(UUID id, Tracked tracked) {
+        active.remove(id);
+        if (tracked != null) {
+            AbilityGraphics.removeDisplay(tracked.body);
         }
     }
 
@@ -178,11 +216,11 @@ public final class ProjectileTracker {
     }
 
     private LivingEntity findHit(Entity projectile, Player caster) {
-        for (Entity nearby : projectile.getNearbyEntities(0.75, 0.75, 0.75)) {
+        for (Entity nearby : projectile.getNearbyEntities(0.85, 0.85, 0.85)) {
             if (!(nearby instanceof LivingEntity living)) {
                 continue;
             }
-            if (living.equals(caster)) {
+            if (living.equals(caster) || living instanceof ItemDisplay) {
                 continue;
             }
             return living;
@@ -195,7 +233,11 @@ public final class ProjectileTracker {
         if (particle == null) {
             return;
         }
-        location.getWorld().spawnParticle(particle, location, spec.trailCount(), 0.05, 0.05, 0.05, 0.01);
+        int count = Math.max(spec.trailCount(), 4);
+        location.getWorld().spawnParticle(particle, location, count, 0.08, 0.08, 0.08, 0.015);
+        // Soft dust halo for readability
+        location.getWorld().spawnParticle(Particle.DUST, location, 2, 0.05, 0.05, 0.05, 0,
+                new Particle.DustOptions(org.bukkit.Color.fromRGB(255, 220, 120), 0.9f));
     }
 
     private static EntityType parseEntityType(String raw) {
@@ -216,7 +258,10 @@ public final class ProjectileTracker {
         try {
             return Particle.valueOf(raw.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
-            return null;
+            return switch (raw.trim().toUpperCase()) {
+                case "BLOCK_CRACK", "BLOCK_DUST" -> Particle.BLOCK;
+                default -> null;
+            };
         }
     }
 
@@ -226,10 +271,11 @@ public final class ProjectileTracker {
             ProjectileSpec spec,
             BiConsumer<Player, LivingEntity> onHit,
             int ticks,
-            UUID lockTargetId) {
+            UUID lockTargetId,
+            ItemDisplay body) {
 
         Tracked nextTick() {
-            return new Tracked(casterId, ability, spec, onHit, ticks + 1, lockTargetId);
+            return new Tracked(casterId, ability, spec, onHit, ticks + 1, lockTargetId, body);
         }
     }
 }

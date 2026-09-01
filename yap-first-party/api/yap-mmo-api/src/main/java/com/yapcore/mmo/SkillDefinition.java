@@ -8,6 +8,7 @@ public record SkillDefinition(
         SkillId id,
         String display,
         Material icon,
+        int iconCmd,
         boolean enabled,
         Map<Material, BreakAction> breakActions,
         Map<String, FishAction> fishActions,
@@ -19,6 +20,25 @@ public record SkillDefinition(
         HitpointsRatio hitpointsRatio,
         PrayerDrainAction prayerDrain
 ) {
+    /** Back-compat without custom model data. */
+    public SkillDefinition(
+            SkillId id,
+            String display,
+            Material icon,
+            boolean enabled,
+            Map<Material, BreakAction> breakActions,
+            Map<String, FishAction> fishActions,
+            Map<Material, SmeltAction> smeltActions,
+            CombatDealtAction combatDealt,
+            CombatDealtAction rangedDealt,
+            CombatDealtAction magicDealt,
+            CombatTakenAction combatTaken,
+            HitpointsRatio hitpointsRatio,
+            PrayerDrainAction prayerDrain) {
+        this(id, display, icon, 0, enabled, breakActions, fishActions, smeltActions,
+                combatDealt, rangedDealt, magicDealt, combatTaken, hitpointsRatio, prayerDrain);
+    }
+
     public record BreakAction(double xp, int minLevel) {
     }
 
