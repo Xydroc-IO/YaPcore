@@ -98,11 +98,13 @@ public final class ServerSelectorPlugin implements LinkPlugin {
     private void openPool(Properties props) throws Exception {
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(props.getProperty("jdbc-url",
-                "jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true"));
+                "jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true"));
         hc.setUsername(props.getProperty("user", "yap"));
-        hc.setPassword(props.getProperty("password", "yap"));
+        hc.setPassword(props.getProperty("password", "change-me"));
         hc.setMaximumPoolSize(Integer.parseInt(props.getProperty("pool-max", "4")));
         hc.setPoolName("YaPLinkSelector");
+        Class.forName("com.mysql.cj.jdbc.Driver", true, getClass().getClassLoader());
+        hc.setDriverClassName("com.mysql.cj.jdbc.Driver");
         pool = new HikariDataSource(hc);
     }
 

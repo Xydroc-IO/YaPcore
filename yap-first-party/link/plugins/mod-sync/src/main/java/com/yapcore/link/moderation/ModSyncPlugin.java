@@ -76,11 +76,14 @@ public final class ModSyncPlugin implements LinkPlugin {
         }
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(props.getProperty("jdbc-url",
-                "jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true"));
+                "jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true"));
         hc.setUsername(props.getProperty("user", "yap"));
-        hc.setPassword(props.getProperty("password", "yap"));
+        hc.setPassword(props.getProperty("password", "change-me"));
         hc.setMaximumPoolSize(Integer.parseInt(props.getProperty("pool-max", "4")));
         hc.setPoolName("YaPLinkModSync");
+        // Link plugins use an isolated classloader — register the shaded driver explicitly.
+        Class.forName("com.mysql.cj.jdbc.Driver", true, getClass().getClassLoader());
+        hc.setDriverClassName("com.mysql.cj.jdbc.Driver");
         pool = new HikariDataSource(hc);
     }
 }

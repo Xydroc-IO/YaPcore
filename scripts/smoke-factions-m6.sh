@@ -102,7 +102,7 @@ while kill -0 "$PID" 2>/dev/null; do
   fi
   if grep -qiE '\[YaPFactions\].*(Failed|SEVERE|Error enabling)|Could not load.*yap-factions' "$LOG" 2>/dev/null; then
     echo "YaPFactions failed during enable:"
-    grep -iE 'YaPFactions|yap-factions|YaPPlayerdata' "$LOG" 2>/dev/null | tail -25 || true
+    grep -iE 'YaPFactions|yap-factions|YaPPlayerData' "$LOG" 2>/dev/null | tail -25 || true
     exit 1
   fi
   if ! kill -0 "$PID" 2>/dev/null; then
@@ -115,7 +115,7 @@ done
 
 if [ "$ready" -eq 0 ]; then
   echo "Timed out waiting for YaPFactions"
-  grep -iE 'YaPFactions|YaPDB|YaPPlayerdata|folia|Done \(' "$LOG" 2>/dev/null | tail -40 || true
+  grep -iE 'YaPFactions|YaPDB|YaPPlayerData|folia|Done \(' "$LOG" 2>/dev/null | tail -40 || true
   tail -n 40 "$LOG" || true
   exit 1
 fi

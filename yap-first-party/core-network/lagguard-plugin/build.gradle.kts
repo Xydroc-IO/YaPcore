@@ -39,5 +39,5 @@ tasks.jar {
 tasks.register<Copy>("installIntoPlugins") {
     dependsOn(tasks.shadowJar)
     from(tasks.shadowJar.get().archiveFile)
-    into(rootProject.layout.projectDirectory.dir("server/plugins"))
+    into(rootProject.layout.projectDirectory.dir("plugins"))
 }

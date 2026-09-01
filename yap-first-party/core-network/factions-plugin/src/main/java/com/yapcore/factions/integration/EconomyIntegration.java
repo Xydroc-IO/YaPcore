@@ -9,14 +9,14 @@ import org.bukkit.plugin.Plugin;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Soft bridge to YaPPlayerdata economy. */
+/** Soft bridge to YaPPlayerData economy. */
 public final class EconomyIntegration {
 
     private EconomyIntegration() {
     }
 
     public static Optional<SyncService> sync() {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerdata");
+        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerData");
         if (!(plugin instanceof PlayerDataPlugin playerData) || !plugin.isEnabled()) {
             return Optional.empty();
         }

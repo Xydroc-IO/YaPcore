@@ -57,9 +57,9 @@ public final class PlayerDataConfig {
     private boolean featureWarps = true;
     private boolean featureKits = true;
     private boolean featureMail = true;
-    private boolean featureShops = false;
+    private boolean featureShops = true;
     private boolean featureJobs = false;
-    private boolean featureAuctions = false;
+    private boolean featureAuctions = true;
     private boolean featureClaims = true;
     private boolean featureTraders = false;
 
@@ -124,9 +124,9 @@ public final class PlayerDataConfig {
         featureWarps = c.getBoolean("features.warps", true);
         featureKits = c.getBoolean("features.kits", true);
         featureMail = c.getBoolean("features.mail", true);
-        featureShops = economyEnabled && c.getBoolean("features.shops", false);
+        featureShops = economyEnabled && c.getBoolean("features.shops", true);
         featureJobs = economyEnabled && c.getBoolean("features.jobs", false);
-        featureAuctions = economyEnabled && c.getBoolean("features.auctions", false);
+        featureAuctions = economyEnabled && c.getBoolean("features.auctions", true);
         featureTraders = economyEnabled && c.getBoolean("features.traders", false);
         // features.claims AND legacy claims.enabled
         featureClaims = c.getBoolean("features.claims", true) && c.getBoolean("claims.enabled", true);

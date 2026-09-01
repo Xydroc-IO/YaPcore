@@ -3,8 +3,8 @@ use-shared-yapdb: true
 
 # Used only when YaPDB is missing or use-shared-yapdb is false
 jdbc:
-  # Packaged Docker MariaDB publishes on host 3316 (see deploy/mariadb/.env YAP_DB_PORT).
-  url: jdbc:mysql://127.0.0.1:3316/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
+  # Align with deploy/mariadb/.env.example. Prefer shared YaPDB + ./configure-db.sh.
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
   user: yap
   password: change-me
 
@@ -32,23 +32,23 @@ economy:
   enabled: true
 
 # Feature modules (freeze: no new Essentials-class commands without product review).
-# shops / jobs / auctions default off — highest EssentialsX overlap.
-# When yap-skills is enabled, keep jobs: false to avoid double mining payouts.
-# Money features also require economy.enabled=true.
+# shops + auctions on by default; jobs stay off (overlaps YaPSkills mining payouts).
+# traders remain opt-in. Money features also require economy.enabled=true.
 features:
   homes: true
   warps: true
   kits: true
   mail: true
-  shops: false
+  shops: true
   jobs: false
-  auctions: false
+  auctions: true
   claims: true
   traders: false
 
 # Offline password auth (AuthMe-class). Session lock is separate (always on).
+# LAN/demo default OFF so players join without /register. Enable for public offline-mode.
 auth:
-  enabled: true
+  enabled: false
   # true = always require /login even on online-mode servers
   force: false
   # true = skip auth when online-mode=false (Velocity modern forwarding backends)
@@ -108,6 +108,20 @@ kits:
       - material: BREAD
         amount: 16
       - material: WOODEN_SWORD
+        amount: 1
+  # Unlocked by quest t1_first_steps (kit_unlock:adventurer → yapdata.kit.adventurer)
+  adventurer:
+    delay-seconds: 43200
+    items:
+      - material: BREAD
+        amount: 16
+      - material: STONE_SWORD
+        amount: 1
+      - material: STONE_PICKAXE
+        amount: 1
+      - material: TORCH
+        amount: 32
+      - material: LEATHER_CHESTPLATE
         amount: 1
 
 jobs:

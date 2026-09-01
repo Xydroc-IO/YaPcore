@@ -13,14 +13,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Soft bridge to YaPPlayerdata claims (no schema changes). */
+/** Soft bridge to YaPPlayerData claims (no schema changes). */
 public final class ClaimIntegration {
 
     private ClaimIntegration() {
     }
 
     public static Optional<ClaimService> claims() {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerdata");
+        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerData");
         if (!(plugin instanceof PlayerDataPlugin playerData) || !plugin.isEnabled()) {
             return Optional.empty();
         }

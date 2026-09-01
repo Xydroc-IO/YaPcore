@@ -1,3 +1,4 @@
+# Optional Discord bridge — leave empty until you add webhook URLs.
 webhooks:
   moderation: ""
   chat: ""
@@ -6,8 +7,9 @@ relay:
   mc-to-discord: false
   discord-to-mc: false
 
+# Inbound Discord→MC HTTP. Off by default (enable + set a real secret for production).
 inbound:
-  enabled: true
+  enabled: false
   port: 8765
   secret: "change-me"
   path: "/discord/inbound"

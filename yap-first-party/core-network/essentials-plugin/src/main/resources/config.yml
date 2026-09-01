@@ -13,9 +13,10 @@ server-id: lobby
 use-shared-yapdb: true
 
 database:
-  jdbc-url: "jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true"
+  # Fallback only when YaPDB is absent — prefer use-shared-yapdb + ./configure-db.sh
+  jdbc-url: "jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true"
   user: yap
-  password: yap
+  password: change-me
   pool-max: 4
   pool-min-idle: 1
   connection-timeout-ms: 10000

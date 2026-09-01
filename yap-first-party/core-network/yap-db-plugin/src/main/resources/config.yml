@@ -2,8 +2,9 @@
 # Point every backend at the SAME database (Docker: deploy/mariadb/).
 
 jdbc:
-  # Packaged Docker MariaDB publishes on host 3316 (see deploy/mariadb/.env YAP_DB_PORT).
-  url: jdbc:mysql://127.0.0.1:3316/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
+  # Align with deploy/mariadb/.env.example. Prefer ./configure-db.sh after start-mariadb
+  # (auto-bumps port to 3316 when host :3306 is already taken).
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
   user: yap
   password: change-me
 

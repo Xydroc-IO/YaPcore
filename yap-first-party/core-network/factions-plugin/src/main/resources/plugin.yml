@@ -6,7 +6,7 @@ folia-supported: true
 description: Full-featured factions — power, relations, claims overlay, chat, bank
 authors: [YapLabs]
 depend: [YaPDB]
-softdepend: [YaPPlayerdata, PlaceholderAPI]
+softdepend: [YaPPlayerData, PlaceholderAPI]
 commands:
   f:
     description: Faction commands

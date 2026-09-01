@@ -12,9 +12,10 @@ limits:
 
 database:
   use-shared-yapdb: true
-  jdbc-url: "jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true"
+  # Fallback only when YaPDB is absent — prefer ./configure-db.sh
+  jdbc-url: "jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true"
   user: yap
-  password: yap
+  password: change-me
   pool-max: 6
   pool-min-idle: 1
   connection-timeout-ms: 10000
