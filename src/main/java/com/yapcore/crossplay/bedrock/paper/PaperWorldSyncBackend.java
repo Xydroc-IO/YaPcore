@@ -137,9 +137,14 @@ public final class PaperWorldSyncBackend {
         return cached == null ? null : cached.states();
     }
 
-    public List<PaperWorldBlocks.SkullBlock> skullsInColumn(int chunkX, int chunkZ) {
+    public List<BedrockPaperWorldSync.SkullBlock> skullsInColumn(int chunkX, int chunkZ) {
         ColumnCache cached = snapshotColumn(chunkX, chunkZ);
-        return cached == null ? List.of() : cached.skulls();
+        if (cached == null) {
+            return List.of();
+        }
+        return cached.skulls().stream()
+                .map(s -> new BedrockPaperWorldSync.SkullBlock(s.x(), s.y(), s.z(), s.owner()))
+                .toList();
     }
 
     private ColumnCache snapshotColumn(int chunkX, int chunkZ) {

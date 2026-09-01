@@ -32,6 +32,10 @@ http://127.0.0.1:8080/
 
 Paste the token on the login screen (or set `Authorization: Bearer <token>`).
 
+**Quick access:** type `dashboard` in the YaP Control Panel console or headless stdin — prints a one-click login URL and token. In the Swing GUI, use **Web Dashboard** (header) or **Connect → Open**.
+
+Login links include `?token=…` so the browser signs in automatically (token is stripped from the address bar after load).
+
 ## Navigation
 
 | Group | Tabs |

@@ -30,12 +30,12 @@ YaP-only bugs:
 |------|-----------------|
 | **Smithing table (1.20+ templates)** | Older mid clients may not drive the full smithing UI the way a same-version client does. Same class of issue ViaBackwards documents for &lt;1.19.4 on 1.20+ servers. Prefer same-era clients for smithing workflows, or accept degraded UI. |
 | **Sound mappings** | Incomplete / approximate. Missing or remapped sounds may be silent or play a substitute. Unmapped sound packets are **dropped** (never kick). Do not rely on exact sound IDs across bands. |
-| **New blocks / items / entities** | Shown as placeholders or nearest older equivalents when the client catalog lacks the name. Unknown entity types map to **pig** (else armor_stand). Hitboxes/AI remain server-authoritative on Paper. |
+| **New blocks / items / entities** | Shown as placeholders or nearest older equivalents when the client catalog lacks the name. Unknown entity types map to **pig** (else armor_stand). Unknown block states map to **stone** (else air). Hitboxes/AI remain server-authoritative on Paper. |
 | **Component items (1.20.5+) ↔ NBT (≤1.20.4)** | Cross-era remaps strip opaque component/NBT payloads when tables are incomplete — type + count preserved; enchant/custom data may drop. |
 | **Particles / exotic metadata** | Fail-soft: metadata loop may truncate rather than corrupt the packet stream. |
 | **Inventory click edge cases** | Mid `window_click` / creative bodies are remapped; rare desyncs under rapid shift-click or modded containers can still occur (also reported upstream in Via\* ecosystems). |
 | **Chat signing / report flows** | Unsigned / unsigned-chat product path (`yap-chat`) may differ from vanilla signed-chat expectations on older clients. |
-| **Resource packs** | Forced/play-phase packs work on the matrix path; older clients that reject modern pack formats still need operator pack policy. |
+| **Resource packs** | Config-phase prompts are **auto-acked** when `resource-pack-forced=false` so mid clients join without blocking on optional packs. Set `resource-pack-forced=true` to require client download. Play-phase YaPPacks pushes unchanged. |
 
 ---
 

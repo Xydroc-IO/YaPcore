@@ -27,6 +27,7 @@ Leading `/` is optional in the YaP console.
 | `ranks apply force` | Re-apply after clearing marker |
 | `ranks reset-marker` | Clear `config/yap-ranks-applied` |
 | `crashdump` | Write diagnostic report |
+| `dashboard` | Web admin dashboard login link + token |
 
 See [PERMISSIONS.md](PERMISSIONS.md) for rank assignment.
 

@@ -6,7 +6,7 @@
   "description": "Mineflayer swarm for YaPcore highpop MSPT benches",
   "type": "module",
   "dependencies": {
-    "bedrock-protocol": "^3.58.2",
+    "bedrock-protocol": "^3.58.3",
     "minecraft-data": "^3.113.2",
     "minecraft-protocol": "^1.67.0",
     "mineflayer": "^4.37.1"

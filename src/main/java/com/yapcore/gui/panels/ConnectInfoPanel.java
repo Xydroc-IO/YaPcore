@@ -4,6 +4,7 @@ import com.yapcore.gui.theme.GuiTheme;
 import com.yapcore.network.publicity.LocalJoinAddresses;
 import com.yapcore.network.publicity.PublicEndpoint;
 import com.yapcore.server.YaPcoreServer;
+import com.yapcore.web.DashboardAccessInfo;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -32,6 +33,7 @@ public final class ConnectInfoPanel {
     private final JTextField lanField = addressField();
     private final JTextField crossplayField = addressField();
     private final JTextField packField = addressField();
+    private final JTextField dashboardField = addressField();
     private final JLabel modeLabel = new JLabel("—");
     private final JLabel tipLabel = new JLabel();
 
@@ -55,6 +57,12 @@ public final class ConnectInfoPanel {
                 + ":" + server.getConfig().getPort());
         crossplayField.setText(ep.crossplayJoinAddress());
         packField.setText(ep.packBaseUrl() + "/pack/…");
+        var dash = DashboardAccessInfo.resolve(server.getConfig());
+        if (dash.enabled()) {
+            dashboardField.setText(dash.primaryLoginUrl());
+        } else {
+            dashboardField.setText(dash.hint());
+        }
         tipLabel.setText("<html><body style='width:260px'>" + local.tip() + "</body></html>");
         if (server.getConfig().isAllowLocalhost()) {
             modeLabel.setText("Same-PC OK · 127.0.0.1");
@@ -96,6 +104,8 @@ public final class ConnectInfoPanel {
         c.gridy++;
         panel.add(row("Resource packs", packField), c);
         c.gridy++;
+        panel.add(dashboardRow(), c);
+        c.gridy++;
         tipLabel.setForeground(GuiTheme.MUTED);
         tipLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
         panel.add(tipLabel, c);
@@ -129,6 +139,63 @@ public final class ConnectInfoPanel {
         line.add(copy, BorderLayout.EAST);
         col.add(line, BorderLayout.CENTER);
         return col;
+    }
+
+    private JPanel dashboardRow() {
+        JPanel col = new JPanel(new BorderLayout(4, 2));
+        col.setOpaque(false);
+        JLabel l = new JLabel("Web dashboard (admins)");
+        l.setForeground(GuiTheme.MUTED);
+        l.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        col.add(l, BorderLayout.NORTH);
+        JPanel line = new JPanel(new BorderLayout(4, 0));
+        line.setOpaque(false);
+        line.add(dashboardField, BorderLayout.CENTER);
+        JPanel actions = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT, 4, 0));
+        actions.setOpaque(false);
+        JButton copy = new JButton("Copy");
+        copy.setMargin(new Insets(2, 8, 2, 8));
+        copy.setFocusPainted(false);
+        copy.addActionListener(e -> {
+            var dash = DashboardAccessInfo.resolve(server.getConfig());
+            if (!dash.enabled()) {
+                return;
+            }
+            DashboardAccessInfo.copyToClipboard(dash.primaryLoginUrl());
+            copy.setText("Copied");
+            Timer t = new Timer(1200, ev -> copy.setText("Copy"));
+            t.setRepeats(false);
+            t.start();
+        });
+        JButton open = new JButton("Open");
+        open.setMargin(new Insets(2, 8, 2, 8));
+        open.setFocusPainted(false);
+        GuiTheme.stylePrimary(open);
+        open.addActionListener(e -> openDashboard());
+        actions.add(copy);
+        actions.add(open);
+        line.add(actions, BorderLayout.EAST);
+        col.add(line, BorderLayout.CENTER);
+        return col;
+    }
+
+    /** Opens the signed-in dashboard URL in the default browser. */
+    public void openDashboard() {
+        var dash = DashboardAccessInfo.resolve(server.getConfig());
+        if (!dash.enabled()) {
+            javax.swing.JOptionPane.showMessageDialog(root,
+                    dash.hint(), "Web dashboard", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        String url = dash.primaryLoginUrl();
+        if (!DashboardAccessInfo.openInBrowser(url)) {
+            DashboardAccessInfo.copyToClipboard(url);
+            javax.swing.JOptionPane.showMessageDialog(root,
+                    "Could not open a browser — login link copied to clipboard.",
+                    "Web dashboard", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        DashboardAccessInfo.copyToClipboard(url);
     }
 
     private static JTextField addressField() {

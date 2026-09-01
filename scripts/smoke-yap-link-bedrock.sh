@@ -42,16 +42,23 @@ python3 -u -c "
 import socket, sys
 s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 s.bind(('127.0.0.1', ${BACKEND_PORT}))
-s.settimeout(12)
+s.settimeout(20)
 data, addr = s.recvfrom(4096)
 sys.stdout.write(data.decode('latin-1', errors='replace'))
 " >"$HOME_DIR/udp-recv.txt" 2>/dev/null &
 UDP_PID=$!
 sleep 0.5
 
-timeout 10 "$JAVA_BIN" -Xms128M -Xmx256M -jar "$JAR" --home "$HOME_DIR" >>"$LOG" 2>&1 &
+timeout 20 "$JAVA_BIN" -Xms128M -Xmx256M -jar "$JAR" --home "$HOME_DIR" >>"$LOG" 2>&1 &
 LINK_PID=$!
-sleep 2
+
+if ! yap_wait_log_grep "$LOG" 'Bedrock UDP edge' 15; then
+  kill "$LINK_PID" 2>/dev/null || true
+  kill "$UDP_PID" 2>/dev/null || true
+  echo "FAIL: Bedrock UDP edge did not start" >&2
+  tail -n 30 "$LOG" >&2 || true
+  exit 1
+fi
 
 python3 -c "
 import socket

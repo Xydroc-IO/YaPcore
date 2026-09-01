@@ -30,7 +30,12 @@ if [ "${SKIP_LIVE:-0}" = "1" ]; then
 fi
 
 VER="${FOLIA_VERSION:-26.2}"
-if [ ! -f "$ROOT/lib/folia-${VER}.jar" ]; then
+if [ -z "${FOLIA_JAR_SOURCE:-${YAP_FOLIA_JAR_SOURCE:-}}" ] && [ -f "$ROOT/lib/yap-folia-${VER}.jar" ]; then
+  FOLIA_SRC=build
+else
+  FOLIA_SRC="${FOLIA_JAR_SOURCE:-${YAP_FOLIA_JAR_SOURCE:-fetch}}"
+fi
+if [ ! -f "$ROOT/lib/folia-${VER}.jar" ] && [ ! -f "$ROOT/lib/yap-folia-${VER}.jar" ]; then
   "$ROOT/scripts/fetch-folia.sh" "$VER"
 fi
 
@@ -48,9 +53,16 @@ fi
 WORK="$ROOT/bench/workdir-bedrock-play-smoke"
 rm -rf "$WORK"
 mkdir -p "$WORK/config" "$WORK/lib" "$WORK/plugins" "$WORK/logs"
-/bin/cp -f "$ROOT/lib/folia-${VER}.jar" "$WORK/lib/"
+if [ "$FOLIA_SRC" = "build" ] && [ -f "$ROOT/lib/yap-folia-${VER}.jar" ]; then
+  /bin/cp -f "$ROOT/lib/yap-folia-${VER}.jar" "$WORK/lib/"
+  /bin/cp -f "$ROOT/lib/yap-folia-${VER}.jar" "$WORK/lib/folia-${VER}.jar"
+elif [ -f "$ROOT/lib/folia-${VER}.jar" ]; then
+  /bin/cp -f "$ROOT/lib/folia-${VER}.jar" "$WORK/lib/"
+else
+  echo "Missing Folia jar for smoke" >&2
+  exit 1
+fi
 [ -f "$ROOT/plugins/yap-folia-bridge.jar" ] && cp -f "$ROOT/plugins/yap-folia-bridge.jar" "$WORK/plugins/"
-/bin/cp -f "$ROOT/lib/folia-${VER}.jar" "$WORK/lib/"
 
 PORT=25568
 cat >"$WORK/config/server.properties" <<EOF
@@ -72,6 +84,7 @@ folia-embed=true
 folia-dir=folia-kernel
 folia-port=${PORT}
 folia-version=${VER}
+folia-jar-source=${FOLIA_SRC}
 folia-ready-timeout-sec=180
 velocity-enabled=false
 web-dashboard-enabled=false
@@ -84,7 +97,7 @@ LOG="$WORK/smoke.log"
 : >"$LOG"
 
 echo "Booting Folia + Bedrock dual-stack :${PORT}…"
-pkill -f "folia-${VER}.jar" 2>/dev/null || true
+pkill -f "yapcore.home=$WORK" 2>/dev/null || true
 sleep 1
 ( exec "$JAVA_BIN" -Xms512M -Xmx1536M -Dyapcore.home="$WORK" -jar "$YAP_JAR" --nogui ) >>"$LOG" 2>&1 &
 PID=$!
@@ -95,11 +108,11 @@ while kill -0 "$PID" 2>/dev/null; do
   now="$(date +%s)"
   [ $((now - start_ts)) -ge "$WAIT_SECS" ] && break
   if grep -q 'Dual-stack gateway ready' "$LOG" 2>/dev/null \
-    && { [ -f "$WORK/folia-kernel/yap-folia-ready.marker" ] || grep -q 'Managed Folia online\|\[folia\].*Done (' "$LOG" 2>/dev/null; }; then
-    if "$JAVA_BIN" -e 'try(var s=new java.net.DatagramSocket()){s.setSoTimeout(1500);var p=new byte[1];s.send(new java.net.DatagramPacket(p,1,java.net.InetAddress.getByName("127.0.0.1"),'"$PORT"'));System.exit(0);}catch(Exception e){System.exit(1);}' 2>/dev/null; then
-      ready=1
-      break
-    fi
+    && grep -q 'Bedrock Edition UDP on' "$LOG" 2>/dev/null \
+    && { [ -f "$WORK/folia-kernel/yap-folia-ready.marker" ] \
+      || grep -q 'Managed Folia online\|\[folia\].*Done (' "$LOG" 2>/dev/null; }; then
+    ready=1
+    break
   fi
   sleep 1
 done
@@ -122,7 +135,7 @@ PLAY_RC=${PIPESTATUS[0]}
 set -e
 
 kill "$PID" 2>/dev/null || true
-pkill -f "folia-${VER}.jar" 2>/dev/null || true
+pkill -f "yapcore.home=$WORK" 2>/dev/null || true
 wait "$PID" 2>/dev/null || true
 
 if [ "$PLAY_RC" -eq 0 ]; then

@@ -196,8 +196,11 @@ public final class ViaProxyBackendHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    /** Forward pack prompt to JE clients that have config/play add_resource_pack (≈1.20.2+). */
-    private static boolean shouldForwardResourcePack(ViaSession session) {
+    /** Forward pack prompt only when YaP is actively serving packs (≈1.20.2+ clients). */
+    private boolean shouldForwardResourcePack(ViaSession session) {
+        if (!host.resourcePackForwardEnabled()) {
+            return false;
+        }
         if (session.isConfigSkip()) {
             return false;
         }

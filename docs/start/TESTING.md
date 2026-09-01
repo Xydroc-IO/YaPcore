@@ -45,6 +45,20 @@ Link suite: `smoke-yap-link-folia.sh`, `smoke-yap-link-plugins.sh`,
 Protocol matrix (Via/Geyser parity): `scripts/protocol-matrix/` — see
 [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
 
+**Tier 4 release gates** (with YaPcore listening on `25566`):
+
+```bash
+gradle :test --tests 'com.yapcore.protocol.via.*' --tests 'com.yapcore.crossplay.bedrock.*'
+./scripts/protocol-matrix/play-soak.sh --all
+HOST=127.0.0.1 PORT=25566 ./scripts/protocol-matrix/run-matrix.sh
+HOST=127.0.0.1 PORT=25566 ./scripts/protocol-matrix/run-bedrock-smoke.sh
+# optional full network bench (slow):
+./scripts/smoke-network-full.sh
+```
+
+Baseline artifact: `build/tier4-4a-baseline.json`. Phased plan:
+[TIER4_PHASES.md](../overview/TIER4_PHASES.md).
+
 ## Endurance FAIL codes (chassis harness)
 
 If you run the Gradle endurance harness and see FAIL codes:

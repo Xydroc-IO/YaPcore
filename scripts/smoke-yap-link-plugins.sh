@@ -23,7 +23,7 @@ gradle :yap-link-native:shadowJar \
 JAR="$ROOT/yap-first-party/link/native/build/libs/yap-link.jar"
 cp -a "$ROOT/link-data/." "$HOME_DIR/"
 mkdir -p "$HOME_DIR/plugins"
-cp -f "$ROOT/link-data/plugins/"*.jar "$HOME_DIR/plugins/" 2>/dev/null || true
+/bin/cp -f "$ROOT/link-data/plugins/"*.jar "$HOME_DIR/plugins/"
 
 cat >"$HOME_DIR/link.properties" <<EOF
 bind=127.0.0.1:25578
@@ -42,11 +42,16 @@ JAVA_BIN="$(yap_java_bin)"
 LOG="$HOME_DIR/link.log"
 : >"$LOG"
 
-timeout 8 "$JAVA_BIN" -Xms128M -Xmx256M -jar "$JAR" --home "$HOME_DIR" >>"$LOG" 2>&1 &
+timeout 25 "$JAVA_BIN" -Xms128M -Xmx256M -jar "$JAR" --home "$HOME_DIR" >>"$LOG" 2>&1 &
 PID=$!
-sleep 3
-kill "$PID" 2>/dev/null || true
-wait "$PID" 2>/dev/null || true
+
+if ! yap_wait_log_grep "$LOG" 'Enabled plugin yaplink-discord' 20; then
+  kill "$PID" 2>/dev/null || true
+  wait "$PID" 2>/dev/null || true
+  echo "FAIL: Link did not enable plugins in time" >&2
+  tail -n 40 "$LOG" >&2
+  exit 1
+fi
 
 count=0
 for id in yaplink-chat-bridge yaplink-mod-sync yaplink-server-selector yaplink-tab-bridge yaplink-discord; do
@@ -54,6 +59,9 @@ for id in yaplink-chat-bridge yaplink-mod-sync yaplink-server-selector yaplink-t
     count=$((count + 1))
   fi
 done
+
+kill "$PID" 2>/dev/null || true
+wait "$PID" 2>/dev/null || true
 
 if [ "$count" -ge 5 ]; then
   echo "PASS: $count/5 YaP Link plugins loaded"

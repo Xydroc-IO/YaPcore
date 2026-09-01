@@ -565,6 +565,24 @@ yap_banner() {
   echo ""
 }
 
+# Poll a log file until a grep pattern matches (returns 0) or timeout (returns 1).
+yap_wait_log_grep() {
+  local log="$1" pattern="$2" timeout="${3:-20}"
+  local start now
+  start="$(date +%s)"
+  while [ -f "$log" ]; do
+    if grep -qE "$pattern" "$log" 2>/dev/null; then
+      return 0
+    fi
+    now="$(date +%s)"
+    if [ $((now - start)) -ge "$timeout" ]; then
+      return 1
+    fi
+    sleep 1
+  done
+  return 1
+}
+
 # Keep Konsole / Dolphin "Run" windows open so you can read results.
 yap_pause_end() {
   CODE="${1:-0}"

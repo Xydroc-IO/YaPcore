@@ -191,7 +191,7 @@ the Geyser jar. Pin: **Bedrock 1.21.50**.
 | G.30 | Containers / villager / enchanting UIs | `BedrockContainerBridge` | **Done** | Villager by actor type; trade refresh; furnace SET_DATA; enchant fail-closed |
 | G.31 | Scoring / boss bars / titles | `BedrockUiCodec` + `BedrockUiBridge` | **Done** | `BedrockUiCodecTest` + command mirror |
 | G.32 | Emotes | — | **Gap** (low) | Optional |
-| G.33 | Custom skulls / player heads display | `BedrockUiCodec.blockActorSkull` | **Partial** | Placed skull NBT; item texture v2 |
+| G.33 | Custom skulls / player heads display | `BedrockUiCodec.blockActorSkull` + `BedrockWorldPush` / `PaperWorldBlocks` | **Partial** | Block actor on chunk load + BREAK/PLACE; item-in-hand texture v2 |
 | G.34 | Bedrock resource packs (server-offered) | `BedrockLoginCodec` + pack supplier | **Done** | Mirrors JE pack URL when enabled |
 | G.35 | Vehicles / boats / minecarts mount sync | — | **Out** | Not v1 scope — use JE for mounted travel; document explicitly |
 
@@ -250,7 +250,7 @@ validated at least once in CI or recorded soak; no Geyser/Floodgate jars require
 
 **Bedrock 1.21.50:**
 
-- [ ] RakNet ping + login + spawn (`geyserParitySmoke`)
+- [x] RakNet ping + login + spawn (`geyserParitySmoke`) — automated 2026-09-01
 - [ ] Move across chunk borders — terrain matches Paper (**P4.5**, not flat void)
 - [ ] Move, jump, sprint; chat visible to JE
 - [ ] Break/place mirrored on Paper; column refreshes

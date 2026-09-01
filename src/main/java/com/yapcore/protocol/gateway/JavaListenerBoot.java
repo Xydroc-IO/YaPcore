@@ -71,7 +71,8 @@ public final class JavaListenerBoot {
                                 ch.pipeline().addLast("via-proxy", new ViaProxyHandler(
                                         "127.0.0.1",
                                         gamePort,
-                                        ProtocolCompat.SERVER_PROTOCOL));
+                                        ProtocolCompat.SERVER_PROTOCOL,
+                                        gateway.resourcePackForwardEnabled()));
                             } else {
                                 ch.pipeline().addLast("kernel-proxy", new JavaKernelProxyHandler(
                                         "127.0.0.1",

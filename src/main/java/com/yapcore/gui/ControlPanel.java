@@ -188,11 +188,15 @@ public final class ControlPanel extends JFrame {
         JButton testLabBtn = new JButton("Test Lab");
         GuiTheme.stylePrimary(testLabBtn);
         testLabBtn.addActionListener(e -> TestLab.open(server.getRootDir()));
+        JButton dashboardBtn = new JButton("Web Dashboard");
+        GuiTheme.stylePrimary(dashboardBtn);
+        dashboardBtn.addActionListener(e -> connectPanel.openDashboard());
         GuiTheme.stylePrimary(startBtn);
         GuiTheme.styleDanger(stopBtn);
         startBtn.addActionListener(e -> startServer());
         stopBtn.addActionListener(e -> stopServer());
         actions.add(testLabBtn);
+        actions.add(dashboardBtn);
         actions.add(startBtn);
         actions.add(stopBtn);
         header.add(actions, BorderLayout.EAST);

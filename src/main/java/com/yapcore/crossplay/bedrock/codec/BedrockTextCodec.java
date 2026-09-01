@@ -22,6 +22,7 @@ public final class BedrockTextCodec {
         writeString(out, message);
         writeString(out, ""); // xuid
         writeString(out, ""); // platform
+        writeString(out, ""); // filtered_message (1.21.50+)
         return out;
     }
     public static BedrockPacketCodec.TextDecode tryDecodeText(ByteBuf body) {
@@ -33,9 +34,24 @@ public final class BedrockTextCodec {
                 source = readString(body);
             }
             String message = readString(body);
+            skipTextTrailingFields(body);
             return new BedrockPacketCodec.TextDecode(type, needsTranslation, source, message);
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    private static void skipTextTrailingFields(ByteBuf body) {
+        if (!body.isReadable()) {
+            return;
+        }
+        try {
+            readString(body); // xuid
+            readString(body); // platform_chat_id
+            if (body.isReadable()) {
+                readString(body); // filtered_message (1.21.50+)
+            }
+        } catch (Exception ignored) {
         }
     }
 

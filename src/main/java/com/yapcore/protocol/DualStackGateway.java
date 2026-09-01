@@ -114,6 +114,25 @@ public final class DualStackGateway {
         return protocols;
     }
 
+    public ResourcePackManager resourcePacks() {
+        return packs;
+    }
+
+    /**
+     * Forward Paper/Folia config-phase resource_pack_push only when packs are forced.
+     * Optional packs are auto-acked so mid clients are not blocked waiting for a download
+     * prompt; play-phase {@code addResourcePack} still applies when YaPPacks pushes extras.
+     */
+    public boolean resourcePackForwardEnabled() {
+        if (!config.isResourcePackEnabled()) {
+            return false;
+        }
+        if (packs.getActivePacks().isEmpty()) {
+            return false;
+        }
+        return config.isResourcePackForced();
+    }
+
     public CrossplayHub crossplay() {
         return crossplay;
     }

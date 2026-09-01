@@ -22,4 +22,10 @@ public interface ViaProxyHost {
     void enqueueC2S(ByteBuf out, boolean keepAlive);
 
     ChannelHandlerContext inboundCtx();
+
+    /**
+     * When false, config/play resource_pack_push is auto-acked toward Paper so mid clients
+     * are not blocked waiting for a pack download YaP is not serving.
+     */
+    boolean resourcePackForwardEnabled();
 }

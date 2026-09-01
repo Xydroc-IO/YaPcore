@@ -205,7 +205,15 @@
     }
   }
 
-  if (token) {
+  const params = new URLSearchParams(window.location.search);
+  const urlToken = params.get("token");
+  if (urlToken && urlToken.trim()) {
+    token = urlToken.trim();
+    localStorage.setItem("yap_token", token);
+    history.replaceState({}, "", window.location.pathname);
+    $("tokenInput").value = token;
+    showApp();
+  } else if (token) {
     $("tokenInput").value = token;
     showApp();
   }

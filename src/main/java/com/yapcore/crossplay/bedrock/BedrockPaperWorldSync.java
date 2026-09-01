@@ -85,9 +85,7 @@ public final class BedrockPaperWorldSync {
 
     /** Skull blocks discovered during the last column snapshot for a chunk. */
     public List<SkullBlock> skullsInColumn(int chunkX, int chunkZ) {
-        return backend.skullsInColumn(chunkX, chunkZ).stream()
-                .map(s -> new SkullBlock(s.x(), s.y(), s.z(), s.owner()))
-                .toList();
+        return backend.skullsInColumn(chunkX, chunkZ);
     }
 
     public record SkullBlock(int x, int y, int z, String owner) {

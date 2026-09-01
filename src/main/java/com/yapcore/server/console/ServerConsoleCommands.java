@@ -5,6 +5,7 @@ import com.yapcore.crash.CrashLogger;
 import com.yapcore.network.publicity.PublicityCommands;
 import com.yapcore.ranks.YapRanks;
 import com.yapcore.server.YaPcoreServer;
+import com.yapcore.web.DashboardAccessInfo;
 
 import java.nio.file.Path;
 import java.util.Locale;
@@ -44,6 +45,7 @@ public final class ServerConsoleCommands {
                       joinjava <name> [proto]   Simulate Java client join
                       joinbedrock <name> [proto] Simulate Bedrock client join
                       crashdump [reason]   Write full diagnostic crash report
+                      dashboard            Web admin dashboard login link + token
                       ranks [status|apply] YaPPerms group pack (default/vip/mod/admin)
                       stop / end           Graceful shutdown
                       demo                 Run store-purchase lifecycle demo
@@ -55,6 +57,7 @@ public final class ServerConsoleCommands {
                       set ops=YourName in config, or run: op YourName
                     """ + PublicityCommands.helpLines();
             case "status" -> server.statusReport();
+            case "dashboard", "webdashboard", "dash" -> DashboardAccessInfo.formatConsole(server.getConfig());
             case "ranks", "yapranks" -> ranksCommand(server, parts);
             case "say" -> {
                 String msg = line.length() > 4 ? line.substring(4).trim() : "";

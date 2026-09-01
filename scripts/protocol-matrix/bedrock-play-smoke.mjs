@@ -3,7 +3,7 @@
  * Bedrock play-depth smoke — join/spawn plus gameplay packet exercise.
  *
  * Extends bedrock-smoke.mjs: after spawn, sends chat, player_action (break),
- * and container open request; verifies client stays connected.
+ * and command_request; verifies client stays connected.
  *
  * Usage:
  *   HOST=127.0.0.1 PORT=25568 node scripts/protocol-matrix/bedrock-play-smoke.mjs
@@ -11,6 +11,7 @@
 import { createRequire } from 'module';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { randomUUID } from 'crypto';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const botsPkg = path.join(__dirname, '../bench/bots/package.json');
@@ -29,7 +30,7 @@ const result = {
   raknetSpawned: false,
   chatSent: false,
   breakSent: false,
-  inventorySent: false,
+  commandSent: false,
   stillConnected: false,
   playDepthOk: false,
   errors: [],
@@ -48,10 +49,51 @@ function pingRakNet(bp) {
   });
 }
 
+function sendGameplay(client, username) {
+  const entityId = client.entityId ?? client.startGameData?.runtime_entity_id;
+  if (entityId == null) {
+    throw new Error('entityId not ready');
+  }
+  const name = String(username || 'YapPlaySmoke');
+
+  client.write('text', {
+    type: 'chat',
+    needs_translation: false,
+    source_name: name,
+    message: 'phase15-play-smoke',
+    xuid: '',
+    platform_chat_id: '',
+    filtered_message: '',
+  });
+  result.chatSent = true;
+
+  client.write('player_action', {
+    runtime_entity_id: entityId,
+    action: 'start_break',
+    position: { x: 0, y: 64, z: 0 },
+    result_position: { x: 0, y: 64, z: 0 },
+    face: 1,
+  });
+  result.breakSent = true;
+
+  client.write('command_request', {
+    command: '/help',
+    origin: {
+      type: 'player',
+      uuid: randomUUID(),
+      request_id: '',
+    },
+    internal: false,
+    version: 52,
+  });
+  result.commandSent = true;
+}
+
 function joinAndPlay(bp) {
   return new Promise((resolve) => {
     let settled = false;
     let client;
+    let gameplaySent = false;
     const done = (ok) => {
       if (settled) return;
       settled = true;
@@ -81,42 +123,28 @@ function joinAndPlay(bp) {
       }
     });
     const onSpawn = async () => {
+      if (gameplaySent) return;
       result.raknetSpawned = true;
       result.stillConnected = true;
-      await sleep(1500);
+      if (client.entityId == null && client.startGameData?.runtime_entity_id == null) {
+        return;
+      }
+      await sleep(500);
       try {
-        if (typeof client.queue === 'function') {
-          client.queue('text', { type: 'chat', needs_translation: false, source_name: client.username, message: 'phase15-play-smoke' });
-          result.chatSent = true;
-          await sleep(400);
-          client.queue('player_action', {
-            runtime_entity_id: client.entityId || 1n,
-            action: 'start_break',
-            position: { x: 0, y: 64, z: 0 },
-            result_position: { x: 0, y: 64, z: 0 },
-            face: 1,
-          });
-          result.breakSent = true;
-          await sleep(400);
-          client.queue('container_open', { window_id: 0, type: 'inventory', coordinates: { x: 0, y: 0, z: 0 }, runtime_entity_id: client.entityId || 1n });
-          result.inventorySent = true;
-        } else if (typeof client.write === 'function') {
-          client.write('text', { type: 'chat', needs_translation: false, source_name: client.username, message: 'phase15-play-smoke' });
-          result.chatSent = true;
-          result.breakSent = true;
-          result.inventorySent = true;
-        }
+        sendGameplay(client, client.options?.username);
+        gameplaySent = true;
       } catch (e) {
         result.errors.push('play:' + String(e.message || e).slice(0, 120));
       }
       await sleep(2000);
       result.stillConnected = true;
-      done(true);
+      if (gameplaySent) done(true);
     };
     client.on('spawn', onSpawn);
     client.on('start_game', onSpawn);
     client.on('packet', (p) => {
-      if (p?.name === 'start_game' || p?.name === 'play_status') {
+      if (p?.name === 'start_game') onSpawn();
+      if (p?.name === 'play_status') {
         const st = p.params?.status ?? p.data?.status;
         if (st === 'player_spawn' || st === 3) onSpawn();
       }
@@ -142,9 +170,10 @@ process.stderr.write(`  ping=${result.pingOk}\n`);
 
 process.stderr.write(`… Bedrock play join + gameplay packets\n`);
 await joinAndPlay(bp);
-process.stderr.write(`  spawn=${result.raknetSpawned} chat=${result.chatSent} break=${result.breakSent} inv=${result.inventorySent}\n`);
+process.stderr.write(`  spawn=${result.raknetSpawned} chat=${result.chatSent} break=${result.breakSent} cmd=${result.commandSent}\n`);
 
-result.playDepthOk = result.pingOk && result.raknetSpawned && result.chatSent && result.breakSent && result.stillConnected;
+result.playDepthOk = result.pingOk && result.raknetSpawned && result.chatSent
+  && result.breakSent && result.commandSent && result.stillConnected;
 const summary = { ...result, passed: result.playDepthOk };
 
 const json = JSON.stringify(summary, null, 2);

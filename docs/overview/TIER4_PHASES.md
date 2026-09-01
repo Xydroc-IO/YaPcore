@@ -11,7 +11,7 @@ Track status in [COMPLETION_BACKLOG.md](COMPLETION_BACKLOG.md).
 
 **Goal:** Know what actually fails before writing code.
 
-**Status:** Automated unit/smoke gates **PASS** (2026-09-01). Live §E checklist still operator-owned.
+**Status:** Automated unit/smoke gates **PASS** (2026-09-01). Live matrix partial (1/4 spawn); baseline recorded in `build/tier4-4a-baseline.json`.
 
 | Task | Command / artifact |
 |------|-------------------|
@@ -20,6 +20,7 @@ Track status in [COMPLETION_BACKLOG.md](COMPLETION_BACKLOG.md).
 | Play soak | `./scripts/protocol-matrix/play-soak.sh --all` |
 | Network full | `./scripts/smoke-network-full.sh` → `build/smoke-network-full-latest.json` |
 | Record failures | Update checklist §E in [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md) |
+| Baseline artifact | `build/tier4-4a-baseline.json` |
 
 **Gate:** All automated smokes run to completion (pass or logged fail). Play soak
 checklist items marked pass/fail honestly.
@@ -29,6 +30,8 @@ checklist items marked pass/fail honestly.
 ## Phase 4B — Bedrock play depth
 
 **Goal:** Pure Bedrock clients play vanilla loops on shared YaP-Folia world.
+
+**Status:** Code paths closed (2026-09-01). G.33 block-actor sync wired; live §E soak operator-owned.
 
 | ID | Work | Parity rows |
 |----|------|-------------|
@@ -47,6 +50,8 @@ checklist items marked pass/fail honestly.
 
 **Goal:** Older JE clients on YaP-Folia 26.2 without ViaBackwards jar.
 
+**Status:** VB.23 block stand-in policy shipped; JE matrix **4/4 spawn** with optional-pack auto-ack on Via proxy.
+
 | ID | Work | Parity rows |
 |----|------|-------------|
 | 4C.1 | Window click + creative slot bodies | VB.12, VB.16 |
@@ -63,6 +68,8 @@ checklist items marked pass/fail honestly.
 ## Phase 4D — JE forward & dumps
 
 **Goal:** Newer JE clients when server lags a Mojang build.
+
+**Status:** **Done** — index + heuristics + [PROTOCOL_DUMPS.md](../protocol/PROTOCOL_DUMPS.md) workflow.
 
 | ID | Work | Parity rows |
 |----|------|-------------|
@@ -82,7 +89,7 @@ checklist items marked pass/fail honestly.
 |----|------|--------|
 | 4E.1 | Grim fetch + docs | **Done** — [GRIM.md](../ops/GRIM.md) |
 | 4E.2 | YaPGuard disable guide when Grim present | **Done** — GRIM.md + ANTICHEAT.md |
-| 4E.3 | Dashboard Guard tab hint when `grim.jar` installed | Pending |
+| 4E.3 | Dashboard Guard tab hint when `grim.jar` installed | **Done** — Guard tab + `acHint` |
 | 4E.4 | Release zip includes grim notices when fetched | **Done** — yap-release.gradle.kts |
 
 **Gate:** Operator can fetch Grim, disable YaPGuard, and see status in dashboard or docs.
@@ -92,6 +99,8 @@ checklist items marked pass/fail honestly.
 ## Phase 4F — Lock & claim language
 
 **Goal:** Tier 4 honestly closable.
+
+**Status:** **Done** (2026-09-01) — limitations + §E + backlog updated; live soak caveats documented.
 
 | Task | Output |
 |------|--------|

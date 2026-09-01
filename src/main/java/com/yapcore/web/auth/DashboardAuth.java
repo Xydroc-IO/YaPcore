@@ -2,19 +2,15 @@ package com.yapcore.web.auth;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.yapcore.config.ServerConfig;
+import com.yapcore.web.DashboardAccessInfo;
 import com.yapcore.web.http.DashboardHttp;
 
 import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.util.HexFormat;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public final class DashboardAuth {
-
-    private static final Logger LOG = Logger.getLogger("YaPcore.WebDash");
 
     private String token;
 
@@ -23,15 +19,8 @@ public final class DashboardAuth {
     }
 
     public void ensureToken(ServerConfig cfg) throws IOException {
+        DashboardAccessInfo.ensureToken(cfg);
         token = cfg.getWebDashboardToken();
-        if (token == null || token.isBlank()) {
-            byte[] raw = new byte[16];
-            new SecureRandom().nextBytes(raw);
-            token = HexFormat.of().formatHex(raw);
-            cfg.setWebDashboardToken(token);
-            cfg.save();
-            LOG.warning("Generated web-dashboard-token and saved to config/server.properties");
-        }
     }
 
     public void setToken(String newToken) {

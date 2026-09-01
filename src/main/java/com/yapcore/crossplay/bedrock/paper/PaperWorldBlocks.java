@@ -10,7 +10,7 @@ import java.util.logging.Level;
 
 final class PaperWorldBlocks {
 
-    public record SkullBlock(int x, int y, int z, String owner) {
+    record SkullBlock(int x, int y, int z, String owner) {
     }
 
     static boolean isSkullMaterial(String material) {

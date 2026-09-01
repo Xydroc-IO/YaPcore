@@ -34,6 +34,7 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter implemen
     private final String backendHost;
     private final int backendPort;
     private final int serverProtocol;
+    private final boolean resourcePackForwardEnabled;
     private Channel backend;
     private ViaSession session;
     private PacketTransformer transformer;
@@ -45,9 +46,15 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter implemen
     private ChannelHandlerContext inboundCtx;
 
     public ViaProxyHandler(String backendHost, int backendPort, int serverProtocol) {
+        this(backendHost, backendPort, serverProtocol, false);
+    }
+
+    public ViaProxyHandler(String backendHost, int backendPort, int serverProtocol,
+                           boolean resourcePackForwardEnabled) {
         this.backendHost = backendHost;
         this.backendPort = backendPort;
         this.serverProtocol = serverProtocol;
+        this.resourcePackForwardEnabled = resourcePackForwardEnabled;
     }
 
     @Override
@@ -73,6 +80,11 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter implemen
     @Override
     public ChannelHandlerContext inboundCtx() {
         return inboundCtx;
+    }
+
+    @Override
+    public boolean resourcePackForwardEnabled() {
+        return resourcePackForwardEnabled;
     }
 
     @Override
