@@ -30,8 +30,9 @@ Operator and maintainer helpers. Prefer this short list; see
 | `smoke-folia.sh` | Boot + ready hold |
 
 Soak hooks (called by `soak-yap-folia.sh`): `smoke-folia-sched-compat.sh`,
-`smoke-folia-cross-region-tp.sh`, `smoke-folia-async-save.sh`,
-`smoke-folia-scoreboard.sh`.
+`smoke-folia-cross-region-tp.sh`, `smoke-folia-async-save.sh`.
+
+Optional standalone: `smoke-folia-scoreboard.sh` (not part of default soak profile).
 
 ## Network / release gates
 

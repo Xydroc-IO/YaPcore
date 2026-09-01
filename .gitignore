@@ -125,8 +125,10 @@ game-kernel/
 # Nested local server cwd (smoke/soak/deploy scratch — never publish)
 /server/
 
-# Folia live cwd — keep seeded yml / eula / config / server.properties in git;
-# ignore operator-generated state, jars, caches, worlds, and rotated logs
+# Folia live cwd — keep seeded yml / eula / config in git;
+# ignore operator-generated state, jars, caches, worlds, rotated logs, and runtime server.properties overrides
+folia-kernel/server.properties
+!folia-kernel/server.properties.example
 folia-kernel/logs/
 folia-kernel/crash-reports/
 folia-kernel/usercache.json
@@ -150,7 +152,7 @@ folia-kernel/world_the_end/
 lib/*
 !lib/.gitkeep
 
-# Vendored Paper checkout (clone via scripts/vendor-paper.sh)
+# Vendored Paper checkout (clone via scripts/fetch-folia.sh for stock Folia bench)
 vendor/paper/
 
 # Folia vendor clone/build (Agent 1); keep lock + patches + README tracked
@@ -167,12 +169,9 @@ bench/link-plugins-smoke/
 bench/results/*
 !bench/results/README.md
 !bench/results/.gitkeep
-!bench/results/20260824-phase1-yap-folia-baseline.json
-!bench/results/20260824T234919Z-spawncollapse-folia.json
-!bench/results/20260824T234919Z-spawncollapse-yapfolia.json
-!bench/results/20260825T014032Z-asyncsave-stock.json
-!bench/results/20260825T014032Z-asyncsave-yapfolia.json
-!bench/results/20260825T014032Z-asyncsave-compare.json
+bench/link-bedrock-smoke-test/
+bench/link-plugins-smoke-test/
+bench/link-bedrock-smoke/udp-recv.txt
 bench/*.lock
 bench/*.port
 bench/highpop.lock

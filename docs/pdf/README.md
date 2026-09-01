@@ -16,7 +16,15 @@ All sources below are written for the **current product path**: **YaP-Folia**
 | `COMPARISON_BRIEF.pdf` | [../overview/COMPARISON_BRIEF.md](../overview/COMPARISON_BRIEF.md) |
 | `QUICK_START.pdf` | [../start/QUICK_START.md](../start/QUICK_START.md) |
 | `DEFAULTS.pdf` | [../start/DEFAULTS.md](../start/DEFAULTS.md) |
+| `SECRETS.pdf` | [../start/SECRETS.md](../start/SECRETS.md) |
+| `PRIVACY_POLICY.pdf` | [../start/PRIVACY_POLICY.md](../start/PRIVACY_POLICY.md) |
+| `TERMS_OF_USE.pdf` | [../start/TERMS_OF_USE.md](../start/TERMS_OF_USE.md) |
+| `TESTING.pdf` | [../start/TESTING.md](../start/TESTING.md) |
 | `RELEASES.pdf` | [../start/RELEASES.md](../start/RELEASES.md) |
+| `PROJECT_STATUS.pdf` | [../overview/PROJECT_STATUS.md](../overview/PROJECT_STATUS.md) |
+| `COMPLETION_BACKLOG.pdf` | [../overview/COMPLETION_BACKLOG.md](../overview/COMPLETION_BACKLOG.md) |
+| `PRIVACY_POLICY.pdf` | [../start/PRIVACY_POLICY.md](../start/PRIVACY_POLICY.md) |
+| `TERMS_OF_USE.pdf` | [../start/TERMS_OF_USE.md](../start/TERMS_OF_USE.md) |
 | `PLUGINS.pdf` | [../plugins/PLUGINS.md](../plugins/PLUGINS.md) |
 | `YAPDB.pdf` | [../data/YAPDB.md](../data/YAPDB.md) |
 | `MARIADB.pdf` | [../data/MARIADB.md](../data/MARIADB.md) |

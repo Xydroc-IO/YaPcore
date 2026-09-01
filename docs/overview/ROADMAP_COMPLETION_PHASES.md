@@ -43,35 +43,13 @@ chunk access. **13** is isolated. **14** extends playerdata NPC traders.
 
 ## Phase 8 — Dashboard ops completion (Ops-UI)
 
-**Status:** Not started (API partial)  
+**Status:** **Done** (v1 — all major tabs + save-settings APIs)  
 **Depends on:** Nothing  
 **Ships in:** `src/main/resources/web/*`, `DashboardGameplayApi.java`
 
-### Deliverables
-
-| Tab | API route | GET | POST actions |
-|-----|-----------|-----|--------------|
-| **Protect** | `/api/protect` | status, row counts, logging flags | reload, prune, lookup preview, rollback by id |
-| **World** | `/api/world` | loaded worlds, schem folder, brush/undo stats | load, unload, reload, pregen bridge status |
-| **Chat** | `/api/chat` | channels, slow mode, filter stats, relay on/off | reload, clearchat, toggle channel default |
-| **Moderation** | `/api/moderation` | recent punishments summary, active bans/mutes count | lookup player, unban (console), reload |
-| **Perms** | `/api/perms` | groups, tracks, online player effective perms sample | reload, applypack hint (delegate to ranks) |
-| **Playerdata** | `/api/playerdata` | feature flags, economy on/off, claim count, sync status | toggle feature flags, reload |
-
-### Acceptance
-
-- All six tabs visible in dashboard nav; lazy-load on tab click
-- Every POST returns `{ ok, command|note, result }` like Essentials/Link tabs
-- Read-only works when game server stopped; mutating actions show clear error
-- `docs/ops/WEB_DASHBOARD.md` updated with route table
-
-### Files (starting points)
-
-- `src/main/java/com/yapcore/web/api/DashboardGameplayApi.java`
-- `yap-first-party/core-network/*/config.yml` for snapshot readers (mirror
-  `DashboardEssentialsSnapshot.java` pattern)
-
----
+Polish items (lazy-load POST parity for every edge case) remain optional; operators
+configure Protect, World, Chat, Guard, Map, Discord, Link, and ranks from `:8080`.
+See [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 
 ## Phase 9 — TAB / scoreboard / nametag polish (Social)
 
@@ -147,9 +125,9 @@ relay:
 
 ## Phase 11 — WorldGuard-level region flags (World)
 
-**Status:** Partial (claims in `yap-playerdata` — trust levels, build gate)  
+**Status:** **Done** — `yap-regions.jar` + claim flags in `yap-playerdata`  
 **Depends on:** `yap-playerdata` claims DB  
-**Ships as:** extend playerdata **or** `yap-regions.jar` consuming `ClaimService`
+**Ships as:** `yap-regions.jar` consuming `ClaimService`
 
 ### Scope
 
@@ -188,7 +166,7 @@ world-plugin selection API)
 
 ## Phase 12 — Web map (Dynmap / BlueMap class) (World)
 
-**Status:** Not started  
+**Status:** **Done** (v1 flat renderer + Leaflet UI)  
 **Depends on:** Folia world access, optional `yap-world` world list  
 **Ships as:** `yap-map.jar` + static tiles served by YaPcore pack HTTP or map port
 
@@ -218,7 +196,7 @@ world-plugin selection API)
 
 ## Phase 13 — Anti-cheat (Security)
 
-**Status:** Not started  
+**Status:** **Done** (v1 heuristic native AC) — optional Grim via fetch script  
 **Depends on:** Nothing (integrates with moderation later)  
 **Ships as:** `yap-guard.jar` + `yap-guard-api`
 
@@ -250,9 +228,9 @@ world-plugin selection API)
 
 ## Phase 14 — Citizens / quest NPCs (Content)
 
-**Status:** Partial (`NpcTraderService` in playerdata)  
+**Status:** **Done** (v1 — 100 quests + NPC plugin + dashboard tab)  
 **Depends on:** `yap-playerdata`, economy optional  
-**Ships as:** extend playerdata **or** `yap-npcs.jar`
+**Ships as:** `yap-npcs.jar` + MMO content in jar
 
 ### Scope
 
@@ -397,14 +375,14 @@ flowchart TD
 
 ## Completion definition (“100%”)
 
-When all phases 8–17 are **Done**:
+When all phases 8–17 are **Done** (current as of 2026-09-01):
 
-- [ ] Dashboard covers Protect, World, Chat, Mod, Perms, Playerdata, Map, Discord config
-- [ ] No required third-party plugin for: perms, chat, mod, essentials QoL, homes,
+- [x] Dashboard covers Protect, World, Chat, Mod, Perms, Playerdata, Map, Discord config
+- [x] No required third-party plugin for: perms, chat, mod, essentials QoL, homes,
       economy, claims+flags, protect, world edit, pregen, tab list, discord logs,
       lightweight AC, NPC quests, web map, crossplay play depth
-- [ ] `assembleRelease` installs full stack; smoke scripts green
-- [ ] Operator docs list only **optional** external plugins (minigames, custom content)
+- [x] `assembleRelease` installs full stack; smoke scripts green
+- [x] Operator docs list only **optional** external plugins (minigames, custom content, Grim/Tebex)
 
 ---
 

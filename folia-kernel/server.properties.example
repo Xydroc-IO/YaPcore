@@ -1,5 +1,7 @@
-#Minecraft server properties
-#Tue Sep 01 03:20:37 PDT 2026
+# YaP-Folia seed server.properties
+# Copy to folia-kernel/server.properties on first boot (gitignored at runtime).
+# Do not commit machine-specific resource-pack URLs or auto-generated secrets.
+
 accepts-transfers=false
 allow-flight=false
 broadcast-console-to-ops=true
@@ -35,7 +37,7 @@ management-server-allowed-origins=
 management-server-enabled=false
 management-server-host=localhost
 management-server-port=0
-management-server-secret=UhWR8jrEvJjTtuTQZm9TvQXHepbfka0ozsu7JLLv
+management-server-secret=
 management-server-tls-enabled=true
 management-server-tls-keystore=
 management-server-tls-keystore-password=
@@ -43,7 +45,7 @@ max-chained-neighbor-updates=1000000
 max-players=100
 max-tick-time=60000
 max-world-size=29999984
-motd=YaPcore Â· Folia Game Â· Yap Edge
+motd=YaPcore · Folia Game · Yap Edge
 network-compression-threshold=256
 online-mode=false
 op-permission-level=4
@@ -56,10 +58,10 @@ rcon.password=
 rcon.port=25575
 region-file-compression=deflate
 require-resource-pack=false
-resource-pack=http\://172.21.0.1\:8081/pack/yapcore-default.zip
-resource-pack-id=48e4dfd1-3a6b-3b7a-a00b-cc57a7abc5bd
-resource-pack-prompt={"text"\:"This server offers a resource pack. Click Yes to download, or No to play without it."}
-resource-pack-sha1=73705dcab501709d7829693c9ad1ad9a5dd3922d
+resource-pack=
+resource-pack-id=
+resource-pack-prompt=
+resource-pack-sha1=
 server-ip=127.0.0.1
 server-port=25567
 simulation-distance=10

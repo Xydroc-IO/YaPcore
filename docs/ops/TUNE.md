@@ -19,7 +19,7 @@ Tune does **not** replace the admin menu; they target different operators and li
 | Path | Role |
 |------|------|
 | `config/server.properties` | YaP product — ports, dual-stack, Phase 3 flags, packs, JVM |
-| `config/paper/` | Symlink → `paper-kernel/config/` — `paper-global.yml`, `paper-world-defaults.yml` (**high-pop tuned**) |
+| `config/paper/` | Symlink → `folia-kernel/config/` — `paper-global.yml`, `paper-world-defaults.yml` (**high-pop tuned**) |
 | `config/spigot.yml` / `bukkit.yml` | Symlinks into paper-dir (**high-pop tuned**) |
 | `config/templates/highpop/` | Canonical Paper/Spigot/Bukkit performance templates |
 | `config/paper-server.properties` | Symlink → Paper’s `server.properties` (`view-distance=8`, `simulation-distance=6`) |

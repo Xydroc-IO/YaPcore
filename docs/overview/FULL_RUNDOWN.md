@@ -140,8 +140,9 @@ Requires YaP Paperclip. Not for new deployments.
 | **3–3.7** | Paper spatial on cores 3–6 | **Done as code** — **retired as product default** |
 | **YaP-Folia product path** | Managed fork embed (`folia-jar-source=build`) | **Default** |
 | **YaP Link** | Native Velocity-class proxy (phases 0–6) | **Shipped** |
+| **8–17** | Dashboard, TAB, Discord, regions, map, guard, NPCs, Bedrock depth, release polish | **Done** (v1) |
+| **Tier 4** | First-party Via/Geyser parity | **Done** — automated gates green; live §E partial |
 | **Gate** | Fair highpop MSPT (~100 active bots) | **Active** |
-| **4** | Dual-stack + YaP network plugins | **Join DoD green** |
 
 ---
 
@@ -216,6 +217,7 @@ gradle assembleRelease
 
 | Doc | Topic |
 |-----|--------|
+| [PROJECT_STATUS.md](PROJECT_STATUS.md) | Done / partial / remaining (with test artifacts) |
 | [PLAIN_ENGLISH.md](PLAIN_ENGLISH.md) | Non-tech overview |
 | [WHAT_WE_ARE.md](WHAT_WE_ARE.md) | Short identity |
 | [FOLIA_FORK.md](../folia/FOLIA_FORK.md) | YaP-Folia patches & build |

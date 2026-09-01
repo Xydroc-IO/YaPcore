@@ -14,7 +14,10 @@ Browse by folder: [docs/README.md](README.md).
 | [**Quick Start**](start/QUICK_START.md) | **10-minute setup** — release zip or source build |
 | [RELEASES.md](start/RELEASES.md) | Downloadable zips, `assembleRelease`, version bumps |
 | [DEFAULTS.md](start/DEFAULTS.md) | First-boot configs + seed script |
+| [SECRETS.md](start/SECRETS.md) | Passwords, tokens, webhooks (operator-owned) |
 | [LICENSING.md](start/LICENSING.md) | GPLv3 (YaPcore) + third-party notices |
+| [PRIVACY_POLICY.md](start/PRIVACY_POLICY.md) | Privacy (software + operator template) |
+| [TERMS_OF_USE.md](start/TERMS_OF_USE.md) | Terms of use + operator template |
 | [WINDOWS.md](start/WINDOWS.md) | Windows launchers and parity |
 | [TESTING.md](start/TESTING.md) | Smoke, soak, bench scripts |
 
@@ -25,6 +28,8 @@ Browse by folder: [docs/README.md](README.md).
 | [WHAT_WE_ARE.md](overview/WHAT_WE_ARE.md) | What YaPcore is (and isn't) |
 | [PLAIN_ENGLISH.md](overview/PLAIN_ENGLISH.md) | Non-technical overview |
 | [FULL_RUNDOWN.md](overview/FULL_RUNDOWN.md) | Complete product rundown |
+| [PROJECT_STATUS.md](overview/PROJECT_STATUS.md) | Done / partial / remaining |
+| [COMPLETION_BACKLOG.md](overview/COMPLETION_BACKLOG.md) | Tier 1–4 checklist |
 | [COMPARE_ECOSYSTEM.md](overview/COMPARE_ECOSYSTEM.md) | vs Paper, Purpur, Folia, … |
 | [ROADMAP_COMPLETION_PHASES.md](overview/ROADMAP_COMPLETION_PHASES.md) | Completion roadmap |
 

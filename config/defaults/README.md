@@ -16,4 +16,6 @@ First-boot / fresh-install configs copied by `./scripts/seed-defaults.sh`
 After MariaDB is up, run `./configure-db.sh --server-id lobby` (or
 `./scripts/db/ensure-db.sh`) so JDBC host/port/password match the live `.env`.
 
+**Secrets:** change passwords in `.env` before first start — see [docs/start/SECRETS.md](../docs/start/SECRETS.md).
+
 See [docs/start/DEFAULTS.md](../docs/start/DEFAULTS.md).

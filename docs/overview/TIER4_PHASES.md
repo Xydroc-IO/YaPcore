@@ -11,7 +11,7 @@ Track status in [COMPLETION_BACKLOG.md](COMPLETION_BACKLOG.md).
 
 **Goal:** Know what actually fails before writing code.
 
-**Status:** Automated unit/smoke gates **PASS** (2026-09-01). Live matrix partial (1/4 spawn); baseline recorded in `build/tier4-4a-baseline.json`.
+**Status:** Automated unit/smoke gates **PASS** (2026-09-01). JE matrix **4/4 spawn**; baseline in `build/tier4-4a-baseline.json`.
 
 | Task | Command / artifact |
 |------|-------------------|

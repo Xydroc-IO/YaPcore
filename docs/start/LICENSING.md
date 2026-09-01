@@ -62,6 +62,11 @@ project and is **not** affiliated with or endorsed by Mojang or Microsoft.
 Running a public server requires accepting the
 [Minecraft EULA](https://www.minecraft.net/en-us/eula).
 
+Operator-facing legal docs (templates, not legal advice):
+
+- [Privacy Policy](PRIVACY_POLICY.md)  
+- [Terms of Use](TERMS_OF_USE.md)
+
 ---
 
 ## Default resource pack

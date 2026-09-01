@@ -15,7 +15,7 @@ playerdata, packs).
 | **Wiki** | [**docs/WIKI.md**](docs/WIKI.md) |
 | **Releases** | [docs/start/RELEASES.md](docs/start/RELEASES.md) · build locally with `gradle publishReleasesFolder` |
 | **Scripts** | [scripts/README.md](scripts/README.md) |
-| **License** | [GPLv3](LICENSE) · [LICENSING.md](docs/start/LICENSING.md) |
+| **License** | [GPLv3](LICENSE) · [LICENSING.md](docs/start/LICENSING.md) · [Privacy](docs/start/PRIVACY_POLICY.md) · [Terms](docs/start/TERMS_OF_USE.md) |
 
 > Not affiliated with Mojang / Microsoft.
 

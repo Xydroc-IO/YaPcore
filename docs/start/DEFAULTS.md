@@ -16,6 +16,9 @@ that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when m
 | YaPPerms starter ranks | Yes (`apply-starter-pack-on-first-boot` + `yap-ranks-auto-apply`) |
 | Economy / claims / moderation / SQL plugins | **Needs MariaDB** |
 | Discord webhooks | Needs your webhook URLs |
+
+**Passwords & secrets:** every credential is operator-owned. See [SECRETS.md](SECRETS.md)
+for MariaDB, dashboard token, forwarding secret, Discord inbound, and auth.
 | Floodgate key identity | Optional `key.pem` (UUID heuristic works without it) |
 
 ## Fresh install (recommended)

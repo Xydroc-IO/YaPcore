@@ -254,6 +254,12 @@ web-dashboard-bind=127.0.0.1
 EOF
     fi
   fi
+  local folia_dir="${FOLIA_DIR:-folia-kernel}"
+  if [ ! -f "$ROOT/$folia_dir/server.properties" ]; then
+    if [ -f "$ROOT/$folia_dir/server.properties.example" ]; then
+      cp -f "$ROOT/$folia_dir/server.properties.example" "$ROOT/$folia_dir/server.properties"
+    fi
+  fi
 }
 
 # Link kernel_dir/plugins → ../plugins (migrate jars out of a former real dir).

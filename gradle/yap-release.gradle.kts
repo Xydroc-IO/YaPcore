@@ -107,7 +107,8 @@ tasks.register("assembleRelease") {
             "**/WINDOWS.md", "**/NGINX_AND_LOCALHOST.md", "**/PLAYERDATA.md", "**/MARIADB.md", "**/YAPDB.md",
             "**/STACKER.md", "**/PLUGINS.md", "**/MODULES_AND_API.md", "**/TUNE.md", "**/PERMISSIONS.md",
             "**/TEBEX.md",
-            "**/REGIONS.md", "**/RELEASES.md", "**/DEFAULTS.md",
+            "**/REGIONS.md", "**/RELEASES.md", "**/DEFAULTS.md", "**/SECRETS.md", "**/TESTING.md",
+            "**/PROJECT_STATUS.md", "**/COMPLETION_BACKLOG.md",
             "**/PLUGIN_COMPAT_MATRIX.md", "**/YAP_LINK_NATIVE.md", "**/PHASE4_PROTOCOL.md",
             "**/ROADMAP_COMPLETION_PHASES.md", "**/VIA_GEYSER_PARITY.md",
             "**/FOLIA_FORK.md", "**/YAP_FOLIA_SOAK.md",
@@ -140,8 +141,22 @@ tasks.register("assembleRelease") {
                 }
             }
             project.copy {
+                from(project.file("config/defaults"))
+                into(dest.resolve("config/defaults"))
+            }
+            project.copy {
                 from(project.file("config"))
                 into(dest.resolve("config"))
+                include("README.md", "*.example", ".gitkeep")
+                // Never ship operator live config (tokens, ops, JDBC overrides)
+                exclude("server.properties", "yap-ranks-applied")
+            }
+            val templates = project.file("config/templates")
+            if (templates.isDirectory) {
+                project.copy {
+                    from(templates)
+                    into(dest.resolve("config/templates"))
+                }
             }
             project.copy {
                 from(project.file("plugins"))

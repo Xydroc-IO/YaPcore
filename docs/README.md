@@ -8,7 +8,7 @@ Docs are grouped by topic:
 
 | Folder | What’s in it |
 |--------|----------------|
-| [**start/**](start/) | Quick start, defaults, releases, licensing, Windows, testing |
+| [**start/**](start/) | Quick start, defaults, releases, licensing, legal, Windows, testing |
 | [**overview/**](overview/) | What we are, plain English, ecosystem compare, roadmap |
 | [**ops/**](ops/) | Commands, permissions, web dashboard, tune |
 | [**network/**](network/) | Ports, clients, crossplay, nginx, Cloudflare, YaP Link, Velocity |
@@ -30,14 +30,18 @@ Docs are grouped by topic:
 |----------|-------------|
 | [**Quick Start**](start/QUICK_START.md) | **10-minute setup** — release zip or source |
 | [**Defaults**](start/DEFAULTS.md) | Shipped first-boot configs — `config/defaults/` |
+| [**Secrets**](start/SECRETS.md) | Passwords, tokens, webhooks (operator-owned) |
 | [**Wiki**](WIKI.md) | Full operator doc index |
 | [**Releases**](start/RELEASES.md) | Downloadable zips, build commands |
 | [**Licensing**](start/LICENSING.md) | GPLv3 + third-party notices |
+| [**Privacy Policy**](start/PRIVACY_POLICY.md) | Data handling (software + operator guidance) |
+| [**Terms of Use**](start/TERMS_OF_USE.md) | Acceptable use, disclaimers, operator duties |
 
 ## Overview
 
 | Document | Description |
 |----------|-------------|
+| [**PROJECT_STATUS**](overview/PROJECT_STATUS.md) | **What's done, what's partial, what's left** (operator rundown) |
 | [PLAIN_ENGLISH](overview/PLAIN_ENGLISH.md) | Non-tech overview |
 | [FULL_RUNDOWN](overview/FULL_RUNDOWN.md) | Full product rundown |
 | [WHAT_WE_ARE](overview/WHAT_WE_ARE.md) | Short identity |
