@@ -1,7 +1,8 @@
 # YaPDB — shared MariaDB pool for YaP plugins
 
-First-party **`yap-db.jar`** (`YaPDB`) owns **one HikariCP pool** per JVM. Other plugins
-(and your own addons) borrow connections instead of each shading Hikari + the MySQL driver.
+First-party **`yap-db.jar`** (`YaPDB`) owns **one HikariCP pool** per JVM on each
+**YaP-Folia** backend. Other plugins (and your own addons) borrow connections instead of
+each shading Hikari + the MySQL driver.
 
 ## Why
 

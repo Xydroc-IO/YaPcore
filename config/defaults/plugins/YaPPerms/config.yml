@@ -1,0 +1,134 @@
+# YaPPerms — native permissions (shared MariaDB via YaPDB)
+use-shared-yapdb: true
+
+# JDBC fallback when YaPDB is absent
+jdbc:
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata
+  user: yap
+  password: change-me
+
+pool:
+  maximum-pool-size: 8
+  minimum-idle: 2
+  connection-timeout-ms: 10000
+
+# Default group for new players (must exist after applypack)
+default-group: default
+default-track: yap
+
+# Apply YaP starter rank pack on first boot (default/vip/mod/admin + track yap)
+apply-starter-pack-on-first-boot: true
+
+# Chat/tab meta uses legacy § codes; Adventure consumers may translate
+groups:
+  default:
+    weight: 0
+    prefix: "&7"
+    suffix: ""
+    parents: []
+  vip:
+    weight: 10
+    prefix: "&a[VIP] "
+    suffix: " &a✦"
+    parents: [default]
+  mod:
+    weight: 50
+    prefix: "&9[Mod] "
+    suffix: ""
+    parents: [vip]
+  admin:
+    weight: 100
+    prefix: "&c[Admin] "
+    suffix: ""
+    parents: [mod]
+
+tracks:
+  yap: [default, vip, mod, admin]
+
+# Starter permission grants (merged into group rows on applypack)
+starter-grants:
+  default:
+    - yapvehicles.drive
+    - yapdata.menu
+    - yapdata.balance
+    - yapdata.pay
+    - yapdata.home
+    - yapdata.warp
+    - yapdata.kit
+    - yapdata.kit.starter
+    - yapdata.mail
+    - yapdata.shop
+    - yapdata.jobs
+    - yapdata.job.miner
+    - yapdata.job.lumberjack
+    - yapdata.ah
+    - yapdata.claim
+    - yapchat.use
+    - yapchat.msg
+    - yapessentials.spawn
+    - yapessentials.back
+    - yapessentials.tpa
+    - yapessentials.afk
+    - yapessentials.list
+    - yapessentials.rules
+    - yapessentials.motd
+    - yapessentials.suicide
+  vip:
+    - yapvehicles.command
+    - yapvehicles.spawn
+    - yapdata.claims.wilderness
+    - yapdata.kit.*
+    - yapdata.job.*
+    - yapessentials.hat
+    - yapessentials.ptime
+    - yapessentials.pweather
+  mod:
+    - yapdata.warp.admin
+    - yapdata.balance.others
+    - yapdata.claims.admin
+    - yapvehicles.destroy
+    - yapstacker.gui
+    - yapstacker.give
+    - yapstacker.wand
+    - yapstacker.tool
+    - yapstacker.aura
+    - yapcompat.status
+    - placeholderapi.parse
+    - yapchat.staff
+    - yapchat.socialspy
+    - yapmod.warn
+    - yapmod.mute
+    - yapmod.kick
+    - yapmod.history
+    - yapessentials.fly
+    - yapessentials.speed
+    - yapessentials.heal
+    - yapessentials.feed
+    - yapessentials.repair
+    - yapessentials.clear
+    - yapessentials.vanish
+    - yapessentials.invsee
+    - yapessentials.echest
+    - yapessentials.teleport
+    - yapessentials.broadcast
+    - yapessentials.setspawn
+  admin:
+    - yapdata.admin
+    - yapdata.trader.admin
+    - yapstacker.admin
+    - yappregen.admin
+    - yapknobs.reload
+    - yapdb.admin
+    - yappacks.admin
+    - placeholderapi.admin
+    - yapvehicles.command
+    - yapvehicles.spawn
+    - yapvehicles.destroy
+    - yapvehicles.drive
+    - yapperm.admin
+    - yapmod.ban
+    - yapmod.ipban
+    - yapmod.admin
+    - yapessentials.god
+    - yapessentials.nick
+    - yapessentials.nick.others

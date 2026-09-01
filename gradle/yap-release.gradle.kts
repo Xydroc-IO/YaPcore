@@ -68,6 +68,7 @@ tasks.register("assembleRelease") {
             "yap-discord.jar",
             "yap-floodgate.jar",
             "yap-bedrock-ui.jar",
+            "yap-folia-bridge.jar",
         )
         val gameplayPluginJars = listOf(
             "yap-vehicles.jar",
@@ -103,7 +104,7 @@ tasks.register("assembleRelease") {
             "VEHICLES.md", "CLIENTS_AND_PACKS.md", "WEB_DASHBOARD.md", "PREGEN.md",
             "WINDOWS.md", "NGINX_AND_LOCALHOST.md", "PLAYERDATA.md", "MARIADB.md", "YAPDB.md",
             "STACKER.md", "PLUGINS.md", "MODULES_AND_API.md", "TUNE.md", "PERMISSIONS.md",
-            "REGIONS.md", "RELEASES.md",
+            "REGIONS.md", "RELEASES.md", "DEFAULTS.md",
             "PLUGIN_COMPAT_MATRIX.md", "YAP_LINK_NATIVE.md", "PHASE4_PROTOCOL.md",
             "ROADMAP_COMPLETION_PHASES.md", "VIA_GEYSER_PARITY.md",
             "FOLIA_FORK.md", "YAP_FOLIA_SOAK.md",
@@ -114,6 +115,7 @@ tasks.register("assembleRelease") {
             "fetch-folia.sh",
             "vendor-folia.sh", "folia-patch.sh", "build-yap-folia.sh", "verify-yap-folia.sh",
             "soak-yap-folia.sh", "smoke-folia.sh",
+            "seed-defaults.sh",
             "yapctl",
         )
 
@@ -314,17 +316,24 @@ tasks.register("assembleRelease") {
             Launch
             ------
               chmod +x *.sh scripts/*.sh scripts/db/*.sh scripts/yapctl
+              ./scripts/seed-defaults.sh   # first boot configs (safe if already present)
+              ./configure-db.sh --server-id lobby   # MariaDB + JDBC (recommended)
               ./start.sh --fg
               ./gui.sh
               ./stop.sh
               ./status.sh
               ./start-prod.sh --fg
 
+            Defaults
+            --------
+              config/defaults/ is copied into place on first start (never overwrites).
+              See docs/DEFAULTS.md
+
             MariaDB (YaPPlayerData — single or multi-backend)
             -------------------------------------------------
               ./start-mariadb.sh
               ./configure-playerdata.sh
-              ./configure-db.sh
+              ./configure-db.sh --server-id lobby
               # multi-backend: ./configure-db.sh --host <db-ip> --server-id survival
               ./stop-mariadb.sh
               See docs/MARIADB.md

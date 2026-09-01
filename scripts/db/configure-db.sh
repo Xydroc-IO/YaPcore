@@ -119,4 +119,44 @@ if [ -n "$SERVER_ID" ] || [ -f "$PLAYER_CFG" ] || [ -f "$REPO_ROOT/playerdata-pl
   fi
 fi
 
+# Patch every plugin config JDBC fallback (+ Link plugin properties) to the same credentials.
+# Plugins with use-shared-yapdb still get correct fallbacks if YaPDB is absent.
+if command -v python3 >/dev/null 2>&1; then
+  python3 - "$TARGET_ROOT" "$JDBC" "$USER" "$PASS" <<'PY'
+import sys, re
+from pathlib import Path
+root, jdbc, user, password = sys.argv[1:5]
+n = 0
+plugins = Path(root) / "plugins"
+if plugins.is_dir():
+    for cfg in plugins.glob("*/config.yml"):
+        text = cfg.read_text(encoding="utf-8")
+        orig = text
+        if "jdbc" not in text.lower() and "mysql" not in text.lower():
+            continue
+        text = re.sub(r"jdbc:mysql://[^\s\"']+", jdbc, text)
+        text = re.sub(r"(?m)^([ \t]*(?:user|jdbc-user):\s*).*$", rf"\g<1>{user}", text)
+        text = re.sub(r"(?m)^([ \t]*(?:password|jdbc-password):\s*).*$", rf"\g<1>{password}", text)
+        if text != orig:
+            cfg.write_text(text, encoding="utf-8")
+            n += 1
+            print(f"  fallback JDBC → {cfg.parent.name}")
+link = Path(root) / "link-data" / "plugins"
+if link.is_dir():
+    for cfg in link.glob("*/config.properties"):
+        text = cfg.read_text(encoding="utf-8")
+        if "jdbc" not in text.lower():
+            continue
+        orig = text
+        text = re.sub(r"(?m)^(jdbc-url=).*$", rf"\g<1>{jdbc}", text)
+        text = re.sub(r"(?m)^(user=).*$", rf"\g<1>{user}", text)
+        text = re.sub(r"(?m)^(password=).*$", rf"\g<1>{password}", text)
+        if text != orig:
+            cfg.write_text(text, encoding="utf-8")
+            n += 1
+            print(f"  link JDBC → {cfg.parent.name}")
+print(f"Patched {n} additional JDBC config(s)")
+PY
+fi
+
 echo "Done. Restart backends after installing yap-db.jar + yap-playerdata.jar."

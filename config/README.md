@@ -4,11 +4,16 @@ Edit **here** for day-to-day tuning.
 
 | Path | What |
 |------|------|
-| `server.properties` | YaP product (ports, dual-stack, Phase 3, packs) |
+| `server.properties` | YaP product (ports, dual-stack, packs, Folia) |
+| `server.properties.example` | Canonical product profile (copy if missing) |
+| `defaults/` | **Shipped first-boot pack** — see [docs/DEFAULTS.md](../docs/DEFAULTS.md) |
 | `paper/` | Paper globals / world defaults (**high-pop tuned**) |
 | `spigot.yml` / `bukkit.yml` | Classic Spigot/Bukkit (**high-pop tuned; EAR uncapped for fair vs Leaf**) |
 | `templates/highpop/` | Canonical Paper/Spigot/Bukkit templates (EAR=0) |
 | `templates/highpop-ear/` | Optional tight EAR — not the product default |
+
+`./scripts/seed-defaults.sh` (also run from `start.sh`) copies `defaults/**` into
+`config/`, `plugins/`, and `link-data/` **only when those files are missing**.
 
 Gameplay encyclopedia: `plugins/YaPGameplayKnobs/knobs.yml` (jar in `plugins/`).
 See `docs/TUNE.md`.

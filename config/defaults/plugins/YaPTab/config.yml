@@ -1,0 +1,31 @@
+header:
+  - "&6&lYaP Network"
+  - "&7Welcome &f{player}"
+
+footer:
+  - "&7Online: &f{online}&7/&f{max}"
+  - "&eyaplabs.us"
+
+sidebar:
+  enabled: true
+  lines:
+    - "&6&lInfo"
+    - "&7Rank: &f{rank}"
+    - "&7Balance: &a{balance}"
+    - ""
+    - "&7World: &f{world}"
+
+nametag-teams: true
+refresh-seconds: 3
+
+network-sync:
+  enabled: true
+  server-id: default
+
+bossbar:
+  enabled: false
+  welcome-on-join: true
+  title: "&6&lWelcome to YaP"
+  subtitle: "&7Enjoy your stay, &f{player}"
+  color: YELLOW
+  duration-seconds: 8

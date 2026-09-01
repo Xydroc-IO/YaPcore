@@ -1,0 +1,66 @@
+spawn:
+  world: world
+  x: 0.5
+  y: 80.0
+  z: 0.5
+  yaw: 0.0
+  pitch: 0.0
+  # global = one spawn network-wide; server = per server-id
+  scope: server
+  persist-db: true
+
+server-id: lobby
+use-shared-yapdb: true
+
+database:
+  # Fallback only when YaPDB is absent — prefer use-shared-yapdb + ./configure-db.sh
+  jdbc-url: "jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true"
+  user: yap
+  password: change-me
+  pool-max: 4
+  pool-min-idle: 1
+  connection-timeout-ms: 10000
+
+tpa:
+  timeout-seconds: 60
+
+afk:
+  prefix: "&7[AFK] "
+
+messages:
+  rules:
+    - "&6Server Rules"
+    - "&71. Be respectful."
+    - "&72. No cheating."
+  motd:
+    - "&aWelcome to the server!"
+    - "&7Type &f/rules &7or &f/menu"
+
+broadcast-format: "&6[Broadcast] &f{message}"
+
+features:
+  spawn: true
+  back: true
+  tpa: true
+  teleport: true
+  fly: true
+  god: true
+  speed: true
+  heal: true
+  feed: true
+  repair: true
+  clear: true
+  vanish: true
+  invsee: true
+  echest: true
+  nick: true
+  afk: true
+  list: true
+  ptime: true
+  pweather: true
+  broadcast: true
+  rules: true
+  motd: true
+  suicide: true
+  hat: true
+  staff: true

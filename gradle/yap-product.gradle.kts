@@ -106,6 +106,15 @@ tasks.register("installGameplayDefaults") {
     if (findProject(":games-plugin") != null) {
         dependsOn(":games-plugin:installIntoPlugins")
     }
+    if (findProject(":games-module") != null) {
+        dependsOn(":games-module:installIntoModules")
+    }
+    if (findProject(":games-ffa-module") != null) {
+        dependsOn(":games-ffa-module:installIntoModules")
+    }
+    if (findProject(":games-duels-module") != null) {
+        dependsOn(":games-duels-module:installIntoModules")
+    }
     if (findProject(":floodgate-plugin") != null) {
         dependsOn(":floodgate-plugin:installIntoPlugins")
     }
@@ -137,11 +146,20 @@ tasks.register("installAllProductDefaults") {
 
 tasks.register("installFineTuneModules") {
     group = "distribution"
-    description = "Install all fine-tune packaging modules into modules/ (incl. vehicles)"
+    description = "Install all fine-tune packaging modules into modules/ (incl. vehicles + games)"
     dependsOn(
         ":finetune-modules:installIntoModules",
         ":vehicles-module:installIntoModules",
     )
+    if (findProject(":games-module") != null) {
+        dependsOn(":games-module:installIntoModules")
+    }
+    if (findProject(":games-ffa-module") != null) {
+        dependsOn(":games-ffa-module:installIntoModules")
+    }
+    if (findProject(":games-duels-module") != null) {
+        dependsOn(":games-duels-module:installIntoModules")
+    }
 }
 /** Flat folder of every first-party product plugin jar for distribution / mirrors. */
 tasks.register("assemblePluginDist") {
@@ -202,6 +220,9 @@ tasks.register("assemblePluginDist") {
         ":yap-npcs-api:jar",
         ":yap-tab-api:jar",
         ":finetune-modules:buildAllFineTuneModules",
+        ":games-module:jar",
+        ":games-ffa-module:jar",
+        ":games-duels-module:jar",
     )
 
     val outDir = layout.buildDirectory.dir("dist/yap-plugins")
@@ -348,6 +369,15 @@ tasks.register("assemblePluginDist") {
             copyNamed(f, if (gameplayModule) modulesGameplay else modulesCore)
         }
         copyNamed(jarOf(":vehicles-module"), modulesGameplay)
+        if (findProject(":games-module") != null) {
+            copyNamed(jarOf(":games-module"), modulesGameplay)
+        }
+        if (findProject(":games-ffa-module") != null) {
+            copyNamed(jarOf(":games-ffa-module"), modulesGameplay)
+        }
+        if (findProject(":games-duels-module") != null) {
+            copyNamed(jarOf(":games-duels-module"), modulesGameplay)
+        }
 
         dest.resolve("README.txt").writeText(
             """
@@ -364,7 +394,7 @@ tasks.register("assemblePluginDist") {
             core-network/     CORE plugins
             gameplay/         GAMEPLAY plugins (opt-in)
             modules/core/     CORE fine-tune modules
-            modules/gameplay/ vehicles + stacker + knobs modules
+            modules/gameplay/ vehicles + stacker + knobs + games modules
             api/              yap-*-api jars
 
             Rebuild:  gradle assemblePluginDist

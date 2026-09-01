@@ -1,8 +1,8 @@
 # MariaDB for YaP (shared YaPDB + PlayerData)
 
 YaPcore does **not** embed a database engine. Owners run one MariaDB instance
-(packaged via Docker). **`yap-db.jar` (YaPDB)** owns the shared Hikari pool;
-**YaPPlayerData** and future SQL plugins borrow it.
+(packaged via Docker). **`yap-db.jar` (YaPDB)** owns the shared Hikari pool on each
+**YaP-Folia** backend; **YaPPlayerData** and other SQL plugins borrow it.
 
 Works the same on **Linux** and **Windows**.
 

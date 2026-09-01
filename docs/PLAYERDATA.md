@@ -1,6 +1,7 @@
 # YaP PlayerData — cross-server sync, offline auth, claims, taxes, NPC traders, GUIs
 
-First-party **`yap-playerdata.jar`** (`YaPPlayerData`) — shared MariaDB across Velocity / YaP Link.
+First-party **`yap-playerdata.jar`** (`YaPPlayerData`) — shared MariaDB across
+**YaP Link** (or Velocity) backends running **YaP-Folia**.
 
 ## Database setup (required)
 
@@ -71,23 +72,24 @@ Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin
 | Economy `/bal` `/pay` + Vault | on | `economy.enabled` |
 | Homes / warps / kits / mail | on | `features.homes` … |
 | Claims | on | `features.claims` (+ `claims.*`) |
-| Shops / jobs / auctions | **off** | `features.shops` / `jobs` / `auctions` |
+| Shops / auctions (AH) | **on** | `features.shops` / `auctions` |
+| Jobs | **off** (keep off with YaPSkills) | `features.jobs` |
 | NPC traders | **off** | `features.traders` |
 
 Money features require `economy.enabled: true`. When economy is off, shops/jobs/AH/traders and claim tax stay off even if their feature flags are true.
 
 ```yaml
-# No economy network (sync + homes only):
+# Default product features (economy on):
 economy:
-  enabled: false
+  enabled: true
 features:
   homes: true
   warps: true
   kits: true
   mail: true
-  shops: false
+  shops: true
   jobs: false
-  auctions: false
+  auctions: true
   claims: true
   traders: false
 ```
@@ -101,8 +103,8 @@ features:
 | Sync | Inv / XP / vitals · economy when enabled |
 | Fancy GUIs | `/menu` hub (icons match enabled modules) |
 | Claims | Shovel · subdivides · taxes (tax needs economy) |
-| NPC traders | `/trader` (needs economy) |
+| NPC traders | `/trader` (opt-in; needs economy) |
 | Homes/warps/kits/mail | Cross-server |
-| Shops/jobs/AH | Opt-in money modules |
+| Shops / AH | Chest shops (`/shop`) + auction house (`/ah`) |
 
 Plugin jar: `gradle :playerdata-plugin:installIntoPlugins` (also in `assembleRelease`).

@@ -1,0 +1,51 @@
+# Unsigned system chat clears "Chat messages cannot be verified" on offline/Via joins
+unsigned-system-chat: true
+
+# Default public channel
+default-channel: global
+
+channels:
+  global:
+    format: "{prefix}{player}{suffix}&7: &f{message}"
+    radius: -1
+  local:
+    format: "&8[&aLocal&8] {prefix}{player}{suffix}&7: &f{message}"
+    radius: 100
+  staff:
+    format: "&c[Staff] &f{prefix}{player}{suffix}&7: &f{message}"
+    radius: -1
+    permission: yapchat.staff
+
+# Prefix local chat with ! or /local (handled in listener)
+local-prefix: "!"
+
+# Slow mode (seconds between messages; 0 = off)
+slow-mode-seconds: 0
+
+# Basic word filter (case-insensitive substring match)
+filter:
+  enabled: true
+  mode: replace
+  block-on-match: false
+  words:
+    - fuck
+    - shit
+  replacement: "***"
+
+messages:
+  muted: "&cYou are muted. &7({reason})"
+  no-permission: "&cNo permission."
+  pm-sent: "&7[&dYou → {target}&7] &f{message}"
+  pm-received: "&7[&d{sender} → You&7] &f{message}"
+  staff-format: "&c[Staff] &f{player}&7: &f{message}"
+  socialspy: "&8[Spy] &7{sender} → {target}: &f{message}"
+  slow-mode: "&cSlow mode — wait {seconds}s."
+  filtered: "&cMessage blocked by filter."
+
+server-id: lobby
+
+network:
+  enabled: true
+  relay-channels:
+    - global
+    - staff
