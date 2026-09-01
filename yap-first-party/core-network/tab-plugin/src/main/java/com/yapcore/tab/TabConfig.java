@@ -19,6 +19,7 @@ public final class TabConfig {
     private int refreshSeconds = 3;
     private boolean networkSyncEnabled = true;
     private String serverId = "default";
+    private int networkSyncHeartbeatSeconds = 30;
     private boolean bossBarEnabled;
     private boolean bossBarWelcomeOnJoin = true;
     private String bossBarTitle = "&6&lWelcome";
@@ -41,6 +42,7 @@ public final class TabConfig {
         refreshSeconds = Math.max(1, c.getInt("refresh-seconds", 3));
         networkSyncEnabled = c.getBoolean("network-sync.enabled", true);
         serverId = c.getString("network-sync.server-id", "default");
+        networkSyncHeartbeatSeconds = Math.max(10, c.getInt("network-sync.heartbeat-seconds", 30));
         bossBarEnabled = c.getBoolean("bossbar.enabled", false);
         bossBarWelcomeOnJoin = c.getBoolean("bossbar.welcome-on-join", true);
         bossBarTitle = c.getString("bossbar.title", "&6&lWelcome to YaP");
@@ -104,6 +106,10 @@ public final class TabConfig {
 
     public String serverId() {
         return serverId;
+    }
+
+    public int networkSyncHeartbeatSeconds() {
+        return networkSyncHeartbeatSeconds;
     }
 
     public boolean bossBarEnabled() {

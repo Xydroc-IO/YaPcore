@@ -9,6 +9,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
@@ -109,6 +111,28 @@ public final class ClaimListener implements Listener {
         if (!claims.canEnter(event.getPlayer(), event.getTo())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage("§cEntry denied in this claim.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onFireSpread(BlockSpreadEvent event) {
+        if (event.getSource().getType() != Material.FIRE && event.getSource().getType() != Material.SOUL_FIRE) {
+            return;
+        }
+        if (!claims.isFireSpreadAllowed(event.getBlock().getLocation())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onMobSpawn(CreatureSpawnEvent event) {
+        if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.CUSTOM
+                || event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER_EGG
+                || event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER) {
+            return;
+        }
+        if (!claims.isMobSpawningAllowed(event.getLocation())) {
+            event.setCancelled(true);
         }
     }
 

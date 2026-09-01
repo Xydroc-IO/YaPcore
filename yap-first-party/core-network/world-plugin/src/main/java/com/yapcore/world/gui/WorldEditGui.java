@@ -47,6 +47,11 @@ public final class WorldEditGui {
     static final int SLOT_PASTE_LIST = 32;
     static final int SLOT_WALLS = 34;
     static final int SLOT_HOLLOW = 35;
+    static final int SLOT_COPY = 42;
+    static final int SLOT_CLIP_PASTE = 43;
+    static final int SLOT_EXPAND = 44;
+    static final int SLOT_SPHERE = 45;
+    static final int SLOT_CYL = 46;
     static final int SLOT_BROWSER = 37;
     static final int SLOT_PREGEN = 40;
     static final int SLOT_CLOSE = 49;
@@ -115,6 +120,17 @@ public final class WorldEditGui {
                 "Four sides with " + session.material().name()));
         inv.setItem(SLOT_HOLLOW, WorldEditGuiHolder.icon(Material.SPONGE, "Hollow",
                 "Clear interior, keep shell"));
+
+        inv.setItem(SLOT_COPY, WorldEditGuiHolder.icon(Material.SHEARS, "Copy selection",
+                "Clipboard relative to your feet"));
+        inv.setItem(SLOT_CLIP_PASTE, WorldEditGuiHolder.icon(Material.SLIME_BALL, "Paste clipboard",
+                "At your feet · ignores air? use //paste -a"));
+        inv.setItem(SLOT_EXPAND, WorldEditGuiHolder.icon(Material.PISTON, "Expand +1 all",
+                "Grow selection · //expand <n> [dir]"));
+        inv.setItem(SLOT_SPHERE, WorldEditGuiHolder.icon(Material.FIRE_CHARGE, "Sphere here",
+                "Radius = brush · material from palette"));
+        inv.setItem(SLOT_CYL, WorldEditGuiHolder.icon(Material.END_ROD, "Cylinder here",
+                "Radius/height = brush · material from palette"));
 
         inv.setItem(SLOT_UNDO, WorldEditGuiHolder.icon(Material.ORANGE_STAINED_GLASS, "Undo"));
         inv.setItem(SLOT_REDO, WorldEditGuiHolder.icon(Material.CYAN_STAINED_GLASS, "Redo"));

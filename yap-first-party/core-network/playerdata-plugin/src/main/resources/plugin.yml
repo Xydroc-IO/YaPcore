@@ -78,8 +78,8 @@ commands:
     usage: /warps
     permission: yapdata.warp
   kit:
-    description: Claim a kit
-    usage: /kit [name]
+    description: Claim a kit, or admin give/grant (console / Tebex)
+    usage: /kit [name|give|grant|list]
     permission: yapdata.kit
   kits:
     description: Kits GUI
@@ -144,8 +144,17 @@ permissions:
   yapdata.kit.starter:
     description: Claim the starter kit
     default: true
+  yapdata.kit.adventurer:
+    description: Claim the adventurer kit
+    default: false
+  yapdata.kit.vip:
+    description: Claim the VIP kit
+    default: false
   yapdata.kit.*:
     description: Access all kits
+    default: op
+  yapdata.kit.give:
+    description: Admin / console kit give and grant (store)
     default: op
   yapdata.mail:
     description: Read / send / clear mail

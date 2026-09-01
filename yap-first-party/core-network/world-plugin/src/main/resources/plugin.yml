@@ -10,7 +10,7 @@ softdepend: [YaPPerms, YaPPregen]
 commands:
   yapworld:
     description: World edit + world admin (Folia-safe WorldEdit-class)
-    usage: /yapworld help|gui|tool|editor|pos1|pos2|fill|walls|undo|…
+    usage: /yapworld help|gui|tool|set|copy|paste|…  (also //set //copy …)
     # Per-subcommand permissions — do not require admin for basic editing
     aliases: [mv, worldedit, we]
 permissions:

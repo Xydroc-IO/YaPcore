@@ -21,6 +21,8 @@ refresh-seconds: 3
 network-sync:
   enabled: true
   server-id: default
+  # Republish header/footer/sidebar to other backends (requires yap-link-tab-bridge on Link)
+  heartbeat-seconds: 30
 
 bossbar:
   enabled: false

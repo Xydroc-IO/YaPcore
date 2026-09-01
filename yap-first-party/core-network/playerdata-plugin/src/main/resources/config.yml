@@ -101,28 +101,9 @@ claims:
     fire-spread: deny
     mob-spawning: allow
 
-kits:
-  starter:
-    delay-seconds: 86400
-    items:
-      - material: BREAD
-        amount: 16
-      - material: WOODEN_SWORD
-        amount: 1
-  # Unlocked by quest t1_first_steps (kit_unlock:adventurer → yapdata.kit.adventurer)
-  adventurer:
-    delay-seconds: 43200
-    items:
-      - material: BREAD
-        amount: 16
-      - material: STONE_SWORD
-        amount: 1
-      - material: STONE_PICKAXE
-        amount: 1
-      - material: TORCH
-        amount: 32
-      - material: LEATHER_CHESTPLATE
-        amount: 1
+# Kit definitions live in kits.yml (shared across Hub + survival backends).
+# Optional overrides here still merge on reload. See docs/ops/TEBEX.md for store wiring.
+# kits: {}
 
 jobs:
   miner:

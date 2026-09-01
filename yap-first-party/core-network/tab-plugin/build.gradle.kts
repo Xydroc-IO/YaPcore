@@ -1,5 +1,6 @@
 plugins {
     java
+    id("com.gradleup.shadow") version "9.6.1"
 }
 
 group = "com.yapcore"
@@ -23,23 +24,25 @@ dependencies {
     implementation(project(":yap-tab-api"))
     compileOnly(project(":yap-perms-api"))
     compileOnly(project(":yap-mmo-api"))
+    implementation("net.megavex:scoreboard-library-api:2.8.2")
+    implementation("net.megavex:scoreboard-library-implementation:2.8.2")
+}
+
+tasks.shadowJar {
+    archiveFileName.set("yap-tab.jar")
+    archiveClassifier.set("")
+    relocate("net.megavex", "com.yapcore.tab.libs.megavex")
+    mergeServiceFiles()
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 tasks.jar {
-    from({
-        configurations.runtimeClasspath.get()
-            .filter { f ->
-                val n = f.name
-                n.contains("yap-sched") || n.contains("yap-tab-api")
-            }
-            .map { zipTree(it) }
-    })
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    archiveFileName.set("yap-tab.jar")
+    enabled = true
+    archiveClassifier.set("dev")
 }
 
 tasks.register<Copy>("installIntoPlugins") {
-    dependsOn(tasks.jar)
-    from(tasks.jar.get().archiveFile)
+    dependsOn(tasks.shadowJar)
+    from(tasks.shadowJar.get().archiveFile)
     into(rootProject.layout.projectDirectory.dir("plugins"))
 }

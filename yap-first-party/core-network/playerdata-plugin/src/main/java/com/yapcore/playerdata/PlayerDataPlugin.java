@@ -38,6 +38,7 @@ import com.yapcore.playerdata.feature.JobListener;
 import com.yapcore.playerdata.feature.ShopListener;
 import com.yapcore.playerdata.gui.MenuListener;
 import com.yapcore.playerdata.gui.Menus;
+import com.yapcore.playerdata.kit.KitGrantService;
 import com.yapcore.playerdata.npc.NpcTraderListener;
 import com.yapcore.playerdata.npc.NpcTraderService;
 import com.yapcore.playerdata.service.PlayerDataServiceImpl;
@@ -68,6 +69,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
     private NpcTraderService traders;
     private Menus menus;
     private PlayerDataServiceImpl playerDataService;
+    private KitGrantService kitGrants;
 
     @Override
     public void onEnable() {
@@ -82,7 +84,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
             getLogger().severe("Failed to open MariaDB/MySQL — disabling YaPPlayerData: " + e.getMessage());
             getLogger().severe("Prefer shared YaPDB (yap-db.jar). JDBC must match deploy/mariadb/.env (port often 3316).");
             getLogger().severe("Setup: ./scripts/db/ensure-db.sh --server-id <id>   (or Windows Start-MariaDB + Configure-Db)");
-            getLogger().severe("Docs: docs/YAPDB.md · docs/MARIADB.md");
+            getLogger().severe("Docs: docs/data/YAPDB.md · docs/data/MARIADB.md");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -130,9 +132,10 @@ public final class PlayerDataPlugin extends JavaPlugin {
         }
 
         menus = new Menus(this, config, sync, balances, homes, warps, kits, jobs, auctions, mail, claims);
+        kitGrants = config.featureKits() ? new KitGrantService(this, config, kits, sync) : null;
 
         getServer().getPluginManager().registerEvents(
-                new JoinQuitListener(this, sync, config.featureMail() ? mail : null), this);
+                new JoinQuitListener(this, sync, config.featureMail() ? mail : null, kitGrants), this);
         getServer().getPluginManager().registerEvents(new AuthListener(auth, repository, config), this);
         getServer().getPluginManager().registerEvents(new MenuListener(menus, traders), this);
         if (claims != null) {
@@ -191,7 +194,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
         }
 
         if (config.featureKits()) {
-            KitCommands kitCommands = new KitCommands(config, kits, sync, menus);
+            KitCommands kitCommands = new KitCommands(this, config, kits, sync, kitGrants, menus);
             bind("kit", kitCommands, kitCommands);
             bind("kits", kitCommands, kitCommands);
         } else {

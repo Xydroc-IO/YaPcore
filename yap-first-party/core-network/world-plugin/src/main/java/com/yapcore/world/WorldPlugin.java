@@ -1,13 +1,17 @@
 package com.yapcore.world;
 
 import com.yapcore.world.cmd.WorldCommands;
+import com.yapcore.world.cmd.WorldEditOps;
 import com.yapcore.world.edit.BrushService;
+import com.yapcore.world.edit.ClipboardService;
+import com.yapcore.world.edit.GenerationService;
 import com.yapcore.world.edit.SelectionEditService;
 import com.yapcore.world.edit.UndoService;
 import com.yapcore.world.gui.WorldEditGui;
 import com.yapcore.world.gui.WorldEditGuiListener;
 import com.yapcore.world.listener.BrushListener;
 import com.yapcore.world.listener.SelectionWandListener;
+import com.yapcore.world.listener.WorldEditSlashBridge;
 import com.yapcore.world.listener.WorldEditToolListener;
 import com.yapcore.world.schem.SchematicPaster;
 import com.yapcore.world.service.SelectionServiceImpl;
@@ -33,6 +37,9 @@ public final class WorldPlugin extends JavaPlugin {
     private UndoService undoService;
     private BrushService brushService;
     private SelectionEditService selectionEditService;
+    private ClipboardService clipboardService;
+    private GenerationService generationService;
+    private WorldEditOps editOps;
     private WorldEditTool worldEditTool;
     private WorldEditGui worldEditGui;
     private WorldEditSessionRegistry editSessions;
@@ -50,7 +57,8 @@ public final class WorldPlugin extends JavaPlugin {
                 new WorldEditToolListener(config, selection, brushService, worldEditTool, this::openInGameGui), this);
         getServer().getPluginManager().registerEvents(
                 new WorldEditGuiListener(this, config, worldEditGui, selection, brushService,
-                        selectionEditService, undoService, paster), this);
+                        selectionEditService, clipboardService, generationService, undoService, paster), this);
+        getServer().getPluginManager().registerEvents(new WorldEditSlashBridge(this), this);
 
         var sm = getServer().getServicesManager();
         sm.register(com.yapcore.world.WorldManagerService.class, worldManager, this, ServicePriority.Normal);
@@ -61,7 +69,7 @@ public final class WorldPlugin extends JavaPlugin {
             cmd.setExecutor(commands);
             cmd.setTabCompleter(commands);
         }
-        getLogger().info("YaPWorld ready — /yapworld gui, golden axe tool, schematics, brush/undo (Folia-safe).");
+        getLogger().info("YaPWorld ready — //set //copy /yapworld gui (Folia-safe WorldEdit-class).");
     }
 
     public void reloadWorld() {
@@ -83,6 +91,10 @@ public final class WorldPlugin extends JavaPlugin {
         undoService = new UndoService(this, config.undoSessions());
         brushService = new BrushService(this, undoService);
         selectionEditService = new SelectionEditService(this, undoService);
+        clipboardService = new ClipboardService(this, undoService);
+        generationService = new GenerationService(this, undoService);
+        editOps = new WorldEditOps(this, selection, selectionEditService, generationService,
+                clipboardService, undoService, brushService);
         worldEditTool = new WorldEditTool(this);
         worldEditGui = new WorldEditGui(this, config, selection, worldEditTool);
         if (editSessions == null) {
@@ -90,7 +102,7 @@ public final class WorldPlugin extends JavaPlugin {
         }
         restartEditorHttp();
         commands = new WorldCommands(this, config, worldManager, selection, paster, brushService,
-                undoService, selectionEditService, worldEditTool, worldEditGui);
+                undoService, selectionEditService, editOps, worldEditTool, worldEditGui);
     }
 
     private void restartEditorHttp() {
@@ -149,6 +161,18 @@ public final class WorldPlugin extends JavaPlugin {
 
     public WorldEditGui gui() {
         return worldEditGui;
+    }
+
+    public WorldEditOps editOps() {
+        return editOps;
+    }
+
+    public ClipboardService clipboard() {
+        return clipboardService;
+    }
+
+    public GenerationService generation() {
+        return generationService;
     }
 
     public SelectionEditService selectionEdit() {

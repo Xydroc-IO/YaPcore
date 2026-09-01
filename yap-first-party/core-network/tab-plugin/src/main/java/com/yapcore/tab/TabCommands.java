@@ -25,10 +25,22 @@ public final class TabCommands implements CommandExecutor {
         }
         if (args.length >= 1 && "refresh".equalsIgnoreCase(args[0])) {
             plugin.tabService().refreshAll();
+            if (plugin.networkSync() != null) {
+                plugin.networkSync().publishLocalSnapshot();
+            }
             sender.sendMessage("§aTab list refreshed.");
             return true;
         }
-        sender.sendMessage("§e/yaptab reload|refresh");
+        if (args.length >= 1 && "sync".equalsIgnoreCase(args[0])) {
+            if (plugin.networkSync() == null) {
+                sender.sendMessage("§cNetwork sync not initialized.");
+                return true;
+            }
+            plugin.networkSync().publishLocalSnapshot();
+            sender.sendMessage("§aTab network snapshot published.");
+            return true;
+        }
+        sender.sendMessage("§e/yaptab reload|refresh|sync");
         return true;
     }
 }

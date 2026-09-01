@@ -148,6 +148,22 @@ public final class RegionServiceImpl implements RegionService {
         return resolve(region.get(), RegionFlag.MOB_DAMAGE) == FlagValue.ALLOW;
     }
 
+    public boolean isFireSpreadAllowed(Location location) {
+        Optional<AdminRegion> region = at(location);
+        if (region.isEmpty()) {
+            return true;
+        }
+        return resolve(region.get(), RegionFlag.FIRE_SPREAD) == FlagValue.ALLOW;
+    }
+
+    public boolean isMobSpawningAllowed(Location location) {
+        Optional<AdminRegion> region = at(location);
+        if (region.isEmpty()) {
+            return true;
+        }
+        return resolve(region.get(), RegionFlag.MOB_SPAWNING) == FlagValue.ALLOW;
+    }
+
     public boolean canOpenContainer(Player player, Location location) {
         if (player.hasPermission("yapregions.admin")) {
             return true;

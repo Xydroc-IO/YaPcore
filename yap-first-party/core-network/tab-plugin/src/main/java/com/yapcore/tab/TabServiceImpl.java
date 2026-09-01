@@ -1,6 +1,7 @@
 package com.yapcore.tab;
 
 import com.yapcore.perms.YaPPerms;
+import com.yapcore.sched.YapSched;
 import com.yapcore.tab.util.LegacyColors;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -16,20 +17,28 @@ import org.bukkit.scoreboard.Team;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public final class TabServiceImpl implements com.yapcore.tab.TabService {
 
     private static final String SIDEBAR_OBJECTIVE = "yaptab";
 
+    private final JavaPlugin plugin;
     private final TabConfig config;
     private final TabNetworkState networkState;
+    private final TabPacketSidebar packetSidebar;
+    private final boolean packetSidebarEnabled;
     private List<String> runtimeHeader;
     private List<String> runtimeFooter;
     private List<String> runtimeSidebar;
 
-    public TabServiceImpl(TabConfig config, TabNetworkState networkState) {
+    public TabServiceImpl(JavaPlugin plugin, TabConfig config, TabNetworkState networkState,
+                          TabPacketSidebar packetSidebar) {
+        this.plugin = plugin;
         this.config = config;
         this.networkState = networkState;
+        this.packetSidebar = packetSidebar;
+        this.packetSidebarEnabled = packetSidebar != null;
     }
 
     @Override
@@ -150,6 +159,19 @@ public final class TabServiceImpl implements com.yapcore.tab.TabService {
     }
 
     private void applySidebar(Player player) {
+        if (packetSidebarEnabled) {
+            YapSched.entity(plugin, player, () ->
+                    packetSidebar.update(player, effectiveSidebar(), this::applyPlaceholders));
+            return;
+        }
+        try {
+            applyLegacySidebar(player);
+        } catch (UnsupportedOperationException e) {
+            plugin.getLogger().log(Level.FINE, "Legacy sidebar unavailable on this server", e);
+        }
+    }
+
+    private void applyLegacySidebar(Player player) {
         Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
         Objective obj = board.registerNewObjective(
                 SIDEBAR_OBJECTIVE, Criteria.DUMMY,
@@ -173,6 +195,17 @@ public final class TabServiceImpl implements com.yapcore.tab.TabService {
     }
 
     private void applyNametag(Player player) {
+        if (packetSidebarEnabled) {
+            return;
+        }
+        try {
+            applyLegacyNametag(player);
+        } catch (UnsupportedOperationException e) {
+            plugin.getLogger().log(Level.FINE, "Nametag teams unavailable on this server", e);
+        }
+    }
+
+    private void applyLegacyNametag(Player player) {
         Scoreboard board = player.getScoreboard();
         if (board == null) {
             return;

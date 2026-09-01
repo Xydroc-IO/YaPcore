@@ -3,9 +3,11 @@ package com.yapcore.playerdata;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -117,7 +119,7 @@ public final class PlayerDataConfig {
         mailMaxUnread = Math.max(1, c.getInt("mail.max-unread", 50));
         auctionHours = Math.max(1, c.getInt("auctions.expire-hours", 48));
         auctionFeePercent = Math.max(0, c.getInt("auctions.fee-percent", 0));
-        kits = loadKits(c.getConfigurationSection("kits"));
+        kits = loadAllKits(c);
         jobs = loadJobs(c.getConfigurationSection("jobs"));
 
         featureHomes = c.getBoolean("features.homes", true);
@@ -172,6 +174,23 @@ public final class PlayerDataConfig {
             return serverId;
         }
         return mode.isEmpty() ? "global" : inventoryProfileMode.trim();
+    }
+
+    /**
+     * Prefer shared {@code kits.yml} (copy identically to Hub + survival).
+     * Optional {@code kits:} in config.yml still merge on top for local overrides.
+     */
+    private Map<String, KitDef> loadAllKits(FileConfiguration config) {
+        plugin.saveResource("kits.yml", false);
+        File kitsFile = new File(plugin.getDataFolder(), "kits.yml");
+        Map<String, KitDef> merged = new LinkedHashMap<>();
+        if (kitsFile.isFile()) {
+            FileConfiguration kitsYml = YamlConfiguration.loadConfiguration(kitsFile);
+            merged.putAll(loadKits(kitsYml.getConfigurationSection("kits")));
+        }
+        Map<String, KitDef> fromConfig = loadKits(config.getConfigurationSection("kits"));
+        merged.putAll(fromConfig);
+        return Collections.unmodifiableMap(merged);
     }
 
     private static Map<String, KitDef> loadKits(ConfigurationSection section) {

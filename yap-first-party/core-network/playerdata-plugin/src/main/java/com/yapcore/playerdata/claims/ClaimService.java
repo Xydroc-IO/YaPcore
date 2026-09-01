@@ -293,6 +293,28 @@ public final class ClaimService {
         return flags.resolveOrDefault(claim.get().id(), RegionFlag.MOB_DAMAGE) == FlagValue.ALLOW;
     }
 
+    public boolean isFireSpreadAllowed(Location loc) {
+        if (!config.claimsEnabled()) {
+            return true;
+        }
+        var claim = getAt(loc);
+        if (claim.isEmpty()) {
+            return true;
+        }
+        return flags.resolveOrDefault(claim.get().id(), RegionFlag.FIRE_SPREAD) == FlagValue.ALLOW;
+    }
+
+    public boolean isMobSpawningAllowed(Location loc) {
+        if (!config.claimsEnabled()) {
+            return true;
+        }
+        var claim = getAt(loc);
+        if (claim.isEmpty()) {
+            return true;
+        }
+        return flags.resolveOrDefault(claim.get().id(), RegionFlag.MOB_SPAWNING) == FlagValue.ALLOW;
+    }
+
     private boolean flagAllowsBuild(Claim claim, Player player) {
         var explicit = flags.explicit(claim.id(), RegionFlag.BUILD);
         if (explicit.isPresent() && explicit.get() == FlagValue.DENY) {

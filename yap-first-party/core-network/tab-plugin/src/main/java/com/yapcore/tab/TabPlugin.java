@@ -8,6 +8,7 @@ public final class TabPlugin extends JavaPlugin {
 
     private TabConfig config;
     private TabNetworkState networkState;
+    private TabPacketSidebar packetSidebar;
     private TabServiceImpl tabService;
     private TabNetworkSync networkSync;
     private TabListener listener;
@@ -16,6 +17,7 @@ public final class TabPlugin extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         networkState = new TabNetworkState();
+        packetSidebar = new TabPacketSidebar(this);
         reloadTab();
 
         PluginCommand cmd = getCommand("yaptab");
@@ -35,6 +37,7 @@ public final class TabPlugin extends JavaPlugin {
 
         networkSync = new TabNetworkSync(this, config, networkState);
         networkSync.register();
+        networkSync.startHeartbeat();
         networkSync.publishLocalSnapshot();
 
         getLogger().info("YaPTab ready — sidebar=" + config.sidebarEnabled()
@@ -46,10 +49,14 @@ public final class TabPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         if (networkSync != null) {
+            networkSync.publishClear();
             networkSync.unregister();
         }
         if (tabService != null) {
             getServer().getServicesManager().unregister(com.yapcore.tab.TabService.class, tabService);
+        }
+        if (packetSidebar != null) {
+            packetSidebar.close();
         }
     }
 
@@ -61,12 +68,17 @@ public final class TabPlugin extends JavaPlugin {
             config = new TabConfig(this);
         }
         config.reload();
-        tabService = new TabServiceImpl(config, networkState);
+        tabService = new TabServiceImpl(this, config, networkState, packetSidebar);
         getServer().getServicesManager().register(
                 com.yapcore.tab.TabService.class, tabService, this, ServicePriority.Normal);
         if (networkSync != null) {
+            networkSync.startHeartbeat();
             networkSync.publishLocalSnapshot();
         }
+    }
+
+    public TabNetworkSync networkSync() {
+        return networkSync;
     }
 
     public TabConfig tabConfig() {
@@ -75,5 +87,9 @@ public final class TabPlugin extends JavaPlugin {
 
     public TabServiceImpl tabService() {
         return tabService;
+    }
+
+    TabPacketSidebar packetSidebar() {
+        return packetSidebar;
     }
 }

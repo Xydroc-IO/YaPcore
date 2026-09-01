@@ -1,6 +1,7 @@
 package com.yapcore.playerdata.sync;
 
 import com.yapcore.playerdata.db.MailRepository;
+import com.yapcore.playerdata.kit.KitGrantService;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -26,17 +27,22 @@ public final class JoinQuitListener implements Listener {
     private final JavaPlugin plugin;
     private final SyncService sync;
     private final MailRepository mail;
+    private final KitGrantService kitGrants;
 
-    public JoinQuitListener(JavaPlugin plugin, SyncService sync, MailRepository mail) {
+    public JoinQuitListener(JavaPlugin plugin, SyncService sync, MailRepository mail, KitGrantService kitGrants) {
         this.plugin = plugin;
         this.sync = sync;
         this.mail = mail;
+        this.kitGrants = kitGrants;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         sync.beginJoin(player);
+        if (kitGrants != null) {
+            kitGrants.scheduleDelivery(player);
+        }
         YapSched.asyncLater(plugin, () -> {
             if (!player.isOnline() || mail == null) {
                 return;

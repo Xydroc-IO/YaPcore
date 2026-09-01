@@ -141,6 +141,16 @@ public final class Database implements AutoCloseable {
                     )
                     """);
             st.execute("""
+                    CREATE TABLE IF NOT EXISTS kit_grants (
+                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      uuid CHAR(36) NOT NULL,
+                      kit VARCHAR(32) NOT NULL,
+                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                      delivered_at TIMESTAMP NULL,
+                      INDEX (uuid, delivered_at)
+                    )
+                    """);
+            st.execute("""
                     CREATE TABLE IF NOT EXISTS shops (
                       id BIGINT AUTO_INCREMENT PRIMARY KEY,
                       owner_uuid CHAR(36) NOT NULL,

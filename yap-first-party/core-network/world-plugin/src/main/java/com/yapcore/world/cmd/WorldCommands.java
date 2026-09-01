@@ -41,14 +41,15 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
     private final BrushService brushService;
     private final UndoService undoService;
     private final SelectionEditService selectionEdit;
+    private final WorldEditOps editOps;
     private final WorldEditTool worldEditTool;
     private final WorldEditGui gui;
 
     public WorldCommands(WorldPlugin plugin, WorldConfig config, WorldManagerServiceImpl worlds,
                          SelectionServiceImpl selection, SchematicPaster paster,
                          BrushService brushService, UndoService undoService,
-                         SelectionEditService selectionEdit, WorldEditTool worldEditTool,
-                         WorldEditGui gui) {
+                         SelectionEditService selectionEdit, WorldEditOps editOps,
+                         WorldEditTool worldEditTool, WorldEditGui gui) {
         this.plugin = plugin;
         this.config = config;
         this.worlds = worlds;
@@ -57,6 +58,7 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
         this.brushService = brushService;
         this.undoService = undoService;
         this.selectionEdit = selectionEdit;
+        this.editOps = editOps;
         this.worldEditTool = worldEditTool;
         this.gui = gui;
     }
@@ -85,13 +87,13 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
             case "editor", "studio", "web" -> openEditor(sender);
             case "pos1" -> setPos(sender, true);
             case "pos2" -> setPos(sender, false);
-            case "clear" -> clearSel(sender);
-            case "fill" -> fill(sender, args);
-            case "walls" -> walls(sender, args);
-            case "shell" -> shell(sender, args);
-            case "hollow" -> hollow(sender);
-            case "outline" -> outline(sender, args);
-            case "replace" -> replace(sender, args);
+            case "clear", "desel" -> clearSel(sender);
+            case "fill", "set", "walls", "shell", "faces", "hollow", "outline", "edges",
+                 "replace", "copy", "cut", "paste", "rotate", "flip", "stack", "move",
+                 "expand", "contract", "shift", "outset", "inset", "chunk", "size", "distr",
+                 "cyl", "hcyl", "sphere", "hsphere", "pyramid", "line", "drain", "smooth",
+                 "overlay", "naturalize", "replacenear", "thru", "jumpto", "up", "ascend",
+                 "descend" -> weOp(sender, args);
             case "schem", "schematic" -> schem(sender, args);
             case "brush" -> brush(sender, args);
             case "undo" -> undo(sender);
@@ -102,6 +104,25 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
                 yield true;
             }
         };
+    }
+
+    private boolean weOp(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return true;
+        }
+        if (!player.hasPermission("yapworld.selection") && !player.hasPermission("yapworld.brush")) {
+            sender.sendMessage("§cNo permission.");
+            return true;
+        }
+        String name = args[0];
+        String[] rest = args.length > 1
+                ? java.util.Arrays.copyOfRange(args, 1, args.length)
+                : new String[0];
+        if (!editOps.dispatch(player, name, rest)) {
+            help(sender);
+        }
+        return true;
     }
 
     private boolean reload(CommandSender sender) {
@@ -606,19 +627,20 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
     }
 
     private void help(CommandSender sender) {
-        sender.sendMessage("§6YaPWorld §7— Folia-safe world edit");
-        sender.sendMessage("§e/yapworld §7or §e/yapworld gui §7— open in-game editor");
-        sender.sendMessage("§e/yapworld tool §7— golden axe (LMB pos1 · RMB pos2 · sneak+RMB GUI)");
-        sender.sendMessage("§e/yapworld fill|walls|shell|hollow|outline|replace §7[material]");
-        sender.sendMessage("§e/yapworld undo|redo · schem · brush · editor §7(browser studio)");
-        sender.sendMessage("§e/yapworld load|unload|tp · pregen · status · reload");
+        sender.sendMessage("§6YaPWorld §7— Folia-safe WorldEdit-class");
+        sender.sendMessage("§e/yapworld §7or §e// §7— GUI / help · §e/yapworld tool §7— wand");
+        sender.sendMessage("§e//set //copy //cut //paste //rotate //flip //stack //move");
+        sender.sendMessage("§e//expand //contract //shift //cyl //sphere //pyramid //smooth //undo");
+        sender.sendMessage("§e/yapworld schem|brush|editor|load|unload|tp|pregen|status|reload");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             return filter(List.of("help", "gui", "menu", "tool", "wand", "editor", "pos1", "pos2", "clear",
-                    "fill", "walls", "shell", "hollow", "outline", "replace",
+                    "set", "fill", "walls", "shell", "hollow", "outline", "replace",
+                    "copy", "cut", "paste", "rotate", "flip", "stack", "move",
+                    "expand", "contract", "shift", "cyl", "sphere", "pyramid", "smooth",
                     "schem", "brush", "undo", "redo", "pregen", "load", "unload", "tp", "status", "reload"), args[0]);
         }
         if (args.length == 2 && ("load".equalsIgnoreCase(args[0]) || "unload".equalsIgnoreCase(args[0])

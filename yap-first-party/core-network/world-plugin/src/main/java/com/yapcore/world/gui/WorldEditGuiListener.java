@@ -4,6 +4,8 @@ import com.yapcore.sched.YapSched;
 import com.yapcore.world.WorldConfig;
 import com.yapcore.world.WorldPlugin;
 import com.yapcore.world.edit.BrushService;
+import com.yapcore.world.edit.ClipboardService;
+import com.yapcore.world.edit.GenerationService;
 import com.yapcore.world.edit.SelectionEditService;
 import com.yapcore.world.edit.UndoService;
 import com.yapcore.world.pregen.PregenBridge;
@@ -37,12 +39,15 @@ public final class WorldEditGuiListener implements Listener {
     private final SelectionServiceImpl selection;
     private final BrushService brushService;
     private final SelectionEditService selectionEdit;
+    private final ClipboardService clipboard;
+    private final GenerationService generation;
     private final UndoService undoService;
     private final SchematicPaster paster;
 
     public WorldEditGuiListener(WorldPlugin plugin, WorldConfig config, WorldEditGui gui,
                                 SelectionServiceImpl selection, BrushService brushService,
-                                SelectionEditService selectionEdit, UndoService undoService,
+                                SelectionEditService selectionEdit, ClipboardService clipboard,
+                                GenerationService generation, UndoService undoService,
                                 SchematicPaster paster) {
         this.plugin = plugin;
         this.config = config;
@@ -50,6 +55,8 @@ public final class WorldEditGuiListener implements Listener {
         this.selection = selection;
         this.brushService = brushService;
         this.selectionEdit = selectionEdit;
+        this.clipboard = clipboard;
+        this.generation = generation;
         this.undoService = undoService;
         this.paster = paster;
     }
@@ -145,6 +152,28 @@ public final class WorldEditGuiListener implements Listener {
             hollowSelection(player);
             return;
         }
+        if (slot == WorldEditGui.SLOT_COPY) {
+            copySelection(player);
+            return;
+        }
+        if (slot == WorldEditGui.SLOT_CLIP_PASTE) {
+            pasteClipboard(player);
+            return;
+        }
+        if (slot == WorldEditGui.SLOT_EXPAND) {
+            selection.expand(player.getUniqueId(), 1, "all");
+            player.sendMessage("§aExpanded selection.");
+            gui.refreshMain(player, inv);
+            return;
+        }
+        if (slot == WorldEditGui.SLOT_SPHERE) {
+            sphereHere(player);
+            return;
+        }
+        if (slot == WorldEditGui.SLOT_CYL) {
+            cylHere(player);
+            return;
+        }
         if (slot == WorldEditGui.SLOT_UNDO) {
             undoService.undo(player.getUniqueId()).thenAccept(count ->
                     YapSched.global(plugin, () -> player.sendMessage("§aUndid §f" + count + " §ablocks.")));
@@ -222,6 +251,44 @@ public final class WorldEditGuiListener implements Listener {
         player.sendMessage("§7Hollowing selection…");
         selectionEdit.hollow(player, opt.get()).thenAccept(count ->
                 YapSched.global(plugin, () -> player.sendMessage("§aHollowed §f" + count + " §ablocks.")));
+    }
+
+    private void copySelection(Player player) {
+        var opt = selection.selection(player.getUniqueId());
+        if (opt.isEmpty()) {
+            player.sendMessage("§cSet pos1 and pos2 first.");
+            return;
+        }
+        clipboard.copy(player, opt.get(), false).thenAccept(count ->
+                YapSched.global(plugin, () -> player.sendMessage("§aCopied §f" + count + " §ablocks.")));
+    }
+
+    private void pasteClipboard(Player player) {
+        clipboard.paste(player, false).thenAccept(count ->
+                YapSched.global(plugin, () -> {
+                    if (count == 0) {
+                        player.sendMessage("§cClipboard empty — copy a selection first.");
+                    } else {
+                        player.sendMessage("§aPasted §f" + count + " §ablocks.");
+                    }
+                }));
+    }
+
+    private void sphereHere(Player player) {
+        WorldEditSession session = WorldEditSession.of(player.getUniqueId());
+        String pattern = session.material().name().toLowerCase(Locale.ROOT);
+        generation.sphere(player, player.getLocation(), pattern, session.brushRadius(), false)
+                .thenAccept(count -> YapSched.global(plugin, () ->
+                        player.sendMessage("§aSphere §f" + count + " §ablocks.")));
+    }
+
+    private void cylHere(Player player) {
+        WorldEditSession session = WorldEditSession.of(player.getUniqueId());
+        String pattern = session.material().name().toLowerCase(Locale.ROOT);
+        int r = session.brushRadius();
+        generation.cylinder(player, player.getLocation(), pattern, r, Math.max(1, r), false)
+                .thenAccept(count -> YapSched.global(plugin, () ->
+                        player.sendMessage("§aCylinder §f" + count + " §ablocks.")));
     }
 
     private void quickSave(Player player) {

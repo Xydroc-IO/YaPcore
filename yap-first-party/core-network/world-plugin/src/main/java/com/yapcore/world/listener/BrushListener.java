@@ -40,7 +40,7 @@ public final class BrushListener implements Listener {
         var target = event.getClickedBlock() != null
                 ? event.getClickedBlock().getLocation()
                 : player.getLocation();
-        brushes.applySphere(player, target).thenAccept(count ->
+        brushes.apply(player, target).thenAccept(count ->
                 player.sendMessage("§aBrush placed §f" + count + " §ablocks."));
     }
 }

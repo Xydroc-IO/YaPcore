@@ -70,7 +70,7 @@ public final class WorldEditToolListener implements Listener {
             var target = event.getClickedBlock() != null
                     ? event.getClickedBlock().getLocation()
                     : player.getLocation();
-            brushService.applySphere(player, target).thenAccept(count ->
+            brushService.apply(player, target).thenAccept(count ->
                     player.sendMessage("§aBrush placed §f" + count + " §ablocks."));
             return;
         }

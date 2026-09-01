@@ -9,6 +9,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
@@ -102,6 +104,34 @@ public final class RegionListener implements Listener {
         if (to.isPresent() && !regions.canEnter(event.getPlayer(), event.getTo())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage("§cEntry denied in this admin region.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onFireSpread(BlockSpreadEvent event) {
+        if (!regions.at(event.getBlock().getLocation()).isPresent()) {
+            return;
+        }
+        if (event.getSource().getType() != Material.FIRE && event.getSource().getType() != Material.SOUL_FIRE) {
+            return;
+        }
+        if (!regions.isFireSpreadAllowed(event.getBlock().getLocation())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onMobSpawn(CreatureSpawnEvent event) {
+        if (!regions.at(event.getLocation()).isPresent()) {
+            return;
+        }
+        if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.CUSTOM
+                || event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER_EGG
+                || event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER) {
+            return;
+        }
+        if (!regions.isMobSpawningAllowed(event.getLocation())) {
+            event.setCancelled(true);
         }
     }
 

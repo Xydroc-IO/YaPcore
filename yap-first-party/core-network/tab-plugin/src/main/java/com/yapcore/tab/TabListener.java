@@ -25,11 +25,17 @@ public final class TabListener implements Listener {
             plugin.tabService().refresh(event.getPlayer());
             plugin.tabService().refreshAll();
             showWelcomeBossBar(event.getPlayer());
+            if (plugin.networkSync() != null) {
+                plugin.networkSync().publishLocalSnapshot();
+            }
         });
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        if (plugin.packetSidebar() != null) {
+            plugin.packetSidebar().remove(event.getPlayer());
+        }
         YapSched.global(plugin, () -> plugin.tabService().refreshAll());
     }
 

@@ -1,0 +1,38 @@
+name: YaPAdmin
+version: '1.0.0.0'
+main: com.yapcore.admin.AdminPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: In-game admin super menu — players, give, moderation, server ops
+website: https://github.com/yaplabs
+softdepend:
+  - YaPEssentials
+  - YaPModeration
+  - YaPPerms
+  - YaPWorld
+  - YaPStacker
+  - YaPPlayerData
+  - YaPSkills
+  - YaPCombat
+  - yap-mmo-content
+  - YaPMMO
+commands:
+  yapadmin:
+    description: Open the YaP admin super menu
+    usage: /yapadmin
+    permission: yapadmin.menu
+    aliases: [staff, adminmenu, am]
+permissions:
+  yapadmin.menu:
+    description: Open the admin super menu
+    default: op
+  yapadmin.give:
+    description: Give items / kits from the admin menu
+    default: op
+  yapadmin.server:
+    description: Server ops (broadcast, status) from the admin menu
+    default: op
+  yapadmin.economy:
+    description: Economy grants from the admin menu
+    default: op

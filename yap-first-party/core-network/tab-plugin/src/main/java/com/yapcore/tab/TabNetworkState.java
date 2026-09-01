@@ -63,6 +63,18 @@ public final class TabNetworkState {
         return nametagTeams;
     }
 
+    public static byte[] encodeClear(String serverId) {
+        return ("CLEAR|" + (serverId == null ? "" : serverId)).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+    }
+
+    public static Optional<String> decodeClear(byte[] data) {
+        String payload = new String(data, java.nio.charset.StandardCharsets.UTF_8);
+        if (!payload.startsWith("CLEAR|")) {
+            return Optional.empty();
+        }
+        return Optional.of(payload.substring(6));
+    }
+
     public static byte[] encodeSync(String serverId, List<String> header, List<String> footer,
                                     List<String> sidebar, boolean sidebarEnabled, boolean nametagTeams) {
         String payload = "SYNC|" + serverId + "|"

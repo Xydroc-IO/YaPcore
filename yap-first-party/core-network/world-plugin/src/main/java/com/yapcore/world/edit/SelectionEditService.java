@@ -1,89 +1,153 @@
 package com.yapcore.world.edit;
 
-import com.yapcore.sched.YapSched;
 import com.yapcore.world.CuboidSelection;
-import com.yapcore.world.util.BlockCodec;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-/** Cuboid fill/replace operations on the current selection. */
+/** Cuboid set/replace/walls/shell/hollow/outline + analysis helpers. */
 public final class SelectionEditService {
 
-    private final JavaPlugin plugin;
-    private final UndoService undo;
+    private final BlockBatch batch;
 
     public SelectionEditService(JavaPlugin plugin, UndoService undo) {
-        this.plugin = plugin;
-        this.undo = undo;
+        this.batch = new BlockBatch(plugin, undo);
     }
 
     public CompletableFuture<Integer> fill(Player player, CuboidSelection sel, Material material) {
-        Material target = validBlock(material);
-        return apply(player, sel, (x, y, z) -> true, target, false, null);
+        return fillPattern(player, sel, material == null ? "stone" : material.name());
     }
 
-    public CompletableFuture<Integer> replace(Player player, CuboidSelection sel, Material from, Material to) {
-        Material source = validBlock(from);
-        Material target = validBlock(to);
-        return apply(player, sel, (x, y, z) -> true, target, true, source);
-    }
-
-    /** Four vertical walls (full height), open top and bottom. */
-    public CompletableFuture<Integer> walls(Player player, CuboidSelection sel, Material material) {
-        Material target = validBlock(material);
-        return apply(player, sel, (x, y, z) ->
-                x == sel.minX() || x == sel.maxX() || z == sel.minZ() || z == sel.maxZ(), target, false, null);
-    }
-
-    /** All six faces of the cuboid. */
-    public CompletableFuture<Integer> shell(Player player, CuboidSelection sel, Material material) {
-        Material target = validBlock(material);
-        return apply(player, sel, (x, y, z) -> onShell(x, y, z, sel), target, false, null);
-    }
-
-    /** Clear interior blocks; leaves the outer shell unchanged. */
-    public CompletableFuture<Integer> hollow(Player player, CuboidSelection sel) {
-        return apply(player, sel, (x, y, z) -> !onShell(x, y, z, sel), Material.AIR, false, null);
-    }
-
-    /** One-block-thick outline along all twelve edges. */
-    public CompletableFuture<Integer> outline(Player player, CuboidSelection sel, Material material) {
-        Material target = validBlock(material);
-        return apply(player, sel, (x, y, z) -> onOutline(x, y, z, sel), target, false, null);
-    }
-
-    private CompletableFuture<Integer> apply(Player player, CuboidSelection sel,
-                                             CoordFilter filter, Material material,
-                                             boolean onlyMatching, Material matchMaterial) {
-        World world = org.bukkit.Bukkit.getWorld(sel.world());
+    public CompletableFuture<Integer> fillPattern(Player player, CuboidSelection sel, String pattern) {
+        World world = Bukkit.getWorld(sel.world());
         if (world == null) {
             return CompletableFuture.completedFuture(0);
         }
-        EditSession session = new EditSession();
-        CompletableFuture<Integer> chain = CompletableFuture.completedFuture(0);
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        BlockBatch.forEachBlock(sel.minX(), sel.minY(), sel.minZ(), sel.maxX(), sel.maxY(), sel.maxZ(),
+                (x, y, z) -> plans.add(new BlockBatch.Planned(x, y, z, BlockBatch.pickPattern(pattern))));
+        return batch.apply(player, world, plans);
+    }
+
+    public CompletableFuture<Integer> replace(Player player, CuboidSelection sel, Material from, Material to) {
+        World world = Bukkit.getWorld(sel.world());
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        BlockBatch.forEachBlock(sel.minX(), sel.minY(), sel.minZ(), sel.maxX(), sel.maxY(), sel.maxZ(), (x, y, z) -> {
+            if (world.getBlockAt(x, y, z).getType() == from) {
+                plans.add(new BlockBatch.Planned(x, y, z, to));
+            }
+        });
+        return batch.apply(player, world, plans);
+    }
+
+    public CompletableFuture<Integer> walls(Player player, CuboidSelection sel, Material material) {
+        return mask(player, sel, material, (x, y, z) ->
+                x == sel.minX() || x == sel.maxX() || z == sel.minZ() || z == sel.maxZ());
+    }
+
+    public CompletableFuture<Integer> shell(Player player, CuboidSelection sel, Material material) {
+        return mask(player, sel, material, (x, y, z) -> onShell(x, y, z, sel));
+    }
+
+    public CompletableFuture<Integer> hollow(Player player, CuboidSelection sel) {
+        return mask(player, sel, Material.AIR, (x, y, z) -> !onShell(x, y, z, sel));
+    }
+
+    public CompletableFuture<Integer> outline(Player player, CuboidSelection sel, Material material) {
+        return mask(player, sel, material, (x, y, z) -> onOutline(x, y, z, sel));
+    }
+
+    public CompletableFuture<Integer> naturalize(Player player, CuboidSelection sel) {
+        World world = Bukkit.getWorld(sel.world());
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        List<BlockBatch.Planned> plans = new ArrayList<>();
         for (int x = sel.minX(); x <= sel.maxX(); x++) {
-            for (int y = sel.minY(); y <= sel.maxY(); y++) {
-                for (int z = sel.minZ(); z <= sel.maxZ(); z++) {
-                    if (!filter.test(x, y, z)) {
-                        continue;
+            for (int z = sel.minZ(); z <= sel.maxZ(); z++) {
+                Integer top = null;
+                for (int y = sel.maxY(); y >= sel.minY(); y--) {
+                    Material type = world.getBlockAt(x, y, z).getType();
+                    if (!type.isAir()) {
+                        top = y;
+                        break;
                     }
-                    int bx = x;
-                    int by = y;
-                    int bz = z;
-                    chain = chain.thenCompose(count -> setOne(session, world, bx, by, bz, material, onlyMatching, matchMaterial)
-                            .thenApply(ok -> ok ? count + 1 : count));
+                }
+                if (top == null) {
+                    continue;
+                }
+                plans.add(new BlockBatch.Planned(x, top, z, Material.GRASS_BLOCK));
+                if (top - 1 >= sel.minY()) {
+                    plans.add(new BlockBatch.Planned(x, top - 1, z, Material.DIRT));
+                }
+                if (top - 2 >= sel.minY()) {
+                    plans.add(new BlockBatch.Planned(x, top - 2, z, Material.DIRT));
+                }
+                for (int y = top - 3; y >= sel.minY(); y--) {
+                    Material type = world.getBlockAt(x, y, z).getType();
+                    if (!type.isAir() && type != Material.BEDROCK) {
+                        plans.add(new BlockBatch.Planned(x, y, z, Material.STONE));
+                    }
                 }
             }
         }
-        return chain.thenApply(count -> {
-            undo.push(player.getUniqueId(), session);
-            return count;
+        return batch.apply(player, world, plans);
+    }
+
+    public Map<Material, Integer> count(CuboidSelection sel) {
+        World world = Bukkit.getWorld(sel.world());
+        Map<Material, Integer> counts = new EnumMap<>(Material.class);
+        if (world == null) {
+            return counts;
+        }
+        BlockBatch.forEachBlock(sel.minX(), sel.minY(), sel.minZ(), sel.maxX(), sel.maxY(), sel.maxZ(), (x, y, z) -> {
+            Material type = world.getBlockAt(x, y, z).getType();
+            counts.merge(type, 1, Integer::sum);
         });
+        return counts;
+    }
+
+    public Map<String, Integer> distribution(CuboidSelection sel, int limit) {
+        Map<Material, Integer> raw = count(sel);
+        List<Map.Entry<Material, Integer>> sorted = new ArrayList<>(raw.entrySet());
+        sorted.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+        Map<String, Integer> out = new LinkedHashMap<>();
+        int n = 0;
+        for (var e : sorted) {
+            if (n++ >= limit) {
+                break;
+            }
+            out.put(e.getKey().name().toLowerCase(), e.getValue());
+        }
+        return out;
+    }
+
+    private CompletableFuture<Integer> mask(Player player, CuboidSelection sel, Material material, CoordFilter filter) {
+        World world = Bukkit.getWorld(sel.world());
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        Material target = material == null || !material.isBlock() ? Material.STONE : material;
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        BlockBatch.forEachBlock(sel.minX(), sel.minY(), sel.minZ(), sel.maxX(), sel.maxY(), sel.maxZ(), (x, y, z) -> {
+            if (filter.test(x, y, z)) {
+                plans.add(new BlockBatch.Planned(x, y, z, target));
+            }
+        });
+        return batch.apply(player, world, plans);
     }
 
     @FunctionalInterface
@@ -91,36 +155,13 @@ public final class SelectionEditService {
         boolean test(int x, int y, int z);
     }
 
-    private CompletableFuture<Boolean> setOne(EditSession session, World world, int x, int y, int z,
-                                              Material material, boolean onlyMatching, Material matchMaterial) {
-        CompletableFuture<Boolean> done = new CompletableFuture<>();
-        var loc = new org.bukkit.Location(world, x, y, z);
-        YapSched.region(plugin, loc, () -> {
-            try {
-                Block block = world.getBlockAt(x, y, z);
-                if (onlyMatching && block.getType() != matchMaterial) {
-                    done.complete(false);
-                    return;
-                }
-                String before = BlockCodec.encode(block);
-                block.setType(material, false);
-                String after = BlockCodec.encode(block);
-                session.record(world.getName(), x, y, z, before, after);
-                done.complete(true);
-            } catch (Exception e) {
-                done.complete(false);
-            }
-        });
-        return done;
-    }
-
-    private boolean onShell(int x, int y, int z, CuboidSelection sel) {
+    private static boolean onShell(int x, int y, int z, CuboidSelection sel) {
         return x == sel.minX() || x == sel.maxX()
                 || y == sel.minY() || y == sel.maxY()
                 || z == sel.minZ() || z == sel.maxZ();
     }
 
-    private boolean onOutline(int x, int y, int z, CuboidSelection sel) {
+    private static boolean onOutline(int x, int y, int z, CuboidSelection sel) {
         int edges = 0;
         if (x == sel.minX() || x == sel.maxX()) {
             edges++;
@@ -132,9 +173,5 @@ public final class SelectionEditService {
             edges++;
         }
         return edges >= 2;
-    }
-
-    private static Material validBlock(Material material) {
-        return material == null || !material.isBlock() ? Material.STONE : material;
     }
 }
