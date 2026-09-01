@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
 Generate bare-minimum YaP MMO content packs:
-  - 30 quests (6 chains × 5)
+  - 100 quests (via generate-mmo-quest-compendium.py)
   - 20 bosses
-  - 80 recipes (smithing / cooking / crafting)
+  - 150+ recipes (smithing / cooking / crafting / herblore)
 
 Outputs into plugin resources + content-manifest.txt for jar extract.
 """
@@ -712,6 +712,9 @@ def write_crafting_extended() -> list[str]:
 
 
 def main() -> None:
+    import subprocess
+    import sys
+
     smith_ids = write_smithing_recipes()
     smith_ext = write_smithing_extended()
     cook_ids = write_cooking_recipes()
@@ -721,17 +724,25 @@ def main() -> None:
     herb_ids = write_herblore()
     recipe_ids = smith_ids + smith_ext + cook_ids + cook_ext + craft_ids + craft_ext + herb_ids
     boss_ids = write_bosses()
-    quest_ids = write_quests(boss_ids, recipe_ids)
+
+    # Quests: 100-quest progression compendium (do not regenerate old 35-chain packs)
+    compendium = ROOT / "scripts/content/generate-mmo-quest-compendium.py"
+    subprocess.check_call([sys.executable, str(compendium)])
 
     quest_files = sorted(p.name for p in MMO_QUESTS.glob("*.yml"))
     boss_files = sorted(p.name for p in MMO_BOSSES.glob("*.yml"))
     write_manifest(quest_files, boss_files)
 
-    print(f"Generated {len(quest_ids)} quests in {len(quest_files)} files")
+    quest_count = sum(
+        1
+        for line in "\n".join(p.read_text(encoding="utf-8") for p in MMO_QUESTS.glob("*.yml")).splitlines()
+        if line.startswith("  ") and line.rstrip().endswith(":") and not line.startswith("    ")
+    )
+    print(f"Quest packs: {len(quest_files)} files (~{quest_count} quest keys)")
     print(f"Generated {len(boss_ids)} bosses in {len(boss_files)} files")
     print(f"Generated {len(recipe_ids)} recipes in recipe packs")
-    if len(quest_ids) < 20:
-        raise SystemExit("Quest count below bare minimum 20")
+    if quest_count < 100:
+        raise SystemExit("Quest count below 100-compendium target")
     if len(boss_ids) < 20:
         raise SystemExit("Boss count below bare minimum 20")
     if len(recipe_ids) < 150:

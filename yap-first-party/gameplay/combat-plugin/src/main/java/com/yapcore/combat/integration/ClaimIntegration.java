@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Optional claim PvP gate via YaPPlayerdata ({@code RegionFlag.PVP}).
+ * Optional claim PvP gate via YaPPlayerData ({@code RegionFlag.PVP}).
  */
 public final class ClaimIntegration {
 
@@ -14,7 +14,7 @@ public final class ClaimIntegration {
     }
 
     public static boolean isPvpAllowed(Player attacker, Player victim) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerdata");
+        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerData");
         if (!(plugin instanceof PlayerDataPlugin playerData) || !plugin.isEnabled()) {
             return true;
         }
@@ -22,7 +22,7 @@ public final class ClaimIntegration {
     }
 
     public static boolean isMobDamageAllowed(Player victim) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerdata");
+        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerData");
         if (!(plugin instanceof PlayerDataPlugin playerData) || !plugin.isEnabled()) {
             return true;
         }

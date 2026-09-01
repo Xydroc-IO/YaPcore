@@ -175,7 +175,7 @@ public final class MmoContentPlugin extends JavaPlugin {
     private void extractFromManifest() throws IOException {
         try (var in = getResource("content-manifest.txt")) {
             if (in == null) {
-                copyResourceIfMissing(config.questsDir() + "/starter_chain.yml");
+                copyResourceIfMissing(config.questsDir() + "/compendium_tier_01.yml");
                 return;
             }
             String text = new String(in.readAllBytes());

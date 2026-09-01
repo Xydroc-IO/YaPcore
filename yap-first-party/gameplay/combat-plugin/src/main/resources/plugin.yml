@@ -6,7 +6,7 @@ folia-supported: true
 description: YaP MMO custom combat — gear, food, potions, spells, prayer (M2+)
 authors: [YapLabs]
 depend: [YaPDB]
-softdepend: [YaPSkills, YaPPlayerdata]
+softdepend: [YaPSkills, YaPPlayerData]
 commands:
   combat:
     description: Combat stats and admin

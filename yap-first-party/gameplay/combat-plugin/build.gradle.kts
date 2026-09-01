@@ -22,11 +22,11 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-sched"))
     implementation(project(":yap-mmo-api"))
+    // Shade so ServicesManager registration of AbilityCombatBridge works at runtime
+    implementation(project(":yap-abilities-api"))
     compileOnly(project(":yap-db-api"))
     compileOnly(project(":yap-games-api"))
-    compileOnly(project(":yap-abilities-api"))
     compileOnly(project(":playerdata-plugin"))
-    compileOnly(project(":yap-abilities-api"))
 
     implementation("com.zaxxer:HikariCP:6.2.1")
     implementation("com.mysql:mysql-connector-j:9.1.0")

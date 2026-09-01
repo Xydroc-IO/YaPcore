@@ -1,0 +1,210 @@
+# Tier 2 — The Rising Hero
+# YaP MMO Quest Compendium — YaP-Folia / YaPSkills / YaP bosses
+
+quests:
+  t2_nether:
+    name: "Into the Nether"
+    description: "Prove you reached the Nether — kill 5 Magma Cubes."
+    requires: t1_mining_five
+    objectives:
+      - id: magma
+        type: KILL_MOB
+        entity: MAGMA_CUBE
+        amount: 5
+    rewards:
+      - skill_xp:attack:500
+      - item:POTION:1
+      - money:50
+
+  t2_blaze:
+    name: "Blaze Hunter"
+    description: "Kill 5 Blazes for blaze rods."
+    requires: t2_nether
+    objectives:
+      - id: blaze
+        type: KILL_MOB
+        entity: BLAZE
+        amount: 5
+    rewards:
+      - skill_xp:magic:600
+      - item:BLAZE_ROD:5
+      - item:BOOK:1
+
+  t2_ender:
+    name: "Ender Pearl Dive"
+    description: "Kill 10 Endermen."
+    requires: t2_blaze
+    objectives:
+      - id: endermen
+        type: KILL_MOB
+        entity: ENDERMAN
+        amount: 10
+    rewards:
+      - skill_xp:magic:700
+      - item:ENDER_PEARL:4
+
+  t2_goblin_menace:
+    name: "Goblin Menace"
+    description: "Kill 20 Zombies outside spawn (Goblin Scout stand-ins)."
+    requires: t2_ender
+    objectives:
+      - id: goblin_scouts
+        type: KILL_MOB
+        entity: ZOMBIE
+        amount: 20
+    rewards:
+      - skill_xp:attack:800
+      - item:LEATHER_CHESTPLATE:1
+      - money:100
+
+  t2_miner_delight:
+    name: "Miner's Delight"
+    description: "Reach Mining Level 15 (YaPSkills)."
+    requires: t2_goblin_menace
+    objectives:
+      - id: mine15
+        type: SKILL_LEVEL
+        skill: mining
+        level: 15
+    rewards:
+      - skill_xp:mining:1000
+      - item:IRON_PICKAXE:1
+      - teleport_unlock:mining_guild
+
+  t2_warrior:
+    name: "Warrior's Path"
+    description: "Reach Strength Level 15 (YaPSkills)."
+    requires: t2_miner_delight
+    objectives:
+      - id: str15
+        type: SKILL_LEVEL
+        skill: strength
+        level: 15
+    rewards:
+      - skill_xp:strength:1000
+      - item:DIAMOND_SWORD:1
+
+  t2_lost_mine:
+    name: "The Lost Mine"
+    description: "Mine 64 Deepslate Iron Ore in abandoned shafts."
+    requires: t2_warrior
+    objectives:
+      - id: ds_iron
+        type: GATHER
+        material: DEEPSLATE_IRON_ORE
+        amount: 64
+    rewards:
+      - skill_xp:mining:1200
+      - item:GOLD_INGOT:16
+      - item:CHEST_MINECART:1
+
+  t2_ocean:
+    name: "Ocean Monument Scout"
+    description: "Kill 15 Guardians near ocean monuments."
+    requires: t2_lost_mine
+    objectives:
+      - id: guardians
+        type: KILL_MOB
+        entity: GUARDIAN
+        amount: 15
+    rewards:
+      - skill_xp:ranged:1500
+      - item:POTION:2
+      - money:75
+
+  t2_wither_skull:
+    name: "Wither Skeleton Skull"
+    description: "Kill 25 Wither Skeletons."
+    requires: t2_ocean
+    objectives:
+      - id: wskeles
+        type: KILL_MOB
+        entity: WITHER_SKELETON
+        amount: 25
+    rewards:
+      - skill_xp:attack:2000
+      - item:WITHER_SKELETON_SKULL:1
+
+  t2_enchanter:
+    name: "Enchanter's Apprentice"
+    description: "Reach Magic Level 10, then craft an enchanting table."
+    requires: t2_wither_skull
+    objectives:
+      - id: magic10
+        type: SKILL_LEVEL
+        skill: magic
+        level: 10
+      - id: etable
+        type: CRAFT_ITEM
+        recipe: craft_enchant_table
+        amount: 1
+    rewards:
+      - skill_xp:magic:1500
+      - item:LAPIS_LAZULI:32
+
+  t2_cave_stalker:
+    name: "Cave Stalker Bounty"
+    description: "Slay the Cave Stalker boss (YaPMmoContent)."
+    requires: t2_enchanter
+    objectives:
+      - id: cs
+        type: KILL_BOSS
+        boss-id: cave_stalker
+        amount: 1
+    rewards:
+      - skill_xp:attack:900
+      - skill_xp:defence:400
+      - money:80
+
+  t2_ash_wraith:
+    name: "Ash Wraith Hunt"
+    description: "Slay the Ash Wraith boss."
+    requires: t2_cave_stalker
+    objectives:
+      - id: aw
+        type: KILL_BOSS
+        boss-id: ash_wraith
+        amount: 1
+    rewards:
+      - skill_xp:magic:900
+      - money:90
+
+  t2_cook_mid:
+    name: "Camp Cook"
+    description: "Cook 24 Salmon (cook_salmon)."
+    requires: t2_ash_wraith
+    objectives:
+      - id: salmon
+        type: CRAFT_ITEM
+        recipe: cook_salmon
+        amount: 24
+    rewards:
+      - skill_xp:cooking:600
+      - item:COOKED_SALMON:16
+
+  t2_wood_mid:
+    name: "Timber Rights"
+    description: "Reach Woodcutting Level 15."
+    requires: t2_cook_mid
+    objectives:
+      - id: wc15
+        type: SKILL_LEVEL
+        skill: woodcutting
+        level: 15
+    rewards:
+      - skill_xp:woodcutting:800
+      - item:IRON_AXE:1
+
+  t2_stone_titan:
+    name: "Stone Titan Trial"
+    description: "Defeat the Stone Titan boss."
+    requires: t2_wood_mid
+    objectives:
+      - id: st
+        type: KILL_BOSS
+        boss-id: stone_titan
+        amount: 1
+    rewards:
+      - skill_xp:strength:1000
+      - money:120
+

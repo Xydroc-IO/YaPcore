@@ -1,0 +1,158 @@
+# Ultimate Completionist Quests
+# YaP MMO Quest Compendium — YaP-Folia / YaPSkills / YaP bosses
+
+quests:
+  ult_impossible_trio:
+    name: "The Impossible Trio"
+    description: "Kill Wither, Ender Dragon, and Warden."
+    requires: t6_magic99
+    objectives:
+      - id: w
+        type: KILL_MOB
+        entity: WITHER
+        amount: 1
+      - id: d
+        type: KILL_MOB
+        entity: ENDER_DRAGON
+        amount: 1
+      - id: wa
+        type: KILL_MOB
+        entity: WARDEN
+        amount: 1
+    rewards:
+      - permission:yap.mmo.title.god_slayer
+      - permission:yap.mmo.cosmetic.cape_god
+      - skill_xp:attack:500000
+
+  ult_full_beacon:
+    name: "Full Beacon"
+    description: "Smelt gold x36 and iron x164 for full beacon materials."
+    requires: ult_impossible_trio
+    objectives:
+      - id: g36
+        type: CRAFT_ITEM
+        recipe: smelt_gold
+        amount: 36
+      - id: i164
+        type: CRAFT_ITEM
+        recipe: smelt_iron
+        amount: 164
+    rewards:
+      - permission:yap.mmo.title.beacon_lord
+      - item:BEACON:2
+
+  ult_all_skills:
+    name: "All Skills Maxed"
+    description: "Reach Mining 99 and Attack 99."
+    requires: ult_full_beacon
+    objectives:
+      - id: m99
+        type: SKILL_LEVEL
+        skill: mining
+        level: 99
+      - id: a99
+        type: SKILL_LEVEL
+        skill: attack
+        level: 99
+    rewards:
+      - group:omni_god
+      - permission:yap.mmo.rank.omni_god
+
+  ult_completionist:
+    name: "Quest Completionist"
+    description: "Speak to the Legend NPC after finishing the chain."
+    requires: ult_all_skills
+    objectives: []
+    rewards:
+      - permission:yap.mmo.title.server_legend
+      - permission:yap.mmo.particle.legend_aura
+      - money:100000
+
+  ult_economy_dom:
+    name: "Economy Domination"
+    description: "Craft iron_platebody x100 for shop stock domination."
+    requires: ult_completionist
+    objectives:
+      - id: plates
+        type: CRAFT_ITEM
+        recipe: iron_platebody
+        amount: 100
+    rewards:
+      - permission:yap.mmo.title.tycoon
+      - money:250000
+
+  ult_pvp_undefeated:
+    name: "PvP Undefeated"
+    description: "Win 100 arena PLAYER kills."
+    requires: ult_economy_dom
+    objectives:
+      - id: arena100
+        type: KILL_MOB
+        entity: PLAYER
+        amount: 100
+    rewards:
+      - item:NETHERITE_SWORD:1
+      - permission:yap.mmo.title.undefeated
+
+  ult_dungeon_flawless:
+    name: "Dungeon Flawless"
+    description: "Slay World Eater again as flawless clear proxy."
+    requires: ult_pvp_undefeated
+    objectives:
+      - id: we2
+        type: KILL_BOSS
+        boss-id: world_eater
+        amount: 1
+    rewards:
+      - permission:yap.mmo.title.ghost
+      - item:NETHERITE_CHESTPLATE:1
+
+  ult_collection:
+    name: "Collection Master"
+    description: "Defeat Goblin King, Hydra, and Juggernaut again."
+    requires: ult_dungeon_flawless
+    objectives:
+      - id: gk2
+        type: KILL_BOSS
+        boss-id: goblin_king
+        amount: 1
+      - id: hy2
+        type: KILL_BOSS
+        boss-id: swamp_hydra
+        amount: 1
+      - id: ij2
+        type: KILL_BOSS
+        boss-id: iron_juggernaut
+        amount: 1
+    rewards:
+      - permission:yap.mmo.title.collector
+      - money:50000
+
+  ult_time:
+    name: "Time Traveler"
+    description: "Reach Hitpoints Level 99 (1000-hour proxy)."
+    requires: ult_collection
+    objectives:
+      - id: hp99
+        type: SKILL_LEVEL
+        skill: hitpoints
+        level: 99
+    rewards:
+      - permission:yap.mmo.title.immortal
+      - group:immortal
+
+  ult_end_of_line:
+    name: "The End of the Line"
+    description: "Reach Attack Level 100 and speak to the Mayor one last time."
+    requires: ult_time
+    objectives:
+      - id: atk100
+        type: SKILL_LEVEL
+        skill: attack
+        level: 100
+    rewards:
+      - permission:yap.mmo.cosmetic.admin_tag
+      - permission:yap.mmo.cosmetic.custom_join
+      - permission:yap.mmo.statue_honor
+      - money:1000000
+

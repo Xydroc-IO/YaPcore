@@ -25,7 +25,7 @@ R=$(count_recipes | tr -d ' ')
 echo "Content counts: quests=$Q bosses=$B recipes=$R"
 
 fail=0
-[ "$Q" -ge 20 ] || { echo "FAIL: need >= 20 quests"; fail=1; }
+[ "$Q" -ge 100 ] || { echo "FAIL: need >= 100 quests (compendium)"; fail=1; }
 [ "$B" -ge 20 ] || { echo "FAIL: need >= 20 bosses"; fail=1; }
 [ "$R" -ge 75 ] || { echo "FAIL: need >= 75 recipes"; fail=1; }
 if [ "$R" -lt 150 ]; then

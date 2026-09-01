@@ -5,7 +5,7 @@ api-version: '1.21'
 folia-supported: true
 authors: [ YaPcore ]
 description: Config-driven ability engine — effects, projectiles, buffs, VFX
-depend: [ YaPSched ]
+# YapSched is a shaded library (not a Bukkit plugin) — do not list it as depend.
 softdepend: [ YaPSkills, YaPCombat ]
 commands:
   ability:

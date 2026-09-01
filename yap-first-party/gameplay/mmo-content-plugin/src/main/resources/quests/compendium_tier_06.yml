@@ -1,0 +1,209 @@
+# Tier 6 — The Ascended One
+# YaP MMO Quest Compendium — YaP-Folia / YaPSkills / YaP bosses
+
+quests:
+  t6_veteran:
+    name: "Server Veteran"
+    description: "Reach Hitpoints Level 80 (500-hour playtime proxy)."
+    requires: t5_storm
+    objectives:
+      - id: hp80
+        type: SKILL_LEVEL
+        skill: hitpoints
+        level: 80
+    rewards:
+      - group:veteran
+      - permission:yap.mmo.particle.clouds
+      - skill_xp:hitpoints:100000
+
+  t6_quest_master:
+    name: "Quest Master"
+    description: "Talk to the Quest Master NPC after prior tiers."
+    requires: t6_veteran
+    objectives: []
+    rewards:
+      - skill_xp:attack:500000
+      - permission:yap.mmo.title.quest_master
+      - money:5000
+
+  t6_god_gear:
+    name: "The Ultimate Gear"
+    description: "Reach Smithing Level 75 (God Tier armor proxy)."
+    requires: t6_quest_master
+    objectives:
+      - id: smith75
+        type: SKILL_LEVEL
+        skill: smithing
+        level: 75
+    rewards:
+      - skill_xp:smithing:1000000
+      - group:ascended
+      - permission:yap.mmo.rank.ascended_trial
+
+  t6_economy_king:
+    name: "Economy King"
+    description: "Smelt gold 200 times (economy proxy)."
+    requires: t6_god_gear
+    objectives:
+      - id: gold200
+        type: CRAFT_ITEM
+        recipe: smelt_gold
+        amount: 200
+    rewards:
+      - permission:yap.mmo.title.midas
+      - permission:yap.mmo.particle.gold
+      - money:50000
+
+  t6_guild_warlord:
+    name: "Guild Warlord"
+    description: "Reach Attack Level 80 then report to Guild Marshal NPC."
+    requires: t6_economy_king
+    objectives:
+      - id: atk80
+        type: SKILL_LEVEL
+        skill: attack
+        level: 80
+    rewards:
+      - skill_xp:attack:200000
+      - item:GOAT_HORN:1
+      - money:3000
+
+  t6_dungeon:
+    name: "Dungeon Master"
+    description: "Kill World Eater boss (Infinite Dungeon proxy)."
+    requires: t6_guild_warlord
+    objectives:
+      - id: we
+        type: KILL_BOSS
+        boss-id: world_eater
+        amount: 1
+    rewards:
+      - skill_xp:attack:300000
+      - permission:yap.mmo.dungeon_key
+      - money:4000
+
+  t6_monster_hunter:
+    name: "Monster Hunter"
+    description: "Kill 1000 Zombies (MythicMob trash clear proxy)."
+    requires: t6_dungeon
+    objectives:
+      - id: trash
+        type: KILL_MOB
+        entity: ZOMBIE
+        amount: 1000
+    rewards:
+      - skill_xp:attack:250000
+      - item:LEATHER:64
+      - permission:yap.mmo.cosmetic.hunter_cloak
+
+  t6_peacekeeper:
+    name: "Peacekeeper"
+    description: "Reach Prayer Level 60 (pacifist proxy)."
+    requires: t6_monster_hunter
+    objectives:
+      - id: pray60
+        type: SKILL_LEVEL
+        skill: prayer
+        level: 60
+    rewards:
+      - permission:yap.mmo.title.saint
+      - permission:yap.mmo.cosmetic.halo
+
+  t6_chaos:
+    name: "Chaos Bringer"
+    description: "Win 50 PvP arena kills (PLAYER kills)."
+    requires: t6_peacekeeper
+    objectives:
+      - id: pvp
+        type: KILL_MOB
+        entity: PLAYER
+        amount: 50
+    rewards:
+      - skill_xp:attack:250000
+      - item:DIAMOND_CHESTPLATE:1
+      - permission:yap.mmo.title.gladiator
+
+  t6_architect:
+    name: "The Architect"
+    description: "Gather 5000 Stone Bricks while building."
+    requires: t6_chaos
+    objectives:
+      - id: bricks
+        type: GATHER
+        material: STONE_BRICKS
+        amount: 5000
+    rewards:
+      - skill_xp:crafting:500000
+      - permission:yap.mmo.worldedit_token
+      - money:8000
+
+  t6_mining99:
+    name: "Mining Virtuoso"
+    description: "Reach Mining Level 90."
+    requires: t6_architect
+    objectives:
+      - id: mine90
+        type: SKILL_LEVEL
+        skill: mining
+        level: 90
+    rewards:
+      - skill_xp:mining:400000
+      - item:NETHERITE_PICKAXE:1
+
+  t6_combat99:
+    name: "Combat Virtuoso"
+    description: "Reach Attack Level 90."
+    requires: t6_mining99
+    objectives:
+      - id: atk90
+        type: SKILL_LEVEL
+        skill: attack
+        level: 90
+    rewards:
+      - skill_xp:attack:400000
+      - item:NETHERITE_SWORD:1
+
+  t6_all_round:
+    name: "All-Rounder"
+    description: "Reach Cooking Level 70 and Fishing Level 70."
+    requires: t6_combat99
+    objectives:
+      - id: cook70
+        type: SKILL_LEVEL
+        skill: cooking
+        level: 70
+      - id: fish70
+        type: SKILL_LEVEL
+        skill: fishing
+        level: 70
+    rewards:
+      - skill_xp:cooking:200000
+      - skill_xp:fishing:200000
+      - money:10000
+
+  t6_defence99:
+    name: "Iron Wall"
+    description: "Reach Defence Level 90."
+    requires: t6_all_round
+    objectives:
+      - id: def90
+        type: SKILL_LEVEL
+        skill: defence
+        level: 90
+    rewards:
+      - skill_xp:defence:400000
+      - item:NETHERITE_CHESTPLATE:1
+
+  t6_magic99:
+    name: "Arcane Master"
+    description: "Reach Magic Level 90."
+    requires: t6_defence99
+    objectives:
+      - id: mag90
+        type: SKILL_LEVEL
+        skill: magic
+        level: 90
+    rewards:
+      - skill_xp:magic:400000
+      - item:ENCHANTED_GOLDEN_APPLE:16
+

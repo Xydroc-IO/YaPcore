@@ -7,7 +7,7 @@ author: YapLabs
 description: MMO content layer — quests v2 packs, bosses, skill areas, hiscores (Folia-safe)
 website: https://github.com/yaplabs
 depend: [YaPSkills]
-softdepend: [YaPDB, YaPNpcs, YaPCombat, YaPCrafting, YaPPlayerdata]
+softdepend: [YaPDB, YaPNpcs, YaPCombat, YaPCrafting, YaPPlayerData]
 commands:
   hiscores:
     description: Global skill hiscores

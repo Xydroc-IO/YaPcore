@@ -159,7 +159,7 @@ recipes:
       - material: COPPER_INGOT
         amount: 1
     output:
-      material: WOODEN_HELMET
+      material: COPPER_HELMET
       amount: 1
       gear-tier: bronze
       display-name: Bronze Helmet
@@ -175,7 +175,7 @@ recipes:
       - material: COPPER_INGOT
         amount: 3
     output:
-      material: WOODEN_CHESTPLATE
+      material: COPPER_CHESTPLATE
       amount: 1
       gear-tier: bronze
       display-name: Bronze Platebody
@@ -191,7 +191,7 @@ recipes:
       - material: COPPER_INGOT
         amount: 1
     output:
-      material: WOODEN_LEGGINGS
+      material: COPPER_LEGGINGS
       amount: 1
       gear-tier: bronze
       display-name: Bronze Leggings
@@ -207,7 +207,7 @@ recipes:
       - material: COPPER_INGOT
         amount: 1
     output:
-      material: WOODEN_BOOTS
+      material: COPPER_BOOTS
       amount: 1
       gear-tier: bronze
       display-name: Bronze Boots

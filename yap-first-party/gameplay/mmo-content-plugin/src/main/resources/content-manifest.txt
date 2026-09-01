@@ -1,13 +1,13 @@
 # One resource path per line (relative to plugin jar root)
 DIR quests
 DIR bosses
-quests/chain_boss_hunter.yml
-quests/chain_combat.yml
-quests/chain_fishing_cooking.yml
-quests/chain_mining.yml
-quests/chain_smithing.yml
-quests/chain_woodcutting.yml
-quests/starter_chain.yml
+quests/compendium_tier_01.yml
+quests/compendium_tier_02.yml
+quests/compendium_tier_03.yml
+quests/compendium_tier_04.yml
+quests/compendium_tier_05.yml
+quests/compendium_tier_06.yml
+quests/compendium_ultimate.yml
 bosses/pack_01.yml
 bosses/pack_02.yml
 bosses/pack_03.yml

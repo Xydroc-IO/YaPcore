@@ -1,5 +1,6 @@
 package com.yapcore.skills.listener;
 
+import com.yapcore.mmo.CombatServices;
 import com.yapcore.mmo.SkillDefinition;
 import com.yapcore.mmo.SkillId;
 import com.yapcore.mmo.XpSource;
@@ -15,8 +16,8 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 
 /**
- * Combat skill XP (M1 stub — vanilla damage values, no custom combat formulas until M2).
- * Attack/strength split 50/50; hitpoints receives configured ratio of combined combat XP.
+ * Fallback combat skill XP when YaPCombat is not loaded/enabled.
+ * With YaPCombat online, {@code CombatXpAwarder} owns attack/strength/defence/hitpoints XP.
  */
 public final class CombatSkillListener implements Listener {
 
@@ -33,6 +34,9 @@ public final class CombatSkillListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamageDealt(EntityDamageByEntityEvent event) {
+        if (combatOwnsXp()) {
+            return;
+        }
         Player player = resolveAttacker(event);
         if (player == null) {
             return;
@@ -61,6 +65,9 @@ public final class CombatSkillListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamageTaken(EntityDamageEvent event) {
+        if (combatOwnsXp()) {
+            return;
+        }
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
@@ -83,6 +90,11 @@ public final class CombatSkillListener implements Listener {
         }
         double xp = damage * def.combatTaken().xpPerDamage();
         grantAsync(player, def, DEFENCE, xp);
+    }
+
+    /** True when YaPCombat registered {@code CombatService} (config-enabled path). */
+    private static boolean combatOwnsXp() {
+        return CombatServices.find().isPresent();
     }
 
     private static Player resolveAttacker(EntityDamageByEntityEvent event) {

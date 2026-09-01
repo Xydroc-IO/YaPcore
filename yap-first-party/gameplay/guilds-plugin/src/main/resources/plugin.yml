@@ -6,7 +6,7 @@ folia-supported: true
 description: MMO guilds — levels, perks, bank, chat, relations
 authors: [YapLabs]
 depend: [YaPDB]
-softdepend: [YaPPlayerdata, YaPSkills, PlaceholderAPI]
+softdepend: [YaPPlayerData, YaPSkills, PlaceholderAPI]
 commands:
   g:
     description: Guild commands

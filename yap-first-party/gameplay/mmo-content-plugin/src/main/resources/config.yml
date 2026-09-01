@@ -1,8 +1,8 @@
 enabled: true
 use-shared-yapdb: true
-jdbc-url: jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true
+jdbc-url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
 jdbc-user: yap
-jdbc-password: yap
+jdbc-password: change-me
 pool-max: 4
 pool-min: 1
 pool-timeout-ms: 10000

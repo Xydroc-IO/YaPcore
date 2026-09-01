@@ -33,3 +33,32 @@ areas:
     max-y: 70
     max-z: 120
     xp-multiplier: 1.5
+
+  # Unlocked by quest t1_mining_five (teleport_unlock:mines)
+  mines:
+    type: MINING_GUILD
+    world: world
+    min-x: -64
+    min-y: 40
+    min-z: -64
+    max-x: -32
+    max-y: 72
+    max-z: -32
+    respawn-seconds: 45
+    nodes:
+      - x: -48
+        y: 55
+        z: -48
+        ore: IRON_ORE
+      - x: -52
+        y: 54
+        z: -40
+        ore: COAL_ORE
+      - x: -40
+        y: 56
+        z: -52
+        ore: COPPER_ORE
+      - x: -44
+        y: 50
+        z: -44
+        ore: GOLD_ORE

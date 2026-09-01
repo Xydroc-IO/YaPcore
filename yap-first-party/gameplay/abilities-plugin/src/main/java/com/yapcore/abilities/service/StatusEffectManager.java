@@ -7,7 +7,6 @@ import com.yapcore.abilities.StatusEffectService;
 import com.yapcore.abilities.exec.EffectRunner;
 import com.yapcore.abilities.load.StatusEffectPackLoader;
 import com.yapcore.sched.YapSched;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -64,10 +63,10 @@ public final class StatusEffectManager implements StatusEffectService {
                     return other != null && def.group().equals(other.group()) && !other.id().equals(def.id());
                 });
             }
-            long expires = Bukkit.getCurrentTick() + def.durationTicks();
+            long expires = nowTick() + def.durationTicks();
             MutableEffect existing = map.get(effectId);
             int nextStacks = Math.min(def.maxStacks(), (existing == null ? 0 : existing.stacks) + Math.max(1, stacks));
-            map.put(effectId, new MutableEffect(sourceId, nextStacks, expires, Bukkit.getCurrentTick()));
+            map.put(effectId, new MutableEffect(sourceId, nextStacks, expires, nowTick()));
             if (target instanceof org.bukkit.entity.Player player) {
                 player.sendActionBar(net.kyori.adventure.text.Component.text(
                         (def.kind() == com.yapcore.abilities.StatusKind.BUFF ? "§a+" : "§c-")
@@ -137,7 +136,7 @@ public final class StatusEffectManager implements StatusEffectService {
     }
 
     private void tickAll() {
-        long now = Bukkit.getCurrentTick();
+        long now = nowTick();
         for (Map.Entry<UUID, ConcurrentHashMap<String, MutableEffect>> entityEntry : active.entrySet()) {
             LivingEntity entity = findEntity(entityEntry.getKey());
             if (entity == null || !entity.isValid()) {
@@ -170,6 +169,11 @@ public final class StatusEffectManager implements StatusEffectService {
 
     private LivingEntity findEntity(UUID id) {
         return plugin.getServer().getEntity(id) instanceof LivingEntity living ? living : null;
+    }
+
+    /** Folia-safe tick clock — {@link Bukkit#getCurrentTick()} throws off a region thread. */
+    private static long nowTick() {
+        return System.currentTimeMillis() / 50L;
     }
 
     private static final class MutableEffect {

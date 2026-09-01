@@ -4,7 +4,7 @@ enabled: true
 use-shared-yapdb: true
 
 jdbc:
-  url: jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
   user: yap
   password: change-me
 

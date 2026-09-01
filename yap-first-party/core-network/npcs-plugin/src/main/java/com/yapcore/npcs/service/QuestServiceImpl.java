@@ -270,10 +270,71 @@ public final class QuestServiceImpl implements QuestService {
             if (dispatchTeleportUnlockReward(player, reward)) {
                 continue;
             }
+            if (dispatchKitUnlockReward(player, reward)) {
+                continue;
+            }
+            if (dispatchPermissionReward(player, reward)) {
+                continue;
+            }
+            if (dispatchGroupReward(player, reward)) {
+                continue;
+            }
             String cmd = reward.replace("{player}", player.getName());
             YapSched.global(plugin, () ->
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd));
         }
+    }
+
+    /** {@code kit_unlock:adventurer} → YaPPerms {@code yapdata.kit.adventurer}. */
+    private boolean dispatchKitUnlockReward(Player player, String reward) {
+        if (reward == null || !reward.startsWith("kit_unlock:")) {
+            return false;
+        }
+        String kitId = reward.substring("kit_unlock:".length()).trim().toLowerCase(Locale.ROOT);
+        if (kitId.isEmpty()) {
+            return true;
+        }
+        YapSched.global(plugin, () ->
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                        "yapperm user " + player.getName()
+                                + " permission set yapdata.kit." + kitId + " true"));
+        YapSched.entity(plugin, player, () ->
+                player.sendMessage("§aKit unlocked: §f/kit " + kitId));
+        return true;
+    }
+
+    /** {@code permission:yap.example.node} → YaPPerms permission set true. */
+    private boolean dispatchPermissionReward(Player player, String reward) {
+        if (reward == null || !reward.startsWith("permission:")) {
+            return false;
+        }
+        String node = reward.substring("permission:".length()).trim();
+        if (node.isEmpty()) {
+            return true;
+        }
+        YapSched.global(plugin, () ->
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                        "yapperm user " + player.getName() + " permission set " + node + " true"));
+        YapSched.entity(plugin, player, () ->
+                player.sendMessage("§aPermission unlocked: §f" + node));
+        return true;
+    }
+
+    /** {@code group:vip} → YaPPerms parent add (trial ranks, titles via group packs). */
+    private boolean dispatchGroupReward(Player player, String reward) {
+        if (reward == null || !reward.startsWith("group:")) {
+            return false;
+        }
+        String group = reward.substring("group:".length()).trim();
+        if (group.isEmpty()) {
+            return true;
+        }
+        YapSched.global(plugin, () ->
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                        "yapperm user " + player.getName() + " parent add " + group));
+        YapSched.entity(plugin, player, () ->
+                player.sendMessage("§aRank/group granted: §f" + group));
+        return true;
     }
 
     /** {@code skill_xp:mining:500} — no-op when YaPSkills is absent. */
