@@ -21,6 +21,9 @@ See `docs/mmo/MMO_BEDROCK_UI.md` and `docs/mmo/MMO_ABILITIES.md`.
 - Permissions: document in `docs/ops/PERMISSIONS.md`
 - Smoke / validate: `./scripts/validate-mmo-content.sh` (+ optional `smoke-folia-plugins.sh`)
 
+> **Acceptance checklists** under each milestone are **manual QA** for operator sign-off.
+> Milestones M0–M7 are **shipped** (code + automated gates); tick boxes after live soak.
+
 **Reference implementations**
 
 | Pattern | Copy from |

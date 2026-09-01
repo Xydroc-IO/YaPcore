@@ -259,7 +259,8 @@ Content packs: `plugins/yap-mmo-content/quests/starter_chain.yml`
 
 | Node | Default | Grants |
 |------|---------|--------|
-| `yapabilities.use` | true | `/ability list`, `/ability cast`, shorthand `/ability <id>` |
+| `yapabilities.use` | true | `/ability list`, `/ability cast`, `/ability bar`, `/ability book`, `/abilities`, hotbar cast keys 4–9 |
+| `yapabilities.bar` | true | `/ability bind`, `/ability clear`, drag-bind in ability book |
 | `yapabilities.admin` | op | `/yapabilities reload` |
 
 233 combat abilities ship in YAML packs; `/cast` delegates when yap-abilities is loaded.

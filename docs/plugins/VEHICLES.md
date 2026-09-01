@@ -175,6 +175,9 @@ Clients must load `yapcore-default.zip` (or a pack that merges YaP Vehicles).
 Without the pack, HD bodies look like blank paper — set
 `visuals.high-res-models: false` for BlockDisplay-only bodies.
 
+**Preview gallery:** [`resourcepacks/yap-vehicles/showcase/`](../resourcepacks/yap-vehicles/showcase/)
+— demo PNGs of every model (regenerate with `python3 scripts/generate-vehicle-showcase.py`).
+
 ### Author API
 
 ```java

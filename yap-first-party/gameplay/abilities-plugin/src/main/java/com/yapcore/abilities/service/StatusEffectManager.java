@@ -7,6 +7,7 @@ import com.yapcore.abilities.StatusEffectService;
 import com.yapcore.abilities.exec.EffectRunner;
 import com.yapcore.abilities.load.StatusEffectPackLoader;
 import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -23,6 +24,7 @@ public final class StatusEffectManager implements StatusEffectService {
     private final JavaPlugin plugin;
     private final StatusEffectPackLoader loader;
     private EffectRunner effectRunner;
+    private YapTask statusTicker;
     private final ConcurrentHashMap<UUID, ConcurrentHashMap<String, MutableEffect>> active = new ConcurrentHashMap<>();
 
     public StatusEffectManager(JavaPlugin plugin, StatusEffectPackLoader loader) {
@@ -35,7 +37,15 @@ public final class StatusEffectManager implements StatusEffectService {
     }
 
     public void startTicker(long intervalTicks) {
-        YapSched.globalTimer(plugin, this::tickAll, intervalTicks, intervalTicks);
+        stopTicker();
+        statusTicker = YapSched.globalTimer(plugin, this::tickAll, intervalTicks, intervalTicks);
+    }
+
+    public void stopTicker() {
+        if (statusTicker != null) {
+            statusTicker.cancel();
+            statusTicker = null;
+        }
     }
 
     @Override

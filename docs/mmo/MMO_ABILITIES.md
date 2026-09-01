@@ -33,8 +33,61 @@ Folia-safe: all entity/world mutations via `YapSched`.
 | `/ability list [page] [category]` | `yapabilities.use` | Paginated ability list |
 | `/ability cast <id>` | `yapabilities.use` | Cast ability |
 | `/ability info <id>` | `yapabilities.use` | Show requirements |
+| `/ability bar` | `yapabilities.use` | List hotbar bindings + current page |
+| `/ability book [category] [page]` | `yapabilities.use` | Open ability book GUI |
+| `/abilities` | `yapabilities.use` | Alias — open ability book |
+| `/ability tome` | `yapabilities.use` | Receive an Ability Tome item |
+| `/ability mode [build\|combat]` | `yapabilities.use` | Swap or set build/combat hotbar page |
+| `/ability bind <1-6> [id]` | `yapabilities.bar` | Bind ability to bar slot (clears if id omitted) |
+| `/ability clear` | `yapabilities.bar` | Clear all bar bindings |
 | `/cast <id>` | combat | Delegates to ability engine when loaded |
-| `/yapabilities reload` | `yapabilities.admin` | Placeholder (restart for full reload) |
+| `/yapabilities reload` | `yapabilities.admin` | Reload config + ability/effect YAML packs (hot) |
+
+## Ability hotbar (dual page)
+
+MMO **two-page hotbar** in **`yap-abilities.jar`**:
+
+| Page | Hotbar | Behavior |
+|------|--------|----------|
+| **Build** (default) | **1–9** | Normal Minecraft — blocks, tools, full row |
+| **Combat** | **1–3** weapons · **4–9** cast abilities | Press **4–9** to cast; weapon keys work normally |
+
+### Swap build ↔ combat
+
+| Input | Config key |
+|-------|------------|
+| **Middle mouse** (pick block) | `PICK_BLOCK` |
+| **Swap hands** (`F` — rebind to middle mouse in Minecraft Controls) | `SWAP_HANDS` |
+| **Sneak + Q** (drop) | `SNEAK_DROP` |
+| **Command** | `/ability mode` · `/ability mode build` · `/ability mode combat` |
+
+Config: `plugins/YaPAbilities/config.yml` → `ability-bar.*`  
+Bindings: `/ability bind 1 wind_strike` … `/ability bar`  
+Persistence: `plugins/YaPAbilities/bars.yml` (ability ids; weapon rows stay in-session)
+
+RS **skills** stay passive — only **abilities** bind to combat keys 4–9.
+
+## Ability book (spellbook GUI)
+
+Browse **unlocked** abilities (gated by RS skill levels in each ability’s `min-level`) and bind them to combat keys **4–9** without memorizing ids.
+
+| Input | Action |
+|-------|--------|
+| **`/abilities`** or **`/ability book`** | Open the book |
+| **Ability Tome** (right-click) | Open the book — auto-given on first join when enabled |
+| **`/ability tome`** | Get a replacement tome |
+| **Bedrock** | Same commands open a **form UI** (category → ability → slot) |
+
+### Java GUI
+
+- **Category tabs** — All · Magic · Ranged · Melee · Prayer · Utility  
+- **Ability grid** — paginated; locked abilities shown gray when `show-locked: true`  
+- **Bottom row** — combat bar slots (keys 4–9)  
+- **Drag** an ability onto a slot, **shift-click** an ability for the first empty slot, **right-click** a slot to clear  
+- **Clear all** button removes every binding  
+
+Config: `plugins/YaPAbilities/config.yml` → `ability-book.*`  
+Persistence: same `bars.yml` as `/ability bind` — book and commands stay in sync.
 
 ## YAML schema (ability)
 

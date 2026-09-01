@@ -1,6 +1,17 @@
 package com.yapcore.abilities;
 
 import com.yapcore.abilities.cmd.AbilityCommands;
+import com.yapcore.abilities.bar.AbilityBarConfig;
+import com.yapcore.abilities.bar.AbilityBarListener;
+import com.yapcore.abilities.bar.AbilityBarService;
+import com.yapcore.abilities.bar.AbilityBarStore;
+import com.yapcore.abilities.book.AbilityBookBedrockUi;
+import com.yapcore.abilities.book.AbilityBookConfig;
+import com.yapcore.abilities.book.AbilityBookKeys;
+import com.yapcore.abilities.book.AbilityBookListener;
+import com.yapcore.abilities.book.AbilityBookMenu;
+import com.yapcore.abilities.book.AbilityBookPlayerStore;
+import com.yapcore.abilities.book.AbilityBookService;
 import com.yapcore.abilities.exec.AbilityExecutor;
 import com.yapcore.abilities.exec.EffectRunner;
 import com.yapcore.abilities.exec.ProjectileTracker;
@@ -8,7 +19,10 @@ import com.yapcore.abilities.load.AbilityPackLoader;
 import com.yapcore.abilities.load.StatusEffectPackLoader;
 import com.yapcore.abilities.service.AbilityServiceImpl;
 import com.yapcore.abilities.service.StatusEffectManager;
+import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -25,39 +39,124 @@ public final class AbilitiesPlugin extends JavaPlugin {
     private StatusEffectPackLoader statusLoader;
     private AbilityServiceImpl abilityService;
     private StatusEffectManager statusService;
+    private AbilityBarService abilityBar;
+    private AbilityBookService abilityBook;
+    private AbilityBookKeys bookKeys;
+    private boolean runtimeWired;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        reloadAbilities();
+        reloadAbilityPacks();
 
         if (!getConfig().getBoolean("enabled", true)) {
             getLogger().info("YaPAbilities disabled via config.");
             return;
         }
 
-        AbilityCommands commands = new AbilityCommands(abilityService);
-        bind("ability", commands);
-        bind("yapabilities", commands);
-
-        getServer().getServicesManager().register(AbilityService.class, abilityService, this, ServicePriority.Normal);
-        getServer().getServicesManager().register(StatusEffectService.class, statusService, this, ServicePriority.Normal);
-
-        getLogger().info("YaP Abilities ready — abilities=" + abilityLoader.abilities().size()
-                + ", status-effects=" + statusLoader.effects().size());
+        wireRuntime();
     }
 
     @Override
     public void onDisable() {
-        if (abilityService != null) {
-            getServer().getServicesManager().unregister(AbilityService.class, abilityService);
-        }
-        if (statusService != null) {
-            getServer().getServicesManager().unregister(StatusEffectService.class, statusService);
-        }
+        tearDownRuntime();
     }
 
-    public void reloadAbilities() {
+    public AbilityServiceImpl abilityService() {
+        return abilityService;
+    }
+
+    public AbilityBarService abilityBar() {
+        return abilityBar;
+    }
+
+    public AbilityBookService abilityBook() {
+        return abilityBook;
+    }
+
+    /**
+     * Hot reload: config.yml, ability/effect YAML packs, bar/book settings.
+     * Re-registers listeners and Bukkit services without a full server restart.
+     */
+    public void adminReload(CommandSender sender) {
+        if (abilityBar != null) {
+            abilityBar.store().saveAll();
+        }
+        tearDownRuntime();
+        reloadConfig();
+        reloadAbilityPacks();
+
+        if (!getConfig().getBoolean("enabled", true)) {
+            sender.sendMessage("§eYaPAbilities disabled via config — runtime torn down.");
+            return;
+        }
+
+        wireRuntime();
+        for (Player player : getServer().getOnlinePlayers()) {
+            abilityBar.initPlayer(player);
+            abilityBar.syncBar(player);
+        }
+
+        int abilities = abilityLoader == null ? 0 : abilityLoader.abilities().size();
+        int effects = statusLoader == null ? 0 : statusLoader.effects().size();
+        sender.sendMessage("§aYaP Abilities reloaded — §f" + abilities + " §aabilities, §f" + effects
+                + " §astatus effects.");
+        getLogger().info("Admin reload by " + sender.getName() + " — abilities=" + abilities
+                + ", status-effects=" + effects);
+    }
+
+    private void wireRuntime() {
+        AbilityBarConfig barConfig = new AbilityBarConfig(getConfig());
+        AbilityBookConfig bookConfig = new AbilityBookConfig(getConfig());
+        AbilityBarStore barStore = new AbilityBarStore(this, barConfig);
+        abilityBar = new AbilityBarService(this, barConfig, barStore, abilityService);
+
+        bookKeys = new AbilityBookKeys(this);
+        AbilityBookMenu bookMenu = new AbilityBookMenu(this, bookConfig, bookKeys, barConfig, barStore, abilityService);
+        AbilityBookBedrockUi bedrockUi = new AbilityBookBedrockUi(this, bookConfig, abilityService, abilityBar);
+        AbilityBookPlayerStore bookPlayers = new AbilityBookPlayerStore(this);
+        abilityBook = new AbilityBookService(this, bookConfig, bookKeys, bookMenu, bedrockUi, bookPlayers,
+                abilityBar, abilityService);
+
+        getServer().getPluginManager().registerEvents(
+                new AbilityBarListener(this, barConfig, abilityBar), this);
+        getServer().getPluginManager().registerEvents(
+                new AbilityBookListener(this, abilityBook, abilityService), this);
+
+        AbilityCommands commands = new AbilityCommands(this);
+        bind("ability", commands);
+        bind("abilities", commands);
+        bind("yapabilities", commands);
+
+        getServer().getServicesManager().register(AbilityService.class, abilityService, this, ServicePriority.Normal);
+        getServer().getServicesManager().register(StatusEffectService.class, statusService, this, ServicePriority.Normal);
+        runtimeWired = true;
+
+        getLogger().info("YaP Abilities ready — abilities=" + abilityLoader.abilities().size()
+                + ", status-effects=" + statusLoader.effects().size()
+                + ", ability-bar=keys " + barConfig.firstKey() + "-" + barConfig.lastKey()
+                + ", ability-book=" + (bookConfig.enabled() ? "on" : "off"));
+    }
+
+    private void tearDownRuntime() {
+        if (abilityBar != null) {
+            abilityBar.store().saveAll();
+        }
+        if (statusService != null) {
+            statusService.stopTicker();
+        }
+        if (runtimeWired) {
+            getServer().getServicesManager().unregister(AbilityService.class, abilityService);
+            getServer().getServicesManager().unregister(StatusEffectService.class, statusService);
+            HandlerList.unregisterAll(this);
+            runtimeWired = false;
+        }
+        abilityBar = null;
+        abilityBook = null;
+        bookKeys = null;
+    }
+
+    private void reloadAbilityPacks() {
         Path data = getDataFolder().toPath();
         try {
             Files.createDirectories(data);
@@ -71,6 +170,10 @@ public final class AbilitiesPlugin extends JavaPlugin {
         Path effectsPath = data.resolve(effectsDir);
         extractBundledDir(abilitiesDir, abilitiesPath);
         extractBundledDir(effectsDir, effectsPath);
+
+        if (statusService != null) {
+            statusService.stopTicker();
+        }
 
         abilityLoader = new AbilityPackLoader();
         statusLoader = new StatusEffectPackLoader();

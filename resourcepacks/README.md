@@ -17,6 +17,7 @@ resource-pack-forced=true
 - **Default pack:** `yapcore-default.zip` = Faithful 64x + YaP Vehicles
   (built by `gradle prepareClientPack` / `shadowJar`)
 - Standalone vehicles overlay: [`yap-vehicles.zip`](yap-vehicles.zip)
+- Vehicle model previews (docs): [`yap-vehicles/showcase/`](yap-vehicles/showcase/)
 - MMO skill/ability icons: [`yap-abilities/`](yap-abilities/) on **`clay_ball`** CMD
   (`python3 scripts/generate-mmo-icons.py`, merged with GAMEPLAY pack)
 - Shaders / realistic skies are **not** resource packs — see

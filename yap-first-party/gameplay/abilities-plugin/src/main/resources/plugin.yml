@@ -9,8 +9,12 @@ description: Config-driven ability engine — effects, projectiles, buffs, VFX
 softdepend: [ YaPSkills, YaPCombat ]
 commands:
   ability:
-    description: Cast or list abilities
-    usage: /ability [list|cast|info] [id] [page]
+    description: Cast, list, or bind abilities
+    usage: /ability [list|book|bar|bind|cast|info|mode|tome] ...
+    permission: yapabilities.use
+  abilities:
+    description: Open the ability book GUI
+    usage: /abilities
     permission: yapabilities.use
   yapabilities:
     description: Admin reload for ability packs
@@ -18,6 +22,8 @@ commands:
     permission: yapabilities.admin
 permissions:
   yapabilities.use:
+    default: true
+  yapabilities.bar:
     default: true
   yapabilities.admin:
     default: op

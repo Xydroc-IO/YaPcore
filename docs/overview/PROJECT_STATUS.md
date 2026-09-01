@@ -1,6 +1,6 @@
 # YaPcore — project status (complete rundown)
 
-**As of:** 2026-09-01 (evening)  
+**As of:** 2026-09-01 (evening, updated)  
 **Branch:** `main` (commits ahead of `origin/main`; push needs `gh auth login`)  
 **Last production battery:** `build/production-test-battery-latest.json` — **all gates PASS**  
 **Bot swarm:** **100 / 200 join verified** — see [BENCH_BOTS.md](../performance/BENCH_BOTS.md)
@@ -46,7 +46,7 @@ Installed via `gradle installProductDefaults` / `assembleRelease`:
 
 | Area | Jars |
 |------|------|
-| MMO | skills, combat, mechanics, content (100 quests + 20 bosses), abilities, bedrock-ui |
+| MMO | skills, combat, mechanics, content (100 quests + 20 bosses), abilities (233 + dual hotbar + ability book), bedrock-ui |
 | Extras | vehicles, stacker, games, factions, guilds, gameplay-knobs |
 
 ### Ops surfaces
@@ -211,9 +211,9 @@ Bot bench doc: [BENCH_BOTS.md](../performance/BENCH_BOTS.md). MSPT tables: [BENC
 
 | Item | State |
 |------|-------|
-| Local commits | `main` **ahead** of `origin/main` (Tier 4, cleanup, bench, bot-fix docs) |
-| Push | Blocked until `gh auth login` |
-| Uncommitted | Abilities/vehicles WIP (separate from bot bench commit) |
+| Local commits | `main` **ahead** of `origin/main` (bench + release notes; abilities commit pending) |
+| Push | Run `gh auth login && git push -u origin main` when ready |
+| Recent gameplay | **Abilities** — dual hotbar, ability book GUI, Shift+F open, `/yapabilities reload` (hot) |
 | Verify locally | `./scripts/smoke-network-full.sh` or full battery in [TESTING.md](../start/TESTING.md) |
 
 ---
@@ -242,7 +242,8 @@ Summary written to `build/production-test-battery-latest.json`.
 2. **Manual §E soak** — JE + Bedrock clients, 10 minutes each, tick checklist in parity doc  
 3. **Optional perf soak** — `SOAK_SECS=600 ./scripts/soak-yap-folia.sh perf` before a major release  
 4. **G.33 live pass** — verify placed skulls + item-in-hand on real Bedrock client  
-5. **When Mojang ships new protocol** — follow [PROTOCOL_DUMPS.md](../protocol/PROTOCOL_DUMPS.md), re-run matrix  
+5. **CI depth** — optional nightly `smoke-network-full.sh` (GitHub CI today = build + unit tests only)  
+6. **When Mojang ships new protocol** — follow [PROTOCOL_DUMPS.md](../protocol/PROTOCOL_DUMPS.md), re-run matrix  
 
 ---
 
