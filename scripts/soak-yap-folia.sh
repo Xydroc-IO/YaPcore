@@ -16,6 +16,9 @@
 #   SKIP_HOOKS=1                skip optional A2/A3 hook smokes
 #   YAP_FOLIA_ENTITY_TICK_BUDGET  (perf only; default unset/off — A3 sets e.g. 300)
 #   YAP_FOLIA_ASYNC_CHUNK_SAVE    (perf only; default unset/off — A3 sets true)
+#   YAP_FOLIA_MICROTICK_BUDGET_MS (perf only; soft Mob AI deadline ms)
+#   YAP_FOLIA_STEAL_THRESHOLD_MS / YAP_FOLIA_TASK_SLICE_MS (WORK_STEALING only)
+#   YAP_FOLIA_GRID_EXPONENT       (optional override of paper-global grid-exponent)
 #
 # Pass: managed Folia stays ready for the full soak window (see docs/YAP_FOLIA_SOAK.md).
 set -euo pipefail
@@ -31,7 +34,7 @@ usage() {
 Usage: ./scripts/soak-yap-folia.sh <compat|perf|list> [seconds]
 
   compat  build jar + sched-compat + teleport; perf knobs OFF
-  perf    compat + optional -Dyap.folia.entity-tick-budget / async-chunk-save
+  perf    compat + optional -Dyap.folia.entity-tick-budget / async-chunk-save / microtick
   list    print profiles and env knobs
 
 Docs: docs/YAP_FOLIA_SOAK.md
@@ -53,6 +56,9 @@ Profiles:
   perf    same as compat, plus:
           YAP_FOLIA_ENTITY_TICK_BUDGET → -Dyap.folia.entity-tick-budget
           YAP_FOLIA_ASYNC_CHUNK_SAVE   → -Dyap.folia.async-chunk-save
+          YAP_FOLIA_MICROTICK_BUDGET_MS → -Dyap.folia.microtick-budget-ms
+          YAP_FOLIA_STEAL_THRESHOLD_MS / YAP_FOLIA_TASK_SLICE_MS (needs WORK_STEALING)
+          YAP_FOLIA_GRID_EXPONENT → -Dyap.folia.grid-exponent
 Hooks (unless SKIP_HOOKS=1):
   compat → smoke-folia-sched-compat.sh (SKIP_LIVE ok), smoke-folia-cross-region-tp.sh if present
   perf   → smoke-folia-async-save.sh if present (informational)
@@ -121,10 +127,12 @@ export YAP_FOLIA_SOAK=1
 export YAP_FOLIA_SOAK_PROFILE="$PROFILE"
 
 if [ "$PROFILE" = "perf" ]; then
-  echo "perf knobs: entity-tick-budget=${YAP_FOLIA_ENTITY_TICK_BUDGET:-off} async-chunk-save=${YAP_FOLIA_ASYNC_CHUNK_SAVE:-off}"
+  echo "perf knobs: entity-tick-budget=${YAP_FOLIA_ENTITY_TICK_BUDGET:-off} async-chunk-save=${YAP_FOLIA_ASYNC_CHUNK_SAVE:-off} microtick=${YAP_FOLIA_MICROTICK_BUDGET_MS:-off} subregion=${YAP_FOLIA_SUBREGION_PARTITION:-off}"
 else
   # Compat: ensure perf env cannot leak into smoke
-  unset YAP_FOLIA_ENTITY_TICK_BUDGET YAP_FOLIA_ASYNC_CHUNK_SAVE 2>/dev/null || true
+  unset YAP_FOLIA_ENTITY_TICK_BUDGET YAP_FOLIA_ASYNC_CHUNK_SAVE \
+    YAP_FOLIA_MICROTICK_BUDGET_MS YAP_FOLIA_STEAL_THRESHOLD_MS YAP_FOLIA_TASK_SLICE_MS \
+    YAP_FOLIA_GRID_EXPONENT YAP_FOLIA_SCOREBOARD_SWMR YAP_FOLIA_SUBREGION_PARTITION 2>/dev/null || true
   echo "perf knobs: OFF (compat profile)"
 fi
 

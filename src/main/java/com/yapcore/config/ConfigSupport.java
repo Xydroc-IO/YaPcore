@@ -15,4 +15,12 @@ public final class ConfigSupport {
             return fallback;
         }
     }
+
+    public static long parseLong(Properties props, String key, long fallback) {
+        try {
+            return Long.parseLong(props.getProperty(key, Long.toString(fallback)).trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
 }

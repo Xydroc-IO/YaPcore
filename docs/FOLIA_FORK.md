@@ -1,25 +1,68 @@
-# YaP Folia fork
+# YaP-Folia — our game fork
 
-Phase 1 bootstrap: vendor PaperMC Folia 26.2, apply ordered YaP patches, build
-`yap-folia-26.2.jar`, and teach YaPcore to prefer it.
+**YaPcore does not ship stock PaperMC Folia as the product game.**  
+The default game jar is **YaP-Folia**: PaperMC Folia **26.2** plus ordered YapLabs patches, built to `lib/yap-folia-26.2.jar`.
 
-**Zero gameplay / perf changes in Phase 1** — branding only (`YaP-Folia`).
+Stock Fill Folia remains a **fallback / bench** path only (`folia-jar-source=fetch`).
+
+## Product defaults
+
+```properties
+game-authority=folia
+folia-embed=true
+folia-version=26.2
+folia-dir=folia-kernel
+folia-jar-source=build          # prefer lib/yap-folia-*.jar
+folia-teleport-transactions=true
+```
+
+Jar resolution (`FoliaFiles.ensureFoliaJar()`):
+
+1. `folia-jar-path` (if set)
+2. `lib/yap-folia-{version}.jar` when `folia-jar-source=build` (or `auto` and present)
+3. Cached `folia-kernel/folia-*.jar` / `lib/folia-*.jar`
+4. PaperMC Fill download when `folia-jar-source=fetch`
+
+## What YaP-Folia is
+
+| Piece | Role |
+|-------|------|
+| Upstream | PaperMC Folia `ver/26.2.x` pin in `vendor/folia/UPSTREAM.lock` |
+| Patches | `vendor/folia/patches/0000`…`0015` (ordered) |
+| Brand | Jar metadata → **YaP-Folia** |
+| Runtime | Child JVM under YaPcore (`folia-kernel/`); chassis owns edge/I/O |
+
+YapEngine **never** owns world/entity/redstone tick. That is YaP-Folia’s region thread pool.
 
 ## Layout
 
 ```
 vendor/folia/
-  README.md           # license + overview
-  UPSTREAM.lock       # REPO / BRANCH / COMMIT / MC_VERSION
-  patches/
-    0000-yap-branding.patch
-  work/               # gitignored clone (scripts/vendor-folia.sh)
+  UPSTREAM.lock
+  patches/          # YaP patches (see table below)
+  work/             # gitignored clone (scripts/vendor-folia.sh)
 scripts/
   vendor-folia.sh
   folia-patch.sh
   build-yap-folia.sh
   verify-yap-folia.sh
+  soak-yap-folia.sh
 ```
+
+## Patches (current tree)
+
+| Patch | Purpose | Default |
+|-------|---------|---------|
+| `0000-yap-branding` | Rebrand jar to YaP-Folia | always |
+| `0001-yap-teleport-transactions` | Cross-region teleport PREPARE/COMMIT/CONFIRM | **on** (`folia-teleport-transactions=true`) |
+| `0010-yap-async-chunk-save` | Moonrise flush off region thread | **off** |
+| `0011-yap-scoreboard-swmr` | Scoreboard mutations under SWMR lock | **off** |
+| `0012-yap-entity-tick-budget` | Per-region Mob AI tick budget | **off** (0) |
+| `0013-yap-region-pool-and-microtick` | Pool metrics, steal/slice knobs, microtick | metrics on; budgets off |
+| `0014-yap-subregion-force-partition` | Force-partition hot regions into parallel shards | **off** |
+| `0015-yap-cross-region-neighbor-defer` | Defer neighbor/shape updates across shard borders | with partition |
+
+Perf knobs stay **off/safe** unless you turn them on after soak. See `vendor/folia/patches/AGENT3.md` and [YAP_FOLIA_SOAK.md](YAP_FOLIA_SOAK.md).
 
 ## Build
 
@@ -31,92 +74,55 @@ scripts/
 
 Requires **JDK 25+**, Git, and network (Paperweight downloads Minecraft + Paper).
 
-## Product config
+```bash
+./scripts/verify-yap-folia.sh      # build + smoke with source=build
+./scripts/soak-yap-folia.sh compat
+FOLIA_JAR_SOURCE=build ./scripts/smoke-folia.sh
+```
+
+## Stock Folia (non-product)
 
 ```properties
-game-authority=folia
-folia-version=26.2
-folia-jar-source=build    # build | fetch | path | auto
-folia-jar-path=           # optional absolute/relative jar when source=path
-folia-jar-url=            # optional Fill override when source=fetch
+folia-jar-source=fetch
 ```
-
-Resolution order in `FoliaFiles.ensureFoliaJar()`:
-
-1. `folia-jar-path` (if set and usable)
-2. `lib/yap-folia-{version}.jar` when `folia-jar-source=build`
-3. existing `folia-kernel/folia-{version}.jar` / `lib/folia-{version}.jar`
-4. Fill download (`folia-jar-url` or PaperMC Fill)
-
-Default is **`build`** (YaP-Folia) after Agent 2 soak-compat green. Stock Fill:
-set `folia-jar-source=fetch`.
 
 ```bash
-./scripts/build-yap-folia.sh
-./scripts/soak-yap-folia.sh compat
+./scripts/fetch-folia.sh
 ```
 
-See [YAP_FOLIA_SOAK.md](YAP_FOLIA_SOAK.md).
+Use this for A/B benches against upstream only. Product docs, releases, and smokes assume **YaP-Folia**.
 
-## Changelog (default jar source)
+## Adding a patch
 
-| When | Default |
-|------|---------|
-| Phase 1 bootstrap | `fetch` (stock Fill) |
-| Pre soak-compat green | `fetch` + loud **recommended: `build`** |
-| After A2 soak-compat green | **`build`** (YaP-Folia) — Agent 1 flipped |
+1. `./scripts/vendor-folia.sh` — clean pin.
+2. Edit Folia tracked patch inputs under `folia-server/paper-patches/`, `minecraft-patches/`, etc., or fold via Folia’s `./rb.sh`.
+3. Export ordered patch: `git -C vendor/folia/work diff > vendor/folia/patches/00NN-name.patch`
+4. `./scripts/folia-patch.sh --check` then `./scripts/build-yap-folia.sh`
+5. Smoke: `FOLIA_JAR_SOURCE=build ./scripts/smoke-folia.sh`
 
-## Adding a patch (Agents 2 / 3)
-
-1. `./scripts/vendor-folia.sh` and ensure clean pin (`git -C vendor/folia/work status`).
-2. Prefer editing Folia’s **tracked** patch inputs under:
-   - `folia-server/paper-patches/`
-   - `folia-server/minecraft-patches/`
-   - `folia-api/paper-patches/`
-   - `folia-server/build.gradle.kts.patch`
-3. Or after `./gradlew applyAllPatches`, edit generated sources and fold changes back with Folia’s `./rb.sh` (upstream workflow).
-4. Export an ordered patch against the pin:
-
-   ```bash
-   git -C vendor/folia/work diff > vendor/folia/patches/0001-short-name.patch
-   ```
-
-5. Name files `000N-description.patch` (zero-padded). `folia-patch.sh` applies in sort order **before** `applyAllPatches`.
-6. `./scripts/folia-patch.sh --check` then `./scripts/build-yap-folia.sh`.
-7. Smoke: `FOLIA_JAR_SOURCE=build ./scripts/smoke-folia.sh`
-
-**Do not** edit the same region/teleport/scheduler files as another agent in the same PR (see `docs/FOLIA_FORK_AGENT_HANDOFF.md`).
+Handoff / file ownership: [FOLIA_FORK_AGENT_HANDOFF.md](FOLIA_FORK_AGENT_HANDOFF.md).
 
 ## Refresh upstream
 
 ```bash
-./scripts/vendor-folia.sh --update-lock   # tip of ver/26.2.x → UPSTREAM.lock
-./scripts/folia-patch.sh --check          # re-validate YaP patches
-# Fix conflicts, then:
+./scripts/vendor-folia.sh --update-lock
+./scripts/folia-patch.sh --check
 ./scripts/build-yap-folia.sh
 ```
 
-Commit the updated `UPSTREAM.lock` + any patch rebases together.
-
-## Verify
-
-```bash
-./scripts/verify-yap-folia.sh             # build + smoke with source=build
-SKIP_SMOKE=1 ./scripts/verify-yap-folia.sh
-./scripts/soak-yap-folia.sh compat       # shared soak (docs/YAP_FOLIA_SOAK.md)
-```
+Commit `UPSTREAM.lock` + any patch rebases together.
 
 ## License
 
-Folia is **GPL-3.0**. Shipping `yap-folia-*.jar` requires offering corresponding
-source (this tree + patches + build scripts). See Folia `LICENSE` and YaPcore
-`docs/LICENSING.md`.
+Upstream Folia is **GPL-3.0**. Shipping `yap-folia-*.jar` requires offering corresponding source (this tree + patches + build scripts). See Folia `LICENSE` and [LICENSING.md](LICENSING.md).
 
-## Next phases
+## Citeable bench (spawncollapse)
 
-| Agent | Work |
-|-------|------|
-| 2 | Scheduler shim + teleport transactions |
-| 3 | Regionizer / save / scoreboard perf |
+Stamp `20260824T234919Z` — region MSPT @ chunk 0,0 with `-Dyap.folia.entity-tick-budget=300`:
 
-Handoff map: [`FOLIA_FORK_AGENT_HANDOFF.md`](FOLIA_FORK_AGENT_HANDOFF.md).
+| Side | mspt_mean |
+|------|----------:|
+| Stock Folia | 25.25 |
+| YaP-Folia | 21.45 (−15%) |
+
+Details: [BENCH_VS_FOLIA.md](BENCH_VS_FOLIA.md).

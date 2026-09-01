@@ -33,6 +33,21 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-async-chunk-save", "false");
         props.setProperty("folia-entity-tick-budget", "0");
         props.setProperty("folia-scoreboard-swmr", "false");
+        // Phase 4 region pool / micro-tick — defaults OFF (safe)
+        props.setProperty("folia-microtick-budget-ms", "0");
+        props.setProperty("folia-steal-threshold-ms", "3");
+        props.setProperty("folia-task-slice-ms", "2");
+        props.setProperty("folia-grid-exponent", "");
+        props.setProperty("folia-region-metrics", "true");
+        // Phase 5 — true parallel sub-regions via force-partition (default OFF)
+        props.setProperty("folia-subregion-partition", "false");
+        props.setProperty("folia-subregion-shards", "2");
+        props.setProperty("folia-subregion-mspt-threshold", "20");
+        props.setProperty("folia-subregion-min-sections", "4");
+        props.setProperty("folia-subregion-min-entities", "32");
+        props.setProperty("folia-subregion-coalesce-mspt", "8");
+        props.setProperty("folia-subregion-coalesce-ticks", "100");
+        props.setProperty("folia-subregion-coalesce-quiet-ticks", "200");
     }
 
     public boolean isFoliaAuthority() {
@@ -116,6 +131,86 @@ public final class FoliaAuthorityConfig {
     /** Allow Bukkit scoreboard mutations under SWMR ({@code -Dyap.folia.scoreboard-swmr}). Default off. */
     public boolean isFoliaScoreboardSwmr() {
         return Boolean.parseBoolean(props.getProperty("folia-scoreboard-swmr", "false"));
+    }
+
+    /**
+     * Soft deadline (ms) for Mob AI phase per region tick ({@code -Dyap.folia.microtick-budget-ms}).
+     * {@code 0} = off. Same-thread deferral — not true parallel sub-regions.
+     */
+    public int getFoliaMicrotickBudgetMs() {
+        return ConfigSupport.parseInt(props, "folia-microtick-budget-ms", 0);
+    }
+
+    /** WORK_STEALING steal threshold ms ({@code -Dyap.folia.steal-threshold-ms}). Default 3. */
+    public long getFoliaStealThresholdMs() {
+        return ConfigSupport.parseLong(props, "folia-steal-threshold-ms", 3L);
+    }
+
+    /** WORK_STEALING task slice ms ({@code -Dyap.folia.task-slice-ms}). Default 2. */
+    public long getFoliaTaskSliceMs() {
+        return ConfigSupport.parseLong(props, "folia-task-slice-ms", 2L);
+    }
+
+    /**
+     * Optional override for Folia {@code threaded-regions.grid-exponent}
+     * ({@code -Dyap.folia.grid-exponent}). Empty = use paper-global.yml.
+     */
+    public String getFoliaGridExponent() {
+        return props.getProperty("folia-grid-exponent", "").trim();
+    }
+
+    /** Region merge/split/migration counters ({@code -Dyap.folia.region-metrics}). Default on. */
+    public boolean isFoliaRegionMetrics() {
+        return Boolean.parseBoolean(props.getProperty("folia-region-metrics", "true"));
+    }
+
+    /**
+     * Force-partition hot regions into independent Folia shards that tick in parallel
+     * ({@code -Dyap.folia.subregion-partition}). Default off.
+     */
+    public boolean isFoliaSubregionPartition() {
+        return Boolean.parseBoolean(props.getProperty("folia-subregion-partition", "false"));
+    }
+
+    public int getFoliaSubregionShards() {
+        return ConfigSupport.parseInt(props, "folia-subregion-shards", 2);
+    }
+
+    public int getFoliaSubregionMsptThreshold() {
+        return ConfigSupport.parseInt(props, "folia-subregion-mspt-threshold", 20);
+    }
+
+    public int getFoliaSubregionMinSections() {
+        return ConfigSupport.parseInt(props, "folia-subregion-min-sections", 4);
+    }
+
+    public int getFoliaSubregionMinEntities() {
+        return ConfigSupport.parseInt(props, "folia-subregion-min-entities", 32);
+    }
+
+    public int getFoliaSubregionCoalesceMspt() {
+        return ConfigSupport.parseInt(props, "folia-subregion-coalesce-mspt", 8);
+    }
+
+    public int getFoliaSubregionCoalesceTicks() {
+        return ConfigSupport.parseInt(props, "folia-subregion-coalesce-ticks", 100);
+    }
+
+    public int getFoliaSubregionCoalesceQuietTicks() {
+        return ConfigSupport.parseInt(props, "folia-subregion-coalesce-quiet-ticks", 200);
+    }
+
+    /** Corridor unload before force-partition ({@code -Dyap.folia.subregion-carve}). Default true. */
+    public boolean isFoliaSubregionCarve() {
+        return Boolean.parseBoolean(props.getProperty("folia-subregion-carve", "true"));
+    }
+
+    public int getFoliaSubregionPartitionDelayTicks() {
+        return ConfigSupport.parseInt(props, "folia-subregion-partition-delay-ticks", 600);
+    }
+
+    public int getFoliaSubregionGapMaintainInterval() {
+        return ConfigSupport.parseInt(props, "folia-subregion-gap-maintain-interval", 10);
     }
 
     /**

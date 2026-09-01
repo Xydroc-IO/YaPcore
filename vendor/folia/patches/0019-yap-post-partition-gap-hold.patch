@@ -1,0 +1,226 @@
+From: YaPcore Agent 3 <agent-3@yapcore>
+Subject: [PATCH] YaP gap hold, partition delay, carve integration
+
+Post-partition gap hold, partition hot-streak delay, carve scheduling,
+and carve-skip when groups are already spatially buffered.
+Post-applyAllPatches. Depends on 0018.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
+@@ -2,6 +2,7 @@
+ 
+ import com.mojang.logging.LogUtils;
+ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
++import net.minecraft.server.level.ServerLevel;
+ import org.slf4j.Logger;
+ 
+ import java.util.ArrayList;
+@@ -25,6 +26,7 @@
+  *   <li>{@code -Dyap.folia.subregion-coalesce-mspt=8} — cool MSPT to allow coalesce</li>
+  *   <li>{@code -Dyap.folia.subregion-coalesce-ticks=100} — cool ticks before coalesce</li>
+  *   <li>{@code -Dyap.folia.subregion-coalesce-quiet-ticks=200} — post-partition quiet before cool-count completes</li>
++ *   <li>{@code -Dyap.folia.subregion-carve=true} — unload Folia-wide corridor before partition (default true)</li>
+  * </ul>
+  */
+ public final class YapSubRegionPartitioner {
+@@ -41,6 +43,9 @@
+     private static final int COALESCE_QUIET = Math.max(0, Integer.getInteger("yap.folia.subregion-coalesce-quiet-ticks", 200));
+     /** Do not partition empty / worldgen regions — require live entities in the region. */
+     private static final int MIN_ENTITIES = Math.max(0, Integer.getInteger("yap.folia.subregion-min-entities", 32));
++    /** Consecutive hot ticks above MSPT threshold before enqueueing partition (lets bench warmup finish). */
++    private static final int PARTITION_DELAY_TICKS = Math.max(0,
++            Integer.getInteger("yap.folia.subregion-partition-delay-ticks", 600));
+ 
+     private static final AtomicLong SHARD_GROUP_GENERATOR = new AtomicLong(1L);
+     private static final LongAdder FORCE_PARTITIONS = new LongAdder();
+@@ -53,6 +58,8 @@
+     private static final ConcurrentHashMap<Long, Integer> GROUP_COOL_TICKS = new ConcurrentHashMap<>();
+     /** shard group → last seen region ids in group (for coalesce) */
+     private static final ConcurrentHashMap<Long, ConcurrentHashMap<Long, Boolean>> GROUP_MEMBERS = new ConcurrentHashMap<>();
++    /** region id → consecutive hot ticks while above MSPT threshold (unsharded only) */
++    private static final ConcurrentHashMap<Long, Integer> HOT_STREAK = new ConcurrentHashMap<>();
+ 
+     private YapSubRegionPartitioner() {
+     }
+@@ -82,7 +89,16 @@
+                 + " forceSplits=" + forcePartitions()
+                 + " inhibitedMerges=" + inhibitedMerges()
+                 + " coalesces=" + coalesces()
+-                + " pending=" + PARTITION_REQUESTS.size();
++                + " pending=" + PARTITION_REQUESTS.size()
++                + " " + YapCorridorCarver.snapshot();
++    }
++
++    /** Re-queue a partition request after corridor carve completes. */
++    public static void requestPartition(final long regionId, final int shardCount) {
++        if (!ENABLED || regionId == 0L) {
++            return;
++        }
++        PARTITION_REQUESTS.put(regionId, Math.min(4, Math.max(2, shardCount)));
+     }
+ 
+     /**
+@@ -126,6 +142,7 @@
+         final long group = region.getYapShardGroup();
+         if (group != 0L) {
+             GROUP_MEMBERS.computeIfAbsent(group, g -> new ConcurrentHashMap<>()).put(region.id, Boolean.TRUE);
++            YapCorridorCarver.tickGapHold(group);
+             if (msptMs <= COALESCE_MSPT) {
+                 GROUP_COOL_TICKS.merge(group, 1, Integer::sum);
+             } else {
+@@ -141,18 +158,25 @@
+         }
+ 
+         if (msptMs < MSPT_THRESHOLD) {
++            HOT_STREAK.remove(region.id);
+             return;
+         }
+         final int entities = data.getRegionStats().getEntityCount();
+         if (entities < MIN_ENTITIES) {
++            HOT_STREAK.remove(region.id);
+             return;
+         }
+         final int sections = region.getSectionCount();
+         if (sections < MIN_SECTIONS) {
++            HOT_STREAK.remove(region.id);
+             return;
+         }
+-        // Already maximally shredded for our K? Still allow if enough sections for another cut.
+         if (sections < SHARDS * 2) {
++            HOT_STREAK.remove(region.id);
++            return;
++        }
++        final int streak = HOT_STREAK.merge(region.id, 1, Integer::sum);
++        if (streak < PARTITION_DELAY_TICKS) {
+             return;
+         }
+         PARTITION_REQUESTS.put(region.id, SHARDS);
+@@ -189,7 +213,13 @@
+         if (sections.size() < MIN_SECTIONS || sections.size() < shardCount) {
+             return false;
+         }
+-        final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups = cutSections(sections, shardCount);
++        // Prefer Folia-safe empty cut; fall back to median for carve planning.
++        List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups = cutSections(sections, shardCount);
++        if (groups.size() >= 2 && groupsAreSpatiallyBuffered(groups)) {
++            // Pre-gapped / lobe layout — partition without carving.
++        } else if (groups.size() < 2) {
++            groups = cutSectionsAggressive(sections, shardCount);
++        }
+         if (groups.size() < 2) {
+             return false;
+         }
+@@ -199,31 +229,56 @@
+             }
+         }
+         if (!groupsAreSpatiallyBuffered(groups)) {
+-            LOGGER.debug("YaP force-partition skipped region #{} — non-empty sections would touch across shards",
+-                    region.id);
++            if (YapCorridorCarver.isInFlight(region.id)) {
++                // Carve settler owns the attempt — do not nest another carve.
++                return false;
++            }
++            if (YapCorridorCarver.recentlyCarved(region.id)) {
++                // Carve just finished — keep the request so delayed retries can partition
++                // once the regionizer gap appears (do not drop + do not re-carve yet).
++                PARTITION_REQUESTS.put(region.id, Math.min(4, Math.max(2, shardCount)));
++                return false;
++            }
++            if (YapCorridorCarver.enabled()
++                    && YapCorridorCarver.scheduleCarve(region, groups, shardCount)) {
++                LOGGER.info("YaP force-partition deferred region #{} — corridor carve scheduled", region.id);
++            } else {
++                LOGGER.debug("YaP force-partition skipped region #{} — no Folia-safe gap and carve unavailable",
++                        region.id);
++            }
+             return false;
+         }
++        final int createRadius = Math.max(1, region.regioniser.emptySectionCreateRadius);
++        final YapCorridorCarver.CorridorPlan gapPlan =
++                YapCorridorCarver.planCorridor(region, groups, createRadius);
++        final int[] anchor = YapCorridorCarver.firstNonEmptyChunkOutside(groups, gapPlan);
++        ServerLevel world = null;
++        if (region.getData() instanceof TickRegions.TickRegionData tickData) {
++            world = tickData.world;
++        }
+         final boolean ok = region.regioniser.forcePartition(region, groups);
+         if (ok) {
+             FORCE_PARTITIONS.increment();
+-            // Assign quiet countdown to each new shard group — children share nextShardGroup()
+-            // set inside forcePartition; set quiet on the group we just created by scanning ready kids.
+-            // forcePartition sets yapShardGroup on children before onRegionActive; grab from first section owner.
+             long quietGroup = 0L;
+             for (final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> g : groups) {
+                 if (!g.isEmpty()) {
+                     final ThreadedRegionizer.ThreadedRegion<?, ?> owner = g.get(0).getRegion();
+                     if (owner != null) {
+                         quietGroup = owner.getYapShardGroup();
++                        if (world == null && owner.getData() instanceof TickRegions.TickRegionData childData) {
++                            world = childData.world;
++                        }
+                         break;
+                     }
+                 }
+             }
++            YapCorridorCarver.onForcePartitionSuccess(region.id, quietGroup, world, gapPlan, anchor);
+             if (quietGroup != 0L && COALESCE_QUIET > 0) {
+                 GROUP_COOL_TICKS.put(quietGroup, -COALESCE_QUIET);
+             }
+             LOGGER.info("YaP force-partition region #{} into {} shards (sections={})",
+                     region.id, groups.size(), sections.size());
++            YapRegionPoolMetrics.onSplit(groups.size());
+         }
+         return ok;
+     }
+@@ -262,6 +317,7 @@
+         }
+         GROUP_COOL_TICKS.remove(group);
+         GROUP_MEMBERS.remove(group);
++        YapCorridorCarver.releaseGapHold(group);
+         boolean any = false;
+         for (int i = 1; i < ready.size(); ++i) {
+             final ThreadedRegionizer.ThreadedRegion<R, S> src = ready.get(i);
+@@ -331,6 +387,43 @@
+         return out;
+     }
+ 
++    /**
++     * Median cut without empty-buffer requirement — used only to plan corridor carve.
++     */
++    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> cutSectionsAggressive(
++            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sections,
++            final int k) {
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted = new ArrayList<>(sections);
++        sorted.sort(Comparator
++                .comparingInt((ThreadedRegionizer.ThreadedRegionSection<R, S> s) -> s.sectionX)
++                .thenComparingInt(s -> s.sectionZ));
++        final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out = new ArrayList<>();
++        if (sorted.size() < 2) {
++            return out;
++        }
++        final boolean sameX = sorted.get(0).sectionX == sorted.get(sorted.size() - 1).sectionX;
++        if (sameX) {
++            sorted.sort(Comparator.comparingInt(s -> s.sectionZ));
++        }
++        final int shards = Math.min(Math.max(2, k), sorted.size());
++        if (shards <= 2) {
++            final int mid = Math.max(1, Math.min(sorted.size() - 1, sorted.size() / 2));
++            out.add(new ArrayList<>(sorted.subList(0, mid)));
++            out.add(new ArrayList<>(sorted.subList(mid, sorted.size())));
++            return out;
++        }
++        final int step = sorted.size() / shards;
++        int prev = 0;
++        for (int i = 1; i < shards; ++i) {
++            final int cut = Math.max(prev + 1, Math.min(sorted.size() - (shards - i), i * step));
++            out.add(new ArrayList<>(sorted.subList(prev, cut)));
++            prev = cut;
++        }
++        out.add(new ArrayList<>(sorted.subList(prev, sorted.size())));
++        return out;
++    }
++
+     /**
+      * Prefer a cut index near {@code preferred} where the section just before or at the cut is empty.
+      * Returns {@code -1} when no empty-sided cut exists in {@code [1, size-1]} (caller must refuse partition).

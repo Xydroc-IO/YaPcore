@@ -1,0 +1,510 @@
+From: YaPcore Agent 3 <agent-3@yapcore>
+Subject: [PATCH] YaP true parallel sub-region force-partition
+
+Force-partition hot regions into independent Folia shards with
+merge-inhibition so they tick in parallel. Coalesce when cool.
+Post-applyAllPatches. Depends on 0013 region pool / microtick.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
+@@ -0,0 +1,303 @@
++package io.papermc.paper.threadedregions;
++
++import com.mojang.logging.LogUtils;
++import it.unimi.dsi.fastutil.objects.ObjectArrayList;
++import org.slf4j.Logger;
++
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.List;
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.atomic.AtomicLong;
++import java.util.concurrent.atomic.LongAdder;
++
++/**
++ * YaP true parallel sub-region ticking via force-partition into independent Folia regions
++ * with merge-inhibition across shard boundaries.
++ *
++ * <p>Knobs (system properties, all product-safe defaults):
++ * <ul>
++ *   <li>{@code -Dyap.folia.subregion-partition=true} — enable (default false)</li>
++ *   <li>{@code -Dyap.folia.subregion-shards=2} — shards per partition (2–4)</li>
++ *   <li>{@code -Dyap.folia.subregion-mspt-threshold=20} — MSPT to request partition</li>
++ *   <li>{@code -Dyap.folia.subregion-min-sections=4} — min sections before partition</li>
++ *   <li>{@code -Dyap.folia.subregion-coalesce-mspt=8} — cool MSPT to allow coalesce</li>
++ *   <li>{@code -Dyap.folia.subregion-coalesce-ticks=100} — cool ticks before coalesce</li>
++ * </ul>
++ */
++public final class YapSubRegionPartitioner {
++
++    private static final Logger LOGGER = LogUtils.getLogger();
++
++    private static final boolean ENABLED = Boolean.getBoolean("yap.folia.subregion-partition");
++    private static final int SHARDS = Math.min(4, Math.max(2, Integer.getInteger("yap.folia.subregion-shards", 2)));
++    private static final int MSPT_THRESHOLD = Math.max(1, Integer.getInteger("yap.folia.subregion-mspt-threshold", 20));
++    private static final int MIN_SECTIONS = Math.max(2, Integer.getInteger("yap.folia.subregion-min-sections", 4));
++    private static final int COALESCE_MSPT = Math.max(1, Integer.getInteger("yap.folia.subregion-coalesce-mspt", 8));
++    private static final int COALESCE_TICKS = Math.max(1, Integer.getInteger("yap.folia.subregion-coalesce-ticks", 100));
++
++    private static final AtomicLong SHARD_GROUP_GENERATOR = new AtomicLong(1L);
++    private static final LongAdder FORCE_PARTITIONS = new LongAdder();
++    private static final LongAdder INHIBITED_MERGES = new LongAdder();
++    private static final LongAdder COALESCES = new LongAdder();
++
++    /** region id → requested shard count */
++    private static final ConcurrentHashMap<Long, Integer> PARTITION_REQUESTS = new ConcurrentHashMap<>();
++    /** shard group → consecutive cool ticks */
++    private static final ConcurrentHashMap<Long, Integer> GROUP_COOL_TICKS = new ConcurrentHashMap<>();
++    /** shard group → last seen region ids in group (for coalesce) */
++    private static final ConcurrentHashMap<Long, ConcurrentHashMap<Long, Boolean>> GROUP_MEMBERS = new ConcurrentHashMap<>();
++
++    private YapSubRegionPartitioner() {
++    }
++
++    public static boolean enabled() {
++        return ENABLED;
++    }
++
++    public static int shards() {
++        return SHARDS;
++    }
++
++    public static long forcePartitions() {
++        return FORCE_PARTITIONS.sum();
++    }
++
++    public static long inhibitedMerges() {
++        return INHIBITED_MERGES.sum();
++    }
++
++    public static long coalesces() {
++        return COALESCES.sum();
++    }
++
++    public static String snapshot() {
++        return "partition=" + ENABLED
++                + " forceSplits=" + forcePartitions()
++                + " inhibitedMerges=" + inhibitedMerges()
++                + " coalesces=" + coalesces()
++                + " pending=" + PARTITION_REQUESTS.size();
++    }
++
++    /**
++     * Two regions may merge only if neither has shard affinity, or both share the same
++     * shard group <em>and</em> shard id (affinity cleared regions are mergeable).
++     */
++    public static boolean canMerge(
++            final ThreadedRegionizer.ThreadedRegion<?, ?> a,
++            final ThreadedRegionizer.ThreadedRegion<?, ?> b) {
++        if (a == null || b == null || a == b) {
++            return true;
++        }
++        final long ga = a.getYapShardGroup();
++        final long gb = b.getYapShardGroup();
++        if (ga == 0L || gb == 0L) {
++            // One or both unsharded: only allow if neither is sharded (avoid absorbing a shard).
++            if (ga == 0L && gb == 0L) {
++                return true;
++            }
++            INHIBITED_MERGES.increment();
++            return false;
++        }
++        if (ga == gb && a.getYapShardId() == b.getYapShardId()) {
++            return true;
++        }
++        INHIBITED_MERGES.increment();
++        return false;
++    }
++
++    /**
++     * Called after each region tick with measured MSPT (ms). Enqueues partition or tracks cool ticks.
++     * Must not hold regionizer write lock; must not mutate region topology here.
++     */
++    public static void onTickComplete(
++            final TickRegions.TickRegionData data,
++            final long msptMs) {
++        if (!ENABLED || data == null || data.region == null) {
++            return;
++        }
++        final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region = data.region;
++        final long group = region.getYapShardGroup();
++        if (group != 0L) {
++            GROUP_MEMBERS.computeIfAbsent(group, g -> new ConcurrentHashMap<>()).put(region.id, Boolean.TRUE);
++            if (msptMs <= COALESCE_MSPT) {
++                GROUP_COOL_TICKS.merge(group, 1, Integer::sum);
++            } else {
++                GROUP_COOL_TICKS.put(group, 0);
++            }
++            return;
++        }
++
++        if (msptMs < MSPT_THRESHOLD) {
++            return;
++        }
++        final int sections = region.getSectionCount();
++        if (sections < MIN_SECTIONS) {
++            return;
++        }
++        // Already maximally shredded for our K? Still allow if enough sections for another cut.
++        if (sections < SHARDS * 2) {
++            return;
++        }
++        PARTITION_REQUESTS.put(region.id, SHARDS);
++    }
++
++    /**
++     * Apply pending partition or coalesce while holding regionizer write lock and region is READY.
++     * Invoked from {@link ThreadedRegionizer.ThreadedRegion#markNotTicking()}.
++     *
++     * @return true if the region still exists and is READY after this call
++     */
++    public static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    boolean afterRelease(final ThreadedRegionizer.ThreadedRegion<R, S> region) {
++        if (!ENABLED || region == null || !region.isReady()) {
++            return region != null && region.isReady();
++        }
++
++        final Integer requested = PARTITION_REQUESTS.remove(region.id);
++        if (requested != null && region.getYapShardGroup() == 0L) {
++            if (tryForcePartition(region, requested.intValue())) {
++                return false; // old region dead; children scheduled via onRegionActive
++            }
++        }
++
++        if (region.getYapShardGroup() != 0L) {
++            tryCoalesce(region);
++        }
++        return region.isReady();
++    }
++
++    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    boolean tryForcePartition(final ThreadedRegionizer.ThreadedRegion<R, S> region, final int shardCount) {
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sections = region.copySections();
++        if (sections.size() < MIN_SECTIONS || sections.size() < shardCount) {
++            return false;
++        }
++        final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups = cutSections(sections, shardCount);
++        if (groups.size() < 2) {
++            return false;
++        }
++        for (final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> g : groups) {
++            if (g.isEmpty()) {
++                return false;
++            }
++        }
++        final boolean ok = region.regioniser.forcePartition(region, groups);
++        if (ok) {
++            FORCE_PARTITIONS.increment();
++            LOGGER.info("YaP force-partition region #{} into {} shards (sections={})",
++                    region.id, groups.size(), sections.size());
++        }
++        return ok;
++    }
++
++    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    void tryCoalesce(final ThreadedRegionizer.ThreadedRegion<R, S> region) {
++        final long group = region.getYapShardGroup();
++        if (group == 0L) {
++            return;
++        }
++        final int cool = GROUP_COOL_TICKS.getOrDefault(group, 0);
++        if (cool < COALESCE_TICKS) {
++            return;
++        }
++        final ConcurrentHashMap<Long, Boolean> members = GROUP_MEMBERS.get(group);
++        if (members == null || members.size() < 2) {
++            return;
++        }
++        // Collect READY regions in this group from the same regioniser (caller holds write lock)
++        final ObjectArrayList<ThreadedRegionizer.ThreadedRegion<R, S>> ready = new ObjectArrayList<>();
++        region.regioniser.computeForAllRegionsUnsynchronised(r -> {
++            if (r.getYapShardGroup() == group && r.isReady()) {
++                @SuppressWarnings("unchecked")
++                final ThreadedRegionizer.ThreadedRegion<R, S> typed = (ThreadedRegionizer.ThreadedRegion<R, S>) r;
++                ready.add(typed);
++            }
++        });
++        if (ready.size() < 2) {
++            return;
++        }
++        ready.sort(Comparator.comparingLong(r -> r.id));
++        final ThreadedRegionizer.ThreadedRegion<R, S> target = ready.get(0);
++        // Clear affinity so killAndMergeInto is allowed
++        for (final ThreadedRegionizer.ThreadedRegion<R, S> r : ready) {
++            r.clearYapShard();
++        }
++        GROUP_COOL_TICKS.remove(group);
++        GROUP_MEMBERS.remove(group);
++        boolean any = false;
++        for (int i = 1; i < ready.size(); ++i) {
++            final ThreadedRegionizer.ThreadedRegion<R, S> src = ready.get(i);
++            if (src.isReady() && src.killAndMergeInto(target)) {
++                any = true;
++            }
++        }
++        if (any) {
++            COALESCES.increment();
++            LOGGER.info("YaP coalesce shard-group {} into region #{}", group, target.id);
++            YapRegionPoolMetrics.onMerge();
++        }
++    }
++
++    /**
++     * Spatial cut: K=2 median X (fallback Z); K=3 X tertiles; K=4 median X then Z.
++     */
++    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> cutSections(
++            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sections,
++            final int k) {
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted = new ArrayList<>(sections);
++        sorted.sort(Comparator
++                .comparingInt((ThreadedRegionizer.ThreadedRegionSection<R, S> s) -> s.sectionX)
++                .thenComparingInt(s -> s.sectionZ));
++
++        final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out = new ArrayList<>();
++        if (k <= 2 || sorted.size() < 4) {
++            final int mid = sorted.size() / 2;
++            // Prefer X variance; if all same X, sort by Z
++            final boolean sameX = sorted.get(0).sectionX == sorted.get(sorted.size() - 1).sectionX;
++            if (sameX) {
++                sorted.sort(Comparator.comparingInt(s -> s.sectionZ));
++            }
++            out.add(new ArrayList<>(sorted.subList(0, Math.max(1, mid))));
++            out.add(new ArrayList<>(sorted.subList(Math.max(1, mid), sorted.size())));
++            return out;
++        }
++        if (k == 3) {
++            final int a = sorted.size() / 3;
++            final int b = (2 * sorted.size()) / 3;
++            out.add(new ArrayList<>(sorted.subList(0, Math.max(1, a))));
++            out.add(new ArrayList<>(sorted.subList(Math.max(1, a), Math.max(a + 1, b))));
++            out.add(new ArrayList<>(sorted.subList(Math.max(a + 1, b), sorted.size())));
++            return out;
++        }
++        // k == 4: median X then median Z
++        final int midX = sorted.size() / 2;
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> left = new ArrayList<>(sorted.subList(0, midX));
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> right = new ArrayList<>(sorted.subList(midX, sorted.size()));
++        splitByZ(left, out);
++        splitByZ(right, out);
++        return out;
++    }
++
++    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    void splitByZ(
++            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> in,
++            final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out) {
++        if (in.isEmpty()) {
++            return;
++        }
++        if (in.size() == 1) {
++            out.add(in);
++            return;
++        }
++        in.sort(Comparator.comparingInt(s -> s.sectionZ));
++        final int mid = in.size() / 2;
++        out.add(new ArrayList<>(in.subList(0, mid)));
++        out.add(new ArrayList<>(in.subList(mid, in.size())));
++    }
++
++    static long nextShardGroup() {
++        return SHARD_GROUP_GENERATOR.getAndIncrement();
++    }
++}
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/ThreadedRegionizer.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/ThreadedRegionizer.java
+@@ -373,7 +373,12 @@
+                     if (region.isTicking()) {
+                         continue;
+                     }
+-                    firstUnlockedRegion = region;
++                    // YaP — prefer a merge-compatible unlocked neighbour when sharded
++                    if (firstUnlockedRegion == null) {
++                        firstUnlockedRegion = region;
++                    } else if (!YapSubRegionPartitioner.canMerge(firstUnlockedRegion, region)) {
++                        // keep first; incompatible shards stay independent
++                    }
+                     if (firstUnlockedRegion.state == ThreadedRegion.STATE_READY && (!firstUnlockedRegion.mergeIntoLater.isEmpty() || !firstUnlockedRegion.expectingMergeFrom.isEmpty())) {
+                         throw new IllegalStateException("Illegal state for unlocked region " + firstUnlockedRegion);
+                     }
+@@ -407,6 +412,10 @@
+                     if (region == regionOfInterest) {
+                         continue;
+                     }
++                    // YaP — do not merge across sub-region shard boundaries
++                    if (!YapSubRegionPartitioner.canMerge(region, regionOfInterest)) {
++                        continue;
++                    }
+ 
+                     if (!region.killAndMergeInto(regionOfInterest)) {
+                         // note: the region may already be a merge target
+@@ -495,6 +504,64 @@
+         }
+     }
+ 
++    /**
++     * YaP — force-partition a READY region into independent schedulable shards.
++     * Caller must hold the regionizer write lock. Region must be STATE_READY.
++     */
++    boolean forcePartition(final ThreadedRegion<R, S> region,
++                           final List<List<ThreadedRegionSection<R, S>>> groups) {
++        if (region.state != ThreadedRegion.STATE_READY) {
++            return false;
++        }
++        if (groups == null || groups.size() < 2) {
++            return false;
++        }
++        if (!region.mergeIntoLater.isEmpty() || !region.expectingMergeFrom.isEmpty()) {
++            return false;
++        }
++
++        final List<ThreadedRegion<R, S>> newRegionObjects = new ArrayList<>(groups.size());
++        for (int i = 0, len = groups.size(); i < len; ++i) {
++            newRegionObjects.add(new ThreadedRegion<>(this));
++        }
++
++        this.callbacks.preSplit(region, newRegionObjects);
++
++        region.state = ThreadedRegion.STATE_DEAD;
++        region.onRemove(true);
++
++        final long shardGroup = YapSubRegionPartitioner.nextShardGroup();
++        final Long2ReferenceOpenHashMap<ThreadedRegion<R, S>> newRegionsMap = new Long2ReferenceOpenHashMap<>();
++        final ReferenceOpenHashSet<ThreadedRegion<R, S>> newRegionsSet = new ReferenceOpenHashSet<>(newRegionObjects);
++
++        for (int i = 0, len = groups.size(); i < len; i++) {
++            final List<ThreadedRegionSection<R, S>> sections = groups.get(i);
++            final ThreadedRegion<R, S> newRegion = newRegionObjects.get(i);
++            newRegion.setYapShard(shardGroup, i + 1);
++
++            for (final ThreadedRegionSection<R, S> section : sections) {
++                section.setRegionRelease(null);
++                newRegion.addSection(section);
++                final ThreadedRegion<R, S> curr = newRegionsMap.putIfAbsent(section.sectionKey, newRegion);
++                if (curr != null) {
++                    throw new IllegalStateException("Expected no region at " + section + ", but got " + curr + ", should have put " + newRegion);
++                }
++            }
++        }
++
++        region.split(newRegionsMap, newRegionsSet);
++
++        for (final ThreadedRegion<R, S> newRegion : newRegionsSet) {
++            newRegion.state = ThreadedRegion.STATE_READY;
++            if (!newRegion.mergeIntoLater.isEmpty() || !newRegion.expectingMergeFrom.isEmpty()) {
++                throw new IllegalStateException("Illegal state " + newRegion);
++            }
++            newRegion.onCreate();
++            this.callbacks.onRegionActive(newRegion);
++        }
++        return true;
++    }
++
+     // must hold regionLock
+     private void onRegionRelease(final ThreadedRegion<R, S> region) {
+         if (!region.mergeIntoLater.isEmpty()) {
+@@ -694,11 +761,48 @@
+         private final ReferenceOpenHashSet<ThreadedRegion<R, S>> mergeIntoLater = new ReferenceOpenHashSet<>();
+         private final ReferenceOpenHashSet<ThreadedRegion<R, S>> expectingMergeFrom = new ReferenceOpenHashSet<>();
+ 
++        // YaP sub-region shard affinity (0 = none)
++        private long yapShardGroup;
++        private int yapShardId;
++
+         public ThreadedRegion(final ThreadedRegionizer<R, S> regioniser) {
+             this.regioniser = regioniser;
+             this.id = REGION_ID_GENERATOR.getAndIncrement();
+             this.state = STATE_TRANSIENT;
+             this.data = regioniser.callbacks.createNewData(this);
++            this.yapShardGroup = 0L;
++            this.yapShardId = 0;
++        }
++
++        public long getYapShardGroup() {
++            return this.yapShardGroup;
++        }
++
++        public int getYapShardId() {
++            return this.yapShardId;
++        }
++
++        void setYapShard(final long group, final int shardId) {
++            this.yapShardGroup = group;
++            this.yapShardId = shardId;
++        }
++
++        void clearYapShard() {
++            this.yapShardGroup = 0L;
++            this.yapShardId = 0;
++        }
++
++        public int getSectionCount() {
++            return this.sectionByKey.size();
++        }
++
++        public boolean isReady() {
++            return this.state == STATE_READY;
++        }
++
++        /** Package: used by YaP force-partition cut. */
++        List<ThreadedRegionSection<R, S>> copySections() {
++            return new ArrayList<>(this.sectionByKey.values());
+         }
+ 
+         public LongArrayList getOwnedSections() {
+@@ -983,7 +1087,11 @@
+ 
+                 this.regioniser.onRegionRelease(this);
+ 
+-                return this.state == STATE_READY;
++                // YaP — apply deferred force-partition / coalesce while still holding write lock
++                if (this.state == STATE_READY) {
++                    return YapSubRegionPartitioner.afterRelease(this);
++                }
++                return false;
+             } catch (final Throwable throwable) {
+                 LOGGER.error("Failed to release region " + this, throwable);
+                 SneakyThrow.sneaky(throwable);
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/TickRegions.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/TickRegions.java
+@@ -493,7 +493,12 @@
+             final ca.spottedleaf.leafprofiler.RegionizedProfiler.Handle profiler = io.papermc.paper.threadedregions.TickRegionScheduler.getProfiler(); // Folia - profiler
+             profiler.startTick(); try { // Folia - profiler
+             MinecraftServer.getServer().tickServer(startTime, scheduledEnd, TimeUnit.MILLISECONDS.toMillis(10L), this.region);
+-            } finally { profiler.stopTick(); } // Folia - profiler
++            } finally {
++                profiler.stopTick(); // Folia - profiler
++                // YaP — hot-region force-partition / coalesce policy (MSPT of this tick)
++                final long msptMs = Math.max(0L, (System.nanoTime() - startTime) / 1_000_000L);
++                YapSubRegionPartitioner.onTickComplete(this.region, msptMs);
++            }
+         }
+ 
+         @Override
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionPoolMetrics.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionPoolMetrics.java
+@@ -64,6 +64,10 @@
+         }
+     }
+ 
++    public static void onForcePartition(final int intoCount) {
++        onSplit(intoCount);
++    }
++
+     /**
+      * Record a region tick start. If the same region runs on a different thread than
+      * last time, count a migration (steal / rebalance signal under WORK_STEALING).
+@@ -114,6 +118,7 @@
+                 + " merges=" + merges()
+                 + " splits=" + splits()
+                 + " activeEv=" + regionActiveEvents()
+-                + " inactiveEv=" + regionInactiveEvents();
++                + " inactiveEv=" + regionInactiveEvents()
++                + " | " + YapSubRegionPartitioner.snapshot();
+     }
+ }
+

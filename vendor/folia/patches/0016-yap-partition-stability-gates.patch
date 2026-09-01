@@ -1,0 +1,98 @@
+From: YaPcore Agent 3 <agent-3@yapcore>
+Subject: [PATCH] YaP partition stability: min-entities + coalesce quiet + null-safe split
+
+Gate force-partition on live entity count (avoid worldgen shred), hold
+merge-inhibit quiet after partition, and null-safe entity redistribution
+on region split. Post-applyAllPatches. Depends on 0014/0015.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
+@@ -21,8 +21,10 @@
+  *   <li>{@code -Dyap.folia.subregion-shards=2} — shards per partition (2–4)</li>
+  *   <li>{@code -Dyap.folia.subregion-mspt-threshold=20} — MSPT to request partition</li>
+  *   <li>{@code -Dyap.folia.subregion-min-sections=4} — min sections before partition</li>
++ *   <li>{@code -Dyap.folia.subregion-min-entities=32} — min entities before partition (avoids worldgen shred)</li>
+  *   <li>{@code -Dyap.folia.subregion-coalesce-mspt=8} — cool MSPT to allow coalesce</li>
+  *   <li>{@code -Dyap.folia.subregion-coalesce-ticks=100} — cool ticks before coalesce</li>
++ *   <li>{@code -Dyap.folia.subregion-coalesce-quiet-ticks=200} — post-partition quiet before cool-count completes</li>
+  * </ul>
+  */
+ public final class YapSubRegionPartitioner {
+@@ -35,6 +37,10 @@
+     private static final int MIN_SECTIONS = Math.max(2, Integer.getInteger("yap.folia.subregion-min-sections", 4));
+     private static final int COALESCE_MSPT = Math.max(1, Integer.getInteger("yap.folia.subregion-coalesce-mspt", 8));
+     private static final int COALESCE_TICKS = Math.max(1, Integer.getInteger("yap.folia.subregion-coalesce-ticks", 100));
++    /** After a force-partition, wait this many ticks before coalesce cool-counting can complete. */
++    private static final int COALESCE_QUIET = Math.max(0, Integer.getInteger("yap.folia.subregion-coalesce-quiet-ticks", 200));
++    /** Do not partition empty / worldgen regions — require live entities in the region. */
++    private static final int MIN_ENTITIES = Math.max(0, Integer.getInteger("yap.folia.subregion-min-entities", 32));
+ 
+     private static final AtomicLong SHARD_GROUP_GENERATOR = new AtomicLong(1L);
+     private static final LongAdder FORCE_PARTITIONS = new LongAdder();
+@@ -123,7 +129,13 @@
+             if (msptMs <= COALESCE_MSPT) {
+                 GROUP_COOL_TICKS.merge(group, 1, Integer::sum);
+             } else {
+-                GROUP_COOL_TICKS.put(group, 0);
++                // Hot tick resets cool progress, but do not wipe a post-partition quiet countdown
++                GROUP_COOL_TICKS.compute(group, (k, v) -> {
++                    if (v == null || v.intValue() < 0) {
++                        return v == null ? 0 : Integer.valueOf(v.intValue() + 1); // still advance quiet
++                    }
++                    return 0;
++                });
+             }
+             return;
+         }
+@@ -131,6 +143,10 @@
+         if (msptMs < MSPT_THRESHOLD) {
+             return;
+         }
++        final int entities = data.getRegionStats().getEntityCount();
++        if (entities < MIN_ENTITIES) {
++            return;
++        }
+         final int sections = region.getSectionCount();
+         if (sections < MIN_SECTIONS) {
+             return;
+@@ -185,6 +201,22 @@
+         final boolean ok = region.regioniser.forcePartition(region, groups);
+         if (ok) {
+             FORCE_PARTITIONS.increment();
++            // Assign quiet countdown to each new shard group — children share nextShardGroup()
++            // set inside forcePartition; set quiet on the group we just created by scanning ready kids.
++            // forcePartition sets yapShardGroup on children before onRegionActive; grab from first section owner.
++            long quietGroup = 0L;
++            for (final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> g : groups) {
++                if (!g.isEmpty()) {
++                    final ThreadedRegionizer.ThreadedRegion<?, ?> owner = g.get(0).getRegion();
++                    if (owner != null) {
++                        quietGroup = owner.getYapShardGroup();
++                        break;
++                    }
++                }
++            }
++            if (quietGroup != 0L && COALESCE_QUIET > 0) {
++                GROUP_COOL_TICKS.put(quietGroup, -COALESCE_QUIET);
++            }
+             LOGGER.info("YaP force-partition region #{} into {} shards (sections={})",
+                     region.id, groups.size(), sections.size());
+         }
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedWorldData.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedWorldData.java
+@@ -184,6 +184,13 @@
+                 // Note: It is impossible for an entity in the world to _not_ be in an entity chunk, which means
+                 // the chunk holder must _exist_, and so the region section exists.
+                 final RegionizedWorldData into = regionToData.get(CoordinateUtils.getChunkKey(pos.x() >> chunkToRegionShift, pos.z() >> chunkToRegionShift));
++                // YaP — force-partition can race with mid-spawn; never NPE / drop silently without a home
++                if (into == null) {
++                    org.slf4j.LoggerFactory.getLogger(RegionizedWorldData.class).error(
++                            "YaP region split: no target RegionizedWorldData for entity {} at chunk {},{} — keeping on source until next merge",
++                            entity.getType(), pos.x(), pos.z());
++                    continue;
++                }
+                 into.allEntities.add(entity);
+                 // Note: entityTickList is a subset of allEntities
+                 if (from.entityTickList.contains(entity)) {

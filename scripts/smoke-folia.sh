@@ -81,6 +81,19 @@ folia-ready-timeout-sec=180
 folia-async-chunk-save=${YAP_FOLIA_ASYNC_CHUNK_SAVE:-false}
 folia-entity-tick-budget=${YAP_FOLIA_ENTITY_TICK_BUDGET:-0}
 folia-scoreboard-swmr=${YAP_FOLIA_SCOREBOARD_SWMR:-false}
+folia-microtick-budget-ms=${YAP_FOLIA_MICROTICK_BUDGET_MS:-0}
+folia-steal-threshold-ms=${YAP_FOLIA_STEAL_THRESHOLD_MS:-3}
+folia-task-slice-ms=${YAP_FOLIA_TASK_SLICE_MS:-2}
+folia-grid-exponent=${YAP_FOLIA_GRID_EXPONENT:-}
+folia-region-metrics=${YAP_FOLIA_REGION_METRICS:-true}
+folia-subregion-partition=${YAP_FOLIA_SUBREGION_PARTITION:-false}
+folia-subregion-shards=${YAP_FOLIA_SUBREGION_SHARDS:-2}
+folia-subregion-mspt-threshold=${YAP_FOLIA_SUBREGION_MSPT_THRESHOLD:-20}
+folia-subregion-min-sections=${YAP_FOLIA_SUBREGION_MIN_SECTIONS:-4}
+folia-subregion-min-entities=${YAP_FOLIA_SUBREGION_MIN_ENTITIES:-32}
+folia-subregion-coalesce-mspt=${YAP_FOLIA_SUBREGION_COALESCE_MSPT:-8}
+folia-subregion-coalesce-ticks=${YAP_FOLIA_SUBREGION_COALESCE_TICKS:-100}
+folia-subregion-coalesce-quiet-ticks=${YAP_FOLIA_SUBREGION_COALESCE_QUIET_TICKS:-200}
 velocity-enabled=false
 web-dashboard-enabled=false
 resource-pack-enabled=false
@@ -96,7 +109,7 @@ echo "  java=$JAVA_BIN"
 echo "  jar=$YAP_JAR"
 echo "  port=$PORT"
 echo "  folia-jar-source=$FOLIA_SRC sched-compat=$SCHED_COMPAT teleport=$TP_TX"
-echo "  perf: async-save=${YAP_FOLIA_ASYNC_CHUNK_SAVE:-off} budget=${YAP_FOLIA_ENTITY_TICK_BUDGET:-off} swmr=${YAP_FOLIA_SCOREBOARD_SWMR:-off}"
+echo "  perf: async-save=${YAP_FOLIA_ASYNC_CHUNK_SAVE:-off} budget=${YAP_FOLIA_ENTITY_TICK_BUDGET:-off} swmr=${YAP_FOLIA_SCOREBOARD_SWMR:-off} microtick=${YAP_FOLIA_MICROTICK_BUDGET_MS:-off} subregion=${YAP_FOLIA_SUBREGION_PARTITION:-off}"
 
 # Optional A3 perf knobs forwarded into chassis → FoliaKernel → Folia JVM
 EXTRA_D=()
@@ -108,6 +121,29 @@ if [ -n "${YAP_FOLIA_ASYNC_CHUNK_SAVE:-}" ]; then
 fi
 if [ "${YAP_FOLIA_SCOREBOARD_SWMR:-}" = "true" ]; then
   EXTRA_D+=("-Dyap.folia.scoreboard-swmr=true")
+fi
+if [ -n "${YAP_FOLIA_MICROTICK_BUDGET_MS:-}" ]; then
+  EXTRA_D+=("-Dyap.folia.microtick-budget-ms=${YAP_FOLIA_MICROTICK_BUDGET_MS}")
+fi
+if [ -n "${YAP_FOLIA_STEAL_THRESHOLD_MS:-}" ]; then
+  EXTRA_D+=("-Dyap.folia.steal-threshold-ms=${YAP_FOLIA_STEAL_THRESHOLD_MS}")
+fi
+if [ -n "${YAP_FOLIA_TASK_SLICE_MS:-}" ]; then
+  EXTRA_D+=("-Dyap.folia.task-slice-ms=${YAP_FOLIA_TASK_SLICE_MS}")
+fi
+if [ -n "${YAP_FOLIA_GRID_EXPONENT:-}" ]; then
+  EXTRA_D+=("-Dyap.folia.grid-exponent=${YAP_FOLIA_GRID_EXPONENT}")
+fi
+if [ "${YAP_FOLIA_REGION_METRICS:-}" = "false" ]; then
+  EXTRA_D+=("-Dyap.folia.region-metrics=false")
+fi
+if [ "${YAP_FOLIA_SUBREGION_PARTITION:-}" = "true" ]; then
+  EXTRA_D+=("-Dyap.folia.subregion-partition=true")
+  [ -n "${YAP_FOLIA_SUBREGION_SHARDS:-}" ] && EXTRA_D+=("-Dyap.folia.subregion-shards=${YAP_FOLIA_SUBREGION_SHARDS}")
+  [ -n "${YAP_FOLIA_SUBREGION_MSPT_THRESHOLD:-}" ] && EXTRA_D+=("-Dyap.folia.subregion-mspt-threshold=${YAP_FOLIA_SUBREGION_MSPT_THRESHOLD}")
+  [ -n "${YAP_FOLIA_SUBREGION_MIN_SECTIONS:-}" ] && EXTRA_D+=("-Dyap.folia.subregion-min-sections=${YAP_FOLIA_SUBREGION_MIN_SECTIONS}")
+  [ -n "${YAP_FOLIA_SUBREGION_MIN_ENTITIES:-}" ] && EXTRA_D+=("-Dyap.folia.subregion-min-entities=${YAP_FOLIA_SUBREGION_MIN_ENTITIES}")
+  [ -n "${YAP_FOLIA_SUBREGION_COALESCE_QUIET_TICKS:-}" ] && EXTRA_D+=("-Dyap.folia.subregion-coalesce-quiet-ticks=${YAP_FOLIA_SUBREGION_COALESCE_QUIET_TICKS}")
 fi
 if [ "${YAP_FOLIA_SOAK_PROFILE:-}" = "compat" ]; then
   # Compat soak: never enable perf knobs even if env leaked

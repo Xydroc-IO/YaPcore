@@ -276,6 +276,22 @@ public final class ServerConfig {
     public boolean isFoliaAsyncChunkSave() { return folia.isFoliaAsyncChunkSave(); }
     public int getFoliaEntityTickBudget() { return folia.getFoliaEntityTickBudget(); }
     public boolean isFoliaScoreboardSwmr() { return folia.isFoliaScoreboardSwmr(); }
+    public int getFoliaMicrotickBudgetMs() { return folia.getFoliaMicrotickBudgetMs(); }
+    public long getFoliaStealThresholdMs() { return folia.getFoliaStealThresholdMs(); }
+    public long getFoliaTaskSliceMs() { return folia.getFoliaTaskSliceMs(); }
+    public String getFoliaGridExponent() { return folia.getFoliaGridExponent(); }
+    public boolean isFoliaRegionMetrics() { return folia.isFoliaRegionMetrics(); }
+    public boolean isFoliaSubregionPartition() { return folia.isFoliaSubregionPartition(); }
+    public int getFoliaSubregionShards() { return folia.getFoliaSubregionShards(); }
+    public int getFoliaSubregionMsptThreshold() { return folia.getFoliaSubregionMsptThreshold(); }
+    public int getFoliaSubregionMinSections() { return folia.getFoliaSubregionMinSections(); }
+    public int getFoliaSubregionMinEntities() { return folia.getFoliaSubregionMinEntities(); }
+    public int getFoliaSubregionCoalesceMspt() { return folia.getFoliaSubregionCoalesceMspt(); }
+    public int getFoliaSubregionCoalesceTicks() { return folia.getFoliaSubregionCoalesceTicks(); }
+    public int getFoliaSubregionCoalesceQuietTicks() { return folia.getFoliaSubregionCoalesceQuietTicks(); }
+    public boolean isFoliaSubregionCarve() { return folia.isFoliaSubregionCarve(); }
+    public int getFoliaSubregionPartitionDelayTicks() { return folia.getFoliaSubregionPartitionDelayTicks(); }
+    public int getFoliaSubregionGapMaintainInterval() { return folia.getFoliaSubregionGapMaintainInterval(); }
     public int foliaListenPort() { return folia.foliaListenPort(); }
 
     public boolean isPaperEmbed() { return paper.isPaperEmbed(); }

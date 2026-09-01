@@ -1,0 +1,1018 @@
+From: YaPcore Agent 3 <agent-3@yapcore>
+Subject: [PATCH] YaP corridor carve before force-partition
+
+Relocate via region-local entities; abort with zero mutation if relocate fails.
+Post-applyAllPatches. Depends on 0017.
+---
+
+--- /dev/null
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
+@@ -0,0 +1,1008 @@
++package io.papermc.paper.threadedregions;
++
++import ca.spottedleaf.moonrise.common.util.CoordinateUtils;
++import com.mojang.logging.LogUtils;
++import it.unimi.dsi.fastutil.longs.LongArrayList;
++import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
++import net.minecraft.server.level.ServerLevel;
++import net.minecraft.server.level.TicketType;
++import org.bukkit.entity.Entity;
++import org.bukkit.entity.Player;
++import org.slf4j.Logger;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.TimeUnit;
++import java.util.concurrent.atomic.AtomicInteger;
++import java.util.concurrent.atomic.LongAdder;
++
++/**
++ * YaP — unload a Folia-wide empty corridor between planned shard groups so
++ * {@link YapSubRegionPartitioner} can force-partition without TickThread violations.
++ *
++ * <p>Must not run while holding the regionizer write lock. Carve work is queued onto
++ * each corridor chunk's owning region tick thread via {@link RegionizedTaskQueue}.
++ *
++ * <p>Critical: when Bukkit already reports a chunk unloaded but the regionizer bitset
++ * still has it, call {@code regioniser.removeChunk} only (desync repair). Never call
++ * {@code removeChunk} and then {@code unloadChunk} — Moonrise will double-remove and crash.
++ */
++public final class YapCorridorCarver {
++
++    private static final Logger LOGGER = LogUtils.getLogger();
++
++    private static final boolean ENABLED = Boolean.parseBoolean(
++            System.getProperty("yap.folia.subregion-carve", "true"));
++
++    private static final LongAdder CARVES_STARTED = new LongAdder();
++    private static final LongAdder CARVES_COMPLETED = new LongAdder();
++    private static final LongAdder CHUNKS_UNLOADED = new LongAdder();
++    private static final LongAdder REGIONIZER_REPAIRS = new LongAdder();
++    private static final LongAdder ENTITIES_RELOCATED = new LongAdder();
++
++    private static final ConcurrentHashMap<Long, Boolean> IN_FLIGHT = new ConcurrentHashMap<>();
++    /** Set when force-partition wins mid-carve — settler must stop unloading across new boundaries. */
++    private static final ConcurrentHashMap<Long, Boolean> CANCELLED = new ConcurrentHashMap<>();
++    private static final ConcurrentHashMap<Long, Long> LAST_CARVE_DONE_MS = new ConcurrentHashMap<>();
++    private static final ConcurrentHashMap<Long, Integer> CARVE_CYCLES = new ConcurrentHashMap<>();
++    /** region id → last corridor chunk keys (re-unpin before partition retries). */
++    private static final ConcurrentHashMap<Long, LongOpenHashSet> LAST_CORRIDOR = new ConcurrentHashMap<>();
++    /** region id → corridor plan while carve or until partition registers gap hold. */
++    private static final ConcurrentHashMap<Long, CorridorPlan> PENDING_PLANS = new ConcurrentHashMap<>();
++    /** region id → anchor chunk outside corridor for region-thread tasks. */
++    private static final ConcurrentHashMap<Long, int[]> PENDING_ANCHORS = new ConcurrentHashMap<>();
++    /** Per-carve landing pads so corridor entities are moved, not deleted (fair MSPT). */
++    private static final ConcurrentHashMap<Long, CarveLandings> LANDINGS = new ConcurrentHashMap<>();
++    /** shard group → post-partition gap hold (prevents sim-distance re-pin → inactive shards). */
++    private static final ConcurrentHashMap<Long, GapHold> GAP_HOLDS = new ConcurrentHashMap<>();
++
++    private static final long CARVE_COOLDOWN_MS = Math.max(1000L,
++            Long.getLong("yap.folia.subregion-carve-cooldown-ms", 12000L));
++    private static final int MAX_CARVE_CYCLES = Math.max(1,
++            Integer.getInteger("yap.folia.subregion-carve-max-cycles", 4));
++    private static final long SETTLE_MS = Math.max(500L,
++            Long.getLong("yap.folia.subregion-carve-settle-ms", 2500L));
++    private static final int GAP_MAINTAIN_INTERVAL = Math.max(1,
++            Integer.getInteger("yap.folia.subregion-gap-maintain-interval", 10));
++    private static final LongAdder GAP_MAINTAIN_PASSES = new LongAdder();
++
++    private YapCorridorCarver() {
++    }
++
++    public static boolean enabled() {
++        return ENABLED;
++    }
++
++    public static boolean recentlyCarved(final long regionId) {
++        final Long t = LAST_CARVE_DONE_MS.get(regionId);
++        return t != null && (System.currentTimeMillis() - t.longValue()) < CARVE_COOLDOWN_MS;
++    }
++
++    public static boolean isInFlight(final long regionId) {
++        return IN_FLIGHT.containsKey(regionId);
++    }
++
++    public static void onForcePartitionSuccess(
++            final long regionId,
++            final long shardGroup,
++            final ServerLevel world,
++            final CorridorPlan plan,
++            final int[] anchor) {
++        CANCELLED.put(regionId, Boolean.TRUE);
++        IN_FLIGHT.remove(regionId);
++        CARVE_CYCLES.remove(regionId);
++        LAST_CARVE_DONE_MS.put(regionId, System.currentTimeMillis());
++        final CarveLandings landings = LANDINGS.remove(regionId);
++        PENDING_PLANS.remove(regionId);
++        PENDING_ANCHORS.remove(regionId);
++        LAST_CORRIDOR.remove(regionId);
++        if (shardGroup != 0L && world != null && plan != null && anchor != null && !plan.keys.isEmpty()) {
++            GAP_HOLDS.put(shardGroup, new GapHold(world, plan, anchor.clone(), landings));
++            LOGGER.info("YaP gap hold registered shard-group {} — {} corridor chunks lo={} hi={}",
++                    shardGroup, plan.keys.size(), plan.lo, plan.hi);
++        }
++    }
++
++    /** Drop gap maintenance when shard group coalesces back to one region. */
++    public static void releaseGapHold(final long shardGroup) {
++        if (shardGroup != 0L) {
++            GAP_HOLDS.remove(shardGroup);
++        }
++    }
++
++    /**
++     * Periodic maintenance while shards tick in parallel — strip sim tickets and unload
++     * corridor chunks that entity sim-distance re-pins after partition.
++     */
++    public static void tickGapHold(final long shardGroup) {
++        final GapHold hold = GAP_HOLDS.get(shardGroup);
++        if (hold == null) {
++            return;
++        }
++        final int tick = hold.tickCounter.incrementAndGet();
++        if (tick % GAP_MAINTAIN_INTERVAL != 0) {
++            return;
++        }
++        GAP_MAINTAIN_PASSES.increment();
++        // Fire-and-forget on a daemon — never block the global RegionizedServer task queue.
++        final Thread maint = new Thread(() -> maintainGapBand(hold), "yap-gap-maintain-" + shardGroup);
++        maint.setDaemon(true);
++        maint.start();
++    }
++
++    private static boolean isCancelled(final long regionId) {
++        return CANCELLED.containsKey(regionId);
++    }
++
++    public static long carvesStarted() {
++        return CARVES_STARTED.sum();
++    }
++
++    public static long carvesCompleted() {
++        return CARVES_COMPLETED.sum();
++    }
++
++    public static long chunksUnloaded() {
++        return CHUNKS_UNLOADED.sum();
++    }
++
++    public static String snapshot() {
++        return "carve=" + ENABLED
++                + " started=" + carvesStarted()
++                + " completed=" + carvesCompleted()
++                + " unloaded=" + chunksUnloaded()
++                + " relocated=" + ENTITIES_RELOCATED.sum()
++                + " repairs=" + REGIONIZER_REPAIRS.sum()
++                + " inflight=" + IN_FLIGHT.size()
++                + " gapHolds=" + GAP_HOLDS.size()
++                + " gapPasses=" + GAP_MAINTAIN_PASSES.sum();
++    }
++
++    public static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    boolean scheduleCarve(
++            final ThreadedRegionizer.ThreadedRegion<R, S> region,
++            final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups,
++            final int shardCount) {
++        if (!ENABLED || region == null || groups == null || groups.size() < 2) {
++            return false;
++        }
++        if (!(region.getData() instanceof TickRegions.TickRegionData tickData)) {
++            return false;
++        }
++        if (IN_FLIGHT.putIfAbsent(region.id, Boolean.TRUE) != null) {
++            return false;
++        }
++        if (recentlyCarved(region.id)) {
++            IN_FLIGHT.remove(region.id);
++            return false;
++        }
++        if (CARVE_CYCLES.getOrDefault(region.id, 0) >= MAX_CARVE_CYCLES) {
++            IN_FLIGHT.remove(region.id);
++            return false;
++        }
++        CANCELLED.remove(region.id);
++
++        final int createRadius = Math.max(1, region.regioniser.emptySectionCreateRadius);
++        final CorridorPlan plan = planCorridor(region, groups, createRadius);
++        if (plan.keys.isEmpty()) {
++            IN_FLIGHT.remove(region.id);
++            return false;
++        }
++        final CarveLandings landings = CarveLandings.fromGroups(groups, plan);
++        if (landings == null) {
++            IN_FLIGHT.remove(region.id);
++            LOGGER.warn("YaP corridor carve region #{} aborted — no shard landing pads", region.id);
++            return false;
++        }
++
++        final ServerLevel world = tickData.world;
++        final long regionId = region.id;
++        CARVES_STARTED.increment();
++        CARVE_CYCLES.merge(region.id, 1, Integer::sum);
++        LAST_CORRIDOR.put(regionId, new LongOpenHashSet(plan.keys));
++        PENDING_PLANS.put(regionId, plan);
++        LANDINGS.put(regionId, landings);
++        LOGGER.info("YaP corridor carve start region #{} — {} chunks lo={} hi={} axis={} gapR={} cycle {}/{} (relocate, not delete)",
++                regionId, plan.keys.size(), plan.lo, plan.hi, plan.cutOnX ? "X" : "Z",
++                createRadius, CARVE_CYCLES.get(region.id), MAX_CARVE_CYCLES);
++
++        // Anchor OUTSIDE the corridor so task_queue_ticket does not pin chunks we unload.
++        final int[] anchor = firstNonEmptyChunkOutside(groups, plan);
++        if (anchor == null) {
++            IN_FLIGHT.remove(region.id);
++            LANDINGS.remove(regionId);
++            LOGGER.warn("YaP corridor carve region #{} aborted — no outside-corridor anchor", regionId);
++            return false;
++        }
++        PENDING_ANCHORS.put(regionId, anchor.clone());
++
++        final LongOpenHashSet keysCopy = new LongOpenHashSet(plan.keys);
++        final int shards = shardCount;
++        final int unloadRounds = Math.max(2, Integer.getInteger("yap.folia.subregion-carve-unload-rounds", 8));
++        final Thread settler = new Thread(() -> {
++            try {
++                // Do NOT bulk-unforce corridor chunks up front — that unloads TNT before relocate.
++                // First move every corridor entity onto landing pads via region-local entity list.
++                final java.util.concurrent.atomic.AtomicBoolean abortEvacuate =
++                        new java.util.concurrent.atomic.AtomicBoolean(false);
++                if (!runOnAnchor(world, anchor, 120L, () -> {
++                    final long before = ENTITIES_RELOCATED.sum();
++                    final int[] scan = countCorridorEntities(world, plan);
++                    relocateCorridorBand(world, regionId, plan);
++                    final long moved = ENTITIES_RELOCATED.sum() - before;
++                    LOGGER.info("YaP corridor evacuate region #{} — local={} inCorridor={} relocated+={}",
++                            regionId, scan[0], scan[1], moved);
++                    if ((scan[1] > 0 && moved <= 0) || (scan[1] == 0 && scan[0] > 64)) {
++                        LOGGER.warn("YaP corridor carve region #{} abort evacuate — local={} inCorridor={} moved={}",
++                                regionId, scan[0], scan[1], moved);
++                        abortEvacuate.set(true);
++                        return;
++                    }
++                    for (final long key : keysCopy) {
++                        if (isCancelled(regionId)) {
++                            return;
++                        }
++                        carveOneChunk(world, regionId, CoordinateUtils.getChunkX(key),
++                                CoordinateUtils.getChunkZ(key), false);
++                    }
++                })) {
++                    LOGGER.warn("YaP corridor carve region #{} evacuate wave timed out", regionId);
++                }
++                if (abortEvacuate.get()) {
++                    RegionizedServer.getInstance().addTask(() -> finishCarve(regionId, shards, world, plan));
++                    return;
++                }
++                for (int round = 0; round < unloadRounds; ++round) {
++                    if (isCancelled(regionId)) {
++                        LOGGER.info("YaP corridor carve region #{} aborted mid-unload — force-partition won", regionId);
++                        CANCELLED.remove(regionId);
++                        return;
++                    }
++                    Thread.sleep(Math.max(100L, SETTLE_MS / 10));
++                    final boolean strip = (round % 2 == 0);
++                    final LongOpenHashSet still = collectCorridorKeysFromWorld(world, plan);
++                    final LongOpenHashSet target = still.isEmpty() ? keysCopy : still;
++                    if (!runOnAnchor(world, anchor, 120L, () -> {
++                        for (final long key : target) {
++                            if (isCancelled(regionId)) {
++                                return;
++                            }
++                            final int cx = CoordinateUtils.getChunkX(key);
++                            final int cz = CoordinateUtils.getChunkZ(key);
++                            // After a partial split, foreign-region chunks must not be touched here.
++                            if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, cx, cz)) {
++                                continue;
++                            }
++                            if (strip) {
++                                carveOneChunk(world, regionId, cx, cz, false);
++                            }
++                            carveOneChunk(world, regionId, cx, cz, true);
++                        }
++                    })) {
++                        LOGGER.warn("YaP corridor carve region #{} unload round {} timed out", regionId, round);
++                    }
++                    if (isCancelled(regionId)) {
++                        LOGGER.info("YaP corridor carve region #{} aborted after round {} — force-partition won",
++                                regionId, round);
++                        CANCELLED.remove(regionId);
++                        return;
++                    }
++                    final LongOpenHashSet after = collectCorridorKeysFromWorld(world, plan);
++                    if (after.isEmpty()) {
++                        LOGGER.info("YaP corridor carve region #{} emptied after unload round {}", regionId, round);
++                        break;
++                    }
++                    if (round == unloadRounds - 1 || round % 2 == 1) {
++                        LOGGER.info("YaP corridor carve region #{} unload round {} — {} keys still in regionizer",
++                                regionId, round, after.size());
++                    }
++                }
++                if (isCancelled(regionId)) {
++                    CANCELLED.remove(regionId);
++                    return;
++                }
++                Thread.sleep(Math.max(200L, SETTLE_MS / 5));
++                RegionizedServer.getInstance().addTask(() -> secondPassAndPartition(world, regionId, plan, shards, anchor));
++            } catch (final InterruptedException e) {
++                Thread.currentThread().interrupt();
++                IN_FLIGHT.remove(regionId);
++            }
++        }, "yap-carve-settle-" + regionId);
++        settler.setDaemon(true);
++        settler.start();
++        return true;
++    }
++
++    /** Run work on the outside-corridor anchor tick thread (does not pin corridor chunks). */
++    private static boolean runOnAnchor(
++            final ServerLevel world,
++            final int[] anchor,
++            final long awaitSeconds,
++            final Runnable work) {
++        final CountDownLatch done = new CountDownLatch(1);
++        try {
++            RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(world, anchor[0], anchor[1], () -> {
++                try {
++                    work.run();
++                } catch (final Throwable t) {
++                    LOGGER.error("YaP corridor anchor-wave failed at {},{}", anchor[0], anchor[1], t);
++                } finally {
++                    done.countDown();
++                }
++            });
++        } catch (final Throwable t) {
++            LOGGER.error("YaP corridor anchor schedule failed", t);
++            done.countDown();
++        }
++        try {
++            return done.await(awaitSeconds, TimeUnit.SECONDS);
++        } catch (final InterruptedException e) {
++            Thread.currentThread().interrupt();
++            return false;
++        }
++    }
++
++    private static void secondPassAndPartition(
++            final ServerLevel world,
++            final long regionId,
++            final CorridorPlan plan,
++            final int shards,
++            final int[] anchor) {
++        if (isCancelled(regionId)) {
++            CANCELLED.remove(regionId);
++            LOGGER.info("YaP corridor carve region #{} skip second pass — already partitioned", regionId);
++            return;
++        }
++        try {
++            final LongOpenHashSet remaining = collectCorridorKeysFromWorld(world, plan);
++            if (!remaining.isEmpty()) {
++                LOGGER.info("YaP corridor carve region #{} second pass — {} keys still in regionizer",
++                        regionId, remaining.size());
++                for (final long key : remaining) {
++                    try {
++                        world.setChunkForced(CoordinateUtils.getChunkX(key), CoordinateUtils.getChunkZ(key), false);
++                    } catch (final Throwable ignored) {
++                    }
++                }
++                final Thread wait = new Thread(() -> {
++                    try {
++                        runOnAnchor(world, anchor, 90L, () -> {
++                            for (final long key : remaining) {
++                                final int cx = CoordinateUtils.getChunkX(key);
++                                final int cz = CoordinateUtils.getChunkZ(key);
++                                if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, cx, cz)) {
++                                    continue;
++                                }
++                                carveOneChunk(world, regionId, cx, cz, true);
++                            }
++                        });
++                        Thread.sleep(SETTLE_MS);
++                        finishCarve(regionId, shards, world, plan);
++                    } catch (final InterruptedException e) {
++                        Thread.currentThread().interrupt();
++                        IN_FLIGHT.remove(regionId);
++                    }
++                }, "yap-carve-settle2-" + regionId);
++                wait.setDaemon(true);
++                wait.start();
++                return;
++            }
++            final Thread wait = new Thread(() -> {
++                try {
++                    Thread.sleep(SETTLE_MS);
++                    finishCarve(regionId, shards, world, plan);
++                } catch (final InterruptedException e) {
++                    Thread.currentThread().interrupt();
++                    IN_FLIGHT.remove(regionId);
++                }
++            }, "yap-carve-settle2-" + regionId);
++            wait.setDaemon(true);
++            wait.start();
++        } catch (final Throwable t) {
++            LOGGER.error("YaP corridor second pass failed region #{}", regionId, t);
++            IN_FLIGHT.remove(regionId);
++        }
++    }
++
++    private static void finishCarve(final long regionId, final int shards,
++                                    final ServerLevel world, final CorridorPlan plan) {
++        if (isCancelled(regionId)) {
++            CANCELLED.remove(regionId);
++            LANDINGS.remove(regionId);
++            return;
++        }
++        final LongOpenHashSet still = collectCorridorKeysFromWorld(world, plan);
++        if (!still.isEmpty()) {
++            // Incomplete gap → force-partition would freeze load in non-ticking chunks (fuse_ok=false).
++            LOGGER.warn("YaP corridor carve region #{} abort partition — {} corridor keys remain (relocated≈{} unloaded≈{})",
++                    regionId, still.size(), ENTITIES_RELOCATED.sum(), chunksUnloaded());
++            IN_FLIGHT.remove(regionId);
++            LANDINGS.remove(regionId);
++            PENDING_PLANS.remove(regionId);
++            PENDING_ANCHORS.remove(regionId);
++            LAST_CARVE_DONE_MS.put(regionId, System.currentTimeMillis());
++            return;
++        }
++        IN_FLIGHT.remove(regionId);
++        CARVES_COMPLETED.increment();
++        LAST_CARVE_DONE_MS.put(regionId, System.currentTimeMillis());
++        LANDINGS.remove(regionId);
++        RegionizedServer.getInstance().addTask(() ->
++                YapSubRegionPartitioner.requestPartition(regionId, shards));
++        final Thread t = new Thread(() -> {
++            try {
++                for (final long delay : new long[]{1000L, 2500L, 5000L}) {
++                    Thread.sleep(delay);
++                    if (isCancelled(regionId)) {
++                        CANCELLED.remove(regionId);
++                        return;
++                    }
++                    RegionizedServer.getInstance().addTask(() ->
++                            YapSubRegionPartitioner.requestPartition(regionId, shards));
++                }
++            } catch (final InterruptedException e) {
++                Thread.currentThread().interrupt();
++            }
++        }, "yap-carve-partition-retry-" + regionId);
++        t.setDaemon(true);
++        t.start();
++        LOGGER.info("YaP corridor carve complete region #{} — unloaded≈{} relocated≈{} repairs={} settle={}ms — partition requested",
++                regionId, chunksUnloaded(), ENTITIES_RELOCATED.sum(), REGIONIZER_REPAIRS.sum(), SETTLE_MS);
++    }
++
++    /**
++     * Collect chunk keys still present in the regionizer for the corridor band.
++     */
++    private static LongOpenHashSet collectCorridorKeysFromWorld(final ServerLevel world, final CorridorPlan plan) {
++        final LongOpenHashSet keys = new LongOpenHashSet();
++        try {
++            world.regioniser.computeForAllRegionsUnsynchronised(region -> {
++                final List<? extends ThreadedRegionizer.ThreadedRegionSection<?, ?>> sections = region.copySections();
++                for (final ThreadedRegionizer.ThreadedRegionSection<?, ?> s : sections) {
++                    if (s.isEmpty()) {
++                        continue;
++                    }
++                    final int coord = plan.cutOnX ? s.sectionX : s.sectionZ;
++                    if (coord < plan.lo || coord > plan.hi) {
++                        continue;
++                    }
++                    final LongArrayList chunks = s.getChunks();
++                    for (int i = 0; i < chunks.size(); ++i) {
++                        keys.add(chunks.getLong(i));
++                    }
++                }
++            });
++        } catch (final Throwable t) {
++            LOGGER.warn("YaP corridor collect remaining failed", t);
++        }
++        return keys;
++    }
++
++    record CorridorPlan(long regionId, boolean cutOnX, int lo, int hi, LongOpenHashSet keys) {
++    }
++
++    private static final class GapHold {
++        private final ServerLevel world;
++        private final CorridorPlan plan;
++        private final int[] anchor;
++        private final CarveLandings landings;
++        private final AtomicInteger tickCounter = new AtomicInteger();
++
++        private GapHold(final ServerLevel world, final CorridorPlan plan, final int[] anchor,
++                        final CarveLandings landings) {
++            this.world = world;
++            this.plan = plan;
++            this.anchor = anchor;
++            this.landings = landings;
++        }
++    }
++
++    private static void maintainGapBand(final GapHold hold) {
++        final LongOpenHashSet keys = collectCorridorKeysFromWorld(hold.world, hold.plan);
++        if (keys.isEmpty()) {
++            return;
++        }
++        // Anchor outside corridor — never queueTickTaskQueue on gap chunks (pins them).
++        runOnAnchor(hold.world, hold.anchor, 30L, () -> {
++            for (final long key : keys) {
++                final int cx = CoordinateUtils.getChunkX(key);
++                final int cz = CoordinateUtils.getChunkZ(key);
++                if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(hold.world, cx, cz)) {
++                    continue;
++                }
++                try {
++                    hold.world.setChunkForced(cx, cz, false);
++                } catch (final Throwable ignored) {
++                }
++                stripNonUnknownTickets(hold.world, cx, cz);
++                maintainGapChunk(hold, cx, cz);
++            }
++        });
++    }
++
++    /** Strip sim tickets and unload corridor chunks re-pinned after partition — no regionizer.removeChunk. */
++    private static void maintainGapChunk(final GapHold hold, final int cx, final int cz) {
++        final org.bukkit.World bukkit = hold.world.getWorld();
++        if (hold.landings != null) {
++            relocateGapEntities(hold, cx, cz);
++        }
++        if (!bukkit.isChunkLoaded(cx, cz)) {
++            return;
++        }
++        if (corridorChunkHasNonPlayerEntities(hold.world, cx, cz)) {
++            return;
++        }
++        stripNonUnknownTickets(hold.world, cx, cz);
++        hold.world.getChunkSource().purgeUnload();
++        if (!bukkit.isChunkLoaded(cx, cz)) {
++            return;
++        }
++        bukkit.unloadChunkRequest(cx, cz);
++        hold.world.getChunkSource().purgeUnload();
++    }
++
++    private static void relocateGapEntities(final GapHold hold, final int cx, final int cz) {
++        final org.bukkit.World bukkit = hold.world.getWorld();
++        try {
++            if (!bukkit.isChunkLoaded(cx, cz)) {
++                return;
++            }
++            final org.bukkit.Chunk chunk = bukkit.getChunkAt(cx, cz);
++            final boolean toLeft = cx < 0;
++            final int[][] pads = toLeft ? hold.landings.left : hold.landings.right;
++            if (pads.length == 0) {
++                return;
++            }
++            for (final Entity entity : chunk.getEntities()) {
++                if (entity instanceof Player) {
++                    continue;
++                }
++                try {
++                    final int i = Math.floorMod(hold.landings.rr.getAndIncrement(), pads.length);
++                    final int[] dest = pads[i];
++                    final double x = (dest[0] << 4) + 8.0;
++                    final double z = (dest[1] << 4) + 8.0;
++                    final double y = Math.max(entity.getLocation().getY(),
++                            bukkit.getHighestBlockYAt((int) x, (int) z) + 1.0);
++                    entity.teleport(new org.bukkit.Location(bukkit, x, y, z));
++                } catch (final Throwable ignored) {
++                }
++            }
++        } catch (final Throwable ignored) {
++        }
++    }
++
++    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    CorridorPlan planCorridor(
++            final ThreadedRegionizer.ThreadedRegion<R, S> region,
++            final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups,
++            final int createRadius) {
++        final int minGap = 2 * createRadius + 1;
++        final int maxChunks = Math.max(64, Integer.getInteger("yap.folia.subregion-carve-max-chunks", 4096));
++
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> left = groups.get(0);
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> right = groups.get(groups.size() - 1);
++        int leftMaxX = Integer.MIN_VALUE, leftMaxZ = Integer.MIN_VALUE;
++        int rightMinX = Integer.MAX_VALUE, rightMinZ = Integer.MAX_VALUE;
++        int leftCount = 0, rightCount = 0;
++        for (final ThreadedRegionizer.ThreadedRegionSection<R, S> s : left) {
++            if (s.isEmpty()) {
++                continue;
++            }
++            leftCount++;
++            leftMaxX = Math.max(leftMaxX, s.sectionX);
++            leftMaxZ = Math.max(leftMaxZ, s.sectionZ);
++        }
++        for (final ThreadedRegionizer.ThreadedRegionSection<R, S> s : right) {
++            if (s.isEmpty()) {
++                continue;
++            }
++            rightCount++;
++            rightMinX = Math.min(rightMinX, s.sectionX);
++            rightMinZ = Math.min(rightMinZ, s.sectionZ);
++        }
++        if (leftCount == 0 || rightCount == 0) {
++            return new CorridorPlan(region.id, true, 0, 0, new LongOpenHashSet());
++        }
++
++        final int dx = Math.abs(rightMinX - leftMaxX);
++        final int dz = Math.abs(rightMinZ - leftMaxZ);
++        final boolean cutOnX = dx >= dz;
++        final int leftMax = cutOnX ? leftMaxX : leftMaxZ;
++        final int rightMin = cutOnX ? rightMinX : rightMinZ;
++        int corridorLo = Math.min(leftMax, rightMin);
++        int corridorHi = Math.max(leftMax, rightMin);
++        while ((corridorHi + 1) - (corridorLo - 1) < minGap) {
++            if (leftCount >= rightCount) {
++                corridorLo--;
++            } else {
++                corridorHi++;
++            }
++            if (corridorHi - corridorLo > minGap + 1) {
++                break;
++            }
++        }
++        // Extra section halo so sim-distance tickets from shard edges cannot re-pin the Folia gap.
++        // Default 2: with createRadius=1 and sim≈1–2, halo=1 still leaves section ±3 loaded and
++        // re-pins the corridor → inactive regions → frozen TNT (fuse gate fails).
++        final int halo = Math.max(0, Integer.getInteger("yap.folia.subregion-carve-halo-sections", 2));
++        corridorLo -= halo;
++        corridorHi += halo;
++
++        // Collect from the whole region (not just group lists) so every bitset chunk in the band is targeted.
++        final LongOpenHashSet keys = new LongOpenHashSet();
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sections = region.copySections();
++        for (final ThreadedRegionizer.ThreadedRegionSection<R, S> s : sections) {
++            if (s.isEmpty()) {
++                continue;
++            }
++            final int coord = cutOnX ? s.sectionX : s.sectionZ;
++            if (coord < corridorLo || coord > corridorHi) {
++                continue;
++            }
++            final LongArrayList chunks = s.getChunks();
++            for (int i = 0; i < chunks.size(); ++i) {
++                keys.add(chunks.getLong(i));
++                if (keys.size() >= maxChunks) {
++                    LOGGER.warn("YaP corridor carve capped at {} chunks (lo={} hi={})",
++                            maxChunks, corridorLo, corridorHi);
++                    return new CorridorPlan(region.id, cutOnX, corridorLo, corridorHi, keys);
++                }
++            }
++        }
++        return new CorridorPlan(region.id, cutOnX, corridorLo, corridorHi, keys);
++    }
++
++    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    int[] firstNonEmptyChunkOutside(
++            final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups,
++            final CorridorPlan plan) {
++        for (final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> group : groups) {
++            for (final ThreadedRegionizer.ThreadedRegionSection<R, S> s : group) {
++                if (s.isEmpty()) {
++                    continue;
++                }
++                final int coord = plan.cutOnX ? s.sectionX : s.sectionZ;
++                if (coord >= plan.lo && coord <= plan.hi) {
++                    continue;
++                }
++                final LongArrayList chunks = s.getChunks();
++                if (!chunks.isEmpty()) {
++                    final long key = chunks.getLong(0);
++                    return new int[]{CoordinateUtils.getChunkX(key), CoordinateUtils.getChunkZ(key)};
++                }
++            }
++        }
++        return null;
++    }
++
++    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    int[] firstNonEmptyChunk(final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> group) {
++        for (final ThreadedRegionizer.ThreadedRegionSection<R, S> s : group) {
++            if (s.isEmpty()) {
++                continue;
++            }
++            final LongArrayList chunks = s.getChunks();
++            if (!chunks.isEmpty()) {
++                final long key = chunks.getLong(0);
++                return new int[]{CoordinateUtils.getChunkX(key), CoordinateUtils.getChunkZ(key)};
++            }
++        }
++        return null;
++    }
++
++    /**
++     * Landing pads on left/right shards. Corridor entities are teleported here so carve
++     * does not delete load (citeable MSPT requires entity/TNT parity with stock).
++     */
++    private static final class CarveLandings {
++        private final int[][] left;
++        private final int[][] right;
++        private final AtomicInteger rr = new AtomicInteger();
++
++        private CarveLandings(final int[][] left, final int[][] right) {
++            this.left = left;
++            this.right = right;
++        }
++
++        static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++        CarveLandings fromGroups(
++                final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups,
++                final CorridorPlan plan) {
++            // Stay clear of the corridor so sim-distance tickets cannot re-pin the Folia gap.
++            // Default margin=1 section (~16 chunks) — strip benches need half-width ≳40.
++            final int margin = Math.max(1, Integer.getInteger("yap.folia.subregion-carve-landing-margin", 1));
++            final int[][] left = collectOutsideChunks(groups.get(0), plan, margin, 24, true);
++            final int[][] right = collectOutsideChunks(groups.get(groups.size() - 1), plan, margin, 24, false);
++            if (left.length == 0 || right.length == 0) {
++                return null;
++            }
++            return new CarveLandings(left, right);
++        }
++
++        private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++        int[][] collectOutsideChunks(
++                final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> group,
++                final CorridorPlan plan,
++                final int margin,
++                final int max,
++                final boolean leftSide) {
++            final int sectionShift = 4; // Folia default grid-exponent=4 → 16-chunk sections
++            final int sectionSize = 1 << sectionShift;
++            final List<int[]> scored = new ArrayList<>();
++            for (final ThreadedRegionizer.ThreadedRegionSection<R, S> s : group) {
++                if (s.isEmpty()) {
++                    continue;
++                }
++                final int coord = plan.cutOnX ? s.sectionX : s.sectionZ;
++                if (leftSide) {
++                    if (coord > plan.lo - margin) {
++                        continue;
++                    }
++                } else if (coord < plan.hi + margin) {
++                    continue;
++                }
++                final LongArrayList chunks = s.getChunks();
++                for (int i = 0; i < chunks.size(); ++i) {
++                    final long key = chunks.getLong(i);
++                    final int cx = CoordinateUtils.getChunkX(key);
++                    final int cz = CoordinateUtils.getChunkZ(key);
++                    final int along = plan.cutOnX ? cx : cz;
++                    // Distance from nearest corridor edge (chunks) — prefer strip tips.
++                    final int dist = leftSide
++                            ? (plan.lo * sectionSize) - along
++                            : along - ((plan.hi + 1) * sectionSize - 1);
++                    scored.add(new int[]{cx, cz, dist});
++                }
++            }
++            scored.sort((a, b) -> Integer.compare(b[2], a[2]));
++            final int n = Math.min(max, scored.size());
++            final int[][] out = new int[n][];
++            for (int i = 0; i < n; ++i) {
++                out[i] = new int[]{scored.get(i)[0], scored.get(i)[1]};
++            }
++            return out;
++        }
++
++        int[] pick(final int cx, final int cz, final CorridorPlan plan) {
++            final boolean toLeft = plan.cutOnX ? cx < 0 : cz < 0;
++            final int[][] pads = toLeft ? left : right;
++            final int i = Math.floorMod(rr.getAndIncrement(), pads.length);
++            return pads[i];
++        }
++    }
++
++    /**
++     * Evacuate + optionally soft-unload one corridor chunk, or repair regionizer desync if Bukkit already unloaded it.
++     * @param unloadOnly if true, attempt soft unload after relocate (never hard {@code unloadChunk}).
++     */
++    private static void carveOneChunk(final ServerLevel world, final long regionId, final int cx, final int cz,
++                                      final boolean unloadOnly) {
++        final org.bukkit.World bukkit = world.getWorld();
++
++        // Relocate WHILE chunk is still held (force-loaded / tickets). Unforcing first orphans TNT.
++        if (bukkit.isChunkLoaded(cx, cz)) {
++            relocateCorridorEntities(world, regionId, cx, cz);
++            if (corridorChunkHasNonPlayerEntities(world, cx, cz)) {
++                return;
++            }
++        }
++
++        try {
++            world.setChunkForced(cx, cz, false);
++        } catch (final Throwable ignored) {
++        }
++
++        if (!bukkit.isChunkLoaded(cx, cz)) {
++            if (!unloadOnly) {
++                stripNonUnknownTickets(world, cx, cz);
++            }
++            world.getChunkSource().purgeUnload();
++            repairRegionizer(world, cx, cz);
++            return;
++        }
++
++        stripNonUnknownTickets(world, cx, cz);
++        if (!unloadOnly) {
++            return;
++        }
++        if (corridorChunkHasNonPlayerEntities(world, cx, cz)) {
++            return;
++        }
++        bukkit.unloadChunkRequest(cx, cz);
++        world.getChunkSource().purgeUnload();
++        if (!bukkit.isChunkLoaded(cx, cz)) {
++            repairRegionizer(world, cx, cz);
++            CHUNKS_UNLOADED.increment();
++        }
++    }
++
++    private static void carveOneChunk(final ServerLevel world, final long regionId, final int cx, final int cz) {
++        carveOneChunk(world, regionId, cx, cz, false);
++    }
++
++    /** Returns {totalNonPlayerLocal, inCorridorKeys}. */
++    private static int[] countCorridorEntities(final ServerLevel world, final CorridorPlan plan) {
++        final RegionizedWorldData data = world.getCurrentWorldData();
++        if (data == null) {
++            return new int[]{0, 0};
++        }
++        int total = 0;
++        int inBand = 0;
++        for (final net.minecraft.world.entity.Entity e : data.getLocalEntitiesCopy()) {
++            if (e == null || e instanceof net.minecraft.world.entity.player.Player) {
++                continue;
++            }
++            total++;
++            final long key = CoordinateUtils.getChunkKey(e.chunkPosition().x(), e.chunkPosition().z());
++            if (plan.keys.contains(key)) {
++                inBand++;
++            }
++        }
++        return new int[]{total, inBand};
++    }
++
++    /**
++     * Move all region-local entities whose chunk is in the corridor onto landing pads.
++     * Uses {@link RegionizedWorldData#getLocalEntitiesCopy()} so we do not miss Folia entities
++     * that chunk AABB queries can skip from an anchor tick thread.
++     */
++    private static void relocateCorridorBand(
++            final ServerLevel world,
++            final long regionId,
++            final CorridorPlan plan) {
++        final CarveLandings landings = LANDINGS.get(regionId);
++        if (landings == null || plan.keys.isEmpty()) {
++            return;
++        }
++        final org.bukkit.World bukkit = world.getWorld();
++        final RegionizedWorldData data = world.getCurrentWorldData();
++        if (data == null) {
++            return;
++        }
++        final net.minecraft.world.entity.Entity[] local = data.getLocalEntitiesCopy();
++        for (final net.minecraft.world.entity.Entity nmsEntity : local) {
++            if (nmsEntity == null || nmsEntity instanceof net.minecraft.world.entity.player.Player) {
++                continue;
++            }
++            final int cx = nmsEntity.chunkPosition().x();
++            final int cz = nmsEntity.chunkPosition().z();
++            if (!plan.keys.contains(CoordinateUtils.getChunkKey(cx, cz))) {
++                continue;
++            }
++            try {
++                // Midpoint of corridor in chunk coords; origin-centered strip → leftPad by sign.
++                final boolean leftPad = plan.cutOnX ? cx <= 0 : cz <= 0;
++                final int[][] pads = leftPad ? landings.left : landings.right;
++                if (pads.length == 0) {
++                    continue;
++                }
++                final int i = Math.floorMod(landings.rr.getAndIncrement(), pads.length);
++                final int[] dest = pads[i];
++                final double x = (dest[0] << 4) + 8.0;
++                final double z = (dest[1] << 4) + 8.0;
++                final double y = Math.max(nmsEntity.getY(), world.getHeight(
++                        net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
++                        (int) x, (int) z) + 1.0);
++                if (nmsEntity.getBukkitEntity().teleport(new org.bukkit.Location(bukkit, x, y, z))) {
++                    ENTITIES_RELOCATED.increment();
++                }
++            } catch (final Throwable ignored) {
++            }
++        }
++        LOGGER.info("YaP corridor band relocate region #{} — relocated+={} this pass",
++                regionId, ENTITIES_RELOCATED.sum());
++    }
++
++    /**
++     * Move entities onto shard landing pads. Never {@code remove()} — that games MSPT by
++     * destroying the bench load the soak is supposed to measure.
++     */
++    private static void relocateCorridorEntities(final ServerLevel world, final long regionId,
++                                                 final int cx, final int cz) {
++        final CarveLandings landings = LANDINGS.get(regionId);
++        if (landings == null) {
++            return;
++        }
++        final org.bukkit.World bukkit = world.getWorld();
++        final net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(
++                cx << 4, world.getMinY(), cz << 4,
++                (cx << 4) + 16, world.getMaxY() + 1, (cz << 4) + 16);
++        final List<net.minecraft.world.entity.Entity> snapshot =
++                world.getEntities((net.minecraft.world.entity.Entity) null, box, e -> true);
++        final boolean toLeft = cx < 0;
++        final int[][] pads = toLeft ? landings.left : landings.right;
++        if (pads.length == 0) {
++            return;
++        }
++        for (final net.minecraft.world.entity.Entity nmsEntity : snapshot) {
++            if (nmsEntity instanceof net.minecraft.world.entity.player.Player) {
++                continue;
++            }
++            // Only relocate entities actually in this chunk (AABB may spill edges).
++            if (nmsEntity.chunkPosition().x() != cx || nmsEntity.chunkPosition().z() != cz) {
++                continue;
++            }
++            try {
++                final int i = Math.floorMod(landings.rr.getAndIncrement(), pads.length);
++                final int[] dest = pads[i];
++                final double x = (dest[0] << 4) + 8.0;
++                final double z = (dest[1] << 4) + 8.0;
++                final double y = Math.max(nmsEntity.getY(), world.getHeight(
++                        net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
++                        (int) x, (int) z) + 1.0);
++                final Entity bukkitEntity = nmsEntity.getBukkitEntity();
++                if (bukkitEntity.teleport(new org.bukkit.Location(bukkit, x, y, z))) {
++                    ENTITIES_RELOCATED.increment();
++                }
++            } catch (final Throwable ignored) {
++                // Leave entity in place — unload will refuse rather than delete load.
++            }
++        }
++    }
++
++    private static boolean corridorChunkHasNonPlayerEntities(final ServerLevel world, final int cx, final int cz) {
++        final net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(
++                cx << 4, world.getMinY(), cz << 4,
++                (cx << 4) + 16, world.getMaxY() + 1, (cz << 4) + 16);
++        final List<net.minecraft.world.entity.Entity> found =
++                world.getEntities((net.minecraft.world.entity.Entity) null, box,
++                        e -> !(e instanceof net.minecraft.world.entity.player.Player)
++                                && e.chunkPosition().x() == cx && e.chunkPosition().z() == cz);
++        return !found.isEmpty();
++    }
++
++    /** Only when Bukkit unloaded AND Moonrise has no holder — sync regionizer bitset. */
++    private static void repairRegionizer(final ServerLevel world, final int cx, final int cz) {
++        try {
++            final ca.spottedleaf.moonrise.patches.chunk_system.scheduling.ChunkHolderManager mgr =
++                    ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel) world)
++                            .moonrise$getChunkTaskScheduler().chunkHolderManager;
++            if (mgr.getChunkHolder(cx, cz) != null) {
++                // Holder still present — Moonrise will removeChunk; do not race it.
++                return;
++            }
++            world.regioniser.removeChunk(cx, cz);
++            REGIONIZER_REPAIRS.increment();
++            CHUNKS_UNLOADED.increment();
++        } catch (final IllegalStateException expected) {
++            CHUNKS_UNLOADED.increment();
++        } catch (final Throwable t) {
++            LOGGER.debug("YaP regionizer repair {},{}: {}", cx, cz, t.toString());
++        }
++    }
++
++    private static void stripNonUnknownTickets(final ServerLevel world, final int cx, final int cz) {
++        try {
++            final ca.spottedleaf.moonrise.patches.chunk_system.scheduling.ChunkHolderManager mgr =
++                    ((ca.spottedleaf.moonrise.patches.chunk_system.level.ChunkSystemServerLevel) world)
++                            .moonrise$getChunkTaskScheduler().chunkHolderManager;
++            for (int pass = 0; pass < 4; ++pass) {
++                final java.util.List<net.minecraft.server.level.Ticket> tickets =
++                        new java.util.ArrayList<>(mgr.getTicketsAt(cx, cz));
++                if (tickets.isEmpty()) {
++                    return;
++                }
++                boolean progress = false;
++                for (final net.minecraft.server.level.Ticket ticket : tickets) {
++                    if (ticket.getType() == TicketType.UNKNOWN) {
++                        continue;
++                    }
++                    try {
++                        final Object id = ((ca.spottedleaf.moonrise.patches.chunk_system.ticket.ChunkSystemTicket<?>) ticket)
++                                .moonrise$getIdentifier();
++                        mgr.removeTicketAtLevel(ticket.getType(), cx, cz, ticket.getTicketLevel(), id);
++                        progress = true;
++                    } catch (final Throwable ignored) {
++                    }
++                }
++                if (!progress) {
++                    return;
++                }
++            }
++        } catch (final Throwable ignored) {
++        }
++    }
++}

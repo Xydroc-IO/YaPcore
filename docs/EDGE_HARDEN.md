@@ -13,11 +13,12 @@ Internet players
 DNS-only A/AAAA ──► nginx stream ──► YaP Link :25565-local OR YaPcore :25566
 (grey cloud)         (optional)         dashboard :8080 → 127.0.0.1 only
                                         metrics  :9091 → 127.0.0.1 only
+                                        YaP-Folia game (child JVM)
 ```
 
 | Surface | Public? | Bind |
 |---------|---------|------|
-| Game JE/BE | Yes (`:25565`) | nginx → Link or Folia |
+| Game JE/BE | Yes (`:25565`) | nginx → Link or YaPcore → **YaP-Folia** |
 | Packs HTTP | Yes (`:80`/`:443`) via nginx | YaPcore `:8081` localhost |
 | Web dashboard `:8080` | **No** | `web-dashboard-bind=127.0.0.1` |
 | Link `/metrics` `:9091` | **No** | `metrics-http-bind=127.0.0.1` |

@@ -164,6 +164,67 @@ public final class FoliaKernel {
         if (config.isFoliaScoreboardSwmr()) {
             cmd.add("-Dyap.folia.scoreboard-swmr=true");
         }
+        int microtickMs = config.getFoliaMicrotickBudgetMs();
+        if (microtickMs > 0) {
+            cmd.add("-Dyap.folia.microtick-budget-ms=" + microtickMs);
+        }
+        long stealMs = config.getFoliaStealThresholdMs();
+        if (stealMs != 3L) {
+            cmd.add("-Dyap.folia.steal-threshold-ms=" + stealMs);
+        }
+        long sliceMs = config.getFoliaTaskSliceMs();
+        if (sliceMs != 2L) {
+            cmd.add("-Dyap.folia.task-slice-ms=" + sliceMs);
+        }
+        String gridExp = config.getFoliaGridExponent();
+        if (gridExp != null && !gridExp.isBlank()) {
+            cmd.add("-Dyap.folia.grid-exponent=" + gridExp.trim());
+        }
+        if (!config.isFoliaRegionMetrics()) {
+            cmd.add("-Dyap.folia.region-metrics=false");
+        }
+        if (config.isFoliaSubregionPartition()) {
+            cmd.add("-Dyap.folia.subregion-partition=true");
+            int shards = config.getFoliaSubregionShards();
+            if (shards != 2) {
+                cmd.add("-Dyap.folia.subregion-shards=" + shards);
+            }
+            int mspt = config.getFoliaSubregionMsptThreshold();
+            if (mspt != 20) {
+                cmd.add("-Dyap.folia.subregion-mspt-threshold=" + mspt);
+            }
+            int minSec = config.getFoliaSubregionMinSections();
+            if (minSec != 4) {
+                cmd.add("-Dyap.folia.subregion-min-sections=" + minSec);
+            }
+            int minEnt = config.getFoliaSubregionMinEntities();
+            if (minEnt != 32) {
+                cmd.add("-Dyap.folia.subregion-min-entities=" + minEnt);
+            }
+            int coalMspt = config.getFoliaSubregionCoalesceMspt();
+            if (coalMspt != 8) {
+                cmd.add("-Dyap.folia.subregion-coalesce-mspt=" + coalMspt);
+            }
+            int coalTicks = config.getFoliaSubregionCoalesceTicks();
+            if (coalTicks != 100) {
+                cmd.add("-Dyap.folia.subregion-coalesce-ticks=" + coalTicks);
+            }
+            int quietTicks = config.getFoliaSubregionCoalesceQuietTicks();
+            if (quietTicks != 200) {
+                cmd.add("-Dyap.folia.subregion-coalesce-quiet-ticks=" + quietTicks);
+            }
+            if (!config.isFoliaSubregionCarve()) {
+                cmd.add("-Dyap.folia.subregion-carve=false");
+            }
+            int partDelay = config.getFoliaSubregionPartitionDelayTicks();
+            if (partDelay != 600) {
+                cmd.add("-Dyap.folia.subregion-partition-delay-ticks=" + partDelay);
+            }
+            int gapInterval = config.getFoliaSubregionGapMaintainInterval();
+            if (gapInterval != 10) {
+                cmd.add("-Dyap.folia.subregion-gap-maintain-interval=" + gapInterval);
+            }
+        }
         cmd.add("-jar");
         cmd.add(jar.toAbsolutePath().toString());
         cmd.add("--nogui");

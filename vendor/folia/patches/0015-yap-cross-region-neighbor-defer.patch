@@ -1,0 +1,155 @@
+From: YaPcore Agent 3 <agent-3@yapcore>
+Subject: [PATCH] YaP defer cross-region neighbor updates at shard borders
+
+Defer foreign-pos CollectingNeighborUpdater.addAndRun onto owning region
+tick queue; prefer empty-section cut lines in YapSubRegionPartitioner.
+Post-applyAllPatches. Depends on 0014 force-partition.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/redstone/CollectingNeighborUpdater.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/redstone/CollectingNeighborUpdater.java
+@@ -66,6 +66,31 @@
+     }
+ 
+     private void addAndRun(final BlockPos pos, final CollectingNeighborUpdater.NeighborUpdates update) {
++        // YaP / Folia — if the target block is owned by another region (force-partition shard
++        // borders), defer onto that region's tick queue instead of crashing. Matches how Folia
++        // already routes cross-region setblock/POI work via RegionizedTaskQueue.
++        if (this.level instanceof net.minecraft.server.level.ServerLevel serverLevel
++                && !ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(this.level, pos)) {
++            if (serverLevel.getChunkIfLoaded(pos) == null) {
++                return; // unloaded — same semantics as patch 0004 skip
++            }
++            final BlockPos immutable = pos.immutable();
++            io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(
++                    serverLevel,
++                    immutable.getX() >> 4,
++                    immutable.getZ() >> 4,
++                    () -> {
++                        final CollectingNeighborUpdater owning =
++                                serverLevel.getCurrentWorldData().neighborUpdater;
++                        owning.addAndRunOwned(immutable, update);
++                    }
++            );
++            return;
++        }
++        this.addAndRunOwned(pos, update);
++    }
++
++    private void addAndRunOwned(final BlockPos pos, final CollectingNeighborUpdater.NeighborUpdates update) {
+         ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread(this.level, pos, "Adding block without owning region"); // Folia - region threading
+         boolean runningAlready = this.count > 0;
+         boolean tooManyUpdates = this.maxChainedNeighborUpdates >= 0 && this.count >= this.maxChainedNeighborUpdates;
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/ThreadedRegionizer.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/ThreadedRegionizer.java
+@@ -1222,7 +1222,8 @@
+             return ret;
+         }
+ 
+-        private boolean isEmpty() {
++        /** Package: YaP cut hardening — empty buffer sections preferred at shard boundaries. */
++        boolean isEmpty() {
+             return this.chunkCount == 0;
+         }
+ 
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
+@@ -241,6 +241,8 @@
+ 
+     /**
+      * Spatial cut: K=2 median X (fallback Z); K=3 X tertiles; K=4 median X then Z.
++     * Prefers a cut index where at least one side of the boundary is an empty section
++     * (Folia-like buffer) to reduce hot cross-shard neighbor traffic; falls back to median.
+      */
+     static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
+     List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> cutSections(
+@@ -253,33 +255,68 @@
+ 
+         final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out = new ArrayList<>();
+         if (k <= 2 || sorted.size() < 4) {
+-            final int mid = sorted.size() / 2;
+             // Prefer X variance; if all same X, sort by Z
+             final boolean sameX = sorted.get(0).sectionX == sorted.get(sorted.size() - 1).sectionX;
+             if (sameX) {
+                 sorted.sort(Comparator.comparingInt(s -> s.sectionZ));
+             }
++            final int mid = preferEmptyCut(sorted, sorted.size() / 2);
+             out.add(new ArrayList<>(sorted.subList(0, Math.max(1, mid))));
+             out.add(new ArrayList<>(sorted.subList(Math.max(1, mid), sorted.size())));
+             return out;
+         }
+         if (k == 3) {
+-            final int a = sorted.size() / 3;
+-            final int b = (2 * sorted.size()) / 3;
+-            out.add(new ArrayList<>(sorted.subList(0, Math.max(1, a))));
+-            out.add(new ArrayList<>(sorted.subList(Math.max(1, a), Math.max(a + 1, b))));
+-            out.add(new ArrayList<>(sorted.subList(Math.max(a + 1, b), sorted.size())));
++            final int a = preferEmptyCut(sorted, sorted.size() / 3);
++            final int b = preferEmptyCut(sorted, (2 * sorted.size()) / 3);
++            final int cutA = Math.max(1, a);
++            final int cutB = Math.max(cutA + 1, b);
++            out.add(new ArrayList<>(sorted.subList(0, cutA)));
++            out.add(new ArrayList<>(sorted.subList(cutA, cutB)));
++            out.add(new ArrayList<>(sorted.subList(cutB, sorted.size())));
+             return out;
+         }
+         // k == 4: median X then median Z
+-        final int midX = sorted.size() / 2;
+-        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> left = new ArrayList<>(sorted.subList(0, midX));
+-        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> right = new ArrayList<>(sorted.subList(midX, sorted.size()));
++        final int midX = preferEmptyCut(sorted, sorted.size() / 2);
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> left = new ArrayList<>(sorted.subList(0, Math.max(1, midX)));
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> right = new ArrayList<>(sorted.subList(Math.max(1, midX), sorted.size()));
+         splitByZ(left, out);
+         splitByZ(right, out);
+         return out;
+     }
+ 
++    /**
++     * Prefer a cut index near {@code preferred} where the section just before or at the cut is empty.
++     * Always returns in {@code [1, size-1]} so both sides are non-empty lists when size >= 2.
++     */
++    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    int preferEmptyCut(final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted, final int preferred) {
++        final int size = sorted.size();
++        if (size < 2) {
++            return Math.max(1, preferred);
++        }
++        final int lo = 1;
++        final int hi = size - 1;
++        final int start = Math.min(hi, Math.max(lo, preferred));
++        // Search outward from preferred for an empty-sided cut
++        for (int d = 0; d < size; ++d) {
++            final int left = start - d;
++            final int right = start + d;
++            if (left >= lo && left <= hi && isEmptySidedCut(sorted, left)) {
++                return left;
++            }
++            if (d != 0 && right >= lo && right <= hi && isEmptySidedCut(sorted, right)) {
++                return right;
++            }
++        }
++        return start;
++    }
++
++    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    boolean isEmptySidedCut(final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted, final int cut) {
++        // cut splits [0, cut) | [cut, size); prefer empty on either side of the boundary
++        return sorted.get(cut - 1).isEmpty() || sorted.get(cut).isEmpty();
++    }
++
+     private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
+     void splitByZ(
+             final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> in,
+@@ -292,7 +329,7 @@
+             return;
+         }
+         in.sort(Comparator.comparingInt(s -> s.sectionZ));
+-        final int mid = in.size() / 2;
++        final int mid = preferEmptyCut(in, in.size() / 2);
+         out.add(new ArrayList<>(in.subList(0, mid)));
+         out.add(new ArrayList<>(in.subList(mid, in.size())));
+     }
+

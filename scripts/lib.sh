@@ -204,8 +204,19 @@ yap_ensure_dirs() {
   mkdir -p "$ROOT/config" "$ROOT/plugins" "$ROOT/logs" "$ROOT/lib" "$ROOT/$FOLIA_DIR"
   yap_ensure_unified_plugins
   yap_ensure_config_hub
+  # Shippable defaults (never overwrite operator files)
+  if [ -x "$ROOT/scripts/seed-defaults.sh" ]; then
+    bash "$ROOT/scripts/seed-defaults.sh" --root "$ROOT" || true
+  elif [ -f "$ROOT/scripts/seed-defaults.sh" ]; then
+    bash "$ROOT/scripts/seed-defaults.sh" --root "$ROOT" || true
+  fi
   if [ ! -f "$ROOT/config/server.properties" ]; then
-    cat >"$ROOT/config/server.properties" <<'EOF'
+    if [ -f "$ROOT/config/defaults/server.properties" ]; then
+      cp -f "$ROOT/config/defaults/server.properties" "$ROOT/config/server.properties"
+    elif [ -f "$ROOT/config/server.properties.example" ]; then
+      cp -f "$ROOT/config/server.properties.example" "$ROOT/config/server.properties"
+    else
+      cat >"$ROOT/config/server.properties" <<'EOF'
 server-name=YaPcore
 bind-host=0.0.0.0
 port=25566
@@ -234,7 +245,14 @@ game-authority=folia
 folia-embed=true
 folia-dir=folia-kernel
 folia-version=26.2
+resource-pack-enabled=true
+resource-pack-file=yapcore-default.zip
+yap-ranks-auto-apply=true
+web-dashboard-enabled=true
+web-dashboard-port=8080
+web-dashboard-bind=127.0.0.1
 EOF
+    fi
   fi
 }
 

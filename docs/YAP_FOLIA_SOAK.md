@@ -15,6 +15,7 @@ parallel long-boot scripts.
 
 # Perf soak (A3 knobs via env — defaults OFF)
 YAP_FOLIA_ENTITY_TICK_BUDGET=300 YAP_FOLIA_ASYNC_CHUNK_SAVE=true \
+  YAP_FOLIA_MICROTICK_BUDGET_MS=8 \
   ./scripts/soak-yap-folia.sh perf
 ```
 
@@ -27,7 +28,7 @@ YAP_FOLIA_ENTITY_TICK_BUDGET=300 YAP_FOLIA_ASYNC_CHUNK_SAVE=true \
 | Profile | Script arg | Jar | sched-compat | teleport transactions | Perf knobs |
 |---------|------------|-----|--------------|----------------------|------------|
 | **soak-compat** | `compat` | `FOLIA_JAR_SOURCE=build` | on | on | **OFF** |
-| **soak-perf** | `perf` | same | on | on | env: `YAP_FOLIA_ENTITY_TICK_BUDGET`, `YAP_FOLIA_ASYNC_CHUNK_SAVE` |
+| **soak-perf** | `perf` | same | on | on | env: budget / async-save / microtick / steal |
 
 Defaults durations: **compat = 300s**, **perf = 600s** (override with argv or `SOAK_SECS=`).
 
@@ -57,9 +58,48 @@ Results JSON: `bench/results/<stamp>-yap-folia-soak-<profile>.json`.
 | `SOAK_HOOK_SECS` | compat | Seconds for A2 hook smokes (default 300 / 180) |
 | `YAP_FOLIA_ENTITY_TICK_BUDGET` | **perf** | → `-Dyap.folia.entity-tick-budget` (A3) |
 | `YAP_FOLIA_ASYNC_CHUNK_SAVE` | **perf** | → `-Dyap.folia.async-chunk-save` (A3) |
+| `YAP_FOLIA_MICROTICK_BUDGET_MS` | **perf** | → `-Dyap.folia.microtick-budget-ms` (same-thread AI deadline) |
+| `YAP_FOLIA_STEAL_THRESHOLD_MS` | **perf** | → steal threshold (needs `scheduler: WORK_STEALING`) |
+| `YAP_FOLIA_TASK_SLICE_MS` | **perf** | → task slice (needs `WORK_STEALING`) |
+| `YAP_FOLIA_GRID_EXPONENT` | **perf** | → override `threaded-regions.grid-exponent` |
+| `YAP_FOLIA_SUBREGION_PARTITION` | **perf** | → force-partition parallel shards (`true`) |
+| `YAP_FOLIA_SUBREGION_SHARDS` | **perf** | → shard count (2–4) |
+| `YAP_FOLIA_SUBREGION_MSPT_THRESHOLD` | **perf** | → MSPT ms to request partition |
+| `YAP_FOLIA_SUBREGION_MIN_ENTITIES` | **perf** | → min entities before partition (default 32) |
+| `YAP_FOLIA_SUBREGION_COALESCE_QUIET_TICKS` | **perf** | → post-partition quiet before coalesce cool-count |
+| `YAP_FOLIA_SUBREGION_CARVE` | **perf** | → corridor carve before partition (`false` for lobe/pre-gap) |
+| `YAP_FOLIA_SUBREGION_PARTITION_DELAY_TICKS` | **perf** | → hot ticks before partition request (default 600) |
+| `YAP_FOLIA_SUBREGION_GAP_MAINTAIN_INTERVAL` | **perf** | → post-partition corridor sweep interval |
 
 Perf knobs stay **unset in compat**. FoliaKernel forwards any `-Dyap.folia.*` from
 the chassis JVM into the managed Folia process.
+
+## Region pool / Phase 4–5
+
+| Blueprint item | Delivery |
+|----------------|----------|
+| Sub-region micro-ticking (deferral) | Same-thread time-slice (`microtick-budget-ms`) + count budget |
+| **True parallel sub-region ticking** | Force-partition (`folia-subregion-partition=true`) into Folia shards with merge-inhibit |
+| Dynamic merge/split | Upstream + YaP force-split/coalesce + `YapRegionPoolMetrics` |
+| Thread stealing | `threaded-regions.scheduler: WORK_STEALING` + steal/slice knobs |
+| Steal/queue metrics | Merges, splits, migrations, force-partitions, inhibited merges, coalesces |
+
+```bash
+# Parallel sub-regions (lobe/pre-gap layout — carve OFF)
+YAP_FOLIA_ENTITY_TICK_BUDGET=300 YAP_FOLIA_ASYNC_CHUNK_SAVE=true \
+YAP_FOLIA_SUBREGION_PARTITION=true YAP_FOLIA_SUBREGION_CARVE=false \
+  ./scripts/soak-yap-folia.sh perf
+
+# Full stack + microtick tune layer
+YAP_FOLIA_MICROTICK_BUDGET_MS=8 \
+  ./scripts/soak-yap-folia.sh perf
+```
+
+Previously:
+```bash
+YAP_FOLIA_SUBREGION_PARTITION=true YAP_FOLIA_SUBREGION_MSPT_THRESHOLD=15 \
+  ./scripts/soak-yap-folia.sh perf
+```
 
 ## Hooks (plug-in points)
 

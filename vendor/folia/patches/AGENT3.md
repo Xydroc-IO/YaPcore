@@ -1,10 +1,18 @@
-# Agent 3 Folia patches (Phase 3)
+# Agent 3 Folia patches (Phase 3–5)
 
 | File | Workstream | Status |
 |------|------------|--------|
-| `0010-yap-async-chunk-save.patch` | 3.3 Moonrise flush off region thread | **landed** (post-apply) |
-| `0011-yap-scoreboard-swmr.patch` | 3.4 CraftScoreboard SWMR | **landed** (post-apply) |
-| `0012-yap-entity-tick-budget.patch` | 3.2 hot-region Mob AI budget | **landed** (post-apply) |
+| `0010-yap-async-chunk-save.patch` | 3.3 Moonrise flush off region thread | **landed** |
+| `0011-yap-scoreboard-swmr.patch` | 3.4 CraftScoreboard SWMR | **landed** |
+| `0012-yap-entity-tick-budget.patch` | 3.2 hot-region Mob AI count budget | **landed** |
+| `0013-yap-region-pool-and-microtick.patch` | 4.x pool metrics, steal knobs, microtick, grid override | **landed** |
+| `0014-yap-subregion-force-partition.patch` | 5.x true parallel sub-regions via force-partition + merge-inhibit | **landed** |
+| `0015-yap-cross-region-neighbor-defer.patch` | 5.x defer cross-shard neighbor/shape updates; empty-cut preference | **landed** |
+| `0016-yap-partition-stability-gates.patch` | 5.x min-entities + coalesce quiet + null-safe entity split | **landed** |
+| `0017-yap-partition-empty-buffer-required.patch` | 5.x refuse force-partition without empty-buffer cut | **landed** |
+| `0018-yap-corridor-carve-before-partition.patch` | 5.x unload Folia-wide corridor then force-partition | **landed** |
+| `0019-yap-post-partition-gap-hold.patch` | 5.x maintain corridor gap after partition (sim re-pin fix) | **landed** |
+| `0019` (continued) | partition delay + skip carve when pre-buffered | **landed** (merged into 0019) |
 
 **Apply order:** `folia-patch.sh pre` → `applyAllPatches` → `folia-patch.sh post`  
 (see `scripts/build-yap-folia.sh`).
@@ -16,21 +24,85 @@
 | `-Dyap.folia.async-chunk-save=true` | false | Enqueue Moonrise flush off region thread |
 | `-Dyap.folia.scoreboard-swmr=true` | false | Allow Bukkit scoreboard mutations under write lock |
 | `-Dyap.folia.entity-tick-budget=N` | 0 (off) | Max **Mob** AI ticks per region tick; TNT/players/vehicles/items always tick |
+| `-Dyap.folia.microtick-budget-ms=N` | 0 (off) | Soft ms deadline for Mob AI phase (same-thread deferral) |
+| `-Dyap.folia.steal-threshold-ms=N` | 3 | WORK_STEALING steal threshold |
+| `-Dyap.folia.task-slice-ms=N` | 2 | WORK_STEALING intermediate task slice |
+| `-Dyap.folia.grid-exponent=N` | unset | Override `threaded-regions.grid-exponent` (finer = more regions) |
+| `-Dyap.folia.region-metrics=false` | true | Disable merge/split/migration counters |
+| `-Dyap.folia.subregion-partition=true` | false | Force-partition hot regions into parallel Folia shards |
+| `-Dyap.folia.subregion-shards=N` | 2 | Shards per partition (2–4) |
+| `-Dyap.folia.subregion-mspt-threshold=N` | 20 | MSPT (ms) to request partition |
+| `-Dyap.folia.subregion-min-sections=N` | 4 | Min sections before partition |
+| `-Dyap.folia.subregion-min-entities=N` | 32 | Min entities before partition (avoids worldgen shred) |
+| `-Dyap.folia.subregion-coalesce-mspt=N` | 8 | Cool MSPT to allow re-merge |
+| `-Dyap.folia.subregion-coalesce-ticks=N` | 100 | Cool ticks before coalesce |
+| `-Dyap.folia.subregion-coalesce-quiet-ticks=N` | 200 | Post-partition quiet before cool-count can complete |
+| `-Dyap.folia.subregion-carve=true` | true | Unload Folia-wide corridor before force-partition |
+| `-Dyap.folia.subregion-carve-cooldown-ms=N` | 8000 | Min ms between carve attempts per region |
+| `-Dyap.folia.subregion-carve-max-chunks=N` | 2048 | Cap corridor unload size |
+| `-Dyap.folia.subregion-gap-maintain-interval=N` | 10 | Ticks between post-partition corridor gap sweeps |
+| `-Dyap.folia.subregion-partition-delay-ticks=N` | 600 | Hot ticks before partition request (~30s @ 20 TPS) |
+
+## Region pool / sub-ticks
+
+Folia’s invariant: **one tick thread owns one region**. True parallel ticking of one
+hot contiguous area is done by **force-partitioning** into independent Folia regions
+with **merge-inhibition** across shard boundaries so they stay schedulable.
+
+| Blueprint item | YaP delivery |
+|----------------|--------------|
+| Sub-region micro-ticking (deferral) | Count budget (`0012`) + time-slice (`0013`) |
+| **True parallel sub-region ticking** | Force-partition + merge-inhibit (`0014`) + neighbor defer (`0015`) + gates (`0016`/`0017`) + corridor carve (`0018`) |
+| Dynamic region merge/split | Upstream Folia + YaP force-split/coalesce + telemetry |
+| Thread stealing / pool balance | `WORK_STEALING` + steal/slice knobs (`0013`) |
+| Steal/queue metrics | `YapRegionPoolMetrics` + `YapSubRegionPartitioner.snapshot()` |
+
+**Shard border caveat (`0015`):** shape/neighbor updates that target a foreign shard are
+queued onto the owning region’s tick thread (same pattern as Folia setblock/POI). Physics
+at the cut may lag by up to one region tick; do not enable partition by default until soak green.
+
+Log snapshot: `YapRegionPoolMetrics.snapshot()` includes partition counters.
 
 ## Citeable bench
 
-Stamp **`20260824T234919Z`** spawncollapse (region MSPT @ chunk 0,0):
+Stamp **`20260901T010804Z-budget`** spawncollapse (region MSPT @ chunk 0,0; 8k TNT / 1024 hoppers / 2500 mobs):
 
-| Side | mspt_mean | fuse_ok |
-|------|----------:|:-------:|
-| stock Folia | 25.2466 | yes |
-| YaP-Folia | 21.4509 | yes |
+| Side | mspt_mean | fuse_ok | entities |
+|------|----------:|:-------:|---------:|
+| stock Folia | 26.5446 | yes | ~8560 |
+| YaP-Folia | 20.5415 | yes | ~8755 |
 
-**−15.0%** with `-Dyap.folia.entity-tick-budget=300`. See `docs/BENCH_VS_FOLIA.md`.
+**−22.6%** with `-Dyap.folia.entity-tick-budget=300` + async-chunk-save. See `docs/BENCH_VS_FOLIA.md`.
+
+Prior stamp **`20260824T234919Z`**: −15.0% (25.25 → 21.45).
+
+**Partition (force-split):** default **OFF**. Folia’s invariant is stronger than “no
+shared block”: **adjacent regions (within `2×emptySectionCreateRadius`) cannot tick
+in parallel** — they go inactive and must merge. Canvas/Folia “parallel works” means
+that model, plus Canvas’s region-threading bugfixes — **not** splitting one dense
+contiguous blob. YaP `0017` refuses unsafe cuts. `0018` corridor carve is landed — **mechanism
+cite** on contiguous strips: stamp **`20260901T033401Z-carveC7`** (`forceSplits>0`,
+`fuse_ok`, 0 TickThread). Carve relocates entities (no delete), aborts when partition
+wins, requeues during cooldown. Patch **`0019`** adds post-partition gap hold so
+sim-distance cannot re-pin the corridor and freeze TNT (`fuse_ticking_ok`).
+
+**Fair paired soak (stock contiguous vs YaP lobe parallel):** bench
+`-Dyap.bench.strip_two_phase=true` + `-Dyap.bench.strip_lobe_gap_half=24` spawns YaP load
+on separated lobes (same 8000 TNT / entity totals as stock full strip). Stamp
+**`20260901T050321Z-carveFair12`**: stock **27.83** → YaP **22.89** MSPT (**−17.7%**),
+both `fuse_ticking_ok`, TNT=8000, yap lobe-spawn 192 chunks vs stock contiguous 819.
+**`20260901T052718Z-fullNoCarve`**: partition ON + two-phase auto + carve OFF —
+fuse_ok, **−10.6%** MSPT (budget=300, async-save). Use carve OFF for lobe/pre-gap layouts;
+carve ON only for contiguous dynamic split (experimental).
+
+Run paired soak:
+Pre-gap cite remains valid: **`20260901T022139Z-gap1`** (−22.1%). Budget path:
+**`20260901T010804Z-budget`** (−22.6%).
 
 ## Perf soak (Next Wave)
 
-- `./scripts/smoke-folia-async-save.sh` — stamp `20260825T014032Z` (**missed ≤50% spike target**; load floor ~6 ms)
-- `./scripts/smoke-folia-scoreboard.sh` — SWMR live PASS (`EXPECT_FAIL=0`)
-- Operator knobs: `folia-async-chunk-save` / `folia-entity-tick-budget` / `folia-scoreboard-swmr` in `server.properties` (**defaults OFF**)
+- `./scripts/smoke-folia-async-save.sh` — stamp `20260825T014032Z`
+- Operator knobs in `server.properties` (**perf knobs default OFF**)
 - Profiles: `docs/YAP_FOLIA_SOAK.md`
+- Parallel shards: `YAP_FOLIA_SUBREGION_PARTITION=true ./scripts/soak-yap-folia.sh perf`
+- For steal tuning: set `scheduler: WORK_STEALING` in `folia-kernel/config/paper-global.yml`
