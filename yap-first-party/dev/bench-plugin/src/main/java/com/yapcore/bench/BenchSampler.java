@@ -131,9 +131,17 @@ final class BenchSampler {
         final int saveAllAt = Integer.getInteger("yap.bench.save_all_at", -1);
         final int[] saveFiredAt = {-1}; // sample index when save-all ran
         // Folia: sample on the spawn/hot-region thread — getAverageTickTime() is region-local.
-        // spawncollapse / heavypop load lives around chunk (0,0); global-region MSPT is near-empty.
+        // spawncollapse / heavypop load lives around chunk (0,0); dual-lobe uses ±lobe_offset.
+        final int lobes = Math.max(1, Integer.getInteger("yap.bench.lobes", 1));
+        final int lobeOffset = Math.max(16, Integer.getInteger("yap.bench.lobe_offset_chunks", 40));
+        final int stripHalf = Integer.getInteger("yap.bench.strip_half_width", 0);
+        final boolean multiSample = lobes >= 2 || stripHalf > 0;
         final int sampleCx = 0;
         final int sampleCz = 0;
+        final int sampleCxEast = stripHalf > 0 ? Math.max(8, stripHalf - 4) : (lobes >= 2 ? lobeOffset : 0);
+        final int sampleCxWest = -sampleCxEast;
+        final double[] lastEast = {Double.NaN};
+        final double[] lastWest = {Double.NaN};
         Runnable tick = () -> {
             int elapsed = sampleSec - left[0];
             if (saveAllAt >= 0 && saveFiredAt[0] < 0 && elapsed >= saveAllAt) {
@@ -156,7 +164,20 @@ final class BenchSampler {
                 }
             }
             try {
-                mspt.add(Bukkit.getServer().getAverageTickTime());
+                if (multiSample) {
+                    // Max of lobe MSPTs — cite the hotter parallel region (fair vs single-blob stock).
+                    double a = lastWest[0];
+                    double b = lastEast[0];
+                    if (!Double.isNaN(a) && !Double.isNaN(b)) {
+                        mspt.add(Math.max(a, b));
+                    } else if (!Double.isNaN(a)) {
+                        mspt.add(a);
+                    } else if (!Double.isNaN(b)) {
+                        mspt.add(b);
+                    }
+                } else {
+                    mspt.add(Bukkit.getServer().getAverageTickTime());
+                }
             } catch (UnsupportedOperationException uoe) {
                 // Not on a region thread somehow — skip sample
                 return;
@@ -207,7 +228,26 @@ final class BenchSampler {
                 }
             }
         };
-        if (YapSched.isRegionized()) {
+        if (YapSched.isRegionized() && multiSample) {
+            plugin.getLogger().info("MSPT sampler dual chunks (" + sampleCxWest + ",0) & ("
+                    + sampleCxEast + ",0) — max of region-local getAverageTickTime()");
+            YapSched.regionChunkTimer(plugin, world, sampleCxWest, sampleCz, () -> {
+                try {
+                    lastWest[0] = Bukkit.getServer().getAverageTickTime();
+                } catch (UnsupportedOperationException ignored) {
+                    // not owning thread
+                }
+            }, 20L, 20L);
+            YapSched.regionChunkTimer(plugin, world, sampleCxEast, sampleCz, () -> {
+                try {
+                    lastEast[0] = Bukkit.getServer().getAverageTickTime();
+                } catch (UnsupportedOperationException ignored) {
+                    // not owning thread
+                }
+            }, 20L, 20L);
+            // Global 1 Hz combiner — reads last lobe samples (plain doubles, no world access).
+            sampler[0] = YapSched.globalTimer(plugin, tick, 20L, 20L);
+        } else if (YapSched.isRegionized()) {
             plugin.getLogger().info("MSPT sampler on region chunk (" + sampleCx + "," + sampleCz
                     + ") — Folia region-local getAverageTickTime()");
             sampler[0] = YapSched.regionChunkTimer(plugin, world, sampleCx, sampleCz, tick, 20L, 20L);

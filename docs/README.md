@@ -7,8 +7,9 @@
 | Document | Description |
 |----------|-------------|
 | [**Quick Start**](QUICK_START.md) | **10-minute setup** — release zip or source |
+| [**Defaults**](DEFAULTS.md) | **Shipped first-boot configs** — `config/defaults/` + seed script |
 | [**Wiki**](WIKI.md) | Full operator doc index |
-| [**Licensing**](LICENSING.md) | MIT + third-party (Folia, Mojang EULA, packs) |
+| [**Licensing**](LICENSING.md) | MIT + third-party (YaP-Folia/Folia, Mojang EULA, packs) |
 | [**Commands**](COMMANDS.md) | Console + in-game command reference |
 | [**Permissions**](PERMISSIONS.md) | Permission nodes + YaPPerms rank ladder |
 | [**Releases**](RELEASES.md) | Downloadable zips, build commands |
@@ -16,17 +17,18 @@
 | [**PLAIN_ENGLISH**](PLAIN_ENGLISH.md) | **Non-tech overview** — what we are / what we’re into, in plain English |
 | [**FULL_RUNDOWN**](FULL_RUNDOWN.md) | **Full “what we are / what we do” rundown** |
 | [WHAT_WE_ARE](WHAT_WE_ARE.md) | Short identity / are we better Paper? |
-| [**COMPARE_ECOSYSTEM**](COMPARE_ECOSYSTEM.md) | **YaPcore vs Paper, Purpur, Pufferfish, Leaf, Folia** |
+| [**COMPARE_ECOSYSTEM**](COMPARE_ECOSYSTEM.md) | **YaPcore vs Paper, Purpur, Pufferfish, Leaf, Folia / YaP-Folia** |
+| [**FOLIA_FORK**](FOLIA_FORK.md) | **YaP-Folia** — our Folia 26.2 fork (product game jar) |
 | [**PDFs**](pdf/) | Printable PDFs of the identity + whitepaper + vehicles + web dashboard docs |
-| [VELOCITY](VELOCITY.md) | **Velocity proxy** — optional stand-in; Folia/Paper backends with modern forwarding |
+| [VELOCITY](VELOCITY.md) | **Velocity proxy** — optional stand-in; YaP-Folia backends with modern forwarding |
 | [**YAP_LINK_NATIVE**](YAP_LINK_NATIVE.md) | **YaP Link** phased Velocity-class parity matrix |
 | [**YAP_LINK**](YAP_LINK.md) | **YaP Link** — first-party native network proxy |
 | [**YAP_SCHED**](YAP_SCHED.md) | **YapSched** — Folia-safe scheduler helper for YaP plugins |
 | [**PLAYERDATA**](PLAYERDATA.md) | **Cross-server inv / claims / GUIs** — `yap-playerdata` |
 | [**YAPDB**](YAPDB.md) | **Shared MariaDB Hikari pool** — `yap-db` for any SQL plugin |
 | [**MARIADB**](MARIADB.md) | **Easy MariaDB** — Docker package for Linux + Windows (single & multi) |
-| [YAPENGINE_16THREAD](YAPENGINE_16THREAD.md) | **YapEngine chassis** — edge/I/O thread roles (v2.0); Folia owns game tick |
-| [BENCH_VS_FOLIA](BENCH_VS_FOLIA.md) | **MSPT product gate** — stock Folia vs YaP Folia chassis |
+| [YAPENGINE_16THREAD](YAPENGINE_16THREAD.md) | **YapEngine chassis** — edge/I/O thread roles (v2.0); YaP-Folia owns game tick |
+| [BENCH_VS_FOLIA](BENCH_VS_FOLIA.md) | **MSPT product gate** — stock Folia vs YaP-Folia |
 | [PERF_AND_LAYOUT](PERF_AND_LAYOUT.md) | Performance layout & folder discipline |
 | [ZGC_NUMA](ZGC_NUMA.md) | Generational ZGC + NUMA launch flags |
 | [NETWORKING](NETWORKING.md) | Domain / public ports / boot banner (`yapcoremc.yaplabs.us`) |
@@ -40,15 +42,15 @@
 | [NGINX_AND_LOCALHOST](NGINX_AND_LOCALHOST.md) | Same-PC joins + nginx |
 | [**WINDOWS**](WINDOWS.md) | **Windows parity** — launchers, Paperclip, nginx stream |
 | [CLOUDFLARE_AND_NGINX](CLOUDFLARE_AND_NGINX.md) | **yapcoremc.yaplabs.us** + Cloudflare DNS / SSL |
-| [PLUGINS](PLUGINS.md) | Plugin API — Folia/Paper + YaP jars in one `plugins/` folder |
-| [PLUGIN_COMPAT](PLUGIN_COMPAT.md) | Folia product path + unified `plugins/`; Paper path legacy |
+| [PLUGINS](PLUGINS.md) | Plugin API — YaP-Folia + YaP jars in one `plugins/` folder |
+| [PLUGIN_COMPAT](PLUGIN_COMPAT.md) | YaP-Folia product path + unified `plugins/`; Paper path legacy |
 | [**PLUGIN_BACKCOMPAT**](PLUGIN_BACKCOMPAT.md) | **1.20–1.21 jars on 26.2** — Tier A + light ASM rewrite |
 | [**PREGEN**](PREGEN.md) | **Built-in chunk pregen** (Chunky-class) — `/yappregen` |
 | [**STACKER**](STACKER.md) | **PDC mob/item/spawner stacker** (no NMS) — `/yapstacker` |
 | [**PLACEHOLDERAPI**](PLACEHOLDERAPI.md) | **Built-in clip-compatible PlaceholderAPI** (no HelpChat jar) |
-| [**PAPER_API_COVERAGE**](PAPER_API_COVERAGE.md) | Folia APIs on Folia path; complete Paper API on legacy Paper path |
+| [**PAPER_API_COVERAGE**](PAPER_API_COVERAGE.md) | Folia APIs on YaP-Folia path; complete Paper API on legacy Paper path |
 | [**WEB_DASHBOARD**](WEB_DASHBOARD.md) | **Headless browser control** — start/stop, console, packs, vehicles |
-| [**VEHICLES**](VEHICLES.md) | **Real vehicle API** (not minecarts) — Folia/Paper plugin + author guide |
+| [**VEHICLES**](VEHICLES.md) | **Real vehicle API** (not minecarts) — YaP-Folia plugin + author guide |
 | [TUNE](TUNE.md) | **Central config hub** + Purpur-class gameplay knobs module |
 | [COMMANDS](COMMANDS.md) | Vanilla / Paper / plugin commands from GUI + in-game |
 | [**PERMISSIONS**](PERMISSIONS.md) | **Permission nodes** + YaPPerms rank ladder |
@@ -64,6 +66,8 @@
 | Page | Description |
 |------|-------------|
 | [MMO_PHASES.md](MMO_PHASES.md) | M0–M7 milestones + smoke checklist |
+| [MMO_QUESTS.md](MMO_QUESTS.md) | **100-quest compendium** — kits, skills, bosses, ranks |
+| [MMO_CONTENT.md](MMO_CONTENT.md) | Quest/boss/recipe packs |
 | [MMO_SKILLS.md](MMO_SKILLS.md) | 13 RS skills |
 | [MMO_COMBAT.md](MMO_COMBAT.md) | Custom combat |
 | [MMO_ABILITIES.md](MMO_ABILITIES.md) | 233 combat abilities |

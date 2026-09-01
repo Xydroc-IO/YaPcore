@@ -1,18 +1,20 @@
 # Plugin API Guide
 
-YaPcore supports **three** extension kinds: Paper/Spigot plugins, YaP plugins, and
+YaPcore supports **three** extension kinds: Folia-aware / Spigot-style plugins, YaP plugins, and
 **modules**. See [MODULES_AND_API.md](MODULES_AND_API.md) for modules + coverage.
 Compatibility matrix: [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md).
+
+**Product game:** **YaP-Folia** (`game-authority=folia`, `folia-jar-source=build`) — not stock Folia, not Paper. See [FOLIA_FORK.md](FOLIA_FORK.md).
 
 **One folder:** drop first-party Folia-native jars into **`plugins/`**.
 `folia-kernel/plugins` (and legacy `paper-kernel/plugins`) symlink to that folder.
 
-Product path is **`game-authority=folia`**. First-party plugins use [`YapSched`](YAP_SCHED.md)
+First-party plugins use [`YapSched`](YAP_SCHED.md)
 (Folia `GlobalRegionScheduler` / entity / region affinity) and declare
-`folia-supported: true`. Stock Paper jars are **unsupported**.
+`folia-supported: true`. Stock Paper jars are **unsupported** on the product path.
 
 `yap-spatial-tick.jar` is **not** a product plugin — Paper Phase 3 legacy only
-(benches). Folia refuses it (`folia-supported: false`).
+(benches). YaP-Folia refuses it (`folia-supported: false`).
 
 ```bash
 cp MyPlugin.jar plugins/
@@ -22,7 +24,7 @@ cp MyPlugin.jar plugins/
 
 ## 1. Legacy Spigot / Paper / Purpur (`plugin.yml`)
 
-### On Folia (default — production path)
+### On YaP-Folia (default — production path)
 
 Put first-party jars in **`plugins/`**. They must declare `folia-supported: true`
 and schedule via `com.yapcore.sched.YapSched` (or Folia region APIs directly).
@@ -34,10 +36,10 @@ Optional smoke: `./scripts/smoke-folia-plugins.sh`
 Put jars in **`plugins/`**. Within reason, anything that works on stock
 Paper 26.2 works here when `game-authority=paper`. Folia-only plugins may not.
 
-### YaP Compatibility Bridge (non-Paper authority only)
+### YaP Compatibility Bridge (non-game authority only)
 
-When Paper is not game authority, lightweight `plugin.yml` jars can load through
-the Compatibility Bridge (soft-fail). Prefer Paper authority for production plugins.
+When Paper/YaP-Folia is not game authority, lightweight `plugin.yml` jars can load through
+the Compatibility Bridge (soft-fail). Prefer Folia authority for production plugins.
 
 | Bukkit call (facade) | YaPcore routing |
 |----------------------|-----------------|
@@ -77,33 +79,23 @@ description: All-in-one store (GUI + economy + DB) without lag
 Same pools as YaP plugins; intended for **optional fine-tuning** operators add
 like mods. See [MODULES_AND_API.md](MODULES_AND_API.md).
 
-## 4. Vehicles (Paper plugin + API)
+## 4. Vehicles (plugin + API)
 
 Real vehicle mechanics for plugin authors (cars / bikes / custom chassis — **not**
 minecarts or boats): [VEHICLES.md](VEHICLES.md). Soft-depend `YaPVehicles` and
-load `VehicleAPI` from `ServicesManager`.
+load `VehicleAPI` from `ServicesManager`. Runs on **YaP-Folia** (`folia-supported: true`).
 
-**Shipped by default (CORE + NETWORK)** on `gradle shadowJar` / `assembleRelease`:
-`resourcepacks/yapcore-default.zip` (Faithful), **`plugins/yap-placeholderapi.jar`**
-(clip-compatible PlaceholderAPI — [PLACEHOLDERAPI.md](PLACEHOLDERAPI.md)),
-**`plugins/yap-pregen.jar`** ([PREGEN.md](PREGEN.md)),
-**`plugins/yap-plugin-compat.jar`** ([PLUGIN_BACKCOMPAT.md](PLUGIN_BACKCOMPAT.md)),
-**`plugins/yap-db.jar`** (shared MariaDB Hikari — [YAPDB.md](YAPDB.md) / [MARIADB.md](MARIADB.md)),
-**`plugins/yap-perms.jar`** (native permissions — groups/tracks/prefixes),
-**`plugins/yap-playerdata.jar`** (cross-server data, offline `/login`, modular features — [PLAYERDATA.md](PLAYERDATA.md)),
-**`plugins/yap-moderation.jar`** (ban/mute/warn/kick/history),
-**`plugins/yap-essentials.jar`** (Essentials-class QoL commands),
-**`plugins/yap-packs.jar`**, **`plugins/yap-chat.jar`**, **`plugins/yap-tab.jar`** (header/footer/sidebar/boss bar),
-**`plugins/yap-discord.jar`** (webhooks + Discord↔MC inbound),
-**`plugins/yap-protect.jar`**, **`plugins/yap-world.jar`**, **`plugins/yap-regions.jar`**, **`plugins/yap-guard.jar`**, **`plugins/yap-map.jar`**, **`plugins/yap-npcs.jar`**,
-and **`plugins/yap-floodgate.jar`** ([VELOCITY.md](VELOCITY.md)).
+## Shipped jars
+
+**CORE + NETWORK (default)** on `gradle shadowJar` / `assembleRelease`:
+
+`yap-placeholderapi`, `yap-pregen`, `yap-plugin-compat`, `yap-db`, `yap-perms`,
+`yap-playerdata`, `yap-moderation`, `yap-essentials`, `yap-packs`, `yap-chat`, `yap-tab`,
+`yap-discord`, `yap-protect`, `yap-world`, `yap-regions`, `yap-guard`, `yap-lagguard`,
+`yap-map`, `yap-npcs`, `yap-factions`, `yap-floodgate`, `yap-bedrock-ui`, `yap-folia-bridge`.
 
 **GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `-PyapGameplay=true`):
-`plugins/yap-vehicles.jar`, `modules/yap-vehicles-module.jar`,
-**`plugins/yap-stacker.jar`** ([STACKER.md](STACKER.md)),
-**`plugins/yap-gameplay-knobs.jar`**, vehicles + **abilities** overlays in the default pack.
-
-**MMO stack** (same gameplay tier — see [MMO_PHASES.md](MMO_PHASES.md)):
+`yap-vehicles`, `yap-stacker`, `yap-gameplay-knobs`, plus MMO:
 
 | Jar | Plugin |
 |-----|--------|
@@ -111,14 +103,11 @@ and **`plugins/yap-floodgate.jar`** ([VELOCITY.md](VELOCITY.md)).
 | `yap-combat.jar` | YaPCombat — custom combat |
 | `yap-crafting.jar` | YaPCrafting — recipes |
 | `yap-mmo-content.jar` | YaPMmoContent — quests/bosses |
-| `yap-abilities.jar` | YaPAbilities — 233 combat abilities |
+| `yap-abilities.jar` | YaPAbilities — combat abilities |
 | `yap-mmo-bedrock.jar` | YaPMmoBedrock — Bedrock forms |
-| `yap-bedrock-ui.jar` | YaPBedrockUI — Bedrock UI bridge |
 | `yap-mechanics.jar` | YaPMechanics — stamina/nodes |
 | `yap-games.jar` | YaPGames — minigames |
 | `yap-guilds.jar` | YaPGuilds — guilds |
-
-API jars in `plugins/` or release `api/`: `yap-mmo-api.jar`, `yap-abilities-api.jar`, `yap-bedrock-ui-api.jar`, …
 
 SQL plugin authors: `compileOnly(project(":yap-db-api"))` and soft-depend `YaPDB`
 ([YAPDB.md](YAPDB.md)). Ranks: [PERMISSIONS.md](PERMISSIONS.md).

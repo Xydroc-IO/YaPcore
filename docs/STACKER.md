@@ -1,13 +1,14 @@
 # YaP Stacker
 
-First-party **VortexStacker-class** mob / item / spawner stacker for YaPcore / Paper 26.2.
+First-party **VortexStacker-class** mob / item / spawner stacker for YaPcore /
+**YaP-Folia 26.2** (`folia-supported: true`).
 Shipped as `plugins/yap-stacker.jar` (**GAMEPLAY** opt-in:
 `gradle installGameplayDefaults` or `assembleRelease -PyapGameplay=true`).
 
 **Design:** stack sizes live in Bukkit **PersistentDataContainer** (PDC) on entities,
-item meta, and spawner tile states — **no NMS**, so it stays stable across Paper updates.
+item meta, and spawner tile states — **no NMS**, so it stays stable across Folia updates.
 
-**Not a YaP `modules/` jar.** Runtime is a normal Paper plugin (`plugin.yml`). A thin
+**Not a YaP `modules/` jar.** Runtime is a normal Folia-aware plugin (`plugin.yml`). A thin
 `provides: [stacker]` packaging module is optional later; v1 does not need one.
 
 ## Commands

@@ -91,9 +91,66 @@ plugin samples on the hot region at chunk `(0,0)` via `YapSched.regionChunkTimer
 
 | Stamp | Folia MSPT | YaP-Folia plain | Delta | Notes |
 |-------|-----------:|----------------:|------:|-------|
-| `20260824T234919Z` | **25.2466** | **21.4509** | **−15.0%** | **CITEABLE** — region MSPT @ (0,0); 8k TNT / 1024 hoppers / 2500 mobs; JVM 4G/8G; fuse_ok both; YaP knobs: `-Dyap.folia.entity-tick-budget=300` (Mob AI only; TNT always ticks), `-Dyap.folia.async-chunk-save=true`. Files: `bench/results/20260824T234919Z-spawncollapse-{folia,yapfolia}.json` |
+| `20260901T010804Z-budget` | **26.5446** | **20.5415** | **−22.6%** | **CITEABLE** — 8k TNT / 1024 hoppers / 2500 mobs; fuse_ok both; knobs: `entity-tick-budget=300`, `async-chunk-save=true`. Files: `bench/results/20260901T010804Z-budget-spawncollapse-{folia,yapfolia}.json` |
+| `20260901T075602Z-fullstack` (1/3) | **30.3333** | **23.9128** | **−21.2%** | Full-stack phase 1: budget+async; fuse_ok; chunks 819→819 |
+| `20260901T075602Z-fullstack` (2/3) | **30.3671** | **23.3475** | **−23.1%** | + microtick 8ms + partition, carve OFF, lobe; fuse_ok |
+| `20260901T075602Z-fullstack` (3/3) | **28.9300** | **23.9174** | **−17.3%** | Contiguous carve+partition; fuse_ok; experimental |
+| `20260824T234919Z` | **25.2466** | **21.4509** | **−15.0%** | Prior citeable (same load profile). |
 
-Reproduce:
+Folia-fork peers: see [FOLIA_FORKS_COMPARE.md](FOLIA_FORKS_COMPARE.md). Canvas has no citeable spawncollapse three-way yet; Kaiiju skipped on 26.2.
+
+### Parallel sub-regions + budget (P1)
+
+| Stamp | Folia MSPT | YaP-Folia | Delta | fuse_ok | Notes |
+|-------|-----------:|----------:|------:|:-------:|-------|
+| `20260901T052718Z-fullNoCarve` | 4.15 | 3.71 | **−10.6%** | both | partition ON, carve OFF, two-phase lobe auto, budget=300 |
+
+Reproduce P1:
+
+```bash
+YAP_BENCH_COMPETITORS=folia,yapfolia \
+YAP_FOLIA_ENTITY_TICK_BUDGET=300 YAP_FOLIA_ASYNC_CHUNK_SAVE=true \
+YAP_FOLIA_SUBREGION_PARTITION=true YAP_FOLIA_SUBREGION_CARVE=false \
+./scripts/bench/run-vs-folia.sh spawncollapse 50
+```
+
+### Lobe parallel (partition OFF)
+
+| Stamp | Folia MSPT | YaP-Folia | Delta | Notes |
+|-------|-----------:|----------:|------:|-------|
+| `20260901T050321Z-carveFair12` | 27.83 | 22.89 | **−17.7%** | two-phase lobe, budget=300, fuse_ok |
+
+| `20260901T053935Z-p1` | 3.89 | 3.63 | **−6.8%** | both | P1: partition ON, carve OFF, lobe auto |
+
+### Dynamic contiguous carve (P3)
+
+| Stamp | Folia MSPT | YaP-Folia | fuse_ok (yap) | Notes |
+|-------|-----------:|----------:|:-------------:|-------|
+| `20260901T054520Z-p3` | 3.60 | 3.78 | **yes** | contiguous strip both sides, carve+partition, 819 chunks stable, fuse_drop=1001 |
+
+MSPT delta not citeable at this load level; **stability gate passes** (first contiguous carve fuse_ok).
+
+### Microtick A/B (P2)
+
+| Stamp | microtick | MSPT | fuse_ok |
+|-------|-----------|-----:|:-------:|
+| `20260901T054230Z-p2a` | 0 | 2.53 | yes |
+| `20260901T054353Z-p2b` | 8ms | 2.47 | yes |
+
+Microtick adds marginal headroom at this load; use as optional tune layer.
+
+Reproduce P3:
+
+```bash
+YAP_BENCH_CONTIGUOUS_CARVE=true \
+YAP_FOLIA_SUBREGION_PARTITION=true YAP_FOLIA_SUBREGION_CARVE=true \
+YAP_FOLIA_ENTITY_TICK_BUDGET=300 \
+./scripts/bench/run-vs-folia.sh spawncollapse 50
+```
+
+Warmup auto-extends to 60s; partition delay 800 ticks.
+
+Reproduce budget cite:
 
 ```bash
 YAP_BENCH_SHUFFLE=0 YAP_BENCH_COMPETITORS=folia,yapfolia \

@@ -28,6 +28,15 @@ ENTITIES="${YAP_BENCH_ENTITIES:-}"
 HOPPERS="${YAP_BENCH_HOPPERS:-}"
 HEAVY_HOPPERS="${YAP_BENCH_HEAVY_HOPPERS:-}"
 MOBS="${YAP_BENCH_MOBS:-}"
+LOBES="${YAP_BENCH_LOBES:-}"
+LOBES_OFFSET="${YAP_BENCH_LOBE_OFFSET_CHUNKS:-}"
+STRIP_HALF="${YAP_BENCH_STRIP_HALF_WIDTH:-}"
+STRIP_Z="${YAP_BENCH_STRIP_Z_RADIUS:-}"
+STRIP_GAP="${YAP_BENCH_STRIP_GAP_HALF:-}"
+STRIP_TWO_PHASE="${YAP_BENCH_STRIP_TWO_PHASE:-}"
+STRIP_LOBE_GAP="${YAP_BENCH_STRIP_LOBE_GAP_HALF:-}"
+CONTIGUOUS_CARVE="${YAP_BENCH_CONTIGUOUS_CARVE:-}"
+PARTITION_DELAY="${YAP_FOLIA_SUBREGION_PARTITION_DELAY_TICKS:-}"
 COMPETITORS_CSV="${YAP_BENCH_COMPETITORS:-folia,canvas,yapfolia,yapcore}"
 SHUFFLE="${YAP_BENCH_SHUFFLE:-1}"
 STAMP="${YAP_BENCH_STAMP:-$(date -u +%Y%m%dT%H%M%SZ)}"
@@ -146,14 +155,59 @@ case "$YAP_JAR" in /*) ;; *) YAP_JAR="$ROOT/$YAP_JAR" ;; esac
 STOCK_FOLIA="$ROOT/lib/folia-${VER}.jar"
 STOCK_CANVAS="$ROOT/lib/canvas-${VER}.jar"
 YAP_FOLIA="$ROOT/lib/yap-folia-${VER}.jar"
-# Phase 3 knobs (YaP-Folia only) — stock Folia ignores unknown -D props
+# Phase 3–5 knobs (YaP-Folia only) — stock Folia ignores unknown -D props
 ENTITY_TICK_BUDGET="${YAP_FOLIA_ENTITY_TICK_BUDGET:-}"
+MICROTICK_BUDGET="${YAP_FOLIA_MICROTICK_BUDGET_MS:-}"
 ASYNC_CHUNK_SAVE="${YAP_FOLIA_ASYNC_CHUNK_SAVE:-}"
+SUBREGION_PARTITION="${YAP_FOLIA_SUBREGION_PARTITION:-}"
+SUBREGION_SHARDS="${YAP_FOLIA_SUBREGION_SHARDS:-}"
+SUBREGION_MSPT="${YAP_FOLIA_SUBREGION_MSPT_THRESHOLD:-}"
+SUBREGION_MIN_SECTIONS="${YAP_FOLIA_SUBREGION_MIN_SECTIONS:-}"
+SUBREGION_MIN_ENTITIES="${YAP_FOLIA_SUBREGION_MIN_ENTITIES:-}"
+SUBREGION_COALESCE_QUIET="${YAP_FOLIA_SUBREGION_COALESCE_QUIET_TICKS:-}"
+SUBREGION_COALESCE_MSPT="${YAP_FOLIA_SUBREGION_COALESCE_MSPT:-}"
+SUBREGION_COALESCE_TICKS="${YAP_FOLIA_SUBREGION_COALESCE_TICKS:-}"
+GRID_EXPONENT="${YAP_FOLIA_GRID_EXPONENT:-}"
 if [ "$SCENARIO" = "spawncollapse" ] && [ -z "$ENTITY_TICK_BUDGET" ]; then
   ENTITY_TICK_BUDGET="${YAP_FOLIA_ENTITY_TICK_BUDGET:-400}"
 fi
 if [ -z "$ASYNC_CHUNK_SAVE" ]; then
   ASYNC_CHUNK_SAVE="${YAP_FOLIA_ASYNC_CHUNK_SAVE:-true}"
+fi
+# Citeable / full-stack load (8k TNT strip — matches 20260901T010804Z-budget profile).
+# Applied after scenario defaults so it overrides spawncollapse's lighter 800-TNT default.
+if [ "${YAP_BENCH_CITE_LOAD:-}" = "1" ] || [ "${YAP_BENCH_CITE_LOAD:-}" = "true" ] \
+    || [ "${YAP_BENCH_FULL_STACK:-}" = "1" ] || [ "${YAP_BENCH_FULL_STACK:-}" = "true" ]; then
+  ENTITIES="${YAP_BENCH_ENTITIES:-8000}"
+  HOPPERS="${YAP_BENCH_HOPPERS:-1024}"
+  MOBS="${YAP_BENCH_MOBS:-2500}"
+  STRIP_HALF="${YAP_BENCH_STRIP_HALF_WIDTH:-56}"
+  GAME_XMS="${YAP_BENCH_GAME_XMS:-4G}"
+  GAME_XMX="${YAP_BENCH_GAME_XMX:-8G}"
+  WARMUP="${YAP_BENCH_WARMUP:-25}"
+fi
+# Full-stack YaP knobs (budget + async + microtick + partition; carve off for lobe layout).
+if [ "${YAP_BENCH_FULL_STACK:-}" = "1" ] || [ "${YAP_BENCH_FULL_STACK:-}" = "true" ]; then
+  ENTITY_TICK_BUDGET="${ENTITY_TICK_BUDGET:-300}"
+  ASYNC_CHUNK_SAVE="${ASYNC_CHUNK_SAVE:-true}"
+  MICROTICK_BUDGET="${MICROTICK_BUDGET:-8}"
+  SUBREGION_PARTITION="${SUBREGION_PARTITION:-true}"
+  YAP_FOLIA_SUBREGION_CARVE="${YAP_FOLIA_SUBREGION_CARVE:-false}"
+fi
+# Parallel sub-region benches need Folia-safe lobe layout on YaP side (stock stays contiguous).
+if [ "$SCENARIO" = "spawncollapse" ] && [ "${SUBREGION_PARTITION}" = "true" ]; then
+  if [ -z "$STRIP_HALF" ]; then STRIP_HALF="${YAP_BENCH_STRIP_HALF_WIDTH:-56}"; fi
+  if [ "$CONTIGUOUS_CARVE" = "true" ] || [ "$CONTIGUOUS_CARVE" = "1" ]; then
+    # P3: stock contiguous strip vs YaP dynamic carve+partition (long warmup for carve settle).
+    STRIP_TWO_PHASE=false
+    STRIP_LOBE_GAP=""
+    if [ -z "${YAP_BENCH_WARMUP:-}" ]; then WARMUP=60; fi
+    if [ -z "$PARTITION_DELAY" ]; then PARTITION_DELAY=800; fi
+  elif [ -z "$STRIP_TWO_PHASE" ] && [ -z "$STRIP_LOBE_GAP" ]; then
+    STRIP_TWO_PHASE="${YAP_BENCH_STRIP_TWO_PHASE:-true}"
+    STRIP_LOBE_GAP="${YAP_BENCH_STRIP_LOBE_GAP_HALF:-24}"
+    if [ -z "$PARTITION_DELAY" ]; then PARTITION_DELAY=300; fi
+  fi
 fi
 
 write_server_props() {
@@ -171,8 +225,8 @@ online-mode=false
 max-players=$maxp
 server-port=$port
 level-seed=yap-bench-1
-view-distance=10
-simulation-distance=12
+view-distance=${YAP_BENCH_VIEW_DISTANCE:-10}
+simulation-distance=${YAP_BENCH_SIM_DISTANCE:-12}
 spawn-monsters=false
 player-idle-timeout=0
 network-compression-threshold=-1
@@ -257,6 +311,11 @@ bench_jvm_extra() {
   [[ -n "$HOPPERS" ]] && extra+=(-Dyap.bench.hoppers="$HOPPERS")
     [[ -n "$HEAVY_HOPPERS" ]] && extra+=(-Dyap.bench.heavy_hoppers="$HEAVY_HOPPERS")
     [[ -n "$MOBS" ]] && extra+=(-Dyap.bench.mobs="$MOBS")
+    [[ -n "$LOBES" ]] && extra+=(-Dyap.bench.lobes="$LOBES")
+    [[ -n "$LOBES_OFFSET" ]] && extra+=(-Dyap.bench.lobe_offset_chunks="$LOBES_OFFSET")
+    [[ -n "$STRIP_HALF" ]] && extra+=(-Dyap.bench.strip_half_width="$STRIP_HALF")
+    [[ -n "$STRIP_Z" ]] && extra+=(-Dyap.bench.strip_z_radius="$STRIP_Z")
+    [[ -n "$STRIP_GAP" ]] && extra+=(-Dyap.bench.strip_gap_half="$STRIP_GAP")
     extra+=(-Dyap.bench.root="$ROOT")
   if [ "$NEEDS_BOTS" = "1" ]; then
     extra+=(
@@ -268,7 +327,37 @@ bench_jvm_extra() {
   fi
   if [ "$yap_knobs" = "1" ]; then
     [[ -n "$ENTITY_TICK_BUDGET" ]] && extra+=(-Dyap.folia.entity-tick-budget="$ENTITY_TICK_BUDGET")
+    [[ -n "$MICROTICK_BUDGET" ]] && extra+=(-Dyap.folia.microtick-budget-ms="$MICROTICK_BUDGET")
     [[ -n "$ASYNC_CHUNK_SAVE" ]] && extra+=(-Dyap.folia.async-chunk-save="$ASYNC_CHUNK_SAVE")
+    if [ "${SUBREGION_PARTITION}" = "true" ]; then
+      extra+=(-Dyap.folia.subregion-partition=true)
+      [[ -n "$SUBREGION_SHARDS" ]] && extra+=(-Dyap.folia.subregion-shards="$SUBREGION_SHARDS")
+      [[ -n "$SUBREGION_MSPT" ]] && extra+=(-Dyap.folia.subregion-mspt-threshold="$SUBREGION_MSPT")
+      [[ -n "$SUBREGION_MIN_SECTIONS" ]] && extra+=(-Dyap.folia.subregion-min-sections="$SUBREGION_MIN_SECTIONS")
+      [[ -n "$SUBREGION_MIN_ENTITIES" ]] && extra+=(-Dyap.folia.subregion-min-entities="$SUBREGION_MIN_ENTITIES")
+      [[ -n "$SUBREGION_COALESCE_QUIET" ]] && extra+=(-Dyap.folia.subregion-coalesce-quiet-ticks="$SUBREGION_COALESCE_QUIET")
+      [[ -n "$SUBREGION_COALESCE_MSPT" ]] && extra+=(-Dyap.folia.subregion-coalesce-mspt="$SUBREGION_COALESCE_MSPT")
+      [[ -n "$SUBREGION_COALESCE_TICKS" ]] && extra+=(-Dyap.folia.subregion-coalesce-ticks="$SUBREGION_COALESCE_TICKS")
+      # Lobe/pre-gap: carve OFF unless explicitly set or contiguous_carve bench mode.
+      if [ -n "${YAP_FOLIA_SUBREGION_CARVE:-}" ]; then
+        extra+=(-Dyap.folia.subregion-carve="$YAP_FOLIA_SUBREGION_CARVE")
+      elif [ "$CONTIGUOUS_CARVE" != "true" ] && [ "$CONTIGUOUS_CARVE" != "1" ]; then
+        extra+=(-Dyap.folia.subregion-carve=false)
+      fi
+      if [ -n "${YAP_FOLIA_SUBREGION_CARVE_HALO:-}" ]; then
+        extra+=(-Dyap.folia.subregion-carve-halo-sections="$YAP_FOLIA_SUBREGION_CARVE_HALO")
+      fi
+      [[ -n "$PARTITION_DELAY" ]] && extra+=(-Dyap.folia.subregion-partition-delay-ticks="$PARTITION_DELAY")
+    fi
+    if [ "$CONTIGUOUS_CARVE" = "true" ] || [ "$CONTIGUOUS_CARVE" = "1" ]; then
+      extra+=(-Dyap.bench.contiguous_carve=true)
+    fi
+    # YaP-only bench layout: lobe spawn for fair parallel vs stock contiguous strip.
+    [[ -n "$STRIP_LOBE_GAP" ]] && extra+=(-Dyap.bench.strip_gap_half="$STRIP_LOBE_GAP")
+    if [ "$STRIP_TWO_PHASE" = "true" ] || [ "$STRIP_TWO_PHASE" = "1" ]; then
+      extra+=(-Dyap.bench.strip_two_phase=true)
+    fi
+    [[ -n "$GRID_EXPONENT" ]] && extra+=(-Dyap.folia.grid-exponent="$GRID_EXPONENT")
   fi
   printf '%s\0' "${extra[@]}"
 }
@@ -483,7 +572,7 @@ EOF
   rm -rf "$work/folia-kernel/world" "$work/folia-kernel/world_nether" "$work/folia-kernel/world_the_end"
 
   echo "=== yapcore (YaP Folia chassis) scenario=$SCENARIO → $out ==="
-  echo "    knobs: entity-tick-budget=${ENTITY_TICK_BUDGET:-off} async-chunk-save=${ASYNC_CHUNK_SAVE:-off}"
+  echo "    knobs: entity-tick-budget=${ENTITY_TICK_BUDGET:-off} async-chunk-save=${ASYNC_CHUNK_SAVE:-off} subregion=${SUBREGION_PARTITION:-off} grid=${GRID_EXPONENT:-default}"
   local botpid=""
   if [ "$NEEDS_BOTS" = "1" ]; then
     start_bots "$port" "$botlog"
@@ -494,7 +583,7 @@ EOF
     cd "$work"
     "$JAVA_BIN" -Xms"$CHASSIS_XMS" -Xmx"$CHASSIS_XMX" \
       -Dyap.bench.root="$ROOT" \
-      -Dyapcore.home="$ROOT" \
+      -Dyapcore.home="$work" \
       -Dyap.bench.scenario="$SCENARIO" \
       -Dyap.bench.seconds="$SECONDS_N" \
       -Dyap.bench.warmup="$WARMUP" \
@@ -524,7 +613,7 @@ run_yapfolia_plain() {
   local port=25683
   prepare_plain "$work" "$YAP_FOLIA" "$port" "YaP MSPT bench yap-folia-plain"
   echo "=== yapfolia (plain) scenario=$SCENARIO → $out ==="
-  echo "    knobs: entity-tick-budget=${ENTITY_TICK_BUDGET:-off} async-chunk-save=${ASYNC_CHUNK_SAVE:-off}"
+  echo "    knobs: entity-tick-budget=${ENTITY_TICK_BUDGET:-off} async-chunk-save=${ASYNC_CHUNK_SAVE:-off} subregion=${SUBREGION_PARTITION:-off} grid=${GRID_EXPONENT:-default}"
   mapfile -d '' -t extra < <(bench_jvm_extra "$port" 1)
   (
     cd "$work"

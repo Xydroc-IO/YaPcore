@@ -97,8 +97,10 @@ Requires `link-embed=false` (default).
 
 ## Bedrock / Geyser
 
-Phase 4 — Bedrock UDP routing at Link. Until then, use backend dual-stack or stock Velocity
-as a stand-in for BE-heavy networks.
+Bedrock UDP edge at Link is **shipped** (`BedrockUdpForwarder`, phase 4/6) but
+**off by default** (`bedrock-enabled=false` in `link.properties`). For single-box
+crossplay, prefer chassis dual-stack on the YaP-Folia backend. For BE-heavy multi-backend
+networks, enable Link Bedrock bind or use stock Velocity as a stand-in.
 
 ## Related
 

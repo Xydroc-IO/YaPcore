@@ -3,11 +3,13 @@
 **Not minecarts or boats.** YaP Vehicles gives plugin authors a **buildable chassis**
 plus **non-vanilla physics** (traction, slip, slopes, yaw inertia, fuel, damage).
 
+Runs on the product path: **YaP-Folia** (`folia-supported: true`). See [FOLIA_FORK.md](FOLIA_FORK.md).
+
 | Piece | Where |
 |-------|--------|
-| Runtime + API | `plugins/yap-vehicles.jar` (Paper plugin **YaPVehicles**) |
+| Runtime + API | `plugins/yap-vehicles.jar` (Folia-aware plugin **YaPVehicles**) |
 | Operator packaging | `modules/yap-vehicles-module.jar` (`provides: [vehicles]`) |
-| Example author plugin | `examples/yap-vehicle-addon/` |
+| Example author plugin | `examples/yap-vehicle-addon/`
 
 ## Operator install
 

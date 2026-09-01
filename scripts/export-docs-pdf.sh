@@ -1,32 +1,49 @@
 #!/usr/bin/env bash
-# Export identity + whitepaper Markdown docs to docs/pdf/*.pdf
+# Export identity + ops + whitepaper Markdown docs to docs/pdf/*.pdf
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/docs/pdf"
 mkdir -p "$OUT"
 
-python3 << PY
+# stem|relative path from repo root (docs/… or docs/whitepaper/…)
+DOC_LIST=(
+  "PLAIN_ENGLISH|docs/PLAIN_ENGLISH.md"
+  "WHAT_WE_ARE|docs/WHAT_WE_ARE.md"
+  "FULL_RUNDOWN|docs/FULL_RUNDOWN.md"
+  "COMPARE_ECOSYSTEM|docs/COMPARE_ECOSYSTEM.md"
+  "FOLIA_FORKS_COMPARE|docs/FOLIA_FORKS_COMPARE.md"
+  "COMPARISON_BRIEF|docs/COMPARISON_BRIEF.md"
+  "QUICK_START|docs/QUICK_START.md"
+  "DEFAULTS|docs/DEFAULTS.md"
+  "RELEASES|docs/RELEASES.md"
+  "PLUGINS|docs/PLUGINS.md"
+  "YAPDB|docs/YAPDB.md"
+  "MARIADB|docs/MARIADB.md"
+  "PLAYERDATA|docs/PLAYERDATA.md"
+  "EDGE_HARDEN|docs/EDGE_HARDEN.md"
+  "LAGGUARD|docs/LAGGUARD.md"
+  "FOLIA_FORK|docs/FOLIA_FORK.md"
+  "YAP_LINK|docs/YAP_LINK.md"
+  "YAP_LINK_NATIVE|docs/YAP_LINK_NATIVE.md"
+  "VIA_GEYSER_PARITY|docs/VIA_GEYSER_PARITY.md"
+  "VEHICLES|docs/VEHICLES.md"
+  "STACKER|docs/STACKER.md"
+  "WEB_DASHBOARD|docs/WEB_DASHBOARD.md"
+  "YAPCORE_WHITEPAPER|docs/whitepaper/YAPCORE_WHITEPAPER.md"
+  "YAPCORE_WHITEPAPER_PLAIN_ENGLISH|docs/whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md"
+)
+
+export ROOT OUT
+DOC_LIST_EXPORT="$(printf '%s\n' "${DOC_LIST[@]}")"
+export DOC_LIST_EXPORT
+
+python3 <<'PY'
 from pathlib import Path
 import markdown
+import os
 
-ROOT = Path("$ROOT")
-OUT = Path("$OUT")
-
-files = [
-    ROOT / "docs" / "PLAIN_ENGLISH.md",
-    ROOT / "docs" / "WHAT_WE_ARE.md",
-    ROOT / "docs" / "FULL_RUNDOWN.md",
-    ROOT / "docs" / "COMPARE_ECOSYSTEM.md",
-    ROOT / "docs" / "COMPARISON_BRIEF.md",
-    ROOT / "docs" / "YAP_LINK.md",
-    ROOT / "docs" / "YAP_LINK_NATIVE.md",
-    ROOT / "docs" / "VIA_GEYSER_PARITY.md",
-    ROOT / "docs" / "VEHICLES.md",
-    ROOT / "docs" / "STACKER.md",
-    ROOT / "docs" / "WEB_DASHBOARD.md",
-    ROOT / "docs" / "whitepaper" / "YAPCORE_WHITEPAPER.md",
-    ROOT / "docs" / "whitepaper" / "YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md",
-]
+ROOT = Path(os.environ["ROOT"])
+OUT = Path(os.environ["OUT"])
 
 css = """
 @page { margin: 18mm 16mm; size: letter; }
@@ -68,18 +85,26 @@ hr { border: none; border-top: 1px solid #ccc; margin: 1.4em 0; }
 a { color: #0b57d0; text-decoration: none; }
 """
 
-for md_path in files:
+stems = []
+for line in os.environ["DOC_LIST_EXPORT"].strip().splitlines():
+    stem, rel = line.split("|", 1)
+    md_path = ROOT / rel
+    if not md_path.is_file():
+        raise SystemExit(f"missing markdown: {md_path}")
     body = markdown.markdown(
         md_path.read_text(encoding="utf-8"),
         extensions=["tables", "fenced_code", "sane_lists"],
     )
-    title = md_path.stem.replace("_", " ")
+    title = stem.replace("_", " ")
     html = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/><title>{title}</title>
 <style>{css}</style></head><body>{body}</body></html>
 """
-    (OUT / f"{md_path.stem}.html").write_text(html, encoding="utf-8")
-    print(f"html  {md_path.stem}")
+    (OUT / f"{stem}.html").write_text(html, encoding="utf-8")
+    stems.append(stem)
+    print(f"html  {stem}")
+
+(OUT / ".pdf-stems").write_text("\n".join(stems) + "\n", encoding="utf-8")
 PY
 
 CHROME=""
@@ -92,10 +117,12 @@ if [[ -z "$CHROME" ]]; then
 fi
 
 cd "$OUT"
-for f in PLAIN_ENGLISH WHAT_WE_ARE FULL_RUNDOWN COMPARE_ECOSYSTEM COMPARISON_BRIEF YAP_LINK YAP_LINK_NATIVE VIA_GEYSER_PARITY VEHICLES STACKER WEB_DASHBOARD YAPCORE_WHITEPAPER YAPCORE_WHITEPAPER_PLAIN_ENGLISH; do
+mapfile -t STEMS < .pdf-stems
+for f in "${STEMS[@]}"; do
   "$CHROME" --headless --disable-gpu --no-pdf-header-footer \
     --print-to-pdf="${f}.pdf" "file://${OUT}/${f}.html" >/dev/null 2>&1
   rm -f "${f}.html"
   echo "pdf   ${f}.pdf"
 done
-echo "done → $OUT"
+rm -f .pdf-stems
+echo "done → $OUT ($(ls -1 "$OUT"/*.pdf 2>/dev/null | wc -l) PDFs)"

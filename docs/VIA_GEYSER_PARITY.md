@@ -4,11 +4,12 @@
 Companion to [PHASE4_PROTOCOL.md](PHASE4_PROTOCOL.md).
 
 **Product rule:** YaPcore ships complete multi-version JE (supported bands) and
-Bedrock crossplay **in our own code**. Operators must **not** install ViaVersion,
-ViaBackwards, ViaRewind, Geyser, or Floodgate for the product path to work.
+Bedrock crossplay **in our own code** on the chassis edge in front of **YaP-Folia**.
+Operators must **not** install ViaVersion, ViaBackwards, ViaRewind, Geyser, or Floodgate
+jars for the product path to work.
 
 **Parity definition:** For every row below, “Done” means a supported client can
-complete that feature on a Paper 26.2 backend **without** those jars, verified by
+complete that feature on a **YaP-Folia 26.2** backend **without** those jars, verified by
 the listed gate (matrix / smoke / unit / live soak). “Partial” means join works
 or a subset works; deepen is tracked. “Out” means explicitly not product DoD.
 
@@ -18,18 +19,18 @@ or a subset works; deepen is tracked. “Out” means explicitly not product DoD
 
 | Band | Direction | Product stance |
 |------|-----------|----------------|
-| **JE 1.20.2 → current** onto Paper 26.2 (~776) | ViaBackwards-class | **DoD** |
+| **JE 1.20.2 → current** onto YaP-Folia 26.2 (~776) | ViaBackwards-class | **DoD** |
 | **JE newer than server** (when server lags a build) | ViaVersion-class | **DoD** when dumps exist |
 | **JE 1.19.4** | Canary | Join/spawn matrix; play deepen as capacity allows |
 | **JE 1.8–1.16 (Rewind)** | ViaRewind-class | **Best-effort join** — play depth **out** of DoD |
-| **Bedrock 1.21.50** (current pin) | Geyser-class | **DoD** for vanilla gameplay on shared Paper world |
-| **Floodgate identity** | Floodgate-class | **DoD** in core + `yap-floodgate` on Velocity |
+| **Bedrock 1.21.50** (current pin) | Geyser-class | **DoD** for vanilla gameplay on shared YaP-Folia world |
+| **Floodgate identity** | Floodgate-class | **DoD** in core + `yap-floodgate` |
 
 ```
-Older JE  ──► MidBandTransformer / PlayPacketRemapper / Rewind18 ──► Paper 776
-Newer JE  ──► ForwardTransformer ──► Paper 776
-Modern JE ──► passthrough ──► Paper 776
-Bedrock   ──► RakNet + BedrockGameplayBridge + GeyserStyleTranslator ──► Paper world
+Older JE  ──► MidBandTransformer / PlayPacketRemapper / Rewind18 ──► YaP-Folia 776
+Newer JE  ──► ForwardTransformer ──► YaP-Folia 776
+Modern JE ──► passthrough ──► YaP-Folia 776
+Bedrock   ──► RakNet + BedrockGameplayBridge + GeyserStyleTranslator ──► YaP-Folia world
 ```
 
 Classes live under `com.yapcore.protocol.via*` and `com.yapcore.crossplay*`
@@ -72,9 +73,9 @@ keepalive/chunk/spawn stable; matrix spawn green for pinned forward cases.
 
 ---
 
-## B. ViaBackwards parity (older client → Paper 26.2) — slice 4.V2
+## B. ViaBackwards parity (older client → YaP-Folia 26.2) — slice 4.V2
 
-Target: what **ViaBackwards** does for older JE on a modern Paper backend.
+Target: what **ViaBackwards** does for older JE on a modern **YaP-Folia** backend.
 **Product floor: 1.20.2+.** Rows below that floor are canary / best-effort.
 
 ### B1 — Connection & state machine

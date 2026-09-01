@@ -3,6 +3,8 @@
 Browser-based **admin control panel** for headless hosts and remote operators.
 Set up the network, configure YaP Link, manage plugins, and monitor health — no SSH required for day-to-day ops.
 
+Controls the **YaPcore chassis** in front of **YaP-Folia** (game child JVM). See [FOLIA_FORK.md](FOLIA_FORK.md).
+
 Modern **sidebar shell** (Overview · Server · People · Content · Gameplay) with dark theme, stat cards, and full plugin config editors where the backend supports it.
 
 ## Enable

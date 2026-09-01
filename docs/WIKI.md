@@ -72,7 +72,8 @@ Operator documentation for running and configuring YaPcore. Start with
 | [MMO_COMBAT.md](MMO_COMBAT.md) | Custom combat system |
 | [MMO_ABILITIES.md](MMO_ABILITIES.md) | 233 combat abilities |
 | [MMO_BEDROCK_UI.md](MMO_BEDROCK_UI.md) | Bedrock MMO forms |
-| [MMO_CONTENT.md](MMO_CONTENT.md) | Quests & bosses |
+| [MMO_CONTENT.md](MMO_CONTENT.md) | Quests, bosses, recipes |
+| [MMO_QUESTS.md](MMO_QUESTS.md) | **100-quest progression compendium** |
 
 ---
 

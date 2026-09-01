@@ -294,16 +294,129 @@ final class BenchRegionLoad {
     /**
      * Spawn-collapse interest: a single Folia region around spawn (chunks in one
      * contiguous 3×3 block) so all load shares one tick runner.
+     * <p>With {@code -Dyap.bench.lobes=2}, load is split into west/east lobes separated by a
+     * Folia-safe gap so regions can tick in parallel (see Folia empty-section radius).
      */
     static final int[][] SPAWN_COLLAPSE_CHUNKS = {
             {0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1},
             {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
     };
 
-    static Set<long[]> spawnCollapseChunks() {
+    /** Half-lobe 3×3 offsets; applied at ±{@code lobeOffsetChunks}. */
+    static final int[][] LOBE_OFFSETS = {
+            {0, 0}, {1, 0}, {-1, 0}, {0, 1}, {0, -1},
+            {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
+    };
+
+    /** After spawn, pin lobes only (corridor unforced) — citeable dynamic carve vs contiguous stock. */
+    static boolean stripTwoPhase() {
+        return Boolean.parseBoolean(System.getProperty("yap.bench.strip_two_phase", "false"));
+    }
+
+    /** YaP-only: full contiguous force-load (no lobe gap) for dynamic carve+partition cite. */
+    static boolean contiguousCarve() {
+        return Boolean.parseBoolean(System.getProperty("yap.bench.contiguous_carve", "false"));
+    }
+
+    static int stripHalfWidth() {
+        return Integer.getInteger("yap.bench.strip_half_width", 0);
+    }
+
+    static int stripZRadius() {
+        return Math.max(0, Integer.getInteger("yap.bench.strip_z_radius", 1));
+    }
+
+    /** Gap half-width in chunks; lobes are chunks with {@code |cx| > gapHalf}. */
+    static int stripGapHalf() {
+        int gap = Math.max(0, Integer.getInteger("yap.bench.strip_gap_half", 0));
+        if (gap > 0) {
+            return gap;
+        }
+        int half = stripHalfWidth();
+        if (half > 0 && stripTwoPhase()) {
+            // Folia-safe default: ~25% of strip center empty (matches gap1-style cite).
+            return Math.max(16, half / 3);
+        }
+        return 0;
+    }
+
+    /** Full contiguous strip — used to spawn load before corridor unpin (two-phase). */
+    static Set<long[]> spawnCollapseFullStripChunks() {
+        int stripHalf = stripHalfWidth();
+        if (stripHalf <= 0) {
+            return Set.of();
+        }
+        int zRadius = stripZRadius();
         Set<long[]> out = new LinkedHashSet<>();
-        for (int[] c : SPAWN_COLLAPSE_CHUNKS) {
-            out.add(pack(c[0], c[1]));
+        for (int cx = -stripHalf; cx <= stripHalf; cx++) {
+            for (int cz = -zRadius; cz <= zRadius; cz++) {
+                out.add(pack(cx, cz));
+            }
+        }
+        return out;
+    }
+
+    /** Lobe pin set: wide strip minus Folia gap corridor. */
+    static Set<long[]> spawnCollapseLobePinChunks() {
+        int stripHalf = stripHalfWidth();
+        if (stripHalf <= 0) {
+            return Set.of();
+        }
+        int zRadius = stripZRadius();
+        int gapHalf = stripGapHalf();
+        Set<long[]> out = new LinkedHashSet<>();
+        for (int cx = -stripHalf; cx <= stripHalf; cx++) {
+            if (gapHalf > 0 && Math.abs(cx) <= gapHalf) {
+                continue;
+            }
+            for (int cz = -zRadius; cz <= zRadius; cz++) {
+                out.add(pack(cx, cz));
+            }
+        }
+        return out;
+    }
+
+    static Set<long[]> spawnCollapseChunks() {
+        int lobes = Math.max(1, Integer.getInteger("yap.bench.lobes", 1));
+        // Contiguous wide strip so corridor carve can unload a Folia-safe middle gap.
+        int stripHalf = stripHalfWidth();
+        if (stripHalf > 0) {
+            if (contiguousCarve()) {
+                return spawnCollapseFullStripChunks();
+            }
+            if (stripTwoPhase()) {
+                return spawnCollapseLobePinChunks();
+            }
+            int zRadius = stripZRadius();
+            // Optional pre-carved Folia-safe gap (chunks with |cx| <= gapHalf are not force-loaded).
+            int gapHalf = stripGapHalf();
+            Set<long[]> out = new LinkedHashSet<>();
+            for (int cx = -stripHalf; cx <= stripHalf; cx++) {
+                if (gapHalf > 0 && Math.abs(cx) <= gapHalf) {
+                    continue;
+                }
+                for (int cz = -zRadius; cz <= zRadius; cz++) {
+                    out.add(pack(cx, cz));
+                }
+            }
+            return out;
+        }
+        if (lobes < 2) {
+            Set<long[]> out = new LinkedHashSet<>();
+            for (int[] c : SPAWN_COLLAPSE_CHUNKS) {
+                out.add(pack(c[0], c[1]));
+            }
+            return out;
+        }
+        // Gap must exceed Folia's adjacency (≈2×emptySectionCreateRadius sections).
+        // Default offset 40 chunks → ~20-chunk empty corridor at x≈0 — safe at grid-exponent 0–2.
+        int offset = Math.max(16, Integer.getInteger("yap.bench.lobe_offset_chunks", 40));
+        Set<long[]> out = new LinkedHashSet<>();
+        for (int sign : new int[]{-1, 1}) {
+            int ox = sign * offset;
+            for (int[] c : LOBE_OFFSETS) {
+                out.add(pack(c[0] + ox, c[1]));
+            }
         }
         return out;
     }
@@ -334,14 +447,18 @@ final class BenchRegionLoad {
         int entities = Integer.getInteger("yap.bench.entities", 800);
         int hoppers = Integer.getInteger("yap.bench.hoppers", 256);
         int mobs = Integer.getInteger("yap.bench.mobs", 200);
-        Set<long[]> chunks = spawnCollapseChunks();
+        final boolean twoPhase = stripTwoPhase() && stripHalfWidth() > 0 && !contiguousCarve();
+        // YaP two-phase: spawn on lobe pin set only (same totals as stock contiguous strip).
+        // contiguous_carve: full strip for dynamic carve cite (stock vs YaP both contiguous).
+        final Set<long[]> spawnChunks = twoPhase ? spawnCollapseLobePinChunks() : spawnCollapseChunks();
+        final Set<long[]> pinChunks = twoPhase ? spawnChunks : spawnChunks;
         YapSched.global(plugin, () -> {
             world.setSpawnLocation(0, 80, 0);
             world.setGameRule(GameRule.SPAWN_MONSTERS, false);
-            for (long[] c : chunks) {
+            for (long[] c : spawnChunks) {
                 world.setChunkForceLoaded((int) c[0], (int) c[1], true);
             }
-            forEachChunk(plugin, world, chunks, c -> {
+            forEachChunk(plugin, world, spawnChunks, c -> {
                 int cx = (int) c[0];
                 int cz = (int) c[1];
                 world.getChunkAt(cx, cz).load(true);
@@ -350,14 +467,87 @@ final class BenchRegionLoad {
                         e.remove();
                     }
                 }
-            }, () -> injectSpawnCollapseLoad(plugin, world, chunks, entities, hoppers, mobs, onReady));
+            }, () -> injectSpawnCollapseLoad(plugin, world, spawnChunks, pinChunks, twoPhase,
+                    entities, hoppers, mobs, onReady));
         });
+    }
+
+    /** Unpin corridor after spawn so sim tickets do not bridge partitioned shards. */
+    private static void applyLobePinOnly(
+            JavaPlugin plugin,
+            World world,
+            Set<long[]> spawnChunks,
+            Set<long[]> pinChunks,
+            int expectedTnt,
+            Consumer<Integer> onReady) {
+        final java.util.ArrayList<long[]> corridor = new java.util.ArrayList<>();
+        final java.util.ArrayList<long[]> lobes = new java.util.ArrayList<>(pinChunks);
+        for (long[] c : spawnChunks) {
+            boolean keep = false;
+            for (long[] p : pinChunks) {
+                if (p[0] == c[0] && p[1] == c[1]) {
+                    keep = true;
+                    break;
+                }
+            }
+            if (!keep) {
+                corridor.add(c);
+            }
+        }
+        if (corridor.isEmpty() || lobes.isEmpty()) {
+            YapSched.global(plugin, () -> onReady.accept(expectedTnt));
+            return;
+        }
+        // Move corridor load onto lobes before unpin — otherwise entities despawn / evade snapshot.
+        forEachChunk(plugin, world, new LinkedHashSet<>(corridor), c -> {
+            int cx = (int) c[0];
+            int cz = (int) c[1];
+            long[] dest = lobes.get(Math.floorMod(cx + cz, lobes.size()));
+            int dcx = (int) dest[0];
+            int dcz = (int) dest[1];
+            double x = (dcx << 4) + 8.0;
+            double z = (dcz << 4) + 8.0;
+            for (Entity entity : world.getChunkAt(cx, cz).getEntities()) {
+                if (entity instanceof Player) {
+                    continue;
+                }
+                try {
+                    double y = Math.max(entity.getLocation().getY(),
+                            world.getHighestBlockYAt((int) x, (int) z) + 1.0);
+                    entity.teleport(new Location(world, x, y, z));
+                } catch (Throwable ignored) {
+                }
+            }
+        }, () -> YapSched.global(plugin, () -> {
+            int unpinned = 0;
+            for (long[] c : spawnChunks) {
+                int cx = (int) c[0];
+                int cz = (int) c[1];
+                boolean keep = false;
+                for (long[] p : pinChunks) {
+                    if (p[0] == cx && p[1] == cz) {
+                        keep = true;
+                        break;
+                    }
+                }
+                if (!keep) {
+                    world.setChunkForceLoaded(cx, cz, false);
+                    unpinned++;
+                }
+            }
+            plugin.getLogger().info("spawncollapse two-phase — spawned on " + spawnChunks.size()
+                    + " chunks, relocated corridor→lobes, pinned " + pinChunks.size()
+                    + " lobe chunks, unpinned corridor=" + unpinned + " gapHalf=" + stripGapHalf());
+            onReady.accept(expectedTnt);
+        }));
     }
 
     private static void injectSpawnCollapseLoad(
             JavaPlugin plugin,
             World world,
             Set<long[]> chunks,
+            Set<long[]> pinChunks,
+            boolean twoPhase,
             int totalTnt,
             int totalHoppers,
             int totalMobs,
@@ -405,16 +595,26 @@ final class BenchRegionLoad {
                             EntityType.COW, EntityType.SHEEP, EntityType.PIG
                     };
                     for (int m = 0; m < mobHere; m++) {
-                        world.spawnEntity(
+                        org.bukkit.entity.Entity spawned = world.spawnEntity(
                                 new Location(world, bx + (m % 4) * 0.5, y, bz + (m / 4) * 0.5),
                                 types[m % types.length]);
+                        if (spawned instanceof org.bukkit.entity.LivingEntity living) {
+                            living.setRemoveWhenFarAway(false);
+                            living.setPersistent(true);
+                        }
                     }
                 } finally {
                     if (left.decrementAndGet() == 0) {
                         int expected = spawnedTnt.get();
+                        String layout = stripHalfWidth() > 0
+                                ? (twoPhase ? " (two-phase lobe-spawn carve-capable)"
+                                : " (wide-strip carve-capable)")
+                                : Integer.getInteger("yap.bench.lobes", 1) >= 2
+                                ? " (dual-lobe parallel-capable)"
+                                : " (single-region overload)";
                         plugin.getLogger().info("spawncollapse region-ready — TNT=" + expected
                                 + " hoppers≈" + totalHoppers + " mobs≈" + totalMobs
-                                + " chunks=" + n + " (single-region overload)");
+                                + " chunks=" + n + layout);
                         YapSched.global(plugin, () -> onReady.accept(expected));
                     }
                 }

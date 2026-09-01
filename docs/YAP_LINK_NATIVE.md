@@ -147,8 +147,10 @@ protocol fixes so operators are not on a stale root jar.
 
 ## Bedrock / Geyser
 
-Phase 4 — Bedrock UDP routing at Link (`bedrock-enabled=false` by default). Until then, use backend dual-stack or stock Velocity
-as a stand-in for BE-heavy networks. See [YAP_LINK.md](YAP_LINK.md#bedrock--geyser).
+Bedrock UDP routing at Link is **shipped** (`BedrockUdpForwarder`) but **off by default**
+(`bedrock-enabled=false`). For single-box crossplay, use chassis dual-stack on the
+**YaP-Folia** backend. For BE-heavy multi-backend networks, enable Link Bedrock bind or
+use stock Velocity as a stand-in. See [YAP_LINK.md](YAP_LINK.md#bedrock--geyser).
 
 ---
 

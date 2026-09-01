@@ -1,11 +1,11 @@
 # YaPcore whitepaper — plain English edition
 
 **YapLabs · companion to the technical whitepaper**  
-Version 0.1 · August 2026  
+Version **0.3** · September 2026  
 Pairs with: [YAPCORE_WHITEPAPER.md](YAPCORE_WHITEPAPER.md) (`YAP-WP-16T-001`)
 
 This is the same story as the technical whitepaper, written for people who don’t live in systems engineering.  
-If you want the academic / engineer version, use the [technical whitepaper](YAPCORE_WHITEPAPER.md).
+If you want the academic / engineer version (full plugin catalog, MMO, data plane, smokes), use the [technical whitepaper](YAPCORE_WHITEPAPER.md).
 
 ---
 
@@ -13,14 +13,15 @@ If you want the academic / engineer version, use the [technical whitepaper](YAPC
 
 Most Minecraft-style servers put almost everything important on **one main worker**: updating the world, talking to plugins, and a lot of network-related work. That keeps the design simple — until the server gets busy, and then that one worker becomes a traffic jam.
 
-**YaPcore** (built on **YapEngine**) splits that work across a **fixed set of sixteen workers**, each with a clear job. Ordering rules keep things from happening out of turn. Older plugins still work through a careful “compatibility” path. Java and Bedrock players can join toward the same world story. New plugins are guided into lanes so heavy database work doesn’t freeze the fun parts of the game.
+**YaPcore** splits the product into three clear pieces:
 
-This plain-English paper explains:
+1. **YaP-Folia** — our multi-threaded game engine (a fork of PaperMC Folia, not the stock download) runs the world.  
+2. **YapEngine** — a slim “chassis” handles networking, menus, databases, and ops — **not** the world heartbeat.  
+3. **YaP Link** — our network front door when you run more than one game box.
 
-- Why that matters  
-- How the sixteen jobs fit together  
-- How plugins are supposed to behave  
-- How we think about networking and testing  
+Ordering rules keep things from happening out of turn. Older-style plugins still work through a careful compatibility path when needed. Java and Bedrock players can join toward the same world story. New plugins are guided into lanes so heavy database work doesn’t freeze the fun parts of the game.
+
+On top of that stack we **ship** the plugins most networks used to assemble themselves: ranks, chat, moderation, player data / economy / shops / auction house, protect, world tools, regions, map, factions — plus an optional gameplay pack (vehicles, stacker, and a full skills/combat/crafting MMO).
 
 ---
 
@@ -28,59 +29,51 @@ This plain-English paper explains:
 
 ### The everyday version
 
-Imagine a store with **one cashier** for:
+Imagine a store with **one cashier** for ringing up customers, restocking shelves, answering the phone, and updating the inventory computer. When it’s quiet, that works. When it’s busy, the line piles up.
 
-- ringing up customers  
-- restocking shelves  
-- answering the phone  
-- updating the inventory computer  
+That’s roughly how classic Minecraft servers work: one “main thread” does the authoritative world updates. If a plugin spends that time waiting on a database, the whole world feels laggy. If you let lots of workers change the world at once **with no rules**, you get broken chunks and inventory glitches.
 
-When it’s quiet, that works. When it’s busy, the line piles up — even if other people in the building could help.
+Operators also used to install **ten separate community plugins** (permissions, essentials, CoreProtect, WorldGuard, Velocity, Geyser, …) and hope they all got along on Folia.
 
-That’s roughly how classic Minecraft servers work: one “main thread” does the authoritative world updates (~20 heartbeats per second). If a plugin spends that time waiting on a database or the internet, the whole world feels laggy. If you instead let lots of workers change the world at once **with no rules**, you get broken chunks, duplicate mobs, and inventory glitches.
-
-Bedrock players also use a different connection style (UDP) than Java (TCP), but operators usually still want **one shared world**, not two separate games.
+Bedrock players also use a different connection style (UDP) than Java (TCP), but operators usually still want **one shared world**.
 
 ### What YaPcore is trying to contribute
 
-1. **Three layers** — **Folia** runs the game; **YapEngine** runs edge/I/O; **YaP Link** fronts multi-backend networks.  
+1. **Three layers** — **YaP-Folia** runs the game; **YapEngine** runs edge/I/O; **YaP Link** fronts multi-backend networks.  
 2. **Order tickets (SequenceToken)** — work can move between chassis workers without everything sharing one giant lock.  
 3. **A Compatibility Bridge** — older plugins can still change the world safely by waiting for the right window.  
 4. **Java + Bedrock on one product story** — both can join; optionally even on the same port number.  
-5. **Three ways to extend the server** — Folia/Paper-style plugins, YaP plugins, and smaller “fine-tune” modules — all Folia/Paper/YaP jars drop into one `plugins/` folder.
+5. **Three ways to extend the server** — Folia-aware plugins, YaP plugins, and smaller “fine-tune” modules — all drop into one `plugins/` folder.  
+6. **Shipped YaP plugins** — CORE+NETWORK by default; GAMEPLAY + MMO opt-in — so you are not piecing together LuckPerms + EssentialsX + … for a normal survival/network.
 
 ### What we are *not* promising
 
-We don’t claim “every Paper plugin works on Folia day one” (same as stock Folia), and we’re not trying to be a full NeoForge dedicated-server clone. We grow compatibility based on what people actually need.
+We don’t claim “every Paper plugin works on YaP-Folia day one” (same reality as Folia), and we’re not shipping stock Folia as the product jar. We grow compatibility based on what people actually need. Bedrock join and play-depth smoke are green; some fancy fidelity details are still partial.
 
-### Where the product is today (August 2026)
+### Where the product is today (September 2026)
 
-We use **Folia** for the real Minecraft game by default. **YapEngine** runs the
-**slim edge/I/O chassis** around it (not world tick). **YaP Link** is our Velocity-class front door for
-multi-backend networks (**phases 0–6 shipped** — forwarding, plugins, Bedrock UDP edge, release bundle).
-Legacy **Paper + Phase 3** spatial tick (spreading interior work across four
-map-area workers) is **done as code** but **off by default** — benches only; Folia
-does not use that path. The product is aimed at **busy / high-pop** servers; fair
-cites focus on **~100 active bots** (250 keepalive holds are not MSPT wins). Phase 4
-dual-stack join DoD is green (JE matrix + play-depth smoke); optional fidelity soak
-remains — shared MariaDB (`yap-db`),
-playerdata (offline `/login`, claims), LuckPerms ranks, multi-pack helpers — on that
-Folia-backed world.
+We use **YaP-Folia** for the real Minecraft game by default (`folia-jar-source=build`). **YapEngine** runs the
+**slim edge/I/O chassis** around it (not world tick). **YaP Link** is our Velocity-class front door
+(**phases 0–6 shipped**). Legacy **Paper + Phase 3** spatial tick is **done as code** but **off by default**.
+CORE+NETWORK plugins ship by default; GAMEPLAY/MMO is opt-in. Playerdata **shops + auction house** are **on** by default (jobs stay off when skills are used).
+The product is aimed at **busy / high-pop** servers; fair cites focus on **~100 active bots**.
+Phase 4 dual-stack join DoD is green.
 
-Details: [FULL_RUNDOWN.md](../FULL_RUNDOWN.md) ·
-[BENCH_VS_FOLIA.md](../BENCH_VS_FOLIA.md) · [YAP_LINK.md](../YAP_LINK.md) · [YAP_LINK_NATIVE.md](../YAP_LINK_NATIVE.md).
+Details: [FULL_RUNDOWN.md](../FULL_RUNDOWN.md) · [FOLIA_FORK.md](../FOLIA_FORK.md) ·
+[BENCH_VS_FOLIA.md](../BENCH_VS_FOLIA.md) · [YAP_LINK.md](../YAP_LINK.md) ·
+[technical whitepaper §6–13](YAPCORE_WHITEPAPER.md).
 
 ---
 
 ## 2. How this compares to other approaches
 
-- **Paper / Purpur** improve the classic Bukkit model; **Folia** provides region-based multithreading — and is YaPcore’s default game.  
-- **Proxies** (Velocity; YaP Link) route players but don’t usually *own* the world.  
-- **Research engines** often prove fancy parallel designs but drop familiar plugin support.
+- **Paper / Purpur** improve the classic Bukkit model (still one main tick).  
+- **Upstream Folia** provides region-based multithreading — we **fork** it as **YaP-Folia**.  
+- **Proxies** (Velocity; YaP Link) route players but don’t usually *own* the world.
 
 YaPcore sits as:
 
-> Keep **Folia for the kitchen**, a **slim YapEngine edge/I/O chassis**, and **YaP Link** at the front door for multi-backend networks.
+> Keep **YaP-Folia for the kitchen**, a **slim YapEngine edge/I/O chassis**, and **YaP Link** at the front door for multi-backend networks — with **YaP plugins** already in the pantry.
 
 ---
 
@@ -92,108 +85,73 @@ YaPcore sits as:
 |-------|----------------|
 | **YaP Link** | Front door for big networks — sends players to the right backend |
 | **YapEngine chassis** | Netty edge, dual-stack, plugin bridge, menus, DB/HTTP — **not** world tick |
-| **Folia** | The actual game heartbeat — regions, mobs, redstone |
+| **YaP-Folia** | The kitchen — chunks, mobs, redstone, commands on many region workers |
 
-Chassis still uses sixteen **logical channels** (T1–16) for edge/I/O work:
+Inside the chassis, numbered “channels” (1–16) have fixed jobs: watchdog, traffic shaping, bridge, menus, heavy I/O, telemetry. On the product path, world tick is **not** on those chassis cores — it is on YaP-Folia’s region pool.
 
-| Workers | Job (plain English) |
-|---------|---------------------|
-| **1** | Watchdog — watches health and helps recover if something stalls |
-| **2** | Front door / traffic — players connecting, order tickets assigned |
-| **3–6** | Chassis worker quads — sequenced bridge tasks (**legacy map-cook tick on Paper benches only**) |
-| **7–8** | Chunk leases / border referee — **Paper Phase 3 legacy only** |
-| **9** | Compatibility Bridge — stages older plugin world changes safely |
-| **10–11** | Menus / UI polish — clicks, HUD, menu feel |
-| **12–15** | Heavy chores — databases, HTTP, files, big saves |
-| **16** | Telemetry — metrics and health signals |
+### 3.2 Order tickets
 
-More detail for engineers: [YAPENGINE_16THREAD.md](../YAPENGINE_16THREAD.md).
+When work moves between workers, it carries a **SequenceToken** so one player’s actions don’t get reordered into nonsense, while different players can still progress in parallel.
 
-### 3.2 Order tickets (sequencing)
+### 3.3 Memory
 
-Every logical stream of work (a connection, a chunk lease, a plugin task) gets an **order ticket**. Within that stream, things must stay in order. Across different streams, work can happen in parallel. That way you get speed *and* sanity.
-
-### 3.3 Splitting the map
-
-The world is divided so the four map workers can often update **different regions** at the same time. Anything that crosses a border goes through the border referee before other areas treat it as official.
-
-### 3.4 Memory cleanup (GC)
-
-Production startups prefer a modern garbage collector (**Generational ZGC**) and can pin work to nearby CPU/memory banks (**NUMA**) on big machines when that helps. Details: [ZGC_NUMA.md](../ZGC_NUMA.md).
+Production scripts lean on modern garbage collection (**Generational ZGC**) and can pin to NUMA nodes on big machines.
 
 ---
 
-## 4. How plugins are supposed to behave
+## 4. Plugins without freezing the world
 
-Plugins don’t all get the same lane. There are three:
+Think of three lanes:
 
-| Lane | Meant for | Don’t do here |
-|------|-----------|---------------|
-| **SYNC** | Blocks, inventory, teleport, world changes | Slow database / HTTP waits |
-| **HEAVY** | Databases, HTTP, disk, messaging | Direct world edits without hopping back to SYNC |
-| **UI** | Menu animation and polish | Authoritative world writes |
+| Lane | Good for | Bad for |
+|------|----------|---------|
+| **SYNC** | Changing blocks, inventories, teleports | Waiting on a database |
+| **HEAVY** | Databases, HTTP, disk | Touching the world directly |
+| **UI** | Menu polish | Authoritative world writes |
 
-If something tries to change the world from the wrong lane, the Compatibility Bridge can queue it for a safe moment — but authors should still schedule world work on purpose.
-
-Smaller **modules** use the same lanes and can declare what they provide or need so operators can mix features cleanly. See [MODULES_AND_API.md](../MODULES_AND_API.md).
-
-The product build ships **YaP Vehicles** (real cars/trucks — not minecarts), gameplay knobs,
-**YapDb** / playerdata (shared MariaDB networks), packs/chat/floodgate helpers, and a **web dashboard**
-in the browser for headless hosts (`:8080` — including a Ranks tab) alongside the desktop control panel.
-Client textures/models come from the default pack `yapcore-default.zip`.
+YaP first-party plugins declare `folia-supported: true` and schedule through those rules.
 
 ---
 
-## 5. Networking & crossplay (the join story)
+## 5. What you get “in the box”
 
-- **Java Edition** players connect the usual TCP way, including modern login/play flows.  
-- **Bedrock** players connect over UDP; the same port number can be shared with Java when configured that way.  
-- Operators can put a domain / reverse proxy (nginx) + Cloudflare in front — this
-  project’s public hostname is **`yapcoremc.yaplabs.us`**.
-- A **crossplay hub** aims at one shared player identity and world path across editions.
+**Always (CORE+NETWORK):** shared MariaDB pool, ranks, player sync + economy + shops + AH + claims, moderation, essentials QoL, chat, packs, PlaceholderAPI, pregen, protect, world tools, regions, NPCs, TAB, Discord webhooks, anti-cheat lite, lag guard, web map, factions, Bedrock identity/UI bridge.
 
-On the same computer as the server, use `127.0.0.1` to join (hairpin NAT issues are common otherwise).
+**Optional (GAMEPLAY):** vehicles, mob stacker, gameplay knobs, and the MMO pack (13 skills, custom combat, crafting, quests/bosses, abilities, guilds, minigames, Bedrock MMO UI).
+
+Full tables: [technical whitepaper §6](YAPCORE_WHITEPAPER.md#6-shipped-first-party-plugins).
 
 ---
 
-## 6. How we evaluate whether it works
+## 6. Networking in plain English
 
-We recommend a practical test stack:
-
-1. Unit tests for basic correctness  
-2. Concurrency explorers (Fray and friends) to hunt race bugs  
-3. Optional stress tools (JCStress / TSan / Infer)  
-4. Long “soak” runs that record clear FAIL codes  
-5. Profiling under load at the interesting boundaries  
-
-What we care about measuring:
-
-- How long ticks take in the worst cases  
-- How backed-up the plugin bridge gets  
-- How often borders need refereeing  
-- Join success across Minecraft versions  
-- Whether the HEAVY lane is overloaded  
-
-See [TESTING.md](../TESTING.md).
+- **Java players** connect over TCP; version translation lives in our chassis (no separate Via jar).  
+- **Bedrock players** connect over UDP through our own crossplay path (no Geyser jar).  
+- **YaP Link** can sit in front when you run multiple game servers.  
+- Resource packs can be served over HTTP; ops use a browser dashboard on port **8080**.
 
 ---
 
-## 7. Caveats (what could make results misleading)
+## 7. How we check that it works
 
-- Rare Phase 3 threading edge cases (legacy Paper path only) can still surprise plugins that assume one entity thread.  
-- Minecraft versions keep changing; packet/registry work is ongoing.  
-- NUMA / ZGC benefits depend on the machine.  
-- Bedrock join/spawn is green; full play-depth parity can still lag Java for some gameplay packets.
+Unit tests, milestone smoke scripts (plugins, MMO, Link, shops/AH), Folia soak, and MSPT benches vs stock Folia. When quoting performance, use **~100 active bots** as the fair high-pop cite.
 
 ---
 
-## 8. Closing thought
+## 8. Honest caveats
 
-YaPcore’s bet is practical:
+- Paper-only plugins are not a free pass on Folia.  
+- Protocol and Bedrock fidelity need ongoing care.  
+- Fancy Folia performance patches stay **off** until you soak them.  
+- Dashboard “every tab is fully interactive” polish is still on the roadmap.
 
-> Run **Folia** for the game, split the rest of the product across **sixteen specialized jobs**, give plugins **clear lanes**, and use **YaP Link** when you need a multi-backend front door.
+---
 
-Still ahead: richer registry sync, deeper world streaming, fuller command graphs, and stronger formal checks on the order-ticket queues.
+## 9. Bottom line
+
+**YaP-Folia** cooks the world on many threads. **YapEngine** runs the front-of-house (network, menus, databases). **YaP Link** seats guests across multiple dining rooms. **YaP plugins** stock the shelves so operators are not assembling a grocery list of community jars for a normal network.
+
+For the full engineering write-up, tables, and status matrix, read [YAPCORE_WHITEPAPER.md](YAPCORE_WHITEPAPER.md).
 
 ---
 
@@ -203,19 +161,20 @@ Still ahead: richer registry sync, deeper world streaming, fuller command graphs
 |-------------|------------|
 | Non-tech / just curious | [PLAIN_ENGLISH.md](../PLAIN_ENGLISH.md) |
 | Reading the engineer paper | [YAPCORE_WHITEPAPER.md](YAPCORE_WHITEPAPER.md) |
-| Running a server | [README](../../README.md), [NETWORKING](../NETWORKING.md), [WEB_DASHBOARD](../WEB_DASHBOARD.md) |
-| Writing plugins | [PLUGINS](../PLUGINS.md), [MODULES_AND_API](../MODULES_AND_API.md), [VEHICLES](../VEHICLES.md) |
-| Working on the engine | [YAPENGINE_16THREAD](../YAPENGINE_16THREAD.md), [PERF_AND_LAYOUT](../PERF_AND_LAYOUT.md) |
+| Running a server | [QUICK_START](../QUICK_START.md), [FOLIA_FORK](../FOLIA_FORK.md), [WEB_DASHBOARD](../WEB_DASHBOARD.md) |
+| Writing plugins | [PLUGINS](../PLUGINS.md), [VEHICLES](../VEHICLES.md) |
+| Working on the fork | [FOLIA_FORK](../FOLIA_FORK.md), [YAPENGINE_16THREAD](../YAPENGINE_16THREAD.md) |
 
 ### Citation (technical paper)
 
 ```bibtex
 @techreport{yapcore2026sixteen,
-  title       = {YaPcore: Folia Game Authority with a Slim Edge Chassis for Minecraft-Class Servers},
+  title       = {YaPcore: YaP-Folia Game Authority, Slim Edge Chassis, Native Network Stack, and First-Party Plugin Suite},
   author      = {{YapLabs}},
   institution = {YapLabs},
   year        = {2026},
+  month       = sep,
   number      = {YAP-WP-16T-001},
-  note        = {Technical whitepaper, YaPcore 0.1}
+  note        = {Technical whitepaper, YaPcore 0.3}
 }
 ```
