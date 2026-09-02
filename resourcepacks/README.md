@@ -14,11 +14,12 @@ resource-pack-forced=true
 ```
 
 - **Forced** (`resource-pack-forced=true`): decline → kick
-- **Default pack:** `yapcore-default.zip` = Faithful 64x + YaP Vehicles
+- **Default pack:** `yapcore-default.zip` = Faithful 64x + **YaP Skies** + YaP Vehicles
   (built by `gradle prepareClientPack` / `shadowJar`)
+- Skies overlay: [`yap-skies/`](yap-skies/) (`python3 scripts/generate-yap-skies.py`)
 - Standalone vehicles overlay: [`yap-vehicles.zip`](yap-vehicles.zip)
 - Vehicle model previews (docs): [`yap-vehicles/showcase/`](yap-vehicles/showcase/)
 - MMO skill/ability icons: [`yap-abilities/`](yap-abilities/) on **`clay_ball`** CMD
   (`python3 scripts/generate-mmo-icons.py`, merged with GAMEPLAY pack)
-- Shaders / realistic skies are **not** resource packs — see
+- Iris / Complementary volumetric shaders are still client-only — see
   [docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md)

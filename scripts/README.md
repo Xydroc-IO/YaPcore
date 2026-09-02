@@ -35,6 +35,6 @@ Install, setup, and lifecycle helpers for operators.
 | Script | Purpose |
 |--------|---------|
 | `fetch-tebex.sh` · `fetch-grim.sh` · `grim-ac.sh` | Optional Tebex / Grim AC |
-| `build-default-resourcepack.sh` · `fetch-faithful-64x.sh` | Default resource pack |
+| `build-default-resourcepack.sh` · `fetch-faithful-64x.sh` · `generate-yap-skies.py` | Default resource pack + YaP Skies |
 
 See [docs/start/QUICK_START.md](../docs/start/QUICK_START.md) and [docs/start/WINDOWS.md](../docs/start/WINDOWS.md).

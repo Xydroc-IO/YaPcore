@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build resourcepacks/yapcore-default.zip
-# Default (CORE): Faithful 64x only (or empty stub).
+# Default (CORE): Faithful 64x + YaP Skies (or empty stub).
 # With YAP_INCLUDE_VEHICLES=1|true: overlay YaP Vehicles (GAMEPLAY tier).
 set -eu
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
@@ -10,6 +10,7 @@ VEH_DIR="$PACKS/yap-vehicles"
 VEH_ZIP="$PACKS/yap-vehicles.zip"
 ABIL_DIR="$PACKS/yap-abilities"
 ABIL_ZIP="$PACKS/yap-abilities.zip"
+SKIES_DIR="$PACKS/yap-skies"
 FAITHFUL="$PACKS/faithful-64x.zip"
 INCLUDE_VEHICLES="${YAP_INCLUDE_VEHICLES:-0}"
 STAGE="$(mktemp -d)"
@@ -29,7 +30,16 @@ else
     >"$STAGE/pack.mcmeta"
 fi
 
-DESC="YaPcore default — Faithful 64x (CORE)"
+# Realistic sun / moon / clouds + atmosphere (CORE). Regenerates missing PNGs.
+if [ ! -f "$SKIES_DIR/assets/minecraft/textures/environment/celestial/sun.png" ]; then
+  python3 "$ROOT/scripts/generate-yap-skies.py"
+fi
+if [ -d "$SKIES_DIR/assets" ]; then
+  mkdir -p "$STAGE/assets"
+  cp -a "$SKIES_DIR/assets/." "$STAGE/assets/"
+fi
+
+DESC="YaPcore default — Faithful 64x + YaP Skies (CORE)"
 if [ "$want_vehicles" -eq 1 ]; then
   if [ -d "$ABIL_DIR" ]; then
     if [ -f "$ABIL_ZIP" ]; then
@@ -44,7 +54,7 @@ if [ "$want_vehicles" -eq 1 ]; then
     exit 1
   fi
   unzip -q -o "$VEH_ZIP" -d "$STAGE"
-  DESC="YaPcore default — Faithful 64x + YaP Vehicles + MMO icons (GAMEPLAY)"
+  DESC="YaPcore default — Faithful 64x + YaP Skies + Vehicles + MMO icons (GAMEPLAY)"
 fi
 
 python3 - <<PY "$STAGE" "$DESC" "$want_vehicles"
