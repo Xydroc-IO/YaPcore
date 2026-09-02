@@ -1,20 +1,18 @@
 # YaPcore scripts
 
-Operator and maintainer helpers. Prefer this short list; see
-[docs/start/RELEASES.md](../docs/start/RELEASES.md) and [docs/start/QUICK_START.md](../docs/start/QUICK_START.md).
+Operator and maintainer helpers. See [docs/start/TESTING.md](../docs/start/TESTING.md) for release gates.
 
-## Everyday (ship in release zips)
+## Everyday (shipped in release zips)
 
 | Script | Purpose |
 |--------|---------|
 | `start.sh` / `stop.sh` / `status.sh` | Server lifecycle |
 | `gui.sh` / `start-prod.sh` | Swing panel / production launch |
-| `seed-defaults.sh` | First-boot configs from `config/defaults/` |
-| `apply-production-profile.sh` | Apply public production keys to `config/server.properties` |
+| `seed-defaults.sh` | First-boot configs |
+| `apply-production-profile.sh` | Public production keys |
 | `yapctl` | CLI helper |
-| `setup-velocity-forwarding.sh` | Shared secret + Folia Velocity forwarding |
-| `db/ensure-db.sh` · `db/configure-db.sh` | MariaDB + JDBC wiring |
-| `db/start-mariadb.sh` · `stop-mariadb.sh` · `status-mariadb.sh` | Docker MariaDB |
+| `setup-velocity-forwarding.sh` | Velocity forwarding secret |
+| `db/*.sh` | MariaDB + JDBC |
 | `windows/*.ps1` | Windows equivalents |
 
 ## YaP-Folia (product game jar)
@@ -22,54 +20,38 @@ Operator and maintainer helpers. Prefer this short list; see
 | Script | Purpose |
 |--------|---------|
 | `build-yap-folia.sh` | Build `lib/yap-folia-26.2.jar` |
-| `verify-yap-folia.sh` | Sanity-check the fork jar |
-| `vendor-folia.sh` · `folia-patch.sh` | Vendor + apply patches |
-| `fetch-folia.sh` | Stock Fill Folia (bench / fallback only) |
-| `fetch-tebex.sh` | Official Tebex Folia plugin → `plugins/tebex.jar` (GPLv3) |
-| `fetch-grim.sh` | Official Grim AC Folia jar → `plugins/grim.jar` (or `--disabled` → `grim.jar.disabled`) |
-| `grim-ac.sh` | Enable/disable fetched Grim (`enable` / `disable` / `status`) |
-| `soak-yap-folia.sh` | Compat / perf soak profiles |
-| `smoke-folia.sh` | Boot + ready hold |
+| `verify-yap-folia.sh` | Sanity-check fork jar |
+| `vendor-folia.sh` · `folia-patch.sh` | Vendor + patches |
+| `fetch-folia.sh` | Stock Folia (fallback / CI) |
+| `fetch-tebex.sh` · `fetch-grim.sh` · `grim-ac.sh` | Optional plugins |
+| `soak-yap-folia.sh` · `smoke-folia.sh` | Soak + boot smoke |
 
-Soak hooks (called by `soak-yap-folia.sh`): `smoke-folia-sched-compat.sh`,
-`smoke-folia-cross-region-tp.sh`, `smoke-folia-async-save.sh`.
+Soak hooks: `smoke-folia-sched-compat.sh`, `smoke-folia-cross-region-tp.sh`, `smoke-folia-async-save.sh`.
 
-Optional standalone: `smoke-folia-scoreboard.sh` (not part of default soak profile).
-
-## Network / release gates
+## Release gates
 
 | Script | Purpose |
 |--------|---------|
-| `start-yap-link.sh` | Run YaP Link proxy |
-| `smoke-yap-link-folia.sh` · `smoke-yap-link-plugins.sh` | Link + Folia |
-| `smoke-yap-link-bedrock.sh` · `smoke-yap-link-two-backend.sh` | Crossplay / multi-backend |
-| `smoke-folia-plugins.sh` · `smoke-bedrock-play.sh` | Plugin + Bedrock play |
-| `smoke-network-full.sh` | Full release gate (assemble + smokes) |
-| `smoke-playerdata-shops-ah.sh` · `smoke-link-rate-limit.sh` · `smoke-lagguard.sh` | Feature smokes |
-| `check-plugin-layout.sh` | Plugin folder layout check |
+| `smoke-network-full.sh` | **Primary release gate** (9 steps) |
+| `smoke-phase7-soak.sh` | Play soak + gameplay (600s) |
+| `smoke-yap-link-*.sh` · `smoke-folia-plugins.sh` · `smoke-bedrock-play.sh` | Network / crossplay |
+| `check-plugin-layout.sh` | Plugin folder layout |
+| `protocol-matrix/` | JE/BE matrix + play soak bots |
 
 ## Content / packs
 
 | Script | Purpose |
 |--------|---------|
-| `content/generate-mmo-quest-compendium.py` | Tiered quest YAML |
-| `content/generate-mmo-baseline-pack.py` | Recipes / bosses |
-| `validate-mmo-content.sh` | Manifest + quest validation |
-| `generate-ability-pack.py` · `generate-mmo-icons.py` | Abilities YAML + CLAY_BALL icon pack |
-| `generate-vehicle-showcase.py` | Vehicle model demo PNGs → `resourcepacks/yap-vehicles/showcase/` |
-| `build-default-resourcepack.sh` · `fetch-faithful-64x.sh` · `verify-packs.sh` | Client packs |
+| `content/*.py` · `validate-mmo-content.sh` | MMO content pipeline |
+| `generate-ability-pack.py` · `generate-mmo-icons.py` | Abilities + icons |
+| `build-default-resourcepack.sh` · `fetch-faithful-64x.sh` | Resource packs |
 
-## Bench / protocol / tests
+## Bench / tests (maintainers)
 
 | Path | Purpose |
 |------|---------|
-| `bench/run-vs-folia.sh` · `run-vs-all.sh` | MSPT / stack benches (Folia + forks + Paper/Purpur/Leaf) |
-| `bench/bots/` · `patch-minecraft-data.sh` | Mineflayer swarm; Paper 26.2 protocol patch — [BENCH_BOTS.md](../docs/performance/BENCH_BOTS.md) |
-| `bench/fetch-*.sh` · `compare-folia.py` | Competitor jars + compare |
-| `protocol-matrix/` | JE/BE protocol matrix (Via/Geyser parity) |
-| `test-unit.sh` · `test-fray.sh` · `test-all.sh` | `gradle test` / Fray / verify |
+| `bench/run-vs-folia.sh` · `run-vs-all.sh` | MSPT benches |
+| `bench/bots/` | Mineflayer swarm |
+| `test-unit.sh` · `test-fray.sh` · `test-all.sh` | Gradle test wrappers |
 | `export-docs-pdf.sh` | Rebuild docs PDFs |
-| `lib.sh` | Shared helpers (sourced by other scripts) |
-
-Milestone one-shot smokes (`smoke-mmo-m*`, factions/guilds/games gates) and root
-`test-*.sh` wrappers were removed — use the gates above.
+| `lib.sh` | Shared helpers |

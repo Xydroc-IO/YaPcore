@@ -160,28 +160,18 @@ vendor/folia/work/
 vendor/folia/*.tmp
 
 # =============================================================================
-# In-house lab (bench, smokes, protocol matrix, internal docs)
-# Not needed to run YaPcore or for external server owners / contributors.
+# Bench runtime artifacts (scripts/bench/ stays tracked)
 # =============================================================================
 bench/
-scripts/bench/
+
+# Dev-only plugins and stress harness (not shipped)
 yap-first-party/dev/
-scripts/smoke-*.sh
-scripts/soak-*.sh
-scripts/test-all.sh
-scripts/test-fray.sh
-scripts/protocol-matrix/
-scripts/export-docs-pdf.sh
-scripts/heap-dump.sh
-scripts/fetch-folia.sh
 src/jcstress/
-docs/overview/
-docs/performance/
-docs/whitepaper/
-docs/pdf/
-docs/folia/
-docs/protocol/
-docs/start/TESTING.md
+
+# Generated PDFs — regenerate with ./scripts/export-docs-pdf.sh
+docs/pdf/*.pdf
+
+# Folia agent scratch notes (archived handoffs live under docs/archive/)
 vendor/folia/patches/AGENT*.md
 
 # =============================================================================

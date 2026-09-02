@@ -138,7 +138,7 @@ Native Bedrock UDP (no Velocity) already uses first-party `FloodgateAuth` with t
 ## ViaVersion / ViaBackwards / ViaRewind / Geyser
 
 **Do not use.** Phase 4 DoD is **full** Via\* + Geyser feature parity in YaPcore
-code ([PHASE4_PROTOCOL.md](../protocol/PHASE4_PROTOCOL.md)). Dropping those jars into
+code ([VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md)). Dropping those jars into
 `plugins/` is not the supported path.
 
 Proxy networks that still run Via on Velocity for *other* backends are outside

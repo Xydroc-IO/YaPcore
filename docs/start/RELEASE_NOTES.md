@@ -3,7 +3,7 @@
 Product version **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2**
 
 For build commands and zip layout see [RELEASES.md](RELEASES.md). For live status see
-[PROJECT_STATUS.md](../overview/PROJECT_STATUS.md).
+[YAPCORE_MASTER.md](../overview/YAPCORE_MASTER.md).
 
 ---
 

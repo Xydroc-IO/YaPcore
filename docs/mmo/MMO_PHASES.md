@@ -450,7 +450,7 @@ YAP_GAMEPLAY=1 ./scripts/smoke-folia-plugins.sh   # if extended for gameplay jar
 
 Update:
 
-- `docs/overview/FULL_RUNDOWN.md` — MMO section
+- [YAPCORE_MASTER.md](../overview/YAPCORE_MASTER.md) — MMO section
 - `docs/ops/PERMISSIONS.md` — `yapskills.*`, `yapcombat.*`, `yapcraft.*`, `yapmmo.*`, `yapabilities.*`
 - `gradle/yap-product.gradle.kts` — gameplay install includes all MMO jars
 - `gradle/yap-release.gradle.kts` — release artifact list

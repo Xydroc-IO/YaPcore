@@ -11,6 +11,7 @@ playerdata, packs).
 
 | | |
 |--|--|
+| **Master doc** | [**docs/overview/YAPCORE_MASTER.md**](docs/overview/YAPCORE_MASTER.md) — what we are, where we stand, advantages |
 | **Quick Start** | [**docs/start/QUICK_START.md**](docs/start/QUICK_START.md) |
 | **Wiki** | [**docs/WIKI.md**](docs/WIKI.md) |
 | **Releases** | [docs/start/RELEASES.md](docs/start/RELEASES.md) · build locally with `gradle publishReleasesFolder` |
@@ -109,7 +110,7 @@ Default: `game-authority=folia`, `folia-jar-source=build`, dual-stack Java+Bedro
 |----------|------------|
 | **Admins** | [QUICK_START.md](docs/start/QUICK_START.md) → [WIKI.md](docs/WIKI.md) · [DEFAULTS.md](docs/start/DEFAULTS.md) |
 | **Commands / perms** | [COMMANDS.md](docs/ops/COMMANDS.md) · [PERMISSIONS.md](docs/ops/PERMISSIONS.md) |
-| **Architecture** | [WHAT_WE_ARE.md](docs/overview/WHAT_WE_ARE.md) · [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
+| **Architecture** | [YAPCORE_MASTER.md](docs/overview/YAPCORE_MASTER.md) · [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
 | **Contributors** | [CONTRIBUTING.md](CONTRIBUTING.md) · [scripts/README.md](scripts/README.md) |
 
 ---

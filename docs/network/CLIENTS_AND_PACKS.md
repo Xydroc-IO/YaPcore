@@ -5,7 +5,7 @@
 **Product path:** Folia game (`game-authority=folia`, `folia-embed=true`) + YapEngine chassis.  
 Phase 3 Paper spatial is **legacy / opt-in** (defaults off); Folia path has no Phase 3 spatial tick.  
 Phase 4: dual-stack join + play-depth smoke green (not full Geyser clone yet).  
-See [PHASE4_PROTOCOL.md](../protocol/PHASE4_PROTOCOL.md) · [WHAT_WE_ARE.md](../overview/WHAT_WE_ARE.md).
+See [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md) · [YAPCORE_MASTER.md](../overview/YAPCORE_MASTER.md).
 
 ```properties
 game-authority=folia
@@ -62,7 +62,7 @@ Legacy Paperclip (Phase 3 benches only):
 checks (`MATRIX_FULL=1`); deep play remaps are **not** a Phase 4 blocker.
 
 **Phase 4 DoD:** first-party ViaVersion + ViaBackwards equivalents on the Folia
-JE path. ViaRewind-depth is best-effort only. See [PHASE4_PROTOCOL.md](../protocol/PHASE4_PROTOCOL.md)
+JE path. ViaRewind-depth is best-effort only. See [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md)
 and the full checklist [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
 Join/spawn is green; **do not** claim full Geyser play parity yet.
 

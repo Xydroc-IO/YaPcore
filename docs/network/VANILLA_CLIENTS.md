@@ -4,7 +4,7 @@
 **YaP-Folia** owns the public JE protocol after boot (not stock Fill). Legacy
 `game-authority=paper` uses Paper the same way. YaPcore’s native multi-version
 bands apply when `game-authority=native`. See [FOLIA_FORK.md](../folia/FOLIA_FORK.md),
-[CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md), and [PHASE4_PROTOCOL.md](../protocol/PHASE4_PROTOCOL.md).
+[CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md), and [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
 
 YaPcore’s native path speaks **real Minecraft Java protocol** with **built-in multi-version bands**
 (`ProtocolBand`). Each client gets its own codec path — no external translators.

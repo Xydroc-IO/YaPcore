@@ -13,7 +13,7 @@ not product DoD for play remaps. Live matrix (2026-08-21): JE **7/7** join/spawn
 Bedrock smoke `geyserParitySmoke=true` on 1.21.50 (~1599 itemstates).
 
 **Phase 4 DoD** is that parity on the Folia-backed world (product default). Slice roll-up:
-[PHASE4_PROTOCOL.md](../protocol/PHASE4_PROTOCOL.md). Feature-by-feature checklist:
+[VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md). Feature-by-feature checklist:
 [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
 Bedrock terrain defaults to **column stream** from the game authority (P4.5); flat is opt-in
 (`-Dyapcore.bedrock.flat-chunks=true`). Automated soak preamble:
@@ -23,7 +23,7 @@ Bedrock terrain defaults to **column stream** from the game authority (P4.5); fl
 Phase 3 Paper spatial tick is **not** product default (opt-in for Paper benches only;
 Folia path has no Phase 3 spatial tick). Phase 4 finishes dual-stack depth —
 join/spawn green; core play depth via `smoke-bedrock-play.sh` (do not claim full Geyser play parity yet).
-See [PHASE4_PROTOCOL.md](../protocol/PHASE4_PROTOCOL.md) · [WHAT_WE_ARE.md](../overview/WHAT_WE_ARE.md).
+See [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md) · [YAPCORE_MASTER.md](../overview/YAPCORE_MASTER.md).
 
 ## Streamlined one-port join
 
@@ -66,7 +66,7 @@ Moves/chats/clicks are translated into shared engine ops.
 **Target:** full Geyser feature parity + full Via\* feature parity in YaP code.
 **Join/spawn replace claim:** JE matrix green + Bedrock smoke green — operators do **not**
 need Via\* or Geyser jars for supported bands. Soft gameplay depth (richer BE metadata,
-block-state catalogs) still hardens from live clients — see [PHASE4_PROTOCOL.md](../protocol/PHASE4_PROTOCOL.md).
+block-state catalogs) still hardens from live clients — see [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
 
 Re-run:
 

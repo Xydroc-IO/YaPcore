@@ -101,16 +101,15 @@ tasks.register("assembleRelease") {
             }
         }
         val docFiles = listOf(
-            // Prefer **/ so docs under start/, ops/, … are included after the docs/ regroup.
             "**/QUICK_START.md", "**/WIKI.md", "**/LICENSING.md", "**/COMMANDS.md",
             "**/VEHICLES.md", "**/CLIENTS_AND_PACKS.md", "**/WEB_DASHBOARD.md", "**/PREGEN.md",
             "**/WINDOWS.md", "**/NGINX_AND_LOCALHOST.md", "**/PLAYERDATA.md", "**/MARIADB.md", "**/YAPDB.md",
             "**/STACKER.md", "**/PLUGINS.md", "**/MODULES_AND_API.md", "**/TUNE.md", "**/PERMISSIONS.md",
             "**/TEBEX.md",
             "**/REGIONS.md", "**/RELEASES.md", "**/RELEASE_NOTES.md", "**/DEFAULTS.md", "**/SECRETS.md", "**/TESTING.md",
-            "**/PROJECT_STATUS.md", "**/COMPLETION_BACKLOG.md",
-            "**/PLUGIN_COMPAT_MATRIX.md", "**/YAP_LINK_NATIVE.md", "**/PHASE4_PROTOCOL.md",
-            "**/ROADMAP_COMPLETION_PHASES.md", "**/VIA_GEYSER_PARITY.md",
+            "**/YAPCORE_MASTER.md", "**/RELEASE_READINESS.md", "**/COMPARE_ECOSYSTEM.md",
+            "**/PLUGIN_COMPAT_MATRIX.md", "**/YAP_LINK_NATIVE.md",
+            "**/VIA_GEYSER_PARITY.md",
             "**/FOLIA_FORK.md", "**/YAP_FOLIA_SOAK.md",
             "README.md",
         )
