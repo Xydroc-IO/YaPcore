@@ -27,4 +27,15 @@ class AbilityBookConfigTest {
         assertTrue(cfg.tomeEnabled());
         assertFalse(cfg.giveTomeOnFirstJoin());
     }
+
+    @Test
+    void defaultsOpenBookAndEnchantedTome() {
+        AbilityBookConfig cfg = new AbilityBookConfig(new YamlConfiguration());
+        assertTrue(cfg.enabled());
+        assertTrue(cfg.showLocked());
+        assertTrue(cfg.openTrigger(AbilityBookConfig.OpenTrigger.COMMAND));
+        assertTrue(cfg.openTrigger(AbilityBookConfig.OpenTrigger.TOME));
+        assertTrue(cfg.openTrigger(AbilityBookConfig.OpenTrigger.SNEAK_SWAP));
+        assertEquals("ENCHANTED_BOOK", cfg.tomeMaterialName());
+    }
 }

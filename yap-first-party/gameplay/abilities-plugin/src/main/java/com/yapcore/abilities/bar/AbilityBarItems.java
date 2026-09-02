@@ -3,6 +3,7 @@ package com.yapcore.abilities.bar;
 import com.yapcore.abilities.AbilityDefinition;
 import com.yapcore.abilities.AbilityService;
 import com.yapcore.abilities.CastResult;
+import com.yapcore.abilities.book.AbilityDescribe;
 import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
@@ -41,12 +42,18 @@ public final class AbilityBarItems {
         if (ability.isPresent()) {
             AbilityDefinition a = ability.get();
             meta.displayName(Component.text("§d" + a.displayName()));
-            int cmd = a.resolvedIconCmd();
-            if (cmd > 0) {
-                meta.setCustomModelData(cmd);
+            try {
+                int cmd = a.resolvedIconCmd();
+                if (cmd > 0) {
+                    meta.setCustomModelData(cmd);
+                }
+            } catch (Throwable ignored) {
             }
             List<Component> lore = new ArrayList<>();
             lore.add(Component.text("§7Key §f" + hotbarKey + " §7· §e" + a.id()));
+            for (String line : AbilityDescribe.lorePlain(a)) {
+                lore.add(Component.text(line));
+            }
             lore.add(Component.text("§8Press §f" + hotbarKey + " §8to cast"));
             if (abilities.isOnCooldown(player, a.id())) {
                 long ticks = abilities.cooldownRemainingTicks(player, a.id());

@@ -17,7 +17,8 @@ public record AbilityDefinition(
         List<AbilityEffect> castEffects,
         List<AbilityEffect> hitEffects,
         ProjectileSpec projectile,
-        int iconCmd) {
+        int iconCmd,
+        String description) {
 
     public AbilityDefinition {
         minLevels = minLevels == null ? Map.of() : Map.copyOf(minLevels);
@@ -26,6 +27,7 @@ public record AbilityDefinition(
         hitEffects = hitEffects == null ? List.of() : List.copyOf(hitEffects);
         cooldownTicks = Math.max(0, cooldownTicks);
         range = range <= 0 ? 20 : range;
+        description = description == null ? "" : description.trim();
     }
 
     /** Back-compat without conditions/icon. */
@@ -43,7 +45,27 @@ public record AbilityDefinition(
             List<AbilityEffect> hitEffects,
             ProjectileSpec projectile) {
         this(id, displayName, category, minLevels, costs, cooldownTicks, range, targetMode,
-                targetFilter, List.of(), castEffects, hitEffects, projectile, 0);
+                targetFilter, List.of(), castEffects, hitEffects, projectile, 0, "");
+    }
+
+    /** Back-compat without description. */
+    public AbilityDefinition(
+            String id,
+            String displayName,
+            AbilityCategory category,
+            Map<String, Integer> minLevels,
+            AbilityCosts costs,
+            int cooldownTicks,
+            double range,
+            TargetMode targetMode,
+            String targetFilter,
+            List<CastCondition> conditions,
+            List<AbilityEffect> castEffects,
+            List<AbilityEffect> hitEffects,
+            ProjectileSpec projectile,
+            int iconCmd) {
+        this(id, displayName, category, minLevels, costs, cooldownTicks, range, targetMode,
+                targetFilter, conditions, castEffects, hitEffects, projectile, iconCmd, "");
     }
 
     public int minLevel(String skillId) {

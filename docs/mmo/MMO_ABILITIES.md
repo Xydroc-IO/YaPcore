@@ -69,13 +69,20 @@ RS **skills** stay passive — only **abilities** bind to combat keys 4–9.
 
 ## Ability book (spellbook GUI)
 
-Browse **unlocked** abilities (gated by RS skill levels in each ability’s `min-level`) and bind them to combat keys **4–9** without memorizing ids.
+Browse abilities in a **chest GUI** (not a vanilla written book) and bind them to combat keys **4–9**.
+
+Level-1 spells (Wind Strike, etc.) are bindable immediately. Higher spells show as gunpowder until the RS skill is high enough. Ops / `yapabilities.admin` can bind any ability.
 
 | Input | Action |
 |-------|--------|
-| **`/abilities`** or **`/ability book`** | Open the book |
-| **Ability Tome** (right-click) | Open the book — auto-given on first join when enabled |
+| **`/abilities`** `/ability` `/spell` | Open the ability book GUI |
+| **`/spell wind_strike`** | Put that spell on the next empty hotbar key (4–9) |
+| **Hover a spell in the book** | See what it does, costs, and requirements |
+| **Right-click a spell** or **`/ability info <id>`** | Full spell card in chat |
+| **Click a spell in the book** | Add it to the hotbar and switch to the combat bar |
+| **Ability Tome** (right-click enchanted book) | Open the book — auto-given on first join when enabled |
 | **`/ability tome`** | Get a replacement tome |
+| **`/ability mode combat`** | Show the combat hotbar, then press **4–9** to cast |
 | **Bedrock** | Same commands open a **form UI** (category → ability → slot) |
 
 ### Java GUI

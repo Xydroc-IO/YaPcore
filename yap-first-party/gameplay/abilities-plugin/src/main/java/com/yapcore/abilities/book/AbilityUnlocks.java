@@ -18,6 +18,10 @@ public final class AbilityUnlocks {
     }
 
     public static boolean isUnlocked(Player player, AbilityDefinition ability, Collection<SkillProgress> skills) {
+        if (player != null && (player.hasPermission("yapabilities.admin")
+                || player.hasPermission("yapabilities.bypass.lock"))) {
+            return true;
+        }
         if (ability.minLevels().isEmpty()) {
             return true;
         }

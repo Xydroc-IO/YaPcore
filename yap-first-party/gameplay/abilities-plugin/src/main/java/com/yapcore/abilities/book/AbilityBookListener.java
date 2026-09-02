@@ -1,19 +1,15 @@
 package com.yapcore.abilities.book;
 
-import com.yapcore.abilities.AbilityCategory;
 import com.yapcore.abilities.AbilityDefinition;
 import com.yapcore.abilities.AbilityService;
-import com.yapcore.mmo.SkillProgress;
-import com.yapcore.mmo.SkillService;
-import com.yapcore.mmo.SkillServices;
 import com.yapcore.sched.YapSched;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -23,9 +19,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 public final class AbilityBookListener implements Listener {
@@ -48,9 +42,12 @@ public final class AbilityBookListener implements Listener {
         YapSched.entityLater(plugin, event.getPlayer(), () -> book.maybeGiveFirstJoinTome(event.getPlayer()), 20L);
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onTomeInteract(PlayerInteractEvent event) {
         if (!book.config().enabled() || !book.config().openTrigger(AbilityBookConfig.OpenTrigger.TOME)) {
+            return;
+        }
+        if (event.getHand() != null && event.getHand() != EquipmentSlot.HAND) {
             return;
         }
         Action action = event.getAction();
@@ -84,7 +81,8 @@ public final class AbilityBookListener implements Listener {
             return;
         }
         Inventory top = event.getView().getTopInventory();
-        if (!(top.getHolder() instanceof AbilityBookHolder holder)) {
+        AbilityBookHolder holder = BookInventories.bookHolder(top);
+        if (holder == null) {
             return;
         }
         if (!holder.viewer().equals(player.getUniqueId())) {
@@ -132,7 +130,8 @@ public final class AbilityBookListener implements Listener {
             return;
         }
         Inventory top = event.getView().getTopInventory();
-        if (!(top.getHolder() instanceof AbilityBookHolder holder)) {
+        AbilityBookHolder holder = BookInventories.bookHolder(top);
+        if (holder == null) {
             return;
         }
         if (!holder.viewer().equals(player.getUniqueId())) {
@@ -180,13 +179,7 @@ public final class AbilityBookListener implements Listener {
             boolean shiftClick,
             boolean rightClick
     ) {
-        SkillService skills = SkillServices.find().orElse(null);
-        if (skills != null) {
-            skills.getAll(player.getUniqueId()).thenAccept(all ->
-                    YapSched.entity(plugin, player, () ->
-                            book.handleAbilityClick(player, holder, ability, shiftClick, rightClick, all)));
-        } else {
-            book.handleAbilityClick(player, holder, ability, shiftClick, rightClick, List.of());
-        }
+        AbilitySkillData.load(plugin, player, all ->
+                book.handleAbilityClick(player, holder, ability, shiftClick, rightClick, all));
     }
 }

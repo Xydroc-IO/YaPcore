@@ -3,12 +3,10 @@ package com.yapcore.abilities.book;
 import com.yapcore.abilities.AbilityCategory;
 import com.yapcore.abilities.AbilityDefinition;
 import com.yapcore.abilities.AbilityService;
+import com.yapcore.abilities.bar.AbilityBarMode;
 import com.yapcore.abilities.bar.AbilityBarService;
 import com.yapcore.bedrock.ui.BedrockUiServices;
 import com.yapcore.mmo.SkillProgress;
-import com.yapcore.mmo.SkillService;
-import com.yapcore.mmo.SkillServices;
-import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -166,27 +164,18 @@ public final class AbilityBookService {
         if (ability == null) {
             return;
         }
-        if (!AbilityUnlocks.isUnlocked(player, ability, skills)) {
-            player.sendMessage("§cLocked: " + AbilityUnlocks.requirementsText(ability, skills));
-            return;
-        }
-        if (rightClick) {
-            player.sendMessage("§6" + ability.displayName() + " §7(" + ability.id() + ")");
-            player.sendMessage("§7" + AbilityUnlocks.requirementsText(ability, skills));
-            if (ability.cooldownTicks() > 0) {
-                player.sendMessage("§7Cooldown: §f" + (ability.cooldownTicks() / 20.0) + "s");
-            }
+        if (rightClick || !AbilityUnlocks.isUnlocked(player, ability, skills)) {
+            AbilityDescribe.send(player, ability, skills);
             return;
         }
         if (shiftClick) {
-            bindToFirstEmpty(player, holder, ability.id());
+            holder.setPendingAbilityId(ability.id());
+            player.sendActionBar(Component.text("§eSelected §f" + ability.displayName()
+                    + " §7— click a bar slot to place it"));
+            menu.refresh(player, holder);
             return;
         }
-        holder.setPendingAbilityId(ability.id());
-        player.sendActionBar(Component.text("§eSelected §f" + ability.displayName()
-                + " §7— click a bar slot (keys " + bar.config().firstKey()
-                + "–" + bar.config().lastKey() + ")"));
-        menu.refresh(player, holder);
+        bindToFirstEmpty(player, holder, ability.id());
     }
 
     public void handleBarSlotClick(
@@ -248,24 +237,52 @@ public final class AbilityBookService {
             player.sendMessage("§cUnknown ability.");
             return;
         }
-        SkillService skills = SkillServices.find().orElse(null);
-        if (skills != null) {
-            skills.getAll(player.getUniqueId()).thenAccept(all -> YapSched.entity(plugin, player, () -> {
-                abilities.get(abilityId).ifPresent(def -> {
-                    if (!AbilityUnlocks.isUnlocked(player, def, all)) {
-                        player.sendMessage("§cThat ability is locked.");
-                        return;
-                    }
-                    bar.bind(player, barIndex + 1, abilityId, true);
-                    holder.setPendingAbilityId(null);
-                    menu.refresh(player, holder);
-                });
-            }));
-        } else {
+        AbilitySkillData.load(plugin, player, all -> abilities.get(abilityId).ifPresent(def -> {
+            if (!AbilityUnlocks.isUnlocked(player, def, all)) {
+                player.sendMessage("§cThat ability is locked.");
+                return;
+            }
             bar.bind(player, barIndex + 1, abilityId, true);
+            bar.setMode(player, AbilityBarMode.COMBAT);
             holder.setPendingAbilityId(null);
             menu.refresh(player, holder);
+        }));
+    }
+
+    public void showInfo(Player player, String abilityId) {
+        abilities.get(abilityId).ifPresentOrElse(def -> AbilitySkillData.load(plugin, player, all ->
+                AbilityDescribe.send(player, def, all)), () ->
+                player.sendMessage("§cUnknown ability. §e/abilities"));
+    }
+
+    /**
+     * Bind an unlocked ability to a combat hotbar slot (0 = first empty) and switch to combat.
+     */
+    public void addToHotbar(Player player, String abilityId, int slotOneBased) {
+        if (!player.hasPermission("yapabilities.bar")) {
+            player.sendMessage("§cNo permission.");
+            return;
         }
+        if (abilityId == null || abilityId.isBlank()) {
+            open(player);
+            return;
+        }
+        abilities.get(abilityId).ifPresentOrElse(def -> AbilitySkillData.load(plugin, player, all -> {
+            if (!AbilityUnlocks.isUnlocked(player, def, all)) {
+                player.sendMessage("§cLocked: " + AbilityUnlocks.requirementsText(def, all));
+                return;
+            }
+            int slot = slotOneBased;
+            if (slot < 1) {
+                slot = bar.bindNextEmpty(player, def.id(), true);
+            } else {
+                bar.bind(player, slot, def.id(), true);
+            }
+            if (slot < 1) {
+                return;
+            }
+            bar.setMode(player, AbilityBarMode.COMBAT);
+        }), () -> player.sendMessage("§cUnknown ability §e" + abilityId + "§c. Use §e/abilities"));
     }
 
     private static AbilityCategory parseCategory(String raw) {

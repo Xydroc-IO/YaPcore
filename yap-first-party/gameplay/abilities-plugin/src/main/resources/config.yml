@@ -30,7 +30,7 @@ ability-book:
     - SNEAK_SWAP    # sneak + swap hands (F) — ability book hotkey
   tome:
     enabled: true
-    material: KNOWLEDGE_BOOK
+    material: ENCHANTED_BOOK
     custom-model-data: 79100
     display-name: "§dAbility Tome"
     lore:

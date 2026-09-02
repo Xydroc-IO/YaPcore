@@ -65,11 +65,22 @@ public final class AbilityCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            if (command.getName().equalsIgnoreCase("abilities")) {
-                abilityBook.open(player);
-                return true;
-            }
-            listAbilities(player, abilities, abilityBar, 1, null);
+            abilityBook.open(player);
+            return true;
+        }
+        if (command.getName().equalsIgnoreCase("spell")
+                && !"add".equalsIgnoreCase(args[0])
+                && !"bind".equalsIgnoreCase(args[0])
+                && !"book".equalsIgnoreCase(args[0])
+                && !"list".equalsIgnoreCase(args[0])
+                && !"clear".equalsIgnoreCase(args[0])
+                && !"mode".equalsIgnoreCase(args[0])
+                && !"tome".equalsIgnoreCase(args[0])
+                && !"info".equalsIgnoreCase(args[0])
+                && !"cast".equalsIgnoreCase(args[0])
+                && !"bar".equalsIgnoreCase(args[0])) {
+            int slot = args.length > 1 ? parseBarSlot(args[1]) : 0;
+            abilityBook.addToHotbar(player, args[0], Math.max(0, slot));
             return true;
         }
         if ("list".equalsIgnoreCase(args[0])) {
@@ -106,22 +117,27 @@ public final class AbilityCommands implements CommandExecutor, TabCompleter {
             }
             return true;
         }
-        if ("bind".equalsIgnoreCase(args[0])) {
+        if ("add".equalsIgnoreCase(args[0]) || "bind".equalsIgnoreCase(args[0])) {
             if (!player.hasPermission("yapabilities.bar")) {
                 player.sendMessage("§cNo permission.");
                 return true;
             }
             if (args.length < 2) {
-                player.sendMessage("§e/ability bind <1-6> [abilityId]");
+                player.sendMessage("§e/spell <ability> [slot] §7or §e/ability add <ability> [1-6]");
+                abilityBook.open(player);
                 return true;
             }
-            int slot = parseBarSlot(args[1]);
-            if (slot < 1) {
-                player.sendMessage("§cBar slot must be §e1–6§c (keys §e4–9§c).");
+            int asSlot = parseBarSlot(args[1]);
+            if (asSlot >= 1 && args.length >= 3) {
+                abilityBook.addToHotbar(player, args[2], asSlot);
                 return true;
             }
-            String abilityId = args.length > 2 ? args[2] : "";
-            abilityBar.bind(player, slot, abilityId);
+            if (asSlot >= 1 && args.length == 2) {
+                player.sendMessage("§e/ability bind " + asSlot + " <ability>");
+                return true;
+            }
+            int slot = args.length > 2 ? parseBarSlot(args[2]) : 0;
+            abilityBook.addToHotbar(player, args[1], Math.max(0, slot));
             return true;
         }
         if ("clear".equalsIgnoreCase(args[0])) {
@@ -135,7 +151,7 @@ public final class AbilityCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if ("info".equalsIgnoreCase(args[0]) && args.length > 1) {
-            info(player, abilities, args[1]);
+            abilityBook.showInfo(player, args[1]);
             return true;
         }
         if ("cast".equalsIgnoreCase(args[0]) && args.length > 1) {
@@ -169,18 +185,7 @@ public final class AbilityCommands implements CommandExecutor, TabCompleter {
             player.sendMessage("§e" + a.id() + " §7— §f" + a.displayName()
                     + " §8[" + a.category().name().toLowerCase(Locale.ROOT) + "]");
         }
-        player.sendMessage("§8Hotbar: §7/ability book §8· §7Shift+F §8· §7/ability mode · keys §e4–9");
-    }
-
-    private void info(Player player, AbilityService abilities, String id) {
-        abilities.get(id).ifPresentOrElse(a -> {
-            player.sendMessage("§6" + a.displayName() + " §7(" + a.id() + ")");
-            player.sendMessage("§7Category: §f" + a.category());
-            player.sendMessage("§7Range: §f" + a.range() + " §7Cooldown: §f" + a.cooldownTicks() + "t");
-            if (!a.minLevels().isEmpty()) {
-                player.sendMessage("§7Requires: §f" + a.minLevels());
-            }
-        }, () -> player.sendMessage("§cUnknown ability."));
+        player.sendMessage("§8Add to hotbar: §e/spell <id> §8· §e/abilities §8· keys §e4–9");
     }
 
     private static int parsePage(String raw) {
@@ -211,7 +216,7 @@ public final class AbilityCommands implements CommandExecutor, TabCompleter {
             }
             return List.of();
         }
-        if (!cmd.equals("ability") && !cmd.equals("abilities")) {
+        if (!cmd.equals("ability") && !cmd.equals("abilities") && !cmd.equals("spell") && !cmd.equals("addspell")) {
             return List.of();
         }
         AbilityService abilities = plugin.abilityService();
@@ -219,8 +224,8 @@ public final class AbilityCommands implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            List<String> out = new ArrayList<>(List.of("list", "book", "cast", "info", "bar", "bind", "clear", "mode", "tome"));
-            abilities.definitions().stream().map(AbilityDefinition::id).limit(40).forEach(out::add);
+            List<String> out = new ArrayList<>(List.of("list", "book", "cast", "info", "bar", "bind", "add", "clear", "mode", "tome"));
+            abilities.definitions().stream().map(AbilityDefinition::id).forEach(out::add);
             return prefix(out, args[0]);
         }
         if (args.length == 2 && "mode".equalsIgnoreCase(args[0])) {
@@ -229,12 +234,16 @@ public final class AbilityCommands implements CommandExecutor, TabCompleter {
         if (args.length == 2 && "book".equalsIgnoreCase(args[0])) {
             return prefix(List.of("all", "magic", "ranged", "melee", "prayer", "utility"), args[1]);
         }
-        if (args.length == 2 && "bind".equalsIgnoreCase(args[0])) {
-            List<String> slots = IntStream.rangeClosed(1, 6).mapToObj(Integer::toString).toList();
-            return prefix(slots, args[1]);
+        if (args.length == 2 && ("bind".equalsIgnoreCase(args[0]) || "add".equalsIgnoreCase(args[0]))) {
+            List<String> mixed = new ArrayList<>(IntStream.rangeClosed(1, 6).mapToObj(Integer::toString).toList());
+            abilities.definitions().stream().map(AbilityDefinition::id).forEach(mixed::add);
+            return prefix(mixed, args[1]);
         }
-        if (args.length == 3 && "bind".equalsIgnoreCase(args[0])) {
+        if (args.length == 3 && ("bind".equalsIgnoreCase(args[0]) || "add".equalsIgnoreCase(args[0]))) {
             return prefix(abilities.definitions().stream().map(AbilityDefinition::id).toList(), args[2]);
+        }
+        if (args.length == 2 && ("spell".equals(cmd) || "addspell".equals(cmd))) {
+            return prefix(IntStream.rangeClosed(1, 6).mapToObj(Integer::toString).toList(), args[1]);
         }
         if (args.length == 2 && ("cast".equalsIgnoreCase(args[0]) || "info".equalsIgnoreCase(args[0]))) {
             return prefix(abilities.definitions().stream().map(AbilityDefinition::id).toList(), args[1]);

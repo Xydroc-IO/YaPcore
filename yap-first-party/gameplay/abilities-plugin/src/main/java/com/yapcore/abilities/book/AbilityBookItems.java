@@ -80,13 +80,17 @@ public final class AbilityBookItems {
             meta.displayName(Component.text("How to bind", NamedTextColor.AQUA)
                     .decoration(TextDecoration.ITALIC, false));
             meta.lore(List.of(
-                    Component.text("Drag an ability onto keys 4–9 below")
+                    Component.text("Hover a spell to see what it does")
                             .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
-                    Component.text("Shift-click ability → first empty slot")
+                    Component.text("Right-click a spell for the full card")
+                            .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+                    Component.text("Click to put it on keys 4–9")
+                            .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+                    Component.text("Shift-click then click a slot to place it")
                             .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
                     Component.text("Right-click a bar slot to clear")
                             .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
-                    Component.text("Switch to combat bar (/ability mode) to cast")
+                    Component.text("/spell <name>  also adds to the hotbar")
                             .color(NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false)
             ));
         });
@@ -140,6 +144,34 @@ public final class AbilityBookItems {
         return stack;
     }
 
+    public static ItemStack emptyCatalogNotice() {
+        ItemStack stack = new ItemStack(Material.BARRIER);
+        stack.editMeta(meta -> {
+            meta.displayName(Component.text("No abilities loaded", NamedTextColor.RED)
+                    .decoration(TextDecoration.ITALIC, false));
+            meta.lore(List.of(
+                    Component.text("Check plugins/YaPAbilities/abilities/*.yml")
+                            .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false),
+                    Component.text("Then /yapabilities reload")
+                            .color(NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false)
+            ));
+        });
+        return stack;
+    }
+
+    public static ItemStack emptyFilterNotice(AbilityCategory filter) {
+        ItemStack stack = new ItemStack(Material.MAP);
+        stack.editMeta(meta -> {
+            meta.displayName(Component.text("Nothing in this category", NamedTextColor.YELLOW)
+                    .decoration(TextDecoration.ITALIC, false));
+            meta.lore(List.of(
+                    Component.text(filter == null ? "Try another page" : "Try All or another tab")
+                            .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false)
+            ));
+        });
+        return stack;
+    }
+
     public static ItemStack abilityIcon(
             AbilityBookKeys keys,
             AbilityDefinition ability,
@@ -149,15 +181,10 @@ public final class AbilityBookItems {
             AbilityService abilities,
             Player player
     ) {
-        ItemStack stack = new ItemStack(unlocked ? Material.CLAY_BALL : Material.GRAY_STAINED_GLASS_PANE);
+        ItemStack stack = new ItemStack(iconMaterial(ability, unlocked));
         stack.editMeta(meta -> {
-            if (unlocked) {
-                int cmd = ability.resolvedIconCmd();
-                if (cmd > 0) {
-                    meta.setCustomModelData(cmd);
-                }
-                meta.getPersistentDataContainer().set(keys.bookAbility, PersistentDataType.STRING, ability.id());
-            }
+            applyCmd(meta, ability.resolvedIconCmd());
+            meta.getPersistentDataContainer().set(keys.bookAbility, PersistentDataType.STRING, ability.id());
             String prefix = unlocked ? "§d" : "§8";
             if (selected) {
                 prefix = "§e§l";
@@ -167,6 +194,7 @@ public final class AbilityBookItems {
             List<Component> lore = new ArrayList<>();
             lore.add(Component.text("§7" + ability.category().name().toLowerCase(Locale.ROOT)
                     + " §8· §e" + ability.id()).decoration(TextDecoration.ITALIC, false));
+            lore.addAll(AbilityDescribe.lore(ability));
             if (!unlocked) {
                 lore.add(Component.text("§cLocked").decoration(TextDecoration.ITALIC, false));
                 lore.add(Component.text(AbilityUnlocks.requirementsText(ability, skills))
@@ -185,7 +213,7 @@ public final class AbilityBookItems {
                 } else {
                     lore.add(Component.text("§aReady to bind").decoration(TextDecoration.ITALIC, false));
                 }
-                lore.add(Component.text("§8Drag onto bar slot · Shift-click quick bind")
+                lore.add(Component.text("§aClick to add to hotbar (keys 4–9)")
                         .decoration(TextDecoration.ITALIC, false));
             }
             if (selected) {
@@ -215,8 +243,8 @@ public final class AbilityBookItems {
         AbilityDefinition bound = null;
         if (boundId != null && !boundId.isBlank()) {
             bound = abilities.get(boundId).orElse(null);
-            if (bound != null && bound.resolvedIconCmd() > 0) {
-                type = Material.CLAY_BALL;
+            if (bound != null) {
+                type = iconMaterial(bound, true);
             }
         }
         ItemStack stack = new ItemStack(type);
@@ -234,15 +262,13 @@ public final class AbilityBookItems {
             }
             meta.displayName(Component.text("§fKey " + hotbarKey + " §7· §d" + finalBound.displayName())
                     .decoration(TextDecoration.ITALIC, false));
-            int cmd = finalBound.resolvedIconCmd();
-            if (cmd > 0) {
-                meta.setCustomModelData(cmd);
-            }
+            applyCmd(meta, finalBound.resolvedIconCmd());
             meta.getPersistentDataContainer().set(keys.bookAbility, PersistentDataType.STRING, finalBound.id());
-            meta.lore(List.of(
-                    Component.text("§e" + finalBound.id()).decoration(TextDecoration.ITALIC, false),
-                    Component.text("§8Right-click to unbind").decoration(TextDecoration.ITALIC, false)
-            ));
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.text("§e" + finalBound.id()).decoration(TextDecoration.ITALIC, false));
+            lore.addAll(AbilityDescribe.lore(finalBound));
+            lore.add(Component.text("§8Right-click to unbind").decoration(TextDecoration.ITALIC, false));
+            meta.lore(lore);
         });
         return stack;
     }
@@ -256,9 +282,7 @@ public final class AbilityBookItems {
                 lore.add(Component.text(line).decoration(TextDecoration.ITALIC, false));
             }
             meta.lore(lore);
-            if (config.tomeCustomModelData() > 0) {
-                meta.setCustomModelData(config.tomeCustomModelData());
-            }
+            applyCmd(meta, config.tomeCustomModelData());
             meta.getPersistentDataContainer().set(keys.tome, PersistentDataType.BYTE, (byte) 1);
         });
         return stack;
@@ -290,6 +314,30 @@ public final class AbilityBookItems {
             return null;
         }
         return stack.getItemMeta().getPersistentDataContainer().get(keys.navButton, PersistentDataType.STRING);
+    }
+
+    static Material iconMaterial(AbilityDefinition ability, boolean unlocked) {
+        if (!unlocked) {
+            return Material.GUNPOWDER;
+        }
+        return switch (ability.category()) {
+            case MAGIC -> Material.BLAZE_POWDER;
+            case RANGED -> Material.ARROW;
+            case MELEE -> Material.IRON_SWORD;
+            case PRAYER -> Material.GLOWSTONE_DUST;
+            case UTILITY -> Material.COMPASS;
+        };
+    }
+
+    static void applyCmd(ItemMeta meta, int cmd) {
+        if (meta == null || cmd <= 0) {
+            return;
+        }
+        try {
+            meta.setCustomModelData(cmd);
+        } catch (Throwable ignored) {
+            // Paper 26 custom-model-data component must not blank the book
+        }
     }
 
     private static String formatCooldown(long ticks) {

@@ -6,9 +6,6 @@ import com.yapcore.abilities.AbilityService;
 import com.yapcore.abilities.bar.AbilityBarConfig;
 import com.yapcore.abilities.bar.AbilityBarStore;
 import com.yapcore.mmo.SkillProgress;
-import com.yapcore.mmo.SkillService;
-import com.yapcore.mmo.SkillServices;
-import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -19,7 +16,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 
 public final class AbilityBookMenu {
 
@@ -47,33 +43,16 @@ public final class AbilityBookMenu {
     }
 
     public void open(Player player, AbilityCategory category, int page) {
-        SkillService skills = SkillServices.find().orElse(null);
-        if (skills != null) {
-            skills.getAll(player.getUniqueId()).thenAccept(all ->
-                    YapSched.entity(plugin, player, () -> openSync(player, category, page, all)));
-        } else {
-            YapSched.entity(plugin, player, () -> openSync(player, category, page, List.of()));
-        }
+        AbilitySkillData.load(plugin, player, all -> openSync(player, category, page, all));
     }
 
     public void refresh(Player player, AbilityBookHolder holder) {
-        SkillService skills = SkillServices.find().orElse(null);
-        if (skills != null) {
-            skills.getAll(player.getUniqueId()).thenAccept(all ->
-                    YapSched.entity(plugin, player, () -> {
-                        if (player.getOpenInventory().getTopInventory().getHolder() instanceof AbilityBookHolder open
-                                && open.viewer().equals(holder.viewer())) {
-                            populate(player, open, all);
-                        }
-                    }));
-        } else {
-            YapSched.entity(plugin, player, () -> {
-                if (player.getOpenInventory().getTopInventory().getHolder() instanceof AbilityBookHolder open
-                        && open.viewer().equals(holder.viewer())) {
-                    populate(player, open, List.of());
-                }
-            });
-        }
+        AbilitySkillData.load(plugin, player, all -> {
+            AbilityBookHolder open = BookInventories.bookHolder(player.getOpenInventory().getTopInventory());
+            if (open != null && open.viewer().equals(holder.viewer())) {
+                populate(player, open, all);
+            }
+        });
     }
 
     private void openSync(Player player, AbilityCategory category, int page, Collection<SkillProgress> skills) {
@@ -110,21 +89,28 @@ public final class AbilityBookMenu {
         inv.setItem(AbilityBookHolder.SLOT_HELP, AbilityBookItems.helpItem());
         inv.setItem(AbilityBookHolder.SLOT_CLOSE, AbilityBookItems.closeButton(keys));
 
+        Collection<AbilityDefinition> catalog = abilities.definitions();
         List<AbilityDefinition> sorted = AbilityUnlocks.sorted(
-                abilities.definitions(), filter, config.showLocked(), player, skills);
+                catalog, filter, config.showLocked(), player, skills);
         AbilityBookPagination.Page<AbilityDefinition> slice =
                 AbilityBookPagination.slice(sorted, holder.page(), config.abilitiesPerPage());
 
         holder.setPage(slice.page());
         String pending = holder.pendingAbilityId();
 
-        for (int i = 0; i < AbilityBookHolder.ABILITY_SLOTS.length; i++) {
-            if (i < slice.items().size()) {
-                AbilityDefinition def = slice.items().get(i);
-                boolean unlocked = AbilityUnlocks.isUnlocked(player, def, skills);
-                boolean selected = def.id().equalsIgnoreCase(pending);
-                inv.setItem(AbilityBookHolder.ABILITY_SLOTS[i],
-                        AbilityBookItems.abilityIcon(keys, def, unlocked, selected, skills, abilities, player));
+        if (catalog.isEmpty()) {
+            inv.setItem(AbilityBookHolder.ABILITY_SLOTS[0], AbilityBookItems.emptyCatalogNotice());
+        } else if (slice.items().isEmpty()) {
+            inv.setItem(AbilityBookHolder.ABILITY_SLOTS[0], AbilityBookItems.emptyFilterNotice(filter));
+        } else {
+            for (int i = 0; i < AbilityBookHolder.ABILITY_SLOTS.length; i++) {
+                if (i < slice.items().size()) {
+                    AbilityDefinition def = slice.items().get(i);
+                    boolean unlocked = AbilityUnlocks.isUnlocked(player, def, skills);
+                    boolean selected = def.id().equalsIgnoreCase(pending);
+                    inv.setItem(AbilityBookHolder.ABILITY_SLOTS[i],
+                            AbilityBookItems.abilityIcon(keys, def, unlocked, selected, skills, abilities, player));
+                }
             }
         }
 

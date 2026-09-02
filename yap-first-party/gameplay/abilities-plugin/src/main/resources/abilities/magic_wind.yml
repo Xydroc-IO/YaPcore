@@ -2,6 +2,7 @@
 abilities:
   wind_strike:
     name: "Wind Strike"
+    description: "Hurl a gust that smacks the target for light magic damage and a small knockback."
     icon-cmd: 78421
     category: magic
     min-level:

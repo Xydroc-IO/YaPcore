@@ -1,7 +1,9 @@
 package com.yapcore.abilities.bar;
 
+import com.yapcore.sched.StaffBypass;
 import com.yapcore.sched.YapSched;
 import io.papermc.paper.event.player.PlayerPickItemEvent;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -12,6 +14,7 @@ import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -30,6 +33,22 @@ public final class AbilityBarListener implements Listener {
         this.plugin = plugin;
         this.config = config;
         this.bar = bar;
+    }
+
+    /** Creative inventory stays free. Never skip cast / page-swap for staff — they need to test abilities. */
+    private boolean skipSlotProtection(Player player) {
+        return StaffBypass.creative(player);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onGameMode(PlayerGameModeChangeEvent event) {
+        if (!config.enabled()) {
+            return;
+        }
+        GameMode next = event.getNewGameMode();
+        if ((next == GameMode.CREATIVE || next == GameMode.SPECTATOR) && bar.isCombat(event.getPlayer())) {
+            YapSched.entity(plugin, event.getPlayer(), () -> bar.setMode(event.getPlayer(), AbilityBarMode.BUILD));
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -72,7 +91,8 @@ public final class AbilityBarListener implements Listener {
     /** Middle-mouse pick block / pick item → swap hotbar page (Paper). */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onPickItem(PlayerPickItemEvent event) {
-        if (!config.enabled() || !config.dualHotbar() || !config.swapTrigger(AbilityBarConfig.SwapTrigger.PICK_BLOCK)) {
+        if (!config.enabled()
+                || !config.dualHotbar() || !config.swapTrigger(AbilityBarConfig.SwapTrigger.PICK_BLOCK)) {
             return;
         }
         event.setCancelled(true);
@@ -82,7 +102,10 @@ public final class AbilityBarListener implements Listener {
     /** Swap hands (default {@code F}) → swap hotbar page; rebind to middle mouse in Controls. */
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onSwapHands(PlayerSwapHandItemsEvent event) {
-        if (!config.enabled() || !config.dualHotbar()) {
+        if (!config.enabled()) {
+            return;
+        }
+        if (!config.dualHotbar()) {
             if (AbilityBarItems.isBarToken(event.getMainHandItem()) || AbilityBarItems.isBarToken(event.getOffHandItem())) {
                 event.setCancelled(true);
             }
@@ -123,6 +146,12 @@ public final class AbilityBarListener implements Listener {
         if (!config.enabled()) {
             return;
         }
+        if (StaffBypass.creative(event.getPlayer())) {
+            bar.initPlayer(event.getPlayer());
+            YapSched.entityLater(plugin, event.getPlayer(),
+                    () -> bar.setMode(event.getPlayer(), AbilityBarMode.BUILD), 6L);
+            return;
+        }
         bar.initPlayer(event.getPlayer());
     }
 
@@ -134,7 +163,8 @@ public final class AbilityBarListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onClick(InventoryClickEvent event) {
-        if (!config.enabled() || !(event.getWhoClicked() instanceof Player player) || !bar.isCombat(player)) {
+        if (!config.enabled() || !(event.getWhoClicked() instanceof Player player)
+                || skipSlotProtection(player) || !bar.isCombat(player)) {
             return;
         }
         if (event.getClickedInventory() == null) {
@@ -167,7 +197,8 @@ public final class AbilityBarListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDrag(InventoryDragEvent event) {
-        if (!config.enabled() || !(event.getWhoClicked() instanceof Player player) || !bar.isCombat(player)) {
+        if (!config.enabled() || !(event.getWhoClicked() instanceof Player player)
+                || skipSlotProtection(player) || !bar.isCombat(player)) {
             return;
         }
         for (int raw : event.getRawSlots()) {

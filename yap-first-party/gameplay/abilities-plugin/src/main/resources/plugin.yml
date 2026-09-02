@@ -16,6 +16,11 @@ commands:
     description: Open the ability book GUI
     usage: /abilities
     permission: yapabilities.use
+  spell:
+    description: Add a spell to your combat hotbar, or open the ability book
+    usage: /spell [ability] [slot]
+    aliases: [addspell]
+    permission: yapabilities.use
   yapabilities:
     description: Admin reload and dashboard snapshot for ability packs
     usage: /yapabilities reload|snapshot json
@@ -25,5 +30,8 @@ permissions:
     default: true
   yapabilities.bar:
     default: true
+  yapabilities.bypass.lock:
+    description: Bind abilities regardless of skill level
+    default: op
   yapabilities.admin:
     default: op

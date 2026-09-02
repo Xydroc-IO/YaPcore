@@ -56,6 +56,7 @@ public final class AbilityBookConfig {
         if (rawTriggers == null || rawTriggers.isEmpty()) {
             triggers.add(OpenTrigger.COMMAND);
             triggers.add(OpenTrigger.TOME);
+            triggers.add(OpenTrigger.SNEAK_SWAP);
         } else {
             for (String line : rawTriggers) {
                 OpenTrigger t = OpenTrigger.parse(line);
@@ -70,7 +71,7 @@ public final class AbilityBookConfig {
         openTriggers = Set.copyOf(triggers);
 
         tomeEnabled = c.getBoolean("ability-book.tome.enabled", true);
-        tomeMaterialName = c.getString("ability-book.tome.material", "KNOWLEDGE_BOOK");
+        tomeMaterialName = c.getString("ability-book.tome.material", "ENCHANTED_BOOK");
         tomeCustomModelData = c.getInt("ability-book.tome.custom-model-data", 79100);
         tomeDisplayName = c.getString("ability-book.tome.display-name", "§dAbility Tome");
         List<String> lore = c.getStringList("ability-book.tome.lore");
@@ -110,7 +111,7 @@ public final class AbilityBookConfig {
 
     public org.bukkit.Material tomeMaterial() {
         org.bukkit.Material mat = org.bukkit.Material.matchMaterial(tomeMaterialName);
-        return mat != null && mat.isItem() ? mat : org.bukkit.Material.KNOWLEDGE_BOOK;
+        return mat != null && mat.isItem() ? mat : org.bukkit.Material.ENCHANTED_BOOK;
     }
 
     public String tomeMaterialName() {

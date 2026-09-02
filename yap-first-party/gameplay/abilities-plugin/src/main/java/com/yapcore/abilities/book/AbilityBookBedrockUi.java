@@ -8,8 +8,6 @@ import com.yapcore.bedrock.ui.BedrockFormResult;
 import com.yapcore.bedrock.ui.BedrockUiService;
 import com.yapcore.bedrock.ui.BedrockUiServices;
 import com.yapcore.mmo.SkillProgress;
-import com.yapcore.mmo.SkillService;
-import com.yapcore.mmo.SkillServices;
 import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
@@ -78,14 +76,8 @@ public final class AbilityBookBedrockUi {
     }
 
     private void openAbilityList(Player player, BedrockUiService bedrock, AbilityCategory category, int page) {
-        SkillService skills = SkillServices.find().orElse(null);
-        if (skills != null) {
-            skills.getAll(player.getUniqueId()).thenAccept(all ->
-                    YapSched.entity(plugin, player, () ->
-                            openAbilityListSync(player, bedrock, category, page, all)));
-        } else {
-            YapSched.entity(plugin, player, () -> openAbilityListSync(player, bedrock, category, page, List.of()));
-        }
+        AbilitySkillData.load(plugin, player, all ->
+                openAbilityListSync(player, bedrock, category, page, all));
     }
 
     private void openAbilityListSync(
@@ -95,20 +87,22 @@ public final class AbilityBookBedrockUi {
             int page,
             Collection<SkillProgress> skillData
     ) {
-        List<AbilityDefinition> unlocked = AbilityUnlocks.sorted(
-                abilities.definitions(), category, config.showLocked(), player, skillData).stream()
-                .filter(def -> AbilityUnlocks.isUnlocked(player, def, skillData))
-                .toList();
+        List<AbilityDefinition> listed = AbilityUnlocks.sorted(
+                abilities.definitions(), category, true, player, skillData);
         AbilityBookPagination.Page<AbilityDefinition> slice =
-                AbilityBookPagination.slice(unlocked, page, 8);
+                AbilityBookPagination.slice(listed, page, 8);
         if (slice.items().isEmpty()) {
-            bedrock.sendSimpleForm(player, config.title(), "No unlocked abilities in this category.",
+            bedrock.sendSimpleForm(player, config.title(),
+                    listed.isEmpty() && abilities.definitions().isEmpty()
+                            ? "No abilities loaded. Check plugins/YaPAbilities/abilities."
+                            : "No abilities in this category.",
                     r -> open(player), "Back");
             return;
         }
         List<String> buttons = new ArrayList<>();
         for (AbilityDefinition def : slice.items()) {
-            buttons.add(def.displayName());
+            boolean unlocked = AbilityUnlocks.isUnlocked(player, def, skillData);
+            buttons.add((unlocked ? "" : "[Locked] ") + def.displayName());
         }
         if (slice.hasPrev()) {
             buttons.add("Prev");
@@ -151,7 +145,48 @@ public final class AbilityBookBedrockUi {
             } else if ("Back".equals(label)) {
                 open(player);
             } else if (idx < slice.items().size()) {
-                openSlotPicker(player, bedrock, slice.items().get(idx));
+                openInspect(player, bedrock, slice.items().get(idx), category, slice.page());
+            }
+        });
+    }
+
+    private void openInspect(
+            Player player,
+            BedrockUiService bedrock,
+            AbilityDefinition ability,
+            AbilityCategory category,
+            int page
+    ) {
+        AbilitySkillData.load(plugin, player, all -> {
+            boolean unlocked = AbilityUnlocks.isUnlocked(player, ability, all);
+            String body = AbilityDescribe.inspectBody(ability, all);
+            if (unlocked) {
+                bedrock.sendSimpleForm(
+                        player,
+                        ability.displayName(),
+                        body,
+                        result -> {
+                            if (result.cancelled()) {
+                                return;
+                            }
+                            YapSched.entity(plugin, player, () -> {
+                                if (result.buttonIndex() == 0) {
+                                    openSlotPicker(player, bedrock, ability);
+                                } else {
+                                    openAbilityList(player, bedrock, category, page);
+                                }
+                            });
+                        },
+                        "Add to hotbar",
+                        "Back");
+            } else {
+                bedrock.sendSimpleForm(
+                        player,
+                        ability.displayName(),
+                        body + "\n\nLocked — raise the required skill to use this.",
+                        result -> YapSched.entity(plugin, player, () ->
+                                openAbilityList(player, bedrock, category, page)),
+                        "Back");
             }
         });
     }

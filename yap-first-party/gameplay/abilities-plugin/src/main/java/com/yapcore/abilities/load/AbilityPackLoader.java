@@ -56,7 +56,8 @@ public final class AbilityPackLoader {
                 if (s == null) {
                     continue;
                 }
-                loaded.put(id, parseAbility(id, s));
+                String key = id.toLowerCase(java.util.Locale.ROOT);
+                loaded.put(key, parseAbility(key, s));
             }
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to load ability pack " + file, e);
@@ -71,6 +72,7 @@ public final class AbilityPackLoader {
         List<AbilityEffect> hit = EffectParser.parseSectionList(s, "on-hit");
         ProjectileSpec projectile = readProjectile(s.getConfigurationSection("projectile"));
         List<com.yapcore.abilities.CastCondition> conditions = readConditions(s.getMapList("conditions"));
+        String description = s.getString("description", s.getString("desc", ""));
         return new AbilityDefinition(
                 id,
                 s.getString("name", id),
@@ -85,7 +87,8 @@ public final class AbilityPackLoader {
                 cast,
                 hit,
                 projectile,
-                s.getInt("icon-cmd", s.getInt("icon_cmd", 0)));
+                s.getInt("icon-cmd", s.getInt("icon_cmd", 0)),
+                description);
     }
 
     private static List<com.yapcore.abilities.CastCondition> readConditions(List<Map<?, ?>> raw) {

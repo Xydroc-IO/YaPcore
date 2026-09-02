@@ -177,6 +177,30 @@ public final class AbilityBarService {
         }
     }
 
+    /** First empty combat slot (1-based), or {@code -1} if the bar is full. */
+    public int firstEmptySlot(Player player) {
+        for (int i = 0; i < config.slotCount(); i++) {
+            if (store.get(player.getUniqueId(), i).isBlank()) {
+                return i + 1;
+            }
+        }
+        return -1;
+    }
+
+    public int bindNextEmpty(Player player, String abilityId, boolean feedback) {
+        int slot = firstEmptySlot(player);
+        if (slot < 1) {
+            if (feedback) {
+                player.sendMessage("§cCombat hotbar is full (keys §e"
+                        + config.firstKey() + "–" + config.lastKey()
+                        + "§c). Right-click a slot in §e/abilities §cto replace.");
+            }
+            return -1;
+        }
+        bind(player, slot, abilityId, feedback);
+        return slot;
+    }
+
     public void bind(Player player, int barSlotOneBased, String abilityId) {
         bind(player, barSlotOneBased, abilityId, true);
     }
@@ -209,8 +233,8 @@ public final class AbilityBarService {
         store.set(player.getUniqueId(), index, def.get().id());
         if (feedback) {
             int key = config.firstKey() + index;
-            player.sendMessage("§aBound §f" + def.get().displayName() + " §7→ slot §e" + barSlotOneBased
-                    + " §7(press §e" + key + " §7in combat bar to cast).");
+            player.sendMessage("§aAdded §f" + def.get().displayName() + " §7to hotbar key §e" + key
+                    + "§7. Press §e" + key + " §7to cast.");
         }
         syncBar(player);
     }

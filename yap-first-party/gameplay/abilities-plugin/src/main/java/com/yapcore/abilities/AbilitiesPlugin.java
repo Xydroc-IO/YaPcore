@@ -140,6 +140,7 @@ public final class AbilitiesPlugin extends JavaPlugin {
         AbilityCommands commands = new AbilityCommands(this);
         bind("ability", commands);
         bind("abilities", commands);
+        bind("spell", commands);
         bind("yapabilities", commands);
 
         getServer().getServicesManager().register(AbilityService.class, abilityService, this, ServicePriority.Normal);
