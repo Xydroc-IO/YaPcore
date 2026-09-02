@@ -3,6 +3,7 @@ package com.yapcore.chat.cmd;
 import com.yapcore.chat.ChatConfig;
 import com.yapcore.chat.ChatFormat;
 import com.yapcore.chat.ChatPlugin;
+import com.yapcore.chat.service.PlayerChannelService;
 import com.yapcore.chat.service.PrivateMessageService;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -20,11 +21,14 @@ public final class MsgCommands implements CommandExecutor, TabCompleter {
     private final ChatPlugin plugin;
     private final ChatConfig config;
     private final PrivateMessageService pm;
+    private final PlayerChannelService channels;
 
-    public MsgCommands(ChatPlugin plugin, ChatConfig config, PrivateMessageService pm) {
+    public MsgCommands(ChatPlugin plugin, ChatConfig config, PrivateMessageService pm,
+                       PlayerChannelService channels) {
         this.plugin = plugin;
         this.config = config;
         this.pm = pm;
+        this.channels = channels;
     }
 
     @Override
@@ -43,13 +47,58 @@ public final class MsgCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage(ChatFormat.legacy("&e/yapchat reload"));
             return true;
         }
-        if ("staffchat".equals(name) || "sc".equals(name) || "ac".equals(name)) {
-            return staffChat(sender, args);
+        if ("staffchat".equals(name) || "sc".equals(name)) {
+            return quickChannel(sender, args, "staff", config.staffFormat(), "yapchat.staff");
+        }
+        if ("adminchat".equals(name) || "ac".equals(name)) {
+            return quickChannel(sender, args, "admin", config.adminFormat(), "yapchat.admin");
         }
         if ("reply".equals(name) || "r".equals(name)) {
             return reply(sender, args);
         }
         return msg(sender, args);
+    }
+
+    /**
+     * No args → toggle sticky channel. With args → one-shot message to that channel.
+     */
+    private boolean quickChannel(CommandSender sender, String[] args, String channelId,
+                                 String oneShotFormat, String fallbackPerm) {
+        ChatConfig.ChannelDef def = config.channel(channelId);
+        String need = def.requiresPermission() ? def.permission() : fallbackPerm;
+        if (!sender.hasPermission(need) && !config.canUseChannel(sender, channelId)) {
+            sender.sendMessage(ChatFormat.legacy("&cNo permission."));
+            return true;
+        }
+        if (args.length < 1) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage(ChatFormat.legacy("&e/" + channelId + "chat <message>"));
+                return true;
+            }
+            String current = channels.channel(player, config.defaultChannel());
+            if (channelId.equals(current)) {
+                channels.setChannel(player, config.defaultChannel());
+                player.sendMessage(ChatFormat.legacy("&eLeft &f" + channelId + " &echannel → &f"
+                        + config.defaultChannel()));
+            } else {
+                channels.setChannel(player, channelId);
+                player.sendMessage(ChatFormat.legacy("&aJoined &f" + channelId
+                        + " &achannel. &7Type again with no args to leave."));
+            }
+            return true;
+        }
+        String message = join(args, 0);
+        String line = ChatFormat.color(oneShotFormat
+                .replace("{player}", sender.getName())
+                .replace("{prefix}", "")
+                .replace("{suffix}", "")
+                .replace("{message}", message));
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            if (config.canUseChannel(online, channelId)) {
+                online.sendMessage(ChatFormat.legacy(line));
+            }
+        }
+        return true;
     }
 
     private boolean msg(CommandSender sender, String[] args) {
@@ -94,27 +143,6 @@ public final class MsgCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         deliverPrivate(from, to, join(args, 0));
-        return true;
-    }
-
-    private boolean staffChat(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("yapchat.staff")) {
-            sender.sendMessage(ChatFormat.legacy("&cNo permission."));
-            return true;
-        }
-        if (args.length < 1) {
-            sender.sendMessage(ChatFormat.legacy("&e/staffchat <message>"));
-            return true;
-        }
-        String message = join(args, 0);
-        String line = ChatFormat.color(config.staffFormat()
-                .replace("{player}", sender.getName())
-                .replace("{message}", message));
-        for (Player online : Bukkit.getOnlinePlayers()) {
-            if (online.hasPermission("yapchat.staff")) {
-                online.sendMessage(ChatFormat.legacy(line));
-            }
-        }
         return true;
     }
 

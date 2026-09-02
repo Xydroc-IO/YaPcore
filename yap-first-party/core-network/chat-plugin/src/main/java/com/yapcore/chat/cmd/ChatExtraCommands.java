@@ -12,9 +12,9 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
@@ -51,22 +51,35 @@ public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length < 1) {
-            player.sendMessage(ChatFormat.legacy("&eChannel: &f" + channels.channel(player, config.defaultChannel())));
-            player.sendMessage(ChatFormat.legacy("&e/ch <global|local|staff>"));
+            String current = channels.channel(player, config.defaultChannel());
+            player.sendMessage(ChatFormat.legacy("&eChannel: &f" + current));
+            player.sendMessage(ChatFormat.legacy("&7Available: &f" + listChannels(player)));
+            player.sendMessage(ChatFormat.legacy("&e/ch <channel> &7— switch  ·  &e!<msg> &7— one-shot local"));
             return true;
         }
         String ch = args[0].toLowerCase(Locale.ROOT);
-        if ("staff".equals(ch) && !player.hasPermission("yapchat.staff")) {
-            player.sendMessage(ChatFormat.legacy("&cNo permission."));
+        if (!config.channels().containsKey(ch)) {
+            player.sendMessage(ChatFormat.legacy("&cUnknown channel. Try: &f" + listChannels(player)));
             return true;
         }
-        if (!config.channels().containsKey(ch) && !"staff".equals(ch)) {
-            player.sendMessage(ChatFormat.legacy("&cUnknown channel."));
+        if (!config.canUseChannel(player, ch)) {
+            player.sendMessage(ChatFormat.legacy("&cNo permission for &f" + ch + "&c."));
             return true;
         }
         channels.setChannel(player, ch);
         player.sendMessage(ChatFormat.legacy("&aChat channel set to &f" + ch));
         return true;
+    }
+
+    private String listChannels(Player player) {
+        List<String> names = new ArrayList<>();
+        for (String id : config.channels().keySet()) {
+            if (config.canUseChannel(player, id)) {
+                names.add(id);
+            }
+        }
+        names.sort(String::compareTo);
+        return String.join(", ", names);
     }
 
     private boolean clearChat(CommandSender sender) {
@@ -154,7 +167,12 @@ public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
                     .collect(Collectors.toList());
         }
         if (args.length == 1 && ("channel".equalsIgnoreCase(command.getName()) || "ch".equalsIgnoreCase(command.getName()))) {
-            return List.of("global", "local", "staff");
+            String prefix = args[0].toLowerCase(Locale.ROOT);
+            return config.channels().keySet().stream()
+                    .filter(id -> id.startsWith(prefix))
+                    .filter(id -> !(sender instanceof Player p) || config.canUseChannel(p, id))
+                    .sorted()
+                    .collect(Collectors.toList());
         }
         return List.of();
     }

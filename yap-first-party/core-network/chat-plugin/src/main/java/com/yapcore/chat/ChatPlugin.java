@@ -30,9 +30,9 @@ public final class ChatPlugin extends JavaPlugin {
         saveDefaultConfig();
         reloadChat();
 
-        MsgCommands msgCommands = new MsgCommands(this, config, privateMessages);
+        MsgCommands msgCommands = new MsgCommands(this, config, privateMessages, channels);
         ChatExtraCommands extraCommands = new ChatExtraCommands(this, config, channels, ignore);
-        for (String name : new String[]{"msg", "reply", "staffchat", "yapchat"}) {
+        for (String name : new String[]{"msg", "reply", "staffchat", "adminchat", "yapchat"}) {
             bind(name, msgCommands);
         }
         for (String name : new String[]{"channel", "clearchat", "ignore", "unignore", "ignorelist"}) {

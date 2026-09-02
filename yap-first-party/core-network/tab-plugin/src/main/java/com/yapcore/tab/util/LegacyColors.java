@@ -5,7 +5,10 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public final class LegacyColors {
 
-    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
+    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.builder()
+            .character('&')
+            .hexColors()
+            .build();
 
     private LegacyColors() {
     }

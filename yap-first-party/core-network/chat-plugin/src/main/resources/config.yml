@@ -1,22 +1,32 @@
-# Unsigned system chat clears "Chat messages cannot be verified" on offline/Via joins
+# Send formatted chat as YaP-Folia system packets (no Mojang signature).
+# Required behind YaP Link / offline / Via — otherwise clients show
+# "Chat messages cannot be verified".
 unsigned-system-chat: true
 
 # Default public channel
 default-channel: global
 
+# Channels — optional permission gates speak + hear
 channels:
   global:
-    format: "{prefix}{player}{suffix}&7: &f{message}"
+    format: "{prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}"
     radius: -1
   local:
-    format: "&8[&aLocal&8] {prefix}{player}{suffix}&7: &f{message}"
+    format: "&8[&aLocal&8] {prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}"
     radius: 100
+  trade:
+    format: "&8[&6Trade&8] {prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}"
+    radius: -1
   staff:
-    format: "&c[Staff] &f{prefix}{player}{suffix}&7: &f{message}"
+    format: "&8[&bStaff&8] {prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}"
     radius: -1
     permission: yapchat.staff
+  admin:
+    format: "&8[&cAdmin&8] {prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}"
+    radius: -1
+    permission: yapchat.admin
 
-# Prefix local chat with ! or /local (handled in listener)
+# Prefix local chat with ! (one-shot without switching channel)
 local-prefix: "!"
 
 # Slow mode (seconds between messages; 0 = off)
@@ -37,7 +47,8 @@ messages:
   no-permission: "&cNo permission."
   pm-sent: "&7[&dYou → {target}&7] &f{message}"
   pm-received: "&7[&d{sender} → You&7] &f{message}"
-  staff-format: "&c[Staff] &f{player}&7: &f{message}"
+  staff-format: "&8[&bStaff&8] &f{player}&7: &f{message}"
+  admin-format: "&8[&cAdmin&8] &f{player}&7: &f{message}"
   socialspy: "&8[Spy] &7{sender} → {target}: &f{message}"
   slow-mode: "&cSlow mode — wait {seconds}s."
   filtered: "&cMessage blocked by filter."
@@ -48,4 +59,6 @@ network:
   enabled: true
   relay-channels:
     - global
+    - trade
     - staff
+    - admin

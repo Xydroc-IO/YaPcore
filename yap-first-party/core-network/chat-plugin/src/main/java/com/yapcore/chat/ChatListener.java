@@ -6,6 +6,7 @@ import com.yapcore.chat.service.IgnoreService;
 import com.yapcore.chat.service.PlayerChannelService;
 import com.yapcore.chat.service.SlowModeService;
 import com.yapcore.moderation.Punishment;
+import com.yapcore.sched.StaffBypass;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
@@ -42,6 +43,7 @@ public final class ChatListener implements Listener {
         Player source = event.getPlayer();
         if (!source.hasPermission("yapchat.use")) {
             event.setCancelled(true);
+            event.viewers().clear();
             source.sendMessage(ChatFormat.legacy(config.filteredMessage()));
             return;
         }
@@ -49,6 +51,7 @@ public final class ChatListener implements Listener {
         Optional<Punishment> mute = ChatFormat.activeMute(source.getUniqueId());
         if (mute.isPresent()) {
             event.setCancelled(true);
+            event.viewers().clear();
             source.sendMessage(ChatFormat.legacy(config.mutedMessage()
                     .replace("{reason}", mute.get().reason())));
             return;
@@ -56,6 +59,7 @@ public final class ChatListener implements Listener {
 
         if (!slowMode.allow(source, config.slowModeSeconds())) {
             event.setCancelled(true);
+            event.viewers().clear();
             source.sendMessage(ChatFormat.legacy(config.slowModeMessage()
                     .replace("{seconds}", String.valueOf(slowMode.remainingSeconds(source, config.slowModeSeconds())))));
             return;
@@ -70,16 +74,23 @@ public final class ChatListener implements Listener {
             messageText = plain.substring(config.localPrefix().length()).trim();
         }
 
-        if ("staff".equals(channel) && !source.hasPermission("yapchat.staff")) {
+        if (!config.channels().containsKey(channel) && !"local".equals(channel)) {
+            channel = config.defaultChannel();
+        }
+
+        if (!config.canUseChannel(source, channel)) {
             event.setCancelled(true);
-            source.sendMessage(ChatFormat.legacy("&cNo permission for staff channel."));
+            event.viewers().clear();
+            source.sendMessage(ChatFormat.legacy("&cNo permission for &f" + channel + " &cchannel."));
+            channels.setChannel(source, config.defaultChannel());
             return;
         }
 
-        if (!source.hasPermission("yapchat.bypass.filter")) {
+        if (!StaffBypass.chat(source) && !source.hasPermission("yapchat.bypass.filter")) {
             ChatFilterService.FilterResult filtered = filter.filter(messageText);
             if (filtered.blocked()) {
                 event.setCancelled(true);
+                event.viewers().clear();
                 source.sendMessage(ChatFormat.legacy(config.filteredMessage()));
                 return;
             }
@@ -90,46 +101,46 @@ public final class ChatListener implements Listener {
 
         ChatConfig.ChannelDef channelDef = config.channel(channel);
         String finalPlain = messageText;
-        Component rendered = ChatFormat.format(config, source, finalPlain, channel);
+        String finalChannel = channel;
+        Component rendered = ChatFormat.format(config, source, finalPlain, finalChannel);
         event.setCancelled(true);
+        event.viewers().clear();
 
+        broadcast(source, rendered, channelDef, finalChannel);
+        chatService.forwardLocalChat(finalChannel, source.getUniqueId(), source.getName(), finalPlain);
+    }
+
+    private void broadcast(Player source, Component rendered,
+                           ChatConfig.ChannelDef channelDef, String channel) {
+        int radius = channelDef.radius();
+        for (Player target : source.getServer().getOnlinePlayers()) {
+            if (!canSee(source, target, channelDef, channel, radius)) {
+                continue;
+            }
+            send(target, rendered);
+        }
+        send(source.getServer().getConsoleSender(), rendered);
+    }
+
+    private boolean canSee(Player source, Audience viewer, ChatConfig.ChannelDef channelDef,
+                           String channel, int radius) {
+        if (!(viewer instanceof Player target)) {
+            return true;
+        }
+        if (ignore.isIgnoring(target, source)) {
+            return false;
+        }
+        if (!config.canUseChannel(target, channel)) {
+            return false;
+        }
+        return radius <= 0 || (source.getWorld() == target.getWorld()
+                && source.getLocation().distanceSquared(target.getLocation()) <= (long) radius * radius);
+    }
+
+    private void send(Audience viewer, Component rendered) {
         if (config.unsignedSystemChat()) {
-            broadcastUnsigned(event, source, rendered, channelDef.radius());
+            ChatFormat.sendSystem(viewer, rendered);
         } else {
-            broadcastSigned(event, source, rendered, channelDef.radius(), channel);
-        }
-        chatService.forwardLocalChat(channel, source.getUniqueId(), source.getName(), finalPlain);
-    }
-
-    private void broadcastUnsigned(AsyncChatEvent event, Player source, Component rendered, int radius) {
-        for (Audience viewer : event.viewers()) {
-            if (viewer instanceof Player target) {
-                if (ignore.isIgnoring(target, source)) {
-                    continue;
-                }
-                if (radius > 0 && (source.getWorld() != target.getWorld()
-                        || source.getLocation().distanceSquared(target.getLocation()) > radius * radius)) {
-                    continue;
-                }
-            }
-            viewer.sendMessage(rendered);
-        }
-    }
-
-    private void broadcastSigned(AsyncChatEvent event, Player source, Component rendered, int radius, String channel) {
-        for (Audience viewer : event.viewers()) {
-            if (viewer instanceof Player target) {
-                if (ignore.isIgnoring(target, source)) {
-                    continue;
-                }
-                if (radius > 0 && (source.getWorld() != target.getWorld()
-                        || source.getLocation().distanceSquared(target.getLocation()) > radius * radius)) {
-                    continue;
-                }
-                if ("staff".equals(channel) && !target.hasPermission("yapchat.staff")) {
-                    continue;
-                }
-            }
             viewer.sendMessage(rendered);
         }
     }

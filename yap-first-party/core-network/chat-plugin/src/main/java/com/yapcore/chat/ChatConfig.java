@@ -12,7 +12,14 @@ import java.util.Set;
 
 public final class ChatConfig {
 
-    public record ChannelDef(String name, String format, int radius) {
+    public record ChannelDef(String name, String format, int radius, String permission) {
+        public ChannelDef(String name, String format, int radius) {
+            this(name, format, radius, "");
+        }
+
+        public boolean requiresPermission() {
+            return permission != null && !permission.isBlank();
+        }
     }
 
     private final JavaPlugin plugin;
@@ -30,12 +37,13 @@ public final class ChatConfig {
     private String pmSent = "&7[You → {target}] {message}";
     private String pmReceived = "&7[{sender} → You] {message}";
     private String staffFormat = "&c[Staff] {player}: {message}";
+    private String adminFormat = "&4[Admin] {player}: {message}";
     private String socialSpyFormat = "&8[Spy] {sender} → {target}: {message}";
     private String slowModeMessage = "&cSlow mode.";
     private String filteredMessage = "&cMessage blocked.";
     private boolean networkEnabled = true;
     private String serverId = "lobby";
-    private Set<String> networkRelayChannels = Set.of("global", "staff");
+    private Set<String> networkRelayChannels = Set.of("global", "staff", "admin");
 
     public ChatConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -61,6 +69,7 @@ public final class ChatConfig {
         pmSent = c.getString("messages.pm-sent", pmSent);
         pmReceived = c.getString("messages.pm-received", pmReceived);
         staffFormat = c.getString("messages.staff-format", staffFormat);
+        adminFormat = c.getString("messages.admin-format", adminFormat);
         socialSpyFormat = c.getString("messages.socialspy", socialSpyFormat);
         slowModeMessage = c.getString("messages.slow-mode", slowModeMessage);
         filteredMessage = c.getString("messages.filtered", filteredMessage);
@@ -71,13 +80,14 @@ public final class ChatConfig {
             networkRelayChannels.add(ch.toLowerCase(Locale.ROOT));
         }
         if (networkRelayChannels.isEmpty()) {
-            networkRelayChannels = Set.of("global", "staff");
+            networkRelayChannels = Set.of("global", "staff", "admin");
         }
     }
 
     private static Map<String, ChannelDef> loadChannels(ConfigurationSection section) {
         if (section == null) {
-            return Map.of("global", new ChannelDef("global", "{prefix}{player}{suffix}&7: &f{message}", -1));
+            return Map.of("global", new ChannelDef("global",
+                    "{prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}", -1, ""));
         }
         Map<String, ChannelDef> out = new HashMap<>();
         for (String key : section.getKeys(false)) {
@@ -85,11 +95,29 @@ public final class ChatConfig {
             if (ch == null) {
                 continue;
             }
-            String format = ch.getString("format", "{prefix}{player}{suffix}&7: &f{message}");
+            String format = ch.getString("format", "{prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}");
             int radius = ch.getInt("radius", -1);
-            out.put(key.toLowerCase(Locale.ROOT), new ChannelDef(key.toLowerCase(Locale.ROOT), format, radius));
+            String permission = ch.getString("permission", "");
+            // Back-compat: staff channel defaults to yapchat.staff when omitted
+            if ((permission == null || permission.isBlank()) && "staff".equalsIgnoreCase(key)) {
+                permission = "yapchat.staff";
+            }
+            if ((permission == null || permission.isBlank()) && "admin".equalsIgnoreCase(key)) {
+                permission = "yapchat.admin";
+            }
+            out.put(key.toLowerCase(Locale.ROOT),
+                    new ChannelDef(key.toLowerCase(Locale.ROOT), format, radius,
+                            permission == null ? "" : permission));
         }
         return Map.copyOf(out);
+    }
+
+    public boolean canUseChannel(org.bukkit.permissions.Permissible player, String channelName) {
+        ChannelDef def = channel(channelName);
+        if (!def.requiresPermission()) {
+            return true;
+        }
+        return player.hasPermission(def.permission());
     }
 
     public boolean unsignedSystemChat() {
@@ -130,7 +158,9 @@ public final class ChatConfig {
 
     public ChannelDef channel(String name) {
         return channels.getOrDefault(name.toLowerCase(Locale.ROOT),
-                channels.getOrDefault(defaultChannel, new ChannelDef("global", "{prefix}{player}&7: &f{message}", -1)));
+                channels.getOrDefault(defaultChannel,
+                        new ChannelDef("global",
+                                "{prefix}{namecolor}{player}&7: {chatcolor}{message}", -1, "")));
     }
 
     public String mutedMessage() {
@@ -147,6 +177,10 @@ public final class ChatConfig {
 
     public String staffFormat() {
         return staffFormat;
+    }
+
+    public String adminFormat() {
+        return adminFormat;
     }
 
     public String socialSpyFormat() {

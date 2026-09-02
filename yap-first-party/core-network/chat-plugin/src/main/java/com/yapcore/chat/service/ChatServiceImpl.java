@@ -105,14 +105,14 @@ public final class ChatServiceImpl implements ChatService {
         int radius = channelDef.radius();
         Player any = Bukkit.getOnlinePlayers().stream().findFirst().orElse(null);
         for (Player target : Bukkit.getOnlinePlayers()) {
-            if ("staff".equalsIgnoreCase(channelId) && !target.hasPermission("yapchat.staff")) {
+            if (!config.canUseChannel(target, channelId)) {
                 continue;
             }
             if (radius > 0 && any != null && (any.getWorld() != target.getWorld()
                     || any.getLocation().distanceSquared(target.getLocation()) > radius * radius)) {
                 continue;
             }
-            target.sendMessage(rendered);
+            ChatFormat.sendSystem(target, rendered);
         }
     }
 }

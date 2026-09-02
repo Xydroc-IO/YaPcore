@@ -19,17 +19,22 @@ commands:
     aliases: [r]
     permission: yapchat.msg
   staffchat:
-    description: Staff-only chat channel
-    usage: /staffchat <message>
-    aliases: [sc, ac]
+    description: Staff chat — toggle channel or send one-shot
+    usage: /staffchat [message]
+    aliases: [sc]
     permission: yapchat.staff
+  adminchat:
+    description: Admin chat — toggle channel or send one-shot
+    usage: /adminchat [message]
+    aliases: [ac]
+    permission: yapchat.admin
   yapchat:
     description: Chat admin
     usage: /yapchat reload
     permission: yapchat.admin
   channel:
     description: Switch chat channel
-    usage: /channel <global|local|staff>
+    usage: /channel <global|local|trade|staff|admin>
     aliases: [ch]
     permission: yapchat.use
   clearchat:
@@ -58,13 +63,13 @@ permissions:
     description: Private messages
     default: true
   yapchat.staff:
-    description: Staff chat
+    description: Staff chat channel
     default: op
   yapchat.socialspy:
     description: See private messages
     default: op
   yapchat.admin:
-    description: Reload chat config
+    description: Admin chat + reload / clear
     default: op
   yapchat.color:
     description: Use color codes in chat

@@ -1,5 +1,6 @@
 package com.yapcore.chat.service;
 
+import com.yapcore.sched.StaffBypass;
 import org.bukkit.entity.Player;
 
 import java.util.Map;
@@ -11,7 +12,9 @@ public final class SlowModeService {
     private final Map<UUID, Long> lastMessageMs = new ConcurrentHashMap<>();
 
     public boolean allow(Player player, int slowModeSeconds) {
-        if (slowModeSeconds <= 0 || player.hasPermission("yapchat.bypass.slow")) {
+        if (slowModeSeconds <= 0
+                || StaffBypass.chat(player)
+                || player.hasPermission("yapchat.bypass.slow")) {
             return true;
         }
         long now = System.currentTimeMillis();
