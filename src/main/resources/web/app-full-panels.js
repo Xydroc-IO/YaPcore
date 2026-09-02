@@ -103,7 +103,9 @@ window.YapDashRegisterFullPanels = function (YapDash) {
     try {
       const r = await api("/api/guard");
       $("grdFly").textContent = r.flyEnabled ? "on" : "off";
-      $("grdGrim").textContent = r.grimInstalled ? "installed" : "none";
+      $("grdGrim").textContent = r.grimInstalled
+        ? "enabled"
+        : (r.grimDownloaded ? "disabled (ready)" : "none");
       const hint = $("grdAcHint");
       if (hint) {
         const msg = r.acHint || "";

@@ -1,0 +1,25 @@
+# YaPcore — public production profile (copy keys into config/server.properties)
+# See docs/start/QUICK_START.md and docs/network/EDGE_HARDEN.md
+
+internet-exposed=true
+online-mode=true
+allow-localhost=true
+web-dashboard-bind=127.0.0.1
+web-dashboard-localhost-only=true
+
+# Set before going live (replace example.com)
+public-host=
+public-port=25565
+server-domain=
+nginx-domain=
+nginx-public-port=25565
+nginx-pack-port=80
+
+# Product YaP-Folia (run ./scripts/build-yap-folia.sh first)
+folia-jar-source=build
+game-authority=folia
+folia-embed=true
+
+# With YaP Link in front: velocity-enabled=true, online-mode=false, forwarding.secret
+# velocity-enabled=false
+# velocity-secret-file=forwarding.secret

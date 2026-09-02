@@ -300,10 +300,14 @@ public final class DashboardNetworkSnapshots {
         out.put("alertsEnabled", bool(yaml.get("alerts-enabled"), true));
         out.put("violationDecaySeconds", intVal(yaml.get("violation-decay-seconds"), 45));
         Path pluginsDir = root.resolve("plugins");
-        boolean grim = jarPresent(pluginsDir, "grim");
-        out.put("grimInstalled", grim);
-        if (grim) {
-            out.put("acHint", "Grim AC (grim.jar) is installed — disable YaPGuard checks or remove yap-guard.jar to avoid double punishment. See docs/ops/GRIM.md");
+        boolean grimEnabled = jarPresent(pluginsDir, "grim");
+        boolean grimDownloaded = grimEnabled || Files.isRegularFile(pluginsDir.resolve("grim.jar.disabled"));
+        out.put("grimInstalled", grimEnabled);
+        out.put("grimDownloaded", grimDownloaded);
+        if (grimEnabled) {
+            out.put("acHint", "Grim AC is enabled — YaPGuard movement checks should be off to avoid double punishment. See docs/ops/GRIM.md");
+        } else if (grimDownloaded) {
+            out.put("acHint", "Grim AC downloaded but disabled. Run ./scripts/grim-ac.sh enable and restart Folia for top-tier AC.");
         }
         return out;
     }

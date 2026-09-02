@@ -58,7 +58,7 @@ Plus GAMEPLAY fine-tune modules (`yap-vehicles-module`, `yap-stacker-module`,
 | Jar | How | Notes |
 |-----|-----|-------|
 | `tebex.jar` | `./scripts/fetch-tebex.sh` or `gradle fetchTebex` | Official **GPLv3** Folia store plugin — Hub only · [TEBEX.md](../docs/ops/TEBEX.md) |
-| `grim.jar` | `./scripts/fetch-grim.sh` or `gradle fetchGrim` | Official **GPLv3** Grim AC (Folia) · [GRIM.md](../docs/ops/GRIM.md) |
+| `grim.jar` | `./scripts/fetch-grim.sh` or `gradle fetchGrim` | Official **GPLv3** Grim AC — auto-downloaded **disabled** on `seed-defaults.sh`; enable with `./scripts/grim-ac.sh enable` · [GRIM.md](../docs/ops/GRIM.md) |
 
 See [docs/plugins/VEHICLES.md](../docs/plugins/VEHICLES.md) · [docs/plugins/MODULES_AND_API.md](../docs/plugins/MODULES_AND_API.md) ·
 [docs/plugins/PLACEHOLDERAPI.md](../docs/plugins/PLACEHOLDERAPI.md) ·

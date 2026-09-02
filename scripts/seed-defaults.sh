@@ -86,4 +86,19 @@ if [ "$seeded" -eq 0 ]; then
 else
   echo "  seeded $seeded file(s)"
 fi
+
+# Optional third-party jars (GPLv3) — fetched disabled until operator enables.
+# Skip in CI/offline: YAP_SKIP_OPTIONAL_FETCH=1
+if [ "${YAP_SKIP_OPTIONAL_FETCH:-}" != "1" ] && [ -x "$SCRIPT_DIR/fetch-grim.sh" ]; then
+  if [ ! -f "$ROOT/plugins/grim.jar" ] && [ ! -f "$ROOT/plugins/grim.jar.disabled" ]; then
+    echo "Fetching Grim AC (top-tier, disabled until ./scripts/grim-ac.sh enable) …"
+    if "$SCRIPT_DIR/fetch-grim.sh" --disabled --root "$ROOT" --quiet; then
+      echo "  grim.jar.disabled ready"
+    else
+      echo "  Grim fetch skipped (offline or Modrinth unavailable) — run ./scripts/fetch-grim.sh --disabled later"
+    fi
+  fi
+fi
+
 echo "Tip: ./configure-db.sh --server-id lobby  # after MariaDB is healthy"
+echo "Tip: ./scripts/grim-ac.sh enable          # when you want Grim AC active"

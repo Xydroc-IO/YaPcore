@@ -18,15 +18,16 @@ Use YaPGuard when you want **zero extra jars** and basic SMP protection.
 
 ## Third-party “gold standard” on Folia
 
-For serious PvP networks, **do not rebuild Matrix inside YaPGuard**. Fetch **Grim**
-like Tebex — optional jar, GPLv3, not in git:
+For serious PvP networks, **do not rebuild Matrix inside YaPGuard**. **Grim** is
+fetched on first setup (disabled until enabled):
 
 ```bash
-./scripts/fetch-grim.sh    # → plugins/grim.jar
-# or: gradle fetchGrim
+./scripts/seed-defaults.sh         # downloads grim.jar.disabled
+./scripts/grim-ac.sh enable        # activate + disable YaPGuard movement checks
+# restart Folia
 ```
 
-Full setup: **[GRIM.md](GRIM.md)** · notices in `third-party/grim/`.
+Manual fetch: `./scripts/fetch-grim.sh --disabled` or `gradle fetchGrim` — see **[GRIM.md](GRIM.md)**.
 
 | Option | Notes |
 |--------|--------|

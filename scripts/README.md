@@ -10,6 +10,7 @@ Operator and maintainer helpers. Prefer this short list; see
 | `start.sh` / `stop.sh` / `status.sh` | Server lifecycle |
 | `gui.sh` / `start-prod.sh` | Swing panel / production launch |
 | `seed-defaults.sh` | First-boot configs from `config/defaults/` |
+| `apply-production-profile.sh` | Apply public production keys to `config/server.properties` |
 | `yapctl` | CLI helper |
 | `setup-velocity-forwarding.sh` | Shared secret + Folia Velocity forwarding |
 | `db/ensure-db.sh` · `db/configure-db.sh` | MariaDB + JDBC wiring |
@@ -25,7 +26,8 @@ Operator and maintainer helpers. Prefer this short list; see
 | `vendor-folia.sh` · `folia-patch.sh` | Vendor + apply patches |
 | `fetch-folia.sh` | Stock Fill Folia (bench / fallback only) |
 | `fetch-tebex.sh` | Official Tebex Folia plugin → `plugins/tebex.jar` (GPLv3) |
-| `fetch-grim.sh` | Official Grim AC Folia jar → `plugins/grim.jar` (GPLv3) |
+| `fetch-grim.sh` | Official Grim AC Folia jar → `plugins/grim.jar` (or `--disabled` → `grim.jar.disabled`) |
+| `grim-ac.sh` | Enable/disable fetched Grim (`enable` / `disable` / `status`) |
 | `soak-yap-folia.sh` | Compat / perf soak profiles |
 | `smoke-folia.sh` | Boot + ready hold |
 

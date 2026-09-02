@@ -117,10 +117,10 @@ tasks.register("assembleRelease") {
         val linuxScripts = listOf(
             "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
             "nginx-setup.sh", "heap-dump.sh", "build-default-resourcepack.sh", "fetch-faithful-64x.sh",
-            "fetch-folia.sh", "fetch-tebex.sh", "fetch-grim.sh",
+            "fetch-folia.sh", "fetch-tebex.sh", "fetch-grim.sh", "grim-ac.sh",
             "vendor-folia.sh", "folia-patch.sh", "build-yap-folia.sh", "verify-yap-folia.sh",
             "soak-yap-folia.sh", "smoke-folia.sh",
-            "seed-defaults.sh",
+            "seed-defaults.sh", "apply-production-profile.sh",
             "yapctl",
         )
 
@@ -174,10 +174,16 @@ tasks.register("assembleRelease") {
                     }
                 }
             }
-            // Optional Grim AC (GPLv3) — run ./scripts/fetch-grim.sh before assemble
+            // Optional Grim AC (GPLv3) — fetched on seed-defaults as grim.jar.disabled
             val grimJar = project.file("plugins/grim.jar")
-            if (grimJar.isFile) {
-                grimJar.copyTo(dest.resolve("plugins/grim.jar"), overwrite = true)
+            val grimDisabled = project.file("plugins/grim.jar.disabled")
+            val grimSource = when {
+                grimDisabled.isFile -> grimDisabled
+                grimJar.isFile -> grimJar
+                else -> null
+            }
+            if (grimSource != null) {
+                grimSource.copyTo(dest.resolve("plugins/grim.jar.disabled"), overwrite = true)
                 listOf("grim-NOTICE.txt", "grim-LICENSE-GPLv3.txt").forEach { name ->
                     val f = project.file("plugins/$name")
                     if (f.isFile) {
@@ -310,7 +316,7 @@ tasks.register("assembleRelease") {
                       GAMEPLAY (vehicles, stacker, knobs): rebuild with -PyapGameplay=true
                       or run: gradle installGameplayDefaults
                       Optional: tebex.jar (GPLv3) via ./scripts/fetch-tebex.sh — Hub store
-                      Optional: grim.jar (GPLv3) via ./scripts/fetch-grim.sh — heavy AC
+                      Optional: grim.jar.disabled (GPLv3) — fetched on seed-defaults; enable via grim-ac.sh
             modules/  CORE fine-tune packaging modules by default;
                       GAMEPLAY adds vehicles/stacker/knobs modules
                       (gradle installFineTuneModules · docs/plugins/MODULES_AND_API.md)

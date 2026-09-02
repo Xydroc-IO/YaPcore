@@ -1,13 +1,47 @@
 # Grim Anticheat (optional third-party)
 
 **Grim AC** is the recommended **heavy** anti-cheat for PvP / competitive networks.
-YaPcore ships **YaPGuard** as a lightweight native default; Grim is optional and
-fetched like Tebex — not vendored in git.
+YaPcore ships **YaPGuard** as a lightweight native default (always on). **Grim is
+downloaded automatically on first setup** but **not loaded** until you enable it.
 
-## Fetch & install
+## First install (automatic)
+
+`./scripts/seed-defaults.sh` (also run from `start.sh`) downloads the latest
+Folia-capable Grim build from Modrinth as:
+
+```text
+plugins/grim.jar.disabled
+```
+
+Folia ignores `*.jar.disabled` — Grim does **not** run until you enable it.
+
+Skip the download (offline / CI): `YAP_SKIP_OPTIONAL_FETCH=1 ./scripts/seed-defaults.sh`
+
+## Enable Grim (operator action)
 
 ```bash
-./scripts/fetch-grim.sh          # → plugins/grim.jar
+./scripts/grim-ac.sh enable    # → grim.jar + turns off YaPGuard movement checks
+# restart Folia
+```
+
+Disable again:
+
+```bash
+./scripts/grim-ac.sh disable   # → grim.jar.disabled
+# restart Folia
+```
+
+Status:
+
+```bash
+./scripts/grim-ac.sh status
+```
+
+Manual fetch (same as setup, still disabled):
+
+```bash
+./scripts/fetch-grim.sh --disabled
+# or active jar for dev: ./scripts/fetch-grim.sh
 # or: gradle fetchGrim
 ```
 
@@ -15,25 +49,25 @@ Notices: `third-party/grim/`. License: **GPLv3** (same family as YaPcore).
 
 | Place | Install? |
 |-------|----------|
-| **Every Folia backend** that needs AC | **Yes** — `plugins/grim.jar` |
+| **Every Folia backend** that needs AC | **Yes** — enable Grim per backend |
 | Hub only | Common for lobby + PvP backends separately |
 | YaP Link / proxy | **No** — Grim runs on the game server |
 
-Restart Folia after install. Config appears under `plugins/GrimAC/`.
+Restart Folia after enable/disable. Config appears under `plugins/GrimAC/`.
 
 ## YaPGuard vs Grim
 
 | | YaPGuard (native) | Grim (optional) |
 |--|-------------------|-----------------|
-| Jars | `yap-guard.jar` (product default) | `grim.jar` (fetch) |
+| Jars | `yap-guard.jar` (product default, **on**) | `grim.jar.disabled` → `grim.jar` after enable |
 | Depth | Fly/speed/reach/scaffold heuristics | Full movement simulation |
 | Best for | Casual SMP, low cheat pressure | PvP, minigames, competitive |
 
 **Do not run both at full sensitivity.** Typical setups:
 
-- **Grim only** — disable YaPGuard checks in `plugins/YaPGuard/config.yml`, or remove `yap-guard.jar`
-- **YaPGuard only** — no Grim fetch (default product path)
-- **Grim + YaPGuard alerts** — Grim punishes; YaPGuard off or bypass-only for staff
+- **Grim only** — `./scripts/grim-ac.sh enable` (disables YaPGuard movement checks)
+- **YaPGuard only** — leave Grim disabled (default after setup)
+- **Grim + YaPGuard alerts** — Grim punishes; YaPGuard checks off, alerts optional
 
 See [ANTICHEAT.md](ANTICHEAT.md) for the locked product split (regions ≠ AC).
 
@@ -49,8 +83,9 @@ See [ANTICHEAT.md](ANTICHEAT.md) for the locked product split (regions ≠ AC).
 
 ## Release zips
 
-If `plugins/grim.jar` exists before `gradle assembleRelease`, it is copied into
-the zip with `grim-NOTICE.txt` / `grim-LICENSE-GPLv3.txt` (same pattern as Tebex).
+Release trees ship `grim.jar.disabled` when a Grim jar was present at build time
+(or after `seed-defaults.sh` on the installed copy). Operators still run
+`grim-ac.sh enable` before Grim loads.
 
 ## Related
 
