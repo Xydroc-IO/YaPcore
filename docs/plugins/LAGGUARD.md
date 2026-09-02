@@ -3,16 +3,15 @@
 Per-chunk lag-machine governor for **YaP-Folia** (`folia-supported: true`). Cancels excess
 entity spawns, primed TNT, hopper moves, and redstone updates when a chunk is hot.
 
-Runs on the product game path (`game-authority=folia`, `folia-jar-source=build`). See [FOLIA_FORK.md](../folia/FOLIA_FORK.md).
+Runs on the product game path (`game-authority=folia`, `folia-jar-source=build`). Build with `./scripts/build-yap-folia.sh`.
 
 ## Install
 
 ```bash
 gradle installProductDefaults   # → plugins/yap-lagguard.jar
 # or included in assembleRelease
+./scripts/start.sh --fg
 ```
-
-Smoke: `./scripts/smoke-lagguard.sh` (compile). `LIVE=1` also runs YaP-Folia smoke.
 
 ## Config (`plugins/YaPLagGuard/config.yml`)
 

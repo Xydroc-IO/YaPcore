@@ -4,12 +4,12 @@ YaPcore supports **three** extension kinds: Folia-aware / Spigot-style plugins, 
 **modules**. See [MODULES_AND_API.md](MODULES_AND_API.md) for modules + coverage.
 Compatibility matrix: [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md).
 
-**Product game:** **YaP-Folia** (`game-authority=folia`, `folia-jar-source=build`) — not stock Folia, not Paper. See [FOLIA_FORK.md](../folia/FOLIA_FORK.md).
+**Product game:** **YaP-Folia** (`game-authority=folia`, `folia-jar-source=build`) — not stock Folia, not Paper. Build with `./scripts/build-yap-folia.sh`.
 
 **One folder:** drop first-party Folia-native jars into **`plugins/`**.
 `folia-kernel/plugins` (and legacy `paper-kernel/plugins`) symlink to that folder.
 
-First-party plugins use [`YapSched`](../folia/YAP_SCHED.md)
+First-party plugins use [`YapSched`](../plugins/MODULES_AND_API.md)
 (Folia `GlobalRegionScheduler` / entity / region affinity) and declare
 `folia-supported: true`. Stock Paper jars are **unsupported** on the product path.
 
@@ -18,7 +18,6 @@ First-party plugins use [`YapSched`](../folia/YAP_SCHED.md)
 
 ```bash
 cp MyPlugin.jar plugins/
-./scripts/check-plugin-layout.sh
 ./scripts/start.sh --fg
 ```
 
@@ -28,8 +27,6 @@ cp MyPlugin.jar plugins/
 
 Put first-party jars in **`plugins/`**. They must declare `folia-supported: true`
 and schedule via `com.yapcore.sched.YapSched` (or Folia region APIs directly).
-
-Optional smoke: `./scripts/smoke-folia-plugins.sh`
 
 ### On Paper (legacy benches)
 

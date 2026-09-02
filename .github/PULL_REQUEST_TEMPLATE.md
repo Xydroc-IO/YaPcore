@@ -10,7 +10,7 @@ assignees: []
 -
 
 ## Test plan
-- [ ] `./test-unit.sh`
+- [ ] `gradle test` (or targeted module tests)
 - [ ] `gradle shadowJar`
 - [ ] Manual join smoke (if networking touched)
 - [ ] Docs updated (if API/behavior changed)

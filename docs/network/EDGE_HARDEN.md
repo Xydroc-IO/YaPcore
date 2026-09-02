@@ -60,16 +60,11 @@ max-concurrent-per-ip=32
 # or max-concurrent-per-ip-enabled=false for LAN only
 ```
 
-Keep loopback exemption **on** so `./scripts/smoke-*.sh` keep working.
+Keep loopback exemption **on** for local admin tools and `./scripts/start.sh`.
 
-## Prove throttles fire
+## Verify throttles
 
-```bash
-./scripts/smoke-link-rate-limit.sh              # unit soak (always)
-LOOPBACK_SOAK=1 ./scripts/smoke-link-rate-limit.sh   # live TCP flood + /metrics
-```
-
-Watch:
+Watch metrics after stressing the edge:
 
 ```text
 yap_link_connect_throttled_total
@@ -114,10 +109,6 @@ Example host firewall / fail2ban snippets (docs only): see bottom of this file.
 
 Install LagGuard (`gradle installProductDefaults`). Survival defaults ship in
 `plugins/YaPLagGuard/config.yml` — [LAGGUARD.md](../plugins/LAGGUARD.md).
-
-```bash
-./scripts/smoke-lagguard.sh
-```
 
 ---
 

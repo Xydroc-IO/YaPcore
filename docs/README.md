@@ -2,13 +2,13 @@
 
 ![YaPcore](../branding/yapcore-banner.png)
 
-**Start here:** [**YAPCORE Master**](overview/YAPCORE_MASTER.md) — identity, status, advantages, production path.
+Operator docs for install, configuration, plugins, and gameplay features.
 
 | Next step | Doc |
 |-----------|-----|
 | First boot | [Quick Start](start/QUICK_START.md) |
 | Full index | [Wiki](WIKI.md) |
-| Printable PDFs | [pdf/README.md](pdf/README.md) — run `./scripts/export-docs-pdf.sh` |
+| Architecture | [Whitepaper](whitepaper/YAPCORE_WHITEPAPER.md) |
 
 ---
 
@@ -16,18 +16,14 @@
 
 | Folder | Contents |
 |--------|----------|
-| [**start/**](start/) | Quick start, releases, secrets, licensing, testing |
-| [**overview/**](overview/) | Master doc, plain English, ecosystem comparison, release readiness |
+| [**start/**](start/) | Quick start, releases, secrets, licensing, Windows |
 | [**ops/**](ops/) | Commands, permissions, dashboard, tune |
 | [**network/**](network/) | Ports, crossplay, nginx, YaP Link, edge hardening |
-| [**protocol/**](protocol/) | Via/Geyser parity, limitations, protocol dumps |
-| [**plugins/**](plugins/) | Plugin list, vehicles, stacker, compat |
+| [**plugins/**](plugins/) | Plugin list, modules, vehicles, stacker, compat |
 | [**data/**](data/) | YaPDB, MariaDB, playerdata |
 | [**mmo/**](mmo/) | Opt-in MMO gameplay |
-| [**folia/**](folia/) | YaP-Folia fork, scheduler, soak |
-| [**performance/**](performance/) | MSPT benches (maintainers) |
+| [**gameplay/**](gameplay/) | Guilds, factions, regions |
 | [**whitepaper/**](whitepaper/) | Technical architecture |
-| [**archive/**](archive/) | Historical plans (not maintained) |
 
 ---
 
@@ -35,12 +31,12 @@
 
 | Document | When to read |
 |----------|--------------|
-| [YAPCORE_MASTER.md](overview/YAPCORE_MASTER.md) | **Everything important in one place** |
 | [QUICK_START.md](start/QUICK_START.md) | Install and first boot |
-| [RELEASE_READINESS.md](overview/RELEASE_READINESS.md) | Production operator checklist |
-| [TESTING.md](start/TESTING.md) | Smoke and release gates |
-| [COMPARE_ECOSYSTEM.md](overview/COMPARE_ECOSYSTEM.md) | vs Paper, Folia, DIY stacks |
-| [VIA_GEYSER_PARITY.md](protocol/VIA_GEYSER_PARITY.md) | Crossplay parity matrix |
+| [DEFAULTS.md](start/DEFAULTS.md) | First-boot configs |
+| [SECRETS.md](start/SECRETS.md) | Passwords and tokens |
+| [PLUGINS.md](plugins/PLUGINS.md) | Shipped plugins |
+| [MODULES_AND_API.md](plugins/MODULES_AND_API.md) | Modules and API |
+| [YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) | Architecture deep dive |
 
 ---
 

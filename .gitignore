@@ -168,10 +168,10 @@ bench/
 yap-first-party/dev/
 src/jcstress/
 
-# Generated PDFs — regenerate with ./scripts/export-docs-pdf.sh
-docs/pdf/*.pdf
+# Generated PDFs — not tracked (Markdown only in docs/)
+docs/pdf/
 
-# Folia agent scratch notes (archived handoffs live under docs/archive/)
+# Folia agent scratch notes
 vendor/folia/patches/AGENT*.md
 
 # =============================================================================

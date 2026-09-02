@@ -3,8 +3,8 @@
 **Default product path (`game-authority=folia`, `folia-jar-source=build`):**
 **YaP-Folia** owns the public JE protocol after boot (not stock Fill). Legacy
 `game-authority=paper` uses Paper the same way. YaPcore’s native multi-version
-bands apply when `game-authority=native`. See [FOLIA_FORK.md](../folia/FOLIA_FORK.md),
-[CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md), and [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
+bands apply when `game-authority=native`. See [QUICK_START.md](../start/QUICK_START.md),
+[CLIENTS_AND_PACKS.md](CLIENTS_AND_PACKS.md), and [CROSSPLAY.md](../network/CROSSPLAY.md).
 
 YaPcore’s native path speaks **real Minecraft Java protocol** with **built-in multi-version bands**
 (`ProtocolBand`). Each client gets its own codec path — no external translators.
@@ -72,7 +72,7 @@ YaPcore ships official dumps under `src/main/resources/protocol/vanilla/<version
 
 **26.2** packet dumps live under `src/main/resources/protocol/vanilla/` (checked in).
 When Mojang ships a newer protocol, regenerate dumps with `minecraft-data` / Mojang specs,
-commit `packets.json` + `index.json`, then verify with `scripts/protocol-matrix/`.
+commit `packets.json` + `index.json`, then commit under `src/main/resources/protocol/vanilla/`.
 Drop files in `protocol/vanilla/<ver>/` for additional versions.
 
 Threading does not affect this path — join is protocol content, not YapEngine layout.

@@ -5,7 +5,7 @@
 **Product path:** Folia game (`game-authority=folia`, `folia-embed=true`) + YapEngine chassis.  
 Phase 3 Paper spatial is **legacy / opt-in** (defaults off); Folia path has no Phase 3 spatial tick.  
 Phase 4: dual-stack join + play-depth smoke green (not full Geyser clone yet).  
-See [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md) · [YAPCORE_MASTER.md](../overview/YAPCORE_MASTER.md).
+See [CROSSPLAY.md](../network/CROSSPLAY.md) · [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
 
 ```properties
 game-authority=folia
@@ -33,7 +33,6 @@ paper-phase3-nms-tick=false
 
 ```bash
 ./scripts/build-yap-folia.sh          # → lib/yap-folia-26.2.jar
-./scripts/soak-yap-folia.sh compat    # shared soak (Agents 2/3 plug in)
 ./scripts/start.sh --fg
 ```
 
@@ -44,14 +43,9 @@ Stock Fill fallback:
 # folia-jar-source=fetch
 ```
 
-See [FOLIA_FORK.md](../folia/FOLIA_FORK.md) · [YAP_FOLIA_SOAK.md](../folia/YAP_FOLIA_SOAK.md).
-Legacy Paperclip (Phase 3 benches only):
+See [QUICK_START.md](../start/QUICK_START.md).
 
-```bash
-> **Retired (Folia product path):** Paperclip / Phase 3 vendor scripts (`vendor-paper.sh`, `build-vendor-paper.sh`, `apply-yap-paper-hooks.sh`, `smoke-paper-plugins.sh`, `verify-paper-api-coverage.sh`, Paper Phase 3 benches) were removed. Use `./scripts/fetch-folia.sh` / `smoke-folia.sh` instead.
-
-./scripts/fetch-folia.sh   # → lib/folia-26.2.jar
-```
+Legacy Paperclip (Phase 3 benches only) is retired — use the Folia product path above.
 
 ## Built-in multi-version (Via-class — no Via* plugins)
 
@@ -62,8 +56,8 @@ Legacy Paperclip (Phase 3 benches only):
 checks (`MATRIX_FULL=1`); deep play remaps are **not** a Phase 4 blocker.
 
 **Phase 4 DoD:** first-party ViaVersion + ViaBackwards equivalents on the Folia
-JE path. ViaRewind-depth is best-effort only. See [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md)
-and the full checklist [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
+JE path. ViaRewind-depth is best-effort only. See [CROSSPLAY.md](../network/CROSSPLAY.md)
+and the full checklist [CROSSPLAY.md](../network/CROSSPLAY.md).
 Join/spawn is green; **do not** claim full Geyser play parity yet.
 
 Scaffold: `ProtocolBand` / `ProtocolCompat` / `ViaStyleRemapper`. Bedrock uses

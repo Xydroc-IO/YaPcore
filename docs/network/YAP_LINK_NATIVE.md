@@ -38,8 +38,8 @@ See also: [`yap-first-party/link/api/`](../../yap-first-party/link/api/) · [`ya
 | Release bundle | — | ✓ `yap-link.jar` in `assembleRelease` | **5** ✓ |
 | Velocity fork retired | — | ✓ archived | **5** ✓ |
 | Play plugin-message relay (`yap:chat`) | plugins | ✓ `PluginMessagePackets` | **6** ✓ |
-| Two-backend soak (probe + chat) | — | ✓ smoke script | **6** ✓ |
-| Bedrock UDP forward soak | — | ✓ smoke script | **6** ✓ |
+| Two-backend probe + chat relay | — | ✓ | **6** ✓ |
+| Bedrock UDP forward to backend | — | ✓ | **6** ✓ |
 
 ---
 
@@ -48,8 +48,8 @@ See also: [`yap-first-party/link/api/`](../../yap-first-party/link/api/) · [`ya
 | Task | Gate |
 |------|------|
 | Play-phase `PluginMessageEvent` for registered channels | Unit tests + chat-bridge relay |
-| Multi-backend probe + `say` chat relay | `./scripts/smoke-yap-link-two-backend.sh` |
-| Bedrock UDP datagram forward to backend | `./scripts/smoke-yap-link-bedrock.sh` |
+| Multi-backend probe + `say` chat relay |  |
+| Bedrock UDP datagram forward to backend |  |
 
 ---
 
@@ -83,10 +83,6 @@ Plugins load from `link-data/plugins/*.jar` with `link-plugin.json` descriptors.
 gradle :yap-link-native:shadowJar
 gradle :yap-link-plugin-chat-bridge:installIntoLinkPlugins   # optional
 ./scripts/start-yap-link.sh
-./scripts/smoke-yap-link-folia.sh
-./scripts/smoke-yap-link-plugins.sh    # Phase 3 gate
-./scripts/smoke-yap-link-bedrock.sh    # Phase 4/6 gate
-./scripts/smoke-yap-link-two-backend.sh # Phase 6 gate
 ```
 
 **Embedded Link (dev / single-box):** `config/server.properties`:
@@ -179,4 +175,4 @@ Full play-phase plugin-message wire sniffing (all channels) is **optional future
 - [EDGE_RATE_LIMIT.md](EDGE_RATE_LIMIT.md) · [EDGE_HARDEN.md](EDGE_HARDEN.md) — rate limits, Prometheus, public edge harden
 - [YAP_LINK.md](YAP_LINK.md) — operator entry
 - [VELOCITY.md](VELOCITY.md) — Folia backend forwarding
-- [YAPENGINE_16THREAD.md](../performance/YAPENGINE_16THREAD.md) — chassis vs Link process boundaries
+- [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) — chassis vs Link process boundaries

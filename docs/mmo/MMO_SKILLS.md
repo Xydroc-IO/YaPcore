@@ -53,12 +53,6 @@ Each action in a skill YAML may set `min-level`. Blocked actions show a chat mes
 
 `GET /api/mmo` — read-only snapshot when skills plugin is loaded (M1+).
 
-## Smoke
-
-```bash
-./scripts/validate-mmo-content.sh
-```
-
 ## See also
 
 - [MMO_PHASES.md](MMO_PHASES.md) — milestone plan M0–M7

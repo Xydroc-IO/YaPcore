@@ -3,7 +3,7 @@
 YaPcore ships **jar-embedded** plugin YAML plus a tracked **`config/defaults/`** pack
 that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when missing**.
 
-**Game path:** product defaults use **YaP-Folia** (`game-authority=folia`, `folia-jar-source=build`). See [FOLIA_FORK.md](../folia/FOLIA_FORK.md).
+**Game path:** product defaults use **YaP-Folia** (`game-authority=folia`, `folia-jar-source=build`). Build with `./scripts/build-yap-folia.sh`.
 
 ## What works without editing
 

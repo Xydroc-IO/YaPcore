@@ -111,13 +111,6 @@ distance drop-off, and headshot multiplier. Routed through the same hit pipeline
 - `death.keep-inventory` — RS-lite keep items flag
 - Respawn restores custom HP when `death.restore-hp-on-respawn: true`
 
-## Smoke
-
-```bash
-./scripts/validate-mmo-content.sh
-# combat units also covered by gradle test
-```
-
 ## See also
 
 - [MMO_PHASES.md](MMO_PHASES.md) — M2 acceptance checklist

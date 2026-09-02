@@ -9,10 +9,9 @@ Thanks for helping build a clean, professional Minecraft-class server engine.
    see the hygiene table in [README.md](README.md) and [docs/start/RELEASES.md](docs/start/RELEASES.md).
 2. **Threading** — world / inventory / block changes on **SYNC**; DB/HTTP on **HEAVY**; menu polish on **UI**.
 3. **Size** — prefer ≤500 lines per domain file; split by package when a class grows
-   (see [docs/performance/PERF_AND_LAYOUT.md](docs/performance/PERF_AND_LAYOUT.md)). Link JE outbound framing belongs in
+   (see [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md)). Link JE outbound framing belongs in
    `McOutboundPacketEncoder`, not a stacked compress+frame Netty pair.
 4. **Docs** — API or architecture changes update `docs/` and, when substantial, the [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md).
-   Regenerated PDFs under `docs/pdf/` are gitignored — commit Markdown, run `./scripts/export-docs-pdf.sh` locally.
 
 ## Setup
 
@@ -36,7 +35,6 @@ Optional YaP Paperclip (Phase 3 NMS interior tick):
 ## Pull requests
 
 - Use the PR template.
-- Run `./test-unit.sh` (and relevant soaks for engine changes).
 - One logical change per PR when possible.
 
 ## Modules & plugins

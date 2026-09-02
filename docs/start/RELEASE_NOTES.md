@@ -3,14 +3,14 @@
 Product version **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2**
 
 For build commands and zip layout see [RELEASES.md](RELEASES.md). For live status see
-[YAPCORE_MASTER.md](../overview/YAPCORE_MASTER.md).
+[YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
 
 ---
 
 ## v1.0.0.0 — 2026-09-01
 
 First shippable **YaP-Folia** network product release: native plugin stack, first-party
-Java + Bedrock crossplay, YaP Link proxy, web dashboard, and automated release gates green.
+Java + Bedrock crossplay, YaP Link proxy, and web dashboard.
 
 ### Highlights
 
@@ -31,7 +31,7 @@ Java + Bedrock crossplay, YaP Link proxy, web dashboard, and automated release g
 - **Bedrock 1.21.50** — RakNet login, spawn, dig/place, chat, commands; play-depth smoke green.
 - **Paper column stream** default for Bedrock terrain (flat chunks opt-in only).
 - **G.33** placed-skull block-actor sync wired; item-in-hand head textures still partial.
-- Limitations documented in [VIA_BACKWARDS_LIMITATIONS.md](../protocol/VIA_BACKWARDS_LIMITATIONS.md).
+- Limitations documented in [CROSSPLAY.md](../network/CROSSPLAY.md).
 
 ### Ops & configuration
 
@@ -48,23 +48,9 @@ Completion backlog **Tiers 1–4 Done** (with live-soak caveats):
 - Tier 1: YaPTab sidebar, claim flags, admin menus, combat PvE defaults.
 - Tier 2: Dashboard polish, web map, Discord relay, tune docs.
 - Tier 3: RS quest/boss roster, abilities, Bedrock skill UI, TAB cross-server sync.
-- Tier 4: Protocol phases 4A→4F — matrix, bedrock smoke, play soak, limitation docs.
+- Tier 4: Protocol phases 4A→4F — dual-stack join, Bedrock play depth, limitation docs.
 
 Roadmap phases **8–17 Done** (dashboard, TAB, Discord, regions, map, guard, NPCs, Bedrock depth, release polish).
-
-### Verified gates (2026-09-01)
-
-Production battery artifact: `build/production-test-battery-latest.json`
-
-| Gate | Result |
-|------|--------|
-| `gradle verifyConcurrency` | PASS |
-| `./scripts/smoke-network-full.sh` | PASS (9/9) |
-| JE protocol matrix | PASS (4/4 spawn) |
-| Bedrock smoke + play smoke | PASS |
-| Folia compat soak (300s) | PASS |
-
-Re-run locally: [TESTING.md](TESTING.md).
 
 ### Build & install
 
@@ -95,11 +81,10 @@ Gameplay add-ons: `gradle assembleRelease -PyapGameplay=true`
 
 Not blockers for release; documented for operators:
 
-- **Live §E soak** — 10-minute real-client sessions (chunk borders, full inv UI, retail Xbox) recommended before marketing “full play depth.”
+- **Retail Xbox / full inv UI** — validate with real clients before marketing “full play depth.”
 - **ViaRewind 1.8 play depth** — out of product scope.
 - **Smithing / sounds / particles** on older JE clients — same class of issues as ViaBackwards; see limitations doc.
 - **YaPGuard** — lightweight native AC; use optional **Grim** for gold-standard checks.
-- **600s perf soak** — optional; 300s compat soak passed.
 
 ### Contributors & license
 
@@ -125,9 +110,8 @@ Summarized from git history; not separate tagged releases.
 ## Upcoming (not in 1.0.0.0)
 
 - Push to GitHub after `gh auth login`
-- Manual §E live checklist completion ([VIA_GEYSER_PARITY.md §E](../protocol/VIA_GEYSER_PARITY.md))
-- Optional `SOAK_SECS=600 ./scripts/soak-yap-folia.sh perf`
-- Next-protocol dump when Mojang ships a new JE build ([PROTOCOL_DUMPS.md](../protocol/PROTOCOL_DUMPS.md))
+- Manual §E live checklist completion ([CROSSPLAY.md](../network/CROSSPLAY.md))
+- Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))
 
 ---
 

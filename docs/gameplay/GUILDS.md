@@ -80,8 +80,6 @@ GuildServices.find().ifPresent(s -> s.addGuildXp(guildId, playerId, 100, "quest"
 ## Smoke
 
 ```bash
-./scripts/smoke-network-full.sh   # includes plugin layout + Folia/Link gates
-SKIP_LIVE=1 ./scripts/smoke-folia-plugins.sh
 ```
 
 ## vs Factions

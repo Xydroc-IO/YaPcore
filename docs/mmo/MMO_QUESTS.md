@@ -7,7 +7,7 @@ Regenerate:
 
 ```bash
 python3 scripts/content/generate-mmo-quest-compendium.py
-./scripts/validate-mmo-content.sh
+./gradle installGameplayDefaults
 ```
 
 ## Progression flow (intro)

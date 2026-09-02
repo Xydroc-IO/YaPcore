@@ -5,7 +5,7 @@ YaPcore does **not** promise to run arbitrary Paper plugins on Folia — this ma
 operators clarity and dashboard warnings.
 
 **Machine-readable source:** `src/main/resources/plugin-compat-matrix.json` (loaded by
-dashboard Plugins tab and `check-plugin-layout.sh`).
+dashboard Plugins tab).
 
 ## Status values
 
@@ -40,12 +40,6 @@ dashboard Plugins tab and `check-plugin-layout.sh`).
 
 Plugins tab shows **compat status** and **native alternative** badge per installed jar.
 Warnings count appears on **Status → Network health**.
-
-## CLI
-
-```bash
-./scripts/check-plugin-layout.sh   # layout + known-bad jar warnings
-```
 
 ## Matrix size
 

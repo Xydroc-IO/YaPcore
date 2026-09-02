@@ -53,10 +53,11 @@ ranks apply   # after server start → yapperm applypack
 
 See [PERMISSIONS.md](../ops/PERMISSIONS.md) · [`examples/yapperms/`](../examples/yapperms/).
 
-Layout check:
+Layout: keep all jars in **`plugins/`** (Folia kernel symlinks to the same folder).
 
 ```bash
-./scripts/check-plugin-layout.sh
+cp MyPlugin.jar plugins/
+./scripts/start.sh --fg
 ```
 
 ## What “within reason” means
@@ -113,11 +114,8 @@ not “Paper incompatible.”
 
 ## Verify
 
-```bash
-./scripts/check-plugin-layout.sh   # plugins/ unified; kernel plugins → symlink
-./scripts/smoke-folia.sh           # Folia product smoke
-> **Retired (Folia product path):** Paperclip / Phase 3 vendor scripts (`vendor-paper.sh`, `build-vendor-paper.sh`, `apply-yap-paper-hooks.sh`, `smoke-paper-plugins.sh`, `verify-paper-api-coverage.sh`, Paper Phase 3 benches) were removed. Use `./scripts/fetch-folia.sh` / `smoke-folia.sh` instead.
+Put jars in **`plugins/`** and boot with `./scripts/start.sh --fg`.
 
-```
+> **Retired:** Paperclip / Phase 3 vendor scripts were removed. Use `./scripts/fetch-folia.sh` and `./scripts/build-yap-folia.sh` on the Folia product path.
 
-Also: [PLUGINS.md](PLUGINS.md) · [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md) · [YAPCORE_MASTER.md](../overview/YAPCORE_MASTER.md).
+Also: [PLUGINS.md](PLUGINS.md) · [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).

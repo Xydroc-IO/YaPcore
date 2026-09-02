@@ -190,13 +190,6 @@ StatusEffectServices.find().ifPresent(s -> s.apply(target, "poison", sourceId, 1
 AbilityCombatServices.find(); // registered by yap-combat
 ```
 
-## Smoke
-
-```bash
-./scripts/validate-mmo-content.sh
-# optional live: ./scripts/smoke-folia-plugins.sh
-```
-
 ---
 
 ## M7 — Advanced mechanics + client graphics

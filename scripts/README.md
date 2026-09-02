@@ -1,57 +1,40 @@
 # YaPcore scripts
 
-Operator and maintainer helpers. See [docs/start/TESTING.md](../docs/start/TESTING.md) for release gates.
+Install, setup, and lifecycle helpers for operators.
 
-## Everyday (shipped in release zips)
+## Server lifecycle
 
 | Script | Purpose |
 |--------|---------|
 | `start.sh` / `stop.sh` / `status.sh` | Server lifecycle |
 | `gui.sh` / `start-prod.sh` | Swing panel / production launch |
+| `start-yap-link.sh` | Start YaP Link proxy |
+| `yapctl` | CLI helper |
+
+## First boot and setup
+
+| Script | Purpose |
+|--------|---------|
 | `seed-defaults.sh` | First-boot configs |
 | `apply-production-profile.sh` | Public production keys |
-| `yapctl` | CLI helper |
 | `setup-velocity-forwarding.sh` | Velocity forwarding secret |
-| `db/*.sh` | MariaDB + JDBC |
+| `nginx-setup.sh` | nginx edge template install |
+| `db/*.sh` | MariaDB + JDBC setup |
 | `windows/*.ps1` | Windows equivalents |
 
-## YaP-Folia (product game jar)
+## Build YaP-Folia (from source)
 
 | Script | Purpose |
 |--------|---------|
 | `build-yap-folia.sh` | Build `lib/yap-folia-26.2.jar` |
-| `verify-yap-folia.sh` | Sanity-check fork jar |
 | `vendor-folia.sh` · `folia-patch.sh` | Vendor + patches |
-| `fetch-folia.sh` | Stock Folia (fallback / CI) |
-| `fetch-tebex.sh` · `fetch-grim.sh` · `grim-ac.sh` | Optional plugins |
-| `soak-yap-folia.sh` · `smoke-folia.sh` | Soak + boot smoke |
+| `fetch-folia.sh` | Stock Folia fallback |
 
-Soak hooks: `smoke-folia-sched-compat.sh`, `smoke-folia-cross-region-tp.sh`, `smoke-folia-async-save.sh`.
-
-## Release gates
+## Optional plugins and packs
 
 | Script | Purpose |
 |--------|---------|
-| `smoke-network-full.sh` | **Primary release gate** (9 steps) |
-| `smoke-phase7-soak.sh` | Play soak + gameplay (600s) |
-| `smoke-yap-link-*.sh` · `smoke-folia-plugins.sh` · `smoke-bedrock-play.sh` | Network / crossplay |
-| `check-plugin-layout.sh` | Plugin folder layout |
-| `protocol-matrix/` | JE/BE matrix + play soak bots |
+| `fetch-tebex.sh` · `fetch-grim.sh` · `grim-ac.sh` | Optional Tebex / Grim AC |
+| `build-default-resourcepack.sh` · `fetch-faithful-64x.sh` | Default resource pack |
 
-## Content / packs
-
-| Script | Purpose |
-|--------|---------|
-| `content/*.py` · `validate-mmo-content.sh` | MMO content pipeline |
-| `generate-ability-pack.py` · `generate-mmo-icons.py` | Abilities + icons |
-| `build-default-resourcepack.sh` · `fetch-faithful-64x.sh` | Resource packs |
-
-## Bench / tests (maintainers)
-
-| Path | Purpose |
-|------|---------|
-| `bench/run-vs-folia.sh` · `run-vs-all.sh` | MSPT benches |
-| `bench/bots/` | Mineflayer swarm |
-| `test-unit.sh` · `test-fray.sh` · `test-all.sh` | Gradle test wrappers |
-| `export-docs-pdf.sh` | Rebuild docs PDFs |
-| `lib.sh` | Shared helpers |
+See [docs/start/QUICK_START.md](../docs/start/QUICK_START.md) and [docs/start/WINDOWS.md](../docs/start/WINDOWS.md).

@@ -19,7 +19,6 @@ See `docs/mmo/MMO_BEDROCK_UI.md` and `docs/mmo/MMO_ABILITIES.md`.
 - Gradle: add modules to `settings.gradle.kts`, wire `installProductDefaults` +
   `assembleRelease` when shipping jars
 - Permissions: document in `docs/ops/PERMISSIONS.md`
-- Smoke / validate: `./scripts/validate-mmo-content.sh` (+ optional `smoke-folia-plugins.sh`)
 
 > **Acceptance checklists** under each milestone are **manual QA** for operator sign-off.
 > Milestones M0–M7 are **shipped** (code + automated gates); tick boxes after live soak.
@@ -131,7 +130,6 @@ XpSource { action, quest, admin, command }
 
 - Unit: `XpTableTest` — level 1, 50, 99 boundaries
 - Unit: `MiningXpCalculatorTest` — material map
-- Script: `scripts/validate-mmo-content.sh` — compile, run unit tests, `SKIP_LIVE=1` boot check
 
 ### Acceptance
 
@@ -149,7 +147,7 @@ XpSource { action, quest, admin, command }
 Implement YaP MMO Phase M0 per docs/mmo/MMO_PHASES.md.
 Create yap-mmo-api + skills-plugin (Mining only). Folia-safe YapSched.
 DB table yap_skill_progress, SkillService on ServicesManager, /skills GUI,
-BlockBreakEvent XP, PAPI placeholders, `validate-mmo-content.sh`.
+BlockBreakEvent XP, PAPI placeholders, `gradle installGameplayDefaults`.
 Extend yap-npcs quest rewards with skill_xp:mining:N (soft dependency).
 Do not implement other skills yet. Match npcs-plugin Gradle/shadow patterns.
 ```
@@ -159,7 +157,6 @@ Do not implement other skills yet. Match npcs-plugin Gradle/shadow patterns.
 - `yap-first-party/api/yap-mmo-api/src/main/java/com/yapcore/mmo/SkillService.java`
 - `yap-first-party/gameplay/skills-plugin/src/main/java/com/yapcore/skills/SkillsPlugin.java`
 - `yap-first-party/gameplay/skills-plugin/src/main/resources/skills/mining.yml`
-- `scripts/validate-mmo-content.sh`
 
 ---
 
@@ -211,7 +208,6 @@ Use **config-driven** skill defs: `skills/*.yml` one file per skill.
 - [ ] `/skill top mining` returns DB leaderboard (paginated, async)
 - [ ] TAB sidebar updates on level-up
 - [ ] Dashboard `/api/mmo` returns JSON without server crash when skills plugin loaded
-- [ ] `scripts/validate-mmo-content.sh` passes
 
 ### Agent prompt
 
@@ -278,7 +274,6 @@ GearBonus { attackBonus, strengthBonus, defenceBonus, ... } // aggregated from i
 - [ ] Potion buff visible in `/combat stats`
 - [ ] Combat XP awards on mob kill match M1 ratios
 - [ ] Folia: no cross-region entity mutation without `YapSched.entity`
-- [ ] `scripts/validate-mmo-content.sh` — unit tests for hit formula + compile boot
 
 ### Agent prompt
 
@@ -323,7 +318,6 @@ recipe unlocks by level, shop/AH hooks.
 - [ ] Fish → cook → eat (fishing + cooking XP loop)
 - [ ] Recipe blocked below required level with message citing required level
 - [ ] `/sell` adds money when economy enabled
-- [ ] `scripts/validate-mmo-content.sh` — recipe parser unit tests + boot
 
 ### Agent prompt
 
@@ -387,7 +381,6 @@ Ship `plugins/yap-mmo-content/quests/starter_chain.yml` — 5-quest chain teachi
 - [ ] One boss killable with M2 combat; drops usable gear
 - [ ] Mining guild ore respawns after configured delay
 - [ ] `/hiscores mining` works cross-restart
-- [ ] `scripts/validate-mmo-content.sh` — quest parser tests + full `SKIP_LIVE=1` boot with all MMO jars
 
 ### Agent prompt
 
@@ -407,7 +400,6 @@ hiscore preview. Depends on yap-skills, yap-combat, yap-crafting. Folia-safe.
 **Docs:** [MMO_BEDROCK_UI.md](MMO_BEDROCK_UI.md)
 
 FormService skills hub, paginated recipes/hiscores, XP action bar mirror, combat sidebar.
-Smoke: `scripts/validate-mmo-content.sh`
 
 ---
 
@@ -418,7 +410,6 @@ Smoke: `scripts/validate-mmo-content.sh`
 **Docs:** [MMO_ABILITIES.md](MMO_ABILITIES.md)
 
 YAML-driven abilities: projectiles, VFX, buffs/debuffs, cooldowns, `/ability`, `/cast` delegation.
-Smoke: `scripts/validate-mmo-content.sh`
 
 ---
 
@@ -428,7 +419,7 @@ Smoke: `scripts/validate-mmo-content.sh`
 **Ships:** updated `yap-abilities.jar`, `yap-mmo-bedrock.jar`, `resourcepacks/yap-abilities/` overlay
 
 AoE, homing projectiles, chain lightning, cast conditions, animation sync, blaze-rod spell icons,
-Bedrock spellbook panel. Smoke: `scripts/validate-mmo-content.sh`
+Bedrock spellbook panel. Smoke: gradle installGameplayDefaults
 
 ---
 
@@ -437,20 +428,12 @@ Bedrock spellbook panel. Smoke: `scripts/validate-mmo-content.sh`
 After **M7**, run full integration:
 
 ```bash
-`./scripts/validate-mmo-content.sh`
-`./scripts/validate-mmo-content.sh`
-`./scripts/validate-mmo-content.sh`
-`./scripts/validate-mmo-content.sh`
-`./scripts/validate-mmo-content.sh`
-`./scripts/validate-mmo-content.sh`
-`./scripts/validate-mmo-content.sh`
-`./scripts/validate-mmo-content.sh`
-YAP_GAMEPLAY=1 ./scripts/smoke-folia-plugins.sh   # if extended for gameplay jars
+
 ```
 
 Update:
 
-- [YAPCORE_MASTER.md](../overview/YAPCORE_MASTER.md) — MMO section
+- [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) — MMO section
 - `docs/ops/PERMISSIONS.md` — `yapskills.*`, `yapcombat.*`, `yapcraft.*`, `yapmmo.*`, `yapabilities.*`
 - `gradle/yap-product.gradle.kts` — gameplay install includes all MMO jars
 - `gradle/yap-release.gradle.kts` — release artifact list

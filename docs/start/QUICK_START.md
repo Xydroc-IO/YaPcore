@@ -3,7 +3,7 @@
 Get a YaPcore server running in **under 10 minutes**. No nginx, no public domain, no
 plugin hunting — everything you need ships in the box.
 
-**Game jar:** product default is **YaP-Folia** (`lib/yap-folia-*.jar`, `folia-jar-source=build`) — our Folia 26.2 fork, not stock Fill Folia. See [FOLIA_FORK.md](../folia/FOLIA_FORK.md).
+**Game jar:** product default is **YaP-Folia** (`lib/yap-folia-*.jar`, `folia-jar-source=build`) — our Folia 26.2 fork, not stock Fill Folia. Build with `./scripts/build-yap-folia.sh`.
 
 ## Requirements
 
@@ -212,7 +212,7 @@ Compose: [`deploy/mariadb/docker-compose.yml`](../deploy/mariadb/docker-compose.
 | Dashboard 401 | Paste token from console log into login screen |
 | No commands in-game | You need OP: `op YourName` or `ops=YourName` in config |
 
-More: [TESTING.md](TESTING.md) · [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md) · [FOLIA_FORK.md](../folia/FOLIA_FORK.md).
+More: [WIKI.md](../WIKI.md) · [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md) · [QUICK_START.md](../start/QUICK_START.md).
 
 ---
 
@@ -220,7 +220,7 @@ More: [TESTING.md](TESTING.md) · [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md
 
 | Topic | Doc |
 |-------|-----|
-| YaP-Folia fork | [FOLIA_FORK.md](../folia/FOLIA_FORK.md) |
+| YaP-Folia fork | [QUICK_START.md](../start/QUICK_START.md) |
 | All commands | [COMMANDS.md](../ops/COMMANDS.md) |
 | Permissions & ranks | [PERMISSIONS.md](../ops/PERMISSIONS.md) |
 | Web dashboard | [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |

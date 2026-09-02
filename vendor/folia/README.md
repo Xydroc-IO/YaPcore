@@ -20,7 +20,6 @@ Build requires: **JDK 25+** (Temurin/OpenJDK), Git, network for Paperweight down
 ./scripts/vendor-folia.sh          # clone/pin into vendor/folia/work
 ./scripts/folia-patch.sh           # apply YaP patches (after Folia applyAllPatches)
 ./scripts/build-yap-folia.sh       # → lib/yap-folia-26.2.jar
-./scripts/verify-yap-folia.sh      # build + smoke-folia
 ```
 
 Product config (prefer built jar):

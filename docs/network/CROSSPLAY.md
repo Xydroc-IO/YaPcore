@@ -13,17 +13,16 @@ not product DoD for play remaps. Live matrix (2026-08-21): JE **7/7** join/spawn
 Bedrock smoke `geyserParitySmoke=true` on 1.21.50 (~1599 itemstates).
 
 **Phase 4 DoD** is that parity on the Folia-backed world (product default). Slice roll-up:
-[VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md). Feature-by-feature checklist:
-[VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
+[CROSSPLAY.md](../network/CROSSPLAY.md). Feature-by-feature checklist:
+[CROSSPLAY.md](../network/CROSSPLAY.md).
 Bedrock terrain defaults to **column stream** from the game authority (P4.5); flat is opt-in
-(`-Dyapcore.bedrock.flat-chunks=true`). Automated soak preamble:
-`./scripts/protocol-matrix/play-soak.sh`.
+(`-Dyapcore.bedrock.flat-chunks=true`).
 
 **Product note:** With default `game-authority=folia`, **Folia** owns the JE game.
 Phase 3 Paper spatial tick is **not** product default (opt-in for Paper benches only;
 Folia path has no Phase 3 spatial tick). Phase 4 finishes dual-stack depth —
-join/spawn green; core play depth via `smoke-bedrock-play.sh` (do not claim full Geyser play parity yet).
-See [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md) · [YAPCORE_MASTER.md](../overview/YAPCORE_MASTER.md).
+join/spawn and core play depth are supported; some advanced Bedrock fidelity rows remain partial.
+See [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
 
 ## Streamlined one-port join
 
@@ -66,14 +65,7 @@ Moves/chats/clicks are translated into shared engine ops.
 **Target:** full Geyser feature parity + full Via\* feature parity in YaP code.
 **Join/spawn replace claim:** JE matrix green + Bedrock smoke green — operators do **not**
 need Via\* or Geyser jars for supported bands. Soft gameplay depth (richer BE metadata,
-block-state catalogs) still hardens from live clients — see [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
-
-Re-run:
-
-```bash
-HOST=127.0.0.1 PORT=25566 ./scripts/protocol-matrix/run-matrix.sh
-HOST=127.0.0.1 PORT=25566 ./scripts/protocol-matrix/run-bedrock-smoke.sh
-```
+block-state catalogs) still hardens from live clients.
 
 ## GUI
 

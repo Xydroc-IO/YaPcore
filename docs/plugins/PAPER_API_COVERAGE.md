@@ -2,7 +2,7 @@
 
 **Product path:** under `game-authority=folia` (default), Folia owns the game.
 First-party plugins must declare `folia-supported: true` and schedule via
-[`YapSched`](../folia/YAP_SCHED.md). Stock Paper jars are **unsupported** (no PaperCompat).
+[`YapSched`](../plugins/MODULES_AND_API.md). Stock Paper jars are **unsupported** (no PaperCompat).
 
 **Legacy Paper path:** under `game-authority=paper`, YaPcore still embeds Paperclip
 for benches / Phase 3 opt-in. That is **not** the product default.
@@ -29,4 +29,4 @@ Paperclip — same as stock Paper 26.2. Phase 3 spatial tick remains opt-in for
 benches only.
 
 Runtime matrix: `com.yapcore.api.ApiCoverage`.
-Smoke: `./scripts/smoke-folia-plugins.sh` · `./scripts/smoke-yap-link-folia.sh`
+Smoke:  · 

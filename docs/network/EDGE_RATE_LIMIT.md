@@ -50,8 +50,6 @@ yap_link_throttle_*_drops   # gauge mirrors for dashboards
 Prove:
 
 ```bash
-./scripts/smoke-link-rate-limit.sh
-LOOPBACK_SOAK=1 ./scripts/smoke-link-rate-limit.sh
 ```
 
 ## YaPLagGuard
@@ -61,7 +59,6 @@ See [LAGGUARD.md](../plugins/LAGGUARD.md). Jar via `gradle installProductDefault
 Survival-oriented defaults: entities/chunk `72`, primed TNT `8`, hopper `48`/20t, redstone `96`/20t.
 
 ```bash
-./scripts/smoke-lagguard.sh
 ```
 
 ## Prometheus scrape

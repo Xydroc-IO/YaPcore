@@ -80,7 +80,6 @@ Install MariaDB/MySQL, create database/user matching `deploy/mariadb/.env.exampl
 |---------|-----|
 | YaPDB disables on boot | `./scripts/db/ensure-db.sh --server-id <id>` then restart; `./scripts/db/status-mariadb.sh` |
 | Access denied for `yap@localhost` | Jar default is **:3306**; YaP Docker may be on **3316**. Re-run ensure/configure into the **same** home that boots (`--root`) |
-| Smoke / workdir still fails DB | Configure must target the workdir: `ensure-db.sh --root bench/workdir-…` (repo-root config alone is not enough) |
 | PlayerData uses embedded pool | Install `yap-db.jar`; check `/yapdb status` |
 | Multi-backend can't connect | Use LAN IP not `127.0.0.1` |
 | Port 3306 busy | Auto-bumped to 3316 on start; or set `YAP_DB_PORT` in `.env` and reconfigure |

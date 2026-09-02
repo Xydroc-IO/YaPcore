@@ -49,10 +49,6 @@ Plugins: `link-data/plugins/*.jar` — loaded when `plugins-enabled=true`.
 ## Smoke gates
 
 ```bash
-./scripts/smoke-yap-link-folia.sh
-./scripts/smoke-yap-link-plugins.sh
-./scripts/smoke-yap-link-bedrock.sh
-./scripts/smoke-yap-link-two-backend.sh   # Phase 6
 ```
 
 ## Console

@@ -35,19 +35,13 @@ Other plugins (skills, combat, content) can query via `MechanicsServices.find()`
 
 Load **before or with** `yap-skills` — both listen on `BlockBreakEvent` at HIGH (tools/stamina) then skills grant XP at MONITOR.
 
-## Smoke
-
-```bash
-./scripts/validate-mmo-content.sh
-```
-
 ## Content scale (recipes)
 
 Regenerate expanded recipe packs (150+):
 
 ```bash
 python3 scripts/content/generate-mmo-baseline-pack.py
-./scripts/validate-mmo-content.sh
+./gradle installGameplayDefaults
 ```
 
 Recipe files under `plugins/YaPCrafting/recipes/`:

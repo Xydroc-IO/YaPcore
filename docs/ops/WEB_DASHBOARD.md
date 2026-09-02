@@ -3,7 +3,7 @@
 Browser-based **admin control panel** for headless hosts and remote operators.
 Set up the network, configure YaP Link, manage plugins, and monitor health — no SSH required for day-to-day ops.
 
-Controls the **YaPcore chassis** in front of **YaP-Folia** (game child JVM). See [FOLIA_FORK.md](../folia/FOLIA_FORK.md).
+Controls the **YaPcore chassis** in front of **YaP-Folia** (game child JVM). Build with `./scripts/build-yap-folia.sh`.
 
 Modern **sidebar shell** (Overview · Server · People · Content · Gameplay) with dark theme, stat cards, and full plugin config editors where the backend supports it.
 
@@ -54,7 +54,6 @@ Static assets: `src/main/resources/web/` — `app-shell.js`, `app-core.js`, `app
 
 | Section | What you configure |
 |---------|-------------------|
-| **Monitoring** | Crash dump, run `smoke-network-full.sh`, refresh health |
 | **Dashboard access** | Port, bind, localhost-only, enable/disable, **rotate token** |
 | **External access** | Internet expose, domain, public Java/Bedrock/pack ports, DNS SRV hint |
 | **nginx** | Localhost assist, stream/HTTP ports, domain, config dry-run |
@@ -67,7 +66,6 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | Tab | API | GET snapshot | POST actions (high level) |
 |-----|-----|--------------|---------------------------|
 | **Dashboard** | `/api/status` | running, heap, ticks, link process, network health | — |
-| **Network setup** | `/api/admin` | dashboard, nginx, proxy, smoke | save-*, rotate-token, run-smoke, crashdump |
 | **Connect** | `/api/connect` | Java/Bedrock/crossplay join, pack URL | — |
 | **Console** | `/api/console`, `/api/command` | log backlog | run command · SSE `/api/console/stream` |
 | **Settings** | `/api/config` | server.properties fields, ops, auto-op | save config keys |
@@ -90,7 +88,6 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Map** | `/api/map` | map URL, tiles, worlds, render interval | reload, render, **save-settings** |
 | **Guard** | `/api/guard` | check toggles, kick threshold, decay, alerts | reload, player-status, **save-settings** |
 | **Protect** | `/api/protect` | logging, retention, status | reload, prune, lookup, **rollback**, **save-settings** |
-| **Discord** | `/api/discord` | webhooks, relay, inbound | save-webhook, save-relay, save-inbound, test-webhook, reload |
 | **MMO** | `/api/mmo` | skills, abilities, hiscores, boss kills, combat bar bindings | **reload-abilities**, reload-mmo |
 
 Legacy routes (superseded by UI tabs): `/api/moderation` → **Players**; `/api/perms` → **Access & ranks**.
@@ -154,7 +151,6 @@ These tabs **write plugin YAML** via `save-settings` (or equivalent) and reload 
 - Folia running, bedrock/crossplay/velocity flags
 - Link process running (`linkProcessRunning`), config + suite completeness
 - Plugin count + compat warning count
-- Last smoke artifact timestamps
 - **Ops plugins** — Phase 8 jar readiness (Protect, Chat, Moderation, Player data, Map, Discord) with one-line detail per plugin
 
 ### Map tab
@@ -211,16 +207,6 @@ Dashboard **Access & ranks** and **Rank pack** tabs call `/api/access` and `/api
 Config: `plugins/YaPPerms/config.yml`. See [PERMISSIONS.md](PERMISSIONS.md).
 
 Optional: `yap-ranks-auto-apply=true` in `config/server.properties`.
-
-## Release smoke
-
-Full network gate:
-
-```bash
-./scripts/smoke-network-full.sh
-```
-
-Or trigger from **Network setup** tab → **Run network smoke**.
 
 ## Security
 

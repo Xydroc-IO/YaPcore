@@ -106,19 +106,18 @@ tasks.register("assembleRelease") {
             "**/WINDOWS.md", "**/NGINX_AND_LOCALHOST.md", "**/PLAYERDATA.md", "**/MARIADB.md", "**/YAPDB.md",
             "**/STACKER.md", "**/PLUGINS.md", "**/MODULES_AND_API.md", "**/TUNE.md", "**/PERMISSIONS.md",
             "**/TEBEX.md",
-            "**/REGIONS.md", "**/RELEASES.md", "**/RELEASE_NOTES.md", "**/DEFAULTS.md", "**/SECRETS.md", "**/TESTING.md",
-            "**/YAPCORE_MASTER.md", "**/RELEASE_READINESS.md", "**/COMPARE_ECOSYSTEM.md",
-            "**/PLUGIN_COMPAT_MATRIX.md", "**/YAP_LINK_NATIVE.md",
-            "**/VIA_GEYSER_PARITY.md",
-            "**/FOLIA_FORK.md", "**/YAP_FOLIA_SOAK.md",
+            "**/REGIONS.md", "**/RELEASES.md", "**/RELEASE_NOTES.md", "**/DEFAULTS.md", "**/SECRETS.md",
+            "**/PLUGIN_COMPAT_MATRIX.md", "**/YAP_LINK_NATIVE.md", "**/CROSSPLAY.md", "**/NETWORKING.md",
+            "**/YAP_LINK.md", "**/YAPCORE_WHITEPAPER.md", "**/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md",
+            "**/MMO_PHASES.md", "**/GUILDS.md", "**/FACTIONS.md",
             "README.md",
         )
         val linuxScripts = listOf(
             "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
-            "nginx-setup.sh", "heap-dump.sh", "build-default-resourcepack.sh", "fetch-faithful-64x.sh",
+            "start-yap-link.sh", "nginx-setup.sh", "setup-velocity-forwarding.sh",
+            "build-default-resourcepack.sh", "fetch-faithful-64x.sh",
             "fetch-folia.sh", "fetch-tebex.sh", "fetch-grim.sh", "grim-ac.sh",
-            "vendor-folia.sh", "folia-patch.sh", "build-yap-folia.sh", "verify-yap-folia.sh",
-            "soak-yap-folia.sh", "smoke-folia.sh",
+            "vendor-folia.sh", "folia-patch.sh", "build-yap-folia.sh",
             "seed-defaults.sh", "apply-production-profile.sh",
             "yapctl",
         )
@@ -322,7 +321,7 @@ tasks.register("assembleRelease") {
             resourcepacks/yapcore-default.zip
             config/
             docs/
-            lib/  (yap-folia-*.jar when built on host; else stock folia-*.jar — see FOLIA_FORK.md)
+            lib/  (yap-folia-*.jar when built on host; else stock folia-*.jar)
 
             Web dashboard: http://127.0.0.1:8080/
             Token: config/server.properties → web-dashboard-token
@@ -330,7 +329,6 @@ tasks.register("assembleRelease") {
             Requires Java 25+ on PATH (or JAVA_HOME).
             Product path: YaP-Folia recommended (./scripts/build-yap-folia.sh +
             folia-jar-source=build). Stock Fill: fetch-folia / folia-jar-source=fetch.
-            Soak: ./scripts/soak-yap-folia.sh compat — docs/folia/YAP_FOLIA_SOAK.md.
             """.trimIndent()
 
         // --- linux ---
@@ -400,8 +398,8 @@ tasks.register("assembleRelease") {
 
             Folia (product game authority)
             ------------------------------
+              ./scripts/build-yap-folia.sh
               ./scripts/fetch-folia.sh
-              ./scripts/smoke-folia.sh
 
             nginx edge
             ----------

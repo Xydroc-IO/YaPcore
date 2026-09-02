@@ -17,7 +17,7 @@ YaPcore (Folia/Paper) is a **game backend**. The public edge is a **proxy**:
 # players → Link :25565 → Folia loopback
 ```
 
-Smoke: `./scripts/smoke-yap-link-folia.sh`
+Smoke: 
 
 When Folia `proxies.velocity.enabled` is **false** (local default in some trees), Link
 still completes login without `velocity:player_info`. Enable forwarding for production
@@ -138,7 +138,7 @@ Native Bedrock UDP (no Velocity) already uses first-party `FloodgateAuth` with t
 ## ViaVersion / ViaBackwards / ViaRewind / Geyser
 
 **Do not use.** Phase 4 DoD is **full** Via\* + Geyser feature parity in YaPcore
-code ([VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md)). Dropping those jars into
+code ([CROSSPLAY.md](../network/CROSSPLAY.md)). Dropping those jars into
 `plugins/` is not the supported path.
 
 Proxy networks that still run Via on Velocity for *other* backends are outside

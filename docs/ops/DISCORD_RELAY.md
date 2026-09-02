@@ -45,7 +45,6 @@ inbound:
 |--------|---------------------|
 | Save mod webhook | `{"action":"save-webhook","key":"moderation","url":"..."}` |
 | Save chat webhook | `{"action":"save-webhook","key":"chat","url":"..."}` |
-| Test webhook | `{"action":"test-webhook","key":"moderation"}` |
 | Save relay | `{"action":"save-relay","mcToDiscord":"true","discordToMc":"false"}` |
 | Reload plugin | `{"action":"reload"}` |
 

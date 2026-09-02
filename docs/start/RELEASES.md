@@ -5,7 +5,7 @@ All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `p
 **Release notes:** [RELEASE_NOTES.md](RELEASE_NOTES.md)  
 **License:** release trees include root **`LICENSE`** (GNU GPLv3). See [LICENSING.md](LICENSING.md).
 
-**Game jar:** product path expects **YaP-Folia** (`lib/yap-folia-26.2.jar`) built via `./scripts/build-yap-folia.sh`. Stock Fill Folia is not the release default. See [FOLIA_FORK.md](../folia/FOLIA_FORK.md).
+**Game jar:** product path expects **YaP-Folia** (`lib/yap-folia-26.2.jar`) built via `./scripts/build-yap-folia.sh`. Stock Fill Folia is not the release default. Build with `./scripts/build-yap-folia.sh`.
 
 ## Build commands
 
@@ -75,7 +75,7 @@ See [WINDOWS.md](WINDOWS.md) and [MARIADB.md](../data/MARIADB.md).
 ## Repo layout discipline
 
 - First-party code: [`yap-first-party/`](../../yap-first-party/README.md)
-- YaP-Folia: [`vendor/folia/`](../vendor/folia/) + [FOLIA_FORK.md](../folia/FOLIA_FORK.md)
+- YaP-Folia: [`vendor/folia/`](../vendor/folia/) + [QUICK_START.md](../start/QUICK_START.md)
 - Gradle split: `build.gradle.kts` + `gradle/yap-product.gradle.kts`, `yap-release.gradle.kts`, `yap-packaging.gradle.kts`
 - **Do not commit** live kernel/link state (`folia-kernel/logs`, `usercache`, `ops`, `link-data/link.properties`, plugin config dirs) — enforced by `.gitignore`
 

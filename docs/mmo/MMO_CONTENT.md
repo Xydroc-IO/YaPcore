@@ -39,14 +39,14 @@ Full design + operator setup: **[MMO_QUESTS.md](MMO_QUESTS.md)**.
 
 ```bash
 python3 scripts/content/generate-mmo-quest-compendium.py
-./scripts/validate-mmo-content.sh
+./gradle installGameplayDefaults
 ```
 
 ## Regenerate recipes / bosses
 
 ```bash
 python3 scripts/content/generate-mmo-baseline-pack.py   # recipes + bosses (does not replace quests)
-./scripts/validate-mmo-content.sh
+./gradle installGameplayDefaults
 gradle :crafting-plugin:test :mmo-content-plugin:shadowJar
 ```
 

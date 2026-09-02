@@ -31,14 +31,10 @@ fi
 
 DESC="YaPcore default — Faithful 64x (CORE)"
 if [ "$want_vehicles" -eq 1 ]; then
-  if [ -d "$ABIL_DIR" ] || [ -f "$ROOT/scripts/generate-mmo-icons.py" ]; then
-    python3 "$ROOT/scripts/generate-mmo-icons.py" 2>/dev/null || python3 "$ROOT/scripts/generate-ability-icons.py" 2>/dev/null || true
-    if [ -d "$ABIL_DIR" ]; then
-      (cd "$ABIL_DIR" && zip -qr "$ABIL_ZIP" .)
+  if [ -d "$ABIL_DIR" ]; then
+    if [ -f "$ABIL_ZIP" ]; then
+      unzip -q -o "$ABIL_ZIP" -d "$STAGE"
     fi
-  fi
-  if [ -f "$ABIL_ZIP" ]; then
-    unzip -q -o "$ABIL_ZIP" -d "$STAGE"
   fi
   if [ -d "$VEH_DIR" ]; then
     (cd "$VEH_DIR" && zip -qr "$VEH_ZIP" .)

@@ -4,10 +4,9 @@ Packet ID dumps power first-party Via\* remaps (`PacketIdDump` / Mid / Forward).
 
 | File | Role |
 |------|------|
-| [`index.json`](index.json) | Protocol → resource map (P4.10 source of truth) |
+| [`index.json`](index.json) | Protocol → resource map |
 | `*/packets.json` | Per-version play/login/config IDs |
 
-Add a new Mojang protocol: see [`docs/protocol/PROTOCOL_DUMPS.md`](../../../../docs/protocol/PROTOCOL_DUMPS.md).
 Dumps are checked in; regenerate offline and commit when Mojang ships past the pin.
 
-Honesty limits: [`docs/protocol/VIA_BACKWARDS_LIMITATIONS.md`](../../../../docs/protocol/VIA_BACKWARDS_LIMITATIONS.md).
+Crossplay scope and limitations: [`docs/network/CROSSPLAY.md`](../../../../docs/network/CROSSPLAY.md).

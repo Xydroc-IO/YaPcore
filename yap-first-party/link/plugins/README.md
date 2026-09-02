@@ -14,6 +14,4 @@ gradle :yap-link-plugin-discord:installIntoLinkPlugins
 
 Each jar ships a `link-plugin.json` descriptor. See [`../api/`](../api/) for the plugin API.
 
-Smoke gate: `./scripts/smoke-yap-link-plugins.sh`
-
 See [`../../README.md`](../../README.md) for the full first-party layout.

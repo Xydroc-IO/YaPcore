@@ -71,7 +71,7 @@ without hopping to SYNC. Keep caches labeled by owning pool.
 ## API coverage (what authors can use)
 
 **Paper / Folia plugins (`plugin.yml`):** **Folia-native first-party** under product
-`game-authority=folia` (`folia-supported` + [`YapSched`](../folia/YAP_SCHED.md)). Stock
+`game-authority=folia` (`folia-supported` + [`YapSched`](../plugins/MODULES_AND_API.md)). Stock
 Paper jars are unsupported. Legacy `game-authority=paper` still exposes complete
 Paper API for benches — see [PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md).
 
@@ -81,15 +81,9 @@ Runtime matrix: `com.yapcore.api.ApiCoverage`.
 
 **Folia `RegionScheduler` APIs:** supported on the Folia product path via Folia + YapSched.
 
-Verify:
+Runtime matrix: `com.yapcore.api.ApiCoverage` (see source).
 
-```bash
-./scripts/smoke-folia-plugins.sh
-./scripts/smoke-yap-link-folia.sh
-# Legacy Paper benches only:
-> **Retired (Folia product path):** Paperclip / Phase 3 vendor scripts (`vendor-paper.sh`, `build-vendor-paper.sh`, `apply-yap-paper-hooks.sh`, `smoke-paper-plugins.sh`, `verify-paper-api-coverage.sh`, Paper Phase 3 benches) were removed. Use `./scripts/fetch-folia.sh` / `smoke-folia.sh` instead.
-
-```
+> **Retired:** Paperclip / Phase 3 vendor scripts were removed. Use `./scripts/fetch-folia.sh` and `./scripts/build-yap-folia.sh` on the Folia product path.
 
 ## Author checklist
 

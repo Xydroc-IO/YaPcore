@@ -35,7 +35,7 @@ the Gradle shadow jar. After Link protocol changes run
 ## Folia backend (YaP-Folia fork)
 
 Product default: **`folia-jar-source=build`** (YaP-Folia under `lib/yap-folia-*.jar`),
-not stock Fill Folia. See [FOLIA_FORK.md](../folia/FOLIA_FORK.md).
+not stock Fill Folia. Build with `./scripts/build-yap-folia.sh`.
 
 Two forwarding modes:
 
@@ -77,7 +77,7 @@ java -jar yap-link.jar --home link-data
 
 Config: **`link.properties`** in link home (not `velocity.toml`). Seeded on first start.
 
-Smoke: `./scripts/smoke-yap-link-folia.sh`
+Smoke: 
 
 Requires `link-embed=false` (default). When `link-embed=true`, Link starts in-process at JVM boot and start/stop controls are disabled.
 
@@ -112,7 +112,7 @@ network-sync:
 - Sending `CLEAR|<server-id>` drops stale overlay when a backend stops.
 - Admin: `/yaptab sync` forces a publish; `/yaptab reload` reloads and syncs.
 
-Smoke: `./scripts/smoke-yap-link-two-backend.sh`
+Smoke: 
 
 ## Bedrock / Geyser
 

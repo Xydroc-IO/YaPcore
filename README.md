@@ -11,30 +11,14 @@ playerdata, packs).
 
 | | |
 |--|--|
-| **Master doc** | [**docs/overview/YAPCORE_MASTER.md**](docs/overview/YAPCORE_MASTER.md) — what we are, where we stand, advantages |
 | **Quick Start** | [**docs/start/QUICK_START.md**](docs/start/QUICK_START.md) |
 | **Wiki** | [**docs/WIKI.md**](docs/WIKI.md) |
+| **Whitepaper** | [**docs/whitepaper/YAPCORE_WHITEPAPER.md**](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
 | **Releases** | [docs/start/RELEASES.md](docs/start/RELEASES.md) · build locally with `gradle publishReleasesFolder` |
 | **Scripts** | [scripts/README.md](scripts/README.md) |
 | **License** | [GPLv3](LICENSE) · [LICENSING.md](docs/start/LICENSING.md) · [Privacy](docs/start/PRIVACY_POLICY.md) · [Terms](docs/start/TERMS_OF_USE.md) |
 
 > Not affiliated with Mojang / Microsoft.
-
----
-
-## What makes YaPcore different
-
-| Feature | YaPcore | Typical Paper stack |
-|---------|---------|---------------------|
-| **Game authority** | **YaP-Folia** regionized tick | Single main thread |
-| **Shipped plugins** | Perms, chat, mod, essentials, DB, packs, floodgate | Install 10+ jars yourself |
-| **Dual-stack** | Java + Bedrock on one port | Geyser + Floodgate + config |
-| **Ops UI** | Swing GUI + web dashboard (`:8080`) | Console only or third-party panels |
-| **Network proxy** | **YaP Link** (native Velocity-class) | Stock Velocity + DIY plugins |
-| **Defaults** | `config/defaults/` + `seed-defaults.sh` | Hand-edit every plugin |
-
-One `gradle installProductDefaults` (or a release zip) gives you a network-ready
-server — not an empty jar and a shopping list.
 
 ---
 
@@ -96,11 +80,13 @@ Details: [docs/start/RELEASES.md](docs/start/RELEASES.md).
 
 | Layer | Role |
 |-------|------|
-| **YaP-Folia** | Game tick — [FOLIA_FORK.md](docs/folia/FOLIA_FORK.md) |
+| **YaP-Folia** | Game tick (build with `./scripts/build-yap-folia.sh`) |
 | **YapEngine** | Edge, dual-stack, I/O, GUI/dashboard |
 | **YaP Link** | Multi-backend proxy — [YAP_LINK.md](docs/network/YAP_LINK.md) |
 
 Default: `game-authority=folia`, `folia-jar-source=build`, dual-stack Java+Bedrock.
+
+Deep dive: [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md).
 
 ---
 
@@ -110,7 +96,8 @@ Default: `game-authority=folia`, `folia-jar-source=build`, dual-stack Java+Bedro
 |----------|------------|
 | **Admins** | [QUICK_START.md](docs/start/QUICK_START.md) → [WIKI.md](docs/WIKI.md) · [DEFAULTS.md](docs/start/DEFAULTS.md) |
 | **Commands / perms** | [COMMANDS.md](docs/ops/COMMANDS.md) · [PERMISSIONS.md](docs/ops/PERMISSIONS.md) |
-| **Architecture** | [YAPCORE_MASTER.md](docs/overview/YAPCORE_MASTER.md) · [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
+| **Plugins / modules** | [PLUGINS.md](docs/plugins/PLUGINS.md) · [MODULES_AND_API.md](docs/plugins/MODULES_AND_API.md) |
+| **Architecture** | [YAPCORE_WHITEPAPER.md](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
 | **Contributors** | [CONTRIBUTING.md](CONTRIBUTING.md) · [scripts/README.md](scripts/README.md) |
 
 ---

@@ -1,6 +1,6 @@
 # YaPcore Wiki
 
-Operator documentation. **Start:** [YAPCORE Master](overview/YAPCORE_MASTER.md) or [Quick Start](start/QUICK_START.md).
+Operator documentation for install, configuration, plugins, and gameplay.
 
 Browse by folder: [docs/README.md](README.md).
 
@@ -10,23 +10,13 @@ Browse by folder: [docs/README.md](README.md).
 
 | Page | Description |
 |------|-------------|
-| [**YAPCORE_MASTER.md**](overview/YAPCORE_MASTER.md) | Master doc — identity, status, advantages |
-| [**QUICK_START.md**](start/QUICK_START.md) | 10-minute setup |
+| [**QUICK_START.md**](start/QUICK_START.md) | Install and first boot |
 | [RELEASES.md](start/RELEASES.md) | Release zips and build |
 | [RELEASE_NOTES.md](start/RELEASE_NOTES.md) | Changelog |
 | [DEFAULTS.md](start/DEFAULTS.md) | First-boot configs |
 | [SECRETS.md](start/SECRETS.md) | Passwords and tokens |
-| [TESTING.md](start/TESTING.md) | Smoke and bench scripts |
 | [WINDOWS.md](start/WINDOWS.md) | Windows launchers |
-
-### Overview — [`overview/`](overview/)
-
-| Page | Description |
-|------|-------------|
-| [YAPCORE_MASTER.md](overview/YAPCORE_MASTER.md) | **Canonical** product doc |
-| [PLAIN_ENGLISH.md](overview/PLAIN_ENGLISH.md) | Non-technical overview |
-| [COMPARE_ECOSYSTEM.md](overview/COMPARE_ECOSYSTEM.md) | vs Paper, Purpur, Folia, … |
-| [RELEASE_READINESS.md](overview/RELEASE_READINESS.md) | Production checklist |
+| [LICENSING.md](start/LICENSING.md) | License and legal |
 
 ---
 
@@ -40,6 +30,9 @@ Browse by folder: [docs/README.md](README.md).
 | [TUNE.md](ops/TUNE.md) | Config hub |
 | [GRIM.md](ops/GRIM.md) | Optional Grim AC |
 | [ANTICHEAT.md](ops/ANTICHEAT.md) | AC strategy |
+| [ADMIN_MENU.md](ops/ADMIN_MENU.md) | In-game admin menu |
+| [DISCORD_RELAY.md](ops/DISCORD_RELAY.md) | Discord webhooks |
+| [TEBEX.md](ops/TEBEX.md) | Tebex store integration |
 
 ---
 
@@ -50,32 +43,31 @@ Browse by folder: [docs/README.md](README.md).
 | [NETWORKING.md](network/NETWORKING.md) | Ports and domains |
 | [CROSSPLAY.md](network/CROSSPLAY.md) | Java + Bedrock |
 | [YAP_LINK.md](network/YAP_LINK.md) | Multi-backend proxy |
+| [YAP_LINK_NATIVE.md](network/YAP_LINK_NATIVE.md) | Native Link setup |
+| [VELOCITY.md](network/VELOCITY.md) | Velocity forwarding |
+| [CLIENTS_AND_PACKS.md](network/CLIENTS_AND_PACKS.md) | Clients and resource packs |
+| [VANILLA_CLIENTS.md](network/VANILLA_CLIENTS.md) | Vanilla client support |
 | [EDGE_HARDEN.md](network/EDGE_HARDEN.md) | Public edge hardening |
-| [CLOUDFLARE_AND_NGINX.md](network/CLOUDFLARE_AND_NGINX.md) | DNS and nginx |
+| [EDGE_RATE_LIMIT.md](network/EDGE_RATE_LIMIT.md) | Rate limits |
+| [NGINX_AND_LOCALHOST.md](network/NGINX_AND_LOCALHOST.md) | nginx and localhost |
+| [CLOUDFLARE_AND_NGINX.md](network/CLOUDFLARE_AND_NGINX.md) | DNS and Cloudflare |
 
 ---
 
-## Protocol — [`protocol/`](protocol/)
-
-| Page | Description |
-|------|-------------|
-| [VIA_GEYSER_PARITY.md](protocol/VIA_GEYSER_PARITY.md) | **Parity checklist** |
-| [VIA_BACKWARDS_LIMITATIONS.md](protocol/VIA_BACKWARDS_LIMITATIONS.md) | Known JE limits |
-
----
-
-## Plugins, data, Folia, MMO
+## Plugins, data, gameplay, MMO
 
 | Area | Index |
 |------|-------|
-| Plugins | [PLUGINS.md](plugins/PLUGINS.md) |
+| Plugins | [PLUGINS.md](plugins/PLUGINS.md) · [MODULES_AND_API.md](plugins/MODULES_AND_API.md) |
 | Data | [YAPDB.md](data/YAPDB.md) · [MARIADB.md](data/MARIADB.md) · [PLAYERDATA.md](data/PLAYERDATA.md) |
-| YaP-Folia | [FOLIA_FORK.md](folia/FOLIA_FORK.md) |
-| MSPT benches | [BENCH_VS_FOLIA.md](performance/BENCH_VS_FOLIA.md) |
-| MMO (opt-in) | [MMO_PHASES.md](mmo/MMO_PHASES.md) |
+| Gameplay | [GUILDS.md](gameplay/GUILDS.md) · [FACTIONS.md](gameplay/FACTIONS.md) · [REGIONS.md](gameplay/REGIONS.md) |
+| MMO (opt-in) | [MMO_PHASES.md](mmo/MMO_PHASES.md) · [MMO_CONTENT.md](mmo/MMO_CONTENT.md) |
 
 ---
 
-## Archive
+## Architecture — [`whitepaper/`](whitepaper/)
 
-Completed phase plans and old status snapshots: [archive/README.md](archive/README.md) (not maintained).
+| Page | Description |
+|------|-------------|
+| [YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) | Technical architecture |
+| [YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md](whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) | Plain-English summary |

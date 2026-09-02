@@ -29,6 +29,5 @@ Native YaPcore Bedrock sessions use chassis `FormService` + `BedrockUiBridge.pus
 ## Smoke
 
 ```bash
-./scripts/validate-mmo-content.sh
-# Bedrock UI: ./scripts/smoke-bedrock-play.sh
+./gradle installGameplayDefaults
 ```

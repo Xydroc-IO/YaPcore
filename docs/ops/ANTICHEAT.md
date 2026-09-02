@@ -38,7 +38,7 @@ Manual fetch: `./scripts/fetch-grim.sh --disabled` or `gradle fetchGrim` — see
 Product stance:
 
 1. **Regions / flags** → extend YaP natives (claims + `yap-regions`)
-2. **Heavy AC** → optional third-party jar + `scripts/check-plugin-layout.sh` hint
+2. **Heavy AC** → optional third-party jar; verify Folia support before deploy
 3. **YaPGuard** → stays maintained as lightweight default, not a Matrix clone
 
 ## Permissions
