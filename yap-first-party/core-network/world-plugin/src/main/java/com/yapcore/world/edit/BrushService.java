@@ -1,13 +1,18 @@
 package com.yapcore.world.edit;
 
 import com.yapcore.sched.YapSched;
+import com.yapcore.world.schem.Schematic;
 import com.yapcore.world.util.BlockCodec;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -20,25 +25,70 @@ public final class BrushService {
 
     public enum BrushType {
         SPHERE,
-        CYL
+        CYL,
+        SMOOTH,
+        GRAVITY,
+        CLIPBOARD,
+        BUTCHER
     }
 
     private final JavaPlugin plugin;
     private final UndoService undo;
+    private final BlockBatch batch;
     private final Map<UUID, BrushState> states = new ConcurrentHashMap<>();
+    private MaskEngine masks;
+    private PlayerEditState editState;
+    private ClipboardService clipboard;
+    private int maxRadius = 16;
 
     public BrushService(JavaPlugin plugin, UndoService undo) {
         this.plugin = plugin;
         this.undo = undo;
+        this.batch = new BlockBatch(plugin, undo);
+    }
+
+    public void setMasks(MaskEngine masks) {
+        this.masks = masks;
+    }
+
+    public void setEditState(PlayerEditState editState) {
+        this.editState = editState;
+        batch.setEditState(editState);
+    }
+
+    public void setClipboard(ClipboardService clipboard) {
+        this.clipboard = clipboard;
+    }
+
+    public void setMaxRadius(int maxRadius) {
+        this.maxRadius = Math.max(1, Math.min(64, maxRadius));
+        batch.setParallelChunks(4);
+    }
+
+    public void setParallelChunks(int n) {
+        batch.setParallelChunks(n);
     }
 
     public void setBrush(UUID playerId, int radius, Material material) {
         BrushState prev = states.get(playerId);
         BrushType type = prev == null ? BrushType.SPHERE : prev.type();
+        String pattern = material == null || material.isAir() ? "stone" : material.name().toLowerCase(Locale.ROOT);
+        if (editState != null) {
+            editState.setBrushPattern(playerId, pattern);
+        }
         states.put(playerId, new BrushState(
-                Math.max(1, Math.min(radius, 32)),
+                clampRadius(radius),
                 material == null || material.isAir() ? Material.STONE : material,
-                type));
+                type,
+                pattern));
+    }
+
+    public void setBrushFull(UUID playerId, BrushType type, int radius, String pattern) {
+        Material mat = PatternEngine.pickMaterial(pattern);
+        if (editState != null) {
+            editState.setBrushPattern(playerId, pattern);
+        }
+        states.put(playerId, new BrushState(clampRadius(radius), mat, type, pattern));
     }
 
     public void setBrushType(UUID playerId, String typeName) {
@@ -47,11 +97,30 @@ public final class BrushService {
             setBrush(playerId, 3, Material.STONE);
             prev = states.get(playerId);
         }
-        BrushType type = switch (typeName == null ? "sphere" : typeName.toLowerCase(Locale.ROOT)) {
-            case "cyl", "cylinder" -> BrushType.CYL;
-            default -> BrushType.SPHERE;
-        };
-        states.put(playerId, new BrushState(prev.radius(), prev.material(), type));
+        BrushType type = parseType(typeName);
+        states.put(playerId, new BrushState(prev.radius(), prev.material(), type, prev.pattern()));
+    }
+
+    public void setSize(UUID playerId, int radius) {
+        BrushState prev = states.get(playerId);
+        if (prev == null) {
+            setBrush(playerId, radius, Material.STONE);
+            return;
+        }
+        states.put(playerId, new BrushState(clampRadius(radius), prev.material(), prev.type(), prev.pattern()));
+    }
+
+    public void setMat(UUID playerId, String pattern) {
+        BrushState prev = states.get(playerId);
+        if (prev == null) {
+            setBrushFull(playerId, BrushType.SPHERE, 3, pattern);
+            return;
+        }
+        Material mat = PatternEngine.pickMaterial(pattern);
+        if (editState != null) {
+            editState.setBrushPattern(playerId, pattern);
+        }
+        states.put(playerId, new BrushState(prev.radius(), mat, prev.type(), pattern));
     }
 
     public BrushState state(UUID playerId) {
@@ -63,7 +132,14 @@ public final class BrushService {
         if (state == null) {
             return CompletableFuture.completedFuture(0);
         }
-        return state.type() == BrushType.CYL ? applyCyl(player, center, state) : applySphere(player, center, state);
+        return switch (state.type()) {
+            case CYL -> applyCyl(player, center, state);
+            case SMOOTH -> applySmooth(player, center, state);
+            case GRAVITY -> applyGravity(player, center, state);
+            case CLIPBOARD -> applyClipboard(player, center, state);
+            case BUTCHER -> applyButcher(player, center, state);
+            default -> applySphere(player, center, state);
+        };
     }
 
     public CompletableFuture<Integer> applySphere(Player player, Location center) {
@@ -79,29 +155,29 @@ public final class BrushService {
         if (world == null) {
             return CompletableFuture.completedFuture(0);
         }
-        EditSession session = new EditSession();
         int r = state.radius();
         int cx = center.getBlockX();
         int cy = center.getBlockY();
         int cz = center.getBlockZ();
         int rSq = r * r;
-        CompletableFuture<Integer> chain = CompletableFuture.completedFuture(0);
+        PatternEngine.Pattern pat = PatternEngine.parse(state.pattern());
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        UUID id = player.getUniqueId();
         for (int x = -r; x <= r; x++) {
             for (int y = -r; y <= r; y++) {
                 for (int z = -r; z <= r; z++) {
                     if (x * x + y * y + z * z > rSq) {
                         continue;
                     }
-                    Location loc = new Location(world, cx + x, cy + y, cz + z);
-                    chain = chain.thenCompose(count -> paintOne(session, world, loc, state.material())
-                            .thenApply(ok -> ok ? count + 1 : count));
+                    int wx = cx + x, wy = cy + y, wz = cz + z;
+                    if (masks != null && !masks.allows(id, world, wx, wy, wz)) {
+                        continue;
+                    }
+                    plans.add(PatternEngine.toBatch(wx, wy, wz, pat.resolve(world, wx, wy, wz, null)));
                 }
             }
         }
-        return chain.thenApply(count -> {
-            undo.push(player.getUniqueId(), session);
-            return count;
-        });
+        return batch.apply(player, world, plans);
     }
 
     private CompletableFuture<Integer> applyCyl(Player player, Location center, BrushState state) {
@@ -109,51 +185,204 @@ public final class BrushService {
         if (world == null) {
             return CompletableFuture.completedFuture(0);
         }
-        EditSession session = new EditSession();
         int r = state.radius();
         int cx = center.getBlockX();
         int cy = center.getBlockY();
         int cz = center.getBlockZ();
         int rSq = r * r;
         int height = Math.max(1, r);
-        CompletableFuture<Integer> chain = CompletableFuture.completedFuture(0);
+        PatternEngine.Pattern pat = PatternEngine.parse(state.pattern());
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        UUID id = player.getUniqueId();
         for (int x = -r; x <= r; x++) {
             for (int z = -r; z <= r; z++) {
                 if (x * x + z * z > rSq) {
                     continue;
                 }
                 for (int y = 0; y < height; y++) {
-                    Location loc = new Location(world, cx + x, cy + y, cz + z);
-                    chain = chain.thenCompose(count -> paintOne(session, world, loc, state.material())
-                            .thenApply(ok -> ok ? count + 1 : count));
+                    int wx = cx + x, wy = cy + y, wz = cz + z;
+                    if (masks != null && !masks.allows(id, world, wx, wy, wz)) {
+                        continue;
+                    }
+                    plans.add(PatternEngine.toBatch(wx, wy, wz, pat.resolve(world, wx, wy, wz, null)));
                 }
             }
         }
-        return chain.thenApply(count -> {
-            undo.push(player.getUniqueId(), session);
-            return count;
-        });
+        return batch.apply(player, world, plans);
     }
 
-    private CompletableFuture<Boolean> paintOne(EditSession session, World world, Location loc, Material material) {
-        CompletableFuture<Boolean> done = new CompletableFuture<>();
-        YapSched.region(plugin, loc, () -> {
-            try {
-                String before = BlockCodec.encode(world.getBlockAt(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
-                world.getBlockAt(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()).setType(material, false);
-                String after = BlockCodec.encode(world.getBlockAt(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ()));
-                session.record(world.getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), before, after);
-                done.complete(true);
-            } catch (Exception e) {
-                done.complete(false);
+    private CompletableFuture<Integer> applySmooth(Player player, Location center, BrushState state) {
+        World world = center.getWorld();
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        int r = state.radius();
+        int minX = center.getBlockX() - r;
+        int maxX = center.getBlockX() + r;
+        int minZ = center.getBlockZ() - r;
+        int maxZ = center.getBlockZ() + r;
+        int minY = center.getBlockY() - r;
+        int maxY = center.getBlockY() + r;
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        for (int x = minX; x <= maxX; x++) {
+            for (int z = minZ; z <= maxZ; z++) {
+                int sum = 0;
+                int count = 0;
+                for (int ox = -1; ox <= 1; ox++) {
+                    for (int oz = -1; oz <= 1; oz++) {
+                        int hx = highestSolid(world, x + ox, z + oz, minY, maxY);
+                        if (hx != Integer.MIN_VALUE) {
+                            sum += hx;
+                            count++;
+                        }
+                    }
+                }
+                if (count == 0) {
+                    continue;
+                }
+                int targetY = Math.round(sum / (float) count);
+                int current = highestSolid(world, x, z, minY, maxY);
+                if (current == Integer.MIN_VALUE) {
+                    continue;
+                }
+                if (targetY > current) {
+                    Material fill = world.getBlockAt(x, current, z).getType();
+                    for (int y = current + 1; y <= targetY && y <= maxY; y++) {
+                        plans.add(new BlockBatch.Planned(x, y, z, fill.isAir() ? Material.STONE : fill));
+                    }
+                } else if (targetY < current) {
+                    for (int y = current; y > targetY && y >= minY; y--) {
+                        plans.add(new BlockBatch.Planned(x, y, z, Material.AIR));
+                    }
+                }
             }
+        }
+        return batch.apply(player, world, plans);
+    }
+
+    private CompletableFuture<Integer> applyGravity(Player player, Location center, BrushState state) {
+        World world = center.getWorld();
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        int r = state.radius();
+        int cx = center.getBlockX();
+        int cy = center.getBlockY();
+        int cz = center.getBlockZ();
+        List<BlockBatch.Encoded> dest = new ArrayList<>();
+        List<BlockBatch.Planned> clear = new ArrayList<>();
+        CompletableFuture<Integer> done = new CompletableFuture<>();
+        YapSched.region(plugin, center, () -> {
+            for (int x = -r; x <= r; x++) {
+                for (int z = -r; z <= r; z++) {
+                    if (x * x + z * z > r * r) {
+                        continue;
+                    }
+                    List<String> column = new ArrayList<>();
+                    for (int y = -r; y <= r; y++) {
+                        var b = world.getBlockAt(cx + x, cy + y, cz + z);
+                        if (!b.getType().isAir()) {
+                            column.add(BlockCodec.encode(b));
+                            clear.add(new BlockBatch.Planned(cx + x, cy + y, cz + z, Material.AIR));
+                        }
+                    }
+                    int y = cy - r;
+                    for (String enc : column) {
+                        final int fx = cx + x;
+                        final int fz = cz + z;
+                        while (y <= cy + r) {
+                            final int fy = y;
+                            boolean occupied = !world.getBlockAt(fx, fy, fz).getType().isAir()
+                                    && clear.stream().noneMatch(p -> p.x() == fx && p.y() == fy && p.z() == fz);
+                            if (!occupied) {
+                                break;
+                            }
+                            y++;
+                        }
+                        if (y > cy + r) {
+                            break;
+                        }
+                        dest.add(new BlockBatch.Encoded(fx, y, fz, enc));
+                        y++;
+                    }
+                }
+            }
+            batch.apply(player, world, clear).thenCompose(n -> batch.applyEncoded(player, world, dest))
+                    .whenComplete((n, err) -> done.complete(n == null ? 0 : n));
         });
         return done;
     }
 
-    public record BrushState(int radius, Material material, BrushType type) {
+    private CompletableFuture<Integer> applyClipboard(Player player, Location center, BrushState state) {
+        if (clipboard == null || clipboard.clipboard(player.getUniqueId()) == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        ClipboardService.Clipboard clip = clipboard.clipboard(player.getUniqueId());
+        World world = center.getWorld();
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        int ox = center.getBlockX() - clip.offsetX();
+        int oy = center.getBlockY() - clip.offsetY();
+        int oz = center.getBlockZ() - clip.offsetZ();
+        List<BlockBatch.Encoded> plans = new ArrayList<>();
+        for (Schematic.BlockEntry e : clip.blocks()) {
+            plans.add(new BlockBatch.Encoded(ox + e.dx(), oy + e.dy(), oz + e.dz(), e.encoded()));
+        }
+        return batch.applyEncoded(player, world, plans);
+    }
+
+    private CompletableFuture<Integer> applyButcher(Player player, Location center, BrushState state) {
+        World world = center.getWorld();
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        CompletableFuture<Integer> done = new CompletableFuture<>();
+        double r = state.radius();
+        YapSched.region(plugin, center, () -> {
+            int n = 0;
+            for (Entity e : world.getNearbyEntities(center, r, r, r)) {
+                if (e instanceof LivingEntity living && !(e instanceof Player)) {
+                    living.remove();
+                    n++;
+                }
+            }
+            done.complete(n);
+        });
+        return done;
+    }
+
+    private int clampRadius(int radius) {
+        return Math.max(1, Math.min(radius, maxRadius));
+    }
+
+    private static BrushType parseType(String typeName) {
+        return switch (typeName == null ? "sphere" : typeName.toLowerCase(Locale.ROOT)) {
+            case "cyl", "cylinder" -> BrushType.CYL;
+            case "smooth" -> BrushType.SMOOTH;
+            case "gravity", "grav" -> BrushType.GRAVITY;
+            case "clipboard", "schem", "paste" -> BrushType.CLIPBOARD;
+            case "butcher", "kill" -> BrushType.BUTCHER;
+            default -> BrushType.SPHERE;
+        };
+    }
+
+    private static int highestSolid(World world, int x, int z, int minY, int maxY) {
+        for (int y = maxY; y >= minY; y--) {
+            if (!world.getBlockAt(x, y, z).getType().isAir()) {
+                return y;
+            }
+        }
+        return Integer.MIN_VALUE;
+    }
+
+    public record BrushState(int radius, Material material, BrushType type, String pattern) {
         public BrushState(int radius, Material material) {
-            this(radius, material, BrushType.SPHERE);
+            this(radius, material, BrushType.SPHERE, material == null ? "stone" : material.name().toLowerCase(Locale.ROOT));
+        }
+
+        public BrushState(int radius, Material material, BrushType type) {
+            this(radius, material, type, material == null ? "stone" : material.name().toLowerCase(Locale.ROOT));
         }
     }
 }

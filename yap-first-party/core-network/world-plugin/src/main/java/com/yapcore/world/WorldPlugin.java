@@ -5,15 +5,21 @@ import com.yapcore.world.cmd.WorldEditOps;
 import com.yapcore.world.edit.BrushService;
 import com.yapcore.world.edit.ClipboardService;
 import com.yapcore.world.edit.GenerationService;
+import com.yapcore.world.edit.MaskEngine;
+import com.yapcore.world.edit.PlayerEditState;
 import com.yapcore.world.edit.SelectionEditService;
+import com.yapcore.world.edit.SelectionShape;
+import com.yapcore.world.edit.TerrainService;
 import com.yapcore.world.edit.UndoService;
 import com.yapcore.world.gui.WorldEditGui;
 import com.yapcore.world.gui.WorldEditGuiListener;
 import com.yapcore.world.listener.BrushListener;
 import com.yapcore.world.listener.SelectionWandListener;
+import com.yapcore.world.listener.ToolModeListener;
 import com.yapcore.world.listener.WorldEditSlashBridge;
 import com.yapcore.world.listener.WorldEditToolListener;
 import com.yapcore.world.schem.SchematicPaster;
+import com.yapcore.world.service.EditApplyServiceImpl;
 import com.yapcore.world.service.SelectionServiceImpl;
 import com.yapcore.world.service.WorldManagerServiceImpl;
 import com.yapcore.world.tool.WorldEditTool;
@@ -39,19 +45,24 @@ public final class WorldPlugin extends JavaPlugin {
     private SelectionEditService selectionEditService;
     private ClipboardService clipboardService;
     private GenerationService generationService;
+    private TerrainService terrainService;
+    private MaskEngine maskEngine;
+    private SelectionShape selectionShape;
+    private PlayerEditState playerEditState;
     private WorldEditOps editOps;
     private WorldEditTool worldEditTool;
     private WorldEditGui worldEditGui;
     private WorldEditSessionRegistry editSessions;
     private WorldEditHttpServer editHttp;
     private WorldCommands commands;
+    private EditApplyServiceImpl editApply;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         reloadWorld();
 
-        getServer().getPluginManager().registerEvents(new SelectionWandListener(config, selection), this);
+        getServer().getPluginManager().registerEvents(new SelectionWandListener(config, selection, selectionShape), this);
         getServer().getPluginManager().registerEvents(new BrushListener(brushService), this);
         getServer().getPluginManager().registerEvents(
                 new WorldEditToolListener(config, selection, brushService, worldEditTool, this::openInGameGui), this);
@@ -59,17 +70,20 @@ public final class WorldPlugin extends JavaPlugin {
                 new WorldEditGuiListener(this, config, worldEditGui, selection, brushService,
                         selectionEditService, clipboardService, generationService, undoService, paster), this);
         getServer().getPluginManager().registerEvents(new WorldEditSlashBridge(this), this);
+        getServer().getPluginManager().registerEvents(
+                new ToolModeListener(this, playerEditState, selection, selectionShape, terrainService), this);
 
         var sm = getServer().getServicesManager();
         sm.register(com.yapcore.world.WorldManagerService.class, worldManager, this, ServicePriority.Normal);
         sm.register(com.yapcore.world.SelectionService.class, selection, this, ServicePriority.Normal);
+        sm.register(com.yapcore.world.EditApplyService.class, editApply, this, ServicePriority.Normal);
 
         PluginCommand cmd = getCommand("yapworld");
         if (cmd != null) {
             cmd.setExecutor(commands);
             cmd.setTabCompleter(commands);
         }
-        getLogger().info("YaPWorld ready — //set //copy /yapworld gui (Folia-safe WorldEdit-class).");
+        getLogger().info("YaPWorld ready — FAWE-class //set //mask //sel /yapworld gui (Folia-safe).");
     }
 
     public void reloadWorld() {
@@ -88,13 +102,52 @@ public final class WorldPlugin extends JavaPlugin {
         if (paster == null) {
             paster = new SchematicPaster(this);
         }
+        if (maskEngine == null) {
+            maskEngine = new MaskEngine();
+        }
+        if (selectionShape == null) {
+            selectionShape = new SelectionShape();
+        }
+        if (playerEditState == null) {
+            playerEditState = new PlayerEditState();
+        }
         undoService = new UndoService(this, config.undoSessions());
         brushService = new BrushService(this, undoService);
+        brushService.setMaxRadius(config.maxBrushRadius());
+        brushService.setParallelChunks(config.parallelChunks());
+        brushService.setMasks(maskEngine);
+        brushService.setEditState(playerEditState);
+
         selectionEditService = new SelectionEditService(this, undoService);
+        selectionEditService.setMasks(maskEngine);
+        selectionEditService.setShapes(selectionShape);
+        selectionEditService.setMaxChanges(config.maxChanges());
+        selectionEditService.setEditState(playerEditState);
+        selectionEditService.setParallelChunks(config.parallelChunks());
+
         clipboardService = new ClipboardService(this, undoService);
+        clipboardService.setMasks(maskEngine);
+        clipboardService.setShapes(selectionShape);
+        clipboardService.setEditState(playerEditState);
+        clipboardService.setParallelChunks(config.parallelChunks());
+
         generationService = new GenerationService(this, undoService);
+        generationService.setMasks(maskEngine);
+        generationService.setEditState(playerEditState);
+        generationService.setParallelChunks(config.parallelChunks());
+
+        terrainService = new TerrainService(this, undoService);
+        terrainService.setMasks(maskEngine);
+        terrainService.setShapes(selectionShape);
+        terrainService.setEditState(playerEditState);
+        terrainService.setParallelChunks(config.parallelChunks());
+
+        brushService.setClipboard(clipboardService);
+
         editOps = new WorldEditOps(this, selection, selectionEditService, generationService,
-                clipboardService, undoService, brushService);
+                clipboardService, undoService, brushService, maskEngine, selectionShape,
+                playerEditState, terrainService);
+        editApply = new EditApplyServiceImpl(selectionEditService, clipboardService, selection);
         worldEditTool = new WorldEditTool(this);
         worldEditGui = new WorldEditGui(this, config, selection, worldEditTool);
         if (editSessions == null) {
@@ -123,7 +176,6 @@ public final class WorldPlugin extends JavaPlugin {
         }
     }
 
-    /** Primary in-game editor (inventory GUI). */
     public void openInGameGui(Player player) {
         if (!player.hasPermission("yapworld.selection") && !player.hasPermission("yapworld.brush")
                 && !player.hasPermission("yapworld.admin")) {
@@ -137,7 +189,6 @@ public final class WorldPlugin extends JavaPlugin {
         worldEditGui.openMain(player);
     }
 
-    /** Optional browser World Edit Studio. */
     public void openBrowserEditor(Player player) {
         if (!canUseEditor(player)) {
             player.sendMessage("§cNo permission.");
@@ -157,6 +208,10 @@ public final class WorldPlugin extends JavaPlugin {
 
     public static boolean canUseEditor(Player player) {
         return player.hasPermission("yapworld.editor") || player.hasPermission("yapworld.selection");
+    }
+
+    public WorldConfig worldConfig() {
+        return config;
     }
 
     public WorldEditGui gui() {
@@ -179,6 +234,22 @@ public final class WorldPlugin extends JavaPlugin {
         return selectionEditService;
     }
 
+    public MaskEngine masks() {
+        return maskEngine;
+    }
+
+    public SelectionShape shapes() {
+        return selectionShape;
+    }
+
+    public PlayerEditState editState() {
+        return playerEditState;
+    }
+
+    public TerrainService terrain() {
+        return terrainService;
+    }
+
     public Path schematicsDir() {
         Path dir = getDataFolder().toPath().resolve(config.schematicsFolder());
         dir.toFile().mkdirs();
@@ -197,6 +268,9 @@ public final class WorldPlugin extends JavaPlugin {
         }
         if (selection != null) {
             sm.unregister(com.yapcore.world.SelectionService.class, selection);
+        }
+        if (editApply != null) {
+            sm.unregister(com.yapcore.world.EditApplyService.class, editApply);
         }
     }
 }

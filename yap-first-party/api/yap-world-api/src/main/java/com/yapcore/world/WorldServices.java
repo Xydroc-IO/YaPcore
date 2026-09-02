@@ -29,4 +29,14 @@ public final class WorldServices {
         SelectionService service = rsp.getProvider();
         return service == null ? Optional.empty() : Optional.of(service);
     }
+
+    public static Optional<EditApplyService> editApply() {
+        RegisteredServiceProvider<EditApplyService> rsp =
+                Bukkit.getServicesManager().getRegistration(EditApplyService.class);
+        if (rsp == null) {
+            return Optional.empty();
+        }
+        EditApplyService service = rsp.getProvider();
+        return service == null ? Optional.empty() : Optional.of(service);
+    }
 }

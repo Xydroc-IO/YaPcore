@@ -32,7 +32,11 @@ public final class SchematicPaster {
                         entry.encoded(),
                         placed));
             }
-            chain.whenComplete((v, err) -> future.complete(placed.get()));
+            chain.whenComplete((v, err) -> YapSched.region(plugin,
+                    new Location(targetWorld, originX, originY, originZ), () -> {
+                        SchematicIO.spawnEntities(schematic, targetWorld, originX, originY, originZ);
+                        future.complete(placed.get());
+                    }));
         });
         return future;
     }

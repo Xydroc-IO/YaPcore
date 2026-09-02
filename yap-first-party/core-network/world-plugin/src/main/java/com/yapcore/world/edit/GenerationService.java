@@ -19,10 +19,23 @@ public final class GenerationService {
 
     private final JavaPlugin plugin;
     private final BlockBatch batch;
+    private MaskEngine masks;
 
     public GenerationService(JavaPlugin plugin, UndoService undo) {
         this.plugin = plugin;
         this.batch = new BlockBatch(plugin, undo);
+    }
+
+    public void setMasks(MaskEngine masks) {
+        this.masks = masks;
+    }
+
+    public void setEditState(PlayerEditState state) {
+        batch.setEditState(state);
+    }
+
+    public void setParallelChunks(int n) {
+        batch.setParallelChunks(n);
     }
 
     public CompletableFuture<Integer> cylinder(Player player, Location center, String pattern,
@@ -37,7 +50,9 @@ public final class GenerationService {
         int rSq = radius * radius;
         int outer = rSq;
         int inner = hollow && radius > 0 ? (radius - 1) * (radius - 1) : -1;
+        PatternEngine.Pattern pat = PatternEngine.parse(pattern);
         List<BlockBatch.Planned> plans = new ArrayList<>();
+        var id = player.getUniqueId();
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius; z++) {
                 int d = x * x + z * z;
@@ -45,7 +60,11 @@ public final class GenerationService {
                     continue;
                 }
                 for (int y = 0; y < height; y++) {
-                    plans.add(new BlockBatch.Planned(cx + x, cy + y, cz + z, BlockBatch.pickPattern(pattern)));
+                    int wx = cx + x, wy = cy + y, wz = cz + z;
+                    if (masks != null && !masks.allows(id, world, wx, wy, wz)) {
+                        continue;
+                    }
+                    plans.add(PatternEngine.toBatch(wx, wy, wz, pat.resolve(world, wx, wy, wz, null)));
                 }
             }
         }
@@ -63,7 +82,9 @@ public final class GenerationService {
         int cz = center.getBlockZ();
         int rSq = radius * radius;
         int inner = hollow && radius > 0 ? (radius - 1) * (radius - 1) : -1;
+        PatternEngine.Pattern pat = PatternEngine.parse(pattern);
         List<BlockBatch.Planned> plans = new ArrayList<>();
+        var id = player.getUniqueId();
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {
                 for (int z = -radius; z <= radius; z++) {
@@ -71,7 +92,11 @@ public final class GenerationService {
                     if (d > rSq || (hollow && d <= inner)) {
                         continue;
                     }
-                    plans.add(new BlockBatch.Planned(cx + x, cy + y, cz + z, BlockBatch.pickPattern(pattern)));
+                    int wx = cx + x, wy = cy + y, wz = cz + z;
+                    if (masks != null && !masks.allows(id, world, wx, wy, wz)) {
+                        continue;
+                    }
+                    plans.add(PatternEngine.toBatch(wx, wy, wz, pat.resolve(world, wx, wy, wz, null)));
                 }
             }
         }
@@ -86,7 +111,9 @@ public final class GenerationService {
         int cx = center.getBlockX();
         int cy = center.getBlockY();
         int cz = center.getBlockZ();
+        PatternEngine.Pattern pat = PatternEngine.parse(pattern);
         List<BlockBatch.Planned> plans = new ArrayList<>();
+        var id = player.getUniqueId();
         for (int y = 0; y < size; y++) {
             int layer = size - y - 1;
             for (int x = -layer; x <= layer; x++) {
@@ -94,7 +121,11 @@ public final class GenerationService {
                     if (hollow && Math.abs(x) < layer && Math.abs(z) < layer && y < size - 1) {
                         continue;
                     }
-                    plans.add(new BlockBatch.Planned(cx + x, cy + y, cz + z, BlockBatch.pickPattern(pattern)));
+                    int wx = cx + x, wy = cy + y, wz = cz + z;
+                    if (masks != null && !masks.allows(id, world, wx, wy, wz)) {
+                        continue;
+                    }
+                    plans.add(PatternEngine.toBatch(wx, wy, wz, pat.resolve(world, wx, wy, wz, null)));
                 }
             }
         }

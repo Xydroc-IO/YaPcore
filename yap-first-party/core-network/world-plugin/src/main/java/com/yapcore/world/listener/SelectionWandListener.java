@@ -1,6 +1,7 @@
 package com.yapcore.world.listener;
 
 import com.yapcore.world.WorldConfig;
+import com.yapcore.world.edit.SelectionShape;
 import com.yapcore.world.service.SelectionServiceImpl;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -16,10 +17,12 @@ public final class SelectionWandListener implements Listener {
 
     private final WorldConfig config;
     private final SelectionServiceImpl selection;
+    private final SelectionShape shapes;
 
-    public SelectionWandListener(WorldConfig config, SelectionServiceImpl selection) {
+    public SelectionWandListener(WorldConfig config, SelectionServiceImpl selection, SelectionShape shapes) {
         this.config = config;
         this.selection = selection;
+        this.shapes = shapes;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -44,7 +47,13 @@ public final class SelectionWandListener implements Listener {
         if (event.getAction() == Action.LEFT_CLICK_BLOCK) {
             selection.setPos1(player.getUniqueId(), block.getWorld().getName(),
                     block.getX(), block.getY(), block.getZ());
-            player.sendMessage("§aPos1 set to §f" + block.getX() + ", " + block.getY() + ", " + block.getZ());
+            if (shapes != null && shapes.mode(player.getUniqueId()) == SelectionShape.Mode.POLY) {
+                shapes.addPolyPoint(player.getUniqueId(), block.getX(), block.getY(), block.getZ());
+                player.sendMessage("§aPoly vertex #" + shapes.polyPoints(player.getUniqueId()).size()
+                        + " §f" + block.getX() + ", " + block.getY() + ", " + block.getZ());
+            } else {
+                player.sendMessage("§aPos1 set to §f" + block.getX() + ", " + block.getY() + ", " + block.getZ());
+            }
             event.setCancelled(true);
         } else if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             selection.setPos2(player.getUniqueId(), block.getWorld().getName(),

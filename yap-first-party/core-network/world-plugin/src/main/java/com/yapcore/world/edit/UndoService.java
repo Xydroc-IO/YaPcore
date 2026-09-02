@@ -70,6 +70,11 @@ public final class UndoService {
         return redo == null ? 0 : redo.size();
     }
 
+    public void clearHistory(UUID playerId) {
+        undoStacks.remove(playerId);
+        redoStacks.remove(playerId);
+    }
+
     private CompletableFuture<Integer> applySession(EditSession session, boolean undo) {
         CompletableFuture<Integer> result = CompletableFuture.completedFuture(0);
         for (EditSession.BlockEdit edit : session.edits()) {

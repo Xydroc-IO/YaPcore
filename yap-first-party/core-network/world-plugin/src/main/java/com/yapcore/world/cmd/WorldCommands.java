@@ -627,10 +627,10 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
     }
 
     private void help(CommandSender sender) {
-        sender.sendMessage("§6YaPWorld §7— Folia-safe WorldEdit-class");
+        sender.sendMessage("§6YaPWorld §7— Folia-safe FAWE-class");
         sender.sendMessage("§e/yapworld §7or §e// §7— GUI / help · §e/yapworld tool §7— wand");
-        sender.sendMessage("§e//set //copy //cut //paste //rotate //flip //stack //move");
-        sender.sendMessage("§e//expand //contract //shift //cyl //sphere //pyramid //smooth //undo");
+        sender.sendMessage("§e//set //replace //mask //gmask //sel //copy //paste //brush //fast");
+        sender.sendMessage("§e//regen //forest //setbiome //deform //undo //redo");
         sender.sendMessage("§e/yapworld schem|brush|editor|load|unload|tp|pregen|status|reload");
     }
 
@@ -641,7 +641,14 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
                     "set", "fill", "walls", "shell", "hollow", "outline", "replace",
                     "copy", "cut", "paste", "rotate", "flip", "stack", "move",
                     "expand", "contract", "shift", "cyl", "sphere", "pyramid", "smooth",
+                    "sel", "mask", "gmask", "fast", "regen", "forest", "setbiome",
                     "schem", "brush", "undo", "redo", "pregen", "load", "unload", "tp", "status", "reload"), args[0]);
+        }
+        if (args.length == 2 && "brush".equalsIgnoreCase(args[0])) {
+            return filter(List.of("sphere", "cyl", "smooth", "gravity", "clipboard", "butcher"), args[1]);
+        }
+        if (args.length == 2 && "sel".equalsIgnoreCase(args[0])) {
+            return filter(List.of("cuboid", "sphere", "cyl", "poly"), args[1]);
         }
         if (args.length == 2 && ("load".equalsIgnoreCase(args[0]) || "unload".equalsIgnoreCase(args[0])
                 || "tp".equalsIgnoreCase(args[0]))) {

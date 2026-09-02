@@ -41,10 +41,28 @@ public final class ClipboardService {
     private final JavaPlugin plugin;
     private final BlockBatch batch;
     private final Map<UUID, Clipboard> clipboards = new ConcurrentHashMap<>();
+    private MaskEngine masks;
+    private SelectionShape shapes;
 
     public ClipboardService(JavaPlugin plugin, UndoService undo) {
         this.plugin = plugin;
         this.batch = new BlockBatch(plugin, undo);
+    }
+
+    public void setMasks(MaskEngine masks) {
+        this.masks = masks;
+    }
+
+    public void setShapes(SelectionShape shapes) {
+        this.shapes = shapes;
+    }
+
+    public void setEditState(PlayerEditState state) {
+        batch.setEditState(state);
+    }
+
+    public void setParallelChunks(int n) {
+        batch.setParallelChunks(n);
     }
 
     public Clipboard clipboard(UUID playerId) {
@@ -65,9 +83,13 @@ public final class ClipboardService {
         YapSched.region(plugin, new Location(world, sel.minX(), sel.minY(), sel.minZ()), () -> {
             List<Schematic.BlockEntry> blocks = new ArrayList<>();
             List<BlockBatch.Planned> airOut = new ArrayList<>();
+            UUID id = player.getUniqueId();
             for (int x = sel.minX(); x <= sel.maxX(); x++) {
                 for (int y = sel.minY(); y <= sel.maxY(); y++) {
                     for (int z = sel.minZ(); z <= sel.maxZ(); z++) {
+                        if (shapes != null && !shapes.contains(id, sel, x, y, z)) {
+                            continue;
+                        }
                         Block block = world.getBlockAt(x, y, z);
                         blocks.add(new Schematic.BlockEntry(
                                 x - sel.minX(), y - sel.minY(), z - sel.minZ(),
@@ -109,15 +131,18 @@ public final class ClipboardService {
         int originY = feet.getBlockY() - clip.offsetY();
         int originZ = feet.getBlockZ() - clip.offsetZ();
         List<BlockBatch.Encoded> plans = new ArrayList<>();
+        UUID id = player.getUniqueId();
         for (Schematic.BlockEntry entry : clip.blocks()) {
             if (ignoreAir && isAirEncoded(entry.encoded())) {
                 continue;
             }
-            plans.add(new BlockBatch.Encoded(
-                    originX + entry.dx(),
-                    originY + entry.dy(),
-                    originZ + entry.dz(),
-                    entry.encoded()));
+            int wx = originX + entry.dx();
+            int wy = originY + entry.dy();
+            int wz = originZ + entry.dz();
+            if (masks != null && !masks.allows(id, world, wx, wy, wz)) {
+                continue;
+            }
+            plans.add(new BlockBatch.Encoded(wx, wy, wz, entry.encoded()));
         }
         return batch.applyEncoded(player, world, plans);
     }

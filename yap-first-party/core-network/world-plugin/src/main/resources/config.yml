@@ -4,17 +4,23 @@ worlds:
 
 selection:
   enabled: true
-  max-volume: 1000000
+  max-volume: 2000000
 
 schematics:
   enabled: true
   folder: schematics
 
 brush:
-  max-radius: 16
+  max-radius: 32
 
 undo:
-  max-sessions: 10
+  max-sessions: 25
+
+limits:
+  max-changes: 2000000
+  max-radius: 128
+  parallel-chunks: 4
+  progress-messages: true
 
 editor:
   enabled: true

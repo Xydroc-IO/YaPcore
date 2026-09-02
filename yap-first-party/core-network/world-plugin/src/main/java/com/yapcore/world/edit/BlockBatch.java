@@ -14,13 +14,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 /**
- * Chunk-batched block writes (Folia-safe) with undo recording.
+ * Chunk-batched block writes (Folia-safe) with undo recording and optional parallel chunk apply.
  */
 public final class BlockBatch {
 
@@ -30,12 +30,30 @@ public final class BlockBatch {
         }
     }
 
+    public record Encoded(int x, int y, int z, String encoded) {
+    }
+
     private final JavaPlugin plugin;
     private final UndoService undo;
+    private volatile int parallelChunks = 4;
+    private volatile PlayerEditState editState;
+    private volatile BiConsumer<UUID, Integer> progressHook;
 
     public BlockBatch(JavaPlugin plugin, UndoService undo) {
         this.plugin = plugin;
         this.undo = undo;
+    }
+
+    public void setParallelChunks(int n) {
+        this.parallelChunks = Math.max(1, Math.min(16, n));
+    }
+
+    public void setEditState(PlayerEditState editState) {
+        this.editState = editState;
+    }
+
+    public void setProgressHook(BiConsumer<UUID, Integer> progressHook) {
+        this.progressHook = progressHook;
     }
 
     public CompletableFuture<Integer> apply(Player player, World world, List<Planned> planned) {
@@ -47,18 +65,37 @@ public final class BlockBatch {
             long key = (((long) (p.x() >> 4)) << 32) ^ (p.z() >> 4);
             byChunk.computeIfAbsent(key, k -> new ArrayList<>()).add(p);
         }
-        EditSession session = new EditSession();
+        boolean skipUndo = editState != null && editState.isFast(player.getUniqueId());
+        EditSession session = skipUndo ? null : new EditSession();
         AtomicInteger changed = new AtomicInteger();
-        CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
-        for (List<Planned> chunkPlans : byChunk.values()) {
+        List<List<Planned>> chunks = new ArrayList<>(byChunk.values());
+        return applyPlannedParallel(world, chunks, session, changed, 0)
+                .thenApply(v -> {
+                    if (session != null) {
+                        undo.push(player.getUniqueId(), session);
+                    }
+                    if (progressHook != null && changed.get() > 0) {
+                        progressHook.accept(player.getUniqueId(), changed.get());
+                    }
+                    return changed.get();
+                });
+    }
+
+    private CompletableFuture<Void> applyPlannedParallel(World world, List<List<Planned>> chunks,
+                                                         EditSession session, AtomicInteger changed, int offset) {
+        if (offset >= chunks.size()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        int end = Math.min(offset + parallelChunks, chunks.size());
+        List<CompletableFuture<Void>> wave = new ArrayList<>();
+        for (int i = offset; i < end; i++) {
+            List<Planned> chunkPlans = chunks.get(i);
             Planned first = chunkPlans.get(0);
             Location anchor = new Location(world, first.x(), first.y(), first.z());
-            chain = chain.thenCompose(v -> applyChunk(session, world, anchor, chunkPlans, changed));
+            wave.add(applyChunk(session, world, anchor, chunkPlans, changed));
         }
-        return chain.thenApply(v -> {
-            undo.push(player.getUniqueId(), session);
-            return changed.get();
-        });
+        return CompletableFuture.allOf(wave.toArray(CompletableFuture[]::new))
+                .thenCompose(v -> applyPlannedParallel(world, chunks, session, changed, end));
     }
 
     public CompletableFuture<Integer> applyEncoded(Player player, World world, List<Encoded> planned) {
@@ -70,21 +107,34 @@ public final class BlockBatch {
             long key = (((long) (p.x() >> 4)) << 32) ^ (p.z() >> 4);
             byChunk.computeIfAbsent(key, k -> new ArrayList<>()).add(p);
         }
-        EditSession session = new EditSession();
+        boolean skipUndo = editState != null && editState.isFast(player.getUniqueId());
+        EditSession session = skipUndo ? null : new EditSession();
         AtomicInteger changed = new AtomicInteger();
-        CompletableFuture<Void> chain = CompletableFuture.completedFuture(null);
-        for (List<Encoded> chunkPlans : byChunk.values()) {
-            Encoded first = chunkPlans.get(0);
-            Location anchor = new Location(world, first.x(), first.y(), first.z());
-            chain = chain.thenCompose(v -> applyEncodedChunk(session, world, anchor, chunkPlans, changed));
-        }
-        return chain.thenApply(v -> {
-            undo.push(player.getUniqueId(), session);
-            return changed.get();
-        });
+        List<List<Encoded>> chunks = new ArrayList<>(byChunk.values());
+        return applyEncodedParallel(world, chunks, session, changed, 0)
+                .thenApply(v -> {
+                    if (session != null) {
+                        undo.push(player.getUniqueId(), session);
+                    }
+                    return changed.get();
+                });
     }
 
-    public record Encoded(int x, int y, int z, String encoded) {
+    private CompletableFuture<Void> applyEncodedParallel(World world, List<List<Encoded>> chunks,
+                                                         EditSession session, AtomicInteger changed, int offset) {
+        if (offset >= chunks.size()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        int end = Math.min(offset + parallelChunks, chunks.size());
+        List<CompletableFuture<Void>> wave = new ArrayList<>();
+        for (int i = offset; i < end; i++) {
+            List<Encoded> chunkPlans = chunks.get(i);
+            Encoded first = chunkPlans.get(0);
+            Location anchor = new Location(world, first.x(), first.y(), first.z());
+            wave.add(applyEncodedChunk(session, world, anchor, chunkPlans, changed));
+        }
+        return CompletableFuture.allOf(wave.toArray(CompletableFuture[]::new))
+                .thenCompose(v -> applyEncodedParallel(world, chunks, session, changed, end));
     }
 
     private CompletableFuture<Void> applyChunk(EditSession session, World world, Location anchor,
@@ -102,7 +152,9 @@ public final class BlockBatch {
                     }
                     String after = BlockCodec.encode(block);
                     if (!before.equals(after)) {
-                        session.record(world.getName(), p.x(), p.y(), p.z(), before, after);
+                        if (session != null) {
+                            session.record(world.getName(), p.x(), p.y(), p.z(), before, after);
+                        }
                         changed.incrementAndGet();
                     }
                 }
@@ -124,7 +176,9 @@ public final class BlockBatch {
                     BlockCodec.apply(block, p.encoded());
                     String after = BlockCodec.encode(block);
                     if (!before.equals(after)) {
-                        session.record(world.getName(), p.x(), p.y(), p.z(), before, after);
+                        if (session != null) {
+                            session.record(world.getName(), p.x(), p.y(), p.z(), before, after);
+                        }
                         changed.incrementAndGet();
                     }
                 }
@@ -137,20 +191,7 @@ public final class BlockBatch {
 
     /** Parse {@code stone} or {@code 50%stone,50%dirt}. */
     public static Material pickPattern(String pattern) {
-        List<Weighted> weights = parsePattern(pattern);
-        if (weights.isEmpty()) {
-            return Material.STONE;
-        }
-        int total = weights.stream().mapToInt(Weighted::weight).sum();
-        int roll = ThreadLocalRandom.current().nextInt(Math.max(1, total));
-        int acc = 0;
-        for (Weighted w : weights) {
-            acc += w.weight();
-            if (roll < acc) {
-                return w.material();
-            }
-        }
-        return weights.get(0).material();
+        return PatternEngine.pickMaterial(pattern);
     }
 
     public static List<Weighted> parsePattern(String pattern) {
