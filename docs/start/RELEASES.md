@@ -15,7 +15,7 @@ All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `p
 | `gradle assembleRelease` | `build/dist/yapcore-release/` — **linux/** + **windows/** full trees (all plugins) |
 | `gradle assembleRelease -PyapGameplay=false` | Slim CORE+NETWORK only (no vehicles / MMO / stacker) |
 | `gradle publishReleasesFolder` | **`releases/<version>/`** — trees + linux/windows zips + suite zips |
-| Git tag `v*` push | GitHub Actions → `yapcore-release-linux.zip` + `-windows.zip` |
+| Git tag `1.0.0.0` or `v*` push | GitHub Actions → `yapcore-release-linux.zip` + `-windows.zip` |
 | `gradle assembleNetworkSuite` | `build/dist/yap-network-suite.zip` — YaP Link + native link plugins |
 | `gradle assembleGameplaySuite` | `build/dist/yap-gameplay-suite.zip` — GAMEPLAY plugins/modules (standalone) |
 | `gradle assembleAddonsRelease` | `build/dist/yap-addons-release.zip` — example vehicle addon |
@@ -84,4 +84,4 @@ See [WINDOWS.md](WINDOWS.md) and [MARIADB.md](../data/MARIADB.md).
 1. Root `build.gradle.kts` `version = "1.0.0.0"`
 2. Each subproject `build.gradle.kts` + `plugin.yml` / `link-plugin.json`
 3. Rebuild YaP-Folia + `gradle assembleAllReleases`
-4. Tag git: `v1.0.0.0`
+4. First ship tag: **`1.0.0.0`** (also accepted: `v1.0.0.0`)

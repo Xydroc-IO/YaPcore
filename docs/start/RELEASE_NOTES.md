@@ -7,10 +7,11 @@ For build commands and zip layout see [RELEASES.md](RELEASES.md). For live statu
 
 ---
 
-## v1.0.0.0 — 2026-09-01
+## v1.0.0.0 — 2026-09-02
 
-First shippable **YaP-Folia** network product release: native plugin stack, first-party
-Java + Bedrock crossplay, YaP Link proxy, and web dashboard.
+First shippable **YaP-Folia** network product release. This is the starting version —
+all first-party artifacts stay on **1.0.0.0**. Native plugin stack, first-party Java +
+Bedrock crossplay, YaP Link proxy, web dashboard, and the operator SMP commands below.
 
 ### Highlights
 
@@ -18,10 +19,13 @@ Java + Bedrock crossplay, YaP Link proxy, and web dashboard.
 |------|----------------|
 | **Game authority** | YaP-Folia 26.2 (`folia-jar-source=build`) — regionized tick, not stock Paper/Folia |
 | **Crossplay** | First-party ViaBackwards-class JE (1.20.2+) + Geyser-class Bedrock — **no Via\* / Geyser jars** |
-| **Network** | YaP Link native proxy, dual-stack gateway, Floodgate-class identity |
+| **Network** | YaP Link native proxy, dual-stack gateway, Floodgate-class identity; offline-mode Mojang skins |
 | **Plugins** | Full CORE+NETWORK stack: perms, chat, moderation, essentials, claims, regions, protect, world, tab, discord, guard, map, NPCs, … |
-| **Gameplay (opt-in)** | MMO (100 quests, 20 bosses, abilities, Bedrock UI), vehicles, stacker, factions, guilds |
-| **Ops** | Web dashboard (`:8080`), Swing GUI, seed defaults, MariaDB Docker package |
+| **Operator SMP** | `/bag` (3/5/7/9 pages), `/gm` + `/item`, `/eco`, per-rank name/chat colors, `/yapmod seen` |
+| **Gameplay (in the full box)** | MMO (100 quests, 20 bosses, abilities book + hotbar), vehicles, stacker, factions, guilds |
+| **Ops** | Web dashboard (`:8080`) — ranks, kit builder, plugin YAML editors, Swing GUI, seed defaults, MariaDB Docker package |
+| **Clients (optional)** | Fabric 26.2 mods **yap-bag** and **yap-ultrawide** — vanilla and Bedrock stay supported without them |
+| **Packs** | `yapcore-default` + **yap-skies** overlay |
 | **Integrations** | Optional fetch scripts for **Grim AC** and **Tebex** (GPLv3, not bundled by default) |
 
 ### Protocol & crossplay
@@ -37,7 +41,7 @@ Java + Bedrock crossplay, YaP Link proxy, and web dashboard.
 
 - **`config/defaults/`** + `./scripts/seed-defaults.sh` — LAN-friendly first boot.
 - **[SECRETS.md](SECRETS.md)** — where owners set MariaDB passwords, dashboard token, Discord webhooks, forwarding secret.
-- **Web dashboard** — ranks, players, regions, guard, map, Discord, Link, packs, plugins (save-to-YAML on major tabs).
+- **Web dashboard** — ranks (name/chat colors), kit builder, players, regions, guard, map, Discord, Link, packs, plugin YAML editors.
 - **Release zips** ship defaults/examples only — live operator tokens are never packaged.
 - **Privacy / terms templates** for public server operators: [PRIVACY_POLICY.md](PRIVACY_POLICY.md), [TERMS_OF_USE.md](TERMS_OF_USE.md).
 
@@ -107,12 +111,11 @@ Summarized from git history; not separate tagged releases.
 
 ---
 
-## Upcoming (not in 1.0.0.0)
+## After 1.0.0.0 (not a new version yet)
 
-- Push to GitHub after `gh auth login`
 - Manual §E live checklist completion ([CROSSPLAY.md](../network/CROSSPLAY.md))
 - Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))
 
 ---
 
-*Update this file when tagging `v1.0.0.1` or the next minor release.*
+*1.0.0.0 is the first ship. Update this file only when cutting a later version.*
