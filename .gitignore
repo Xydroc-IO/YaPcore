@@ -1,6 +1,6 @@
 # YaPcore — Git ignore (professional / GitHub-ready)
-# Keep the published tree: source, docs, branding, scripts, examples.
-# Never commit build outputs, vendored Paper trees, or live server state.
+# Keep the published tree: source, operator docs, branding, run scripts, examples.
+# Never commit build outputs, vendored Paper trees, live server state, or in-house lab work.
 
 # =============================================================================
 # Build / Gradle / JVM
@@ -160,28 +160,29 @@ vendor/folia/work/
 vendor/folia/*.tmp
 
 # =============================================================================
-# Bench lab (scripts regenerate workdirs + results)
+# In-house lab (bench, smokes, protocol matrix, internal docs)
+# Not needed to run YaPcore or for external server owners / contributors.
 # =============================================================================
-bench/workdir-*/
-bench/workdir-stock/
-bench/workdir-yap/
-bench/link-plugins-smoke/
-bench/results/*
-!bench/results/README.md
-!bench/results/.gitkeep
-bench/link-bedrock-smoke-test/
-bench/link-plugins-smoke-test/
-bench/link-bedrock-smoke/udp-recv.txt
-bench/*.lock
-bench/*.port
-bench/highpop.lock
-bench/highpop-ready.port
-scripts/bench/bots/node_modules/
-
-# =============================================================================
-# Generated docs PDFs (regenerate: ./scripts/export-docs-pdf.sh)
-# =============================================================================
-docs/pdf/*.pdf
+bench/
+scripts/bench/
+yap-first-party/dev/
+scripts/smoke-*.sh
+scripts/soak-*.sh
+scripts/test-all.sh
+scripts/test-fray.sh
+scripts/protocol-matrix/
+scripts/export-docs-pdf.sh
+scripts/heap-dump.sh
+scripts/fetch-folia.sh
+src/jcstress/
+docs/overview/
+docs/performance/
+docs/whitepaper/
+docs/pdf/
+docs/folia/
+docs/protocol/
+docs/start/TESTING.md
+vendor/folia/patches/AGENT*.md
 
 # =============================================================================
 # Velocity / proxy / secrets

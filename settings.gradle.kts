@@ -7,15 +7,6 @@ rootProject.name = "YaPcore"
 // First-party product sources — see yap-first-party/README.md
 // Gradle project names stay stable; only projectDir paths moved under yap-first-party/.
 
-include("bench-plugin")
-project(":bench-plugin").projectDir = file("yap-first-party/dev/bench-plugin")
-
-include("compat-smoke-plugin")
-project(":compat-smoke-plugin").projectDir = file("yap-first-party/dev/compat-smoke-plugin")
-
-include("scoreboard-smoke-plugin")
-project(":scoreboard-smoke-plugin").projectDir = file("yap-first-party/dev/scoreboard-smoke-plugin")
-
 include("gameplay-knobs-plugin")
 project(":gameplay-knobs-plugin").projectDir = file("yap-first-party/gameplay/gameplay-knobs-plugin")
 
@@ -117,9 +108,6 @@ project(":yap-sched").projectDir = file("yap-first-party/engine/yap-sched")
 
 include("yap-sched-agent")
 project(":yap-sched-agent").projectDir = file("yap-first-party/engine/yap-sched-agent")
-
-include("legacy-sched-smoke-plugin")
-project(":legacy-sched-smoke-plugin").projectDir = file("yap-first-party/dev/legacy-sched-smoke-plugin")
 
 include("yap-guard-api")
 project(":yap-guard-api").projectDir = file("yap-first-party/api/yap-guard-api")
