@@ -75,10 +75,7 @@ public final class ResourcePackManager {
 
     public synchronized void startHttp() throws IOException {
         ensureDirectory();
-        if (!config.isResourcePackEnabled()) {
-            LOG.info("Resource packs disabled in config");
-            return;
-        }
+        // Always host packs/map on :8081 so operators can curl/test even when the login offer is off.
         httpServer = new ResourcePackHttpServer(
                 config.getBindHost(),
                 config.getResourcePackHttpPort(),
@@ -88,6 +85,11 @@ public final class ResourcePackManager {
         );
         httpServer.start();
         writePluginManifest();
+        if (!config.isResourcePackEnabled()) {
+            LOG.info("Resource pack login offer disabled — HTTP still serving on :"
+                    + config.getResourcePackHttpPort());
+            return;
+        }
         List<ResourcePackInfo> actives = getActivePacks();
         LOG.info("Active resource packs (" + actives.size() + "): "
                 + actives.stream().map(ResourcePackInfo::getFileName).collect(Collectors.joining(", ")));

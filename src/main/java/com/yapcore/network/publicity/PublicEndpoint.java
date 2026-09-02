@@ -107,13 +107,11 @@ public final class PublicEndpoint {
 
     public int advertisedPackPort() {
         int pub = config.getPublicPackPort();
-        if (pub > 0) {
+        // YaP always hosts the current zip on resource-pack-http-port (default 8081).
+        // public-pack-port=80 usually means nginx/CDN — often stale / hairpin-broken on LAN.
+        // Prefer the live pack HTTP unless the operator set an explicit non-80/443 edge port.
+        if (pub > 0 && pub != 80) {
             return pub;
-        }
-        if (hasNginxEdge()) {
-            // Cloudflare orange-cloud typically terminates TLS → nginx :80
-            int nginx = config.getNginxPackPort();
-            return nginx == 80 ? 443 : nginx;
         }
         return config.getResourcePackHttpPort();
     }
@@ -144,13 +142,34 @@ public final class PublicEndpoint {
         if (override != null && !override.isBlank()) {
             return override.replace("{file}", fileName);
         }
-        return packBaseUrl() + "/pack/" + fileName;
+        // Prefer pack-specific public host when set (LAN IP), else join host.
+        String host = firstNonBlank(
+                config.getResourcePackPublicHost(),
+                publicHost());
+        if (host == null || host.isBlank()) {
+            host = guessLocalIpv4().orElse("127.0.0.1");
+        } else {
+            host = stripScheme(host);
+        }
+        int port = advertisedPackPort();
+        if (port == 80 || port == 443) {
+            String scheme = port == 443 ? "https" : "http";
+            return scheme + "://" + host + "/pack/" + fileName;
+        }
+        return "http://" + host + ":" + port + "/pack/" + fileName;
     }
 
-    /** Pack URL reachable from a specific client (loopback → local HTTP, else public/CDN). */
+    /** Pack URL reachable from a specific client (loopback / LAN → local HTTP). */
     public String packUrlForClient(String fileName, java.net.InetSocketAddress client) {
-        if (client != null && client.getAddress() != null && client.getAddress().isLoopbackAddress()) {
-            return "http://127.0.0.1:" + config.getResourcePackHttpPort() + "/pack/" + fileName;
+        if (client != null && client.getAddress() != null) {
+            InetAddress addr = client.getAddress();
+            if (addr.isLoopbackAddress()) {
+                return "http://127.0.0.1:" + config.getResourcePackHttpPort() + "/pack/" + fileName;
+            }
+            if (addr instanceof Inet4Address v4 && v4.isSiteLocalAddress()) {
+                String lan = guessLocalIpv4().orElse("127.0.0.1");
+                return "http://" + lan + ":" + config.getResourcePackHttpPort() + "/pack/" + fileName;
+            }
         }
         return packUrl(fileName);
     }

@@ -1,6 +1,6 @@
 # Primary pack is offered by Paper server.properties (login Yes/No prompt).
-# Play-phase extras: Via remaps add_resource_pack + auto-acks Paper (see ViaProxyHandler).
-push-extras-on-join: true
+# Keep play-phase extras OFF by default — second push during join hangs clients.
+push-extras-on-join: false
 push-delay-ticks: 60
 # When push-extras is on, skip the first manifest pack (already prompted at login).
 skip-primary: true

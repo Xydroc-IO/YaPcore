@@ -32,7 +32,7 @@ public final class FoliaAuthorityConfig {
         // Phase 3 perf knobs — product defaults OFF (safe). Enable for soak-perf / hot spawn.
         props.setProperty("folia-async-chunk-save", "false");
         props.setProperty("folia-entity-tick-budget", "0");
-        props.setProperty("folia-scoreboard-swmr", "false");
+        props.setProperty("folia-scoreboard-swmr", "true");
         // Phase 4 region pool / micro-tick — defaults OFF (safe)
         props.setProperty("folia-microtick-budget-ms", "0");
         props.setProperty("folia-steal-threshold-ms", "3");

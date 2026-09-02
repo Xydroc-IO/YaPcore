@@ -117,6 +117,13 @@ public final class ResourcePackHttpServer {
             headers.add("Content-Disposition", "attachment; filename=\"" + name + "\"");
             headers.add("Cache-Control", "no-cache");
             long size = Files.size(file);
+            // Explicit length — some MC clients fail when HEAD/GET omit Content-Length.
+            headers.add("Content-Length", Long.toString(size));
+            if ("HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
+                // -1 + manual Content-Length: body omitted, length still advertised
+                exchange.sendResponseHeaders(200, -1);
+                return;
+            }
             exchange.sendResponseHeaders(200, size);
             try (InputStream in = Files.newInputStream(file);
                  OutputStream out = exchange.getResponseBody()) {
