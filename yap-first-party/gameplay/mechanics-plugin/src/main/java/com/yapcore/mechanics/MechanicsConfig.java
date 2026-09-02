@@ -28,6 +28,10 @@ public final class MechanicsConfig {
     private double fishingBonus = 1.25;
     private int minFishWait = 40;
     private int maxFishWait = 600;
+    private boolean waterWavesEnabled = true;
+    private boolean waterSplashEnabled = true;
+    private double waterWaveAmplitude = 0.045;
+    private double waterWaveSpeed = 1.0;
 
     public MechanicsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -57,6 +61,10 @@ public final class MechanicsConfig {
         fishingBonus = c.getDouble("fishing.perfect-catch-bonus-multiplier", 1.25);
         minFishWait = c.getInt("fishing.min-wait-ticks", 40);
         maxFishWait = c.getInt("fishing.max-wait-ticks", 600);
+        waterWavesEnabled = c.getBoolean("water-waves.enabled", true);
+        waterSplashEnabled = c.getBoolean("water-waves.splash", true);
+        waterWaveAmplitude = c.getDouble("water-waves.amplitude", 0.045);
+        waterWaveSpeed = c.getDouble("water-waves.speed", 1.0);
     }
 
     public boolean enabled() {
@@ -137,5 +145,21 @@ public final class MechanicsConfig {
 
     public int maxFishWait() {
         return maxFishWait;
+    }
+
+    public boolean waterWavesEnabled() {
+        return waterWavesEnabled;
+    }
+
+    public boolean waterSplashEnabled() {
+        return waterSplashEnabled;
+    }
+
+    public double waterWaveAmplitude() {
+        return waterWaveAmplitude;
+    }
+
+    public double waterWaveSpeed() {
+        return waterWaveSpeed;
     }
 }

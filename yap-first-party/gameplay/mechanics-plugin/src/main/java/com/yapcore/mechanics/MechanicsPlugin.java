@@ -6,11 +6,13 @@ import com.yapcore.mechanics.listener.BlockBreakMechanicsListener;
 import com.yapcore.mechanics.listener.FarmingListener;
 import com.yapcore.mechanics.listener.PhysicsListener;
 import com.yapcore.mechanics.listener.ResourceNodeListener;
+import com.yapcore.mechanics.listener.WaterWavesListener;
 import com.yapcore.mechanics.node.ResourceNodeLoader;
 import com.yapcore.mechanics.physics.PhysicsLoader;
 import com.yapcore.mechanics.service.MechanicsServiceImpl;
 import com.yapcore.mechanics.stamina.StaminaTracker;
 import com.yapcore.mechanics.tool.ToolRuleLoader;
+import com.yapcore.mechanics.water.WaterWaves;
 import com.yapcore.sched.YapSched;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.ServicePriority;
@@ -30,6 +32,7 @@ public final class MechanicsPlugin extends JavaPlugin {
     private FarmingLoader farmingLoader;
     private PhysicsLoader physicsLoader;
     private MechanicsServiceImpl mechanicsService;
+    private WaterWaves waterWaves;
 
     @Override
     public void onEnable() {
@@ -45,6 +48,8 @@ public final class MechanicsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ResourceNodeListener(this, mechanicsService), this);
         getServer().getPluginManager().registerEvents(new FarmingListener(this, mechanicsService, farmingLoader), this);
         getServer().getPluginManager().registerEvents(new PhysicsListener(mechanicsService), this);
+        waterWaves = new WaterWaves(this, config);
+        getServer().getPluginManager().registerEvents(new WaterWavesListener(waterWaves), this);
 
         PluginCommand cmd = getCommand("ymechanics");
         if (cmd != null) {
@@ -58,8 +63,12 @@ public final class MechanicsPlugin extends JavaPlugin {
             staminaTracker.tickSprintDrain(getServer().getOnlinePlayers());
         }, 20L, 20L);
 
+        // Wave bob ~10 Hz — region-safe via player scheduler inside WaterWaves
+        YapSched.globalTimer(this, () -> waterWaves.tick(getServer().getOnlinePlayers()), 10L, 2L);
+
         getLogger().info("YaPMechanics ready — tools=" + toolLoader.ruleCount()
-                + " nodes=" + nodeLoader.nodes().size());
+                + " nodes=" + nodeLoader.nodes().size()
+                + " water-waves=" + config.waterWavesEnabled());
     }
 
     @Override
