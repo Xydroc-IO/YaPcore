@@ -174,6 +174,9 @@ GRID_EXPONENT="${YAP_FOLIA_GRID_EXPONENT:-}"
 if [ "$SCENARIO" = "spawncollapse" ] && [ -z "$ENTITY_TICK_BUDGET" ]; then
   ENTITY_TICK_BUDGET="${YAP_FOLIA_ENTITY_TICK_BUDGET:-400}"
 fi
+if [ "$NEEDS_BOTS" = "1" ] && [ -z "$ENTITY_TICK_BUDGET" ]; then
+  ENTITY_TICK_BUDGET=300
+fi
 if [ -z "$ASYNC_CHUNK_SAVE" ]; then
   ASYNC_CHUNK_SAVE="${YAP_FOLIA_ASYNC_CHUNK_SAVE:-true}"
 fi
@@ -544,6 +547,10 @@ run_yap() {
     maxp=$((PLAYERS + 50))
     if [ "$maxp" -lt 100 ]; then maxp=100; fi
   fi
+  local folia_entity_budget=0
+  local folia_async_save=false
+  if [ -n "$ENTITY_TICK_BUDGET" ]; then folia_entity_budget="$ENTITY_TICK_BUDGET"; fi
+  if [ "$ASYNC_CHUNK_SAVE" = "true" ] || [ "$ASYNC_CHUNK_SAVE" = "1" ]; then folia_async_save=true; fi
   cat >"$work/config/server.properties" <<EOF
 server-name=YaP-Folia-Bench
 bind-host=127.0.0.1
@@ -564,6 +571,8 @@ folia-port=${port}
 folia-version=${VER}
 folia-jar-source=build
 folia-ready-timeout-sec=180
+folia-entity-tick-budget=${folia_entity_budget}
+folia-async-chunk-save=${folia_async_save}
 velocity-enabled=false
 web-dashboard-enabled=false
 resource-pack-enabled=false
@@ -615,10 +624,16 @@ run_yapfolia_plain() {
   fi
   local out="$RESULTS/${STAMP}-${SCENARIO}-yapfolia.json"
   local work="$ROOT/bench/workdir-folia-yapfolia"
+  local botlog="$ROOT/logs/bench/bots-${STAMP}-yapfolia.log"
   local port=25683
   prepare_plain "$work" "$YAP_FOLIA" "$port" "YaP MSPT bench yap-folia-plain"
   echo "=== yapfolia (plain) scenario=$SCENARIO → $out ==="
   echo "    knobs: entity-tick-budget=${ENTITY_TICK_BUDGET:-off} async-chunk-save=${ASYNC_CHUNK_SAVE:-off} subregion=${SUBREGION_PARTITION:-off} grid=${GRID_EXPONENT:-default}"
+  local botpid=""
+  if [ "$NEEDS_BOTS" = "1" ]; then
+    start_bots "$port" "$botlog"
+    botpid="$START_BOTS_PID"
+  fi
   mapfile -d '' -t extra < <(bench_jvm_extra "$port" 1)
   (
     cd "$work"
@@ -636,6 +651,7 @@ run_yapfolia_plain() {
       "${extra[@]}" \
       -jar server.jar --nogui </dev/null
   ) || true
+  if [ "$NEEDS_BOTS" = "1" ]; then stop_bots "$botpid"; fi
   if [ ! -f "$out" ]; then
     echo "WARN: yapfolia run did not write $out" >&2
   fi

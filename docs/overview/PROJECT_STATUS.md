@@ -185,8 +185,9 @@ API routes exist for Protect, World, Chat, etc.; some tabs are **polish-level** 
 | Compat soak 300s | **PASS** |
 | Perf soak 600s (`SOAK_SECS=600 ./scripts/soak-yap-folia.sh perf`) | **Not run** in last battery |
 | Spawncollapse MSPT (8k TNT / 1024 hoppers / 2500 mobs) | **CITEABLE** — YaP-Folia −22% to −26% vs stock; `20260901T210712Z-speedtest` |
-| High-pop bot join (100 / 200) | **PASS** — `players_ok: true` on stock Folia (`20260901T232100Z`, `20260901T232700Z`) |
-| High-pop **fullcite** multi-peer (100 bots + fixtures) | **PASS** — folia / yapcore / paper `players_ok: true` (`20260901T235600Z-fullcite`) |
+| High-pop bot join (100 / 200) | **PASS** — `players_ok: true` on stock Folia |
+| High-pop **fullcite** yapcore vs Folia | **CITEABLE** — −5.8% MSPT (`20260902T005200Z-fullcite-knobs2`, ship knobs) |
+| High-pop **highpop** yapcore vs Folia | **Valid tie** — −4.2% at 100 bots (`20260902T010200Z-highpop-knobs`; within 5% band) |
 
 Bot bench doc: [BENCH_BOTS.md](../performance/BENCH_BOTS.md). MSPT tables: [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md).
 
@@ -251,6 +252,7 @@ Summary written to `build/production-test-battery-latest.json`.
 
 | Doc | Use when |
 |-----|----------|
+| [RELEASE_READINESS.md](RELEASE_READINESS.md) | **What’s left to do + production readiness score** |
 | [FULL_RUNDOWN.md](FULL_RUNDOWN.md) | Architecture, how to run, comparison table |
 | [COMPLETION_BACKLOG.md](COMPLETION_BACKLOG.md) | Tier 1–4 checklist ticks |
 | [TIER4_PHASES.md](TIER4_PHASES.md) | Protocol phase gates 4A→4F |

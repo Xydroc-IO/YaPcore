@@ -25,10 +25,13 @@ YAP_BENCH_PLAYERS=200 YAP_BENCH_COMPETITORS=folia \
   NODE_OPTIONS="--max-old-space-size=8192" \
   ./scripts/bench/run-vs-folia.sh highpop 30
 
-# Full cite: bots + fixtures (600 entities, 128 heavy hoppers)
-YAP_BENCH_PLAYERS=100 YAP_BENCH_COMPETITORS=folia,yapcore,paper \
+# Full cite: bots + fixtures (ship knobs default on YaP side for bot scenarios)
+YAP_BENCH_PLAYERS=100 YAP_BENCH_COMPETITORS=folia,yapcore \
   ./scripts/bench/run-vs-folia.sh fullcite 40
 ```
+
+Bot scenarios auto-apply YaP-Folia ship knobs (`entity-tick-budget=300`,
+`async-chunk-save=true`) on **YaP-Folia / yapcore** only — stock Folia ignores them.
 
 **Stop live YaPcore** before bot benches — port `25566` must be free; bench servers
 use `25680`–`25686`.
@@ -81,27 +84,46 @@ Workers: at **≥150** players with `cite-stable`, **2** Node workers; with
 
 ---
 
-## Verified results (2026-09-01, post-fix)
+## Valid vs citeable
 
-Stock **Folia 26.2**, `highpop`, game JVM 8G/12G, `measurement_scope=game_tick_mspt`.
+| Term | Meaning |
+|------|---------|
+| **Valid** | `players_ok: true`, load proofs match, same JVM |
+| **Citeable win** | `compare-folia.py`: **≥5%** lower MSPT on YaP vs stock Folia |
 
-| Stamp | Bots | Mode | Players start/end | `players_ok` | MSPT mean | Notes |
-|-------|-----:|------|------------------:|:------------:|----------:|-------|
-| `20260901T221000Z-botjoin3` | 10 | active | 10 / 10 | **true** | 5.96 | Smoke after patch |
-| `20260901T232100Z-bots100` | 100 | active | 100 / 100 | **true** | 10.87 | Held 100/100 through sample |
-| `20260901T232700Z-bots200` | 200 | cite-stable | 200 / 200 | **true** | 14.04 | 2×100 workers; physics OFF |
+`compare-folia.py` rejects bot rows with `players_ok: false`.
 
-### fullcite (100 bots + 600 entities + 128 heavy hoppers)
+---
 
-| Stamp | Peer | Players | `players_ok` | MSPT mean |
-|-------|------|--------:|:------------:|----------:|
-| `20260901T235600Z-fullcite` | stock Folia | 100 / 100 | **true** | 19.18 |
-| `20260901T235600Z-fullcite` | yap-folia-chassis | 100 / 100 | **true** | 18.62 |
-| `20260901T235600Z-fullcite` | stock Paper | 100 / 100 | **true** | 28.94 |
+## Verified results (post-fix)
 
-Artifacts:
+### Join smoke (`highpop`)
 
-- `bench/results/20260901T235600Z-fullcite-fullcite-{folia,yapcore,paper}.json`
+| Stamp | Bots | Mode | `players_ok` | MSPT (Folia) |
+|-------|-----:|------|:------------:|-------------:|
+| `20260901T232100Z-bots100` | 100 | active | **true** | 10.87 |
+| `20260901T232700Z-bots200` | 200 | cite-stable | **true** | 14.04 |
+
+### fullcite — **CITEABLE** (`20260902T005200Z-fullcite-knobs2`)
+
+100 bots + 2400 TNT + fixtures. YaP ship knobs on (`entity-tick-budget=300`,
+`async-chunk-save=true`):
+
+| Peer | `players_ok` | MSPT | vs stock Folia |
+|------|:------------:|-----:|----------------|
+| stock Folia | **true** | 19.99 | — |
+| yap-folia-chassis | **true** | 18.83 | **−5.8% CITEABLE** |
+| yap-folia-plain | **true** | 19.82 | −0.9% (tie) |
+
+JSON: `bench/results/20260902T005200Z-fullcite-knobs2-fullcite-{folia,yapcore,yapfolia}.json`
+
+### highpop — valid, tie at 100 bots (`20260902T010200Z-highpop-knobs`)
+
+yapcore **−4.2%** vs Folia — within 5% noise band. Population held.
+
+### Earlier fullcite (knobs off, `20260901T235600Z-fullcite`)
+
+yapcore **−3.0%** vs Folia — valid, not citeable.
 
 ---
 
@@ -111,8 +133,9 @@ Artifacts:
 |-------|-------|
 | `20260901T210712Z-speedtest` **fullcite** rows | `players_ok: false`, `players_end: 0` — pre-fix bot version |
 | `20260901T215113Z-botfix` | Kicked `Outdated client! Please use 26.2` — partial fix only |
+| `20260902T003600Z-fullcite-knobs` yapfolia | **69% “win” INVALID** — `run_yapfolia_plain` had no bots (`players_ok: false`) |
 
-**Spawncollapse** rows from the same speedtest stamp remain **valid** (no bots).
+**Spawncollapse** rows from speedtest stamp remain **valid** (no bots).
 
 ---
 

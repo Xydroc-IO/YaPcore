@@ -100,42 +100,27 @@ plugin samples on the hot region at chunk `(0,0)` via `YapSched.regionChunkTimer
 
 Folia-fork peers: see [FOLIA_FORKS_COMPARE.md](../folia/FOLIA_FORKS_COMPARE.md). Canvas has no citeable spawncollapse three-way yet; Kaiiju skipped on 26.2.
 
-### highpop (Mineflayer bots) — citeable
+### highpop (Mineflayer bots)
 
-| Stamp | Bots | Peer | Mode | Players | `players_ok` | MSPT mean | Notes |
-|-------|-----:|------|------|--------:|:------------:|----------:|-------|
-| `20260901T232100Z-bots100` | 100 | stock Folia | active | 100 / 100 | **true** | 10.87 | Post `patch-minecraft-data.sh`; 30s sample |
-| `20260901T232700Z-bots200` | 200 | stock Folia | cite-stable | 200 / 200 | **true** | 14.04 | 2 workers; physics OFF |
+| Stamp | Bots | Peer | `players_ok` | MSPT | Citeable? |
+|-------|-----:|------|:------------:|-----:|:---------:|
+| `20260902T010200Z-highpop-knobs` | 100 | yapcore vs folia | **true** | 10.67 vs 11.13 | **tie** (−4.2%) |
+| `20260901T232100Z-bots100` | 100 | stock Folia | **true** | 10.87 | join smoke |
 
-### fullcite (100 bots + fixtures) — citeable
+### fullcite (100 bots + fixtures) — **CITEABLE**
 
-| Stamp | Peer | Players | `players_ok` | MSPT mean | Entities | Heavy hoppers |
-|-------|------|--------:|:------------:|----------:|---------:|--------------:|
-| `20260901T235600Z-fullcite` | stock Folia | 100 / 100 | **true** | 19.18 | 600 | 128 |
-| `20260901T235600Z-fullcite` | yap-folia-chassis | 100 / 100 | **true** | 18.62 | 600 | 128 |
-| `20260901T235600Z-fullcite` | stock Paper | 100 / 100 | **true** | 28.94 | 600 | 128 |
+| Stamp | Peer | `players_ok` | MSPT | vs stock Folia |
+|-------|------|:------------:|-----:|----------------|
+| `20260902T005200Z-fullcite-knobs2` | stock Folia | **true** | 19.99 | — |
+| `20260902T005200Z-fullcite-knobs2` | yap-folia-chassis | **true** | 18.83 | **−5.8% CITEABLE** |
+| `20260902T005200Z-fullcite-knobs2` | yap-folia-plain | **true** | 19.82 | −0.9% (tie) |
 
-JSON: `bench/results/20260901T235600Z-fullcite-fullcite-{folia,yapcore,paper}.json`
+Bot scenarios default YaP ship knobs (`entity-tick-budget=300`, `async-chunk-save=true`).
+**Product cite:** yapcore (chassis) vs stock Folia on **fullcite**, not plain jar alone.
 
-Reproduce:
+JSON: `bench/results/20260902T005200Z-fullcite-knobs2-fullcite-*.json`
 
-```bash
-YAP_BENCH_STAMP=$(date -u +%Y%m%dT%H%M%SZ)-fullcite \
-  YAP_BENCH_PLAYERS=100 YAP_BENCH_COMPETITORS=folia,yapcore,paper \
-  NODE_OPTIONS="--max-old-space-size=8192" \
-  ./scripts/bench/run-vs-folia.sh fullcite 40
-```
-
-**INVALID:** `20260901T210712Z-speedtest` fullcite (`players_end: 0`) — pre-fix bot protocol.
-
-Reproduce 100-bot gate:
-
-```bash
-cd scripts/bench/bots && npm install
-YAP_BENCH_STAMP=$(date -u +%Y%m%dT%H%M%SZ)-bots100 \
-  YAP_BENCH_PLAYERS=100 YAP_BENCH_COMPETITORS=folia \
-  ./scripts/bench/run-vs-folia.sh highpop 30
-```
+**INVALID:** `20260901T210712Z-speedtest` fullcite (`players_end: 0`); `20260902T003600Z` yapfolia without bots.
 
 Full bot doc: [BENCH_BOTS.md](BENCH_BOTS.md).
 

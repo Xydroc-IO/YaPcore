@@ -63,7 +63,7 @@ def fairness_check(stock: dict, yap: dict) -> list[str]:
             reasons.append("MISSING_LOAD_PROOFS — re-run with updated yap-mspt-bench")
         return reasons
 
-    if scenario in ("entity", "heavypop", "spawncollapse"):
+    if scenario in ("entity", "heavypop", "spawncollapse", "highpop", "fullcite"):
         for side, d in ("stock", stock), ("yap", yap):
             exp = int(d.get("expected_tnt", 0))
             start = int(d.get("tnt_start", 0))
@@ -86,7 +86,7 @@ def fairness_check(stock: dict, yap: dict) -> list[str]:
                 f"TNT mismatch end: stock={stock['tnt_end']} yap={yap['tnt_end']}"
             )
 
-    if scenario in ("heavypop", "spawncollapse"):
+    if scenario in ("heavypop", "spawncollapse", "fullcite"):
         for side, d in ("stock", stock), ("yap", yap):
             hs, he = int(d.get("hoppers_start", 0)), int(d.get("hoppers_end", 0))
             if hs < 100:
@@ -100,6 +100,17 @@ def fairness_check(stock: dict, yap: dict) -> list[str]:
             reasons.append(
                 f"hopper mismatch: stock={stock['hoppers_start']} yap={yap['hoppers_start']}"
             )
+
+    if scenario in ("highpop", "fullcite"):
+        for side, d in ("stock", stock), ("yap", yap):
+            target = int(d.get("players_target", 0))
+            if target <= 0:
+                continue
+            if not d.get("players_ok", False):
+                reasons.append(
+                    f"{side} players_ok=false (start={d.get('players_start')} "
+                    f"end={d.get('players_end')} target={target})"
+                )
 
     return reasons
 
