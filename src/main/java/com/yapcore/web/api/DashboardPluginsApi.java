@@ -9,6 +9,7 @@ import com.yapcore.web.DashboardNetworkSnapshots;
 import com.yapcore.web.PluginCompatMatrix;
 import com.yapcore.web.PluginCompatMatrix.Lookup;
 import com.yapcore.web.PluginConfigCatalog;
+import com.yapcore.web.PluginConfigHints;
 import com.yapcore.web.PluginConfigIo;
 import com.yapcore.web.TinyJson;
 import com.yapcore.web.auth.DashboardAuth;
@@ -147,7 +148,8 @@ public final class DashboardPluginsApi {
         Path file = PluginConfigIo.configPath(root, entry);
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("id", entry.id());
-        row.put("title", entry.title());
+        row.put("title", PluginConfigHints.pluginTitle(entry.id(), entry.title()));
+        row.put("blurb", PluginConfigHints.pluginBlurb(entry.id()));
         row.put("dataDir", entry.dataDir());
         row.put("file", entry.file());
         row.put("reload", entry.reload());

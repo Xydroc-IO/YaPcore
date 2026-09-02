@@ -364,6 +364,8 @@ public final class DashboardGameplayApi {
 
     public void apiDiscord(HttpExchange ex) throws IOException { network.apiDiscord(ex); }
 
+    public void apiTebex(HttpExchange ex) throws IOException { network.apiTebex(ex); }
+
     public void apiTab(HttpExchange ex) throws IOException { network.apiTab(ex); }
 
     public void apiMap(HttpExchange ex) throws IOException { network.apiMap(ex); }

@@ -46,7 +46,7 @@ public final class DashboardPlayersApi {
             snap.put("moderation", DashboardNetworkSnapshots.moderation(root));
             snap.put("groups", DashboardNetworkSnapshots.perms(root).get("groups"));
             snap.put("durationHelp", "1h, 30m, 7d, 2w — for temp ban / mute / timeout");
-            snap.put("hint", "Ban/kick/mute by username, UUID, or last IP. Everyone who has joined is listed below.");
+            snap.put("hint", "Ban/kick/mute by username, UUID, or last IP. Economy: give/take/set/reset balance. Everyone who has joined is listed below.");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -135,8 +135,32 @@ public final class DashboardPlayersApi {
             case "promote" -> require(player, "promote " + q(player));
             case "demote" -> require(player, "demote " + q(player));
             case "user-info", "perm-info" -> require(player, "yapperm user " + q(player) + " info");
+            case "bal", "balance" -> require(player, "bal " + q(player));
+            case "eco-give", "give-money", "givemoney" -> ecoCmd("give", player, body.get("amount"));
+            case "eco-take", "take-money" -> ecoCmd("take", player, body.get("amount"));
+            case "eco-set", "set-balance", "set-money" -> ecoCmd("set", player, body.get("amount"));
+            case "eco-reset", "reset-balance" -> require(player, "eco reset " + q(player));
             default -> null;
         };
+    }
+
+    private static String ecoCmd(String op, String player, String amountRaw) {
+        if (player == null || player.isBlank()) {
+            return null;
+        }
+        if (amountRaw == null || amountRaw.isBlank()) {
+            return null;
+        }
+        String amount = amountRaw.trim();
+        try {
+            double value = Double.parseDouble(amount);
+            if (value < 0 || Double.isNaN(value) || Double.isInfinite(value)) {
+                return null;
+            }
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        return "eco " + op + " " + q(player) + " " + amount;
     }
 
     private static String require(String value, String cmd) {

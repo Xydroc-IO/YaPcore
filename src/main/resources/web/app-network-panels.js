@@ -115,6 +115,96 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
     refreshDiscord();
   };
 
+  async function refreshTebex() {
+    if (!$("tbxInstalled")) return;
+    try {
+      const r = await api("/api/tebex");
+      $("tbxInstalled").textContent = r.installed ? "yes" : "no";
+      $("tbxSecret").textContent = r.secretConfigured ? (r.secretMasked || "set") : "not set";
+      $("tbxBuy").textContent = r.buyCommandEnabled
+        ? ("/" + (r.buyCommandName || "buy"))
+        : "off";
+      $("tbxProxy").textContent = r.proxyMode ? "on" : "off";
+      if ($("tbxHint")) $("tbxHint").textContent = r.setupHint || "";
+      if ($("tbxBuyEnabled")) $("tbxBuyEnabled").value = r.buyCommandEnabled ? "true" : "false";
+      if ($("tbxBuyName")) $("tbxBuyName").value = r.buyCommandName || "buy";
+      if ($("tbxProxyMode")) $("tbxProxyMode").value = r.proxyMode ? "true" : "false";
+      if ($("tbxVerbose")) $("tbxVerbose").value = r.verbose ? "true" : "false";
+      if ($("tbxOpenCreator") && r.creatorUrl) $("tbxOpenCreator").href = r.creatorUrl;
+      if ($("tbxOpenDocs") && r.docsUrl) $("tbxOpenDocs").href = r.docsUrl;
+      const box = $("tbxRecipes");
+      if (box) {
+        box.innerHTML = "";
+        (r.packageRecipes || []).forEach((recipe) => {
+          const wrap = document.createElement("div");
+          wrap.className = "card";
+          const title = document.createElement("h4");
+          title.textContent = recipe.name || "Package";
+          const pre = document.createElement("pre");
+          pre.className = "report";
+          pre.textContent = recipe.commands || "";
+          const copy = document.createElement("button");
+          copy.type = "button";
+          copy.textContent = "Copy";
+          copy.onclick = async () => {
+            try {
+              await navigator.clipboard.writeText(recipe.commands || "");
+              copy.textContent = "Copied";
+              setTimeout(() => { copy.textContent = "Copy"; }, 1200);
+            } catch {
+              alert(recipe.commands || "");
+            }
+          };
+          wrap.appendChild(title);
+          wrap.appendChild(pre);
+          wrap.appendChild(copy);
+          box.appendChild(wrap);
+        });
+      }
+      if (!r.installed && r.fetchHint) {
+        $("tbxOut").textContent = "Plugin missing — run: " + r.fetchHint;
+      }
+    } catch (e) {
+      if ($("tbxOut")) $("tbxOut").textContent = e.message;
+    }
+  }
+  if ($("tbxRefresh")) {
+    $("tbxRefresh").onclick = () => refreshTebex();
+    $("tbxReload").onclick = async () => {
+      $("tbxOut").textContent = (await netPost("/api/tebex", { action: "reload" })).result || "ok";
+      refreshTebex();
+    };
+    $("tbxSaveSecret").onclick = async () => {
+      const secret = ($("tbxSecretInput").value || "").trim();
+      if (!secret) { alert("Paste your Tebex game-server secret key."); return; }
+      try {
+        const r = await netPost("/api/tebex", { action: "set-secret", secret });
+        $("tbxOut").textContent = r.result || "Secret saved.";
+        $("tbxSecretInput").value = "";
+        refreshTebex();
+      } catch (e) { $("tbxOut").textContent = e.message; }
+    };
+    $("tbxSaveSettings").onclick = async () => {
+      try {
+        const r = await netPost("/api/tebex", {
+          action: "save-settings",
+          buyCommandEnabled: $("tbxBuyEnabled").value,
+          buyCommandName: $("tbxBuyName").value.trim() || "buy",
+          proxyMode: $("tbxProxyMode").value,
+          verbose: $("tbxVerbose").value,
+        });
+        $("tbxOut").textContent = r.result || "Settings saved.";
+        refreshTebex();
+      } catch (e) { $("tbxOut").textContent = e.message; }
+    };
+    $("tbxInfo").onclick = async () => {
+      $("tbxOut").textContent = (await netPost("/api/tebex", { action: "info" })).result || "";
+    };
+    $("tbxForceCheck").onclick = async () => {
+      $("tbxOut").textContent = (await netPost("/api/tebex", { action: "forcecheck" })).result || "ok";
+    };
+  }
+
   async function refreshTabPanel() {
     try {
       const r = await api("/api/tab");
@@ -160,6 +250,7 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
     perms: refreshPerms,
     data: refreshData,
     discord: refreshDiscord,
+    tebex: refreshTebex,
     tab: refreshTabPanel,
   });
 };

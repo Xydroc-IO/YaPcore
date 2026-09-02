@@ -133,6 +133,7 @@ public final class WebDashboard {
         http.createContext("/api/playerdata", gameplayApi::apiPlayerdata);
         http.createContext("/api/kits", kitsApi::apiKits);
         http.createContext("/api/discord", gameplayApi::apiDiscord);
+        http.createContext("/api/tebex", gameplayApi::apiTebex);
         http.createContext("/api/tab", gameplayApi::apiTab);
         http.createContext("/api/map", gameplayApi::apiMap);
         http.createContext("/api/guard", gameplayApi::apiGuard);

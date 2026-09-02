@@ -4,57 +4,63 @@ window.YapDashRegisterPluginEditors = function (YapDash) {
   let selected = "";
   let fields = [];
 
-  function setOut(text) {
+  function setOut(text, err) {
     const el = $("edOut");
-    if (el) el.textContent = text || "";
+    if (!el) return;
+    el.textContent = text || "";
+    el.className = "easy-save-msg" + (text ? (err ? " err" : " ok") : "");
   }
+
+  const STARTER = ["yap-perms", "yap-playerdata", "yap-chat", "yap-essentials", "yap-moderation"];
 
   function renderList() {
     const wrap = $("edPluginList");
     if (!wrap) return;
     const q = ($("edSearch")?.value || "").trim().toLowerCase();
     wrap.innerHTML = "";
-    plugins.filter((p) => {
+    const shown = plugins.filter((p) => {
       if (!q) return true;
-      return (p.title + " " + p.id + " " + p.dataDir).toLowerCase().includes(q);
-    }).forEach((p) => {
+      return (p.title + " " + p.id + " " + (p.blurb || "")).toLowerCase().includes(q);
+    }).slice().sort((a, b) => {
+      const ai = STARTER.indexOf(a.id);
+      const bi = STARTER.indexOf(b.id);
+      if (ai !== bi) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      return String(a.title).localeCompare(String(b.title));
+    });
+    shown.forEach((p) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "plugin-ed-item" + (p.id === selected ? " selected" : "");
-      const status = p.configPresent ? (p.fields + " keys") : "no config yet";
-      btn.innerHTML = `<strong>${p.title}</strong><span class="muted-small">${p.installed ? "installed" : "not installed"} · ${status}</span>`;
+      const starter = STARTER.includes(p.id) ? `<span class="easy-pill">Start here</span>` : "";
+      btn.innerHTML = `<strong>${p.title}${starter}</strong><span class="muted-small">${p.blurb || "Settings for this plugin."}</span>`;
       btn.onclick = () => loadPlugin(p.id);
       wrap.appendChild(btn);
     });
   }
 
-  function renderFields() {
-    const wrap = $("edFields");
-    if (!wrap) return;
-    wrap.innerHTML = "";
-    (fields || []).forEach((f) => {
-      const lab = document.createElement("label");
-      lab.textContent = f.key;
-      if (f.readonly || f.type === "complex") {
-        const span = document.createElement("div");
-        span.className = "muted-small";
-        span.textContent = String(f.value ?? "");
-        lab.appendChild(span);
-      } else if (f.type === "bool") {
-        const sel = document.createElement("select");
-        sel.dataset.key = f.key;
-        sel.innerHTML = `<option value="true">true</option><option value="false">false</option>`;
-        sel.value = String(!!f.value);
-        lab.appendChild(sel);
-      } else {
-        const inp = document.createElement("input");
-        inp.dataset.key = f.key;
-        inp.value = f.value == null ? "" : String(f.value);
-        if (f.secret) inp.type = "password";
-        if (f.type === "number") inp.type = "number";
-        lab.appendChild(inp);
-      }
-      wrap.appendChild(lab);
+  const GROUP_BLURBS = {
+    "What this plugin does": "Yes means players can use that feature. No hides it.",
+    "Basics": "Everyday switches. Read the gray line if you are not sure.",
+    "Money": "Starting cash and whether /bal and /pay work.",
+    "Extra bag": "The extra backpack (/bag), not the vanilla E inventory.",
+    "Login / register": "Only needed on a public offline-mode server.",
+    "Word filter": "Stops or stars out words you list.",
+    "Database": "Leave these unless the database login failed.",
+    "Other servers": "For a multi-server network with YaP Link.",
+  };
+
+  function paintFields() {
+    if (!window.YapFriendlyForms) return;
+    const advanced = !!$("edShowAdvanced")?.checked;
+    if (!selected) {
+      $("edFields").innerHTML = `<div class="card easy-empty"><p>Pick a plugin on the left. Start with <strong>Ranks</strong>, <strong>Player data</strong>, or <strong>Chat</strong>.</p></div>`;
+      return;
+    }
+    window.YapFriendlyForms.renderGroups($("edFields"), fields, {
+      showAdvanced: advanced,
+      showKeys: advanced,
+      query: $("edFieldSearch")?.value || "",
+      groupBlurbs: GROUP_BLURBS,
     });
   }
 
@@ -64,14 +70,13 @@ window.YapDashRegisterPluginEditors = function (YapDash) {
     try {
       const r = await api("/api/plugin-config?plugin=" + encodeURIComponent(id));
       $("edTitle").textContent = r.title || id;
-      $("edHint").textContent = (r.configPresent ? "Editing " : "No file yet — save will create ")
-        + "plugins/" + r.dataDir + "/" + r.file
-        + (r.reload ? " · reload: " + r.reload : "");
+      $("edHint").textContent = (r.blurb ? r.blurb + " " : "")
+        + (r.configPresent ? "Press Save and apply when you are done." : "No file yet — save creates it.");
       fields = r.fields || [];
-      renderFields();
+      paintFields();
       setOut("");
     } catch (e) {
-      setOut(e.message);
+      setOut(e.message, true);
     }
   }
 
@@ -81,34 +86,38 @@ window.YapDashRegisterPluginEditors = function (YapDash) {
       plugins = r.plugins || [];
       renderList();
       if (selected) loadPlugin(selected);
+      else paintFields();
       setOut("");
     } catch (e) {
-      setOut(e.message);
+      setOut(e.message, true);
     }
   }
 
   $("edSearch")?.addEventListener("input", renderList);
+  $("edFieldSearch")?.addEventListener("input", paintFields);
+  $("edShowAdvanced")?.addEventListener("change", paintFields);
 
   $("edSave")?.addEventListener("click", async () => {
-    if (!selected) { alert("Select a plugin first."); return; }
-    const body = { action: "save", plugin: selected };
-    $("edFields")?.querySelectorAll("input,select").forEach((el) => {
-      if (el.dataset.key) body[el.dataset.key] = el.value;
-    });
+    if (!selected) { setOut("Pick a plugin on the left first.", true); return; }
+    const body = window.YapFriendlyForms
+      ? window.YapFriendlyForms.collect($("edFields"))
+      : {};
+    body.action = "save";
+    body.plugin = selected;
     try {
       const r = await netPost("/api/plugin-config", body);
-      setOut("Saved " + selected + (r.reload ? ". " + r.reload : "."));
+      setOut("Saved. " + (r.reload || "The plugin will use the new values."));
       await loadPlugin(selected);
       refreshEditors();
-    } catch (e) { setOut(e.message); }
+    } catch (e) { setOut(e.message, true); }
   });
 
   $("edReload")?.addEventListener("click", async () => {
     if (!selected) return;
     try {
       const r = await netPost("/api/plugin-config", { action: "reload", plugin: selected });
-      setOut(r.result || "Reloaded.");
-    } catch (e) { setOut(e.message); }
+      setOut(r.result || "Reloaded from the file on disk.");
+    } catch (e) { setOut(e.message, true); }
   });
 
   Object.assign(YapDash.tabLoads, { editors: refreshEditors });

@@ -24,6 +24,7 @@ public final class PluginConfigCatalog {
                 e("yap-chat", "YaPChat", "YaPChat", "config.yml", "yap-chat", "yapchat reload"),
                 e("yap-tab", "YaPTab", "YaPTab", "config.yml", "yap-tab", "yaptab reload"),
                 e("yap-discord", "YaPDiscord", "YaPDiscord", "config.yml", "yap-discord", "yapdiscord reload"),
+                e("tebex", "Tebex store", "Tebex", "config.yml", "tebex", "tebex reload"),
                 e("yap-floodgate", "YaPFloodgate", "YaPFloodgate", "config.yml", "yap-floodgate", "yapfloodgate reload"),
                 e("yap-bedrock-ui", "YaPBedrockUI", "YaPBedrockUI", "config.yml", "yap-bedrock-ui", ""),
                 e("yap-folia-bridge", "YaPFoliaBridge", "YaPFoliaBridge", "config.yml", "yap-folia-bridge", ""),

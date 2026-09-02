@@ -17,7 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Dashboard routes: Discord, TAB, map, guard, regions, NPCs. */
+/** Dashboard routes: Discord, Tebex, TAB, map, guard, regions, NPCs. */
 public final class DashboardGameplayNetworkApi {
 
     private final YaPcoreServer server;
@@ -86,6 +86,76 @@ public final class DashboardGameplayNetworkApi {
                     DashboardNetworkSnapshotWriters.saveDiscordInbound(root, enabled, port, secret);
                     server.executeCommand("yapdiscord reload");
                     DashboardHttp.json(ex, 200, Map.of("ok", true, "action", action));
+                }
+                default -> DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
+            }
+            return;
+        }
+        ex.sendResponseHeaders(405, -1);
+    }
+
+    public void apiTebex(HttpExchange ex) throws IOException {
+        if (!auth.requireAuth(ex)) {
+            return;
+        }
+        Path root = server.getRootDir();
+        if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, Object> snap = new LinkedHashMap<>(DashboardNetworkSnapshots.tebex(root));
+            snap.put("ok", true);
+            snap.put("hint", "POST set-secret | save-settings | reload | info | forcecheck");
+            DashboardHttp.json(ex, 200, snap);
+            return;
+        }
+        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
+            String action = body.getOrDefault("action", "").toLowerCase();
+            switch (action) {
+                case "set-secret", "secret" -> {
+                    String secret = body.getOrDefault("secret", body.getOrDefault("key", "")).trim();
+                    if (secret.isEmpty()) {
+                        DashboardHttp.json(ex, 400, Map.of("error", "secret required"));
+                        return;
+                    }
+                    if (secret.contains(" ") || secret.contains("\"") || secret.contains("'")
+                            || secret.contains("\n") || secret.contains("\r")) {
+                        DashboardHttp.json(ex, 400, Map.of("error", "secret must be a single token (no spaces/quotes)"));
+                        return;
+                    }
+                    DashboardNetworkSnapshotWriters.saveTebexSecret(root, secret);
+                    String result = server.executeCommand("tebex secret " + secret);
+                    DashboardHttp.json(ex, 200, Map.of(
+                            "ok", true,
+                            "action", "set-secret",
+                            "secretConfigured", true,
+                            "secretMasked", DashboardNetworkSnapshots.maskSecret(secret),
+                            "result", result == null ? "" : result));
+                }
+                case "save-settings" -> {
+                    Boolean buyEnabled = body.containsKey("buyCommandEnabled")
+                            ? !"false".equalsIgnoreCase(body.get("buyCommandEnabled")) : null;
+                    Boolean proxy = body.containsKey("proxyMode")
+                            ? !"false".equalsIgnoreCase(body.get("proxyMode")) : null;
+                    Boolean verbose = body.containsKey("verbose")
+                            ? !"false".equalsIgnoreCase(body.get("verbose")) : null;
+                    String buyName = body.get("buyCommandName");
+                    DashboardNetworkSnapshotWriters.saveTebexSettings(root, buyEnabled, buyName, proxy, verbose);
+                    String result = server.executeCommand("tebex reload");
+                    DashboardHttp.json(ex, 200, Map.of(
+                            "ok", true,
+                            "action", action,
+                            "result", result == null ? "" : result));
+                }
+                case "reload" -> {
+                    String result = server.executeCommand("tebex reload");
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result));
+                }
+                case "info" -> {
+                    String result = server.executeCommand("tebex info");
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result));
+                }
+                case "forcecheck", "force-check" -> {
+                    String result = server.executeCommand("tebex forcecheck");
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result));
                 }
                 default -> DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
             }

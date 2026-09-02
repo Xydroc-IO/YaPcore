@@ -404,30 +404,46 @@
       </section>
 
       <section id="tab-settings" class="panel">
-        <form id="settingsForm" class="form-grid"></form>
-        <button id="saveSettings" class="primary">Save settings</button>
+        <div class="page-header">
+          <h2>Server setup</h2>
+          <p>Everyday switches for how the server looks and who can join. Read the gray help under each box. Leave anything you do not understand.</p>
+        </div>
+        <div id="settingsForm" class="easy-form"></div>
+        <div class="btn-row">
+          <button id="saveSettings" class="primary">Save server setup</button>
+          <button id="settingsShowAdvanced" type="button">Show advanced</button>
+        </div>
+        <p id="settingsOut" class="easy-save-msg" hidden></p>
       </section>
 
       <section id="tab-editors" class="panel">
         <div class="page-header">
-          <h2>Plugin editors</h2>
-          <p>Edit every first-party plugin config from the dashboard. Dedicated tabs still exist for ranks, chat, and other high-traffic tools.</p>
+          <h2>Plugin settings</h2>
+          <p>Pick a plugin on the left. Each switch is in plain English. For ranks and chat colors, use <strong>Access &amp; ranks</strong> instead — it is easier.</p>
         </div>
         <div class="plugin-editor-layout">
           <div class="card">
             <h3>Plugins</h3>
-            <input id="edSearch" placeholder="Search plugins…"/>
+            <p class="muted hint">New here? Open one marked Start here.</p>
+            <input id="edSearch" placeholder="Find a plugin…"/>
             <div id="edPluginList" class="plugin-ed-list"></div>
           </div>
-          <div class="card">
-            <h3 id="edTitle">Select a plugin</h3>
-            <p class="muted hint" id="edHint">Choose a plugin to edit its YAML settings. Secrets (passwords, tokens) are masked.</p>
-            <div id="edFields" class="form-grid"></div>
-            <div class="btn-row" style="margin-top:14px">
-              <button id="edSave" class="primary">Save + reload</button>
-              <button id="edReload">Reload only</button>
+          <div>
+            <div class="card">
+              <h3 id="edTitle">Select a plugin</h3>
+              <p class="muted hint" id="edHint">Choose a plugin. Passwords stay hidden.</p>
+              <input id="edFieldSearch" placeholder="Find a setting…" style="margin:8px 0 12px"/>
+              <label class="inline-check easy-advanced-toggle">
+                <input type="checkbox" id="edShowAdvanced"/>
+                Show advanced / database keys
+              </label>
             </div>
-            <pre id="edOut" class="report"></pre>
+            <div id="edFields" class="easy-form"></div>
+            <div class="btn-row" style="margin-top:4px">
+              <button id="edSave" class="primary">Save and apply</button>
+              <button id="edReload">Reload without saving</button>
+            </div>
+            <p id="edOut" class="easy-save-msg"></p>
           </div>
         </div>
       </section>
@@ -868,6 +884,18 @@
               <button id="plDemote">Demote</button>
             </div>
 
+            <h3>Economy</h3>
+            <div class="form-grid compact">
+              <label>Amount <input id="plMoney" type="number" min="0" step="0.01" value="1000" placeholder="1000"/></label>
+            </div>
+            <div class="toolbar player-btns">
+              <button id="plBal">Check balance</button>
+              <button id="plEcoGive" class="primary">Give money</button>
+              <button id="plEcoTake">Take money</button>
+              <button id="plEcoSet">Set balance</button>
+              <button id="plEcoReset" class="warn">Reset</button>
+            </div>
+
             <h3>Lookup</h3>
             <div class="toolbar player-btns">
               <button id="plHistory">History</button>
@@ -878,6 +906,67 @@
           </div>
         </div>
         <pre id="plOut" class="report"></pre>
+      </section>
+
+      <section id="tab-tebex" class="panel">
+        <div class="page-header">
+          <h2>Tebex store</h2>
+          <p>Connect the shipped Folia Tebex plugin to your web store. Hub only — put packages on creator.tebex.io with <code>{username}</code> console commands.</p>
+        </div>
+        <p id="tbxHint" class="muted hint"></p>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="tbxInstalled">—</strong></div>
+          <div class="stat"><span>Secret</span><strong id="tbxSecret">—</strong></div>
+          <div class="stat"><span>/buy</span><strong id="tbxBuy">—</strong></div>
+          <div class="stat"><span>Proxy mode</span><strong id="tbxProxy">—</strong></div>
+        </div>
+        <div class="card">
+          <h3>1. Connect store</h3>
+          <p class="muted hint">Create a game server at <a href="https://creator.tebex.io/" target="_blank" rel="noopener">creator.tebex.io</a>, copy the secret key, paste below. Install jar with <code>./scripts/fetch-tebex.sh</code> if missing.</p>
+          <div class="form-grid">
+            <label>Secret key
+              <input id="tbxSecretInput" type="password" autocomplete="off" placeholder="paste game-server secret"/>
+            </label>
+          </div>
+          <div class="btn-row">
+            <button id="tbxSaveSecret" class="primary">Save secret</button>
+            <button id="tbxInfo">Store info</button>
+            <button id="tbxForceCheck">Force check</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>2. Plugin settings</h3>
+          <div class="form-grid">
+            <label>Buy command
+              <select id="tbxBuyEnabled"><option value="true">on</option><option value="false">off</option></select>
+            </label>
+            <label>Command name <input id="tbxBuyName" placeholder="buy"/></label>
+            <label>Proxy mode (Velocity/Bungee)
+              <select id="tbxProxyMode"><option value="false">off</option><option value="true">on</option></select>
+            </label>
+            <label>Verbose debug
+              <select id="tbxVerbose"><option value="false">off</option><option value="true">on</option></select>
+            </label>
+          </div>
+          <button id="tbxSaveSettings" class="primary">Save settings</button>
+        </div>
+        <div class="card">
+          <h3>3. Package commands (copy into Tebex)</h3>
+          <p class="muted hint">Execute as console on the Hub. Placeholder must be <code>{username}</code>. Full examples: <code>examples/tebex/</code> · <a href="docs/ops/TEBEX.md">TEBEX.md</a></p>
+          <div id="tbxRecipes"></div>
+        </div>
+        <div class="toolbar">
+          <button id="tbxRefresh">Refresh</button>
+          <button id="tbxReload">Reload Tebex</button>
+        </div>
+        <p class="muted hint">
+          <a id="tbxOpenCreator" href="https://creator.tebex.io/" target="_blank" rel="noopener">Open Tebex creator</a>
+          ·
+          <a id="tbxOpenDocs" href="https://docs.tebex.io/creators/tebex-control-panel/game-servers/minecraft-java-edition" target="_blank" rel="noopener">Tebex Minecraft docs</a>
+          ·
+          <a href="docs/ops/TEBEX.md">YaP TEBEX.md</a>
+        </p>
+        <pre id="tbxOut" class="report"></pre>
       </section>
 
       <section id="tab-kits" class="panel">
@@ -1279,6 +1368,7 @@
     </div>
   </div>
   <script src="/app-shell.js"></script>
+  <script src="/app-friendly-forms.js"></script>
   <script src="/app-color.js"></script>
   <script src="/app-access-actions.js"></script>
   <script src="/app-access-panels.js"></script>

@@ -2,64 +2,51 @@
   function register(YapDash) {
     const { $, api, netPost } = YapDash;
 
-  const SETTINGS_FIELDS = [
-    ["server-name", "Server name"],
-    ["motd", "MOTD"],
-    ["bind-host", "Bind host"],
-    ["port", "Java port"],
-    ["bedrock-port", "Bedrock port"],
-    ["max-players", "Max players"],
-    ["ram-mb", "RAM max (MB)"],
-    ["ram-min-mb", "RAM min (MB)"],
-    ["view-distance", "View distance"],
-    ["public-host", "Public host"],
-    ["server-domain", "Domain"],
-    ["public-port", "Public JE port"],
-    ["resource-pack-file", "Active pack file"],
-    ["java-enabled", "Java enabled", "bool"],
-    ["bedrock-enabled", "Bedrock enabled", "bool"],
-    ["shared-listen-port", "Shared listen port", "bool"],
-    ["crossplay-enabled", "Crossplay", "bool"],
-    ["allow-localhost", "Allow localhost", "bool"],
-    ["online-mode", "Online mode", "bool"],
-    ["resource-pack-enabled", "Pack HTTP", "bool"],
-    ["internet-exposed", "Internet exposed", "bool"],
-    ["yap-ranks-auto-apply", "Auto-apply YaPPerms rank pack once", "bool"],
-  ];
+  let settingsCfg = {};
+  let settingsAdvanced = false;
 
-  async function loadSettings() {
-    const cfg = await api("/api/config");
-    const form = $("settingsForm");
-    form.innerHTML = "";
-    SETTINGS_FIELDS.forEach(([key, label, type]) => {
-      const lab = document.createElement("label");
-      lab.textContent = label;
-      if (type === "bool") {
-        const sel = document.createElement("select");
-        sel.name = key;
-        sel.innerHTML = `<option value="true">true</option><option value="false">false</option>`;
-        sel.value = String(!!cfg[key]);
-        lab.appendChild(sel);
-      } else {
-        const inp = document.createElement("input");
-        inp.name = key;
-        inp.value = cfg[key] == null ? "" : cfg[key];
-        lab.appendChild(inp);
-      }
-      form.appendChild(lab);
-    });
+  function paintSettings() {
+    if (window.YapFriendlyForms) {
+      window.YapFriendlyForms.renderSettings($("settingsForm"), settingsCfg, settingsAdvanced);
+    }
   }
 
+  async function loadSettings() {
+    settingsCfg = await api("/api/config");
+    paintSettings();
+    const out = $("settingsOut");
+    if (out) { out.hidden = true; out.textContent = ""; }
+  }
+
+  $("settingsShowAdvanced")?.addEventListener("click", () => {
+    settingsAdvanced = !settingsAdvanced;
+    $("settingsShowAdvanced").textContent = settingsAdvanced ? "Hide advanced" : "Show advanced";
+    paintSettings();
+  });
+
   $("saveSettings").onclick = async () => {
-    const body = {};
-    $("settingsForm").querySelectorAll("input,select").forEach((el) => {
-      body[el.name] = el.value;
-    });
+    const body = window.YapFriendlyForms
+      ? window.YapFriendlyForms.collect($("settingsForm"))
+      : {};
+    const out = $("settingsOut");
     try {
       await api("/api/config", { method: "POST", body: JSON.stringify(body) });
-      alert("Settings saved");
+      Object.assign(settingsCfg, body);
+      if (out) {
+        out.hidden = false;
+        out.className = "easy-save-msg ok";
+        out.textContent = "Saved. Restart the server if you changed ports or RAM.";
+      }
       await YapDash.refreshStatus();
-    } catch (e) { alert(e.message); }
+    } catch (e) {
+      if (out) {
+        out.hidden = false;
+        out.className = "easy-save-msg err";
+        out.textContent = e.message;
+      } else {
+        alert(e.message);
+      }
+    }
   };
 
   async function loadPlugins() {

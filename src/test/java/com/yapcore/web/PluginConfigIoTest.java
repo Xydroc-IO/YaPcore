@@ -29,6 +29,12 @@ class PluginConfigIoTest {
         List<Map<String, Object>> fields = PluginConfigIo.flatten(yaml);
         assertTrue(fields.stream().anyMatch(f -> "enabled".equals(f.get("key"))));
         assertTrue(fields.stream().anyMatch(f -> "jdbc.url".equals(f.get("key"))));
+        Map<String, Object> jdbcUrl = fields.stream()
+                .filter(f -> "jdbc.url".equals(f.get("key")))
+                .findFirst().orElseThrow();
+        assertEquals("Database address", jdbcUrl.get("title"));
+        assertEquals("Database", jdbcUrl.get("group"));
+        assertEquals(Boolean.TRUE, jdbcUrl.get("advanced"));
         assertEquals("world, nether", fields.stream()
                 .filter(f -> "worlds".equals(f.get("key")))
                 .findFirst().orElseThrow()

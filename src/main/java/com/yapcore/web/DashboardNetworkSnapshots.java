@@ -127,6 +127,56 @@ public final class DashboardNetworkSnapshots {
         return out;
     }
 
+    /** Third-party Tebex Folia store plugin (`plugins/tebex.jar` → `plugins/Tebex/`). */
+    public static Map<String, Object> tebex(Path root) {
+        Map<String, Object> out = base(root, "tebex", "Tebex");
+        Map<String, Object> yaml = yaml(root, "Tebex", "config.yml");
+        Map<String, Object> buy = map(yaml.get("buy-command"));
+        Map<String, Object> serverCfg = map(yaml.get("server"));
+        String secret = str(serverCfg.get("secret-key"), "");
+        boolean secretSet = !secret.isBlank();
+        out.put("secretConfigured", secretSet);
+        out.put("secretMasked", secretSet ? maskSecret(secret) : "");
+        out.put("buyCommandEnabled", bool(buy.get("enabled"), true));
+        out.put("buyCommandName", str(buy.get("name"), "buy"));
+        out.put("proxyMode", bool(serverCfg.get("proxy"), false));
+        out.put("verbose", bool(yaml.get("verbose"), false));
+        out.put("checkForUpdates", bool(yaml.get("check-for-updates"), true));
+        out.put("creatorUrl", "https://creator.tebex.io/");
+        out.put("docsUrl", "https://docs.tebex.io/creators/tebex-control-panel/game-servers/minecraft-java-edition");
+        out.put("yapDocs", "docs/ops/TEBEX.md");
+        out.put("fetchHint", "./scripts/fetch-tebex.sh");
+        out.put("packageRecipes", List.of(
+                Map.of(
+                        "name", "VIP rank",
+                        "commands", "yapperm user {username} parent set vip\nkit grant {username} vip"),
+                Map.of(
+                        "name", "Adventurer kit unlock",
+                        "commands", "yapperm user {username} permission set yapdata.kit.adventurer true\nkit grant {username} adventurer"),
+                Map.of(
+                        "name", "VIP kit unlock only",
+                        "commands", "yapperm user {username} permission set yapdata.kit.vip true")));
+        if (!bool(out.get("installed"), false)) {
+            out.put("setupHint", "Run ./scripts/fetch-tebex.sh (or gradle fetchTebex), restart Folia, then paste your game-server secret key.");
+        } else if (!secretSet) {
+            out.put("setupHint", "Paste the game-server secret from creator.tebex.io → Game Servers, then Save secret.");
+        } else {
+            out.put("setupHint", "Secret set. Create packages on Tebex with the console commands below ({username} placeholder).");
+        }
+        return out;
+    }
+
+    public static String maskSecret(String secret) {
+        if (secret == null || secret.isBlank()) {
+            return "";
+        }
+        String t = secret.trim();
+        if (t.length() <= 8) {
+            return "••••••••";
+        }
+        return t.substring(0, 4) + "…" + t.substring(t.length() - 4);
+    }
+
     public static Map<String, Object> tab(Path root) {
         Map<String, Object> out = base(root, "yap-tab", "YaPTab");
         Map<String, Object> yaml = yaml(root, "YaPTab", "config.yml");

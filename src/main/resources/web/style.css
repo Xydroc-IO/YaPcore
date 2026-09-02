@@ -582,6 +582,81 @@ details.soft-details > summary + * { margin-top: 12px; }
 }
 .plugin-ed-item.selected { border-color: var(--accent); background: var(--accent-dim); }
 
+.easy-form { display: flex; flex-direction: column; gap: 0; }
+.easy-card h3 { margin-bottom: 6px; }
+.easy-card > .easy-hint { margin: 0 0 14px; display: block; }
+.easy-empty { color: var(--muted); }
+.easy-pill {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent);
+  background: var(--accent-dim);
+  vertical-align: middle;
+}
+.easy-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px 20px;
+}
+.easy-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
+}
+.easy-field input { width: 100%; }
+.easy-label { font-size: 13px; font-weight: 600; color: var(--text); }
+.easy-hint { font-size: 12px; color: var(--muted); line-height: 1.4; font-weight: 400; }
+.easy-key { font-size: 10px; color: var(--muted); font-family: var(--mono); opacity: 0.55; }
+.easy-readonly {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 0;
+}
+.easy-switch-wrap { display: flex; align-items: center; gap: 10px; }
+.easy-switch {
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  position: relative;
+  padding: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.easy-switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s, background 0.15s;
+}
+.easy-switch[aria-checked="true"] { background: var(--ok-dim); border-color: rgba(52, 211, 153, 0.45); }
+.easy-switch[aria-checked="true"]::after { transform: translateX(18px); background: var(--ok); }
+.easy-switch-label { font-size: 13px; font-weight: 600; }
+.easy-save-msg { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+.easy-save-msg.ok { color: var(--ok); }
+.easy-save-msg.err { color: var(--danger); }
+.easy-advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 4px;
+}
+.easy-advanced-toggle input { width: auto; }
+
 .kit-item-row {
   display: grid;
   grid-template-columns: minmax(120px, 1.4fr) 70px 120px minmax(100px, 1fr) minmax(140px, 1.2fr) minmax(140px, 1.2fr) 40px;

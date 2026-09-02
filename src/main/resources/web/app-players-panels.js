@@ -214,6 +214,24 @@
     $("plSetRank").onclick = () => plAction({ action: "set-group", group: $("plGroup").value });
     $("plPromote").onclick = () => plAction({ action: "promote" });
     $("plDemote").onclick = () => plAction({ action: "demote" });
+    $("plBal").onclick = () => plAction({ action: "bal" });
+    $("plEcoGive").onclick = () => {
+      const amount = ($("plMoney")?.value || "").trim();
+      if (!amount) { alert("Enter an amount."); return; }
+      plAction({ action: "eco-give", amount });
+    };
+    $("plEcoTake").onclick = () => {
+      const amount = ($("plMoney")?.value || "").trim();
+      if (!amount) { alert("Enter an amount."); return; }
+      plAction({ action: "eco-take", amount });
+    };
+    $("plEcoSet").onclick = () => {
+      const amount = ($("plMoney")?.value || "").trim();
+      if (amount === "") { alert("Enter an amount."); return; }
+      plAction({ action: "eco-set", amount });
+    };
+    $("plEcoReset").onclick = () => plAction({ action: "eco-reset" },
+      "Reset balance for " + target() + " to 0?");
     $("plTpCoords").onclick = () => plAction({
       action: "tp",
       x: $("plTpX").value,

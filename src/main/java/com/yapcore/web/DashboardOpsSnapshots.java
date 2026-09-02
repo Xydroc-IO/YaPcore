@@ -115,6 +115,14 @@ public final class DashboardOpsSnapshots {
             }
             return "webhooks empty";
         }));
+        rows.add(opsRow("Tebex", DashboardNetworkSnapshots.tebex(root), snap -> {
+            if (!DashboardNetworkSnapshots.bool(snap.get("installed"), false)) {
+                return "missing";
+            }
+            return DashboardNetworkSnapshots.bool(snap.get("secretConfigured"), false)
+                    ? "secret set"
+                    : "secret empty";
+        }));
         long installed = rows.stream().filter(r -> Boolean.TRUE.equals(r.get("installed"))).count();
         out.put("plugins", rows);
         out.put("installedCount", installed);

@@ -59,6 +59,7 @@ public final class PluginConfigIo {
                 field.put("type", "text");
                 field.put("value", val == null ? "" : String.valueOf(val));
             }
+            PluginConfigHints.decorate(field);
             out.add(field);
         }
     }

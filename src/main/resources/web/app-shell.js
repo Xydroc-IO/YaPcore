@@ -7,7 +7,7 @@
     ]},
     { group: "Server", items: [
       { tab: "console", icon: "▸", label: "Console" },
-      { tab: "settings", icon: "☰", label: "Settings" },
+      { tab: "settings", icon: "☰", label: "Server setup" },
       { tab: "link", icon: "⇄", label: "YaP Link" },
     ]},
     { group: "People", items: [
@@ -17,7 +17,7 @@
     ]},
     { group: "Content", items: [
       { tab: "plugins", icon: "🧩", label: "Plugins" },
-      { tab: "editors", icon: "✎", label: "Plugin editors" },
+      { tab: "editors", icon: "✎", label: "Plugin settings" },
       { tab: "modules", icon: "📦", label: "Modules" },
       { tab: "packs", icon: "🎨", label: "Packs" },
       { tab: "world", icon: "🌍", label: "World" },
@@ -30,6 +30,7 @@
       { tab: "pregen", icon: "⬡", label: "Pregen" },
       { tab: "data", icon: "💾", label: "Player data" },
       { tab: "kits", icon: "🎒", label: "Kits" },
+      { tab: "tebex", icon: "🛒", label: "Tebex store" },
       { tab: "chat", icon: "💬", label: "Chat" },
       { tab: "tab", icon: "📋", label: "Tab list" },
       { tab: "mmo", icon: "⚔", label: "MMO" },

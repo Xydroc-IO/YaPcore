@@ -451,5 +451,52 @@ public final class DashboardNetworkSnapshotWriters {
         DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }
 
+    public static void saveTebexSecret(Path root, String secret) throws IOException {
+        Path file = root.resolve("plugins").resolve("Tebex").resolve("config.yml");
+        Map<String, Object> yaml = Files.isRegularFile(file)
+                ? DashboardNetworkSnapshots.loadYaml(file)
+                : new LinkedHashMap<>();
+        Map<String, Object> server = DashboardNetworkSnapshots.mapOrCreate(yaml, "server");
+        server.put("secret-key", secret == null ? "" : secret.trim());
+        if (!yaml.containsKey("buy-command")) {
+            Map<String, Object> buy = new LinkedHashMap<>();
+            buy.put("enabled", true);
+            buy.put("name", "buy");
+            yaml.put("buy-command", buy);
+        }
+        if (!server.containsKey("proxy")) {
+            server.put("proxy", false);
+        }
+        if (!yaml.containsKey("config-version")) {
+            yaml.put("config-version", 2);
+        }
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
+    public static void saveTebexSettings(Path root, Boolean buyEnabled, String buyName,
+                                        Boolean proxy, Boolean verbose) throws IOException {
+        Path file = root.resolve("plugins").resolve("Tebex").resolve("config.yml");
+        Map<String, Object> yaml = Files.isRegularFile(file)
+                ? DashboardNetworkSnapshots.loadYaml(file)
+                : new LinkedHashMap<>();
+        Map<String, Object> buy = DashboardNetworkSnapshots.mapOrCreate(yaml, "buy-command");
+        if (buyEnabled != null) {
+            buy.put("enabled", buyEnabled);
+        }
+        if (buyName != null && !buyName.isBlank()) {
+            buy.put("name", buyName.trim().replaceAll("\\s+", ""));
+        }
+        Map<String, Object> server = DashboardNetworkSnapshots.mapOrCreate(yaml, "server");
+        if (proxy != null) {
+            server.put("proxy", proxy);
+        }
+        if (verbose != null) {
+            yaml.put("verbose", verbose);
+        }
+        if (!yaml.containsKey("config-version")) {
+            yaml.put("config-version", 2);
+        }
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
 
 }
