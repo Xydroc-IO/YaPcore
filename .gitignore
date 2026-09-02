@@ -217,6 +217,8 @@ resourcepacks/**
 !resourcepacks/yap-vehicles.zip
 !resourcepacks/yap-vehicles/
 !resourcepacks/yap-abilities/
+!resourcepacks/yap-abilities/**
+!resourcepacks/yap-abilities.zip
 !resourcepacks/yap-skies/
 !resourcepacks/yap-skies/**
 !resourcepacks/yapcore-default.zip
@@ -287,3 +289,7 @@ src/test/resources/xbox/retail-chain.json
 /build/xbox-client-jwt-capture.txt
 xbox-chain-capture.json
 xbox-client-jwt-capture.txt
+
+# Iris Distant Horizons compile-only API (needed to build yap-iris)
+!yap-iris/DHApi.jar
+dist/client-mods/

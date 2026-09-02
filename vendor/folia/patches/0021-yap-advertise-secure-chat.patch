@@ -1,0 +1,11 @@
+--- a/folia-server/src/minecraft/java/net/minecraft/server/players/PlayerList.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/players/PlayerList.java
+@@ -258,7 +258,7 @@
+                 doLimitedCrafting,
+                 player.createCommonSpawnInfo(level),
+                 this.server.usesAuthentication(),
+-                this.server.enforceSecureProfile()
++                true // YaP: hide unverified-chat toast; keys not required (enforce-secure-profile=false)
+             )
+         );
+         player.getBukkitEntity().sendSupportedChannels(); // CraftBukkit

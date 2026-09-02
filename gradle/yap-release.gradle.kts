@@ -5,7 +5,7 @@ val yapGameplayEnabled: Boolean =
 tasks.register<Exec>("prepareClientPack") {
     group = "distribution"
     description =
-        "Build yapcore-default.zip (Faithful CORE + YaP Skies + vehicles/abilities overlays)"
+        "Build yapcore-default.zip (Faithful CORE + YaP Skies + vehicles + abilities overlays)"
     workingDir = project.projectDir
     environment("YAP_INCLUDE_VEHICLES", if (yapGameplayEnabled) "1" else "0")
     commandLine("bash", "scripts/build-default-resourcepack.sh")
@@ -14,6 +14,8 @@ tasks.register<Exec>("prepareClientPack") {
     inputs.file(project.file("scripts/generate-yap-skies.py")).optional()
     inputs.dir(project.file("resourcepacks/yap-vehicles")).optional()
     inputs.file(project.file("resourcepacks/yap-vehicles.zip")).optional()
+    inputs.dir(project.file("resourcepacks/yap-abilities")).optional()
+    inputs.file(project.file("resourcepacks/yap-abilities.zip")).optional()
     inputs.file(project.file("resourcepacks/faithful-64x.zip")).optional()
 }
 
@@ -100,6 +102,7 @@ tasks.register("assembleRelease") {
             add("README.md")
             if (includeGameplay) {
                 add("yap-vehicles.zip")
+                add("yap-abilities.zip")
             }
         }
         val linuxScripts = listOf(

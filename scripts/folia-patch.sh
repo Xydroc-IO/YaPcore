@@ -42,7 +42,7 @@ fi
 if [ "$PHASE" = "pre" ]; then
   mapfile -t PATCHES < <(find "$PATCH_DIR" -maxdepth 1 -type f -name '0000-*.patch' | sort)
 else
-  mapfile -t PATCHES < <(find "$PATCH_DIR" -maxdepth 1 -type f \( -name '000[1-9]-*.patch' -o -name '001*.patch' \) | sort)
+  mapfile -t PATCHES < <(find "$PATCH_DIR" -maxdepth 1 -type f \( -name '000[1-9]-*.patch' -o -name '001*.patch' -o -name '002*.patch' \) | sort)
 fi
 
 if [ "${#PATCHES[@]}" -eq 0 ]; then

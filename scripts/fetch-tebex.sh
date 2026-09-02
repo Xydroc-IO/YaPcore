@@ -50,5 +50,5 @@ Installed as: ${OUT}
 Source: https://github.com/tebexio/Tebex-Minecraft
 EOF
 
-echo "OK $(wc -c < "$OUT") bytes — run on Hub: tebex secret <key>"
+echo "OK $(wc -c < "$OUT") bytes — dashboard: Tebex store → paste secret, or Hub: tebex secret <key>"
 echo "Docs: docs/ops/TEBEX.md · License: third-party/tebex/"
