@@ -17,7 +17,8 @@ Tone rule: **state what is true today, what is in progress, and what we do not c
 | Phase 3 Paper spatial | **Done as code** — **defaults off**; no Phase 3 on Folia path |
 | Folia-aware plugins | **Yes** on product path (same ABI expectations as Folia) |
 | Paper plugins (classic) | Legacy `game-authority=paper` for benches only |
-| Fair highpop MSPT cite | **~100 active bots** |
+| Fair population MSPT cite | **fullcite** — 100 active bots + fixtures; **−5.8%** vs stock Folia (ship knobs, `20260902T005200Z-fullcite-knobs2`) |
+| highpop (lighter bots) | **Valid** join gate; **−4.2%** vs Folia at 100 bots — **tie** (within 5% band) |
 | 250 keepalive holds | **HOLD-ONLY** — not an MSPT win |
 | Dual-stack (JE + BE) | Join/spawn + play-depth smoke green — **not** full Geyser clone yet |
 | YaP Link | **Shipped (phases 0–6)** — `0.6.0-phase6`; stock Velocity optional |
@@ -47,7 +48,7 @@ Tone rule: **state what is true today, what is in progress, and what we do not c
 | **YaP-Folia** game + engineered product edge | Regionized tick + our patches; chassis + Link; no Velocity/Geyser jar stack |
 | **One product** for JE + Bedrock | Built-in dual-stack |
 | Network ops without assembling ten plugins | Shared MariaDB, offline auth, claims, ranks, packs HTTP, web dashboard `:8080` |
-| High-pop / entity-heavy target | Fair cites at ~100 active |
+| High-pop / entity-heavy target | Fair cites use **fullcite** (100 active bots + fixtures) |
 
 ### Choose something else when
 
@@ -81,7 +82,7 @@ Tone rule: **state what is true today, what is in progress, and what we do not c
 | **5** | **Ops surface** | Shipped | Web dashboard `:8080`; `assembleRelease` |
 | **6** | **Gameplay modules** | Shipped (opt-in) | Vehicles, stacker, knobs, MMO |
 | **7** | **JE + Bedrock dual-stack** | Join DoD green | Join/spawn + play-depth smoke; fidelity partial |
-| **8** | Fair highpop MSPT (~100 active) | Active gate | 250 keepalive = HOLD-ONLY |
+| **8** | Population MSPT (`fullcite`, 100 active bots) | **Citeable** — yapcore −5.8% vs stock Folia (ship knobs) | highpop alone = tie (−4.2%); 250 keepalive = HOLD-ONLY |
 | **9** | Phase 3 Paper spatial | Legacy · off | Benches only |
 
 ```
@@ -134,7 +135,7 @@ Minecraft JE server cores
 
 | Claim | Verdict |
 |-------|---------|
-| YaPcore always beats Paper MSPT | **False** — fair cite ~100 active |
+| YaPcore always beats Paper MSPT | **False** — cite **fullcite** population load, not empty lobby |
 | 250 keepalive is an MSPT win | **False** — HOLD-ONLY |
 | YaPcore keeps Folia-aware plugins | **True** (product path) |
 | YaPcore is stock Folia | **False** — product jar is **YaP-Folia** |
@@ -144,7 +145,7 @@ Minecraft JE server cores
 | YaPcore is only branding on Folia | **False** — patches + chassis + Link + dual-stack + YaP plugins |
 
 **Deck line (accurate):**  
-*YaPcore is **next-gen server software** — **YaP-Folia’s game**, a **shipped YaP plugin stack**, **YaP Link**, and dual-stack join + play-depth smoke green. Honest highpop cites ~100 active.*
+*YaPcore is **next-gen server software** — **YaP-Folia’s game**, a **shipped YaP plugin stack**, **YaP Link**, and dual-stack join + play-depth smoke green. Population cite: **fullcite** −5.8% vs stock Folia; highpop join verified at 100/200 bots.*
 
 ---
 

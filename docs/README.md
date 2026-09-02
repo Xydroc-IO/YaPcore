@@ -42,7 +42,9 @@ Docs are grouped by topic:
 
 | Document | Description |
 |----------|-------------|
-| [**PROJECT_STATUS**](overview/PROJECT_STATUS.md) | **What's done, what's partial, what's left** (operator rundown) |
+| [**WHERE_WE_STAND**](overview/WHERE_WE_STAND.md) | **Executive snapshot** — verdict, scorecard, what's left |
+| [**PROJECT_STATUS**](overview/PROJECT_STATUS.md) | Full rundown — gates, plugins, parity rows |
+| [**RELEASE_READINESS**](overview/RELEASE_READINESS.md) | Production readiness score + operator checklist |
 | [PLAIN_ENGLISH](overview/PLAIN_ENGLISH.md) | Non-tech overview |
 | [FULL_RUNDOWN](overview/FULL_RUNDOWN.md) | Full product rundown |
 | [WHAT_WE_ARE](overview/WHAT_WE_ARE.md) | Short identity |

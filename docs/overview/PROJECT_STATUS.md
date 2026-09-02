@@ -1,9 +1,9 @@
 # YaPcore — project status (complete rundown)
 
-**As of:** 2026-09-01 (evening, updated)  
+**As of:** 2026-09-02 (evening)  
 **Branch:** `main` (commits ahead of `origin/main`; push needs `gh auth login`)  
 **Last production battery:** `build/production-test-battery-latest.json` — **all gates PASS**  
-**Bot swarm:** **100 / 200 join verified** — see [BENCH_BOTS.md](../performance/BENCH_BOTS.md)
+**Bot swarm:** **100 / 200 join verified**; **fullcite** yapcore **−5.8%** vs stock Folia (citeable) — see [BENCH_BOTS.md](../performance/BENCH_BOTS.md)
 
 This is the honest operator view: what exists, what automated CI proves, what still needs human soak, and what is explicitly out of scope. For architecture and pitch, see [FULL_RUNDOWN.md](FULL_RUNDOWN.md). For phased backlog ticks, see [COMPLETION_BACKLOG.md](COMPLETION_BACKLOG.md).
 
@@ -252,6 +252,7 @@ Summary written to `build/production-test-battery-latest.json`.
 
 | Doc | Use when |
 |-----|----------|
+| [WHERE_WE_STAND.md](WHERE_WE_STAND.md) | **Executive snapshot** — verdict, scorecard, what's left |
 | [RELEASE_READINESS.md](RELEASE_READINESS.md) | **What’s left to do + production readiness score** |
 | [FULL_RUNDOWN.md](FULL_RUNDOWN.md) | Architecture, how to run, comparison table |
 | [COMPLETION_BACKLOG.md](COMPLETION_BACKLOG.md) | Tier 1–4 checklist ticks |
@@ -273,7 +274,8 @@ Summary written to `build/production-test-battery-latest.json`.
 - “First-party ViaBackwards-class for **1.20.2+**; no Via\* jars on the product path.”  
 - “First-party Geyser-class Bedrock join on shared YaP-Folia world.”  
 - “JE matrix 4/4 spawn; Bedrock smoke + play-depth smoke green; network full 9/9.”  
-- “Mineflayer highpop: 100 active + 200 cite-stable bots join verified on Folia 26.2 (bench harness).”  
+- “Mineflayer population bench: 100/200 bots join verified; **fullcite** yapcore −5.8% vs stock Folia (citeable, ship knobs).”  
+- “highpop at 100 bots: valid join, tie vs Folia (−4.2%, within noise band).”  
 - “Native plugin stack replaces LuckPerms/EssentialsX/TAB/DiscordSRV-class setups for typical SMP.”  
 
 **Say with caveats until §E live soak closes:**

@@ -56,7 +56,7 @@ We use **YaP-Folia** for the real Minecraft game by default (`folia-jar-source=b
 **slim edge/I/O chassis** around it (not world tick). **YaP Link** is our Velocity-class front door
 (**phases 0–6 shipped**). Legacy **Paper + Phase 3** spatial tick is **done as code** but **off by default**.
 CORE+NETWORK plugins ship by default; GAMEPLAY/MMO is opt-in. Playerdata **shops + auction house** are **on** by default (jobs stay off when skills are used).
-The product is aimed at **busy / high-pop** servers; fair cites focus on **~100 active bots**.
+The product is aimed at **busy / high-pop** servers. **Citeable** population MSPT uses **fullcite** (100 active bots + fixtures); join verified at 100/200 bots — [BENCH_BOTS.md](../performance/BENCH_BOTS.md).
 Phase 4 dual-stack join DoD is green.
 
 Details: [FULL_RUNDOWN.md](../overview/FULL_RUNDOWN.md) · [FOLIA_FORK.md](../folia/FOLIA_FORK.md) ·
@@ -134,7 +134,7 @@ Full tables: [technical whitepaper §6](YAPCORE_WHITEPAPER.md#6-shipped-first-pa
 
 ## 7. How we check that it works
 
-Unit tests, milestone smoke scripts (plugins, MMO, Link, shops/AH), Folia soak, and MSPT benches vs stock Folia. When quoting performance, use **~100 active bots** as the fair high-pop cite.
+Unit tests, milestone smoke scripts (plugins, MMO, Link, shops/AH), Folia soak, and MSPT benches vs stock Folia. When quoting population performance, cite **fullcite** (−5.8% vs stock Folia, ship knobs); **highpop** alone is join validation + tie band.
 
 ---
 

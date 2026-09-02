@@ -70,7 +70,7 @@ Chassis channel map: [YAPENGINE_16THREAD.md](../performance/YAPENGINE_16THREAD.m
 | YaP-Folia product path | **Default** — `folia-jar-source=build` |
 | YapEngine chassis | **Always on** |
 | YaP Link | **Phases 0–6 shipped** (`0.6.0-phase6`) |
-| Fair highpop MSPT | **Active** — cite ~100 active bots — [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md) |
+| Fair population MSPT | **Citeable** — fullcite 100 bots, yapcore **−5.8%** vs stock Folia — [BENCH_BOTS.md](../performance/BENCH_BOTS.md) |
 | Dual-stack join DoD | **Green** — JE matrix + BE play-depth smoke |
 | Phase 3 Paper spatial | **Legacy / off** |
 

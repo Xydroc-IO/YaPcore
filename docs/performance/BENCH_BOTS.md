@@ -167,8 +167,8 @@ yapcore **−3.0%** vs Folia — valid, not citeable.
 
 ## Next steps (bench backlog)
 
-1. ~~**fullcite 100 bots** — folia, yapcore, paper with `players_ok: true`~~ **Done** (`20260901T235600Z-fullcite`)
-2. **Active 200 bots** — `YAP_BOT_CITE_STABLE=0` stress (optional)
+1. ~~**fullcite 100 bots** — folia, yapcore, paper with `players_ok: true`~~ **Done** (`20260902T005200Z-fullcite-knobs2`, citeable −5.8% yapcore vs Folia)
+2. **Active 200 bots** — `YAP_BOT_CITE_STABLE=0` stress (optional; 150 bots showed yapcore slower — do not cite)
 3. **Drop patch** when PrismarineJS ships native 26.2 protocol data
 
 ---

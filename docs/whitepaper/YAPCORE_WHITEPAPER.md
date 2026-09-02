@@ -70,7 +70,7 @@ YaPcore contributes:
 
 - **Stock Paper plugins on YaP-Folia** are unsupported (same reality as upstream Folia). Prefer Folia-aware jars or YaP natives — [PLUGIN_COMPAT_MATRIX.md](../plugins/PLUGIN_COMPAT_MATRIX.md).
 - YaPcore is **not** a clean-room rewrite of Minecraft; it **forks Folia on purpose**.
-- We do **not** claim “faster than Paper/Leaf on every workload.” Fair high-pop cites focus on **~100 active bots** (250 keepalive = HOLD-ONLY) — [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md).
+- We do **not** claim “faster than Paper/Leaf on every workload.” Population cite: **fullcite** (100 active bots + fixtures) — yapcore **−5.8%** vs stock Folia with ship knobs; highpop alone is a **tie** (−4.2%). **250 keepalive = HOLD-ONLY** — [BENCH_BOTS.md](../performance/BENCH_BOTS.md).
 - Bedrock play-depth is **join/spawn + play-depth smoke green**; some fidelity rows remain partial — [VIA_GEYSER_PARITY.md](../protocol/VIA_GEYSER_PARITY.md).
 - The Compatibility Bridge facade (non-game authority) remains **best-effort stubs** — [PAPER_API_COVERAGE.md](../plugins/PAPER_API_COVERAGE.md).
 
@@ -365,7 +365,7 @@ Recommended harness — [TESTING.md](../start/TESTING.md) · [BENCH_VS_FOLIA.md]
 
 **Metrics:** region MSPT p99, bridge queue depth, join success by protocol version, HEAVY pool saturation, MariaDB pool health.
 
-**Fair cite rule:** report **~100 active bots** for high-pop MSPT; do not treat 250 keepalive as active load.
+**Fair cite rule:** report **fullcite** (100 active bots + fixtures) for population MSPT wins; **highpop** validates join at ~100 bots; do not treat 250 keepalive as active load. Citeable = `compare-folia.py` **≥5%** delta vs stock Folia.
 
 ---
 
@@ -393,7 +393,7 @@ Recommended harness — [TESTING.md](../start/TESTING.md) · [BENCH_VS_FOLIA.md]
 | CORE+NETWORK plugins | **Shipped** |
 | GAMEPLAY + MMO M0–M7 | **Shipped** (opt-in install) |
 | PlayerData shops + AH | **On by default** (jobs remain off) |
-| Fair highpop MSPT gate | **Active** (~100 active bots) |
+| Fair population MSPT gate | **Citeable** — fullcite 100 bots, yapcore −5.8% vs stock Folia (ship knobs) |
 | Dashboard Phase 8 full tabs | **Partial / roadmap** |
 | PAPI eCloud | **Intentionally stubbed** |
 | Stock Paper jars on Folia | **Unsupported** |

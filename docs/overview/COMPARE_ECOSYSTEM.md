@@ -19,7 +19,7 @@ Product MSPT gate: `./scripts/smoke-folia.sh`, `./scripts/bench/run-vs-folia.sh`
 | ~ | Partial, optional, or workload-dependent |
 | ✗ | Not the model / not supported |
 
-Fair highpop cite **~100 active bots**. **250 keepalive = HOLD-ONLY.**
+Fair population cite: **fullcite** (100 active bots + fixtures). **Citeable win:** yapcore −5.8% vs stock Folia with ship knobs (`20260902T005200Z-fullcite-knobs2`). **highpop** at 100 bots = valid join + **tie** (−4.2%). **250 keepalive = HOLD-ONLY.**
 
 ---
 
@@ -96,7 +96,7 @@ YaPcore is **not** “stock Folia with branding.” We **fork Folia**, patch it,
 
 **Best for:** Almost every community server; plugin compatibility; boring reliability.
 
-**YaPcore vs Paper (honest):** Default product uses **YaP-Folia** for chunks, mobs, redstone, commands. We do **not** claim “faster everywhere.” Fair cites focus on **~100 active bots**.
+**YaPcore vs Paper (honest):** Default product uses **YaP-Folia** for chunks, mobs, redstone, commands. We do **not** claim “faster everywhere.” Population cite uses **fullcite** (100 bots + fixtures); Paper was ~55% higher MSPT than Folia on that load — architecture mismatch, not a Folia marketing claim.
 
 ### Local MSPT scoreboard (product — YaP-Folia)
 

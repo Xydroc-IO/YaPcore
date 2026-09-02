@@ -24,7 +24,9 @@ All sources below are written for the **current product path**: **YaP-Folia**
 | `RELEASE_NOTES.pdf` | [../start/RELEASE_NOTES.md](../start/RELEASE_NOTES.md) |
 | `BENCH_VS_FOLIA.pdf` | [../performance/BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md) |
 | `BENCH_BOTS.pdf` | [../performance/BENCH_BOTS.md](../performance/BENCH_BOTS.md) |
+| `WHERE_WE_STAND.pdf` | [../overview/WHERE_WE_STAND.md](../overview/WHERE_WE_STAND.md) |
 | `PROJECT_STATUS.pdf` | [../overview/PROJECT_STATUS.md](../overview/PROJECT_STATUS.md) |
+| `RELEASE_READINESS.pdf` | [../overview/RELEASE_READINESS.md](../overview/RELEASE_READINESS.md) |
 | `COMPLETION_BACKLOG.pdf` | [../overview/COMPLETION_BACKLOG.md](../overview/COMPLETION_BACKLOG.md) |
 | `PLUGINS.pdf` | [../plugins/PLUGINS.md](../plugins/PLUGINS.md) |
 | `YAPDB.pdf` | [../data/YAPDB.md](../data/YAPDB.md) |

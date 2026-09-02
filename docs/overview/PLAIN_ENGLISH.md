@@ -31,7 +31,7 @@ Normal Minecraft servers (including classic Paper) do a lot of the “game tick�
 
 **YaP-Folia** spreads game work across **regions**. **YapEngine** runs the **slim chassis** — network edge, dual-stack, plugins bridge, I/O, ops — **not** world tick. **YaP Link** lets you run **many** game boxes behind one public join address.
 
-We’re **not** optimizing for empty lobby servers. The product is aimed at **high-pop / heavy-load** networks. Fair bot cites focus on **~100 active players** per shard — see [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md).
+We’re **not** optimizing for empty lobby servers. The product is aimed at **high-pop / heavy-load** networks. **Citeable** population MSPT uses **fullcite** (100 active bots + fixtures); see [BENCH_BOTS.md](../performance/BENCH_BOTS.md) and [BENCH_VS_FOLIA.md](../performance/BENCH_VS_FOLIA.md).
 
 ---
 
@@ -69,7 +69,8 @@ Stock Folia would be “someone else’s kitchen plans.” We run **our** kitche
 | YaP-Folia runs the game | Default product path (`folia-jar-source=build`) | **Default on** |
 | YapEngine chassis | Fixed worker roles always boot | **Done** |
 | YaP Link proxy | Public join → YaP-Folia backends | **Shipped** (phases 0–6) |
-| Fair highpop cite | ~100 active bots MSPT | **Active gate** |
+| Population MSPT cite | **fullcite** 100 bots — **−5.8%** vs stock Folia (citeable) |
+| highpop join gate | 100 / 200 bots verified (`players_ok: true`) |
 | Dual-stack join | First-party Via\* + Geyser-class for supported bands | **Join DoD green** |
 | Legacy Paper + Phase 3 | Old Paper path | **Opt-in / benches only** |
 

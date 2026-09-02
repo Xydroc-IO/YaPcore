@@ -93,7 +93,16 @@ YAP_BENCH_PLAYERS=200 NODE_OPTIONS="--max-old-space-size=8192" \
 ```
 
 Gate: JSON must show `players_ok: true` and `players_end` ≥ 90% of target.
-Stop live YaPcore (`./scripts/stop.sh`) before bot benches.
+Citeable win: `python3 scripts/bench/compare-folia.py` reports **≥5%** lower MSPT on YaP vs stock Folia.
+
+```bash
+# Citeable fullcite (ship knobs default on YaP side)
+YAP_BENCH_PLAYERS=100 YAP_BENCH_COMPETITORS=folia,yapcore \
+  ./scripts/bench/run-vs-folia.sh fullcite 40
+python3 scripts/bench/compare-folia.py \
+  bench/results/<stamp>-fullcite-folia.json \
+  bench/results/<stamp>-fullcite-yapcore.json
+```
 
 ## Endurance FAIL codes (chassis harness)
 

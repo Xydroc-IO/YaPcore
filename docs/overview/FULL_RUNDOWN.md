@@ -142,7 +142,8 @@ Requires YaP Paperclip. Not for new deployments.
 | **YaP Link** | Native Velocity-class proxy (phases 0–6) | **Shipped** |
 | **8–17** | Dashboard, TAB, Discord, regions, map, guard, NPCs, Bedrock depth, release polish | **Done** (v1) |
 | **Tier 4** | First-party Via/Geyser parity | **Done** — automated gates green; live §E partial |
-| **Gate** | Fair highpop MSPT (~100 active bots) | **Active** |
+| **Gate** | Population MSPT (`fullcite`, 100 bots) | **Citeable** (−5.8% vs stock Folia) |
+| **Join** | Mineflayer 100 / 200 bots | **Verified** |
 
 ---
 
