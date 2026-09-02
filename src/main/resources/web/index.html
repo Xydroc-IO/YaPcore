@@ -1019,14 +1019,38 @@
       <section id="tab-mmo" class="panel">
         <div class="page-header">
           <h2>MMO</h2>
-          <p>Skills progression, hiscore preview, boss kill totals, and content pack status.</p>
+          <p>Skills progression, combat abilities, hotbar bindings, hiscores, and boss totals.</p>
         </div>
         <div class="grid stats">
           <div class="stat"><span>Skills</span><strong id="mmoSkillsInstalled">—</strong></div>
           <div class="stat"><span>Content</span><strong id="mmoContentInstalled">—</strong></div>
+          <div class="stat"><span>Abilities</span><strong id="mmoAbilitiesInstalled">—</strong></div>
+          <div class="stat"><span>Ability count</span><strong id="mmoAbilityCount">—</strong></div>
           <div class="stat"><span>Skills loaded</span><strong id="mmoSkillCount">—</strong></div>
           <div class="stat"><span>Bosses</span><strong id="mmoBossCount">—</strong></div>
           <div class="stat"><span>Skill areas</span><strong id="mmoAreaCount">—</strong></div>
+          <div class="stat"><span>Hotbar keys</span><strong id="mmoHotbarKeys">—</strong></div>
+          <div class="stat"><span>Bar bindings</span><strong id="mmoBarPlayers">—</strong></div>
+        </div>
+        <div class="card">
+          <h3>Ability engine</h3>
+          <p class="muted hint">Dual hotbar (build vs combat), ability book (Shift+F), keys 4–9 cast slots.</p>
+          <div class="grid stats compact">
+            <div class="stat"><span>Dual hotbar</span><strong id="mmoDualHotbar">—</strong></div>
+            <div class="stat"><span>Ability book</span><strong id="mmoAbilityBook">—</strong></div>
+            <div class="stat"><span>Shift+F book</span><strong id="mmoShiftFBook">—</strong></div>
+            <div class="stat"><span>Online w/ bindings</span><strong id="mmoOnlineBindings">—</strong></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Online combat bar bindings</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Player</th><th>Slots</th><th>Bound</th></tr></thead>
+              <tbody id="mmoBarBody"></tbody>
+            </table>
+          </div>
+          <p id="mmoBarEmpty" class="muted hint hidden">No online players with ability bar bindings yet.</p>
         </div>
         <div class="card">
           <h3>Hiscore preview · <span id="mmoHiscoreSkill" class="muted">mining</span></h3>
@@ -1048,7 +1072,10 @@
           </div>
           <p id="mmoBossEmpty" class="muted hint hidden">No boss kills recorded yet.</p>
         </div>
-        <div class="toolbar"><button id="mmoRefresh">Refresh</button></div>
+        <div class="toolbar">
+          <button id="mmoRefresh">Refresh</button>
+          <button id="mmoReloadAbilities" class="secondary">Reload abilities</button>
+        </div>
         <pre id="mmoOut" class="report muted-small"></pre>
       </section>
       </main>

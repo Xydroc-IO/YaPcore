@@ -8,6 +8,7 @@ import com.yapcore.abilities.CastResult;
 import com.yapcore.abilities.bar.AbilityBarMode;
 import com.yapcore.abilities.bar.AbilityBarService;
 import com.yapcore.abilities.book.AbilityBookService;
+import com.yapcore.abilities.dashboard.AbilitiesDashboardJson;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -41,7 +42,11 @@ public final class AbilityCommands implements CommandExecutor, TabCompleter {
                 plugin.adminReload(sender);
                 return true;
             }
-            sender.sendMessage("§e/yapabilities reload");
+            if (args.length >= 2 && "snapshot".equalsIgnoreCase(args[0]) && "json".equalsIgnoreCase(args[1])) {
+                sender.sendMessage("YAPABILITIES_JSON:" + AbilitiesDashboardJson.toJson(plugin.dashboardSnapshot()));
+                return true;
+            }
+            sender.sendMessage("§e/yapabilities reload|snapshot json");
             return true;
         }
         if (!(sender instanceof Player player)) {
@@ -199,7 +204,10 @@ public final class AbilityCommands implements CommandExecutor, TabCompleter {
         String cmd = command.getName().toLowerCase(Locale.ROOT);
         if ("yapabilities".equals(cmd)) {
             if (args.length == 1) {
-                return prefix(List.of("reload"), args[0]);
+                return prefix(List.of("reload", "snapshot"), args[0]);
+            }
+            if (args.length == 2 && "snapshot".equalsIgnoreCase(args[0])) {
+                return prefix(List.of("json"), args[1]);
             }
             return List.of();
         }

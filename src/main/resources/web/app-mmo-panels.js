@@ -1,9 +1,18 @@
 window.YapDashRegisterMmoPanels = function (YapDash) {
-  const { $, api } = YapDash;
+  const { $, api, netPost } = YapDash;
 
   function setOut(text) {
     const el = $("mmoOut");
     if (el) el.textContent = text || "";
+  }
+
+  function setText(id, value) {
+    const el = $(id);
+    if (el) el.replaceChildren(document.createTextNode(value == null ? "—" : String(value)));
+  }
+
+  function yesNo(val) {
+    return val === true || val === "true" ? "yes" : "no";
   }
 
   function renderHiscorePreview(preview) {
@@ -47,14 +56,49 @@ window.YapDashRegisterMmoPanels = function (YapDash) {
     });
   }
 
+  function renderBarBindings(preview) {
+    const tbody = $("mmoBarBody");
+    const empty = $("mmoBarEmpty");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    const rows = Array.isArray(preview) ? preview : [];
+    if (!rows.length) {
+      empty?.classList.remove("hidden");
+      return;
+    }
+    empty?.classList.add("hidden");
+    rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${row.player || "—"}</td>`
+        + `<td class="muted-small">${row.bindings || "—"}</td>`
+        + `<td>${row.boundCount ?? "—"}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderAbilities(abilities) {
+    const ab = abilities || {};
+    const installed = ab.abilitiesInstalled === true || ab.abilitiesInstalled === "true";
+    setText("mmoAbilitiesInstalled", installed ? "yap-abilities" : "—");
+    setText("mmoAbilityCount", ab.abilityCount ?? 0);
+    setText("mmoHotbarKeys", ab.hotbarKeys || "4-9");
+    setText("mmoBarPlayers", ab.barBindingPlayers ?? 0);
+    setText("mmoDualHotbar", yesNo(ab.dualHotbar));
+    setText("mmoAbilityBook", yesNo(ab.abilityBookEnabled));
+    setText("mmoShiftFBook", yesNo(ab.shiftFBook));
+    setText("mmoOnlineBindings", ab.onlineWithBindings ?? "—");
+    renderBarBindings(ab.barBindingPreview);
+  }
+
   async function refreshMmoPanel() {
     try {
       const data = await api("/api/mmo");
-      $("mmoSkillsInstalled")?.replaceChildren(document.createTextNode(data.installed ? "yap-skills" : "—"));
-      $("mmoContentInstalled")?.replaceChildren(document.createTextNode(data.contentInstalled ? "yap-mmo-content" : "—"));
-      $("mmoSkillCount")?.replaceChildren(document.createTextNode(String(data.skillCount ?? 0)));
-      $("mmoBossCount")?.replaceChildren(document.createTextNode(String(data.bossCount ?? 0)));
-      $("mmoAreaCount")?.replaceChildren(document.createTextNode(String(data.areaCount ?? 0)));
+      setText("mmoSkillsInstalled", data.installed ? "yap-skills" : "—");
+      setText("mmoContentInstalled", data.contentInstalled ? "yap-mmo-content" : "—");
+      setText("mmoSkillCount", data.skillCount ?? 0);
+      setText("mmoBossCount", data.bossCount ?? 0);
+      setText("mmoAreaCount", data.areaCount ?? 0);
+      renderAbilities(data.abilities);
       const preview = (data.live && data.live.hiscorePreview) || data.hiscorePreview || {};
       renderHiscorePreview(preview);
       const kills = (data.live && data.live.bossKills) || data.bossKillTotals || {};
@@ -65,6 +109,17 @@ window.YapDashRegisterMmoPanels = function (YapDash) {
     }
   }
 
+  async function reloadAbilities() {
+    try {
+      const r = await netPost("/api/mmo", { action: "reload-abilities" });
+      setOut(r.result || "Abilities reloaded.");
+      await refreshMmoPanel();
+    } catch (e) {
+      setOut(e.message);
+    }
+  }
+
   $("mmoRefresh")?.addEventListener("click", refreshMmoPanel);
+  $("mmoReloadAbilities")?.addEventListener("click", reloadAbilities);
   YapDash.tabLoads.mmo = refreshMmoPanel;
 };

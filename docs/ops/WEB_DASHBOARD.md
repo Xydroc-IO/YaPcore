@@ -44,7 +44,7 @@ Login links include `?token=…` so the browser signs in automatically (token is
 | **Server** | Console, Settings, YaP Link |
 | **People** | Players, Access & ranks, Rank pack |
 | **Content** | Plugins, Modules, Packs, World, Regions, NPCs |
-| **Gameplay** | Essentials, Vehicles, Pregen, Player data, Chat, Tab list, Map, Guard, Protect, Discord |
+| **Gameplay** | Essentials, Vehicles, Pregen, Player data, Chat, Tab list, **MMO**, Map, Guard, Protect, Discord |
 
 Static assets: `src/main/resources/web/` — `app-shell.js`, `app-core.js`, `app-*-panels.js`, `style.css`.
 
@@ -91,6 +91,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Guard** | `/api/guard` | check toggles, kick threshold, decay, alerts | reload, player-status, **save-settings** |
 | **Protect** | `/api/protect` | logging, retention, status | reload, prune, lookup, **rollback**, **save-settings** |
 | **Discord** | `/api/discord` | webhooks, relay, inbound | save-webhook, save-relay, save-inbound, test-webhook, reload |
+| **MMO** | `/api/mmo` | skills, abilities, hiscores, boss kills, combat bar bindings | **reload-abilities**, reload-mmo |
 
 Legacy routes (superseded by UI tabs): `/api/moderation` → **Players**; `/api/perms` → **Access & ranks**.
 
@@ -111,6 +112,22 @@ Full operator control without `/op` and `/yapperm` by hand:
 Staff moderation panel: online table (name, UUID, IP, location), kick/ban/mute/timeout by **username, UUID, or IP**, teleport, rank assign, history/check/banlist.
 
 Requires game server running + `yap-moderation` / `yap-perms`.
+
+### MMO (`yap-skills`, `yap-abilities`, `yap-mmo-content`)
+
+**Gameplay → MMO** tab — read-only progression overview plus ability hotbar status:
+
+- Skill/content jar presence, ability catalog count, boss/area counts
+- Dual hotbar + ability book flags (including Shift+F)
+- Online players with combat bar bindings (keys 4–9)
+- Hiscore preview + boss kill totals (live when Folia is running)
+
+| Action | POST `/api/mmo` |
+|--------|-----------------|
+| Reload ability YAML | `{"action":"reload-abilities"}` |
+| Reload MMO content | `{"action":"reload-mmo"}` |
+
+Live data uses console exports: `yapmmo snapshot json`, `yapabilities snapshot json`.
 
 ### NPCs (`yap-npcs`)
 

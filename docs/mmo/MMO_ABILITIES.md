@@ -89,6 +89,10 @@ Browse **unlocked** abilities (gated by RS skill levels in each ability’s `min
 Config: `plugins/YaPAbilities/config.yml` → `ability-book.*`  
 Persistence: same `bars.yml` as `/ability bind` — book and commands stay in sync.
 
+### Web dashboard
+
+**Gameplay → MMO** tab (`GET /api/mmo`) shows ability catalog count, dual hotbar/book flags, and online combat bar bindings. Admins can hot-reload packs with **Reload abilities** (`POST {"action":"reload-abilities"}`). See [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
+
 ## YAML schema (ability)
 
 ```yaml

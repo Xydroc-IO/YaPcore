@@ -17,8 +17,8 @@ commands:
     usage: /abilities
     permission: yapabilities.use
   yapabilities:
-    description: Admin reload for ability packs
-    usage: /yapabilities reload
+    description: Admin reload and dashboard snapshot for ability packs
+    usage: /yapabilities reload|snapshot json
     permission: yapabilities.admin
 permissions:
   yapabilities.use:

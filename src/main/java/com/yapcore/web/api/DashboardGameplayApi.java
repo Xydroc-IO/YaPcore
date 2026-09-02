@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.yapcore.plugin.PluginManager;
 import com.yapcore.ranks.YapRanks;
 import com.yapcore.server.YaPcoreServer;
+import com.yapcore.web.DashboardAbilitiesSnapshot;
 import com.yapcore.web.DashboardEssentialsSnapshot;
 import com.yapcore.web.DashboardFactionsSnapshot;
 import com.yapcore.web.DashboardGuildsSnapshot;
@@ -16,6 +17,8 @@ import com.yapcore.web.TinyJson;
 import com.yapcore.web.auth.DashboardAuth;
 import com.yapcore.web.http.DashboardHttp;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 
 public final class DashboardGameplayApi {
+
+    private static final Gson GSON = new Gson();
 
     private final YaPcoreServer server;
     private final DashboardAuth auth;
@@ -373,12 +378,17 @@ public final class DashboardGameplayApi {
         if (!auth.requireAuth(ex)) {
             return;
         }
+        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            handleMmoPost(ex);
+            return;
+        }
         if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
             ex.sendResponseHeaders(405, -1);
             return;
         }
         Path root = server.getRootDir();
         Map<String, Object> snap = new LinkedHashMap<>(DashboardMmoSnapshot.snapshot(root));
+        snap.put("abilities", new LinkedHashMap<>(DashboardAbilitiesSnapshot.snapshot(root)));
         snap.put("onlinePlayers", server.getOnlinePlayers());
         if (server.isRunning()) {
             String live = server.executeCommand("yapmmo snapshot json");
@@ -396,6 +406,7 @@ public final class DashboardGameplayApi {
                     }
                 }
             }
+            mergeAbilitiesLive(snap, server.executeCommand("yapabilities snapshot json"));
         }
         if (server.isRunning() && server.getBukkitServer() != null) {
             List<Map<String, Object>> sample = new ArrayList<>();
@@ -412,6 +423,48 @@ public final class DashboardGameplayApi {
             DashboardMmoSnapshot.enrichOnlineSample(snap, sample);
         }
         DashboardHttp.json(ex, 200, snap);
+    }
+
+    private void handleMmoPost(HttpExchange ex) throws IOException {
+        Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
+        String action = body.getOrDefault("action", "");
+        if (!server.isRunning()) {
+            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+            return;
+        }
+        switch (action) {
+            case "reload-abilities" -> {
+                String out = server.executeCommand("yapabilities reload");
+                DashboardHttp.json(ex, 200, Map.of("ok", true, "action", action, "result", out == null ? "" : out));
+            }
+            case "reload-mmo" -> {
+                String out = server.executeCommand("yapmmo reload");
+                DashboardHttp.json(ex, 200, Map.of("ok", true, "action", action, "result", out == null ? "" : out));
+            }
+            default -> DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void mergeAbilitiesLive(Map<String, Object> snap, String live) {
+        if (live == null || !live.contains("YAPABILITIES_JSON:")) {
+            return;
+        }
+        int idx = live.indexOf("YAPABILITIES_JSON:");
+        String json = live.substring(idx + "YAPABILITIES_JSON:".length()).trim();
+        if (json.isBlank()) {
+            return;
+        }
+        try {
+            Map<String, Object> abilities = GSON.fromJson(json, new TypeToken<Map<String, Object>>() {
+            }.getType());
+            if (abilities != null && !abilities.isEmpty()) {
+                snap.put("abilities", abilities);
+                snap.put("abilitiesLive", true);
+            }
+        } catch (Exception ignored) {
+            // keep filesystem snapshot
+        }
     }
 
     public void apiFactions(HttpExchange ex) throws IOException {

@@ -12,6 +12,7 @@ import com.yapcore.abilities.book.AbilityBookListener;
 import com.yapcore.abilities.book.AbilityBookMenu;
 import com.yapcore.abilities.book.AbilityBookPlayerStore;
 import com.yapcore.abilities.book.AbilityBookService;
+import com.yapcore.abilities.dashboard.AbilitiesDashboardSnapshot;
 import com.yapcore.abilities.exec.AbilityExecutor;
 import com.yapcore.abilities.exec.EffectRunner;
 import com.yapcore.abilities.exec.ProjectileTracker;
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
@@ -72,6 +74,18 @@ public final class AbilitiesPlugin extends JavaPlugin {
 
     public AbilityBookService abilityBook() {
         return abilityBook;
+    }
+
+    public Map<String, Object> dashboardSnapshot() {
+        if (abilityService == null || abilityBar == null || abilityBook == null) {
+            return Map.of("abilitiesInstalled", false);
+        }
+        return AbilitiesDashboardSnapshot.snapshot(
+                abilityService,
+                abilityBar.config(),
+                abilityBar.store(),
+                abilityBook.config(),
+                getDataFolder().toPath().resolve("bars.yml"));
     }
 
     /**
