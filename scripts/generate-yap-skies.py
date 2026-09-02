@@ -163,16 +163,25 @@ def make_moon_sheet(phases: dict[str, np.ndarray]) -> np.ndarray:
 
 def make_clouds() -> np.ndarray:
     n = CLOUDS
-    # White = cloud cell (26.2 occupancy). Keep ~25% coverage in horizontal banks.
-    base = _fbm(n, n, 40.0, 5, 1.4)
-    stretch = _value_noise(n, n, 18.0, 8.8)
-    field = 0.62 * base + 0.38 * stretch
-    xs = np.linspace(0, 4 * math.pi, n, endpoint=False)[None, :]
-    field += 0.05 * np.sin(xs)
-    mask = field > 0.60
-    wisps = (field > 0.55) & (field <= 0.60) & (_fbm(n, n, 10.0, 2, 3.3) > 0.68)
+    # White = cloud cell (26.2 occupancy). Multi-scale banks + soft wisps (~32% cover).
+    large = _fbm(n, n, 56.0, 4, 1.4)
+    mid = _fbm(n, n, 22.0, 5, 7.2)
+    # Anisotropic stretch so banks read as wind-blown sheets, not blobs.
+    stretch_x = _value_noise(n, n, 28.0, 8.8)
+    stretch_y = _value_noise(n, n, 12.0, 14.1)
+    field = 0.48 * large + 0.32 * mid + 0.14 * stretch_x + 0.06 * stretch_y
+    xs = np.linspace(0, 3 * math.pi, n, endpoint=False)[None, :]
+    ys = np.linspace(0, 2 * math.pi, n, endpoint=False)[:, None]
+    field += 0.04 * np.sin(xs + 0.35 * ys) + 0.025 * np.sin(ys * 1.7 - xs * 0.4)
+    # Carve soft holes so the sky reads through banks.
+    holes = _smoothstep(0.58, 0.78, _fbm(n, n, 48.0, 3, 21.5))
+    field = field * (1.0 - 0.35 * holes)
+    detail = _fbm(n, n, 8.0, 3, 3.3)
+    core = field > 0.56
+    fringe = (field > 0.50) & (field <= 0.56) & (detail > 0.55)
+    wisps = (field > 0.46) & (field <= 0.50) & (detail > 0.72)
     out = np.zeros((n, n), dtype=np.float64)
-    out[mask | wisps] = 255.0
+    out[core | fringe | wisps] = 255.0
     return out
 
 
@@ -238,54 +247,69 @@ def _atmosphere(dx, dy, dz, mode: str, cloud_tex: np.ndarray, wisp_tex: np.ndarr
     hz = np.exp(-up * 4.4)
     clouds = _sample_equirect(cloud_tex, dx, dy, dz)
     wisps = _sample_equirect(wisp_tex, dx, dy, dz)
+    # Soft undersides + lit tops for depth in the baked dome.
+    underside = _smoothstep(0.08, 0.42, up)
     if mode == "day":
         zenith = np.array([0.20, 0.48, 0.94])
         horizon = np.array([0.74, 0.84, 0.96])
         sun = np.array([1.0, 0.78, 0.42])
         glow = np.exp(-((dx - 0.62) ** 2 + (dy - 0.22) ** 2 + (dz + 0.12) ** 2) * 5.5)
-        cloud_col = np.array([0.93, 0.95, 0.98])
-        cloud_amt = clouds * (0.18 + 0.28 * hz) * (0.35 + 0.65 * up)
+        cloud_lit = np.array([0.96, 0.97, 0.99])
+        cloud_shade = np.array([0.62, 0.68, 0.78])
+        cloud_col = cloud_shade + (cloud_lit - cloud_shade) * underside[..., None]
+        cloud_amt = np.clip(clouds * 1.15 + wisps * 0.35, 0.0, 1.0)
+        cloud_amt = cloud_amt * (0.28 + 0.42 * hz) * (0.25 + 0.75 * up)
+        cloud_blend = 0.72
     elif mode == "sunrise":
         zenith = np.array([0.16, 0.26, 0.52])
         horizon = np.array([0.99, 0.58, 0.30])
         sun = np.array([1.0, 0.74, 0.32])
         glow = np.exp(-((dx - 0.88) ** 2 + (dy - 0.04) ** 2 + dz**2) * 3.2)
-        cloud_col = np.array([1.0, 0.62, 0.38])
-        cloud_amt = clouds * (0.22 + 0.40 * hz)
+        cloud_lit = np.array([1.0, 0.72, 0.42])
+        cloud_shade = np.array([0.55, 0.28, 0.32])
+        cloud_col = cloud_shade + (cloud_lit - cloud_shade) * (0.35 + 0.65 * underside)[..., None]
+        cloud_amt = np.clip(clouds * 1.2 + wisps * 0.4, 0.0, 1.0) * (0.30 + 0.48 * hz)
+        cloud_blend = 0.78
     elif mode == "sunset":
         zenith = np.array([0.10, 0.12, 0.36])
         horizon = np.array([0.96, 0.30, 0.16])
         sun = np.array([1.0, 0.42, 0.10])
         glow = np.exp(-((dx + 0.88) ** 2 + (dy - 0.04) ** 2 + dz**2) * 3.2)
-        cloud_col = np.array([0.95, 0.38, 0.18])
-        cloud_amt = clouds * (0.22 + 0.42 * hz)
+        cloud_lit = np.array([1.0, 0.48, 0.22])
+        cloud_shade = np.array([0.42, 0.16, 0.18])
+        cloud_col = cloud_shade + (cloud_lit - cloud_shade) * (0.35 + 0.65 * underside)[..., None]
+        cloud_amt = np.clip(clouds * 1.2 + wisps * 0.4, 0.0, 1.0) * (0.30 + 0.50 * hz)
+        cloud_blend = 0.78
     elif mode == "storm":
-        zenith = np.array([0.26, 0.30, 0.34])
-        horizon = np.array([0.40, 0.42, 0.44])
-        sun = np.array([0.48, 0.48, 0.46])
+        zenith = np.array([0.22, 0.26, 0.30])
+        horizon = np.array([0.36, 0.38, 0.40])
+        sun = np.array([0.42, 0.42, 0.40])
         glow = np.zeros_like(up)
-        cloud_col = np.array([0.22, 0.24, 0.26])
-        cloud_amt = np.clip(clouds * 1.15 + wisps * 0.25, 0.0, 1.0) * (0.55 + 0.25 * up)
+        cloud_col = np.array([0.18, 0.20, 0.22]) + underside[..., None] * np.array([0.10, 0.11, 0.12])
+        cloud_amt = np.clip(clouds * 1.45 + wisps * 0.55, 0.0, 1.0) * (0.70 + 0.28 * up)
+        cloud_blend = 0.88
     elif mode == "end":
         zenith = np.array([0.05, 0.02, 0.09])
         horizon = np.array([0.22, 0.04, 0.28])
         sun = np.array([0.55, 0.12, 0.70])
         glow = np.exp(-((dx * 0.3 + dz) ** 2 + (dy - 0.2) ** 2) * 2.0) * 0.4
         cloud_col = np.array([0.40, 0.08, 0.48])
-        cloud_amt = wisps * 0.22 * up
+        cloud_amt = wisps * 0.28 * up
+        cloud_blend = 0.55
     else:
         zenith = np.array([0.008, 0.015, 0.05])
         horizon = np.array([0.035, 0.045, 0.09])
         sun = np.array([0.16, 0.20, 0.32])
         glow = np.exp(-((dx + 0.2) ** 2 + (dy - 0.35) ** 2) * 8.0) * 0.25
-        cloud_col = np.array([0.08, 0.09, 0.12])
-        cloud_amt = clouds * 0.12 * up
+        cloud_col = np.array([0.07, 0.08, 0.11]) + underside[..., None] * 0.04
+        cloud_amt = np.clip(clouds * 0.95 + wisps * 0.25, 0.0, 1.0) * (0.18 + 0.22 * up)
+        cloud_blend = 0.62
 
     # Fade clouds near cube poles so equirect samples do not pinch.
     cloud_amt = cloud_amt * (1.0 - _smoothstep(0.72, 0.94, np.abs(dy)))
     col = zenith + (horizon - zenith) * hz[..., None]
     col = col + sun * glow[..., None]
-    col = col * (1.0 - 0.55 * cloud_amt)[..., None] + cloud_col * cloud_amt[..., None]
+    col = col * (1.0 - cloud_blend * cloud_amt)[..., None] + cloud_col * (cloud_blend * cloud_amt)[..., None]
     if mode == "night":
         h = np.mod(np.sin(dx * 812.1 + dy * 311.7 + dz * 197.3) * 43758.5453, 1.0)
         col = col + (h > 0.996)[..., None] * 0.90
@@ -332,8 +356,11 @@ def main() -> None:
     _save_l(ENV / "clouds.png", make_clouds())
     _save_rgba(ENV / "end_sky.png", make_end_sky())
 
-    cloud_tex = _smoothstep(0.52, 0.72, _fbm(256, 128, 22.0, 5, 12.4))
-    wisp_tex = _fbm(256, 128, 14.0, 4, 19.7)
+    # Larger banks + finer wisps for richer panoramic cloud cover.
+    banks = _fbm(384, 192, 28.0, 5, 12.4)
+    ripples = _fbm(384, 192, 11.0, 4, 18.2)
+    cloud_tex = _smoothstep(0.46, 0.70, 0.72 * banks + 0.28 * ripples)
+    wisp_tex = _smoothstep(0.40, 0.78, _fbm(384, 192, 16.0, 5, 19.7))
     boxes = {
         "day": "day",
         "sunrise": "sunrise",

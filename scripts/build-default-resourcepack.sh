@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build resourcepacks/yapcore-default.zip
 # Default (CORE): Faithful 64x + YaP Skies (or empty stub).
-# With YAP_INCLUDE_VEHICLES=1|true: overlay YaP Vehicles (GAMEPLAY tier).
+# With YAP_INCLUDE_VEHICLES=1|true: overlay YaP Vehicles + YaP Abilities (GAMEPLAY).
 set -eu
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 PACKS="$ROOT/resourcepacks"
@@ -30,22 +30,28 @@ else
     >"$STAGE/pack.mcmeta"
 fi
 
-# Realistic sun / moon / clouds + atmosphere (CORE). Regenerates missing PNGs.
+# Realistic sun / moon / clouds + atmosphere + water (CORE).
 if [ ! -f "$SKIES_DIR/assets/minecraft/textures/environment/celestial/sun.png" ]; then
   python3 "$ROOT/scripts/generate-yap-skies.py"
 fi
+# Always refresh YaP water / weather overlays (fast; biome-tint grayscale).
+python3 "$ROOT/scripts/generate-yap-water.py"
 if [ -d "$SKIES_DIR/assets" ]; then
   mkdir -p "$STAGE/assets"
   cp -a "$SKIES_DIR/assets/." "$STAGE/assets/"
 fi
 
-DESC="YaPcore default — Faithful 64x + YaP Skies (CORE)"
+DESC="YaPcore default — Faithful 64x + YaP Skies + YaP Water (CORE)"
 if [ "$want_vehicles" -eq 1 ]; then
-  if [ -d "$ABIL_DIR" ]; then
-    if [ -f "$ABIL_ZIP" ]; then
-      unzip -q -o "$ABIL_ZIP" -d "$STAGE"
-    fi
+  # Same path as vehicles: zip the overlay tree, then merge into the default pack.
+  if [ -d "$ABIL_DIR/assets" ]; then
+    (cd "$ABIL_DIR" && zip -qr "$ABIL_ZIP" assets pack.mcmeta)
   fi
+  if [ ! -f "$ABIL_ZIP" ]; then
+    echo "ERROR: YAP_INCLUDE_VEHICLES set but missing $ABIL_ZIP (and no yap-abilities/ folder)" >&2
+    exit 1
+  fi
+  unzip -q -o "$ABIL_ZIP" -d "$STAGE"
   if [ -d "$VEH_DIR" ]; then
     (cd "$VEH_DIR" && zip -qr "$VEH_ZIP" .)
   fi
@@ -54,7 +60,7 @@ if [ "$want_vehicles" -eq 1 ]; then
     exit 1
   fi
   unzip -q -o "$VEH_ZIP" -d "$STAGE"
-  DESC="YaPcore default — Faithful 64x + YaP Skies + Vehicles + MMO icons (GAMEPLAY)"
+  DESC="YaPcore default — Faithful 64x + YaP Skies + YaP Water + Vehicles + MMO icons (GAMEPLAY)"
 fi
 
 python3 - <<PY "$STAGE" "$DESC" "$want_vehicles"
@@ -117,4 +123,7 @@ rm -f "$OUT"
 echo "Wrote $OUT ($(du -h "$OUT" | awk '{print $1}')) vehicles=$want_vehicles"
 
 # Mirror into nginx docroot for Cloudflare :80 /pack/ (when available)
-# Optional: copy "$OUT" into your nginx/www root when publishing packs.
+if [[ -x "$ROOT/scripts/sync-pack-to-nginx.sh" ]]; then
+  "$ROOT/scripts/sync-pack-to-nginx.sh" || true
+fi
+echo "NOTE: restart Folia (or YaPcore) so server.properties resource-pack-sha1 matches the new zip."
