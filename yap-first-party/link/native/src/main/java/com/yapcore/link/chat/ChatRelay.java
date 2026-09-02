@@ -69,7 +69,7 @@ public final class ChatRelay {
                 .replace("{name}", senderName)
                 .replace("{message}", plainMessage)
                 .replace("{channel}", server.config().chatRelayChannel());
-        server.playerHub().broadcastPlain(formatted, senderId);
+        server.playerHub().broadcastPlainExceptBackend(formatted, senderId, backendName);
         LOG.info("CHAT relay [" + backendName + "] " + senderName + ": " + plainMessage);
     }
 

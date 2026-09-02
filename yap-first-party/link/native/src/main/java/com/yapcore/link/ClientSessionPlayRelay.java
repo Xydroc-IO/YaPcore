@@ -1,5 +1,6 @@
 package com.yapcore.link;
 
+import com.yapcore.link.protocol.PlayChat;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -40,6 +41,7 @@ final class ClientSessionPlayRelay extends ChannelInboundHandlerAdapter {
             ClientSessionRouting.tryFirePluginMessage(session, buf, true);
         } else {
             ClientSessionRouting.tryFirePluginMessage(session, buf, false);
+            PlayChat.advertiseSecureChat(session.protocolVersion, buf);
         }
         if (peer.isActive()) {
             peer.writeAndFlush(msg);

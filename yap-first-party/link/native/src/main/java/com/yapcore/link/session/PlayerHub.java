@@ -51,8 +51,21 @@ public final class PlayerHub {
     }
 
     public void broadcastPlain(String plain, UUID except) {
+        broadcastPlainExceptBackend(plain, except, null);
+    }
+
+    /** Skip players already on {@code backendName} (YaPChat owns that server's chat). */
+    public void broadcastPlainExceptBackend(String plain, UUID except, String backendName) {
         String json = "{\"text\":" + quoteJson(plain) + "}";
-        broadcastSystemChat(json, except);
+        for (PlayerRecord r : byId.values()) {
+            if (except != null && except.equals(r.id())) {
+                continue;
+            }
+            if (backendName != null && backendName.equalsIgnoreCase(r.backendName())) {
+                continue;
+            }
+            r.chatSink().sendSystemChat(json);
+        }
     }
 
     private static String quoteJson(String s) {
