@@ -21,22 +21,30 @@ public final class TabListener implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        YapSched.entity(plugin, event.getPlayer(), () -> {
-            plugin.tabService().refresh(event.getPlayer());
-            plugin.tabService().refreshAll();
-            showWelcomeBossBar(event.getPlayer());
+        Player player = event.getPlayer();
+        // Delay one tick so the client finishes login before scoreboard packets.
+        YapSched.entityLater(plugin, player, () -> {
+            plugin.tabService().refresh(player);
+            showWelcomeBossBar(player);
             if (plugin.networkSync() != null) {
                 plugin.networkSync().publishLocalSnapshot();
             }
-        });
+            // Refresh others on their own entity threads (prefixes / online count).
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                if (!online.getUniqueId().equals(player.getUniqueId())) {
+                    plugin.tabService().refresh(online);
+                }
+            }
+        }, 1L);
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
-        if (plugin.packetSidebar() != null) {
-            plugin.packetSidebar().remove(event.getPlayer());
-        }
-        YapSched.global(plugin, () -> plugin.tabService().refreshAll());
+        YapSched.global(plugin, () -> {
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                plugin.tabService().refresh(online);
+            }
+        });
     }
 
     public void startRefreshTask(TabConfig config) {
@@ -55,7 +63,9 @@ public final class TabListener implements Listener {
         Component subtitle = subtitleRaw == null || subtitleRaw.isBlank()
                 ? Component.empty()
                 : LegacyColors.component(applyPlaceholders(player, subtitleRaw));
-        Component combined = subtitle.equals(Component.empty()) ? title : title.append(Component.space()).append(subtitle);
+        Component combined = subtitle.equals(Component.empty())
+                ? title
+                : title.append(Component.space()).append(subtitle);
         BossBar bar = BossBar.bossBar(combined, 1.0f, config.bossBarColor(), BossBar.Overlay.PROGRESS);
         player.showBossBar(bar);
         long ticks = config.bossBarDurationSeconds() * 20L;

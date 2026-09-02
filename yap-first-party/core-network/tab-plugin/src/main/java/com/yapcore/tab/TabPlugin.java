@@ -8,7 +8,6 @@ public final class TabPlugin extends JavaPlugin {
 
     private TabConfig config;
     private TabNetworkState networkState;
-    private TabPacketSidebar packetSidebar;
     private TabServiceImpl tabService;
     private TabNetworkSync networkSync;
     private TabListener listener;
@@ -17,7 +16,6 @@ public final class TabPlugin extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         networkState = new TabNetworkState();
-        packetSidebar = new TabPacketSidebar(this);
         reloadTab();
 
         PluginCommand cmd = getCommand("yaptab");
@@ -41,7 +39,7 @@ public final class TabPlugin extends JavaPlugin {
         networkSync.publishLocalSnapshot();
 
         getLogger().info("YaPTab ready — sidebar=" + config.sidebarEnabled()
-                + " networkSync=" + config.networkSyncEnabled()
+                + " (bukkit/Folia-safe) networkSync=" + config.networkSyncEnabled()
                 + " bossBar=" + config.bossBarEnabled()
                 + " refresh=" + config.refreshSeconds() + "s");
     }
@@ -55,9 +53,6 @@ public final class TabPlugin extends JavaPlugin {
         if (tabService != null) {
             getServer().getServicesManager().unregister(com.yapcore.tab.TabService.class, tabService);
         }
-        if (packetSidebar != null) {
-            packetSidebar.close();
-        }
     }
 
     public void reloadTab() {
@@ -68,7 +63,7 @@ public final class TabPlugin extends JavaPlugin {
             config = new TabConfig(this);
         }
         config.reload();
-        tabService = new TabServiceImpl(this, config, networkState, packetSidebar);
+        tabService = new TabServiceImpl(this, config, networkState);
         getServer().getServicesManager().register(
                 com.yapcore.tab.TabService.class, tabService, this, ServicePriority.Normal);
         if (networkSync != null) {
@@ -87,9 +82,5 @@ public final class TabPlugin extends JavaPlugin {
 
     public TabServiceImpl tabService() {
         return tabService;
-    }
-
-    TabPacketSidebar packetSidebar() {
-        return packetSidebar;
     }
 }

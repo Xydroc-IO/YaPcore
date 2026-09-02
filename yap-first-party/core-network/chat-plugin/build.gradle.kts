@@ -19,6 +19,7 @@ repositories {
 dependencies {
     val paperApi = providers.gradleProperty("paperApiVersion").getOrElse("26.2.build.112-stable")
     compileOnly("io.papermc.paper:paper-api:$paperApi")
+    compileOnly("io.netty:netty-transport:4.2.15.Final")
     implementation(project(":yap-sched"))
     implementation(project(":yap-chat-api"))
     compileOnly(project(":yap-perms-api"))

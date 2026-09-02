@@ -5,7 +5,7 @@ api-version: '1.21'
 folia-supported: true
 author: YapLabs
 description: TAB list, header/footer, sidebar, and nametag prefixes (Folia-safe)
-softdepend: [YaPPerms, PlaceholderAPI, YaPEssentials, Vault]
+softdepend: [YaPPerms, PlaceholderAPI, YaPEssentials, YaPPlayerData]
 commands:
   yaptab:
     description: Tab admin

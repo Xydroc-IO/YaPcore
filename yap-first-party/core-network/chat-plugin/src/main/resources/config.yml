@@ -1,6 +1,6 @@
-# Send formatted chat as YaP-Folia system packets (no Mojang signature).
-# Required behind YaP Link / offline / Via — otherwise clients show
-# "Chat messages cannot be verified".
+# Offline / Link / Via cannot present Mojang chat keys. When true:
+# formatted chat is a system packet, leftover player-chat is rewritten,
+# and play-login advertises secure chat so the join toast is hidden.
 unsigned-system-chat: true
 
 # Default public channel

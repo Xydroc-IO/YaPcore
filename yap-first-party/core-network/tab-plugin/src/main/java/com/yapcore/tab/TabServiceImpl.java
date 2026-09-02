@@ -1,6 +1,7 @@
 package com.yapcore.tab;
 
 import com.yapcore.perms.YaPPerms;
+import com.yapcore.playerdata.PlayerDataService;
 import com.yapcore.sched.YapSched;
 import com.yapcore.tab.util.LegacyColors;
 import net.kyori.adventure.text.Component;
@@ -19,6 +20,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 
+/**
+ * Tab list + sidebar using Adventure header/footer and Folia-safe Bukkit scoreboards.
+ * Packet scoreboard libraries are avoided — NMS constructors break on YaP-Folia 26.2.
+ */
 public final class TabServiceImpl implements com.yapcore.tab.TabService {
 
     private static final String SIDEBAR_OBJECTIVE = "yaptab";
@@ -26,40 +31,65 @@ public final class TabServiceImpl implements com.yapcore.tab.TabService {
     private final JavaPlugin plugin;
     private final TabConfig config;
     private final TabNetworkState networkState;
-    private final TabPacketSidebar packetSidebar;
-    private final boolean packetSidebarEnabled;
+    private final java.util.concurrent.atomic.AtomicBoolean sidebarUnsupportedLogged =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
     private List<String> runtimeHeader;
     private List<String> runtimeFooter;
     private List<String> runtimeSidebar;
 
-    public TabServiceImpl(JavaPlugin plugin, TabConfig config, TabNetworkState networkState,
-                          TabPacketSidebar packetSidebar) {
+    public TabServiceImpl(JavaPlugin plugin, TabConfig config, TabNetworkState networkState) {
         this.plugin = plugin;
         this.config = config;
         this.networkState = networkState;
-        this.packetSidebar = packetSidebar;
-        this.packetSidebarEnabled = packetSidebar != null;
     }
 
     @Override
     public void refresh(Player player) {
-        if (!player.isOnline()) {
+        if (player == null || !player.isOnline()) {
             return;
         }
-        applyHeaderFooter(player);
-        applyTabSort(player);
-        if (effectiveSidebarEnabled()) {
-            applySidebar(player);
-        }
-        if (effectiveNametagTeams()) {
-            applyNametag(player);
-        }
+        YapSched.entity(plugin, player, () -> refreshOnEntity(player));
     }
 
     @Override
     public void refreshAll() {
         for (Player online : Bukkit.getOnlinePlayers()) {
             refresh(online);
+        }
+    }
+
+    private void refreshOnEntity(Player player) {
+        if (!player.isOnline()) {
+            return;
+        }
+        try {
+            applyHeaderFooter(player);
+            applyTabSort(player);
+        } catch (Throwable t) {
+            plugin.getLogger().log(Level.WARNING,
+                    "YaPTab header/list failed for " + player.getName() + ": " + t.getMessage(), t);
+        }
+        if (effectiveSidebarEnabled()) {
+            try {
+                applySidebar(player);
+            } catch (UnsupportedOperationException e) {
+                // Folia disables Bukkit scoreboards unless -Dyap.folia.scoreboard-swmr=true
+                if (sidebarUnsupportedLogged.compareAndSet(false, true)) {
+                    plugin.getLogger().warning(
+                            "Sidebar unavailable: enable folia-scoreboard-swmr=true in config/server.properties "
+                                    + "and restart (YaP-Folia). Rank/balance still show in the tab footer.");
+                }
+            } catch (Throwable t) {
+                plugin.getLogger().log(Level.WARNING,
+                        "YaPTab sidebar failed for " + player.getName() + ": " + t.getMessage(), t);
+            }
+        }
+        if (effectiveNametagTeams()) {
+            try {
+                applyNametag(player);
+            } catch (Throwable ignored) {
+                // nametags are best-effort on Folia
+            }
         }
     }
 
@@ -159,27 +189,22 @@ public final class TabServiceImpl implements com.yapcore.tab.TabService {
     }
 
     private void applySidebar(Player player) {
-        if (packetSidebarEnabled) {
-            YapSched.entity(plugin, player, () ->
-                    packetSidebar.update(player, effectiveSidebar(), this::applyPlaceholders));
+        ScoreboardManagerSafe boardMgr = ScoreboardManagerSafe.get();
+        if (boardMgr == null) {
             return;
         }
-        try {
-            applyLegacySidebar(player);
-        } catch (UnsupportedOperationException e) {
-            plugin.getLogger().log(Level.FINE, "Legacy sidebar unavailable on this server", e);
-        }
-    }
-
-    private void applyLegacySidebar(Player player) {
-        Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
+        Scoreboard board = boardMgr.newScoreboard();
         Objective obj = board.registerNewObjective(
                 SIDEBAR_OBJECTIVE, Criteria.DUMMY,
                 LegacyColors.component("&6&lYaP"), RenderType.INTEGER);
         obj.setDisplaySlot(DisplaySlot.SIDEBAR);
         List<String> lines = new ArrayList<>(effectiveSidebar());
-        int score = lines.size();
+        int score = Math.min(15, lines.size());
+        int index = 0;
         for (String line : lines) {
+            if (index >= 15) {
+                break;
+            }
             if (line == null || line.isBlank()) {
                 score--;
                 continue;
@@ -190,32 +215,22 @@ public final class TabServiceImpl implements com.yapcore.tab.TabService {
             team.prefix(LegacyColors.component(applyPlaceholders(player, trim(line, 64))));
             obj.getScore(entry).setScore(score);
             score--;
+            index++;
         }
         player.setScoreboard(board);
     }
 
     private void applyNametag(Player player) {
-        if (packetSidebarEnabled) {
-            return;
-        }
-        try {
-            applyLegacyNametag(player);
-        } catch (UnsupportedOperationException e) {
-            plugin.getLogger().log(Level.FINE, "Nametag teams unavailable on this server", e);
-        }
-    }
-
-    private void applyLegacyNametag(Player player) {
         Scoreboard board = player.getScoreboard();
-        if (board == null) {
+        if (board == null || board == Bukkit.getScoreboardManager().getMainScoreboard()) {
             return;
         }
         YaPPerms perms = Bukkit.getServicesManager().load(YaPPerms.class);
         for (Player target : Bukkit.getOnlinePlayers()) {
-            String teamId = teamId(target.getUniqueId());
-            Team team = board.getTeam(teamId);
+            String id = teamId(target.getUniqueId());
+            Team team = board.getTeam(id);
             if (team == null) {
-                team = board.registerNewTeam(teamId);
+                team = board.registerNewTeam(id);
             }
             if (!team.hasEntry(target.getName())) {
                 team.addEntry(target.getName());
@@ -263,12 +278,9 @@ public final class TabServiceImpl implements com.yapcore.tab.TabService {
 
     private static String formatBalance(Player player) {
         try {
-            var reg = Bukkit.getServicesManager().getRegistration(Class.forName("net.milkbowl.vault.economy.Economy"));
-            if (reg != null) {
-                Object eco = reg.getProvider();
-                var method = eco.getClass().getMethod("getBalance", org.bukkit.OfflinePlayer.class);
-                Object bal = method.invoke(eco, player);
-                return String.format("%.2f", ((Number) bal).doubleValue());
+            PlayerDataService data = Bukkit.getServicesManager().load(PlayerDataService.class);
+            if (data != null && data.economyEnabled()) {
+                return String.format("%.2f", data.balance(player.getUniqueId()));
             }
         } catch (Exception ignored) {
         }
@@ -307,5 +319,27 @@ public final class TabServiceImpl implements com.yapcore.tab.TabService {
             return line;
         }
         return plain.substring(0, max);
+    }
+
+    /** Tiny wrapper so missing ScoreboardManager never NPEs. */
+    private static final class ScoreboardManagerSafe {
+        private final org.bukkit.scoreboard.ScoreboardManager mgr;
+
+        private ScoreboardManagerSafe(org.bukkit.scoreboard.ScoreboardManager mgr) {
+            this.mgr = mgr;
+        }
+
+        static ScoreboardManagerSafe get() {
+            try {
+                var mgr = Bukkit.getScoreboardManager();
+                return mgr == null ? null : new ScoreboardManagerSafe(mgr);
+            } catch (Throwable t) {
+                return null;
+            }
+        }
+
+        Scoreboard newScoreboard() {
+            return mgr.getNewScoreboard();
+        }
     }
 }

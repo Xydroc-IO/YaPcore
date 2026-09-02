@@ -24,14 +24,12 @@ dependencies {
     implementation(project(":yap-tab-api"))
     compileOnly(project(":yap-perms-api"))
     compileOnly(project(":yap-mmo-api"))
-    implementation("net.megavex:scoreboard-library-api:2.8.2")
-    implementation("net.megavex:scoreboard-library-implementation:2.8.2")
+    compileOnly(project(":yap-playerdata-api"))
 }
 
 tasks.shadowJar {
     archiveFileName.set("yap-tab.jar")
     archiveClassifier.set("")
-    relocate("net.megavex", "com.yapcore.tab.libs.megavex")
     mergeServiceFiles()
     duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }

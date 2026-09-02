@@ -24,11 +24,16 @@ public final class ChatPlugin extends JavaPlugin {
     private ChatFilterService filter;
     private PlayerChannelService channels;
     private IgnoreService ignore;
+    private SecureChatRewriter secureChat;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         reloadChat();
+        secureChat = new SecureChatRewriter(this);
+        if (config.unsignedSystemChat()) {
+            secureChat.install();
+        }
 
         MsgCommands msgCommands = new MsgCommands(this, config, privateMessages, channels);
         ChatExtraCommands extraCommands = new ChatExtraCommands(this, config, channels, ignore);
@@ -46,16 +51,28 @@ public final class ChatPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new ChatListener(config, slowMode, filter, channels, ignore, chatService), this);
         getServer().getPluginManager().registerEvents(new CommandMuteListener(config), this);
+        getServer().getPluginManager().registerEvents(new org.bukkit.event.Listener() {
+            @org.bukkit.event.EventHandler
+            public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+                if (secureChat != null && config.unsignedSystemChat()) {
+                    secureChat.injectPlayer(event.getPlayer());
+                }
+            }
+        }, this);
 
         getServer().getServicesManager().register(
                 com.yapcore.chat.ChatService.class, chatService, this, ServicePriority.Normal);
 
         getLogger().info("YaPChat ready — unsigned=" + config.unsignedSystemChat()
-                + " network=" + config.networkEnabled());
+                + " network=" + config.networkEnabled()
+                + " secure-rewrite=" + (secureChat != null && config.unsignedSystemChat()));
     }
 
     @Override
     public void onDisable() {
+        if (secureChat != null) {
+            secureChat.uninstall();
+        }
         if (chatService != null) {
             getServer().getServicesManager().unregister(com.yapcore.chat.ChatService.class, chatService);
         }

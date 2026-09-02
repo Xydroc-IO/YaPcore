@@ -77,6 +77,10 @@ public final class ChatFormat {
         if (audience == null || message == null) {
             return;
         }
+        if (audience instanceof Player player) {
+            player.sendMessage(message);
+            return;
+        }
         audience.sendMessage(message);
     }
 

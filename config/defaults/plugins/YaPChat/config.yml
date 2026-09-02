@@ -1,4 +1,4 @@
-# Unsigned system chat clears "Chat messages cannot be verified" on offline/Via joins
+# Hide "Chat messages cannot be verified" on offline / Link / Via joins.
 unsigned-system-chat: true
 
 # Default public channel
