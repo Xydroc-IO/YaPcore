@@ -91,11 +91,24 @@ public final class YapMmoCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cInvalid amount.");
             return;
         }
+        if (amount < 0 || Double.isNaN(amount) || Double.isInfinite(amount)) {
+            sender.sendMessage("§cInvalid amount.");
+            return;
+        }
         YapSched.global(plugin, () -> {
-            if (Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "pay " + target.getName() + " " + amount)) {
+            var economy = Bukkit.getServicesManager().load(com.yapcore.playerdata.PlayerDataService.class);
+            if (economy == null || !economy.economyEnabled()) {
+                sender.sendMessage("§cEconomy unavailable — YaPPlayerData required.");
                 return;
             }
-            target.sendMessage("§aQuest reward: §f$" + (int) amount + " §7(credit pending economy hook)");
+            var next = economy.deposit(target.getUniqueId(), amount);
+            if (next.isEmpty()) {
+                sender.sendMessage("§cCould not deposit.");
+                return;
+            }
+            sender.sendMessage("§aGave " + economy.formatMoney(amount) + " to " + target.getName()
+                    + " (now " + economy.formatMoney(next.get()) + ")");
+            target.sendMessage("§aYou received §f" + economy.formatMoney(amount) + "§a.");
         });
     }
 

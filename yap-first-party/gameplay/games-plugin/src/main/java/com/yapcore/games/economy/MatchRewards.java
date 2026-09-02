@@ -2,7 +2,7 @@ package com.yapcore.games.economy;
 
 import com.yapcore.games.GamesConfig;
 import com.yapcore.games.mode.GameModeType;
-import net.milkbowl.vault.economy.Economy;
+import com.yapcore.playerdata.PlayerDataService;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -20,8 +20,8 @@ public final class MatchRewards {
         if (!config.rewardsEnabled() || winnerId == null) {
             return;
         }
-        Economy economy = economy();
-        if (economy == null) {
+        PlayerDataService economy = economy();
+        if (economy == null || !economy.economyEnabled()) {
             return;
         }
         double amount = type == GameModeType.DUEL ? config.duelWinReward() : config.ffaWinReward();
@@ -32,15 +32,16 @@ public final class MatchRewards {
         if (player == null) {
             return;
         }
-        economy.depositPlayer(player, amount);
-        player.sendMessage("§aYou earned §f" + economy.format(amount) + " §afor winning!");
+        if (economy.deposit(winnerId, amount).isEmpty()) {
+            return;
+        }
+        player.sendMessage("§aYou earned §f" + economy.formatMoney(amount) + " §afor winning!");
     }
 
-    private Economy economy() {
+    private PlayerDataService economy() {
         if (Bukkit.getPluginManager().getPlugin("YaPPlayerData") == null) {
             return null;
         }
-        var reg = Bukkit.getServicesManager().getRegistration(Economy.class);
-        return reg == null ? null : reg.getProvider();
+        return Bukkit.getServicesManager().load(PlayerDataService.class);
     }
 }

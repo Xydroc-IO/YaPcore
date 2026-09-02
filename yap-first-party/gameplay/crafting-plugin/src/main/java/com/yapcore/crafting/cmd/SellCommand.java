@@ -2,7 +2,7 @@ package com.yapcore.crafting.cmd;
 
 import com.yapcore.crafting.CraftingConfig;
 import com.yapcore.crafting.economy.SellPriceRegistry;
-import net.milkbowl.vault.economy.Economy;
+import com.yapcore.playerdata.PlayerDataService;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -13,6 +13,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public final class SellCommand implements CommandExecutor, TabCompleter {
 
@@ -38,8 +39,8 @@ public final class SellCommand implements CommandExecutor, TabCompleter {
             player.sendMessage("§cSelling is disabled.");
             return true;
         }
-        Economy economy = economy();
-        if (economy == null) {
+        PlayerDataService economy = economy();
+        if (economy == null || !economy.economyEnabled()) {
             player.sendMessage("§cEconomy unavailable — install YaPPlayerData with economy enabled.");
             return true;
         }
@@ -69,23 +70,22 @@ public final class SellCommand implements CommandExecutor, TabCompleter {
         if (hand.getAmount() <= 0) {
             player.getInventory().setItemInMainHand(null);
         }
-        var response = economy.depositPlayer(player, total);
-        if (!response.transactionSuccess()) {
+        Optional<Double> deposited = economy.deposit(player.getUniqueId(), total);
+        if (deposited.isEmpty()) {
             player.getInventory().addItem(toRemove);
-            player.sendMessage("§cSale failed: " + response.errorMessage);
+            player.sendMessage("§cSale failed.");
             return true;
         }
         player.sendMessage("§aSold §f" + amount + "x " + toRemove.getType().name().toLowerCase(Locale.ROOT)
-                + " §afor §f" + economy.format(total));
+                + " §afor §f" + economy.formatMoney(total));
         return true;
     }
 
-    private Economy economy() {
+    private PlayerDataService economy() {
         if (config.requirePlayerData() && Bukkit.getPluginManager().getPlugin("YaPPlayerData") == null) {
             return null;
         }
-        var reg = Bukkit.getServicesManager().getRegistration(Economy.class);
-        return reg == null ? null : reg.getProvider();
+        return Bukkit.getServicesManager().load(PlayerDataService.class);
     }
 
     @Override

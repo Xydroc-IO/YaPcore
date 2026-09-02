@@ -4,6 +4,7 @@ import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.PlayerDataService;
 import com.yapcore.playerdata.db.AuthRepository;
 import com.yapcore.playerdata.db.PlayerRepository;
+import com.yapcore.playerdata.economy.BalanceStore;
 import com.yapcore.playerdata.sync.SessionLock;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -21,14 +22,17 @@ public final class PlayerDataServiceImpl implements PlayerDataService {
     private final SessionLock locks;
     private final PlayerRepository repository;
     private final AuthRepository authRepository;
+    private final BalanceStore balances;
 
     public PlayerDataServiceImpl(JavaPlugin plugin, PlayerDataConfig config, SessionLock locks,
-                                 PlayerRepository repository, AuthRepository authRepository) {
+                                 PlayerRepository repository, AuthRepository authRepository,
+                                 BalanceStore balances) {
         this.plugin = plugin;
         this.config = config;
         this.locks = locks;
         this.repository = repository;
         this.authRepository = authRepository;
+        this.balances = balances;
     }
 
     @Override
@@ -98,5 +102,53 @@ public final class PlayerDataServiceImpl implements PlayerDataService {
                 return Optional.empty();
             }
         });
+    }
+
+    @Override
+    public boolean economyEnabled() {
+        return config.economyEnabled();
+    }
+
+    @Override
+    public double balance(UUID uuid) {
+        if (!config.economyEnabled() || uuid == null) {
+            return 0.0;
+        }
+        return balances.getBalance(uuid);
+    }
+
+    @Override
+    public Optional<Double> deposit(UUID uuid, double amount) {
+        if (!config.economyEnabled() || uuid == null || amount < 0
+                || Double.isNaN(amount) || Double.isInfinite(amount)) {
+            return Optional.empty();
+        }
+        double next = balances.getBalance(uuid) + amount;
+        balances.setBalance(uuid, next);
+        return Optional.of(balances.getBalance(uuid));
+    }
+
+    @Override
+    public Optional<Double> withdraw(UUID uuid, double amount) {
+        if (!config.economyEnabled() || uuid == null || amount < 0
+                || Double.isNaN(amount) || Double.isInfinite(amount)) {
+            return Optional.empty();
+        }
+        double current = balances.getBalance(uuid);
+        if (current < amount) {
+            return Optional.empty();
+        }
+        balances.setBalance(uuid, current - amount);
+        return Optional.of(balances.getBalance(uuid));
+    }
+
+    @Override
+    public Optional<Double> setBalance(UUID uuid, double amount) {
+        if (!config.economyEnabled() || uuid == null || amount < 0
+                || Double.isNaN(amount) || Double.isInfinite(amount)) {
+            return Optional.empty();
+        }
+        balances.setBalance(uuid, amount);
+        return Optional.of(balances.getBalance(uuid));
     }
 }

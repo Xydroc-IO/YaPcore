@@ -26,10 +26,8 @@ dependencies {
     compileOnly(project(":yap-mmo-api"))
     compileOnly(project(":yap-db-api"))
     compileOnly(project(":yap-regions-api"))
+    compileOnly(project(":yap-playerdata-api"))
     compileOnly(project(":placeholderapi-plugin"))
-    compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") {
-        exclude(group = "org.bukkit", module = "bukkit")
-    }
 
     implementation("com.zaxxer:HikariCP:6.2.1")
     implementation("com.mysql:mysql-connector-j:9.1.0")

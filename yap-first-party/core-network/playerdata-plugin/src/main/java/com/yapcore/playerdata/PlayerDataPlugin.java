@@ -107,12 +107,12 @@ public final class PlayerDataPlugin extends JavaPlugin {
         sync.bindAuth(auth);
         sync.startAutosave();
 
-        playerDataService = new PlayerDataServiceImpl(this, config, locks, repository, authRepo);
+        BalanceStore balances = new BalanceStore(sync, repository, getLogger());
+        playerDataService = new PlayerDataServiceImpl(this, config, locks, repository, authRepo, balances);
         getServer().getServicesManager().register(
                 com.yapcore.playerdata.PlayerDataService.class,
                 playerDataService, this, ServicePriority.Normal);
 
-        BalanceStore balances = new BalanceStore(sync, repository, getLogger());
         HomesRepository homes = new HomesRepository(database);
         WarpsRepository warps = new WarpsRepository(database);
         MailRepository mail = new MailRepository(database);

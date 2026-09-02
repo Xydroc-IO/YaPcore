@@ -22,7 +22,8 @@ public final class EconomyTuneModule extends FineTuneModule {
                 "economy.enabled: true",
                 "features.shops / jobs / auctions / traders — opt-in money surfaces",
                 "sync.economy: true for cross-server balance",
-                "Vault: soft-depend — YaPEconomy registers when Vault is present",
+                "Native API: PlayerDataService (balance/deposit/withdraw/setBalance)",
+                "Vault: optional third-party bridge only — first-party plugins use PlayerDataService",
                 "",
                 "Docs: docs/data/PLAYERDATA.md"
         );

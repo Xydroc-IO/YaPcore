@@ -6,7 +6,7 @@ folia-supported: true
 description: YaP MMO crafting — recipes, stations, economy sell (M3)
 authors: [YapLabs]
 depend: []
-softdepend: [YaPSkills, YaPPlayerData, Vault]
+softdepend: [YaPSkills, YaPPlayerData]
 commands:
   recipe:
     description: List unlocked recipes for a skill

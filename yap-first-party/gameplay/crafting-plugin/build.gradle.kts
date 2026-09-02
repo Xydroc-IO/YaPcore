@@ -23,9 +23,7 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-sched"))
     implementation(project(":yap-mmo-api"))
-    compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") {
-        exclude(group = "org.bukkit", module = "bukkit")
-    }
+    compileOnly(project(":yap-playerdata-api"))
 
     testImplementation("io.papermc.paper:paper-api:$paperApi")
     testImplementation(project(":yap-mmo-api"))
