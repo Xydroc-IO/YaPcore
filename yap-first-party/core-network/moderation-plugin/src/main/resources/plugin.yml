@@ -68,7 +68,7 @@ commands:
     permission: yapmod.history
   yapmod:
     description: Moderation admin
-    usage: /yapmod reload
+    usage: /yapmod reload | seen [json]
     permission: yapmod.admin
 permissions:
   yapmod.ban:

@@ -1,7 +1,6 @@
 package com.yapcore.moderation.cmd;
 
 import com.yapcore.moderation.DurationParser;
-import com.yapcore.moderation.ModerationAudit;
 import com.yapcore.moderation.ModerationConfig;
 import com.yapcore.moderation.ModerationPlugin;
 import com.yapcore.moderation.ModerationServiceImpl;
@@ -9,7 +8,9 @@ import com.yapcore.moderation.Punishment;
 import com.yapcore.moderation.PunishmentType;
 import com.yapcore.moderation.StaffNotify;
 import com.yapcore.moderation.alt.AltRepository;
+import com.yapcore.moderation.cmd.ModerationCmdSupport.Actor;
 import com.yapcore.moderation.db.ModerationRepository;
+import com.yapcore.moderation.seen.SeenPlayerRepository;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -19,7 +20,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -29,18 +29,21 @@ import java.util.stream.Collectors;
 public final class ModerationCommands implements CommandExecutor, TabCompleter {
 
     private final ModerationPlugin plugin;
-    private final ModerationServiceImpl service;
     private final ModerationRepository repository;
-    private final AltRepository alts;
+    private final SeenPlayerRepository seen;
     private final ModerationConfig config;
+    private final SeenCommands seenCmds;
+    private final ModerationLookupCommands lookup;
 
     public ModerationCommands(ModerationPlugin plugin, ModerationServiceImpl service,
-                               ModerationRepository repository, AltRepository alts, ModerationConfig config) {
+                               ModerationRepository repository, AltRepository alts,
+                               SeenPlayerRepository seen, ModerationConfig config) {
         this.plugin = plugin;
-        this.service = service;
         this.repository = repository;
-        this.alts = alts;
+        this.seen = seen;
         this.config = config;
+        this.seenCmds = new SeenCommands(plugin, seen);
+        this.lookup = new ModerationLookupCommands(plugin, service, repository, alts);
     }
 
     @Override
@@ -57,9 +60,9 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
             case "unmute" -> unmute(sender, args);
             case "warn" -> warn(sender, args);
             case "kick" -> kick(sender, args);
-            case "modhistory", "history", "punishments" -> history(sender, args);
-            case "modcheck", "check", "alts" -> modCheck(sender, args);
-            case "banlist" -> banList(sender, args);
+            case "modhistory", "history", "punishments" -> lookup.history(sender, args);
+            case "modcheck", "check", "alts" -> lookup.modCheck(sender, args);
+            case "banlist" -> lookup.banList(sender, args);
             case "yapmod" -> yapmod(sender, args);
             default -> false;
         };
@@ -75,7 +78,10 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage("§aYaPModeration reloaded.");
             return true;
         }
-        sender.sendMessage("§e/yapmod reload");
+        if (args.length >= 1 && "seen".equalsIgnoreCase(args[0])) {
+            return seenCmds.dump(sender, args);
+        }
+        sender.sendMessage("§e/yapmod reload | seen [json|snapshot]");
         return true;
     }
 
@@ -90,9 +96,9 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
         }
         int reasonStart = temp ? 1 : 1;
         String targetName = args[0];
-        String reason = join(args, reasonStart, "No reason given");
+        String reason = ModerationCmdSupport.join(args, reasonStart, "No reason given");
         OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
-        Actor actor = actor(sender);
+        Actor actor = ModerationCmdSupport.actor(sender);
         YapSched.async(plugin, () -> {
             try {
                 repository.deactivateType(target.getUniqueId(), PunishmentType.BAN);
@@ -104,11 +110,11 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
                             + DurationParser.formatExpiry(expiresAt));
                     StaffNotify.broadcast("&c[Mod] &f" + actor.name() + " &cbanned &f" + targetName
                             + " &7(" + reason + ")");
-                    audit(temp ? PunishmentType.BAN : PunishmentType.BAN, actor.name(), targetName, reason,
+                    ModerationCmdSupport.audit(temp ? PunishmentType.BAN : PunishmentType.BAN, actor.name(), targetName, reason,
                             DurationParser.formatExpiry(expiresAt));
                     Player online = Bukkit.getPlayer(target.getUniqueId());
                     if (online != null) {
-                        online.kickPlayer(color(config.kickMessage()
+                        online.kickPlayer(ModerationCmdSupport.color(config.kickMessage()
                                 .replace("{reason}", reason)));
                     }
                 });
@@ -171,27 +177,43 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage("§e/ipban <player|ip> [reason]");
             return true;
         }
-        String reason = args.length >= 2 ? join(args, 1, "No reason given") : "No reason given";
+        String reason = args.length >= 2 ? ModerationCmdSupport.join(args, 1, "No reason given") : "No reason given";
         String token = args[0];
         Player online = Bukkit.getPlayer(token);
-        String ip = token.contains(".") ? token : (online != null ? online.getAddress().getAddress().getHostAddress() : null);
+        String ip = SeenPlayerRepository.looksLikeIp(token)
+                ? token
+                : (online != null && online.getAddress() != null
+                ? online.getAddress().getAddress().getHostAddress() : null);
+        UUID targetUuid = online != null ? online.getUniqueId() : Bukkit.getOfflinePlayer(token).getUniqueId();
+        String targetName = online != null ? online.getName() : token;
         if (ip == null) {
-            sender.sendMessage("§cPlayer must be online to resolve IP, or provide an IP address.");
+            try {
+                var stored = seen.findByNameOrUuid(token);
+                if (stored.isPresent() && stored.get().lastIp() != null && !stored.get().lastIp().isBlank()) {
+                    ip = stored.get().lastIp();
+                    targetUuid = stored.get().uuid();
+                    targetName = stored.get().username().isBlank() ? token : stored.get().username();
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        if (ip == null) {
+            sender.sendMessage("§cNo last IP for that player. Provide an IP, or wait until they have joined once.");
             return true;
         }
         String finalIp = ip;
-        UUID targetUuid = online != null ? online.getUniqueId() : Bukkit.getOfflinePlayer(token).getUniqueId();
-        String targetName = online != null ? online.getName() : token;
-        Actor actor = actor(sender);
+        UUID finalUuid = targetUuid;
+        String finalName = targetName;
+        Actor actor = ModerationCmdSupport.actor(sender);
         YapSched.async(plugin, () -> {
             try {
                 repository.deactivateIp(finalIp);
-                repository.insert(PunishmentType.IP_BAN, targetUuid, targetName,
+                repository.insert(PunishmentType.IP_BAN, finalUuid, finalName,
                         actor.uuid(), actor.name(), reason, finalIp, 0L);
                 YapSched.global(plugin, () -> {
                     sender.sendMessage("§aIP banned §f" + finalIp);
                     if (online != null) {
-                        online.kickPlayer(color(config.ipBanLoginMessage().replace("{reason}", reason)));
+                        online.kickPlayer(ModerationCmdSupport.color(config.ipBanLoginMessage().replace("{reason}", reason)));
                     }
                 });
             } catch (Exception e) {
@@ -231,9 +253,9 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         String targetName = args[0];
-        String reason = join(args, 1, "No reason given");
+        String reason = ModerationCmdSupport.join(args, 1, "No reason given");
         OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
-        Actor actor = actor(sender);
+        Actor actor = ModerationCmdSupport.actor(sender);
         YapSched.async(plugin, () -> {
             try {
                 repository.deactivateType(target.getUniqueId(), PunishmentType.MUTE);
@@ -242,7 +264,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
                 YapSched.global(plugin, () -> {
                     sender.sendMessage("§aMuted §f" + targetName);
                     StaffNotify.broadcast("&e[Mod] &f" + actor.name() + " &emuted &f" + targetName + " &7(" + reason + ")");
-                    audit(PunishmentType.MUTE, actor.name(), targetName, reason,
+                    ModerationCmdSupport.audit(PunishmentType.MUTE, actor.name(), targetName, reason,
                             DurationParser.formatExpiry(expiresAt));
                 });
             } catch (Exception e) {
@@ -260,7 +282,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
         try {
             long expires = DurationParser.parseToEpochMs(args[1]);
             String[] rest = args.length > 2
-                    ? new String[]{args[0], join(Arrays.copyOfRange(args, 2, args.length), 0, "Temporary mute")}
+                    ? new String[]{args[0], ModerationCmdSupport.join(Arrays.copyOfRange(args, 2, args.length), 0, "Temporary mute")}
                     : new String[]{args[0]};
             return mute(sender, rest, expires);
         } catch (IllegalArgumentException e) {
@@ -300,9 +322,9 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         String targetName = args[0];
-        String reason = join(args, 1, "No reason given");
+        String reason = ModerationCmdSupport.join(args, 1, "No reason given");
         OfflinePlayer target = Bukkit.getOfflinePlayer(targetName);
-        Actor actor = actor(sender);
+        Actor actor = ModerationCmdSupport.actor(sender);
         YapSched.async(plugin, () -> {
             try {
                 repository.insert(PunishmentType.WARN, target.getUniqueId(), targetName,
@@ -310,10 +332,10 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
                 YapSched.global(plugin, () -> {
                     sender.sendMessage("§aWarned §f" + targetName);
                     StaffNotify.broadcast("&e[Mod] &f" + actor.name() + " &ewarned &f" + targetName + " &7(" + reason + ")");
-                    audit(PunishmentType.WARN, actor.name(), targetName, reason, "");
+                    ModerationCmdSupport.audit(PunishmentType.WARN, actor.name(), targetName, reason, "");
                     Player online = Bukkit.getPlayer(target.getUniqueId());
                     if (online != null) {
-                        online.sendMessage(color(config.warnMessage().replace("{reason}", reason)));
+                        online.sendMessage(ModerationCmdSupport.color(config.warnMessage().replace("{reason}", reason)));
                     }
                 });
             } catch (Exception e) {
@@ -337,12 +359,12 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cPlayer not online.");
             return true;
         }
-        String reason = join(args, 1, "Kicked");
-        Actor actor = actor(sender);
-        target.kickPlayer(color(config.kickMessage().replace("{reason}", reason)));
+        String reason = ModerationCmdSupport.join(args, 1, "Kicked");
+        Actor actor = ModerationCmdSupport.actor(sender);
+        target.kickPlayer(ModerationCmdSupport.color(config.kickMessage().replace("{reason}", reason)));
         sender.sendMessage("§aKicked §f" + target.getName());
         StaffNotify.broadcast("&e[Mod] &f" + actor.name() + " &ekicked &f" + target.getName() + " &7(" + reason + ")");
-        audit(PunishmentType.KICK, actor.name(), target.getName(), reason, "");
+        ModerationCmdSupport.audit(PunishmentType.KICK, actor.name(), target.getName(), reason, "");
         YapSched.async(plugin, () -> {
             try {
                 repository.insertKick(target.getUniqueId(), target.getName(), actor.uuid(), actor.name(), reason);
@@ -352,143 +374,24 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    private boolean modCheck(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("yapmod.history")) {
-            sender.sendMessage("§cNo permission.");
-            return true;
-        }
-        if (args.length < 1) {
-            sender.sendMessage("§e/modcheck <player>");
-            return true;
-        }
-        OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
-        UUID uuid = target.getUniqueId();
-        YapSched.async(plugin, () -> {
-            try {
-                int warnings = repository.countWarnings(uuid);
-                var ban = service.activeBan(uuid);
-                var mute = service.activeMute(uuid);
-                var linked = alts.findAlts(uuid, null);
-                YapSched.global(plugin, () -> {
-                    sender.sendMessage("§6Check: §f" + args[0]);
-                    sender.sendMessage("§7Warnings: §f" + warnings);
-                    sender.sendMessage("§7Ban: §f" + (ban.isPresent() ? ban.get().reason() : "none"));
-                    sender.sendMessage("§7Mute: §f" + (mute.isPresent() ? mute.get().reason() : "none"));
-                    if (linked.isEmpty()) {
-                        sender.sendMessage("§7Alts: §fnone known");
-                    } else {
-                        sender.sendMessage("§7Alts: §f" + linked.stream()
-                                .map(a -> a.name() != null ? a.name() : a.uuid().toString())
-                                .collect(Collectors.joining(", ")));
-                    }
-                });
-            } catch (Exception e) {
-                YapSched.global(plugin, () -> sender.sendMessage("§cCheck failed: " + e.getMessage()));
-            }
-        });
-        return true;
-    }
-
-    private boolean banList(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("yapmod.history")) {
-            sender.sendMessage("§cNo permission.");
-            return true;
-        }
-        int limit = 20;
-        if (args.length >= 1) {
-            try {
-                limit = Math.min(100, Math.max(1, Integer.parseInt(args[0])));
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        int finalLimit = limit;
-        YapSched.async(plugin, () -> {
-            try {
-                var bans = repository.listActiveBans(finalLimit);
-                YapSched.global(plugin, () -> {
-                    sender.sendMessage("§6Active bans (" + bans.size() + "):");
-                    for (Punishment p : bans) {
-                        sender.sendMessage("§f" + p.targetName() + " §7— §f" + p.reason()
-                                + " §7expires §f" + DurationParser.formatExpiry(p.expiresAtEpochMs()));
-                    }
-                });
-            } catch (Exception e) {
-                YapSched.global(plugin, () -> sender.sendMessage("§cFailed: " + e.getMessage()));
-            }
-        });
-        return true;
-    }
-
-    private boolean history(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("yapmod.history")) {
-            sender.sendMessage("§cNo permission.");
-            return true;
-        }
-        if (args.length < 1) {
-            sender.sendMessage("§e/modhistory <player> [limit]");
-            return true;
-        }
-        int limit = 10;
-        if (args.length >= 2) {
-            try {
-                limit = Math.min(50, Math.max(1, Integer.parseInt(args[1])));
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
-        int finalLimit = limit;
-        service.history(target.getUniqueId(), finalLimit).thenAccept(list -> YapSched.global(plugin, () -> {
-            sender.sendMessage("§6History for §f" + args[0] + " §6(" + list.size() + "):");
-            for (Punishment p : list) {
-                sender.sendMessage("§7#" + p.id() + " §f" + p.type() + " §7active=" + p.active()
-                        + " §7by §f" + p.actorName() + " §7— §f" + p.reason());
-            }
-        }));
-        return true;
-    }
-
-    private static void audit(PunishmentType type, String actor, String target, String reason, String detail) {
-        ModerationAudit.fire(new ModerationAudit.Action(type, actor, target, reason, detail));
-    }
-
-    private record Actor(UUID uuid, String name) {
-    }
-
-    private static Actor actor(CommandSender sender) {
-        if (sender instanceof Player player) {
-            return new Actor(player.getUniqueId(), player.getName());
-        }
-        return new Actor(null, sender.getName());
-    }
-
-    private static String join(String[] args, int start, String fallback) {
-        if (start >= args.length) {
-            return fallback;
-        }
-        StringBuilder sb = new StringBuilder();
-        for (int i = start; i < args.length; i++) {
-            if (i > start) {
-                sb.append(' ');
-            }
-            sb.append(args[i]);
-        }
-        return sb.toString();
-    }
-
-    private static String color(String raw) {
-        return raw.replace('&', '§');
-    }
-
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+        if ("yapmod".equalsIgnoreCase(command.getName())) {
+            if (args.length == 1) {
+                return List.of("reload", "seen").stream()
+                        .filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT)))
+                        .collect(Collectors.toList());
+            }
+            if (args.length == 2 && "seen".equalsIgnoreCase(args[0])) {
+                return List.of("json", "snapshot");
+            }
+            return List.of();
+        }
         if (args.length == 1) {
             return Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
                     .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(args[0].toLowerCase(Locale.ROOT)))
                     .collect(Collectors.toList());
-        }
-        if ("yapmod".equalsIgnoreCase(command.getName()) && args.length == 1) {
-            return List.of("reload");
         }
         return List.of();
     }
