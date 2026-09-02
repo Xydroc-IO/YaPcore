@@ -16,9 +16,10 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 
 | Tier | Gradle | What’s installed |
 |------|--------|------------------|
-| **CORE + NETWORK** (default) | `gradle installProductDefaults` / `assembleRelease` | Network + ops jars below |
-| **GAMEPLAY** (opt-in) | `gradle installGameplayDefaults` or `assembleRelease -PyapGameplay=true` | Vehicles, stacker, knobs + fat pack |
-| **Both** | `gradle installAllProductDefaults` | CORE + GAMEPLAY |
+| **CORE + NETWORK** | `gradle installProductDefaults` | Network + ops jars below |
+| **GAMEPLAY** | `gradle installGameplayDefaults` | Vehicles, stacker, knobs, MMO |
+| **Full release box** | `gradle assembleRelease` | CORE + NETWORK + GAMEPLAY |
+| **Slim box** | `gradle assembleRelease -PyapGameplay=false` | CORE + NETWORK only |
 | **Fine-tune modules** | `gradle installFineTuneModules` | All packaging jars → `modules/` |
 | `Dist folder (all jars)` | `gradle assemblePluginDist` | `build/dist/yap-plugins/{core-network,gameplay,api,modules/…}/` |
 

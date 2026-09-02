@@ -36,6 +36,10 @@ git -C "$WORK" clean -fd
 
 cd "$WORK"
 
+# Paper stamps Build-Time from BUILD_STARTED_AT; without it the jar shows 1970-01-01 (epoch).
+export BUILD_STARTED_AT="${BUILD_STARTED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+echo "BUILD_STARTED_AT=$BUILD_STARTED_AT"
+
 # YaP branding modifies Folia's tracked patch files BEFORE paperweight runs.
 if [ "${YAP_FOLIA_SKIP_PATCH:-0}" != "1" ]; then
   echo "== YaP patches (pre-applyAllPatches) =="
@@ -55,8 +59,32 @@ if [ "${YAP_FOLIA_SKIP_PATCH:-0}" != "1" ]; then
 fi
 
 echo "== Folia createPaperclipJar / createBundlerJar =="
-./gradlew --no-daemon :folia-server:createPaperclipJar :folia-server:createBundlerJar || \
-  ./gradlew --no-daemon :folia-server:createPaperclipJar || \
+# Ensure BUILD_STARTED_AT still exported for jar manifest (re-set in case of subshells)
+export BUILD_STARTED_AT="${BUILD_STARTED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+# Prefer lock branch name over detached "HEAD" in version string
+export YAP_GIT_BRANCH="${YAP_GIT_BRANCH:-${BRANCH:-ver/26.2.x}}"
+if [ -f folia-server/build.gradle.kts ]; then
+  python3 - <<'PY'
+from pathlib import Path
+p = Path("folia-server/build.gradle.kts")
+t = p.read_text()
+old2 = 'val gitBranch = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()'
+new2 = '''val gitBranch = run {
+            val envBranch = System.getenv("YAP_GIT_BRANCH")
+            if (!envBranch.isNullOrBlank()) envBranch else {
+                val abr = git.exec(providers, "rev-parse", "--abbrev-ref", "HEAD").get().trim()
+                if (abr == "HEAD") "yap" else abr
+            }
+        }'''
+if old2 in t:
+    p.write_text(t.replace(old2, new2, 1))
+    print("build.gradle.kts: gitBranch prefers YAP_GIT_BRANCH")
+PY
+fi
+
+# Rebuild server jar so Build-Time picks up BUILD_STARTED_AT, then paperclip.
+./gradlew --no-daemon :folia-server:jar :folia-server:createPaperclipJar :folia-server:createBundlerJar || \
+  ./gradlew --no-daemon :folia-server:jar :folia-server:createPaperclipJar || \
   ./gradlew --no-daemon :folia-server:createBundlerJar
 
 CANDIDATE=""

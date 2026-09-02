@@ -65,7 +65,7 @@ cp deploy/mariadb/.env.example deploy/mariadb/.env   # edit passwords
 ./start.sh --fg
 ```
 
-Gameplay add-ons: `gradle assembleRelease -PyapGameplay=true`
+Gameplay (vehicles, stacker, MMO) is included in the full box. Slim CORE+NETWORK: `gradle assembleRelease -PyapGameplay=false`.
 
 ### Breaking / migration notes
 

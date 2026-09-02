@@ -1,15 +1,17 @@
-val yapGameplayProp: Provider<String> = providers.gradleProperty("yapGameplay").orElse("false")
+val yapGameplayProp: Provider<String> = providers.gradleProperty("yapGameplay").orElse("true")
 val yapGameplayEnabled: Boolean =
-    yapGameplayProp.get() == "true" || yapGameplayProp.get() == "1"
+    yapGameplayProp.get() != "false" && yapGameplayProp.get() != "0"
 
 tasks.register<Exec>("prepareClientPack") {
     group = "distribution"
     description =
-        "Build yapcore-default.zip (Faithful CORE; + vehicles when -PyapGameplay=true)"
+        "Build yapcore-default.zip (Faithful CORE + YaP Skies + vehicles/abilities overlays)"
     workingDir = project.projectDir
     environment("YAP_INCLUDE_VEHICLES", if (yapGameplayEnabled) "1" else "0")
     commandLine("bash", "scripts/build-default-resourcepack.sh")
     outputs.file(project.file("resourcepacks/yapcore-default.zip"))
+    inputs.dir(project.file("resourcepacks/yap-skies")).optional()
+    inputs.file(project.file("scripts/generate-yap-skies.py")).optional()
     inputs.dir(project.file("resourcepacks/yap-vehicles")).optional()
     inputs.file(project.file("resourcepacks/yap-vehicles.zip")).optional()
     inputs.file(project.file("resourcepacks/faithful-64x.zip")).optional()
@@ -18,7 +20,7 @@ tasks.register<Exec>("prepareClientPack") {
 tasks.register("assembleRelease") {
     group = "distribution"
     description =
-        "Release package (CORE+NETWORK). Use -PyapGameplay=true for vehicles/stacker/knobs."
+        "Release package with all first-party plugins (CORE+NETWORK+GAMEPLAY)."
     dependsOn(
         tasks.named("distJar"),
         "installProductDefaults",
@@ -100,22 +102,11 @@ tasks.register("assembleRelease") {
                 add("yap-vehicles.zip")
             }
         }
-        val docFiles = listOf(
-            "**/QUICK_START.md", "**/WIKI.md", "**/LICENSING.md", "**/COMMANDS.md",
-            "**/VEHICLES.md", "**/CLIENTS_AND_PACKS.md", "**/WEB_DASHBOARD.md", "**/PREGEN.md",
-            "**/WINDOWS.md", "**/NGINX_AND_LOCALHOST.md", "**/PLAYERDATA.md", "**/MARIADB.md", "**/YAPDB.md",
-            "**/STACKER.md", "**/PLUGINS.md", "**/MODULES_AND_API.md", "**/TUNE.md", "**/PERMISSIONS.md",
-            "**/TEBEX.md",
-            "**/REGIONS.md", "**/RELEASES.md", "**/RELEASE_NOTES.md", "**/DEFAULTS.md", "**/SECRETS.md",
-            "**/PLUGIN_COMPAT_MATRIX.md", "**/YAP_LINK_NATIVE.md", "**/CROSSPLAY.md", "**/NETWORKING.md",
-            "**/YAP_LINK.md", "**/YAPCORE_WHITEPAPER.md", "**/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md",
-            "**/MMO_PHASES.md", "**/GUILDS.md", "**/FACTIONS.md",
-            "README.md",
-        )
         val linuxScripts = listOf(
             "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
             "start-yap-link.sh", "nginx-setup.sh", "setup-velocity-forwarding.sh",
             "build-default-resourcepack.sh", "fetch-faithful-64x.sh",
+            "generate-yap-skies.py",
             "fetch-folia.sh", "fetch-tebex.sh", "fetch-grim.sh", "grim-ac.sh",
             "vendor-folia.sh", "folia-patch.sh", "build-yap-folia.sh",
             "seed-defaults.sh", "apply-production-profile.sh",
@@ -219,7 +210,7 @@ tasks.register("assembleRelease") {
             project.copy {
                 from(project.file("docs"))
                 into(dest.resolve("docs"))
-                include(*docFiles.toTypedArray())
+                exclude("pdf/**")
             }
             project.copy {
                 from(project.file("branding"))
@@ -310,13 +301,10 @@ tasks.register("assembleRelease") {
             yapcore.jar
             yap-link.jar          native network proxy (see docs/network/YAP_LINK_NATIVE.md)
             link-data/            Link config + plugins (link.properties, plugins/*.jar)
-            plugins/  CORE+NETWORK by default (db, playerdata, packs, chat, floodgate, …)
-                      GAMEPLAY (vehicles, stacker, knobs): rebuild with -PyapGameplay=true
-                      or run: gradle installGameplayDefaults
+            plugins/  all first-party jars (CORE+NETWORK+GAMEPLAY: vehicles, stacker, MMO, …)
                       Optional: tebex.jar (GPLv3) via ./scripts/fetch-tebex.sh — Hub store
                       Optional: grim.jar.disabled (GPLv3) — fetched on seed-defaults; enable via grim-ac.sh
-            modules/  CORE fine-tune packaging modules by default;
-                      GAMEPLAY adds vehicles/stacker/knobs modules
+            modules/  CORE + GAMEPLAY fine-tune modules
                       (gradle installFineTuneModules · docs/plugins/MODULES_AND_API.md)
             resourcepacks/yapcore-default.zip
             config/

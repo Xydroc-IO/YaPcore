@@ -4,9 +4,9 @@
 
 import org.gradle.api.tasks.bundling.Jar
 
-val yapGameplayProp: Provider<String> = providers.gradleProperty("yapGameplay").orElse("false")
+val yapGameplayProp: Provider<String> = providers.gradleProperty("yapGameplay").orElse("true")
 val yapGameplayEnabled: Boolean =
-    yapGameplayProp.get() == "true" || yapGameplayProp.get() == "1"
+    yapGameplayProp.get() != "false" && yapGameplayProp.get() != "0"
 
 tasks.register("installProductDefaults") {
     group = "distribution"
@@ -406,8 +406,8 @@ tasks.register("assemblePluginDist") {
 
             Rebuild:  gradle assemblePluginDist
                       gradle installFineTuneModules
-            Full box: gradle assembleRelease
-            Full + gameplay: gradle assembleRelease -PyapGameplay=true
+            Full box (all plugins): gradle assembleRelease
+            Slim CORE+NETWORK only: gradle assembleRelease -PyapGameplay=false
 
             Docs: docs/plugins/MODULES_AND_API.md · docs/ops/TUNE.md · plugins/README.md
             """.trimIndent() + "\n"

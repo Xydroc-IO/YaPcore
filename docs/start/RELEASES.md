@@ -12,8 +12,8 @@ All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `p
 | Task | Output |
 |------|--------|
 | `./scripts/build-yap-folia.sh` | `lib/yap-folia-26.2.jar` — **required for product path** |
-| `gradle assembleRelease` | `build/dist/yapcore-release/` — **linux/** + **windows/** full server trees |
-| `gradle assembleRelease -PyapGameplay=true` | Same + vehicles, stacker, gameplay-knobs, MMO jars & modules |
+| `gradle assembleRelease` | `build/dist/yapcore-release/` — **linux/** + **windows/** full trees (all plugins) |
+| `gradle assembleRelease -PyapGameplay=false` | Slim CORE+NETWORK only (no vehicles / MMO / stacker) |
 | `gradle publishReleasesFolder` | **`releases/<version>/`** — trees + linux/windows zips + suite zips |
 | Git tag `v*` push | GitHub Actions → `yapcore-release-linux.zip` + `-windows.zip` |
 | `gradle assembleNetworkSuite` | `build/dist/yap-network-suite.zip` — YaP Link + native link plugins |
@@ -69,7 +69,7 @@ See [WINDOWS.md](WINDOWS.md) and [MARIADB.md](../data/MARIADB.md).
 | Zip | Contents | Default in full box? |
 |-----|----------|----------------------|
 | **yap-network-suite.zip** | Link proxy + chat/mod/selector/tab/discord bridge plugins | Yes (`link-data/plugins/`) |
-| **yap-gameplay-suite.zip** | yap-vehicles, yap-stacker, yap-gameplay-knobs + MMO + modules | Only with `-PyapGameplay=true` |
+| **yap-gameplay-suite.zip** | yap-vehicles, yap-stacker, yap-gameplay-knobs + modules | Also included in the full box |
 | **yap-addons-release.zip** | `examples/yap-vehicle-addon` built jar + source | No — author reference |
 
 ## Repo layout discipline

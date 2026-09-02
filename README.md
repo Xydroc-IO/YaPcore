@@ -70,7 +70,7 @@ Details: [docs/start/RELEASES.md](docs/start/RELEASES.md).
 | `yap-floodgate.jar` | Bedrock identity |
 | `yap-folia-bridge.jar` | Folia scheduling bridge |
 
-**Gameplay opt-in:** `gradle installGameplayDefaults` — vehicles, stacker, MMO, knobs.
+**Gameplay** (vehicles, stacker, MMO, knobs) ships in the full release box. Rebuild without it: `gradle assembleRelease -PyapGameplay=false`.
 
 [plugins/README.md](plugins/README.md) · [docs/plugins/PLUGINS.md](docs/plugins/PLUGINS.md)
 

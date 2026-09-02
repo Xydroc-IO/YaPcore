@@ -71,7 +71,7 @@ Operator-facing legal docs (templates, not legal advice):
 
 ## Default resource pack
 
-The default client pack may include **Faithful 64x** and YaP vehicle overlays.
+The default client pack may include **Faithful 64x**, **YaP Skies**, and YaP vehicle overlays.
 Credits and pack-specific licenses: `resourcepacks/CREDITS.md`,
 `resourcepacks/FAITHFUL_LICENSE.txt`.
 

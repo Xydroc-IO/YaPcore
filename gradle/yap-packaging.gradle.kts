@@ -262,8 +262,7 @@ tasks.register("publishReleasesFolder") {
               yap-addons-release.zip
 
             Rebuild:  gradle publishReleasesFolder
-            Gameplay in the full box:  gradle assembleRelease -PyapGameplay=true
-                                       && gradle publishReleasesFolder
+            Slim CORE+NETWORK only:  gradle assembleRelease -PyapGameplay=false
 
             Docs: docs/start/RELEASES.md · docs/start/QUICK_START.md
             """.trimIndent() + "\n"
