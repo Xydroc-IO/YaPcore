@@ -67,6 +67,21 @@ final class ClientSessionLoginFlow {
             return;
         }
 
+        // Offline proxy: still try Mojang texture lookup so premium skins forward to Folia.
+        // Does not rewrite UUID (keeps offline playerdata). Failures are silent.
+        if (session.properties == null || session.properties.isEmpty()) {
+            try {
+                var textures = MojangAuth.lookupTextures(session.username);
+                if (!textures.isEmpty()) {
+                    session.properties = textures;
+                    LOG.info("SKIN offline-lookup ok user=" + session.username
+                            + " props=" + textures.size());
+                }
+            } catch (Exception e) {
+                LOG.log(Level.FINE, "offline skin lookup failed for " + session.username, e);
+            }
+        }
+
         String redirect = session.server.redirects().take(session.playerId);
         beginBackendConnect(ctx, redirect);
     }

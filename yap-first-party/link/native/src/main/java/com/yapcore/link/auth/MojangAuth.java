@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/** Mojang sessionserver hasJoined for online-mode. */
+/** Mojang sessionserver hasJoined for online-mode + profile texture lookup for offline skins. */
 public final class MojangAuth {
 
     private static final Gson GSON = new Gson();
@@ -46,10 +46,73 @@ public final class MojangAuth {
         if (resp.statusCode() != 200) {
             throw new IllegalStateException("Mojang auth HTTP " + resp.statusCode());
         }
-        JsonObject json = GSON.fromJson(resp.body(), JsonObject.class);
+        return parseProfile(resp.body(), username);
+    }
+
+    /**
+     * Best-effort skin/textures lookup for offline-mode proxies.
+     * Keeps the caller's UUID unless {@code rewriteUuid} is true — only attaches
+     * signed {@code textures} properties so players keep offline playerdata.
+     */
+    public static List<ModernForwarding.Property> lookupTextures(String username) {
+        try {
+            UUID mojangId = lookupUuid(username);
+            if (mojangId == null) {
+                return List.of();
+            }
+            String url = "https://sessionserver.mojang.com/session/minecraft/profile/"
+                    + mojangId.toString().replace("-", "") + "?unsigned=false";
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(Duration.ofSeconds(8))
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() != 200 || resp.body() == null || resp.body().isBlank()) {
+                return List.of();
+            }
+            return parseProfile(resp.body(), username).properties();
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    public static UUID lookupUuid(String username) {
+        try {
+            String url = "https://api.minecraftservices.com/users/profiles/minecraft/"
+                    + URLEncoder.encode(username, StandardCharsets.UTF_8);
+            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(Duration.ofSeconds(8))
+                    .GET()
+                    .build();
+            HttpResponse<String> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() != 200 || resp.body() == null || resp.body().isBlank()) {
+                // Fallback legacy API
+                url = "https://api.mojang.com/users/profiles/minecraft/"
+                        + URLEncoder.encode(username, StandardCharsets.UTF_8);
+                req = HttpRequest.newBuilder(URI.create(url))
+                        .timeout(Duration.ofSeconds(8))
+                        .GET()
+                        .build();
+                resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+            }
+            if (resp.statusCode() != 200 || resp.body() == null || resp.body().isBlank()) {
+                return null;
+            }
+            JsonObject json = GSON.fromJson(resp.body(), JsonObject.class);
+            if (json == null || !json.has("id")) {
+                return null;
+            }
+            return dashUuid(json.get("id").getAsString());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static Profile parseProfile(String body, String fallbackName) {
+        JsonObject json = GSON.fromJson(body, JsonObject.class);
         String id = json.get("id").getAsString();
         UUID uuid = dashUuid(id);
-        String name = json.has("name") ? json.get("name").getAsString() : username;
+        String name = json.has("name") ? json.get("name").getAsString() : fallbackName;
         List<ModernForwarding.Property> props = new ArrayList<>();
         if (json.has("properties")) {
             JsonArray arr = json.getAsJsonArray("properties");

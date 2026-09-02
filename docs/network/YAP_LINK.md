@@ -44,12 +44,15 @@ Two forwarding modes:
 ```properties
 velocity-enabled=true
 velocity-secret-file=forwarding.secret
-velocity-online-mode=false   # match Link online-mode
+velocity-online-mode=false   # match Link; set true when Link online-mode=true
 velocity-bind-localhost=true
-online-mode=false
+online-mode=false            # Folia stays offline; Link handles auth / skin forwarding
 game-authority=folia
 ```
 
+**Skins:** Link `online-mode=false` still looks up Mojang textures by username and forwards
+them via modern `velocity:player_info`. For full premium auth + skins, set Link
+`online-mode=true` and matching `velocity-online-mode=true`.
 Same `forwarding.secret` next to Link’s `link.properties`.
 
 2. **Forwarding disabled** (common local Link → Via → YaP-Folia): Folia
