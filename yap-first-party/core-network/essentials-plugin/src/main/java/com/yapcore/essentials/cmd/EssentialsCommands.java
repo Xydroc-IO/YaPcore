@@ -9,6 +9,7 @@ import com.yapcore.essentials.store.StaffService;
 import com.yapcore.essentials.store.TpaService;
 import com.yapcore.essentials.store.VanishService;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -48,6 +49,12 @@ public final class EssentialsCommands implements CommandExecutor, TabCompleter {
             case "tpahere" -> teleport.tpa(sender, args, true);
             case "tpaccept", "tpyes" -> teleport.tpAccept(sender);
             case "tpdeny", "tpno" -> teleport.tpDeny(sender);
+            case "gm", "egm" -> player.gamemode(sender, args, null);
+            case "gms" -> player.gamemode(sender, args, GameMode.SURVIVAL);
+            case "gmc" -> player.gamemode(sender, args, GameMode.CREATIVE);
+            case "gma" -> player.gamemode(sender, args, GameMode.ADVENTURE);
+            case "gmsp" -> player.gamemode(sender, args, GameMode.SPECTATOR);
+            case "i", "item" -> player.item(sender, args);
             case "fly" -> player.fly(sender, args);
             case "god" -> player.god(sender, args);
             case "speed" -> player.speed(sender, args);
@@ -80,10 +87,45 @@ public final class EssentialsCommands implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (args.length == 1) {
+        String name = command.getName().toLowerCase(Locale.ROOT);
+        if ((name.equals("gm") || name.equals("egm")) && args.length == 1) {
+            String prefix = args[0].toLowerCase(Locale.ROOT);
+            return List.of("0", "1", "2", "3", "survival", "creative", "adventure", "spectator").stream()
+                    .filter(s -> s.startsWith(prefix))
+                    .collect(Collectors.toList());
+        }
+        if (name.equals("i") || name.equals("item")) {
+            String prefix = args[args.length - 1].toLowerCase(Locale.ROOT).replace(' ', '_');
+            if (args.length == 1) {
+                return java.util.Arrays.stream(org.bukkit.Material.values())
+                        .filter(m -> m.isItem() && !m.isAir())
+                        .map(m -> m.name().toLowerCase(Locale.ROOT))
+                        .filter(s -> s.startsWith(prefix))
+                        .limit(32)
+                        .collect(Collectors.toList());
+            }
+            List<String> out = new java.util.ArrayList<>();
+            if (args.length == 2) {
+                for (String qty : List.of("1", "16", "64")) {
+                    if (qty.startsWith(prefix)) {
+                        out.add(qty);
+                    }
+                }
+            }
+            if (args.length == 2 || args.length == 3) {
+                out.addAll(Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(prefix))
+                        .toList());
+            }
+            return out;
+        }
+        int playerArg = (name.equals("gm") || name.equals("egm")) ? 2 : 1;
+        if (args.length == playerArg) {
+            String prefix = args[playerArg - 1].toLowerCase(Locale.ROOT);
             return Bukkit.getOnlinePlayers().stream()
                     .map(Player::getName)
-                    .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(args[0].toLowerCase(Locale.ROOT)))
+                    .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(prefix))
                     .collect(Collectors.toList());
         }
         return List.of();

@@ -43,6 +43,8 @@ features:
   back: true
   tpa: true
   teleport: true
+  gamemode: true
+  item: true
   fly: true
   god: true
   speed: true

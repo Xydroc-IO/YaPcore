@@ -34,6 +34,91 @@ final class EssentialsPlayerCommands {
         this.ctx = ctx;
     }
 
+    boolean gamemode(CommandSender sender, String[] args, GameMode forced) {
+        if (ctx.disabled(sender, "gamemode")) {
+            return true;
+        }
+        GameMode mode = forced;
+        int playerArg = 0;
+        if (mode == null) {
+            if (args.length < 1) {
+                sender.sendMessage("§e/gm <0|1|2|3|s|c|a|sp> [player]");
+                sender.sendMessage("§7Also §f/gms §7/ §f/gmc §7/ §f/gma §7/ §f/gmsp");
+                return true;
+            }
+            mode = EssentialsCommandSupport.parseGameMode(args[0]);
+            if (mode == null) {
+                sender.sendMessage("§cUnknown game mode. Use 0/1/2/3 or survival/creative/adventure/spectator.");
+                return true;
+            }
+            playerArg = 1;
+        }
+        Player target = ctx.targetPlayer(sender, args, playerArg, "yapessentials.gamemode");
+        if (target == null) {
+            return true;
+        }
+        GameMode applied = mode;
+        YapSched.entity(ctx.plugin, target, () -> {
+            target.setGameMode(applied);
+            EssentialsCommandSupport.msg(sender, target, "Game mode set to " + pretty(applied) + ".");
+        });
+        return true;
+    }
+
+    private static String pretty(GameMode mode) {
+        String name = mode.name().toLowerCase(Locale.ROOT);
+        return Character.toUpperCase(name.charAt(0)) + name.substring(1);
+    }
+
+    boolean item(CommandSender sender, String[] args) {
+        if (ctx.disabled(sender, "item")) {
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage("§e/i <item> [amount] [player]");
+            return true;
+        }
+        Material material = EssentialsCommandSupport.matchItem(args[0]);
+        if (material == null) {
+            sender.sendMessage("§cUnknown item: " + args[0]);
+            return true;
+        }
+        int amount = 1;
+        int playerArg = -1;
+        if (args.length >= 2) {
+            try {
+                amount = Integer.parseInt(args[1]);
+                playerArg = 2;
+            } catch (NumberFormatException e) {
+                playerArg = 1;
+            }
+        }
+        if (amount < 1 || amount > 2304) {
+            sender.sendMessage("§cAmount must be 1–2304.");
+            return true;
+        }
+        String[] targetArgs = (playerArg >= 0 && args.length > playerArg) ? args : new String[0];
+        int otherIndex = (playerArg >= 0 && args.length > playerArg) ? playerArg : 0;
+        Player target = ctx.targetPlayer(sender, targetArgs, otherIndex, "yapessentials.item");
+        if (target == null) {
+            return true;
+        }
+        int give = amount;
+        YapSched.entity(ctx.plugin, target, () -> {
+            int left = give;
+            while (left > 0) {
+                int stack = Math.min(left, Math.max(1, material.getMaxStackSize()));
+                var leftover = target.getInventory().addItem(new ItemStack(material, stack));
+                leftover.values().forEach(drop ->
+                        target.getWorld().dropItemNaturally(target.getLocation(), drop));
+                left -= stack;
+            }
+            EssentialsCommandSupport.msg(sender, target,
+                    "Received " + give + "× " + material.name().toLowerCase(Locale.ROOT).replace('_', ' ') + ".");
+        });
+        return true;
+    }
+
     boolean fly(CommandSender sender, String[] args) {
         if (ctx.disabled(sender, "fly")) {
             return true;

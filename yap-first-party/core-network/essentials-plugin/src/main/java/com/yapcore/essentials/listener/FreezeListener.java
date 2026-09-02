@@ -1,6 +1,7 @@
 package com.yapcore.essentials.listener;
 
 import com.yapcore.essentials.store.StaffService;
+import com.yapcore.sched.StaffBypass;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,9 +19,13 @@ public final class FreezeListener implements Listener {
         this.staff = staff;
     }
 
+    private boolean frozen(org.bukkit.entity.Player player) {
+        return staff.isFrozen(player.getUniqueId()) && !StaffBypass.staff(player);
+    }
+
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
-        if (!staff.isFrozen(event.getPlayer().getUniqueId())) {
+        if (!frozen(event.getPlayer())) {
             return;
         }
         if (event.getFrom().getBlockX() != event.getTo().getBlockX()
@@ -32,29 +37,28 @@ public final class FreezeListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent event) {
-        if (staff.isFrozen(event.getPlayer().getUniqueId())) {
+        if (frozen(event.getPlayer())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
-        if (staff.isFrozen(event.getPlayer().getUniqueId())) {
+        if (frozen(event.getPlayer())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent event) {
-        if (staff.isFrozen(event.getPlayer().getUniqueId())) {
+        if (frozen(event.getPlayer())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent event) {
-        if (event.getEntity() instanceof org.bukkit.entity.Player player
-                && staff.isFrozen(player.getUniqueId())) {
+        if (event.getEntity() instanceof org.bukkit.entity.Player player && frozen(player)) {
             event.setCancelled(true);
         }
     }

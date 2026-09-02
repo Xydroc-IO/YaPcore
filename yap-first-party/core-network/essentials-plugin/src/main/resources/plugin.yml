@@ -38,6 +38,32 @@ commands:
     usage: /tpdeny
     aliases: [tpno]
     permission: yapessentials.tpa
+  gm:
+    description: Change game mode (0/1/2/3 or s/c/a/sp)
+    usage: /gm <0|1|2|3|s|c|a|sp> [player]
+    aliases: [egm]
+    permission: yapessentials.gamemode
+  gms:
+    description: Survival mode
+    usage: /gms [player]
+    permission: yapessentials.gamemode
+  gmc:
+    description: Creative mode
+    usage: /gmc [player]
+    permission: yapessentials.gamemode
+  gma:
+    description: Adventure mode
+    usage: /gma [player]
+    permission: yapessentials.gamemode
+  gmsp:
+    description: Spectator mode
+    usage: /gmsp [player]
+    permission: yapessentials.gamemode
+  i:
+    description: Give an item to yourself or another player
+    usage: /i <item> [amount] [player]
+    aliases: [item]
+    permission: yapessentials.item
   fly:
     description: Toggle flight
     usage: /fly [player]
@@ -158,6 +184,12 @@ permissions:
     default: true
   yapessentials.tpa:
     default: true
+  yapessentials.gamemode:
+    default: op
+    description: Change game mode with /gm /gms /gmc /gma /gmsp
+  yapessentials.item:
+    default: op
+    description: Give items with /i
   yapessentials.fly:
     default: op
   yapessentials.god:

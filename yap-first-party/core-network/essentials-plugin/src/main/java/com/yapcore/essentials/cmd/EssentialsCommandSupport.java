@@ -122,6 +122,41 @@ final class EssentialsCommandSupport {
         }
     }
 
+    static Material matchItem(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String key = raw.trim().toLowerCase(Locale.ROOT).replace(' ', '_').replace('-', '_');
+        if (key.startsWith("minecraft:")) {
+            key = key.substring("minecraft:".length());
+        }
+        Material mat = Material.matchMaterial(key);
+        if (mat != null && mat.isItem() && !mat.isAir()) {
+            return mat;
+        }
+        try {
+            mat = Material.valueOf(key.toUpperCase(Locale.ROOT));
+            if (mat.isItem() && !mat.isAir()) {
+                return mat;
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        return null;
+    }
+
+    static GameMode parseGameMode(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        return switch (raw.toLowerCase(Locale.ROOT)) {
+            case "0", "s", "surv", "survival" -> GameMode.SURVIVAL;
+            case "1", "c", "crea", "creative" -> GameMode.CREATIVE;
+            case "2", "a", "adv", "adventure" -> GameMode.ADVENTURE;
+            case "3", "sp", "spec", "spectator" -> GameMode.SPECTATOR;
+            default -> null;
+        };
+    }
+
     static String join(String[] args) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < args.length; i++) {

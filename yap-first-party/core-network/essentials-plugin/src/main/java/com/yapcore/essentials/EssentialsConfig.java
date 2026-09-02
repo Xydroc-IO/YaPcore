@@ -33,6 +33,8 @@ public final class EssentialsConfig {
     private boolean featureBack = true;
     private boolean featureTpa = true;
     private boolean featureTeleport = true;
+    private boolean featureItem = true;
+    private boolean featureGamemode = true;
     private boolean featureFly = true;
     private boolean featureGod = true;
     private boolean featureSpeed = true;
@@ -97,6 +99,8 @@ public final class EssentialsConfig {
         featureBack = c.getBoolean("features.back", true);
         featureTpa = c.getBoolean("features.tpa", true);
         featureTeleport = c.getBoolean("features.teleport", true);
+        featureItem = c.getBoolean("features.item", true);
+        featureGamemode = c.getBoolean("features.gamemode", true);
         featureFly = c.getBoolean("features.fly", true);
         featureGod = c.getBoolean("features.god", true);
         featureSpeed = c.getBoolean("features.speed", true);
@@ -202,6 +206,8 @@ public final class EssentialsConfig {
             case "back" -> featureBack;
             case "tpa" -> featureTpa;
             case "teleport" -> featureTeleport;
+            case "item" -> featureItem;
+            case "gamemode" -> featureGamemode;
             case "fly" -> featureFly;
             case "god" -> featureGod;
             case "speed" -> featureSpeed;
