@@ -36,7 +36,7 @@ public final class SkillRepository {
                     return Optional.empty();
                 }
                 return Optional.of(new SkillProgress(
-                        uuid, skillId, rs.getDouble("xp"), rs.getInt("level")));
+                        uuid, skillId, Math.max(0, rs.getDouble("xp")), Math.max(1, rs.getInt("level"))));
             }
         }
     }
@@ -52,11 +52,15 @@ public final class SkillRepository {
             ps.setString(1, uuid.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
+                    String skillId = rs.getString("skill_id");
+                    if (skillId == null || skillId.isBlank()) {
+                        continue;
+                    }
                     out.add(new SkillProgress(
                             uuid,
-                            SkillId.of(rs.getString("skill_id")),
-                            rs.getDouble("xp"),
-                            rs.getInt("level")));
+                            SkillId.of(skillId),
+                            Math.max(0, rs.getDouble("xp")),
+                            Math.max(1, rs.getInt("level"))));
                 }
             }
         }

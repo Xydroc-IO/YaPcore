@@ -6,6 +6,7 @@ import com.yapcore.regions.RegionFlag;
 import com.yapcore.regions.RegionService;
 import com.yapcore.regions.RegionsConfig;
 import com.yapcore.regions.db.AdminRegionRepository;
+import com.yapcore.sched.StaffBypass;
 import com.yapcore.world.CuboidSelection;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -116,21 +117,21 @@ public final class RegionServiceImpl implements RegionService {
     }
 
     public boolean canBuild(Player player, Location location) {
-        if (player.hasPermission("yapregions.admin")) {
+        if (StaffBypass.land(player)) {
             return true;
         }
         return flagAt(location, RegionFlag.BUILD) == FlagValue.ALLOW;
     }
 
     public boolean canEnter(Player player, Location location) {
-        if (player.hasPermission("yapregions.admin")) {
+        if (StaffBypass.land(player)) {
             return true;
         }
         return flagAt(location, RegionFlag.ENTRY) == FlagValue.ALLOW;
     }
 
     public boolean isPvpAllowed(Player attacker, Player victim) {
-        if (attacker.hasPermission("yapregions.admin")) {
+        if (StaffBypass.land(attacker)) {
             return true;
         }
         Optional<AdminRegion> region = at(victim.getLocation());
@@ -165,14 +166,14 @@ public final class RegionServiceImpl implements RegionService {
     }
 
     public boolean canOpenContainer(Player player, Location location) {
-        if (player.hasPermission("yapregions.admin")) {
+        if (StaffBypass.land(player)) {
             return true;
         }
         return flagAt(location, RegionFlag.CHEST_ACCESS) == FlagValue.ALLOW;
     }
 
     public boolean canInteract(Player player, Location location) {
-        if (player.hasPermission("yapregions.admin")) {
+        if (StaffBypass.land(player)) {
             return true;
         }
         return flagAt(location, RegionFlag.INTERACT) == FlagValue.ALLOW;

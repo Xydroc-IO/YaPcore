@@ -74,5 +74,9 @@ public final class ViolationTracker {
         public boolean hasLastMove;
         public long scaffoldWindowStartMs;
         public int scaffoldPlaces;
+        /** Ignore movement checks until this time (ms) — proxy join / spawn settle. */
+        public long joinGraceUntilMs;
+        /** Consecutive suspicious fly samples before a violation counts. */
+        public int flyAirborneStreak;
     }
 }

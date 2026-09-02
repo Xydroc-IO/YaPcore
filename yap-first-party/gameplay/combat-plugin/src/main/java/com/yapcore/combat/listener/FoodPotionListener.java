@@ -4,6 +4,7 @@ import com.yapcore.combat.CombatConfig;
 import com.yapcore.combat.food.FoodLoader;
 import com.yapcore.combat.model.PlayerCombatState;
 import com.yapcore.combat.service.CombatServiceImpl;
+import com.yapcore.sched.StaffBypass;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -44,6 +45,9 @@ public final class FoodPotionListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
+        if (StaffBypass.mmo(player)) {
+            return;
+        }
         ItemStack stack = event.getItem();
         if (stack == null) {
             return;
@@ -65,7 +69,7 @@ public final class FoodPotionListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onVanillaConsume(PlayerItemConsumeEvent event) {
-        if (!config.enabled()) {
+        if (!config.enabled() || StaffBypass.mmo(event.getPlayer())) {
             return;
         }
         Material type = event.getItem().getType();

@@ -8,6 +8,7 @@ import com.yapcore.mechanics.node.ResourceNodeLoader;
 import com.yapcore.mechanics.physics.PhysicsLoader;
 import com.yapcore.mechanics.stamina.StaminaTracker;
 import com.yapcore.mechanics.tool.ToolRuleLoader;
+import com.yapcore.sched.StaffBypass;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -65,7 +66,7 @@ public final class MechanicsServiceImpl implements MechanicsService {
         if (!config.enabled()) {
             return Optional.empty();
         }
-        if (player.hasPermission("yapmechanics.admin")) {
+        if (StaffBypass.mmo(player)) {
             return Optional.empty();
         }
         if (config.toolsEnabled() && config.toolsEnforce()) {

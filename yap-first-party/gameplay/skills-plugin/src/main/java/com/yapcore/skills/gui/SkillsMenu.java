@@ -15,6 +15,8 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 public final class SkillsMenu {
 
@@ -33,12 +35,18 @@ public final class SkillsMenu {
     }
 
     public void open(Player viewer, UUID targetId, String targetName) {
-        skills.getAll(targetId).thenAccept(all -> YapSched.entity(plugin, viewer, () -> {
-            if (!viewer.isOnline()) {
-                return;
-            }
-            openSync(viewer, targetId, targetName, all);
-        }));
+        skills.getAll(targetId)
+                .orTimeout(2, TimeUnit.SECONDS)
+                .exceptionally(ex -> {
+                    plugin.getLogger().log(Level.WARNING, "Skill menu lookup failed", ex);
+                    return List.of();
+                })
+                .thenAccept(all -> YapSched.entity(plugin, viewer, () -> {
+                    if (!viewer.isOnline()) {
+                        return;
+                    }
+                    openSync(viewer, targetId, targetName, all == null ? List.of() : all);
+                }));
     }
 
     private void openSync(Player viewer, UUID targetId, String targetName, Collection<SkillProgress> progressList) {
@@ -59,6 +67,10 @@ public final class SkillsMenu {
         int combatLevel = skills.combatLevel(targetId);
         inv.setItem(COMBAT_SLOT, SkillsMenuHolder.combatLevelIcon(combatLevel, table.maxLevel()));
 
+        if (enabled.isEmpty()) {
+            inv.setItem(SKILL_SLOTS[0], SkillsMenuHolder.skillIcon(
+                    org.bukkit.Material.BARRIER, 0, "No skills loaded", 1, 0, 0, 0, table.maxLevel()));
+        }
         int slotIndex = 0;
         for (SkillDefinition def : enabled) {
             if (slotIndex >= SKILL_SLOTS.length) {

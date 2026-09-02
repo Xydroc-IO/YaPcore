@@ -1,5 +1,6 @@
 package com.yapcore.guard;
 
+import com.yapcore.sched.StaffBypass;
 import com.yapcore.sched.YapSched;
 import com.yapcore.sched.YapTask;
 import org.bukkit.GameMode;
@@ -16,6 +17,7 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffectType;
 
 public final class GuardListener implements Listener {
 
@@ -59,37 +61,94 @@ public final class GuardListener implements Listener {
         if (shouldBypass(player)) {
             return;
         }
+        ViolationTracker.PlayerState state = tracker.state(player.getUniqueId());
+        if (System.currentTimeMillis() < state.joinGraceUntilMs) {
+            return;
+        }
         if (config.flyEnabled()) {
-            checkFly(player);
+            checkFly(player, state);
         }
         if (config.speedEnabled()) {
             checkSpeed(player);
         }
     }
 
-    private void checkFly(Player player) {
+    private void checkFly(Player player, ViolationTracker.PlayerState state) {
         if (player.getAllowFlight() || player.isFlying()) {
+            state.flyAirborneStreak = 0;
             return;
         }
         if (player.getGameMode() == GameMode.CREATIVE || player.getGameMode() == GameMode.SPECTATOR) {
+            state.flyAirborneStreak = 0;
             return;
         }
         if (player.isGliding() || player.isInsideVehicle() || player.isRiptiding()) {
+            state.flyAirborneStreak = 0;
             return;
         }
-        if (player.isOnGround() || player.isInWater() || player.isClimbing()) {
+        if (player.hasPotionEffect(PotionEffectType.LEVITATION)
+                || player.hasPotionEffect(PotionEffectType.SLOW_FALLING)) {
+            state.flyAirborneStreak = 0;
             return;
         }
-        if (player.getFallDistance() > 0.5f && player.getVelocity().getY() < -0.08) {
+        if (player.isOnGround() || player.isInWater() || player.isClimbing() || player.isSwimming()) {
+            state.flyAirborneStreak = 0;
             return;
         }
         if (player.getLocation().getBlock().isLiquid()) {
+            state.flyAirborneStreak = 0;
+            return;
+        }
+        if (hasSolidGroundNearby(player)) {
+            state.flyAirborneStreak = 0;
+            return;
+        }
+        // Jumping / knockback upward — not fly hacks
+        if (player.getVelocity().getY() > 0.05) {
+            state.flyAirborneStreak = 0;
+            return;
+        }
+        if (player.getFallDistance() > 0.5f && player.getVelocity().getY() < -0.08) {
+            state.flyAirborneStreak = 0;
+            return;
+        }
+
+        state.flyAirborneStreak++;
+        if (state.flyAirborneStreak < config.flyMinAirborneChecks()) {
             return;
         }
         if (Math.random() > config.flySensitivity()) {
             return;
         }
+        state.flyAirborneStreak = 0;
         flag(player, "fly");
+    }
+
+    /** Solid block within ~1.3 blocks under feet (covers stairs/slabs + laggy isOnGround). */
+    private static boolean hasSolidGroundNearby(Player player) {
+        Location loc = player.getLocation();
+        var world = loc.getWorld();
+        if (world == null) {
+            return false;
+        }
+        int x = loc.getBlockX();
+        int z = loc.getBlockZ();
+        double feetY = loc.getY();
+        for (double dy = 0.05; dy <= 1.35; dy += 0.45) {
+            Block block = world.getBlockAt(x, (int) Math.floor(feetY - dy), z);
+            if (isGroundLike(block.getType())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isGroundLike(Material type) {
+        if (type.isAir()) {
+            return false;
+        }
+        return type.isSolid() || type.name().endsWith("_SLAB") || type.name().endsWith("_STAIRS")
+                || type.name().endsWith("_CARPET") || type == Material.SCAFFOLDING;
     }
 
     private void checkSpeed(Player player) {
@@ -200,6 +259,10 @@ public final class GuardListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         service.resetViolations(event.getPlayer().getUniqueId());
+        ViolationTracker.PlayerState state = tracker.state(event.getPlayer().getUniqueId());
+        long graceMs = config.joinGraceSeconds() * 1000L;
+        state.joinGraceUntilMs = System.currentTimeMillis() + graceMs;
+        state.flyAirborneStreak = 0;
     }
 
     private void flag(Player player, String check) {
@@ -214,8 +277,6 @@ public final class GuardListener implements Listener {
     }
 
     private boolean shouldBypass(Player player) {
-        return player.hasPermission("yapguard.bypass")
-                || player.getGameMode() == GameMode.CREATIVE
-                || player.getGameMode() == GameMode.SPECTATOR;
+        return StaffBypass.guard(player);
     }
 }

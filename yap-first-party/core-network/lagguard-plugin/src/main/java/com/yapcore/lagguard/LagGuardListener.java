@@ -1,5 +1,6 @@
 package com.yapcore.lagguard;
 
+import com.yapcore.sched.StaffBypass;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -45,7 +46,7 @@ public final class LagGuardListener implements Listener {
         if (entity instanceof Player) {
             return;
         }
-        if (bypass(entity)) {
+        if (playerNearbyBypass(event.getLocation())) {
             return;
         }
         Location loc = event.getLocation();
@@ -88,6 +89,9 @@ public final class LagGuardListener implements Listener {
         if (loc == null || loc.getWorld() == null) {
             return;
         }
+        if (playerNearbyBypass(loc)) {
+            return;
+        }
         World world = loc.getWorld();
         int cx = loc.getBlockX() >> 4;
         int cz = loc.getBlockZ() >> 4;
@@ -117,20 +121,37 @@ public final class LagGuardListener implements Listener {
             return;
         }
         Block block = event.getBlock();
+        if (playerNearbyBypass(block.getLocation())) {
+            return;
+        }
         World world = block.getWorld();
         String key = ChunkBudgetTracker.key(world.getName(), block.getX() >> 4, block.getZ() >> 4);
         long tick = world.getFullTime();
         if (!tracker.tryRedstone(key, config.maxRedstoneEventsPerWindow(),
                 config.redstoneWindowTicks(), tick)) {
-            // Freeze current — prevent further propagation this tick
             event.setNewCurrent(event.getOldCurrent());
             tracker.tripRedstone();
             logTrip("redstone", world.getName(), block.getX() >> 4, block.getZ() >> 4, -1);
         }
     }
 
-    private boolean bypass(Entity entity) {
-        // No player-attached bypass on spawn; ops use permission on commands only.
+    /** Creative / staff / {@code yaplagguard.bypass} in the same chunk. */
+    private boolean playerNearbyBypass(Location loc) {
+        World world = loc.getWorld();
+        if (world == null) {
+            return false;
+        }
+        int cx = loc.getBlockX() >> 4;
+        int cz = loc.getBlockZ() >> 4;
+        for (Player player : world.getPlayers()) {
+            Location pl = player.getLocation();
+            if (pl.getBlockX() >> 4 != cx || pl.getBlockZ() >> 4 != cz) {
+                continue;
+            }
+            if (StaffBypass.lag(player)) {
+                return true;
+            }
+        }
         return false;
     }
 

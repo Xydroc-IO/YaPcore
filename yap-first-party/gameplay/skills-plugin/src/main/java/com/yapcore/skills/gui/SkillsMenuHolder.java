@@ -7,6 +7,7 @@ import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,16 @@ public final class SkillsMenuHolder implements InventoryHolder {
         return inventory;
     }
 
+    private static void applyCmd(ItemMeta meta, int cmd) {
+        if (meta == null || cmd <= 0) {
+            return;
+        }
+        try {
+            meta.setCustomModelData(cmd);
+        } catch (Throwable ignored) {
+        }
+    }
+
     public static ItemStack filler() {
         ItemStack stack = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         stack.editMeta(meta -> meta.displayName(Component.text(" ").decoration(TextDecoration.ITALIC, false)));
@@ -43,7 +54,7 @@ public final class SkillsMenuHolder implements InventoryHolder {
     public static ItemStack combatLevelIcon(int combatLevel, int maxLevel) {
         ItemStack stack = new ItemStack(Material.CLAY_BALL);
         stack.editMeta(meta -> {
-            meta.setCustomModelData(79000);
+            applyCmd(meta, 79000);
             meta.displayName(Component.text("Combat Level")
                     .color(NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
             List<Component> lore = new ArrayList<>();
@@ -69,9 +80,7 @@ public final class SkillsMenuHolder implements InventoryHolder {
             int maxLevel) {
         ItemStack stack = new ItemStack(icon == null ? Material.CLAY_BALL : icon);
         stack.editMeta(meta -> {
-            if (iconCmd > 0) {
-                meta.setCustomModelData(iconCmd);
-            }
+            applyCmd(meta, iconCmd);
             meta.displayName(Component.text(name).color(NamedTextColor.GOLD).decoration(TextDecoration.ITALIC, false));
             List<Component> lore = new ArrayList<>();
             lore.add(Component.text("Level " + level + " / " + maxLevel)

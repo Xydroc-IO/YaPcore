@@ -2,6 +2,7 @@ package com.yapcore.skills.listener;
 
 import com.yapcore.mmo.SkillDefinition;
 import com.yapcore.mmo.XpSource;
+import com.yapcore.sched.StaffBypass;
 import com.yapcore.sched.YapSched;
 import com.yapcore.skills.SkillsPlugin;
 import org.bukkit.Material;
@@ -23,7 +24,7 @@ public final class BreakSkillListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBreakGate(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        if (player.hasPermission("yapskills.admin")) {
+        if (StaffBypass.mmo(player)) {
             return;
         }
         Material block = event.getBlock().getType();

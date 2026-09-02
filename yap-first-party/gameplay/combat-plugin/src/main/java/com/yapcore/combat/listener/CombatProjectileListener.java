@@ -8,6 +8,7 @@ import com.yapcore.combat.service.CombatHitPipeline;
 import com.yapcore.combat.service.CombatServiceImpl;
 import com.yapcore.combat.status.StatusEffectService;
 import com.yapcore.mmo.CombatStyle;
+import com.yapcore.sched.StaffBypass;
 import com.yapcore.sched.YapSched;
 import org.bukkit.entity.AbstractArrow;
 import org.bukkit.entity.Entity;
@@ -49,7 +50,7 @@ public final class CombatProjectileListener implements Listener {
         if (!config.enabled() || !config.projectiles().enabled()) {
             return;
         }
-        if (!(event.getEntity() instanceof Player shooter)) {
+        if (!(event.getEntity() instanceof Player shooter) || StaffBypass.mmo(shooter)) {
             return;
         }
         Entity projectile = event.getProjectile();
@@ -67,7 +68,7 @@ public final class CombatProjectileListener implements Listener {
             return;
         }
         Projectile projectile = event.getEntity();
-        if (!(projectile.getShooter() instanceof Player shooter)) {
+        if (!(projectile.getShooter() instanceof Player shooter) || StaffBypass.mmo(shooter)) {
             return;
         }
         if (ProjectilePhysics.isManaged(projectile, keys)) {
@@ -95,7 +96,10 @@ public final class CombatProjectileListener implements Listener {
             return;
         }
         Player shooter = ProjectilePhysics.resolveShooter(projectile, keys);
-        if (shooter == null) {
+        if (shooter == null || StaffBypass.mmo(shooter)) {
+            return;
+        }
+        if (victim instanceof Player victimPlayer && StaffBypass.mmo(victimPlayer)) {
             return;
         }
         event.setCancelled(true);

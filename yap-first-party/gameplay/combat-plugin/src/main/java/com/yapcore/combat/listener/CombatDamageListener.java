@@ -7,6 +7,7 @@ import com.yapcore.combat.projectile.ProjectilePhysics;
 import com.yapcore.combat.service.CombatHitPipeline;
 import com.yapcore.combat.service.CombatXpAwarder;
 import com.yapcore.mmo.CombatStyle;
+import com.yapcore.sched.StaffBypass;
 import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -43,6 +44,13 @@ public final class CombatDamageListener implements Listener {
             return;
         }
         Player attacker = resolveAttacker(event);
+        if (attacker != null && StaffBypass.mmo(attacker)) {
+            // Creative / staff: vanilla damage, no custom combat pipeline.
+            return;
+        }
+        if (event.getEntity() instanceof Player victim && StaffBypass.mmo(victim)) {
+            return;
+        }
         if (attacker == null) {
             if (event.getEntity() instanceof Player victim) {
                 handleMobVsPlayer(event, victim);

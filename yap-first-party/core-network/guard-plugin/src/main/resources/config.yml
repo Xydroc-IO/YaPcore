@@ -1,7 +1,8 @@
 checks:
   fly:
     enabled: true
-    sensitivity: 0.6
+    sensitivity: 0.4
+    min-airborne-checks: 4
   speed:
     enabled: true
     sensitivity: 0.7
@@ -16,6 +17,7 @@ checks:
     max-places-per-second: 8
     require-air-below: true
 
-max-violations-before-kick: 8
+max-violations-before-kick: 12
 violation-decay-seconds: 45
+join-grace-seconds: 10
 alerts-enabled: true

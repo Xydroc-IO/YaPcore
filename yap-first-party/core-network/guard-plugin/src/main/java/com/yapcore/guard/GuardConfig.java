@@ -22,6 +22,8 @@ public final class GuardConfig {
     private int maxViolationsBeforeKick = 8;
     private int violationDecaySeconds = 45;
     private boolean alertsEnabled = true;
+    private int joinGraceSeconds = 10;
+    private int flyMinAirborneChecks = 4;
 
     public GuardConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -45,6 +47,8 @@ public final class GuardConfig {
         maxViolationsBeforeKick = Math.max(1, c.getInt("max-violations-before-kick", maxViolationsBeforeKick));
         violationDecaySeconds = Math.max(5, c.getInt("violation-decay-seconds", violationDecaySeconds));
         alertsEnabled = c.getBoolean("alerts-enabled", true);
+        joinGraceSeconds = Math.max(0, c.getInt("join-grace-seconds", joinGraceSeconds));
+        flyMinAirborneChecks = Math.max(1, c.getInt("checks.fly.min-airborne-checks", flyMinAirborneChecks));
     }
 
     private static double clamp01(double value) {
@@ -109,6 +113,14 @@ public final class GuardConfig {
 
     public boolean alertsEnabled() {
         return alertsEnabled;
+    }
+
+    public int joinGraceSeconds() {
+        return joinGraceSeconds;
+    }
+
+    public int flyMinAirborneChecks() {
+        return flyMinAirborneChecks;
     }
 
     public void setAlertsEnabled(boolean alertsEnabled) {

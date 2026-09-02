@@ -1,6 +1,7 @@
 package com.yapcore.mechanics.listener;
 
 import com.yapcore.mechanics.service.MechanicsServiceImpl;
+import com.yapcore.sched.StaffBypass;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,6 +19,9 @@ public final class BlockBreakMechanicsListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
         if (!mechanics.config().enabled()) {
+            return;
+        }
+        if (StaffBypass.mmo(event.getPlayer())) {
             return;
         }
         ItemStack tool = event.getPlayer().getInventory().getItemInMainHand();
