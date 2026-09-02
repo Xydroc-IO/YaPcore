@@ -38,7 +38,9 @@ public final class SchematicIO {
                         continue;
                     }
                     blocks.add(new Schematic.BlockEntry(
-                            x - anchorX, y - anchorY, z - anchorZ, BlockCodec.encode(block)));
+                            x - anchorX, y - anchorY, z - anchorZ,
+                            BlockCodec.encode(block),
+                            com.yapcore.world.util.TileCodec.capture(block)));
                 }
             }
         }
@@ -76,7 +78,7 @@ public final class SchematicIO {
     public static void save(Path file, Schematic schematic) throws IOException {
         Files.createDirectories(file.getParent());
         try (BufferedWriter w = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-            w.write("# yap-schem v2");
+            w.write("# yap-schem v3");
             w.newLine();
             w.write("world=" + schematic.world());
             w.newLine();
@@ -85,6 +87,11 @@ public final class SchematicIO {
             for (Schematic.BlockEntry entry : schematic.blocks()) {
                 w.write("block=" + entry.dx() + "," + entry.dy() + "," + entry.dz() + "," + entry.encoded());
                 w.newLine();
+                if (entry.tileNbt() != null && !entry.tileNbt().isBlank()) {
+                    w.write("tile=" + entry.dx() + "," + entry.dy() + "," + entry.dz() + ","
+                            + entry.tileNbt().replace('\n', ' '));
+                    w.newLine();
+                }
             }
             for (Schematic.EntityEntry e : schematic.entities()) {
                 w.write("entity=" + e.dx() + "," + e.dy() + "," + e.dz() + ","
@@ -102,6 +109,7 @@ public final class SchematicIO {
         int az = 0;
         List<Schematic.BlockEntry> blocks = new ArrayList<>();
         List<Schematic.EntityEntry> entities = new ArrayList<>();
+        java.util.Map<String, String> tiles = new java.util.HashMap<>();
         try (BufferedReader r = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             String line;
             while ((line = r.readLine()) != null) {
@@ -123,6 +131,11 @@ public final class SchematicIO {
                             Integer.parseInt(parts[1]),
                             Integer.parseInt(parts[2]),
                             parts[3]));
+                } else if (line.startsWith("tile=")) {
+                    String[] parts = line.substring("tile=".length()).split(",", 4);
+                    if (parts.length >= 4) {
+                        tiles.put(parts[0] + "," + parts[1] + "," + parts[2], parts[3]);
+                    }
                 } else if (line.startsWith("entity=")) {
                     String[] parts = line.substring("entity=".length()).split(",", 7);
                     if (parts.length >= 6) {
@@ -137,6 +150,14 @@ public final class SchematicIO {
                     }
                 }
             }
+        }
+        if (!tiles.isEmpty()) {
+            List<Schematic.BlockEntry> withTiles = new ArrayList<>();
+            for (Schematic.BlockEntry b : blocks) {
+                String key = b.dx() + "," + b.dy() + "," + b.dz();
+                withTiles.add(new Schematic.BlockEntry(b.dx(), b.dy(), b.dz(), b.encoded(), tiles.get(key)));
+            }
+            blocks = withTiles;
         }
         return new Schematic(world, ax, ay, az, blocks, entities);
     }

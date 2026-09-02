@@ -44,6 +44,9 @@ tasks.register("installProductDefaults") {
     if (findProject(":world-plugin") != null) {
         dependsOn(":world-plugin:installIntoPlugins")
     }
+    if (findProject(":worldedit-shim-plugin") != null) {
+        dependsOn(":worldedit-shim-plugin:installIntoPlugins")
+    }
     if (findProject(":packs-plugin") != null) {
         dependsOn(":packs-plugin:installIntoPlugins")
     }
@@ -182,6 +185,7 @@ tasks.register("assemblePluginDist") {
         ":admin-plugin:jar",
         ":protect-plugin:shadowJar",
         ":world-plugin:shadowJar",
+        ":worldedit-shim-plugin:shadowJar",
         ":packs-plugin:jar",
         ":chat-plugin:jar",
         ":tab-plugin:jar",
@@ -265,6 +269,9 @@ tasks.register("assemblePluginDist") {
         }
         copyNamed(jarOf(":protect-plugin", "shadowJar"), coreDir)
         copyNamed(jarOf(":world-plugin", "shadowJar"), coreDir)
+        if (findProject(":worldedit-shim-plugin") != null) {
+            copyNamed(jarOf(":worldedit-shim-plugin", "shadowJar"), coreDir)
+        }
         copyNamed(jarOf(":packs-plugin"), coreDir)
         copyNamed(jarOf(":chat-plugin"), coreDir)
         if (findProject(":tab-plugin") != null) {

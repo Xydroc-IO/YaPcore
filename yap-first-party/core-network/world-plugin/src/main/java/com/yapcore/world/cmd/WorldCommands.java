@@ -523,7 +523,7 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length < 2) {
-            sender.sendMessage("§e/yapworld schem save|paste|import <name>");
+            sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats <name>");
             return true;
         }
         if ("save".equalsIgnoreCase(args[1])) {
@@ -535,7 +535,27 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
         if ("import".equalsIgnoreCase(args[1])) {
             return schemImport(player, args);
         }
-        sender.sendMessage("§e/yapworld schem save|paste|import <name>");
+        if ("list".equalsIgnoreCase(args[1]) || "ls".equalsIgnoreCase(args[1])) {
+            return editOps.dispatch(player, "schem", new String[]{"list"});
+        }
+        if ("load".equalsIgnoreCase(args[1])) {
+            if (args.length < 3) {
+                player.sendMessage("§e/yapworld schem load <name>");
+                return true;
+            }
+            return editOps.dispatch(player, "schem", new String[]{"load", args[2]});
+        }
+        if ("delete".equalsIgnoreCase(args[1]) || "rm".equalsIgnoreCase(args[1])) {
+            if (args.length < 3) {
+                player.sendMessage("§e/yapworld schem delete <name>");
+                return true;
+            }
+            return editOps.dispatch(player, "schem", new String[]{"delete", args[2]});
+        }
+        if ("formats".equalsIgnoreCase(args[1])) {
+            return editOps.dispatch(player, "schem", new String[]{"formats"});
+        }
+        sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats <name>");
         return true;
     }
 
@@ -655,7 +675,7 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
             return filter(worlds.loadedWorlds().stream().toList(), args[1]);
         }
         if (args.length == 2 && "schem".equalsIgnoreCase(args[0])) {
-            return filter(List.of("save", "paste", "import"), args[1]);
+            return filter(List.of("save", "paste", "import", "list", "load", "delete", "formats"), args[1]);
         }
         if (args.length == 2 && "pregen".equalsIgnoreCase(args[0])) {
             return filter(List.of("start", "status", "pause", "resume", "cancel"), args[1]);

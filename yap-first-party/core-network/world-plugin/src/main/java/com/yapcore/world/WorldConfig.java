@@ -23,6 +23,8 @@ public final class WorldConfig {
     private int maxRadius = 128;
     private int parallelChunks = 4;
     private boolean progressMessages = true;
+    private boolean cuiEnabled = true;
+    private boolean clipboardWebEnabled = true;
 
     public WorldConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -48,6 +50,8 @@ public final class WorldConfig {
         maxRadius = Math.max(1, Math.min(512, c.getInt("limits.max-radius", maxRadius)));
         parallelChunks = Math.max(1, Math.min(16, c.getInt("limits.parallel-chunks", parallelChunks)));
         progressMessages = c.getBoolean("limits.progress-messages", true);
+        cuiEnabled = c.getBoolean("cui.enabled", true);
+        clipboardWebEnabled = c.getBoolean("editor.clipboard-web", true);
     }
 
     public boolean allowLoad() {
@@ -116,5 +120,13 @@ public final class WorldConfig {
 
     public boolean progressMessages() {
         return progressMessages;
+    }
+
+    public boolean cuiEnabled() {
+        return cuiEnabled;
+    }
+
+    public boolean clipboardWebEnabled() {
+        return clipboardWebEnabled;
     }
 }

@@ -61,6 +61,7 @@ tasks.register("assembleRelease") {
             "yap-admin.jar",
             "yap-protect.jar",
             "yap-world.jar",
+            "WorldEdit.jar",
             "yap-regions.jar",
             "yap-npcs.jar",
             "yap-guard.jar",

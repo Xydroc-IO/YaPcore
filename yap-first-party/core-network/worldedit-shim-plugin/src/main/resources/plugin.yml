@@ -1,0 +1,8 @@
+name: WorldEdit
+version: '1.0.0.0'
+main: com.yapcore.worldedit.WorldEditShimPlugin
+api-version: '1.21'
+folia-supported: true
+depend: [YaPWorld]
+description: YaPWorld WorldEdit API compatibility shim (not stock EngineHub/FAWE)
+authors: [YaPcore]

@@ -30,7 +30,10 @@ public final class BlockBatch {
         }
     }
 
-    public record Encoded(int x, int y, int z, String encoded) {
+    public record Encoded(int x, int y, int z, String encoded, String tileNbt) {
+        public Encoded(int x, int y, int z, String encoded) {
+            this(x, y, z, encoded, null);
+        }
     }
 
     private final JavaPlugin plugin;
@@ -174,8 +177,11 @@ public final class BlockBatch {
                     Block block = world.getBlockAt(p.x(), p.y(), p.z());
                     String before = BlockCodec.encode(block);
                     BlockCodec.apply(block, p.encoded());
+                    if (p.tileNbt() != null) {
+                        com.yapcore.world.util.TileCodec.apply(block, p.tileNbt());
+                    }
                     String after = BlockCodec.encode(block);
-                    if (!before.equals(after)) {
+                    if (!before.equals(after) || p.tileNbt() != null) {
                         if (session != null) {
                             session.record(world.getName(), p.x(), p.y(), p.z(), before, after);
                         }

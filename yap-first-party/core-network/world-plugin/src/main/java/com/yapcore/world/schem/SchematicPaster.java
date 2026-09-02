@@ -2,6 +2,7 @@ package com.yapcore.world.schem;
 
 import com.yapcore.sched.YapSched;
 import com.yapcore.world.util.BlockCodec;
+import com.yapcore.world.util.TileCodec;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -30,6 +31,7 @@ public final class SchematicPaster {
                         originY + entry.dy(),
                         originZ + entry.dz(),
                         entry.encoded(),
+                        entry.tileNbt(),
                         placed));
             }
             chain.whenComplete((v, err) -> YapSched.region(plugin,
@@ -41,12 +43,14 @@ public final class SchematicPaster {
         return future;
     }
 
-    private CompletableFuture<Void> pasteOne(World world, int x, int y, int z, String encoded, AtomicInteger placed) {
+    private CompletableFuture<Void> pasteOne(World world, int x, int y, int z, String encoded,
+                                             String tile, AtomicInteger placed) {
         CompletableFuture<Void> done = new CompletableFuture<>();
         Location loc = new Location(world, x, y, z);
         YapSched.region(plugin, loc, () -> {
             Block block = loc.getBlock();
             BlockCodec.apply(block, encoded);
+            TileCodec.apply(block, tile);
             placed.incrementAndGet();
             done.complete(null);
         });

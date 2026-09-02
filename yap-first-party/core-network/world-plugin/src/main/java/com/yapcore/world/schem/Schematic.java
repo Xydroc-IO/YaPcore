@@ -6,7 +6,10 @@ import java.util.List;
 
 public final class Schematic {
 
-    public record BlockEntry(int dx, int dy, int dz, String encoded) {
+    public record BlockEntry(int dx, int dy, int dz, String encoded, String tileNbt) {
+        public BlockEntry(int dx, int dy, int dz, String encoded) {
+            this(dx, dy, dz, encoded, null);
+        }
     }
 
     /** Lightweight entity snapshot (type + relative pos + yaw/pitch). NBT payload optional. */

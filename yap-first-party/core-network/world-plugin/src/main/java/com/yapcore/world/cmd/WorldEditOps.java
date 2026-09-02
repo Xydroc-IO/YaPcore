@@ -3,6 +3,7 @@ package com.yapcore.world.cmd;
 import com.yapcore.sched.YapSched;
 import com.yapcore.world.CuboidSelection;
 import com.yapcore.world.WorldPlugin;
+import com.yapcore.world.cui.WorldEditCuiBridge;
 import com.yapcore.world.edit.BrushService;
 import com.yapcore.world.edit.ClipboardService;
 import com.yapcore.world.edit.GenerationService;
@@ -12,14 +13,24 @@ import com.yapcore.world.edit.SelectionEditService;
 import com.yapcore.world.edit.SelectionShape;
 import com.yapcore.world.edit.TerrainService;
 import com.yapcore.world.edit.UndoService;
+import com.yapcore.world.schem.Schematic;
+import com.yapcore.world.schem.SchematicIO;
+import com.yapcore.world.schem.SchematicPaster;
+import com.yapcore.world.schem.SpongeSchematicImporter;
 import com.yapcore.world.service.SelectionServiceImpl;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -40,11 +51,12 @@ public final class WorldEditOps {
     private final SelectionShape shapes;
     private final PlayerEditState editState;
     private final TerrainService terrain;
+    private final WorldEditCuiBridge cui;
 
     public WorldEditOps(WorldPlugin plugin, SelectionServiceImpl selection, SelectionEditService edit,
                         GenerationService generation, ClipboardService clipboard, UndoService undo,
                         BrushService brush, MaskEngine masks, SelectionShape shapes,
-                        PlayerEditState editState, TerrainService terrain) {
+                        PlayerEditState editState, TerrainService terrain, WorldEditCuiBridge cui) {
         this.plugin = plugin;
         this.selection = selection;
         this.edit = edit;
@@ -56,6 +68,7 @@ public final class WorldEditOps {
         this.shapes = shapes;
         this.editState = editState;
         this.terrain = terrain;
+        this.cui = cui;
     }
 
     public boolean dispatch(Player player, String name, String[] args) {
@@ -116,11 +129,20 @@ public final class WorldEditOps {
                 selection.clearSelection(player.getUniqueId());
                 shapes.clearPoly(player.getUniqueId());
                 player.sendMessage("§eSelection cleared.");
+                notifyCui(player);
                 yield true;
             }
             case "clearclipboard" -> {
                 clipboard.clear(player.getUniqueId());
                 player.sendMessage("§eClipboard cleared.");
+                yield true;
+            }
+            case "clipboard", "clip" -> {
+                clipboardSlot(player, args);
+                yield true;
+            }
+            case "schem", "schematic" -> {
+                schemCmd(player, args);
                 yield true;
             }
             case "mask" -> {
@@ -157,6 +179,7 @@ public final class WorldEditOps {
                 selection.selectChunk(player.getUniqueId(), loc.getWorld().getName(),
                         loc.getBlockX(), loc.getBlockZ());
                 player.sendMessage("§aSelected chunk around you.");
+                notifyCui(player);
                 yield true;
             }
             case "set", "fill" -> set(player, args);
@@ -322,21 +345,25 @@ public final class WorldEditOps {
                 yield true;
             }
             case "copy" -> {
+                applyClipboardSlotFlag(player, args);
                 Optional<CuboidSelection> sel = requireSel(player);
                 if (sel.isEmpty()) {
                     yield true;
                 }
                 clipboard.copy(player, sel.get(), false).thenAccept(n ->
-                        YapSched.global(plugin, () -> player.sendMessage("§aCopied §f" + n + " §ablocks.")));
+                        YapSched.global(plugin, () -> player.sendMessage(
+                                "§aCopied §f" + n + " §ablocks §7(slot " + clipboard.slot(player.getUniqueId()) + ")")));
                 yield true;
             }
             case "cut" -> {
+                applyClipboardSlotFlag(player, args);
                 Optional<CuboidSelection> sel = requireSel(player);
                 if (sel.isEmpty()) {
                     yield true;
                 }
                 clipboard.copy(player, sel.get(), true).thenAccept(n ->
-                        YapSched.global(plugin, () -> player.sendMessage("§aCut §f" + n + " §ablocks.")));
+                        YapSched.global(plugin, () -> player.sendMessage(
+                                "§aCut §f" + n + " §ablocks §7(slot " + clipboard.slot(player.getUniqueId()) + ")")));
                 yield true;
             }
             case "paste" -> {
@@ -470,10 +497,201 @@ public final class WorldEditOps {
         player.sendMessage("§eEdit: §f//set //replace <mask> <pattern> //walls //faces //hollow //overlay //smooth");
         player.sendMessage("§eGenerate: §f//cyl //sphere //pyramid //line //drain //regen //forest //flora");
         player.sendMessage("§eBiome/deform: §f//setbiome //biomeinfo //deform //twist //center //curve");
-        player.sendMessage("§eClipboard: §f//copy //cut //paste [-a] //rotate //flip //stack //move");
+        player.sendMessage("§eClipboard: §f//copy [-m slot] //cut //paste [-a] //rotate //flip //stack //move //clipboard [slot]");
+        player.sendMessage("§eSchem: §f//schem list|load|save|delete|formats|paste <name>");
         player.sendMessage("§eBrush: §f//brush sphere|cyl|smooth|gravity|clipboard|butcher <r> [pat] //size //mat");
         player.sendMessage("§eTools: §f//farwand //superpickaxe //info //tree //none");
         player.sendMessage("§eHistory: §f//undo //redo §7· §eGUI: §f/yapworld");
+    }
+
+    private void notifyCui(Player player) {
+        if (cui != null) {
+            cui.update(player);
+        }
+    }
+
+    private void applyClipboardSlotFlag(Player player, String[] args) {
+        for (int i = 0; i < args.length - 1; i++) {
+            if ("-m".equalsIgnoreCase(args[i]) || "-slot".equalsIgnoreCase(args[i])) {
+                clipboard.setSlot(player.getUniqueId(), parseInt(args[i + 1], 0));
+                return;
+            }
+        }
+    }
+
+    private void clipboardSlot(Player player, String[] args) {
+        if (args.length >= 1) {
+            clipboard.setSlot(player.getUniqueId(), parseInt(args[0], 0));
+        }
+        player.sendMessage("§aClipboard §f" + clipboard.statusLine(player.getUniqueId()));
+    }
+
+    private void schemCmd(Player player, String[] args) {
+        if (!plugin.worldConfig().schematicsEnabled()) {
+            player.sendMessage("§cSchematics disabled.");
+            return;
+        }
+        if (!player.hasPermission("yapworld.schematic")) {
+            player.sendMessage("§cNo permission.");
+            return;
+        }
+        if (args.length < 1) {
+            player.sendMessage("§e//schem list|load|save|delete|formats|paste <name>");
+            return;
+        }
+        String sub = args[0].toLowerCase(Locale.ROOT);
+        switch (sub) {
+            case "list", "ls" -> schemList(player);
+            case "formats", "format" -> player.sendMessage("§aFormats: §f.yschem (v3 tile-NBT) §7· §f.schem (Sponge import)");
+            case "save" -> {
+                if (args.length < 2) {
+                    player.sendMessage("§e//schem save <name>");
+                    return;
+                }
+                schemSave(player, args[1]);
+            }
+            case "load", "paste" -> {
+                if (args.length < 2) {
+                    player.sendMessage("§e//schem " + sub + " <name>");
+                    return;
+                }
+                if ("load".equals(sub)) {
+                    schemLoadClipboard(player, args[1]);
+                } else {
+                    schemPasteAtFeet(player, args[1]);
+                }
+            }
+            case "delete", "rm", "remove" -> {
+                if (args.length < 2) {
+                    player.sendMessage("§e//schem delete <name>");
+                    return;
+                }
+                schemDelete(player, args[1]);
+            }
+            default -> player.sendMessage("§e//schem list|load|save|delete|formats|paste <name>");
+        }
+    }
+
+    private void schemList(Player player) {
+        Path dir = plugin.schematicsDir();
+        List<String> names = new ArrayList<>();
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (Path p : stream) {
+                String n = p.getFileName().toString();
+                if (n.endsWith(".yschem") || n.endsWith(".schem")) {
+                    names.add(n);
+                }
+            }
+        } catch (Exception e) {
+            player.sendMessage("§cList failed: " + e.getMessage());
+            return;
+        }
+        if (names.isEmpty()) {
+            player.sendMessage("§eNo schematics in §f" + dir.getFileName());
+            return;
+        }
+        player.sendMessage("§aSchematics (§f" + names.size() + "§a):");
+        names.stream().sorted().limit(40).forEach(n -> player.sendMessage("  §7" + n));
+        if (names.size() > 40) {
+            player.sendMessage("  §8… +" + (names.size() - 40) + " more");
+        }
+    }
+
+    private void schemSave(Player player, String name) {
+        Optional<CuboidSelection> opt = requireSel(player);
+        if (opt.isEmpty()) {
+            return;
+        }
+        CuboidSelection sel = opt.get();
+        World world = org.bukkit.Bukkit.getWorld(sel.world());
+        if (world == null) {
+            player.sendMessage("§cWorld not loaded.");
+            return;
+        }
+        YapSched.global(plugin, () -> {
+            try {
+                Schematic schem = SchematicIO.capture(sel, world);
+                Path file = plugin.schematicsDir().resolve(name + ".yschem");
+                SchematicIO.save(file, schem);
+                player.sendMessage("§aSaved §f" + name + ".yschem §a(" + schem.blocks().size() + " blocks).");
+            } catch (Exception e) {
+                player.sendMessage("§cSave failed: " + e.getMessage());
+            }
+        });
+    }
+
+    private void schemLoadClipboard(Player player, String name) {
+        Path file = resolveSchemFile(name);
+        if (file == null) {
+            player.sendMessage("§cSchematic not found.");
+            return;
+        }
+        YapSched.async(plugin, () -> {
+            try {
+                Schematic schematic = file.toString().endsWith(".schem")
+                        ? SpongeSchematicImporter.importFile(file)
+                        : SchematicIO.load(file);
+                YapSched.global(plugin, () -> {
+                    clipboard.loadSchematic(player.getUniqueId(), schematic, 0, 0, 0);
+                    player.sendMessage("§aLoaded §f" + file.getFileName() + " §ainto clipboard slot "
+                            + clipboard.slot(player.getUniqueId()) + " (§f" + schematic.blocks().size() + "§a).");
+                });
+            } catch (Exception e) {
+                YapSched.global(plugin, () -> player.sendMessage("§cLoad failed: " + e.getMessage()));
+            }
+        });
+    }
+
+    private void schemPasteAtFeet(Player player, String name) {
+        Path file = resolveSchemFile(name);
+        if (file == null) {
+            player.sendMessage("§cSchematic not found.");
+            return;
+        }
+        Location loc = player.getLocation();
+        YapSched.async(plugin, () -> {
+            try {
+                Schematic schematic = file.toString().endsWith(".schem")
+                        ? SpongeSchematicImporter.importFile(file)
+                        : SchematicIO.load(file);
+                SchematicPaster paster = new SchematicPaster(plugin);
+                paster.paste(schematic, player.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
+                        .thenAccept(count -> YapSched.global(plugin,
+                                () -> player.sendMessage("§aPasted §f" + count + " §ablocks.")));
+            } catch (Exception e) {
+                YapSched.global(plugin, () -> player.sendMessage("§cPaste failed: " + e.getMessage()));
+            }
+        });
+    }
+
+    private void schemDelete(Player player, String name) {
+        Path file = resolveSchemFile(name);
+        if (file == null) {
+            player.sendMessage("§cSchematic not found.");
+            return;
+        }
+        try {
+            Files.deleteIfExists(file);
+            player.sendMessage("§aDeleted §f" + file.getFileName());
+        } catch (Exception e) {
+            player.sendMessage("§cDelete failed: " + e.getMessage());
+        }
+    }
+
+    private Path resolveSchemFile(String name) {
+        String base = name.endsWith(".yschem") || name.endsWith(".schem")
+                ? name.substring(0, name.lastIndexOf('.'))
+                : name;
+        Path yschem = plugin.schematicsDir().resolve(base + ".yschem");
+        Path schem = plugin.schematicsDir().resolve(base + ".schem");
+        if (Files.isRegularFile(yschem)) {
+            return yschem;
+        }
+        if (Files.isRegularFile(schem)) {
+            return schem;
+        }
+        Path raw = plugin.schematicsDir().resolve(name);
+        return Files.isRegularFile(raw) ? raw : null;
     }
 
     private boolean selMode(Player player, String[] args) {
@@ -518,6 +736,7 @@ public final class WorldEditOps {
                     loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
             player.sendMessage("§aPos2 set.");
         }
+        notifyCui(player);
         return true;
     }
 
@@ -574,6 +793,7 @@ public final class WorldEditOps {
         } else {
             CuboidSelection s = result.get();
             player.sendMessage("§a" + op + " → volume §f" + s.volume());
+            notifyCui(player);
         }
         return true;
     }

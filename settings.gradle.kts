@@ -82,6 +82,9 @@ project(":protect-plugin").projectDir = file("yap-first-party/core-network/prote
 include("yap-world-api")
 project(":yap-world-api").projectDir = file("yap-first-party/api/yap-world-api")
 
+include("yap-worldedit-compat")
+project(":yap-worldedit-compat").projectDir = file("yap-first-party/api/yap-worldedit-compat")
+
 include("regions-plugin")
 project(":regions-plugin").projectDir = file("yap-first-party/core-network/regions-plugin")
 
@@ -93,6 +96,9 @@ project(":npcs-plugin").projectDir = file("yap-first-party/core-network/npcs-plu
 
 include("world-plugin")
 project(":world-plugin").projectDir = file("yap-first-party/core-network/world-plugin")
+
+include("worldedit-shim-plugin")
+project(":worldedit-shim-plugin").projectDir = file("yap-first-party/core-network/worldedit-shim-plugin")
 
 include("yap-tab-api")
 project(":yap-tab-api").projectDir = file("yap-first-party/api/yap-tab-api")

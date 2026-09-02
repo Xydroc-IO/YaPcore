@@ -120,7 +120,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 
 | Area | Change |
 |------|--------|
-| **YaPWorld** | FAWE-class phases 1–3: masks/patterns, `//sel` shapes, biomes/terrain/brushes, parallel chunk apply, `//fast`, entity `.yschem` v2, soft `EditApplyService` — [YAPWORLD.md](../plugins/YAPWORLD.md) |
+| **YaPWorld** | FAWE-class phases 1–4: masks/patterns, `//sel`, biomes/terrain/brushes, parallel chunks, `//fast`, `.yschem` v3 (tile-NBT + entities), `EditApplyService`, `WorldEdit.jar` API shim, WorldEditCUI, multi-clipboard, optional clipboard-web — [YAPWORLD.md](../plugins/YAPWORLD.md) |
 | **YaPTab** | Folia-safe Bukkit scoreboard sidebar (removed megavex packet path that kicked on join) |
 | **YaPChat** | Secure-chat login rewrite fixed for YaP-Folia 26.2 (`ClientboundLoginPacket`) |
 | **Economy** | Native `PlayerDataService` balance (deposit/withdraw/set) — crafting `/sell`, games rewards drop Vault fallback |
@@ -133,7 +133,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 
 - Manual §E live checklist ([CROSSPLAY.md](../network/CROSSPLAY.md))
 - Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))
-- **YaPWorld Phase 4** (planned): WE API shim, WorldEditCUI, tile-NBT schematics, optional clipboard-web — [YAPWORLD.md](../plugins/YAPWORLD.md)
+- YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
 
 ---
 

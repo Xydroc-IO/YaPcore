@@ -1,7 +1,9 @@
 package com.yapcore.world;
 
+import com.sk89q.worldedit.extent.EditSession;
 import com.yapcore.world.cmd.WorldCommands;
 import com.yapcore.world.cmd.WorldEditOps;
+import com.yapcore.world.cui.WorldEditCuiBridge;
 import com.yapcore.world.edit.BrushService;
 import com.yapcore.world.edit.ClipboardService;
 import com.yapcore.world.edit.GenerationService;
@@ -11,6 +13,7 @@ import com.yapcore.world.edit.SelectionEditService;
 import com.yapcore.world.edit.SelectionShape;
 import com.yapcore.world.edit.TerrainService;
 import com.yapcore.world.edit.UndoService;
+import com.yapcore.world.edit.WorldEditBridge;
 import com.yapcore.world.gui.WorldEditGui;
 import com.yapcore.world.gui.WorldEditGuiListener;
 import com.yapcore.world.listener.BrushListener;
@@ -56,13 +59,16 @@ public final class WorldPlugin extends JavaPlugin {
     private WorldEditHttpServer editHttp;
     private WorldCommands commands;
     private EditApplyServiceImpl editApply;
+    private WorldEditBridge worldEditBridge;
+    private WorldEditCuiBridge cuiBridge;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         reloadWorld();
 
-        getServer().getPluginManager().registerEvents(new SelectionWandListener(config, selection, selectionShape), this);
+        getServer().getPluginManager().registerEvents(
+                new SelectionWandListener(config, selection, selectionShape, this::notifyCui), this);
         getServer().getPluginManager().registerEvents(new BrushListener(brushService), this);
         getServer().getPluginManager().registerEvents(
                 new WorldEditToolListener(config, selection, brushService, worldEditTool, this::openInGameGui), this);
@@ -83,7 +89,7 @@ public final class WorldPlugin extends JavaPlugin {
             cmd.setExecutor(commands);
             cmd.setTabCompleter(commands);
         }
-        getLogger().info("YaPWorld ready — FAWE-class //set //mask //sel /yapworld gui (Folia-safe).");
+        getLogger().info("YaPWorld ready — FAWE-class Phase 4 (WE shim, CUI, tile-NBT, clipboard-web).");
     }
 
     public void reloadWorld() {
@@ -144,9 +150,20 @@ public final class WorldPlugin extends JavaPlugin {
 
         brushService.setClipboard(clipboardService);
 
+        worldEditBridge = new WorldEditBridge(this, undoService);
+        worldEditBridge.setEditState(playerEditState);
+        worldEditBridge.setParallelChunks(config.parallelChunks());
+        EditSession.YaPEditBridge.set(worldEditBridge);
+
+        if (cuiBridge == null) {
+            cuiBridge = new WorldEditCuiBridge(this, selection, selectionShape);
+            cuiBridge.register();
+        }
+        cuiBridge.setEnabled(config.cuiEnabled());
+
         editOps = new WorldEditOps(this, selection, selectionEditService, generationService,
                 clipboardService, undoService, brushService, maskEngine, selectionShape,
-                playerEditState, terrainService);
+                playerEditState, terrainService, cuiBridge);
         editApply = new EditApplyServiceImpl(selectionEditService, clipboardService, selection);
         worldEditTool = new WorldEditTool(this);
         worldEditGui = new WorldEditGui(this, config, selection, worldEditTool);
@@ -167,12 +184,18 @@ public final class WorldPlugin extends JavaPlugin {
             return;
         }
         editHttp = new WorldEditHttpServer(this, config, editSessions, worldManager, selection, brushService,
-                selectionEditService, undoService, paster, worldEditTool);
+                selectionEditService, undoService, paster, worldEditTool, clipboardService);
         try {
             editHttp.start();
         } catch (IOException e) {
             getLogger().warning("World edit studio failed to start: " + e.getMessage());
             editHttp = null;
+        }
+    }
+
+    public void notifyCui(Player player) {
+        if (cuiBridge != null) {
+            cuiBridge.update(player);
         }
     }
 
@@ -250,6 +273,10 @@ public final class WorldPlugin extends JavaPlugin {
         return terrainService;
     }
 
+    public WorldEditCuiBridge cui() {
+        return cuiBridge;
+    }
+
     public Path schematicsDir() {
         Path dir = getDataFolder().toPath().resolve(config.schematicsFolder());
         dir.toFile().mkdirs();
@@ -262,6 +289,11 @@ public final class WorldPlugin extends JavaPlugin {
             editHttp.stop();
             editHttp = null;
         }
+        if (cuiBridge != null) {
+            cuiBridge.unregister();
+            cuiBridge = null;
+        }
+        EditSession.YaPEditBridge.set(null);
         var sm = getServer().getServicesManager();
         if (worldManager != null) {
             sm.unregister(com.yapcore.world.WorldManagerService.class, worldManager);

@@ -38,9 +38,12 @@ public final class ClipboardService {
     ) {
     }
 
+    public static final int MAX_SLOTS = 3;
+
     private final JavaPlugin plugin;
     private final BlockBatch batch;
-    private final Map<UUID, Clipboard> clipboards = new ConcurrentHashMap<>();
+    private final Map<UUID, Clipboard[]> clipSlots = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer> activeSlot = new ConcurrentHashMap<>();
     private MaskEngine masks;
     private SelectionShape shapes;
 
@@ -65,12 +68,37 @@ public final class ClipboardService {
         batch.setParallelChunks(n);
     }
 
+    public int slot(UUID playerId) {
+        return activeSlot.getOrDefault(playerId, 0);
+    }
+
+    public void setSlot(UUID playerId, int slot) {
+        activeSlot.put(playerId, Math.max(0, Math.min(MAX_SLOTS - 1, slot)));
+    }
+
     public Clipboard clipboard(UUID playerId) {
-        return clipboards.get(playerId);
+        Clipboard[] slots = clipSlots.get(playerId);
+        if (slots == null) {
+            return null;
+        }
+        return slots[slot(playerId)];
+    }
+
+    public void putClipboard(UUID playerId, Clipboard clip) {
+        Clipboard[] slots = clipSlots.computeIfAbsent(playerId, id -> new Clipboard[MAX_SLOTS]);
+        slots[slot(playerId)] = clip;
     }
 
     public void clear(UUID playerId) {
-        clipboards.remove(playerId);
+        Clipboard[] slots = clipSlots.get(playerId);
+        if (slots != null) {
+            slots[slot(playerId)] = null;
+        }
+    }
+
+    public void clearAll(UUID playerId) {
+        clipSlots.remove(playerId);
+        activeSlot.remove(playerId);
     }
 
     public CompletableFuture<Integer> copy(Player player, CuboidSelection sel, boolean cut) {
@@ -93,7 +121,8 @@ public final class ClipboardService {
                         Block block = world.getBlockAt(x, y, z);
                         blocks.add(new Schematic.BlockEntry(
                                 x - sel.minX(), y - sel.minY(), z - sel.minZ(),
-                                BlockCodec.encode(block)));
+                                BlockCodec.encode(block),
+                                com.yapcore.world.util.TileCodec.capture(block)));
                         if (cut && !block.getType().isAir()) {
                             airOut.add(new BlockBatch.Planned(x, y, z, Material.AIR));
                         }
@@ -103,7 +132,7 @@ public final class ClipboardService {
             int sizeX = sel.maxX() - sel.minX() + 1;
             int sizeY = sel.maxY() - sel.minY() + 1;
             int sizeZ = sel.maxZ() - sel.minZ() + 1;
-            clipboards.put(player.getUniqueId(), new Clipboard(
+            putClipboard(player.getUniqueId(), new Clipboard(
                     world.getName(),
                     blocks,
                     sizeX, sizeY, sizeZ,
@@ -121,7 +150,7 @@ public final class ClipboardService {
     }
 
     public CompletableFuture<Integer> paste(Player player, boolean ignoreAir) {
-        Clipboard clip = clipboards.get(player.getUniqueId());
+        Clipboard clip = clipboard(player.getUniqueId());
         if (clip == null) {
             return CompletableFuture.completedFuture(0);
         }
@@ -142,13 +171,13 @@ public final class ClipboardService {
             if (masks != null && !masks.allows(id, world, wx, wy, wz)) {
                 continue;
             }
-            plans.add(new BlockBatch.Encoded(wx, wy, wz, entry.encoded()));
+            plans.add(new BlockBatch.Encoded(wx, wy, wz, entry.encoded(), entry.tileNbt()));
         }
         return batch.applyEncoded(player, world, plans);
     }
 
     public boolean rotateY(UUID playerId, int degrees) {
-        Clipboard clip = clipboards.get(playerId);
+        Clipboard clip = clipboard(playerId);
         if (clip == null) {
             return false;
         }
@@ -169,7 +198,7 @@ public final class ClipboardService {
                 dx = ndx;
                 dz = ndz;
             }
-            rotated.add(new Schematic.BlockEntry(dx, dy, dz, e.encoded()));
+            rotated.add(new Schematic.BlockEntry(dx, dy, dz, e.encoded(), e.tileNbt()));
             minDx = Math.min(minDx, dx);
             minDz = Math.min(minDz, dz);
         }
@@ -180,7 +209,7 @@ public final class ClipboardService {
         for (Schematic.BlockEntry e : rotated) {
             int dx = e.dx() - minDx;
             int dz = e.dz() - minDz;
-            normalized.add(new Schematic.BlockEntry(dx, e.dy(), dz, e.encoded()));
+            normalized.add(new Schematic.BlockEntry(dx, e.dy(), dz, e.encoded(), e.tileNbt()));
             maxDx = Math.max(maxDx, dx);
             maxDy = Math.max(maxDy, e.dy());
             maxDz = Math.max(maxDz, dz);
@@ -196,13 +225,13 @@ public final class ClipboardService {
         }
         ox -= minDx;
         oz -= minDz;
-        clipboards.put(playerId, new Clipboard(
+        putClipboard(playerId, new Clipboard(
                 clip.world(), normalized, maxDx + 1, maxDy + 1, maxDz + 1, ox, clip.offsetY(), oz));
         return true;
     }
 
     public boolean flip(UUID playerId, char axis) {
-        Clipboard clip = clipboards.get(playerId);
+        Clipboard clip = clipboard(playerId);
         if (clip == null) {
             return false;
         }
@@ -220,7 +249,7 @@ public final class ClipboardService {
             } else {
                 return false;
             }
-            flipped.add(new Schematic.BlockEntry(dx, dy, dz, e.encoded()));
+            flipped.add(new Schematic.BlockEntry(dx, dy, dz, e.encoded(), e.tileNbt()));
         }
         int ox = clip.offsetX();
         int oy = clip.offsetY();
@@ -232,7 +261,7 @@ public final class ClipboardService {
         } else {
             oy = clip.sizeY() - 1 - oy;
         }
-        clipboards.put(playerId, new Clipboard(
+        putClipboard(playerId, new Clipboard(
                 clip.world(), flipped, clip.sizeX(), clip.sizeY(), clip.sizeZ(), ox, oy, oz));
         return true;
     }
@@ -251,9 +280,11 @@ public final class ClipboardService {
             for (int x = sel.minX(); x <= sel.maxX(); x++) {
                 for (int y = sel.minY(); y <= sel.maxY(); y++) {
                     for (int z = sel.minZ(); z <= sel.maxZ(); z++) {
+                        Block block = world.getBlockAt(x, y, z);
                         blocks.add(new Schematic.BlockEntry(
                                 x - sel.minX(), y - sel.minY(), z - sel.minZ(),
-                                BlockCodec.encode(world.getBlockAt(x, y, z))));
+                                BlockCodec.encode(block),
+                                com.yapcore.world.util.TileCodec.capture(block)));
                     }
                 }
             }
@@ -268,7 +299,7 @@ public final class ClipboardService {
                 int oy = sel.minY() + dy * i;
                 int oz = sel.minZ() + dz * i;
                 for (Schematic.BlockEntry e : clip.blocks()) {
-                    plans.add(new BlockBatch.Encoded(ox + e.dx(), oy + e.dy(), oz + e.dz(), e.encoded()));
+                    plans.add(new BlockBatch.Encoded(ox + e.dx(), oy + e.dy(), oz + e.dz(), e.encoded(), e.tileNbt()));
                 }
             }
             return batch.applyEncoded(player, world, plans);
@@ -284,21 +315,54 @@ public final class ClipboardService {
         int sy = dir.getBlockY() * amount;
         int sz = dir.getBlockZ() * amount;
         return copy(player, sel, true).thenCompose(n -> {
-            Clipboard clip = clipboards.get(player.getUniqueId());
+            Clipboard clip = clipboard(player.getUniqueId());
             if (clip == null) {
                 return CompletableFuture.completedFuture(0);
             }
-            // Move: paste at original min + shift, using zero offsets temporarily
             List<BlockBatch.Encoded> plans = new ArrayList<>();
             for (Schematic.BlockEntry e : clip.blocks()) {
                 plans.add(new BlockBatch.Encoded(
                         sel.minX() + sx + e.dx(),
                         sel.minY() + sy + e.dy(),
                         sel.minZ() + sz + e.dz(),
-                        e.encoded()));
+                        e.encoded(),
+                        e.tileNbt()));
             }
             return batch.applyEncoded(player, world, plans);
         });
+    }
+
+    /** Export active clipboard as a schematic (anchor 0,0,0; player offset preserved in comment via size). */
+    public Schematic toSchematic(UUID playerId) {
+        Clipboard clip = clipboard(playerId);
+        if (clip == null) {
+            return null;
+        }
+        return new Schematic(clip.world(), 0, 0, 0, clip.blocks());
+    }
+
+    public void loadSchematic(UUID playerId, Schematic schem, int offsetX, int offsetY, int offsetZ) {
+        if (schem == null) {
+            return;
+        }
+        Schematic.Bounds b = schem.bounds();
+        putClipboard(playerId, new Clipboard(
+                schem.world(),
+                schem.blocks(),
+                Math.max(1, b.sizeX()),
+                Math.max(1, b.sizeY()),
+                Math.max(1, b.sizeZ()),
+                offsetX, offsetY, offsetZ));
+    }
+
+    public String statusLine(UUID playerId) {
+        int s = slot(playerId);
+        Clipboard clip = clipboard(playerId);
+        if (clip == null) {
+            return "slot " + s + " empty (0–" + (MAX_SLOTS - 1) + ")";
+        }
+        return "slot " + s + ": " + clip.blocks().size() + " blocks "
+                + clip.sizeX() + "×" + clip.sizeY() + "×" + clip.sizeZ();
     }
 
     private static boolean isAirEncoded(String encoded) {

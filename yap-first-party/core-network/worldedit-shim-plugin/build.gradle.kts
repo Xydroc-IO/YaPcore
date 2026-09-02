@@ -20,18 +20,14 @@ repositories {
 dependencies {
     val paperApi = providers.gradleProperty("paperApiVersion").getOrElse("26.2.build.112-stable")
     compileOnly("io.papermc.paper:paper-api:$paperApi")
-    implementation(project(":yap-sched"))
-    implementation(project(":yap-world-api"))
     implementation(project(":yap-worldedit-compat"))
-    compileOnly(project(":yap-perms-api"))
-    compileOnly(project(":pregen-plugin"))
+    compileOnly(project(":yap-world-api"))
 }
 
 tasks.shadowJar {
-    archiveFileName.set("yap-world.jar")
+    archiveFileName.set("WorldEdit.jar")
     archiveClassifier.set("")
     mergeServiceFiles()
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
 }
 
 tasks.jar {

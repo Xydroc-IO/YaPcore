@@ -4,8 +4,11 @@ import com.yapcore.sched.YapSched;
 import com.yapcore.world.WorldConfig;
 import com.yapcore.world.WorldPlugin;
 import com.yapcore.world.edit.BrushService;
+import com.yapcore.world.edit.ClipboardService;
 import com.yapcore.world.edit.SelectionEditService;
 import com.yapcore.world.edit.UndoService;
+import com.yapcore.world.schem.Schematic;
+import com.yapcore.world.schem.SchematicIO;
 import com.yapcore.world.schem.SchematicPaster;
 import com.yapcore.world.service.SelectionServiceImpl;
 import com.yapcore.world.service.WorldManagerServiceImpl;
@@ -42,15 +45,18 @@ public final class WorldEditHttpServer {
     private final WorldConfig config;
     private final WorldEditSessionRegistry sessions;
     private final WorldEditActionHandler actions;
+    private final ClipboardService clipboard;
     private HttpServer http;
 
     public WorldEditHttpServer(WorldPlugin plugin, WorldConfig config, WorldEditSessionRegistry sessions,
                                WorldManagerServiceImpl worldManager, SelectionServiceImpl selection,
                                BrushService brushService, SelectionEditService selectionEdit,
-                               UndoService undoService, SchematicPaster paster, WorldEditTool tool) {
+                               UndoService undoService, SchematicPaster paster, WorldEditTool tool,
+                               ClipboardService clipboard) {
         this.plugin = plugin;
         this.config = config;
         this.sessions = sessions;
+        this.clipboard = clipboard;
         this.actions = new WorldEditActionHandler(plugin, config, worldManager, selection, brushService,
                 selectionEdit, undoService, paster, tool);
     }
@@ -67,6 +73,8 @@ public final class WorldEditHttpServer {
         http.createContext("/api/world-edit/state", this::apiState);
         http.createContext("/api/world-edit/action", this::apiAction);
         http.createContext("/api/world-edit/schematic/download", this::schematicDownload);
+        http.createContext("/api/world-edit/clipboard/download", this::clipboardDownload);
+        http.createContext("/api/world-edit/clipboard/upload", this::clipboardUpload);
         http.createContext("/editor/health", ex -> text(ex, 200, "ok"));
         http.setExecutor(Executors.newFixedThreadPool(6, r -> {
             Thread t = new Thread(r, "yap-world-edit-http");
@@ -148,6 +156,110 @@ public final class WorldEditHttpServer {
         ex.sendResponseHeaders(200, bytes.length);
         try (OutputStream out = ex.getResponseBody()) {
             out.write(bytes);
+        }
+    }
+
+    private void clipboardDownload(HttpExchange ex) throws IOException {
+        addCors(ex);
+        if ("OPTIONS".equalsIgnoreCase(ex.getRequestMethod())) {
+            ex.sendResponseHeaders(204, -1);
+            return;
+        }
+        if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            ex.sendResponseHeaders(405, -1);
+            return;
+        }
+        if (!config.clipboardWebEnabled()) {
+            json(ex, 403, Map.of("error", "clipboard-web disabled"));
+            return;
+        }
+        Optional<WorldEditSessionRegistry.Entry> entry = resolveSession(ex);
+        if (entry.isEmpty()) {
+            return;
+        }
+        Player player = Bukkit.getPlayer(entry.get().playerId());
+        if (player == null || !player.isOnline() || !WorldPlugin.canUseEditor(player)) {
+            json(ex, 403, Map.of("error", "forbidden"));
+            return;
+        }
+        Schematic schem = clipboard.toSchematic(player.getUniqueId());
+        if (schem == null) {
+            json(ex, 404, Map.of("error", "clipboard empty"));
+            return;
+        }
+        Path tmp = Files.createTempFile("yap-clip-", ".yschem");
+        try {
+            SchematicIO.save(tmp, schem);
+            byte[] bytes = Files.readAllBytes(tmp);
+            Headers h = ex.getResponseHeaders();
+            h.set("Content-Type", "application/octet-stream");
+            h.set("Content-Disposition", "attachment; filename=\"clipboard.yschem\"");
+            ex.sendResponseHeaders(200, bytes.length);
+            try (OutputStream out = ex.getResponseBody()) {
+                out.write(bytes);
+            }
+        } finally {
+            Files.deleteIfExists(tmp);
+        }
+    }
+
+    private void clipboardUpload(HttpExchange ex) throws IOException {
+        addCors(ex);
+        if ("OPTIONS".equalsIgnoreCase(ex.getRequestMethod())) {
+            ex.sendResponseHeaders(204, -1);
+            return;
+        }
+        if (!"POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            ex.sendResponseHeaders(405, -1);
+            return;
+        }
+        if (!config.clipboardWebEnabled()) {
+            json(ex, 403, Map.of("error", "clipboard-web disabled"));
+            return;
+        }
+        Optional<WorldEditSessionRegistry.Entry> entry = resolveSession(ex);
+        if (entry.isEmpty()) {
+            return;
+        }
+        Player player = Bukkit.getPlayer(entry.get().playerId());
+        if (player == null || !player.isOnline() || !WorldPlugin.canUseEditor(player)) {
+            json(ex, 403, Map.of("error", "forbidden"));
+            return;
+        }
+        byte[] body = ex.getRequestBody().readAllBytes();
+        if (body.length == 0 || body.length > 32 * 1024 * 1024) {
+            json(ex, 400, Map.of("error", "invalid body"));
+            return;
+        }
+        Path tmp = Files.createTempFile("yap-clip-up-", ".yschem");
+        try {
+            Files.write(tmp, body);
+            Schematic schem = SchematicIO.load(tmp);
+            String slotQ = query(ex, "slot");
+            CountDownLatch latch = new CountDownLatch(1);
+            AtomicInteger blocks = new AtomicInteger(0);
+            YapSched.global(plugin, () -> {
+                try {
+                    if (!slotQ.isBlank()) {
+                        clipboard.setSlot(player.getUniqueId(), Integer.parseInt(slotQ));
+                    }
+                    clipboard.loadSchematic(player.getUniqueId(), schem, 0, 0, 0);
+                    blocks.set(schem.blocks().size());
+                } catch (Exception ignored) {
+                } finally {
+                    latch.countDown();
+                }
+            });
+            try {
+                latch.await(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            json(ex, 200, Map.of("ok", true, "blocks", blocks.get(), "slot", clipboard.slot(player.getUniqueId())));
+        } catch (Exception e) {
+            json(ex, 400, Map.of("error", e.getMessage() == null ? "parse failed" : e.getMessage()));
+        } finally {
+            Files.deleteIfExists(tmp);
         }
     }
 

@@ -30,6 +30,9 @@ permissions:
     description: Open the browser world edit studio (/yapworld editor)
   yapworld.schematic:
     default: op
+  yapworld.cui:
+    default: op
+    description: Receive WorldEditCUI selection outlines
   yapworld.brush:
     default: op
   yapworld.pregen:

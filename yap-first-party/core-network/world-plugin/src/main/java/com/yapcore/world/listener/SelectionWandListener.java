@@ -11,6 +11,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
+import java.util.function.Consumer;
+
 public final class SelectionWandListener implements Listener {
 
     public static final Material WAND = Material.WOODEN_AXE;
@@ -18,11 +20,14 @@ public final class SelectionWandListener implements Listener {
     private final WorldConfig config;
     private final SelectionServiceImpl selection;
     private final SelectionShape shapes;
+    private final Consumer<Player> onSelectionChanged;
 
-    public SelectionWandListener(WorldConfig config, SelectionServiceImpl selection, SelectionShape shapes) {
+    public SelectionWandListener(WorldConfig config, SelectionServiceImpl selection, SelectionShape shapes,
+                                 Consumer<Player> onSelectionChanged) {
         this.config = config;
         this.selection = selection;
         this.shapes = shapes;
+        this.onSelectionChanged = onSelectionChanged;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -55,11 +60,17 @@ public final class SelectionWandListener implements Listener {
                 player.sendMessage("§aPos1 set to §f" + block.getX() + ", " + block.getY() + ", " + block.getZ());
             }
             event.setCancelled(true);
+            if (onSelectionChanged != null) {
+                onSelectionChanged.accept(player);
+            }
         } else if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             selection.setPos2(player.getUniqueId(), block.getWorld().getName(),
                     block.getX(), block.getY(), block.getZ());
             player.sendMessage("§aPos2 set to §f" + block.getX() + ", " + block.getY() + ", " + block.getZ());
             event.setCancelled(true);
+            if (onSelectionChanged != null) {
+                onSelectionChanged.accept(player);
+            }
         }
     }
 }
