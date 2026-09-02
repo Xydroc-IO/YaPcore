@@ -44,6 +44,12 @@ features:
   auctions: true
   claims: true
   traders: false
+  backpack: true
+
+# Extra storage (not the vanilla E inventory). 45 slots per page; bottom row is tabs.
+backpack:
+  default-pages: 3
+  max-pages: 9
 
 # Offline password auth (AuthMe-class). Session lock is separate (always on).
 # LAN/demo default OFF so players join without /register. Enable for public offline-mode.

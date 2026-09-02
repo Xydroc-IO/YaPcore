@@ -34,15 +34,45 @@ public final class KitRepository {
         }
     }
 
+    public int uses(UUID uuid, String kit) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT uses FROM kit_cooldowns WHERE uuid = ? AND kit = ?")) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, kit);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getInt("uses") : 0;
+            }
+        }
+    }
+
     public void markClaimed(UUID uuid, String kit) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO kit_cooldowns (uuid, kit, claimed_at) VALUES (?, ?, ?)
-                     ON DUPLICATE KEY UPDATE claimed_at = VALUES(claimed_at)
+                     INSERT INTO kit_cooldowns (uuid, kit, claimed_at, uses) VALUES (?, ?, ?, 1)
+                     ON DUPLICATE KEY UPDATE claimed_at = VALUES(claimed_at), uses = uses + 1
                      """)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, kit);
             ps.setTimestamp(3, Timestamp.from(Instant.now()));
+            ps.executeUpdate();
+        }
+    }
+
+    public void resetCooldown(UUID uuid, String kit) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "DELETE FROM kit_cooldowns WHERE uuid = ? AND kit = ?")) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, kit);
+            ps.executeUpdate();
+        }
+    }
+
+    public void resetAll(UUID uuid) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("DELETE FROM kit_cooldowns WHERE uuid = ?")) {
+            ps.setString(1, uuid.toString());
             ps.executeUpdate();
         }
     }

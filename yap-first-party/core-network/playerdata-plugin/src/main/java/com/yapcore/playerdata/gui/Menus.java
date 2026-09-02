@@ -2,6 +2,7 @@ package com.yapcore.playerdata.gui;
 
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.PlayerDataPlugin;
+import com.yapcore.playerdata.bag.BackpackService;
 import com.yapcore.playerdata.claims.Claim;
 import com.yapcore.playerdata.claims.ClaimService;
 import com.yapcore.playerdata.claims.ClaimVisualizer;
@@ -10,6 +11,8 @@ import com.yapcore.playerdata.db.AuctionRepository;
 import com.yapcore.playerdata.db.HomesRepository;
 import com.yapcore.playerdata.db.JobRepository;
 import com.yapcore.playerdata.db.KitRepository;
+import com.yapcore.playerdata.kit.CooldownFormat;
+import com.yapcore.playerdata.kit.KitDef;
 import com.yapcore.playerdata.db.LocationRow;
 import com.yapcore.playerdata.db.MailRepository;
 import com.yapcore.playerdata.db.WarpsRepository;
@@ -47,6 +50,7 @@ public final class Menus {
     final AuctionRepository auctions;
     final MailRepository mail;
     final ClaimService claims;
+    BackpackService backpack;
 
     /** slot → auction id / home name / etc for click routing */
     final Map<java.util.UUID, Map<Integer, String>> clickMeta = new HashMap<>();
@@ -68,6 +72,10 @@ public final class Menus {
         this.claims = claims;
     }
 
+    public void bindBackpack(BackpackService backpack) {
+        this.backpack = backpack;
+    }
+
     public void openHub(Player player) {
         if (!Perms.require(player, "yapdata.menu")) {
             return;
@@ -85,6 +93,11 @@ public final class Menus {
         } else {
             inv.setItem(4, YapMenuHolder.icon(Material.PAPER, NamedTextColor.GRAY,
                     "Profile", "Economy off", "Profile: " + config.inventoryProfile()));
+        }
+        if (config.featureBackpack() && backpack != null && player.hasPermission("yapdata.bag")) {
+            int pages = backpack.pagesFor(player);
+            inv.setItem(13, YapMenuHolder.icon(Material.BUNDLE, NamedTextColor.GOLD,
+                    "Bag", pages + (pages == 1 ? " page" : " pages"), "Click to open · /bag"));
         }
         if (config.featureHomes()) {
             inv.setItem(19, YapMenuHolder.icon(Material.RED_BED, "Homes", "Click to open"));
@@ -196,18 +209,75 @@ public final class Menus {
             if (slot >= 35) {
                 break;
             }
-            Material icon = entry.getValue().items().isEmpty()
-                    ? Material.CHEST
-                    : entry.getValue().items().get(0).getType();
+            KitDef def = entry.getValue();
+            Material icon = def.iconStack() != null ? def.iconStack().getType() : Material.CHEST;
+            String remain = "Ready";
+            String uses = def.maxUses() > 0 ? "Uses left: ?" : "Unlimited uses";
+            try {
+                var last = kits.lastClaim(player.getUniqueId(), def.id());
+                if (last.isPresent() && def.delaySeconds() > 0) {
+                    long secs = java.time.Duration.between(java.time.Instant.now(),
+                            last.get().plusSeconds(def.delaySeconds())).getSeconds();
+                    if (secs > 0) {
+                        remain = "Cooldown: " + CooldownFormat.formatSeconds(secs);
+                    }
+                }
+                int used = kits.uses(player.getUniqueId(), def.id());
+                if (def.maxUses() > 0) {
+                    uses = "Uses: " + Math.max(0, def.maxUses() - used) + "/" + def.maxUses();
+                }
+            } catch (Exception ignored) {
+            }
+            String cost = def.cost() > 0 ? "Cost: $" + String.format("%.2f", def.cost()) : "Free";
             inv.setItem(slot, YapMenuHolder.icon(icon, entry.getKey(),
-                    "Cooldown: " + entry.getValue().delaySeconds() + "s",
-                    "Items: " + entry.getValue().items().size(),
-                    "Click to claim"));
+                    remain, uses, cost, "Items: " + def.itemCount(),
+                    "Click to claim · Shift: preview"));
             meta.put(slot, entry.getKey());
             slot++;
         }
         inv.setItem(40, YapMenuHolder.icon(Material.ARROW, "Back"));
         clickMeta.put(player.getUniqueId(), meta);
+        player.openInventory(inv);
+    }
+
+    public void openKitPreview(Player player, String kitId) {
+        KitDef def = config.kits().get(kitId.toLowerCase());
+        if (def == null) {
+            player.sendMessage("§cUnknown kit.");
+            return;
+        }
+        YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.KIT_PREVIEW, kitId);
+        Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Kit: " + def.id(), NamedTextColor.YELLOW));
+        holder.bind(inv);
+        int slot = 0;
+        if (def.helmet() != null) {
+            inv.setItem(slot++, def.helmet().clone());
+        }
+        if (def.chestplate() != null) {
+            inv.setItem(slot++, def.chestplate().clone());
+        }
+        if (def.leggings() != null) {
+            inv.setItem(slot++, def.leggings().clone());
+        }
+        if (def.boots() != null) {
+            inv.setItem(slot++, def.boots().clone());
+        }
+        if (def.offhand() != null) {
+            inv.setItem(slot++, def.offhand().clone());
+        }
+        for (ItemStack stack : def.items()) {
+            if (slot >= 45) {
+                break;
+            }
+            if (stack != null) {
+                inv.setItem(slot++, stack.clone());
+            }
+        }
+        inv.setItem(49, YapMenuHolder.icon(Material.ARROW, "Back"));
+        inv.setItem(53, YapMenuHolder.icon(Material.CHEST, NamedTextColor.GREEN, "Claim",
+                def.cost() > 0 ? "Cost: $" + String.format("%.2f", def.cost()) : "Free",
+                "Delay: " + def.delaySeconds() + "s"));
+        clickMeta.put(player.getUniqueId(), java.util.Map.of(53, def.id()));
         player.openInventory(inv);
     }
 

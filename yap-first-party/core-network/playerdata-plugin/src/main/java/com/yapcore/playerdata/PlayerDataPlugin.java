@@ -7,9 +7,13 @@ import com.yapcore.playerdata.claims.ClaimFlagService;
 import com.yapcore.playerdata.claims.ClaimListener;
 import com.yapcore.playerdata.claims.ClaimService;
 import com.yapcore.playerdata.claims.TaxService;
+import com.yapcore.playerdata.bag.BackpackChannel;
+import com.yapcore.playerdata.bag.BackpackListener;
+import com.yapcore.playerdata.bag.BackpackService;
 import com.yapcore.playerdata.cmd.AdminCommand;
 import com.yapcore.playerdata.cmd.AuctionCommands;
 import com.yapcore.playerdata.cmd.AuthCommands;
+import com.yapcore.playerdata.cmd.BagCommands;
 import com.yapcore.playerdata.cmd.BalanceCommands;
 import com.yapcore.playerdata.cmd.ClaimCommands;
 import com.yapcore.playerdata.cmd.HomeCommands;
@@ -22,6 +26,7 @@ import com.yapcore.playerdata.cmd.TraderCommands;
 import com.yapcore.playerdata.cmd.WarpCommands;
 import com.yapcore.playerdata.db.AuctionRepository;
 import com.yapcore.playerdata.db.AuthRepository;
+import com.yapcore.playerdata.db.BackpackRepository;
 import com.yapcore.playerdata.db.ClaimRepository;
 import com.yapcore.playerdata.db.Database;
 import com.yapcore.playerdata.db.HomesRepository;
@@ -38,7 +43,9 @@ import com.yapcore.playerdata.feature.JobListener;
 import com.yapcore.playerdata.feature.ShopListener;
 import com.yapcore.playerdata.gui.MenuListener;
 import com.yapcore.playerdata.gui.Menus;
+import com.yapcore.playerdata.kit.KitDelivery;
 import com.yapcore.playerdata.kit.KitGrantService;
+import com.yapcore.playerdata.kit.KitSignListener;
 import com.yapcore.playerdata.npc.NpcTraderListener;
 import com.yapcore.playerdata.npc.NpcTraderService;
 import com.yapcore.playerdata.service.PlayerDataServiceImpl;
@@ -68,6 +75,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
     private TaxService taxes;
     private NpcTraderService traders;
     private Menus menus;
+    private BackpackService backpack;
     private PlayerDataServiceImpl playerDataService;
     private KitGrantService kitGrants;
 
@@ -132,7 +140,22 @@ public final class PlayerDataPlugin extends JavaPlugin {
         }
 
         menus = new Menus(this, config, sync, balances, homes, warps, kits, jobs, auctions, mail, claims);
-        kitGrants = config.featureKits() ? new KitGrantService(this, config, kits, sync) : null;
+
+        if (config.featureBackpack()) {
+            BackpackRepository backpackRepo = new BackpackRepository(database);
+            backpack = new BackpackService(this, config, sync, backpackRepo);
+            menus.bindBackpack(backpack);
+            BagCommands bagCommands = new BagCommands(this, backpack, backpackRepo, sync);
+            bind("bag", bagCommands, bagCommands);
+            getServer().getPluginManager().registerEvents(new BackpackListener(backpack), this);
+            getServer().getMessenger().registerOutgoingPluginChannel(this, BackpackService.CHANNEL);
+            getServer().getMessenger().registerIncomingPluginChannel(
+                    this, BackpackService.CHANNEL, new BackpackChannel(this, backpack));
+        } else {
+            bindDisabled("bag", "features.backpack");
+        }
+        KitDelivery kitDelivery = new KitDelivery(this, config, kits, balances);
+        kitGrants = config.featureKits() ? new KitGrantService(this, config, kits, sync, kitDelivery) : null;
 
         getServer().getPluginManager().registerEvents(
                 new JoinQuitListener(this, sync, config.featureMail() ? mail : null, kitGrants), this);
@@ -149,9 +172,11 @@ public final class PlayerDataPlugin extends JavaPlugin {
             BalanceCommands balanceCommands = new BalanceCommands(balances);
             bind("bal", balanceCommands, balanceCommands);
             bind("pay", balanceCommands, balanceCommands);
+            bind("eco", balanceCommands, balanceCommands);
         } else {
             bindDisabled("bal", "economy");
             bindDisabled("pay", "economy");
+            bindDisabled("eco", "economy");
         }
 
         AdminCommand admin = new AdminCommand(this, config, database, sync, auth);
@@ -194,12 +219,23 @@ public final class PlayerDataPlugin extends JavaPlugin {
         }
 
         if (config.featureKits()) {
-            KitCommands kitCommands = new KitCommands(this, config, kits, sync, kitGrants, menus);
+            KitCommands kitCommands = new KitCommands(this, config, kits, sync, kitGrants, kitDelivery, menus);
             bind("kit", kitCommands, kitCommands);
             bind("kits", kitCommands, kitCommands);
+            bind("createkit", kitCommands, kitCommands);
+            bind("delkit", kitCommands, kitCommands);
+            bind("showkit", kitCommands, kitCommands);
+            bind("kitreset", kitCommands, kitCommands);
+            bind("kitresetcooldown", kitCommands, kitCommands);
+            getServer().getPluginManager().registerEvents(new KitSignListener(this, kitCommands), this);
         } else {
             bindDisabled("kit", "features.kits");
             bindDisabled("kits", "features.kits");
+            bindDisabled("createkit", "features.kits");
+            bindDisabled("delkit", "features.kits");
+            bindDisabled("showkit", "features.kits");
+            bindDisabled("kitreset", "features.kits");
+            bindDisabled("kitresetcooldown", "features.kits");
         }
 
         if (config.featureMail()) {
@@ -297,11 +333,23 @@ public final class PlayerDataPlugin extends JavaPlugin {
         if (config.featureTraders()) {
             on.add("traders");
         }
+        if (config.featureBackpack()) {
+            on.add("backpack");
+        }
         return on.isEmpty() ? "none" : String.join(",", on);
     }
 
     @Override
     public void onDisable() {
+        if (backpack != null) {
+            backpack.flushAllOnlineBlocking();
+            try {
+                getServer().getMessenger().unregisterIncomingPluginChannel(this, BackpackService.CHANNEL);
+                getServer().getMessenger().unregisterOutgoingPluginChannel(this, BackpackService.CHANNEL);
+            } catch (Throwable ignored) {
+            }
+            backpack = null;
+        }
         if (traders != null) {
             traders.stop();
             traders = null;

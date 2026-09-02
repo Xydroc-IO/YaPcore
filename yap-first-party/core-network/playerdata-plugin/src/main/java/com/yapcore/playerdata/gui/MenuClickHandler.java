@@ -34,7 +34,8 @@ final class MenuClickHandler {
                 case HUB -> hubClick(player, name);
                 case HOMES -> homesClick(player, slot, shift, name);
                 case WARPS -> warpsClick(player, slot, name);
-                case KITS -> kitsClick(player, slot, name);
+                case KITS -> kitsClick(player, slot, shift, name);
+                case KIT_PREVIEW -> kitPreviewClick(player, slot, name);
                 case JOBS -> jobsClick(player, slot, name);
                 case AUCTIONS -> auctionsClick(player, slot, name);
                 case MAIL -> mailClick(player, name);
@@ -58,6 +59,13 @@ final class MenuClickHandler {
 
     boolean hubClick(Player player, String name) {
         return switch (name) {
+            case "Bag" -> {
+                if (menus.config.featureBackpack() && menus.backpack != null) {
+                    player.closeInventory();
+                    menus.backpack.openOwn(player, 1);
+                }
+                yield true;
+            }
             case "Homes" -> {
                 if (menus.config.featureHomes()) {
                     menus.openHomes(player);
@@ -150,7 +158,7 @@ final class MenuClickHandler {
         return true;
     }
 
-    boolean kitsClick(Player player, int slot, String name) throws Exception {
+    boolean kitsClick(Player player, int slot, boolean shift, String name) throws Exception {
         if ("Back".equals(name)) {
             menus.openHub(player);
             return true;
@@ -160,8 +168,28 @@ final class MenuClickHandler {
         if (kit == null) {
             return true;
         }
+        if (shift) {
+            menus.openKitPreview(player, kit);
+            return true;
+        }
         player.closeInventory();
         player.performCommand("kit " + kit);
+        return true;
+    }
+
+    boolean kitPreviewClick(Player player, int slot, String name) {
+        if ("Back".equals(name)) {
+            menus.openKits(player);
+            return true;
+        }
+        if ("Claim".equals(name)) {
+            Map<Integer, String> meta = menus.clickMeta.getOrDefault(player.getUniqueId(), Map.of());
+            String kit = meta.get(53);
+            player.closeInventory();
+            if (kit != null) {
+                player.performCommand("kit " + kit);
+            }
+        }
         return true;
     }
 

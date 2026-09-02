@@ -41,6 +41,11 @@ commands:
     description: Pay another player
     usage: /pay <player> <amount>
     permission: yapdata.pay
+  eco:
+    description: Staff economy — give, take, set, or reset a balance
+    usage: /eco <give|take|set|reset> <player> [amount]
+    aliases: [economy]
+    permission: yapdata.eco
   yapdata:
     description: Admin reload / status / force-save
     usage: /yapdata <reload|status|save>
@@ -78,13 +83,35 @@ commands:
     usage: /warps
     permission: yapdata.warp
   kit:
-    description: Claim a kit, or admin give/grant (console / Tebex)
-    usage: /kit [name|give|grant|list]
+    description: Claim a kit, or admin give/grant/create/reset
+    usage: /kit [name|give|grant|list|create|delete|show|reset]
     permission: yapdata.kit
   kits:
     description: Kits GUI
     usage: /kits
     permission: yapdata.kit
+  createkit:
+    description: Save current inventory as a kit
+    usage: /createkit <name> [delaySeconds]
+    permission: yapdata.kit.create
+    aliases: [kitcreate]
+  delkit:
+    description: Delete a kit from kits.yml
+    usage: /delkit <name>
+    permission: yapdata.kit.create
+  showkit:
+    description: Preview a kit
+    usage: /showkit <name>
+    permission: yapdata.kit
+    aliases: [previewkit]
+  kitreset:
+    description: Reset kit cooldown / uses
+    usage: /kitreset <player> [kit|all]
+    permission: yapdata.kit.reset
+  kitresetcooldown:
+    description: Alias of /kitreset
+    usage: /kitresetcooldown <player> [kit|all]
+    permission: yapdata.kit.reset
   mail:
     description: Mail GUI / send
     usage: /mail [read|clear|send <player> <msg>]
@@ -113,6 +140,11 @@ commands:
     usage: /trader <create|remove|addbuy|addsell|list|reload>
     permission: yapdata.trader.admin
     aliases: [npctrader, traders]
+  bag:
+    description: Open extra bag pages
+    usage: /bag [page] | /bag see <player> [page]
+    permission: yapdata.bag
+    aliases: [backpack, bp]
 permissions:
   yapdata.admin:
     description: Reload, status, force-save, manage shops/auctions/claims/traders
@@ -129,6 +161,9 @@ permissions:
   yapdata.pay:
     description: Pay other players
     default: true
+  yapdata.eco:
+    description: Staff /eco give take set reset
+    default: op
   yapdata.home:
     description: Set / use / delete homes
     default: true
@@ -155,6 +190,12 @@ permissions:
     default: op
   yapdata.kit.give:
     description: Admin / console kit give and grant (store)
+    default: op
+  yapdata.kit.create:
+    description: /createkit /delkit and kit signs
+    default: op
+  yapdata.kit.reset:
+    description: /kitreset cooldown and uses
     default: op
   yapdata.mail:
     description: Read / send / clear mail
@@ -188,4 +229,19 @@ permissions:
     default: false
   yapdata.trader.admin:
     description: Create and manage NPC traders
+    default: op
+  yapdata.bag:
+    description: Open /bag extra storage
+    default: true
+  yapdata.bag.see:
+    description: Open another player's bag
+    default: op
+  yapdata.bag.pages.5:
+    description: At least 5 bag pages (VIP)
+    default: false
+  yapdata.bag.pages.7:
+    description: At least 7 bag pages (staff)
+    default: false
+  yapdata.bag.pages.*:
+    description: All configured bag pages
     default: op

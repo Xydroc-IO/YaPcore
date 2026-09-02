@@ -1,11 +1,11 @@
 package com.yapcore.playerdata.kit;
 
 import com.yapcore.playerdata.PlayerDataConfig;
+import com.yapcore.playerdata.cmd.Perms;
 import com.yapcore.playerdata.db.KitRepository;
 import com.yapcore.playerdata.sync.SyncService;
 import com.yapcore.sched.YapSched;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
@@ -23,12 +23,15 @@ public final class KitGrantService {
     private final PlayerDataConfig config;
     private final KitRepository kits;
     private final SyncService sync;
+    private final KitDelivery delivery;
 
-    public KitGrantService(JavaPlugin plugin, PlayerDataConfig config, KitRepository kits, SyncService sync) {
+    public KitGrantService(JavaPlugin plugin, PlayerDataConfig config, KitRepository kits, SyncService sync,
+                           KitDelivery delivery) {
         this.plugin = plugin;
         this.config = config;
         this.kits = kits;
         this.sync = sync;
+        this.delivery = delivery;
     }
 
     public void scheduleDelivery(Player player) {
@@ -46,6 +49,32 @@ public final class KitGrantService {
             return;
         }
         deliverPending(player);
+        tryFirstJoin(player);
+    }
+
+    private void tryFirstJoin(Player player) {
+        if (!player.isOnline() || !config.featureKits()) {
+            return;
+        }
+        YapSched.entity(plugin, player, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            for (KitDef def : config.kits().values()) {
+                if (!def.firstJoin() || !Perms.hasKit(player, def.id())) {
+                    continue;
+                }
+                try {
+                    if (kits.lastClaim(player.getUniqueId(), def.id()).isPresent()) {
+                        continue;
+                    }
+                    delivery.claim(player, def.id(), KitDelivery.Mode.FIRST_JOIN);
+                    player.sendMessage("§aStarter kit §f" + def.id() + " §adelivered.");
+                } catch (Exception e) {
+                    plugin.getLogger().log(Level.WARNING, "First-join kit failed for " + player.getName(), e);
+                }
+            }
+        });
     }
 
     public int deliverPending(Player player) {
@@ -59,7 +88,7 @@ public final class KitGrantService {
             }
             int delivered = 0;
             for (KitRepository.PendingGrant grant : pending) {
-                PlayerDataConfig.KitDef def = config.kits().get(grant.kit());
+                KitDef def = config.kits().get(grant.kit());
                 if (def == null) {
                     plugin.getLogger().warning("Pending kit grant '" + grant.kit()
                             + "' for " + player.getName()
@@ -80,7 +109,7 @@ public final class KitGrantService {
     }
 
     /** Give kit items on the player's region thread; returns false if player left. */
-    public boolean giveItemsSync(Player player, PlayerDataConfig.KitDef def) {
+    public boolean giveItemsSync(Player player, KitDef def) {
         CountDownLatch latch = new CountDownLatch(1);
         boolean[] ok = {false};
         YapSched.entity(plugin, player, () -> {
@@ -88,9 +117,8 @@ public final class KitGrantService {
                 if (!player.isOnline()) {
                     return;
                 }
-                for (ItemStack stack : def.items()) {
-                    player.getInventory().addItem(stack.clone());
-                }
+                delivery.giveContents(player, def);
+                delivery.runCommands(player, def);
                 player.sendMessage("§aStore kit delivered: §f" + def.id());
                 ok[0] = true;
             } finally {
@@ -105,26 +133,21 @@ public final class KitGrantService {
         return ok[0];
     }
 
-    public CompletableFuture<Boolean> giveOnline(Player player, PlayerDataConfig.KitDef def, boolean markCooldown) {
+    public CompletableFuture<Boolean> giveOnline(Player player, KitDef def, boolean markCooldown) {
         CompletableFuture<Boolean> done = new CompletableFuture<>();
         YapSched.entity(plugin, player, () -> {
             if (!player.isOnline()) {
                 done.complete(false);
                 return;
             }
-            for (ItemStack stack : def.items()) {
-                player.getInventory().addItem(stack.clone());
+            try {
+                KitDelivery.Result result = delivery.claim(player, def.id(),
+                        markCooldown ? KitDelivery.Mode.ADMIN : KitDelivery.Mode.ADMIN_FORCE);
+                done.complete(result.outcome() == KitDelivery.Outcome.OK);
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.WARNING, "Admin kit give failed", e);
+                done.complete(false);
             }
-            if (markCooldown) {
-                YapSched.async(plugin, () -> {
-                    try {
-                        kits.markClaimed(player.getUniqueId(), def.id());
-                    } catch (Exception e) {
-                        plugin.getLogger().log(Level.WARNING, "Failed to mark kit cooldown", e);
-                    }
-                });
-            }
-            done.complete(true);
         });
         return done;
     }

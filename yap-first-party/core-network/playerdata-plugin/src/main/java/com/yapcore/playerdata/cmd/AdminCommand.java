@@ -69,6 +69,8 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
                         + " / " + plugin.getServer().getOnlinePlayers().size());
                 sender.sendMessage("  autosave: " + config.autosaveSeconds() + "s");
                 sender.sendMessage("  kits: " + config.kits().size() + " jobs: " + config.jobs().size());
+                sender.sendMessage("  backpack: " + (config.featureBackpack() ? "on" : "off")
+                        + " pages=" + config.backpackDefaultPages() + "-" + config.backpackMaxPages());
             }
             case "save" -> {
                 sync.saveAllOnlineBlocking();

@@ -69,12 +69,13 @@ Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin
 | Area | Default | Config |
 |------|---------|--------|
 | Auth `/login` | on | `auth.enabled` |
-| Economy `/bal` `/pay` + Vault | on | `economy.enabled` |
+| Economy `/bal` `/pay` `/eco` + Vault | on | `economy.enabled` |
 | Homes / warps / kits / mail | on | `features.homes` … |
 | Claims | on | `features.claims` (+ `claims.*`) |
 | Shops / auctions (AH) | **on** | `features.shops` / `auctions` |
 | Jobs | **off** (keep off with YaPSkills) | `features.jobs` |
 | NPC traders | **off** | `features.traders` |
+| Backpack `/bag` | **on** | `features.backpack` |
 
 Money features require `economy.enabled: true`. When economy is off, shops/jobs/AH/traders and claim tax stay off even if their feature flags are true.
 
@@ -92,6 +93,10 @@ features:
   auctions: true
   claims: true
   traders: false
+  backpack: true
+backpack:
+  default-pages: 3
+  max-pages: 9
 ```
 
 **Freeze lifted:** Essentials-class QoL lives in **`yap-essentials.jar`**. Playerdata stays the data/sync layer.
@@ -106,19 +111,40 @@ features:
 | NPC traders | `/trader` (opt-in; needs economy) |
 | Homes/warps/kits/mail | Cross-server |
 | Shops / AH | Chest shops (`/shop`) + auction house (`/ah`) |
+| Backpack | `/bag` paged extra storage (45 slots/page). Vanilla E inventory stays 36. Optional Fabric `yap-bag` adds a keybind and inventory tabs. |
 
-### Kits (not Essentials)
+### Backpack (extra bag space)
 
-Kits are **YaPPlayerData only** — Essentials has no kit commands.
+The vanilla **E** inventory cannot grow from the server. `/bag` (aliases `/backpack` `/bp`) opens a double-chest GUI with **pages**. Bottom row is Prev / page tabs / Next. Contents live in MariaDB `player_backpack_pages` under the same `inventory-profile` as inv/enderchest, so they follow the player across backends.
+
+| Who | Pages |
+|-----|-------|
+| Everyone with `yapdata.bag` | `backpack.default-pages` (3) |
+| VIP `yapdata.bag.pages.5` | 5 |
+| Staff `yapdata.bag.pages.7` | 7 |
+| Admin `yapdata.bag.pages.*` | `backpack.max-pages` (9) |
+| Staff `yapdata.bag.see` | `/bag see <player> [page]` |
+
+Vanilla Java and Bedrock use the command / hub icon. The optional **yap-bag** Fabric client (Minecraft 26.2) binds **B** and adds a Bag button on the inventory screen plus page tabs on the bag chest. Same items — the mod is not required.
+
+Existing ranks: `ranks apply force` (or dashboard) so starter-grants pick up the new bag nodes.
+
+### Kits (EssentialsX-class)
+
+Kits live in **YaPPlayerData**. `/createkit` captures inventory, armor, and offhand with full item data (enchants, names, components).
 
 | What | Where |
 |------|--------|
 | Definitions | `plugins/YaPPlayerData/kits.yml` — **same file on Hub + every survival backend** |
-| Cooldowns | MariaDB `kit_cooldowns` (network-wide) |
+| Cooldowns / uses | MariaDB `kit_cooldowns` (network-wide) |
 | Store grants | MariaDB `kit_grants` via `kit grant <player> <kit>` |
 | Access | `yapdata.kit.<id>` / VIP `yapdata.kit.*` (YaPPerms) |
+| First join | `first-join: true` on a kit (starter ships on) |
+| Cost | `cost:` + economy balance |
+| Signs | `[Kit]` line 1, kit id line 2 |
 
-Player: `/kit` `/kits` · Console/store: `kit give` (online) · `kit grant` (queued).  
+Player: `/kit` `/kits` `/showkit` · Admin: `/createkit` `/delkit` `/kitreset` · Console/store: `kit give` · `kit grant`.  
+Dashboard: **Gameplay → Kits** builds the same `kits.yml` (items, armor slot, cooldown, cost, first-join, commands).  
 Tebex on Hub: [TEBEX.md](../ops/TEBEX.md) · [examples/tebex/](../../examples/tebex/).
 
 Plugin jar: `gradle :playerdata-plugin:installIntoPlugins` (also in `assembleRelease`).

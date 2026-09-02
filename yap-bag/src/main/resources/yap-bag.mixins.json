@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "package": "com.yapcore.bag.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "OptionsMixin",
+    "MinecraftMixin",
+    "InventoryScreenMixin",
+    "ContainerScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

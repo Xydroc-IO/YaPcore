@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "yap-bag",
+  "version": "${version}",
+  "name": "YaP Bag",
+  "description": "Optional inventory tab and keybind for YaPcore /bag extra storage. Vanilla and Bedrock still use /bag.",
+  "authors": [
+    "YapLabs"
+  ],
+  "contact": {
+    "homepage": "https://yaplabs.us",
+    "sources": "https://github.com/YapLabs/YaPcore"
+  },
+  "license": "GPL-3.0-or-later",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.yapcore.bag.YapBagClient"
+    ]
+  },
+  "mixins": [
+    "yap-bag.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25"
+  }
+}

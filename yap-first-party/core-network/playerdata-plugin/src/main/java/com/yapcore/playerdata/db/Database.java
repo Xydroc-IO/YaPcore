@@ -137,9 +137,15 @@ public final class Database implements AutoCloseable {
                       uuid CHAR(36) NOT NULL,
                       kit VARCHAR(32) NOT NULL,
                       claimed_at TIMESTAMP NOT NULL,
+                      uses INT NOT NULL DEFAULT 1,
                       PRIMARY KEY (uuid, kit)
                     )
                     """);
+            try {
+                st.execute("ALTER TABLE kit_cooldowns ADD COLUMN uses INT NOT NULL DEFAULT 1");
+            } catch (SQLException ignored) {
+                // already present
+            }
             st.execute("""
                     CREATE TABLE IF NOT EXISTS kit_grants (
                       id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -260,6 +266,16 @@ public final class Database implements AutoCloseable {
                       last_login TIMESTAMP NULL,
                       last_ip VARCHAR(64) NULL,
                       UNIQUE KEY auth_username (username)
+                    )
+                    """);
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS player_backpack_pages (
+                      uuid CHAR(36) NOT NULL,
+                      profile VARCHAR(64) NOT NULL,
+                      page INT NOT NULL,
+                      contents MEDIUMBLOB NOT NULL,
+                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                      PRIMARY KEY (uuid, profile, page)
                     )
                     """);
             tryAlter(st, "ALTER TABLE claims ADD COLUMN parent_id BIGINT NULL");

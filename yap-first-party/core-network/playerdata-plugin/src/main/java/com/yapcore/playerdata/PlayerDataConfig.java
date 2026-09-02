@@ -1,10 +1,11 @@
 package com.yapcore.playerdata;
 
+import com.yapcore.playerdata.kit.KitDef;
+import com.yapcore.playerdata.kit.KitYaml;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -21,9 +22,6 @@ import java.util.Map;
  * Typed config for YaP PlayerData.
  */
 public final class PlayerDataConfig {
-
-    public record KitDef(String id, long delaySeconds, List<ItemStack> items) {
-    }
 
     public record JobDef(String id, String display, Map<Material, Double> breakPays, double xpPerAction) {
     }
@@ -64,6 +62,9 @@ public final class PlayerDataConfig {
     private boolean featureAuctions = true;
     private boolean featureClaims = true;
     private boolean featureTraders = false;
+    private boolean featureBackpack = true;
+    private int backpackDefaultPages = 3;
+    private int backpackMaxPages = 9;
 
     private boolean claimsEnabled = true;
     private boolean claimsRequireClaimToBuild = false;
@@ -130,6 +131,10 @@ public final class PlayerDataConfig {
         featureJobs = economyEnabled && c.getBoolean("features.jobs", false);
         featureAuctions = economyEnabled && c.getBoolean("features.auctions", true);
         featureTraders = economyEnabled && c.getBoolean("features.traders", false);
+        featureBackpack = c.getBoolean("features.backpack", true);
+        backpackDefaultPages = Math.max(1, c.getInt("backpack.default-pages", 3));
+        backpackMaxPages = Math.max(backpackDefaultPages, c.getInt("backpack.max-pages", 9));
+        backpackMaxPages = Math.min(9, backpackMaxPages);
         // features.claims AND legacy claims.enabled
         featureClaims = c.getBoolean("features.claims", true) && c.getBoolean("claims.enabled", true);
 
@@ -186,41 +191,26 @@ public final class PlayerDataConfig {
         Map<String, KitDef> merged = new LinkedHashMap<>();
         if (kitsFile.isFile()) {
             FileConfiguration kitsYml = YamlConfiguration.loadConfiguration(kitsFile);
-            merged.putAll(loadKits(kitsYml.getConfigurationSection("kits")));
+            merged.putAll(KitYaml.load(kitsYml.getConfigurationSection("kits")));
         }
-        Map<String, KitDef> fromConfig = loadKits(config.getConfigurationSection("kits"));
-        merged.putAll(fromConfig);
+        merged.putAll(KitYaml.load(config.getConfigurationSection("kits")));
         return Collections.unmodifiableMap(merged);
     }
 
-    private static Map<String, KitDef> loadKits(ConfigurationSection section) {
-        if (section == null) {
-            return Map.of();
-        }
-        Map<String, KitDef> out = new LinkedHashMap<>();
-        for (String id : section.getKeys(false)) {
-            ConfigurationSection ks = section.getConfigurationSection(id);
-            if (ks == null) {
-                continue;
-            }
-            long delay = ks.getLong("delay-seconds", 86400);
-            List<ItemStack> items = new ArrayList<>();
-            List<?> raw = ks.getList("items");
-            if (raw != null) {
-                for (Object o : raw) {
-                    if (o instanceof Map<?, ?> map) {
-                        String mat = String.valueOf(map.get("material"));
-                        int amount = map.get("amount") instanceof Number n ? n.intValue() : 1;
-                        Material material = Material.matchMaterial(mat);
-                        if (material != null && material.isItem()) {
-                            items.add(new ItemStack(material, Math.max(1, amount)));
-                        }
-                    }
-                }
-            }
-            out.put(id.toLowerCase(Locale.ROOT), new KitDef(id.toLowerCase(Locale.ROOT), delay, List.copyOf(items)));
-        }
-        return Collections.unmodifiableMap(out);
+    public void putKit(KitDef def) {
+        Map<String, KitDef> next = new LinkedHashMap<>(kits);
+        next.put(def.id(), def);
+        kits = Collections.unmodifiableMap(next);
+    }
+
+    public void removeKit(String id) {
+        Map<String, KitDef> next = new LinkedHashMap<>(kits);
+        next.remove(id.toLowerCase(Locale.ROOT));
+        kits = Collections.unmodifiableMap(next);
+    }
+
+    public void reloadKits() {
+        kits = loadAllKits(plugin.getConfig());
     }
 
     private static Map<String, JobDef> loadJobs(ConfigurationSection section) {
@@ -350,6 +340,18 @@ public final class PlayerDataConfig {
 
     public boolean featureTraders() {
         return featureTraders;
+    }
+
+    public boolean featureBackpack() {
+        return featureBackpack;
+    }
+
+    public int backpackDefaultPages() {
+        return backpackDefaultPages;
+    }
+
+    public int backpackMaxPages() {
+        return backpackMaxPages;
     }
 
     public int maxHomes() {

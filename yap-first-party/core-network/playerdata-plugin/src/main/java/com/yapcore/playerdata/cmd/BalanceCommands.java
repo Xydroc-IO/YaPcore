@@ -14,9 +14,11 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * /bal and /pay
+ * /bal, /pay, and staff /eco give|take|set|reset
  */
 public final class BalanceCommands implements CommandExecutor, TabCompleter {
+
+    private static final List<String> ECO_ACTIONS = List.of("give", "take", "set", "reset");
 
     private final BalanceStore store;
 
@@ -32,6 +34,9 @@ public final class BalanceCommands implements CommandExecutor, TabCompleter {
         }
         if (name.equals("pay")) {
             return pay(sender, args);
+        }
+        if (name.equals("eco") || name.equals("economy")) {
+            return eco(sender, args);
         }
         return false;
     }
@@ -107,11 +112,107 @@ public final class BalanceCommands implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean eco(CommandSender sender, String[] args) {
+        if (!Perms.require(sender, "yapdata.eco")) {
+            return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage("§e/eco <give|take|set|reset> <player> [amount]");
+            return true;
+        }
+        String action = args[0].toLowerCase(Locale.ROOT);
+        if (!ECO_ACTIONS.contains(action)) {
+            sender.sendMessage("§cUnknown action. Use give, take, set, or reset.");
+            return true;
+        }
+        OfflinePlayer target = resolvePlayer(args[1]);
+        String shown = target.getName() != null ? target.getName() : args[1];
+        double current = store.getBalance(target.getUniqueId());
+        if ("reset".equals(action)) {
+            store.setBalance(target.getUniqueId(), 0.0);
+            tellEco(sender, target, 0.0, "Reset " + shown + "'s balance to $0.00.");
+            return true;
+        }
+        if (args.length < 3) {
+            sender.sendMessage("§e/eco " + action + " <player> <amount>");
+            return true;
+        }
+        Double amount = parseAmount(args[2]);
+        if (amount == null) {
+            sender.sendMessage("§cInvalid amount.");
+            return true;
+        }
+        double next;
+        switch (action) {
+            case "give" -> next = current + amount;
+            case "take" -> {
+                if (current < amount) {
+                    sender.sendMessage(String.format("§c%s only has $%.2f.", shown, current));
+                    return true;
+                }
+                next = current - amount;
+            }
+            case "set" -> next = amount;
+            default -> {
+                return true;
+            }
+        }
+        store.setBalance(target.getUniqueId(), next);
+        String verb = switch (action) {
+            case "give" -> String.format("Gave $%.2f to %s.", amount, shown);
+            case "take" -> String.format("Took $%.2f from %s.", amount, shown);
+            default -> String.format("Set %s's balance to $%.2f.", shown, next);
+        };
+        tellEco(sender, target, next, verb + String.format(" New balance: $%.2f", next));
+        return true;
+    }
+
+    private static void tellEco(CommandSender sender, OfflinePlayer target,
+                                double newBal, String staffMsg) {
+        sender.sendMessage("§a" + staffMsg);
+        Player online = target.getPlayer();
+        if (online != null && !online.equals(sender)) {
+            online.sendMessage(String.format("§aYour balance is now $%.2f.", newBal));
+        }
+    }
+
+    private static OfflinePlayer resolvePlayer(String name) {
+        Player online = Bukkit.getPlayerExact(name);
+        if (online != null) {
+            return online;
+        }
+        @SuppressWarnings("deprecation")
+        OfflinePlayer offline = Bukkit.getOfflinePlayer(name);
+        return offline;
+    }
+
+    private static Double parseAmount(String raw) {
+        try {
+            double amount = Double.parseDouble(raw);
+            if (amount < 0 || Double.isNaN(amount) || Double.isInfinite(amount)) {
+                return null;
+            }
+            return Math.round(amount * 100.0) / 100.0;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> out = new ArrayList<>();
-        if (args.length == 1) {
-            String prefix = args[0].toLowerCase(Locale.ROOT);
+        String name = command.getName().toLowerCase(Locale.ROOT);
+        String prefix = args[args.length - 1].toLowerCase(Locale.ROOT);
+        if ((name.equals("eco") || name.equals("economy")) && args.length == 1) {
+            for (String action : ECO_ACTIONS) {
+                if (action.startsWith(prefix)) {
+                    out.add(action);
+                }
+            }
+            return out;
+        }
+        int playerArg = (name.equals("eco") || name.equals("economy")) ? 2 : 1;
+        if (args.length == playerArg) {
             for (Player p : Bukkit.getOnlinePlayers()) {
                 if (p.getName().toLowerCase(Locale.ROOT).startsWith(prefix)) {
                     out.add(p.getName());

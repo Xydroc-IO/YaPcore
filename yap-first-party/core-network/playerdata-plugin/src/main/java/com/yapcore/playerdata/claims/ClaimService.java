@@ -6,6 +6,7 @@ import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.ClaimRepository;
 import com.yapcore.regions.FlagValue;
 import com.yapcore.regions.RegionFlag;
+import com.yapcore.sched.StaffBypass;
 import com.yapcore.sched.YapSched;
 import com.yapcore.sched.YapTask;
 import org.bukkit.Bukkit;
@@ -182,7 +183,7 @@ public final class ClaimService {
         if (!config.claimsEnabled()) {
             return true;
         }
-        if (player.hasPermission("yapdata.claims.admin")) {
+        if (StaffBypass.land(player)) {
             return true;
         }
         Optional<Claim> claim = getAt(loc);
@@ -215,7 +216,7 @@ public final class ClaimService {
         if (!config.claimsEnabled()) {
             return true;
         }
-        if (player.hasPermission("yapdata.claims.admin")) {
+        if (StaffBypass.land(player)) {
             return true;
         }
         Optional<Claim> claim = getAt(loc);
@@ -232,7 +233,7 @@ public final class ClaimService {
     }
 
     public boolean canEnter(Player player, Location loc) {
-        if (!config.claimsEnabled() || player.hasPermission("yapdata.claims.admin")) {
+        if (!config.claimsEnabled() || StaffBypass.land(player)) {
             return true;
         }
         Optional<Claim> claim = getAt(loc);
@@ -260,7 +261,7 @@ public final class ClaimService {
         }
         FlagValue pvp = flags.resolveOrDefault(claim.get().id(), RegionFlag.PVP);
         if (pvp == FlagValue.DENY) {
-            return attacker.hasPermission("yapdata.claims.admin")
+            return StaffBypass.land(attacker)
                     || hasTrust(claim.get(), attacker.getUniqueId(), ClaimRepository.TrustLevel.BUILD);
         }
         return true;
@@ -478,7 +479,7 @@ public final class ClaimService {
         Claim parent = top.get();
         if (!parent.owner().equals(player.getUniqueId())
                 && !hasTrust(parent, player.getUniqueId(), ClaimRepository.TrustLevel.MANAGE)
-                && !player.hasPermission("yapdata.claims.admin")) {
+                && !StaffBypass.land(player)) {
             return "§cYou need manage trust on the parent claim.";
         }
         if (!parent.containsFully(minX, maxX, minZ, maxZ)) {
@@ -509,7 +510,7 @@ public final class ClaimService {
     }
 
     public boolean abandon(Player player, Claim claim) throws SQLException {
-        if (!claim.owner().equals(player.getUniqueId()) && !player.hasPermission("yapdata.claims.admin")) {
+        if (!claim.owner().equals(player.getUniqueId()) && !StaffBypass.land(player)) {
             return false;
         }
         int refund = claim.isSubdivision() ? 0 : claim.area();

@@ -3,10 +3,17 @@
 #
 # Access nodes: yapdata.kit.<id>  ·  VIP starter pack grants yapdata.kit.*
 # Store (Tebex on Hub): see docs/ops/TEBEX.md and examples/tebex/
+#
+# Essentials-class fields:
+#   delay-seconds / delay, max-uses (0 = unlimited), cost, first-join, commands
+#   armor.helmet|chestplate|leggings|boots, offhand
+#   items: material+amount+enchantments+name+lore  OR full Bukkit ItemStack (/createkit)
+# Signs: [Kit] on line 1, kit id on line 2.
 
 kits:
   starter:
     delay-seconds: 86400
+    first-join: true
     items:
       - material: BREAD
         amount: 16
