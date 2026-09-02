@@ -5,8 +5,11 @@ import com.yapcore.module.ModuleManager;
 import com.yapcore.plugin.PluginManager;
 import com.yapcore.resourcepack.ResourcePackManager;
 import com.yapcore.server.YaPcoreServer;
+import com.yapcore.web.DashboardNetworkSnapshots;
 import com.yapcore.web.PluginCompatMatrix;
 import com.yapcore.web.PluginCompatMatrix.Lookup;
+import com.yapcore.web.PluginConfigCatalog;
+import com.yapcore.web.PluginConfigIo;
 import com.yapcore.web.TinyJson;
 import com.yapcore.web.auth.DashboardAuth;
 import com.yapcore.web.http.DashboardHttp;
@@ -81,6 +84,120 @@ public final class DashboardPluginsApi {
             return;
         }
         ex.sendResponseHeaders(405, -1);
+    }
+
+    public void apiPluginConfig(HttpExchange ex) throws IOException {
+        if (!auth.requireAuth(ex)) {
+            return;
+        }
+        Path root = server.getRootDir();
+        if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            String query = ex.getRequestURI().getQuery();
+            String pluginId = queryValue(query, "plugin");
+            if (pluginId != null && !pluginId.isBlank()) {
+                PluginConfigCatalog.Entry entry = PluginConfigCatalog.byId(pluginId);
+                if (entry == null) {
+                    DashboardHttp.json(ex, 404, Map.of("error", "unknown plugin"));
+                    return;
+                }
+                DashboardHttp.json(ex, 200, pluginDetail(root, entry));
+                return;
+            }
+            List<Map<String, Object>> list = new ArrayList<>();
+            for (PluginConfigCatalog.Entry entry : PluginConfigCatalog.all()) {
+                list.add(pluginSummary(root, entry));
+            }
+            DashboardHttp.json(ex, 200, Map.of("ok", true, "plugins", list));
+            return;
+        }
+        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
+            String action = body.getOrDefault("action", "save").toLowerCase();
+            PluginConfigCatalog.Entry entry = PluginConfigCatalog.byId(body.get("plugin"));
+            if (entry == null) {
+                DashboardHttp.json(ex, 400, Map.of("error", "plugin required"));
+                return;
+            }
+            try {
+                if ("reload".equals(action)) {
+                    String result = entry.reload().isBlank() ? "no reload command"
+                            : server.executeCommand(entry.reload());
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result));
+                    return;
+                }
+                PluginConfigIo.save(root, entry, body);
+                String result = "";
+                if (!entry.reload().isBlank()) {
+                    result = server.executeCommand(entry.reload());
+                }
+                DashboardHttp.json(ex, 200, Map.of(
+                        "ok", true,
+                        "plugin", entry.id(),
+                        "reload", result == null ? "" : result,
+                        "fields", PluginConfigIo.flatten(PluginConfigIo.load(root, entry)).size()));
+            } catch (Exception e) {
+                DashboardHttp.json(ex, 500, Map.of("error", e.getMessage() == null ? "save failed" : e.getMessage()));
+            }
+            return;
+        }
+        ex.sendResponseHeaders(405, -1);
+    }
+
+    private static Map<String, Object> pluginSummary(Path root, PluginConfigCatalog.Entry entry) {
+        Path file = PluginConfigIo.configPath(root, entry);
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("id", entry.id());
+        row.put("title", entry.title());
+        row.put("dataDir", entry.dataDir());
+        row.put("file", entry.file());
+        row.put("reload", entry.reload());
+        row.put("installed", jarPresent(root.resolve("plugins"), entry.jarToken()));
+        row.put("configPresent", java.nio.file.Files.isRegularFile(file));
+        int fields = 0;
+        if (java.nio.file.Files.isRegularFile(file)) {
+            try {
+                fields = PluginConfigIo.flatten(DashboardNetworkSnapshots.loadYaml(file)).size();
+            } catch (Exception ignored) {
+                fields = 0;
+            }
+        }
+        row.put("fields", fields);
+        return row;
+    }
+
+    private static Map<String, Object> pluginDetail(Path root, PluginConfigCatalog.Entry entry) throws IOException {
+        Map<String, Object> out = pluginSummary(root, entry);
+        out.put("ok", true);
+        out.put("fields", PluginConfigIo.flatten(PluginConfigIo.load(root, entry)));
+        return out;
+    }
+
+    private static boolean jarPresent(Path pluginsDir, String token) {
+        if (!java.nio.file.Files.isDirectory(pluginsDir) || token == null || token.isBlank()) {
+            return false;
+        }
+        try (var stream = java.nio.file.Files.newDirectoryStream(pluginsDir, "*.jar")) {
+            for (var jar : stream) {
+                if (jar.getFileName().toString().toLowerCase().contains(token.toLowerCase())) {
+                    return true;
+                }
+            }
+        } catch (IOException ignored) {
+        }
+        return false;
+    }
+
+    private static String queryValue(String query, String key) {
+        if (query == null || query.isBlank()) {
+            return "";
+        }
+        for (String part : query.split("&")) {
+            int eq = part.indexOf('=');
+            if (eq > 0 && key.equals(part.substring(0, eq))) {
+                return java.net.URLDecoder.decode(part.substring(eq + 1), java.nio.charset.StandardCharsets.UTF_8);
+            }
+        }
+        return "";
     }
 
     public void apiModules(HttpExchange ex) throws IOException {

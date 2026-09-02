@@ -10,6 +10,7 @@ import com.yapcore.web.api.DashboardAccessApi;
 import com.yapcore.web.api.DashboardAdminApi;
 import com.yapcore.web.api.DashboardConsoleApi;
 import com.yapcore.web.api.DashboardGameplayApi;
+import com.yapcore.web.api.DashboardKitsApi;
 import com.yapcore.web.api.DashboardLinkConsoleApi;
 import com.yapcore.web.api.DashboardPlayersApi;
 import com.yapcore.web.api.DashboardPluginsApi;
@@ -45,6 +46,7 @@ public final class WebDashboard {
     private final DashboardConsoleApi consoleApi;
     private final DashboardLinkConsoleApi linkConsoleApi;
     private final DashboardGameplayApi gameplayApi;
+    private final DashboardKitsApi kitsApi;
     private final ChassisMetricsHandler metricsHandler;
     private final Consumer<String> consoleListener;
     private final Consumer<String> linkConsoleListener;
@@ -60,6 +62,7 @@ public final class WebDashboard {
         this.consoleApi = new DashboardConsoleApi(auth);
         this.linkConsoleApi = new DashboardLinkConsoleApi(auth, server.getLinkProcess());
         this.gameplayApi = new DashboardGameplayApi(server, auth);
+        this.kitsApi = new DashboardKitsApi(server, auth);
         this.metricsHandler = new ChassisMetricsHandler(server);
         this.consoleListener = line -> consoleApi.broadcastSse(line);
         this.linkConsoleListener = line -> linkConsoleApi.broadcastSse(line.trim());
@@ -110,6 +113,7 @@ public final class WebDashboard {
         http.createContext("/api/server/stop", statusApi::apiStop);
         http.createContext("/api/command", statusApi::apiCommand);
         http.createContext("/api/plugins", pluginsApi::apiPlugins);
+        http.createContext("/api/plugin-config", pluginsApi::apiPluginConfig);
         http.createContext("/api/modules", pluginsApi::apiModules);
         http.createContext("/api/packs", pluginsApi::apiPacks);
         http.createContext("/api/console", consoleApi::apiConsole);
@@ -127,6 +131,7 @@ public final class WebDashboard {
         http.createContext("/api/moderation", gameplayApi::apiModeration);
         http.createContext("/api/perms", gameplayApi::apiPerms);
         http.createContext("/api/playerdata", gameplayApi::apiPlayerdata);
+        http.createContext("/api/kits", kitsApi::apiKits);
         http.createContext("/api/discord", gameplayApi::apiDiscord);
         http.createContext("/api/tab", gameplayApi::apiTab);
         http.createContext("/api/map", gameplayApi::apiMap);

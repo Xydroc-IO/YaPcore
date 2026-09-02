@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.yapcore.server.YaPcoreServer;
 import com.yapcore.web.DashboardNetworkSnapshots;
 import com.yapcore.web.DashboardPlayerList;
+import com.yapcore.web.DashboardSeenPlayers;
 import com.yapcore.web.TinyJson;
 import com.yapcore.web.auth.DashboardAuth;
 import com.yapcore.web.http.DashboardHttp;
@@ -33,16 +34,19 @@ public final class DashboardPlayersApi {
         if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, Object> snap = new LinkedHashMap<>();
             List<Map<String, Object>> online = DashboardPlayerList.onlinePlayers(server);
+            List<Map<String, Object>> seen = DashboardSeenPlayers.load(root, online);
             snap.put("ok", true);
             snap.put("running", server.isRunning());
             snap.put("online", online);
+            snap.put("seen", seen);
+            snap.put("seenCount", seen.size());
             snap.put("count", online.size());
             snap.put("maxPlayers", server.getMaxPlayers());
             snap.put("spawn", DashboardNetworkSnapshots.essentialsSpawn(root));
             snap.put("moderation", DashboardNetworkSnapshots.moderation(root));
             snap.put("groups", DashboardNetworkSnapshots.perms(root).get("groups"));
             snap.put("durationHelp", "1h, 30m, 7d, 2w — for temp ban / mute / timeout");
-            snap.put("hint", "Ban/kick/mute by username, UUID, or IP (ip ban). Select online player or type name/UUID.");
+            snap.put("hint", "Ban/kick/mute by username, UUID, or last IP. Everyone who has joined is listed below.");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -64,7 +68,9 @@ public final class DashboardPlayersApi {
             resp.put("action", action);
             resp.put("command", cmd);
             resp.put("result", result == null ? "" : result);
-            resp.put("online", DashboardPlayerList.onlinePlayers(server));
+            List<Map<String, Object>> online = DashboardPlayerList.onlinePlayers(server);
+            resp.put("online", online);
+            resp.put("seen", DashboardSeenPlayers.load(root, online));
             DashboardHttp.json(ex, 200, resp);
             return;
         }
@@ -99,6 +105,7 @@ public final class DashboardPlayersApi {
             case "history" -> require(player, "history " + q(player));
             case "check", "modcheck" -> require(player, "modcheck " + q(player));
             case "banlist" -> "banlist " + body.getOrDefault("limit", "25");
+            case "seen-refresh", "seen-snapshot" -> "yapmod seen snapshot";
             case "tp" -> {
                 String x = body.get("x");
                 String y = body.get("y");

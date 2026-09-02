@@ -29,6 +29,9 @@
         <div class="login-logo" style="width:32px;height:32px;font-size:14px;border-radius:8px">Y</div>
         <strong>YaPcore</strong>
       </div>
+      <div class="nav-search-wrap">
+        <input id="navSearch" type="search" placeholder="Find a page…" autocomplete="off"/>
+      </div>
       <nav class="sidebar-nav" id="sidebarNav"></nav>
       <div class="sidebar-footer">
         <p class="muted" style="font-size:11px;margin:0 0 8px;line-height:1.35">GPLv3 · <a href="https://www.gnu.org/licenses/gpl-3.0.html" target="_blank" rel="noopener">License</a></p>
@@ -94,7 +97,7 @@
       <section id="tab-access" class="panel">
         <div class="page-header">
           <h2>Access & ranks</h2>
-          <p>Minecraft operators, default rank for new players, permission groups, and per-player rank assignment.</p>
+          <p>Click a rank, pick colors, then choose which commands it can use. No color codes required.</p>
         </div>
         <div class="grid stats">
           <div class="stat"><span>Default rank</span><strong id="accDefault">—</strong></div>
@@ -103,110 +106,196 @@
           <div class="stat"><span>YaPPerms</span><strong id="accPermsOk">—</strong></div>
         </div>
 
-        <div class="card">
-          <h3>Minecraft operators (OP)</h3>
-          <p class="muted hint">Operators get full in-game admin commands. Saved to <code>config/server.properties</code> and applied with <code>/op</code>.</p>
-          <div class="chip-list" id="accOpsList"></div>
-          <div class="inline">
-            <input id="accOpAdd" placeholder="Player name to OP"/>
-            <button id="accOpAddBtn" class="primary">Add operator</button>
-          </div>
-          <label style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--muted)">
-            <input type="checkbox" id="accAutoOpBox" style="width:auto"/>
-            Auto-op new players on first join
-          </label>
-          <div class="toolbar" style="margin-top:12px">
-            <button id="accSaveOps">Save operators</button>
-          </div>
+        <div class="subnav" id="accSubnav">
+          <button type="button" class="active" data-acc-pane="ranks">Ranks &amp; colors</button>
+          <button type="button" data-acc-pane="ops">Operators</button>
+          <button type="button" data-acc-pane="players">Players</button>
         </div>
 
-        <div class="card">
-          <h3>Default rank for new players</h3>
-          <div class="form-grid">
-            <label>Default group
-              <select id="accDefaultGroup"></select>
+        <div class="acc-pane" id="accPaneRanks">
+          <details class="soft-details">
+            <summary>Create a new rank</summary>
+            <p class="muted hint">Pick a tag color, a player-name color, and a message color. Type the tag text like <code>[Helper] </code> — click a swatch to color it.</p>
+            <div class="form-grid">
+              <label>Rank id <input id="accNewGroupName" placeholder="helper"/></label>
+              <label>Weight <input id="accNewGroupWeight" type="number" value="5"/></label>
+              <label>Tag text <input id="accNewGroupPrefix" data-mc-color="insert" data-mc-preview="1" placeholder="[Helper] "/></label>
+              <label>Tag after name <input id="accNewGroupSuffix" data-mc-color="insert" placeholder=""/></label>
+              <label>Player name color <input id="accNewGroupNameColor" data-mc-color="replace" value="&amp;a" placeholder="&amp;a"/></label>
+              <label>Chat message color <input id="accNewGroupChatColor" data-mc-color="replace" value="&amp;f" placeholder="&amp;f"/></label>
+              <label>Inherits from <input id="accNewGroupParents" placeholder="default"/></label>
+              <label>Starter commands
+                <select id="accNewTemplate">
+                  <option value="blank">Empty</option>
+                  <option value="player">Player commands</option>
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                  <option value="clone">Copy from existing rank</option>
+                </select>
+              </label>
+              <label>Copy from
+                <select id="accNewClone"></select>
+              </label>
+            </div>
+            <label class="inline-check" style="display:flex;align-items:center;gap:10px;margin:12px 0;font-size:13px;color:var(--muted)">
+              <input type="checkbox" id="accNewGroupTrack" style="width:auto"/>
+              Add to promotion track (yap)
             </label>
-          </div>
-          <button id="accSaveDefault" class="primary">Save default rank</button>
-        </div>
+            <div class="chat-preview-box">
+              <span class="label">How chat will look</span>
+              <span id="accNewPreview" class="mc-preview">—</span>
+            </div>
+            <button id="accCreateGroup" class="primary">Create rank</button>
+          </details>
 
-        <div class="card">
-          <h3>Create rank</h3>
-          <p class="muted hint">Use <code>&amp;</code> color codes in prefix/suffix (e.g. <code>&amp;a[VIP] </code>, <code>&amp;c[Admin] </code>). Chat and tab names use these tags.</p>
-          <div class="form-grid">
-            <label>Rank id <input id="accNewGroupName" placeholder="helper"/></label>
-            <label>Weight <input id="accNewGroupWeight" type="number" value="5"/></label>
-            <label>Prefix <input id="accNewGroupPrefix" placeholder="&amp;a[Helper] "/></label>
-            <label>Suffix <input id="accNewGroupSuffix" placeholder=""/></label>
-            <label>Inherits (comma) <input id="accNewGroupParents" placeholder="default"/></label>
+          <div class="card">
+            <h3>Your ranks</h3>
+            <p class="muted hint">Click a rank to edit its look and commands.</p>
+            <div class="group-cards" id="accGroupCards"></div>
           </div>
-          <label class="inline-check" style="display:flex;align-items:center;gap:10px;margin:12px 0;font-size:13px;color:var(--muted)">
-            <input type="checkbox" id="accNewGroupTrack" style="width:auto"/>
-            Add to promotion track (yap)
-          </label>
-          <button id="accCreateGroup" class="primary">Create rank</button>
-        </div>
 
-        <div class="card">
-          <h3>Permission groups</h3>
-          <p class="muted hint">Click a rank to edit prefix, suffix, weight, and inheritance.</p>
-          <div class="group-cards" id="accGroupCards"></div>
-          <div class="form-grid" style="margin-top:16px">
-            <label>Selected rank <input id="accEditGroupName" readonly placeholder="—"/></label>
-            <label>Weight <input id="accEditGroupWeight" type="number" value="0"/></label>
-            <label>Prefix <input id="accEditGroupPrefix" placeholder="&amp;7"/></label>
-            <label>Suffix <input id="accEditGroupSuffix" placeholder=""/></label>
-            <label>Inherits (comma) <input id="accEditGroupParents" placeholder="default"/></label>
+          <div class="card">
+            <h3>Look in chat · <span id="accEditTitle" class="muted">—</span></h3>
+            <div class="chat-preview-box">
+              <span class="label">Live preview</span>
+              <span id="accPrefixPreview" class="mc-preview">—</span>
+            </div>
+            <div class="form-grid">
+              <label>Rank id <input id="accEditGroupName" readonly placeholder="—"/></label>
+              <label>Weight <input id="accEditGroupWeight" type="number" value="0"/></label>
+              <label>Tag text <input id="accEditGroupPrefix" data-mc-color="insert" placeholder="[VIP] "/></label>
+              <label>Tag after name <input id="accEditGroupSuffix" data-mc-color="insert" placeholder=""/></label>
+              <label>Player name color <input id="accEditGroupNameColor" data-mc-color="replace" placeholder="&amp;a"/></label>
+              <label>Chat message color <input id="accEditGroupChatColor" data-mc-color="replace" placeholder="&amp;f"/></label>
+              <label>Inherits from <input id="accEditGroupParents" placeholder="default"/></label>
+            </div>
+            <div class="form-grid" style="margin-top:4px">
+              <label>Apply command pack
+                <select id="accApplyTemplate">
+                  <option value="player">Player commands</option>
+                  <option value="staff">Staff</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </label>
+              <label>Or copy commands from
+                <select id="accCloneFrom"></select>
+              </label>
+            </div>
+            <div class="btn-row">
+              <button id="accSaveGroup" class="primary">Save look</button>
+              <button id="accApplyPackBtn" type="button">Apply command pack</button>
+              <button id="accCloneBtn" type="button">Copy commands</button>
+              <button id="accDeleteGroup" class="danger">Delete rank</button>
+            </div>
+            <pre id="accGroupDetail" class="hidden" hidden></pre>
           </div>
-          <p class="muted-small">Preview: <span id="accPrefixPreview" class="mc-preview">—</span></p>
-          <div class="btn-row">
-            <button id="accSaveGroup" class="primary">Save rank</button>
-            <button id="accDeleteGroup" class="danger">Delete rank</button>
-          </div>
-          <pre id="accGroupDetail" class="report muted-small" style="max-height:100px;margin-top:12px"></pre>
-        </div>
 
-        <div class="card">
-          <h3>Assign rank to player</h3>
-          <div class="form-grid">
-            <label>Player <input id="accPlayer" placeholder="Steve"/></label>
-            <label>Rank
-              <select id="accPlayerGroup"></select>
+          <div class="card" id="accPermEditorCard">
+            <h3>Commands this rank can use</h3>
+            <p class="muted hint">Editing <strong id="accPermGroupLabel">—</strong>. <em>Inherit</em> uses parent ranks. <em>Allow</em> grants the command. <em>Deny</em> blocks it even if a parent allows it.</p>
+            <div class="perm-editor-toolbar">
+              <input id="accPermSearch" placeholder="Search commands (spawn, /tp, fly…)"/>
+              <span class="muted-small" id="accPermDirty"></span>
+            </div>
+            <div id="accPermCats" class="perm-cats"></div>
+            <div class="form-grid" style="margin-top:14px">
+              <label>Add any permission <input id="accCustomNode" placeholder="myplugin.command.foo or worldedit.*"/></label>
+              <label>Value
+                <select id="accCustomVal">
+                  <option value="true">allow</option>
+                  <option value="false">deny</option>
+                </select>
+              </label>
+            </div>
+            <label>Add several at once (one per line)
+              <textarea id="accBulkNodes" rows="3" placeholder="yapessentials.fly&#10;worldedit.*&#10;minecraft.command.gamemode"></textarea>
             </label>
-          </div>
-          <div class="btn-row">
-            <button id="accLookup" class="primary">Look up</button>
-            <button id="accSetGroup">Set rank</button>
-            <button id="accPromote">Promote ↑</button>
-            <button id="accDemote">Demote ↓</button>
-          </div>
-          <h4 style="margin:18px 0 8px;font-size:14px;color:var(--text)">Player name override</h4>
-          <p class="muted hint">Override prefix/suffix for one player (overrides rank tags in chat and tab).</p>
-          <div class="form-grid">
-            <label>Prefix override <input id="accMetaPrefix" placeholder="&amp;d★ "/></label>
-            <label>Suffix override <input id="accMetaSuffix" placeholder=""/></label>
-          </div>
-          <div class="btn-row">
-            <button id="accSetMeta">Apply name tags</button>
-            <button id="accClearMeta">Clear override</button>
-          </div>
-          <div class="form-grid" style="margin-top:14px">
-            <label>Permission node <input id="accPermNode" placeholder="yapmod.ban"/></label>
-            <label>Value
-              <select id="accPermVal"><option value="true">true</option><option value="false">false</option></select>
-            </label>
-          </div>
-          <div class="btn-row">
-            <button id="accUserPerm">Set on player</button>
-            <button id="accGroupPerm">Set on selected group</button>
+            <div class="btn-row">
+              <button id="accAddCustom" type="button">Add permission</button>
+              <button id="accAddBulk" type="button">Add all listed</button>
+              <button id="accSaveNodes" class="primary">Save permissions</button>
+            </div>
           </div>
         </div>
+
+        <div class="acc-pane" id="accPaneOps" hidden>
+          <div class="card">
+            <h3>Minecraft operators (OP)</h3>
+            <p class="muted hint">Operators get every in-game admin command. Saved to <code>config/server.properties</code>.</p>
+            <div class="chip-list" id="accOpsList"></div>
+            <div class="inline">
+              <input id="accOpAdd" placeholder="Player name"/>
+              <button id="accOpAddBtn" class="primary">Add operator</button>
+            </div>
+            <label style="display:flex;align-items:center;gap:10px;margin-top:14px;font-size:13px;color:var(--muted)">
+              <input type="checkbox" id="accAutoOpBox" style="width:auto"/>
+              Auto-op new players on first join
+            </label>
+            <div class="toolbar" style="margin-top:12px">
+              <button id="accSaveOps" class="primary">Save operators</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Default rank for new players</h3>
+            <div class="form-grid">
+              <label>Starting rank
+                <select id="accDefaultGroup"></select>
+              </label>
+            </div>
+            <button id="accSaveDefault" class="primary">Save default rank</button>
+          </div>
+        </div>
+
+        <div class="acc-pane" id="accPanePlayers" hidden>
+          <div class="card">
+            <h3>Assign a rank</h3>
+            <div class="form-grid">
+              <label>Player <input id="accPlayer" placeholder="Steve"/></label>
+              <label>Rank
+                <select id="accPlayerGroup"></select>
+              </label>
+            </div>
+            <div class="btn-row">
+              <button id="accLookup" class="primary">Look up</button>
+              <button id="accSetGroup">Set rank</button>
+              <button id="accPromote">Promote ↑</button>
+              <button id="accDemote">Demote ↓</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Custom name tag for one player</h3>
+            <p class="muted hint">Overrides the rank tag in chat and tab. Click a color, then type the tag text.</p>
+            <div class="form-grid">
+              <label>Tag before name <input id="accMetaPrefix" data-mc-color="insert" data-mc-preview="1" placeholder="★ "/></label>
+              <label>Tag after name <input id="accMetaSuffix" data-mc-color="insert" placeholder=""/></label>
+            </div>
+            <div class="btn-row">
+              <button id="accSetMeta" class="primary">Apply name tag</button>
+              <button id="accClearMeta">Clear override</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>One extra permission</h3>
+            <p class="muted hint">For a whole rank, use Commands this rank can use instead.</p>
+            <div class="form-grid">
+              <label>Permission <input id="accPermNode" placeholder="yapmod.ban"/></label>
+              <label>Value
+                <select id="accPermVal"><option value="true">allow</option><option value="false">deny</option></select>
+              </label>
+            </div>
+            <div class="btn-row">
+              <button id="accUserPerm">Set on this player</button>
+              <button id="accGroupPerm">Set on selected rank</button>
+            </div>
+          </div>
+        </div>
+
         <div class="toolbar">
           <button id="accRefresh">Refresh</button>
           <button id="accReload">Reload YaPPerms</button>
-          <button id="accApplypack">Install starter rank pack</button>
+          <button id="accApplypack">Install starter ranks</button>
         </div>
-        <pre id="accOut" class="report"></pre>
+        <div id="accOut" class="status-line hidden" hidden></div>
       </section>
 
       <section id="tab-admin" class="panel">
@@ -319,6 +408,30 @@
         <button id="saveSettings" class="primary">Save settings</button>
       </section>
 
+      <section id="tab-editors" class="panel">
+        <div class="page-header">
+          <h2>Plugin editors</h2>
+          <p>Edit every first-party plugin config from the dashboard. Dedicated tabs still exist for ranks, chat, and other high-traffic tools.</p>
+        </div>
+        <div class="plugin-editor-layout">
+          <div class="card">
+            <h3>Plugins</h3>
+            <input id="edSearch" placeholder="Search plugins…"/>
+            <div id="edPluginList" class="plugin-ed-list"></div>
+          </div>
+          <div class="card">
+            <h3 id="edTitle">Select a plugin</h3>
+            <p class="muted hint" id="edHint">Choose a plugin to edit its YAML settings. Secrets (passwords, tokens) are masked.</p>
+            <div id="edFields" class="form-grid"></div>
+            <div class="btn-row" style="margin-top:14px">
+              <button id="edSave" class="primary">Save + reload</button>
+              <button id="edReload">Reload only</button>
+            </div>
+            <pre id="edOut" class="report"></pre>
+          </div>
+        </div>
+      </section>
+
       <section id="tab-plugins" class="panel">
         <div class="toolbar">
           <button id="refreshPlugins">Refresh</button>
@@ -420,12 +533,12 @@
             <button id="essBroadcastBtn" class="primary">Send</button>
           </div>
         </label>
-        <label class="field-block">MOTD lines (one per line, &amp; color codes OK)
-          <textarea id="essMotd" rows="3" placeholder="&amp;aWelcome!"></textarea>
+        <label class="field-block">MOTD lines (one per line)
+          <textarea id="essMotd" rows="3" data-mc-color="insert" data-mc-preview="1" placeholder="Welcome!"></textarea>
           <button id="essSaveMotd">Save MOTD</button>
         </label>
         <label class="field-block">Rules lines
-          <textarea id="essRules" rows="4" placeholder="&amp;61. Be respectful."></textarea>
+          <textarea id="essRules" rows="4" data-mc-color="insert" data-mc-preview="1" placeholder="1. Be respectful."></textarea>
           <button id="essSaveRules">Save rules</button>
         </label>
         <p class="muted">Feature toggles (writes config + reload):</p>
@@ -452,7 +565,7 @@
         <h3>Proxy settings</h3>
         <div class="form-grid">
           <label>Bind <input id="linkBind" placeholder="0.0.0.0:25565"/></label>
-          <label>MOTD <input id="linkMotd" placeholder="YaP Link"/></label>
+          <label>MOTD <input id="linkMotd" data-mc-color="insert" placeholder="YaP Link"/></label>
           <label>Max players <input id="linkMaxPlayers" type="number" min="1" value="500"/></label>
           <label>Online mode
             <select id="linkOnlineMode">
@@ -641,10 +754,10 @@
               <select id="chtFormatChannel"></select>
             </label>
             <label>Format string
-              <input id="chtFormatInput" placeholder="{prefix}{player}{suffix}&amp;7: &amp;f{message}"/>
+              <input id="chtFormatInput" data-mc-color="insert" placeholder="{prefix}{namecolor}{player}{suffix}&amp;7: {chatcolor}{message}"/>
             </label>
           </div>
-          <p class="muted-small">Use <code>{prefix}</code>, <code>{player}</code>, <code>{suffix}</code>, <code>{message}</code> — prefix/suffix come from YaPPerms ranks.</p>
+          <p class="muted-small">Use <code>{prefix}</code>, <code>{namecolor}</code>, <code>{player}</code>, <code>{suffix}</code>, <code>{chatcolor}</code>, <code>{message}</code> — colors come from each rank.</p>
           <button id="chtSaveFormat" class="primary">Save channel format</button>
           <button id="chtSaveSettings" class="primary">Save settings</button>
         </div>
@@ -659,10 +772,11 @@
       <section id="tab-players" class="panel">
         <div class="page-header">
           <h2>Players</h2>
-          <p>Kick, ban, mute, teleport, and rank tools — by username, UUID, or IP.</p>
+          <p>Every player who has ever connected — username, nickname, UUID, and IPs for bans. Click a row to act.</p>
         </div>
         <div class="grid stats">
           <div class="stat"><span>Online</span><strong id="plCount">0</strong></div>
+          <div class="stat"><span>Ever joined</span><strong id="plSeenCount">0</strong></div>
           <div class="stat"><span>Max</span><strong id="plMax">—</strong></div>
           <div class="stat"><span>Moderation</span><strong id="plModOk">—</strong></div>
         </div>
@@ -671,13 +785,27 @@
             <div class="toolbar">
               <button id="plRefresh" class="primary">Refresh list</button>
             </div>
+            <h3>Online now</h3>
             <div class="table-wrap">
               <table class="data-table" id="plTable">
-                <thead><tr><th>Name</th><th>UUID</th><th>IP</th><th>Location</th></tr></thead>
+                <thead><tr><th>Name</th><th>Nick</th><th>UUID</th><th>IP</th><th>Location</th></tr></thead>
                 <tbody id="plBody"></tbody>
               </table>
             </div>
             <p id="plEmpty" class="muted hint hidden">No players online — server may be stopped or Folia not ready.</p>
+
+            <h3 style="margin-top:20px">Everyone who has joined</h3>
+            <p class="muted hint">UUID, nickname, and every known IP are stored on join (YaP-Folia). Click a row, then IP ban.</p>
+            <div class="toolbar">
+              <input id="plSeenSearch" placeholder="Search name, nick, UUID, or IP"/>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table" id="plSeenTable">
+                <thead><tr><th></th><th>Username</th><th>Nickname</th><th>UUID</th><th>Last IP</th><th>Known IPs</th><th>First joined</th><th>Last seen</th></tr></thead>
+                <tbody id="plSeenBody"></tbody>
+              </table>
+            </div>
+            <p id="plSeenEmpty" class="muted hint hidden">No join history yet. Players appear here after they connect once.</p>
           </div>
           <div class="card player-actions">
             <h3>Actions</h3>
@@ -752,6 +880,72 @@
         <pre id="plOut" class="report"></pre>
       </section>
 
+      <section id="tab-kits" class="panel">
+        <div class="page-header">
+          <h2>Kits</h2>
+          <p>Build claim kits in <code>plugins/YaPPlayerData/kits.yml</code>. Players need <code>yapdata.kit.&lt;id&gt;</code> (or <code>yapdata.kit.*</code>).</p>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Kits</span><strong id="kitCount">—</strong></div>
+          <div class="stat"><span>File</span><strong id="kitFileOk">—</strong></div>
+        </div>
+        <div class="plugin-editor-layout">
+          <div class="card">
+            <h3>Kits</h3>
+            <div class="group-cards" id="kitCards"></div>
+            <div class="form-grid" style="margin-top:12px">
+              <label>New kit id <input id="kitNewId" placeholder="helper"/></label>
+            </div>
+            <div class="btn-row">
+              <button id="kitCreate" class="primary">New kit</button>
+              <button id="kitClone">Clone selected</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Edit kit · <span id="kitEditLabel">—</span></h3>
+            <div class="form-grid">
+              <label>Id <input id="kitId" readonly placeholder="—"/></label>
+              <label>Cooldown (seconds) <input id="kitDelay" type="number" min="0" value="86400"/></label>
+              <label>Max uses (0 = unlimited) <input id="kitMaxUses" type="number" min="0" value="0"/></label>
+              <label>Cost <input id="kitCost" type="number" min="0" step="0.01" value="0"/></label>
+            </div>
+            <label class="inline-check" style="display:flex;align-items:center;gap:10px;margin:12px 0;font-size:13px;color:var(--muted)">
+              <input type="checkbox" id="kitFirstJoin" style="width:auto"/>
+              Give on first join
+            </label>
+            <label>Console commands (one per line, <code>{player}</code> allowed)
+              <textarea id="kitCommands" rows="3" placeholder="say {player} claimed a kit"></textarea>
+            </label>
+            <h4 style="margin:18px 0 8px;font-size:14px">Items</h4>
+            <p class="muted hint">Bukkit material ids (BREAD, DIAMOND_SWORD). Armor / offhand slots auto-equip when empty. Grant <code>yapdata.kit.&lt;id&gt;</code> on Access &amp; ranks.</p>
+            <p id="kitLossy" class="muted hint" hidden>This kit was saved with <code>/createkit</code> (full NBT). Saving here keeps material, name, lore, and enchantments — extra components are dropped.</p>
+            <datalist id="kitMaterials"></datalist>
+            <div class="kit-item-row kit-item-head">
+              <span>Material</span><span>Qty</span><span>Slot</span><span>Name</span><span>Enchants</span><span>Lore</span><span></span>
+            </div>
+            <div id="kitItems"></div>
+            <div class="btn-row">
+              <button id="kitAddItem" type="button">Add item</button>
+              <button id="kitSave" class="primary">Save kit</button>
+              <button id="kitDelete" class="danger">Delete kit</button>
+            </div>
+            <h4 style="margin:18px 0 8px;font-size:14px">Give to player</h4>
+            <div class="form-grid">
+              <label>Player <input id="kitGivePlayer" placeholder="Steve"/></label>
+            </div>
+            <div class="btn-row">
+              <button id="kitGive">Give now</button>
+              <button id="kitGrant">Grant (claim later)</button>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button id="kitRefresh">Refresh</button>
+          <button id="kitReload">Reload YaPPlayerData</button>
+        </div>
+        <pre id="kitOut" class="report"></pre>
+      </section>
+
       <section id="tab-data" class="panel">
         <p class="muted"><code>yap-playerdata</code> — homes, economy, claims, sync</p>
         <div class="grid stats">
@@ -797,7 +991,10 @@
       </section>
 
       <section id="tab-tab" class="panel">
-        <p class="muted"><code>yap-tab</code> — header/footer, sidebar, nametag prefixes, optional welcome boss bar</p>
+        <div class="page-header">
+          <h2>Tab list</h2>
+          <p>Header, footer, sidebar, and welcome boss bar. Click a color, then type your text.</p>
+        </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="tabInstalled">—</strong></div>
           <div class="stat"><span>Sidebar</span><strong id="tabSidebar">—</strong></div>
@@ -806,22 +1003,22 @@
           <div class="stat"><span>Refresh</span><strong id="tabRefreshSec">—</strong></div>
         </div>
         <label class="field-block">Header lines (one per line)
-          <textarea id="tabHeader" rows="3"></textarea>
+          <textarea id="tabHeader" rows="3" data-mc-color="insert" data-mc-preview="1"></textarea>
           <button id="tabSaveHeader">Save header</button>
         </label>
         <label class="field-block">Footer lines (one per line)
-          <textarea id="tabFooter" rows="3"></textarea>
+          <textarea id="tabFooter" rows="3" data-mc-color="insert" data-mc-preview="1"></textarea>
           <button id="tabSaveFooter">Save footer</button>
         </label>
         <label class="field-block">Sidebar lines (one per line)
-          <textarea id="tabSidebarLines" rows="5"></textarea>
+          <textarea id="tabSidebarLines" rows="5" data-mc-color="insert" data-mc-preview="1"></textarea>
           <button id="tabSaveSidebar">Save sidebar</button>
         </label>
         <label>Boss bar title
-          <input id="tabBossTitle" placeholder="&amp;6&amp;lWelcome"/>
+          <input id="tabBossTitle" data-mc-color="insert" data-mc-preview="1" placeholder="Welcome"/>
         </label>
         <label>Boss bar subtitle
-          <input id="tabBossSubtitle" placeholder="&amp;7Enjoy your stay"/>
+          <input id="tabBossSubtitle" data-mc-color="insert" placeholder="Enjoy your stay"/>
         </label>
         <label>Boss bar enabled
           <select id="tabBossEnabled"><option value="false">off</option><option value="true">on</option></select>
@@ -964,7 +1161,7 @@
           <h3>Create NPC</h3>
           <div class="form-grid">
             <label>Id <input id="npcNewId" placeholder="shop_keeper"/></label>
-            <label>Display name <input id="npcNewName" placeholder="Shop Keeper"/></label>
+            <label>Display name <input id="npcNewName" data-mc-color="insert" placeholder="Shop Keeper"/></label>
             <label>World <input id="npcNewWorld" value="world"/></label>
             <label>X <input id="npcNewX" type="number" step="0.1" value="0"/></label>
             <label>Y <input id="npcNewY" type="number" step="0.1" value="64"/></label>
@@ -992,7 +1189,7 @@
         <div class="card">
           <h3>Edit selected · <span id="npcEditId" class="muted">—</span></h3>
           <div class="form-grid">
-            <label>Display name <input id="npcEditName"/></label>
+            <label>Display name <input id="npcEditName" data-mc-color="insert"/></label>
             <label>World <input id="npcEditWorld"/></label>
             <label>X <input id="npcEditX" type="number" step="0.1"/></label>
             <label>Y <input id="npcEditY" type="number" step="0.1"/></label>
@@ -1002,8 +1199,8 @@
               <select id="npcEditQuest"><option value="">— none —</option></select>
             </label>
           </div>
-          <label class="field-block">Dialogue <span class="muted">(use &amp; color codes; blank = default)</span>
-            <textarea id="npcEditDialogue" rows="2" placeholder="&6Hello! &7Can I help you?"></textarea>
+          <label class="field-block">Dialogue <span class="muted">(blank = default)</span>
+            <textarea id="npcEditDialogue" rows="2" data-mc-color="insert" data-mc-preview="1" placeholder="Hello! Can I help you?"></textarea>
           </label>
           <button id="npcSaveEdit" class="primary">Save changes</button>
         </div>
@@ -1082,6 +1279,8 @@
     </div>
   </div>
   <script src="/app-shell.js"></script>
+  <script src="/app-color.js"></script>
+  <script src="/app-access-actions.js"></script>
   <script src="/app-access-panels.js"></script>
   <script src="/app-players-panels.js"></script>
   <script src="/app-admin-panels.js"></script>
@@ -1090,6 +1289,8 @@
   <script src="/app-full-panels.js"></script>
   <script src="/app-npcs-panels.js"></script>
   <script src="/app-mmo-panels.js"></script>
+  <script src="/app-plugin-editors.js"></script>
+  <script src="/app-kits-panels.js"></script>
   <script src="/app-core.js"></script>
 </body>
 </html>

@@ -72,51 +72,31 @@ public final class DashboardNetworkSnapshots {
         return out;
     }
 
+
     public static Map<String, Object> perms(Path root) {
         Map<String, Object> out = base(root, "yap-perms", "YaPPerms");
         Map<String, Object> yaml = yaml(root, "YaPPerms", "config.yml");
         out.put("defaultGroup", str(yaml.get("default-group"), "default"));
         out.put("defaultTrack", str(yaml.get("default-track"), "yap"));
         out.put("useSharedYapdb", bool(yaml.get("use-shared-yapdb"), true));
-        out.put("groups", parseGroupDetails(yaml.get("groups")));
-        out.put("groupNames", groupNames(yaml.get("groups")));
-        out.put("tracks", parseTracks(yaml.get("tracks")));
+        out.put("groups", DashboardPermsNodes.parseGroupDetails(yaml.get("groups")));
+        out.put("groupNames", DashboardPermsNodes.groupNames(yaml.get("groups")));
+        out.put("tracks", DashboardPermsNodes.parseTracks(yaml.get("tracks")));
+        out.put("starterGrants", DashboardPermsNodes.parseStarterGrants(yaml.get("starter-grants")));
+        out.put("groupNodes", DashboardPermsNodes.mergeGroupNodes(root, yaml));
         return out;
     }
 
-    @SuppressWarnings("unchecked")
-    private static List<Map<String, Object>> parseGroupDetails(Object groupsObj) {
-        List<Map<String, Object>> out = new ArrayList<>();
-        if (!(groupsObj instanceof Map<?, ?> map)) {
-            return out;
-        }
-        map.entrySet().stream()
-                .sorted((a, b) -> String.valueOf(a.getKey()).compareToIgnoreCase(String.valueOf(b.getKey())))
-                .forEach(e -> {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("name", String.valueOf(e.getKey()));
-                    if (e.getValue() instanceof Map<?, ?> g) {
-                        Map<String, Object> gm = (Map<String, Object>) g;
-                        row.put("weight", intVal(gm.get("weight"), 0));
-                        row.put("prefix", str(gm.get("prefix"), ""));
-                        row.put("suffix", str(gm.get("suffix"), ""));
-                        row.put("parents", stringList(gm.get("parents"), List.of()));
-                    }
-                    out.add(row);
-                });
-        return out;
+    public static Map<String, List<String>> parseStarterGrants(Object grantsObj) {
+        return DashboardPermsNodes.parseStarterGrants(grantsObj);
     }
 
-    @SuppressWarnings("unchecked")
-    private static Map<String, List<String>> parseTracks(Object tracksObj) {
-        Map<String, List<String>> out = new LinkedHashMap<>();
-        if (!(tracksObj instanceof Map<?, ?> map)) {
-            return out;
-        }
-        for (var e : map.entrySet()) {
-            out.put(String.valueOf(e.getKey()), stringList(e.getValue(), List.of()));
-        }
-        return out;
+    public static Map<String, Map<String, Boolean>> mergeGroupNodes(Path root, Map<String, Object> yaml) {
+        return DashboardPermsNodes.mergeGroupNodes(root, yaml);
+    }
+
+    public static Map<String, Map<String, Boolean>> parseEditorNodes(Object editorObj) {
+        return DashboardPermsNodes.parseEditorNodes(editorObj);
     }
 
     public static Map<String, Object> playerdata(Path root) {
@@ -168,124 +148,17 @@ public final class DashboardNetworkSnapshots {
         return out;
     }
 
+
     public static Map<String, Object> map(Path root) {
-        Map<String, Object> out = base(root, "yap-map", "YaPMap");
-        Map<String, Object> yaml = yaml(root, "YaPMap", "config.yml");
-        Map<String, Object> http = map(yaml.get("http"));
-        boolean usePackServer = bool(http.get("use-yapcore-server"), true);
-        Map<String, String> serverProps = loadServerProperties(root);
-        int packPort = intVal(serverProps.get("resource-pack-http-port"), 8081);
-        int dashPort = intVal(serverProps.get("web-dashboard-port"), 8080);
-        String bind = str(http.get("bind"), "127.0.0.1");
-        int port = intVal(http.get("port"), 8082);
-        if (usePackServer) {
-            port = packPort;
-            bind = "127.0.0.1";
-        }
-        out.put("bindHost", bind);
-        out.put("httpPort", port);
-        out.put("dashboardPort", dashPort);
-        out.put("usePackServer", usePackServer);
-        // Same-origin path — works locally and when dashboard is accessed remotely
-        out.put("mapUrl", "/map/");
-        out.put("packMapUrl", "http://127.0.0.1:" + packPort + "/map/");
-        out.put("worlds", stringList(yaml.get("worlds"), List.of("world")));
-        out.put("renderIntervalMinutes", intVal(yaml.get("render-interval-minutes"), 15));
-        out.put("maxHeight", intVal(yaml.get("max-height"), 320));
-        out.put("sampleChunkRadius", intVal(yaml.get("sample-chunk-radius"), 8));
-        Path tiles = root.resolve("plugins").resolve("YaPMap").resolve("map/tiles");
-        int tileCount = countFilesRecursive(tiles, ".png");
-        out.put("tileCount", tileCount);
-        out.put("tilesDir", tiles.toString());
-        out.put("webReady", Files.isRegularFile(root.resolve("plugins").resolve("YaPMap").resolve("web/index.html")));
-        out.put("mapReady", tileCount > 0 && bool(out.get("webReady"), false));
-        return out;
+        return DashboardOpsSnapshots.map(root);
     }
 
-    private static Map<String, String> loadServerProperties(Path root) {
-        Map<String, String> out = new LinkedHashMap<>();
-        Path file = root.resolve("config").resolve("server.properties");
-        if (!Files.isRegularFile(file)) {
-            return out;
-        }
-        try {
-            for (String line : Files.readAllLines(file)) {
-                String t = line.trim();
-                if (t.isEmpty() || t.startsWith("#")) {
-                    continue;
-                }
-                int eq = t.indexOf('=');
-                if (eq > 0) {
-                    out.put(t.substring(0, eq).trim(), t.substring(eq + 1).trim());
-                }
-            }
-        } catch (IOException ignored) {
-        }
-        return out;
-    }
-
-    /** Compact Phase 8 ops-plugin readiness for the dashboard status tab. */
     public static Map<String, Object> opsPhase8Summary(Path root) {
-        Map<String, Object> out = new LinkedHashMap<>();
-        List<Map<String, Object>> rows = new ArrayList<>();
-        rows.add(opsRow("Protect", protect(root), snap -> {
-            if (!bool(snap.get("installed"), false)) {
-                return "missing";
-            }
-            return bool(snap.get("loggingEnabled"), true) ? "logging on" : "logging off";
-        }));
-        rows.add(opsRow("Chat", chat(root), snap -> {
-            if (!bool(snap.get("installed"), false)) {
-                return "missing";
-            }
-            int channels = snap.get("channels") instanceof List<?> list ? list.size() : 0;
-            return channels + " ch · slow " + intVal(snap.get("slowModeSeconds"), 0) + "s";
-        }));
-        rows.add(opsRow("Moderation", moderation(root), snap ->
-                bool(snap.get("installed"), false) ? "ready" : "missing"));
-        rows.add(opsRow("Player data", playerdata(root), snap -> {
-            if (!bool(snap.get("installed"), false)) {
-                return "missing";
-            }
-            return bool(snap.get("economyEnabled"), true) ? "economy on" : "economy off";
-        }));
-        rows.add(opsRow("Map", map(root), snap -> {
-            if (!bool(snap.get("installed"), false)) {
-                return "missing";
-            }
-            return bool(snap.get("mapReady"), false)
-                    ? intVal(snap.get("tileCount"), 0) + " tiles"
-                    : "awaiting render";
-        }));
-        rows.add(opsRow("Discord", discord(root), snap -> {
-            if (!bool(snap.get("installed"), false)) {
-                return "missing";
-            }
-            boolean hooks = bool(snap.get("moderationConfigured"), false)
-                    || bool(snap.get("chatConfigured"), false);
-            if (hooks) {
-                return "webhooks set";
-            }
-            return "webhooks empty";
-        }));
-        long installed = rows.stream().filter(r -> Boolean.TRUE.equals(r.get("installed"))).count();
-        out.put("plugins", rows);
-        out.put("installedCount", installed);
-        out.put("totalCount", rows.size());
-        out.put("summary", installed == rows.size()
-                ? "All Phase 8 ops plugins present"
-                : installed + " / " + rows.size() + " ops plugins installed");
-        return out;
+        return DashboardOpsSnapshots.opsPhase8Summary(root);
     }
 
-    private static Map<String, Object> opsRow(String label, Map<String, Object> snap,
-                                              java.util.function.Function<Map<String, Object>, String> detailFn) {
-        Map<String, Object> row = new LinkedHashMap<>();
-        row.put("label", label);
-        row.put("installed", bool(snap.get("installed"), false));
-        row.put("configPresent", bool(snap.get("configPresent"), false));
-        row.put("detail", detailFn.apply(snap));
-        return row;
+    public static Map<String, Object> npcs(Path root) {
+        return DashboardOpsSnapshots.npcs(root);
     }
 
     public static Map<String, Object> guard(Path root) {
@@ -321,50 +194,12 @@ public final class DashboardNetworkSnapshots {
         return out;
     }
 
-    public static Map<String, Object> npcs(Path root) {
-        Map<String, Object> out = base(root, "yap-npcs", "YaPNpcs");
-        Map<String, Object> yaml = yaml(root, "YaPNpcs", "config.yml");
-        out.put("serverId", str(yaml.get("server-id"), "default"));
-        Map<String, Object> dialogue = map(yaml.get("dialogue"));
-        out.put("defaultDialogue", str(dialogue.get("default"), "&7Hello, traveler!"));
-        Path questDir = root.resolve("plugins").resolve("YaPNpcs").resolve("quests");
-        out.put("questPackCount", countFiles(questDir, ".yml", ".yaml"));
-        out.put("questIds", listQuestIds(questDir));
-        return out;
-    }
 
-    private static List<String> listQuestIds(Path questDir) {
-        List<String> ids = new ArrayList<>();
-        if (!Files.isDirectory(questDir)) {
-            return ids;
-        }
-        try (var stream = Files.list(questDir)) {
-            stream.filter(p -> {
-                String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
-                return n.endsWith(".yml") || n.endsWith(".yaml");
-            }).forEach(path -> {
-                try {
-                    Map<String, Object> doc = loadYaml(path);
-                    Object quests = doc.get("quests");
-                    if (quests instanceof Map<?, ?> map) {
-                        map.keySet().forEach(k -> ids.add(String.valueOf(k)));
-                    }
-                } catch (Exception ignored) {
-                    /* skip bad pack */
-                }
-            });
-        } catch (IOException ignored) {
-            return ids;
-        }
-        ids.sort(String.CASE_INSENSITIVE_ORDER);
-        return ids;
-    }
-
-    private static boolean checkEnabled(Map<String, Object> checks, String key) {
+    static boolean checkEnabled(Map<String, Object> checks, String key) {
         return bool(map(checks.get(key)).get("enabled"), true);
     }
 
-    private static List<String> stringList(Object val, List<String> fallback) {
+    static List<String> stringList(Object val, List<String> fallback) {
         if (val instanceof List<?> list) {
             List<String> out = new ArrayList<>();
             for (Object item : list) {
@@ -379,23 +214,7 @@ public final class DashboardNetworkSnapshots {
         return fallback;
     }
 
-    private static int countFilesRecursive(Path dir, String suffix) {
-        if (!Files.isDirectory(dir)) {
-            return 0;
-        }
-        int count = 0;
-        try (var walk = Files.walk(dir)) {
-            for (Path p : walk.toList()) {
-                if (Files.isRegularFile(p) && p.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(suffix)) {
-                    count++;
-                }
-            }
-        } catch (IOException ignored) {
-        }
-        return count;
-    }
-
-    private static Map<String, Object> base(Path root, String jarToken, String dataDir) {
+    static Map<String, Object> base(Path root, String jarToken, String dataDir) {
         Map<String, Object> out = new LinkedHashMap<>();
         Path pluginsDir = root.resolve("plugins");
         out.put("installed", jarPresent(pluginsDir, jarToken));
@@ -404,7 +223,7 @@ public final class DashboardNetworkSnapshots {
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> yaml(Path root, String dataDir, String fileName) {
+    static Map<String, Object> yaml(Path root, String dataDir, String fileName) {
         Path file = root.resolve("plugins").resolve(dataDir).resolve(fileName);
         if (!Files.isRegularFile(file)) {
             return Map.of();
@@ -416,7 +235,7 @@ public final class DashboardNetworkSnapshots {
         }
     }
 
-    private static List<String> channelNames(Object channels) {
+    static List<String> channelNames(Object channels) {
         if (!(channels instanceof Map<?, ?> map)) {
             return List.of("global", "local", "staff");
         }
@@ -429,7 +248,7 @@ public final class DashboardNetworkSnapshots {
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, String> parseChannelFormats(Object channels) {
+    static Map<String, String> parseChannelFormats(Object channels) {
         Map<String, String> out = new LinkedHashMap<>();
         if (!(channels instanceof Map<?, ?> map)) {
             return out;
@@ -444,19 +263,7 @@ public final class DashboardNetworkSnapshots {
         return out;
     }
 
-    private static List<String> groupNames(Object groups) {
-        if (!(groups instanceof Map<?, ?> map)) {
-            return List.of("default", "vip", "mod", "admin");
-        }
-        List<String> names = new ArrayList<>();
-        for (Object key : map.keySet()) {
-            names.add(String.valueOf(key));
-        }
-        names.sort(String::compareToIgnoreCase);
-        return names;
-    }
-
-    private static Map<String, Boolean> featureBools(Object features, List<String> keys) {
+    static Map<String, Boolean> featureBools(Object features, List<String> keys) {
         Map<String, Object> map = map(features);
         Map<String, Boolean> out = new LinkedHashMap<>();
         for (String key : keys) {
@@ -465,7 +272,7 @@ public final class DashboardNetworkSnapshots {
         return out;
     }
 
-    private static List<String> lines(Object val) {
+    static List<String> lines(Object val) {
         List<String> out = new ArrayList<>();
         if (val instanceof List<?> list) {
             for (Object item : list) {
@@ -479,7 +286,7 @@ public final class DashboardNetworkSnapshots {
         return out;
     }
 
-    private static int countFiles(Path dir, String... suffixes) {
+    static int countFiles(Path dir, String... suffixes) {
         if (!Files.isDirectory(dir)) {
             return 0;
         }
@@ -552,14 +359,14 @@ public final class DashboardNetworkSnapshots {
     }
 
     @SuppressWarnings("unchecked")
-    private static Map<String, Object> map(Object val) {
+    static Map<String, Object> map(Object val) {
         if (val instanceof Map<?, ?> m) {
             return (Map<String, Object>) m;
         }
         return new LinkedHashMap<>();
     }
 
-    private static Object nested(Map<String, Object> root, String... keys) {
+    static Object nested(Map<String, Object> root, String... keys) {
         Object cur = root;
         for (String key : keys) {
             if (!(cur instanceof Map<?, ?> map)) {
@@ -570,12 +377,12 @@ public final class DashboardNetworkSnapshots {
         return cur;
     }
 
-    private static boolean nestedBool(Map<String, Object> root, String section, String key) {
+    static boolean nestedBool(Map<String, Object> root, String section, String key) {
         Object val = nested(root, section, key);
         return bool(val, false);
     }
 
-    private static int intVal(Object val, int fallback) {
+    static int intVal(Object val, int fallback) {
         if (val instanceof Number n) {
             return n.intValue();
         }
@@ -588,7 +395,7 @@ public final class DashboardNetworkSnapshots {
         return fallback;
     }
 
-    private static String str(Object val, String fallback) {
+    static String str(Object val, String fallback) {
         if (val == null) {
             return fallback;
         }
@@ -596,7 +403,7 @@ public final class DashboardNetworkSnapshots {
         return s.isEmpty() ? fallback : s;
     }
 
-    private static boolean bool(Object val, boolean fallback) {
+    static boolean bool(Object val, boolean fallback) {
         if (val instanceof Boolean b) {
             return b;
         }
@@ -606,7 +413,7 @@ public final class DashboardNetworkSnapshots {
         return fallback;
     }
 
-    private static boolean jarPresent(Path pluginsDir, String token) {
+    static boolean jarPresent(Path pluginsDir, String token) {
         if (!Files.isDirectory(pluginsDir)) {
             return false;
         }

@@ -191,6 +191,8 @@
   if (window.YapDashRegisterFullPanels) window.YapDashRegisterFullPanels(window.YapDash);
   if (window.YapDashRegisterNpcPanels) window.YapDashRegisterNpcPanels(window.YapDash);
   if (window.YapDashRegisterMmoPanels) window.YapDashRegisterMmoPanels(window.YapDash);
+  if (window.YapDashRegisterPluginEditors) window.YapDashRegisterPluginEditors(window.YapDash);
+  if (window.YapDashRegisterKitsPanels) window.YapDashRegisterKitsPanels(window.YapDash);
   window.YapDashTabLoads = window.YapDash.tabLoads;
 
   async function boot() {

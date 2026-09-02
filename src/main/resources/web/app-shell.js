@@ -17,6 +17,7 @@
     ]},
     { group: "Content", items: [
       { tab: "plugins", icon: "🧩", label: "Plugins" },
+      { tab: "editors", icon: "✎", label: "Plugin editors" },
       { tab: "modules", icon: "📦", label: "Modules" },
       { tab: "packs", icon: "🎨", label: "Packs" },
       { tab: "world", icon: "🌍", label: "World" },
@@ -28,13 +29,14 @@
       { tab: "vehicles", icon: "🚗", label: "Vehicles" },
       { tab: "pregen", icon: "⬡", label: "Pregen" },
       { tab: "data", icon: "💾", label: "Player data" },
+      { tab: "kits", icon: "🎒", label: "Kits" },
       { tab: "chat", icon: "💬", label: "Chat" },
       { tab: "tab", icon: "📋", label: "Tab list" },
       { tab: "mmo", icon: "⚔", label: "MMO" },
       { tab: "map", icon: "🗺", label: "Map" },
       { tab: "guard", icon: "🛡", label: "Guard" },
       { tab: "protect", icon: "🔒", label: "Protect" },
-      { tab: "discord", icon: "Discord", label: "Discord" },
+      { tab: "discord", icon: "📢", label: "Discord" },
     ]},
   ];
 
@@ -77,6 +79,31 @@
     document.getElementById("sidebar")?.classList.remove("open");
   }
 
-  window.YapShell = { switchTab, buildSidebar };
-  document.addEventListener("DOMContentLoaded", buildSidebar);
+  function filterNav(query) {
+    const q = (query || "").trim().toLowerCase();
+    document.querySelectorAll(".nav-group").forEach((group) => {
+      let visible = 0;
+      group.querySelectorAll(".nav-item").forEach((item) => {
+        const label = (item.textContent || "").toLowerCase();
+        const hide = !!q && !label.includes(q);
+        item.classList.toggle("nav-hidden", hide);
+        if (!hide) visible++;
+      });
+      group.classList.toggle("nav-hidden", !!q && visible === 0);
+    });
+  }
+
+  window.YapShell = { switchTab, buildSidebar, filterNav };
+  document.addEventListener("DOMContentLoaded", () => {
+    buildSidebar();
+    const search = document.getElementById("navSearch");
+    if (search) {
+      search.addEventListener("input", () => filterNav(search.value));
+      search.addEventListener("keydown", (e) => {
+        if (e.key !== "Enter") return;
+        const first = document.querySelector(".nav-item:not(.nav-hidden)");
+        if (first) first.click();
+      });
+    }
+  });
 })();
