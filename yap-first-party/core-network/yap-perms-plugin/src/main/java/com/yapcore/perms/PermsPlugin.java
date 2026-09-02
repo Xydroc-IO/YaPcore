@@ -8,6 +8,7 @@ import com.yapcore.perms.engine.PermissionResolver;
 import com.yapcore.perms.gui.RanksGui;
 import com.yapcore.perms.gui.RanksGuiListener;
 import com.yapcore.perms.hook.PermsPlaceholders;
+import com.yapcore.perms.hook.YaPVaultPermission;
 import com.yapcore.perms.listener.JoinListener;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
@@ -30,6 +31,7 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
     private PermissionResolver resolver;
     private PermissionApplicator applicator;
     private RanksGui ranksGui;
+    private YaPVaultPermission vault;
 
     @Override
     public void onEnable() {
@@ -51,6 +53,7 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
         applicator = new PermissionApplicator(this);
 
         try {
+            repository.backfillEmptyColorsFromConfig();
             reloadAllSync();
             if (config.applyStarterPackOnFirstBoot() && !repository.starterPackApplied()) {
                 repository.applyStarterPackFromConfig();
@@ -78,7 +81,16 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
             refresh(player);
         }
         PermsPlaceholders.registerIfPresent(this);
-        getLogger().info("YaPPerms ready — /yapperm gui for in-game ranks.");
+        if (Bukkit.getPluginManager().getPlugin("Vault") != null) {
+            try {
+                vault = new YaPVaultPermission(this);
+                vault.register();
+            } catch (Throwable t) {
+                getLogger().warning("Vault present but Permission registration failed: " + t.getMessage());
+            }
+        }
+        YapSched.asyncTimer(this, this::purgeExpiredNodes, 20L * 60, 20L * 60);
+        getLogger().info("YaPPerms ready — /yapperm gui · /lp alias · Vault=" + (vault != null));
     }
 
     public RanksGui ranksGui() {
@@ -93,8 +105,28 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
         }
     }
 
+    private void purgeExpiredNodes() {
+        try {
+            int n = repository.purgeExpired();
+            if (n > 0) {
+                resolver.reloadCache();
+                YapSched.global(this, this::refreshAll);
+                getLogger().info("Purged " + n + " expired permission node(s).");
+            }
+        } catch (Exception e) {
+            getLogger().warning("Expiry sweep failed: " + e.getMessage());
+        }
+    }
+
     @Override
     public void onDisable() {
+        if (vault != null) {
+            try {
+                vault.unregister();
+            } catch (Throwable ignored) {
+            }
+            vault = null;
+        }
         getServer().getServicesManager().unregisterAll(this);
         applicator.detachAll();
         if (database != null) {
@@ -135,13 +167,25 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
     }
 
     @Override
+    public EffectiveUser resolve(UUID uuid, String name, String world, String server) {
+        return resolver.resolve(uuid, name, world, server == null || server.isBlank()
+                ? config.serverContext() : server);
+    }
+
+    @Override
+    public String explain(UUID uuid, String name, String node, String world) {
+        return resolver.explain(uuid, name, node, world, config.serverContext());
+    }
+
+    @Override
     public CompletableFuture<EffectiveUser> resolveAsync(UUID uuid, String name) {
         return CompletableFuture.supplyAsync(() -> resolve(uuid, name));
     }
 
     @Override
     public void refresh(Player player) {
-        EffectiveUser effective = resolve(player.getUniqueId(), player.getName());
+        String world = player.getWorld() != null ? player.getWorld().getName() : "";
+        EffectiveUser effective = resolve(player.getUniqueId(), player.getName(), world, config.serverContext());
         applicator.apply(player, effective);
     }
 
@@ -175,13 +219,39 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
     }
 
     @Override
+    public Optional<String> getNameColor(UUID uuid) {
+        return groupChatMeta(uuid, true);
+    }
+
+    @Override
+    public Optional<String> getChatColor(UUID uuid) {
+        return groupChatMeta(uuid, false);
+    }
+
+    private Optional<String> groupChatMeta(UUID uuid, boolean nameColor) {
+        String group = displayGroup(uuid);
+        var row = resolver.groups().get(group);
+        if (row == null) {
+            return Optional.empty();
+        }
+        String raw = nameColor ? row.nameColor() : row.chatColor();
+        if (raw == null || raw.isBlank()) {
+            PermsConfig.GroupDef def = config.groups().get(group);
+            if (def != null) {
+                raw = nameColor ? def.nameColor() : def.chatColor();
+            }
+        }
+        return raw == null || raw.isBlank() ? Optional.empty() : Optional.of(raw);
+    }
+
+    @Override
     public int getWeight(UUID uuid) {
         return resolve(uuid, "unknown").weight();
     }
 
     @Override
     public String displayGroup(UUID uuid) {
-        return resolve(uuid, "unknown").primaryGroup();
+        return resolve(uuid, "unknown").displayGroup();
     }
 
     @Override

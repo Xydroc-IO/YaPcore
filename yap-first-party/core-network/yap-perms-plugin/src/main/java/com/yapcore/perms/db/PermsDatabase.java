@@ -73,7 +73,10 @@ public final class PermsDatabase implements AutoCloseable {
                       group_name VARCHAR(32) NOT NULL,
                       node VARCHAR(128) NOT NULL,
                       value TINYINT(1) NOT NULL,
-                      PRIMARY KEY (group_name, node)
+                      world VARCHAR(64) NOT NULL DEFAULT '',
+                      server_ctx VARCHAR(64) NOT NULL DEFAULT '',
+                      expires_at TIMESTAMP NULL,
+                      PRIMARY KEY (group_name, node, world, server_ctx)
                     )
                     """);
             st.execute("""
@@ -96,7 +99,10 @@ public final class PermsDatabase implements AutoCloseable {
                       uuid CHAR(36) NOT NULL,
                       node VARCHAR(128) NOT NULL,
                       value TINYINT(1) NOT NULL,
-                      PRIMARY KEY (uuid, node)
+                      world VARCHAR(64) NOT NULL DEFAULT '',
+                      server_ctx VARCHAR(64) NOT NULL DEFAULT '',
+                      expires_at TIMESTAMP NULL,
+                      PRIMARY KEY (uuid, node, world, server_ctx)
                     )
                     """);
             st.execute("""
@@ -120,6 +126,39 @@ public final class PermsDatabase implements AutoCloseable {
                       suffix VARCHAR(64) NULL
                     )
                     """);
+            migrateNodeContexts(st);
+            addColumn(st, "yap_perms_groups", "name_color", "VARCHAR(32) NOT NULL DEFAULT ''");
+            addColumn(st, "yap_perms_groups", "chat_color", "VARCHAR(32) NOT NULL DEFAULT ''");
+        }
+    }
+
+    /** Existing 1.0 installs had (group/uuid, node) only — add context + expiry. */
+    private static void migrateNodeContexts(Statement st) {
+        addColumn(st, "yap_perms_group_nodes", "world", "VARCHAR(64) NOT NULL DEFAULT ''");
+        addColumn(st, "yap_perms_group_nodes", "server_ctx", "VARCHAR(64) NOT NULL DEFAULT ''");
+        addColumn(st, "yap_perms_group_nodes", "expires_at", "TIMESTAMP NULL");
+        addColumn(st, "yap_perms_user_nodes", "world", "VARCHAR(64) NOT NULL DEFAULT ''");
+        addColumn(st, "yap_perms_user_nodes", "server_ctx", "VARCHAR(64) NOT NULL DEFAULT ''");
+        addColumn(st, "yap_perms_user_nodes", "expires_at", "TIMESTAMP NULL");
+        widenPrimaryKey(st, "yap_perms_group_nodes",
+                "PRIMARY KEY (group_name, node, world, server_ctx)");
+        widenPrimaryKey(st, "yap_perms_user_nodes",
+                "PRIMARY KEY (uuid, node, world, server_ctx)");
+    }
+
+    private static void addColumn(Statement st, String table, String column, String ddl) {
+        try {
+            st.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + ddl);
+        } catch (SQLException ignored) {
+            // already present
+        }
+    }
+
+    private static void widenPrimaryKey(Statement st, String table, String newPk) {
+        try {
+            st.execute("ALTER TABLE " + table + " DROP PRIMARY KEY, ADD " + newPk);
+        } catch (SQLException ignored) {
+            // already widened or engine-specific
         }
     }
 

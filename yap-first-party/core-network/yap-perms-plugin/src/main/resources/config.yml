@@ -16,7 +16,10 @@ pool:
 default-group: default
 default-track: yap
 
-# Apply YaP starter rank pack on first boot (default/vip/mod/admin + track yap)
+# Server context for world/server-scoped nodes (blank = only global + matching world)
+server-context: ""
+
+# Apply YaP starter rank pack on first boot (default/vip/staff/admin/owner + track yap)
 apply-starter-pack-on-first-boot: true
 
 # Chat/tab meta uses legacy § codes; Adventure consumers may translate
@@ -25,27 +28,51 @@ groups:
     weight: 0
     prefix: "&7"
     suffix: ""
+    name-color: "&7"
+    chat-color: "&f"
     parents: []
   vip:
     weight: 10
     prefix: "&a[VIP] "
     suffix: " &a✦"
+    name-color: "&a"
+    chat-color: "&f"
     parents: [default]
+  # Legacy alias — same ladder step as staff; prefer assigning staff going forward
   mod:
-    weight: 50
+    weight: 45
     prefix: "&9[Mod] "
     suffix: ""
+    name-color: "&9"
+    chat-color: "&f"
+    parents: [vip]
+  staff:
+    weight: 50
+    prefix: "&b[Staff] "
+    suffix: ""
+    name-color: "&b"
+    chat-color: "&f"
     parents: [vip]
   admin:
     weight: 100
     prefix: "&c[Admin] "
     suffix: ""
-    parents: [mod]
+    name-color: "&c"
+    chat-color: "&f"
+    parents: [staff]
+  owner:
+    weight: 200
+    prefix: "&6[Owner] "
+    suffix: ""
+    name-color: "&6"
+    chat-color: "&f"
+    parents: [admin]
 
 tracks:
-  yap: [default, vip, mod, admin]
+  yap: [default, vip, staff, admin, owner]
 
-# Starter permission grants (merged into group rows on applypack)
+# Starter permission grants (merged into group rows on applypack).
+# The web rank editor also writes editor-nodes: (allow/deny) and editor-apply.yml.
 starter-grants:
   default:
     - yapvehicles.drive
@@ -63,6 +90,7 @@ starter-grants:
     - yapdata.job.lumberjack
     - yapdata.ah
     - yapdata.claim
+    - yapdata.bag
     - yapchat.use
     - yapchat.msg
     - yapessentials.spawn
@@ -79,13 +107,27 @@ starter-grants:
     - yapdata.claims.wilderness
     - yapdata.kit.*
     - yapdata.job.*
+    - yapdata.bag.pages.5
     - yapessentials.hat
     - yapessentials.ptime
     - yapessentials.pweather
+  # Junior moderation (legacy) — prefer staff for new hires
   mod:
+    - yapchat.staff
+    - yapmod.warn
+    - yapmod.mute
+    - yapmod.kick
+    - yapmod.history
+    - yapessentials.heal
+    - yapessentials.feed
+    - yapessentials.teleport
+  staff:
     - yapdata.warp.admin
     - yapdata.balance.others
+    - yapdata.eco
     - yapdata.claims.admin
+    - yapdata.bag.pages.7
+    - yapdata.bag.see
     - yapvehicles.destroy
     - yapstacker.gui
     - yapstacker.give
@@ -101,6 +143,8 @@ starter-grants:
     - yapmod.kick
     - yapmod.history
     - yapessentials.fly
+    - yapessentials.gamemode
+    - yapessentials.item
     - yapessentials.speed
     - yapessentials.heal
     - yapessentials.feed
@@ -112,8 +156,12 @@ starter-grants:
     - yapessentials.teleport
     - yapessentials.broadcast
     - yapessentials.setspawn
+    - yapessentials.staff
+    - yapadmin.menu
+    - yapguard.alerts
   admin:
     - yapdata.admin
+    - yapdata.bag.pages.*
     - yapdata.trader.admin
     - yapstacker.admin
     - yappregen.admin
@@ -132,3 +180,44 @@ starter-grants:
     - yapessentials.god
     - yapessentials.nick
     - yapessentials.nick.others
+    - yapchat.admin
+    - yapchat.bypass.filter
+    - yapchat.bypass.slow
+    - yapchat.socialspy
+    - yapadmin.menu
+    - yapadmin.give
+    - yapadmin.server
+    - yapadmin.economy
+    - yapregions.admin
+    - yapworld.admin
+    - yapworld.load
+    - yapworld.unload
+    - yapworld.teleport
+    - yapworld.selection
+    - yapprotect.admin
+    - yapguard.admin
+    - yapguard.bypass
+    - yap.bypass
+    - yap.bypass.mmo
+    - yapskills.admin
+    - yapmechanics.admin
+    - yapcombat.admin
+    - yapabilities.admin
+    - yaplagguard.bypass
+    - yaplagguard.admin
+    - yaptab.admin
+    - yapdiscord.admin
+    - yapmap.admin
+    - yapnpcs.admin
+  owner:
+    - "*"
+    - yap.bypass
+    - yap.bypass.mmo
+    - yapperm.promote
+    - yapperm.demote
+    - yapperm.admin
+    - yapadmin.*
+    - yapguard.bypass
+    - minecraft.command.op
+    - bukkit.command.op
+    - bukkit.command.op.give

@@ -110,12 +110,14 @@ public final class RanksGuiListener implements Listener {
         player.sendMessage("§7Prefix: §r" + row.prefix() + "Name" + row.suffix());
         player.sendMessage("§7Parents: §f" + (row.parents().isEmpty() ? "—" : String.join(", ", row.parents())));
         int shown = 0;
-        for (var e : row.nodes().entrySet()) {
+        for (var node : row.nodes()) {
             if (shown++ >= 12) {
                 player.sendMessage("§8…");
                 break;
             }
-            player.sendMessage("  §7" + e.getKey() + " §f= §a" + e.getValue());
+            player.sendMessage("  §7" + node.node() + " §f= §a" + node.value()
+                    + (node.world().isBlank() ? "" : " §8world=" + node.world())
+                    + (node.temporary() ? " §8temp" : ""));
         }
     }
 

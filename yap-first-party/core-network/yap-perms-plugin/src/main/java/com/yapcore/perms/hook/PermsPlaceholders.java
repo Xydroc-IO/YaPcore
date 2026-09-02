@@ -44,6 +44,8 @@ public final class PermsPlaceholders extends PlaceholderExpansion {
         return switch (params.toLowerCase()) {
             case "prefix" -> color(perms.getPrefix(player.getUniqueId()).orElse(""));
             case "suffix" -> color(perms.getSuffix(player.getUniqueId()).orElse(""));
+            case "name_color", "namecolor" -> color(perms.getNameColor(player.getUniqueId()).orElse("&f"));
+            case "chat_color", "chatcolor" -> color(perms.getChatColor(player.getUniqueId()).orElse("&f"));
             case "group", "primary_group" -> perms.getPrimaryGroup(player.getUniqueId()).orElse("default");
             case "display_group" -> perms.displayGroup(player.getUniqueId());
             case "weight" -> String.valueOf(perms.getWeight(player.getUniqueId()));

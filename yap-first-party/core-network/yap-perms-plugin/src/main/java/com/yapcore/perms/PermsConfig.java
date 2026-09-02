@@ -14,7 +14,12 @@ import java.util.Set;
 
 public final class PermsConfig {
 
-    public record GroupDef(String name, int weight, String prefix, String suffix, List<String> parents) {
+    public record GroupDef(String name, int weight, String prefix, String suffix,
+                           String nameColor, String chatColor, List<String> parents) {
+        public GroupDef {
+            nameColor = nameColor == null ? "" : nameColor;
+            chatColor = chatColor == null ? "" : chatColor;
+        }
     }
 
     private final JavaPlugin plugin;
@@ -27,10 +32,12 @@ public final class PermsConfig {
     private long connectionTimeoutMs = 10_000L;
     private String defaultGroup = "default";
     private String defaultTrack = "yap";
+    private String serverContext = "";
     private boolean applyStarterPackOnFirstBoot = true;
     private Map<String, GroupDef> groups = Map.of();
     private Map<String, List<String>> tracks = Map.of();
     private Map<String, List<String>> starterGrants = Map.of();
+    private Map<String, Map<String, Boolean>> editorNodes = Map.of();
 
     public PermsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -48,10 +55,15 @@ public final class PermsConfig {
         connectionTimeoutMs = Math.max(1000L, c.getLong("pool.connection-timeout-ms", 10_000L));
         defaultGroup = c.getString("default-group", "default");
         defaultTrack = c.getString("default-track", "yap");
+        serverContext = c.getString("server-context", "");
+        if (serverContext == null) {
+            serverContext = "";
+        }
         applyStarterPackOnFirstBoot = c.getBoolean("apply-starter-pack-on-first-boot", true);
         groups = loadGroups(c.getConfigurationSection("groups"));
         tracks = loadTracks(c.getConfigurationSection("tracks"));
         starterGrants = loadStarterGrants(c.getConfigurationSection("starter-grants"));
+        editorNodes = loadEditorNodes(c.getConfigurationSection("editor-nodes"));
     }
 
     private static Map<String, GroupDef> loadGroups(ConfigurationSection section) {
@@ -67,8 +79,11 @@ public final class PermsConfig {
             int weight = g.getInt("weight", 0);
             String prefix = g.getString("prefix", "");
             String suffix = g.getString("suffix", "");
+            String nameColor = g.getString("name-color", "");
+            String chatColor = g.getString("chat-color", "");
             List<String> parents = g.getStringList("parents");
-            out.put(key.toLowerCase(), new GroupDef(key.toLowerCase(), weight, prefix, suffix, List.copyOf(parents)));
+            out.put(key.toLowerCase(), new GroupDef(key.toLowerCase(), weight, prefix, suffix,
+                    nameColor, chatColor, List.copyOf(parents)));
         }
         return Collections.unmodifiableMap(out);
     }
@@ -96,6 +111,51 @@ public final class PermsConfig {
         Map<String, List<String>> out = new LinkedHashMap<>();
         for (String key : section.getKeys(false)) {
             out.put(key.toLowerCase(), List.copyOf(section.getStringList(key)));
+        }
+        return Collections.unmodifiableMap(out);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Map<String, Boolean>> loadEditorNodes(ConfigurationSection section) {
+        if (section == null) {
+            return Map.of();
+        }
+        Map<String, Map<String, Boolean>> out = new LinkedHashMap<>();
+        for (String key : section.getKeys(false)) {
+            Map<String, Boolean> nodes = new LinkedHashMap<>();
+            List<Map<?, ?>> rows = section.getMapList(key);
+            if (!rows.isEmpty()) {
+                for (Map<?, ?> row : rows) {
+                    Object nodeObj = row.get("node");
+                    if (nodeObj == null) {
+                        continue;
+                    }
+                    String node = String.valueOf(nodeObj).trim();
+                    if (node.isEmpty()) {
+                        continue;
+                    }
+                    Object raw = row.get("value");
+                    boolean value = raw == null || Boolean.parseBoolean(String.valueOf(raw));
+                    if (raw instanceof Boolean b) {
+                        value = b;
+                    }
+                    nodes.put(node, value);
+                }
+            } else {
+                ConfigurationSection group = section.getConfigurationSection(key);
+                if (group != null) {
+                    for (String rowKey : group.getKeys(false)) {
+                        ConfigurationSection row = group.getConfigurationSection(rowKey);
+                        if (row != null) {
+                            String node = row.getString("node", "");
+                            if (!node.isBlank()) {
+                                nodes.put(node, row.getBoolean("value", true));
+                            }
+                        }
+                    }
+                }
+            }
+            out.put(key.toLowerCase(), nodes);
         }
         return Collections.unmodifiableMap(out);
     }
@@ -136,6 +196,10 @@ public final class PermsConfig {
         return defaultTrack;
     }
 
+    public String serverContext() {
+        return serverContext;
+    }
+
     public boolean applyStarterPackOnFirstBoot() {
         return applyStarterPackOnFirstBoot;
     }
@@ -150,6 +214,10 @@ public final class PermsConfig {
 
     public Map<String, List<String>> starterGrants() {
         return starterGrants;
+    }
+
+    public Map<String, Map<String, Boolean>> editorNodes() {
+        return editorNodes;
     }
 
     public Set<String> allGroupNames() {

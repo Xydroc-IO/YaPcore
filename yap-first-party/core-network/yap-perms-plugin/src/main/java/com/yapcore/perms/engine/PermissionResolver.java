@@ -1,15 +1,16 @@
 package com.yapcore.perms.engine;
 
 import com.yapcore.perms.EffectiveUser;
+import com.yapcore.perms.PermissionNodes;
 import com.yapcore.perms.PermsConfig;
 import com.yapcore.perms.db.PermsRepository;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -36,14 +37,20 @@ public final class PermissionResolver {
     }
 
     public EffectiveUser resolve(UUID uuid, String name) {
+        return resolve(uuid, name, "", "");
+    }
+
+    public EffectiveUser resolve(UUID uuid, String name, String world, String server) {
         try {
             PermsRepository.UserRow user = repository.loadUser(uuid, name, config.defaultGroup());
             Set<String> groupNames = collectGroups(user);
+            Instant now = Instant.now();
             Map<String, Boolean> merged = new LinkedHashMap<>();
             String prefix = "";
             String suffix = "";
             int weight = Integer.MIN_VALUE;
             String primary = user.primaryGroup();
+            String display = primary;
 
             List<PermsRepository.GroupRow> sorted = new ArrayList<>();
             for (String groupName : groupNames) {
@@ -55,14 +62,15 @@ public final class PermissionResolver {
             sorted.sort(Comparator.comparingInt(PermsRepository.GroupRow::weight));
 
             for (PermsRepository.GroupRow group : sorted) {
-                mergeNodes(merged, group.nodes());
+                mergeNodes(merged, group.nodes(), now, world, server);
                 if (group.weight() >= weight) {
                     weight = group.weight();
                     prefix = group.prefix();
                     suffix = group.suffix();
+                    display = group.name();
                 }
             }
-            mergeNodes(merged, user.nodes());
+            mergeNodes(merged, user.nodes(), now, world, server);
 
             if (user.metaPrefix() != null) {
                 prefix = user.metaPrefix();
@@ -74,10 +82,47 @@ public final class PermissionResolver {
             if (weight == Integer.MIN_VALUE) {
                 weight = 0;
             }
-            return new EffectiveUser(uuid, name, primary, prefix, suffix, weight, Map.copyOf(merged));
+            List<String> membership = new ArrayList<>();
+            membership.add(primary);
+            for (String extra : user.extraGroups()) {
+                if (!membership.contains(extra)) {
+                    membership.add(extra);
+                }
+            }
+            return new EffectiveUser(uuid, name, primary, display, prefix, suffix, weight,
+                    Map.copyOf(merged), List.copyOf(membership));
         } catch (SQLException e) {
-            return new EffectiveUser(uuid, name, config.defaultGroup(), "", "", 0, Map.of());
+            return new EffectiveUser(uuid, name, config.defaultGroup(), config.defaultGroup(),
+                    "", "", 0, Map.of(), List.of(config.defaultGroup()));
         }
+    }
+
+    public String explain(UUID uuid, String name, String node, String world, String server) {
+        EffectiveUser eff = resolve(uuid, name, world, server);
+        boolean granted = PermissionNodes.has(eff.permissions(), node);
+        String deciding = PermissionNodes.decidingPattern(eff.permissions(), node);
+        StringBuilder sb = new StringBuilder();
+        sb.append(granted ? "§aGRANTED" : "§cDENIED");
+        sb.append(" §7").append(node);
+        if (!deciding.isBlank()) {
+            Boolean value = eff.permissions().get(deciding);
+            if (value == null) {
+                for (Map.Entry<String, Boolean> e : eff.permissions().entrySet()) {
+                    if (e.getKey().equalsIgnoreCase(deciding)) {
+                        value = e.getValue();
+                        break;
+                    }
+                }
+            }
+            sb.append(" §7via §f").append(deciding).append("§7=").append(value);
+        } else {
+            sb.append(" §7(no matching node)");
+        }
+        sb.append(" §8[").append(eff.displayGroup()).append(" w").append(eff.weight()).append(']');
+        if (world != null && !world.isBlank()) {
+            sb.append(" §8world=").append(world);
+        }
+        return sb.toString();
     }
 
     public Set<String> membershipGroups(UUID uuid, String name) {
@@ -123,9 +168,15 @@ public final class PermissionResolver {
         }
     }
 
-    private static void mergeNodes(Map<String, Boolean> target, Map<String, Boolean> source) {
-        for (Map.Entry<String, Boolean> e : source.entrySet()) {
-            target.put(e.getKey(), e.getValue());
+    private static void mergeNodes(Map<String, Boolean> target, List<StoredNode> source,
+                                   Instant now, String world, String server) {
+        if (source == null) {
+            return;
+        }
+        for (StoredNode node : source) {
+            if (node.applies(now, world, server)) {
+                target.put(node.node(), node.value());
+            }
         }
     }
 

@@ -33,10 +33,30 @@ public interface YaPPerms {
 
     Optional<String> getSuffix(UUID uuid);
 
+    /** Rank name color ({@code &a}) for chat / tab. Empty if the group has none set. */
+    default Optional<String> getNameColor(UUID uuid) {
+        return Optional.empty();
+    }
+
+    /** Rank message color ({@code &f}) for public chat. Empty if the group has none set. */
+    default Optional<String> getChatColor(UUID uuid) {
+        return Optional.empty();
+    }
+
     int getWeight(UUID uuid);
 
-    /** Highest-weight parent group name. */
+    /** Highest-weight inherited group name (LuckPerms display group). */
     String displayGroup(UUID uuid);
+
+    /** Resolve against a world/server context (empty = global-only nodes). */
+    default EffectiveUser resolve(UUID uuid, String name, String world, String server) {
+        return resolve(uuid, name);
+    }
+
+    /** LuckPerms-style verbose: why a node is granted or denied. */
+    default String explain(UUID uuid, String name, String node, String world) {
+        return hasPermission(uuid, node) ? "granted" : "denied";
+    }
 
     /** Promote one step on a track; returns new group or empty if at top / unknown. */
     Optional<String> promote(UUID uuid, String track);

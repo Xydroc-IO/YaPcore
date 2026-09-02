@@ -1,17 +1,16 @@
 package com.yapcore.perms.db;
 
 import com.yapcore.perms.PermsConfig;
+import com.yapcore.perms.engine.StoredNode;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -20,81 +19,106 @@ import java.util.UUID;
 
 public final class PermsRepository {
 
-    public record GroupRow(String name, int weight, String prefix, String suffix, List<String> parents,
-                           Map<String, Boolean> nodes) {
+    public record GroupRow(String name, int weight, String prefix, String suffix,
+                           String nameColor, String chatColor, List<String> parents,
+                           List<StoredNode> nodes) {
+        public GroupRow {
+            nameColor = nameColor == null ? "" : nameColor;
+            chatColor = chatColor == null ? "" : chatColor;
+        }
     }
 
     public record UserRow(UUID uuid, String name, String primaryGroup, Set<String> extraGroups,
-                          Map<String, Boolean> nodes, String metaPrefix, String metaSuffix) {
+                          List<StoredNode> nodes, String metaPrefix, String metaSuffix) {
     }
 
     private final PermsDatabase database;
     private final PermsConfig config;
+    private final PermsUserStore users;
+    private final PermsStarterPack starter;
 
     public PermsRepository(PermsDatabase database, PermsConfig config) {
         this.database = database;
         this.config = config;
+        this.users = new PermsUserStore(database, config);
+        this.starter = new PermsStarterPack(this, database, config);
     }
 
     public boolean starterPackApplied() throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT meta_value FROM yap_perms_meta WHERE meta_key='starter_pack_applied'")) {
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() && "true".equalsIgnoreCase(rs.getString(1));
-            }
-        }
+        return starter.starterPackApplied();
     }
 
     public void markStarterPackApplied() throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT INTO yap_perms_meta (meta_key, meta_value) VALUES ('starter_pack_applied','true') "
-                             + "ON DUPLICATE KEY UPDATE meta_value='true'")) {
-            ps.executeUpdate();
-        }
+        starter.markStarterPackApplied();
+    }
+
+    public void backfillEmptyColorsFromConfig() throws SQLException {
+        starter.backfillEmptyColorsFromConfig();
     }
 
     public void applyStarterPackFromConfig() throws SQLException {
-        try (Connection c = database.connection()) {
-            c.setAutoCommit(false);
-            try {
-                for (PermsConfig.GroupDef def : config.groups().values()) {
-                    upsertGroup(c, def.name(), def.weight(), def.prefix(), def.suffix());
-                    replaceParents(c, def.name(), def.parents());
-                }
-                for (Map.Entry<String, List<String>> track : config.tracks().entrySet()) {
-                    replaceTrack(c, track.getKey(), track.getValue());
-                }
-                for (Map.Entry<String, List<String>> grant : config.starterGrants().entrySet()) {
-                    for (String node : grant.getValue()) {
-                        setGroupNode(c, grant.getKey(), node, true);
-                    }
-                }
-                markStarterPackAppliedInTx(c);
-                c.commit();
-            } catch (SQLException e) {
-                c.rollback();
-                throw e;
-            } finally {
-                c.setAutoCommit(true);
-            }
-        }
+        starter.applyStarterPackFromConfig();
     }
 
-    private void markStarterPackAppliedInTx(Connection c) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement(
-                "INSERT INTO yap_perms_meta (meta_key, meta_value) VALUES ('starter_pack_applied','true') "
-                        + "ON DUPLICATE KEY UPDATE meta_value='true'")) {
-            ps.executeUpdate();
-        }
+    public UserRow loadUser(UUID uuid, String name, String defaultGroup) throws SQLException {
+        return users.loadUser(uuid, name, defaultGroup);
+    }
+
+    public void ensureUser(UUID uuid, String name, String defaultGroup) throws SQLException {
+        users.ensureUser(uuid, name, defaultGroup);
+    }
+
+    public void setPrimaryGroup(UUID uuid, String name, String group) throws SQLException {
+        users.setPrimaryGroup(uuid, name, group);
+    }
+
+    public void addUserGroup(UUID uuid, String name, String group) throws SQLException {
+        users.addUserGroup(uuid, name, group);
+    }
+
+    public void setUserNode(UUID uuid, String name, String node, boolean value) throws SQLException {
+        users.setUserNode(uuid, name, node, value);
+    }
+
+    public void setUserNode(UUID uuid, String name, String node, boolean value,
+                            String world, String server, Instant expires) throws SQLException {
+        users.setUserNode(uuid, name, node, value, world, server, expires);
+    }
+
+    public void unsetUserNode(UUID uuid, String node, String world, String server) throws SQLException {
+        users.unsetUserNode(uuid, node, world, server);
+    }
+
+    public void addUserParent(UUID uuid, String name, String group) throws SQLException {
+        users.addUserParent(uuid, name, group);
+    }
+
+    public void removeUserParent(UUID uuid, String name, String group) throws SQLException {
+        users.removeUserParent(uuid, name, group);
+    }
+
+    public void setUserMeta(UUID uuid, String name, String prefix, String suffix) throws SQLException {
+        users.setUserMeta(uuid, name, prefix, suffix);
+    }
+
+    public void clearUserMeta(UUID uuid) throws SQLException {
+        users.clearUserMeta(uuid);
+    }
+
+    public Set<String> listEffectiveGroupNames(UUID uuid, String name) throws SQLException {
+        return users.listEffectiveGroupNames(uuid, name);
+    }
+
+    public List<UserRow> listAllUsers() throws SQLException {
+        return users.listAllUsers();
     }
 
     public Map<String, GroupRow> loadAllGroups() throws SQLException {
         Map<String, GroupRow> out = new LinkedHashMap<>();
         try (Connection c = database.connection();
              Statement st = c.createStatement();
-             ResultSet rs = st.executeQuery("SELECT name, weight, prefix, suffix FROM yap_perms_groups")) {
+             ResultSet rs = st.executeQuery(
+                     "SELECT name, weight, prefix, suffix, name_color, chat_color FROM yap_perms_groups")) {
             while (rs.next()) {
                 String name = rs.getString("name").toLowerCase();
                 out.put(name, new GroupRow(
@@ -102,8 +126,10 @@ public final class PermsRepository {
                         rs.getInt("weight"),
                         rs.getString("prefix"),
                         rs.getString("suffix"),
+                        rs.getString("name_color"),
+                        rs.getString("chat_color"),
                         new ArrayList<>(),
-                        new HashMap<>()));
+                        new ArrayList<>()));
             }
         }
         if (out.isEmpty()) {
@@ -121,11 +147,12 @@ public final class PermsRepository {
         }
         try (Connection c = database.connection();
              Statement st = c.createStatement();
-             ResultSet rs = st.executeQuery("SELECT group_name, node, value FROM yap_perms_group_nodes")) {
+             ResultSet rs = st.executeQuery(
+                     "SELECT group_name, node, value, world, server_ctx, expires_at FROM yap_perms_group_nodes")) {
             while (rs.next()) {
                 GroupRow row = out.get(rs.getString("group_name").toLowerCase());
                 if (row != null) {
-                    row.nodes().put(rs.getString("node"), rs.getInt("value") == 1);
+                    row.nodes().add(PermsSql.readNode(rs));
                 }
             }
         }
@@ -145,143 +172,117 @@ public final class PermsRepository {
         }
         return out;
     }
-
-    public UserRow loadUser(UUID uuid, String name, String defaultGroup) throws SQLException {
-        try (Connection c = database.connection()) {
-            ensureUser(c, uuid, name, defaultGroup);
-        }
-        String primary = defaultGroup;
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT name, primary_group FROM yap_perms_users WHERE uuid=?")) {
-            ps.setString(1, uuid.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    primary = rs.getString("primary_group").toLowerCase();
-                }
-            }
-        }
-        Set<String> extraGroups = new LinkedHashSet<>();
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT group_name FROM yap_perms_user_parents WHERE uuid=?")) {
-            ps.setString(1, uuid.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    extraGroups.add(rs.getString("group_name").toLowerCase());
-                }
-            }
-        }
-        Map<String, Boolean> nodes = new HashMap<>();
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT node, value FROM yap_perms_user_nodes WHERE uuid=?")) {
-            ps.setString(1, uuid.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    nodes.put(rs.getString("node"), rs.getInt("value") == 1);
-                }
-            }
-        }
-        String metaPrefix = null;
-        String metaSuffix = null;
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT prefix, suffix FROM yap_perms_user_meta WHERE uuid=?")) {
-            ps.setString(1, uuid.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    metaPrefix = rs.getString("prefix");
-                    metaSuffix = rs.getString("suffix");
-                }
-            }
-        }
-        return new UserRow(uuid, name, primary, extraGroups, nodes, metaPrefix, metaSuffix);
-    }
-
-    public void ensureUser(UUID uuid, String name, String defaultGroup) throws SQLException {
-        try (Connection c = database.connection()) {
-            ensureUser(c, uuid, name, defaultGroup);
-        }
-    }
-
-    private void ensureUser(Connection c, UUID uuid, String name, String defaultGroup) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement(
-                "INSERT INTO yap_perms_users (uuid, name, primary_group) VALUES (?,?,?) "
-                        + "ON DUPLICATE KEY UPDATE name=VALUES(name)")) {
-            ps.setString(1, uuid.toString());
-            ps.setString(2, name);
-            ps.setString(3, defaultGroup);
-            ps.executeUpdate();
-        }
-    }
-
-    public void setPrimaryGroup(UUID uuid, String name, String group) throws SQLException {
-        ensureUser(uuid, name, config.defaultGroup());
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_perms_users SET primary_group=? WHERE uuid=?")) {
-            ps.setString(1, group.toLowerCase());
-            ps.setString(2, uuid.toString());
-            ps.executeUpdate();
-        }
-    }
-
-    public void addUserGroup(UUID uuid, String name, String group) throws SQLException {
-        ensureUser(uuid, name, config.defaultGroup());
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT IGNORE INTO yap_perms_user_parents (uuid, group_name) VALUES (?,?)")) {
-            ps.setString(1, uuid.toString());
-            ps.setString(2, group.toLowerCase());
-            ps.executeUpdate();
-        }
-    }
-
-    public void setUserNode(UUID uuid, String name, String node, boolean value) throws SQLException {
-        ensureUser(uuid, name, config.defaultGroup());
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT INTO yap_perms_user_nodes (uuid, node, value) VALUES (?,?,?) "
-                             + "ON DUPLICATE KEY UPDATE value=VALUES(value)")) {
-            ps.setString(1, uuid.toString());
-            ps.setString(2, node);
-            ps.setInt(3, value ? 1 : 0);
-            ps.executeUpdate();
-        }
-    }
-
     public void setGroupNode(String group, String node, boolean value) throws SQLException {
+        setGroupNode(group, node, value, "", "", null);
+    }
+
+    public void setGroupNode(String group, String node, boolean value,
+                             String world, String server, Instant expires) throws SQLException {
         try (Connection c = database.connection()) {
-            setGroupNode(c, group, node, value);
+            setGroupNode(c, group, node, value, world, server, expires);
         }
     }
 
-    private void setGroupNode(Connection c, String group, String node, boolean value) throws SQLException {
+    void setGroupNode(Connection c, String group, String node, boolean value) throws SQLException {
+        setGroupNode(c, group, node, value, "", "", null);
+    }
+
+    void setGroupNode(Connection c, String group, String node, boolean value,
+                              String world, String server, Instant expires) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(
-                "INSERT INTO yap_perms_group_nodes (group_name, node, value) VALUES (?,?,?) "
-                        + "ON DUPLICATE KEY UPDATE value=VALUES(value)")) {
+                "INSERT INTO yap_perms_group_nodes (group_name, node, value, world, server_ctx, expires_at) "
+                        + "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE value=VALUES(value), "
+                        + "expires_at=VALUES(expires_at)")) {
             ps.setString(1, group.toLowerCase());
             ps.setString(2, node);
             ps.setInt(3, value ? 1 : 0);
+            ps.setString(4, PermsSql.empty(world));
+            ps.setString(5, PermsSql.empty(server));
+            PermsSql.bindExpiry(ps, 6, expires);
             ps.executeUpdate();
+        }
+    }
+
+    public void unsetGroupNode(String group, String node, String world, String server) throws SQLException {
+        try (Connection c = database.connection()) {
+            unsetGroupNode(c, group, node, world, server);
+        }
+    }
+
+    void unsetGroupNode(Connection c, String group, String node, String world, String server)
+            throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(
+                "DELETE FROM yap_perms_group_nodes WHERE group_name=? AND node=? AND world=? AND server_ctx=?")) {
+            ps.setString(1, group.toLowerCase());
+            ps.setString(2, node);
+            ps.setString(3, PermsSql.empty(world));
+            ps.setString(4, PermsSql.empty(server));
+            ps.executeUpdate();
+        }
+    }
+
+    /** Apply a web-editor batch: unset first, then allow/deny. Global context only. */
+    public void applyEditorBatch(String group, List<String> allow, List<String> deny, List<String> unset)
+            throws SQLException {
+        String key = group.toLowerCase();
+        try (Connection c = database.connection()) {
+            c.setAutoCommit(false);
+            try {
+                if (unset != null) {
+                    for (String node : unset) {
+                        if (node != null && !node.isBlank()) {
+                            unsetGroupNode(c, key, node.trim(), "", "");
+                        }
+                    }
+                }
+                if (allow != null) {
+                    for (String node : allow) {
+                        if (node != null && !node.isBlank()) {
+                            setGroupNode(c, key, node.trim(), true);
+                        }
+                    }
+                }
+                if (deny != null) {
+                    for (String node : deny) {
+                        if (node != null && !node.isBlank()) {
+                            setGroupNode(c, key, node.trim(), false);
+                        }
+                    }
+                }
+                c.commit();
+            } catch (SQLException e) {
+                c.rollback();
+                throw e;
+            } finally {
+                c.setAutoCommit(true);
+            }
         }
     }
 
     public void upsertGroup(String name, int weight, String prefix, String suffix) throws SQLException {
+        upsertGroup(name, weight, prefix, suffix, "", "");
+    }
+
+    public void upsertGroup(String name, int weight, String prefix, String suffix,
+                            String nameColor, String chatColor) throws SQLException {
         try (Connection c = database.connection()) {
-            upsertGroup(c, name, weight, prefix, suffix);
+            upsertGroup(c, name, weight, prefix, suffix, nameColor, chatColor);
         }
     }
 
-    private void upsertGroup(Connection c, String name, int weight, String prefix, String suffix) throws SQLException {
+    void upsertGroup(Connection c, String name, int weight, String prefix, String suffix,
+                             String nameColor, String chatColor) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(
-                "INSERT INTO yap_perms_groups (name, weight, prefix, suffix) VALUES (?,?,?,?) "
-                        + "ON DUPLICATE KEY UPDATE weight=VALUES(weight), prefix=VALUES(prefix), suffix=VALUES(suffix)")) {
+                "INSERT INTO yap_perms_groups (name, weight, prefix, suffix, name_color, chat_color) "
+                        + "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE weight=VALUES(weight), "
+                        + "prefix=VALUES(prefix), suffix=VALUES(suffix), "
+                        + "name_color=VALUES(name_color), chat_color=VALUES(chat_color)")) {
             ps.setString(1, name.toLowerCase());
             ps.setInt(2, weight);
-            ps.setString(3, prefix);
-            ps.setString(4, suffix);
+            ps.setString(3, prefix == null ? "" : prefix);
+            ps.setString(4, suffix == null ? "" : suffix);
+            ps.setString(5, nameColor == null ? "" : nameColor);
+            ps.setString(6, chatColor == null ? "" : chatColor);
             ps.executeUpdate();
         }
     }
@@ -292,7 +293,7 @@ public final class PermsRepository {
         }
     }
 
-    private void replaceParents(Connection c, String group, List<String> parents) throws SQLException {
+    void replaceParents(Connection c, String group, List<String> parents) throws SQLException {
         try (PreparedStatement del = c.prepareStatement("DELETE FROM yap_perms_group_parents WHERE group_name=?")) {
             del.setString(1, group.toLowerCase());
             del.executeUpdate();
@@ -314,7 +315,7 @@ public final class PermsRepository {
         }
     }
 
-    private void replaceTrack(Connection c, String track, List<String> groups) throws SQLException {
+    void replaceTrack(Connection c, String track, List<String> groups) throws SQLException {
         try (PreparedStatement del = c.prepareStatement("DELETE FROM yap_perms_tracks WHERE name=?")) {
             del.setString(1, track.toLowerCase());
             del.executeUpdate();
@@ -372,54 +373,48 @@ public final class PermsRepository {
             }
         }
     }
+    public void addGroupParent(String group, String parent) throws SQLException {
+        Map<String, GroupRow> all = loadAllGroups();
+        GroupRow row = all.get(group.toLowerCase());
+        List<String> parents = row == null ? new ArrayList<>() : new ArrayList<>(row.parents());
+        String p = parent.toLowerCase();
+        if (!parents.contains(p)) {
+            parents.add(p);
+        }
+        replaceParents(group, parents);
+    }
 
-    public void addUserParent(UUID uuid, String name, String group) throws SQLException {
-        ensureUser(uuid, name, config.defaultGroup());
+    public void removeGroupParent(String group, String parent) throws SQLException {
+        Map<String, GroupRow> all = loadAllGroups();
+        GroupRow row = all.get(group.toLowerCase());
+        if (row == null) {
+            return;
+        }
+        List<String> parents = new ArrayList<>(row.parents());
+        parents.remove(parent.toLowerCase());
+        replaceParents(group, parents);
+    }
+
+    public void deleteTrack(String track) throws SQLException {
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT IGNORE INTO yap_perms_user_parents (uuid, group_name) VALUES (?,?)")) {
-            ps.setString(1, uuid.toString());
-            ps.setString(2, group.toLowerCase());
+             PreparedStatement ps = c.prepareStatement("DELETE FROM yap_perms_tracks WHERE name=?")) {
+            ps.setString(1, track.toLowerCase());
             ps.executeUpdate();
         }
     }
 
-    public void removeUserParent(UUID uuid, String name, String group) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM yap_perms_user_parents WHERE uuid=? AND group_name=?")) {
-            ps.setString(1, uuid.toString());
-            ps.setString(2, group.toLowerCase());
-            ps.executeUpdate();
+    public int purgeExpired() throws SQLException {
+        int n = 0;
+        try (Connection c = database.connection()) {
+            try (PreparedStatement ps = c.prepareStatement(
+                    "DELETE FROM yap_perms_user_nodes WHERE expires_at IS NOT NULL AND expires_at <= NOW()")) {
+                n += ps.executeUpdate();
+            }
+            try (PreparedStatement ps = c.prepareStatement(
+                    "DELETE FROM yap_perms_group_nodes WHERE expires_at IS NOT NULL AND expires_at <= NOW()")) {
+                n += ps.executeUpdate();
+            }
         }
-    }
-
-    public void setUserMeta(UUID uuid, String name, String prefix, String suffix) throws SQLException {
-        ensureUser(uuid, name, config.defaultGroup());
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT INTO yap_perms_user_meta (uuid, prefix, suffix) VALUES (?,?,?) "
-                             + "ON DUPLICATE KEY UPDATE prefix=VALUES(prefix), suffix=VALUES(suffix)")) {
-            ps.setString(1, uuid.toString());
-            ps.setString(2, prefix);
-            ps.setString(3, suffix);
-            ps.executeUpdate();
-        }
-    }
-
-    public void clearUserMeta(UUID uuid) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("DELETE FROM yap_perms_user_meta WHERE uuid=?")) {
-            ps.setString(1, uuid.toString());
-            ps.executeUpdate();
-        }
-    }
-
-    public Set<String> listEffectiveGroupNames(UUID uuid, String name) throws SQLException {
-        UserRow user = loadUser(uuid, name, config.defaultGroup());
-        Set<String> names = new LinkedHashSet<>();
-        names.add(user.primaryGroup().toLowerCase());
-        names.addAll(user.extraGroups());
-        return names;
+        return n;
     }
 }

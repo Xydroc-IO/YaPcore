@@ -48,7 +48,8 @@ public final class RanksGui {
 
         EffectiveUser self = plugin.resolve(player.getUniqueId(), player.getName());
         inv.setItem(SLOT_SELF, RanksGuiHolder.icon(Material.NAME_TAG, NamedTextColor.AQUA, "You",
-                "Group: " + self.primaryGroup(),
+                "Primary: " + self.primaryGroup(),
+                "Display: " + self.displayGroup(),
                 "Weight: " + self.weight(),
                 "Prefix: " + strip(self.prefix())));
 

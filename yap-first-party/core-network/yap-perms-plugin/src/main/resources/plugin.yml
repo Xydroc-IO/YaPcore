@@ -8,13 +8,13 @@ description: Native first-party permissions — groups, inheritance, tracks, pre
 website: https://github.com/yaplabs
 load: STARTUP
 depend: [YaPDB]
-softdepend: [PlaceholderAPI]
+softdepend: [PlaceholderAPI, Vault]
 commands:
   yapperm:
     description: Manage YaP permissions
-    usage: /yapperm [gui|user|group|track|reload|applypack] ...
+    usage: /yapperm [gui|user|group|track|check|export|import|dump|editor-apply|reload|applypack] ...
     permission: yapperm.user
-    aliases: [yperms, perms, ranks]
+    aliases: [yperms, perms, ranks, lp]
   promote:
     description: Promote a player on the default track
     usage: /promote <player> [track]
@@ -36,3 +36,9 @@ permissions:
   yapperm.user:
     description: View own permission info and open ranks GUI
     default: true
+  yap.bypass:
+    description: Bypass all YaP land/chat/AC/MMO rules (admins and OPs)
+    default: op
+  yap.bypass.mmo:
+    description: Bypass MMO combat/skills/mechanics/ability-bar restrictions
+    default: op

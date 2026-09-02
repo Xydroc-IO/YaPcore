@@ -16,6 +16,7 @@ repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
     maven("https://repo.extendedclip.com/content/repositories/placeholderapi/")
+    maven("https://jitpack.io")
 }
 
 dependencies {
@@ -25,6 +26,9 @@ dependencies {
     implementation(project(":yap-perms-api"))
     compileOnly(project(":yap-db-api"))
     compileOnly("me.clip:placeholderapi:2.11.6")
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") {
+        exclude(group = "org.bukkit", module = "bukkit")
+    }
 
     testImplementation("io.papermc.paper:paper-api:$paperApi")
     testImplementation(platform("org.junit:junit-bom:5.11.3"))

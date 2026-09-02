@@ -5,6 +5,7 @@ import com.yapcore.sched.YapSched;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -24,5 +25,10 @@ public final class JoinListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         plugin.applicator().detach(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onWorldChange(PlayerChangedWorldEvent event) {
+        YapSched.entity(plugin, event.getPlayer(), () -> plugin.refresh(event.getPlayer()));
     }
 }
