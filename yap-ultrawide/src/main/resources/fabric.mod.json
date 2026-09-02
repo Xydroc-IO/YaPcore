@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "yap-ultrawide",
+  "version": "${version}",
+  "name": "YaP Ultrawide",
+  "description": "Hor+ FOV for 21:9 and 32:9. Client-only; join YaPcore / Folia with Fabric.",
+  "authors": [
+    "YapLabs"
+  ],
+  "contact": {
+    "homepage": "https://yaplabs.us",
+    "sources": "https://github.com/YapLabs/YaPcore"
+  },
+  "license": "GPL-3.0-or-later",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.yapcore.ultrawide.YapUltrawide"
+    ]
+  },
+  "mixins": [
+    "yap-ultrawide.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25"
+  }
+}

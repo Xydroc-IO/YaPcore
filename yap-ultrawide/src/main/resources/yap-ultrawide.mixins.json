@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "com.yapcore.ultrawide.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "CameraMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
