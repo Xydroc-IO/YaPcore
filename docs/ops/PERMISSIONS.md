@@ -1,8 +1,9 @@
 # Permissions & ranks
 
 YaP first-party plugins gate commands with **Bukkit permission nodes**.
-**Native ranks** ship in **`yap-perms.jar`** (`YaPPerms`) — groups, inheritance, tracks,
-prefix/suffix meta, MariaDB-backed, PlaceholderAPI expansion `%yapperms_*%`.
+**Native ranks** ship in **`yap-perms.jar`** (`YaPPerms`) — LuckPerms-class groups,
+inheritance, tracks, temp/world nodes, Vault Permission, prefix/suffix, per-rank chat colors, MariaDB,
+PlaceholderAPI `%yapperms_*%`. `/lp` is an alias.
 
 ## Quick start (native — default on product installs)
 
@@ -16,7 +17,7 @@ ranks apply
 /promote Steve
 ```
 
-Starter pack (`default` → `vip` → `mod` → `admin` + track `yap`) applies automatically
+Starter pack (`default` → `vip` → `staff` → `admin` → `owner` + track `yap`) applies automatically
 on first boot, or via `ranks apply` / `/yapperm applypack`.
 
 Optional auto-apply on boot (default **on** for new installs):
@@ -31,7 +32,7 @@ Set `false` to disable. Requires `yap-perms.jar`; waits ~8s after start.
 |---------|-----|
 | Console / stdin | `ranks status` · `ranks apply` · `ranks apply force` |
 | In-game | `/yapperm applypack` · `/promote` · `/demote` |
-| Web dashboard | **Ranks** tab → Apply pack |
+| Web dashboard | **Access & ranks** (permission editor) · **Rank pack** → Apply pack |
 | Config | `plugins/YaPPerms/config.yml` |
 
 OP still receives every node with `default: op` without YaPPerms attachments.
@@ -42,24 +43,56 @@ OP still receives every node with `default: op` without YaPPerms attachments.
 |---------|------------|
 | `/yapperm user <player> info` | `yapperm.user` / admin |
 | `/yapperm user <player> parent set\|add\|remove <group>` | `yapperm.admin` |
-| `/yapperm user <player> permission set <node> true\|false` | `yapperm.admin` |
+| `/yapperm user <player> permission set <node> true\|false [1d] [world=x]` | `yapperm.admin` |
+| `/yapperm user <player> permission unset <node> [world=x]` | `yapperm.admin` |
 | `/yapperm user <player> meta set <prefix> [suffix]` | `yapperm.admin` |
-| `/yapperm group create\|delete\|list\|info\|setprefix …` | `yapperm.admin` |
-| `/yapperm track list\|info` | `yapperm.admin` |
+| `/yapperm group create\|delete\|list\|info\|setprefix\|setsuffix\|setnamecolor\|setchatcolor\|parent …` | `yapperm.admin` |
+| `/yapperm track list\|info\|create\|append\|remove\|delete` | `yapperm.admin` |
+| `/yapperm check <player> <node> [world]` | `yapperm.user` / admin |
+| `/yapperm export [file.yml]` · `import <file.yml>` | `yapperm.admin` |
+| `/yapperm dump` | `yapperm.admin` — write `editor-snapshot.yml` for the web editor |
+| `/yapperm editor-apply` | `yapperm.admin` — apply `editor-apply.yml` / `editor-nodes` from the dashboard |
 | `/yapperm applypack` | `yapperm.admin` |
 | `/promote <player> [track]` | `yapperm.promote` |
 | `/demote <player> [track]` | `yapperm.demote` |
 
 ## Rank ladder (starter pack)
 
-| Rank | Weight | Prefix | Inherits | Role |
-|------|--------|--------|----------|------|
-| `default` | 0 | *(none)* | — | All players |
-| `vip` | 10 | `[VIP]` | default | Donors / trusted |
-| `mod` | 50 | `[Mod]` | vip | Moderators |
-| `admin` | 100 | `[Admin]` | mod | Admins (not necessarily OP) |
+| Rank | Weight | Prefix | Name / chat | Inherits | Role |
+|------|--------|--------|-------------|----------|------|
+| `default` | 0 | gray name | `&7` / `&f` | — | All players |
+| `vip` | 10 | `[VIP]` | `&a` / `&f` | default | Donors / trusted |
+| `staff` | 50 | `[Staff]` | `&b` / `&f` | vip | Helpers / junior–senior staff |
+| `admin` | 100 | `[Admin]` | `&c` / `&f` | staff | Server admins — includes `yap.bypass` + MMO admin nodes |
+| `owner` | 200 | `[Owner]` | `&6` / `&f` | admin | Full access (`*` + `yap.bypass`) — network owners |
 
-Track name: **`yap`**. Promote with `/promote Steve` or `/yapperm user Steve parent set vip`.
+**Bypass rules:** OP, `yap.bypass`, and creative/spectator skip land protection and MMO
+restrictions. Creative always gets vanilla-like build/combat (no skill gates, stamina,
+custom combat, or ability-bar locks). Admins get `yap.bypass` / `yap.bypass.mmo` in the
+starter pack — run `/yapperm applypack` after upgrading.
+
+Legacy group **`mod`** still exists (same general staff tools, not on the promote track). Prefer **`staff`**.
+
+Track name: **`yap`**. Promote with `/promote Steve` or `/yapperm user Steve parent set staff`.
+
+```bash
+/yapperm user Steve parent set staff
+/yapperm user Steve parent set admin
+/yapperm user Steve parent set owner
+```
+
+### Chat colors per rank
+
+Each group has a **prefix** (tag), **name-color** (player name), and **chat-color** (message).
+Chat format: `{prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}`.
+
+```bash
+/yapperm group setnamecolor vip &a
+/yapperm group setchatcolor vip &f
+/yapperm group info vip
+```
+
+Dashboard **Access & ranks** has the same fields. Codes are `&a` green, `&b` aqua, `&c` red, `&6` gold, `&f` white. YAML keys are `name-color` / `chat-color` under `groups.<rank>`. Empty database colors are filled from YAML on plugin start; `/yapperm applypack` also writes them.
 
 **Web store (Tebex):** run those commands on the **Hub** backend console — [TEBEX.md](TEBEX.md).
 
@@ -96,6 +129,8 @@ Track name: **`yap`**. Promote with `/promote Steve` or `/yapperm user Steve par
 | `yapessentials.back` | true | `/back` |
 | `yapessentials.tpa` | true | `/tpa` `/tpahere` `/tpaccept` `/tpdeny` |
 | `yapessentials.teleport` | op | `/tp` `/tphere` |
+| `yapessentials.gamemode` | op | `/gm` `/gms` `/gmc` `/gma` `/gmsp` |
+| `yapessentials.item` | op | `/i` `/item` |
 | `yapessentials.fly` / `.god` / `.speed` / `.heal` / `.feed` | op | QoL toggles |
 | `yapessentials.repair` / `.clear` / `.vanish` | op | Item / vanish tools |
 | `yapessentials.invsee` / `.echest` / `.nick` | op | Staff QoL |
@@ -118,7 +153,7 @@ Toggle domains in `plugins/YaPEssentials/config.yml` under `features.*` (includi
 | `yapadmin.server` | op | Broadcast presets, `/yapadmin reload` |
 | `yapadmin.economy` | op | Money grants (`/yapmmo givemoney`) |
 
-Grant `yapadmin.menu` (+ give/server) on `mod` / `admin` ranks. Individual actions still need the underlying plugin nodes (`yapessentials.*`, `yapmod.*`, …). See [ADMIN_MENU.md](ADMIN_MENU.md).
+Grant `yapadmin.menu` (+ give/server) on `staff` / `admin` / `owner` ranks. Individual actions still need the underlying plugin nodes (`yapessentials.*`, `yapmod.*`, …). See [ADMIN_MENU.md](ADMIN_MENU.md).
 
 ## YaPProtect / YaPWorld
 
@@ -156,9 +191,15 @@ Dashboard: `POST /api/protect`, `POST /api/world`.
 | Node | Default | Command / feature |
 |------|---------|-------------------|
 | `yapdata.menu` | true | `/menu` |
+| `yapdata.bag` | true | `/bag` extra storage |
+| `yapdata.bag.pages.5` | false | At least 5 bag pages (VIP starter grant) |
+| `yapdata.bag.pages.7` | false | At least 7 bag pages (staff starter grant) |
+| `yapdata.bag.pages.*` | op | All configured bag pages |
+| `yapdata.bag.see` | op | `/bag see <player>` |
 | `yapdata.balance` | true | `/bal` (self) |
 | `yapdata.balance.others` | op | `/bal <other>` |
 | `yapdata.pay` | true | `/pay` |
+| `yapdata.eco` | op | `/eco give\|take\|set\|reset` |
 | `yapdata.home` | true | `/home` `/sethome` `/delhome` `/homes` |
 | `yapdata.warp` | true | `/warp` `/warps` |
 | `yapdata.warp.admin` | op | `/setwarp` `/delwarp` |
@@ -168,6 +209,8 @@ Dashboard: `POST /api/protect`, `POST /api/world`.
 | `yapdata.kit.vip` | false | VIP kit (VIP rank also has `yapdata.kit.*`) |
 | `yapdata.kit.*` | op | All kits |
 | `yapdata.kit.give` | op | `/kit give` `/kit grant` (console / Tebex) |
+| `yapdata.kit.create` | op | `/createkit` `/delkit` kit signs |
+| `yapdata.kit.reset` | op | `/kitreset <player> [kit\|all]` |
 | `yapdata.mail` | true | `/mail` |
 | `yapdata.shop` | true | `/shop` + chest shop buy |
 | `yapdata.jobs` | true | `/jobs` GUI |
@@ -264,6 +307,17 @@ Content packs: `plugins/yap-mmo-content/quests/starter_chain.yml`
 | `yapabilities.admin` | op | `/yapabilities reload` |
 
 233 combat abilities ship in YAML packs; `/cast` delegates when yap-abilities is loaded.
+
+## Web rank editor
+
+Dashboard **Access & ranks** edits what each rank may do (YaP commands, vanilla `/gamemode` / `/give`, Paper `/plugins`, deny vs inherit).
+
+Create a rank with a **permission pack** (player / staff / admin) or **copy perms from another rank**. Add any node — including wildcards and nodes discovered from installed `plugin.yml` files — via the custom / bulk fields.
+
+- Saves `starter-grants` (allows) and `editor-nodes` (allow + deny) in `plugins/YaPPerms/config.yml`
+- Applies to MariaDB with `/yapperm editor-apply` (dashboard does this after Save)
+- Live extras (custom nodes) refresh via `/yapperm dump` → `editor-snapshot.yml`
+- Re-`applypack` reapplies starter grants **and** editor-nodes, so dashboard denies survive
 
 ## See also
 

@@ -105,7 +105,7 @@ resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
 
 Publish the **offer** zip (single file or `yap-active-bundle-*.zip`) to the edge docroot after changing actives.
 
-**Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Vehicles) — built on
+**Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Skies + YaP Vehicles) — built on
 `gradle prepareClientPack`. Credit / license: `resourcepacks/CREDITS.md`,
 `FAITHFUL_LICENSE.txt`.
 
@@ -140,10 +140,58 @@ enable/list packs from the [web dashboard](../ops/WEB_DASHBOARD.md) Packs tab
 
 See [NETWORKING.md](NETWORKING.md) and [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md).
 
-## Realistic skies (shaders) — not auto-downloaded
+## Ultrawide 21:9 / 32:9 — optional client mod
 
-Minecraft **cannot** push Iris/OptiFine shaders from the server. For volumetric
-clouds / realistic skies, players install a **client** profile once:
+Vanilla FOV is **vertical**. On 21:9 and 32:9 that becomes a fish-eye horizontal view.
+The server cannot fix projection. **yap-ultrawide** is a Fabric **client** mod (not a
+Folia plugin) that keeps the horizontal FOV you would have on 16:9.
+
+| Piece | Where |
+|-------|--------|
+| YaP-Folia / YaPcore | Server — unchanged |
+| `yap-ultrawide-1.0.0.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
+
+```bash
+cd yap-ultrawide && ./gradlew build
+# → yap-ultrawide/build/libs/yap-ultrawide-1.0.0.jar
+```
+
+Vanilla, Bedrock, and players without the mod still join. Config:
+`.minecraft/config/yap-ultrawide.json` (`match_16_9` default, or `fixed_hfov`).
+See [yap-ultrawide/README.md](../../yap-ultrawide/README.md).
+
+## Extra bag tabs — optional client mod
+
+`/bag` works for every client (vanilla Java, Bedrock, no mods). **yap-bag** is a Fabric **client** mod that adds a **B** keybind, a Bag button on the survival inventory, and page tabs on the bag chest. It only talks to YaPPlayerData (sends `/bag`). It is not a Folia plugin.
+
+| Piece | Where |
+|-------|--------|
+| YaPPlayerData `/bag` | Server — required |
+| `yap-bag-1.0.0.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
+
+```bash
+cd yap-bag && ./gradlew build
+# → yap-bag/build/libs/yap-bag-1.0.0.jar
+```
+
+Vanilla and Bedrock players keep `/bag` and the `/menu` Bag icon. Config: `.minecraft/config/yap-bag.json`.
+See [yap-bag/README.md](../../yap-bag/README.md).
+
+## Realistic skies
+
+**YaP Skies** ships in `yapcore-default.zip` and downloads with the pack prompt.
+
+| Layer | Who sees it |
+|-------|-------------|
+| Circular sun / moon, cloud banks, End nebula, `sky` core shader | Every Java client that accepts the pack |
+| Panoramic day / sunrise / sunset / night / storm / End skyboxes | Clients with a skybox loader |
+
+Skybox loaders (install once on the **client**, not as Folia plugins):
+OptiFine, [Skyboxify](https://modrinth.com/mod/skyboxify), Celestial, or
+Nuit + Interop.
+
+Minecraft **cannot** push Iris/Complementary volumetric shaders from the server.
+That stack is still optional:
 
 | Mod | Role |
 |-----|------|
@@ -153,3 +201,6 @@ clouds / realistic skies, players install a **client** profile once:
 
 Recommend that stack in MOTD / Discord / website. Server modpacks are not required
 and conflict with the Paper product path.
+
+Refresh skies textures: `python3 scripts/generate-yap-skies.py` then
+`./scripts/build-default-resourcepack.sh`.

@@ -5,7 +5,9 @@ Set up the network, configure YaP Link, manage plugins, and monitor health — n
 
 Controls the **YaPcore chassis** in front of **YaP-Folia** (game child JVM). Build with `./scripts/build-yap-folia.sh`.
 
-Modern **sidebar shell** (Overview · Server · People · Content · Gameplay) with dark theme, stat cards, and full plugin config editors where the backend supports it.
+Modern **sidebar shell** (Overview · Server · People · Content · Gameplay) with dark theme, page search, stat cards, and full plugin config editors where the backend supports it.
+
+Colored text (ranks, MOTD, tab list, NPC names, chat format) uses **clickable Minecraft color swatches**, a custom hex picker, and bold/italic controls — plus a live preview. Hex is stored as `&#rrggbb`.
 
 ## Enable
 
@@ -71,9 +73,10 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Settings** | `/api/config` | server.properties fields, ops, auto-op | save config keys |
 | **YaP Link** | `/api/link`, `/api/link/console` | proxy, backends, forced hosts, selector | start, stop, save-proxy, save-servers, command · Link SSE |
 | **Players** | `/api/players` | online list, spawn, moderation flags | kick, ban, tempban, ipban, mute, warn, timeout, tp*, set-rank, promote, demote, history, check, banlist |
-| **Access & ranks** | `/api/access` | ops, auto-op, default group, groups, tracks | save-ops, save-auto-op, set-default-group, op, deop, set-group, promote, demote, group/user perm, reload, applypack |
+| **Access & ranks** | `/api/access` | ops, auto-op, default group, groups, tracks, **permission catalog**, **group nodes** | save-group-nodes, save-ops, save-auto-op, set-default-group, op, deop, set-group, promote, demote, group/user perm, dump, reload, applypack |
 | **Rank pack** | `/api/ranks` | pack applied, auto-apply | apply, force, reset-marker, status |
 | **Plugins** | `/api/plugins` | jar list + compat matrix | install, remove |
+| **Plugin editors** | `/api/plugin-config` | every first-party `config.yml` / `knobs.yml` flattened | **save** + reload, **reload** |
 | **Modules** | `/api/modules` | module jars | install, remove |
 | **Packs** | `/api/packs` | resource packs, active set | setActive, add, remove, clear |
 | **World** | `/api/world` | schematics, brush max, load/unload flags | load, unload, reload, schem-list, **save-brush** |
@@ -83,6 +86,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Vehicles** | `/api/vehicles` | type list | spawn, shop, list, types, upgrades |
 | **Pregen** | `/api/pregen` | job status | start, pause, resume, cancel |
 | **Player data** | `/api/playerdata` | economy, auth, feature toggles | reload, save, set-feature |
+| **Kits** | `/api/kits` | kits.yml definitions, items, armor slots | **save-kit**, **delete-kit**, **clone-kit**, give, grant, reload |
 | **Chat** | `/api/chat` | channels, slow mode, filter, relay | reload, clearchat, **save-settings** |
 | **Tab list** | `/api/tab` | header/footer/sidebar/bossbar | save-header/footer/sidebar/settings/bossbar, reload |
 | **Map** | `/api/map` | map URL, tiles, worlds, render interval | reload, render, **save-settings** |
@@ -101,14 +105,32 @@ Full operator control without `/op` and `/yapperm` by hand:
 - **Minecraft OPs** — chip list, add/remove, persisted to `server.properties`
 - **Auto-op** — toggle for first join
 - **Default rank** — YaPPerms default group dropdown
-- **Group cards** — click for group info; set permission nodes on group or player
+- **Group cards** — click to edit tag, name color, and chat color with **color swatches + custom hex** (no `&` codes required), plus suffix, weight, and inheritance. Live chat preview updates as you pick colors.
+- **Rank permissions** — catalog of player / staff / vanilla / Paper commands plus **nodes discovered from installed plugin.yml**; inherit · allow · deny; any custom / wildcard node (bulk add); saved with `save-group-nodes`
+- **Create rank with a pack** — empty / player / staff / admin, or copy perms from an existing rank (`template`, `cloneFrom` on `create-group`)
+- **Apply pack / copy perms** onto an existing rank (`apply-template`, `clone-group`)
 - **Promote / demote** — track-based rank changes
+
+`POST /api/access` `{"action":"save-group-nodes","group":"vip","allow":"yapessentials.fly,…","deny":"minecraft.command.op","unset":"yapessentials.god"}` writes `plugins/YaPPerms/config.yml` (`starter-grants` + `editor-nodes`) and applies live via `yapperm editor-apply`. Refresh dumps live extras with `yapperm dump` → `editor-snapshot.yml`.
+
+### Kits (`yap-playerdata`)
+
+**Gameplay → Kits** builds claim kits in `plugins/YaPPlayerData/kits.yml` (same file `/createkit` uses):
+
+- Cooldown, max uses, economy cost, first-join, console commands (`{player}`)
+- Item rows: Bukkit material, amount, slot (inventory / armor / offhand), name, lore, enchantments (`sharpness:5`)
+- Clone / delete; **Give now** (`kit give`) or **Grant** (`kit grant`) to a player
+- Saves YAML then runs `yapdata reload` (YAML is kept if Folia is down)
+
+`GET/POST /api/kits` — `save-kit`, `delete-kit`, `clone-kit`, `give`, `grant`, `reload`. Item lines in POST: `MATERIAL|amount|slot|name|lore|enchants`. Players still need `yapdata.kit.<id>` (or `yapdata.kit.*`) on Access & ranks.
+
+`/createkit` Bukkit stacks stay readable; saving from the dashboard writes the material form (NBT beyond name/lore/enchants is dropped).
 
 ### Players
 
-Staff moderation panel: online table (name, UUID, IP, location), kick/ban/mute/timeout by **username, UUID, or IP**, teleport, rank assign, history/check/banlist.
+Staff moderation panel: **online** table plus **everyone who has ever joined** (username, nickname, UUID, last IP, all known IPs, first/last seen). Click a row to kick/ban/mute/IP-ban. IP bans use the stored last IP after they leave.
 
-Requires game server running + `yap-moderation` / `yap-perms`.
+Requires YaP-Folia running + `yap-moderation` / `yap-perms`. Snapshot is refreshed with `yapmod seen snapshot` when you hit Refresh.
 
 ### MMO (`yap-skills`, `yap-abilities`, `yap-mmo-content`)
 

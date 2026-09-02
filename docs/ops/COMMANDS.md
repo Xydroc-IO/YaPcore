@@ -43,14 +43,31 @@ See [PERMISSIONS.md](PERMISSIONS.md) for rank assignment.
 | `/yapperm user <player> parent set\|add\|remove <group>` | `yapperm.admin` | Group membership |
 | `/yapperm user <player> permission set <node> true\|false` | `yapperm.admin` | Direct node grant |
 | `/yapperm user <player> meta set <prefix> [suffix]` | `yapperm.admin` | Chat meta |
-| `/yapperm group create\|delete\|list\|info\|…` | `yapperm.admin` | Group CRUD |
+| `/yapperm group create\|delete\|list\|info\|setprefix\|setnamecolor\|setchatcolor\|…` | `yapperm.admin` | Group CRUD + chat colors |
 | `/yapperm track list\|info` | `yapperm.admin` | Promotion tracks |
 | `/yapperm applypack` | `yapperm.admin` | Apply starter rank pack |
+| `/yapperm dump` | `yapperm.admin` | Write web-editor snapshot |
+| `/yapperm editor-apply` | `yapperm.admin` | Apply dashboard rank editor batch |
 | `/yapperm reload` | `yapperm.admin` | Reload config |
 | `/promote <player> [track]` | `yapperm.promote` | Move up track `yap` |
 | `/demote <player> [track]` | `yapperm.demote` | Move down track |
 
 Aliases: `/yperms`, `/perms`
+
+### YaPAbilities (`yap-abilities.jar`)
+
+| Command | Permission | Description |
+|---------|------------|-------------|
+| `/abilities` `/ability` `/spell` | `yapabilities.use` | Open the ability book |
+| `/spell <ability> [1-6]` | `yapabilities.bar` | Put a spell on combat keys 4–9 |
+| `/ability add <ability> [1-6]` | `yapabilities.bar` | Same as `/spell` |
+| `/ability bind <1-6> <ability>` | `yapabilities.bar` | Place on a specific slot |
+| `/ability mode combat` | `yapabilities.use` | Show the combat hotbar (keys 4–9 cast) |
+| `/ability bar` | `yapabilities.use` | List current bindings |
+| `/ability info <ability>` | `yapabilities.use` | What the spell does, costs, and requirements |
+| `/ability tome` | `yapabilities.use` | Get an Ability Tome |
+
+Click a spell in the book to add it. Press **4–9** to cast. Middle-click (or `/ability mode`) switches back to the build hotbar.
 
 ### YaPChat (`yap-chat.jar`)
 
@@ -58,14 +75,17 @@ Aliases: `/yperms`, `/perms`
 |---------|------------|-------------|
 | `/msg` `/tell` `/w` `<player> <msg>` | `yapchat.msg` | Private message |
 | `/reply` `/r` `<msg>` | `yapchat.msg` | Reply to last PM |
-| `/staffchat` `/sc` `<msg>` | `yapchat.staff` | Staff-only channel |
-| `/channel` `/ch` `<global\|local\|staff>` | `yapchat.use` | Switch channel |
+| `/staffchat` `/sc` `[msg]` | `yapchat.staff` | Toggle staff channel, or one-shot message |
+| `/adminchat` `/ac` `[msg]` | `yapchat.admin` | Toggle admin channel, or one-shot message |
+| `/channel` `/ch` `<global\|local\|trade\|staff\|admin>` | `yapchat.use` | Switch sticky chat channel (`!<msg>` = one-shot local) |
 | `/ignore` `/unignore` `<player>` | `yapchat.use` | Ignore list |
 | `/ignorelist` | `yapchat.use` | Show ignored players |
 | `/clearchat` `/cc` | `yapchat.admin` | Clear chat |
 | `/yapchat reload` | `yapchat.admin` | Reload config |
 
 Local chat: prefix message with `!` when in global channel.
+
+Chat line colors come from each YaPPerms rank (`name-color` / `chat-color`). Format tokens: `{prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}`.
 
 ### YaPModeration (`yap-moderation.jar`)
 
@@ -85,6 +105,7 @@ Local chat: prefix message with `!` when in global channel.
 | `/modcheck` `/check` `/alts` `<player>` | `yapmod.history` | Status + linked alts |
 | `/banlist` `[limit]` | `yapmod.history` | Active bans |
 | `/yapmod reload` | `yapmod.admin` | Reload config |
+| `/yapmod seen [json\|snapshot]` | `yapmod.admin` | List join history, dump JSON, or write dashboard snapshot |
 
 Duration examples: `30m`, `2h`, `7d`, `1w`.
 
@@ -97,6 +118,9 @@ Duration examples: `30m`, `2h`, `7d`, `1w`.
 | `/back` | `yapessentials.back` | Previous location |
 | `/tpa` `/tpahere` `/tpaccept` `/tpdeny` | `yapessentials.tpa` | Teleport requests |
 | `/tp` `/tphere` `/s` | `yapessentials.teleport` | Staff teleport |
+| `/gm` `<0\|1\|2\|3\|s\|c\|a\|sp>` `[player]` | `yapessentials.gamemode` | Game mode (Essentials-style) |
+| `/gms` `/gmc` `/gma` `/gmsp` `[player]` | `yapessentials.gamemode` | Survival / creative / adventure / spectator |
+| `/i` `/item` `<item>` `[amount]` `[player]` | `yapessentials.item` | Give items (e.g. `/i diamond 64`) |
 | `/fly` `[player]` | `yapessentials.fly` | Toggle flight |
 | `/god` `[player]` | `yapessentials.god` | God mode |
 | `/speed` `<0-10> [fly\|walk]` | `yapessentials.speed` | Move speed |
@@ -139,7 +163,7 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 | Gameplay knobs | `/yapknobs …` | [TUNE.md](TUNE.md) |
 | Plugin compat | `/yapcompat …` | [PLUGIN_BACKCOMPAT.md](../plugins/PLUGIN_BACKCOMPAT.md) |
 | PlaceholderAPI | `/papi …` | [PLACEHOLDERAPI.md](../plugins/PLACEHOLDERAPI.md) |
-| Player data | `/yapdata …` · `/kit` `/kits` (not Essentials) | [PLAYERDATA.md](../data/PLAYERDATA.md) |
+| Player data | `/yapdata …` · `/bal` `/pay` `/eco` · `/bag` `/backpack` · `/kit` `/kits` `/createkit` `/showkit` `/kitreset` | [PLAYERDATA.md](../data/PLAYERDATA.md) |
 | Store / Tebex | Hub console: `yapperm …` · `kit grant …` | [TEBEX.md](TEBEX.md) |
 | Resource packs | `/yappacks …` | [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) |
 
@@ -147,8 +171,17 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 
 | Command | Description |
 |---------|-------------|
+| `/bag` `[page]` | Open extra bag (45 slots/page). Aliases `/backpack` `/bp` |
+| `/bag see <player> [page]` | Staff — open another player's bag |
+| `/bal` `[player]` | Show balance |
+| `/pay` `<player> <amount>` | Pay a player |
+| `/eco give\|take\|set <player> <amount>` | Staff money (also `/eco reset <player>`) |
 | `/kit [name]` | Claim kit (player) |
-| `/kits` | Kits GUI |
+| `/kits` | Kits GUI (live cooldown / cost / uses) |
+| `/createkit <name> [delay]` | Save inventory + armor + offhand to `kits.yml` |
+| `/delkit <name>` | Remove a kit |
+| `/showkit <name>` | Preview GUI (shift-click in `/kits`) |
+| `/kitreset <player> [kit\|all]` | Clear cooldown and uses |
 | `kit give <player> <kit> [-force]` | Instant give (online on this backend) |
 | `kit grant <player> <kit>` | Queue delivery (shared DB → any backend) |
 | `kit list` | Kits loaded from `kits.yml` on this server |
