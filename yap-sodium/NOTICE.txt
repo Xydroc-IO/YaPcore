@@ -1,0 +1,7 @@
+Required Notice: Copyright CaffeineMC and contributors.
+Sodium — https://github.com/CaffeineMC/sodium
+License: PolyForm Shield 1.0.0 — see LICENSE-PolyForm-Shield.txt
+
+YaPcore redistributes the official unmodified Sodium Fabric binary for Minecraft 26.2
+as part of the optional client visuals bundle. YaP does not fork or rebrand Sodium
+source under a competing product name (PolyForm Shield noncompete).

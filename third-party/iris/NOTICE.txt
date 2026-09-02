@@ -1,0 +1,10 @@
+YaP Iris is based on Iris Shaders
+Copyright (C) IrisShaders contributors
+License: GNU Lesser General Public License v3.0 only
+Upstream: https://github.com/IrisShaders/Iris
+
+YaP branding and packaging: YapLabs / YaPcore contributors (LGPL-3.0 for Iris-derived code).
+
+Embedded dependency notice (from upstream LICENSE-DEPENDENCIES):
+  glsl-transformer is licensed under the GNU Affero General Public License version 3.
+  This may affect your ability to distribute Iris / YaP Iris.

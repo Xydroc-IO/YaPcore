@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "yap-visuals",
+  "version": "${version}",
+  "name": "YaP Visuals",
+  "description": "All-in-one YaP client visuals: embeds official Sodium + YaP Iris, installs YaP Shaders (water + skies). Drop this single jar into mods/.",
+  "authors": [
+    "YapLabs"
+  ],
+  "contact": {
+    "homepage": "https://yaplabs.us",
+    "sources": "https://github.com/YapLabs/YaPcore"
+  },
+  "license": "GPL-3.0-or-later",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.yapcore.visuals.YapVisuals"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25"
+  },
+  "jars": [
+    {
+      "file": "META-INF/jars/sodium.jar"
+    },
+    {
+      "file": "META-INF/jars/yap-iris.jar"
+    }
+  ],
+  "suggests": {
+    "yap-ultrawide": "*",
+    "yap-bag": "*"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.discord": "https://yaplabs.us"
+      }
+    }
+  }
+}

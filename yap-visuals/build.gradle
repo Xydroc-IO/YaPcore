@@ -1,0 +1,101 @@
+plugins {
+    id "net.fabricmc.fabric-loom" version "${loom_version}"
+}
+
+version = project.version
+group = project.group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+def stackDir = file("${rootProject.projectDir}/../dist/client-mods")
+def sodiumJar = file("${stackDir}/sodium-fabric-0.9.1+mc26.2.jar")
+def irisJar = fileTree(stackDir) {
+    include "yap-iris-fabric-*.jar"
+}.files.max { it.lastModified() }
+def shadersZip = file("${stackDir}/yap-shaders.zip")
+
+tasks.register("verifyStackArtifacts") {
+    doLast {
+        if (!sodiumJar.exists()) {
+            throw new GradleException("Missing ${sodiumJar}. Run ../scripts/fetch-sodium.sh first.")
+        }
+        if (irisJar == null || !irisJar.exists()) {
+            throw new GradleException("Missing yap-iris-fabric-*.jar in ${stackDir}. Build YaP Iris first.")
+        }
+        if (!shadersZip.exists()) {
+            throw new GradleException("Missing ${shadersZip}. Pack yap-shaders first.")
+        }
+    }
+}
+
+tasks.register("stageEmbeddedAssets", Copy) {
+    dependsOn("verifyStackArtifacts")
+    from(shadersZip)
+    into(layout.buildDirectory.dir("generated/embedded"))
+    rename { "yap-shaders.zip" }
+}
+
+processResources {
+    dependsOn("stageEmbeddedAssets")
+    from(layout.buildDirectory.dir("generated/embedded")) {
+        into("assets/yap-visuals")
+    }
+    def version = project.version
+    inputs.property "version", version
+    filesMatching("fabric.mod.json") {
+        expand "version": version
+    }
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+}
+
+tasks.named("compileJava").configure {
+    dependsOn("verifyStackArtifacts")
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = 25
+    it.options.encoding = "UTF-8"
+}
+
+java {
+    withSourcesJar()
+    sourceCompatibility = JavaVersion.VERSION_25
+    targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+    dependsOn("verifyStackArtifacts")
+    // Fabric Loader nested mods (jar-in-jar) — single install artifact
+    from(sodiumJar) {
+        into("META-INF/jars")
+        rename { "sodium.jar" }
+    }
+    from(irisJar) {
+        into("META-INF/jars")
+        rename { "yap-iris.jar" }
+    }
+    from("../LICENSE") {
+        rename { "LICENSE_yap-visuals" }
+    }
+    from("../yap-sodium/LICENSE-PolyForm-Shield.txt") {
+        rename { "LICENSE_Sodium_PolyForm_Shield" }
+    }
+    from("../yap-sodium/NOTICE.txt") {
+        rename { "NOTICE_Sodium" }
+    }
+    from("../yap-iris/LICENSE") {
+        rename { "LICENSE_YaP_Iris_LGPLv3" }
+    }
+    from("../third-party/iris/NOTICE.txt") {
+        rename { "NOTICE_YaP_Iris" }
+    }
+    from("../yap-iris/LICENSE-DEPENDENCIES") {
+        rename { "LICENSE_DEPENDENCIES_Iris" }
+    }
+}

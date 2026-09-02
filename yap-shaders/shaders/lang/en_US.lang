@@ -1,0 +1,14 @@
+option.WAVE_STRENGTH=Wave strength
+option.SSR=Screen-space reflections
+option.SSR_STEPS=SSR quality (steps)
+option.REFRACTION=Refraction
+option.CAUSTICS=Caustics
+option.SPECULAR=Water specular
+option.SUN_GLOW=Sun glow
+option.HORIZON_HAZE=Horizon haze
+option.VOLUMETRIC_CLOUDS=Volumetric clouds
+option.CLOUD_STEPS=Cloud quality (steps)
+profile.LOW=Low
+profile.MEDIUM=Medium
+profile.HIGH=High
+screen.clouds=Clouds
