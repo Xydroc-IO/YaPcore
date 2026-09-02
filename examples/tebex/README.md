@@ -4,7 +4,8 @@ Install the Tebex (or any store) **game-server** plugin on your **Hub/lobby** Fo
 
 ```bash
 ./scripts/fetch-tebex.sh    # GPLv3 Folia jar → plugins/tebex.jar
-# Hub console: tebex secret <your-key>
+# Dashboard: Tebex store → paste secret → Save secret
+# Or Hub console: tebex secret <your-key>
 ```
 
 Full guide: [docs/ops/TEBEX.md](../../docs/ops/TEBEX.md) · License notices: [third-party/tebex/](../../third-party/tebex/)

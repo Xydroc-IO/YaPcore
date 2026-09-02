@@ -24,7 +24,7 @@ dashboard Plugins tab).
 | LuckPerms | `yap-perms.jar` |
 | EssentialsX | `yap-essentials.jar` |
 | CoreProtect | `yap-protect.jar` |
-| WorldEdit / FAWE | `yap-world.jar` |
+| WorldEdit / FAWE | `yap-world.jar` (FAWE-class first-party; stock FAWE not used on Folia) |
 | WorldGuard | `yap-playerdata.jar` (claims + flags) |
 | Via\* / Geyser / Floodgate | Built-in Phase 4 stack |
 | Velocity | `yap-link.jar` |

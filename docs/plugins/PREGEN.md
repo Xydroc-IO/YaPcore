@@ -55,6 +55,7 @@ Prefer **YaPWorld** on Folia: select with `/yapworld tool`, then:
 ```
 
 Falls back to stock WorldEdit `//sel` when YaPWorld is not installed (Paper benches only).
+On the Folia product path prefer YaPWorld (`//sel`, wand) — stock WE/FAWE jars are not supported.
 
 ## Example
 

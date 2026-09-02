@@ -1,7 +1,8 @@
 # YaPWorld
 
-Folia-safe **WorldEdit-class** editing + Multiverse-class world management.
-Replaces stock WorldEdit / FAWE on the YaPcore product path.
+Folia-safe **FAWE-class** world editing + Multiverse-class world management.
+Replaces stock WorldEdit / FAWE on the YaPcore product path
+([FAWE Hangar](https://hangar.papermc.io/IntellectualSites/FastAsyncWorldEdit) feature surface — first-party, not the FAWE jar).
 
 ## Quick start
 
@@ -12,46 +13,63 @@ Replaces stock WorldEdit / FAWE on the YaPcore product path.
   Right-click = pos2
   Shift+RMB   = GUI
 
+//gmask #air
 //set stone
+//sel sphere
 //copy → //paste
-//cyl stone 5 3
+//brush smooth 5
 ```
 
-1. `/yapworld tool` (or GUI → Get edit tool).
-2. Select two corners.
-3. Use `//set`, GUI **Fill**, or generate with `//sphere` / `//cyl`.
-4. Clipboard: `//copy` / `//cut` / `//paste` / `//rotate` / `//flip`.
-5. `//undo` / `//redo` as needed.
+Aliases: `/we`, `/worldedit`, `/mv`. Classic `//…` commands work like WorldEdit/FAWE.
 
-Aliases: `/we`, `/worldedit`, `/mv`. Classic `//…` commands work the same as WorldEdit.
+## FAWE-parity matrix
+
+| Area | Status |
+|------|--------|
+| Cuboid `//` edit + clipboard | **Done** |
+| Patterns (`%`, block-data, `#solid`) | **Phase 1 done** |
+| `//mask` / `//gmask` | **Phase 1 done** |
+| `//sel cuboid\|sphere\|cyl\|poly` | **Phase 1 done** |
+| Biomes / regen / forest / deform / twist | **Phase 1 done** |
+| Brushes: sphere, cyl, smooth, gravity, clipboard, butcher | **Phase 1 done** |
+| Tools: farwand, superpickaxe, info, tree | **Phase 1 done** |
+| Parallel chunk apply, `//fast`, limits | **Phase 2 done** |
+| Entity schematics (`.yschem` v2) + `EditApplyService` API | **Phase 3 done** |
+| WorldEdit API shim (`com.sk89q.worldedit` soft-deps) | **Phase 4 planned** |
+| WorldEditCUI selection outlines | **Phase 4 planned** |
+| Tile-entity NBT schematics + multi-clipboard | **Phase 4 planned** |
+| Clipboard web upload/download | **Phase 4 planned** (optional) |
+| NMS section placement / FAWE CFI | Out of scope / Phase 4.5 only if needed |
 
 ## WorldEdit-class commands
 
 | Area | Commands |
 |------|----------|
-| Selection | `//wand` `//pos1` `//pos2` `//expand` `//contract` `//shift` `//outset` `//inset` `//chunk` `//size` `//desel` |
-| Edit | `//set` `//replace` `//walls` `//faces` `//hollow` `//outline` `//overlay` `//smooth` `//naturalize` |
-| Generate | `//cyl` `//hcyl` `//sphere` `//hsphere` `//pyramid` `//line` `//drain` |
+| Selection | `//sel` `//wand` `//farwand` `//pos1` `//pos2` `//expand` `//contract` `//shift` `//outset` `//inset` `//chunk` `//size` `//desel` |
+| Masks | `//mask` `//gmask` (`#air` `#solid` `#existing` `#region` materials `!negate`) |
+| Edit | `//set` `//replace <mask> <pattern>` `//walls` `//faces` `//hollow` `//outline` `//overlay` `//smooth` `//naturalize` |
+| Generate | `//cyl` `//sphere` `//pyramid` `//line` `//drain` `//regen` `//forest` `//flora` `//pumpkins` |
+| Biome/deform | `//setbiome` `//biomeinfo` `//biomelist` `//deform` `//twist` `//center` `//curve` |
 | Clipboard | `//copy` `//cut` `//paste [-a]` `//rotate` `//flip` `//stack` `//move` |
 | Near/util | `//replacenear` `//removeabove` `//removebelow` `//extinguish` `//green` `//snow` `//thaw` |
 | Nav | `//thru` `//jumpto` `//up` `//ascend` `//descend` |
-| History | `//undo` `//redo` |
-| Brush | `//brush sphere\|cyl <r> [mat]` |
+| History | `//undo` `//redo` `//clearhistory` `//fast` |
+| Brush | `//brush sphere\|cyl\|smooth\|gravity\|clipboard\|butcher <r> [pat]` `//size` `//mat` |
+| Tools | `//superpickaxe` `//info` `//tree` `//none` |
 
-Patterns accept percentages, e.g. `50%stone,50%dirt`.
+Patterns: `stone`, `50%stone,50%dirt`, `oak_log[axis=y]`, `#solid`.
 
-Same ops also work as `/yapworld set …`, `/we copy`, etc.
+## Soft API
 
-## Plugin commands
+Other plugins can use Bukkit services:
 
-| Command | What it does |
-|---------|----------------|
-| `/yapworld` / `gui` | In-game editor (copy/paste/expand/sphere/cyl buttons) |
-| `/yapworld tool` | Give golden axe |
-| `/yapworld editor` | Optional browser studio |
-| `/yapworld schem save\|paste\|import` | Schematics (`.yschem` / `.schem`) |
-| `/yapworld load\|unload\|tp` | World management |
-| `/yapworld pregen start` | Pregen selection (needs YaPPregen) |
+- `SelectionService` — pos1/pos2 cuboid (regions / pregen)
+- `EditApplyService` — `fillPattern` / `replaceMask` (not `com.sk89q.worldedit`)
+
+```java
+WorldServices.editApply().ifPresent(edit ->
+    edit.fillPattern(player, sel, "stone"));
+```
 
 ## Permissions
 
@@ -65,14 +83,9 @@ Same ops also work as `/yapworld set …`, `/we copy`, etc.
 | `yapworld.load` / `unload` / `teleport` | op | World mgmt |
 | `yapworld.admin` | op | Reload / status |
 
-## Regions + pregen
-
-- **YaPRegions** `/region define` uses YaPWorld selection.
-- **YaPPregen** `selection` prefers YaPWorld (falls back to WorldEdit on Paper benches).
-
 ## Config
 
-`plugins/YaPWorld/config.yml` — max volume, brush radius, schematics folder, browser editor port.
+`plugins/YaPWorld/config.yml` — max volume, brush radius, undo depth, `limits.*` (max-changes, parallel-chunks), browser editor port.
 
 ## Related
 

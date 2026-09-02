@@ -69,7 +69,7 @@ Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin
 | Area | Default | Config |
 |------|---------|--------|
 | Auth `/login` | on | `auth.enabled` |
-| Economy `/bal` `/pay` `/eco` + Vault | on | `economy.enabled` |
+| Economy `/bal` `/pay` `/eco` + native `PlayerDataService` | on | `economy.enabled` |
 | Homes / warps / kits / mail | on | `features.homes` … |
 | Claims | on | `features.claims` (+ `claims.*`) |
 | Shops / auctions (AH) | **on** | `features.shops` / `auctions` |
@@ -78,6 +78,11 @@ Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin
 | Backpack `/bag` | **on** | `features.backpack` |
 
 Money features require `economy.enabled: true`. When economy is off, shops/jobs/AH/traders and claim tax stay off even if their feature flags are true.
+
+**Native economy (no Vault required):** first-party plugins use Bukkit `ServicesManager` → `PlayerDataService`
+(`balance` / `deposit` / `withdraw` / `setBalance`). `/sell`, minigame rewards, Tab `{balance}`, and
+`/yapmmo givemoney` all go through that API. Vault remains an **optional** bridge (`YaPEconomy`) only if
+you drop `Vault.jar` for third-party plugins.
 
 ```yaml
 # Default product features (economy on):

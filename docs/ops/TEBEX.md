@@ -8,7 +8,28 @@ separate jar; we do **not** vendor it in git. Fetch the Folia build:
 # or: gradle fetchTebex
 ```
 
-Notices: `third-party/tebex/`. Then set the secret on Hub: `tebex secret <key>`.
+Notices: `third-party/tebex/`.
+
+## Dashboard setup (recommended)
+
+Web admin → **Tebex store** (`GET/POST /api/tebex`):
+
+1. Confirm `tebex.jar` is installed (fetch script above if missing).
+2. Open [creator.tebex.io](https://creator.tebex.io/) → add a **Minecraft (Java / Folia) game server**.
+3. Paste the **secret key** into the dashboard → **Save secret** (runs `tebex secret <key>` + writes `plugins/Tebex/config.yml`).
+4. Optional: toggle `/buy` command name, proxy mode, verbose → **Save settings**.
+5. Copy package console commands from the tab into Tebex packages (`{username}` placeholder).
+6. Use **Store info** / **Force check** to verify delivery.
+
+Also available under **Plugin editors** → Tebex (raw YAML).
+
+## Console setup (same result)
+
+```text
+tebex secret <key>
+tebex info
+tebex forcecheck
+```
 
 ## Where to install
 
@@ -70,9 +91,9 @@ kit grant {username} adventurer
 1. Hub has CORE+NETWORK jars + `tebex.jar` (`./scripts/fetch-tebex.sh`).
 2. Shared MariaDB (`use-shared-yapdb: true`).
 3. Identical `plugins/YaPPlayerData/kits.yml` on Hub + survival.
-4. `tebex secret <key>` on Hub.
+4. Secret set via dashboard **Tebex store** or `tebex secret <key>` on Hub.
 5. Packages use `{username}` — [examples/tebex/](../../examples/tebex/).
 
 ## Related
 
-[PERMISSIONS.md](PERMISSIONS.md) · [COMMANDS.md](COMMANDS.md) · [LICENSING.md](../start/LICENSING.md) · [PLAYERDATA.md](../data/PLAYERDATA.md) · [YAP_LINK.md](../network/YAP_LINK.md)
+[WEB_DASHBOARD.md](WEB_DASHBOARD.md) · [PERMISSIONS.md](PERMISSIONS.md) · [COMMANDS.md](COMMANDS.md) · [LICENSING.md](../start/LICENSING.md) · [PLAYERDATA.md](../data/PLAYERDATA.md) · [YAP_LINK.md](../network/YAP_LINK.md)

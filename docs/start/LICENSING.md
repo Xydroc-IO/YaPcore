@@ -27,6 +27,9 @@ responsible for complying with each when you ship or run a server.
 | **Grim Anticheat** (optional AC) | **GPLv3** | `./scripts/fetch-grim.sh` → `plugins/grim.jar`; notices in `third-party/grim/` |
 | **Minecraft server software** | Mojang EULA | You must accept `eula=true`; not open source |
 | **Faithful 64x** (default pack) | See `resourcepacks/FAITHFUL_LICENSE.txt` | Bundled in release zips when present |
+| **Sodium** (optional client) | **PolyForm Shield 1.0.0** | Official jar pin only — [yap-sodium/](../../yap-sodium/); notices in `third-party/sodium/` |
+| **YaP Iris** (optional client) | **LGPL-3.0** (+ **AGPL-3.0** glsl-transformer) | Fork under [yap-iris/](../../yap-iris/); notices in `third-party/iris/` |
+| **YaP Shaders** (optional client) | **GPLv3** | First-party Iris pack [yap-shaders/](../../yap-shaders/) |
 | **MariaDB Docker image** | GPLv2 (MariaDB) | Optional DB via `deploy/mariadb/` |
 | **PlaceholderAPI compat layer** | **GPLv3** (YaP reimplementation) | `yap-placeholderapi.jar` |
 
@@ -50,6 +53,21 @@ from `third-party/tebex/`. Setup: [TEBEX.md](../ops/TEBEX.md).
 The official [Grim Anticheat](https://github.com/GrimAnticheat/Grim) plugin is
 **GPLv3**. Fetch with `./scripts/fetch-grim.sh` or `gradle fetchGrim`; ship notices
 from `third-party/grim/`. Setup: [GRIM.md](../ops/GRIM.md).
+
+### Optional client render stack (Sodium / YaP Iris / YaP Shaders)
+
+Java players who want realistic **water** and **shader skies** can install the
+optional Fabric client stack (MC **26.2**). It is **not** a Folia plugin and is
+never forced by the server.
+
+| Piece | License | Notes |
+|-------|---------|-------|
+| **Sodium** | PolyForm Shield 1.0.0 | Official unmodified jar only. A YaP fork would compete with Sodium and is **not** allowed under PolyForm Shield. Pin + fetch: [yap-sodium/](../../yap-sodium/), `./scripts/fetch-sodium.sh` |
+| **YaP Iris** | LGPL-3.0 | LGPL fork of [Iris](https://github.com/IrisShaders/Iris) in [yap-iris/](../../yap-iris/). Embeds **glsl-transformer** (**AGPL-3.0**) — distributing the jar requires AGPL compliance for that dependency ([LICENSE-DEPENDENCIES](../../yap-iris/LICENSE-DEPENDENCIES)). Corresponding source: `yap-iris/` in this repo. |
+| **YaP Shaders** | GPLv3 | First-party Iris-format pack (water + skies). Not a Complementary/BSL fork. |
+
+Build / bundle: `./scripts/build-yap-client-render.sh` → `dist/client-mods/`.
+Docs: [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md).
 
 YaPcore first-party code (chassis, plugins, Link) is **GPLv3** unless a file says
 otherwise.

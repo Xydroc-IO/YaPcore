@@ -231,7 +231,7 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-pregen.jar` | YaPPregen | Chunk pre-generator |
 | `yap-folia-bridge.jar` | YaPFoliaBridge | Folia surface / scheduler smoke |
 | `yap-protect.jar` | YaPProtect | CoreProtect-class audit / rollback |
-| `yap-world.jar` | YaPWorld | World mgmt, selection, schematics |
+| `yap-world.jar` | YaPWorld | FAWE-class edit (masks, brushes, schems) + world mgmt |
 | `yap-regions.jar` | YaPRegions | WorldGuard-class cuboid flags |
 | `yap-npcs.jar` | YaPNpcs | Quest NPCs + dialogue |
 | `yap-tab.jar` | YaPTab | Tab list / header / footer / sidebar |
@@ -272,7 +272,7 @@ Nineteen `yap-*-api` jars under `yap-first-party/api/` for soft-depend authors. 
 | LuckPerms | YaPPerms |
 | EssentialsX (QoL) | YaPEssentials (+ playerdata for data/economy) |
 | CoreProtect | YaPProtect |
-| WorldEdit-class ops | YaPWorld |
+| WorldEdit / FAWE-class ops | YaPWorld (Folia-safe; stock FAWE not used) |
 | WorldGuard | YaPRegions (+ playerdata claims) |
 | TAB / scoreboard | YaPTab |
 | DiscordSRV (MVP) | YaPDiscord |

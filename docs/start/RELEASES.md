@@ -79,9 +79,20 @@ See [WINDOWS.md](WINDOWS.md) and [MARIADB.md](../data/MARIADB.md).
 - Gradle split: `build.gradle.kts` + `gradle/yap-product.gradle.kts`, `yap-release.gradle.kts`, `yap-packaging.gradle.kts`
 - **Do not commit** live kernel/link state (`folia-kernel/logs`, `usercache`, `ops`, `link-data/link.properties`, plugin config dirs) — enforced by `.gitignore`
 
-## Version bump checklist
+## Refresh release zips (same version)
 
-1. Root `build.gradle.kts` `version = "1.0.0.0"`
+When docs/plugins change but the product version stays **1.0.0.0**:
+
+```bash
+./scripts/build-yap-folia.sh   # if Folia fork patches changed
+gradle publishReleasesFolder   # refreshes releases/1.0.0.0/ trees + zips
+```
+
+Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 1.0.0.0” — do **not** change Gradle `version`.
+
+## Version bump checklist (new tag only)
+
+1. Root `build.gradle.kts` `version = "…"`
 2. Each subproject `build.gradle.kts` + `plugin.yml` / `link-plugin.json`
-3. Rebuild YaP-Folia + `gradle assembleAllReleases`
-4. First ship tag: **`1.0.0.0`** (also accepted: `v1.0.0.0`)
+3. Rebuild YaP-Folia + `gradle assembleAllReleases` / `publishReleasesFolder`
+4. Tag: e.g. **`1.0.0.0`** or later `1.x.y.z` (also accepted: `v…`)

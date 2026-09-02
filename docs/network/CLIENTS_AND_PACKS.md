@@ -105,7 +105,7 @@ resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
 
 Publish the **offer** zip (single file or `yap-active-bundle-*.zip`) to the edge docroot after changing actives.
 
-**Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Skies + YaP Vehicles) — built on
+**Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Skies + YaP Water + YaP Vehicles + YaP Abilities) — built on
 `gradle prepareClientPack`. Credit / license: `resourcepacks/CREDITS.md`,
 `FAITHFUL_LICENSE.txt`.
 
@@ -179,28 +179,46 @@ See [yap-bag/README.md](../../yap-bag/README.md).
 
 ## Realistic skies
 
-**YaP Skies** ships in `yapcore-default.zip` and downloads with the pack prompt.
+**YaP Skies** + **YaP Water** ship in `yapcore-default.zip` and download with the pack prompt.
 
 | Layer | Who sees it |
 |-------|-------------|
 | Circular sun / moon, cloud banks, End nebula, `sky` core shader | Every Java client that accepts the pack |
+| Animated water still/flow, underwater overlay, rain/snow | Every Java client that accepts the pack |
 | Panoramic day / sunrise / sunset / night / storm / End skyboxes | Clients with a skybox loader |
+| Wavy water, fresnel, refraction tint, atmosphere + volumetric clouds | Clients with the **YaP client render stack** (below) |
 
 Skybox loaders (install once on the **client**, not as Folia plugins):
 OptiFine, [Skyboxify](https://modrinth.com/mod/skyboxify), Celestial, or
 Nuit + Interop.
 
-Minecraft **cannot** push Iris/Complementary volumetric shaders from the server.
-That stack is still optional:
+Minecraft **cannot** push Iris shader packs from the server resource-pack URL.
+Use the optional Fabric stack (or upstream equivalents):
 
-| Mod | Role |
-|-----|------|
-| [Sodium](https://modrinth.com/mod/sodium) | Performance |
-| [Iris](https://modrinth.com/mod/iris) | Shader loader |
-| Complementary / BSL / etc. | Shader pack |
+## YaP client render stack (optional — Fabric Java)
 
-Recommend that stack in MOTD / Discord / website. Server modpacks are not required
-and conflict with the Paper product path.
+Realistic water (waves, specular, refraction tint) and shader skies. Vanilla /
+Bedrock / no-mods players still join YaPcore without these jars.
 
-Refresh skies textures: `python3 scripts/generate-yap-skies.py` then
+**Recommended — one jar:** [`yap-visuals`](../../yap-visuals/) embeds official Sodium +
+YaP Iris (jar-in-jar) and installs YaP Shaders on first launch.
+
+| Piece | Role | License |
+|-------|------|---------|
+| **yap-visuals-*.jar** | All-in-one install | GPLv3 wrapper; nests Sodium + Iris |
+| Official Sodium (nested) | Performance | PolyForm Shield — **not** forked |
+| YaP Iris (nested) | Shader loader | LGPL-3.0 (+ AGPL glsl-transformer) |
+| YaP Shaders (auto-extract) | Water + skies pack | GPLv3 |
+
+```bash
+./scripts/build-yap-client-render.sh
+# → dist/client-mods/yap-visuals-1.0.0.jar   (drop this alone into mods/)
+# → dist/client-mods/yap-client-visuals.zip  (Discord / site bundle)
+```
+
+Install: Fabric Loader 0.19+ · MC 26.2 · **only** `yap-visuals-*.jar` in `.minecraft/mods/`
+(do not also install separate Sodium/Iris/shaders). Upstream Iris + any Iris pack also work.
+Complementary / BSL are **not** redistributed (custom licenses).
+
+Refresh pack skies textures: `python3 scripts/generate-yap-skies.py` then
 `./scripts/build-default-resourcepack.sh`.

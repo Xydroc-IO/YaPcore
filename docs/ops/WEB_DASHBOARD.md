@@ -43,7 +43,7 @@ Login links include `?token=…` so the browser signs in automatically (token is
 | Group | Tabs |
 |-------|------|
 | **Overview** | Dashboard (status), Network setup, Connect |
-| **Server** | Console, Settings, YaP Link |
+| **Server** | Console, Server setup, YaP Link |
 | **People** | Players, Access & ranks, Rank pack |
 | **Content** | Plugins, Modules, Packs, World, Regions, NPCs |
 | **Gameplay** | Essentials, Vehicles, Pregen, Player data, Chat, Tab list, **MMO**, Map, Guard, Protect, Discord |
@@ -70,13 +70,13 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Dashboard** | `/api/status` | running, heap, ticks, link process, network health | — |
 | **Connect** | `/api/connect` | Java/Bedrock/crossplay join, pack URL | — |
 | **Console** | `/api/console`, `/api/command` | log backlog | run command · SSE `/api/console/stream` |
-| **Settings** | `/api/config` | server.properties fields, ops, auto-op | save config keys |
+| **Server setup** | `/api/config` | everyday server switches (name, who can join, RAM) | save config keys |
 | **YaP Link** | `/api/link`, `/api/link/console` | proxy, backends, forced hosts, selector | start, stop, save-proxy, save-servers, command · Link SSE |
-| **Players** | `/api/players` | online list, spawn, moderation flags | kick, ban, tempban, ipban, mute, warn, timeout, tp*, set-rank, promote, demote, history, check, banlist |
+| **Players** | `/api/players` | online list, spawn, moderation flags | kick, ban, tempban, ipban, mute, warn, timeout, tp*, set-rank, promote, demote, **eco give/take/set/reset**, bal, history, check, banlist |
 | **Access & ranks** | `/api/access` | ops, auto-op, default group, groups, tracks, **permission catalog**, **group nodes** | save-group-nodes, save-ops, save-auto-op, set-default-group, op, deop, set-group, promote, demote, group/user perm, dump, reload, applypack |
 | **Rank pack** | `/api/ranks` | pack applied, auto-apply | apply, force, reset-marker, status |
 | **Plugins** | `/api/plugins` | jar list + compat matrix | install, remove |
-| **Plugin editors** | `/api/plugin-config` | every first-party `config.yml` / `knobs.yml` flattened | **save** + reload, **reload** |
+| **Plugin settings** | `/api/plugin-config` | first-party YAML with plain-language titles + Yes/No | **save** + reload, **reload** |
 | **Modules** | `/api/modules` | module jars | install, remove |
 | **Packs** | `/api/packs` | resource packs, active set | setActive, add, remove, clear |
 | **World** | `/api/world` | schematics, brush max, load/unload flags | load, unload, reload, schem-list, **save-brush** |
@@ -87,6 +87,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Pregen** | `/api/pregen` | job status | start, pause, resume, cancel |
 | **Player data** | `/api/playerdata` | economy, auth, feature toggles | reload, save, set-feature |
 | **Kits** | `/api/kits` | kits.yml definitions, items, armor slots | **save-kit**, **delete-kit**, **clone-kit**, give, grant, reload |
+| **Tebex store** | `/api/tebex` | jar present, secret masked, buy command, proxy, package recipes | **set-secret**, **save-settings**, reload, info, forcecheck |
 | **Chat** | `/api/chat` | channels, slow mode, filter, relay | reload, clearchat, **save-settings** |
 | **Tab list** | `/api/tab` | header/footer/sidebar/bossbar | save-header/footer/sidebar/settings/bossbar, reload |
 | **Map** | `/api/map` | map URL, tiles, worlds, render interval | reload, render, **save-settings** |
@@ -126,11 +127,25 @@ Full operator control without `/op` and `/yapperm` by hand:
 
 `/createkit` Bukkit stacks stay readable; saving from the dashboard writes the material form (NBT beyond name/lore/enchants is dropped).
 
+### Tebex store
+
+**Gameplay → Tebex store** wires the GPLv3 Folia plugin (`plugins/tebex.jar`):
+
+- Status: jar present, secret configured (masked), `/buy` command, proxy mode
+- **Save secret** → writes `plugins/Tebex/config.yml` and runs `tebex secret <key>`
+- Buy command / proxy / verbose toggles → `tebex reload`
+- Copy-ready package recipes (`{username}`) for VIP rank and kit unlocks
+- Links to [creator.tebex.io](https://creator.tebex.io/) and Tebex Minecraft docs
+
+`GET/POST /api/tebex` — `set-secret`, `save-settings`, `reload`, `info`, `forcecheck`. Full guide: [TEBEX.md](TEBEX.md).
+
 ### Players
 
 Staff moderation panel: **online** table plus **everyone who has ever joined** (username, nickname, UUID, last IP, all known IPs, first/last seen). Click a row to kick/ban/mute/IP-ban. IP bans use the stored last IP after they leave.
 
-Requires YaP-Folia running + `yap-moderation` / `yap-perms`. Snapshot is refreshed with `yapmod seen snapshot` when you hit Refresh.
+**Economy** on the same panel: amount field + **Give money** / **Take money** / **Set balance** / **Reset** / **Check balance** (`eco …` / `bal` via console).
+
+Requires YaP-Folia running + `yap-moderation` / `yap-perms` / `yap-playerdata`. Snapshot is refreshed with `yapmod seen snapshot` when you hit Refresh.
 
 ### MMO (`yap-skills`, `yap-abilities`, `yap-mmo-content`)
 

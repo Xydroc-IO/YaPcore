@@ -24,8 +24,8 @@ Bedrock crossplay, YaP Link proxy, web dashboard, and the operator SMP commands 
 | **Operator SMP** | `/bag` (3/5/7/9 pages), `/gm` + `/item`, `/eco`, per-rank name/chat colors, `/yapmod seen` |
 | **Gameplay (in the full box)** | MMO (100 quests, 20 bosses, abilities book + hotbar), vehicles, stacker, factions, guilds |
 | **Ops** | Web dashboard (`:8080`) — ranks, kit builder, plugin YAML editors, Swing GUI, seed defaults, MariaDB Docker package |
-| **Clients (optional)** | Fabric 26.2 mods **yap-bag** and **yap-ultrawide** — vanilla and Bedrock stay supported without them |
-| **Packs** | `yapcore-default` + **yap-skies** overlay |
+| **Clients (optional)** | Fabric 26.2: **yap-visuals** (Sodium+Iris+shaders in one jar), **yap-bag**, **yap-ultrawide** — vanilla and Bedrock stay supported without them |
+| **Packs** | `yapcore-default` (Faithful + skies + vehicles + MMO icons) |
 | **Integrations** | Optional fetch scripts for **Grim AC** and **Tebex** (GPLv3, not bundled by default) |
 
 ### Protocol & crossplay
@@ -111,11 +111,30 @@ Summarized from git history; not separate tagged releases.
 
 ---
 
-## After 1.0.0.0 (not a new version yet)
+## After 1.0.0.0 (same version — not a bump)
 
-- Manual §E live checklist completion ([CROSSPLAY.md](../network/CROSSPLAY.md))
+Product stays on **1.0.0.0**. Rebuild / republish artifacts with `gradle publishReleasesFolder`
+when cutting a refreshed zip; do **not** change Gradle `version` until a real tag bump.
+
+### Shipped on 1.0.0.0 line (post-tag refresh)
+
+| Area | Change |
+|------|--------|
+| **YaPWorld** | FAWE-class phases 1–3: masks/patterns, `//sel` shapes, biomes/terrain/brushes, parallel chunk apply, `//fast`, entity `.yschem` v2, soft `EditApplyService` — [YAPWORLD.md](../plugins/YAPWORLD.md) |
+| **YaPTab** | Folia-safe Bukkit scoreboard sidebar (removed megavex packet path that kicked on join) |
+| **YaPChat** | Secure-chat login rewrite fixed for YaP-Folia 26.2 (`ClientboundLoginPacket`) |
+| **Economy** | Native `PlayerDataService` balance (deposit/withdraw/set) — crafting `/sell`, games rewards drop Vault fallback |
+| **Dashboard** | Kit builder, player eco/perm actions, Tebex/plugin YAML editors, friendlier forms |
+| **Packs / clients** | YaP Abilities icons in default pack; skies/water texture refresh; optional **yap-visuals** / Iris / Sodium client stack docs |
+| **Mechanics** | Optional water-wave visuals |
+| **Ops docs** | Public hostname `yapcoremc.yaplabs.us`, packs via nginx `:80`, grey-cloud game DNS |
+
+### Still open (not a version bump)
+
+- Manual §E live checklist ([CROSSPLAY.md](../network/CROSSPLAY.md))
 - Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))
+- **YaPWorld Phase 4** (planned): WE API shim, WorldEditCUI, tile-NBT schematics, optional clipboard-web — [YAPWORLD.md](../plugins/YAPWORLD.md)
 
 ---
 
-*1.0.0.0 is the first ship. Update this file only when cutting a later version.*
+*1.0.0.0 remains the ship version. Bump only when cutting a later tagged release.*
