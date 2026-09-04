@@ -38,7 +38,7 @@ java {
 }
 
 jar {
-    from("../LICENSE") {
+    from("../../LICENSE") {
         rename { "LICENSE_yap-ultrawide" }
     }
 }

@@ -26,4 +26,4 @@ Vanilla / Bedrock / no-mods clients still join without this jar.
 # → dist/client-mods/yap-visuals-1.0.0.jar
 ```
 
-Components still live as source under `yap-sodium/`, `yap-iris/`, `yap-shaders/` for licenses and development.
+Components still live as source under `client/yap-sodium/`, `client/yap-iris/`, `client/yap-shaders/` for licenses and development.

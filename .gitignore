@@ -302,5 +302,5 @@ xbox-chain-capture.json
 xbox-client-jwt-capture.txt
 
 # Iris Distant Horizons compile-only API (needed to build yap-iris)
-!yap-iris/DHApi.jar
+!client/yap-iris/DHApi.jar
 dist/client-mods/

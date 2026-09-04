@@ -10,40 +10,40 @@ echo "==> Fetch official Sodium (PolyForm Shield pin)"
 
 echo "==> Build YaP Iris (LGPL fork)"
 (
-  cd "${ROOT}/yap-iris"
+  cd "${ROOT}/client/yap-iris"
   ./gradlew --no-daemon :fabric:build -Pbuild.release
 )
 
-IRIS_JAR="$(ls -1t "${ROOT}/yap-iris/build/libs"/yap-iris-fabric-*.jar 2>/dev/null | head -1 || true)"
+IRIS_JAR="$(ls -1t "${ROOT}/client/yap-iris/build/libs"/yap-iris-fabric-*.jar 2>/dev/null | head -1 || true)"
 if [[ -z "${IRIS_JAR}" ]]; then
-  IRIS_JAR="$(ls -1t "${ROOT}/yap-iris/fabric/build/libs"/yap-iris-fabric-*.jar 2>/dev/null | head -1 || true)"
+  IRIS_JAR="$(ls -1t "${ROOT}/client/yap-iris/fabric/build/libs"/yap-iris-fabric-*.jar 2>/dev/null | head -1 || true)"
 fi
 if [[ -z "${IRIS_JAR}" ]]; then
   echo "ERROR: yap-iris fabric jar not found" >&2
   exit 1
 fi
 cp -f "$IRIS_JAR" "$OUT/"
-cp -f "${ROOT}/yap-iris/LICENSE" "$OUT/LICENSE-YaP-Iris-LGPLv3.txt"
+cp -f "${ROOT}/client/yap-iris/LICENSE" "$OUT/LICENSE-YaP-Iris-LGPLv3.txt"
 cp -f "${ROOT}/third-party/iris/NOTICE.txt" "$OUT/NOTICE-YaP-Iris.txt"
-cp -f "${ROOT}/yap-iris/LICENSE-DEPENDENCIES" "$OUT/LICENSE-DEPENDENCIES-Iris.txt"
+cp -f "${ROOT}/client/yap-iris/LICENSE-DEPENDENCIES" "$OUT/LICENSE-DEPENDENCIES-Iris.txt"
 
 echo "==> Pack YaP Shaders"
 SHADER_ZIP="${OUT}/yap-shaders.zip"
 rm -f "$SHADER_ZIP"
 (
-  cd "${ROOT}/yap-shaders"
+  cd "${ROOT}/client/yap-shaders"
   zip -qr "$SHADER_ZIP" pack.mcmeta shaders README.md
 )
 
 echo "==> Build YaP Visuals (all-in-one jar)"
 (
-  cd "${ROOT}/yap-visuals"
+  cd "${ROOT}/client/yap-visuals"
   ./gradlew --no-daemon clean build
 )
-VISUALS_JAR="$(ls -1t "${ROOT}/yap-visuals/build/libs"/yap-visuals-*.jar 2>/dev/null | grep -v sources | grep -v javadoc | head -1 || true)"
+VISUALS_JAR="$(ls -1t "${ROOT}/client/yap-visuals/build/libs"/yap-visuals-*.jar 2>/dev/null | grep -v sources | grep -v javadoc | head -1 || true)"
 if [[ -z "${VISUALS_JAR}" ]]; then
   echo "ERROR: yap-visuals jar not found" >&2
-  ls -la "${ROOT}/yap-visuals/build/libs/" >&2 || true
+  ls -la "${ROOT}/client/yap-visuals/build/libs/" >&2 || true
   exit 1
 fi
 cp -f "$VISUALS_JAR" "$OUT/"

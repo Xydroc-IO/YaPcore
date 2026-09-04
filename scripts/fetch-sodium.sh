@@ -18,7 +18,7 @@ else
 fi
 
 # Notices for redistribution
-cp -f "${ROOT}/yap-sodium/LICENSE-PolyForm-Shield.txt" "${OUT}/LICENSE-Sodium-PolyForm-Shield.txt"
-cp -f "${ROOT}/yap-sodium/NOTICE.txt" "${OUT}/NOTICE-Sodium.txt"
+cp -f "${ROOT}/client/yap-sodium/LICENSE-PolyForm-Shield.txt" "${OUT}/LICENSE-Sodium-PolyForm-Shield.txt"
+cp -f "${ROOT}/client/yap-sodium/NOTICE.txt" "${OUT}/NOTICE-Sodium.txt"
 echo "Sodium → $DEST"
 ls -lh "$DEST"

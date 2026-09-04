@@ -17,7 +17,7 @@ Vanilla clients still connect. They just keep vanilla FOV.
 ## Build
 
 ```bash
-cd yap-ultrawide
+cd client/yap-ultrawide
 ./gradlew build
 ```
 

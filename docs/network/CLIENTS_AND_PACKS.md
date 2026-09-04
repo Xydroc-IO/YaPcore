@@ -152,13 +152,13 @@ Folia plugin) that keeps the horizontal FOV you would have on 16:9.
 | `yap-ultrawide-1.0.0.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
 
 ```bash
-cd yap-ultrawide && ./gradlew build
-# → yap-ultrawide/build/libs/yap-ultrawide-1.0.0.jar
+cd client/yap-ultrawide && ./gradlew build
+# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.0.jar
 ```
 
 Vanilla, Bedrock, and players without the mod still join. Config:
 `.minecraft/config/yap-ultrawide.json` (`match_16_9` default, or `fixed_hfov`).
-See [yap-ultrawide/README.md](../../yap-ultrawide/README.md).
+See [yap-ultrawide/README.md](../../client/yap-ultrawide/README.md).
 
 ## Extra bag tabs — optional client mod
 
@@ -170,12 +170,12 @@ See [yap-ultrawide/README.md](../../yap-ultrawide/README.md).
 | `yap-bag-1.0.0.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
 
 ```bash
-cd yap-bag && ./gradlew build
-# → yap-bag/build/libs/yap-bag-1.0.0.jar
+cd client/yap-bag && ./gradlew build
+# → client/yap-bag/build/libs/yap-bag-1.0.0.jar
 ```
 
 Vanilla and Bedrock players keep `/bag` and the `/menu` Bag icon. Config: `.minecraft/config/yap-bag.json`.
-See [yap-bag/README.md](../../yap-bag/README.md).
+See [yap-bag/README.md](../../client/yap-bag/README.md).
 
 ## Realistic skies
 
@@ -200,7 +200,7 @@ Use the optional Fabric stack (or upstream equivalents):
 Realistic water (waves, specular, refraction tint) and shader skies. Vanilla /
 Bedrock / no-mods players still join YaPcore without these jars.
 
-**Recommended — one jar:** [`yap-visuals`](../../yap-visuals/) embeds official Sodium +
+**Recommended — one jar:** [`yap-visuals`](../../client/yap-visuals/) embeds official Sodium +
 YaP Iris (jar-in-jar) and installs YaP Shaders on first launch.
 
 | Piece | Role | License |

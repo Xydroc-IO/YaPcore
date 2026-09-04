@@ -6,7 +6,7 @@ branded for the YaP optional client render stack.
 Based on Iris by coderbot / IrisShaders and contributors. Upstream license:
 [LICENSE](LICENSE). Dependency license notes: [LICENSE-DEPENDENCIES](LICENSE-DEPENDENCIES)
 (**glsl-transformer** is AGPL-3.0 — distributing Iris binaries implies AGPL obligations
-for that component; see [docs/start/LICENSING.md](../docs/start/LICENSING.md)).
+for that component; see [docs/start/LICENSING.md](../../docs/start/LICENSING.md)).
 
 | | |
 |--|--|
@@ -17,7 +17,7 @@ for that component; see [docs/start/LICENSING.md](../docs/start/LICENSING.md)).
 ## Build
 
 ```bash
-cd yap-iris
+cd client/yap-iris
 ./gradlew :fabric:build -Pbuild.release
 # → fabric/build/libs/yap-iris-*.jar  (or iris-*.jar depending on archives name)
 ```

@@ -9,7 +9,7 @@ base {
     archivesName = project.archives_base_name
 }
 
-def stackDir = file("${rootProject.projectDir}/../dist/client-mods")
+def stackDir = file("${rootProject.projectDir}/../../dist/client-mods")
 def sodiumJar = file("${stackDir}/sodium-fabric-0.9.1+mc26.2.jar")
 def irisJar = fileTree(stackDir) {
     include "yap-iris-fabric-*.jar"
@@ -19,7 +19,7 @@ def shadersZip = file("${stackDir}/yap-shaders.zip")
 tasks.register("verifyStackArtifacts") {
     doLast {
         if (!sodiumJar.exists()) {
-            throw new GradleException("Missing ${sodiumJar}. Run ../scripts/fetch-sodium.sh first.")
+            throw new GradleException("Missing ${sodiumJar}. Run ../../scripts/fetch-sodium.sh first.")
         }
         if (irisJar == null || !irisJar.exists()) {
             throw new GradleException("Missing yap-iris-fabric-*.jar in ${stackDir}. Build YaP Iris first.")
@@ -80,7 +80,7 @@ jar {
         into("META-INF/jars")
         rename { "yap-iris.jar" }
     }
-    from("../LICENSE") {
+    from("../../LICENSE") {
         rename { "LICENSE_yap-visuals" }
     }
     from("../yap-sodium/LICENSE-PolyForm-Shield.txt") {
@@ -92,7 +92,7 @@ jar {
     from("../yap-iris/LICENSE") {
         rename { "LICENSE_YaP_Iris_LGPLv3" }
     }
-    from("../third-party/iris/NOTICE.txt") {
+    from("../../third-party/iris/NOTICE.txt") {
         rename { "NOTICE_YaP_Iris" }
     }
     from("../yap-iris/LICENSE-DEPENDENCIES") {

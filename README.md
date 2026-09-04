@@ -74,6 +74,8 @@ Details: [docs/start/RELEASES.md](docs/start/RELEASES.md).
 
 [plugins/README.md](plugins/README.md) · [docs/plugins/PLUGINS.md](docs/plugins/PLUGINS.md)
 
+Optional Fabric **client** mods (visuals, bag, ultrawide): [client/](client/).
+
 ---
 
 ## Architecture

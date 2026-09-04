@@ -20,7 +20,7 @@ Players without the mod keep `/bag`, `/backpack`, `/bp`, and the `/menu` Bag ico
 ## Build
 
 ```bash
-cd yap-bag
+cd client/yap-bag
 ./gradlew build
 ```
 
