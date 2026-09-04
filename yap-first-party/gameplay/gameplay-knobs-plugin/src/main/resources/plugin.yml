@@ -4,14 +4,26 @@ main: com.yapcore.knobs.GameplayKnobsPlugin
 api-version: '1.21'
 folia-supported: true
 author: YapLabs
-description: Purpur-inspired gameplay + mob encyclopedia for YaPcore (Paper plugin)
+description: YaP gameplay + mob encyclopedia (Purpur-inspired, original YaP code)
 website: https://github.com/yaplabs
 commands:
   yapknobs:
-    description: Reload / status for YaP gameplay knobs
+    description: Reload / status for YaP encyclopedia
     usage: /yapknobs <reload|status>
     permission: yapknobs.reload
 permissions:
   yapknobs.reload:
-    description: Reload knobs.yml
+    description: Reload knobs.yml and re-apply to loaded entities
+    default: op
+  yapknobs.ride.*:
+    description: Ride any encyclopedia-enabled ridable mob
+    default: op
+  yapknobs.special.*:
+    description: Use ridable special abilities
+    default: op
+  yapknobs.ride.creeper:
+    description: Ride creepers when ridable=true
+    default: op
+  yapknobs.special.creeper:
+    description: Toggle creeper charged state while riding
     default: op

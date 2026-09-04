@@ -12,6 +12,7 @@ Prove YaP-Folia **ship knobs** beat stock Folia and rank ahead of Canvas — kno
 | **fullcite** 3-way | `20260904TshipFc` | YaP #1 vs Folia & Canvas (Canvas ~35 mspt); pairwise −4.8% that run (noise) |
 | **heavypop** ship | `20260904TshipOn` | YaP **−7.55%** vs stock; **#1 vs Canvas** (−3.85%) |
 | **heavypop** baseline | `20260904TshipBase` | YaP **−7.19%** (async+hopper only; smart knobs off) |
+| **heavypop** Canvas campaign | `20260904T065505Z` | YaP **−16.56%** vs stock; **−8.09% vs Canvas** — **citeable ≥5%** |
 
 ## Ship cite profile
 
@@ -23,8 +24,7 @@ Prove YaP-Folia **ship knobs** beat stock Folia and rank ahead of Canvas — kno
 | microtick-budget-ms | 8 |
 | subregion-partition | true |
 
-Never defer players / TNT / vehicles / items / bosses. `fuse_ticking_ok` required.
-Gate: `YAP_MSPT_REQUIRE_SHIP_KNOBS=1`.
+See also: [CANVAS_PARITY.md](CANVAS_PARITY.md) · [PAPER_PURPUR_SCALE.md](PAPER_PURPUR_SCALE.md) · [TUNE.md](../ops/TUNE.md) (encyclopedia).
 
 ## Why micro / subregion / parallel
 
@@ -41,7 +41,11 @@ shows async+hopper alone (~−7% heavypop); ship profile adds headroom under hot
 ./scripts/yapctl soak-perf 30  # PASS 20260904T033626Z
 ./scripts/yapctl cite-fullcite # PASS 20260904T040935Z (−5.53%; peak cite −12.40% at shipFc2)
 ./scripts/yapctl soak-long 12  # background uptime; not a cite gate
+./scripts/bench/cite-canvas-heavypop.sh 40  # Canvas ≥5% campaign (heavypop)
 ```
+
+Encyclopedia E2 NMS (`0025-yap-encyclopedia-hooks.patch`): defaults off; enable `gameplay.crop-growth-nms` only after `./scripts/build-yap-folia.sh` + soak-compat.
+
 ## Anti-gaming
 
 - Disclose knobs; same load proofs; no keepalive-only population cites

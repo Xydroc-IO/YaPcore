@@ -1,0 +1,8 @@
+scenario=heavypop
+stamp=20260904T065505Z
+stock-folia  mspt_mean=11.9115
+yap-folia    mspt_mean=9.9395   knobs entity=400 microtick=8 hopper=64 async partition
+stock-canvas mspt_mean=10.8144
+yap vs stock  = -16.56% (citeable)
+yap vs canvas = -8.09% (citeable ≥5%)
+VERDICT: YaP #1 vs Folia & Canvas; Canvas pairwise citeable under disclosed ship knobs

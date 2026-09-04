@@ -1,6 +1,6 @@
 # Canvas peer parity notes (26.2)
 
-Goal: beat stock Folia ≥5% on fullcite **and** rank ahead of / competitive with Canvas
+Goal: beat stock Folia ≥5% on fullcite **and** beat Canvas ≥5% on heavypop when fair,
 using the **ship knob profile** (smart budget + microtick + subregion partition).
 
 ## Ship cite profile
@@ -10,20 +10,21 @@ See [`YAP_FOLIA_SOAK.md`](YAP_FOLIA_SOAK.md). Result JSON must include `knob_*`.
 
 ## Peer heavypop ranking (ship knobs)
 
-Stamp **`20260904TshipOn`** (hopper=64, entity=400, microtick=8, partition=true, async=true):
+Stamp **`20260904T065505Z`** (campaign; hopper=64, entity=400, microtick=8, partition=true, async=true):
 
 | Rank | Label | mspt_mean |
 |------|-------|----------:|
-| 1 | yap-folia-chassis | 10.7830 |
-| 2 | stock-canvas | 11.1986 |
-| 3 | stock-folia | 11.6637 |
+| 1 | yap-folia-chassis | 9.9395 |
+| 2 | stock-canvas | 10.8144 |
+| 3 | stock-folia | 11.9115 |
 
-YaP vs stock Folia **−7.55%** (citeable). YaP vs Canvas **−3.85%** (ranked #1; within 5% noise vs Canvas — claim rank lead, not ≥5% Canvas beat).
+YaP vs stock Folia **−16.56%** (citeable). YaP vs Canvas **−8.09%** — **citeable ≥5%** under disclosed ship knobs.
+
+Prior stamp **`20260904TshipOn`**: YaP −7.55% vs stock; −3.85% vs Canvas (rank lead only).
 
 Baseline A/B (`20260904TshipBase`, smart knobs off): YaP **−7.19%** vs stock — async+hopper alone.
-Ship knobs add a small heavypop edge here (region MSPT ≈11 sits near the 12ms budget gate).
 
-Fixtures: `src/test/resources/mspt/{stock-folia,yap-folia}-heavypop.json`, `peer-heavypop-canvas.json`.
+Fixtures: `src/test/resources/mspt/{stock-folia,yap-folia}-heavypop.json`, `peer-heavypop-canvas.json`, `cite-heavypop-canvas-verdict.txt`.
 
 ## Fullcite vs Canvas
 
@@ -38,6 +39,22 @@ Peer ranking fixture `cite-fullcite-canvas.json` (from `20260904TshipFc` 3-way):
 | 3 | stock-canvas | 35.3606 |
 
 YaP leads both peers on fullcite under ship knobs. Canvas row is ranking-only (not the pairwise ≥5% gate).
+
+## Canvas ≥5% campaign
+
+```bash
+./scripts/bench/cite-canvas-heavypop.sh 40
+```
+
+| Stamp | YaP vs Canvas | Claim |
+|-------|---------------|-------|
+| `20260904TshipOn` heavypop | **−3.85%** | Rank #1 only |
+| `20260904T065505Z` heavypop | **−8.09%** | **Citeable ≥5%** |
+| fullcite `20260904TshipFc` | YaP #1 (Canvas ~35 mspt) | Ranking-only vs Canvas |
+
+Ship knobs unchanged: entity=400, microtick=8, hopper=64, async, partition. See [`REAL_GAINS.md`](REAL_GAINS.md).
+
+Paper/Purpur scale story (not Folia-peer MSPT): [`PAPER_PURPUR_SCALE.md`](PAPER_PURPUR_SCALE.md).
 
 ## Port rules (Canvas bumps)
 

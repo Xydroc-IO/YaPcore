@@ -3,6 +3,7 @@ package com.yapcore.knobs;
 import com.yapcore.sched.YapSched;
 import com.yapcore.sched.YapTask;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.LivingEntity;
@@ -10,13 +11,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Purpur-inspired gameplay + mob encyclopedia for YaPcore (Paper plugin).
- * Original YaP implementation — WASD ridables, MobGoal AI, and block knobs.
+ * YaP gameplay + mob encyclopedia (Paper plugin, Folia-safe).
+ * Original YaP implementation — not a Purpur port.
  */
 public final class GameplayKnobsPlugin extends JavaPlugin {
 
     private KnobsConfig knobs;
     private YapTask ridableTask;
+    private int handlersRegistered;
 
     @Override
     public void onEnable() {
@@ -24,9 +26,16 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
         knobs.reload();
         getServer().getPluginManager().registerEvents(new KnobsListener(this, knobs), this);
         getServer().getPluginManager().registerEvents(new BlockKnobsListener(knobs), this);
+        getServer().getPluginManager().registerEvents(new GameplayListener(this, knobs), this);
+        getServer().getPluginManager().registerEvents(new MobSpecialsListener(knobs), this);
+        handlersRegistered = 4;
         ridableTask = YapSched.globalTimer(this, this::tickRidables, 1L, 1L);
-        getLogger().info("YaP Gameplay Knobs online — WASD ridables + AI + block patches");
-        getLogger().info("Edit plugins/YaPGameplayKnobs/knobs.yml · /yapknobs reload");
+        applyServerBrand();
+        EncyclopediaNms.syncFromConfig(knobs);
+        getLogger().info("YaP Encyclopedia online — mobs=" + knobs.mobs().size()
+                + " specials=" + knobs.specialsWired()
+                + " attrKeys=" + AttributeApplier.supportedAttributeKeys());
+        getLogger().info("Edit plugins/YaPGameplayKnobs/knobs.yml · /yapknobs reload|status");
     }
 
     @Override
@@ -35,6 +44,7 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
             ridableTask.cancel();
             ridableTask = null;
         }
+        EncyclopediaNms.clear();
     }
 
     private void tickRidables() {
@@ -52,8 +62,47 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
         }
     }
 
+    private void applyServerBrand() {
+        String brand = knobs.serverModName();
+        if (brand == null || brand.isBlank()) {
+            return;
+        }
+        try {
+            // Paper/Folia: Bukkit.getServer() brand via reflection when API present
+            var server = Bukkit.getServer();
+            try {
+                var m = server.getClass().getMethod("setServerModName", String.class);
+                m.invoke(server, brand);
+            } catch (NoSuchMethodException ignored) {
+                System.setProperty("yap.encyclopedia.server-mod-name", brand);
+            }
+        } catch (ReflectiveOperationException e) {
+            System.setProperty("yap.encyclopedia.server-mod-name", brand);
+            getLogger().fine("server-mod-name via system property: " + brand);
+        }
+    }
+
+    void reapplyLoadedMobs() {
+        for (World world : Bukkit.getWorlds()) {
+            for (LivingEntity living : world.getLivingEntities()) {
+                if (living instanceof Player) {
+                    continue;
+                }
+                KnobsConfig.MobKnobs mk = knobs.mob(living.getType().name());
+                if (mk == null || !mk.enabled()) {
+                    continue;
+                }
+                YapSched.entity(this, living, () -> KnobsListener.applyMob(living, mk));
+            }
+        }
+    }
+
     public KnobsConfig knobs() {
         return knobs;
+    }
+
+    public int handlersRegistered() {
+        return handlersRegistered;
     }
 
     @Override
@@ -62,8 +111,9 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
             return false;
         }
         if (args.length == 0) {
-            sender.sendMessage("YaPGameplayKnobs — mobs=" + knobs.mobs().size()
-                    + " enabled=" + knobs.enabled());
+            sender.sendMessage("YaP Encyclopedia — mobs=" + knobs.mobs().size()
+                    + " enabled=" + knobs.enabled()
+                    + " specials=" + knobs.specialsWired());
             sender.sendMessage("Usage: /yapknobs reload | status");
             return true;
         }
@@ -73,15 +123,33 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
                 return true;
             }
             knobs.reload();
-            sender.sendMessage("Knobs reloaded (" + knobs.mobs().size() + " mobs).");
+            applyServerBrand();
+            EncyclopediaNms.syncFromConfig(knobs);
+            reapplyLoadedMobs();
+            sender.sendMessage("Encyclopedia reloaded (" + knobs.mobs().size()
+                    + " mobs, specials=" + knobs.specialsWired() + ") — re-applied to loaded entities.");
             return true;
         }
         if ("status".equalsIgnoreCase(args[0])) {
             sender.sendMessage("enabled=" + knobs.enabled()
                     + " mobs=" + knobs.mobs().size()
-                    + " barrelRows=" + knobs.barrelRows()
+                    + " specialsWired=" + knobs.specialsWired()
+                    + " attrKeys=" + AttributeApplier.supportedAttributeKeys()
+                    + " handlers=" + handlersRegistered
+                    + " brand=" + knobs.serverModName());
+            sender.sendMessage("gameplay: blindness×" + knobs.gameplay().entityBlindnessMultiplier()
+                    + " cropMod=" + knobs.gameplay().cropGrowthModifier()
+                    + " cropNms=" + knobs.gameplay().cropGrowthNms()
+                    + " tickFluids=" + knobs.gameplay().tickFluids()
+                    + " voidFix=" + knobs.gameplay().useVoidDamageFix()
+                    + " netheriteFR=" + knobs.gameplay().netheriteFireResistance()
+                    + " totemVoid=" + knobs.gameplay().totemWorksInVoid());
+            sender.sendMessage("blocks: barrelRows=" + knobs.barrelRows()
                     + " beehiveMax=" + knobs.beehiveMaxBees()
-                    + " lightningRodRange=" + knobs.lightningRodRange());
+                    + " lightningRodRange=" + knobs.lightningRodRange()
+                    + " giveDropSuppress=" + knobs.disableGiveDropping()
+                    + " projBypassGrief=" + knobs.projectilesBypassMobGriefing());
+            sender.sendMessage("nmsHooks: " + EncyclopediaNms.statusLine());
             return true;
         }
         return false;

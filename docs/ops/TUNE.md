@@ -63,14 +63,22 @@ gradle :gameplay-knobs-plugin:installIntoPlugins   # or installGameplayDefaults
 
 ### What the encyclopedia supports (live)
 
-| Feature | How |
-|---------|-----|
-| **WASD ridables** | `ridable: true` + `controllable: true` — passenger `Input` steers mount every tick |
-| **Ridable in water / max Y** | `ridable-in-water`, `ridable-max-y` |
-| **Deep AI** | `ai.disable-ai`, `disable-random-stroll`, `disable-panic`, `remove-goals: [VANILLA_GOAL_NAME]` via Paper MobGoals |
-| **Attributes** | `attributes.max_health`, `scale` on spawn |
-| **Breeding delay / water dmg / always-drop-exp / pick-up-loot** | Event hooks |
-| **Blocks** | barrel rows, anvil cost, beehive max bees, crying-obsidian portal frame, lightning-rod range, bed explode |
+YaP encyclopedia (`yap-gameplay-knobs.jar`) — **original YaP code**, Purpur-inspired surface, not a Purpur port.
+
+| Feature | Status | How |
+|---------|--------|-----|
+| **WASD ridables** | Wired | `ridable` + `controllable`; perm `yapknobs.ride.<mob>` / `yapknobs.ride.*` |
+| **Ridable specials** | Wired | e.g. creeper charge toggle — `yapknobs.special.<mob>` |
+| **Attributes** | Wired | `max_health`, `scale`, `movement_speed`, `attack_damage`, `armor`, `follow_range`, `spawn_reinforcements`, … on spawn **and** chunk load; `/yapknobs reload` re-applies |
+| **Deep AI** | Wired | `ai.disable-*`, `remove-goals` via Paper MobGoals; `retaliate: false` strips TARGET |
+| **Breeding / water / XP / loot** | Wired | Event hooks |
+| **Mob grief bypass** | Wired | `bypass-mob-griefing` + `projectiles-bypass-mob-griefing` |
+| **Per-mob specials** | Wired | creeper fuse/radius/charged; phantom daylight/torch/grief; bee rain/night; enderman↔endermite; wolf rabid/milk; zombie reinforcements |
+| **Blocks** | Wired | barrel rows, anvil cost, beehive max bees, crying-obsidian portal, lightning-rod range, bed explode |
+| **gameplay.*** | Wired / Partial | blindness×, void fix, netherite fire resist, totem-in-void, crop slow via `BlockGrowEvent`; `tick-fluids` + fast crops need **E2 NMS** |
+| **server-mod-name** | Wired | Best-effort brand / `yap.encyclopedia.server-mod-name` |
+| **disable-give-dropping** | Wired | Suppress drops after `/give` (metadata window) |
+| **Crop growth NMS / fluid tick** | E2-NMS | `gameplay.crop-growth-nms` + YaP-Folia `YapEncyclopediaHooks` (`vendor/folia/patches/0025-yap-encyclopedia-hooks.patch`) — rebuild `./scripts/build-yap-folia.sh`; soak-gate before enabling |
 
 ```yaml
 mobs:
@@ -79,15 +87,22 @@ mobs:
     controllable: true
     ridable-in-water: false
     ridable-max-y: 320.0
+    attributes:
+      max_health: 10
+      movement_speed: 0.2
     ai:
       aware: true
       disable-random-stroll: false
       disable-panic: true
       remove-goals: [PANIC]
+  creeper:
+    explosion-radius: 3.0
+    max-fuse-ticks: 30
 ```
 
 ```bash
 /yapknobs reload
+/yapknobs status   # mobs, specialsWired, attrKeys, nmsHooks
 ```
 
 Original YaP code — not a PurpurMC GPL port. Goal names match Paper `VanillaGoal` constants.

@@ -249,7 +249,7 @@ Sources live under `yap-first-party/`. Install tiers:
 |-----|--------|------|
 | `yap-vehicles.jar` | YaPVehicles | Real vehicle mechanics (not minecarts) |
 | `yap-stacker.jar` | YaPStacker | PDC mob / item / spawner stacker |
-| `yap-gameplay-knobs.jar` | YaPGameplayKnobs | Purpur-class mob encyclopedia |
+| `yap-gameplay-knobs.jar` | YaPGameplayKnobs | YaP encyclopedia (Purpur-inspired; original code) |
 | `yap-skills.jar` | YaPSkills | 13 RS-style skills + `/skills` GUI |
 | `yap-combat.jar` | YaPCombat | Custom PvE combat, gear, food, potions, spells, prayer |
 | `yap-crafting.jar` | YaPCrafting | Recipes, stations, `/sell` |

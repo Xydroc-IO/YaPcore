@@ -1,7 +1,12 @@
-# YaP Gameplay Knobs — Purpur-inspired encyclopedia (original YaP code, not a Purpur port).
+# YaP Encyclopedia — Purpur-inspired mob/gameplay surface (original YaP code, not a Purpur port).
 # Not affiliated with PurpurMC.
-# Supported: WASD ridables (ridable+controllable), MobGoal AI, block patches.
+# Wired: WASD ridables (+ yapknobs.ride.<mob>), attributes, AI, blocks, gameplay.*, per-mob specials.
+# E2 NMS (YaP-Folia): gameplay.crop-growth-nms + tick-fluids via YapEncyclopediaHooks.
 # Edit this file (or plugins/YaPGameplayKnobs/knobs.yml after first run).
+#
+# attributes (any present key applied on spawn/load/reload):
+#   max_health, scale, movement_speed, attack_damage, attack_knockback, armor,
+#   armor_toughness, follow_range, knockback_resistance, flying_speed, spawn_reinforcements, …
 #
 # Per-mob AI example:
 #   ai:
@@ -37,6 +42,9 @@ gameplay:
   entity-blindness-multiplier: 1.0
   tick-fluids: true
   use-void-damage-fix: false
+  # 1.0 = vanilla. <1 slows (Paper event). >1 or precise ticks need crop-growth-nms (E2 Folia hook).
+  crop-growth-modifier: 1.0
+  crop-growth-nms: false
   player:
     netherite-fire-resistance: false
     totem-of-undying-works-in-void: false
@@ -131,6 +139,8 @@ mobs:
     always-drop-exp: false
     can-pick-up-loot: default
     breeding-delay-ticks: 6000
+    can-work-at-night: false
+    can-work-in-rain: false
     attributes:
       max_health: 10
       scale: 1.0
@@ -331,6 +341,10 @@ mobs:
     always-drop-exp: false
     can-pick-up-loot: default
     breeding-delay-ticks: 6000
+    explosion-radius: 3.0
+    max-fuse-ticks: 30
+    charged: false
+    bypass-mob-griefing: false
     attributes:
       max_health: 20
       scale: 1.0
@@ -451,6 +465,8 @@ mobs:
     always-drop-exp: false
     can-pick-up-loot: default
     breeding-delay-ticks: 6000
+    aggressive-towards-endermites: true
+    bypass-mob-griefing: false
     attributes:
       max_health: 40
       scale: 1.0
@@ -891,6 +907,9 @@ mobs:
     always-drop-exp: false
     can-pick-up-loot: default
     breeding-delay-ticks: 6000
+    burn-in-daylight: true
+    allow-griefing: false
+    ignore-players-with-torch: false
     attributes:
       max_health: 20
       scale: 1.0
@@ -1431,6 +1450,7 @@ mobs:
     always-drop-exp: false
     can-pick-up-loot: default
     breeding-delay-ticks: 6000
+    breed-min-doors: 0
     attributes:
       max_health: 20
       scale: 1.0
@@ -1571,6 +1591,8 @@ mobs:
     always-drop-exp: false
     can-pick-up-loot: default
     breeding-delay-ticks: 6000
+    milk-cures-rabid-wolves: true
+    spawn-rabid-chance: 0.0
     attributes:
       max_health: 8
       scale: 1.0
@@ -1611,6 +1633,7 @@ mobs:
     always-drop-exp: false
     can-pick-up-loot: default
     breeding-delay-ticks: 6000
+    reinforcement-chance-pct: -1
     attributes:
       max_health: 20
       scale: 1.0

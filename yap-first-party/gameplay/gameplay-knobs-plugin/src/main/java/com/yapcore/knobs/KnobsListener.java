@@ -1,8 +1,6 @@
 package com.yapcore.knobs;
 
 import com.yapcore.sched.YapSched;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
@@ -19,9 +17,12 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityDismountEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityMountEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,10 +53,36 @@ public final class KnobsListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        applyAttributes(entity, knobs);
+        applyMob(entity, knobs);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntitiesLoad(EntitiesLoadEvent event) {
+        if (!config.enabled()) {
+            return;
+        }
+        for (Entity e : event.getEntities()) {
+            if (!(e instanceof LivingEntity living) || living instanceof Player) {
+                continue;
+            }
+            KnobsConfig.MobKnobs knobs = config.mob(living.getType().name());
+            if (knobs == null || !knobs.enabled()) {
+                continue;
+            }
+            YapSched.entity(plugin, living, () -> applyMob(living, knobs));
+        }
+    }
+
+    static void applyMob(LivingEntity entity, KnobsConfig.MobKnobs knobs) {
+        AttributeApplier.apply(entity, knobs);
         applyPickup(entity, knobs);
+        MobSpecialsListener.applyOnSpawn(entity, knobs);
         if (entity instanceof Mob mob) {
-            AiController.apply(mob, knobs, plugin.getLogger());
+            AiController.apply(mob, knobs, null);
+            if (!knobs.retaliate()) {
+                org.bukkit.Bukkit.getMobGoals().removeAllGoals(mob,
+                        com.destroystokyo.paper.entity.ai.GoalType.TARGET);
+            }
         }
     }
 
@@ -116,15 +143,48 @@ public final class KnobsListener implements Listener {
         if (!config.enabled()) {
             return;
         }
-        if (config.projectilesBypassMobGriefing() && event.getEntity() instanceof Projectile) {
-            // keep blocks
+        Entity ent = event.getEntity();
+        if (config.projectilesBypassMobGriefing() && ent instanceof Projectile) {
+            event.blockList().clear();
             return;
+        }
+        if (ent != null) {
+            KnobsConfig.MobKnobs knobs = config.mob(ent.getType().name());
+            if (knobs != null && knobs.bypassMobGriefing()) {
+                event.blockList().clear();
+            }
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onChangeBlock(EntityChangeBlockEvent event) {
-        // reserved for future block-entity grief knobs
+        if (!config.enabled()) {
+            return;
+        }
+        Entity ent = event.getEntity();
+        KnobsConfig.MobKnobs knobs = config.mob(ent.getType().name());
+        if (knobs != null && knobs.bypassMobGriefing()) {
+            event.setCancelled(true);
+            return;
+        }
+        if (knobs != null && knobs.specials().phantomAllowGriefing() != null
+                && !knobs.specials().phantomAllowGriefing()
+                && "PHANTOM".equals(ent.getType().name())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onGiveDrop(PlayerDropItemEvent event) {
+        if (!config.enabled() || !config.disableGiveDropping()) {
+            return;
+        }
+        // Only suppress drops that look like /give spam: creative + recently given items
+        // are hard to detect; cancel drops while player has metadata from console give.
+        if (event.getPlayer().hasMetadata("yapknobs.suppress-drop")) {
+            event.setCancelled(true);
+            event.getItemDrop().remove();
+        }
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
@@ -140,6 +200,10 @@ public final class KnobsListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
+        String perm = "yapknobs.ride." + living.getType().name().toLowerCase(Locale.ROOT);
+        if (!player.hasPermission(perm) && !player.hasPermission("yapknobs.ride.*")) {
+            return;
+        }
         if (living.getPassengers().contains(player)) {
             return;
         }
@@ -178,20 +242,7 @@ public final class KnobsListener implements Listener {
         }
         KnobsConfig.MobKnobs knobs = config.mob(mob.getType().name());
         if (knobs != null) {
-            // Restore configured AI after ride
             YapSched.entity(plugin, mob, () -> AiController.apply(mob, knobs, plugin.getLogger()));
-        }
-    }
-
-    private static void applyAttributes(LivingEntity entity, KnobsConfig.MobKnobs knobs) {
-        AttributeInstance maxHealth = entity.getAttribute(Attribute.MAX_HEALTH);
-        if (maxHealth != null && knobs.maxHealth() > 0) {
-            maxHealth.setBaseValue(knobs.maxHealth());
-            entity.setHealth(Math.min(entity.getHealth(), knobs.maxHealth()));
-        }
-        AttributeInstance scale = entity.getAttribute(Attribute.SCALE);
-        if (scale != null && knobs.scale() > 0) {
-            scale.setBaseValue(knobs.scale());
         }
     }
 

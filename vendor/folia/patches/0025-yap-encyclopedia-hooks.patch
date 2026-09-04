@@ -1,0 +1,101 @@
+From: YaPcore Encyclopedia <encyclopedia@yapcore>
+Subject: [PATCH] YaP encyclopedia NMS hooks (crop growth + fluid tick)
+
+Reads system properties written by YaPGameplayKnobs.
+Defaults vanilla-safe. Post-applyAllPatches.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapEncyclopediaHooks.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapEncyclopediaHooks.java
+@@ -0,0 +1,64 @@
++package io.papermc.paper.threadedregions;
++
++import java.util.concurrent.ThreadLocalRandom;
++
++/**
++ * YaP encyclopedia NMS hooks — crop growth modifier + fluid tick gate.
++ * Properties synced from YaPGameplayKnobs (EncyclopediaNms).
++ */
++public final class YapEncyclopediaHooks {
++
++    private YapEncyclopediaHooks() {
++    }
++
++    public static double cropGrowthModifier() {
++        try {
++            return Double.parseDouble(System.getProperty("yap.encyclopedia.crop-growth-modifier", "1.0"));
++        } catch (NumberFormatException e) {
++            return 1.0;
++        }
++    }
++
++    public static boolean cropGrowthNms() {
++        return Boolean.parseBoolean(System.getProperty("yap.encyclopedia.crop-growth-nms", "false"));
++    }
++
++    public static boolean tickFluids() {
++        return Boolean.parseBoolean(System.getProperty("yap.encyclopedia.tick-fluids", "true"));
++    }
++
++    /** @return true if this random-tick crop growth should proceed */
++    public static boolean allowCropGrowthTick() {
++        if (!cropGrowthNms()) {
++            return true;
++        }
++        double mod = cropGrowthModifier();
++        if (mod >= 1.0) {
++            return true;
++        }
++        if (mod <= 0) {
++            return false;
++        }
++        return ThreadLocalRandom.current().nextDouble() < mod;
++    }
++
++    public static int extraCropGrowthAttempts() {
++        if (!cropGrowthNms()) {
++            return 0;
++        }
++        double mod = cropGrowthModifier();
++        if (mod <= 1.0) {
++            return 0;
++        }
++        int whole = (int) Math.floor(mod - 1.0);
++        double frac = (mod - 1.0) - whole;
++        if (frac > 0 && ThreadLocalRandom.current().nextDouble() < frac) {
++            whole++;
++        }
++        return Math.min(whole, 8);
++    }
++
++    public static boolean allowFluidTick() {
++        return tickFluids();
++    }
++}
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/block/CropBlock.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/block/CropBlock.java
+@@ -77,6 +77,11 @@
+ 
+     @Override
+     protected void randomTick(final BlockState state, final ServerLevel level, final BlockPos pos, final RandomSource random) {
++        // YaP start - encyclopedia crop growth
++        if (!io.papermc.paper.threadedregions.YapEncyclopediaHooks.allowCropGrowthTick()) {
++            return;
++        }
++        // YaP end - encyclopedia crop growth
+         if (level.getRawBrightness(pos, 0) >= 9) {
+             int age = this.getAge(state);
+             if (age < this.getMaxAge()) {
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/material/FlowingFluid.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/material/FlowingFluid.java
+@@ -494,6 +494,11 @@
+ 
+     @Override
+     public void tick(final ServerLevel level, final BlockPos pos, BlockState blockState, FluidState fluidState) {
++        // YaP start - encyclopedia tick-fluids
++        if (!io.papermc.paper.threadedregions.YapEncyclopediaHooks.allowFluidTick()) {
++            return;
++        }
++        // YaP end - encyclopedia tick-fluids
+         if (!fluidState.isSource()) {
+             FluidState newFluidState = this.getNewLiquid(level, pos, level.getBlockState(pos));
+             int tickDelay = this.getSpreadDelay(level, pos, fluidState, newFluidState);
