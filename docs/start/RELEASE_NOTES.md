@@ -146,12 +146,12 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 
 ### Still open (not a version bump)
 
-- Manual §E live checklist ([CROSSPLAY.md](../network/CROSSPLAY.md)) — include specialty-station smoke
-- Bedrock recipe-picker / anvil rename polish (Stretch)
+- **Manual §E live checklist** — checklist lives in [CROSSPLAY.md](../network/CROSSPLAY.md); operator must tick join + specialty stations on a live box (cannot automate Xbox)
+- Bedrock recipe-picker / anvil rename polish (Stretch — not required for production launch)
 - Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
-- Finish live **12h soak-long** + in-game VFX / encyclopedia smoke before marketing the refreshed zip as soak-proven
-- Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production
+- **12h soak-long** in progress / pending — required before marketing the zip as **soak-proven** (not required to soft-launch); VFX + `/yapknobs status` smoke while it runs
+- Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production (defaults stay **off**)
 
 `releases/1.0.0.0/` was republished after pack CDN/SHA sync + client visuals refresh (`gradle publishReleasesFolder` + `./scripts/build-yap-client-render.sh`, 2026-09-04). Prior same-day refresh covered specialty-container + Automobility vehicles + YaPCommands / YaPWorld.
 

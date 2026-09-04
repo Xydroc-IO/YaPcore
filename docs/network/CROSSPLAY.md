@@ -69,6 +69,37 @@ Bedrock UDP─┘  CrossplayHub                  └─ UnifiedPlayer roster
 **Target:** Geyser-class + Via-class coverage in YaP code for supported bands.
 **Not claimed:** stock Geyser jar parity, Floodgate-only forms, or every complex JE container on Bedrock.
 
+## §E — live operator checklist (production closeout)
+
+Run once on a live YaP-Folia box before calling crossplay “ops-signed.” Automated matrix rows above stay Green; this is **manual** confirmation.
+
+### Join & shared world
+
+- [ ] JE modern client joins (`1.20.2+` / 26.2)
+- [ ] Bedrock (or Bedrock Android/Win) joins native UDP path
+- [ ] Dig / place / chat / one command each side
+- [ ] Resource pack prompt accepts; pack applies (or decline with `resource-pack-forced=false`)
+
+### Containers (specialty stations)
+
+Open each on Bedrock (native UDP); confirm UI opens and slots sync. Recipe-picker / anvil rename may remain Stretch — note if broken beyond open+slots:
+
+- [ ] Chest / furnace / hopper
+- [ ] Anvil
+- [ ] Smithing table
+- [ ] Loom
+- [ ] Stonecutter
+- [ ] Cartography table
+- [ ] Enchant / workbench / villager (best-effort)
+
+### Optional smoke (gameplay box)
+
+- [ ] `/yapknobs status` (encyclopedia present)
+- [ ] Cast one hero ability (e.g. book / hotbar) — VFX visible, no kick
+- [ ] `/bag` open + page change
+
+Retail Xbox / full inv depth: validate on real hardware before marketing “full play depth.”
+
 ## GUI
 
 - **Connect** — Crossplay address + Copy

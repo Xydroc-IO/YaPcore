@@ -22,6 +22,7 @@
 | **Install** | [Quick Start](docs/start/QUICK_START.md) · [Release packages](https://github.com/Xydroc-IO/YaPcore/releases/latest) |
 | **Operators** | [Wiki](docs/WIKI.md) · [Defaults](docs/start/DEFAULTS.md) · [Secrets](docs/start/SECRETS.md) |
 | **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) · [Plain English](docs/whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) |
+| **Performance** | [REAL_GAINS](docs/folia/REAL_GAINS.md) · [YAP_FOLIA_SOAK](docs/folia/YAP_FOLIA_SOAK.md) · [Canvas parity](docs/folia/CANVAS_PARITY.md) |
 | **Network** | [Crossplay](docs/network/CROSSPLAY.md) · [YaP Link](docs/network/YAP_LINK.md) · [Clients & packs](docs/network/CLIENTS_AND_PACKS.md) |
 | **Legal** | [GPLv3](LICENSE) · [Licensing](docs/start/LICENSING.md) · [Privacy](docs/start/PRIVACY_POLICY.md) · [Terms](docs/start/TERMS_OF_USE.md) |
 
@@ -35,7 +36,8 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 
 | Capability | What you get |
 |------------|----------------|
-| **Regionized tick** | YaP-Folia 26.2 (`folia-jar-source=build`) — not stock Paper as the product default |
+| **Regionized + parallel ticks** | YaP-Folia regions + **subregion partition** (parallel shards when hot) — ship knobs on by default |
+| **Microtick / µs chassis** | MSPT-gated **microtick** Mob AI budgets on Folia; YapEngine orders bridge/plugin work in **µs** (`SequenceToken`) — not a single-thread MSPT claim |
 | **Crossplay** | Java (1.20.2+) + Bedrock on one listen path — no Via\* / Geyser jars required |
 | **Network** | YaP Link native proxy, Floodgate-class identity, dual-stack gateway |
 | **Plugin suite** | First-party CORE + NETWORK; full box includes gameplay (vehicles, MMO, encyclopedia knobs, …) |
@@ -44,6 +46,21 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 | **Clients (optional)** | Fabric mods: visuals (Sodium + Iris + shaders), bag UI, ultrawide — vanilla/Bedrock still join |
 
 Version line: **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2** — see [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
+
+### Parallel ticks & microtick (why it’s not “stock Folia”)
+
+Classic Paper/Purpur keep one main world tick. **YaP-Folia** runs **regionized parallel ticks**, and the product ship profile adds:
+
+| Knob (defaults) | Role |
+|-----------------|------|
+| `folia-subregion-partition=true` | Split hot regions into **parallel subregion shards** when geometry allows |
+| `folia-microtick-budget-ms=8` | Soft deadline for Mob AI on hot regions (MSPT-gated with entity budget) |
+| `folia-entity-tick-budget=400` | Cap Mob AI ticks per region when hot (≥12 ms MSPT) — never players / TNT / vehicles / bosses |
+| `folia-hopper-tick-budget=64` | Soft-defer excess hopper transfers |
+
+**YapEngine** (edge/chassis) sequences bridge and plugin work with **µs-resolution** `SequenceToken`s so I/O and menus stay ordered without owning the world heartbeat.
+
+Citeable MSPT vs stock Folia / Canvas (ship knobs disclosed): [REAL_GAINS.md](docs/folia/REAL_GAINS.md) · soak profile: [YAP_FOLIA_SOAK.md](docs/folia/YAP_FOLIA_SOAK.md). We do **not** claim single-thread Paper MSPT victory — [PAPER_PURPUR_SCALE.md](docs/folia/PAPER_PURPUR_SCALE.md).
 
 ---
 
@@ -148,7 +165,8 @@ Documentation is **Markdown in-repo** (`docs/`). Generated PDFs and office dumps
 | **Operators** | [QUICK_START](docs/start/QUICK_START.md) → [WIKI](docs/WIKI.md) · [DEFAULTS](docs/start/DEFAULTS.md) |
 | **Commands / perms** | [COMMANDS](docs/ops/COMMANDS.md) · [PERMISSIONS](docs/ops/PERMISSIONS.md) · [Dashboard](docs/ops/WEB_DASHBOARD.md) |
 | **Network / packs** | [CROSSPLAY](docs/network/CROSSPLAY.md) · [CLIENTS_AND_PACKS](docs/network/CLIENTS_AND_PACKS.md) |
-| **Folia / cite** | [YAP_FOLIA_SOAK](docs/folia/YAP_FOLIA_SOAK.md) · [REAL_GAINS](docs/folia/REAL_GAINS.md) |
+| **Folia / cite** | [YAP_FOLIA_SOAK](docs/folia/YAP_FOLIA_SOAK.md) · [REAL_GAINS](docs/folia/REAL_GAINS.md) · [CANVAS_PARITY](docs/folia/CANVAS_PARITY.md) |
+| **Public edge** | [EDGE_HARDEN](docs/network/EDGE_HARDEN.md) · [SECRETS](docs/start/SECRETS.md) |
 | **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
 | **Contributors** | [CONTRIBUTING](CONTRIBUTING.md) · [scripts/README](scripts/README.md) |
 
