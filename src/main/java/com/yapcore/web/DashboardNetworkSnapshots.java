@@ -166,7 +166,7 @@ public final class DashboardNetworkSnapshots {
                         "name", "VIP kit unlock only",
                         "commands", "yapperm user {username} permission set yapdata.kit.vip true")));
         if (!bool(out.get("installed"), false)) {
-            out.put("setupHint", "Run ./scripts/fetch-tebex.sh (or gradle fetchTebex), restart Folia, then paste your game-server secret key.");
+            out.put("setupHint", "Run ./scripts/fetch-tebex.sh (or gradle fetchTebex), restart YaP-Folia, then paste your game-server secret key.");
         } else if (!secretSet) {
             out.put("setupHint", "Paste the game-server secret from creator.tebex.io → Game Servers, then Save secret.");
         } else {
@@ -239,7 +239,7 @@ public final class DashboardNetworkSnapshots {
         if (grimEnabled) {
             out.put("acHint", "Grim AC is enabled — YaPGuard movement checks should be off to avoid double punishment. See docs/ops/GRIM.md");
         } else if (grimDownloaded) {
-            out.put("acHint", "Grim AC downloaded but disabled. Run ./scripts/grim-ac.sh enable and restart Folia for top-tier AC.");
+            out.put("acHint", "Grim AC downloaded but disabled. Run ./scripts/grim-ac.sh enable and restart YaP-Folia for top-tier AC.");
         }
         return out;
     }

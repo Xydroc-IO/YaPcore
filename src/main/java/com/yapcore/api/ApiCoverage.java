@@ -32,7 +32,7 @@ public final class ApiCoverage {
         return List.of(
                 // --- Product path (default): Folia + chassis + YaP Link ---
                 new Entry("Folia game authority (game-authority=folia)", Status.FULL,
-                        "Managed Folia process owns JE tick (regionized); FoliaKernel embed"),
+                        "Managed YaP-Folia process owns JE tick (regionized); FoliaKernel embed"),
                 new Entry("Folia-native first-party plugins", Status.FULL,
                         "folia-supported:true + YapSched (GlobalRegion/Entity/Region/Async)"),
                 new Entry("plugins/ → folia-kernel/plugins", Status.FULL,
@@ -48,7 +48,7 @@ public final class ApiCoverage {
                 new Entry("Chassis Geyser/Floodgate dual-stack", Status.PARTIAL,
                         "BE UDP on chassis; prefer Geyser on YaP Link edge for networks"),
                 new Entry("GameCommandBridge (BE/console → Folia stdin)", Status.FULL,
-                        "Managed Folia process dispatch; same-JVM Bukkit when available"),
+                        "Managed YaP-Folia process dispatch; same-JVM Bukkit when available"),
                 new Entry("Chunk pregen (yap-pregen)", Status.FULL,
                         "Folia-native YapSched timers; Chunky-class shapes"),
 

@@ -2,7 +2,7 @@
 # YaPcore start — portable across common Linux distros (bash 3.2+)
 # Usage: ./scripts/start.sh [--nogui|--gui] [--fg]
 # JVM: Generational ZGC + NUMA via scripts/lib.sh (config/server.properties)
-# Folia product path: YaP stays at $ROOT; Folia runs as a child JVM with cwd=folia-kernel.
+# YaP-Folia product path: YaP stays at $ROOT; YaP-Folia runs as a child JVM with cwd=folia-kernel.
 
 set -eu
 
@@ -34,8 +34,8 @@ for arg in "$@"; do
     -h|--help)
       echo "Usage: $0 [--gui|--nogui] [--fg]"
       echo "  Starts YaPcore with Generational ZGC / NUMA flags from config/server.properties"
-      echo "  Product path: game-authority=folia (Folia child JVM under folia-dir)"
-      echo "  YaP process cwd stays at project root; Folia cwd is folia-kernel"
+      echo "  Product path: game-authority=folia (YaP-Folia child JVM under folia-dir)"
+      echo "  YaP process cwd stays at project root; YaP-Folia cwd is folia-kernel"
       exit 0
       ;;
   esac

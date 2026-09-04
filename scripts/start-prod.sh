@@ -96,7 +96,7 @@ mkdir -p "$ROOT/logs"
 LOG_FILE="$ROOT/logs/server-prod.log"
 PID_FILE="$ROOT/yapcore.pid"
 
-echo "=== YapLabs production (Generational ZGC + NUMA, Folia game path) ==="
+echo "=== YapLabs production (Generational ZGC + NUMA, YaP-Folia game path) ==="
 echo "  home=$ROOT  game-authority=${GAME_AUTHORITY:-folia}  folia-dir=${FOLIA_DIR:-folia-kernel}"
 echo "  heap=${RAM_MB}m (pinned)"
 echo "  flags: ${JVM_OPTS[*]}"

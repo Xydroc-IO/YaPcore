@@ -41,13 +41,13 @@ yapctl — thin wrapper over YaPcore scripts
   yapctl start [--fg]     → scripts/start.sh
   yapctl stop             → scripts/stop.sh
   yapctl status           → scripts/status.sh
-  yapctl build-folia      → scripts/build-yap-folia.sh
+  yapctl build-folia      → scripts/build-yap-folia.sh (YaP-Folia)
   yapctl soak-compat      → scripts/soak-yap-folia.sh compat
   yapctl soak-perf [min]  → short heap soak (default 30m)
   yapctl soak-long [hrs]  → 12h default slope soak (8h floor)
-  yapctl cite-fullcite    → stock Folia vs YaPcore fullcite MSPT (cite gate)
+  yapctl cite-fullcite    → stock Folia vs YaP-Folia fullcite MSPT (cite gate)
 
-Uptime: 12h continuous flat heap/threads (8h floor). Restarts = ops hygiene.
+Uptime: 12h continuous flat YaP-Folia heap/threads (8h floor). Restarts = ops hygiene.
 Cite: yapctl cite-fullcite → bench/results/cite-latest-*.json
 EOF
     ;;

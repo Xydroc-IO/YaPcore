@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Smoke: boot YaPcore with game-authority=folia (managed Folia process).
+# Smoke: boot YaPcore with game-authority=folia (managed YaP-Folia process).
 # Usage: ./scripts/smoke-folia.sh [seconds]
 set -euo pipefail
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
@@ -30,7 +30,7 @@ if [ "$FOLIA_SRC" = "build" ]; then
     exit 1
   fi
 elif [ ! -f "$STOCK_JAR_CAND" ] && [ ! -f "$YAP_JAR_CAND" ]; then
-  echo "Fetching Folia ${VER}…"
+  echo "Fetching stock Folia ${VER} (fallback)…"
   "$ROOT/scripts/fetch-folia.sh" "$VER"
 fi
 
@@ -109,7 +109,7 @@ EOF
 JAVA_BIN="$(yap_java_bin)"
 LOG="$WORK/smoke.log"
 : >"$LOG"
-echo "Booting Folia smoke (timeout ${WAIT_SECS}s)…"
+echo "Booting YaP-Folia smoke (timeout ${WAIT_SECS}s)…"
 echo "  home=$WORK"
 echo "  java=$JAVA_BIN"
 echo "  jar=$YAP_JAR"
@@ -175,7 +175,7 @@ while kill -0 "$PID" 2>/dev/null; do
     break
   fi
   if [ "$ok" -eq 0 ]; then
-    if grep -q 'Managed Folia online' "$LOG" 2>/dev/null \
+    if grep -Eq 'Managed (YaP-)?Folia online' "$LOG" 2>/dev/null \
       && { [ -f "$WORK/folia-kernel/yap-folia-ready.marker" ] || grep -q '\[folia\].*Done (' "$LOG" 2>/dev/null; }; then
       if "$JAVA_BIN" -e 'try(var s=new java.net.Socket()){s.connect(new java.net.InetSocketAddress("127.0.0.1",'"$PORT"'),1500);System.exit(0);}catch(Exception e){System.exit(1);}' 2>/dev/null \
         || (exec 3<>/dev/tcp/127.0.0.1/"$PORT") 2>/dev/null; then
@@ -208,14 +208,14 @@ sleep 2
 if [ "$ok" -eq 1 ]; then
   if [ "${YAP_FOLIA_SOAK:-0}" = "1" ]; then
     hold=$(( $(date +%s) - ready_ts ))
-    echo "PASS: Folia soak held ready ~${hold}s (window ${WAIT_SECS}s) on :${PORT}"
+    echo "PASS: YaP-Folia soak held ready ~${hold}s (window ${WAIT_SECS}s) on :${PORT}"
   else
-    echo "PASS: Folia managed process became ready on :${PORT}"
+    echo "PASS: YaP-Folia managed process became ready on :${PORT}"
   fi
   echo "  log=$LOG"
   exit 0
 fi
-echo "FAIL: Folia smoke did not become ready within ${WAIT_SECS}s" >&2
+echo "FAIL: YaP-Folia smoke did not become ready within ${WAIT_SECS}s" >&2
 echo "---- tail $LOG ----" >&2
 tail -n 80 "$LOG" >&2 || true
 exit 1

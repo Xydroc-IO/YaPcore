@@ -10,7 +10,7 @@ Install, setup, and lifecycle helpers for operators.
 | `gui.sh` / `start-prod.sh` | Swing panel / production launch |
 | `start-yap-link.sh` | Start YaP Link proxy |
 | `yapctl` | CLI helper (`soak-compat` / `soak-perf` / `soak-long`) |
-| `soak-yap-folia.sh` | Live Folia mem/crash soak (compat / perf / long) |
+| `soak-yap-folia.sh` | Live YaP-Folia mem/crash soak (compat / perf / long) |
 | `verify-yap-folia.sh` | Patch check + build `lib/yap-folia-*.jar` (`SKIP_SMOKE=1` for CI) |
 | `bench/cite-fullcite.sh` | Stock Folia vs YaPcore fullcite — **ship knobs** cite gate (`knob_*` required) |
 | Docs | [YAP_FOLIA_SOAK](../docs/folia/YAP_FOLIA_SOAK.md), [CANVAS_PARITY](../docs/folia/CANVAS_PARITY.md), [REAL_GAINS](../docs/folia/REAL_GAINS.md) |
@@ -18,14 +18,14 @@ Install, setup, and lifecycle helpers for operators.
 | `bench/check-mspt-regression.sh` | Wrapper gate over compare-folia.py |
 | `bench/run-vs-folia.sh` | Multi-competitor MSPT runner |
 
-### Mem / uptime / Folia parity
+### Mem / uptime / YaP-Folia parity
 
 - Fast gates (CI): `gradle verifyConcurrency` + `gradle soakTest` + `scanFirstPartyFoliaCompat` + MSPT fixture compare
 - Chassis retention: `gradle endurance -Dyap.endurance.seconds=300`
-- Live Folia: `./scripts/yapctl soak-compat` then `soak-long` (**12h** default, **8h** floor)
-- Folia jar: nightly / main / `workflow_dispatch` builds via `.github/workflows/folia-fork.yml`
+- Live YaP-Folia: `./scripts/yapctl soak-compat` then `soak-long` (**12h** default, **8h** floor)
+- YaP-Folia jar: nightly / main / `workflow_dispatch` builds via `.github/workflows/folia-fork.yml`
 - **Cite:** `./scripts/yapctl cite-fullcite` → `bench/results/cite-latest-*.json` (ship knobs; must be citeable ≥5%; currently **−12.4%**)
-- Target: flat Folia heap/thread slope for 12h continuous; optional scheduled restart is ops hygiene, not a substitute for fixing slope failures
+- Target: flat YaP-Folia heap/thread slope for 12h continuous; optional scheduled restart is ops hygiene, not a substitute for fixing slope failures
 - Reports: `logs/soak/`, `logs/endurance/`, `bench/results/`
 
 ## First boot and setup
@@ -41,7 +41,7 @@ Install, setup, and lifecycle helpers for operators.
 | `content/generate-mmo-quest-compendium.py` | Validate MMO quest YAML objective types (Wave 3) |
 | `generate-ability-pack.py` | Regenerate bulk ability YAML with V2 element/archetype VFX kits (`docs/mmo/MMO_ABILITY_VFX.md`) |
 | `generate-hero-ability-icons.py` | Unique 16×16 hero ability icons (CMD 78020–78031) |
-| `content/ability-vfx-soak-gate.py` | Offline Folia VFX authoring soak gate (V4) |
+| `content/ability-vfx-soak-gate.py` | Offline YaP-Folia VFX authoring soak gate (V4) |
 
 ## Build YaP-Folia (from source)
 

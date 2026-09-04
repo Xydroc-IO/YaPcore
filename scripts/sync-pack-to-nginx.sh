@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sync resourcepacks/yapcore-default.zip into nginx :80 docroots + Folia SHA.
+# Sync resourcepacks/yapcore-default.zip into nginx :80 docroots + YaP-Folia SHA.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SRC="$ROOT/resourcepacks/yapcore-default.zip"
@@ -40,7 +40,7 @@ for dest in /var/www/html/pack/yapcore-default.zip /var/www/html/packs/yapcore-d
 done
 
 SHA="$(sha1sum "$SRC" | awk '{print $1}')"
-# Keep Folia login-prompt hash in sync with the zip clients download.
+# Keep YaP-Folia login-prompt hash in sync with the zip clients download.
 for props in \
   "$ROOT/folia-kernel/server.properties" \
   "$ROOT/config/paper-server.properties" \
@@ -54,6 +54,6 @@ done
 
 sha1sum "$SRC"
 ls -lh "$SRC"
-echo "Folia/clients should use :8081 (YaP pack HTTP) or :80 after nginx sync."
-echo "NOTE: restart Folia if it was already running so the new SHA is advertised."
+echo "YaP-Folia/clients should use :8081 (YaP pack HTTP) or :80 after nginx sync."
+echo "NOTE: restart YaP-Folia if it was already running so the new SHA is advertised."
 exit "$fail"

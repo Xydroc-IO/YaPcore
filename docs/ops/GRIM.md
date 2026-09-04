@@ -21,14 +21,14 @@ Skip the download (offline / CI): `YAP_SKIP_OPTIONAL_FETCH=1 ./scripts/seed-defa
 
 ```bash
 ./scripts/grim-ac.sh enable    # → grim.jar + turns off YaPGuard movement checks
-# restart Folia
+# restart YaP-Folia
 ```
 
 Disable again:
 
 ```bash
 ./scripts/grim-ac.sh disable   # → grim.jar.disabled
-# restart Folia
+# restart YaP-Folia
 ```
 
 Status:

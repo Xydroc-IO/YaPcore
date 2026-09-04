@@ -107,7 +107,7 @@ Summarized from git history; not separate tagged releases.
 | Period | Themes |
 |--------|--------|
 | **Link 0.6** | Native Velocity-class proxy phases 0–6; frame+zlib encoder fixes; link plugin suite |
-| **YaP-Folia fork** | Managed Folia 26.2 build, sched compat agent, teleport transactions, region pool knobs |
+| **YaP-Folia fork** | Managed YaP-Folia 26.2 build, sched compat agent, teleport transactions, region pool knobs |
 | **MMO content** | Tiered quest compendium (100 quests, 20 bosses), ability VFX, CLAY_BALL icon pack |
 | **World & admin** | YaPWorld in-game edit GUI, admin menu, kits, claim flags, regions plugin |
 | **Docs regroup** | `docs/` topic folders, whitepaper v0.3 (Markdown source of truth; PDFs not tracked) |

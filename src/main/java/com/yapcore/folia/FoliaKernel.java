@@ -48,11 +48,11 @@ public final class FoliaKernel {
 
     public synchronized void start() throws IOException, InterruptedException {
         if (!config.isFoliaAuthority()) {
-            LOG.info("Folia authority off (game-authority≠folia)");
+            LOG.info("YaP-Folia authority off (game-authority≠folia)");
             return;
         }
         if (Runtime.version().feature() < 25) {
-            throw new IOException("Folia 26.2 requires Java 25+ (running " + Runtime.version() + ")");
+            throw new IOException("YaP-Folia 26.2 requires Java 25+ (running " + Runtime.version() + ")");
         }
         if (config.isFoliaEmbed()) {
             startManagedPublic();
@@ -70,21 +70,21 @@ public final class FoliaKernel {
 
     public String dispatchConsoleCommand(String line) {
         if (process == null) {
-            return "Folia is not running";
+            return "YaP-Folia is not running";
         }
         return process.dispatchConsoleCommand(line);
     }
 
     private void startManagedPublic() throws IOException, InterruptedException {
         startProcess(listenPort(), bindIpForPublic(),
-                "YaPcore managed Folia — owns public JE :" + listenPort());
-        LOG.info("Managed Folia online on :" + listenPort());
+                "YaPcore managed YaP-Folia — owns public JE :" + listenPort());
+        LOG.info("Managed YaP-Folia online on :" + listenPort());
     }
 
     private void startWrapProxy() throws IOException, InterruptedException {
         startProcess(config.getFoliaPort(), "127.0.0.1",
-                "YaPcore Folia wrap — loopback proxy :" + config.getPort());
-        LOG.info("Folia wrap online on 127.0.0.1:" + config.getFoliaPort());
+                "YaPcore YaP-Folia wrap — loopback proxy :" + config.getPort());
+        LOG.info("YaP-Folia wrap online on 127.0.0.1:" + config.getFoliaPort());
     }
 
     private String bindIpForPublic() {
@@ -107,7 +107,7 @@ public final class FoliaKernel {
         FoliaSurface.ensureMarker(dir);
         PaperOps.ensure(dir, config);
         List<String> cmd = buildCommand(jar);
-        LOG.info("Starting Folia " + config.getFoliaVersion() + " port=" + port + " dir=" + dir);
+        LOG.info("Starting YaP-Folia " + config.getFoliaVersion() + " port=" + port + " dir=" + dir);
         process = new FoliaProcess(dir);
         process.start(cmd, port, config.getFoliaReadyTimeoutSec());
     }
@@ -265,7 +265,7 @@ public final class FoliaKernel {
         arg.append("warn=").append(config.isFoliaSchedCompatWarn());
         arg.append(",metrics=true");
         cmd.add(arg.toString());
-        LOG.info("Folia sched-compat agent: " + agent.getFileName());
+        LOG.info("YaP-Folia sched-compat agent: " + agent.getFileName());
     }
 
     private Path resolveSchedAgentJar() {

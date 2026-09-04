@@ -84,7 +84,7 @@ public final class FoliaFiles {
         }
         PaperFiles.download(url, cached);
         copyIfNeeded(cached, jar, "Fill download");
-        LOG.info("Fetched Folia " + version + " → " + cached.getFileName());
+        LOG.info("Fetched stock Folia " + version + " → " + cached.getFileName());
         return jar;
     }
 
@@ -106,7 +106,7 @@ public final class FoliaFiles {
             return;
         }
         Files.copy(from, to, StandardCopyOption.REPLACE_EXISTING);
-        LOG.info("Folia jar ← " + from.getFileName() + " (" + why + ")");
+        LOG.info("YaP-Folia jar ← " + from.getFileName() + " (" + why + ")");
     }
 
     private static boolean isUsableJar(Path jar) {

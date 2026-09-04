@@ -15,11 +15,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Managed Folia JVM process lifecycle (stdin commands, log pump, ready wait).
+ * Managed YaP-Folia JVM process lifecycle (stdin commands, log pump, ready wait).
  */
 public final class FoliaProcess {
 
-    private static final Logger LOG = Logger.getLogger("YaPcore.FoliaProcess");
+    private static final Logger LOG = Logger.getLogger("YaPcore.YaPFoliaProcess");
 
     private final Path foliaDir;
     private final AtomicBoolean processRunning = new AtomicBoolean(false);
@@ -48,14 +48,14 @@ public final class FoliaProcess {
         processStdin = new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8);
         process.onExit().thenAccept(p -> {
             processRunning.set(false);
-            // MSPT benches shut Folia via Bukkit.shutdown(); chassis must follow or hang.
+            // MSPT benches shut YaP-Folia via Bukkit.shutdown(); chassis must follow or hang.
             if (System.getProperty("yap.bench.scenario") != null
                     || System.getProperty("yap.bench.out") != null) {
-                LOG.info("Folia exited during bench (code=" + p.exitValue() + ") — exiting chassis");
+                LOG.info("YaP-Folia exited during bench (code=" + p.exitValue() + ") — exiting chassis");
                 System.exit(p.exitValue() == 0 ? 0 : 1);
             } else {
-                LOG.warning("Folia child exited unexpectedly (code=" + p.exitValue()
-                        + ") — chassis stays up; restart Folia or stop the product");
+                LOG.warning("YaP-Folia child exited unexpectedly (code=" + p.exitValue()
+                        + ") — chassis stays up; restart YaP-Folia or stop the product");
             }
         });
         logPump = new Thread(this::pumpLogs, "yap-folia-log");
@@ -63,17 +63,17 @@ public final class FoliaProcess {
         logPump.start();
         if (!waitUntilReady(listenPort, readyTimeoutSec)) {
             stop();
-            throw new IOException("Folia did not become ready within "
+            throw new IOException("YaP-Folia did not become ready within "
                     + readyTimeoutSec + "s — check logs under " + foliaDir);
         }
     }
 
     public String dispatchConsoleCommand(String line) {
         if (!isRunning()) {
-            return "Folia is not running";
+            return "YaP-Folia is not running";
         }
         if (process == null || !process.isAlive() || processStdin == null) {
-            return "Folia process not accepting commands";
+            return "YaP-Folia process not accepting commands";
         }
         try {
             String cmd = line == null ? "" : line.trim();
@@ -85,10 +85,10 @@ public final class FoliaProcess {
                 processStdin.write('\n');
                 processStdin.flush();
             }
-            return "Folia process: /" + cmd;
+            return "YaP-Folia process: /" + cmd;
         } catch (IOException e) {
-            LOG.log(Level.WARNING, "Folia stdin command failed", e);
-            return "Folia stdin error: " + e.getMessage();
+            LOG.log(Level.WARNING, "YaP-Folia stdin command failed", e);
+            return "YaP-Folia stdin error: " + e.getMessage();
         }
     }
 
@@ -123,7 +123,7 @@ public final class FoliaProcess {
         } finally {
             processStdin = null;
             process = null;
-            LOG.info("Folia process stopped");
+            LOG.info("YaP-Folia process stopped");
         }
     }
 
@@ -152,7 +152,7 @@ public final class FoliaProcess {
                 new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
             String line;
             while ((line = r.readLine()) != null) {
-                LOG.info("[folia] " + line);
+                LOG.info("[yap-folia] " + line);
                 if (line.contains("Done (") || line.contains("For help, type \"help\"")) {
                     try {
                         Files.writeString(foliaDir.resolve("yap-folia-ready.marker"),
@@ -164,7 +164,7 @@ public final class FoliaProcess {
             }
         } catch (IOException e) {
             if (processRunning.get()) {
-                LOG.log(Level.WARNING, "Folia log pump ended: " + e.getMessage());
+                LOG.log(Level.WARNING, "YaP-Folia log pump ended: " + e.getMessage());
             }
         }
     }

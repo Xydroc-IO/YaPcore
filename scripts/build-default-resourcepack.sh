@@ -126,4 +126,4 @@ echo "Wrote $OUT ($(du -h "$OUT" | awk '{print $1}')) vehicles=$want_vehicles"
 if [[ -x "$ROOT/scripts/sync-pack-to-nginx.sh" ]]; then
   "$ROOT/scripts/sync-pack-to-nginx.sh" || true
 fi
-echo "NOTE: restart Folia (or YaPcore) so server.properties resource-pack-sha1 matches the new zip."
+echo "NOTE: restart YaP-Folia (or YaPcore) so server.properties resource-pack-sha1 matches the new zip."

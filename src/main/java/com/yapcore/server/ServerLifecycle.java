@@ -147,7 +147,7 @@ final class ServerLifecycle {
                 + " | backwards-compat=" + config.isBackwardsCompatible());
         if (config.isFoliaAuthority() && foliaKernel.isRunning()) {
             if (config.isFoliaEmbed()) {
-                LOG.info("Folia: owns JE :" + config.foliaListenPort()
+                LOG.info("YaP-Folia: owns JE :" + config.foliaListenPort()
                         + " | plugins → " + config.getFoliaDir() + "/plugins");
             } else {
                 LOG.info("Folia wrap :" + config.getFoliaPort());

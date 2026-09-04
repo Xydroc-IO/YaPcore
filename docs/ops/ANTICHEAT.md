@@ -24,7 +24,7 @@ fetched on first setup (disabled until enabled):
 ```bash
 ./scripts/seed-defaults.sh         # downloads grim.jar.disabled
 ./scripts/grim-ac.sh enable        # activate + disable YaPGuard movement checks
-# restart Folia
+# restart YaP-Folia
 ```
 
 Manual fetch: `./scripts/fetch-grim.sh --disabled` or `gradle fetchGrim` — see **[GRIM.md](GRIM.md)**.

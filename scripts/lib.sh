@@ -192,7 +192,7 @@ yap_apply_ulimits() {
   fi
 }
 
-# Active game kernel dir for product path (Folia default).
+# Active game kernel dir for product path (YaP-Folia default).
 yap_active_kernel_dir() {
   case "${GAME_AUTHORITY:-folia}" in
     paper) echo "${PAPER_DIR:-paper-kernel}" ;;
@@ -224,7 +224,7 @@ max-players=100
 ram-mb=2048
 ram-min-mb=512
 view-distance=10
-motd=YaPcore · Folia Game · Yap Edge
+motd=YaPcore · YaP-Folia · Yap Edge
 plugins-dir=plugins
 logs-dir=logs
 online-mode=false
@@ -337,7 +337,7 @@ Edit **here** for day-to-day tuning.
 | Path | What |
 |------|------|
 | `server.properties` | YaP product (ports, dual-stack, packs) |
-| `folia/` | Folia / Paper-family globals (product path) |
+| `folia/` | YaP-Folia / Paper-family globals (product path) |
 | `spigot.yml` / `bukkit.yml` | Classic Spigot/Bukkit (symlinks when present) |
 
 Gameplay encyclopedia: `plugins/YaPGameplayKnobs/knobs.yml` (jar in `plugins/`).

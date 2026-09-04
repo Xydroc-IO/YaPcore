@@ -26,16 +26,16 @@ public final class FoliaSurface {
         Path marker = cfg.resolve("yap-folia-surface.marker");
         if (!Files.isRegularFile(marker)) {
             Files.writeString(marker,
-                    "YaPcore Folia product surface\n"
+                    "YaPcore YaP-Folia product surface\n"
                             + "velocity=paper-global.yml proxies.velocity\n"
                             + "plugins=../plugins symlink\n"
                             + "built-ins=folia-supported first-party jars\n",
                     StandardCharsets.UTF_8);
-            LOG.info("Folia product surface marker → " + marker);
+            LOG.info("YaP-Folia product surface marker → " + marker);
         }
         Path foliaYml = cfg.resolve("folia-regionizer.yml");
         if (Files.isRegularFile(foliaYml)) {
-            LOG.fine("Folia regionizer config present: " + foliaYml);
+            LOG.fine("YaP-Folia regionizer config present: " + foliaYml);
         }
     }
 }

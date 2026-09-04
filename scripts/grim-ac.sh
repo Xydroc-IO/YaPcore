@@ -11,8 +11,8 @@ usage() {
   cat <<EOF
 Usage: $0 {status|enable|disable} [--root DIR]
 
-Grim AC is downloaded on first setup as grim.jar.disabled (not loaded by Folia).
-Use 'enable' when you want top-tier AC active — then restart Folia.
+Grim AC is downloaded on first setup as grim.jar.disabled (not loaded by YaP-Folia).
+Use 'enable' when you want top-tier AC active — then restart YaP-Folia.
 
   status   — show whether Grim is missing, downloaded, or enabled
   enable   — load grim.jar + turn off YaPGuard movement checks (avoids double punishment)
@@ -80,7 +80,7 @@ PY
 case "$CMD" in
   status)
     if [ -f "$ACTIVE" ]; then
-      echo "Grim AC: enabled (grim.jar) — restart Folia after changes"
+      echo "Grim AC: enabled (grim.jar) — restart YaP-Folia after changes"
       exit 0
     fi
     if [ -f "$DISABLED" ]; then
@@ -104,7 +104,7 @@ case "$CMD" in
     mv "$DISABLED" "$ACTIVE"
     echo "Enabled Grim AC → $ACTIVE"
     disable_yapguard_checks
-    echo "Restart Folia to load Grim. Docs: docs/ops/GRIM.md"
+    echo "Restart YaP-Folia to load Grim. Docs: docs/ops/GRIM.md"
     ;;
   disable)
     if [ -f "$DISABLED" ]; then
@@ -117,6 +117,6 @@ case "$CMD" in
     fi
     mv "$ACTIVE" "$DISABLED"
     echo "Disabled Grim AC → $DISABLED"
-    echo "Restart Folia. Re-enable YaPGuard checks in $GUARD_CFG if needed."
+    echo "Restart YaP-Folia. Re-enable YaPGuard checks in $GUARD_CFG if needed."
     ;;
 esac
