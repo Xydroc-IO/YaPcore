@@ -45,6 +45,7 @@ public final class ClaimService {
     private final Map<UUID, SelectMode> modes = new ConcurrentHashMap<>();
     private final Map<Long, Map<UUID, ClaimRepository.TrustLevel>> trustCache = new ConcurrentHashMap<>();
     private YapTask accrualTask;
+    private final ClaimCreationOps creation;
 
     public ClaimService(JavaPlugin plugin, PlayerDataConfig config, ClaimRepository repo,
                         ClaimFlagService flags) {
@@ -52,6 +53,7 @@ public final class ClaimService {
         this.config = config;
         this.repo = repo;
         this.flags = flags;
+        this.creation = new ClaimCreationOps(this);
     }
 
     public ClaimFlagService flags() {
@@ -423,90 +425,9 @@ public final class ClaimService {
         pending.remove(player.getUniqueId());
 
         if (mode == SelectMode.SUBDIVIDE) {
-            return createSubdivision(player, loc.getWorld().getName(), minX, maxX, minZ, maxZ, area);
+            return creation.createSubdivision(player, loc.getWorld().getName(), minX, maxX, minZ, maxZ, area);
         }
-        return createTopLevel(player, loc.getWorld().getName(), minX, maxX, minZ, maxZ, area);
-    }
-
-    private String createTopLevel(Player player, String world, int minX, int maxX, int minZ, int maxZ, int area)
-            throws SQLException {
-        if (area < config.claimsMinArea()) {
-            return "§cClaim too small (min " + config.claimsMinArea() + ").";
-        }
-        if (area > config.claimsMaxArea()) {
-            return "§cClaim too large (max " + config.claimsMaxArea() + ").";
-        }
-        synchronized (local) {
-            for (Claim c : local) {
-                if (c.isSubdivision()) {
-                    continue;
-                }
-                if (c.overlaps(world, minX, maxX, minZ, maxZ)) {
-                    return "§cOverlaps existing claim #" + c.id();
-                }
-            }
-        }
-        int blocks = repo.getBlocks(player.getUniqueId(), config.claimsStartingBlocks());
-        if (blocks < area) {
-            return "§cNeed " + area + " claim blocks (you have " + blocks + ").";
-        }
-        Claim draft = Claim.topLevel(0, player.getUniqueId(), config.serverId(), world,
-                minX, maxX, minZ, maxZ, player.getName() + "'s claim");
-        long id = repo.create(draft);
-        repo.setBlocks(player.getUniqueId(), blocks - area);
-        Claim created = new Claim(id, draft.owner(), draft.serverId(), draft.world(),
-                minX, maxX, minZ, maxZ, draft.name(), null, 0, false);
-        synchronized (local) {
-            local.add(created);
-        }
-        ClaimVisualizer.show(plugin, player, created, config.claimsVisualSeconds());
-        modes.put(player.getUniqueId(), SelectMode.CLAIM);
-        return "§aClaim §f#" + id + " §acreated (" + area + " blocks). Remaining: " + (blocks - area);
-    }
-
-    private String createSubdivision(Player player, String world, int minX, int maxX, int minZ, int maxZ, int area)
-            throws SQLException {
-        if (area < config.claimsSubMinArea()) {
-            return "§cSubdivision too small (min " + config.claimsSubMinArea() + ").";
-        }
-        // parent must contain both corners — use center of rect
-        Location mid = new Location(Bukkit.getWorld(world), (minX + maxX) / 2.0, 64, (minZ + maxZ) / 2.0);
-        Optional<Claim> top = getTopLevelAt(mid);
-        if (top.isEmpty() || !top.get().world().equals(world)) {
-            modes.put(player.getUniqueId(), SelectMode.CLAIM);
-            return "§cStand inside your claim to subdivide. Mode reset to claim.";
-        }
-        Claim parent = top.get();
-        if (!parent.owner().equals(player.getUniqueId())
-                && !hasTrust(parent, player.getUniqueId(), ClaimRepository.TrustLevel.MANAGE)
-                && !StaffBypass.land(player)) {
-            return "§cYou need manage trust on the parent claim.";
-        }
-        if (!parent.containsFully(minX, maxX, minZ, maxZ)) {
-            return "§cSubdivision must be fully inside claim #" + parent.id();
-        }
-        synchronized (local) {
-            for (Claim c : local) {
-                if (!c.isSubdivision() || c.parentId() != parent.id()) {
-                    continue;
-                }
-                if (c.overlaps(world, minX, maxX, minZ, maxZ)) {
-                    return "§cOverlaps subdivision #" + c.id();
-                }
-            }
-        }
-        Claim draft = new Claim(0, parent.owner(), config.serverId(), world,
-                minX, maxX, minZ, maxZ, "Sub of #" + parent.id(), parent.id(), 0, false);
-        long id = repo.create(draft);
-        Claim created = new Claim(id, draft.owner(), draft.serverId(), draft.world(),
-                minX, maxX, minZ, maxZ, draft.name(), parent.id(), 0, false);
-        synchronized (local) {
-            local.add(created);
-        }
-        ClaimVisualizer.show(plugin, player, created, config.claimsVisualSeconds());
-        modes.put(player.getUniqueId(), SelectMode.CLAIM);
-        return "§aSubdivision §f#" + id + " §ainside claim §f#" + parent.id()
-                + " §a(" + area + " blocks). Mode back to claim.";
+        return creation.createTopLevel(player, loc.getWorld().getName(), minX, maxX, minZ, maxZ, area);
     }
 
     public boolean abandon(Player player, Claim claim) throws SQLException {
@@ -539,5 +460,13 @@ public final class ClaimService {
 
     public JavaPlugin plugin() {
         return plugin;
+    }
+
+    List<Claim> localClaimsMutable() {
+        return local;
+    }
+
+    java.util.Map<UUID, SelectMode> modesMutable() {
+        return modes;
     }
 }

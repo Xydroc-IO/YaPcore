@@ -3,7 +3,7 @@ package com.yapcore.web.api;
 import com.sun.net.httpserver.HttpExchange;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.server.YaPcoreServer;
-import com.yapcore.web.DashboardNetworkSnapshotWriters;
+import com.yapcore.web.DashboardPermsSnapshotWriters;
 import com.yapcore.web.DashboardNetworkSnapshots;
 import com.yapcore.web.PermissionCatalog;
 import com.yapcore.web.PluginPermissionScanner;
@@ -56,7 +56,7 @@ public final class DashboardAccessApi {
             String action = body.getOrDefault("action", "").toLowerCase();
             switch (action) {
                 case "save-ops" -> {
-                    List<String> ops = parseList(body.get("ops"));
+                    List<String> ops = DashboardAccessPermsCommands.parseList(body.get("ops"));
                     cfg.setOps(ops);
                     cfg.save();
                     for (String name : ops) {
@@ -72,7 +72,7 @@ public final class DashboardAccessApi {
                 }
                 case "set-default-group" -> {
                     String group = body.getOrDefault("group", "default").trim().toLowerCase();
-                    DashboardNetworkSnapshotWriters.savePermsDefaultGroup(root, group);
+                    DashboardPermsSnapshotWriters.savePermsDefaultGroup(root, group);
                     server.executeCommand("yapperm reload");
                     DashboardHttp.json(ex, 200, Map.of("ok", true, "defaultGroup", group));
                 }
@@ -119,7 +119,7 @@ public final class DashboardAccessApi {
                     DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result, "ops", ops));
                 }
                 default -> {
-                    String cmd = permsCommand(action, body);
+                    String cmd = DashboardAccessPermsCommands.permsCommand(action, body);
                     if (cmd == null) {
                         DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
                         return;
@@ -140,25 +140,25 @@ public final class DashboardAccessApi {
             return;
         }
         try {
-            Integer weight = body.containsKey("weight") ? parseInt(body.get("weight"), 0) : null;
+            Integer weight = body.containsKey("weight") ? DashboardAccessPermsCommands.parseInt(body.get("weight"), 0) : null;
             String prefix = body.containsKey("prefix") ? body.get("prefix") : null;
             String suffix = body.containsKey("suffix") ? body.get("suffix") : null;
             String nameColor = body.containsKey("nameColor") ? body.get("nameColor")
                     : body.containsKey("name-color") ? body.get("name-color") : null;
             String chatColor = body.containsKey("chatColor") ? body.get("chatColor")
                     : body.containsKey("chat-color") ? body.get("chat-color") : null;
-            List<String> parents = body.containsKey("parents") ? parseList(body.get("parents")) : null;
+            List<String> parents = body.containsKey("parents") ? DashboardAccessPermsCommands.parseList(body.get("parents")) : null;
             if ("create-group".equals(action) && weight == null && prefix == null && suffix == null && parents == null) {
                 weight = 0;
                 prefix = "";
                 suffix = "";
                 parents = List.of();
             }
-            DashboardNetworkSnapshotWriters.savePermsGroup(root, name, weight, prefix, suffix,
+            DashboardPermsSnapshotWriters.savePermsGroup(root, name, weight, prefix, suffix,
                     nameColor, chatColor, parents);
             if ("true".equalsIgnoreCase(body.getOrDefault("addToTrack", "false"))) {
                 String track = body.getOrDefault("track", "yap");
-                DashboardNetworkSnapshotWriters.appendGroupToTrack(root, track, name);
+                DashboardPermsSnapshotWriters.appendGroupToTrack(root, track, name);
             }
             Map<String, Integer> nodes = applyPresetNodes(root, name, body);
             String apply = server.executeCommand("yapperm applypack");
@@ -187,11 +187,11 @@ public final class DashboardAccessApi {
             return;
         }
         try {
-            Map<String, Integer> counts = DashboardNetworkSnapshotWriters.savePermsGroupNodes(
+            Map<String, Integer> counts = DashboardPermsSnapshotWriters.savePermsGroupNodes(
                     root, group,
-                    parseNodeList(body.get("allow")),
-                    parseNodeList(body.get("deny")),
-                    parseNodeList(body.get("unset")));
+                    DashboardAccessPermsCommands.parseNodeList(body.get("allow")),
+                    DashboardAccessPermsCommands.parseNodeList(body.get("deny")),
+                    DashboardAccessPermsCommands.parseNodeList(body.get("unset")));
             String apply = server.executeCommand("yapperm editor-apply");
             String dump = server.executeCommand("yapperm dump");
             Map<String, Object> resp = new LinkedHashMap<>();
@@ -220,7 +220,7 @@ public final class DashboardAccessApi {
             return;
         }
         try {
-            DashboardNetworkSnapshotWriters.deletePermsGroup(root, name);
+            DashboardPermsSnapshotWriters.deletePermsGroup(root, name);
             String deleted = server.executeCommand("yapperm group delete " + name);
             String reload = server.executeCommand("yapperm reload");
             DashboardHttp.json(ex, 200, Map.of(
@@ -281,8 +281,8 @@ public final class DashboardAccessApi {
     @SuppressWarnings("unchecked")
     private static Map<String, Integer> applyPresetNodes(Path root, String group, Map<String, String> body)
             throws IOException {
-        List<String> allow = parseNodeList(body.get("allow"));
-        List<String> deny = parseNodeList(body.get("deny"));
+        List<String> allow = DashboardAccessPermsCommands.parseNodeList(body.get("allow"));
+        List<String> deny = DashboardAccessPermsCommands.parseNodeList(body.get("deny"));
         String cloneFrom = body.getOrDefault("cloneFrom", "").trim().toLowerCase();
         String template = body.getOrDefault("template", "").trim().toLowerCase();
         if (!cloneFrom.isEmpty()) {
@@ -326,7 +326,7 @@ public final class DashboardAccessApi {
                 }
             }
         }
-        return DashboardNetworkSnapshotWriters.savePermsGroupNodes(root, group, allow, deny, unset);
+        return DashboardPermsSnapshotWriters.savePermsGroupNodes(root, group, allow, deny, unset);
     }
 
     private static List<Map<String, Object>> catalogWithDiscovered(Path root) {
@@ -339,218 +339,5 @@ public final class DashboardAccessApi {
             cats.add(extra);
         }
         return cats;
-    }
-
-    private static String permsCommand(String action, Map<String, String> body) {
-        String player = sanitizeToken(body.getOrDefault("player", "").trim());
-        return switch (action) {
-            case "reload" -> "yapperm reload";
-            case "applypack" -> "yapperm applypack";
-            case "dump" -> "yapperm dump";
-            case "user-info" -> player.isEmpty() ? null : "yapperm user " + player + " info";
-            case "set-group" -> {
-                String g = sanitizeToken(body.getOrDefault("group", "default"));
-                yield player.isEmpty() || g.isEmpty() ? null : "yapperm user " + player + " parent set " + g;
-            }
-            case "add-group" -> {
-                String g = sanitizeToken(body.getOrDefault("group", ""));
-                yield player.isEmpty() || g.isEmpty() ? null : "yapperm user " + player + " parent add " + g;
-            }
-            case "remove-group" -> {
-                String g = sanitizeToken(body.getOrDefault("group", ""));
-                yield player.isEmpty() || g.isEmpty() ? null : "yapperm user " + player + " parent remove " + g;
-            }
-            case "promote" -> trackStepCommand("promote", player, body);
-            case "demote" -> trackStepCommand("demote", player, body);
-            case "group-info" -> {
-                String g = sanitizeToken(body.getOrDefault("group", player));
-                yield g.isEmpty() ? null : "yapperm group info " + g;
-            }
-            case "group-list" -> "yapperm group list";
-            case "track-info" -> {
-                String track = sanitizeToken(body.getOrDefault("track", "yap"));
-                yield track.isEmpty() ? null : "yapperm track info " + track;
-            }
-            case "track-list" -> "yapperm track list";
-            case "group-perm" -> groupPermSet(body);
-            case "group-perm-unset", "revoke-group-perm" -> groupPermUnset(body);
-            case "user-perm" -> userPermSet(body, player);
-            case "user-perm-unset", "revoke-user-perm" -> userPermUnset(body, player);
-            default -> null;
-        };
-    }
-
-    /** Build {@code promote|demote <player> [track]}. */
-    private static String trackStepCommand(String verb, String player, Map<String, String> body) {
-        if (player.isEmpty()) {
-            return null;
-        }
-        String track = sanitizeToken(body.getOrDefault("track", "").trim());
-        return track.isEmpty() ? verb + " " + player : verb + " " + player + " " + track;
-    }
-
-    private static String userPermSet(Map<String, String> body, String player) {
-        String node = sanitizeNode(body.getOrDefault("node", ""));
-        String val = normalizeBool(body.getOrDefault("value", "true"));
-        if (player.isEmpty() || node.isEmpty()) {
-            return null;
-        }
-        return appendNodeContext("yapperm user " + player + " permission set " + node + " " + val, body);
-    }
-
-    private static String userPermUnset(Map<String, String> body, String player) {
-        String node = sanitizeNode(body.getOrDefault("node", ""));
-        if (player.isEmpty() || node.isEmpty()) {
-            return null;
-        }
-        return appendNodeContext("yapperm user " + player + " permission unset " + node, body, false);
-    }
-
-    private static String groupPermSet(Map<String, String> body) {
-        String g = sanitizeToken(body.getOrDefault("group", ""));
-        String node = sanitizeNode(body.getOrDefault("node", ""));
-        String val = normalizeBool(body.getOrDefault("value", "true"));
-        if (g.isEmpty() || node.isEmpty()) {
-            return null;
-        }
-        return appendNodeContext("yapperm group permission set " + g + " " + node + " " + val, body);
-    }
-
-    private static String groupPermUnset(Map<String, String> body) {
-        String g = sanitizeToken(body.getOrDefault("group", ""));
-        String node = sanitizeNode(body.getOrDefault("node", ""));
-        if (g.isEmpty() || node.isEmpty()) {
-            return null;
-        }
-        return appendNodeContext("yapperm group permission unset " + g + " " + node, body, false);
-    }
-
-    /**
-     * Append LuckPerms-style trailing modifiers that YaPPerms already understands:
-     * duration ({@code 1d}, {@code 7d}), {@code world=}, {@code server=}.
-     */
-    private static String appendNodeContext(String baseCmd, Map<String, String> body) {
-        return appendNodeContext(baseCmd, body, true);
-    }
-
-    private static String appendNodeContext(String baseCmd, Map<String, String> body, boolean includeDuration) {
-        StringBuilder sb = new StringBuilder(baseCmd);
-        if (includeDuration) {
-            String duration = firstNonBlank(body.get("duration"), body.get("expires"), body.get("temp"));
-            if (duration != null) {
-                String token = sanitizeToken(duration);
-                if (!token.isEmpty() && !isPermanentDuration(token)) {
-                    sb.append(' ').append(token);
-                }
-            }
-        }
-        String world = sanitizeToken(body.getOrDefault("world", "").trim());
-        if (!world.isEmpty()) {
-            sb.append(" world=").append(world);
-        }
-        String server = sanitizeToken(body.getOrDefault("server", "").trim());
-        if (!server.isEmpty()) {
-            sb.append(" server=").append(server);
-        }
-        return sb.toString();
-    }
-
-    private static String firstNonBlank(String... values) {
-        if (values == null) {
-            return null;
-        }
-        for (String v : values) {
-            if (v != null && !v.isBlank()) {
-                return v.trim();
-            }
-        }
-        return null;
-    }
-
-    private static boolean isPermanentDuration(String raw) {
-        String t = raw.toLowerCase();
-        return t.isEmpty() || t.equals("0") || t.equals("perm") || t.equals("permanent")
-                || t.equals("forever") || t.equals("*") || t.equals("none");
-    }
-
-    private static String normalizeBool(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return "true";
-        }
-        String t = raw.trim().toLowerCase();
-        if (t.equals("false") || t.equals("deny") || t.equals("0") || t.equals("no")) {
-            return "false";
-        }
-        return "true";
-    }
-
-    /** Permission nodes: allow dots/wildcards; reject shell-breaking chars. */
-    private static String sanitizeNode(String raw) {
-        if (raw == null) {
-            return "";
-        }
-        String t = raw.trim();
-        if (t.isEmpty() || t.indexOf(' ') >= 0 || t.indexOf('"') >= 0 || t.indexOf('\'') >= 0
-                || t.indexOf(';') >= 0 || t.indexOf('|') >= 0 || t.indexOf('&') >= 0) {
-            return "";
-        }
-        return t;
-    }
-
-    private static String sanitizeToken(String raw) {
-        if (raw == null) {
-            return "";
-        }
-        String t = raw.trim();
-        if (t.isEmpty()) {
-            return "";
-        }
-        for (int i = 0; i < t.length(); i++) {
-            char c = t.charAt(i);
-            if (Character.isWhitespace(c) || c == '"' || c == '\'' || c == ';' || c == '|' || c == '&'
-                    || c == '=' || c == '\n' || c == '\r') {
-                return "";
-            }
-        }
-        return t;
-    }
-
-    private static List<String> parseNodeList(String raw) {
-        List<String> out = new ArrayList<>();
-        if (raw == null || raw.isBlank()) {
-            return out;
-        }
-        for (String part : raw.split("[,\\n]")) {
-            String t = part.trim();
-            if (!t.isEmpty() && !out.contains(t)) {
-                out.add(t);
-            }
-        }
-        return out;
-    }
-
-    private static List<String> parseList(String raw) {
-        List<String> out = new ArrayList<>();
-        if (raw == null || raw.isBlank()) {
-            return out;
-        }
-        for (String part : raw.split("[,\\n]")) {
-            String t = part.trim().toLowerCase();
-            if (!t.isEmpty()) {
-                out.add(t);
-            }
-        }
-        return out;
-    }
-
-    private static int parseInt(String raw, int fallback) {
-        if (raw == null || raw.isBlank()) {
-            return fallback;
-        }
-        try {
-            return Integer.parseInt(raw.trim());
-        } catch (NumberFormatException e) {
-            return fallback;
-        }
     }
 }

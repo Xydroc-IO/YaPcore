@@ -58,7 +58,7 @@ class DashboardPermsNodesTest {
         Path perms = tmp.resolve("plugins").resolve("YaPPerms");
         Files.createDirectories(perms);
         Files.writeString(perms.resolve("config.yml"), "default-group: default\ngroups: {}\n");
-        DashboardNetworkSnapshotWriters.savePermsGroupNodes(
+        DashboardPermsSnapshotWriters.savePermsGroupNodes(
                 tmp, "vip",
                 List.of("yapessentials.fly"),
                 List.of("minecraft.command.op"),

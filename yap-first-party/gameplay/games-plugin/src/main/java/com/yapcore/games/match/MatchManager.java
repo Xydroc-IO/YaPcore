@@ -18,10 +18,8 @@ import com.yapcore.games.mode.GameModeDefinition;
 import com.yapcore.games.mode.GameModeLoader;
 import com.yapcore.games.mode.GameModeType;
 import com.yapcore.games.reset.ArenaResetter;
-import com.yapcore.mmo.CombatServices;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
-import org.bukkit.GameMode;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -29,7 +27,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +46,7 @@ public final class MatchManager {
     private final StatsRepository stats;
     private final MatchRewards rewards;
     private final MatchUi ui;
+    private final MatchLifecycle lifecycle;
 
     private final Map<GameModeId, Deque<UUID>> queues = new ConcurrentHashMap<>();
     private final Map<UUID, GameModeId> queued = new ConcurrentHashMap<>();
@@ -75,6 +73,7 @@ public final class MatchManager {
         this.stats = stats;
         this.rewards = rewards;
         this.ui = ui;
+        this.lifecycle = new MatchLifecycle(this);
     }
 
     public Collection<MatchView> activeMatches() {
@@ -177,7 +176,7 @@ public final class MatchManager {
             return false;
         }
         match.eliminate(playerId);
-        restorePlayer(playerId, match);
+        lifecycle.restorePlayer(playerId, match);
         playerMatch.remove(playerId);
         Player player = Bukkit.getPlayer(playerId);
         if (player != null) {
@@ -186,7 +185,7 @@ public final class MatchManager {
         }
         if (match.state() == MatchState.LIVE || match.state() == MatchState.COUNTDOWN) {
             if (match.mode().type() != GameModeType.FFA && match.alive().size() <= 1) {
-                endMatch(match, match.alive().stream().findFirst().orElse(null));
+                lifecycle.endMatch(match, match.alive().stream().findFirst().orElse(null));
             } else if (match.state() == MatchState.COUNTDOWN && match.players().size() <= 1) {
                 matches.remove(match.id());
             }
@@ -247,7 +246,7 @@ public final class MatchManager {
         if (mode == null) {
             return false;
         }
-        startDirectMatch(mode, List.of(challenger, accepter));
+        lifecycle.startDirectMatch(mode, List.of(challenger, accepter));
         return true;
     }
 
@@ -275,74 +274,7 @@ public final class MatchManager {
             }
             return;
         }
-        startDirectMatch(mode, picked);
-    }
-
-    private void startDirectMatch(GameModeDefinition mode, List<UUID> playerIds) {
-        ArenaDefinition arena = arenaLoader.get(mode.arenaId());
-        KitDefinition kit = kitLoader.get(mode.kitId());
-        if (arena == null || kit == null) {
-            for (UUID id : playerIds) {
-                Player p = Bukkit.getPlayer(id);
-                if (p != null) {
-                    p.sendMessage("§cMatch setup failed — missing arena or kit.");
-                }
-            }
-            return;
-        }
-        Match match = new Match(MatchId.random(), mode, arena);
-        matches.put(match.id(), match);
-        int spawnIndex = 0;
-        for (UUID id : playerIds) {
-            Player player = Bukkit.getPlayer(id);
-            if (player == null) {
-                continue;
-            }
-            match.addPlayer(id, KitSnapshot.capture(player));
-            playerMatch.put(id, match.id());
-            final int idx = spawnIndex++;
-            YapSched.entity(plugin, player, () -> {
-                org.bukkit.World world = plugin.getServer().getWorld(arena.worldName());
-                if (world != null) {
-                    player.teleport(arena.randomSpawn(world, idx));
-                }
-                KitSnapshot.applyKitSync(player, kit);
-            });
-            resetCombatHp(player);
-        }
-        beginCountdown(match);
-    }
-
-    private void beginCountdown(Match match) {
-        match.setState(MatchState.COUNTDOWN);
-        int seconds = match.mode().countdownSeconds() > 0
-                ? match.mode().countdownSeconds()
-                : config.defaultCountdown();
-        match.setCountdownEndsAtMs(System.currentTimeMillis() + seconds * 1000L);
-        broadcast(match, "§eMatch starts in §f" + seconds + "§e…");
-        ui.runCountdown(match, () -> startLive(match));
-    }
-
-    private void startLive(Match match) {
-        if (match.state() != MatchState.COUNTDOWN) {
-            return;
-        }
-        match.setState(MatchState.LIVE);
-        if (match.mode().durationSeconds() > 0) {
-            match.setLiveEndsAtMs(System.currentTimeMillis() + match.mode().durationSeconds() * 1000L);
-            YapSched.globalLater(plugin, () -> {
-                if (match.state() == MatchState.LIVE) {
-                    endMatch(match, resolveWinner(match));
-                }
-            }, match.mode().durationSeconds() * 20L);
-            YapSched.globalTimer(plugin, () -> {
-                if (match.state() == MatchState.LIVE) {
-                    ui.refreshScoreboard(match);
-                }
-            }, 20L, 20L);
-        }
-        broadcast(match, "§aFight!");
-        ui.showFight(match);
+        lifecycle.startDirectMatch(mode, picked);
     }
 
     public void handleDeath(Player victim, Player killer) {
@@ -356,14 +288,14 @@ public final class MatchManager {
             ui.refreshScoreboard(match);
             if (match.mode().type() == GameModeType.FFA
                     && match.kills(killer.getUniqueId()) >= match.mode().winKills()) {
-                endMatch(match, killer.getUniqueId());
+                lifecycle.endMatch(match, killer.getUniqueId());
                 return;
             }
         }
         match.recordDeath(victim.getUniqueId());
         if (match.mode().type() == GameModeType.DUEL) {
             UUID winner = killer != null ? killer.getUniqueId() : null;
-            endMatch(match, winner);
+            lifecycle.endMatch(match, winner);
             return;
         }
         if (match.mode().respawnInArena()) {
@@ -377,26 +309,15 @@ public final class MatchManager {
                             victim.teleport(match.arena().randomSpawn(world, 0));
                         }
                         KitSnapshot.applyKitSync(victim, kit);
-                        resetCombatHp(victim);
+                        lifecycle.resetCombatHp(victim);
                     }, 2L);
                 }, 1L);
             }
             return;
         }
-        eliminateToSpectator(victim, match);
+        lifecycle.eliminateToSpectator(victim, match);
         if (match.alive().size() <= 1) {
-            endMatch(match, match.alive().stream().findFirst().orElse(null));
-        }
-    }
-
-    private void eliminateToSpectator(Player player, Match match) {
-        match.eliminate(player.getUniqueId());
-        if (config.spectatorsOnElimination()) {
-            match.addSpectator(player.getUniqueId());
-            YapSched.entity(plugin, player, () -> {
-                player.setGameMode(GameMode.SPECTATOR);
-                player.sendMessage("§7You were eliminated. Spectating…");
-            });
+            lifecycle.endMatch(match, match.alive().stream().findFirst().orElse(null));
         }
     }
 
@@ -409,80 +330,18 @@ public final class MatchManager {
         leaveMatch(playerId);
     }
 
-    private void endMatch(Match match, UUID winnerId) {
-        if (match.state() == MatchState.ENDING) {
-            return;
-        }
-        match.setState(MatchState.ENDING);
-        match.setWinner(winnerId);
-        String winMsg = winnerId == null
-                ? "§7Match ended."
-                : "§6" + Optional.ofNullable(Bukkit.getPlayer(winnerId)).map(Player::getName).orElse("Unknown")
-                + " §ewins!";
-        broadcast(match, winMsg);
-        rewards.payWinner(winnerId, match.mode().type());
-        recordStats(match, winnerId);
-        for (UUID id : new ArrayList<>(match.players())) {
-            restorePlayer(id, match);
-            playerMatch.remove(id);
-            Player player = Bukkit.getPlayer(id);
-            if (player != null) {
-                ui.clear(player);
-            }
-        }
-        resetter.clearDrops(match.arena());
-        matches.remove(match.id());
-    }
 
-    private void recordStats(Match match, UUID winnerId) {
-        YapSched.async(plugin, () -> {
-            for (UUID id : match.players()) {
-                try {
-                    stats.recordMatch(id, match.mode().id(),
-                            match.kills(id),
-                            match.deaths(id),
-                            winnerId != null && winnerId.equals(id));
-                } catch (Exception e) {
-                    plugin.getLogger().log(Level.WARNING, "stats record", e);
-                }
-            }
-        });
-    }
-
-    private void restorePlayer(UUID playerId, Match match) {
-        Player player = Bukkit.getPlayer(playerId);
-        KitSnapshot snapshot = match.snapshots().get(playerId);
-        if (player == null || snapshot == null) {
-            return;
-        }
-        snapshot.restore(plugin, player);
-        resetCombatHp(player);
-    }
-
-    private void resetCombatHp(Player player) {
-        CombatServices.find().ifPresent(combat -> {
-            try {
-                combat.setHp(player.getUniqueId(), combat.stats(player).hitpoints()).join();
-            } catch (Exception ignored) {
-            }
-        });
-    }
-
-    private UUID resolveWinner(Match match) {
-        UUID best = null;
-        int bestKills = -1;
-        for (UUID id : match.players()) {
-            int k = match.kills(id);
-            if (k > bestKills) {
-                bestKills = k;
-                best = id;
-            }
-        }
-        if (bestKills <= 0 && match.alive().size() == 1) {
-            return match.alive().iterator().next();
-        }
-        return best;
-    }
+    JavaPlugin plugin() { return plugin; }
+    GamesConfig config() { return config; }
+    KitLoader kitLoader() { return kitLoader; }
+    ArenaResetter resetter() { return resetter; }
+    StatsRepository stats() { return stats; }
+    MatchRewards rewards() { return rewards; }
+    MatchUi ui() { return ui; }
+    Map<GameModeId, Deque<UUID>> queues() { return queues; }
+    Map<UUID, GameModeId> queued() { return queued; }
+    Map<UUID, MatchId> playerMatch() { return playerMatch; }
+    Map<MatchId, Match> matches() { return matches; }
 
     public GameModeLoader modes() {
         return modeLoader;
@@ -503,14 +362,5 @@ public final class MatchManager {
         snap.put("modes", modeLoader.modes().keySet().stream().map(GameModeId::id).toList());
         snap.put("arenas", arenaLoader.arenas().keySet());
         return snap;
-    }
-
-    private void broadcast(Match match, String message) {
-        for (UUID id : match.players()) {
-            Player player = Bukkit.getPlayer(id);
-            if (player != null) {
-                player.sendMessage(message);
-            }
-        }
     }
 }
