@@ -9,7 +9,8 @@ import java.util.function.BiConsumer;
 import java.util.logging.Logger;
 
 /**
- * P4.6 — Chest / furnace / enchant / villager container open/close for Bedrock.
+ * P4.6 — Bedrock container open/close (chest, furnace, enchant, villager, workbench,
+ * anvil, smithing, loom, stonecutter, cartography).
  * Opens Paper inventories when a Bukkit player is injected; always sends BE container_open.
  */
 public final class BedrockContainerBridge {
@@ -20,8 +21,13 @@ public final class BedrockContainerBridge {
     public static final int TYPE_WORKBENCH = 1;
     public static final int TYPE_FURNACE = 2;
     public static final int TYPE_ENCHANT = 3;
+    public static final int TYPE_ANVIL = 5;
     public static final int TYPE_HOPPER = 8;
     public static final int TYPE_VILLAGER = 15;
+    public static final int TYPE_LOOM = 24;
+    public static final int TYPE_STONECUTTER = 29;
+    public static final int TYPE_CARTOGRAPHY = 30;
+    public static final int TYPE_SMITHING = 33;
 
     private final AtomicInteger nextWindow = new AtomicInteger(1);
     private final ConcurrentHashMap<String, OpenWindow> openByUser = new ConcurrentHashMap<>();
@@ -57,14 +63,7 @@ public final class BedrockContainerBridge {
         OpenWindow w = new OpenWindow(id, type, x, y, z);
         openByUser.put(username.toLowerCase(), w);
         sender.accept(username, BedrockPacketCodec.containerOpen(id, type, x, y, z, -1));
-        int slots = switch (type) {
-            case TYPE_WORKBENCH -> 10;
-            case TYPE_FURNACE -> 3;
-            case TYPE_ENCHANT -> 2;
-            case TYPE_HOPPER -> 5;
-            case TYPE_VILLAGER -> 3;
-            default -> 27;
-        };
+        int slots = slotsForType(type);
         int[] ids = new int[slots];
         int[] counts = new int[slots];
         if (paperWorld != null && paperWorld.isEnabled()) {
@@ -88,10 +87,27 @@ public final class BedrockContainerBridge {
             case TYPE_WORKBENCH -> 10;
             case TYPE_FURNACE -> 3;
             case TYPE_ENCHANT -> 2;
+            case TYPE_ANVIL -> 3;
             case TYPE_HOPPER -> 5;
             case TYPE_VILLAGER -> 3;
+            case TYPE_LOOM -> 4;
+            case TYPE_STONECUTTER -> 2;
+            case TYPE_CARTOGRAPHY -> 3;
+            case TYPE_SMITHING -> 4;
             default -> 27;
         };
+    }
+
+    /** Virtual JE UIs without a block inventory — shadow + Paper open inventory only. */
+    public static boolean isVirtualContainer(int type) {
+        return type == TYPE_WORKBENCH
+                || type == TYPE_ENCHANT
+                || type == TYPE_VILLAGER
+                || type == TYPE_ANVIL
+                || type == TYPE_SMITHING
+                || type == TYPE_LOOM
+                || type == TYPE_STONECUTTER
+                || type == TYPE_CARTOGRAPHY;
     }
 
     /** Villager trade UI bound to an entity runtime id (not block coords). */
@@ -158,6 +174,21 @@ public final class BedrockContainerBridge {
         }
         if (b.contains("enchant")) {
             return TYPE_ENCHANT;
+        }
+        if (b.contains("anvil")) {
+            return TYPE_ANVIL;
+        }
+        if (b.contains("smithing")) {
+            return TYPE_SMITHING;
+        }
+        if (b.contains("loom")) {
+            return TYPE_LOOM;
+        }
+        if (b.contains("stonecutter")) {
+            return TYPE_STONECUTTER;
+        }
+        if (b.contains("cartograph")) {
+            return TYPE_CARTOGRAPHY;
         }
         if (b.contains("hopper")) {
             return TYPE_HOPPER;

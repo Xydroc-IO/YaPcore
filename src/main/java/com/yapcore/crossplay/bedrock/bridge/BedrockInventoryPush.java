@@ -64,8 +64,7 @@ public final class BedrockInventoryPush {
         int n = ctx.containers.slotsForType(w.type());
         BedrockPaperWorldSync sync = ctx.paperWorld;
         if (sync != null && sync.isEnabled()
-                && w.type() != BedrockContainerBridge.TYPE_WORKBENCH
-                && w.type() != BedrockContainerBridge.TYPE_VILLAGER) {
+                && !BedrockContainerBridge.isVirtualContainer(w.type())) {
             int[][] live = sync.snapshotBlockInventory(w.x(), w.y(), w.z(), n);
             if (live != null && live.length >= 2) {
                 ctx.inventory.seedContainer(username, live[0], live[1]);

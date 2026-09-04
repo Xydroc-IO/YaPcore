@@ -167,7 +167,10 @@ public final class BedrockPacketDispatch {
                     || block.contains("SHULKER") || block.contains("FURNACE")
                     || block.contains("SMOKER") || block.contains("BLAST")
                     || block.contains("ENCHANT") || block.contains("HOPPER")
-                    || block.contains("CRAFTING") || block.contains("WORKBENCH"))) {
+                    || block.contains("CRAFTING") || block.contains("WORKBENCH")
+                    || block.contains("ANVIL") || block.contains("SMITHING")
+                    || block.contains("LOOM") || block.contains("STONECUTTER")
+                    || block.contains("CARTOGRAPH"))) {
                 if (block.contains("CRAFTING") || block.contains("WORKBENCH")) {
                     ctype = BedrockContainerBridge.TYPE_WORKBENCH;
                 }

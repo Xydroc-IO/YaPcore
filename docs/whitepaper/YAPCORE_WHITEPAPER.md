@@ -73,7 +73,7 @@ YaPcore contributes:
 - We do **not** claim “faster than Paper/Leaf on every workload.” Population cite: **fullcite** (100 active bots + fixtures) under the **ship Folia knob profile** (async-save, hopper budget, MSPT-gated entity/microtick budgets, subregion partition) — yapcore **−12.4%** vs stock Folia (`20260904TshipFc2`); knobs disclosed in bench JSON (`knob_*`). Heavypop peer: **−8.09% vs Canvas** and **−16.56% vs stock** (`20260904T065505Z`) — [REAL_GAINS.md](../folia/REAL_GAINS.md) · [CANVAS_PARITY.md](../folia/CANVAS_PARITY.md). **250 keepalive = HOLD-ONLY**. Paper/Purpur single-thread MSPT is out of scope for that cite — [PAPER_PURPUR_SCALE.md](../folia/PAPER_PURPUR_SCALE.md).
 - Bedrock play-depth is **join/spawn + play-depth smoke green**; Wave 2 fidelity matrix
   (inventory/forms/G.33 heads) is in [CROSSPLAY.md](../network/CROSSPLAY.md) — Floodgate-only
-  forms and anvil/smithing UIs are **Limited/Out**, not silent Partial.
+  forms remain **Limited**; anvil/smithing/loom/stonecutter/cartography are **Green (best-effort)** Paper-backed.
 - The Compatibility Bridge facade (non-game authority) remains **best-effort stubs** — [PAPER_API_COVERAGE.md](../plugins/PAPER_API_COVERAGE.md).
 
 ### 1.4 Audience
@@ -368,7 +368,7 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 - Folia (and YaP-Folia) reject stock single-thread Paper plugins — operator education required.
 - Protocol version sprawl requires continuous registry/packet maintenance.
 - NUMA/ZGC gains are hardware-dependent.
-- Complex JE containers on Bedrock (anvil/smithing/etc.) remain **Out**; Floodgate-only forms are **Limited** — see [CROSSPLAY.md](../network/CROSSPLAY.md).
+- Specialty JE containers on Bedrock (anvil/smithing/loom/stonecutter/cartography) are **Green (best-effort)** Paper-backed; recipe-picker / rename polish remains Stretch. Floodgate-only forms are **Limited** — see [CROSSPLAY.md](../network/CROSSPLAY.md).
 - YaP-Folia patch rebase risk when refreshing `UPSTREAM.lock`.
 - Phase 3 spatial edge cases apply only on the **legacy Paper** path.
 - Soft-depend plugin names are **case-sensitive** (`YaPPlayerData`); integrations must match `plugin.yml` `name:` exactly.
@@ -390,7 +390,7 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 | PlayerData shops + AH | **On by default** (jobs remain off) |
 | Fair population MSPT gate | **Citeable** — fullcite 100 bots; peak −12.4% (`shipFc2`); re-verify −5.53% (`20260904T040935Z`); **ship knobs** disclosed in JSON |
 | Dashboard Phase 8 full tabs | **Done (ship)** — Factions/Guilds/Games/Disasters/Stacker interactive; Protect restore; Regions flags; MMO reload; YAML-only leftovers documented |
-| Wave 2 Bedrock fidelity | **Done (ship)** — [CROSSPLAY.md](../network/CROSSPLAY.md) matrix; Floodgate forms Limited; anvil/smithing Out |
+| Wave 2 Bedrock fidelity | **Done (ship)** — [CROSSPLAY.md](../network/CROSSPLAY.md) matrix; Floodgate forms Limited; specialty containers Green (best-effort) |
 | Wave 3 MMO quest objectives | **Done (ship)** — PLAYTIME/ECONOMY/PLACE/ENCHANT/ANVIL/TALK; silent proxies removed |
 | Wave 4 Discord / Map / PAPI | **Done (ship)** — event webhooks; map markers; curated local expansions |
 | Wave 5 Access context/temp | **Done (ship)** — dashboard duration + world/server grants |

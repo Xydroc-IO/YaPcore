@@ -48,7 +48,7 @@ Bedrock players also use a different connection style (UDP) than Java (TCP), but
 
 ### What we are *not* promising
 
-We don’t claim “every Paper plugin works on YaP-Folia day one” (same reality as Folia), and we’re not shipping stock Folia as the product jar. We grow compatibility based on what people actually need. Bedrock join and play-depth smoke are green; Wave 2 documents Limited/Out rows (Floodgate-only forms, anvil/smithing) instead of silent Partial.
+We don’t claim “every Paper plugin works on YaP-Folia day one” (same reality as Folia), and we’re not shipping stock Folia as the product jar. We grow compatibility based on what people actually need. Bedrock join and play-depth smoke are green; Wave 2 documents Limited/Out rows honestly (Floodgate-only forms Limited; specialty containers Green best-effort) instead of silent Partial.
 
 ### Where the product is today (September 2026)
 
@@ -141,7 +141,7 @@ Unit tests cover plugin and API behavior. Operators validate with a local boot a
 ## 8. Honest caveats
 
 - Paper-only plugins are not a free pass on Folia.  
-- Protocol and Bedrock fidelity: Wave 2 matrix in CROSSPLAY (Floodgate-only forms Limited; anvil/smithing Out).  
+- Protocol and Bedrock fidelity: Wave 2 matrix in CROSSPLAY (Floodgate-only forms Limited; anvil/smithing/loom/stonecutter/cartography Green best-effort).  
 - Fancy Folia performance patches stay **off** until load-tested on your hardware.  
 - Dashboard tabs for Factions, Guilds, Games, Disasters, Stacker, Protect, and Regions are interactive for ship ops; leftover plugins stay on Plugin settings by design.  
 - Pregen is Folia-safe (region-scheduled loads + chunk tickets).

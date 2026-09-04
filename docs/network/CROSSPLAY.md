@@ -35,7 +35,7 @@ Wave 2 closes inventory/forms honesty for native Bedrock; Floodgate-only and som
 | P4.6 | Enchant / workbench / villager | **Green** (best-effort); XP/layout polish ongoing |
 | Forms (native UDP) | Simple / modal / custom | **Green** |
 | Forms (Floodgate-only) | MMO / admin forms | **Limited** — explicit user message; not Partial |
-| Anvil / smithing / loom / stonecutter / cartography | Container UIs | **Out** — use Java Edition |
+| Anvil / smithing / loom / stonecutter / cartography | Container UIs | **Green** (best-effort) — Paper-backed open + slot sync; recipe-picker / anvil rename Stretch |
 | Full Geyser feature matrix | Every BE packet | **Out** — YaP intentional depth |
 
 ## Streamlined one-port join

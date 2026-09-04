@@ -63,9 +63,31 @@ final class PaperWorldContainers {
                             .invoke(player, loc, true);
                 } catch (NoSuchMethodException ignored) {
                 }
+            } else if (type == BedrockContainerBridge.TYPE_ANVIL) {
+                openVirtual(player, block, cl, "openAnvil");
+            } else if (type == BedrockContainerBridge.TYPE_SMITHING) {
+                openVirtual(player, block, cl, "openSmithingTable");
+            } else if (type == BedrockContainerBridge.TYPE_LOOM) {
+                openVirtual(player, block, cl, "openLoom");
+            } else if (type == BedrockContainerBridge.TYPE_STONECUTTER) {
+                openVirtual(player, block, cl, "openStonecutter");
+            } else if (type == BedrockContainerBridge.TYPE_CARTOGRAPHY) {
+                openVirtual(player, block, cl, "openCartographyTable");
             }
         } catch (Exception e) {
             PaperWorldSyncBackend.LOG.log(Level.FINE, "Paper openContainer failed", e);
+        }
+    }
+
+    private void openVirtual(Object player, Object block, ClassLoader cl, String method) {
+        try {
+            Object loc = block.getClass().getMethod("getLocation").invoke(block);
+            player.getClass().getMethod(method,
+                            Class.forName("org.bukkit.Location", true, cl), boolean.class)
+                    .invoke(player, loc, true);
+        } catch (NoSuchMethodException ignored) {
+        } catch (Exception e) {
+            PaperWorldSyncBackend.LOG.log(Level.FINE, "Paper " + method + " failed", e);
         }
     }
 
