@@ -178,9 +178,22 @@ yap-first-party/dev/
 yap-first-party/dev/bench-plugin/build/
 src/jcstress/
 
-# Generated PDF intermediates (HTML); track PDFs for operator download.
-docs/pdf/*.html
-docs/pdf/.pdf-stems
+# Generated doc exports — Markdown under docs/ is the source of truth.
+# Do not commit PDFs, HTML print intermediates, or office dumps (looks unprofessional).
+docs/pdf/**
+!docs/pdf/
+!docs/pdf/.gitkeep
+!docs/pdf/README.md
+*.pdf
+*.docx
+*.doc
+*.pptx
+*.ppt
+*.xlsx
+*.xls
+*.odt
+*.ods
+*.odp
 
 # Folia agent scratch notes — keep AGENT*.md for multi-agent patch ownership
 # (formerly ignored)

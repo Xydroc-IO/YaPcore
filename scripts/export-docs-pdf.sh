@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Export key Markdown docs to docs/pdf/*.pdf (chromium headless).
+# Optional local export: Markdown → docs/pdf/*.pdf (chromium headless).
+# Outputs are gitignored — Markdown under docs/ is the published source of truth.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/docs/pdf"
@@ -122,6 +123,6 @@ for f in "${STEMS[@]}"; do
     --print-to-pdf="${f}.pdf" "file://${OUT}/${f}.html" >/dev/null 2>&1
 done
 
-# Drop intermediate HTML from the tree (keep PDFs).
+# Drop intermediate HTML from the tree (PDFs stay local; gitignored).
 rm -f .pdf-stems *.html
-echo "Wrote $(ls -1 "$OUT"/*.pdf | wc -l) PDFs under $OUT"
+echo "Wrote $(ls -1 "$OUT"/*.pdf 2>/dev/null | wc -l) PDFs under $OUT (gitignored — do not commit)"
