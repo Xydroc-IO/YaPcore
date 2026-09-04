@@ -17,6 +17,7 @@ softdepend:
   - YaPCombat
   - yap-mmo-content
   - YaPMMO
+  - YaPDisasters
 commands:
   yapadmin:
     description: Open the YaP admin super menu

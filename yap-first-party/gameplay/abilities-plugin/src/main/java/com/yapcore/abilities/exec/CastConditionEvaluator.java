@@ -51,7 +51,12 @@ public final class CastConditionEvaluator {
             case LACKS_STATUS -> !hasStatus(caster, condition.param("id", ""));
             case MIN_HP_PERCENT -> hpPercent(caster) >= condition.intParam("percent", 50);
             case MAX_HP_PERCENT -> hpPercent(caster) <= condition.intParam("percent", 50);
-            case REQUIRES_MAINHAND -> mainHandIs(caster, condition.param("material", ""));
+            case REQUIRES_MAINHAND -> {
+                if (!requireItemConditions()) {
+                    yield true;
+                }
+                yield mainHandIs(caster, condition.param("material", ""));
+            }
             case OFFHAND_EMPTY -> caster.getInventory().getItemInOffHand().getType().isAir();
             case ON_GROUND -> caster.isOnGround();
             case IN_AIR -> !caster.isOnGround();
@@ -79,5 +84,14 @@ public final class CastConditionEvaluator {
         }
         Material expected = Material.matchMaterial(materialName.toUpperCase(Locale.ROOT));
         return expected != null && player.getInventory().getItemInMainHand().getType() == expected;
+    }
+
+    /** When staff/item costs are disabled, skip main-hand material gates too. */
+    private static boolean requireItemConditions() {
+        var plugin = org.bukkit.Bukkit.getPluginManager().getPlugin("YaPAbilities");
+        if (plugin == null) {
+            return false;
+        }
+        return plugin.getConfig().getBoolean("costs.require-staff", false);
     }
 }

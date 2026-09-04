@@ -32,8 +32,11 @@ public final class VfxEmitter {
     public static void runHit(JavaPlugin plugin, Entity anchor, AbilityEffect effect) {
         if (anchor instanceof LivingEntity living) {
             YapSched.entity(plugin, living, () -> emitAt(plugin, living.getLocation().add(0, 1, 0), effect));
-        } else {
-            YapSched.global(plugin, () -> emitAt(plugin, anchor.getLocation(), effect));
+        } else if (plugin != null && anchor != null && anchor.getLocation().getWorld() != null) {
+            Location loc = anchor.getLocation();
+            YapSched.region(plugin, loc, () -> emitAt(plugin, loc, effect));
+        } else if (anchor != null) {
+            emitAt(plugin, anchor.getLocation(), effect);
         }
     }
 
@@ -75,7 +78,8 @@ public final class VfxEmitter {
             final int delay = t;
             Location snap = location.clone();
             Vector dirSnap = direction == null ? null : direction.clone();
-            YapSched.globalLater(plugin, () -> spawnOnce(snap, dirSnap, particle, effect), delay);
+            YapSched.regionChunkLater(plugin, snap.getWorld(), snap.getBlockX() >> 4, snap.getBlockZ() >> 4,
+                    () -> spawnOnce(snap, dirSnap, particle, effect), delay);
         }
     }
 

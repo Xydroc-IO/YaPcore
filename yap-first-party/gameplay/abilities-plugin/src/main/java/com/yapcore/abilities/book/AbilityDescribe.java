@@ -213,14 +213,20 @@ public final class AbilityDescribe {
         if (costs == null) {
             return "";
         }
+        var plugin = org.bukkit.Bukkit.getPluginManager().getPlugin("YaPAbilities");
+        boolean showPrayer = plugin == null || plugin.getConfig().getBoolean("costs.require-prayer", false);
+        boolean showRunes = plugin == null || plugin.getConfig().getBoolean("costs.require-runes", false);
+        boolean showStaff = plugin == null || plugin.getConfig().getBoolean("costs.require-staff", false);
         List<String> parts = new ArrayList<>();
-        if (costs.prayer() > 0) {
+        if (showPrayer && costs.prayer() > 0) {
             parts.add(costs.prayer() + " prayer");
         }
-        for (Map.Entry<Material, Integer> rune : costs.runes().entrySet()) {
-            parts.add(rune.getValue() + " " + prettyMaterial(rune.getKey()));
+        if (showRunes) {
+            for (Map.Entry<Material, Integer> rune : costs.runes().entrySet()) {
+                parts.add(rune.getValue() + " " + prettyMaterial(rune.getKey()));
+            }
         }
-        if (costs.requiredStaff() != null) {
+        if (showStaff && costs.requiredStaff() != null) {
             parts.add("hold " + prettyMaterial(costs.requiredStaff()));
         }
         return parts.isEmpty() ? "" : "Costs " + String.join(" · ", parts);

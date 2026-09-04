@@ -1,13 +1,17 @@
 package com.yapcore.stacker;
 
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
 /**
- * Soft hooks for Citizens / MythicMobs without hard compile deps.
+ * Soft hooks for Citizens / MythicMobs / YaP bosses without hard compile deps.
  */
 public final class HookService {
+
+    private static final NamespacedKey YAP_BOSS_ID = new NamespacedKey("yapcore", "yap_boss_id");
 
     private final StackerConfig config;
     private final boolean citizensPresent;
@@ -20,6 +24,9 @@ public final class HookService {
     }
 
     public boolean shouldSkip(Entity entity) {
+        if (isYapBoss(entity)) {
+            return true;
+        }
         if (config.skipCitizens() && isCitizensNpc(entity)) {
             return true;
         }
@@ -27,6 +34,11 @@ public final class HookService {
             return true;
         }
         return false;
+    }
+
+    /** YaP MMO bosses (PDC yap_boss_id) must never merge into stacks. */
+    public boolean isYapBoss(Entity entity) {
+        return entity.getPersistentDataContainer().has(YAP_BOSS_ID, PersistentDataType.STRING);
     }
 
     public boolean isCitizensNpc(Entity entity) {

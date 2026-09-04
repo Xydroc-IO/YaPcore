@@ -36,8 +36,9 @@ bosses:
     entity: BLAZE
     health: 360
     world: world
+    # Hilltop / dry perch — was 75 and often landed in water columns after chunk gen
     x: 180
-    y: 75
+    y: 96
     z: -160
     yaw: 90
     respawn-seconds: 450

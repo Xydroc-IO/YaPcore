@@ -70,24 +70,29 @@ public final class AbilityExecutor {
         }
 
         consumeCosts(caster, ability);
-        effects.runCast(caster, ability);
+        try {
+            effects.runCast(caster, ability);
 
-        if (ability.hasProjectile()) {
-            projectiles.launch(caster, ability, target, (player, hit) ->
-                    effects.runHit(player, hit, ability.hitEffects(), ability));
-        } else if (ability.targetMode() == TargetMode.AREA || ability.targetMode() == TargetMode.GROUND) {
-            Location center = AoeHelper.areaCenter(caster, ability, target);
-            List<LivingEntity> victims = AoeHelper.targetsAt(caster, center, ability, ability.range());
-            for (LivingEntity victim : victims) {
-                effects.runHit(caster, victim, ability.hitEffects(), ability);
-            }
-            if (victims.isEmpty() && ability.targetMode() == TargetMode.GROUND) {
+            if (ability.hasProjectile()) {
+                projectiles.launch(caster, ability, target, (player, hit) ->
+                        effects.runHit(player, hit, ability.hitEffects(), ability));
+            } else if (ability.targetMode() == TargetMode.AREA || ability.targetMode() == TargetMode.GROUND) {
+                Location center = AoeHelper.areaCenter(caster, ability, target);
+                List<LivingEntity> victims = AoeHelper.targetsAt(caster, center, ability, ability.range());
+                for (LivingEntity victim : victims) {
+                    effects.runHit(caster, victim, ability.hitEffects(), ability);
+                }
+                if (victims.isEmpty() && ability.targetMode() == TargetMode.GROUND) {
+                    effects.runHit(caster, caster, ability.hitEffects(), ability);
+                }
+            } else if (ability.targetMode() == TargetMode.SELF) {
                 effects.runHit(caster, caster, ability.hitEffects(), ability);
+            } else if (target != null) {
+                effects.runHit(caster, target, ability.hitEffects(), ability);
             }
-        } else if (ability.targetMode() == TargetMode.SELF) {
-            effects.runHit(caster, caster, ability.hitEffects(), ability);
-        } else if (target != null) {
-            effects.runHit(caster, target, ability.hitEffects(), ability);
+        } catch (RuntimeException ex) {
+            plugin.getLogger().warning("Ability cast '" + ability.id() + "' failed safely: " + ex.getMessage());
+            return CastResult.SUCCESS;
         }
 
         if (ability.cooldownTicks() > 0) {
@@ -152,7 +157,7 @@ public final class AbilityExecutor {
 
     private boolean hasCosts(Player caster, AbilityDefinition ability) {
         var costs = ability.costs();
-        if (costs.prayer() > 0) {
+        if (requirePrayer() && costs.prayer() > 0) {
             int prayer = AbilityCombatServices.find()
                     .map(b -> b.currentPrayer(caster))
                     .orElseGet(() -> CombatServices.find()
@@ -163,7 +168,7 @@ public final class AbilityExecutor {
                 return false;
             }
         }
-        if (costs.requiresStaff()) {
+        if (requireStaff() && costs.requiresStaff()) {
             ItemStack main = caster.getInventory().getItemInMainHand();
             ItemStack off = caster.getInventory().getItemInOffHand();
             if (main.getType() != costs.requiredStaff() && off.getType() != costs.requiredStaff()) {
@@ -171,7 +176,7 @@ public final class AbilityExecutor {
                 return false;
             }
         }
-        if (!hasRunes(caster, costs.runes())) {
+        if (requireRunes() && !hasRunes(caster, costs.runes())) {
             caster.sendMessage("§cMissing spell runes.");
             return false;
         }
@@ -180,10 +185,24 @@ public final class AbilityExecutor {
 
     private void consumeCosts(Player caster, AbilityDefinition ability) {
         var costs = ability.costs();
-        if (costs.prayer() > 0) {
+        if (requirePrayer() && costs.prayer() > 0) {
             AbilityCombatServices.find().ifPresent(b -> b.drainPrayer(caster, costs.prayer()));
         }
-        consumeRunes(caster, costs.runes());
+        if (requireRunes()) {
+            consumeRunes(caster, costs.runes());
+        }
+    }
+
+    private boolean requireRunes() {
+        return plugin.getConfig().getBoolean("costs.require-runes", false);
+    }
+
+    private boolean requireStaff() {
+        return plugin.getConfig().getBoolean("costs.require-staff", false);
+    }
+
+    private boolean requirePrayer() {
+        return plugin.getConfig().getBoolean("costs.require-prayer", false);
     }
 
     private static boolean hasRunes(Player caster, Map<Material, Integer> runes) {

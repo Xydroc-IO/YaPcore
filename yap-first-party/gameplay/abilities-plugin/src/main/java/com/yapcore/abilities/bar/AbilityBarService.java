@@ -291,7 +291,7 @@ public final class AbilityBarService {
         return switch (result) {
             case ON_COOLDOWN -> "On cooldown";
             case LEVEL_TOO_LOW -> "Level too low";
-            case MISSING_COST -> "Missing runes or prayer";
+            case MISSING_COST -> "Missing cast cost";
             case NO_TARGET -> "No target";
             case INVALID_TARGET -> "Invalid target";
             case PVP_DENIED -> "PvP denied";

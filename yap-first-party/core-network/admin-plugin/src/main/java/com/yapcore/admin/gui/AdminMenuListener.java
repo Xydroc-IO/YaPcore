@@ -355,6 +355,14 @@ public final class AdminMenuListener implements Listener {
             plugin.actions().closeAndRun(player, "yapperm gui");
             return;
         }
+        if (slot == 30) {
+            if (plugin.actions().pluginEnabled("YaPDisasters")) {
+                plugin.actions().closeAndRun(player, "yapdisaster");
+            } else {
+                plugin.actions().closeAndRun(player, "weather");
+            }
+            return;
+        }
         if (clicked == null || clicked.getType() != Material.NOTE_BLOCK) {
             return;
         }

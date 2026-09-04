@@ -100,6 +100,19 @@ Persistence: same `bars.yml` as `/ability bind` — book and commands stay in sy
 
 **Gameplay → MMO** tab (`GET /api/mmo`) shows ability catalog count, dual hotbar/book flags, and online combat bar bindings. Admins can hot-reload packs with **Reload abilities** (`POST {"action":"reload-abilities"}`). See [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 
+## Cast costs
+
+By default only **skill level** gates casting. In `plugins/YaPAbilities/config.yml`:
+
+```yaml
+costs:
+  require-runes: false
+  require-staff: false
+  require-prayer: false
+```
+
+Set any flag to `true` to enforce those costs again.
+
 ## YAML schema (ability)
 
 ```yaml
@@ -110,8 +123,8 @@ abilities:
     min-level:
       magic: 1
     costs:
-      prayer: 1
-      runes:
+      prayer: 1              # ignored unless costs.require-prayer=true
+      runes:                 # ignored unless costs.require-runes=true
         FEATHER: 1
         LAPIS_LAZULI: 1
     cooldown: 0

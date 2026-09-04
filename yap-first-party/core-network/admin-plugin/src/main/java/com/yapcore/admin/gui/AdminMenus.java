@@ -375,6 +375,10 @@ public final class AdminMenus {
         }
         inv.setItem(28, AdminMenuHolder.icon(Material.BOOKSHELF, "Open Ranks GUI",
                 "YaPPerms reload lives there"));
+        if (plugin.actions().pluginEnabled("YaPEssentials") || plugin.actions().pluginEnabled("YaPDisasters")) {
+            inv.setItem(30, AdminMenuHolder.icon(Material.WATER_BUCKET, "Weather / Disasters",
+                    "Clear · storms · disasters", "/yapdisaster"));
+        }
         inv.setItem(SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
         player.openInventory(inv);

@@ -157,6 +157,11 @@ starter-grants:
     - yapessentials.broadcast
     - yapessentials.setspawn
     - yapessentials.staff
+    - yapessentials.weather
+    - yapessentials.ptime
+    - yapessentials.pweather
+    - yapdisasters.use
+    - minecraft.command.weather
     - yapadmin.menu
     - yapguard.alerts
   admin:

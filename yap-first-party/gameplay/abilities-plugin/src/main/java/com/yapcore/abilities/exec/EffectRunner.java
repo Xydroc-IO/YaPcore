@@ -62,9 +62,16 @@ public final class EffectRunner {
         AbilityEffect effect = effects.get(index);
         if (effect.kind() == EffectKind.DELAY) {
             long ticks = Math.max(1, effect.intParam("ticks", 5));
-            YapSched.globalLater(plugin,
-                    () -> runSequence(caster, target, effects, index + 1, castPhase, ability),
-                    ticks);
+            LivingEntity scheduleOn = target != null ? target : caster;
+            if (scheduleOn != null) {
+                YapSched.entityLater(plugin, scheduleOn,
+                        () -> runSequence(caster, target, effects, index + 1, castPhase, ability),
+                        ticks);
+            } else {
+                YapSched.globalLater(plugin,
+                        () -> runSequence(caster, target, effects, index + 1, castPhase, ability),
+                        ticks);
+            }
             return;
         }
         runSingle(caster, target, effect, castPhase, ability);
@@ -202,7 +209,8 @@ public final class EffectRunner {
         }
         if (next != null) {
             LivingEntity chainTarget = next;
-            YapSched.globalLater(plugin, () -> chainJump(caster, chainTarget, effect, remaining - 1, radius, visited), 2L);
+            YapSched.entityLater(plugin, chainTarget,
+                    () -> chainJump(caster, chainTarget, effect, remaining - 1, radius, visited), 2L);
         }
     }
 
@@ -279,7 +287,7 @@ public final class EffectRunner {
         double distance = effect.doubleParam("distance", 6.0);
         YapSched.entity(plugin, caster, () -> {
             var dest = caster.getLocation().add(caster.getLocation().getDirection().normalize().multiply(distance));
-            caster.teleport(dest);
+            caster.teleportAsync(dest);
         });
     }
 

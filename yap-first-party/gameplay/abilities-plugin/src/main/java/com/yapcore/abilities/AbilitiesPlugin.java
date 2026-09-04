@@ -14,6 +14,7 @@ import com.yapcore.abilities.book.AbilityBookPlayerStore;
 import com.yapcore.abilities.book.AbilityBookService;
 import com.yapcore.abilities.dashboard.AbilitiesDashboardSnapshot;
 import com.yapcore.abilities.exec.AbilityExecutor;
+import com.yapcore.abilities.exec.AbilityProjectileListener;
 import com.yapcore.abilities.exec.EffectRunner;
 import com.yapcore.abilities.exec.ProjectileTracker;
 import com.yapcore.abilities.load.AbilityPackLoader;
@@ -41,6 +42,7 @@ public final class AbilitiesPlugin extends JavaPlugin {
     private StatusEffectPackLoader statusLoader;
     private AbilityServiceImpl abilityService;
     private StatusEffectManager statusService;
+    private ProjectileTracker projectileTracker;
     private AbilityBarService abilityBar;
     private AbilityBookService abilityBook;
     private AbilityBookKeys bookKeys;
@@ -136,6 +138,10 @@ public final class AbilitiesPlugin extends JavaPlugin {
                 new AbilityBarListener(this, barConfig, abilityBar), this);
         getServer().getPluginManager().registerEvents(
                 new AbilityBookListener(this, abilityBook, abilityService), this);
+        if (projectileTracker != null) {
+            getServer().getPluginManager().registerEvents(
+                    new AbilityProjectileListener(projectileTracker), this);
+        }
 
         AbilityCommands commands = new AbilityCommands(this);
         bind("ability", commands);
@@ -200,6 +206,7 @@ public final class AbilitiesPlugin extends JavaPlugin {
         statusService.attachEffectRunner(effectRunner);
 
         ProjectileTracker projectiles = new ProjectileTracker(this, effectRunner);
+        projectileTracker = projectiles;
         AbilityExecutor executor = new AbilityExecutor(this, effectRunner, projectiles);
         abilityService = new AbilityServiceImpl(abilityLoader, executor);
         statusService.startTicker(getConfig().getLong("tick-interval", 10L));

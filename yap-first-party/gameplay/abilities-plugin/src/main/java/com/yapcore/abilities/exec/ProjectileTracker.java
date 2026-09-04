@@ -17,8 +17,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 public final class ProjectileTracker {
@@ -26,6 +28,7 @@ public final class ProjectileTracker {
     private final JavaPlugin plugin;
     private final EffectRunner effects;
     private final ConcurrentHashMap<UUID, Tracked> active = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, AtomicInteger> perPlayer = new ConcurrentHashMap<>();
 
     public ProjectileTracker(JavaPlugin plugin, EffectRunner effects) {
         this.plugin = plugin;
@@ -44,7 +47,26 @@ public final class ProjectileTracker {
             }
             return;
         }
+        int maxPer = plugin.getConfig().getInt("folia-safe.max-projectiles-per-player", 12);
+        int maxGlobal = plugin.getConfig().getInt("folia-safe.max-projectiles-global", 96);
+        AtomicInteger mine = perPlayer.computeIfAbsent(caster.getUniqueId(), u -> new AtomicInteger());
+        if (mine.get() >= maxPer || active.size() >= maxGlobal) {
+            // Still apply hit if we already have a lock target — skip only the projectile FX.
+            if (initialTarget != null) {
+                onHit.accept(caster, initialTarget);
+            } else {
+                caster.sendActionBar(net.kyori.adventure.text.Component.text(
+                        "§7Too many spells in flight — try again"));
+            }
+            return;
+        }
         YapSched.entity(plugin, caster, () -> {
+            if (mine.get() >= maxPer || active.size() >= maxGlobal) {
+                if (initialTarget != null) {
+                    onHit.accept(caster, initialTarget);
+                }
+                return;
+            }
             EntityType type = parseEntityType(spec.entityType());
             if (type == null) {
                 if (initialTarget != null) {
@@ -54,7 +76,13 @@ public final class ProjectileTracker {
             }
             Location spawn = caster.getEyeLocation();
             Vector velocity = spawn.getDirection().normalize().multiply(spec.speed());
-            Entity entity = caster.getWorld().spawnEntity(spawn, type);
+            Entity entity;
+            try {
+                entity = caster.getWorld().spawnEntity(spawn, type);
+            } catch (RuntimeException ex) {
+                plugin.getLogger().fine("projectile spawn skipped: " + ex.getMessage());
+                return;
+            }
             if (entity instanceof Projectile projectile) {
                 projectile.setShooter(caster);
                 projectile.setVelocity(velocity);
@@ -66,17 +94,23 @@ public final class ProjectileTracker {
                 entity.setVisibleByDefault(false);
                 entity.setSilent(true);
             }
-            ItemDisplay body = AbilityGraphics.attachProjectileBody(
-                    plugin, entity, ability, spec.displayScale());
+            ItemDisplay body = null;
+            try {
+                body = AbilityGraphics.attachProjectileBody(
+                        plugin, entity, ability, spec.displayScale());
+            } catch (RuntimeException ex) {
+                plugin.getLogger().fine("projectile body skipped: " + ex.getMessage());
+            }
             UUID lockId = initialTarget != null ? initialTarget.getUniqueId() : null;
             active.put(entity.getUniqueId(), new Tracked(
                     caster.getUniqueId(), ability, spec, onHit, 0, lockId, body));
+            mine.incrementAndGet();
             track(entity);
         });
     }
 
     private void track(Entity projectile) {
-        YapSched.globalLater(plugin, () -> tick(projectile), 1L);
+        YapSched.entityLater(plugin, projectile, () -> tick(projectile), 1L);
     }
 
     private void tick(Entity projectile) {
@@ -87,14 +121,17 @@ public final class ProjectileTracker {
         }
         Tracked current = tracked.nextTick();
         active.put(projectile.getUniqueId(), current);
-        AbilityGraphics.tickProjectileBody(current.body, projectile, current.ticks);
+        // Passenger bodies need no cross-entity scheduler hop — spin in-place only.
+        if (current.body != null && current.body.isValid()) {
+            AbilityGraphics.tickProjectileBody(current.body, projectile, current.ticks);
+        }
         if (current.spec.hasTrail() && current.ticks % current.spec.trailInterval() == 0) {
             spawnTrail(projectile.getLocation(), current.spec);
         }
         Player caster = plugin.getServer().getPlayer(current.casterId);
         if (caster == null) {
             cleanup(projectile.getUniqueId(), current);
-            projectile.remove();
+            safeRemove(projectile);
             return;
         }
         if (current.spec.isHoming()) {
@@ -111,7 +148,7 @@ public final class ProjectileTracker {
             }
             impactBurst(projectile.getLocation(), current);
             cleanup(projectile.getUniqueId(), current);
-            projectile.remove();
+            safeRemove(projectile);
             return;
         }
         track(projectile);
@@ -119,16 +156,21 @@ public final class ProjectileTracker {
 
     private void finishHit(Entity projectile, Player caster, Tracked current, LivingEntity hit) {
         active.remove(projectile.getUniqueId());
+        releasePlayerSlot(current.casterId);
         var onHit = current.onHit;
         Location impact = hit.getLocation().add(0, hit.getHeight() * 0.5, 0);
         impactBurst(impact, current);
-        AbilityGraphics.removeDisplay(current.body);
+        AbilityGraphics.removeDisplay(plugin, current.body);
         YapSched.entity(plugin, hit, () -> {
-            onHit.accept(caster, hit);
-            if (current.spec.hasSplash()) {
-                splash(hit.getLocation(), caster, current, hit);
+            try {
+                onHit.accept(caster, hit);
+                if (current.spec.hasSplash()) {
+                    splash(hit.getLocation(), caster, current, hit);
+                }
+            } catch (RuntimeException ex) {
+                plugin.getLogger().warning("ability on-hit failed: " + ex.getMessage());
             }
-            projectile.remove();
+            safeRemove(projectile);
         });
     }
 
@@ -168,10 +210,46 @@ public final class ProjectileTracker {
     }
 
     private void cleanup(UUID id, Tracked tracked) {
-        active.remove(id);
-        if (tracked != null) {
-            AbilityGraphics.removeDisplay(tracked.body);
+        Tracked removed = active.remove(id);
+        Tracked t = tracked != null ? tracked : removed;
+        if (t != null) {
+            releasePlayerSlot(t.casterId());
+            AbilityGraphics.removeDisplay(plugin, t.body());
         }
+    }
+
+    private void releasePlayerSlot(UUID casterId) {
+        AtomicInteger mine = perPlayer.get(casterId);
+        if (mine != null) {
+            mine.updateAndGet(v -> Math.max(0, v - 1));
+        }
+    }
+
+    private void safeRemove(Entity entity) {
+        if (entity == null || !entity.isValid()) {
+            return;
+        }
+        YapSched.entity(plugin, entity, () -> {
+            if (entity.isValid()) {
+                entity.remove();
+            }
+        });
+    }
+
+    /** Called when vanilla removes the projectile (block hit, despawn, etc.). */
+    public void onProjectileGone(Entity projectile) {
+        if (projectile == null) {
+            return;
+        }
+        Tracked tracked = active.remove(projectile.getUniqueId());
+        if (tracked != null) {
+            releasePlayerSlot(tracked.casterId());
+            AbilityGraphics.removeDisplay(plugin, tracked.body());
+        }
+    }
+
+    public boolean isTracked(Entity projectile) {
+        return projectile != null && active.containsKey(projectile.getUniqueId());
     }
 
     private void steer(Entity projectile, Player caster, UUID lockTargetId) {

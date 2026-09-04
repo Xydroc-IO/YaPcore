@@ -36,24 +36,27 @@ public final class BossDeathListener implements Listener {
         if (bossId == null || bossId.isBlank()) {
             return;
         }
-        Player killer = event.getEntity().getKiller();
-        if (killer == null) {
-            return;
-        }
         BossDefinition def = bosses.definition(bossId);
+        Player killer = event.getEntity().getKiller();
+        if (killer != null) {
+            if (def != null) {
+                bosses.dropLoot(def, killer);
+            }
+            YapSched.async(plugin, () -> {
+                try {
+                    kills.increment(killer.getUniqueId(), bossId);
+                } catch (Exception e) {
+                    plugin.getLogger().log(Level.SEVERE, "boss kill persist", e);
+                }
+            });
+            YapSched.global(plugin, () ->
+                    plugin.getServer().getPluginManager().callEvent(new BossKillEvent(killer, bossId)));
+            killer.sendMessage("§6Boss defeated: §f" + (def != null ? def.displayName() : bossId));
+        }
+        // Always respawn — environmental / stacker / purge deaths must not leave a hole,
+        // and restart-spawn duplicates used to pile when only player kills respawned.
         if (def != null) {
-            bosses.dropLoot(def, killer);
             bosses.scheduleRespawn(def);
         }
-        YapSched.async(plugin, () -> {
-            try {
-                kills.increment(killer.getUniqueId(), bossId);
-            } catch (Exception e) {
-                plugin.getLogger().log(Level.SEVERE, "boss kill persist", e);
-            }
-        });
-        YapSched.global(plugin, () ->
-                plugin.getServer().getPluginManager().callEvent(new BossKillEvent(killer, bossId)));
-        killer.sendMessage("§6Boss defeated: §f" + (def != null ? def.displayName() : bossId));
     }
 }
