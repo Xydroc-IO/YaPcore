@@ -13,6 +13,6 @@
 
 ## Notes
 
-- Keep domain folders ≤500 lines where practical
+- Keep domain `.java` files ≤**500** lines (`./scripts/check-domain-line-limits.sh`)
 - World / inventory mutations must stay on **SYNC**
 - Contributions are **GPLv3** — [LICENSE](../LICENSE) · [LICENSING.md](../docs/start/LICENSING.md)

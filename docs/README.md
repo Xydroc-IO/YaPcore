@@ -19,7 +19,7 @@ Operator docs for install, configuration, plugins, and gameplay features.
 | Folder | Contents |
 |--------|----------|
 | [**start/**](start/) | Quick start, releases, secrets, licensing, Windows |
-| [**ops/**](ops/) | Commands, permissions, dashboard, tune |
+| [**ops/**](ops/) | Commands, permissions, dashboard, tune, [code elegance follow-up](ops/CODE_ELEGANCE_FOLLOWUP.md) |
 | [**network/**](network/) | Ports, crossplay, nginx, YaP Link, edge hardening |
 | [**plugins/**](plugins/) | Plugin list, modules, vehicles, stacker, compat |
 | [**data/**](data/) | YaPDB, MariaDB, Postgres, SQLite, playerdata |

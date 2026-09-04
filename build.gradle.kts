@@ -279,6 +279,17 @@ tasks.register("checkMsptRegressionFixtures") {
     }
 }
 
+tasks.register<Exec>("checkDomainLineLimits") {
+    group = "verification"
+    description = "Fail if any chassis/first-party Java source exceeds 500 lines"
+    workingDir = project.projectDir
+    commandLine("bash", "scripts/check-domain-line-limits.sh")
+}
+
+tasks.named("check") {
+    dependsOn("checkDomainLineLimits")
+}
+
 tasks.named<JavaExec>("run") {
     standardInput = System.`in`
     systemProperty("yapcore.home", project.projectDir.absolutePath)

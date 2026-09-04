@@ -16,7 +16,9 @@ jobs:
           distribution: temurin
           java-version: "21"
       - name: Make scripts executable
-        run: chmod +x scripts/bench/check-mspt-regression.sh scripts/verify-yap-folia.sh scripts/smoke-folia.sh scripts/bench/compare-folia.py || true
+        run: chmod +x scripts/*.sh scripts/bench/*.sh scripts/yapctl || true
+      - name: Domain line limits (≤500)
+        run: gradle checkDomainLineLimits --no-daemon
       - name: Build shadow JAR
         run: gradle shadowJar --no-daemon
       - name: Concurrency + unit tests
