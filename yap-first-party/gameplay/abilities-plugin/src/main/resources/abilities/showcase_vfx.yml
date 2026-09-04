@@ -1,0 +1,240 @@
+# V1 ability VFX showcase — arcs, timed layers, shake, new shapes, motion trails
+abilities:
+  arc_comet:
+    name: "Arc Comet"
+    icon-cmd: 78010
+    category: magic
+    min-level:
+      magic: 15
+    costs:
+      prayer: 2
+    cooldown: 25
+    target: raycast
+    cast:
+      - type: animation
+        style: cast
+        pulses: 2
+        pose: glow
+      - type: vfx
+        particle: FLAME
+        shape: helix
+        count: 18
+        radius: 1.0
+      - type: vfx
+        at: 3
+        particle: DUST
+        shape: ring
+        count: 14
+        color: 255,100,30
+        size: 1.2
+        radius: 1.1
+      - type: sound
+        sound: ENTITY_BLAZE_SHOOT
+        pitch: 0.9
+      - type: shake
+        power: 0.06
+        pulses: 2
+    projectile:
+      entity: SNOWBALL
+      speed: 1.05
+      max-ticks: 55
+      path: arc
+      arc-height: 2.4
+      hide: true
+      scale: 1.05
+      icon-cmd: 78010
+      impact-shake: true
+      shake-power: 0.18
+      trail:
+        particle: FLAME
+        count: 7
+        interval: 1
+        style: motion
+        falloff: 0.5
+    on-hit:
+      - type: damage
+        style: magic
+        max-hit: 10
+      - type: vfx
+        particle: LAVA
+        shape: shockwave
+        count: 22
+        radius: 1.8
+      - type: sound
+        sound: ENTITY_GENERIC_EXPLODE
+        pitch: 1.1
+      - type: shake
+        power: 0.2
+        pulses: 3
+        radius: 3.5
+
+  frost_lance:
+    name: "Frost Lance"
+    icon-cmd: 78011
+    category: magic
+    min-level:
+      magic: 22
+    costs:
+      prayer: 3
+    cooldown: 30
+    target: raycast
+    cast:
+      - type: animation
+        style: cast
+        pose: glow
+      - type: vfx
+        particle: SNOWFLAKE
+        shape: cone
+        count: 24
+        radius: 3.5
+      - type: vfx
+        at: 2
+        particle: DUST
+        shape: beam
+        count: 16
+        color: 120,200,255
+        size: 1.1
+        radius: 4
+      - type: sound
+        sound: BLOCK_GLASS_BREAK
+        pitch: 1.4
+    projectile:
+      entity: SNOWBALL
+      speed: 1.35
+      max-ticks: 45
+      path: straight
+      hide: true
+      scale: 0.9
+      icon-cmd: 78011
+      impact-shake: true
+      trail:
+        particle: SNOWFLAKE
+        count: 5
+        interval: 1
+        style: ribbon
+        falloff: 0.35
+    on-hit:
+      - type: damage
+        style: magic
+        max-hit: 9
+      - type: vfx
+        particle: ITEM_SNOWBALL
+        shape: orb
+        count: 20
+        radius: 1.0
+      - type: knockback
+        power: 0.25
+
+  earth_pillar:
+    name: "Earth Pillar"
+    icon-cmd: 78013
+    category: magic
+    min-level:
+      magic: 28
+    costs:
+      prayer: 3
+    cooldown: 40
+    range: 4
+    target: area
+    cast:
+      - type: animation
+        style: slam
+        pose: glow
+      - type: delay
+        ticks: 3
+      - type: vfx
+        particle: BLOCK
+        shape: pillar
+        block: DIRT
+        count: 28
+        radius: 1.1
+        offset-y: 0
+      - type: vfx
+        at: 4
+        particle: BLOCK
+        shape: shockwave
+        block: STONE
+        count: 20
+        radius: 2.4
+        offset-y: 0.05
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_ATTACK
+        volume: 1.0
+      - type: shake
+        power: 0.22
+        pulses: 4
+        radius: 5
+    on-hit:
+      - type: damage
+        style: magic
+        max-hit: 11
+      - type: knockback
+        power: 0.4
+      - type: vfx
+        particle: CRIT
+        shape: ring
+        count: 12
+        radius: 1.6
+
+  storm_orb:
+    name: "Storm Orb"
+    icon-cmd: 78012
+    category: magic
+    min-level:
+      magic: 35
+    costs:
+      prayer: 4
+    cooldown: 45
+    target: raycast
+    cast:
+      - type: animation
+        style: channel
+        pulses: 3
+        pose: glow
+      - type: vfx
+        particle: ELECTRIC_SPARK
+        shape: orb
+        count: 26
+        radius: 1.2
+        ticks: 8
+        interval: 2
+      - type: vfx
+        at: 5
+        particle: END_ROD
+        shape: helix
+        count: 16
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_LIGHTNING_BOLT_THUNDER
+        volume: 0.4
+        pitch: 1.7
+    projectile:
+      entity: SNOWBALL
+      speed: 0.95
+      max-ticks: 60
+      path: arc
+      arc-height: 1.6
+      hide: true
+      scale: 1.15
+      icon-cmd: 78012
+      splash-radius: 2.8
+      impact-shake: true
+      shake-power: 0.2
+      trail:
+        particle: ELECTRIC_SPARK
+        count: 6
+        interval: 1
+        style: motion
+        falloff: 0.4
+    on-hit:
+      - type: damage
+        style: magic
+        max-hit: 12
+      - type: vfx
+        particle: ELECTRIC_SPARK
+        shape: shockwave
+        count: 24
+        radius: 2.5
+      - type: sound
+        sound: ENTITY_LIGHTNING_BOLT_IMPACT
+        pitch: 1.3

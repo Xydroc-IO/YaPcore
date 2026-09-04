@@ -38,6 +38,10 @@ Install, setup, and lifecycle helpers for operators.
 | `nginx-setup.sh` | nginx edge template install |
 | `db/*.sh` | MariaDB + JDBC setup |
 | `windows/*.ps1` | Windows equivalents |
+| `content/generate-mmo-quest-compendium.py` | Validate MMO quest YAML objective types (Wave 3) |
+| `generate-ability-pack.py` | Regenerate bulk ability YAML with V2 element/archetype VFX kits (`docs/mmo/MMO_ABILITY_VFX.md`) |
+| `generate-hero-ability-icons.py` | Unique 16×16 hero ability icons (CMD 78020–78031) |
+| `content/ability-vfx-soak-gate.py` | Offline Folia VFX authoring soak gate (V4) |
 
 ## Build YaP-Folia (from source)
 

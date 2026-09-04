@@ -236,10 +236,15 @@ Example showcase abilities: `showcase_m7.yml` (`fireball_splash`, `homing_arc`, 
 |---------|-----|
 | **Cast icon pulse** | ItemDisplay + CustomModelData at caster eye (scales/floats ~14 ticks) |
 | **Spell projectile body** | ItemDisplay rides the projectile; vanilla entity hidden (`projectile.hide: true`) |
-| **Particle shapes** | `shape: burst\|ring\|helix\|beam\|nova` on `type: vfx` |
+| **Particle shapes** | `shape: burst\|ring\|helix\|beam\|nova\|cone\|pillar\|orb\|shockwave` on `type: vfx` |
 | **Dust / block data** | `color: R,G,B` (DUST) · `block: DIRT` (BLOCK) |
 | **Sustained aura** | `ticks` + `interval` on VFX |
-| **Impact burst** | Auto nova + sound when projectile lands |
+| **Non-blocking timed step** | `at: N` on any effect — fires in N ticks without blocking the list (V1) |
+| **Shake** | `type: shake` — velocity jitter pulses; optional `radius` for nearby players (V1) |
+| **Arc projectiles** | `projectile.path: arc` + `arc-height` (V1) |
+| **Trail styles** | `trail.style: burst\|ribbon\|motion` + `falloff` (V1) |
+| **Impact shake** | `projectile.impact-shake: true` + `shake-power` (V1) |
+| **Impact burst** | Auto nova + orb stage + sound when projectile lands |
 | **Hand sparkles** | Crit/end-rod at hands on animation |
 
 Resource pack overlay: `resourcepacks/yap-abilities/` (merged into `yapcore-default.zip` with `-PyapGameplay=true`).
@@ -270,17 +275,30 @@ cast:
     particle: FLAME
     shape: helix
     count: 22
-  - type: delay
-    ticks: 4
+  - type: vfx
+    at: 4                # non-blocking — continues immediately
+    particle: DUST
+    shape: ring
+    color: 255,80,20
+  - type: shake
+    power: 0.08
+    pulses: 2
 projectile:
   entity: SNOWBALL
+  path: arc              # straight|arc
+  arc-height: 2.2
   hide: true
   scale: 0.95
+  impact-shake: true
   trail:
     particle: FLAME
     count: 6
     interval: 1
+    style: motion        # burst|ribbon|motion
+    falloff: 0.5
 ```
+
+Example showcase abilities: `showcase_m7.yml`, `showcase_vfx.yml` (V1 arcs / timed layers / shake).
 
 ### Bedrock spellbook
 
@@ -289,7 +307,16 @@ projectile:
 
 ## Roadmap (post-M7)
 
-- Full per-spell resource pack art (all 233 CMD models)
-- Bedrock animation controller bridge
+**Ability VFX quality:** ✅ complete — [`MMO_ABILITY_VFX.md`](MMO_ABILITY_VFX.md) (V1–V4).
+
+- **V1** ✅ Engine: `at:` timelines, shake, arc paths, motion trails, cone/pillar/orb/shockwave
+- **V2** ✅ Element/archetype generator kits (`scripts/generate-ability-pack.py`)
+- **V3** ✅ Hand-authored heroes (`showcase_heroes.yml`)
+- **V4** ✅ Status ambient VFX, Bedrock ability-name cast bar, unique hero icons, Folia soak gates
+
+Also still open (separate from VFX quality track):
+
+- Broader per-spell resource pack art beyond heroes (all generated CMD models)
+- Full Bedrock animation controller bridge (beyond action-bar cast labels)
 - AoE shapes beyond circle
 - Unify with combat-plugin `StatusEffectService` (single buff registry)

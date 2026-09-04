@@ -17,7 +17,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -75,7 +74,12 @@ public final class ProjectileTracker {
                 return;
             }
             Location spawn = caster.getEyeLocation();
-            Vector velocity = spawn.getDirection().normalize().multiply(spec.speed());
+            Vector direction = spawn.getDirection().normalize();
+            Vector velocity = direction.clone().multiply(spec.speed());
+            if (spec.isArc() && !spec.isHoming()) {
+                // Seed upward so early ticks still look alive before path override.
+                velocity.setY(velocity.getY() + Math.min(0.55, spec.arcHeight() * 0.18));
+            }
             Entity entity;
             try {
                 entity = caster.getWorld().spawnEntity(spawn, type);
@@ -103,7 +107,16 @@ public final class ProjectileTracker {
             }
             UUID lockId = initialTarget != null ? initialTarget.getUniqueId() : null;
             active.put(entity.getUniqueId(), new Tracked(
-                    caster.getUniqueId(), ability, spec, onHit, 0, lockId, body));
+                    caster.getUniqueId(),
+                    ability,
+                    spec,
+                    onHit,
+                    0,
+                    lockId,
+                    body,
+                    spawn.clone(),
+                    direction.clone(),
+                    spawn.clone()));
             mine.incrementAndGet();
             track(entity);
         });
@@ -119,14 +132,17 @@ public final class ProjectileTracker {
             cleanup(projectile.getUniqueId(), tracked);
             return;
         }
-        Tracked current = tracked.nextTick();
+        Tracked current = tracked.nextTick(projectile.getLocation());
         active.put(projectile.getUniqueId(), current);
         // Passenger bodies need no cross-entity scheduler hop — spin in-place only.
         if (current.body != null && current.body.isValid()) {
             AbilityGraphics.tickProjectileBody(current.body, projectile, current.ticks);
         }
+        if (current.spec.isArc() && !current.spec.isHoming()) {
+            applyArc(projectile, current);
+        }
         if (current.spec.hasTrail() && current.ticks % current.spec.trailInterval() == 0) {
-            spawnTrail(projectile.getLocation(), current.spec);
+            spawnTrail(projectile.getLocation(), current);
         }
         Player caster = plugin.getServer().getPlayer(current.casterId);
         if (caster == null) {
@@ -152,6 +168,25 @@ public final class ProjectileTracker {
             return;
         }
         track(projectile);
+    }
+
+    private void applyArc(Entity projectile, Tracked current) {
+        ProjectileSpec spec = current.spec;
+        double max = Math.max(1, spec.maxTicks());
+        double t = Math.min(1.0, current.ticks / max);
+        double travel = spec.speed() * current.ticks;
+        Vector dir = current.direction.clone();
+        Location next = current.origin.clone().add(dir.clone().multiply(travel));
+        double peak = spec.arcHeight() > 0 ? spec.arcHeight() : Math.max(1.2, travel * 0.12);
+        // Parabola peaking mid-flight, layered on the aim pitch.
+        next.setY(current.origin.getY() + dir.getY() * travel + peak * 4.0 * t * (1.0 - t));
+        Vector delta = next.toVector().subtract(projectile.getLocation().toVector());
+        if (delta.lengthSquared() < 0.0001) {
+            return;
+        }
+        // Cap velocity so Folia entity ticks stay stable.
+        double mag = Math.min(3.5, Math.max(0.15, delta.length()));
+        projectile.setVelocity(delta.normalize().multiply(mag));
     }
 
     private void finishHit(Entity projectile, Player caster, Tracked current, LivingEntity hit) {
@@ -189,8 +224,8 @@ public final class ProjectileTracker {
         }
         VfxEmitter.emitAt(plugin, center, new AbilityEffect(EffectKind.VFX, java.util.Map.of(
                 "particle", current.spec.trailParticle().isBlank() ? "EXPLOSION" : current.spec.trailParticle(),
-                "shape", "nova",
-                "count", "18",
+                "shape", "shockwave",
+                "count", "22",
                 "radius", String.valueOf(Math.max(1.0, current.spec.splashRadius())),
                 "offset-y", "0.2")));
     }
@@ -203,10 +238,21 @@ public final class ProjectileTracker {
                 "count", "14",
                 "radius", "0.9",
                 "offset-y", "0.1")));
+        // Staged secondary burst a tick later for weight.
+        YapSched.regionChunkLater(plugin, at.getWorld(), at.getBlockX() >> 4, at.getBlockZ() >> 4, () ->
+                VfxEmitter.emitAt(plugin, at, new AbilityEffect(EffectKind.VFX, java.util.Map.of(
+                        "particle", particle,
+                        "shape", "orb",
+                        "count", "10",
+                        "radius", "0.55",
+                        "offset-y", "0.15"))), 2L);
         VfxEmitter.emitAt(plugin, at, new AbilityEffect(EffectKind.SOUND, java.util.Map.of(
                 "sound", "ENTITY_GENERIC_EXPLODE",
                 "volume", "0.45",
                 "pitch", "1.35")));
+        if (current.spec.impactShake()) {
+            ImpactFx.shakeAt(plugin, at, current.spec.shakePower(), 3, Math.max(2.5, current.spec.splashRadius()));
+        }
     }
 
     private void cleanup(UUID id, Tracked tracked) {
@@ -306,13 +352,35 @@ public final class ProjectileTracker {
         return null;
     }
 
-    private static void spawnTrail(Location location, ProjectileSpec spec) {
+    private static void spawnTrail(Location location, Tracked tracked) {
+        ProjectileSpec spec = tracked.spec;
         Particle particle = parseParticle(spec.trailParticle());
-        if (particle == null) {
+        if (particle == null || location.getWorld() == null) {
             return;
         }
-        int count = Math.max(spec.trailCount(), 4);
-        location.getWorld().spawnParticle(particle, location, count, 0.08, 0.08, 0.08, 0.015);
+        double life = Math.min(1.0, tracked.ticks / (double) Math.max(1, spec.maxTicks()));
+        int baseCount = Math.max(spec.trailCount(), 2);
+        int count = Math.max(1, (int) Math.round(baseCount * (1.0 - spec.trailFalloff() * life)));
+        Vector motion = location.toVector().subtract(tracked.lastLoc.toVector());
+        String style = spec.trailStyle();
+        if (("motion".equals(style) || "ribbon".equals(style)) && motion.lengthSquared() > 0.0004) {
+            Vector step = motion.clone().multiply(1.0 / Math.max(1, count));
+            Vector side = motion.clone().crossProduct(new Vector(0, 1, 0));
+            if (side.lengthSquared() < 0.0001) {
+                side = motion.clone().crossProduct(new Vector(1, 0, 0));
+            }
+            if (side.lengthSquared() > 0.0001) {
+                side.normalize().multiply("ribbon".equals(style) ? 0.12 : 0.04);
+            } else {
+                side = new Vector(0, 0, 0);
+            }
+            for (int i = 0; i < count; i++) {
+                Location p = tracked.lastLoc.clone().add(step.clone().multiply(i)).add(side.clone().multiply((i % 2 == 0) ? 1 : -1));
+                location.getWorld().spawnParticle(particle, p, 1, 0.01, 0.01, 0.01, 0.0);
+            }
+        } else {
+            location.getWorld().spawnParticle(particle, location, count, 0.08, 0.08, 0.08, 0.015);
+        }
         // Soft dust halo for readability
         location.getWorld().spawnParticle(Particle.DUST, location, 2, 0.05, 0.05, 0.05, 0,
                 new Particle.DustOptions(org.bukkit.Color.fromRGB(255, 220, 120), 0.9f));
@@ -350,10 +418,14 @@ public final class ProjectileTracker {
             BiConsumer<Player, LivingEntity> onHit,
             int ticks,
             UUID lockTargetId,
-            ItemDisplay body) {
+            ItemDisplay body,
+            Location origin,
+            Vector direction,
+            Location lastLoc) {
 
-        Tracked nextTick() {
-            return new Tracked(casterId, ability, spec, onHit, ticks + 1, lockTargetId, body);
+        Tracked nextTick(Location now) {
+            return new Tracked(casterId, ability, spec, onHit, ticks + 1, lockTargetId, body,
+                    origin, direction, now == null ? lastLoc : now.clone());
         }
     }
 }

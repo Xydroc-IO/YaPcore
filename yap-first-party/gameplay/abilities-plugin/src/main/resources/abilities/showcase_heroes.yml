@@ -1,0 +1,825 @@
+# V3 hero abilities — hand-authored signature / ultimate casts
+# Not generated. Generator skips showcase_*.yml and this pack is named showcase_heroes.yml.
+abilities:
+  inferno_meteor:
+    name: "Inferno Meteor"
+    icon-cmd: 78020
+    category: magic
+    min-level:
+      magic: 70
+    costs:
+      prayer: 8
+      runes:
+        BLAZE_POWDER: 4
+        LAPIS_LAZULI: 6
+    cooldown: 90
+    target: raycast
+    cast:
+      - type: animation
+        style: channel
+        pulses: 5
+        pose: glow
+      - type: sound
+        sound: ENTITY_BLAZE_AMBIENT
+        volume: 0.8
+        pitch: 0.7
+      - type: vfx
+        particle: FLAME
+        shape: pillar
+        count: 36
+        radius: 1.4
+        offset-y: 0
+      - type: vfx
+        at: 3
+        particle: LAVA
+        shape: orb
+        count: 22
+        radius: 1.1
+      - type: vfx
+        at: 6
+        particle: DUST
+        shape: ring
+        count: 20
+        color: 255,60,10
+        size: 1.4
+        radius: 1.6
+      - type: shake
+        power: 0.1
+        pulses: 3
+      - type: sound
+        at: 8
+        sound: ENTITY_BLAZE_SHOOT
+        pitch: 0.75
+    projectile:
+      entity: DRAGON_FIREBALL
+      speed: 0.85
+      max-ticks: 70
+      path: arc
+      arc-height: 3.2
+      hide: true
+      scale: 1.35
+      icon-cmd: 78020
+      splash-radius: 4.0
+      impact-shake: true
+      shake-power: 0.28
+      trail:
+        particle: FLAME
+        count: 10
+        interval: 1
+        style: motion
+        falloff: 0.35
+    on-hit:
+      - type: aoe
+        radius: 4
+        style: magic
+        max-hit: 22
+        particle: LAVA
+        shape: shockwave
+        count: 32
+      - type: vfx
+        particle: FLAME
+        shape: pillar
+        count: 28
+        radius: 1.5
+      - type: vfx
+        at: 3
+        particle: LAVA
+        shape: orb
+        count: 18
+        radius: 1.8
+      - type: sound
+        sound: ENTITY_GENERIC_EXPLODE
+        volume: 1.2
+        pitch: 0.7
+      - type: shake
+        power: 0.28
+        pulses: 5
+        radius: 6
+      - type: debuff
+        id: burn
+        stacks: 2
+
+  tidal_collapse:
+    name: "Tidal Collapse"
+    icon-cmd: 78021
+    category: magic
+    min-level:
+      magic: 65
+    costs:
+      prayer: 7
+      runes:
+        LAPIS_LAZULI: 5
+        PRISMARINE_SHARD: 3
+    cooldown: 80
+    range: 5
+    target: area
+    cast:
+      - type: animation
+        style: slam
+        pose: glow
+      - type: vfx
+        particle: DRIPPING_WATER
+        shape: helix
+        count: 30
+        radius: 1.3
+      - type: vfx
+        at: 2
+        particle: BUBBLE_POP
+        shape: cone
+        count: 28
+        radius: 4
+      - type: vfx
+        at: 5
+        particle: DUST
+        shape: shockwave
+        count: 24
+        color: 40,140,255
+        size: 1.3
+        radius: 2.8
+        offset-y: 0.1
+      - type: sound
+        sound: ENTITY_ELDER_GUARDIAN_CURSE
+        volume: 0.7
+        pitch: 1.4
+      - type: shake
+        power: 0.18
+        pulses: 4
+        radius: 5
+    on-hit:
+      - type: damage
+        style: magic
+        max-hit: 18
+      - type: knockback
+        power: 0.55
+      - type: vfx
+        particle: SPLASH
+        shape: shockwave
+        count: 30
+        radius: 3.2
+      - type: sound
+        sound: ENTITY_GENERIC_SPLASH
+        volume: 1.1
+        pitch: 0.85
+
+  cyclone_rift:
+    name: "Cyclone Rift"
+    icon-cmd: 78022
+    category: magic
+    min-level:
+      magic: 60
+    costs:
+      prayer: 6
+      runes:
+        FEATHER: 4
+        LAPIS_LAZULI: 4
+    cooldown: 70
+    target: raycast
+    cast:
+      - type: animation
+        style: channel
+        pulses: 4
+        pose: levitate
+        pose-ticks: 12
+      - type: vfx
+        particle: CLOUD
+        shape: helix
+        count: 34
+        radius: 1.5
+        ticks: 10
+        interval: 2
+      - type: vfx
+        at: 4
+        particle: GUST
+        shape: orb
+        count: 20
+        radius: 1.2
+      - type: sound
+        sound: ENTITY_BREEZE_INHALE
+        pitch: 0.9
+    projectile:
+      entity: SNOWBALL
+      speed: 1.15
+      max-ticks: 55
+      path: arc
+      arc-height: 2.8
+      hide: true
+      scale: 1.2
+      icon-cmd: 78022
+      splash-radius: 3.2
+      impact-shake: true
+      shake-power: 0.22
+      trail:
+        particle: CLOUD
+        count: 8
+        interval: 1
+        style: ribbon
+        falloff: 0.4
+    on-hit:
+      - type: damage
+        style: magic
+        max-hit: 16
+      - type: knockback
+        power: 0.65
+      - type: vfx
+        particle: GUST
+        shape: shockwave
+        count: 28
+        radius: 2.8
+      - type: vfx
+        at: 2
+        particle: CLOUD
+        shape: pillar
+        count: 22
+        radius: 1.0
+      - type: sound
+        sound: ENTITY_BREEZE_WIND_BURST
+        volume: 1.0
+        pitch: 0.8
+      - type: shake
+        power: 0.2
+        pulses: 3
+        radius: 5
+
+  tectonic_spike:
+    name: "Tectonic Spike"
+    icon-cmd: 78023
+    category: magic
+    min-level:
+      magic: 68
+    costs:
+      prayer: 7
+      runes:
+        LAPIS_LAZULI: 5
+        COBBLESTONE: 8
+    cooldown: 85
+    range: 4.5
+    target: ground
+    conditions:
+      - type: on_ground
+    cast:
+      - type: animation
+        style: slam
+        pose: glow
+      - type: delay
+        ticks: 4
+      - type: vfx
+        particle: BLOCK
+        shape: pillar
+        block: STONE
+        count: 40
+        radius: 1.3
+        offset-y: 0
+      - type: vfx
+        at: 3
+        particle: BLOCK
+        shape: shockwave
+        block: DIRT
+        count: 28
+        radius: 3.0
+        offset-y: 0.05
+      - type: sound
+        sound: ENTITY_WARDEN_SONIC_BOOM
+        volume: 0.55
+        pitch: 1.6
+      - type: shake
+        power: 0.3
+        pulses: 5
+        radius: 6
+    on-hit:
+      - type: damage
+        style: magic
+        max-hit: 20
+      - type: knockback
+        power: 0.7
+      - type: vfx
+        particle: BLOCK
+        shape: pillar
+        block: DEEPSLATE
+        count: 24
+        radius: 1.1
+      - type: sound
+        sound: ENTITY_IRON_GOLEM_DAMAGE
+        pitch: 0.7
+
+  void_lance:
+    name: "Void Lance"
+    icon-cmd: 78024
+    category: magic
+    min-level:
+      magic: 72
+    costs:
+      prayer: 8
+      runes:
+        ENDER_PEARL: 2
+        LAPIS_LAZULI: 6
+    cooldown: 75
+    target: raycast
+    cast:
+      - type: animation
+        style: cast
+        pulses: 3
+        pose: glow
+      - type: vfx
+        particle: END_ROD
+        shape: cone
+        count: 32
+        radius: 5
+      - type: vfx
+        at: 2
+        particle: ENCHANT
+        shape: beam
+        count: 24
+        radius: 6
+      - type: vfx
+        at: 4
+        particle: DUST
+        shape: orb
+        count: 16
+        color: 160,60,255
+        size: 1.3
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_SHOOT
+        pitch: 1.5
+      - type: shake
+        power: 0.08
+        pulses: 2
+    projectile:
+      entity: SNOWBALL
+      speed: 1.4
+      max-ticks: 50
+      path: straight
+      hide: true
+      scale: 1.1
+      icon-cmd: 78024
+      impact-shake: true
+      shake-power: 0.2
+      trail:
+        particle: END_ROD
+        count: 7
+        interval: 1
+        style: motion
+        falloff: 0.3
+    on-hit:
+      - type: damage
+        style: magic
+        max-hit: 24
+      - type: vfx
+        particle: END_ROD
+        shape: orb
+        count: 28
+        radius: 1.4
+      - type: vfx
+        at: 2
+        particle: REVERSE_PORTAL
+        shape: shockwave
+        count: 18
+        radius: 1.8
+      - type: sound
+        sound: ENTITY_EVOKER_CAST_SPELL
+        pitch: 0.85
+      - type: knockback
+        power: 0.35
+
+  hex_bloom:
+    name: "Hex Bloom"
+    icon-cmd: 78025
+    category: magic
+    min-level:
+      magic: 55
+    costs:
+      prayer: 6
+      runes:
+        SPIDER_EYE: 3
+        LAPIS_LAZULI: 4
+    cooldown: 65
+    range: 4
+    target: area
+    cast:
+      - type: animation
+        style: channel
+        pulses: 4
+        pose: glow
+      - type: vfx
+        particle: WITCH
+        shape: orb
+        count: 30
+        radius: 1.3
+        ticks: 10
+        interval: 2
+      - type: vfx
+        at: 4
+        particle: SMOKE
+        shape: helix
+        count: 22
+        radius: 1.1
+      - type: sound
+        sound: ENTITY_WITCH_AMBIENT
+        pitch: 0.8
+    on-hit:
+      - type: damage
+        style: magic
+        max-hit: 12
+      - type: debuff
+        id: poison
+        stacks: 2
+      - type: vfx
+        particle: WITCH
+        shape: shockwave
+        count: 26
+        radius: 2.6
+      - type: vfx
+        at: 3
+        particle: WITCH
+        shape: orb
+        count: 16
+        radius: 1.2
+      - type: sound
+        sound: ENTITY_WITCH_CELEBRATE
+        pitch: 0.9
+      - type: shake
+        power: 0.12
+        pulses: 3
+        radius: 4
+
+  solar_aegis:
+    name: "Solar Aegis"
+    icon-cmd: 78026
+    category: prayer
+    min-level:
+      prayer: 60
+    costs:
+      prayer: 5
+    cooldown: 100
+    target: self
+    cast:
+      - type: animation
+        style: both
+        pose: glow
+        pose-ticks: 16
+      - type: vfx
+        particle: ENCHANT
+        shape: pillar
+        count: 36
+        radius: 1.2
+        ticks: 16
+        interval: 2
+      - type: vfx
+        at: 3
+        particle: END_ROD
+        shape: orb
+        count: 24
+        radius: 1.4
+      - type: vfx
+        at: 6
+        particle: DUST
+        shape: shockwave
+        count: 20
+        color: 255,230,120
+        size: 1.4
+        radius: 2.0
+        offset-y: 0.1
+      - type: sound
+        sound: BLOCK_BEACON_ACTIVATE
+        volume: 0.9
+        pitch: 1.2
+      - type: buff
+        id: thick_skin
+        stacks: 2
+      - type: xp
+        skill: prayer
+        amount: 40
+        on-cast: true
+
+  blade_tempest:
+    name: "Blade Tempest"
+    icon-cmd: 78027
+    category: melee
+    min-level:
+      attack: 60
+      strength: 55
+    costs:
+      prayer: 4
+    cooldown: 55
+    range: 3.5
+    target: area
+    cast:
+      - type: animation
+        style: channel
+        pulses: 5
+        pose: glow
+      - type: vfx
+        particle: SWEEP_ATTACK
+        shape: cone
+        count: 28
+        radius: 3.5
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 20
+        radius: 2.0
+      - type: vfx
+        at: 4
+        particle: SWEEP_ATTACK
+        shape: shockwave
+        count: 18
+        radius: 2.4
+        offset-y: 0.4
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_SWEEP
+        pitch: 0.85
+      - type: shake
+        power: 0.14
+        pulses: 3
+    on-hit:
+      - type: damage
+        style: melee
+        max-hit: 16
+      - type: knockback
+        power: 0.45
+      - type: vfx
+        particle: CRIT
+        shape: nova
+        count: 20
+      - type: sound
+        sound: ENTITY_PLAYER_ATTACK_CRIT
+        pitch: 1.1
+
+  skyfall_volley:
+    name: "Skyfall Volley"
+    icon-cmd: 78028
+    category: ranged
+    min-level:
+      ranged: 65
+    costs:
+      prayer: 4
+      runes:
+        ARROW: 8
+    cooldown: 60
+    target: raycast
+    cast:
+      - type: animation
+        style: channel
+        pulses: 4
+        pose: glow
+      - type: vfx
+        particle: CRIT
+        shape: cone
+        count: 26
+        radius: 4
+      - type: vfx
+        at: 3
+        particle: ENCHANTED_HIT
+        shape: helix
+        count: 18
+        radius: 1.0
+      - type: sound
+        sound: ENTITY_ARROW_SHOOT
+        pitch: 0.75
+    projectile:
+      entity: ARROW
+      speed: 1.55
+      max-ticks: 45
+      path: arc
+      arc-height: 1.8
+      hide: true
+      scale: 1.0
+      icon-cmd: 78028
+      splash-radius: 2.5
+      impact-shake: true
+      trail:
+        particle: CRIT
+        count: 6
+        interval: 1
+        style: ribbon
+        falloff: 0.45
+    on-hit:
+      - type: damage
+        style: ranged
+        max-hit: 18
+      - type: vfx
+        particle: CRIT
+        shape: shockwave
+        count: 22
+        radius: 2.2
+      - type: sound
+        sound: ENTITY_ARROW_HIT
+        pitch: 0.9
+      - type: knockback
+        power: 0.4
+
+  phase_mirror:
+    name: "Phase Mirror"
+    icon-cmd: 78029
+    category: utility
+    min-level:
+      magic: 50
+    costs:
+      prayer: 4
+    cooldown: 45
+    target: self
+    cast:
+      - type: animation
+        style: cast
+        pose: levitate
+        pose-ticks: 10
+      - type: vfx
+        particle: PORTAL
+        shape: orb
+        count: 28
+        radius: 1.2
+      - type: vfx
+        at: 2
+        particle: DUST
+        shape: ring
+        count: 16
+        color: 120,60,200
+        size: 1.2
+        radius: 0.9
+      - type: sound
+        sound: ENTITY_ENDERMAN_TELEPORT
+      - type: delay
+        ticks: 4
+      - type: teleport
+        distance: 8
+      - type: vfx
+        particle: REVERSE_PORTAL
+        shape: shockwave
+        count: 24
+        radius: 1.6
+      - type: vfx
+        at: 2
+        particle: END_ROD
+        shape: helix
+        count: 14
+        radius: 0.8
+      - type: shake
+        power: 0.1
+        pulses: 2
+      - type: xp
+        skill: magic
+        amount: 28
+        on-cast: true
+
+  dragonfire_cascade:
+    name: "Dragonfire Cascade"
+    icon-cmd: 78030
+    category: magic
+    min-level:
+      magic: 80
+    costs:
+      prayer: 10
+      runes:
+        BLAZE_POWDER: 6
+        DRAGON_BREATH: 1
+        LAPIS_LAZULI: 8
+    cooldown: 120
+    target: raycast
+    cast:
+      - type: animation
+        style: channel
+        pulses: 6
+        pose: glow
+      - type: display
+      - type: vfx
+        particle: FLAME
+        shape: helix
+        count: 40
+        radius: 1.6
+        ticks: 12
+        interval: 2
+      - type: vfx
+        at: 4
+        particle: SOUL_FIRE_FLAME
+        shape: orb
+        count: 24
+        radius: 1.3
+      - type: vfx
+        at: 8
+        particle: LAVA
+        shape: pillar
+        count: 30
+        radius: 1.4
+      - type: sound
+        sound: ENTITY_ENDER_DRAGON_GROWL
+        volume: 0.7
+        pitch: 1.3
+      - type: shake
+        power: 0.12
+        pulses: 4
+    projectile:
+      entity: DRAGON_FIREBALL
+      speed: 1.0
+      max-ticks: 60
+      path: arc
+      arc-height: 2.5
+      hide: true
+      scale: 1.45
+      icon-cmd: 78030
+      splash-radius: 5.0
+      impact-shake: true
+      shake-power: 0.32
+      trail:
+        particle: SOUL_FIRE_FLAME
+        count: 12
+        interval: 1
+        style: motion
+        falloff: 0.25
+    on-hit:
+      - type: aoe
+        radius: 5
+        style: magic
+        max-hit: 28
+        particle: FLAME
+        shape: shockwave
+        count: 36
+      - type: vfx
+        particle: LAVA
+        shape: pillar
+        count: 32
+        radius: 1.8
+      - type: vfx
+        at: 3
+        particle: FLAME
+        shape: orb
+        count: 24
+        radius: 2.2
+      - type: sound
+        sound: ENTITY_GENERIC_EXPLODE
+        volume: 1.3
+        pitch: 0.6
+      - type: shake
+        power: 0.35
+        pulses: 6
+        radius: 8
+      - type: debuff
+        id: burn
+        stacks: 3
+
+  judgment_smite:
+    name: "Judgment Smite"
+    icon-cmd: 78031
+    category: melee
+    min-level:
+      attack: 70
+      prayer: 40
+    costs:
+      prayer: 6
+    cooldown: 70
+    target: raycast
+    cast:
+      - type: animation
+        style: slam
+        pose: glow
+      - type: vfx
+        particle: ENCHANT
+        shape: pillar
+        count: 28
+        radius: 1.0
+      - type: vfx
+        at: 3
+        particle: END_ROD
+        shape: beam
+        count: 20
+        radius: 5
+      - type: vfx
+        at: 5
+        particle: DUST
+        shape: shockwave
+        count: 18
+        color: 255,240,160
+        size: 1.3
+        radius: 1.8
+        offset-y: 0.1
+      - type: sound
+        sound: ENTITY_LIGHTNING_BOLT_THUNDER
+        volume: 0.45
+        pitch: 1.8
+      - type: shake
+        power: 0.16
+        pulses: 3
+    on-hit:
+      - type: damage
+        style: melee
+        max-hit: 22
+      - type: vfx
+        particle: FLASH
+        shape: nova
+        count: 8
+        radius: 0.6
+      - type: vfx
+        at: 1
+        particle: END_ROD
+        shape: orb
+        count: 20
+        radius: 1.2
+      - type: sound
+        sound: ENTITY_LIGHTNING_BOLT_IMPACT
+        pitch: 1.2
+      - type: knockback
+        power: 0.5
+      - type: shake
+        power: 0.22
+        pulses: 4
+        radius: 4

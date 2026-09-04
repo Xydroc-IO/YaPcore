@@ -978,6 +978,54 @@
     "wind_wave": {
       "cmd": 78423,
       "texture": "ability_wind_wave"
+    },
+    "inferno_meteor": {
+      "cmd": 78020,
+      "texture": "ability_inferno_meteor"
+    },
+    "tidal_collapse": {
+      "cmd": 78021,
+      "texture": "ability_tidal_collapse"
+    },
+    "cyclone_rift": {
+      "cmd": 78022,
+      "texture": "ability_cyclone_rift"
+    },
+    "tectonic_spike": {
+      "cmd": 78023,
+      "texture": "ability_tectonic_spike"
+    },
+    "void_lance": {
+      "cmd": 78024,
+      "texture": "ability_void_lance"
+    },
+    "hex_bloom": {
+      "cmd": 78025,
+      "texture": "ability_hex_bloom"
+    },
+    "solar_aegis": {
+      "cmd": 78026,
+      "texture": "ability_solar_aegis"
+    },
+    "blade_tempest": {
+      "cmd": 78027,
+      "texture": "ability_blade_tempest"
+    },
+    "skyfall_volley": {
+      "cmd": 78028,
+      "texture": "ability_skyfall_volley"
+    },
+    "phase_mirror": {
+      "cmd": 78029,
+      "texture": "ability_phase_mirror"
+    },
+    "dragonfire_cascade": {
+      "cmd": 78030,
+      "texture": "ability_dragonfire_cascade"
+    },
+    "judgment_smite": {
+      "cmd": 78031,
+      "texture": "ability_judgment_smite"
     }
   }
 }

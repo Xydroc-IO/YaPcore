@@ -163,10 +163,14 @@ public final class AbilityPackLoader {
         String trailParticle = "";
         int trailCount = 0;
         int trailInterval = 2;
+        String trailStyle = "burst";
+        double trailFalloff = 0;
         if (trail != null) {
             trailParticle = trail.getString("particle", "");
             trailCount = trail.getInt("count", 2);
             trailInterval = trail.getInt("interval", 2);
+            trailStyle = trail.getString("style", trail.getString("mode", "burst"));
+            trailFalloff = trail.getDouble("falloff", trail.getDouble("density-falloff", 0));
         }
         return new ProjectileSpec(
                 section.getString("entity", "SNOWBALL"),
@@ -180,7 +184,13 @@ public final class AbilityPackLoader {
                 section.getDouble("splash-radius", section.getDouble("splash", 0)),
                 section.getInt("icon-cmd", 0),
                 section.getBoolean("hide", section.getBoolean("hide-entity", true)),
-                (float) section.getDouble("scale", section.getDouble("display-scale", 0.85)));
+                (float) section.getDouble("scale", section.getDouble("display-scale", 0.85)),
+                section.getString("path", "straight"),
+                section.getDouble("arc-height", section.getDouble("arc", 0)),
+                trailStyle,
+                trailFalloff,
+                section.getBoolean("impact-shake", section.getBoolean("shake", false)),
+                section.getDouble("shake-power", 0.14));
     }
 
     private static Material parseMaterial(String raw) {

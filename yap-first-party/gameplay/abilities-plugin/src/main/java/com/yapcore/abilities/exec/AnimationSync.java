@@ -19,6 +19,10 @@ public final class AnimationSync {
     }
 
     public static void play(JavaPlugin plugin, Player player, AbilityEffect effect) {
+        play(plugin, player, effect, "");
+    }
+
+    public static void play(JavaPlugin plugin, Player player, AbilityEffect effect, String abilityName) {
         String style = effect.param("style", "swing").toLowerCase();
         int pulses = Math.max(1, effect.intParam("pulses", 1));
         YapSched.entity(plugin, player, () -> {
@@ -40,22 +44,26 @@ public final class AnimationSync {
                 applyPose(plugin, player, "glow", 10);
             }
             handSparkles(player);
-            notifyBedrockCast(player, style);
+            notifyBedrockCast(player, style, abilityName);
         });
     }
 
     /** Bedrock clients get action-bar cast feedback until animation packets land. */
-    private static void notifyBedrockCast(Player player, String style) {
+    private static void notifyBedrockCast(Player player, String style, String abilityName) {
         BedrockUiServices.find().ifPresent(bedrock -> {
             if (!bedrock.isBedrock(player)) {
                 return;
             }
-            String label = switch (style) {
-                case "channel" -> "§dChanneling…";
-                case "slam" -> "§dSlam!";
-                case "cast" -> "§dCasting…";
-                default -> "§dCast";
+            String verb = switch (style) {
+                case "channel" -> "Channeling";
+                case "slam" -> "Slam";
+                case "cast" -> "Casting";
+                case "both" -> "Prayer";
+                default -> "Cast";
             };
+            String label = (abilityName == null || abilityName.isBlank())
+                    ? "§d" + verb + "…"
+                    : "§d" + verb + " §f" + abilityName;
             bedrock.sendActionBar(player, label);
         });
     }

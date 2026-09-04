@@ -16,7 +16,8 @@ public enum EffectKind {
     AOE,
     ANIMATION,
     CHAIN,
-    DISPLAY;
+    DISPLAY,
+    SHAKE;
 
     public static EffectKind parse(String raw) {
         if (raw == null || raw.isBlank()) {

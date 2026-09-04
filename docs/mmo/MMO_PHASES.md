@@ -10,6 +10,9 @@ existing `yap-playerdata`, `yap-npcs`, `yap-tab`, YaPDB, and Link.
 **M5–M7 (extended):** Bedrock MMO UI (M5), ability engine + 230+ combat abilities (M6), rich cast VFX + dedicated `CLAY_BALL` skill/ability icons (M7).
 See `docs/mmo/MMO_BEDROCK_UI.md` and `docs/mmo/MMO_ABILITIES.md`.
 
+**V1–V4 (ability VFX quality):** Engine foundations → template overhaul → hero art → polish/crossplay.
+See [`MMO_ABILITY_VFX.md`](MMO_ABILITY_VFX.md).
+
 **Global rules (every milestone)**
 
 - `folia-supported: true` in every new `plugin.yml`
@@ -420,6 +423,22 @@ YAML-driven abilities: projectiles, VFX, buffs/debuffs, cooldowns, `/ability`, `
 
 AoE, homing projectiles, chain lightning, cast conditions, animation sync, blaze-rod spell icons,
 Bedrock spellbook panel. Smoke: gradle installGameplayDefaults
+
+---
+
+## V1–V4 — Ability VFX quality
+
+**Status:** ✅ Complete  
+**Docs:** [MMO_ABILITY_VFX.md](MMO_ABILITY_VFX.md)  
+**Ships:** updated `yap-abilities-api.jar`, `yap-abilities.jar`, regenerated bulk packs, `showcase_vfx.yml`, `showcase_heroes.yml`, hero icons, soak gates
+
+Raises cast/travel/hit visuals from generated templates to top-MMO-plugin quality in four phases (engine → kits → heroes → polish).
+
+```bash
+python3 scripts/generate-ability-pack.py
+python3 scripts/generate-hero-ability-icons.py
+python3 scripts/content/ability-vfx-soak-gate.py
+```
 
 ---
 

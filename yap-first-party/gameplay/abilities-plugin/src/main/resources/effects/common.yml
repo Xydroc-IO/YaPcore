@@ -1,4 +1,4 @@
-# Generated status effect definitions for yap-abilities
+# Status effect definitions for yap-abilities (V4 ambient VFX pass)
 effects:
   poison:
     name: Poison
@@ -12,10 +12,18 @@ effects:
         style: magic
         max-hit: 2
       - type: vfx
-        particle: SPELL_MOB
+        particle: DUST
+        shape: orb
+        count: 8
+        color: 80,200,60
+        size: 1.0
+        radius: 0.55
+        offset-y: 0.8
+      - type: vfx
+        particle: WITCH
+        shape: burst
         count: 4
-    modifiers:
-      speed: 0.95
+        offset-y: 0.9
 
   burn:
     name: Burn
@@ -30,13 +38,31 @@ effects:
         max-hit: 3
       - type: vfx
         particle: FLAME
-        count: 6
+        shape: helix
+        count: 10
+        radius: 0.45
+        offset-y: 0.4
+      - type: vfx
+        particle: LAVA
+        shape: burst
+        count: 3
+        offset-y: 1.0
 
   slow:
     name: Slow
     kind: debuff
     duration-ticks: 120
     max-stacks: 1
+    tick-interval: 20
+    tick:
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 10
+        color: 140,180,220
+        size: 0.9
+        radius: 0.55
+        offset-y: 0.1
     modifiers:
       speed: 0.7
 
@@ -45,6 +71,13 @@ effects:
     kind: debuff
     duration-ticks: 160
     max-stacks: 2
+    tick-interval: 25
+    tick:
+      - type: vfx
+        particle: SMOKE
+        shape: burst
+        count: 5
+        offset-y: 1.0
     modifiers:
       attack: -5
       strength: -5
@@ -55,6 +88,16 @@ effects:
     duration-ticks: 600
     max-stacks: 1
     group: prayer_defence
+    tick-interval: 40
+    tick:
+      - type: vfx
+        particle: DUST
+        shape: ring
+        count: 12
+        color: 255,230,120
+        size: 1.0
+        radius: 0.7
+        offset-y: 0.15
     modifiers:
       defence: 5
 
@@ -64,6 +107,13 @@ effects:
     duration-ticks: 600
     max-stacks: 1
     group: prayer_strength
+    tick-interval: 40
+    tick:
+      - type: vfx
+        particle: CRIT
+        shape: burst
+        count: 6
+        offset-y: 1.0
     modifiers:
       strength: 8
 
@@ -73,6 +123,13 @@ effects:
     duration-ticks: 600
     max-stacks: 1
     group: prayer_attack
+    tick-interval: 40
+    tick:
+      - type: vfx
+        particle: ENCHANTED_HIT
+        shape: burst
+        count: 5
+        offset-y: 1.1
     modifiers:
       attack: 8
 
@@ -82,6 +139,14 @@ effects:
     duration-ticks: 600
     max-stacks: 1
     group: prayer_ranged
+    tick-interval: 40
+    tick:
+      - type: vfx
+        particle: CRIT
+        shape: ring
+        count: 8
+        radius: 0.5
+        offset-y: 1.2
     modifiers:
       ranged: 8
 
@@ -91,6 +156,14 @@ effects:
     duration-ticks: 600
     max-stacks: 1
     group: prayer_magic
+    tick-interval: 40
+    tick:
+      - type: vfx
+        particle: ENCHANT
+        shape: helix
+        count: 10
+        radius: 0.5
+        offset-y: 0.3
     modifiers:
       magic: 8
 
@@ -100,6 +173,14 @@ effects:
     duration-ticks: 600
     max-stacks: 1
     group: prayer_overhead
+    tick-interval: 35
+    tick:
+      - type: vfx
+        particle: END_ROD
+        shape: ring
+        count: 10
+        radius: 0.65
+        offset-y: 2.1
     modifiers:
       damage-taken: 0.6
 
@@ -109,6 +190,14 @@ effects:
     duration-ticks: 600
     max-stacks: 1
     group: prayer_overhead
+    tick-interval: 35
+    tick:
+      - type: vfx
+        particle: END_ROD
+        shape: ring
+        count: 10
+        radius: 0.65
+        offset-y: 2.1
     modifiers:
       damage-taken: 0.6
 
@@ -118,6 +207,14 @@ effects:
     duration-ticks: 600
     max-stacks: 1
     group: prayer_overhead
+    tick-interval: 35
+    tick:
+      - type: vfx
+        particle: END_ROD
+        shape: ring
+        count: 10
+        radius: 0.65
+        offset-y: 2.1
     modifiers:
       damage-taken: 0.6
 
@@ -126,6 +223,14 @@ effects:
     kind: buff
     duration-ticks: 200
     max-stacks: 1
+    tick-interval: 25
+    tick:
+      - type: vfx
+        particle: FLAME
+        shape: ring
+        count: 12
+        radius: 0.7
+        offset-y: 0.2
     modifiers:
       strength: 12
       defence: -4
@@ -142,4 +247,6 @@ effects:
         amount: 2
       - type: vfx
         particle: HEART
+        shape: burst
         count: 2
+        offset-y: 1.2

@@ -16,8 +16,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
 /**
- * Particle + sound emitter with shapes (burst/ring/helix/beam/nova) and
- * dust/block data support for cool cast/hit cosmetics.
+ * Particle + sound emitter with shapes (burst/ring/helix/beam/nova/cone/pillar/orb/shockwave)
+ * and dust/block data support for cool cast/hit cosmetics.
  */
 public final class VfxEmitter {
 
@@ -102,6 +102,10 @@ public final class VfxEmitter {
             case "helix", "spiral" -> spawnHelix(world, at, particle, data, count, radius, speed);
             case "beam" -> spawnBeam(world, at, direction, particle, data, count, radius, speed);
             case "nova" -> spawnNova(world, at, particle, data, count, radius, speed);
+            case "cone" -> spawnCone(world, at, direction, particle, data, count, radius, speed);
+            case "pillar", "column" -> spawnPillar(world, at, particle, data, count, radius, speed);
+            case "orb", "sphere" -> spawnOrb(world, at, particle, data, count, radius, speed);
+            case "shockwave", "wave" -> spawnShockwave(world, at, particle, data, count, radius, speed);
             case "burst" -> spawnBurst(world, at, particle, data, count, spread, speed);
             default -> spawnBurst(world, at, particle, data, count, spread, speed);
         }
@@ -168,6 +172,76 @@ public final class VfxEmitter {
             World world, Location at, Particle particle, Object data, int count, double radius, double speed) {
         spawnRing(world, at, particle, data, Math.max(8, count / 2), radius, speed);
         spawnBurst(world, at, particle, data, Math.max(4, count / 2), radius * 0.35, speed * 2);
+    }
+
+    private static void spawnCone(
+            World world, Location at, Vector direction, Particle particle, Object data, int count, double length, double speed) {
+        Vector dir = direction == null || direction.lengthSquared() < 0.0001
+                ? new Vector(0, 0, 1)
+                : direction.clone().normalize();
+        Vector right = dir.clone().crossProduct(new Vector(0, 1, 0));
+        if (right.lengthSquared() < 0.0001) {
+            right = dir.clone().crossProduct(new Vector(1, 0, 0));
+        }
+        right.normalize();
+        Vector up = right.clone().crossProduct(dir).normalize();
+        for (int i = 0; i < count; i++) {
+            double t = (i + 1) / (double) count;
+            double ringR = length * 0.35 * t;
+            double along = length * t;
+            double angle = (Math.PI * 2 * i) / Math.max(1, count / 3.0);
+            Location p = at.clone()
+                    .add(dir.clone().multiply(along))
+                    .add(right.clone().multiply(Math.cos(angle) * ringR))
+                    .add(up.clone().multiply(Math.sin(angle) * ringR));
+            spawnOne(world, p, particle, data, speed);
+        }
+    }
+
+    private static void spawnPillar(
+            World world, Location at, Particle particle, Object data, int count, double radius, double speed) {
+        double height = Math.max(1.5, radius * 2.2);
+        for (int i = 0; i < count; i++) {
+            double t = i / (double) Math.max(1, count - 1);
+            double angle = t * Math.PI * 6;
+            double x = Math.cos(angle) * radius * 0.35;
+            double z = Math.sin(angle) * radius * 0.35;
+            Location p = at.clone().add(x, t * height, z);
+            spawnOne(world, p, particle, data, speed);
+        }
+    }
+
+    private static void spawnOrb(
+            World world, Location at, Particle particle, Object data, int count, double radius, double speed) {
+        for (int i = 0; i < count; i++) {
+            // Fibonacci-ish sphere shell
+            double y = 1 - (i / (double) Math.max(1, count - 1)) * 2;
+            double rAtY = Math.sqrt(Math.max(0, 1 - y * y));
+            double theta = Math.PI * (3 - Math.sqrt(5)) * i;
+            double x = Math.cos(theta) * rAtY * radius;
+            double z = Math.sin(theta) * rAtY * radius;
+            Location p = at.clone().add(x, y * radius, z);
+            spawnOne(world, p, particle, data, speed);
+        }
+    }
+
+    private static void spawnShockwave(
+            World world, Location at, Particle particle, Object data, int count, double radius, double speed) {
+        int rings = Math.max(2, Math.min(5, count / 6));
+        int perRing = Math.max(8, count / rings);
+        for (int r = 1; r <= rings; r++) {
+            double rad = radius * (r / (double) rings);
+            spawnRing(world, at, particle, data, perRing, rad, speed);
+        }
+        spawnBurst(world, at, particle, data, Math.max(4, count / 4), radius * 0.2, speed * 1.5);
+    }
+
+    private static void spawnOne(World world, Location p, Particle particle, Object data, double speed) {
+        if (data != null) {
+            world.spawnParticle(particle, p, 1, 0, 0, 0, speed, data);
+        } else {
+            world.spawnParticle(particle, p, 1, 0, 0, 0, speed);
+        }
     }
 
     private static Object particleData(Particle particle, AbilityEffect effect) {

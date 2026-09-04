@@ -48,7 +48,10 @@ public final class EffectRunner {
         runSequence(null, target, effects, 0, false, ability);
     }
 
-    /** Sequential effects with DELAY support (ticks before continuing the list). */
+    /**
+     * Sequential effects with DELAY (blocking) and {@code at:} (non-blocking) support.
+     * {@code at: N} schedules this step N ticks later and continues the list immediately.
+     */
     private void runSequence(
             Player caster,
             LivingEntity target,
@@ -72,6 +75,24 @@ public final class EffectRunner {
                         () -> runSequence(caster, target, effects, index + 1, castPhase, ability),
                         ticks);
             }
+            return;
+        }
+        // Non-blocking timed step: fire later, keep walking the list now.
+        if (effect.params().containsKey("at")) {
+            long at = Math.max(0, effect.intParam("at", 0));
+            if (at == 0) {
+                runSingle(caster, target, effect, castPhase, ability);
+            } else {
+                LivingEntity scheduleOn = target != null ? target : caster;
+                if (scheduleOn != null) {
+                    YapSched.entityLater(plugin, scheduleOn,
+                            () -> runSingle(caster, target, effect, castPhase, ability), at);
+                } else {
+                    YapSched.globalLater(plugin,
+                            () -> runSingle(caster, target, effect, castPhase, ability), at);
+                }
+            }
+            runSequence(caster, target, effects, index + 1, castPhase, ability);
             return;
         }
         runSingle(caster, target, effect, castPhase, ability);
@@ -128,7 +149,8 @@ public final class EffectRunner {
             case VELOCITY -> applyVelocity(target, effect);
             case ANIMATION -> {
                 if (caster != null) {
-                    AnimationSync.play(plugin, caster, effect);
+                    String abilityName = ability != null ? ability.displayName() : "";
+                    AnimationSync.play(plugin, caster, effect, abilityName);
                 }
             }
             case DISPLAY -> {
@@ -138,6 +160,12 @@ public final class EffectRunner {
             }
             case AOE -> applyAoe(caster, target, effect, ability);
             case CHAIN -> applyChain(caster, target, effect);
+            case SHAKE -> {
+                LivingEntity anchor = target != null ? target : caster;
+                if (anchor != null) {
+                    ImpactFx.run(plugin, anchor, effect);
+                }
+            }
             case DELAY -> {
                 // Handled by runSequence
             }

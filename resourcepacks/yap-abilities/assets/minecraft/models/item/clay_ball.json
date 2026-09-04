@@ -42,6 +42,78 @@
     },
     {
       "predicate": {
+        "custom_model_data": 78020
+      },
+      "model": "yapabilities:item/ability_inferno_meteor"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78021
+      },
+      "model": "yapabilities:item/ability_tidal_collapse"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78022
+      },
+      "model": "yapabilities:item/ability_cyclone_rift"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78023
+      },
+      "model": "yapabilities:item/ability_tectonic_spike"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78024
+      },
+      "model": "yapabilities:item/ability_void_lance"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78025
+      },
+      "model": "yapabilities:item/ability_hex_bloom"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78026
+      },
+      "model": "yapabilities:item/ability_solar_aegis"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78027
+      },
+      "model": "yapabilities:item/ability_blade_tempest"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78028
+      },
+      "model": "yapabilities:item/ability_skyfall_volley"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78029
+      },
+      "model": "yapabilities:item/ability_phase_mirror"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78030
+      },
+      "model": "yapabilities:item/ability_dragonfire_cascade"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 78031
+      },
+      "model": "yapabilities:item/ability_judgment_smite"
+    },
+    {
+      "predicate": {
         "custom_model_data": 78200
       },
       "model": "yapabilities:item/ability_arcanum_01"
