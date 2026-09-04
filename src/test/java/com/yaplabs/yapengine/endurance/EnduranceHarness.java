@@ -284,7 +284,7 @@ public final class EnduranceHarness {
         if (findings.stream().noneMatch(f -> "FAIL".equals(f.severity()))) {
             findings.add(0, new Finding("OK", "ENDURANCE_PASS",
                     "No FAIL findings across " + samples.size() + " samples",
-                    "Extend -Dyap.endurance.seconds toward 86400 for a true day soak."));
+                    "Extend -Dyap.endurance.seconds toward 43200 (12h) for a long chassis soak."));
         }
     }
 

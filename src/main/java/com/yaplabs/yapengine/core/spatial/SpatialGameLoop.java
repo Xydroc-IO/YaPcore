@@ -3,6 +3,7 @@ package com.yaplabs.yapengine.core.spatial;
 import com.yaplabs.yapengine.bridge.CompatibilityBridge;
 import com.yaplabs.yapengine.sequencing.SequenceToken;
 import com.yaplabs.yapengine.sync.handoff.ChunkSyncLayer;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.Map;
 import java.util.Objects;
@@ -70,6 +71,7 @@ public final class SpatialGameLoop implements Runnable {
         }
     }
 
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Thread identity compare for same-thread fast path")
     public Thread getThread() {
         return thread;
     }

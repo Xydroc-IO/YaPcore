@@ -24,6 +24,7 @@ class BoundarySyncTest {
 
     @BeforeEach
     void setUp() {
+        SequenceToken.resetForTests();
         layer = new ChunkSyncLayer();
         layer.start();
     }
@@ -33,6 +34,7 @@ class BoundarySyncTest {
         if (layer != null) {
             layer.stop();
         }
+        SequenceToken.resetForTests();
     }
 
     @Test
@@ -90,31 +92,45 @@ class BoundarySyncTest {
 
     @Test
     @Tag("soak")
-    @Timeout(120)
+    @Timeout(300)
     void soakRapidBoundaryCrossings() throws InterruptedException {
         int bots = Integer.getInteger("yap.soak.bots", 32);
         int seconds = Integer.getInteger("yap.soak.seconds", 30);
+        int maxPending = Integer.getInteger("yap.soak.maxPending", 2_000);
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(seconds);
         AtomicInteger submitted = new AtomicInteger();
         AtomicInteger applied = new AtomicInteger();
 
-        Thread[] workers = new Thread[Math.min(bots, 32)];
+        // Stable stream keys (bot-0..N) — unique keys per handoff unbounded STREAM_SEQ / OOM.
+        int workersN = Math.min(bots, 32);
+        Thread[] workers = new Thread[workersN];
         for (int w = 0; w < workers.length; w++) {
             int workerId = w;
             workers[w] = new Thread(() -> {
-                int n = 0;
+                long n = 0;
+                String stream = "bot-" + workerId;
+                String inv = "inv:bot-" + workerId;
                 while (System.nanoTime() < deadline) {
-                    String id = "bot-" + workerId + "-" + n;
-                    layer.submitHandoff(new ChunkSyncLayer.Handoff(
-                            id,
-                            "inv:bot-" + workerId,
-                            SpatialQuadrant.byId(n & 3),
-                            SpatialQuadrant.byId((n + 1) & 3),
-                            SequenceToken.next(id),
+                    var handoff = new ChunkSyncLayer.Handoff(
+                            stream + "-" + n,
+                            inv,
+                            SpatialQuadrant.byId((int) (n & 3)),
+                            SpatialQuadrant.byId((int) ((n + 1) & 3)),
+                            SequenceToken.next(stream),
                             applied::incrementAndGet
-                    ));
-                    submitted.incrementAndGet();
-                    n++;
+                    );
+                    if (layer.trySubmitHandoff(handoff, maxPending)) {
+                        submitted.incrementAndGet();
+                        n++;
+                    } else {
+                        handoff.token().forget();
+                        try {
+                            Thread.sleep(1);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            return;
+                        }
+                    }
                 }
             }, "soak-bot-" + w);
             workers[w].start();
@@ -131,5 +147,7 @@ class BoundarySyncTest {
         assertTrue(layer.getProcessed() >= target * 0.99,
                 "processed=" + layer.getProcessed() + " applied=" + target
                         + " submitted=" + submitted.get());
+        assertTrue(SequenceToken.streamKeyCount() <= workersN + 4,
+                "streamKeys leaked: " + SequenceToken.streamKeyCount() + " workers=" + workersN);
     }
 }

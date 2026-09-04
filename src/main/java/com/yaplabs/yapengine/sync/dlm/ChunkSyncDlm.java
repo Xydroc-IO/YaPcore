@@ -1,6 +1,7 @@
 package com.yaplabs.yapengine.sync.dlm;
 
 import com.yaplabs.yapengine.sync.lease.AtomicLeaseManager;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import net.jcip.annotations.ThreadSafe;
 
 import java.util.Objects;
@@ -85,6 +86,7 @@ public final class ChunkSyncDlm implements Runnable {
         }
     }
 
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Thread identity for liveness / affinity checks")
     public Thread getThread() {
         return thread;
     }

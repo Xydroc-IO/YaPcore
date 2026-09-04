@@ -3,7 +3,9 @@ package com.yaplabs.yapengine.core.spatial;
 import com.yaplabs.yapengine.bridge.CompatibilityBridge;
 import com.yaplabs.yapengine.sequencing.SequenceToken;
 import com.yaplabs.yapengine.sync.handoff.ChunkSyncLayer;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,7 +55,7 @@ public final class ParallelGameCore {
     }
 
     public Map<SpatialQuadrant, SpatialGameLoop> loops() {
-        return loops;
+        return Collections.unmodifiableMap(loops);
     }
 
     public long totalTicks() {
