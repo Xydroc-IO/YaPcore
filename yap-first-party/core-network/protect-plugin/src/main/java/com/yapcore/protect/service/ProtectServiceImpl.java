@@ -156,6 +156,48 @@ public final class ProtectServiceImpl implements ProtectService {
                 .thenCompose(rows -> rollbackChanges(rows.stream().map(BlockChangeRecord::id).toList()));
     }
 
+    public CompletableFuture<Integer> rollbackUser(UUID actor, long fromMs, long toMs) {
+        return lookupActor(actor, fromMs, toMs, config.maxLookupLimit())
+                .thenCompose(rows -> rollbackChanges(rows.stream().map(BlockChangeRecord::id).toList()));
+    }
+
+    public CompletableFuture<Integer> restoreChanges(List<Long> changeIds) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                List<ProtectChange> changes = new ArrayList<>(repository.fetchByIds(changeIds));
+                changes.sort(restoreOrder());
+                int applied = 0;
+                List<Long> restored = new ArrayList<>();
+                for (ProtectChange change : changes) {
+                    if (!change.rolledBack()) {
+                        continue;
+                    }
+                    if (applyChangeRestore(change)) {
+                        applied++;
+                        restored.add(change.id());
+                    }
+                }
+                if (!restored.isEmpty()) {
+                    repository.clearRolledBack(restored);
+                }
+                return applied;
+            } catch (SQLException e) {
+                plugin.getLogger().warning("restore failed: " + e.getMessage());
+                return 0;
+            }
+        });
+    }
+
+    public CompletableFuture<Integer> restoreUser(UUID actor, long fromMs, long toMs) {
+        return lookupActor(actor, fromMs, toMs, config.maxLookupLimit())
+                .thenCompose(rows -> restoreChanges(rows.stream().map(BlockChangeRecord::id).toList()));
+    }
+
+    public CompletableFuture<Integer> restoreTimeRange(String world, long fromMs, long toMs) {
+        return lookupTimeRange(world, fromMs, toMs, config.maxLookupLimit())
+                .thenCompose(rows -> restoreChanges(rows.stream().map(BlockChangeRecord::id).toList()));
+    }
+
     private Comparator<ProtectChange> rollbackOrder() {
         return (a, b) -> {
             boolean invA = a.changeType() == ChangeType.CONTAINER_INVENTORY;
@@ -170,15 +212,27 @@ public final class ProtectServiceImpl implements ProtectService {
         };
     }
 
+    private Comparator<ProtectChange> restoreOrder() {
+        return rollbackOrder().reversed();
+    }
+
     private boolean applyChangeRollback(ProtectChange change) {
         return switch (change.changeType()) {
-            case BLOCK_BREAK, BLOCK_PLACE -> applyBlockRollback(change);
-            case CONTAINER_INVENTORY -> applyInventoryRollback(change);
+            case BLOCK_BREAK, BLOCK_PLACE -> applyBlockState(change, change.blockBefore());
+            case CONTAINER_INVENTORY -> applyInventoryState(change, change.blockBefore());
             default -> false;
         };
     }
 
-    private boolean applyBlockRollback(ProtectChange change) {
+    private boolean applyChangeRestore(ProtectChange change) {
+        return switch (change.changeType()) {
+            case BLOCK_BREAK, BLOCK_PLACE -> applyBlockState(change, change.blockAfter());
+            case CONTAINER_INVENTORY -> applyInventoryState(change, change.blockAfter());
+            default -> false;
+        };
+    }
+
+    private boolean applyBlockState(ProtectChange change, String encoded) {
         World world = Bukkit.getWorld(change.world());
         if (world == null) {
             return false;
@@ -188,7 +242,7 @@ public final class ProtectServiceImpl implements ProtectService {
         YapSched.region(plugin, loc, () -> {
             try {
                 Block block = loc.getBlock();
-                BlockCodec.apply(block, change.blockBefore());
+                BlockCodec.apply(block, encoded);
                 done.complete(true);
             } catch (Exception e) {
                 done.complete(false);
@@ -201,7 +255,7 @@ public final class ProtectServiceImpl implements ProtectService {
         }
     }
 
-    private boolean applyInventoryRollback(ProtectChange change) {
+    private boolean applyInventoryState(ProtectChange change, String encoded) {
         World world = Bukkit.getWorld(change.world());
         if (world == null) {
             return false;
@@ -216,7 +270,7 @@ public final class ProtectServiceImpl implements ProtectService {
                     return;
                 }
                 Inventory inventory = container.getInventory();
-                InventoryCodec.apply(inventory, change.blockBefore());
+                InventoryCodec.apply(inventory, encoded);
                 state.update(true, false);
                 done.complete(true);
             } catch (Exception e) {

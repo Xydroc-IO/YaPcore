@@ -119,7 +119,18 @@ window.YapDashRegisterMmoPanels = function (YapDash) {
     }
   }
 
+  async function reloadMmoContent() {
+    try {
+      const r = await netPost("/api/mmo", { action: "reload-mmo" });
+      setOut(r.result || "MMO content reloaded.");
+      await refreshMmoPanel();
+    } catch (e) {
+      setOut(e.message);
+    }
+  }
+
   $("mmoRefresh")?.addEventListener("click", refreshMmoPanel);
   $("mmoReloadAbilities")?.addEventListener("click", reloadAbilities);
+  $("mmoReloadContent")?.addEventListener("click", reloadMmoContent);
   YapDash.tabLoads.mmo = refreshMmoPanel;
 };

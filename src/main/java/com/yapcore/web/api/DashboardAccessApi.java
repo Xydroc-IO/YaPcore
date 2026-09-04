@@ -46,7 +46,8 @@ public final class DashboardAccessApi {
             snap.putAll(DashboardNetworkSnapshots.perms(root));
             snap.put("catalog", catalogWithDiscovered(root));
             snap.put("templates", PermissionCatalog.templateSummaries());
-            snap.put("hint", "POST save-group-nodes | create-group | apply-template | clone-group | …");
+            snap.put("hint", "POST save-group-nodes | user-perm | group-perm | user-perm-unset | "
+                    + "group-perm-unset | promote | demote | … — optional duration/world/server on perm set");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -341,46 +342,177 @@ public final class DashboardAccessApi {
     }
 
     private static String permsCommand(String action, Map<String, String> body) {
-        String player = body.getOrDefault("player", "").trim();
+        String player = sanitizeToken(body.getOrDefault("player", "").trim());
         return switch (action) {
             case "reload" -> "yapperm reload";
             case "applypack" -> "yapperm applypack";
             case "dump" -> "yapperm dump";
             case "user-info" -> player.isEmpty() ? null : "yapperm user " + player + " info";
             case "set-group" -> {
-                String g = body.getOrDefault("group", "default");
-                yield player.isEmpty() ? null : "yapperm user " + player + " parent set " + g;
+                String g = sanitizeToken(body.getOrDefault("group", "default"));
+                yield player.isEmpty() || g.isEmpty() ? null : "yapperm user " + player + " parent set " + g;
             }
             case "add-group" -> {
-                String g = body.getOrDefault("group", "");
-                yield player.isEmpty() || g.isBlank() ? null : "yapperm user " + player + " parent add " + g;
+                String g = sanitizeToken(body.getOrDefault("group", ""));
+                yield player.isEmpty() || g.isEmpty() ? null : "yapperm user " + player + " parent add " + g;
             }
             case "remove-group" -> {
-                String g = body.getOrDefault("group", "");
-                yield player.isEmpty() || g.isBlank() ? null : "yapperm user " + player + " parent remove " + g;
+                String g = sanitizeToken(body.getOrDefault("group", ""));
+                yield player.isEmpty() || g.isEmpty() ? null : "yapperm user " + player + " parent remove " + g;
             }
-            case "promote" -> player.isEmpty() ? null : "promote " + player;
-            case "demote" -> player.isEmpty() ? null : "demote " + player;
+            case "promote" -> trackStepCommand("promote", player, body);
+            case "demote" -> trackStepCommand("demote", player, body);
             case "group-info" -> {
-                String g = body.getOrDefault("group", player);
-                yield g.isBlank() ? null : "yapperm group info " + g;
+                String g = sanitizeToken(body.getOrDefault("group", player));
+                yield g.isEmpty() ? null : "yapperm group info " + g;
             }
             case "group-list" -> "yapperm group list";
-            case "group-perm" -> {
-                String g = body.getOrDefault("group", "");
-                String node = body.getOrDefault("node", "");
-                String val = body.getOrDefault("value", "true");
-                yield g.isBlank() || node.isBlank() ? null
-                        : "yapperm group permission set " + g + " " + node + " " + val;
+            case "track-info" -> {
+                String track = sanitizeToken(body.getOrDefault("track", "yap"));
+                yield track.isEmpty() ? null : "yapperm track info " + track;
             }
-            case "user-perm" -> {
-                String node = body.getOrDefault("node", "");
-                String val = body.getOrDefault("value", "true");
-                yield player.isEmpty() || node.isBlank() ? null
-                        : "yapperm user " + player + " permission set " + node + " " + val;
-            }
+            case "track-list" -> "yapperm track list";
+            case "group-perm" -> groupPermSet(body);
+            case "group-perm-unset", "revoke-group-perm" -> groupPermUnset(body);
+            case "user-perm" -> userPermSet(body, player);
+            case "user-perm-unset", "revoke-user-perm" -> userPermUnset(body, player);
             default -> null;
         };
+    }
+
+    /** Build {@code promote|demote <player> [track]}. */
+    private static String trackStepCommand(String verb, String player, Map<String, String> body) {
+        if (player.isEmpty()) {
+            return null;
+        }
+        String track = sanitizeToken(body.getOrDefault("track", "").trim());
+        return track.isEmpty() ? verb + " " + player : verb + " " + player + " " + track;
+    }
+
+    private static String userPermSet(Map<String, String> body, String player) {
+        String node = sanitizeNode(body.getOrDefault("node", ""));
+        String val = normalizeBool(body.getOrDefault("value", "true"));
+        if (player.isEmpty() || node.isEmpty()) {
+            return null;
+        }
+        return appendNodeContext("yapperm user " + player + " permission set " + node + " " + val, body);
+    }
+
+    private static String userPermUnset(Map<String, String> body, String player) {
+        String node = sanitizeNode(body.getOrDefault("node", ""));
+        if (player.isEmpty() || node.isEmpty()) {
+            return null;
+        }
+        return appendNodeContext("yapperm user " + player + " permission unset " + node, body, false);
+    }
+
+    private static String groupPermSet(Map<String, String> body) {
+        String g = sanitizeToken(body.getOrDefault("group", ""));
+        String node = sanitizeNode(body.getOrDefault("node", ""));
+        String val = normalizeBool(body.getOrDefault("value", "true"));
+        if (g.isEmpty() || node.isEmpty()) {
+            return null;
+        }
+        return appendNodeContext("yapperm group permission set " + g + " " + node + " " + val, body);
+    }
+
+    private static String groupPermUnset(Map<String, String> body) {
+        String g = sanitizeToken(body.getOrDefault("group", ""));
+        String node = sanitizeNode(body.getOrDefault("node", ""));
+        if (g.isEmpty() || node.isEmpty()) {
+            return null;
+        }
+        return appendNodeContext("yapperm group permission unset " + g + " " + node, body, false);
+    }
+
+    /**
+     * Append LuckPerms-style trailing modifiers that YaPPerms already understands:
+     * duration ({@code 1d}, {@code 7d}), {@code world=}, {@code server=}.
+     */
+    private static String appendNodeContext(String baseCmd, Map<String, String> body) {
+        return appendNodeContext(baseCmd, body, true);
+    }
+
+    private static String appendNodeContext(String baseCmd, Map<String, String> body, boolean includeDuration) {
+        StringBuilder sb = new StringBuilder(baseCmd);
+        if (includeDuration) {
+            String duration = firstNonBlank(body.get("duration"), body.get("expires"), body.get("temp"));
+            if (duration != null) {
+                String token = sanitizeToken(duration);
+                if (!token.isEmpty() && !isPermanentDuration(token)) {
+                    sb.append(' ').append(token);
+                }
+            }
+        }
+        String world = sanitizeToken(body.getOrDefault("world", "").trim());
+        if (!world.isEmpty()) {
+            sb.append(" world=").append(world);
+        }
+        String server = sanitizeToken(body.getOrDefault("server", "").trim());
+        if (!server.isEmpty()) {
+            sb.append(" server=").append(server);
+        }
+        return sb.toString();
+    }
+
+    private static String firstNonBlank(String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String v : values) {
+            if (v != null && !v.isBlank()) {
+                return v.trim();
+            }
+        }
+        return null;
+    }
+
+    private static boolean isPermanentDuration(String raw) {
+        String t = raw.toLowerCase();
+        return t.isEmpty() || t.equals("0") || t.equals("perm") || t.equals("permanent")
+                || t.equals("forever") || t.equals("*") || t.equals("none");
+    }
+
+    private static String normalizeBool(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "true";
+        }
+        String t = raw.trim().toLowerCase();
+        if (t.equals("false") || t.equals("deny") || t.equals("0") || t.equals("no")) {
+            return "false";
+        }
+        return "true";
+    }
+
+    /** Permission nodes: allow dots/wildcards; reject shell-breaking chars. */
+    private static String sanitizeNode(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String t = raw.trim();
+        if (t.isEmpty() || t.indexOf(' ') >= 0 || t.indexOf('"') >= 0 || t.indexOf('\'') >= 0
+                || t.indexOf(';') >= 0 || t.indexOf('|') >= 0 || t.indexOf('&') >= 0) {
+            return "";
+        }
+        return t;
+    }
+
+    private static String sanitizeToken(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String t = raw.trim();
+        if (t.isEmpty()) {
+            return "";
+        }
+        for (int i = 0; i < t.length(); i++) {
+            char c = t.charAt(i);
+            if (Character.isWhitespace(c) || c == '"' || c == '\'' || c == ';' || c == '|' || c == '&'
+                    || c == '=' || c == '\n' || c == '\r') {
+                return "";
+            }
+        }
+        return t;
     }
 
     private static List<String> parseNodeList(String raw) {

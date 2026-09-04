@@ -19,7 +19,14 @@ public record QuestDefinition(
         KILL_MOB,
         SKILL_LEVEL,
         CRAFT_ITEM,
-        KILL_BOSS
+        KILL_BOSS,
+        PLAYTIME,
+        ECONOMY_BALANCE,
+        ECONOMY_EARN,
+        PLACE_BLOCKS,
+        ENCHANT,
+        ANVIL_USE,
+        TALK
     }
 
     public record Objective(
@@ -31,11 +38,14 @@ public record QuestDefinition(
             String skillId,
             int minLevel,
             String recipeId,
-            String bossId
+            String bossId,
+            String npcId,
+            int minutes,
+            double minBalance
     ) {
         /** Legacy constructor for break/kill objectives. */
         public Objective(String id, ObjectiveType type, Material material, EntityType entityType, int amount) {
-            this(id, type, material, entityType, amount, "", 0, "", "");
+            this(id, type, material, entityType, amount, "", 0, "", "", "", 0, 0.0);
         }
     }
 }

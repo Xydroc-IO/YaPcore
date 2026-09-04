@@ -89,6 +89,7 @@
             <div class="stat"><span>Player data</span><strong id="opPlayerdata">—</strong></div>
             <div class="stat"><span>Map</span><strong id="opMap">—</strong></div>
             <div class="stat"><span>Discord</span><strong id="opDiscord">—</strong></div>
+            <div class="stat"><span>Tebex</span><strong id="opTebex">—</strong></div>
           </div>
         </div>
         <pre id="stReport" class="report"></pre>
@@ -97,13 +98,14 @@
       <section id="tab-access" class="panel">
         <div class="page-header">
           <h2>Access & ranks</h2>
-          <p>Click a rank, pick colors, then choose which commands it can use. No color codes required.</p>
+          <p>YaP ops surface for ranks, OPs, and grants — including world/server context and timed nodes. Not a LuckPerms web clone.</p>
         </div>
         <div class="grid stats">
           <div class="stat"><span>Default rank</span><strong id="accDefault">—</strong></div>
           <div class="stat"><span>Auto-op</span><strong id="accAutoOp">—</strong></div>
           <div class="stat"><span>Operators</span><strong id="accOpCount">—</strong></div>
           <div class="stat"><span>YaPPerms</span><strong id="accPermsOk">—</strong></div>
+          <div class="stat"><span>Track</span><strong id="accTrackStat">—</strong></div>
         </div>
 
         <div class="subnav" id="accSubnav">
@@ -254,7 +256,12 @@
               <label>Rank
                 <select id="accPlayerGroup"></select>
               </label>
+              <label>Promotion track
+                <select id="accTrack"></select>
+              </label>
             </div>
+            <p class="muted hint" id="accTrackHint">Promote / demote steps along the selected track.</p>
+            <div class="chip-list" id="accTrackLadder" aria-label="Track ladder"></div>
             <div class="btn-row">
               <button id="accLookup" class="primary">Look up</button>
               <button id="accSetGroup">Set rank</button>
@@ -275,17 +282,32 @@
             </div>
           </div>
           <div class="card">
-            <h3>One extra permission</h3>
-            <p class="muted hint">For a whole rank, use Commands this rank can use instead.</p>
+            <h3>Grant or revoke a permission</h3>
+            <p class="muted hint">Optional world/server context and duration (e.g. <code>1d</code>, <code>7d</code>). Blank world/server = global. Rank editor above stays permanent/global by design.</p>
             <div class="form-grid">
               <label>Permission <input id="accPermNode" placeholder="yapmod.ban"/></label>
               <label>Value
                 <select id="accPermVal"><option value="true">allow</option><option value="false">deny</option></select>
               </label>
+              <label>Duration
+                <select id="accPermDuration">
+                  <option value="">Permanent</option>
+                  <option value="1h">1 hour</option>
+                  <option value="1d">1 day</option>
+                  <option value="7d">7 days</option>
+                  <option value="30d">30 days</option>
+                  <option value="custom">Custom…</option>
+                </select>
+              </label>
+              <label>Custom duration <input id="accPermDurationCustom" placeholder="1d12h" disabled/></label>
+              <label>World <input id="accPermWorld" placeholder="world (blank = global)"/></label>
+              <label>Server <input id="accPermServer" placeholder="lobby (blank = config default)"/></label>
             </div>
             <div class="btn-row">
-              <button id="accUserPerm">Set on this player</button>
-              <button id="accGroupPerm">Set on selected rank</button>
+              <button id="accUserPerm" class="primary">Grant on player</button>
+              <button id="accGroupPerm">Grant on selected rank</button>
+              <button id="accUserPermUnset">Revoke on player</button>
+              <button id="accGroupPermUnset">Revoke on selected rank</button>
             </div>
           </div>
         </div>
@@ -797,7 +819,7 @@
       <section id="tab-protect" class="panel">
         <div class="page-header">
           <h2>Protect</h2>
-          <p>Block and container audit log — lookup changes and rollback by ID.</p>
+          <p>Block and container audit log — lookup by user or radius, rollback/restore by id or user+time.</p>
         </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="protInstalled">—</strong></div>
@@ -819,7 +841,18 @@
           <button id="protReload">Reload</button>
           <button id="protPruneBtn" class="danger">Prune now</button>
         </div>
-        <div class="inline"><input id="protLookupPlayer" placeholder="Player name"/><button id="protLookupBtn">Lookup</button></div>
+        <div class="inline">
+          <input id="protLookupPlayer" placeholder="Player name"/>
+          <button id="protLookupBtn">Lookup user</button>
+          <input id="protLookupRadius" type="number" min="1" max="128" value="16" style="width:5rem" title="Radius blocks"/>
+          <button id="protLookupRadiusBtn">Lookup radius</button>
+        </div>
+        <div class="inline">
+          <input id="protUserActionPlayer" placeholder="Player for rollback/restore"/>
+          <input id="protUserDuration" placeholder="7d" value="7d" style="width:5rem"/>
+          <button id="protRollbackUserBtn" class="warn">Rollback user</button>
+          <button id="protRestoreUserBtn">Restore user</button>
+        </div>
         <div class="table-wrap">
           <table class="data-table">
             <thead><tr><th>ID</th><th>Type</th><th>Player</th><th>World</th><th>Pos</th><th>Change</th><th></th></tr></thead>
@@ -828,6 +861,46 @@
           <p id="protLookupEmpty" class="muted hint hidden">No rows — run lookup or start the game server.</p>
         </div>
         <pre id="protOut" class="report muted-small"></pre>
+      </section>
+
+      <section id="tab-stacker" class="panel">
+        <div class="page-header">
+          <h2>Stacker</h2>
+          <p>Mob, item, and spawner stacking via <code>yap-stacker</code> — status, stats, and toggles.</p>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="stkInstalled">—</strong></div>
+          <div class="stat"><span>Enabled</span><strong id="stkEnabled">—</strong></div>
+          <div class="stat"><span>Kill mode</span><strong id="stkKillMode">—</strong></div>
+          <div class="stat"><span>Mob max</span><strong id="stkMobMax">—</strong></div>
+        </div>
+        <div class="card">
+          <h3>Stacking switches</h3>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="stkEnabledBox"/> Plugin enabled</label>
+            <label><input type="checkbox" id="stkMobsBox"/> Mobs</label>
+            <label><input type="checkbox" id="stkItemsBox"/> Items</label>
+            <label><input type="checkbox" id="stkSpawnersBox"/> Spawners</label>
+          </div>
+          <div class="form-grid">
+            <label>Kill mode
+              <select id="stkKillSelect">
+                <option value="DECREMENT">DECREMENT</option>
+                <option value="INSTANT">INSTANT</option>
+              </select>
+            </label>
+            <label>Mob max stack <input id="stkMobMaxInput" type="number" min="1" value="100"/></label>
+          </div>
+          <button id="stkSave" class="primary">Save settings</button>
+        </div>
+        <div class="toolbar">
+          <button id="stkRefresh">Refresh</button>
+          <button id="stkReload">Reload</button>
+          <button id="stkStats">Refresh stats</button>
+        </div>
+        <pre id="stkStatus" class="report muted-small"></pre>
+        <pre id="stkStatsOut" class="report muted-small"></pre>
+        <pre id="stkOut" class="report muted-small"></pre>
       </section>
 
       <section id="tab-world" class="panel">
@@ -1160,7 +1233,9 @@
           <div class="stat"><span>Plugin</span><strong id="datInstalled">—</strong></div>
           <div class="stat"><span>Economy</span><strong id="datEco">—</strong></div>
           <div class="stat"><span>Auth</span><strong id="datAuth">—</strong></div>
+          <div class="stat"><span>Max homes</span><strong id="datMaxHomes">—</strong></div>
         </div>
+        <p class="muted hint">Home limit: <code>homes.max</code> in YaPPlayerData config (not Essentials). Warps/kits/mail/eco live here too.</p>
         <div class="toolbar"><button id="datRefresh">Refresh</button><button id="datReload">Reload</button><button id="datSave">Force save</button></div>
         <p class="muted">Feature toggles:</p>
         <div class="feat-grid" id="datFeatures"></div>
@@ -1168,12 +1243,13 @@
       </section>
 
       <section id="tab-discord" class="panel">
-        <p class="muted"><code>yap-discord</code> — webhook mod-log, MC→Discord chat, Discord→MC inbound HTTP bridge</p>
-        <p class="muted hint">Setup order: save moderation + chat webhook URLs → test each → enable MC→Discord relay. Keep Discord→MC off until you set a strong inbound secret. See <code>docs/ops/DISCORD_RELAY.md</code>.</p>
+        <p class="muted"><code>yap-discord</code> — webhook mod-log, chat relay, join/leave/death/advancement events, Discord→MC inbound</p>
+        <p class="muted hint">Setup order: save moderation + chat (+ optional events) webhook URLs → test each → enable MC→Discord and/or event toggles. Keep Discord→MC off until you set a strong inbound secret. See <code>docs/ops/DISCORD_RELAY.md</code>.</p>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="dscInstalled">—</strong></div>
           <div class="stat"><span>Mod webhook</span><strong id="dscModHook">—</strong></div>
           <div class="stat"><span>Chat webhook</span><strong id="dscChatHook">—</strong></div>
+          <div class="stat"><span>Events webhook</span><strong id="dscEventsHook">—</strong></div>
           <div class="stat"><span>MC → Discord</span><strong id="dscRelay">—</strong></div>
           <div class="stat"><span>Discord → MC</span><strong id="dscInbound">—</strong></div>
         </div>
@@ -1187,6 +1263,21 @@
           <button id="dscSaveChat">Save chat webhook</button>
           <button id="dscTestChat">Test chat webhook</button>
         </label>
+        <label class="field-block">Events webhook URL (optional — falls back to chat)
+          <input id="dscEventsUrl" placeholder="https://discord.com/api/webhooks/..."/>
+          <button id="dscSaveEventsHook">Save events webhook</button>
+          <button id="dscTestEvents">Test events webhook</button>
+        </label>
+        <div class="card">
+          <h3>Server events</h3>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="dscEvJoin"/> Join</label>
+            <label><input type="checkbox" id="dscEvLeave"/> Leave</label>
+            <label><input type="checkbox" id="dscEvDeath"/> Death</label>
+            <label><input type="checkbox" id="dscEvAdv"/> Advancement</label>
+          </div>
+          <button id="dscSaveEvents" class="primary">Save event toggles</button>
+        </div>
         <label>MC → Discord chat
           <select id="dscMcRelay"><option value="false">off</option><option value="true">on</option></select>
         </label>
@@ -1239,7 +1330,7 @@
       <section id="tab-map" class="panel">
         <div class="page-header">
           <h2>Map</h2>
-          <p>Web map tiles and render schedule via <code>yap-map</code>.</p>
+          <p>Flat web map (Leaflet + PNG tiles) via <code>yap-map</code>. Live player markers; optional NPC/region overlays. BlueMap-style 3D is Stretch / out of scope for now.</p>
         </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="mapInstalled">—</strong></div>
@@ -1253,10 +1344,16 @@
           <h3>Settings</h3>
           <div class="form-grid">
             <label>Render interval (minutes) <input id="mapInterval" type="number" min="1" value="15"/></label>
+            <label>Marker poll (seconds) <input id="mapMarkerPoll" type="number" min="2" value="5"/></label>
           </div>
           <label class="field-block">Worlds (one per line)
             <textarea id="mapWorldsInput" rows="2">world</textarea>
           </label>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="mapMarkPlayers" checked/> Player markers</label>
+            <label><input type="checkbox" id="mapMarkNpcs"/> NPC markers</label>
+            <label><input type="checkbox" id="mapMarkRegions"/> Region outlines</label>
+          </div>
           <button id="mapSaveSettings" class="primary">Save settings</button>
         </div>
         <div class="toolbar">
@@ -1330,6 +1427,8 @@
             <label>Max Z <input id="regZ2" type="number" value="100"/></label>
           </div>
           <button id="regDefineBtn" class="primary">Define cuboid</button>
+          <button id="regRedefineBtn">Redefine selected</button>
+          <button id="regRemoveBtn" class="danger">Remove selected</button>
         </div>
         <div class="card">
           <h3>Set flag on region</h3>
@@ -1480,8 +1579,169 @@
         <div class="toolbar">
           <button id="mmoRefresh">Refresh</button>
           <button id="mmoReloadAbilities" class="secondary">Reload abilities</button>
+          <button id="mmoReloadContent" class="secondary">Reload MMO content</button>
         </div>
         <pre id="mmoOut" class="report muted-small"></pre>
+      </section>
+
+      <section id="tab-factions" class="panel">
+        <div class="page-header">
+          <h2>Factions</h2>
+          <p>Land claims, power, join mode, and admin force-disband. Player create/join stays in-game.</p>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="facInstalled">—</strong></div>
+          <div class="stat"><span>Factions</span><strong id="facCount">—</strong></div>
+          <div class="stat"><span>Members</span><strong id="facMembers">—</strong></div>
+          <div class="stat"><span>Claims</span><strong id="facClaims">—</strong></div>
+          <div class="stat"><span>Alliances</span><strong id="facAllies">—</strong></div>
+        </div>
+        <div class="card">
+          <h3>Settings</h3>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="facEnabled"/> Enabled</label>
+            <label><input type="checkbox" id="facBank"/> Bank enabled</label>
+            <label><input type="checkbox" id="facAlliesBuild"/> Allies can build</label>
+            <label><input type="checkbox" id="facEnemyPvp"/> Enemy PvP only</label>
+          </div>
+          <div class="form-grid">
+            <label>Base max power <input id="facBasePower" type="number" min="1" value="50"/></label>
+            <label>Power per member <input id="facPowerMember" type="number" min="0" value="10"/></label>
+            <label>Claim blocks / power <input id="facClaimBlocks" type="number" min="1" value="100"/></label>
+          </div>
+          <div class="btn-row">
+            <button id="facSave" class="primary">Save settings</button>
+            <button id="facReload" class="secondary">Reload plugin</button>
+            <button id="facRefresh">Refresh</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Admin actions</h3>
+          <div class="form-grid">
+            <label>Faction <input id="facAdminName" placeholder="name or tag"/></label>
+            <label>Power <input id="facAdminPower" type="number" value="50"/></label>
+            <label>Max power <input id="facAdminMax" type="number" placeholder="optional"/></label>
+            <label>Join mode
+              <select id="facAdminJoin">
+                <option value="open">open</option>
+                <option value="invite" selected>invite</option>
+                <option value="closed">closed</option>
+              </select>
+            </label>
+          </div>
+          <div class="btn-row">
+            <button id="facSetPower" class="secondary">Set power</button>
+            <button id="facSetJoin" class="secondary">Set join mode</button>
+            <button id="facDisband" class="danger">Force disband</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Preview</h3>
+          <p id="facPreviewEmpty" class="muted hidden">No factions loaded.</p>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Name</th><th>Tag</th><th>Power</th><th>Max</th></tr></thead>
+              <tbody id="facPreviewBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <pre id="facOut" class="report muted-small"></pre>
+      </section>
+
+      <section id="tab-guilds" class="panel">
+        <div class="page-header">
+          <h2>Guilds</h2>
+          <p>MMO guild levels, bank, and admin force-disband. Player create/join stays in-game.</p>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="gldInstalled">—</strong></div>
+          <div class="stat"><span>Guilds</span><strong id="gldCount">—</strong></div>
+          <div class="stat"><span>Members</span><strong id="gldMembers">—</strong></div>
+          <div class="stat"><span>Alliances</span><strong id="gldAllies">—</strong></div>
+          <div class="stat"><span>Invites</span><strong id="gldInvites">—</strong></div>
+        </div>
+        <div class="card">
+          <h3>Settings</h3>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="gldEnabled"/> Enabled</label>
+            <label><input type="checkbox" id="gldBank"/> Bank enabled</label>
+          </div>
+          <div class="form-grid">
+            <label>Max level <input id="gldMaxLevel" type="number" min="1" value="50"/></label>
+            <label>Base max members <input id="gldBaseMembers" type="number" min="1" value="5"/></label>
+          </div>
+          <div class="btn-row">
+            <button id="gldSave" class="primary">Save settings</button>
+            <button id="gldReload" class="secondary">Reload plugin</button>
+            <button id="gldRefresh">Refresh</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Admin actions</h3>
+          <div class="form-grid">
+            <label>Guild <input id="gldAdminName" placeholder="name or tag"/></label>
+            <label>Level <input id="gldAdminLevel" type="number" min="1" value="1"/></label>
+            <label>XP <input id="gldAdminXp" type="number" placeholder="optional"/></label>
+          </div>
+          <div class="btn-row">
+            <button id="gldSetLevel" class="secondary">Set level</button>
+            <button id="gldDisband" class="danger">Force disband</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Preview</h3>
+          <p id="gldPreviewEmpty" class="muted hidden">No guilds loaded.</p>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Name</th><th>Tag</th><th>Level</th><th>XP</th></tr></thead>
+              <tbody id="gldPreviewBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <pre id="gldOut" class="report muted-small"></pre>
+      </section>
+
+      <section id="tab-games" class="panel">
+        <div class="page-header">
+          <h2>Games</h2>
+          <p>Minigame modes, arenas, match settings, and force-start from console.</p>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="gmsInstalled">—</strong></div>
+          <div class="stat"><span>Enabled</span><strong id="gmsEnabled">—</strong></div>
+          <div class="stat"><span>Modes</span><strong id="gmsModeCount">—</strong></div>
+          <div class="stat"><span>Arenas</span><strong id="gmsArenaCount">—</strong></div>
+        </div>
+        <div class="card">
+          <h3>Settings</h3>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="gmsEnabledCb"/> Enabled</label>
+            <label><input type="checkbox" id="gmsBlockSkill"/> Block skill XP in match</label>
+            <label><input type="checkbox" id="gmsRewards"/> Rewards enabled</label>
+          </div>
+          <div class="form-grid">
+            <label>Countdown (sec) <input id="gmsCountdown" type="number" min="1" value="10"/></label>
+            <label>Lobby world <input id="gmsLobby" value="world"/></label>
+          </div>
+          <p class="muted">Modes: <span id="gmsModesList">—</span></p>
+          <p class="muted">Arenas: <span id="gmsArenasList">—</span></p>
+          <div class="btn-row">
+            <button id="gmsSave" class="primary">Save settings</button>
+            <button id="gmsReload" class="secondary">Reload plugin</button>
+            <button id="gmsList" class="secondary">List live</button>
+            <button id="gmsRefresh">Refresh</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Force start</h3>
+          <div class="form-grid">
+            <label>Mode <select id="gmsForceMode"></select></label>
+          </div>
+          <div class="btn-row">
+            <button id="gmsForceStart" class="primary">Force start</button>
+          </div>
+        </div>
+        <pre id="gmsOut" class="report muted-small"></pre>
       </section>
       </main>
     </div>
@@ -1499,6 +1759,8 @@
   <script src="/app-npcs-panels.js"></script>
   <script src="/app-mmo-panels.js"></script>
   <script src="/app-disasters-panels.js"></script>
+  <script src="/app-stacker-panels.js"></script>
+  <script src="/app-social-panels.js"></script>
   <script src="/app-plugin-editors.js"></script>
   <script src="/app-kits-panels.js"></script>
   <script src="/app-core.js"></script>

@@ -133,7 +133,12 @@ Duration examples: `30m`, `2h`, `7d`, `1w`.
 | `/nick` `<name\|off> [player]` | `yapessentials.nick` | Display name |
 | `/afk` | `yapessentials.afk` | AFK status |
 | `/list` `/online` `/who` | `yapessentials.list` | Online players |
-| `/ptime` `/pweather` | `yapessentials.ptime` | Client time/weather |
+| `/ptime` `/pweather` | `yapessentials.ptime` / `yapessentials.pweather` | Client time/weather |
+| `/weather` | `yapessentials.weather` | World weather (YaPDisasters GUI when installed) |
+| `/near` `[radius]` | `yapessentials.near` | List nearby players |
+| `/workbench` `/craft` | `yapessentials.workbench` | Portable crafting table |
+| `/disposal` `/trash` | `yapessentials.disposal` | Disposable trash inventory |
+| `/suicide` `/kill` | `yapessentials.suicide` | Kill yourself |
 | `/broadcast` `/bc` `<msg>` | `yapessentials.broadcast` | Server broadcast |
 | `/rules` `/motd` | `yapessentials.rules` | Info messages |
 | `/hat` | `yapessentials.hat` | Wear held item |
@@ -143,6 +148,17 @@ Duration examples: `30m`, `2h`, `7d`, `1w`.
 | `/yapess reload` | `yapessentials.admin` | Reload config |
 
 Feature toggles: `plugins/YaPEssentials/config.yml`.
+
+#### Cross-plugin ops map (intentional Essentials split)
+
+YaP does **not** clone EssentialsX’s entire command set into one jar. Use these plugins:
+
+| EssentialsX-style need | YaP home |
+|------------------------|----------|
+| `/home` `/sethome` `/delhome` · `/warp` · `/kit` · `/mail` · `/bal` `/pay` `/eco` | **YaPPlayerData** — `homes.max` in config (dashboard Data tab shows max homes) |
+| `/msg` `/reply` | **YaPChat** |
+| `/mute` `/ban` `/kick` / warnings | **YaPModeration** |
+| Spawn, TPA, GM, fly, vanish, weather QoL | **YaPEssentials** (this plugin) |
 
 ### YaPAdmin (`yap-admin.jar`)
 

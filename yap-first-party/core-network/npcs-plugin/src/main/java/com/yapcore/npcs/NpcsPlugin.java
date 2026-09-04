@@ -6,7 +6,9 @@ import com.yapcore.npcs.db.NpcDatabase;
 import com.yapcore.npcs.db.NpcRepository;
 import com.yapcore.npcs.db.QuestRepository;
 import com.yapcore.npcs.listener.NpcInteractListener;
+import com.yapcore.npcs.listener.QuestEconomyListener;
 import com.yapcore.npcs.listener.QuestListener;
+import com.yapcore.npcs.listener.QuestMmoListener;
 import com.yapcore.npcs.quest.QuestPackLoader;
 import com.yapcore.npcs.service.NpcServiceImpl;
 import com.yapcore.npcs.service.QuestServiceImpl;
@@ -32,11 +34,19 @@ public final class NpcsPlugin extends JavaPlugin {
         saveDefaultConfig();
         reloadNpcs();
 
+        getServer().getPluginManager().registerEvents(new QuestListener(questService), this);
         try {
             Class.forName("com.yapcore.mmo.event.BossKillEvent", false, getClass().getClassLoader());
-            getServer().getPluginManager().registerEvents(new QuestListener(questService), this);
+            getServer().getPluginManager().registerEvents(new QuestMmoListener(questService), this);
         } catch (ClassNotFoundException | NoClassDefFoundError e) {
-            getLogger().info("YaP MMO not installed — boss-kill quest progress hook skipped");
+            getLogger().info("YaP MMO not installed — boss/craft quest progress hooks skipped");
+        }
+        try {
+            Class.forName("com.yapcore.playerdata.event.PlayerBalanceChangeEvent", false,
+                    getClass().getClassLoader());
+            getServer().getPluginManager().registerEvents(new QuestEconomyListener(questService), this);
+        } catch (ClassNotFoundException | NoClassDefFoundError e) {
+            getLogger().info("YaPPlayerData events not available — economy quest hooks skipped");
         }
         getServer().getPluginManager().registerEvents(new NpcInteractListener(this, config, npcService, questService),
                 this);

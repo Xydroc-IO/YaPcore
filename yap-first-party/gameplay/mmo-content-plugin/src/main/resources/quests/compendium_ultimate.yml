@@ -60,9 +60,13 @@ quests:
 
   ult_completionist:
     name: "Quest Completionist"
-    description: "Speak to the Legend NPC after finishing the chain."
+    description: "Speak to the Legend NPC (npc-id: legend) after finishing the skill chain."
     requires: ult_all_skills
-    objectives: []
+    objectives:
+      - id: talk_legend
+        type: TALK
+        npc-id: legend
+        amount: 1
     rewards:
       - permission:yap.mmo.title.server_legend
       - permission:yap.mmo.particle.legend_aura
@@ -70,13 +74,12 @@ quests:
 
   ult_economy_dom:
     name: "Economy Domination"
-    description: "Craft iron_platebody x100 for shop stock domination."
+    description: "Hold at least 250,000 gold in your YaP economy balance."
     requires: ult_completionist
     objectives:
-      - id: plates
-        type: CRAFT_ITEM
-        recipe: iron_platebody
-        amount: 100
+      - id: balance_250k
+        type: ECONOMY_BALANCE
+        min-balance: 250000
     rewards:
       - permission:yap.mmo.title.tycoon
       - money:250000
@@ -96,7 +99,7 @@ quests:
 
   ult_dungeon_flawless:
     name: "Dungeon Flawless"
-    description: "Slay World Eater again as flawless clear proxy."
+    description: "Slay World Eater again as a flawless dungeon clear."
     requires: ult_pvp_undefeated
     objectives:
       - id: we2
@@ -130,13 +133,12 @@ quests:
 
   ult_time:
     name: "Time Traveler"
-    description: "Reach Hitpoints Level 99 (1000-hour proxy)."
+    description: "Accumulate 1,000 hours of playtime (60,000 minutes) on YaPPlayerData."
     requires: ult_collection
     objectives:
-      - id: hp99
-        type: SKILL_LEVEL
-        skill: hitpoints
-        level: 99
+      - id: play_1000h
+        type: PLAYTIME
+        minutes: 60000
     rewards:
       - permission:yap.mmo.title.immortal
       - group:immortal

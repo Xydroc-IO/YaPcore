@@ -2,10 +2,19 @@
 webhooks:
   moderation: ""
   chat: ""
+  # Join/leave/death/advancement (falls back to chat webhook if blank)
+  events: ""
 
 relay:
   mc-to-discord: false
   discord-to-mc: false
+
+# Server event posts to webhooks.events (or chat). All off by default.
+events:
+  join: false
+  leave: false
+  death: false
+  advancement: false
 
 # Inbound Discord→MC HTTP. Off by default (enable + set a real secret for production).
 inbound:

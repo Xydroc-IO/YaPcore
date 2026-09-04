@@ -170,12 +170,20 @@ window.YapDashRegisterFullPanels = function (YapDash) {
       tr.innerHTML = `<td>${row.id ?? ""}</td><td>${row.changeType ?? ""}</td><td>${row.actorName ?? ""}</td>`
         + `<td>${row.world ?? ""}</td><td>${row.x ?? ""},${row.y ?? ""},${row.z ?? ""}</td>`
         + `<td><span class="mono">${row.blockBefore ?? ""}</span> → <span class="mono">${row.blockAfter ?? ""}</span></td>`
-        + `<td><button type="button" class="warn ghost prot-rb" data-id="${row.id}">Rollback</button></td>`;
+        + `<td><button type="button" class="warn ghost prot-rb" data-id="${row.id}">Rollback</button>`
+        + ` <button type="button" class="ghost prot-rs" data-id="${row.id}">Restore</button></td>`;
       tr.querySelector(".prot-rb")?.addEventListener("click", async () => {
         if (!confirm("Rollback change #" + row.id + "?")) return;
         try {
           const r = await netPost("/api/protect", { action: "rollback", id: String(row.id) });
           setOut("protOut", r.result || "Rollback sent.");
+        } catch (e) { setOut("protOut", e.message); }
+      });
+      tr.querySelector(".prot-rs")?.addEventListener("click", async () => {
+        if (!confirm("Restore change #" + row.id + "?")) return;
+        try {
+          const r = await netPost("/api/protect", { action: "restore", id: String(row.id) });
+          setOut("protOut", r.result || "Restore sent.");
         } catch (e) { setOut("protOut", e.message); }
       });
       tbody.appendChild(tr);
@@ -227,6 +235,42 @@ window.YapDashRegisterFullPanels = function (YapDash) {
       setOut("protOut", e.message);
     }
   });
+  $("protLookupRadiusBtn")?.addEventListener("click", async () => {
+    try {
+      const r = await netPost("/api/protect", {
+        action: "lookup-radius",
+        radius: $("protLookupRadius")?.value || "16",
+        limit: "25",
+      });
+      renderProtectLookup(r.lookupRows || []);
+      setOut("protOut", r.result || (r.lookupRows?.length ? `${r.lookupRows.length} row(s)` : "No rows"));
+    } catch (e) {
+      renderProtectLookup([]);
+      setOut("protOut", e.message);
+    }
+  });
+  $("protRollbackUserBtn")?.addEventListener("click", async () => {
+    const p = $("protUserActionPlayer")?.value.trim() || $("protLookupPlayer")?.value.trim();
+    if (!p) return;
+    if (!confirm("Rollback all logged changes for " + p + "?")) return;
+    try {
+      const r = await netPost("/api/protect", {
+        action: "rollback", player: p, duration: $("protUserDuration")?.value || "7d",
+      });
+      setOut("protOut", r.result || "User rollback sent.");
+    } catch (e) { setOut("protOut", e.message); }
+  });
+  $("protRestoreUserBtn")?.addEventListener("click", async () => {
+    const p = $("protUserActionPlayer")?.value.trim() || $("protLookupPlayer")?.value.trim();
+    if (!p) return;
+    if (!confirm("Restore rolled-back changes for " + p + "?")) return;
+    try {
+      const r = await netPost("/api/protect", {
+        action: "restore", player: p, duration: $("protUserDuration")?.value || "7d",
+      });
+      setOut("protOut", r.result || "User restore sent.");
+    } catch (e) { setOut("protOut", e.message); }
+  });
 
   /* ——— Regions ——— */
   let selectedRegion = "";
@@ -243,13 +287,23 @@ window.YapDashRegisterFullPanels = function (YapDash) {
     list.forEach((reg) => {
       const tr = document.createElement("tr");
       tr.className = reg.name === selectedRegion ? "selected" : "";
+      const flags = reg.flags && typeof reg.flags === "object"
+        ? Object.entries(reg.flags).map(([k, v]) => `${k}=${v}`).join(", ")
+        : String(reg.flagCount ?? 0);
       tr.innerHTML = `<td><strong>${reg.name}</strong></td><td>${reg.world}</td>`
         + `<td>${reg.minX},${reg.minY},${reg.minZ} → ${reg.maxX},${reg.maxY},${reg.maxZ}</td>`
-        + `<td>${reg.flagCount ?? 0}</td>`;
+        + `<td class="mono">${flags || "—"}</td>`;
       tr.onclick = () => {
         selectedRegion = reg.name;
         $("regFlagName").value = reg.name;
         $("regDefineName").value = reg.name;
+        if (reg.world) $("regDefineWorld").value = reg.world;
+        if (reg.minX != null) $("regX1").value = reg.minX;
+        if (reg.minY != null) $("regY1").value = reg.minY;
+        if (reg.minZ != null) $("regZ1").value = reg.minZ;
+        if (reg.maxX != null) $("regX2").value = reg.maxX;
+        if (reg.maxY != null) $("regY2").value = reg.maxY;
+        if (reg.maxZ != null) $("regZ2").value = reg.maxZ;
         renderRegions(list);
       };
       tbody.appendChild(tr);
@@ -286,6 +340,31 @@ window.YapDashRegisterFullPanels = function (YapDash) {
       });
       renderRegions(r.regions || []);
       setOut("regOut", r.result || "Region defined.");
+    } catch (e) { setOut("regOut", e.message); }
+  });
+  $("regRedefineBtn")?.addEventListener("click", async () => {
+    const name = $("regDefineName")?.value.trim() || selectedRegion;
+    if (!name) return;
+    try {
+      const r = await netPost("/api/regions", {
+        action: "redefine", name,
+        world: $("regDefineWorld")?.value.trim() || "world",
+        x1: $("regX1")?.value || "0", y1: $("regY1")?.value || "0", z1: $("regZ1")?.value || "0",
+        x2: $("regX2")?.value || "0", y2: $("regY2")?.value || "255", z2: $("regZ2")?.value || "0",
+      });
+      renderRegions(r.regions || []);
+      setOut("regOut", r.result || "Region redefined.");
+    } catch (e) { setOut("regOut", e.message); }
+  });
+  $("regRemoveBtn")?.addEventListener("click", async () => {
+    const name = $("regDefineName")?.value.trim() || selectedRegion;
+    if (!name) return;
+    if (!confirm("Remove region " + name + "?")) return;
+    try {
+      const r = await netPost("/api/regions", { action: "remove", name });
+      selectedRegion = "";
+      renderRegions(r.regions || []);
+      setOut("regOut", r.result || "Region removed.");
     } catch (e) { setOut("regOut", e.message); }
   });
   $("regFlagBtn")?.addEventListener("click", async () => {
@@ -348,6 +427,10 @@ window.YapDashRegisterFullPanels = function (YapDash) {
       $("mapUrl").textContent = r.mapUrl || "—";
       if ($("mapInterval")) $("mapInterval").value = r.renderIntervalMinutes ?? 15;
       if ($("mapWorldsInput")) $("mapWorldsInput").value = (r.worlds || []).join("\n");
+      if ($("mapMarkerPoll")) $("mapMarkerPoll").value = r.markersPollSeconds ?? 5;
+      if ($("mapMarkPlayers")) $("mapMarkPlayers").checked = r.markersPlayers !== false;
+      if ($("mapMarkNpcs")) $("mapMarkNpcs").checked = !!r.markersNpcs;
+      if ($("mapMarkRegions")) $("mapMarkRegions").checked = !!r.markersRegions;
       const statusEl = $("mapStatus");
       const hintEl = $("mapHint");
       if (statusEl) {
@@ -369,14 +452,17 @@ window.YapDashRegisterFullPanels = function (YapDash) {
           hintEl.textContent = "Click Render now — tiles generate after Folia loads the world (may take a minute).";
           hintEl.style.display = "block";
         } else if (r.usePackServer) {
-          hintEl.textContent = "Map loads through this dashboard (same port). Click Render now if tiles are empty.";
+          hintEl.textContent = "Flat map + live markers on this dashboard. 3D BlueMap-style viewer is Stretch / later.";
           hintEl.style.display = "block";
         } else {
           hintEl.style.display = "none";
         }
       }
       const iframe = $("mapFrame");
-      if (iframe && r.mapUrl) iframe.src = r.mapUrl;
+      if (iframe && r.mapUrl) {
+        const worlds = r.worlds || ["world"];
+        iframe.src = r.mapUrl + (r.mapUrl.includes("?") ? "&" : "?") + "world=" + encodeURIComponent(worlds[0] || "world");
+      }
       setOut("mapOut", "");
     } catch (e) { setOut("mapOut", e.message); }
   }
@@ -394,6 +480,10 @@ window.YapDashRegisterFullPanels = function (YapDash) {
         action: "save-settings",
         renderIntervalMinutes: $("mapInterval")?.value || "15",
         worlds: $("mapWorldsInput")?.value || "world",
+        markersPlayers: $("mapMarkPlayers")?.checked ? "true" : "false",
+        markersNpcs: $("mapMarkNpcs")?.checked ? "true" : "false",
+        markersRegions: $("mapMarkRegions")?.checked ? "true" : "false",
+        markersPollSeconds: $("mapMarkerPoll")?.value || "5",
       });
       setOut("mapOut", "Map settings saved.");
       refreshMap();

@@ -1,32 +1,44 @@
-# Crossplay & multi-version (full Geyser + Via parity — first-party)
+# Crossplay & multi-version (first-party Geyser + Via class)
 
-YaPcore aims for **one shared world** and **full** protocol coverage:
+YaPcore aims for **one shared world** with first-party protocol coverage:
 
-- **Bedrock:** built-in Geyser **parity** (`GeyserStyleTranslator` / CrossplayHub) — not the Geyser jar
-- **Older / other JE:** built-in ViaVersion + ViaBackwards + ViaRewind **parity**
-  (`ProtocolCompat` / `ViaStyleRemapper`) — not Via\* jars
-- **Floodgate-class auth:** first-party `FloodgateAuth` / Xbox chain in core; behind Velocity use
-  **`yap-floodgate.jar`** (not the Floodgate jar) — [VELOCITY.md](VELOCITY.md)
+- **Bedrock:** `GeyserStyleTranslator` / CrossplayHub — not the Geyser jar
+- **Older / other JE:** `ProtocolCompat` / `ViaStyleRemapper` — not Via\* jars
+- **Floodgate-class auth:** core `FloodgateAuth` + backend `yap-floodgate.jar` behind Velocity/Link
 
-**Supported JE floor: 1.20.2+** onto Folia/Paper 26.2. Pre-1.19 / Rewind-depth is **best-effort**,
-not product DoD for play remaps. Live matrix (2026-08-21): JE **7/7** join/spawn under zlib;
-Bedrock smoke `geyserParitySmoke=true` on 1.21.50 (~1599 itemstates).
+**Supported JE floor: 1.20.2+** onto Folia/Paper 26.2. Bedrock smoke: `geyserParitySmoke=true` on 1.21.50.
 
-**Phase 4 DoD** is that parity on the Folia-backed world (product default). Slice roll-up:
-[CROSSPLAY.md](../network/CROSSPLAY.md). Feature-by-feature checklist:
-[CROSSPLAY.md](../network/CROSSPLAY.md).
-Bedrock terrain defaults to **column stream** from the game authority (P4.5); flat is opt-in
-(`-Dyapcore.bedrock.flat-chunks=true`).
+**Product note:** Default `game-authority=folia`. Phase 4 join/spawn + core play-depth are green.
+Wave 2 closes inventory/forms honesty for native Bedrock; Floodgate-only and some UIs are **Limited** / **Out** (not silent Partial).
 
-**Product note:** With default `game-authority=folia`, **Folia** owns the JE game.
-Phase 3 Paper spatial tick is **not** product default (opt-in for Paper benches only;
-Folia path has no Phase 3 spatial tick). Phase 4 finishes dual-stack depth —
-join/spawn and core play depth are supported; some advanced Bedrock fidelity rows remain partial.
-See [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
+## Connection paths
+
+| Path | Transport | Forms | Action bar / sidebar | Inventory authority |
+|------|-----------|-------|----------------------|---------------------|
+| Native YaPcore Bedrock | UDP dual-stack | Chassis `FormService` (simple/modal/custom) | `BedrockUiBridge` | Shadow + Paper inject |
+| Velocity/Geyser → YaPFloodgate | JE TCP to Folia | **Limited** — no chassis session; chat explains forms need native UDP | Paper action bar + scoreboard | Paper Bukkit inventory |
+| YaP Link + Bedrock on YaPcore gateway | Proxy UDP terminating on chassis | Same as native | Same | Same |
+
+## Fidelity matrix (Wave 2)
+
+| ID | Area | Status |
+|----|------|--------|
+| Join / spawn | JE + Bedrock smoke | **Green** |
+| Dig / place / chat / commands | Shared world ops | **Green** |
+| G.25 | Entity health/nametag | **Green** |
+| G.28 | `/clear` inventory | **Green** |
+| G.31 | Title / bossbar / scoreboard | **Green** |
+| G.33 | Placed skull block actor | **Green** (owner name) |
+| G.33 | Item-in-hand player heads | **Green** (SkullOwner Name NBT); full profile hash texture = Stretch |
+| G.34 | JE pack → BE offer | **Green** |
+| P4.6 | Chest / furnace / hopper open | **Green** (live Paper resync on push) |
+| P4.6 | Enchant / workbench / villager | **Green** (best-effort); XP/layout polish ongoing |
+| Forms (native UDP) | Simple / modal / custom | **Green** |
+| Forms (Floodgate-only) | MMO / admin forms | **Limited** — explicit user message; not Partial |
+| Anvil / smithing / loom / stonecutter / cartography | Container UIs | **Out** — use Java Edition |
+| Full Geyser feature matrix | Every BE packet | **Out** — YaP intentional depth |
 
 ## Streamlined one-port join
-
-By default:
 
 ```properties
 shared-listen-port=true
@@ -40,12 +52,7 @@ bedrock-port=25566
 | Java | TCP `:25566` | `127.0.0.1:25566` | `yapcoremc.yaplabs.us:25565` |
 | Bedrock | UDP `:25566` | `127.0.0.1:25566` | `yapcoremc.yaplabs.us:25565` |
 
-Same host **and** same **local** port number — OS allows TCP and UDP to share a port.
-With nginx, players on the internet use **25565**; the origin still listens on **25566**.
-
-Disable with `shared-listen-port=false` to use a separate Bedrock UDP port.
-
-Domain / Cloudflare: [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md).
+Disable with `shared-listen-port=false` for a separate Bedrock UDP port.
 
 ## Architecture
 
@@ -57,18 +64,19 @@ Bedrock UDP─┘  CrossplayHub                  └─ UnifiedPlayer roster
                FloodgateAuth (core) / yap-floodgate (Velocity / YaP Link)
 ```
 
-On join, both editions register a `UnifiedPlayer` into the same shared world.
-Moves/chats/clicks are translated into shared engine ops.
+## Scope
 
-## Scope (Phase 4)
-
-**Target:** full Geyser feature parity + full Via\* feature parity in YaP code.
-**Join/spawn replace claim:** JE matrix green + Bedrock smoke green — operators do **not**
-need Via\* or Geyser jars for supported bands. Soft gameplay depth (richer BE metadata,
-block-state catalogs) still hardens from live clients.
+**Target:** Geyser-class + Via-class coverage in YaP code for supported bands.
+**Not claimed:** stock Geyser jar parity, Floodgate-only forms, or every complex JE container on Bedrock.
 
 ## GUI
 
-- **Connect** — Crossplay address + Copy (local vs public ports)
+- **Connect** — Crossplay address + Copy
 - **Settings** — Shared listen port + Crossplay toggles
-- **nginx** — domain `yapcoremc.yaplabs.us`, stream/HTTP ports, install script
+- **nginx** — domain / stream ports
+
+## Related
+
+- [MMO_BEDROCK_UI.md](../mmo/MMO_BEDROCK_UI.md) — forms need native session
+- [VELOCITY.md](VELOCITY.md) — Floodgate behind proxy
+- [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md)

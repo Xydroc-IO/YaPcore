@@ -32,7 +32,7 @@ Set `false` to disable. Requires `yap-perms.jar`; waits ~8s after start.
 |---------|-----|
 | Console / stdin | `ranks status` · `ranks apply` · `ranks apply force` |
 | In-game | `/yapperm applypack` · `/promote` · `/demote` |
-| Web dashboard | **Access & ranks** (permission editor) · **Rank pack** → Apply pack |
+| Web dashboard | **Access & ranks** (YaP ops surface — rank editor + context/temp grants; not an LP-web clone) · **Rank pack** → Apply pack |
 | Config | `plugins/YaPPerms/config.yml` |
 
 OP still receives every node with `default: op` without YaPPerms attachments.
@@ -43,8 +43,10 @@ OP still receives every node with `default: op` without YaPPerms attachments.
 |---------|------------|
 | `/yapperm user <player> info` | `yapperm.user` / admin |
 | `/yapperm user <player> parent set\|add\|remove <group>` | `yapperm.admin` |
-| `/yapperm user <player> permission set <node> true\|false [1d] [world=x]` | `yapperm.admin` |
-| `/yapperm user <player> permission unset <node> [world=x]` | `yapperm.admin` |
+| `/yapperm user <player> permission set <node> true\|false [1d] [world=x] [server=y]` | `yapperm.admin` |
+| `/yapperm user <player> permission unset <node> [world=x] [server=y]` | `yapperm.admin` |
+| `/yapperm group permission set <group> <node> true\|false [1d] [world=x] [server=y]` | `yapperm.admin` |
+| `/yapperm group permission unset <group> <node> [world=x] [server=y]` | `yapperm.admin` |
 | `/yapperm user <player> meta set <prefix> [suffix]` | `yapperm.admin` |
 | `/yapperm group create\|delete\|list\|info\|setprefix\|setsuffix\|setnamecolor\|setchatcolor\|parent …` | `yapperm.admin` |
 | `/yapperm track list\|info\|create\|append\|remove\|delete` | `yapperm.admin` |
@@ -310,15 +312,25 @@ Content packs: `plugins/yap-mmo-content/quests/starter_chain.yml`
 
 ## Web rank editor
 
-Dashboard **Access & ranks** edits what each rank may do (YaP commands, vanilla `/gamemode` / `/give`, Paper `/plugins`, deny vs inherit).
+Dashboard **Access & ranks** is the YaP **ops surface** for permissions (not a LuckPerms web clone).
 
-Create a rank with a **permission pack** (player / staff / admin) or **copy perms from another rank**. Add any node — including wildcards and nodes discovered from installed `plugin.yml` files — via the custom / bulk fields.
+**Ranks & colors** edits what each rank may do permanently and globally (YaP commands, vanilla `/gamemode` / `/give`, Paper `/plugins`, deny vs inherit). Create a rank with a **permission pack** (player / staff / admin) or **copy perms from another rank**. Add any node — including wildcards and nodes discovered from installed `plugin.yml` files — via the custom / bulk fields.
 
 - Saves `starter-grants` (allows) and `editor-nodes` (allow + deny) in `plugins/YaPPerms/config.yml`
-- Applies to MariaDB with `/yapperm editor-apply` (dashboard does this after Save)
+- Applies to MariaDB with `/yapperm editor-apply` (dashboard does this after Save) — **global, non-expiring** rows only
 - Live extras (custom nodes) refresh via `/yapperm dump` → `editor-snapshot.yml`
 - Re-`applypack` reapplies starter grants **and** editor-nodes, so dashboard denies survive
 
+**Players** pane covers track promote/demote (ladder visibility + track picker) and **context / temporary grants**:
+
+| Dashboard action | Console equivalent |
+|------------------|--------------------|
+| `user-perm` (+ `duration`, `world`, `server`) | `/yapperm user <p> permission set <node> true\|false [1d] [world=x] [server=y]` |
+| `user-perm-unset` | `/yapperm user <p> permission unset <node> [world=x] [server=y]` |
+| `group-perm` / `group-perm-unset` | `/yapperm group permission set\|unset …` |
+| `promote` / `demote` (+ `track`) | `/promote <p> [track]` · `/demote <p> [track]` |
+
+Duration tokens match YaPPerms / LuckPerms muscle memory (`1h`, `1d`, `7d`, `1d12h`, …). Blank world/server = global (server falls back to `server-context` in `config.yml` when set). MariaDB columns: `world`, `server_ctx`, `expires_at`.
 ## See also
 
 - [COMMANDS.md](COMMANDS.md) · [WEB_DASHBOARD.md](WEB_DASHBOARD.md) · [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md)

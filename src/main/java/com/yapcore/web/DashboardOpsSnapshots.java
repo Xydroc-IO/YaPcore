@@ -40,6 +40,11 @@ public final class DashboardOpsSnapshots {
         out.put("renderIntervalMinutes", DashboardNetworkSnapshots.intVal(yaml.get("render-interval-minutes"), 15));
         out.put("maxHeight", DashboardNetworkSnapshots.intVal(yaml.get("max-height"), 320));
         out.put("sampleChunkRadius", DashboardNetworkSnapshots.intVal(yaml.get("sample-chunk-radius"), 8));
+        Map<String, Object> markers = DashboardNetworkSnapshots.map(yaml.get("markers"));
+        out.put("markersPlayers", DashboardNetworkSnapshots.bool(markers.get("players"), true));
+        out.put("markersNpcs", DashboardNetworkSnapshots.bool(markers.get("npcs"), false));
+        out.put("markersRegions", DashboardNetworkSnapshots.bool(markers.get("regions"), false));
+        out.put("markersPollSeconds", DashboardNetworkSnapshots.intVal(markers.get("poll-seconds"), 5));
         Path tiles = root.resolve("plugins").resolve("YaPMap").resolve("map/tiles");
         int tileCount = countFilesRecursive(tiles, ".png");
         out.put("tileCount", tileCount);

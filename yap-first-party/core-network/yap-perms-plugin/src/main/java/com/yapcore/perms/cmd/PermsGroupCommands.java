@@ -252,7 +252,7 @@ final class PermsGroupCommands {
         }
         sender.sendMessage("§e/yapperm group create|delete|list|info|setprefix|setsuffix|setnamecolor|setchatcolor");
         sender.sendMessage("§e/yapperm group parent add|remove|set <group> <parent…>");
-        sender.sendMessage("§e/yapperm group permission set|unset <group> <node> [true|false] [1d] [world=x]");
+        sender.sendMessage("§e/yapperm group permission set|unset <group> <node> [true|false] [1d] [world=x] [server=y]");
         return true;
     }
 }

@@ -200,6 +200,10 @@ public final class BedrockPacketCodec {
     public static ByteBuf inventoryContent(int windowId, int[] networkIds, int[] counts) {
         return BedrockInventoryCodec.inventoryContent(windowId, networkIds, counts);
     }
+
+    public static ByteBuf inventoryContent(int windowId, int[] networkIds, int[] counts, String[] skullOwners) {
+        return BedrockInventoryCodec.inventoryContent(windowId, networkIds, counts, skullOwners);
+    }
     public static Decoded decode(ByteBuf packet) {
         int id = BedrockCodecBinary.readUnsignedVarInt(packet);
         return new Decoded(id, packet);

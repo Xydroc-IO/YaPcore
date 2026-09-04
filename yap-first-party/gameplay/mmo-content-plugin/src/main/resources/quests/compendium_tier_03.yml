@@ -59,7 +59,7 @@ quests:
 
   t3_netherite:
     name: "Full Netherite"
-    description: "Reach Smithing Level 40 (full netherite set proxy)."
+    description: "Reach Smithing Level 40 toward a full netherite smithing path."
     requires: t3_debris
     objectives:
       - id: smith40

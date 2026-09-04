@@ -8,9 +8,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 public final class MapHttpServer {
@@ -20,12 +22,18 @@ public final class MapHttpServer {
     private final String bindHost;
     private final int port;
     private final Path tilesDir;
+    private final Supplier<String> markersJson;
     private HttpServer http;
 
     public MapHttpServer(String bindHost, int port, Path tilesDir) {
+        this(bindHost, port, tilesDir, null);
+    }
+
+    public MapHttpServer(String bindHost, int port, Path tilesDir, Supplier<String> markersJson) {
         this.bindHost = bindHost == null || bindHost.isBlank() ? "127.0.0.1" : bindHost;
         this.port = port;
         this.tilesDir = tilesDir;
+        this.markersJson = markersJson;
     }
 
     public synchronized void start() throws IOException {
@@ -71,6 +79,17 @@ public final class MapHttpServer {
             }
             if (rel.contains("..") || rel.startsWith("/") || rel.contains("\\")) {
                 exchange.sendResponseHeaders(400, -1);
+                return;
+            }
+            if ("markers.json".equals(rel) && markersJson != null) {
+                byte[] body = markersJson.get().getBytes(StandardCharsets.UTF_8);
+                Headers headers = exchange.getResponseHeaders();
+                headers.add("Content-Type", "application/json; charset=utf-8");
+                headers.add("Cache-Control", "no-cache");
+                exchange.sendResponseHeaders(200, body.length);
+                try (OutputStream out = exchange.getResponseBody()) {
+                    out.write(body);
+                }
                 return;
             }
             String resource = "/map/" + rel;
@@ -134,6 +153,9 @@ public final class MapHttpServer {
         }
         if (name.endsWith(".css")) {
             return "text/css; charset=utf-8";
+        }
+        if (name.endsWith(".json")) {
+            return "application/json; charset=utf-8";
         }
         return "application/octet-stream";
     }

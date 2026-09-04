@@ -27,7 +27,7 @@ Fixtures: `src/test/resources/mspt/{stock-folia,yap-folia}-heavypop.json`, `peer
 
 ## Fullcite vs Canvas
 
-Official stock vs Yap: **−12.4%** (`20260904TshipFc2`, ship knobs, `cite-fullcite-*.json`).
+Official stock vs Yap peak: **−12.4%** (`20260904TshipFc2`). Latest ship-gate re-verify: **−5.53%** (`20260904T040935Z`, fixtures `cite-fullcite-*.json`). Both citeable under disclosed ship knobs.
 
 Peer ranking fixture `cite-fullcite-canvas.json` (from `20260904TshipFc` 3-way):
 

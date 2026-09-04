@@ -11,6 +11,7 @@ public final class PregenConfig {
     private boolean autoResume = true;
     private int maxWorlds = 4;
     private int maxInflight = 32;
+    private int maxInflightPerRegion = 8;
 
     public void load(FileConfiguration cfg) {
         chunksPerTick = Math.max(1, cfg.getInt("chunks-per-tick", 5));
@@ -19,6 +20,7 @@ public final class PregenConfig {
         autoResume = cfg.getBoolean("auto-resume", true);
         maxWorlds = Math.max(1, cfg.getInt("max-worlds", 4));
         maxInflight = Math.max(1, cfg.getInt("max-inflight", 32));
+        maxInflightPerRegion = Math.max(1, cfg.getInt("max-inflight-per-region", 8));
     }
 
     public int chunksPerTick() {
@@ -43,5 +45,9 @@ public final class PregenConfig {
 
     public int maxInflight() {
         return maxInflight;
+    }
+
+    public int maxInflightPerRegion() {
+        return maxInflightPerRegion;
     }
 }

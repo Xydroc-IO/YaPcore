@@ -48,6 +48,12 @@ public final class MmoBedrockUi {
     }
 
     public void openHub(Player player) {
+        if (!bedrock.hasNativeSession(player)) {
+            bedrock.sendActionBar(player, "MMO forms need native Bedrock UDP (not Floodgate-only)");
+            player.sendMessage("§eYaP MMO forms require a native YaPcore Bedrock session. "
+                    + "Floodgate-only players get action bar / sidebar fallbacks — join via dual-stack UDP for forms.");
+            return;
+        }
         bedrock.sendSimpleForm(
                 player,
                 "YaP MMO",

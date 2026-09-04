@@ -45,6 +45,7 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
             case "lookup" -> lookup(sender, args);
             case "dash-lookup" -> dashLookup(sender, args);
             case "rollback" -> rollback(sender, args);
+            case "restore" -> restore(sender, args);
             case "prune" -> prune(sender, args);
             default -> {
                 help(sender);
@@ -224,6 +225,7 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
         return switch (args[1].toLowerCase(Locale.ROOT)) {
             case "radius" -> rollbackRadius(sender, args, now);
             case "time" -> rollbackTime(sender, args, now);
+            case "user" -> rollbackUser(sender, args, now);
             default -> rollbackIds(sender, args);
         };
     }
@@ -299,16 +301,105 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean rollbackUser(CommandSender sender, String[] args, long now) {
+        if (args.length < 3) {
+            sender.sendMessage("§e/yapprotect rollback user <player> [duration]");
+            return true;
+        }
+        UUID uuid = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
+        long durationMs = defaultDurationMs(args, 3);
+        service.rollbackUser(uuid, now - durationMs, now)
+                .thenAccept(count -> YapSched.global(Bukkit.getPluginManager().getPlugin("YaPProtect"),
+                        () -> sender.sendMessage("§aUser rollback applied to §f" + count + " §achange(s).")));
+        return true;
+    }
+
+    private boolean restore(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("yapprotect.rollback")) {
+            sender.sendMessage("§cNo permission.");
+            return true;
+        }
+        if (args.length < 2) {
+            restoreHelp(sender);
+            return true;
+        }
+        long now = System.currentTimeMillis();
+        return switch (args[1].toLowerCase(Locale.ROOT)) {
+            case "time" -> restoreTime(sender, args, now);
+            case "user" -> restoreUser(sender, args, now);
+            default -> restoreIds(sender, args);
+        };
+    }
+
+    private boolean restoreIds(CommandSender sender, String[] args) {
+        List<Long> ids = new ArrayList<>();
+        for (int i = 1; i < args.length; i++) {
+            try {
+                ids.add(Long.parseLong(args[i]));
+            } catch (NumberFormatException e) {
+                sender.sendMessage("§cInvalid id: " + args[i]);
+                return true;
+            }
+        }
+        service.restoreChanges(ids).thenAccept(count ->
+                YapSched.global(Bukkit.getPluginManager().getPlugin("YaPProtect"),
+                        () -> sender.sendMessage("§aRestore applied to §f" + count + " §achange(s).")));
+        return true;
+    }
+
+    private boolean restoreUser(CommandSender sender, String[] args, long now) {
+        if (args.length < 3) {
+            sender.sendMessage("§e/yapprotect restore user <player> [duration]");
+            return true;
+        }
+        UUID uuid = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
+        long durationMs = defaultDurationMs(args, 3);
+        service.restoreUser(uuid, now - durationMs, now)
+                .thenAccept(count -> YapSched.global(Bukkit.getPluginManager().getPlugin("YaPProtect"),
+                        () -> sender.sendMessage("§aUser restore applied to §f" + count + " §achange(s).")));
+        return true;
+    }
+
+    private boolean restoreTime(CommandSender sender, String[] args, long now) {
+        String world;
+        int durationArgIndex;
+        if (sender instanceof Player player) {
+            world = player.getWorld().getName();
+            durationArgIndex = 2;
+        } else if (args.length >= 4) {
+            world = args[2];
+            durationArgIndex = 3;
+        } else {
+            sender.sendMessage("§e/yapprotect restore time <duration> | time <world> <duration>");
+            return true;
+        }
+        if (args.length <= durationArgIndex) {
+            sender.sendMessage("§e/yapprotect restore time <duration>");
+            return true;
+        }
+        long durationMs;
+        try {
+            durationMs = DurationParser.parseToMillis(args[durationArgIndex]);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage("§cBad duration: " + args[durationArgIndex]);
+            return true;
+        }
+        service.restoreTimeRange(world, now - durationMs, now)
+                .thenAccept(count -> YapSched.global(Bukkit.getPluginManager().getPlugin("YaPProtect"),
+                        () -> sender.sendMessage("§aTime restore applied to §f" + count + " §achange(s).")));
+        return true;
+    }
+
     private boolean dashLookup(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapprotect.lookup")) {
             sender.sendMessage("§cNo permission.");
             return true;
         }
-        if (args.length < 3 || !"user".equalsIgnoreCase(args[1])) {
-            sender.sendMessage("§e/yapprotect dash-lookup user <player> [limit]");
+        if (args.length < 3) {
+            sender.sendMessage("§e/yapprotect dash-lookup user <player> [limit] | radius <blocks> [limit]");
             return true;
         }
-        String playerName = args[2];
+        String mode = args[1].toLowerCase(Locale.ROOT);
         int limit = 10;
         if (args.length >= 4) {
             try {
@@ -316,13 +407,27 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
             } catch (NumberFormatException ignored) {
             }
         }
-        UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
         long now = System.currentTimeMillis();
         long from = now - TimeUnit.DAYS.toMillis(7);
         try {
-            List<BlockChangeRecord> list = service.lookupActor(uuid, from, now, limit)
-                    .get(8, TimeUnit.SECONDS);
+            List<BlockChangeRecord> list;
+            if ("user".equals(mode)) {
+                UUID uuid = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
+                list = service.lookupActor(uuid, from, now, limit).get(8, TimeUnit.SECONDS);
+            } else if ("radius".equals(mode) && sender instanceof Player player) {
+                int radius = Integer.parseInt(args[2]);
+                var loc = player.getLocation();
+                list = service.lookupRadius(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(),
+                                loc.getBlockZ(), radius, from, now, limit)
+                        .get(8, TimeUnit.SECONDS);
+            } else {
+                sender.sendMessage("§e/yapprotect dash-lookup user <player> [limit] | radius <blocks> [limit]");
+                return true;
+            }
             sender.sendMessage("DASH_JSON=" + toDashJson(list));
+        } catch (NumberFormatException e) {
+            sender.sendMessage("DASH_JSON=[]");
+            sender.sendMessage("§cInvalid number.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             sender.sendMessage("DASH_JSON=[]");
@@ -430,22 +535,32 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage("§e/yapprotect rollback <id> [id...]");
         sender.sendMessage("§e/yapprotect rollback radius <blocks> [duration]");
         sender.sendMessage("§e/yapprotect rollback time [world] <duration>");
+        sender.sendMessage("§e/yapprotect rollback user <player> [duration]");
+    }
+
+    private void restoreHelp(CommandSender sender) {
+        sender.sendMessage("§e/yapprotect restore <id> [id...]");
+        sender.sendMessage("§e/yapprotect restore time [world] <duration>");
+        sender.sendMessage("§e/yapprotect restore user <player> [duration]");
     }
 
     private void help(CommandSender sender) {
-        sender.sendMessage("§e/yapprotect status|reload|lookup|rollback|prune");
+        sender.sendMessage("§e/yapprotect status|reload|lookup|rollback|restore|prune");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(List.of("status", "reload", "lookup", "rollback", "prune"), args[0]);
+            return filter(List.of("status", "reload", "lookup", "rollback", "restore", "prune"), args[0]);
         }
         if (args.length == 2 && "lookup".equalsIgnoreCase(args[0])) {
             return filter(List.of("user", "block", "radius", "time"), args[1]);
         }
         if (args.length == 2 && "rollback".equalsIgnoreCase(args[0])) {
-            return filter(List.of("radius", "time"), args[1]);
+            return filter(List.of("radius", "time", "user"), args[1]);
+        }
+        if (args.length == 2 && "restore".equalsIgnoreCase(args[0])) {
+            return filter(List.of("time", "user"), args[1]);
         }
         return List.of();
     }

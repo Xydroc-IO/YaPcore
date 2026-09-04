@@ -55,6 +55,8 @@ public final class NpcInteractListener implements Listener {
         }
         player.sendMessage(dialogue);
 
+        quests.onTalk(player, npcId);
+
         if (npc.questId() != null && !npc.questId().isBlank()) {
             if (quests.isQuestComplete(player, npc.questId())) {
                 quests.tryComplete(player, npc.questId());

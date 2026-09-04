@@ -46,4 +46,12 @@ public interface PlayerDataService {
     default String formatMoney(double amount) {
         return String.format("$%.2f", amount);
     }
+
+    /**
+     * Lifetime playtime in whole minutes (persisted + current session).
+     * Returns 0 when playtime tracking is unavailable.
+     */
+    default long playMinutes(UUID uuid) {
+        return 0L;
+    }
 }

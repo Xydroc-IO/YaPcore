@@ -239,21 +239,57 @@ window.YapDashBindAccessActions = function (YapDash, ctx) {
     } catch (e) { setOut(e.message, true); }
   });
 
+  function selectedTrack() {
+    return ($("accTrack")?.value || state.defaultTrack || "yap").trim();
+  }
+
+  function permContextFields() {
+    const durSel = $("accPermDuration")?.value || "";
+    let duration = "";
+    if (durSel === "custom") {
+      duration = ($("accPermDurationCustom")?.value || "").trim();
+    } else if (durSel) {
+      duration = durSel;
+    }
+    return {
+      duration,
+      world: ($("accPermWorld")?.value || "").trim(),
+      server: ($("accPermServer")?.value || "").trim(),
+    };
+  }
+
+  function describeContext(ctx) {
+    const bits = [];
+    if (ctx.duration) bits.push("for " + ctx.duration);
+    if (ctx.world) bits.push("world=" + ctx.world);
+    if (ctx.server) bits.push("server=" + ctx.server);
+    return bits.length ? " (" + bits.join(", ") + ")" : "";
+  }
+
+  $("accPermDuration")?.addEventListener("change", () => {
+    const custom = $("accPermDuration")?.value === "custom";
+    const input = $("accPermDurationCustom");
+    if (input) input.disabled = !custom;
+    if (custom) input?.focus();
+  });
+
   $("accPromote")?.addEventListener("click", async () => {
     const p = $("accPlayer")?.value.trim();
     if (!p) return;
+    const track = selectedTrack();
     try {
-      const r = await netPost("/api/access", { action: "promote", player: p });
-      setOut(r.result || "Promoted.");
+      const r = await netPost("/api/access", { action: "promote", player: p, track });
+      setOut(r.result || ("Promoted on track " + track + "."));
     } catch (e) { setOut(e.message, true); }
   });
 
   $("accDemote")?.addEventListener("click", async () => {
     const p = $("accPlayer")?.value.trim();
     if (!p) return;
+    const track = selectedTrack();
     try {
-      const r = await netPost("/api/access", { action: "demote", player: p });
-      setOut(r.result || "Demoted.");
+      const r = await netPost("/api/access", { action: "demote", player: p, track });
+      setOut(r.result || ("Demoted on track " + track + "."));
     } catch (e) { setOut(e.message, true); }
   });
 
@@ -262,9 +298,12 @@ window.YapDashBindAccessActions = function (YapDash, ctx) {
     const node = $("accPermNode")?.value.trim();
     const val = $("accPermVal")?.value || "true";
     if (!p || !node) { alert("Player and permission node required."); return; }
+    const ctx = permContextFields();
     try {
-      const r = await netPost("/api/access", { action: "user-perm", player: p, node, value: val });
-      setOut(r.result || "Permission set on player.");
+      const r = await netPost("/api/access", {
+        action: "user-perm", player: p, node, value: val, ...ctx,
+      });
+      setOut((r.result || "Permission set on player.") + describeContext(ctx));
     } catch (e) { setOut(e.message, true); }
   });
 
@@ -273,9 +312,39 @@ window.YapDashBindAccessActions = function (YapDash, ctx) {
     const node = $("accPermNode")?.value.trim();
     const val = $("accPermVal")?.value || "true";
     if (!g || !node) { alert("Select a group and enter a permission node."); return; }
+    const ctx = permContextFields();
     try {
-      const r = await netPost("/api/access", { action: "group-perm", group: g, node, value: val });
-      setOut(r.result || "Permission set on group " + g + ".");
+      const r = await netPost("/api/access", {
+        action: "group-perm", group: g, node, value: val, ...ctx,
+      });
+      setOut((r.result || ("Permission set on group " + g + ".")) + describeContext(ctx));
+    } catch (e) { setOut(e.message, true); }
+  });
+
+  $("accUserPermUnset")?.addEventListener("click", async () => {
+    const p = $("accPlayer")?.value.trim();
+    const node = $("accPermNode")?.value.trim();
+    if (!p || !node) { alert("Player and permission node required."); return; }
+    const ctx = permContextFields();
+    try {
+      const r = await netPost("/api/access", {
+        action: "user-perm-unset", player: p, node, world: ctx.world, server: ctx.server,
+      });
+      setOut((r.result || "Permission revoked on player.") + describeContext({ world: ctx.world, server: ctx.server }));
+    } catch (e) { setOut(e.message, true); }
+  });
+
+  $("accGroupPermUnset")?.addEventListener("click", async () => {
+    const g = state.selectedGroup || $("accPlayerGroup")?.value;
+    const node = $("accPermNode")?.value.trim();
+    if (!g || !node) { alert("Select a group and enter a permission node."); return; }
+    const ctx = permContextFields();
+    try {
+      const r = await netPost("/api/access", {
+        action: "group-perm-unset", group: g, node, world: ctx.world, server: ctx.server,
+      });
+      setOut((r.result || ("Permission revoked on group " + g + "."))
+        + describeContext({ world: ctx.world, server: ctx.server }));
     } catch (e) { setOut(e.message, true); }
   });
 

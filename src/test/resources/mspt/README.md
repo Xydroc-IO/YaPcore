@@ -6,7 +6,7 @@ Tracked A/B JSON for `checkMsptRegressionFixtures` / `compare-folia.py`.
 |------|------|
 | `stock-folia-heavypop.json` / `yap-folia-heavypop.json` | Soft pass — ship knobs (`20260904TshipOn`, **−7.55%**) |
 | `yap-folia-heavypop-regress.json` | Must fail regression gate |
-| `cite-fullcite-stock.json` / `cite-fullcite-yapcore.json` | Official cite — ship knobs (**−12.4%**, `20260904TshipFc2`) |
+| `cite-fullcite-stock.json` / `cite-fullcite-yapcore.json` | Official cite — ship knobs (**−5.53%**, `20260904T040935Z`; peak **−12.4%** at `shipFc2`) |
 | `cite-fullcite-verdict.txt` | Human verdict text |
 | `peer-heavypop-canvas.json` | Canvas heavypop peer (YaP #1) |
 | `cite-fullcite-canvas.json` | Canvas fullcite peer (ranking only) |

@@ -35,7 +35,7 @@ public final class DashboardGameplayOpsApi {
             String status = server.executeCommand("yapprotect status");
             snap.put("ok", true);
             snap.put("status", status == null ? "" : status);
-            snap.put("hint", "POST reload | prune | lookup | rollback | save-settings");
+            snap.put("hint", "POST reload | prune | lookup | lookup-radius | rollback | restore | save-settings");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -67,7 +67,22 @@ public final class DashboardGameplayOpsApi {
                 case "prune" -> "yapprotect prune " + body.getOrDefault("days", "30");
                 case "lookup" -> "yapprotect dash-lookup user " + body.getOrDefault("player", "Steve") + " "
                         + body.getOrDefault("limit", "10");
-                case "rollback" -> "yapprotect rollback " + body.getOrDefault("id", "0");
+                case "lookup-radius" -> "yapprotect dash-lookup radius " + body.getOrDefault("radius", "16") + " "
+                        + body.getOrDefault("limit", "25");
+                case "rollback" -> {
+                    if (body.containsKey("player")) {
+                        yield "yapprotect rollback user " + body.get("player") + " "
+                                + body.getOrDefault("duration", "7d");
+                    }
+                    yield "yapprotect rollback " + body.getOrDefault("id", "0");
+                }
+                case "restore" -> {
+                    if (body.containsKey("player")) {
+                        yield "yapprotect restore user " + body.get("player") + " "
+                                + body.getOrDefault("duration", "7d");
+                    }
+                    yield "yapprotect restore " + body.getOrDefault("id", "0");
+                }
                 default -> "yapprotect status";
             };
             String result = server.executeCommand(cmd);
@@ -75,7 +90,7 @@ public final class DashboardGameplayOpsApi {
             resp.put("ok", true);
             resp.put("command", cmd);
             resp.put("result", result == null ? "" : result);
-            if ("lookup".equals(action)) {
+            if ("lookup".equals(action) || "lookup-radius".equals(action)) {
                 resp.put("lookupRows", DashboardProtectLookup.parseDashJson(result));
             }
             DashboardHttp.json(ex, 200, resp);

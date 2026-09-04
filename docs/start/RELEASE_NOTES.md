@@ -34,7 +34,7 @@ Bedrock crossplay, YaP Link proxy, web dashboard, and the operator SMP commands 
 - **Optional resource packs** auto-acked when `resource-pack-forced=false` — fixes mid-client join timeouts.
 - **Bedrock 1.21.50** — RakNet login, spawn, dig/place, chat, commands; play-depth smoke green.
 - **Paper column stream** default for Bedrock terrain (flat chunks opt-in only).
-- **G.33** placed-skull block-actor sync wired; item-in-hand head textures still partial.
+- **G.33** placed-skull block-actor sync + item-in-hand SkullOwner Name NBT; full profile-hash textures remain Stretch.
 - Limitations documented in [CROSSPLAY.md](../network/CROSSPLAY.md).
 
 ### Ops & configuration

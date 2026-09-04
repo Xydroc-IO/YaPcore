@@ -140,6 +140,25 @@ commands:
     description: Show message of the day
     usage: /motd
     permission: yapessentials.motd
+  weather:
+    description: Set world weather (or YaPDisasters GUI when installed)
+    usage: /weather <clear|rain|thunder|lock|unlock|gui> [seconds] [world]
+    permission: yapessentials.weather
+  near:
+    description: List nearby players
+    usage: /near [radius]
+    aliases: [nearby]
+    permission: yapessentials.near
+  workbench:
+    description: Open a crafting table
+    usage: /workbench
+    aliases: [craft, wb]
+    permission: yapessentials.workbench
+  disposal:
+    description: Open a disposable trash inventory
+    usage: /disposal
+    aliases: [trash, dispose]
+    permission: yapessentials.disposal
   suicide:
     description: Kill yourself
     usage: /suicide
@@ -225,6 +244,12 @@ permissions:
   yapessentials.weather:
     description: /weather GUI and extended weather controls
     default: op
+  yapessentials.near:
+    default: true
+  yapessentials.workbench:
+    default: true
+  yapessentials.disposal:
+    default: true
   yapessentials.broadcast:
     default: op
   yapessentials.rules:

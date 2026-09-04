@@ -3,10 +3,12 @@ package com.yapcore.web;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import com.yapcore.server.YaPcoreServer;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -17,8 +19,12 @@ public final class DashboardMapServe {
     }
 
     public static HttpHandler mapStatic(Path rootDir) {
+        return mapStatic(rootDir, null);
+    }
+
+    public static HttpHandler mapStatic(Path rootDir, YaPcoreServer server) {
         Path mapWebDir = rootDir.resolve("plugins").resolve("YaPMap").resolve("web");
-        return exchange -> serveMapStatic(exchange, mapWebDir);
+        return exchange -> serveMapStatic(exchange, mapWebDir, rootDir, server);
     }
 
     public static HttpHandler mapTiles(Path rootDir) {
@@ -26,7 +32,8 @@ public final class DashboardMapServe {
         return exchange -> serveTiles(exchange, mapTilesDir);
     }
 
-    private static void serveMapStatic(HttpExchange exchange, Path mapWebDir) throws IOException {
+    private static void serveMapStatic(HttpExchange exchange, Path mapWebDir, Path rootDir,
+                                       YaPcoreServer server) throws IOException {
         try {
             if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(405, -1);
@@ -39,6 +46,17 @@ public final class DashboardMapServe {
             }
             if (rel.contains("..") || rel.startsWith("/") || rel.contains("\\")) {
                 exchange.sendResponseHeaders(400, -1);
+                return;
+            }
+            if ("markers.json".equals(rel)) {
+                byte[] body = DashboardMapMarkers.build(server, rootDir).getBytes(StandardCharsets.UTF_8);
+                Headers headers = exchange.getResponseHeaders();
+                headers.add("Content-Type", "application/json; charset=utf-8");
+                headers.add("Cache-Control", "no-cache");
+                exchange.sendResponseHeaders(200, body.length);
+                try (OutputStream out = exchange.getResponseBody()) {
+                    out.write(body);
+                }
                 return;
             }
             Path file = mapWebDir.resolve(rel).normalize();

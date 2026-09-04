@@ -71,7 +71,9 @@ YaPcore contributes:
 - **Stock Paper plugins on YaP-Folia** are unsupported (same reality as upstream Folia). Prefer Folia-aware jars or YaP natives — [PLUGIN_COMPAT_MATRIX.md](../plugins/PLUGIN_COMPAT_MATRIX.md).
 - YaPcore is **not** a clean-room rewrite of Minecraft; it **forks Folia on purpose**.
 - We do **not** claim “faster than Paper/Leaf on every workload.” Population cite: **fullcite** (100 active bots + fixtures) under the **ship Folia knob profile** (async-save, hopper budget, MSPT-gated entity/microtick budgets, subregion partition) — yapcore **−12.4%** vs stock Folia (`20260904TshipFc2`); knobs disclosed in bench JSON (`knob_*`). See [`YAP_FOLIA_SOAK.md`](../folia/YAP_FOLIA_SOAK.md). **250 keepalive = HOLD-ONLY**.
-- Bedrock play-depth is **join/spawn + play-depth smoke green**; some fidelity rows remain partial — [CROSSPLAY.md](../network/CROSSPLAY.md).
+- Bedrock play-depth is **join/spawn + play-depth smoke green**; Wave 2 fidelity matrix
+  (inventory/forms/G.33 heads) is in [CROSSPLAY.md](../network/CROSSPLAY.md) — Floodgate-only
+  forms and anvil/smithing UIs are **Limited/Out**, not silent Partial.
 - The Compatibility Bridge facade (non-game authority) remains **best-effort stubs** — [PAPER_API_COVERAGE.md](../plugins/PAPER_API_COVERAGE.md).
 
 ### 1.4 Audience
@@ -225,11 +227,11 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-chat.jar` | YaPChat | Channels, PM, filter, staff chat |
 | `yap-packs.jar` | YaPPacks | Multi resource-pack push |
 | `yap-floodgate.jar` | YaPFloodgate | Bedrock identity without Floodgate jar |
-| `yap-placeholderapi.jar` | PlaceholderAPI | Clip-compatible PAPI (eCloud intentionally stubbed; drop expansions locally) |
+| `yap-placeholderapi.jar` | PlaceholderAPI | Clip-compatible PAPI (local expansions; eCloud out of scope by design) |
 | `yap-plugin-compat.jar` | YaPPluginCompat | 1.20–1.21 → 26.2 back-compat status |
-| `yap-pregen.jar` | YaPPregen | Chunk pre-generator |
+| `yap-pregen.jar` | YaPPregen | Folia-safe chunk pre-generator |
 | `yap-folia-bridge.jar` | YaPFoliaBridge | Folia surface / scheduler smoke |
-| `yap-protect.jar` | YaPProtect | CoreProtect-class audit / rollback |
+| `yap-protect.jar` | YaPProtect | CoreProtect-class audit / rollback / restore |
 | `yap-world.jar` | YaPWorld | FAWE-class edit (masks, brushes, schems) + world mgmt |
 | `yap-regions.jar` | YaPRegions | WorldGuard-class cuboid flags |
 | `yap-npcs.jar` | YaPNpcs | Quest NPCs + dialogue |
@@ -237,7 +239,7 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-discord.jar` | YaPDiscord | Discord webhooks + relay |
 | `yap-guard.jar` | YaPGuard | Lightweight anti-cheat heuristics |
 | `yap-lagguard.jar` | YaPLagGuard | Per-chunk lag governor |
-| `yap-map.jar` | YaPMap | Web flat map (Leaflet + PNG tiles) |
+| `yap-map.jar` | YaPMap | Web flat map (Leaflet + PNG tiles + live markers; 3D Stretch) |
 | `yap-factions.jar` | YaPFactions | Factions overlay on playerdata claims |
 | `yap-bedrock-ui.jar` | YaPBedrockUI | Bedrock `FormService` bridge |
 
@@ -333,7 +335,7 @@ Link plugins (`link-plugin.json`): chat-bridge, mod-sync, server-selector, tab-b
 
 Same-machine clients must use `127.0.0.1` (hairpin NAT) — [NGINX_AND_LOCALHOST.md](../network/NGINX_AND_LOCALHOST.md).
 
-Phase 4 dual-stack **join DoD is green**; play-depth smoke green; remaining fidelity rows tracked in [CROSSPLAY.md](../network/CROSSPLAY.md).
+Phase 4 dual-stack **join DoD is green**; play-depth smoke green; Wave 2 matrix in [CROSSPLAY.md](../network/CROSSPLAY.md).
 
 ---
 
@@ -348,7 +350,7 @@ Phase 4 dual-stack **join DoD is green**; play-depth smoke green; remaining fide
 | Release | `gradle assembleRelease` → `build/dist/yapcore-release/{linux,windows}/` |
 | Windows | Parity launchers — [WINDOWS.md](../start/WINDOWS.md) |
 
-Dashboard Phase 8 polish remains a backlog item — see [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
+Dashboard Phase 8 ops tabs are **shipped** (Factions / Guilds / Games interactive; Disasters + MMO reload) — see [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 
 ---
 
@@ -366,7 +368,7 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 - Folia (and YaP-Folia) reject stock single-thread Paper plugins — operator education required.
 - Protocol version sprawl requires continuous registry/packet maintenance.
 - NUMA/ZGC gains are hardware-dependent.
-- Bedrock play-depth parity still lags Java for some packets / UI surfaces.
+- Complex JE containers on Bedrock (anvil/smithing/etc.) remain **Out**; Floodgate-only forms are **Limited** — see [CROSSPLAY.md](../network/CROSSPLAY.md).
 - YaP-Folia patch rebase risk when refreshing `UPSTREAM.lock`.
 - Phase 3 spatial edge cases apply only on the **legacy Paper** path.
 - Soft-depend plugin names are **case-sensitive** (`YaPPlayerData`); integrations must match `plugin.yml` `name:` exactly.
@@ -385,12 +387,30 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 | CORE+NETWORK plugins | **Shipped** |
 | GAMEPLAY + MMO M0–M7 | **Shipped** (opt-in install) |
 | PlayerData shops + AH | **On by default** (jobs remain off) |
-| Fair population MSPT gate | **Citeable** — fullcite 100 bots, yapcore −12.4% vs stock Folia (**ship knobs** disclosed in JSON) |
-| Dashboard Phase 8 full tabs | **Partial / roadmap** |
-| PAPI eCloud | **Intentionally stubbed** |
+| Fair population MSPT gate | **Citeable** — fullcite 100 bots; peak −12.4% (`shipFc2`); re-verify −5.53% (`20260904T040935Z`); **ship knobs** disclosed in JSON |
+| Dashboard Phase 8 full tabs | **Done (ship)** — Factions/Guilds/Games/Disasters/Stacker interactive; Protect restore; Regions flags; MMO reload; YAML-only leftovers documented |
+| Wave 2 Bedrock fidelity | **Done (ship)** — [CROSSPLAY.md](../network/CROSSPLAY.md) matrix; Floodgate forms Limited; anvil/smithing Out |
+| Wave 3 MMO quest objectives | **Done (ship)** — PLAYTIME/ECONOMY/PLACE/ENCHANT/ANVIL/TALK; silent proxies removed |
+| Wave 4 Discord / Map / PAPI | **Done (ship)** — event webhooks; map markers; curated local expansions |
+| Wave 5 Access context/temp | **Done (ship)** — dashboard duration + world/server grants |
+| PAPI eCloud | **Intentionally local-only** (expansions folder) |
+| Stretch (3D / CFI / full RS / clone mirrors) | **Separate plan only** — not stubbed (see §13.1) |
 | Stock Paper jars on Folia | **Unsupported** |
 
-Ops polish backlog: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
+Ops notes: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
+
+### 13.1 Stretch (deferred — no stub ship)
+
+| Item | Why not in Waves 2–5 |
+|------|----------------------|
+| True BlueMap-style 3D mesh | Flat map + markers is product Map |
+| FAWE CFI / NMS section injection | Folia region-threading conflict |
+| Full RuneScape skill/quest matrix | Wave 3 uses existing YaP systems |
+| DiscordSRV account-link / slash matrix | Event webhooks are product Discord |
+| HelpChat eCloud full mirror | Curated expansions are product PAPI |
+| LuckPerms web pixel-clone | Access context/temp is product ops |
+
+Stretch starts only with its own plan and done bars.
 
 ---
 
@@ -398,7 +418,7 @@ Ops polish backlog: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 
 YaPcore demonstrates a practical decomposition for Minecraft-class servers: **YaP-Folia** owns regionized game tick; **YapEngine** owns a slim edge/I/O chassis with an explicit plugin pool contract; **YaP Link** owns multi-backend routing; and a **first-party plugin + MariaDB data plane** replaces the usual DIY glue stack. Opt-in GAMEPLAY and MMO tiers extend the same Folia-safe patterns for vehicles and RS-style progression.
 
-Future work emphasizes deeper dual-stack fidelity, hot-region partition soak under load, dashboard ops completion, and continued Folia upstream rebase hygiene.
+Future work emphasizes Stretch items (3D map, CFI, full RS) only under a separate plan, hot-region partition soak under load, and continued Folia upstream rebase hygiene.
 
 ---
 

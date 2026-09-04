@@ -100,7 +100,7 @@ public final class WebDashboard {
         http = HttpServer.create(addr, 0);
         Path rootDir = server.getRootDir();
 
-        http.createContext("/map/", DashboardMapServe.mapStatic(rootDir));
+        http.createContext("/map/", DashboardMapServe.mapStatic(rootDir, server));
         http.createContext("/tiles/", DashboardMapServe.mapTiles(rootDir));
         http.createContext("/", this::serveStatic);
         http.createContext("/api/players", playersApi::apiPlayers);
@@ -127,6 +127,7 @@ public final class WebDashboard {
         http.createContext("/api/link/console/stream", linkConsoleApi::apiLinkConsoleStream);
         http.createContext("/api/protect", gameplayApi::apiProtect);
         http.createContext("/api/disasters", gameplayApi::apiDisasters);
+        http.createContext("/api/stacker", gameplayApi::apiStacker);
         http.createContext("/api/world", gameplayApi::apiWorld);
         http.createContext("/api/chat", gameplayApi::apiChat);
         http.createContext("/api/moderation", gameplayApi::apiModeration);

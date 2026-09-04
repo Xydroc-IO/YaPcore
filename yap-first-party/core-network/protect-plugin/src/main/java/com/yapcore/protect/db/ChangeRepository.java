@@ -198,6 +198,21 @@ public final class ChangeRepository {
         }
     }
 
+    public void clearRolledBack(List<Long> ids) throws SQLException {
+        if (ids.isEmpty()) {
+            return;
+        }
+        String placeholders = String.join(",", ids.stream().map(id -> "?").toList());
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "UPDATE yap_protect_changes SET rolled_back = 0 WHERE id IN (" + placeholders + ")")) {
+            for (int i = 0; i < ids.size(); i++) {
+                ps.setLong(i + 1, ids.get(i));
+            }
+            ps.executeUpdate();
+        }
+    }
+
     public long pruneBefore(long epochMs) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(

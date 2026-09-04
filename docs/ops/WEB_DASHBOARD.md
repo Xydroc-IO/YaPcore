@@ -45,8 +45,8 @@ Login links include `?token=…` so the browser signs in automatically (token is
 | **Overview** | Dashboard (status), Network setup, Connect |
 | **Server** | Console, Server setup, YaP Link |
 | **People** | Players, Access & ranks, Rank pack |
-| **Content** | Plugins, Modules, Packs, World, Regions, NPCs |
-| **Gameplay** | Essentials, Vehicles, Pregen, Player data, Chat, Tab list, **MMO**, Map, Guard, Protect, Discord |
+| **Content** | Plugins, Plugin settings, Modules, Packs, World, Regions, NPCs |
+| **Gameplay** | Essentials, Vehicles, Pregen, Player data, Kits, Tebex, Chat, Tab list, **MMO**, **Factions**, **Guilds**, **Games**, **Disasters**, **Stacker**, Map, Guard, Protect, Discord |
 
 Static assets: `src/main/resources/web/` — `app-shell.js`, `app-core.js`, `app-*-panels.js`, `style.css`.
 
@@ -73,7 +73,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Server setup** | `/api/config` | everyday server switches (name, who can join, RAM) | save config keys |
 | **YaP Link** | `/api/link`, `/api/link/console` | proxy, backends, forced hosts, selector | start, stop, save-proxy, save-servers, command · Link SSE |
 | **Players** | `/api/players` | online list, spawn, moderation flags | kick, ban, tempban, ipban, mute, warn, timeout, tp*, set-rank, promote, demote, **eco give/take/set/reset**, bal, history, check, banlist |
-| **Access & ranks** | `/api/access` | ops, auto-op, default group, groups, tracks, **permission catalog**, **group nodes** | save-group-nodes, save-ops, save-auto-op, set-default-group, op, deop, set-group, promote, demote, group/user perm, dump, reload, applypack |
+| **Access & ranks** | `/api/access` | ops, auto-op, default group, groups, **tracks**, server-context, **permission catalog**, **group nodes** | save-group-nodes, save-ops, save-auto-op, set-default-group, op, deop, set-group, promote/demote (+ track), **user-perm / group-perm** (+ duration, world, server), **user-perm-unset / group-perm-unset**, dump, reload, applypack |
 | **Rank pack** | `/api/ranks` | pack applied, auto-apply | apply, force, reset-marker, status |
 | **Plugins** | `/api/plugins` | jar list + compat matrix | install, remove |
 | **Plugin settings** | `/api/plugin-config` | first-party YAML with plain-language titles + Yes/No | **save** + reload, **reload** |
@@ -92,8 +92,13 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Tab list** | `/api/tab` | header/footer/sidebar/bossbar | save-header/footer/sidebar/settings/bossbar, reload |
 | **Map** | `/api/map` | map URL, tiles, worlds, render interval | reload, render, **save-settings** |
 | **Guard** | `/api/guard` | check toggles, kick threshold, decay, alerts | reload, player-status, **save-settings** |
-| **Protect** | `/api/protect` | logging, retention, status | reload, prune, lookup, **rollback**, **save-settings** |
-| **MMO** | `/api/mmo` | skills, abilities, hiscores, boss kills, combat bar bindings | **reload-abilities**, reload-mmo |
+| **Protect** | `/api/protect` | logging, retention, status | reload, prune, lookup, lookup-radius, **rollback**, **restore**, **save-settings** |
+| **Stacker** | `/api/stacker` | enabled, mob/item/spawner toggles, kill mode, live stats | **save-settings**, reload, status, stats |
+| **MMO** | `/api/mmo` | skills, abilities, hiscores, boss kills, combat bar bindings | **reload-abilities**, **reload-mmo** |
+| **Factions** | `/api/factions` | counts, preview, power/bank settings | **save-settings**, reload, setpower, setjoin, disband |
+| **Guilds** | `/api/guilds` | counts, preview, level/bank settings | **save-settings**, reload, setlevel, disband |
+| **Games** | `/api/games` | modes, arenas, match/reward toggles | **save-settings**, reload, list, forcestart |
+| **Disasters** | `/api/disasters` | extremes, random schedule, volcano sites | **save-settings**, reload, start, stop, random, site-* |
 
 Legacy routes (superseded by UI tabs): `/api/moderation` → **Players**; `/api/perms` → **Access & ranks**.
 
@@ -101,18 +106,30 @@ Pack HTTP stays on **:8081**. Dashboard is a separate port (**:8080**).
 
 ### Access & ranks
 
-Full operator control without `/op` and `/yapperm` by hand:
+YaP **ops surface** for permissions — not a LuckPerms-web clone. Full operator control without `/op` and `/yapperm` by hand:
 
 - **Minecraft OPs** — chip list, add/remove, persisted to `server.properties`
 - **Auto-op** — toggle for first join
 - **Default rank** — YaPPerms default group dropdown
 - **Group cards** — click to edit tag, name color, and chat color with **color swatches + custom hex** (no `&` codes required), plus suffix, weight, and inheritance. Live chat preview updates as you pick colors.
-- **Rank permissions** — catalog of player / staff / vanilla / Paper commands plus **nodes discovered from installed plugin.yml**; inherit · allow · deny; any custom / wildcard node (bulk add); saved with `save-group-nodes`
+- **Rank permissions** — catalog of player / staff / vanilla / Paper commands plus **nodes discovered from installed plugin.yml**; inherit · allow · deny; any custom / wildcard node (bulk add); saved with `save-group-nodes` (permanent + global via `yapperm editor-apply`)
 - **Create rank with a pack** — empty / player / staff / admin, or copy perms from an existing rank (`template`, `cloneFrom` on `create-group`)
 - **Apply pack / copy perms** onto an existing rank (`apply-template`, `clone-group`)
-- **Promote / demote** — track-based rank changes
+- **Promotion track** — ladder chips + track picker; **Promote / demote** steps one rank (`promote` / `demote` with optional `track`)
+- **Context + temp grants** — Players pane grants/revokes a node with optional `duration` (`1h`, `1d`, `7d`, `30d`, or custom like `1d12h`), `world`, and `server` (wires to `yapperm user|group permission set|unset`)
 
 `POST /api/access` `{"action":"save-group-nodes","group":"vip","allow":"yapessentials.fly,…","deny":"minecraft.command.op","unset":"yapessentials.god"}` writes `plugins/YaPPerms/config.yml` (`starter-grants` + `editor-nodes`) and applies live via `yapperm editor-apply`. Refresh dumps live extras with `yapperm dump` → `editor-snapshot.yml`.
+
+Timed / world-scoped example (does **not** go through the rank editor batch):
+
+```json
+{"action":"user-perm","player":"Steve","node":"yapessentials.fly","value":"true","duration":"7d","world":"world"}
+{"action":"user-perm-unset","player":"Steve","node":"yapessentials.fly","world":"world"}
+{"action":"group-perm","group":"vip","node":"yapmod.ban","value":"true","duration":"1d","server":"lobby"}
+{"action":"promote","player":"Steve","track":"yap"}
+```
+
+MariaDB already stores `world`, `server_ctx`, and `expires_at` on user/group nodes; the dashboard now exposes those fields for ops.
 
 ### Kits (`yap-playerdata`)
 
@@ -163,6 +180,55 @@ Requires YaP-Folia running + `yap-moderation` / `yap-perms` / `yap-playerdata`. 
 
 Live data uses console exports: `yapmmo snapshot json`, `yapabilities snapshot json`.
 
+### Factions (`yap-factions`)
+
+**Gameplay → Factions** — counts + preview, YAML settings (power/bank/relations), admin console actions:
+
+| Action | POST `/api/factions` |
+|--------|----------------------|
+| Save settings + reload | `{"action":"save-settings",…}` |
+| Reload | `{"action":"reload"}` |
+| Set power | `{"action":"setpower","faction":"Tag","power":"50","max":"60"}` |
+| Set join mode | `{"action":"setjoin","faction":"Tag","mode":"invite"}` |
+| Force disband | `{"action":"disband","faction":"Tag"}` |
+
+Player create/join/claim stays in-game (`/f …`).
+
+### Guilds (`yap-guilds`)
+
+**Gameplay → Guilds** — counts + preview, level/bank settings, admin `setlevel` / force-disband via `/yapguilds …`.
+
+### Games (`yap-games`)
+
+**Gameplay → Games** — mode/arena inventory, match toggles, `ygames reload|list|forcestart`.
+
+### Disasters (`yap-disasters`)
+
+**Gameplay → Disasters** — extremes, random schedule, volcano sites. See `/api/disasters` POST actions in the table above.
+
+### Stacker (`yap-stacker`)
+
+**Gameplay → Stacker** — enable toggles, kill mode, max stacks, live `/yapstacker status|stats`.
+
+| Action | POST `/api/stacker` |
+|--------|---------------------|
+| Save YAML + reload | `{"action":"save-settings",…}` |
+| Reload | `{"action":"reload"}` |
+| Stats | `{"action":"stats"}` |
+
+### YAML-only by design (not dashboard gaps)
+
+These ship as **Plugin settings** editors (or in-game hubs) on purpose — they do not need a dedicated interactive ops tab:
+
+| Plugin / area | Why YAML / elsewhere |
+|---------------|----------------------|
+| LagGuard | Already on status metrics |
+| YaPAdmin | In-game staff hub (`/yapadmin`) |
+| gameplay-knobs | Tunables via Plugin settings |
+| skills / combat / crafting / mechanics | MMO tab + YAML packs |
+| floodgate / bedrock-ui / folia-bridge | Crossplay bridge config |
+| placeholderapi / plugin-compat | Expansion / soft-dep config |
+
 ### NPCs (`yap-npcs`)
 
 Dashboard drives the plugin directly:
@@ -173,9 +239,9 @@ Dashboard drives the plugin directly:
 
 ### Regions (`yap-regions`)
 
-- Define admin cuboids from the UI (console: `region define <name> at <world> x1 y1 z1 x2 y2 z2`)
-- Set WorldGuard-class flags (pvp, build, entry, …) allow/deny per region
-- GET `/api/regions` returns structured `regions[]` from `region list json`
+- Define / redefine / remove admin cuboids from the UI
+- Set WorldGuard-class flags (including item-drop/pickup, tnt, creeper-explosion)
+- GET `/api/regions` returns `regions[]` with flag map from `region list json`
 
 ### Chat, Guard, Protect, Map, World
 
@@ -188,15 +254,17 @@ These tabs **write plugin YAML** via `save-settings` (or equivalent) and reload 
 - Folia running, bedrock/crossplay/velocity flags
 - Link process running (`linkProcessRunning`), config + suite completeness
 - Plugin count + compat warning count
-- **Ops plugins** — Phase 8 jar readiness (Protect, Chat, Moderation, Player data, Map, Discord) with one-line detail per plugin
+- **Ops plugins** — Phase 8 jar readiness (Protect, Chat, Moderation, Player data, Map, Discord, Tebex) with one-line detail per plugin
 
 ### Map tab
 
 Serves tiles via YaPcore pack HTTP when `use-yapcore-server: true` (default). First render runs ~2s after plugin enable; full re-render on `render-interval-minutes`. Tune `sample-chunk-radius` and `max-height` on low-CPU hosts — see plugin `config.yml` comments.
 
+**Wave 4 markers** — live player markers via `/map/markers.json` (poll interval configurable). Optional NPC points and region outlines when YaPNpcs / YaPRegions are installed and toggled on in the Map tab. This is a **flat** Leaflet map; BlueMap-style **3D** mesh viewing is Stretch / out of scope until later.
+
 ### Discord tab
 
-Webhooks and relay toggles. Safe setup order documented in [DISCORD_RELAY.md](DISCORD_RELAY.md). MC→Discord and Discord→MC stay **off** until webhooks and inbound secrets are set.
+Webhooks (moderation, chat, events), relay toggles, and join/leave/death/advancement event toggles. Safe setup order documented in [DISCORD_RELAY.md](DISCORD_RELAY.md). MC→Discord and Discord→MC stay **off** until webhooks and inbound secrets are set.
 
 ### YaP Link tab (proxy process)
 

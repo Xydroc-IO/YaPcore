@@ -53,4 +53,41 @@ class QuestObjectiveParserTest {
         assertNotNull(obj.material());
         assertEquals(5, obj.amount());
     }
+
+    @Test
+    void parsesWave3ObjectiveTypes() {
+        Map<String, Object> play = new LinkedHashMap<>();
+        play.put("id", "hours");
+        play.put("type", "PLAYTIME");
+        play.put("minutes", 30000);
+        QuestDefinition.Objective p = QuestPackLoader.parseObjective(play);
+        assertEquals(QuestDefinition.ObjectiveType.PLAYTIME, p.type());
+        assertEquals(30000, p.minutes());
+
+        Map<String, Object> bal = new LinkedHashMap<>();
+        bal.put("id", "rich");
+        bal.put("type", "ECONOMY_BALANCE");
+        bal.put("min-balance", 10000);
+        QuestDefinition.Objective b = QuestPackLoader.parseObjective(bal);
+        assertEquals(QuestDefinition.ObjectiveType.ECONOMY_BALANCE, b.type());
+        assertEquals(10000.0, b.minBalance());
+
+        Map<String, Object> talk = new LinkedHashMap<>();
+        talk.put("id", "hello");
+        talk.put("type", "TALK");
+        talk.put("npc-id", "quest_master");
+        talk.put("amount", 1);
+        QuestDefinition.Objective t = QuestPackLoader.parseObjective(talk);
+        assertEquals(QuestDefinition.ObjectiveType.TALK, t.type());
+        assertEquals("quest_master", t.npcId());
+
+        Map<String, Object> place = new LinkedHashMap<>();
+        place.put("id", "build");
+        place.put("type", "PLACE_BLOCKS");
+        place.put("material", "COBBLESTONE");
+        place.put("amount", 100);
+        QuestDefinition.Objective pl = QuestPackLoader.parseObjective(place);
+        assertEquals(QuestDefinition.ObjectiveType.PLACE_BLOCKS, pl.type());
+        assertEquals(100, pl.amount());
+    }
 }

@@ -76,8 +76,11 @@ public final class PapiCommand implements CommandExecutor, TabCompleter {
             case "version", "ver" -> version(sender);
             case "ecloud" -> {
                 Msg.msg(sender,
-                        "&eYaP PlaceholderAPI does not mirror HelpChat eCloud.",
-                        "&7Drop expansion jars into &fplugins/PlaceholderAPI/expansions/");
+                        "&6YaP PlaceholderAPI &7uses &flocal expansions&7, not HelpChat eCloud.",
+                        "&7Built-in: &fplayer&7, &fserver&7 · YaP plugins register &fyap*&7 placeholders automatically.",
+                        "&7Third-party jars → &fplugins/PlaceholderAPI/expansions/",
+                        "&7Then: &e/papi reload &7or &e/papi register <jar>",
+                        "&7Docs: &fdocs/plugins/PLACEHOLDERAPI.md");
                 yield true;
             }
             default -> {
@@ -95,7 +98,8 @@ public final class PapiCommand implements CommandExecutor, TabCompleter {
                 "&e/papi cmdparse &7<target> <text…> &8— run as command",
                 "&e/papi parserel &7<p1> <p2> <text…>",
                 "&e/papi dump &8— write diagnostics (+ optional paste)",
-                "&e/papi list|info [id]|reload|register <jar>|unregister <id>|version");
+                "&e/papi list|info [id]|reload|register <jar>|unregister <id>|version",
+                "&e/papi ecloud &8— local expansions path (no HelpChat eCloud)");
     }
 
     private boolean parse(CommandSender sender, String[] args, boolean broadcast, boolean command) {

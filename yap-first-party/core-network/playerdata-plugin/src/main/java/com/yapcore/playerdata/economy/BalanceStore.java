@@ -2,7 +2,10 @@ package com.yapcore.playerdata.economy;
 
 import com.yapcore.playerdata.db.PlayerRecord;
 import com.yapcore.playerdata.db.PlayerRepository;
+import com.yapcore.playerdata.event.PlayerBalanceChangeEvent;
 import com.yapcore.playerdata.sync.SyncService;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.sql.SQLException;
 import java.util.UUID;
@@ -50,6 +53,20 @@ public final class BalanceStore {
         }
     }
 
+    /**
+     * Notify listeners of a balance change for an online player (quest ECONOMY_EARN hooks).
+     */
+    public void fireBalanceChange(UUID uuid, double oldBalance, double newBalance) {
+        if (uuid == null || Double.compare(oldBalance, newBalance) == 0) {
+            return;
+        }
+        Player player = Bukkit.getPlayer(uuid);
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        Bukkit.getPluginManager().callEvent(new PlayerBalanceChangeEvent(player, oldBalance, newBalance));
+    }
+
     public boolean transfer(UUID from, UUID to, double amount) {
         if (amount <= 0) {
             return false;
@@ -59,7 +76,10 @@ public final class BalanceStore {
             return false;
         }
         setBalance(from, fromBal - amount);
-        setBalance(to, getBalance(to) + amount);
+        fireBalanceChange(from, fromBal, getBalance(from));
+        double toBefore = getBalance(to);
+        setBalance(to, toBefore + amount);
+        fireBalanceChange(to, toBefore, getBalance(to));
         return true;
     }
 }

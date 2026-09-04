@@ -61,7 +61,7 @@ quests:
 
   t4_raid:
     name: "Raid Leader"
-    description: "Kill 50 Pillagers (raid wave proxy)."
+    description: "Kill 50 Pillagers (raid waves or patrols)."
     requires: t4_wither
     objectives:
       - id: pillagers
@@ -101,13 +101,12 @@ quests:
 
   t4_tycoon:
     name: "Economic Tycoon"
-    description: "Craft 50 iron swords for trade stock (economy proxy)."
+    description: "Hold at least 10,000 gold in your YaP economy balance."
     requires: t4_warden
     objectives:
-      - id: trade_stock
-        type: CRAFT_ITEM
-        recipe: iron_sword
-        amount: 50
+      - id: balance_10k
+        type: ECONOMY_BALANCE
+        min-balance: 10000
     rewards:
       - skill_xp:smithing:30000
       - money:10000
@@ -132,11 +131,11 @@ quests:
 
   t4_architect:
     name: "Architect's Dream"
-    description: "Gather 10000 Cobblestone while building."
+    description: "Place 10,000 Cobblestone while building."
     requires: t4_fish_legend
     objectives:
       - id: build
-        type: GATHER
+        type: PLACE_BLOCKS
         material: COBBLESTONE
         amount: 10000
     rewards:

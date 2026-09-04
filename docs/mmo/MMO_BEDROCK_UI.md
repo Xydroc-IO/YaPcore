@@ -23,8 +23,12 @@ action bar / scoreboard mirroring.
 
 `YaPSkills`, `YaPCombat`, `YaPCrafting`, `YaPMmoContent` (soft), `YaPNpcs` (soft, quests panel), `YaPAbilities` (soft), `YaPBedrockUI`, `YaPFloodgate` (soft).
 
-Native YaPcore Bedrock sessions use chassis `FormService` + `BedrockUiBridge.pushActionBar` /
-`pushSidebar`. Link/Floodgate-only players use Paper action bar + scoreboard fallback.
+Native YaPcore Bedrock sessions use chassis `FormService` (simple/modal/custom) +
+`BedrockUiBridge.pushActionBar` / `pushSidebar`.
+
+**Floodgate-only / Link-without-chassis:** forms are **not** available — hub shows a clear
+chat message; action bar + scoreboard still work. See connection-path table in
+[CROSSPLAY.md](../network/CROSSPLAY.md).
 
 ## Smoke
 

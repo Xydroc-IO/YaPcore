@@ -87,6 +87,10 @@ public final class PregenJob {
         remaining.addFirst(pos);
     }
 
+    public synchronized void requeueBack(ChunkPos pos) {
+        remaining.addLast(pos);
+    }
+
     public void beginInflight() {
         inflight.incrementAndGet();
     }

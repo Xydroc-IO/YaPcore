@@ -72,6 +72,35 @@ public final class RegionServiceImpl implements RegionService {
         reload();
     }
 
+    public void remove(String name) throws SQLException {
+        AdminRegion region = repository.findByName(config.serverId(), name)
+                .orElseThrow(() -> new SQLException("Unknown region: " + name));
+        repository.delete(region.id());
+        reload();
+    }
+
+    public AdminRegion redefine(String name, CuboidSelection selection) throws SQLException {
+        AdminRegion region = repository.findByName(config.serverId(), name)
+                .orElseThrow(() -> new SQLException("Unknown region: " + name));
+        repository.updateBounds(
+                region.id(),
+                selection.world(),
+                selection.minX(),
+                selection.maxX(),
+                selection.minY(),
+                selection.maxY(),
+                selection.minZ(),
+                selection.maxZ());
+        reload();
+        return regions.stream().filter(r -> r.id() == region.id()).findFirst()
+                .orElseThrow(() -> new SQLException("Region not found after redefine"));
+    }
+
+    public AdminRegion redefineAt(String name, String world, int x1, int y1, int z1, int x2, int y2, int z2)
+            throws SQLException {
+        return redefine(name, new CuboidSelection(world, x1, y1, z1, x2, y2, z2));
+    }
+
     @Override
     public Optional<AdminRegion> at(Location location) {
         if (location.getWorld() == null) {
@@ -177,6 +206,36 @@ public final class RegionServiceImpl implements RegionService {
             return true;
         }
         return flagAt(location, RegionFlag.INTERACT) == FlagValue.ALLOW;
+    }
+
+    public boolean canDropItems(Player player, Location location) {
+        if (StaffBypass.land(player)) {
+            return true;
+        }
+        return flagAt(location, RegionFlag.ITEM_DROP) == FlagValue.ALLOW;
+    }
+
+    public boolean canPickupItems(Player player, Location location) {
+        if (StaffBypass.land(player)) {
+            return true;
+        }
+        return flagAt(location, RegionFlag.ITEM_PICKUP) == FlagValue.ALLOW;
+    }
+
+    public boolean isTntAllowed(Location location) {
+        Optional<AdminRegion> region = at(location);
+        if (region.isEmpty()) {
+            return true;
+        }
+        return resolve(region.get(), RegionFlag.TNT) == FlagValue.ALLOW;
+    }
+
+    public boolean isCreeperExplosionAllowed(Location location) {
+        Optional<AdminRegion> region = at(location);
+        if (region.isEmpty()) {
+            return true;
+        }
+        return resolve(region.get(), RegionFlag.CREEPER_EXPLOSION) == FlagValue.ALLOW;
     }
 
     private static long volumeOf(AdminRegion region) {

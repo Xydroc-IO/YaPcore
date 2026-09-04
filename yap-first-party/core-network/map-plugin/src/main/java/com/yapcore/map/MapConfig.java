@@ -16,6 +16,10 @@ public final class MapConfig {
     private int renderIntervalMinutes = 15;
     private int maxHeight = 320;
     private int sampleChunkRadius = 8;
+    private boolean markersPlayers = true;
+    private boolean markersNpcs;
+    private boolean markersRegions;
+    private int markersPollSeconds = 5;
 
     public MapConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -39,6 +43,10 @@ public final class MapConfig {
         renderIntervalMinutes = Math.max(1, c.getInt("render-interval-minutes", renderIntervalMinutes));
         maxHeight = Math.max(16, c.getInt("max-height", maxHeight));
         sampleChunkRadius = Math.max(1, c.getInt("sample-chunk-radius", sampleChunkRadius));
+        markersPlayers = c.getBoolean("markers.players", true);
+        markersNpcs = c.getBoolean("markers.npcs", false);
+        markersRegions = c.getBoolean("markers.regions", false);
+        markersPollSeconds = Math.max(2, c.getInt("markers.poll-seconds", 5));
     }
 
     public String bindHost() {
@@ -67,6 +75,22 @@ public final class MapConfig {
 
     public int sampleChunkRadius() {
         return sampleChunkRadius;
+    }
+
+    public boolean markersPlayers() {
+        return markersPlayers;
+    }
+
+    public boolean markersNpcs() {
+        return markersNpcs;
+    }
+
+    public boolean markersRegions() {
+        return markersRegions;
+    }
+
+    public int markersPollSeconds() {
+        return markersPollSeconds;
     }
 
     public List<int[]> sampleChunks() {

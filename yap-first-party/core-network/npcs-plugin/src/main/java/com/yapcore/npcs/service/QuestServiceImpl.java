@@ -80,6 +80,12 @@ public final class QuestServiceImpl implements QuestService {
         if (objective.type() == QuestDefinition.ObjectiveType.SKILL_LEVEL) {
             return skillLevelProgress(player, questId, objective);
         }
+        if (objective.type() == QuestDefinition.ObjectiveType.PLAYTIME) {
+            return playtimeProgress(player, questId, objective);
+        }
+        if (objective.type() == QuestDefinition.ObjectiveType.ECONOMY_BALANCE) {
+            return economyBalanceProgress(player, questId, objective);
+        }
         int required = objective.amount();
         try {
             int progress = repository.getProgress(player.getUniqueId(), questId, objectiveId);
@@ -203,7 +209,75 @@ public final class QuestServiceImpl implements QuestService {
                 if (!objective.recipeId().equalsIgnoreCase(normalized)) {
                     continue;
                 }
-                incrementAsync(player.getUniqueId(), quest.id(), objective);
+                incrementAsync(player.getUniqueId(), quest.id(), objective, 1);
+            }
+        }
+    }
+
+    public void onBlockPlace(Player player, Material material) {
+        for (QuestDefinition quest : loader.quests().values()) {
+            for (QuestDefinition.Objective objective : quest.objectives()) {
+                if (objective.type() != QuestDefinition.ObjectiveType.PLACE_BLOCKS) {
+                    continue;
+                }
+                if (objective.material() != Material.AIR && objective.material() != material) {
+                    continue;
+                }
+                incrementAsync(player.getUniqueId(), quest.id(), objective, 1);
+            }
+        }
+    }
+
+    public void onEnchant(Player player) {
+        for (QuestDefinition quest : loader.quests().values()) {
+            for (QuestDefinition.Objective objective : quest.objectives()) {
+                if (objective.type() != QuestDefinition.ObjectiveType.ENCHANT) {
+                    continue;
+                }
+                incrementAsync(player.getUniqueId(), quest.id(), objective, 1);
+            }
+        }
+    }
+
+    public void onAnvilUse(Player player) {
+        for (QuestDefinition quest : loader.quests().values()) {
+            for (QuestDefinition.Objective objective : quest.objectives()) {
+                if (objective.type() != QuestDefinition.ObjectiveType.ANVIL_USE) {
+                    continue;
+                }
+                incrementAsync(player.getUniqueId(), quest.id(), objective, 1);
+            }
+        }
+    }
+
+    public void onTalk(Player player, String npcId) {
+        if (npcId == null || npcId.isBlank()) {
+            return;
+        }
+        for (QuestDefinition quest : loader.quests().values()) {
+            for (QuestDefinition.Objective objective : quest.objectives()) {
+                if (objective.type() != QuestDefinition.ObjectiveType.TALK) {
+                    continue;
+                }
+                if (!objective.npcId().equalsIgnoreCase(npcId)) {
+                    continue;
+                }
+                incrementAsync(player.getUniqueId(), quest.id(), objective, 1);
+            }
+        }
+    }
+
+    public void onEconomyEarn(Player player, double amount) {
+        int earned = (int) Math.floor(amount);
+        if (earned <= 0) {
+            return;
+        }
+        for (QuestDefinition quest : loader.quests().values()) {
+            for (QuestDefinition.Objective objective : quest.objectives()) {
+                if (objective.type() != QuestDefinition.ObjectiveType.ECONOMY_EARN) {
+                    continue;
+                }
+                incrementAsync(player.getUniqueId(), quest.id(), objective, earned);
             }
         }
     }
@@ -223,6 +297,31 @@ public final class QuestServiceImpl implements QuestService {
         return new QuestProgress(player.getUniqueId(), questId, objective.id(), level, required, complete);
     }
 
+    private QuestProgress playtimeProgress(Player player, String questId, QuestDefinition.Objective objective) {
+        int required = Math.max(1, objective.minutes() > 0 ? objective.minutes() : objective.amount());
+        long minutes = 0L;
+        var reg = Bukkit.getServicesManager().getRegistration(com.yapcore.playerdata.PlayerDataService.class);
+        if (reg != null) {
+            minutes = reg.getProvider().playMinutes(player.getUniqueId());
+        }
+        int progress = (int) Math.min(Integer.MAX_VALUE, Math.max(0L, minutes));
+        boolean complete = progress >= required;
+        return new QuestProgress(player.getUniqueId(), questId, objective.id(), progress, required, complete);
+    }
+
+    private QuestProgress economyBalanceProgress(Player player, String questId, QuestDefinition.Objective objective) {
+        double need = objective.minBalance() > 0 ? objective.minBalance() : objective.amount();
+        int required = Math.max(1, (int) Math.ceil(need));
+        double balance = 0.0;
+        var reg = Bukkit.getServicesManager().getRegistration(com.yapcore.playerdata.PlayerDataService.class);
+        if (reg != null) {
+            balance = reg.getProvider().balance(player.getUniqueId());
+        }
+        int progress = (int) Math.min(Integer.MAX_VALUE, Math.max(0L, (long) Math.floor(balance)));
+        boolean complete = balance >= need;
+        return new QuestProgress(player.getUniqueId(), questId, objective.id(), progress, required, complete);
+    }
+
     private boolean prerequisiteMet(Player player, QuestDefinition quest) throws SQLException {
         String requires = quest.requiresQuest();
         if (requires == null || requires.isBlank()) {
@@ -232,13 +331,20 @@ public final class QuestServiceImpl implements QuestService {
     }
 
     private void incrementAsync(UUID playerUuid, String questId, QuestDefinition.Objective objective) {
+        incrementAsync(playerUuid, questId, objective, 1);
+    }
+
+    private void incrementAsync(UUID playerUuid, String questId, QuestDefinition.Objective objective, int delta) {
+        if (delta <= 0) {
+            return;
+        }
         YapSched.async(plugin, () -> {
             try {
                 if (repository.isQuestTurnedIn(playerUuid, questId)) {
                     return;
                 }
                 int progress = repository.increment(
-                        playerUuid, questId, objective.id(), 1, objective.amount());
+                        playerUuid, questId, objective.id(), delta, objective.amount());
                 if (progress >= objective.amount()) {
                     Player online = Bukkit.getPlayer(playerUuid);
                     if (online != null) {

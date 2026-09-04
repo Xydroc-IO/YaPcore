@@ -36,7 +36,7 @@ public final class DashboardGameplayNetworkApi {
         if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, Object> snap = new LinkedHashMap<>(DashboardNetworkSnapshots.discord(root));
             snap.put("ok", true);
-            snap.put("hint", "POST save-webhook | save-relay | test-webhook | reload");
+            snap.put("hint", "POST save-webhook | save-relay | save-events | test-webhook | reload");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -63,12 +63,29 @@ public final class DashboardGameplayNetworkApi {
                             "mcToDiscord", mcToDiscord,
                             "discordToMc", discordToMc == null ? false : discordToMc));
                 }
+                case "save-events" -> {
+                    Boolean join = body.containsKey("join")
+                            ? !"false".equalsIgnoreCase(body.get("join")) : null;
+                    Boolean leave = body.containsKey("leave")
+                            ? !"false".equalsIgnoreCase(body.get("leave")) : null;
+                    Boolean death = body.containsKey("death")
+                            ? !"false".equalsIgnoreCase(body.get("death")) : null;
+                    Boolean advancement = body.containsKey("advancement")
+                            ? !"false".equalsIgnoreCase(body.get("advancement")) : null;
+                    DashboardNetworkSnapshotWriters.saveDiscordEvents(root, join, leave, death, advancement);
+                    server.executeCommand("yapdiscord reload");
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "action", action));
+                }
                 case "test-webhook" -> {
                     String key = body.getOrDefault("key", "moderation").toLowerCase();
-                    String cmd = "yapdiscord test " + ("chat".equals(key) ? "chat" : "moderation");
-                    String result = server.executeCommand(cmd);
+                    String target = switch (key) {
+                        case "chat" -> "chat";
+                        case "events", "event" -> "events";
+                        default -> "moderation";
+                    };
+                    String result = server.executeCommand("yapdiscord test " + target);
                     DashboardHttp.json(ex, 200, Map.of(
-                            "ok", true, "action", action, "key", key,
+                            "ok", true, "action", action, "key", target,
                             "result", result == null ? "" : result));
                 }
                 case "reload" -> {
@@ -272,7 +289,18 @@ public final class DashboardGameplayNetworkApi {
                     if (body.containsKey("worlds")) {
                         worlds = DashboardApiUtil.splitLines(body.get("worlds").replace(",", "\n"));
                     }
-                    DashboardNetworkSnapshotWriters.saveMapSettings(root, interval, worlds);
+                    Boolean markersPlayers = body.containsKey("markersPlayers")
+                            ? !"false".equalsIgnoreCase(body.get("markersPlayers")) : null;
+                    Boolean markersNpcs = body.containsKey("markersNpcs")
+                            ? !"false".equalsIgnoreCase(body.get("markersNpcs")) : null;
+                    Boolean markersRegions = body.containsKey("markersRegions")
+                            ? !"false".equalsIgnoreCase(body.get("markersRegions")) : null;
+                    Integer markersPoll = null;
+                    if (body.containsKey("markersPollSeconds")) {
+                        markersPoll = Integer.parseInt(body.get("markersPollSeconds"));
+                    }
+                    DashboardNetworkSnapshotWriters.saveMapSettings(root, interval, worlds,
+                            markersPlayers, markersNpcs, markersRegions, markersPoll);
                     server.executeCommand("yapmap reload");
                     DashboardHttp.json(ex, 200, Map.of("ok", true, "action", action));
                 } catch (Exception e) {
@@ -360,7 +388,7 @@ public final class DashboardGameplayNetworkApi {
             snap.put("ok", true);
             snap.put("regions", regions);
             snap.put("regionCount", regions.size());
-            snap.put("hint", "POST define | flag-set | list | reload");
+            snap.put("hint", "POST define | redefine | remove | flag-set | list | reload");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -387,19 +415,26 @@ public final class DashboardGameplayNetworkApi {
     private static String regionCommand(String action, Map<String, String> body) {
         return switch (action) {
             case "list" -> "region list json";
-            case "define" -> {
+            case "define", "redefine" -> {
                 String name = body.getOrDefault("name", "").trim();
                 String world = body.getOrDefault("world", "world").trim();
                 if (name.isEmpty()) {
                     yield null;
                 }
-                yield "region define " + name + " at " + world + " "
+                yield "region " + action + " " + name + " at " + world + " "
                         + body.getOrDefault("x1", "0") + " "
                         + body.getOrDefault("y1", "0") + " "
                         + body.getOrDefault("z1", "0") + " "
                         + body.getOrDefault("x2", "0") + " "
                         + body.getOrDefault("y2", "255") + " "
                         + body.getOrDefault("z2", "0");
+            }
+            case "remove", "delete" -> {
+                String name = body.getOrDefault("name", "").trim();
+                if (name.isEmpty()) {
+                    yield null;
+                }
+                yield "region remove " + name;
             }
             case "flag-set" -> {
                 String name = body.getOrDefault("name", "").trim();

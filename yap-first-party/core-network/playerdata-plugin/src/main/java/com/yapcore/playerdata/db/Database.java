@@ -281,6 +281,7 @@ public final class Database implements AutoCloseable {
             tryAlter(st, "ALTER TABLE claims ADD COLUMN parent_id BIGINT NULL");
             tryAlter(st, "ALTER TABLE claims ADD COLUMN tax_due DECIMAL(20,2) NOT NULL DEFAULT 0");
             tryAlter(st, "ALTER TABLE claims ADD COLUMN tax_frozen TINYINT(1) NOT NULL DEFAULT 0");
+            tryAlter(st, "ALTER TABLE players ADD COLUMN play_minutes INT NOT NULL DEFAULT 0");
             migrateLegacyProfiles(c);
         }
     }

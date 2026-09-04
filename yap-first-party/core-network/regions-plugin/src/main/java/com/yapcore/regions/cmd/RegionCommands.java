@@ -34,16 +34,19 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
         }
         if (args.length == 0) {
             sender.sendMessage("§e/region define <name> §7· §e/region define <name> at <world> <x1> <y1> <z1> <x2> <y2> <z2>");
+            sender.sendMessage("§e/region redefine <name> §7· §e/region remove <name>");
             sender.sendMessage("§e/region flag set <name> <flag> <allow|deny> §7· §e/region list [json]");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
         return switch (sub) {
             case "define" -> handleDefine(sender, args);
+            case "redefine" -> handleRedefine(sender, args);
+            case "remove", "delete" -> handleRemove(sender, args);
             case "flag" -> handleFlag(sender, args);
             case "list" -> handleList(sender, args);
             default -> {
-                sender.sendMessage("§cUnknown subcommand. Use define, flag, or list.");
+                sender.sendMessage("§cUnknown subcommand. Use define, redefine, remove, flag, or list.");
                 yield true;
             }
         };
@@ -101,6 +104,76 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
         } catch (Exception e) {
             sender.sendMessage("§cFailed: " + e.getMessage());
             plugin.getLogger().warning("region define: " + e.getMessage());
+        }
+        return true;
+    }
+
+    private boolean handleRedefine(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /region redefine <name> [at <world> <x1> <y1> <z1> <x2> <y2> <z2>]");
+            return true;
+        }
+        String name = args[1];
+        int atIdx = indexOf(args, "at", 2);
+        if (atIdx >= 0) {
+            if (args.length < atIdx + 8) {
+                sender.sendMessage("§cUsage: /region redefine <name> at <world> <x1> <y1> <z1> <x2> <y2> <z2>");
+                return true;
+            }
+            String world = args[atIdx + 1];
+            int x1 = parseInt(args[atIdx + 2], sender);
+            int y1 = parseInt(args[atIdx + 3], sender);
+            int z1 = parseInt(args[atIdx + 4], sender);
+            int x2 = parseInt(args[atIdx + 5], sender);
+            int y2 = parseInt(args[atIdx + 6], sender);
+            int z2 = parseInt(args[atIdx + 7], sender);
+            if (x1 == Integer.MIN_VALUE) {
+                return true;
+            }
+            try {
+                var region = regions.redefineAt(name, world, x1, y1, z1, x2, y2, z2);
+                sender.sendMessage("§aRedefined admin region §f" + region.name() + " §7in §f" + region.world());
+            } catch (Exception e) {
+                sender.sendMessage("§cFailed: " + e.getMessage());
+            }
+            return true;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cConsole: use /region redefine <name> at <world> <x1> <y1> <z1> <x2> <y2> <z2>");
+            return true;
+        }
+        var selectionOpt = WorldServices.selection();
+        if (selectionOpt.isEmpty()) {
+            sender.sendMessage("§cYaPWorld selection service unavailable. Use //wand pos1/pos2 first.");
+            return true;
+        }
+        var selection = selectionOpt.get().selection(player.getUniqueId());
+        if (selection.isEmpty()) {
+            sender.sendMessage("§cSet pos1 and pos2 with YaPWorld wand first.");
+            return true;
+        }
+        try {
+            var region = regions.redefine(name, selection.get());
+            sender.sendMessage("§aRedefined admin region §f" + region.name() + " §7(#" + region.id() + ") in §f"
+                    + region.world() + " §7· " + region.minX() + "," + region.minY() + "," + region.minZ()
+                    + " → " + region.maxX() + "," + region.maxY() + "," + region.maxZ());
+        } catch (Exception e) {
+            sender.sendMessage("§cFailed: " + e.getMessage());
+            plugin.getLogger().warning("region redefine: " + e.getMessage());
+        }
+        return true;
+    }
+
+    private boolean handleRemove(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /region remove <name>");
+            return true;
+        }
+        try {
+            regions.remove(args[1]);
+            sender.sendMessage("§aRemoved admin region §f" + args[1]);
+        } catch (Exception e) {
+            sender.sendMessage("§cFailed: " + e.getMessage());
         }
         return true;
     }
@@ -165,8 +238,18 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
                     .append("\"maxX\":").append(r.maxX()).append(',')
                     .append("\"maxY\":").append(r.maxY()).append(',')
                     .append("\"maxZ\":").append(r.maxZ()).append(',')
-                    .append("\"flagCount\":").append(r.flags().size())
-                    .append('}');
+                    .append("\"flagCount\":").append(r.flags().size()).append(',')
+                    .append("\"flags\":{");
+            int fi = 0;
+            for (var entry : r.flags().entrySet()) {
+                if (fi++ > 0) {
+                    sb.append(',');
+                }
+                String key = entry.getKey().name().toLowerCase(Locale.ROOT).replace('_', '-');
+                sb.append(q(key)).append(':')
+                        .append(q(entry.getValue().name().toLowerCase(Locale.ROOT)));
+            }
+            sb.append("}}");
         }
         return sb.append(']').toString();
     }
@@ -202,7 +285,11 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return prefix(List.of("define", "flag", "list"), args[0]);
+            return prefix(List.of("define", "redefine", "remove", "flag", "list"), args[0]);
+        }
+        if (args.length == 2 && ("remove".equalsIgnoreCase(args[0]) || "redefine".equalsIgnoreCase(args[0])
+                || "delete".equalsIgnoreCase(args[0]))) {
+            return prefix(regions.listRegions().stream().map(r -> r.name()).toList(), args[1]);
         }
         if (args.length == 2 && "flag".equalsIgnoreCase(args[0])) {
             return prefix(List.of("set"), args[1]);

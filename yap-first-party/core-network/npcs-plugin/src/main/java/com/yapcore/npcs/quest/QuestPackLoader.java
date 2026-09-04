@@ -131,8 +131,13 @@ public final class QuestPackLoader {
         int minLevel = intOr(raw, "level", intOr(raw, "min-level", amount));
         String recipeId = stringOr(raw, "recipe", stringOr(raw, "recipe-id", ""));
         String bossId = stringOr(raw, "boss", stringOr(raw, "boss-id", ""));
+        String npcId = stringOr(raw, "npc", stringOr(raw, "npc-id", ""));
+        int minutes = intOr(raw, "minutes", type == QuestDefinition.ObjectiveType.PLAYTIME ? amount : 0);
+        double minBalance = doubleOr(raw, "min-balance",
+                type == QuestDefinition.ObjectiveType.ECONOMY_BALANCE ? amount : 0.0);
         return new QuestDefinition.Objective(
-                id, type, material, entityType, Math.max(1, amount), skillId, minLevel, recipeId, bossId);
+                id, type, material, entityType, Math.max(1, amount),
+                skillId, minLevel, recipeId, bossId, npcId, Math.max(0, minutes), Math.max(0.0, minBalance));
     }
 
     private static String stringOr(Map<?, ?> raw, String key, String fallback) {
@@ -148,6 +153,21 @@ public final class QuestPackLoader {
         if (v != null) {
             try {
                 return Integer.parseInt(String.valueOf(v));
+            } catch (NumberFormatException ignored) {
+                return fallback;
+            }
+        }
+        return fallback;
+    }
+
+    private static double doubleOr(Map<?, ?> raw, String key, double fallback) {
+        Object v = raw.get(key);
+        if (v instanceof Number n) {
+            return n.doubleValue();
+        }
+        if (v != null) {
+            try {
+                return Double.parseDouble(String.valueOf(v));
             } catch (NumberFormatException ignored) {
                 return fallback;
             }

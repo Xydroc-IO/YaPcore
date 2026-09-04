@@ -154,6 +154,7 @@ public final class YaPEconomy implements Economy {
         }
         double next = bal - amount;
         store.setBalance(player.getUniqueId(), next);
+        store.fireBalanceChange(player.getUniqueId(), bal, next);
         return new EconomyResponse(amount, next, EconomyResponse.ResponseType.SUCCESS, null);
     }
 
@@ -180,6 +181,7 @@ public final class YaPEconomy implements Economy {
         double bal = getBalance(player);
         double next = bal + amount;
         store.setBalance(player.getUniqueId(), next);
+        store.fireBalanceChange(player.getUniqueId(), bal, next);
         return new EconomyResponse(amount, next, EconomyResponse.ResponseType.SUCCESS, null);
     }
 

@@ -13,6 +13,20 @@ soft/hard-depend on HelpChat’s PlaceholderAPI work **without** installing
 | Extra expansions | Drop jars into `plugins/PlaceholderAPI/expansions/` |
 | Admin | `/papi` full local command tree |
 
+## Intentional product scope
+
+YaP PlaceholderAPI is a **first-party, curated local-expansions** engine — not a
+partial stub and not a HelpChat eCloud mirror.
+
+| In scope | Out of scope (by design) |
+|----------|---------------------------|
+| Parse API, built-ins `player` / `server` | HelpChat eCloud browse / download / update |
+| Jar-drop external expansions | Bundling third-party expansion jars in release zips |
+| First-party `%yap*_*%` from other YaP plugins | GPL eCloud coupling |
+| `/papi parse\|list\|reload\|register\|dump\|…` | |
+
+Operators curate expansions on disk. That is the supported delivery path.
+
 ## Product rule
 
 Do **not** also install HelpChat / clip PlaceholderAPI. Two jars both named
@@ -22,6 +36,19 @@ Do **not** also install HelpChat / clip PlaceholderAPI. Two jars both named
 gradle :placeholderapi-plugin:installIntoPlugins
 # or: gradle shadowJar / assembleRelease
 ```
+
+## Local expansions workflow
+
+1. Create (auto on first enable) or open `plugins/PlaceholderAPI/expansions/`
+2. Copy a compatible expansion `.jar` into that folder
+3. Run `/papi reload` or `/papi register <jar>`
+4. Confirm with `/papi list` / `/papi info <id>`
+
+```text
+plugins/PlaceholderAPI/expansions/
+```
+
+`/papi ecloud` explains this workflow (eCloud download UX is intentionally absent).
 
 ## Commands
 
@@ -36,7 +63,7 @@ gradle :placeholderapi-plugin:installIntoPlugins
 | `/papi list` / `info [id]` / `reload` | Expansion admin |
 | `/papi register <jar>` / `unregister <id>` | Expansion folder admin |
 | `/papi version` | Engine version |
-| `/papi ecloud` | Explains YaP does not mirror eCloud (drop jars instead) |
+| `/papi ecloud` | Points at local expansions folder workflow (no eCloud) |
 
 ## What works for other plugins
 
@@ -60,13 +87,18 @@ flags, bed/compass, first/last join, and more.
 tps / colored tps, uptime, ram_*, whitelist, total_* entity/chunk counts, `time_*`
 patterns, countdown/countup helpers.
 
-## External expansions
+## First-party expansions
 
-```text
-plugins/PlaceholderAPI/expansions/
-```
+Registered **in-process** by other YaP jars when installed (no jar drop needed):
 
-YaP does **not** download from HelpChat eCloud. Copy jars manually.
+| Plugin | Identifier | Notes |
+|--------|------------|--------|
+| yap-perms | `yapperms` | Permission / group placeholders |
+| skills | `yapskills` | Skills / levels |
+| factions | `yapfactions` | Faction data |
+| guilds | `yapguilds` | Guild data |
+| games | (game-specific) | Match / arena helpers |
+| stacker | `yapstacker` | See [STACKER.md](STACKER.md) |
 
 ## Ops extras
 
@@ -74,13 +106,10 @@ YaP does **not** download from HelpChat eCloud. Copy jars manually.
 - **Update checker** — `check-updates` + optional `update-check-url`
 - **Adventure** — `getAdventure()` for expansions that send components
 
-## First-party expansions
-
-YaP Stacker registers `%yapstacker_*%` when both jars are installed — see [STACKER.md](STACKER.md).
-
 ## Honesty bar
 
-Clean-room compatibility engine — not a GPL port. eCloud download UX is intentionally
-absent; everything else above is in-tree.
+Clean-room compatibility engine — not a GPL port. Expansion delivery is
+**intentionally local and operator-curated**; eCloud download UX is out of scope.
+Everything else above is in-tree.
 
 See also [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md) · [PLUGINS.md](PLUGINS.md).

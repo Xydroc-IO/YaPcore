@@ -4,13 +4,12 @@
 quests:
   t5_full_enchant:
     name: "Full Enchantment"
-    description: "Reach Magic Level 50 (multi-enchant proxy)."
+    description: "Enchant items at an enchanting table 16 times."
     requires: t4_hive
     objectives:
-      - id: magic50
-        type: SKILL_LEVEL
-        skill: magic
-        level: 50
+      - id: enchant16
+        type: ENCHANT
+        amount: 16
     rewards:
       - skill_xp:magic:50000
       - item:ENCHANTED_GOLDEN_APPLE:5
@@ -31,7 +30,7 @@ quests:
 
   t5_beacon:
     name: "Beacon Power"
-    description: "Smelt iron 164 times (beacon pyramid materials proxy)."
+    description: "Smelt iron 164 times via YaPCrafting (smelt_iron) for beacon pyramid iron."
     requires: t5_collector
     objectives:
       - id: beacon_iron
@@ -85,7 +84,7 @@ quests:
 
   t5_void_lord:
     name: "Mythic Slayer: Void Lord"
-    description: "Kill Void Shade as Void Lord stand-in."
+    description: "Kill Void Shade (documented Void Lord stand-in boss-id: void_shade)."
     requires: t5_hydra
     objectives:
       - id: vl
@@ -112,12 +111,11 @@ quests:
 
   t5_anvil:
     name: "Anvil God"
-    description: "Craft anvils 50 times (anvil-use proxy)."
+    description: "Take a result from an anvil 50 times (repair, rename, or combine)."
     requires: t5_potion
     objectives:
-      - id: anvils
-        type: CRAFT_ITEM
-        recipe: craft_anvil
+      - id: anvil50
+        type: ANVIL_USE
         amount: 50
     rewards:
       - skill_xp:smithing:40000
@@ -125,7 +123,7 @@ quests:
 
   t5_speedster:
     name: "Speedster"
-    description: "Reach Defence Level 75 (Agility stand-in)."
+    description: "Reach Defence Level 75 (Agility skill not shipped — Defence is the intentional stand-in)."
     requires: t5_anvil
     objectives:
       - id: def75

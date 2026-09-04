@@ -109,6 +109,45 @@ public final class AdminRegionRepository {
         throw new SQLException("No generated key for admin region");
     }
 
+    public void updateBounds(long regionId, String world,
+                             int minX, int maxX, int minY, int maxY, int minZ, int maxZ) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     UPDATE yap_admin_regions
+                     SET world = ?, min_x = ?, max_x = ?, min_y = ?, max_y = ?, min_z = ?, max_z = ?
+                     WHERE id = ?
+                     """)) {
+            ps.setString(1, world);
+            ps.setInt(2, minX);
+            ps.setInt(3, maxX);
+            ps.setInt(4, minY);
+            ps.setInt(5, maxY);
+            ps.setInt(6, minZ);
+            ps.setInt(7, maxZ);
+            ps.setLong(8, regionId);
+            if (ps.executeUpdate() == 0) {
+                throw new SQLException("Region id not found: " + regionId);
+            }
+        }
+    }
+
+    public void delete(long regionId) throws SQLException {
+        try (Connection c = database.connection()) {
+            try (PreparedStatement flags = c.prepareStatement(
+                    "DELETE FROM yap_admin_region_flags WHERE region_id = ?")) {
+                flags.setLong(1, regionId);
+                flags.executeUpdate();
+            }
+            try (PreparedStatement region = c.prepareStatement(
+                    "DELETE FROM yap_admin_regions WHERE id = ?")) {
+                region.setLong(1, regionId);
+                if (region.executeUpdate() == 0) {
+                    throw new SQLException("Region id not found: " + regionId);
+                }
+            }
+        }
+    }
+
     public void setFlag(long regionId, RegionFlag flag, FlagValue value) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""

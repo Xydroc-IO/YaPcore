@@ -174,21 +174,49 @@ public final class BedrockInventoryCodec {
     }
 
     static void writeItemLegacy(ByteBuf out, int networkId, int count) {
+        writeItemLegacy(out, networkId, count, null);
+    }
+
+    /**
+     * ItemLegacy with optional SkullOwner name NBT (G.33 item-in-hand heads).
+     * Other NBT (full profile hash, enchant lists) is Stretch / still Limited.
+     */
+    static void writeItemLegacy(ByteBuf out, int networkId, int count, String skullOwner) {
         writeSignedVarInt(out, networkId);
         out.writeShortLE(Math.max(1, Math.min(64, count)));
         writeUnsignedVarInt(out, 0); // metadata
         writeSignedVarInt(out, 0); // block_runtime_id
-        ByteBuf extra = Unpooled.buffer(16);
-        extra.writeShortLE(0); // has_nbt false
+        ByteBuf extra = Unpooled.buffer(64);
+        if (skullOwner != null && !skullOwner.isBlank()) {
+            extra.writeShortLE(0xFFFF); // has network NBT
+            // Minimal compound: SkullOwner: { Name: "..." }
+            writeBedrockString(extra, ""); // root name unused in network item NBT
+            writeBedrockString(extra, "SkullOwner");
+            extra.writeByte(10); // TAG_Compound
+            writeBedrockString(extra, "Name");
+            extra.writeByte(8); // TAG_String
+            writeBedrockString(extra, skullOwner.trim());
+            extra.writeByte(0); // TAG_End (SkullOwner)
+            extra.writeByte(0); // TAG_End (root)
+        } else {
+            extra.writeShortLE(0); // has_nbt false
+        }
         extra.writeIntLE(0); // can_place_on
         extra.writeIntLE(0); // can_destroy
         if (networkId == SHIELD_NETWORK_ID) {
-            extra.writeLongLE(0L); // blocking_tick
+            extra.writeLongLE(0L);
         }
         writeUnsignedVarInt(out, extra.readableBytes());
         out.writeBytes(extra);
         extra.release();
     }
+
+    private static void writeBedrockString(ByteBuf out, String s) {
+        byte[] bytes = (s == null ? "" : s).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        writeUnsignedVarInt(out, bytes.length);
+        out.writeBytes(bytes);
+    }
+
     public static ByteBuf inventoryContentEmpty(int windowId, int size) {
         int[] air = new int[Math.max(0, size)];
         return inventoryContent(windowId, air);
@@ -205,6 +233,13 @@ public final class BedrockInventoryCodec {
      * @param counts optional parallel stack sizes (clamped 1–64); null → count 1
      */
     public static ByteBuf inventoryContent(int windowId, int[] networkIds, int[] counts) {
+        return inventoryContent(windowId, networkIds, counts, null);
+    }
+
+    /**
+     * @param skullOwners optional parallel SkullOwner names for player heads (null elsewhere)
+     */
+    public static ByteBuf inventoryContent(int windowId, int[] networkIds, int[] counts, String[] skullOwners) {
         ByteBuf out = Unpooled.buffer(32 + networkIds.length * 16);
         writeUnsignedVarInt(out, BedrockPacketCodec.ID_INVENTORY_CONTENT);
         writeUnsignedVarInt(out, windowId);
@@ -218,7 +253,8 @@ public final class BedrockInventoryCodec {
                 if (counts != null && i < counts.length && counts[i] > 0) {
                     c = counts[i];
                 }
-                writeItemLegacy(out, networkId, c);
+                String owner = skullOwners != null && i < skullOwners.length ? skullOwners[i] : null;
+                writeItemLegacy(out, networkId, c, owner);
             }
         }
         out.writeByte(29); // inventory container

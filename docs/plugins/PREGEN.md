@@ -1,9 +1,11 @@
 # YaP Pregen — built-in chunk pre-generator
 
-First-party **Chunky-class** world pregen for YaPcore / Paper 26.2.
+First-party **Chunky-class** world pregen for YaPcore.
 Shipped as `plugins/yap-pregen.jar` (default product install).
 
-**Not Folia.** Uses Paper `World.getChunkAtAsync` with MSPT throttling.
+**Folia-supported.** Chunk loads run on the owning region via `YapSched`, hold plugin
+chunk tickets while inflight, and use per-region inflight caps. Global MSPT throttling
+applies on Paper only (Folia MSPT is region-local).
 
 ## Commands
 
@@ -23,17 +25,19 @@ Shipped as `plugins/yap-pregen.jar` (default product install).
 /yappregen reload
 ```
 
-One job **per world** (parallel across worlds). Shared MSPT budget.
+One job **per world** (parallel across worlds). Shared global inflight budget plus
+per-region caps on Folia.
 
 ## Config (`plugins/YaPPregen/config.yml`)
 
 ```yaml
 chunks-per-tick: 5
-max-mspt: 40.0
+max-mspt: 40.0                 # Paper only
 broadcast-interval-sec: 30
 auto-resume: true
 max-worlds: 4
 max-inflight: 32
+max-inflight-per-region: 8    # Folia region buckets
 ```
 
 Progress: `plugins/YaPPregen/progress/<world>.yml` (resume after restart when `auto-resume: true`).
@@ -42,7 +46,7 @@ Progress: `plugins/YaPPregen/progress/<world>.yml` (resume after restart when `a
 
 Tab **Pregen** at `http://127.0.0.1:8080/` — or:
 
-- `GET /api/pregen` — status text
+- `GET /api/pregen` — status text / job map (`regionized`, `activeRegions`)
 - `POST /api/pregen` — `{ "action":"start", "world":"world", "shape":"radius", "radius":"8" }`
 
 ## WorldEdit
@@ -59,10 +63,9 @@ On the Folia product path prefer YaPWorld (`//sel`, wand) — stock WE/FAWE jars
 
 ## Example
 
-```
+```bash
 /yappregen start world radius 32
 /yappregen status
 /yappregen pause world
 /yappregen resume world
-/yappregen cancel world
 ```

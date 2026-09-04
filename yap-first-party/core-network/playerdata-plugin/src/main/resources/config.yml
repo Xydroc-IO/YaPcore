@@ -73,6 +73,7 @@ sync:
   economy: true
 
 homes:
+  # Max /sethome slots per player (permission overrides may raise this later)
   max: 3
 
 mail:

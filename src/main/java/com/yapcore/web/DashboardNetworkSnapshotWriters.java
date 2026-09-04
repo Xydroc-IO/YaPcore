@@ -41,6 +41,26 @@ public final class DashboardNetworkSnapshotWriters {
         DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }
 
+    public static void saveDiscordEvents(Path root, Boolean join, Boolean leave, Boolean death,
+                                         Boolean advancement) throws IOException {
+        Path file = root.resolve("plugins").resolve("YaPDiscord").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        Map<String, Object> events = DashboardNetworkSnapshots.mapOrCreate(yaml, "events");
+        if (join != null) {
+            events.put("join", join);
+        }
+        if (leave != null) {
+            events.put("leave", leave);
+        }
+        if (death != null) {
+            events.put("death", death);
+        }
+        if (advancement != null) {
+            events.put("advancement", advancement);
+        }
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
     public static void saveTabHeader(Path root, List<String> lines) throws IOException {
         Path file = root.resolve("plugins").resolve("YaPTab").resolve("config.yml");
         Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
@@ -416,6 +436,12 @@ public final class DashboardNetworkSnapshotWriters {
 
     public static void saveMapSettings(Path root, Integer renderIntervalMinutes, List<String> worlds)
             throws IOException {
+        saveMapSettings(root, renderIntervalMinutes, worlds, null, null, null, null);
+    }
+
+    public static void saveMapSettings(Path root, Integer renderIntervalMinutes, List<String> worlds,
+                                       Boolean markersPlayers, Boolean markersNpcs, Boolean markersRegions,
+                                       Integer markersPollSeconds) throws IOException {
         Path file = root.resolve("plugins").resolve("YaPMap").resolve("config.yml");
         Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
         if (renderIntervalMinutes != null) {
@@ -423,6 +449,21 @@ public final class DashboardNetworkSnapshotWriters {
         }
         if (worlds != null && !worlds.isEmpty()) {
             yaml.put("worlds", worlds);
+        }
+        if (markersPlayers != null || markersNpcs != null || markersRegions != null || markersPollSeconds != null) {
+            Map<String, Object> markers = DashboardNetworkSnapshots.mapOrCreate(yaml, "markers");
+            if (markersPlayers != null) {
+                markers.put("players", markersPlayers);
+            }
+            if (markersNpcs != null) {
+                markers.put("npcs", markersNpcs);
+            }
+            if (markersRegions != null) {
+                markers.put("regions", markersRegions);
+            }
+            if (markersPollSeconds != null) {
+                markers.put("poll-seconds", Math.max(2, markersPollSeconds));
+            }
         }
         DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }

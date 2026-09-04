@@ -80,6 +80,13 @@ public final class MmoBedrockPlugin extends JavaPlugin {
                                       java.util.function.Consumer<com.yapcore.bedrock.ui.BedrockFormResult> onResult) {
                 return -1;
             }
+
+            @Override
+            public int sendModalForm(org.bukkit.entity.Player player, String title, String content,
+                                     String button1, String button2,
+                                     java.util.function.Consumer<com.yapcore.bedrock.ui.BedrockFormResult> onResult) {
+                return -1;
+            }
         };
     }
 

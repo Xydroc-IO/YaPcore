@@ -32,6 +32,12 @@ public final class DiscordCommands implements CommandExecutor {
                 sender.sendMessage("§7Sent chat webhook test (if configured).");
                 return true;
             }
+            if ("events".equals(key) || "event".equals(key)) {
+                plugin.webhooks().sendEmbed(config.eventsWebhook(),
+                        "Test", "Events webhook from **" + sender.getName() + "**", 0x9B59B6);
+                sender.sendMessage("§7Sent events webhook test (if configured).");
+                return true;
+            }
             plugin.webhooks().sendEmbed(config.moderationWebhook(),
                     "Test", "Webhook from **" + sender.getName() + "**", 0x3498DB);
             sender.sendMessage("§7Sent moderation webhook test (if configured).");
@@ -43,7 +49,7 @@ public final class DiscordCommands implements CommandExecutor {
             sender.sendMessage("§7Relayed to global chat.");
             return true;
         }
-        sender.sendMessage("§e/yapdiscord reload|test [moderation|chat]|say <message>");
+        sender.sendMessage("§e/yapdiscord reload|test [moderation|chat|events]|say <message>");
         return true;
     }
 }

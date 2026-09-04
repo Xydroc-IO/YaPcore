@@ -189,8 +189,8 @@ final class PermsUserCommands {
         }
         sender.sendMessage("§e/yapperm user <player> parent set|add|remove <group>");
         sender.sendMessage("§e/yapperm user <player> meta set <prefix> [suffix] | meta clear");
-        sender.sendMessage("§e/yapperm user <player> permission set <node> true|false [1d] [world=x]");
-        sender.sendMessage("§e/yapperm user <player> permission unset <node> [world=x]");
+        sender.sendMessage("§e/yapperm user <player> permission set <node> true|false [1d] [world=x] [server=y]");
+        sender.sendMessage("§e/yapperm user <player> permission unset <node> [world=x] [server=y]");
         return true;
     }
 }

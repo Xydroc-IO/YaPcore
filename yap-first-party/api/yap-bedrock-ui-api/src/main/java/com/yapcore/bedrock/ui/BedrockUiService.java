@@ -28,4 +28,12 @@ public interface BedrockUiService {
             String title,
             String jsonContentArray,
             Consumer<BedrockFormResult> onResult);
+
+    int sendModalForm(
+            Player player,
+            String title,
+            String content,
+            String button1,
+            String button2,
+            Consumer<BedrockFormResult> onResult);
 }

@@ -15,3 +15,11 @@ max-height: 320
 # Chunk grid sampled per world (radius² tiles). Use 4–6 on small VPS; 8–12 on dedicated boxes.
 sample-chunk-radius: 8
 # Tiles land in plugins/YaPMap/map/tiles/ — prune old PNGs manually if disk is tight.
+
+# Live markers for the flat Leaflet map (Wave 4). BlueMap-style 3D is Stretch / later.
+markers:
+  players: true
+  # When on, dashboard /map/markers.json may include YaPNpcs / YaPRegions points (plugin file is players-only).
+  npcs: false
+  regions: false
+  poll-seconds: 5

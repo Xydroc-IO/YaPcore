@@ -469,6 +469,61 @@ public final class DashboardGameplayApi {
         ex.sendResponseHeaders(405, -1);
     }
 
+    public void apiStacker(HttpExchange ex) throws IOException {
+        if (!auth.requireAuth(ex)) {
+            return;
+        }
+        Path root = server.getRootDir();
+        if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, Object> snap = new LinkedHashMap<>(com.yapcore.web.DashboardStackerSnapshot.snapshot(root));
+            String status = server.executeCommand("yapstacker status");
+            String stats = server.executeCommand("yapstacker stats");
+            snap.put("ok", true);
+            snap.put("status", status == null ? "" : status);
+            snap.put("stats", stats == null ? "" : stats);
+            snap.put("hint", "POST save-settings | reload | status | stats");
+            DashboardHttp.json(ex, 200, snap);
+            return;
+        }
+        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
+            String action = body.getOrDefault("action", "status").toLowerCase(Locale.ROOT);
+            try {
+                switch (action) {
+                    case "save-settings" -> {
+                        com.yapcore.web.DashboardStackerSnapshot.saveSettings(root, body);
+                        String reload = server.executeCommand("yapstacker reload");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true,
+                                "action", action,
+                                "reload", reload == null ? "" : reload));
+                    }
+                    case "reload" -> {
+                        String result = server.executeCommand("yapstacker reload");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "result", result == null ? "" : result));
+                    }
+                    case "stats" -> {
+                        String result = server.executeCommand("yapstacker stats");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "result", result == null ? "" : result));
+                    }
+                    default -> {
+                        String result = server.executeCommand("yapstacker status");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", "status", "result", result == null ? "" : result));
+                    }
+                }
+            } catch (Exception e) {
+                DashboardHttp.json(ex, 500, Map.of(
+                        "ok", false,
+                        "error", e.getMessage() == null ? "stacker action failed" : e.getMessage()));
+            }
+            return;
+        }
+        ex.sendResponseHeaders(405, -1);
+    }
+
     public void apiWorld(HttpExchange ex) throws IOException { ops.apiWorld(ex); }
 
     public void apiChat(HttpExchange ex) throws IOException { ops.apiChat(ex); }
@@ -590,66 +645,241 @@ public final class DashboardGameplayApi {
         if (!auth.requireAuth(ex)) {
             return;
         }
-        if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
-            ex.sendResponseHeaders(405, -1);
+        Path root = server.getRootDir();
+        if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, Object> snap = new LinkedHashMap<>(DashboardFactionsSnapshot.snapshot(root));
+            snap.put("onlinePlayers", server.getOnlinePlayers());
+            snap.put("ok", true);
+            snap.put("hint", "POST reload | save-settings | setpower | setjoin | disband");
+            if (server.isRunning()) {
+                String live = server.executeCommand("yapfactions snapshot json");
+                if (live != null && live.contains("YAPFACTIONS_JSON:")) {
+                    int idx = live.indexOf("YAPFACTIONS_JSON:");
+                    snap.put("live", live.substring(idx + "YAPFACTIONS_JSON:".length()).trim());
+                }
+            }
+            DashboardHttp.json(ex, 200, snap);
             return;
         }
-        Path root = server.getRootDir();
-        Map<String, Object> snap = new LinkedHashMap<>(DashboardFactionsSnapshot.snapshot(root));
-        snap.put("onlinePlayers", server.getOnlinePlayers());
-        if (server.isRunning()) {
-            String live = server.executeCommand("yapfactions snapshot json");
-            if (live != null && live.contains("YAPFACTIONS_JSON:")) {
-                int idx = live.indexOf("YAPFACTIONS_JSON:");
-                String payload = live.substring(idx + "YAPFACTIONS_JSON:".length()).trim();
-                snap.put("live", payload);
+        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
+            String action = body.getOrDefault("action", "").toLowerCase(Locale.ROOT);
+            try {
+                switch (action) {
+                    case "save-settings" -> {
+                        DashboardFactionsSnapshot.saveSettings(root, body);
+                        String reload = server.isRunning() ? server.executeCommand("yapfactions reload") : "";
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "reload", reload == null ? "" : reload));
+                    }
+                    case "reload" -> {
+                        if (!server.isRunning()) {
+                            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+                            return;
+                        }
+                        String result = server.executeCommand("yapfactions reload");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "result", result == null ? "" : result));
+                    }
+                    case "setpower" -> {
+                        if (!server.isRunning()) {
+                            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+                            return;
+                        }
+                        String faction = body.getOrDefault("faction", "");
+                        String power = body.getOrDefault("power", "0");
+                        String max = body.getOrDefault("max", "");
+                        String cmd = "yapfactions setpower " + faction + " " + power
+                                + (max.isBlank() ? "" : " " + max);
+                        String result = server.executeCommand(cmd);
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "command", cmd,
+                                "result", result == null ? "" : result));
+                    }
+                    case "setjoin" -> {
+                        if (!server.isRunning()) {
+                            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+                            return;
+                        }
+                        String faction = body.getOrDefault("faction", "");
+                        String mode = body.getOrDefault("mode", "invite");
+                        String cmd = "yapfactions setjoin " + faction + " " + mode;
+                        String result = server.executeCommand(cmd);
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "command", cmd,
+                                "result", result == null ? "" : result));
+                    }
+                    case "disband" -> {
+                        if (!server.isRunning()) {
+                            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+                            return;
+                        }
+                        String faction = body.getOrDefault("faction", "");
+                        String cmd = "yapfactions disband " + faction;
+                        String result = server.executeCommand(cmd);
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "command", cmd,
+                                "result", result == null ? "" : result));
+                    }
+                    default -> DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
+                }
+            } catch (Exception e) {
+                DashboardHttp.json(ex, 500, Map.of(
+                        "error", e.getMessage() == null ? "factions action failed" : e.getMessage()));
             }
+            return;
         }
-        DashboardHttp.json(ex, 200, snap);
+        ex.sendResponseHeaders(405, -1);
     }
 
     public void apiGuilds(HttpExchange ex) throws IOException {
         if (!auth.requireAuth(ex)) {
             return;
         }
-        if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
-            ex.sendResponseHeaders(405, -1);
+        Path root = server.getRootDir();
+        if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, Object> snap = new LinkedHashMap<>(DashboardGuildsSnapshot.snapshot(root));
+            snap.put("onlinePlayers", server.getOnlinePlayers());
+            snap.put("ok", true);
+            snap.put("hint", "POST reload | save-settings | setlevel | disband");
+            if (server.isRunning()) {
+                String live = server.executeCommand("yapguilds snapshot json");
+                if (live != null && live.contains("YAPGUILDS_JSON:")) {
+                    int idx = live.indexOf("YAPGUILDS_JSON:");
+                    snap.put("live", live.substring(idx + "YAPGUILDS_JSON:".length()).trim());
+                }
+            }
+            DashboardHttp.json(ex, 200, snap);
             return;
         }
-        Path root = server.getRootDir();
-        Map<String, Object> snap = new LinkedHashMap<>(DashboardGuildsSnapshot.snapshot(root));
-        snap.put("onlinePlayers", server.getOnlinePlayers());
-        if (server.isRunning()) {
-            String live = server.executeCommand("yapguilds snapshot json");
-            if (live != null && live.contains("YAPGUILDS_JSON:")) {
-                int idx = live.indexOf("YAPGUILDS_JSON:");
-                String payload = live.substring(idx + "YAPGUILDS_JSON:".length()).trim();
-                snap.put("live", payload);
+        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
+            String action = body.getOrDefault("action", "").toLowerCase(Locale.ROOT);
+            try {
+                switch (action) {
+                    case "save-settings" -> {
+                        DashboardGuildsSnapshot.saveSettings(root, body);
+                        String reload = server.isRunning() ? server.executeCommand("yapguilds reload") : "";
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "reload", reload == null ? "" : reload));
+                    }
+                    case "reload" -> {
+                        if (!server.isRunning()) {
+                            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+                            return;
+                        }
+                        String result = server.executeCommand("yapguilds reload");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "result", result == null ? "" : result));
+                    }
+                    case "setlevel" -> {
+                        if (!server.isRunning()) {
+                            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+                            return;
+                        }
+                        String guild = body.getOrDefault("guild", "");
+                        String level = body.getOrDefault("level", "1");
+                        String xp = body.getOrDefault("xp", "");
+                        String cmd = "yapguilds setlevel " + guild + " " + level
+                                + (xp.isBlank() ? "" : " " + xp);
+                        String result = server.executeCommand(cmd);
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "command", cmd,
+                                "result", result == null ? "" : result));
+                    }
+                    case "disband" -> {
+                        if (!server.isRunning()) {
+                            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+                            return;
+                        }
+                        String guild = body.getOrDefault("guild", "");
+                        String cmd = "yapguilds disband " + guild;
+                        String result = server.executeCommand(cmd);
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "command", cmd,
+                                "result", result == null ? "" : result));
+                    }
+                    default -> DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
+                }
+            } catch (Exception e) {
+                DashboardHttp.json(ex, 500, Map.of(
+                        "error", e.getMessage() == null ? "guilds action failed" : e.getMessage()));
             }
+            return;
         }
-        DashboardHttp.json(ex, 200, snap);
+        ex.sendResponseHeaders(405, -1);
     }
 
     public void apiGames(HttpExchange ex) throws IOException {
         if (!auth.requireAuth(ex)) {
             return;
         }
-        if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
-            ex.sendResponseHeaders(405, -1);
+        Path root = server.getRootDir();
+        if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, Object> snap = new LinkedHashMap<>(DashboardGamesSnapshot.snapshot(root));
+            snap.put("onlinePlayers", server.getOnlinePlayers());
+            snap.put("ok", true);
+            snap.put("hint", "POST reload | save-settings | list | forcestart");
+            if (server.isRunning()) {
+                String live = server.executeCommand("ygames snapshot json");
+                if (live != null && live.contains("YAPGAMES_JSON:")) {
+                    int idx = live.indexOf("YAPGAMES_JSON:");
+                    snap.put("live", live.substring(idx + "YAPGAMES_JSON:".length()).trim());
+                }
+            }
+            DashboardHttp.json(ex, 200, snap);
             return;
         }
-        Path root = server.getRootDir();
-        Map<String, Object> snap = new LinkedHashMap<>(DashboardGamesSnapshot.snapshot(root));
-        snap.put("onlinePlayers", server.getOnlinePlayers());
-        if (server.isRunning()) {
-            String live = server.executeCommand("ygames snapshot json");
-            if (live != null && live.contains("YAPGAMES_JSON:")) {
-                int idx = live.indexOf("YAPGAMES_JSON:");
-                String payload = live.substring(idx + "YAPGAMES_JSON:".length()).trim();
-                snap.put("live", payload);
+        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
+            String action = body.getOrDefault("action", "").toLowerCase(Locale.ROOT);
+            try {
+                switch (action) {
+                    case "save-settings" -> {
+                        DashboardGamesSnapshot.saveSettings(root, body);
+                        String reload = server.isRunning() ? server.executeCommand("ygames reload") : "";
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "reload", reload == null ? "" : reload));
+                    }
+                    case "reload" -> {
+                        if (!server.isRunning()) {
+                            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+                            return;
+                        }
+                        String result = server.executeCommand("ygames reload");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "result", result == null ? "" : result));
+                    }
+                    case "list" -> {
+                        if (!server.isRunning()) {
+                            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+                            return;
+                        }
+                        String result = server.executeCommand("ygames list");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "result", result == null ? "" : result));
+                    }
+                    case "forcestart" -> {
+                        if (!server.isRunning()) {
+                            DashboardHttp.json(ex, 400, Map.of("error", "server not running"));
+                            return;
+                        }
+                        String mode = body.getOrDefault("mode", "");
+                        String cmd = "ygames forcestart " + mode;
+                        String result = server.executeCommand(cmd);
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "command", cmd,
+                                "result", result == null ? "" : result));
+                    }
+                    default -> DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
+                }
+            } catch (Exception e) {
+                DashboardHttp.json(ex, 500, Map.of(
+                        "error", e.getMessage() == null ? "games action failed" : e.getMessage()));
             }
+            return;
         }
-        DashboardHttp.json(ex, 200, snap);
+        ex.sendResponseHeaders(405, -1);
     }
 
     private Map<String, Object> linkSaveResponse(String action, Path root, String linkHome) {

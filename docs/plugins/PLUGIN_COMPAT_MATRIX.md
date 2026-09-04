@@ -25,13 +25,13 @@ dashboard Plugins tab).
 | EssentialsX | `yap-essentials.jar` |
 | CoreProtect | `yap-protect.jar` |
 | WorldEdit / FAWE | `yap-world.jar` + `WorldEdit.jar` shim (FAWE-class first-party; do not install stock WE/FAWE on Folia) |
-| WorldGuard | `yap-playerdata.jar` (claims + flags) |
+| WorldGuard | `yap-regions.jar` + `yap-playerdata.jar` (admin regions + claims) |
 | Via\* / Geyser / Floodgate | Built-in Phase 4 stack |
 | Velocity | `yap-link.jar` |
 | DiscordSRV | `yap-discord.jar` |
-| Dynmap / BlueMap | `yap-map.jar` |
+| Dynmap / BlueMap | `yap-map.jar` (flat tiles + markers; 3D Stretch) |
 | TAB / NametagEdit | `yap-tab.jar` |
-| Citizens | `yap-playerdata.jar` (NPC/quests) |
+| Citizens | `yap-npcs.jar` |
 | LiteBans / AdvancedBan | `yap-moderation.jar` |
 | ChatControl / VentureChat | `yap-chat.jar` |
 | Matrix / Vulcan AC | `yap-guard.jar` |

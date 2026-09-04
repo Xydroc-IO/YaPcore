@@ -51,6 +51,9 @@ public final class EssentialsConfig {
     private boolean featurePtime = true;
     private boolean featurePweather = true;
     private boolean featureWeather = true;
+    private boolean featureNear = true;
+    private boolean featureWorkbench = true;
+    private boolean featureDisposal = true;
     private boolean featureBroadcast = true;
     private boolean featureRules = true;
     private boolean featureMotd = true;
@@ -118,6 +121,9 @@ public final class EssentialsConfig {
         featurePtime = c.getBoolean("features.ptime", true);
         featurePweather = c.getBoolean("features.pweather", true);
         featureWeather = c.getBoolean("features.weather", true);
+        featureNear = c.getBoolean("features.near", true);
+        featureWorkbench = c.getBoolean("features.workbench", true);
+        featureDisposal = c.getBoolean("features.disposal", true);
         featureBroadcast = c.getBoolean("features.broadcast", true);
         featureRules = c.getBoolean("features.rules", true);
         featureMotd = c.getBoolean("features.motd", true);
@@ -226,6 +232,9 @@ public final class EssentialsConfig {
             case "ptime" -> featurePtime;
             case "pweather" -> featurePweather;
             case "weather" -> featureWeather;
+            case "near" -> featureNear;
+            case "workbench" -> featureWorkbench;
+            case "disposal" -> featureDisposal;
             case "broadcast" -> featureBroadcast;
             case "rules" -> featureRules;
             case "motd" -> featureMotd;

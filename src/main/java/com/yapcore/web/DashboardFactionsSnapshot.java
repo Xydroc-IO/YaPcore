@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Read-only snapshot of {@code plugins/YaPFactions} for the web dashboard. */
+/** Snapshot + settings writer for {@code plugins/YaPFactions} on the web dashboard. */
 public final class DashboardFactionsSnapshot {
 
     private static final String DATA_DIR = "YaPFactions";
@@ -49,6 +49,10 @@ public final class DashboardFactionsSnapshot {
             out.put("enabled", bool(yaml.get("enabled"), true));
             out.put("baseMaxPower", intVal(nested(yaml, "power", "base-max"), 50));
             out.put("powerPerMember", intVal(nested(yaml, "power", "per-member"), 10));
+            out.put("claimBlocksPerPower", intVal(nested(yaml, "power", "claim-blocks-per-power"), 100));
+            out.put("bankEnabled", bool(nested(yaml, "bank", "enabled"), true));
+            out.put("alliesCanBuild", bool(nested(yaml, "relations", "allies-can-build"), true));
+            out.put("enemyPvpOnly", bool(nested(yaml, "relations", "enemy-pvp-only"), true));
             String jdbcUrl = str(nested(yaml, "jdbc", "url"), "");
             String user = str(nested(yaml, "jdbc", "user"), "yap");
             String password = str(nested(yaml, "jdbc", "password"), "");
@@ -61,6 +65,39 @@ public final class DashboardFactionsSnapshot {
             out.put("error", e.getMessage() == null ? "config read failed" : e.getMessage());
         }
         return out;
+    }
+
+    public static void saveSettings(Path rootDir, Map<String, String> body) throws Exception {
+        Path file = rootDir.resolve("plugins").resolve(DATA_DIR).resolve("config.yml");
+        Map<String, Object> yaml = Files.isRegularFile(file)
+                ? DashboardNetworkSnapshots.loadYaml(file)
+                : new LinkedHashMap<>();
+        if (body.containsKey("enabled")) {
+            yaml.put("enabled", !"false".equalsIgnoreCase(body.get("enabled")));
+        }
+        Map<String, Object> power = DashboardNetworkSnapshots.mapOrCreate(yaml, "power");
+        if (body.containsKey("baseMaxPower")) {
+            power.put("base-max", Integer.parseInt(body.get("baseMaxPower").trim()));
+        }
+        if (body.containsKey("powerPerMember")) {
+            power.put("per-member", Integer.parseInt(body.get("powerPerMember").trim()));
+        }
+        if (body.containsKey("claimBlocksPerPower")) {
+            power.put("claim-blocks-per-power", Integer.parseInt(body.get("claimBlocksPerPower").trim()));
+        }
+        Map<String, Object> bank = DashboardNetworkSnapshots.mapOrCreate(yaml, "bank");
+        if (body.containsKey("bankEnabled")) {
+            bank.put("enabled", !"false".equalsIgnoreCase(body.get("bankEnabled")));
+        }
+        Map<String, Object> relations = DashboardNetworkSnapshots.mapOrCreate(yaml, "relations");
+        if (body.containsKey("alliesCanBuild")) {
+            relations.put("allies-can-build", !"false".equalsIgnoreCase(body.get("alliesCanBuild")));
+        }
+        if (body.containsKey("enemyPvpOnly")) {
+            relations.put("enemy-pvp-only", !"false".equalsIgnoreCase(body.get("enemyPvpOnly")));
+        }
+        Files.createDirectories(file.getParent());
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }
 
     private static Map<String, Integer> queryCounts(String jdbcUrl, String user, String password) {

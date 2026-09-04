@@ -78,6 +78,7 @@ public final class DashboardNetworkSnapshots {
         Map<String, Object> yaml = yaml(root, "YaPPerms", "config.yml");
         out.put("defaultGroup", str(yaml.get("default-group"), "default"));
         out.put("defaultTrack", str(yaml.get("default-track"), "yap"));
+        out.put("serverContext", str(yaml.get("server-context"), ""));
         out.put("useSharedYapdb", bool(yaml.get("use-shared-yapdb"), true));
         out.put("groups", DashboardPermsNodes.parseGroupDetails(yaml.get("groups")));
         out.put("groupNames", DashboardPermsNodes.groupNames(yaml.get("groups")));
@@ -109,6 +110,7 @@ public final class DashboardNetworkSnapshots {
         out.put("authEnabled", bool(nestedBool(yaml, "auth", "enabled"), false));
         out.put("syncInventory", bool(nestedBool(yaml, "sync", "inventory"), true));
         out.put("claimsEnabled", bool(nestedBool(yaml, "claims", "enabled"), true));
+        out.put("maxHomes", intVal(map(yaml.get("homes")).get("max"), 3));
         return out;
     }
 
@@ -116,11 +118,18 @@ public final class DashboardNetworkSnapshots {
         Map<String, Object> out = base(root, "yap-discord", "YaPDiscord");
         Map<String, Object> yaml = yaml(root, "YaPDiscord", "config.yml");
         Map<String, Object> hooks = map(yaml.get("webhooks"));
+        Map<String, Object> events = map(yaml.get("events"));
         out.put("moderationConfigured", !str(hooks.get("moderation"), "").isBlank());
         out.put("chatConfigured", !str(hooks.get("chat"), "").isBlank());
+        out.put("eventsConfigured", !str(hooks.get("events"), "").isBlank()
+                || !str(hooks.get("chat"), "").isBlank());
         out.put("mcToDiscord", bool(nestedBool(yaml, "relay", "mc-to-discord"), false));
         out.put("discordToMc", bool(nestedBool(yaml, "relay", "discord-to-mc"), false));
-        out.put("inboundEnabled", bool(nestedBool(yaml, "inbound", "enabled"), true));
+        out.put("eventJoin", bool(events.get("join"), false));
+        out.put("eventLeave", bool(events.get("leave"), false));
+        out.put("eventDeath", bool(events.get("death"), false));
+        out.put("eventAdvancement", bool(events.get("advancement"), false));
+        out.put("inboundEnabled", bool(nestedBool(yaml, "inbound", "enabled"), false));
         out.put("inboundPort", intVal(nested(yaml, "inbound", "port"), 8765));
         out.put("inboundSecretConfigured", !str(nested(yaml, "inbound", "secret"), "").isBlank()
                 && !"change-me".equals(str(nested(yaml, "inbound", "secret"), "")));
@@ -240,7 +249,8 @@ public final class DashboardNetworkSnapshots {
         Map<String, Object> yaml = yaml(root, "YaPRegions", "config.yml");
         out.put("serverId", str(yaml.get("server-id"), "default"));
         out.put("flags", List.of(
-                "pvp", "mob-damage", "build", "interact", "entry", "chest-access", "fire-spread", "mob-spawning"));
+                "pvp", "mob-damage", "build", "interact", "entry", "chest-access", "fire-spread", "mob-spawning",
+                "item-drop", "item-pickup", "tnt", "creeper-explosion"));
         return out;
     }
 

@@ -4,8 +4,12 @@
 quests:
   t1_first_steps:
     name: "First Steps"
-    description: "Talk to the Mayor at the Quest Board NPC at spawn. Walk over and right-click to turn in."
-    objectives: []
+    description: "Talk to the Mayor at the Quest Board NPC at spawn (right-click)."
+    objectives:
+      - id: talk_mayor
+        type: TALK
+        npc-id: mayor
+        amount: 1
     rewards:
       - skill_xp:attack:50
       - item:BREAD:5

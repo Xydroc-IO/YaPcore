@@ -20,6 +20,7 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor {
     private TileRenderer renderer;
     private MapHttpServer httpServer;
     private YapTask renderTask;
+    private YapTask markersTask;
 
     @Override
     public void onEnable() {
@@ -41,6 +42,9 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor {
         renderTask = YapSched.globalTimer(this, () -> new MapRenderTask(this, config, renderer).run(),
                 100L, periodTicks);
         YapSched.globalLater(this, () -> new MapRenderTask(this, config, renderer).run(), 40L);
+        long markerTicks = Math.max(40L, config.markersPollSeconds() * 20L);
+        markersTask = YapSched.globalTimer(this, this::writeMarkersFile, 60L, markerTicks);
+        YapSched.globalLater(this, this::writeMarkersFile, 40L);
 
         var cmd = getCommand("yapmap");
         if (cmd != null) {
@@ -53,13 +57,15 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor {
     private void startEmbeddedHttp() {
         int port = config.port();
         try {
-            httpServer = new MapHttpServer(config.bindHost(), port, tilesRoot());
+            httpServer = new MapHttpServer(config.bindHost(), port, tilesRoot(),
+                    () -> MapMarkers.toJson(config));
             httpServer.start();
             getLogger().info("Map HTTP on http://" + config.bindHost() + ":" + port + "/map/");
         } catch (IOException e) {
             if (port == 8081) {
                 try {
-                    httpServer = new MapHttpServer(config.bindHost(), 8082, tilesRoot());
+                    httpServer = new MapHttpServer(config.bindHost(), 8082, tilesRoot(),
+                            () -> MapMarkers.toJson(config));
                     httpServer.start();
                     getLogger().warning("Port 8081 in use (YaPcore pack HTTP?) — map HTTP on :8082 instead. "
                             + "Set http.use-yapcore-server: true to share the pack port.");
@@ -104,6 +110,17 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor {
         copyResource("map.js", web.resolve("map.js"));
         String cfg = "window.YAP_MAP_CONFIG={sampleChunkRadius:" + config.sampleChunkRadius() + "};\n";
         Files.writeString(web.resolve("map-config.js"), cfg, StandardCharsets.UTF_8);
+        writeMarkersFile();
+    }
+
+    private void writeMarkersFile() {
+        try {
+            Path web = webRoot();
+            Files.createDirectories(web);
+            Files.writeString(web.resolve("markers.json"), MapMarkers.toJson(config), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            getLogger().warning("Could not write map markers.json: " + e.getMessage());
+        }
     }
 
     private void copyResource(String name, Path dest) throws IOException {
@@ -148,6 +165,9 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor {
     public void onDisable() {
         if (renderTask != null) {
             renderTask.cancel();
+        }
+        if (markersTask != null) {
+            markersTask.cancel();
         }
         if (httpServer != null) {
             httpServer.stop();

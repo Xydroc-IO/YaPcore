@@ -20,6 +20,7 @@ final class ChassisFormBridge {
     private Object sessions;
     private Method sendSimple;
     private Method sendCustom;
+    private Method sendModal;
     private Method pushActionBar;
     private Method pushSidebar;
     private Method sessionByName;
@@ -99,6 +100,23 @@ final class ChassisFormBridge {
         }
     }
 
+    int sendModal(String username, String title, String content, String button1, String button2,
+                  Consumer<BedrockFormResult> onResult) {
+        resolve();
+        if (sendModal == null || formService == null || !hasSession(username)) {
+            return -1;
+        }
+        try {
+            Object handler = onResult == null ? null : (Consumer<Object>) result ->
+                    onResult.accept(mapResult(result));
+            Object id = sendModal.invoke(formService, username, title, content, button1, button2, handler);
+            return id instanceof Integer i ? i : -1;
+        } catch (Exception e) {
+            LOG.fine("sendModal failed: " + e.getMessage());
+            return -1;
+        }
+    }
+
     private synchronized void resolve() {
         if (resolved) {
             return;
@@ -119,6 +137,8 @@ final class ChassisFormBridge {
                     "sendSimple", String.class, String.class, String.class, Consumer.class, String[].class);
             sendCustom = formClass.getMethod(
                     "sendCustom", String.class, String.class, String.class, Consumer.class);
+            sendModal = formClass.getMethod(
+                    "sendModal", String.class, String.class, String.class, String.class, String.class, Consumer.class);
             Class<?> uiClass = Class.forName("com.yapcore.crossplay.bedrock.bridge.BedrockUiBridge");
             pushActionBar = uiClass.getMethod("pushActionBar", String.class, String.class);
             pushSidebar = uiClass.getMethod("pushSidebar", String.class, String.class, String.class, List.class);

@@ -10,7 +10,7 @@ softdepend: [YaPDB, YaPModeration]
 commands:
   yapprotect:
     description: Protect admin
-    usage: /yapprotect status|reload|lookup|rollback|prune
+    usage: /yapprotect status|reload|lookup|rollback|restore|prune
     permission: yapprotect.admin
     aliases: [co, coreprotect]
 permissions:

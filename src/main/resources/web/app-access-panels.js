@@ -3,6 +3,7 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
   let state = {
     ops: [], groups: [], groupNames: [], selectedGroup: "",
     catalog: [], groupNodes: {}, draft: {}, dirty: false,
+    tracks: {}, defaultTrack: "yap", serverContext: "",
   };
 
   function paint(raw) {
@@ -233,6 +234,46 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
     });
   }
 
+  function renderTracks() {
+    const trackNames = Object.keys(state.tracks || {});
+    const preferred = state.defaultTrack || "yap";
+    fillSelect($("accTrack"), trackNames.length ? trackNames : [preferred], preferred);
+    const track = $("accTrack")?.value || preferred;
+    const ladder = (state.tracks && state.tracks[track]) || [];
+    const wrap = $("accTrackLadder");
+    if (wrap) {
+      wrap.innerHTML = "";
+      if (!ladder.length) {
+        wrap.innerHTML = `<span class="muted-small">No groups on track '${track}'.</span>`;
+      } else {
+        ladder.forEach((name, i) => {
+          const chip = document.createElement("span");
+          chip.className = "chip";
+          chip.textContent = (i + 1) + ". " + name;
+          wrap.appendChild(chip);
+          if (i < ladder.length - 1) {
+            const arrow = document.createElement("span");
+            arrow.className = "muted-small";
+            arrow.textContent = "→";
+            wrap.appendChild(arrow);
+          }
+        });
+      }
+    }
+    const hint = $("accTrackHint");
+    if (hint) {
+      hint.textContent = ladder.length
+        ? ("Ladder: " + ladder.join(" → ") + ". Promote / demote steps one rank on this track.")
+        : "Promote / demote needs groups on the selected track (starter pack uses yap).";
+    }
+    if ($("accTrackStat")) {
+      $("accTrackStat").textContent = track + (ladder.length ? " (" + ladder.length + ")" : "");
+    }
+    if ($("accPermServer") && !$("accPermServer").value && state.serverContext) {
+      $("accPermServer").placeholder = state.serverContext + " (config default)";
+    }
+  }
+
   function renderGroupCards() {
     const wrap = $("accGroupCards");
     if (!wrap) return;
@@ -273,6 +314,9 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
       state.catalog = r.catalog || state.catalog || [];
       state.groupNodes = r.groupNodes || {};
       state.groupNames = r.groupNames || (state.groups.map((g) => g.name));
+      state.tracks = r.tracks || {};
+      state.defaultTrack = r.defaultTrack || "yap";
+      state.serverContext = r.serverContext || "";
       if (!state.groupNames.length) state.groupNames = ["default", "vip", "mod", "admin"];
 
       $("accDefault").textContent = r.defaultGroup || "default";
@@ -301,6 +345,7 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
       }
 
       renderOps();
+      renderTracks();
       renderGroupCards();
       setOut("");
     } catch (e) {
@@ -318,6 +363,7 @@ window.YapDashRegisterAccessPanels = function (YapDash) {
     .forEach((id) => $(id)?.addEventListener("input", updateNewPreview));
   updateNewPreview();
   $("accPermSearch")?.addEventListener("input", () => renderPermEditor());
+  $("accTrack")?.addEventListener("change", () => renderTracks());
 
   if (typeof YapDashBindAccessActions === "function") {
     YapDashBindAccessActions(YapDash, {

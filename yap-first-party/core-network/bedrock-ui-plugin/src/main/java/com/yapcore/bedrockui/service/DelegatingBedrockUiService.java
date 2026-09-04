@@ -82,6 +82,10 @@ public final class DelegatingBedrockUiService implements BedrockUiService {
         if (player == null || !isBedrock(player)) {
             return -1;
         }
+        if (!hasNativeSession(player)) {
+            notifyFormsNeedNative(player);
+            return -1;
+        }
         return chassis.sendSimple(player.getName(), formTitle, content, onResult, buttons);
     }
 
@@ -94,7 +98,35 @@ public final class DelegatingBedrockUiService implements BedrockUiService {
         if (player == null || !isBedrock(player)) {
             return -1;
         }
+        if (!hasNativeSession(player)) {
+            notifyFormsNeedNative(player);
+            return -1;
+        }
         return chassis.sendCustom(player.getName(), formTitle, jsonContentArray, onResult);
+    }
+
+    @Override
+    public int sendModalForm(
+            Player player,
+            String title,
+            String content,
+            String button1,
+            String button2,
+            Consumer<BedrockFormResult> onResult) {
+        if (player == null || !isBedrock(player)) {
+            return -1;
+        }
+        if (!hasNativeSession(player)) {
+            notifyFormsNeedNative(player);
+            return -1;
+        }
+        return chassis.sendModal(player.getName(), title, content, button1, button2, onResult);
+    }
+
+    private void notifyFormsNeedNative(Player player) {
+        YapSched.entity(plugin, player, () ->
+                player.sendMessage("§eBedrock forms need a native YaPcore Bedrock session "
+                        + "(UDP dual-stack). Floodgate-only joins use action bar / scoreboard fallback."));
     }
 
     private FloodgatePlugin floodgate() {

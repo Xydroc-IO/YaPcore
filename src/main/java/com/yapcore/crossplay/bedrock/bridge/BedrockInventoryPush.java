@@ -25,7 +25,8 @@ public final class BedrockInventoryPush {
             if (paper != null) {
                 ctx.inventory.seedStorage(username, paper[0], paper[1]);
                 ctx.inventoryFingerprint.put(username.toLowerCase(), fingerprintStacks(paper[0], paper[1]));
-                ctx.send(guid, BedrockPacketCodec.inventoryContent(0, paper[0], paper[1]));
+                String[] owners = sync.snapshotSkullOwnersLiveOnly(username, 36);
+                ctx.send(guid, BedrockPacketCodec.inventoryContent(0, paper[0], paper[1], owners));
                 return;
             }
         }
@@ -51,7 +52,8 @@ public final class BedrockInventoryPush {
         }
         ctx.inventory.seedStorage(username, paper[0], paper[1]);
         ctx.inventoryFingerprint.put(username.toLowerCase(), fp);
-        ctx.send(guid, BedrockPacketCodec.inventoryContent(0, paper[0], paper[1]));
+        String[] owners = sync.snapshotSkullOwnersLiveOnly(username, 36);
+        ctx.send(guid, BedrockPacketCodec.inventoryContent(0, paper[0], paper[1], owners));
     }
 
     void pushOpenContainer(long guid, String username) {
@@ -60,6 +62,17 @@ public final class BedrockInventoryPush {
             return;
         }
         int n = ctx.containers.slotsForType(w.type());
+        BedrockPaperWorldSync sync = ctx.paperWorld;
+        if (sync != null && sync.isEnabled()
+                && w.type() != BedrockContainerBridge.TYPE_WORKBENCH
+                && w.type() != BedrockContainerBridge.TYPE_VILLAGER) {
+            int[][] live = sync.snapshotBlockInventory(w.x(), w.y(), w.z(), n);
+            if (live != null && live.length >= 2) {
+                ctx.inventory.seedContainer(username, live[0], live[1]);
+                ctx.send(guid, BedrockPacketCodec.inventoryContent(w.windowId(), live[0], live[1]));
+                return;
+            }
+        }
         int[][] snap = ctx.inventory.containerSnapshot(username, n);
         ctx.send(guid, BedrockPacketCodec.inventoryContent(w.windowId(), snap[0], snap[1]));
     }

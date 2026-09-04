@@ -69,6 +69,7 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
       $("datInstalled").textContent = r.installed ? "yes" : "no";
       $("datEco").textContent = r.economyEnabled ? "on" : "off";
       $("datAuth").textContent = r.authEnabled ? "on" : "off";
+      if ($("datMaxHomes")) $("datMaxHomes").textContent = String(r.maxHomes ?? "—");
       renderDataFeatures(r.features || {});
       $("datOut").textContent = r.status || "";
     } catch (e) { $("datOut").textContent = e.message; }
@@ -83,10 +84,15 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
       $("dscInstalled").textContent = r.installed ? "yes" : "no";
       $("dscModHook").textContent = r.moderationConfigured ? "yes" : "no";
       $("dscChatHook").textContent = r.chatConfigured ? "yes" : "no";
+      if ($("dscEventsHook")) $("dscEventsHook").textContent = r.eventsConfigured ? "yes" : "no";
       $("dscRelay").textContent = r.mcToDiscord ? "on" : "off";
       $("dscInbound").textContent = r.discordToMc ? "on" : "off";
       $("dscMcRelay").value = r.mcToDiscord ? "true" : "false";
       $("dscDiscordMc").value = r.discordToMc ? "true" : "false";
+      if ($("dscEvJoin")) $("dscEvJoin").checked = !!r.eventJoin;
+      if ($("dscEvLeave")) $("dscEvLeave").checked = !!r.eventLeave;
+      if ($("dscEvDeath")) $("dscEvDeath").checked = !!r.eventDeath;
+      if ($("dscEvAdv")) $("dscEvAdv").checked = !!r.eventAdvancement;
       $("dscOut").textContent = r.hint || "";
     } catch (e) { $("dscOut").textContent = e.message; }
   }
@@ -100,12 +106,29 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
     await netPost("/api/discord", { action: "save-webhook", key: "chat", url: $("dscChatUrl").value.trim() });
     refreshDiscord();
   };
+  $("dscSaveEventsHook")?.addEventListener("click", async () => {
+    await netPost("/api/discord", { action: "save-webhook", key: "events", url: $("dscEventsUrl").value.trim() });
+    refreshDiscord();
+  });
   $("dscTestMod").onclick = async () => {
     $("dscOut").textContent = (await netPost("/api/discord", { action: "test-webhook", key: "moderation" })).result || "sent";
   };
   $("dscTestChat").onclick = async () => {
     $("dscOut").textContent = (await netPost("/api/discord", { action: "test-webhook", key: "chat" })).result || "sent";
   };
+  $("dscTestEvents")?.addEventListener("click", async () => {
+    $("dscOut").textContent = (await netPost("/api/discord", { action: "test-webhook", key: "events" })).result || "sent";
+  });
+  $("dscSaveEvents")?.addEventListener("click", async () => {
+    await netPost("/api/discord", {
+      action: "save-events",
+      join: $("dscEvJoin")?.checked ? "true" : "false",
+      leave: $("dscEvLeave")?.checked ? "true" : "false",
+      death: $("dscEvDeath")?.checked ? "true" : "false",
+      advancement: $("dscEvAdv")?.checked ? "true" : "false",
+    });
+    refreshDiscord();
+  });
   $("dscSaveRelay").onclick = async () => {
     await netPost("/api/discord", {
       action: "save-relay",

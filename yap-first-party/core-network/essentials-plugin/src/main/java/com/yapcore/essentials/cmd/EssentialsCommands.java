@@ -70,6 +70,10 @@ public final class EssentialsCommands implements CommandExecutor, TabCompleter {
             case "list", "online", "who" -> staff.list(sender);
             case "ptime" -> player.ptime(sender, args);
             case "pweather" -> player.pweather(sender, args);
+            case "weather" -> staff.weather(sender, args);
+            case "near", "nearby" -> player.near(sender, args);
+            case "workbench", "craft", "wb" -> inventory.workbench(sender);
+            case "disposal", "trash", "dispose" -> inventory.disposal(sender);
             case "broadcast", "bc", "say" -> staff.broadcast(sender, args);
             case "rules" -> staff.rules(sender);
             case "motd" -> staff.motd(sender);

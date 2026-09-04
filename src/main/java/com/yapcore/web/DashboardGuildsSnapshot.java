@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Read-only snapshot of {@code plugins/YaPGuilds} for the web dashboard. */
+/** Snapshot + settings writer for {@code plugins/YaPGuilds} on the web dashboard. */
 public final class DashboardGuildsSnapshot {
 
     private static final String DATA_DIR = "YaPGuilds";
@@ -47,6 +47,8 @@ public final class DashboardGuildsSnapshot {
             Map<String, Object> yaml = loadYaml(configFile);
             out.put("enabled", bool(yaml.get("enabled"), true));
             out.put("maxLevel", intVal(nested(yaml, "guild-xp", "max-level"), 50));
+            out.put("baseMaxMembers", intVal(nested(yaml, "guild-xp", "base-max-members"), 5));
+            out.put("bankEnabled", bool(nested(yaml, "bank", "enabled"), true));
             String jdbcUrl = str(nested(yaml, "jdbc", "url"), "");
             String user = str(nested(yaml, "jdbc", "user"), "yap");
             String password = str(nested(yaml, "jdbc", "password"), "");
@@ -59,6 +61,29 @@ public final class DashboardGuildsSnapshot {
             out.put("error", e.getMessage() == null ? "config read failed" : e.getMessage());
         }
         return out;
+    }
+
+    public static void saveSettings(Path rootDir, Map<String, String> body) throws Exception {
+        Path file = rootDir.resolve("plugins").resolve(DATA_DIR).resolve("config.yml");
+        Map<String, Object> yaml = Files.isRegularFile(file)
+                ? DashboardNetworkSnapshots.loadYaml(file)
+                : new LinkedHashMap<>();
+        if (body.containsKey("enabled")) {
+            yaml.put("enabled", !"false".equalsIgnoreCase(body.get("enabled")));
+        }
+        Map<String, Object> xp = DashboardNetworkSnapshots.mapOrCreate(yaml, "guild-xp");
+        if (body.containsKey("maxLevel")) {
+            xp.put("max-level", Integer.parseInt(body.get("maxLevel").trim()));
+        }
+        if (body.containsKey("baseMaxMembers")) {
+            xp.put("base-max-members", Integer.parseInt(body.get("baseMaxMembers").trim()));
+        }
+        Map<String, Object> bank = DashboardNetworkSnapshots.mapOrCreate(yaml, "bank");
+        if (body.containsKey("bankEnabled")) {
+            bank.put("enabled", !"false".equalsIgnoreCase(body.get("bankEnabled")));
+        }
+        Files.createDirectories(file.getParent());
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }
 
     private static Map<String, Integer> queryCounts(String jdbcUrl, String user, String password) {

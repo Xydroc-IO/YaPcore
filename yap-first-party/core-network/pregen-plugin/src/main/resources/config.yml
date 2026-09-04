@@ -1,6 +1,9 @@
 chunks-per-tick: 5
+# Paper-only global MSPT gate (ignored on Folia — MSPT is region-local)
 max-mspt: 40.0
 broadcast-interval-sec: 30
 auto-resume: true
 max-worlds: 4
 max-inflight: 32
+# Cap concurrent chunk loads per Folia region bucket (~8×8 chunks)
+max-inflight-per-region: 8

@@ -16,7 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** Read-only snapshot of {@code plugins/YaPGames} for the web dashboard. */
+/** Snapshot + settings writer for {@code plugins/YaPGames} on the web dashboard. */
 public final class DashboardGamesSnapshot {
 
     private static final String DATA_DIR = "YaPGames";
@@ -49,6 +49,8 @@ public final class DashboardGamesSnapshot {
             out.put("enabled", bool(yaml.get("enabled"), true));
             out.put("blockSkillXp", bool(nested(yaml, "match", "block-skill-xp"), true));
             out.put("rewardsEnabled", bool(nested(yaml, "rewards", "enabled"), true));
+            out.put("countdownSeconds", intVal(yaml.get("countdown-seconds"), 10));
+            out.put("lobbyWorld", str(yaml.get("lobby-world"), "world"));
             Path modesDir = dataDir.resolve(str(yaml.get("modes-directory"), "modes"));
             Path arenasDir = dataDir.resolve(str(yaml.get("arenas-directory"), "arenas"));
             List<String> modes = listYamlKeys(modesDir);
@@ -65,6 +67,32 @@ public final class DashboardGamesSnapshot {
             out.put("error", e.getMessage() == null ? "config read failed" : e.getMessage());
         }
         return out;
+    }
+
+    public static void saveSettings(Path rootDir, Map<String, String> body) throws Exception {
+        Path file = rootDir.resolve("plugins").resolve(DATA_DIR).resolve("config.yml");
+        Map<String, Object> yaml = Files.isRegularFile(file)
+                ? DashboardNetworkSnapshots.loadYaml(file)
+                : new LinkedHashMap<>();
+        if (body.containsKey("enabled")) {
+            yaml.put("enabled", !"false".equalsIgnoreCase(body.get("enabled")));
+        }
+        if (body.containsKey("countdownSeconds")) {
+            yaml.put("countdown-seconds", Integer.parseInt(body.get("countdownSeconds").trim()));
+        }
+        if (body.containsKey("lobbyWorld")) {
+            yaml.put("lobby-world", body.get("lobbyWorld").trim());
+        }
+        Map<String, Object> match = DashboardNetworkSnapshots.mapOrCreate(yaml, "match");
+        if (body.containsKey("blockSkillXp")) {
+            match.put("block-skill-xp", !"false".equalsIgnoreCase(body.get("blockSkillXp")));
+        }
+        Map<String, Object> rewards = DashboardNetworkSnapshots.mapOrCreate(yaml, "rewards");
+        if (body.containsKey("rewardsEnabled")) {
+            rewards.put("enabled", !"false".equalsIgnoreCase(body.get("rewardsEnabled")));
+        }
+        Files.createDirectories(file.getParent());
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }
 
     private static Map<String, List<Map<String, Object>>> leaderboardPreview(
@@ -169,6 +197,19 @@ public final class DashboardGamesSnapshot {
             return b;
         }
         return !"false".equalsIgnoreCase(String.valueOf(val));
+    }
+
+    private static int intVal(Object val, int def) {
+        if (val instanceof Number n) {
+            return n.intValue();
+        }
+        if (val != null) {
+            try {
+                return Integer.parseInt(String.valueOf(val).trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return def;
     }
 
     private static String str(Object val, String def) {

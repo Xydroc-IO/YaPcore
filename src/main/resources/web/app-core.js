@@ -117,6 +117,7 @@
       "Player data": "opPlayerdata",
       Map: "opMap",
       Discord: "opDiscord",
+      Tebex: "opTebex",
     };
     (ops.plugins || []).forEach((p) => {
       const id = opIds[p.label];
@@ -192,6 +193,7 @@
   if (window.YapDashRegisterNpcPanels) window.YapDashRegisterNpcPanels(window.YapDash);
   if (window.YapDashRegisterMmoPanels) window.YapDashRegisterMmoPanels(window.YapDash);
   if (window.YapDashRegisterDisastersPanels) window.YapDashRegisterDisastersPanels(window.YapDash);
+  if (window.YapDashRegisterSocialPanels) window.YapDashRegisterSocialPanels(window.YapDash);
   if (window.YapDashRegisterPluginEditors) window.YapDashRegisterPluginEditors(window.YapDash);
   if (window.YapDashRegisterKitsPanels) window.YapDashRegisterKitsPanels(window.YapDash);
   window.YapDashTabLoads = window.YapDash.tabLoads;

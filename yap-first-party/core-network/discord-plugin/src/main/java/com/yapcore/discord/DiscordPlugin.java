@@ -10,6 +10,7 @@ public final class DiscordPlugin extends JavaPlugin {
     private WebhookClient webhooks;
     private ModAuditBridge modBridge;
     private ChatRelayListener chatListener;
+    private EventRelayListener eventListener;
     private DiscordMcRelay mcRelay;
     private DiscordInboundServer inboundServer;
 
@@ -64,6 +65,10 @@ public final class DiscordPlugin extends JavaPlugin {
         if (chatListener == null) {
             chatListener = new ChatRelayListener(this);
             getServer().getPluginManager().registerEvents(chatListener, this);
+        }
+        if (eventListener == null) {
+            eventListener = new EventRelayListener(this);
+            getServer().getPluginManager().registerEvents(eventListener, this);
         }
         inboundServer.start(config);
     }

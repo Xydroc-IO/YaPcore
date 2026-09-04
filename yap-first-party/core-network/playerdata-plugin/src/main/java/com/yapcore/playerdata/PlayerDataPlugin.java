@@ -50,6 +50,7 @@ import com.yapcore.playerdata.npc.NpcTraderListener;
 import com.yapcore.playerdata.npc.NpcTraderService;
 import com.yapcore.playerdata.service.PlayerDataServiceImpl;
 import com.yapcore.playerdata.sync.JoinQuitListener;
+import com.yapcore.playerdata.sync.PlaytimeTracker;
 import com.yapcore.playerdata.sync.SessionLock;
 import com.yapcore.playerdata.sync.SyncService;
 import org.bukkit.Bukkit;
@@ -78,6 +79,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
     private BackpackService backpack;
     private PlayerDataServiceImpl playerDataService;
     private KitGrantService kitGrants;
+    private PlaytimeTracker playtime;
 
     @Override
     public void onEnable() {
@@ -109,6 +111,8 @@ public final class PlayerDataPlugin extends JavaPlugin {
 
         BalanceStore balances = new BalanceStore(sync, repository, getLogger());
         playerDataService = new PlayerDataServiceImpl(this, config, locks, repository, authRepo, balances);
+        playtime = new PlaytimeTracker(this, repository);
+        playerDataService.bindPlaytime(playtime);
         getServer().getServicesManager().register(
                 com.yapcore.playerdata.PlayerDataService.class,
                 playerDataService, this, ServicePriority.Normal);
@@ -159,6 +163,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(
                 new JoinQuitListener(this, sync, config.featureMail() ? mail : null, kitGrants), this);
+        getServer().getPluginManager().registerEvents(playtime, this);
         getServer().getPluginManager().registerEvents(new AuthListener(auth, repository, config), this);
         getServer().getPluginManager().registerEvents(new MenuListener(menus, traders), this);
         if (claims != null) {
@@ -361,6 +366,10 @@ public final class PlayerDataPlugin extends JavaPlugin {
         if (claims != null) {
             claims.stop();
             claims = null;
+        }
+        if (playtime != null) {
+            playtime.flushAllOnline();
+            playtime = null;
         }
         if (sync != null) {
             sync.shutdown();

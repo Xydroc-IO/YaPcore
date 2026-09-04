@@ -38,7 +38,8 @@ public final class EssentialsPlugin extends JavaPlugin {
                 "spawn", "setspawn", "back", "tpa", "tpahere", "tpaccept", "tpdeny",
                 "gm", "gmc", "gms", "gma", "gmsp", "i",
                 "fly", "god", "speed", "heal", "feed", "repair", "clear", "vanish",
-                "invsee", "echest", "nick", "afk", "list", "ptime", "pweather",
+                "invsee", "echest", "nick", "afk", "list", "ptime", "pweather", "weather",
+                "near", "workbench", "disposal",
                 "broadcast", "rules", "motd", "suicide", "hat", "tp", "tphere",
                 "socialspy", "freeze", "check", "yapess"
         };

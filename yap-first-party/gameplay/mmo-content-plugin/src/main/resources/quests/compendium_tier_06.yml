@@ -4,13 +4,12 @@
 quests:
   t6_veteran:
     name: "Server Veteran"
-    description: "Reach Hitpoints Level 80 (500-hour playtime proxy)."
+    description: "Accumulate 500 hours of playtime (30,000 minutes) on YaPPlayerData."
     requires: t5_storm
     objectives:
-      - id: hp80
-        type: SKILL_LEVEL
-        skill: hitpoints
-        level: 80
+      - id: play_500h
+        type: PLAYTIME
+        minutes: 30000
     rewards:
       - group:veteran
       - permission:yap.mmo.particle.clouds
@@ -18,9 +17,13 @@ quests:
 
   t6_quest_master:
     name: "Quest Master"
-    description: "Talk to the Quest Master NPC after prior tiers."
+    description: "Talk to the Quest Master NPC (npc-id: quest_master) after prior tiers."
     requires: t6_veteran
-    objectives: []
+    objectives:
+      - id: talk_qm
+        type: TALK
+        npc-id: quest_master
+        amount: 1
     rewards:
       - skill_xp:attack:500000
       - permission:yap.mmo.title.quest_master
@@ -28,7 +31,7 @@ quests:
 
   t6_god_gear:
     name: "The Ultimate Gear"
-    description: "Reach Smithing Level 75 (God Tier armor proxy)."
+    description: "Reach Smithing Level 75."
     requires: t6_quest_master
     objectives:
       - id: smith75
@@ -42,13 +45,12 @@ quests:
 
   t6_economy_king:
     name: "Economy King"
-    description: "Smelt gold 200 times (economy proxy)."
+    description: "Earn 50,000 gold through deposits (shops, rewards, transfers in)."
     requires: t6_god_gear
     objectives:
-      - id: gold200
-        type: CRAFT_ITEM
-        recipe: smelt_gold
-        amount: 200
+      - id: earn_50k
+        type: ECONOMY_EARN
+        amount: 50000
     rewards:
       - permission:yap.mmo.title.midas
       - permission:yap.mmo.particle.gold
@@ -70,7 +72,7 @@ quests:
 
   t6_dungeon:
     name: "Dungeon Master"
-    description: "Kill World Eater boss (Infinite Dungeon proxy)."
+    description: "Kill the World Eater YaP boss."
     requires: t6_guild_warlord
     objectives:
       - id: we
@@ -84,7 +86,7 @@ quests:
 
   t6_monster_hunter:
     name: "Monster Hunter"
-    description: "Kill 1000 Zombies (MythicMob trash clear proxy)."
+    description: "Kill 1000 Zombies (documented Goblin Scout / MythicMob trash stand-ins)."
     requires: t6_dungeon
     objectives:
       - id: trash
@@ -98,7 +100,7 @@ quests:
 
   t6_peacekeeper:
     name: "Peacekeeper"
-    description: "Reach Prayer Level 60 (pacifist proxy)."
+    description: "Reach Prayer Level 60."
     requires: t6_monster_hunter
     objectives:
       - id: pray60
@@ -125,11 +127,11 @@ quests:
 
   t6_architect:
     name: "The Architect"
-    description: "Gather 5000 Stone Bricks while building."
+    description: "Place 5,000 Stone Bricks while building."
     requires: t6_chaos
     objectives:
       - id: bricks
-        type: GATHER
+        type: PLACE_BLOCKS
         material: STONE_BRICKS
         amount: 5000
     rewards:

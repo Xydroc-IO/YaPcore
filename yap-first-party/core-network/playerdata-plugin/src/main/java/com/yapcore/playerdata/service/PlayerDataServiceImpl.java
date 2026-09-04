@@ -5,6 +5,7 @@ import com.yapcore.playerdata.PlayerDataService;
 import com.yapcore.playerdata.db.AuthRepository;
 import com.yapcore.playerdata.db.PlayerRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
+import com.yapcore.playerdata.sync.PlaytimeTracker;
 import com.yapcore.playerdata.sync.SessionLock;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -23,6 +24,7 @@ public final class PlayerDataServiceImpl implements PlayerDataService {
     private final PlayerRepository repository;
     private final AuthRepository authRepository;
     private final BalanceStore balances;
+    private PlaytimeTracker playtime;
 
     public PlayerDataServiceImpl(JavaPlugin plugin, PlayerDataConfig config, SessionLock locks,
                                  PlayerRepository repository, AuthRepository authRepository,
@@ -33,6 +35,10 @@ public final class PlayerDataServiceImpl implements PlayerDataService {
         this.repository = repository;
         this.authRepository = authRepository;
         this.balances = balances;
+    }
+
+    public void bindPlaytime(PlaytimeTracker playtime) {
+        this.playtime = playtime;
     }
 
     @Override
@@ -123,9 +129,12 @@ public final class PlayerDataServiceImpl implements PlayerDataService {
                 || Double.isNaN(amount) || Double.isInfinite(amount)) {
             return Optional.empty();
         }
-        double next = balances.getBalance(uuid) + amount;
+        double before = balances.getBalance(uuid);
+        double next = before + amount;
         balances.setBalance(uuid, next);
-        return Optional.of(balances.getBalance(uuid));
+        double after = balances.getBalance(uuid);
+        balances.fireBalanceChange(uuid, before, after);
+        return Optional.of(after);
     }
 
     @Override
@@ -139,7 +148,9 @@ public final class PlayerDataServiceImpl implements PlayerDataService {
             return Optional.empty();
         }
         balances.setBalance(uuid, current - amount);
-        return Optional.of(balances.getBalance(uuid));
+        double after = balances.getBalance(uuid);
+        balances.fireBalanceChange(uuid, current, after);
+        return Optional.of(after);
     }
 
     @Override
@@ -148,7 +159,18 @@ public final class PlayerDataServiceImpl implements PlayerDataService {
                 || Double.isNaN(amount) || Double.isInfinite(amount)) {
             return Optional.empty();
         }
+        double before = balances.getBalance(uuid);
         balances.setBalance(uuid, amount);
-        return Optional.of(balances.getBalance(uuid));
+        double after = balances.getBalance(uuid);
+        balances.fireBalanceChange(uuid, before, after);
+        return Optional.of(after);
+    }
+
+    @Override
+    public long playMinutes(UUID uuid) {
+        if (playtime == null || uuid == null) {
+            return 0L;
+        }
+        return playtime.playMinutes(uuid);
     }
 }

@@ -3,7 +3,10 @@ package com.yapcore.regions.listener;
 import com.yapcore.regions.service.RegionServiceImpl;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Creeper;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -12,8 +15,11 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -160,6 +166,49 @@ public final class RegionListener implements Listener {
             if (!regions.canInteract(player, block.getLocation())) {
                 event.setCancelled(true);
                 player.sendMessage("§cAdmin region — interaction denied.");
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onDrop(PlayerDropItemEvent event) {
+        if (!regions.at(event.getPlayer().getLocation()).isPresent()) {
+            return;
+        }
+        if (!regions.canDropItems(event.getPlayer(), event.getPlayer().getLocation())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§cAdmin region — item drop denied.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPickup(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        if (!regions.at(player.getLocation()).isPresent()) {
+            return;
+        }
+        if (!regions.canPickupItems(player, player.getLocation())) {
+            event.setCancelled(true);
+            player.sendMessage("§cAdmin region — item pickup denied.");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onExplode(EntityExplodeEvent event) {
+        Entity entity = event.getEntity();
+        if (entity instanceof TNTPrimed) {
+            if (!regions.isTntAllowed(event.getLocation())) {
+                event.setCancelled(true);
+                event.blockList().clear();
+            }
+            return;
+        }
+        if (entity instanceof Creeper) {
+            if (!regions.isCreeperExplosionAllowed(event.getLocation())) {
+                event.setCancelled(true);
+                event.blockList().clear();
             }
         }
     }

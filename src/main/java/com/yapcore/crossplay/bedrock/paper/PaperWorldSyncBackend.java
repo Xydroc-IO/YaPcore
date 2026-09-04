@@ -219,6 +219,10 @@ public final class PaperWorldSyncBackend {
         return inventory.snapshotInventoryStacksLiveOnly(username, slots);
     }
 
+    public String[] snapshotSkullOwnersLiveOnly(String username, int slots) {
+        return inventory.snapshotSkullOwnersLiveOnly(username, slots);
+    }
+
     public int[][] snapshotBlockInventory(int x, int y, int z, int slots) {
         return containers.snapshotBlockInventory(x, y, z, slots);
     }

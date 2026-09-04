@@ -15,8 +15,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
+/**
+ * Chunk pregen coordinator. On Folia, issuance is region-affine with plugin tickets and
+ * per-region inflight caps; global MSPT gating is Paper-only (region MSPT is local).
+ */
 public final class PregenService {
 
     private final JavaPlugin plugin;
@@ -24,6 +29,9 @@ public final class PregenService {
     private final ProgressStore store;
     private final Logger log;
     private final Map<String, PregenJob> jobs = new ConcurrentHashMap<>();
+    /** Per world → regionKey → inflight count. */
+    private final Map<String, ConcurrentHashMap<Long, AtomicInteger>> regionInflight =
+            new ConcurrentHashMap<>();
     private YapTask pump;
     private YapTask persistTask;
 
@@ -72,6 +80,7 @@ public final class PregenService {
             }
         }
         jobs.clear();
+        regionInflight.clear();
     }
 
     public synchronized String startJob(World world, ChunkShape shape) {
@@ -112,6 +121,7 @@ public final class PregenService {
             job.setState(PregenJob.State.CANCELLED);
             store.delete(job.worldName());
             jobs.remove(job.worldName().toLowerCase());
+            regionInflight.remove(job.worldName().toLowerCase());
             msgs.add("Cancelled " + job.worldName());
             broadcast("Cancelled pregen for " + job.worldName());
         }
@@ -146,10 +156,18 @@ public final class PregenService {
             m.put("percent", job.progressPercent());
             m.put("rate", job.ratePerSecond());
             m.put("shape", job.shapeDescription());
+            m.put("inflight", job.inflight());
+            ConcurrentHashMap<Long, AtomicInteger> regions =
+                    regionInflight.get(job.worldName().toLowerCase());
+            m.put("activeRegions", regions == null ? 0 : regions.size());
             arr.add(m);
         }
         out.put("jobs", arr);
-        out.put("mspt", Bukkit.getServer().getAverageTickTime() / 1_000_000.0);
+        out.put("regionized", YapSched.isRegionized());
+        out.put("msptGate", !YapSched.isRegionized());
+        if (!YapSched.isRegionized()) {
+            out.put("mspt", Bukkit.getServer().getAverageTickTime() / 1_000_000.0);
+        }
         return out;
     }
 
@@ -176,9 +194,12 @@ public final class PregenService {
     }
 
     private void tick() {
-        double mspt = Bukkit.getServer().getAverageTickTime() / 1_000_000.0;
-        if (mspt > config.maxMspt()) {
-            return;
+        // Global MSPT is meaningful on single-thread Paper; Folia MSPT is region-local.
+        if (!YapSched.isRegionized()) {
+            double mspt = Bukkit.getServer().getAverageTickTime() / 1_000_000.0;
+            if (mspt > config.maxMspt()) {
+                return;
+            }
         }
         int globalInflight = jobs.values().stream().mapToInt(PregenJob::inflight).sum();
         int budget = Math.max(0, config.maxInflight() - globalInflight);
@@ -194,13 +215,13 @@ public final class PregenService {
             return;
         }
         int roundRobin = 0;
-        while (issued < perTick && issued < budget) {
+        int attempts = 0;
+        int maxAttempts = running.size() * perTick + 8;
+        while (issued < perTick && issued < budget && attempts < maxAttempts) {
+            attempts++;
             PregenJob job = running.get(roundRobin % running.size());
             roundRobin++;
             if (job.state() != PregenJob.State.RUNNING) {
-                if (roundRobin > running.size() * 2) {
-                    break;
-                }
                 continue;
             }
             World world = Bukkit.getWorld(job.worldName());
@@ -208,31 +229,77 @@ public final class PregenService {
                 job.setState(PregenJob.State.CANCELLED);
                 continue;
             }
-            ChunkPos next = job.poll();
+            ChunkPos next = pollWithRegionCap(job);
             if (next == null) {
-                if (job.inflight() == 0) {
+                if (job.isQueueEmpty()) {
                     finish(job);
-                }
-                if (roundRobin > running.size() * 2) {
-                    break;
                 }
                 continue;
             }
             job.beginInflight();
+            long rkey = PregenChunkLoader.regionKey(next.x(), next.z());
+            AtomicInteger regionCount = regionCounter(job.worldName()).computeIfAbsent(
+                    rkey, k -> new AtomicInteger());
+            regionCount.incrementAndGet();
             final ChunkPos pos = next;
             final PregenJob j = job;
-            world.getChunkAtAsync(pos.x(), pos.z(), true, chunk ->
-                    YapSched.region(plugin, world, pos.x() << 4, pos.z() << 4, () -> {
+            PregenChunkLoader.load(plugin, world, pos,
+                    () -> {
                         j.endInflightSuccess();
+                        decRegion(j.worldName(), rkey);
                         if (j.isQueueEmpty() && j.state() == PregenJob.State.RUNNING) {
                             finish(j);
                         }
-                    }));
+                    },
+                    (failed, err) -> {
+                        j.endInflightFail(failed);
+                        decRegion(j.worldName(), rkey);
+                        if (err != null) {
+                            log.warning("Pregen load failed " + j.worldName()
+                                    + " " + failed.x() + "," + failed.z() + ": " + err.getMessage());
+                        }
+                    });
             issued++;
             maybeBroadcast(job);
-            if (roundRobin > running.size() * perTick + 4) {
-                break;
+        }
+    }
+
+    private ChunkPos pollWithRegionCap(PregenJob job) {
+        int cap = config.maxInflightPerRegion();
+        ConcurrentHashMap<Long, AtomicInteger> regions = regionCounter(job.worldName());
+        // Peek/poll until we find a chunk whose region is under cap (bounded retries).
+        for (int i = 0; i < 64; i++) {
+            ChunkPos next = job.poll();
+            if (next == null) {
+                return null;
             }
+            long rkey = PregenChunkLoader.regionKey(next.x(), next.z());
+            AtomicInteger cur = regions.get(rkey);
+            int n = cur == null ? 0 : cur.get();
+            if (n < cap) {
+                return next;
+            }
+            job.requeueBack(next);
+        }
+        return null;
+    }
+
+    private ConcurrentHashMap<Long, AtomicInteger> regionCounter(String worldName) {
+        return regionInflight.computeIfAbsent(worldName.toLowerCase(),
+                k -> new ConcurrentHashMap<>());
+    }
+
+    private void decRegion(String worldName, long rkey) {
+        ConcurrentHashMap<Long, AtomicInteger> regions = regionInflight.get(worldName.toLowerCase());
+        if (regions == null) {
+            return;
+        }
+        AtomicInteger cur = regions.get(rkey);
+        if (cur == null) {
+            return;
+        }
+        if (cur.decrementAndGet() <= 0) {
+            regions.remove(rkey, cur);
         }
     }
 
@@ -240,6 +307,7 @@ public final class PregenService {
         job.setState(PregenJob.State.DONE);
         store.delete(job.worldName());
         jobs.remove(job.worldName().toLowerCase());
+        regionInflight.remove(job.worldName().toLowerCase());
         broadcast("Pregen complete: " + job.worldName() + " " + job.done() + "/" + job.total());
         log.info("Pregen complete: " + job.statusLine());
     }

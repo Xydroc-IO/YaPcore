@@ -12,7 +12,11 @@ public enum RegionFlag {
     ENTRY,
     CHEST_ACCESS,
     FIRE_SPREAD,
-    MOB_SPAWNING;
+    MOB_SPAWNING,
+    ITEM_DROP,
+    ITEM_PICKUP,
+    TNT,
+    CREEPER_EXPLOSION;
 
     public static Optional<RegionFlag> parse(String raw) {
         if (raw == null || raw.isBlank()) {

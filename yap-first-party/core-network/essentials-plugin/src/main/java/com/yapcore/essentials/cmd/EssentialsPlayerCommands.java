@@ -407,4 +407,52 @@ final class EssentialsPlayerCommands {
         player.setHealth(0.0);
         return true;
     }
+
+    boolean near(CommandSender sender, String[] args) {
+        if (ctx.disabled(sender, "near")) {
+            return true;
+        }
+        if (!ctx.requirePlayer(sender)) {
+            return true;
+        }
+        if (!sender.hasPermission("yapessentials.near")) {
+            sender.sendMessage("§cNo permission.");
+            return true;
+        }
+        Player player = (Player) sender;
+        double radius = 100.0;
+        if (args.length >= 1) {
+            try {
+                radius = Double.parseDouble(args[0]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage("§cInvalid radius.");
+                return true;
+            }
+        }
+        radius = Math.max(1.0, Math.min(radius, 500.0));
+        double r2 = radius * radius;
+        Location origin = player.getLocation();
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        for (Player other : player.getWorld().getPlayers()) {
+            if (other.getUniqueId().equals(player.getUniqueId())) {
+                continue;
+            }
+            if (!other.getWorld().equals(origin.getWorld())) {
+                continue;
+            }
+            double distSq = other.getLocation().distanceSquared(origin);
+            if (distSq <= r2) {
+                lines.add("§f" + other.getName() + " §7(" + (int) Math.sqrt(distSq) + "m)");
+            }
+        }
+        if (lines.isEmpty()) {
+            player.sendMessage("§7No players within §f" + (int) radius + "§7m.");
+            return true;
+        }
+        player.sendMessage("§6Nearby (§f" + (int) radius + "§6m):");
+        for (String line : lines) {
+            player.sendMessage(line);
+        }
+        return true;
+    }
 }

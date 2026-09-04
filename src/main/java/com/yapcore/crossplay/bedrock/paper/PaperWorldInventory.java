@@ -86,6 +86,76 @@ final class PaperWorldInventory {
         }
     }
 
+    /** Parallel SkullOwner names for player heads in storage (same length as snapshot ids). */
+    String[] snapshotSkullOwnersLiveOnly(String username, int slots) {
+        if (!backend.isEnabled() || username == null || username.isBlank()) {
+            return null;
+        }
+        try {
+            ClassLoader cl = backend.liveLoader();
+            if (cl == null) {
+                return null;
+            }
+            Class<?> bukkit = Class.forName("org.bukkit.Bukkit", true, cl);
+            Object player = PaperWorldMainThread.findPlayer(bukkit, username);
+            if (player == null) {
+                return null;
+            }
+            Object inv = player.getClass().getMethod("getInventory").invoke(player);
+            Object[] contents = (Object[]) inv.getClass().getMethod("getStorageContents").invoke(inv);
+            int n = Math.max(0, slots);
+            String[] owners = new String[n];
+            for (int i = 0; i < n; i++) {
+                Object stack = contents != null && i < contents.length ? contents[i] : null;
+                owners[i] = skullOwnerFromStack(stack);
+            }
+            return owners;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    static String skullOwnerFromStack(Object stack) {
+        if (stack == null) {
+            return null;
+        }
+        try {
+            Object type = stack.getClass().getMethod("getType").invoke(stack);
+            String name = String.valueOf(type);
+            if (!name.toUpperCase(java.util.Locale.ROOT).contains("PLAYER_HEAD")
+                    && !name.toUpperCase(java.util.Locale.ROOT).contains("SKULL")) {
+                return null;
+            }
+            Object meta = stack.getClass().getMethod("getItemMeta").invoke(stack);
+            if (meta == null) {
+                return null;
+            }
+            try {
+                Object offline = meta.getClass().getMethod("getOwningPlayer").invoke(meta);
+                if (offline != null) {
+                    Object n = offline.getClass().getMethod("getName").invoke(offline);
+                    if (n != null && !String.valueOf(n).isBlank()) {
+                        return String.valueOf(n);
+                    }
+                }
+            } catch (NoSuchMethodException ignored) {
+            }
+            try {
+                Object profile = meta.getClass().getMethod("getOwnerProfile").invoke(meta);
+                if (profile != null) {
+                    Object n = profile.getClass().getMethod("getName").invoke(profile);
+                    if (n != null && !String.valueOf(n).isBlank()) {
+                        return String.valueOf(n);
+                    }
+                }
+            } catch (NoSuchMethodException ignored) {
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     void injectBedrockPlayer(java.util.UUID uuid, String username) {
         backend.inventoryInject.inject(uuid, username);
     }

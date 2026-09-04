@@ -7,8 +7,9 @@ import me.clip.placeholderapi.PlaceholderAPIPlugin;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * eCloud stub — YaP does not mirror HelpChat eCloud. Drop expansion jars into
- * {@code plugins/PlaceholderAPI/expansions/} instead.
+ * eCloud is intentionally unavailable — YaP ships a curated local-expansions product.
+ * Drop expansion jars into {@code plugins/PlaceholderAPI/expansions/} and use
+ * {@code /papi reload} or {@code /papi register <jar>}.
  */
 public final class CloudExpansionManager {
 

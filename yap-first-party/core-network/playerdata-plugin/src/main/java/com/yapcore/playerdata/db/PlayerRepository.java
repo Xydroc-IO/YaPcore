@@ -228,6 +228,36 @@ public final class PlayerRepository {
         }
     }
 
+    public long getPlayMinutes(UUID uuid) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT play_minutes FROM players WHERE uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return 0L;
+                }
+                return rs.getLong("play_minutes");
+            }
+        }
+    }
+
+    /** Adds session minutes and returns the new lifetime total. */
+    public long addPlayMinutes(UUID uuid, long minutes) throws SQLException {
+        if (minutes <= 0) {
+            return getPlayMinutes(uuid);
+        }
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     UPDATE players SET play_minutes = play_minutes + ? WHERE uuid = ?
+                     """)) {
+            ps.setLong(1, minutes);
+            ps.setString(2, uuid.toString());
+            ps.executeUpdate();
+        }
+        return getPlayMinutes(uuid);
+    }
+
     private static String truncateName(String name) {
         if (name == null || name.isEmpty()) {
             return "unknown";

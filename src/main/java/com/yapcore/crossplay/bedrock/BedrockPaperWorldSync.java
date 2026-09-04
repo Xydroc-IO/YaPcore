@@ -138,6 +138,11 @@ public final class BedrockPaperWorldSync {
         return backend.snapshotInventoryStacksLiveOnly(username, slots);
     }
 
+    /** Parallel SkullOwner names for player-head stacks (G.33), or null. */
+    public String[] snapshotSkullOwnersLiveOnly(String username, int slots) {
+        return backend.snapshotSkullOwnersLiveOnly(username, slots);
+    }
+
     /**
      * Block inventory at world coords → {@code [0]=networkIds, [1]=counts} (padded to {@code slots}).
      */

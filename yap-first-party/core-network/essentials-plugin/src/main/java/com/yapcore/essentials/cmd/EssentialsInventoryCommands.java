@@ -83,4 +83,37 @@ final class EssentialsInventoryCommands {
         viewer.openInventory(target.getEnderChest());
         return true;
     }
+
+    boolean workbench(CommandSender sender) {
+        if (ctx.disabled(sender, "workbench")) {
+            return true;
+        }
+        if (!ctx.requirePlayer(sender)) {
+            return true;
+        }
+        if (!sender.hasPermission("yapessentials.workbench")) {
+            sender.sendMessage("§cNo permission.");
+            return true;
+        }
+        Player player = (Player) sender;
+        player.openWorkbench(player.getLocation(), true);
+        return true;
+    }
+
+    boolean disposal(CommandSender sender) {
+        if (ctx.disabled(sender, "disposal")) {
+            return true;
+        }
+        if (!ctx.requirePlayer(sender)) {
+            return true;
+        }
+        if (!sender.hasPermission("yapessentials.disposal")) {
+            sender.sendMessage("§cNo permission.");
+            return true;
+        }
+        Player player = (Player) sender;
+        var inv = Bukkit.createInventory(player, 36, "Disposal");
+        player.openInventory(inv);
+        return true;
+    }
 }
