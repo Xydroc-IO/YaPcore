@@ -195,7 +195,13 @@ public final class PaperFiles {
                 return;
             }
             String url = new PublicEndpoint(config).packUrl(fileName);
-            String sha1 = sha1Hex(pack);
+            String sha1;
+            if (looksAbsoluteHttp(url)) {
+                sha1 = sha1HexFromUrl(url);
+                LOG.info("Resource pack SHA-1 from remote URL (matches what clients download)");
+            } else {
+                sha1 = sha1Hex(pack);
+            }
             String prompt = config.getResourcePackPrompt();
             if (prompt == null || prompt.isBlank()) {
                 prompt = "This server offers a resource pack. Click Yes to download, or No to play without it.";
@@ -215,6 +221,68 @@ public final class PaperFiles {
             LOG.warning("Could not prepare resource pack offer: " + e.getMessage());
             clearPackProps(p);
         }
+    }
+
+    private static boolean looksAbsoluteHttp(String url) {
+        if (url == null) {
+            return false;
+        }
+        String u = url.trim().toLowerCase();
+        return u.startsWith("https://") || u.startsWith("http://");
+    }
+
+    /**
+     * Hash the bytes clients will download (follows redirects — needed for GitHub
+     * {@code /releases/latest/download/…} → CDN).
+     */
+    private static String sha1HexFromUrl(String url) throws IOException {
+        URI uri = URI.create(url.trim());
+        HttpURLConnection conn = null;
+        try {
+            conn = openFollowingRedirects(uri, 8);
+            int code = conn.getResponseCode();
+            if (code < 200 || code >= 300) {
+                throw new IOException("HTTP " + code + " for " + url);
+            }
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            try (InputStream in = conn.getInputStream();
+                 DigestInputStream din = new DigestInputStream(in, digest)) {
+                din.transferTo(OutputStream.nullOutputStream());
+            }
+            return HexFormat.of().formatHex(digest.digest());
+        } catch (IOException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IOException("SHA-1 failed for " + url + ": " + e.getMessage(), e);
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
+        }
+    }
+
+    private static HttpURLConnection openFollowingRedirects(URI start, int maxHops) throws IOException {
+        URI uri = start;
+        for (int hop = 0; hop < maxHops; hop++) {
+            HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
+            conn.setInstanceFollowRedirects(false);
+            conn.setConnectTimeout(15_000);
+            conn.setReadTimeout(180_000);
+            conn.setRequestProperty("User-Agent", "YaPcore-ResourcePack/1.0");
+            conn.setRequestMethod("GET");
+            int code = conn.getResponseCode();
+            if (code >= 300 && code < 400) {
+                String loc = conn.getHeaderField("Location");
+                conn.disconnect();
+                if (loc == null || loc.isBlank()) {
+                    throw new IOException("Redirect without Location from " + uri);
+                }
+                uri = uri.resolve(loc);
+                continue;
+            }
+            return conn;
+        }
+        throw new IOException("Too many redirects for " + start);
     }
 
     private static void clearPackProps(Properties p) {

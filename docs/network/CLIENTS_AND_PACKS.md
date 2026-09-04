@@ -97,20 +97,33 @@ resource-pack-enabled=true
 resource-pack-files=yapcore-default.zip,my-overlay.zip
 resource-pack-forced=false
 resource-pack-prompt=This server offers a resource pack. Click Yes to download, or No to play without it.
-resource-pack-http-port=8081
-resource-pack-public-host=yapcoremc.yaplabs.us
-public-pack-port=80
-resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
+# Prefer GitHub Releases so every client hits the newest published zip:
+resource-pack-url=https://github.com/Xydroc-IO/YaPcore/releases/latest/download/{file}
+# Or self-host via nginx:
+# resource-pack-http-port=8081
+# resource-pack-public-host=yapcoremc.yaplabs.us
+# public-pack-port=80
+# resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
 ```
 
-Publish the **offer** zip (single file or `yap-active-bundle-*.zip`) to the edge docroot after changing actives.
+Attach **`yapcore-default.zip`** (same bytes you built) as a release asset on each GitHub
+release. Tag **`1.0.0.0`** already publishes it — `/releases/latest/download/{file}` follows the
+newest release. YaP hashes the remote zip at boot so Paper’s SHA-1 matches what clients download.
 
 **Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Skies + YaP Water + YaP Vehicles + YaP Abilities) — built on
 `gradle prepareClientPack` (GAMEPLAY: `YAP_INCLUDE_VEHICLES=1`). Credit / license:
 `resourcepacks/CREDITS.md`, `FAITHFUL_LICENSE.txt`, and (vehicles)
 `yap-vehicles/AUTOMOBILITY_LICENSE.txt` (Automobility MIT meshes).
 
-**Publish for Cloudflare:** after rebuilding the zip, copy it into nginx’s docroot
+**Publish for GitHub (recommended):**
+
+```bash
+./scripts/build-default-resourcepack.sh
+gh release upload 1.0.0.0 resourcepacks/yapcore-default.zip --clobber -R Xydroc-IO/YaPcore
+# or create a new release and attach the zip — latest/download then picks it up
+```
+
+**Publish for Cloudflare / nginx (optional):** after rebuilding the zip, copy it into nginx’s docroot
 (and optionally a hash-suffixed name so CF cannot serve a stale zip). Minecraft
 reports “failed to download” when the SHA-1 in `server.properties` does not match
 the bytes it fetched.
