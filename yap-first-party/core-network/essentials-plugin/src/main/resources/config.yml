@@ -60,6 +60,7 @@ features:
   list: true
   ptime: true
   pweather: true
+  weather: true
   broadcast: true
   rules: true
   motd: true

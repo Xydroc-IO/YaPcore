@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public final class DashboardGameplayApi {
@@ -351,6 +352,122 @@ public final class DashboardGameplayApi {
     }
 
     public void apiProtect(HttpExchange ex) throws IOException { ops.apiProtect(ex); }
+
+    public void apiDisasters(HttpExchange ex) throws IOException {
+        if (!auth.requireAuth(ex)) {
+            return;
+        }
+        Path root = server.getRootDir();
+        if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, Object> snap = new LinkedHashMap<>(com.yapcore.web.DashboardDisastersSnapshot.snapshot(root));
+            String live = server.executeCommand("yapdisaster status");
+            snap.put("ok", true);
+            snap.put("liveStatus", live == null ? "" : live);
+            snap.put("hint", "POST save-settings | reload | start | stop | random | site-add | site-remove | site-erupt");
+            DashboardHttp.json(ex, 200, snap);
+            return;
+        }
+        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
+            String action = body.getOrDefault("action", "status").toLowerCase(Locale.ROOT);
+            try {
+                switch (action) {
+                    case "save-settings" -> {
+                        com.yapcore.web.DashboardDisastersSnapshot.saveSettings(root, body);
+                        String reload = server.executeCommand("yapdisaster reload");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true,
+                                "action", action,
+                                "reload", reload == null ? "" : reload));
+                    }
+                    case "reload" -> {
+                        String result = server.executeCommand("yapdisaster reload");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "result", result == null ? "" : result));
+                    }
+                    case "start" -> {
+                        String type = body.getOrDefault("type", "thunder");
+                        String seconds = body.getOrDefault("seconds", "120");
+                        String world = body.getOrDefault("world", "");
+                        String cmd = "yapdisaster " + type + " " + seconds
+                                + (world.isBlank() ? "" : " " + world);
+                        String result = server.executeCommand(cmd);
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "command", cmd,
+                                "result", result == null ? "" : result));
+                    }
+                    case "stop" -> {
+                        String world = body.getOrDefault("world", "");
+                        String cmd = "yapdisaster stop" + (world.isBlank() ? "" : " " + world);
+                        String result = server.executeCommand(cmd);
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "command", cmd,
+                                "result", result == null ? "" : result));
+                    }
+                    case "random" -> {
+                        String mode = body.getOrDefault("mode", "status").toLowerCase(Locale.ROOT);
+                        String cmd = switch (mode) {
+                            case "on", "enable" -> "yapdisaster random on";
+                            case "off", "disable" -> "yapdisaster random off";
+                            case "now" -> {
+                                String type = body.getOrDefault("type", "");
+                                String world = body.getOrDefault("world", "");
+                                yield "yapdisaster random now"
+                                        + (type.isBlank() ? "" : " " + type)
+                                        + (world.isBlank() ? "" : " " + world);
+                            }
+                            default -> "yapdisaster random status";
+                        };
+                        String result = server.executeCommand(cmd);
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "command", cmd,
+                                "result", result == null ? "" : result));
+                    }
+                    case "site-add" -> {
+                        String id = body.getOrDefault("id", "");
+                        String world = body.getOrDefault("world", "world");
+                        double x = Double.parseDouble(body.getOrDefault("x", "0"));
+                        double y = Double.parseDouble(body.getOrDefault("y", "64"));
+                        double z = Double.parseDouble(body.getOrDefault("z", "0"));
+                        boolean dormant = "true".equalsIgnoreCase(body.getOrDefault("dormant", "false"));
+                        com.yapcore.web.DashboardDisastersSnapshot.upsertSite(root, id, world, x, y, z, dormant);
+                        String reload = server.executeCommand("yapdisaster reload");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "id", id,
+                                "reload", reload == null ? "" : reload));
+                    }
+                    case "site-remove" -> {
+                        String id = body.getOrDefault("id", "");
+                        com.yapcore.web.DashboardDisastersSnapshot.removeSite(root, id);
+                        String reload = server.executeCommand("yapdisaster reload");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "id", id,
+                                "reload", reload == null ? "" : reload));
+                    }
+                    case "site-erupt" -> {
+                        String id = body.getOrDefault("id", "");
+                        String seconds = body.getOrDefault("seconds", "120");
+                        String cmd = "yapdisaster site erupt " + id + " " + seconds;
+                        String result = server.executeCommand(cmd);
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "command", cmd,
+                                "result", result == null ? "" : result));
+                    }
+                    case "status" -> {
+                        String result = server.executeCommand("yapdisaster status");
+                        DashboardHttp.json(ex, 200, Map.of(
+                                "ok", true, "action", action, "result", result == null ? "" : result));
+                    }
+                    default -> DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
+                }
+            } catch (Exception e) {
+                DashboardHttp.json(ex, 500, Map.of(
+                        "error", e.getMessage() == null ? "disasters action failed" : e.getMessage()));
+            }
+            return;
+        }
+        ex.sendResponseHeaders(405, -1);
+    }
 
     public void apiWorld(HttpExchange ex) throws IOException { ops.apiWorld(ex); }
 

@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: Native Essentials-class QoL commands for YaPcore
 website: https://github.com/yaplabs
-softdepend: [YaPPerms, YaPPlayerData]
+softdepend: [YaPPerms, YaPPlayerData, YaPDisasters]
 commands:
   spawn:
     description: Teleport to spawn
@@ -221,6 +221,9 @@ permissions:
   yapessentials.ptime:
     default: op
   yapessentials.pweather:
+    default: op
+  yapessentials.weather:
+    description: /weather GUI and extended weather controls
     default: op
   yapessentials.broadcast:
     default: op

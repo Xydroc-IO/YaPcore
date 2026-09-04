@@ -675,6 +675,125 @@
         <pre id="linkOut" class="report muted-small"></pre>
       </section>
 
+      <section id="tab-disasters" class="panel">
+        <div class="page-header">
+          <h2>Disasters</h2>
+          <p>Toggle extremes, random timers, warnings, and soft volcano sites. Grief stays claim/region-safe.</p>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="disInstalled">—</strong></div>
+          <div class="stat"><span>Live</span><strong id="disLive">—</strong></div>
+          <div class="stat"><span>Random</span><strong id="disRandomStat">—</strong></div>
+          <div class="stat"><span>Sites</span><strong id="disSiteCount">—</strong></div>
+          <div class="stat"><span>Grief</span><strong id="disGriefStat">—</strong></div>
+        </div>
+
+        <div class="card">
+          <h3>Global switches</h3>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="disEnabled"/> Plugin enabled</label>
+            <label><input type="checkbox" id="disGrief"/> Grief (block changes)</label>
+            <label><input type="checkbox" id="disRealLightning"/> Real lightning</label>
+            <label><input type="checkbox" id="disProtectClaims"/> Protect claims</label>
+            <label><input type="checkbox" id="disProtectRegions"/> Protect regions</label>
+            <label><input type="checkbox" id="disWarnings"/> Warnings enabled</label>
+            <label><input type="checkbox" id="disBroadcastStart"/> Broadcast start</label>
+            <label><input type="checkbox" id="disBroadcastEnd"/> Broadcast end</label>
+            <label><input type="checkbox" id="disSitesAmbient"/> Volcano ambient smoke</label>
+          </div>
+          <div class="form-grid">
+            <label>Default duration (sec) <input id="disDefaultDur" type="number" min="5" value="120"/></label>
+            <label>Allowed worlds <input id="disAllowedWorlds" placeholder="empty = all (comma list)"/></label>
+            <label>Site snap radius <input id="disSiteSnap" type="number" min="8" value="48"/></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Random events &amp; timers</h3>
+          <div class="feat-grid">
+            <label><input type="checkbox" id="disRandomEnabled"/> Random schedule on</label>
+            <label><input type="checkbox" id="disRandomPlayers"/> Require players online</label>
+          </div>
+          <div class="form-grid">
+            <label>Min interval (sec) <input id="disRandomMin" type="number" min="30" value="900"/></label>
+            <label>Max interval (sec) <input id="disRandomMax" type="number" min="30" value="2400"/></label>
+            <label>Warning (sec) <input id="disRandomWarn" type="number" min="0" value="30"/></label>
+            <label>Event duration (sec) <input id="disRandomDur" type="number" min="10" value="120"/></label>
+          </div>
+          <h4>Random weights</h4>
+          <div class="form-grid" id="disWeights"></div>
+          <div class="btn-row">
+            <button id="disRandomOn" class="secondary">Runtime ON</button>
+            <button id="disRandomOff" class="secondary">Runtime OFF</button>
+            <button id="disRandomNow" class="primary">Force random now</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Per-disaster enable &amp; FX timers</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Disaster</th><th>On</th><th>Period ticks</th><th>Temp / FX</th></tr></thead>
+              <tbody id="disTypeBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Trigger / stop</h3>
+          <div class="form-grid">
+            <label>Type
+              <select id="disStartType">
+                <option value="thunder">thunder</option>
+                <option value="hurricane">hurricane</option>
+                <option value="tornado">tornado</option>
+                <option value="earthquake">earthquake</option>
+                <option value="volcano">volcano</option>
+                <option value="blizzard">blizzard</option>
+                <option value="drought">drought</option>
+                <option value="meteor">meteor</option>
+                <option value="tsunami">tsunami</option>
+                <option value="rain">rain</option>
+                <option value="clear">clear</option>
+              </select>
+            </label>
+            <label>Seconds <input id="disStartSec" type="number" min="5" value="120"/></label>
+            <label>World <input id="disStartWorld" placeholder="default world if empty"/></label>
+          </div>
+          <div class="btn-row">
+            <button id="disStart" class="primary">Start</button>
+            <button id="disStop" class="danger">Stop</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Soft volcano sites</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>ID</th><th>World</th><th>XYZ</th><th></th></tr></thead>
+              <tbody id="disSiteBody"></tbody>
+            </table>
+          </div>
+          <div class="form-grid">
+            <label>ID <input id="disSiteId" placeholder="ember_peak"/></label>
+            <label>World <input id="disSiteWorld" value="world"/></label>
+            <label>X <input id="disSiteX" type="number" value="0"/></label>
+            <label>Y <input id="disSiteY" type="number" value="64"/></label>
+            <label>Z <input id="disSiteZ" type="number" value="0"/></label>
+          </div>
+          <div class="btn-row">
+            <button id="disSiteAdd" class="primary">Save site</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button id="disRefresh">Refresh</button>
+          <button id="disSave" class="primary">Save &amp; apply</button>
+          <button id="disReload">Reload plugin</button>
+        </div>
+        <pre id="disOut" class="report muted-small"></pre>
+      </section>
+
       <section id="tab-protect" class="panel">
         <div class="page-header">
           <h2>Protect</h2>
@@ -1379,6 +1498,7 @@
   <script src="/app-full-panels.js"></script>
   <script src="/app-npcs-panels.js"></script>
   <script src="/app-mmo-panels.js"></script>
+  <script src="/app-disasters-panels.js"></script>
   <script src="/app-plugin-editors.js"></script>
   <script src="/app-kits-panels.js"></script>
   <script src="/app-core.js"></script>

@@ -1,0 +1,93 @@
+# YaP Disasters — Phase 3–5a
+# Extreme weather / disaster FX. Grief is off by default.
+# When grief is on, claims + BUILD-deny regions stay safe (protect-* defaults).
+
+enabled: true
+broadcast-start: true
+broadcast-end: true
+default-duration-seconds: 120
+
+# When false: lightning uses visual-only strikes; block grief skipped.
+grief: false
+real-lightning: false
+
+# Even with grief:true, never modify claimed land / BUILD-deny regions.
+protect-claims: true
+protect-regions: true
+
+# Worlds where disasters are allowed (empty = all).
+allowed-worlds: []
+
+# Phase 4 — random world events + warnings
+warnings:
+  enabled: true
+
+random:
+  # Off by default — enable in config, GUI, or dashboard
+  enabled: false
+  require-players: true
+  min-interval-seconds: 900
+  max-interval-seconds: 2400
+  warning-seconds: 30
+  duration-seconds: 120
+  weights:
+    thunder: 10
+    hurricane: 6
+    tornado: 5
+    earthquake: 5
+    volcano: 4
+    blizzard: 6
+    drought: 4
+    meteor: 5
+    tsunami: 3
+
+# Phase 5a — soft volcano sites (tag real peaks; no worldgen)
+volcano-sites-ambient: true
+volcano-site-snap-blocks: 48
+volcano-sites:
+  ember_peak:
+    world: world
+    x: 180
+    y: 96
+    z: -160
+    dormant: false
+
+disasters:
+  clear:
+    enabled: true
+  rain:
+    enabled: true
+  thunder:
+    enabled: true
+    period-ticks: 35
+  hurricane:
+    enabled: true
+    period-ticks: 12
+  tornado:
+    enabled: true
+    period-ticks: 4
+  earthquake:
+    enabled: true
+    period-ticks: 8
+  volcano:
+    enabled: true
+    period-ticks: 10
+    temporary-lava-ticks: 60
+  blizzard:
+    enabled: true
+    period-ticks: 8
+    temporary-snow-ticks: 80
+  drought:
+    enabled: true
+    period-ticks: 20
+    temporary-dry-ticks: 100
+  meteor:
+    enabled: true
+    period-ticks: 14
+    temporary-fire-ticks: 40
+  tsunami:
+    enabled: true
+    period-ticks: 8
+    temporary-water-ticks: 80
+    wave-radius: 14
+    flood-height: 2

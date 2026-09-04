@@ -49,6 +49,7 @@ public final class PluginConfigCatalog {
                 e("yap-games", "YaPGames", "YaPGames", "config.yml", "yap-games", "ygames reload"),
                 e("yap-mechanics", "YaPMechanics", "YaPMechanics", "config.yml", "yap-mechanics", "ymechanics reload"),
                 e("yap-abilities", "YaPAbilities", "YaPAbilities", "config.yml", "yap-abilities", "yapabilities reload"),
+                e("yap-disasters", "YaPDisasters", "YaPDisasters", "config.yml", "yap-disasters", "yapdisaster reload"),
                 e("yap-mmo-bedrock", "YaPMmoBedrock", "YaPMmoBedrock", "config.yml", "yap-mmo-bedrock", "")
         );
     }

@@ -126,6 +126,7 @@ public final class WebDashboard {
         http.createContext("/api/link/console", linkConsoleApi::apiLinkConsole);
         http.createContext("/api/link/console/stream", linkConsoleApi::apiLinkConsoleStream);
         http.createContext("/api/protect", gameplayApi::apiProtect);
+        http.createContext("/api/disasters", gameplayApi::apiDisasters);
         http.createContext("/api/world", gameplayApi::apiWorld);
         http.createContext("/api/chat", gameplayApi::apiChat);
         http.createContext("/api/moderation", gameplayApi::apiModeration);

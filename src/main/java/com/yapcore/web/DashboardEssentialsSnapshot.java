@@ -22,7 +22,7 @@ public final class DashboardEssentialsSnapshot {
     private static final List<String> FEATURE_KEYS = List.of(
             "spawn", "back", "tpa", "teleport", "fly", "god", "speed", "heal", "feed",
             "repair", "clear", "vanish", "invsee", "echest", "nick", "afk", "list",
-            "ptime", "pweather", "broadcast", "rules", "motd", "suicide", "hat", "staff");
+            "ptime", "pweather", "weather", "broadcast", "rules", "motd", "suicide", "hat", "staff");
 
     private DashboardEssentialsSnapshot() {
     }

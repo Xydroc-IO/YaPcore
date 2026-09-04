@@ -126,7 +126,8 @@ public final class PluginConfigHints {
             Map.entry("yap-skills", "Skills"),
             Map.entry("yap-combat", "Combat"),
             Map.entry("yap-games", "Minigames"),
-            Map.entry("yap-admin", "Admin tools")
+            Map.entry("yap-admin", "Admin tools"),
+            Map.entry("yap-disasters", "Disasters")
     );
 
     private static final Map<String, String> BLURBS = Map.ofEntries(
@@ -156,6 +157,7 @@ public final class PluginConfigHints {
             Map.entry("yap-combat", "PvP timers and combat tags."),
             Map.entry("yap-games", "Minigame arenas."),
             Map.entry("yap-admin", "Staff tools. Leave defaults if you are new."),
+            Map.entry("yap-disasters", "Weather extremes, random events, volcano sites, and flood waves."),
             Map.entry("yap-floodgate", "Lets Bedrock players join Java."),
             Map.entry("yap-pregen", "Pre-generate chunks so new areas load smoothly.")
     );

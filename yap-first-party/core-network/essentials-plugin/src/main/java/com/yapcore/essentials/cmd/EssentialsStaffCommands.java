@@ -9,6 +9,7 @@ import com.yapcore.essentials.store.StaffService;
 import com.yapcore.essentials.store.TpaService;
 import com.yapcore.essentials.store.VanishService;
 import com.yapcore.essentials.util.TeleportHelper;
+import com.yapcore.essentials.weather.WorldWeather;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.moderation.Punishment;
 import com.yapcore.sched.YapSched;
@@ -18,6 +19,7 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.WeatherType;
+import org.bukkit.World;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -227,5 +229,98 @@ final class EssentialsStaffCommands {
         }
         sender.sendMessage("§e/yapess reload");
         return true;
+    }
+
+    boolean weather(CommandSender sender, String[] args) {
+        if (ctx.disabled(sender, "weather")) {
+            return true;
+        }
+        // Prefer YaPDisasters when installed (Phase 1 home for extremes + GUI).
+        var disasters = Bukkit.getPluginManager().getPlugin("YaPDisasters");
+        if (disasters != null && disasters.isEnabled()) {
+            String joined = args.length == 0 ? "gui" : String.join(" ", args);
+            return Bukkit.dispatchCommand(sender, "yapdisaster " + joined);
+        }
+        if (!sender.hasPermission("yapessentials.weather")) {
+            sender.sendMessage("§cNo permission.");
+            return true;
+        }
+        if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {
+            sender.sendMessage("§eInstall YaPDisasters for the weather GUI.");
+            sender.sendMessage("§e/weather <clear|rain|thunder|lock|unlock> [seconds] [world]");
+            return true;
+        }
+
+        String first = args[0].toLowerCase(Locale.ROOT);
+        if ("lock".equals(first) || "unlock".equals(first)) {
+            World world = resolveWorld(sender, args.length >= 2 ? args[1] : null);
+            if (world == null) {
+                return true;
+            }
+            boolean enable = "unlock".equals(first);
+            WorldWeather.setCycle(ctx.plugin, world, enable);
+            sender.sendMessage(enable
+                    ? "§aWeather cycle unlocked in §f" + world.getName() + "§a."
+                    : "§eWeather cycle locked in §f" + world.getName() + "§e.");
+            return true;
+        }
+
+        WorldWeather.Mode mode = WorldWeather.parseMode(first);
+        if (mode == null) {
+            sender.sendMessage("§e/weather <clear|rain|thunder|lock|unlock> [seconds] [world]");
+            sender.sendMessage("§7Extreme weather needs YaPDisasters.");
+            return true;
+        }
+
+        int duration = WorldWeather.DEFAULT_SECONDS;
+        String worldArg = null;
+        if (args.length >= 2) {
+            try {
+                duration = Integer.parseInt(args[1]);
+                if (args.length >= 3) {
+                    worldArg = args[2];
+                }
+            } catch (NumberFormatException e) {
+                worldArg = args[1];
+                if (args.length >= 3) {
+                    try {
+                        duration = Integer.parseInt(args[2]);
+                    } catch (NumberFormatException ignored) {
+                        sender.sendMessage("§cInvalid duration (seconds).");
+                        return true;
+                    }
+                }
+            }
+        }
+        duration = Math.max(1, Math.min(duration, WorldWeather.LOCK_SECONDS));
+
+        World world = resolveWorld(sender, worldArg);
+        if (world == null) {
+            return true;
+        }
+        WorldWeather.apply(ctx.plugin, world, mode, duration);
+        sender.sendMessage("§aWeather set to §f" + mode.name().toLowerCase(Locale.ROOT)
+                + " §ain §f" + world.getName()
+                + " §afor §f" + duration + "s§a.");
+        return true;
+    }
+
+    private World resolveWorld(CommandSender sender, String worldName) {
+        if (worldName != null && !worldName.isBlank()) {
+            World world = Bukkit.getWorld(worldName);
+            if (world == null) {
+                sender.sendMessage("§cUnknown world: §f" + worldName);
+                return null;
+            }
+            return world;
+        }
+        if (sender instanceof Player player) {
+            return player.getWorld();
+        }
+        World first = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().get(0);
+        if (first == null) {
+            sender.sendMessage("§cNo worlds loaded.");
+        }
+        return first;
     }
 }
