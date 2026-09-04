@@ -26,34 +26,38 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: attack
         amount: 11
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: SWEEP_ATTACK
-        count: 3
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -62,9 +66,9 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_STRONG
         volume: 0.85
@@ -96,34 +100,38 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: attack
         amount: 14
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: SWEEP_ATTACK
-        count: 4
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -132,9 +140,9 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_STRONG
         volume: 0.85
@@ -166,34 +174,41 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 15
-        offset-y: 0.2
-        radius: 2.9
+        count: 27
+        offset-y: 0.25
+        radius: 3.25
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: attack
         amount: 17
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: SWEEP_ATTACK
-        count: 4
+        count: 8
         interval: 1
         style: burst
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -202,7 +217,14 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
       - type: sound
@@ -236,34 +258,41 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 15
-        offset-y: 0.2
-        radius: 2.9
+        count: 27
+        offset-y: 0.25
+        radius: 3.25
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: attack
         amount: 20
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: SWEEP_ATTACK
-        count: 5
+        count: 8
         interval: 1
         style: burst
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -272,7 +301,14 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
       - type: sound
@@ -306,40 +342,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: ring
-        count: 18
-        offset-y: 0.2
-        radius: 1.14
+        count: 32
+        offset-y: 0.25
+        radius: 1.35
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: helix
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: CRIT
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: attack
         amount: 23
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: SWEEP_ATTACK
-        count: 5
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
       impact-shake: true
-      shake-power: 0.17
+      shake-power: 0.2
     on-hit:
       - type: damage
         style: melee
@@ -347,18 +396,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: shake
-        power: 0.18
+        power: 0.2
         pulses: 3
         radius: 3.3
       - type: sound
@@ -392,40 +441,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: ring
-        count: 18
-        offset-y: 0.2
-        radius: 1.14
+        count: 32
+        offset-y: 0.25
+        radius: 1.35
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: helix
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: CRIT
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: attack
         amount: 26
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: SWEEP_ATTACK
-        count: 6
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
       impact-shake: true
-      shake-power: 0.17
+      shake-power: 0.2
     on-hit:
       - type: damage
         style: melee
@@ -433,18 +495,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: shake
-        power: 0.18
+        power: 0.2
         pulses: 3
         radius: 3.3
       - type: sound
@@ -478,47 +540,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 21
-        offset-y: 0.2
-        radius: 3.7
+        count: 37
+        offset-y: 0.25
+        radius: 4.15
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: CRIT
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: attack
         amount: 29
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: SWEEP_ATTACK
-        count: 6
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: straight
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: melee
@@ -526,18 +594,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -571,47 +639,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 21
-        offset-y: 0.2
-        radius: 3.7
+        count: 37
+        offset-y: 0.25
+        radius: 4.15
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: CRIT
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: attack
         amount: 32
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: SWEEP_ATTACK
-        count: 7
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: straight
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: melee
@@ -619,18 +693,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -664,48 +738,54 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: shockwave
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: CRIT
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: attack
         amount: 35
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: SWEEP_ATTACK
-        count: 7
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 1
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: melee
@@ -713,18 +793,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound
@@ -758,48 +838,54 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: shockwave
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: CRIT
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: attack
         amount: 38
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: SWEEP_ATTACK
-        count: 8
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 1
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: melee
@@ -807,18 +893,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound
@@ -851,34 +937,38 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: attack
         amount: 11
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: CRIT
-        count: 3
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -887,9 +977,9 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_STRONG
         volume: 0.85
@@ -920,34 +1010,38 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: attack
         amount: 14
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: CRIT
-        count: 4
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -956,9 +1050,9 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_STRONG
         volume: 0.85
@@ -989,34 +1083,41 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 15
-        offset-y: 0.2
-        radius: 2.9
+        count: 27
+        offset-y: 0.25
+        radius: 3.25
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: attack
         amount: 17
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: CRIT
-        count: 4
+        count: 8
         interval: 1
         style: burst
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -1025,7 +1126,14 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
       - type: sound
@@ -1058,34 +1166,41 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 15
-        offset-y: 0.2
-        radius: 2.9
+        count: 27
+        offset-y: 0.25
+        radius: 3.25
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: attack
         amount: 20
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: CRIT
-        count: 5
+        count: 8
         interval: 1
         style: burst
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -1094,7 +1209,14 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
       - type: sound
@@ -1127,40 +1249,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: ring
-        count: 18
-        offset-y: 0.2
-        radius: 1.14
+        count: 32
+        offset-y: 0.25
+        radius: 1.35
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: helix
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: CRIT
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: attack
         amount: 23
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: CRIT
-        count: 5
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
       impact-shake: true
-      shake-power: 0.17
+      shake-power: 0.2
     on-hit:
       - type: damage
         style: melee
@@ -1168,18 +1303,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: shake
-        power: 0.18
+        power: 0.2
         pulses: 3
         radius: 3.3
       - type: sound
@@ -1212,40 +1347,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: ring
-        count: 18
-        offset-y: 0.2
-        radius: 1.14
+        count: 32
+        offset-y: 0.25
+        radius: 1.35
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: helix
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: CRIT
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: attack
         amount: 26
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: CRIT
-        count: 6
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
       impact-shake: true
-      shake-power: 0.17
+      shake-power: 0.2
     on-hit:
       - type: damage
         style: melee
@@ -1253,18 +1401,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: shake
-        power: 0.18
+        power: 0.2
         pulses: 3
         radius: 3.3
       - type: sound
@@ -1297,47 +1445,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 21
-        offset-y: 0.2
-        radius: 3.7
+        count: 37
+        offset-y: 0.25
+        radius: 4.15
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: CRIT
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: attack
         amount: 29
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: CRIT
-        count: 6
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: straight
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: melee
@@ -1345,18 +1499,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -1389,47 +1543,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 21
-        offset-y: 0.2
-        radius: 3.7
+        count: 37
+        offset-y: 0.25
+        radius: 4.15
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: CRIT
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: attack
         amount: 32
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: CRIT
-        count: 7
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: straight
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: melee
@@ -1437,18 +1597,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -1481,48 +1641,54 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: shockwave
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: CRIT
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: attack
         amount: 35
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: CRIT
-        count: 7
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 1
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: melee
@@ -1530,18 +1696,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound
@@ -1574,48 +1740,54 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: shockwave
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: CRIT
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: attack
         amount: 38
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: CRIT
-        count: 8
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 1
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: melee
@@ -1623,18 +1795,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound
@@ -1667,34 +1839,38 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: attack
         amount: 11
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: EXPLOSION
-        count: 3
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -1703,9 +1879,9 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_STRONG
         volume: 0.85
@@ -1736,34 +1912,38 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: attack
         amount: 14
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: EXPLOSION
-        count: 4
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -1772,9 +1952,9 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_STRONG
         volume: 0.85
@@ -1805,34 +1985,41 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 15
-        offset-y: 0.2
-        radius: 2.9
+        count: 27
+        offset-y: 0.25
+        radius: 3.25
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: attack
         amount: 17
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: EXPLOSION
-        count: 4
+        count: 8
         interval: 1
         style: burst
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -1841,7 +2028,14 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
       - type: sound
@@ -1874,34 +2068,41 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 15
-        offset-y: 0.2
-        radius: 2.9
+        count: 27
+        offset-y: 0.25
+        radius: 3.25
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: attack
         amount: 20
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: EXPLOSION
-        count: 5
+        count: 8
         interval: 1
         style: burst
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -1910,7 +2111,14 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
       - type: sound
@@ -1943,40 +2151,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: ring
-        count: 18
-        offset-y: 0.2
-        radius: 1.14
+        count: 32
+        offset-y: 0.25
+        radius: 1.35
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: helix
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: CRIT
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: attack
         amount: 23
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: EXPLOSION
-        count: 5
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
       impact-shake: true
-      shake-power: 0.17
+      shake-power: 0.2
     on-hit:
       - type: damage
         style: melee
@@ -1984,18 +2205,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: shake
-        power: 0.18
+        power: 0.2
         pulses: 3
         radius: 3.3
       - type: sound
@@ -2028,40 +2249,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: ring
-        count: 18
-        offset-y: 0.2
-        radius: 1.14
+        count: 32
+        offset-y: 0.25
+        radius: 1.35
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: helix
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: CRIT
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: attack
         amount: 26
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: EXPLOSION
-        count: 6
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
       impact-shake: true
-      shake-power: 0.17
+      shake-power: 0.2
     on-hit:
       - type: damage
         style: melee
@@ -2069,18 +2303,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: shake
-        power: 0.18
+        power: 0.2
         pulses: 3
         radius: 3.3
       - type: sound
@@ -2113,47 +2347,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 21
-        offset-y: 0.2
-        radius: 3.7
+        count: 37
+        offset-y: 0.25
+        radius: 4.15
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: CRIT
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: attack
         amount: 29
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: EXPLOSION
-        count: 6
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: straight
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: melee
@@ -2161,18 +2401,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -2205,47 +2445,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 21
-        offset-y: 0.2
-        radius: 3.7
+        count: 37
+        offset-y: 0.25
+        radius: 4.15
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: CRIT
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: attack
         amount: 32
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: EXPLOSION
-        count: 7
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: straight
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: melee
@@ -2253,18 +2499,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -2297,48 +2543,54 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: shockwave
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: CRIT
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: attack
         amount: 35
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: EXPLOSION
-        count: 7
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 1
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: melee
@@ -2346,18 +2598,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound
@@ -2390,48 +2642,54 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: shockwave
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: CRIT
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: attack
         amount: 38
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: EXPLOSION
-        count: 8
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 1
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: melee
@@ -2439,18 +2697,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound
@@ -2484,34 +2742,38 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: attack
         amount: 11
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: ENCHANTED_HIT
-        count: 3
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -2520,9 +2782,9 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_STRONG
         volume: 0.85
@@ -2554,34 +2816,38 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: attack
         amount: 14
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: ENCHANTED_HIT
-        count: 4
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -2590,9 +2856,9 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_STRONG
         volume: 0.85
@@ -2624,34 +2890,41 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 15
-        offset-y: 0.2
-        radius: 2.9
+        count: 27
+        offset-y: 0.25
+        radius: 3.25
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: attack
         amount: 17
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: ENCHANTED_HIT
-        count: 4
+        count: 8
         interval: 1
         style: burst
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -2660,7 +2933,14 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
       - type: sound
@@ -2694,34 +2974,41 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 15
-        offset-y: 0.2
-        radius: 2.9
+        count: 27
+        offset-y: 0.25
+        radius: 3.25
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: attack
         amount: 20
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: ENCHANTED_HIT
-        count: 5
+        count: 8
         interval: 1
         style: burst
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -2730,7 +3017,14 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
       - type: sound
@@ -2764,40 +3058,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: ring
-        count: 18
-        offset-y: 0.2
-        radius: 1.14
+        count: 32
+        offset-y: 0.25
+        radius: 1.35
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: helix
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: CRIT
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: attack
         amount: 23
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: ENCHANTED_HIT
-        count: 5
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
       impact-shake: true
-      shake-power: 0.17
+      shake-power: 0.2
     on-hit:
       - type: damage
         style: melee
@@ -2805,18 +3112,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: shake
-        power: 0.18
+        power: 0.2
         pulses: 3
         radius: 3.3
       - type: sound
@@ -2850,40 +3157,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: ring
-        count: 18
-        offset-y: 0.2
-        radius: 1.14
+        count: 32
+        offset-y: 0.25
+        radius: 1.35
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: helix
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: CRIT
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: attack
         amount: 26
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: ENCHANTED_HIT
-        count: 6
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
       impact-shake: true
-      shake-power: 0.17
+      shake-power: 0.2
     on-hit:
       - type: damage
         style: melee
@@ -2891,18 +3211,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: shake
-        power: 0.18
+        power: 0.2
         pulses: 3
         radius: 3.3
       - type: sound
@@ -2936,47 +3256,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 21
-        offset-y: 0.2
-        radius: 3.7
+        count: 37
+        offset-y: 0.25
+        radius: 4.15
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: CRIT
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: attack
         amount: 29
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: ENCHANTED_HIT
-        count: 6
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: straight
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: melee
@@ -2984,18 +3310,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -3029,47 +3355,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 21
-        offset-y: 0.2
-        radius: 3.7
+        count: 37
+        offset-y: 0.25
+        radius: 4.15
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: CRIT
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: attack
         amount: 32
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: ENCHANTED_HIT
-        count: 7
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: straight
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: melee
@@ -3077,18 +3409,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -3122,48 +3454,54 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: shockwave
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: CRIT
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: attack
         amount: 35
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: ENCHANTED_HIT
-        count: 7
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 1
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: melee
@@ -3171,18 +3509,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound
@@ -3216,48 +3554,54 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: shockwave
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: CRIT
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: attack
         amount: 38
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: ENCHANTED_HIT
-        count: 8
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 1
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: melee
@@ -3265,18 +3609,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound
@@ -3310,34 +3654,38 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: attack
         amount: 11
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: CLOUD
-        count: 3
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -3346,9 +3694,9 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_STRONG
         volume: 0.85
@@ -3380,34 +3728,38 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: attack
         amount: 14
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: CLOUD
-        count: 4
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -3416,9 +3768,9 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
       - type: sound
         sound: ENTITY_PLAYER_ATTACK_STRONG
         volume: 0.85
@@ -3450,34 +3802,41 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 15
-        offset-y: 0.2
-        radius: 2.9
+        count: 27
+        offset-y: 0.25
+        radius: 3.25
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: attack
         amount: 17
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: CLOUD
-        count: 4
+        count: 8
         interval: 1
         style: burst
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -3486,7 +3845,14 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
       - type: sound
@@ -3520,34 +3886,41 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 15
-        offset-y: 0.2
-        radius: 2.9
+        count: 27
+        offset-y: 0.25
+        radius: 3.25
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: attack
         amount: 20
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: CLOUD
-        count: 5
+        count: 8
         interval: 1
         style: burst
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -3556,7 +3929,14 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+      - type: vfx
+        at: 2
+        particle: CRIT
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
       - type: sound
@@ -3590,40 +3970,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: ring
-        count: 18
-        offset-y: 0.2
-        radius: 1.14
+        count: 32
+        offset-y: 0.25
+        radius: 1.35
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: helix
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: CRIT
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: attack
         amount: 23
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: CLOUD
-        count: 5
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
       impact-shake: true
-      shake-power: 0.17
+      shake-power: 0.2
     on-hit:
       - type: damage
         style: melee
@@ -3631,18 +4024,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: shake
-        power: 0.18
+        power: 0.2
         pulses: 3
         radius: 3.3
       - type: sound
@@ -3676,40 +4069,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: ring
-        count: 18
-        offset-y: 0.2
-        radius: 1.14
+        count: 32
+        offset-y: 0.25
+        radius: 1.35
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: helix
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: CRIT
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: attack
         amount: 26
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: CLOUD
-        count: 6
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
       impact-shake: true
-      shake-power: 0.17
+      shake-power: 0.2
     on-hit:
       - type: damage
         style: melee
@@ -3717,18 +4123,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: shake
-        power: 0.18
+        power: 0.2
         pulses: 3
         radius: 3.3
       - type: sound
@@ -3762,47 +4168,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 21
-        offset-y: 0.2
-        radius: 3.7
+        count: 37
+        offset-y: 0.25
+        radius: 4.15
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: CRIT
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: attack
         amount: 29
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: CLOUD
-        count: 6
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: straight
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: melee
@@ -3810,18 +4222,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -3855,47 +4267,53 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: cone
-        count: 21
-        offset-y: 0.2
-        radius: 3.7
+        count: 37
+        offset-y: 0.25
+        radius: 4.15
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: CRIT
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: attack
         amount: 32
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: CLOUD
-        count: 7
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: straight
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: melee
@@ -3903,18 +4321,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -3948,48 +4366,54 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: shockwave
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: CRIT
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: attack
         amount: 35
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: CLOUD
-        count: 7
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 1
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: melee
@@ -3997,18 +4421,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound
@@ -4042,48 +4466,54 @@ abilities:
       - type: vfx
         particle: SWEEP_ATTACK
         shape: shockwave
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "255,220,120"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: CRIT
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: attack
         amount: 38
         on-cast: true
     projectile:
-      entity: EGG
+      entity: SNOWBALL
       speed: 1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: CLOUD
-        count: 8
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 1
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: melee
@@ -4091,18 +4521,18 @@ abilities:
       - type: vfx
         particle: CRIT
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
       - type: vfx
         at: 2
         particle: CRIT
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound

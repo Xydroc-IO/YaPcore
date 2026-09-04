@@ -46,7 +46,7 @@ class AbilityPackLoaderM7Test {
         assertTrue(def.projectile().isHoming());
         assertTrue(def.projectile().hasSplash());
         assertTrue(def.projectile().hideEntity());
-        assertEquals(0.85f, def.projectile().displayScale(), 0.001f);
+        assertEquals(1.15f, def.projectile().displayScale(), 0.001f);
     }
 
     @Test

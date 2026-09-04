@@ -317,8 +317,9 @@ def _scale(tier: int, base: int, step: int = 2) -> int:
 def build_cast_vfx(kit: dict, tier: int) -> list[dict]:
     shape = kit["cast_shapes"][tier]
     secondary_shape = "ring" if shape != "ring" else "helix"
-    count = _scale(tier, 12, 3)
-    radius = round(0.9 + tier * 0.12, 2)
+    # Competitive density — readable in combat, not a single pop.
+    count = _scale(tier, 22, 5)
+    radius = round(1.05 + tier * 0.15, 2)
     steps: list[dict] = []
 
     primary: dict[str, Any] = {
@@ -326,13 +327,17 @@ def build_cast_vfx(kit: dict, tier: int) -> list[dict]:
         "particle": kit["cast_particle"],
         "shape": shape,
         "count": count,
-        "offset-y": 0.2 if shape != "pillar" else 0.0,
-        "radius": radius if shape != "cone" else round(2.5 + tier * 0.4, 2),
+        "offset-y": 0.25 if shape != "pillar" else 0.0,
+        "radius": radius if shape != "cone" else round(2.8 + tier * 0.45, 2),
     }
     if kit["color"] and kit["cast_particle"] in ("DUST", "FLAME", "CLOUD", "WITCH", "END_ROD"):
         primary["color"] = kit["color"]
     if kit["block"] and kit["cast_particle"] == "BLOCK":
         primary["block"] = kit["block"]
+    # Sustained cast pulse for tier 2+ (channel feel without blocking combat)
+    if tier >= 2:
+        primary["ticks"] = 6 + tier
+        primary["interval"] = 2
     steps.append(primary)
 
     # Layered timed ring / secondary — V1 parallel beat
@@ -341,13 +346,13 @@ def build_cast_vfx(kit: dict, tier: int) -> list[dict]:
         "at": 2 + min(tier, 3),
         "particle": "DUST" if kit["color"] else kit["cast_secondary"],
         "shape": secondary_shape,
-        "count": _scale(tier, 10, 2),
-        "radius": round(0.75 + tier * 0.1, 2),
-        "offset-y": 0.15,
+        "count": _scale(tier, 18, 4),
+        "radius": round(0.95 + tier * 0.12, 2),
+        "offset-y": 0.2,
     }
     if kit["color"]:
         secondary["color"] = kit["color"]
-        secondary["size"] = round(1.05 + tier * 0.05, 2)
+        secondary["size"] = round(1.15 + tier * 0.06, 2)
     else:
         secondary["particle"] = kit["cast_secondary"]
     # earth uses block secondary as crit ring without dust if preferred
@@ -358,30 +363,38 @@ def build_cast_vfx(kit: dict, tier: int) -> list[dict]:
             "particle": "BLOCK",
             "shape": "shockwave" if tier >= 2 else "ring",
             "block": "STONE" if tier >= 2 else kit["block"],
-            "count": _scale(tier, 12, 2),
-            "radius": round(1.2 + tier * 0.2, 2),
+            "count": _scale(tier, 20, 4),
+            "radius": round(1.4 + tier * 0.22, 2),
             "offset-y": 0.05,
         }
     steps.append(secondary)
 
-    if tier >= 3:
+    # Mid-cast display pulse — spell glyph in front of caster
+    steps.append({
+        "type": "display",
+        "at": 1,
+        "scale": round(0.7 + tier * 0.08, 2),
+        "ticks": 10 + tier,
+    })
+
+    if tier >= 2:
         steps.append({
             "type": "vfx",
             "at": 5,
             "particle": kit["cast_secondary"],
-            "shape": "orb" if tier < 5 else "pillar",
-            "count": _scale(tier, 8, 2),
-            "radius": round(0.7 + tier * 0.08, 2),
-            "offset-y": 0.25,
+            "shape": "orb" if tier < 4 else "pillar",
+            "count": _scale(tier, 14, 3),
+            "radius": round(0.85 + tier * 0.1, 2),
+            "offset-y": 0.3,
             **({"color": kit["color"]} if kit["color"] and kit["cast_secondary"] == "DUST" else {}),
             **({"block": kit["block"]} if kit["block"] and kit["cast_secondary"] == "BLOCK" else {}),
         })
 
-    if tier >= kit["impact_shake_from"] - 1 and tier >= 2:
+    if tier >= 1:
         steps.append({
             "type": "shake",
-            "power": round(0.05 + tier * 0.02, 2),
-            "pulses": 2,
+            "power": round(0.06 + tier * 0.02, 2),
+            "pulses": 2 + (1 if tier >= 3 else 0),
         })
     return steps
 
@@ -392,32 +405,34 @@ def build_hit_vfx(kit: dict, tier: int) -> list[dict]:
         "type": "vfx",
         "particle": kit["hit_particle"],
         "shape": shape,
-        "count": _scale(tier, 10, 3),
-        "radius": round(1.1 + tier * 0.15, 2),
-        "offset-y": 0.25 if shape != "pillar" else 0.0,
+        "count": _scale(tier, 18, 5),
+        "radius": round(1.35 + tier * 0.18, 2),
+        "offset-y": 0.3 if shape != "pillar" else 0.0,
     }
     if kit["color"] and kit["hit_particle"] in ("DUST", "FLAME", "CLOUD", "WITCH", "GUST"):
         hit["color"] = kit["color"]
     if kit["block"] and kit["hit_particle"] == "BLOCK":
         hit["block"] = "STONE" if tier >= 2 else kit["block"]
     steps = [hit]
-    if tier >= 2:
+    if tier >= 1:
         secondary: dict[str, Any] = {
             "type": "vfx",
             "at": 2,
             "particle": kit["cast_secondary"],
-            "shape": "ring",
-            "count": _scale(tier, 8, 2),
-            "radius": round(0.9 + tier * 0.12, 2),
-            "offset-y": 0.2,
+            "shape": "nova" if tier >= 3 else "ring",
+            "count": _scale(tier, 14, 3),
+            "radius": round(1.1 + tier * 0.15, 2),
+            "offset-y": 0.25,
         }
         if kit["block"] and kit["cast_secondary"] == "BLOCK":
             secondary["block"] = kit["block"]
+        if kit["color"] and kit["cast_secondary"] == "DUST":
+            secondary["color"] = kit["color"]
         steps.append(secondary)
     if tier >= kit["impact_shake_from"]:
         steps.append({
             "type": "shake",
-            "power": round(0.12 + tier * 0.03, 2),
+            "power": round(0.14 + tier * 0.03, 2),
             "pulses": 3,
             "radius": round(2.5 + tier * 0.4, 2),
         })
@@ -428,6 +443,10 @@ def upgrade_projectile(proj: dict | None, kit: dict, tier: int) -> dict | None:
     if not proj:
         return None
     out = dict(proj)
+    # Never ship visible egg carriers — snowball hides cleanly behind ItemDisplay.
+    entity = str(out.get("entity") or "").upper()
+    if entity in ("", "EGG", "CHICKEN_EGG", "THROWN_EGG"):
+        out["entity"] = "SNOWBALL"
     path = kit["paths"][tier]
     out["path"] = path
     if path == "arc":
@@ -439,22 +458,22 @@ def upgrade_projectile(proj: dict | None, kit: dict, tier: int) -> dict | None:
     trail = dict(out.get("trail") or {})
     if trail.get("particle") or kit["trail_particle"]:
         trail["particle"] = trail.get("particle") or kit["trail_particle"]
-        trail["count"] = max(int(trail.get("count") or 3), 3 + tier)
+        trail["count"] = max(int(trail.get("count") or 6), 6 + tier * 2)
         trail["interval"] = int(trail.get("interval") or 1)
         trail["style"] = kit["trail_styles"][tier]
-        trail["falloff"] = round(0.25 + tier * 0.08, 2)
+        trail["falloff"] = round(0.18 + tier * 0.06, 2)
         out["trail"] = trail
 
     if tier >= kit["impact_shake_from"]:
         out["impact-shake"] = True
-        out["shake-power"] = round(0.12 + tier * 0.025, 2)
+        out["shake-power"] = round(0.14 + tier * 0.03, 2)
     else:
         out.pop("impact-shake", None)
         out.pop("shake-power", None)
         out.pop("shake", None)
 
-    out.setdefault("hide", True)
-    out.setdefault("scale", 0.95)
+    out["hide"] = True
+    out["scale"] = max(float(out.get("scale") or 0), round(1.15 + tier * 0.05, 2))
     return out
 
 

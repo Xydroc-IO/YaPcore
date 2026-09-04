@@ -72,7 +72,7 @@ public final class AbilityGraphics {
                     d.setTeleportDuration(1);
                     d.setPersistent(false);
                     d.setGravity(false);
-                    applyScale(d, 0.35f);
+                    applyScale(d, 0.55f);
                 });
             } catch (RuntimeException ex) {
                 plugin.getLogger().fine("cast icon spawn skipped: " + ex.getMessage());
@@ -80,7 +80,7 @@ public final class AbilityGraphics {
             }
             LIVE_ICONS.incrementAndGet();
             per.incrementAndGet();
-            pulseInPlaceAndRemove(plugin, display, caster.getUniqueId(), 12);
+            pulseInPlaceAndRemove(plugin, display, caster.getUniqueId(), 16);
         });
     }
 
@@ -95,7 +95,7 @@ public final class AbilityGraphics {
             float scale) {
         int cmd = resolveCmd(ability);
         ItemStack icon = iconStack(cmd, ability.displayName());
-        float s = scale <= 0 ? 0.85f : scale;
+        float s = scale <= 0 ? 1.15f : scale;
         ItemDisplay display = projectile.getWorld().spawn(projectile.getLocation(), ItemDisplay.class, d -> {
             d.setItemStack(icon);
             d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);

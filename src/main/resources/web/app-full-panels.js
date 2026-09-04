@@ -398,6 +398,28 @@ window.YapDashRegisterFullPanels = function (YapDash) {
   $("wldLoad")?.addEventListener("click", async () => {
     setOut("wldOut", (await netPost("/api/world", { action: "load", world: $("wldWorld")?.value.trim() })).result || "");
   });
+  $("wldCreate")?.addEventListener("click", async () => {
+    const name = ($("wldCreateName")?.value || $("wldWorld")?.value || "").trim();
+    if (!name) {
+      setOut("wldOut", "Enter a world name");
+      return;
+    }
+    const body = {
+      action: "create",
+      world: name,
+      type: $("wldType")?.value || "NORMAL",
+      environment: $("wldEnv")?.value || "overworld",
+      seed: ($("wldSeed")?.value || "").trim(),
+      generator: ($("wldGenerator")?.value || "").trim(),
+      structures: $("wldStructures")?.checked !== false ? "true" : "false",
+    };
+    try {
+      const r = await netPost("/api/world", body);
+      setOut("wldOut", (r.result || r.command || "ok") + (r.error ? "\n" + r.error : ""));
+      if ($("wldWorld")) $("wldWorld").value = name;
+      refreshWorld();
+    } catch (e) { setOut("wldOut", e.message); }
+  });
   $("wldUnload")?.addEventListener("click", async () => {
     setOut("wldOut", (await netPost("/api/world", { action: "unload", world: $("wldWorld")?.value.trim() })).result || "");
   });

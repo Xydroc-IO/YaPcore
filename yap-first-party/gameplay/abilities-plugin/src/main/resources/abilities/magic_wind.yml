@@ -27,19 +27,23 @@ abilities:
       - type: vfx
         particle: CLOUD
         shape: burst
-        count: 12
-        offset-y: 0.2
-        radius: 0.9
+        count: 22
+        offset-y: 0.25
+        radius: 1.05
         color: "220,240,255"
       - type: vfx
         at: 2
         particle: DUST
         shape: ring
-        count: 10
-        radius: 0.75
-        offset-y: 0.15
+        count: 18
+        radius: 0.95
+        offset-y: 0.2
         color: "220,240,255"
-        size: 1.05
+        size: 1.15
+      - type: display
+        at: 1
+        scale: 0.7
+        ticks: 10
       - type: xp
         skill: magic
         amount: 12
@@ -49,13 +53,13 @@ abilities:
       speed: 1.2
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.15
       trail:
         particle: CLOUD
-        count: 4
+        count: 6
         interval: 1
         style: burst
-        falloff: 0.25
+        falloff: 0.18
       path: straight
     on-hit:
       - type: damage
@@ -64,9 +68,9 @@ abilities:
       - type: vfx
         particle: GUST
         shape: nova
-        count: 10
-        radius: 1.1
-        offset-y: 0.25
+        count: 18
+        radius: 1.35
+        offset-y: 0.3
         color: "220,240,255"
       - type: sound
         sound: ENTITY_BREEZE_WIND_BURST
@@ -101,19 +105,26 @@ abilities:
       - type: vfx
         particle: CLOUD
         shape: helix
-        count: 15
-        offset-y: 0.2
-        radius: 1.02
+        count: 27
+        offset-y: 0.25
+        radius: 1.2
         color: "220,240,255"
       - type: vfx
         at: 3
         particle: DUST
         shape: ring
-        count: 12
-        radius: 0.85
-        offset-y: 0.15
+        count: 22
+        radius: 1.07
+        offset-y: 0.2
         color: "220,240,255"
-        size: 1.1
+        size: 1.21
+      - type: display
+        at: 1
+        scale: 0.78
+        ticks: 11
+      - type: shake
+        power: 0.08
+        pulses: 2
       - type: xp
         skill: magic
         amount: 28
@@ -123,13 +134,13 @@ abilities:
       speed: 1.6
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.2
       trail:
         particle: CLOUD
-        count: 5
+        count: 8
         interval: 1
         style: motion
-        falloff: 0.33
+        falloff: 0.24
       path: straight
     on-hit:
       - type: damage
@@ -138,10 +149,17 @@ abilities:
       - type: vfx
         particle: GUST
         shape: ring
-        count: 13
+        count: 23
+        radius: 1.53
+        offset-y: 0.3
+        color: "220,240,255"
+      - type: vfx
+        at: 2
+        particle: GUST
+        shape: ring
+        count: 17
         radius: 1.25
         offset-y: 0.25
-        color: "220,240,255"
       - type: sound
         sound: ENTITY_BREEZE_WIND_BURST
         volume: 0.85
@@ -174,21 +192,34 @@ abilities:
       - type: vfx
         particle: CLOUD
         shape: cone
-        count: 18
-        offset-y: 0.2
-        radius: 3.3
+        count: 32
+        offset-y: 0.25
+        radius: 3.7
         color: "220,240,255"
+        ticks: 8
+        interval: 2
       - type: vfx
         at: 4
         particle: DUST
         shape: ring
-        count: 14
-        radius: 0.95
-        offset-y: 0.15
+        count: 26
+        radius: 1.19
+        offset-y: 0.2
         color: "220,240,255"
-        size: 1.15
+        size: 1.27
+      - type: display
+        at: 1
+        scale: 0.86
+        ticks: 12
+      - type: vfx
+        at: 5
+        particle: GUST
+        shape: orb
+        count: 20
+        radius: 1.05
+        offset-y: 0.3
       - type: shake
-        power: 0.09
+        power: 0.1
         pulses: 2
       - type: xp
         skill: magic
@@ -199,13 +230,13 @@ abilities:
       speed: 1.3
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.25
       trail:
         particle: CLOUD
-        count: 6
+        count: 10
         interval: 1
         style: ribbon
-        falloff: 0.41
+        falloff: 0.3
       path: straight
     on-hit:
       - type: damage
@@ -214,17 +245,17 @@ abilities:
       - type: vfx
         particle: GUST
         shape: shockwave
-        count: 16
-        radius: 1.4
-        offset-y: 0.25
+        count: 28
+        radius: 1.71
+        offset-y: 0.3
         color: "220,240,255"
       - type: vfx
         at: 2
         particle: GUST
         shape: ring
-        count: 12
-        radius: 1.14
-        offset-y: 0.2
+        count: 20
+        radius: 1.4
+        offset-y: 0.25
       - type: sound
         sound: ENTITY_BREEZE_WIND_BURST
         volume: 0.85
@@ -257,29 +288,35 @@ abilities:
       - type: vfx
         particle: CLOUD
         shape: helix
-        count: 21
-        offset-y: 0.2
-        radius: 1.26
+        count: 37
+        offset-y: 0.25
+        radius: 1.5
         color: "220,240,255"
+        ticks: 9
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 16
-        radius: 1.05
-        offset-y: 0.15
+        count: 30
+        radius: 1.31
+        offset-y: 0.2
         color: "220,240,255"
-        size: 1.2
+        size: 1.33
+      - type: display
+        at: 1
+        scale: 0.94
+        ticks: 13
       - type: vfx
         at: 5
         particle: GUST
         shape: orb
-        count: 14
-        radius: 0.94
-        offset-y: 0.25
+        count: 23
+        radius: 1.15
+        offset-y: 0.3
       - type: shake
-        power: 0.11
-        pulses: 2
+        power: 0.12
+        pulses: 3
       - type: xp
         skill: magic
         amount: 55
@@ -289,17 +326,17 @@ abilities:
       speed: 1.1
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.3
       trail:
         particle: CLOUD
-        count: 8
+        count: 12
         interval: 1
         style: motion
-        falloff: 0.49
+        falloff: 0.36
       path: arc
       arc-height: 1.5
       impact-shake: true
-      shake-power: 0.2
+      shake-power: 0.23
     on-hit:
       - type: damage
         style: magic
@@ -307,19 +344,19 @@ abilities:
       - type: vfx
         particle: GUST
         shape: nova
-        count: 19
-        radius: 1.55
-        offset-y: 0.25
+        count: 33
+        radius: 1.89
+        offset-y: 0.3
         color: "220,240,255"
       - type: vfx
         at: 2
         particle: GUST
-        shape: ring
-        count: 14
-        radius: 1.26
-        offset-y: 0.2
+        shape: nova
+        count: 23
+        radius: 1.55
+        offset-y: 0.25
       - type: shake
-        power: 0.21
+        power: 0.23
         pulses: 3
         radius: 3.7
       - type: sound
@@ -354,29 +391,35 @@ abilities:
       - type: vfx
         particle: CLOUD
         shape: orb
-        count: 24
-        offset-y: 0.2
-        radius: 1.38
+        count: 42
+        offset-y: 0.25
+        radius: 1.65
         color: "220,240,255"
+        ticks: 10
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 18
-        radius: 1.15
-        offset-y: 0.15
+        count: 34
+        radius: 1.43
+        offset-y: 0.2
         color: "220,240,255"
-        size: 1.25
+        size: 1.39
+      - type: display
+        at: 1
+        scale: 1.02
+        ticks: 14
       - type: vfx
         at: 5
         particle: GUST
-        shape: orb
-        count: 16
-        radius: 1.02
-        offset-y: 0.25
+        shape: pillar
+        count: 26
+        radius: 1.25
+        offset-y: 0.3
       - type: shake
-        power: 0.13
-        pulses: 2
+        power: 0.14
+        pulses: 3
       - type: xp
         skill: magic
         amount: 68
@@ -386,17 +429,17 @@ abilities:
       speed: 1.4
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.35
       trail:
         particle: CLOUD
-        count: 8
+        count: 14
         interval: 1
         style: motion
-        falloff: 0.57
+        falloff: 0.42
       path: arc
       arc-height: 2
       impact-shake: true
-      shake-power: 0.22
+      shake-power: 0.26
     on-hit:
       - type: damage
         style: magic
@@ -404,19 +447,19 @@ abilities:
       - type: vfx
         particle: GUST
         shape: shockwave
-        count: 22
-        radius: 1.7
-        offset-y: 0.25
+        count: 38
+        radius: 2.07
+        offset-y: 0.3
         color: "220,240,255"
       - type: vfx
         at: 2
         particle: GUST
-        shape: ring
-        count: 16
-        radius: 1.38
-        offset-y: 0.2
+        shape: nova
+        count: 26
+        radius: 1.7
+        offset-y: 0.25
       - type: shake
-        power: 0.24
+        power: 0.26
         pulses: 3
         radius: 4.1
       - type: sound
@@ -451,29 +494,35 @@ abilities:
       - type: vfx
         particle: CLOUD
         shape: shockwave
-        count: 27
-        offset-y: 0.2
-        radius: 1.5
+        count: 47
+        offset-y: 0.25
+        radius: 1.8
         color: "220,240,255"
+        ticks: 11
+        interval: 2
       - type: vfx
         at: 5
         particle: DUST
         shape: ring
-        count: 20
-        radius: 1.25
-        offset-y: 0.15
+        count: 38
+        radius: 1.55
+        offset-y: 0.2
         color: "220,240,255"
-        size: 1.3
+        size: 1.45
+      - type: display
+        at: 1
+        scale: 1.1
+        ticks: 15
       - type: vfx
         at: 5
         particle: GUST
         shape: pillar
-        count: 18
-        radius: 1.1
-        offset-y: 0.25
+        count: 29
+        radius: 1.35
+        offset-y: 0.3
       - type: shake
-        power: 0.15
-        pulses: 2
+        power: 0.16
+        pulses: 3
       - type: xp
         skill: magic
         amount: 80
@@ -483,17 +532,17 @@ abilities:
       speed: 1.5
       max-ticks: 50
       hide: true
-      scale: 0.95
+      scale: 1.4
       trail:
         particle: CLOUD
-        count: 10
+        count: 16
         interval: 1
         style: motion
-        falloff: 0.65
+        falloff: 0.48
       path: arc
       arc-height: 2.5
       impact-shake: true
-      shake-power: 0.24
+      shake-power: 0.29
     on-hit:
       - type: damage
         style: magic
@@ -501,19 +550,19 @@ abilities:
       - type: vfx
         particle: GUST
         shape: shockwave
-        count: 25
-        radius: 1.85
-        offset-y: 0.25
+        count: 43
+        radius: 2.25
+        offset-y: 0.3
         color: "220,240,255"
       - type: vfx
         at: 2
         particle: GUST
-        shape: ring
-        count: 18
-        radius: 1.5
-        offset-y: 0.2
+        shape: nova
+        count: 29
+        radius: 1.85
+        offset-y: 0.25
       - type: shake
-        power: 0.27
+        power: 0.29
         pulses: 3
         radius: 4.5
       - type: sound

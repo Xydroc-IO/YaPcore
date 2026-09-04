@@ -95,13 +95,13 @@ public final class ProjectileTracker {
             }
             // Hide vanilla projectile body — ItemDisplay spell model replaces it.
             if (spec.hideEntity()) {
-                entity.setVisibleByDefault(false);
-                entity.setSilent(true);
+                hideProjectileCarrier(caster, entity);
             }
             ItemDisplay body = null;
             try {
+                float scale = spec.displayScale() <= 0 ? 1.2f : Math.max(spec.displayScale(), 1.05f);
                 body = AbilityGraphics.attachProjectileBody(
-                        plugin, entity, ability, spec.displayScale());
+                        plugin, entity, ability, scale);
             } catch (RuntimeException ex) {
                 plugin.getLogger().fine("projectile body skipped: " + ex.getMessage());
             }
@@ -381,9 +381,31 @@ public final class ProjectileTracker {
         } else {
             location.getWorld().spawnParticle(particle, location, count, 0.08, 0.08, 0.08, 0.015);
         }
-        // Soft dust halo for readability
-        location.getWorld().spawnParticle(Particle.DUST, location, 2, 0.05, 0.05, 0.05, 0,
-                new Particle.DustOptions(org.bukkit.Color.fromRGB(255, 220, 120), 0.9f));
+        // Soft dust halo for readability (brighter + denser)
+        location.getWorld().spawnParticle(Particle.DUST, location, 5, 0.08, 0.08, 0.08, 0,
+                new Particle.DustOptions(org.bukkit.Color.fromRGB(255, 230, 140), 1.15f));
+        location.getWorld().spawnParticle(Particle.END_ROD, location, 1, 0.02, 0.02, 0.02, 0.0);
+    }
+
+    private void hideProjectileCarrier(Player caster, Entity entity) {
+        entity.setVisibleByDefault(false);
+        entity.setSilent(true);
+        if (entity instanceof LivingEntity living) {
+            living.setInvisible(true);
+            living.setCollidable(false);
+        }
+        // Hide from every online viewer (including caster) — setVisibleByDefault alone
+        // is not enough on all client/proxy paths and left EGG/SNOWBALL bodies visible.
+        for (Player viewer : plugin.getServer().getOnlinePlayers()) {
+            try {
+                viewer.hideEntity(plugin, entity);
+            } catch (RuntimeException ignored) {
+            }
+        }
+        try {
+            caster.hideEntity(plugin, entity);
+        } catch (RuntimeException ignored) {
+        }
     }
 
     private static EntityType parseEntityType(String raw) {

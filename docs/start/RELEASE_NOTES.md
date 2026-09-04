@@ -24,7 +24,7 @@ Bedrock crossplay, YaP Link proxy, web dashboard, and the operator SMP commands 
 | **Operator SMP** | `/bag` (3/5/7/9 pages), `/gm` + `/item`, `/eco`, per-rank name/chat colors, `/yapmod seen` |
 | **Gameplay (in the full box)** | MMO (100 quests, 20 bosses, abilities book + hotbar), vehicles, stacker, factions, guilds, **YaP Encyclopedia** (Purpur-inspired knobs) |
 | **Ops** | Web dashboard (`:8080`) — ranks, kit builder, plugin YAML editors, Swing GUI, seed defaults, MariaDB Docker package |
-| **Clients (optional)** | Fabric 26.2: **yap-visuals** (Sodium+Iris+shaders in one jar), **yap-bag**, **yap-ultrawide** — vanilla and Bedrock stay supported without them |
+| **Clients (optional)** | Fabric 26.2 under [`client/`](../../client/): **yap-visuals** (Sodium+Iris+shaders in one jar), **yap-bag**, **yap-ultrawide** — vanilla and Bedrock stay supported without them |
 | **Packs** | `yapcore-default` (Faithful + skies + vehicles + MMO icons) |
 | **Integrations** | Optional fetch scripts for **Grim AC** and **Tebex** (GPLv3, not bundled by default) |
 
@@ -35,6 +35,7 @@ Bedrock crossplay, YaP Link proxy, web dashboard, and the operator SMP commands 
 - **Bedrock 1.21.50** — RakNet login, spawn, dig/place, chat, commands; play-depth smoke green.
 - **Paper column stream** default for Bedrock terrain (flat chunks opt-in only).
 - **G.33** placed-skull block-actor sync + item-in-hand SkullOwner Name NBT; full profile-hash textures remain Stretch.
+- **Specialty Bedrock containers** — anvil, smithing, loom, stonecutter, cartography open via Paper-backed P4.6 bridge (**Green** best-effort); recipe-picker / anvil rename remain Stretch.
 - Limitations documented in [CROSSPLAY.md](../network/CROSSPLAY.md).
 
 ### Ops & configuration
@@ -87,8 +88,10 @@ Not blockers for release; documented for operators:
 
 - **Retail Xbox / full inv UI** — validate with real clients before marketing “full play depth.”
 - **ViaRewind 1.8 play depth** — out of product scope.
-- **Smithing / sounds / particles** on older JE clients — same class of issues as ViaBackwards; see limitations doc.
+- **Bedrock specialty UI polish** — recipe pickers (stonecutter/loom) and anvil rename text are Stretch; open + slot sync ship as Green best-effort.
+- **Sounds / particles** on older JE clients — same class of issues as ViaBackwards; see limitations doc.
 - **YaPGuard** — lightweight native AC; use optional **Grim** for gold-standard checks.
+- **Full Geyser feature matrix** — intentional Out; YaP ships depth, not a 1:1 Geyser clone.
 
 ### Contributors & license
 
@@ -120,7 +123,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 
 | Area | Change |
 |------|--------|
-| **YaPWorld** | FAWE-class phases 1–4: masks/patterns, `//sel`, biomes/terrain/brushes, parallel chunks, `//fast`, `.yschem` v3 (tile-NBT + entities), `EditApplyService`, `WorldEdit.jar` API shim, WorldEditCUI, multi-clipboard, optional clipboard-web — [YAPWORLD.md](../plugins/YAPWORLD.md) |
+| **YaPWorld** | FAWE-class phases 1–5: masks/patterns, brushes (+erode/raise/lower/melt/fill/forest), entity clipboard + paste `-a/-e/-b/-o/-s`, `//generate` + expression deform, `//fixlighting`, `//limit`, `.yschem` / `.schem` export + `.schematic`/`.litematic` import, WE shim clipboard surfaces — [YAPWORLD.md](../plugins/YAPWORLD.md) |
 | **YaPTab** | Folia-safe Bukkit scoreboard sidebar (removed megavex packet path that kicked on join) |
 | **YaPChat** | Secure-chat login rewrite fixed for YaP-Folia 26.2 (`ClientboundLoginPacket`) |
 | **Economy** | Native `PlayerDataService` balance (deposit/withdraw/set) — crafting `/sell`, games rewards drop Vault fallback |
@@ -133,14 +136,20 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 | **YaP Encyclopedia** | Real Purpur-inspired `knobs.yml` surface (original YaP code): full attributes, ride perms, per-mob specials, gameplay/blocks wiring, `/yapknobs status`; optional Folia NMS crop/fluid hooks (`0025-yap-encyclopedia-hooks`) — [TUNE.md](../ops/TUNE.md) |
 | **Cite vs Canvas** | Heavypop campaign `20260904T065505Z`: YaP **−8.09% vs Canvas** (citeable ≥5%), **−16.56% vs stock** under disclosed ship knobs — [CANVAS_PARITY.md](../folia/CANVAS_PARITY.md) · [REAL_GAINS.md](../folia/REAL_GAINS.md) |
 | **vs Paper/Purpur** | Honest scale/product framing (regionized + encyclopedia + suite); no single-thread MSPT claim — [PAPER_PURPUR_SCALE.md](../folia/PAPER_PURPUR_SCALE.md) |
+| **Bedrock specialty containers** | Anvil, smithing, loom, stonecutter, cartography — Paper-backed open + slot sync on native UDP (**Green** best-effort); recipe-picker / rename Stretch — [CROSSPLAY.md](../network/CROSSPLAY.md) |
+| **Repo layout** | Optional Fabric client mods nested under [`client/`](../../client/) (`yap-visuals`, `yap-bag`, `yap-ultrawide`, Iris/Sodium/shaders) |
+| **YaPCommands** | YAML custom `/commands` (`yap-commands.jar`) with dashboard **Custom commands** CRUD — messages, player/console runs, aliases, cooldowns — [COMMANDS.md](../ops/COMMANDS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
+| **YaP Vehicles pack** | Fleet HD bodies replaced with [Automobility](https://github.com/FoundationGames/Automobility) MIT meshes (re-import: `scripts/import-automobility-vehicles.py`); trademark display names retired; `yapcore-default` GAMEPLAY pack refreshed — [VEHICLES.md](../plugins/VEHICLES.md) · [CREDITS.md](../../resourcepacks/CREDITS.md) |
 
 ### Still open (not a version bump)
 
-- Manual §E live checklist ([CROSSPLAY.md](../network/CROSSPLAY.md))
+- Manual §E live checklist ([CROSSPLAY.md](../network/CROSSPLAY.md)) — include specialty-station smoke
+- Bedrock recipe-picker / anvil rename polish (Stretch)
 - Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
 - Finish live **12h soak-long** + in-game VFX / encyclopedia smoke before marketing the refreshed zip as soak-proven
 - Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production
+- Republish `releases/1.0.0.0/` zips after specialty-container + vehicles pack refresh (`gradle publishReleasesFolder`)
 
 ---
 

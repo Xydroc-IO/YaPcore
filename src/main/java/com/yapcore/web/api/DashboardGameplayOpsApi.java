@@ -109,23 +109,58 @@ public final class DashboardGameplayOpsApi {
             String status = server.executeCommand("yapworld status");
             snap.put("ok", true);
             snap.put("status", status == null ? "" : status);
-            snap.put("hint", "POST reload | load | unload | pregen-status");
+            snap.put("hint", "POST reload | create | load | unload | pregen-status");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
         if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
             String action = body.getOrDefault("action", "status").toLowerCase();
-            String world = body.getOrDefault("world", "world");
-            if ("save-brush".equals(action)) {
+            String world = sanitizeWorldToken(body.getOrDefault("world", "world"));
+            if (world == null) {
+                DashboardHttp.json(ex, 400, Map.of("error", "invalid world name"));
+                return;
+            }
+            if ("save-brush".equals(action) || "save_brush".equals(action)) {
                 try {
-                    int max = Integer.parseInt(body.getOrDefault("maxRadius", "16"));
+                    int max = Integer.parseInt(body.getOrDefault("maxRadius", body.getOrDefault("max_radius", "16")));
                     DashboardNetworkSnapshotWriters.saveWorldBrushMax(root, max);
                     server.executeCommand("yapworld reload");
                     DashboardHttp.json(ex, 200, Map.of("ok", true, "maxRadius", max));
                 } catch (Exception e) {
                     DashboardHttp.json(ex, 500, Map.of("error", e.getMessage()));
                 }
+                return;
+            }
+            if ("create".equals(action) || "new".equals(action)) {
+                StringBuilder cmd = new StringBuilder("yapworld create ").append(world);
+                appendCreateFlag(cmd, "--type", sanitizeEnumToken(body.get("type"),
+                        "NORMAL", "FLAT", "LARGE_BIOMES", "AMPLIFIED"));
+                appendCreateFlag(cmd, "--env", sanitizeEnvToken(body.get("environment") != null
+                        ? body.get("environment") : body.get("env")));
+                String seedRaw = body.get("seed");
+                if (seedRaw != null && !seedRaw.isBlank()) {
+                    try {
+                        long seed = Long.parseLong(seedRaw.trim());
+                        cmd.append(" --seed ").append(seed);
+                    } catch (NumberFormatException e) {
+                        DashboardHttp.json(ex, 400, Map.of("error", "invalid seed"));
+                        return;
+                    }
+                }
+                String gen = sanitizeGeneratorToken(body.get("generator") != null
+                        ? body.get("generator") : body.get("gen"));
+                if (gen != null) {
+                    cmd.append(" --generator ").append(gen);
+                }
+                if ("false".equalsIgnoreCase(body.getOrDefault("structures", "true"))
+                        || "0".equals(body.get("structures"))
+                        || "no".equalsIgnoreCase(body.getOrDefault("structures", ""))) {
+                    cmd.append(" --no-structures");
+                }
+                String result = server.executeCommand(cmd.toString());
+                DashboardHttp.json(ex, 200, Map.of("ok", true, "command", cmd.toString(),
+                        "result", result == null ? "" : result));
                 return;
             }
             String cmd = switch (action) {
@@ -142,6 +177,67 @@ public final class DashboardGameplayOpsApi {
             return;
         }
         ex.sendResponseHeaders(405, -1);
+    }
+
+    private static void appendCreateFlag(StringBuilder cmd, String flag, String value) {
+        if (value != null && !value.isBlank()) {
+            cmd.append(' ').append(flag).append(' ').append(value);
+        }
+    }
+
+    /** World folder name: letters, digits, underscore, hyphen. */
+    private static String sanitizeWorldToken(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String n = raw.trim();
+        if (n.isEmpty() || n.length() > 64 || !n.matches("[A-Za-z0-9_-]+")) {
+            return null;
+        }
+        return n;
+    }
+
+    private static String sanitizeEnumToken(String raw, String... allowed) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String t = raw.trim().toUpperCase().replace('-', '_').replace(' ', '_');
+        if ("SUPERFLAT".equals(t) || "SUPER_FLAT".equals(t)) {
+            t = "FLAT";
+        }
+        if ("LARGEBIOMES".equals(t) || "LARGE_BIOME".equals(t)) {
+            t = "LARGE_BIOMES";
+        }
+        for (String a : allowed) {
+            if (a.equalsIgnoreCase(t)) {
+                return a;
+            }
+        }
+        return null;
+    }
+
+    private static String sanitizeEnvToken(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String e = raw.trim().toUpperCase().replace('-', '_').replace(' ', '_');
+        return switch (e) {
+            case "NORMAL", "OVERWORLD", "WORLD" -> "overworld";
+            case "NETHER", "HELL" -> "nether";
+            case "THE_END", "END", "THEEND" -> "end";
+            default -> null;
+        };
+    }
+
+    private static String sanitizeGeneratorToken(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String g = raw.trim();
+        if (g.length() > 64 || !g.matches("[A-Za-z0-9_.:-]+")) {
+            return null;
+        }
+        return g;
     }
 
     public void apiChat(HttpExchange ex) throws IOException {

@@ -33,7 +33,7 @@ public record ProjectileSpec(
         trailInterval = Math.max(1, trailInterval);
         turnRate = turnRate <= 0 ? 0.15 : turnRate;
         splashRadius = Math.max(0, splashRadius);
-        displayScale = displayScale <= 0 ? 0.85f : displayScale;
+        displayScale = displayScale <= 0 ? 1.15f : displayScale;
         path = path == null || path.isBlank() ? "straight" : path.trim().toLowerCase();
         arcHeight = Math.max(0, arcHeight);
         trailStyle = trailStyle == null || trailStyle.isBlank() ? "burst" : trailStyle.trim().toLowerCase();

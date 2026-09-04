@@ -1027,5 +1027,6 @@
       "cmd": 78031,
       "texture": "ability_judgment_smite"
     }
-  }
+  },
+  "bulk-icon-pass": "v5-32x32"
 }
