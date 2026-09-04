@@ -128,12 +128,15 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 | **Packs / clients** | YaP Abilities icons in default pack; skies/water texture refresh; optional **yap-visuals** / Iris / Sodium client stack docs |
 | **Mechanics** | Optional water-wave visuals |
 | **Ops docs** | Public hostname `yapcoremc.yaplabs.us`, packs via nginx `:80`, grey-cloud game DNS |
+| **Ability VFX (V1–V4)** | Engine primitives (`at:`, shake, arcs, motion trails, new shapes), element/archetype kits for 227 bulk abilities, 12 hero casts, unique icons, Folia soak gates — [MMO_ABILITY_VFX.md](../mmo/MMO_ABILITY_VFX.md) |
+| **Ops Waves 1–5** | Folia-safe pregen/protect/regions; Bedrock inventory fidelity; quest PLAYTIME/ECONOMY/… objectives; Discord event webhooks; map markers; dashboard Access context/temp + social/stacker panels; cite fixtures −5.53% fullcite (peak −12.4%) — [REAL_GAINS.md](../folia/REAL_GAINS.md) |
 
 ### Still open (not a version bump)
 
 - Manual §E live checklist ([CROSSPLAY.md](../network/CROSSPLAY.md))
 - Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
+- Finish live **12h soak-long** + in-game VFX smoke before marketing the refreshed zip as soak-proven
 
 ---
 

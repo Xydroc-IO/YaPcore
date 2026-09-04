@@ -56,7 +56,7 @@ We use **YaP-Folia** for the real Minecraft game by default (`folia-jar-source=b
 **slim edge/I/O chassis** around it (not world tick). **YaP Link** is our Velocity-class front door
 (**phases 0–6 shipped**). Legacy **Paper + Phase 3** spatial tick is **done as code** but **off by default**.
 CORE+NETWORK plugins ship by default; GAMEPLAY/MMO is opt-in. Playerdata **shops + auction house** are **on** by default (jobs stay off when skills are used).
-The product is aimed at **busy / high-pop** servers. **Citeable** population MSPT uses **fullcite** (100 active bots + fixtures); yapcore **−12.4%** vs stock Folia with ship knobs (smart budget + microtick + subregion partition); join verified at 100/200 bots — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
+The product is aimed at **busy / high-pop** servers. **Citeable** population MSPT uses **fullcite** (100 active bots + fixtures); peak **−12.4%** vs stock Folia with ship knobs (smart budget + microtick + subregion partition); latest ship-gate re-verify **−5.53%** — join verified at 100/200 bots — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md). Ability VFX V1–V4 (kits + heroes) ships in the gameplay box — [MMO_ABILITY_VFX.md](../mmo/MMO_ABILITY_VFX.md).
 Phase 4 dual-stack join DoD is green.
 
 Details: [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) · [QUICK_START.md](../start/QUICK_START.md) ·

@@ -386,6 +386,7 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 | Phase 4 dual-stack join DoD | **Green** |
 | CORE+NETWORK plugins | **Shipped** |
 | GAMEPLAY + MMO M0–M7 | **Shipped** (opt-in install) |
+| Ability VFX V1–V4 | **Shipped** — kits + heroes + soak gates ([MMO_ABILITY_VFX.md](../mmo/MMO_ABILITY_VFX.md)) |
 | PlayerData shops + AH | **On by default** (jobs remain off) |
 | Fair population MSPT gate | **Citeable** — fullcite 100 bots; peak −12.4% (`shipFc2`); re-verify −5.53% (`20260904T040935Z`); **ship knobs** disclosed in JSON |
 | Dashboard Phase 8 full tabs | **Done (ship)** — Factions/Guilds/Games/Disasters/Stacker interactive; Protect restore; Regions flags; MMO reload; YAML-only leftovers documented |
