@@ -3,6 +3,7 @@ package com.yapcore.world.cmd;
 import com.yapcore.sched.YapSched;
 import com.yapcore.world.CuboidSelection;
 import com.yapcore.world.WorldConfig;
+import com.yapcore.world.WorldCreateOptions;
 import com.yapcore.world.WorldPlugin;
 import com.yapcore.world.edit.BrushService;
 import com.yapcore.world.edit.SelectionEditService;
@@ -80,6 +81,7 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
             case "reload" -> reload(sender);
             case "status" -> status(sender);
             case "load" -> load(sender, args);
+            case "create", "new" -> create(sender, args);
             case "unload" -> unload(sender, args);
             case "tp", "teleport" -> teleport(sender, args);
             case "wand", "tool" -> tool(sender);
@@ -146,7 +148,7 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
     }
 
     private boolean load(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("yapworld.load")) {
+        if (!sender.hasPermission("yapworld.load") && !sender.hasPermission("yapworld.create")) {
             sender.sendMessage("§cNo permission.");
             return true;
         }
@@ -156,6 +158,86 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
         }
         worlds.loadWorld(args[1]).thenAccept(ok ->
                 YapSched.global(plugin, () -> sender.sendMessage(ok ? "§aWorld loaded." : "§cLoad failed.")));
+        return true;
+    }
+
+    private boolean create(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("yapworld.create") && !sender.hasPermission("yapworld.load")) {
+            sender.sendMessage("§cNo permission.");
+            return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage("§e/yapworld create <name> [--type flat|normal|large_biomes|amplified]");
+            sender.sendMessage("§7  [--env overworld|nether|end] [--seed <long>] [--generator <id>] [--no-structures]");
+            return true;
+        }
+        String name = args[1];
+        if (WorldManagerServiceImpl.sanitizeName(name) == null) {
+            sender.sendMessage("§cInvalid world name (use letters, digits, _ or -).");
+            return true;
+        }
+        WorldCreateOptions.Builder b = WorldCreateOptions.builder();
+        for (int i = 2; i < args.length; i++) {
+            String a = args[i];
+            if (a.equalsIgnoreCase("--no-structures") || a.equalsIgnoreCase("-S")) {
+                b.generateStructures(false);
+                continue;
+            }
+            String key;
+            String val;
+            if (a.startsWith("--") && a.contains("=")) {
+                int eq = a.indexOf('=');
+                key = a.substring(2, eq).toLowerCase(Locale.ROOT);
+                val = a.substring(eq + 1);
+            } else if (a.startsWith("--") && i + 1 < args.length) {
+                key = a.substring(2).toLowerCase(Locale.ROOT);
+                val = args[++i];
+            } else if (a.startsWith("-") && a.length() == 2 && i + 1 < args.length) {
+                key = switch (a.charAt(1)) {
+                    case 't' -> "type";
+                    case 'e' -> "env";
+                    case 's' -> "seed";
+                    case 'g' -> "generator";
+                    default -> "";
+                };
+                val = args[++i];
+            } else {
+                sender.sendMessage("§cUnknown option: §f" + a);
+                return true;
+            }
+            switch (key) {
+                case "type", "t", "worldtype" -> b.type(val);
+                case "env", "environment", "dim", "dimension" -> b.environment(val);
+                case "seed" -> {
+                    try {
+                        b.seed(Long.parseLong(val));
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage("§cInvalid seed: §f" + val);
+                        return true;
+                    }
+                }
+                case "generator", "gen", "g" -> b.generator(val);
+                case "structures" -> b.generateStructures(!"false".equalsIgnoreCase(val)
+                        && !"no".equalsIgnoreCase(val) && !"0".equals(val));
+                default -> {
+                    sender.sendMessage("§cUnknown option: §f--" + key);
+                    return true;
+                }
+            }
+        }
+        WorldCreateOptions opts = b.build();
+        worlds.createWorld(name, opts).thenAccept(ok ->
+                YapSched.global(plugin, () -> {
+                    if (ok) {
+                        sender.sendMessage("§aWorld §f" + name + " §aready §7(" + opts.type()
+                                + " / " + opts.environment()
+                                + (opts.seed() != null ? " seed=" + opts.seed() : "")
+                                + (opts.generator() != null ? " gen=" + opts.generator() : "")
+                                + ").");
+                    } else {
+                        sender.sendMessage("§cCreate/load failed. Check console (name taken? generator missing?).");
+                    }
+                }));
         return true;
     }
 
@@ -651,7 +733,8 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage("§e/yapworld §7or §e// §7— GUI / help · §e/yapworld tool §7— wand");
         sender.sendMessage("§e//set //replace //mask //gmask //sel //copy //paste //brush //fast");
         sender.sendMessage("§e//regen //forest //setbiome //deform //undo //redo");
-        sender.sendMessage("§e/yapworld schem|brush|editor|load|unload|tp|pregen|status|reload");
+        sender.sendMessage("§e/yapworld schem|brush|editor|create|load|unload|tp|pregen|status|reload");
+        sender.sendMessage("§e/yapworld create <name> --type flat|normal|large_biomes|amplified --env overworld|nether|end [--seed n] [--generator id]");
     }
 
     @Override
@@ -662,13 +745,33 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
                     "copy", "cut", "paste", "rotate", "flip", "stack", "move",
                     "expand", "contract", "shift", "cyl", "sphere", "pyramid", "smooth",
                     "sel", "mask", "gmask", "fast", "regen", "forest", "setbiome",
-                    "schem", "brush", "undo", "redo", "pregen", "load", "unload", "tp", "status", "reload"), args[0]);
+                    "schem", "brush", "undo", "redo", "pregen", "create", "load", "unload", "tp", "status", "reload"), args[0]);
         }
         if (args.length == 2 && "brush".equalsIgnoreCase(args[0])) {
             return filter(List.of("sphere", "cyl", "smooth", "gravity", "clipboard", "butcher"), args[1]);
         }
         if (args.length == 2 && "sel".equalsIgnoreCase(args[0])) {
             return filter(List.of("cuboid", "sphere", "cyl", "poly"), args[1]);
+        }
+        if (args.length >= 2 && ("create".equalsIgnoreCase(args[0]) || "new".equalsIgnoreCase(args[0]))) {
+            if (args.length == 2) {
+                return List.of();
+            }
+            String prev = args[args.length - 2].toLowerCase(Locale.ROOT);
+            String cur = args[args.length - 1];
+            if (prev.equals("--type") || prev.equals("-t")) {
+                return filter(List.of("normal", "flat", "large_biomes", "amplified"), cur);
+            }
+            if (prev.equals("--env") || prev.equals("--environment") || prev.equals("-e")) {
+                return filter(List.of("overworld", "nether", "end"), cur);
+            }
+            if (prev.equals("--structures")) {
+                return filter(List.of("true", "false"), cur);
+            }
+            if (cur.startsWith("-")) {
+                return filter(List.of("--type", "--env", "--seed", "--generator", "--no-structures"), cur);
+            }
+            return List.of();
         }
         if (args.length == 2 && ("load".equalsIgnoreCase(args[0]) || "unload".equalsIgnoreCase(args[0])
                 || "tp".equalsIgnoreCase(args[0]))) {

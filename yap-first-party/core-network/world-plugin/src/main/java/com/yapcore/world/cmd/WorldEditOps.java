@@ -7,15 +7,19 @@ import com.yapcore.world.cui.WorldEditCuiBridge;
 import com.yapcore.world.edit.BrushService;
 import com.yapcore.world.edit.ClipboardService;
 import com.yapcore.world.edit.GenerationService;
+import com.yapcore.world.edit.LightingService;
 import com.yapcore.world.edit.MaskEngine;
 import com.yapcore.world.edit.PlayerEditState;
 import com.yapcore.world.edit.SelectionEditService;
 import com.yapcore.world.edit.SelectionShape;
 import com.yapcore.world.edit.TerrainService;
 import com.yapcore.world.edit.UndoService;
+import com.yapcore.world.schem.LegacySchematicImporter;
+import com.yapcore.world.schem.LitematicImporter;
 import com.yapcore.world.schem.Schematic;
 import com.yapcore.world.schem.SchematicIO;
 import com.yapcore.world.schem.SchematicPaster;
+import com.yapcore.world.schem.SpongeSchematicExporter;
 import com.yapcore.world.schem.SpongeSchematicImporter;
 import com.yapcore.world.service.SelectionServiceImpl;
 import org.bukkit.Location;
@@ -52,6 +56,7 @@ public final class WorldEditOps {
     private final PlayerEditState editState;
     private final TerrainService terrain;
     private final WorldEditCuiBridge cui;
+    private final LightingService lighting;
 
     public WorldEditOps(WorldPlugin plugin, SelectionServiceImpl selection, SelectionEditService edit,
                         GenerationService generation, ClipboardService clipboard, UndoService undo,
@@ -69,6 +74,7 @@ public final class WorldEditOps {
         this.editState = editState;
         this.terrain = terrain;
         this.cui = cui;
+        this.lighting = new LightingService(plugin);
     }
 
     public boolean dispatch(Player player, String name, String[] args) {
@@ -310,6 +316,56 @@ public final class WorldEditOps {
                         YapSched.global(plugin, () -> player.sendMessage("§aDeform §f" + n + " §achanges.")));
                 yield true;
             }
+            case "generate", "gen" -> {
+                Optional<CuboidSelection> sel = requireSel(player);
+                if (sel.isEmpty()) {
+                    yield true;
+                }
+                if (args.length < 1) {
+                    player.sendMessage("§e//generate <expression> [pattern] §7· vars: x y z rx ry rz h noise rand");
+                    player.sendMessage("§7example: §f//generate y<noise*0.5+0.4 stone");
+                    yield true;
+                }
+                String genExpr = args[0];
+                String genPat = args.length >= 2 ? args[1] : "stone";
+                if (args.length > 2) {
+                    // allow "expr with spaces" by joining until last token as pattern when last looks like material
+                    genExpr = String.join(" ", java.util.Arrays.copyOf(args, args.length - 1));
+                    genPat = args[args.length - 1];
+                }
+                generation.generate(player, sel.get(), genExpr, genPat).thenAccept(n ->
+                        YapSched.global(plugin, () -> {
+                            player.sendMessage("§aGenerate §f" + n + " §ablocks.");
+                            maybeAutoRelight(player);
+                        }));
+                yield true;
+            }
+            case "fixlighting", "fixlight", "relight" -> {
+                Optional<CuboidSelection> sel = selection.selection(player.getUniqueId());
+                PlayerEditState.EditBounds last = editState.lastEditBounds(player.getUniqueId());
+                lighting.fixLastOrSelection(player, sel.orElse(null), last).thenAccept(n ->
+                        YapSched.global(plugin, () ->
+                                player.sendMessage("§aLighting refreshed §f" + n + " §achunks.")));
+                yield true;
+            }
+            case "limit" -> {
+                if (args.length < 1) {
+                    long lim = editState.effectiveLimit(player.getUniqueId(), plugin.worldConfig().maxChanges());
+                    Long ov = editState.changeLimit(player.getUniqueId());
+                    player.sendMessage("§aChange limit: §f" + lim
+                            + (ov != null ? " §7(session)" : " §7(config)"));
+                    yield true;
+                }
+                if ("-1".equals(args[0]) || "default".equalsIgnoreCase(args[0]) || "reset".equalsIgnoreCase(args[0])) {
+                    editState.setChangeLimit(player.getUniqueId(), null);
+                    player.sendMessage("§aLimit reset to config (§f" + plugin.worldConfig().maxChanges() + "§a).");
+                    yield true;
+                }
+                long lim = parseLong(args[0], plugin.worldConfig().maxChanges());
+                editState.setChangeLimit(player.getUniqueId(), Math.max(1L, lim));
+                player.sendMessage("§aSession limit set to §f" + lim);
+                yield true;
+            }
             case "twist" -> {
                 Optional<CuboidSelection> sel = requireSel(player);
                 if (sel.isEmpty()) {
@@ -351,8 +407,13 @@ public final class WorldEditOps {
                     yield true;
                 }
                 clipboard.copy(player, sel.get(), false).thenAccept(n ->
-                        YapSched.global(plugin, () -> player.sendMessage(
-                                "§aCopied §f" + n + " §ablocks §7(slot " + clipboard.slot(player.getUniqueId()) + ")")));
+                        YapSched.global(plugin, () -> {
+                            var clip = clipboard.clipboard(player.getUniqueId());
+                            int ents = clip == null ? 0 : clip.entities().size();
+                            player.sendMessage("§aCopied §f" + n + " §ablocks"
+                                    + (ents > 0 ? " §7+ §f" + ents + " §7entities" : "")
+                                    + " §7(slot " + clipboard.slot(player.getUniqueId()) + ")");
+                        }));
                 yield true;
             }
             case "cut" -> {
@@ -362,14 +423,38 @@ public final class WorldEditOps {
                     yield true;
                 }
                 clipboard.copy(player, sel.get(), true).thenAccept(n ->
-                        YapSched.global(plugin, () -> player.sendMessage(
-                                "§aCut §f" + n + " §ablocks §7(slot " + clipboard.slot(player.getUniqueId()) + ")")));
+                        YapSched.global(plugin, () -> {
+                            var clip = clipboard.clipboard(player.getUniqueId());
+                            int ents = clip == null ? 0 : clip.entities().size();
+                            player.sendMessage("§aCut §f" + n + " §ablocks"
+                                    + (ents > 0 ? " §7+ §f" + ents + " §7entities" : "")
+                                    + " §7(slot " + clipboard.slot(player.getUniqueId()) + ")");
+                        }));
                 yield true;
             }
             case "paste" -> {
-                boolean ignoreAir = args.length >= 1 && ("-a".equalsIgnoreCase(args[0]) || "air".equalsIgnoreCase(args[0]));
-                clipboard.paste(player, ignoreAir).thenAccept(n ->
-                        YapSched.global(plugin, () -> player.sendMessage("§aPasted §f" + n + " §ablocks.")));
+                ClipboardService.PasteOptions opts = ClipboardService.PasteOptions.parse(args);
+                var clip = clipboard.clipboard(player.getUniqueId());
+                boolean large = clip != null && clipboard.isLargePaste(clip.blocks().size());
+                if (large) {
+                    player.sendMessage("§eLarge paste §7(§f" + clip.blocks().size() + " §7blocks) — "
+                            + (plugin.worldConfig().autoFastLarge() ? "§efast/no-undo §7· " : "")
+                            + "§eprogress on.");
+                }
+                clipboard.paste(player, opts).thenAccept(n ->
+                        YapSched.global(plugin, () -> {
+                            player.sendMessage("§aPasted §f" + n + " §ablocks"
+                                    + (opts.entities() ? " §7(+entities)" : "")
+                                    + (opts.biomes() ? " §7(+biomes)" : "")
+                                    + (opts.atOrigin() ? " §7@origin" : "")
+                                    + ".");
+                            if (large && plugin.worldConfig().deferRelightLarge()) {
+                                player.sendMessage("§7Relighting…");
+                                maybeAutoRelight(player);
+                            } else {
+                                maybeAutoRelight(player);
+                            }
+                        }));
                 yield true;
             }
             case "rotate" -> {
@@ -491,15 +576,15 @@ public final class WorldEditOps {
     }
 
     public void help(Player player) {
-        player.sendMessage("§6YaPWorld §7— FAWE-class (Folia-safe)");
+        player.sendMessage("§6YaPWorld §7— FAWE-class Phase 5 (Folia-safe)");
         player.sendMessage("§eSelection: §f//sel cuboid|sphere|cyl|poly //wand //pos1 //pos2 //expand //size //desel");
-        player.sendMessage("§eMasks: §f//mask //gmask #air|#solid|mat §7· §eFast: §f//fast //clearhistory");
+        player.sendMessage("§eMasks: §f//mask //gmask #air|#solid|mat §7· §eFast: §f//fast //clearhistory //limit [n]");
         player.sendMessage("§eEdit: §f//set //replace <mask> <pattern> //walls //faces //hollow //overlay //smooth");
-        player.sendMessage("§eGenerate: §f//cyl //sphere //pyramid //line //drain //regen //forest //flora");
-        player.sendMessage("§eBiome/deform: §f//setbiome //biomeinfo //deform //twist //center //curve");
-        player.sendMessage("§eClipboard: §f//copy [-m slot] //cut //paste [-a] //rotate //flip //stack //move //clipboard [slot]");
+        player.sendMessage("§eGenerate: §f//cyl //sphere //pyramid //line //drain //regen //forest //flora //generate <expr>");
+        player.sendMessage("§eBiome/deform: §f//setbiome //biomeinfo //deform //twist //center //curve //fixlighting");
+        player.sendMessage("§eClipboard: §f//copy //cut //paste [-a|-e|-b|-o|-s] //rotate //flip //stack //move");
         player.sendMessage("§eSchem: §f//schem list|load|save|delete|formats|paste <name>");
-        player.sendMessage("§eBrush: §f//brush sphere|cyl|smooth|gravity|clipboard|butcher <r> [pat] //size //mat");
+        player.sendMessage("§eBrush: §f//brush sphere|cyl|smooth|gravity|clipboard|butcher|erode|raise|lower|melt|fill|forest");
         player.sendMessage("§eTools: §f//farwand //superpickaxe //info //tree //none");
         player.sendMessage("§eHistory: §f//undo //redo §7· §eGUI: §f/yapworld");
     }
@@ -542,13 +627,14 @@ public final class WorldEditOps {
         String sub = args[0].toLowerCase(Locale.ROOT);
         switch (sub) {
             case "list", "ls" -> schemList(player);
-            case "formats", "format" -> player.sendMessage("§aFormats: §f.yschem (v3 tile-NBT) §7· §f.schem (Sponge import)");
+            case "formats", "format" -> player.sendMessage(
+                    "§aFormats: §f.yschem §7(native) §f.schem §7(Sponge import/export) §f.schematic §7(legacy import) §f.litematic §7(import)");
             case "save" -> {
                 if (args.length < 2) {
-                    player.sendMessage("§e//schem save <name>");
+                    player.sendMessage("§e//schem save <name> [.yschem|.schem]");
                     return;
                 }
-                schemSave(player, args[1]);
+                schemSave(player, args[1], args.length >= 3 ? args[2] : null);
             }
             case "load", "paste" -> {
                 if (args.length < 2) {
@@ -578,7 +664,8 @@ public final class WorldEditOps {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path p : stream) {
                 String n = p.getFileName().toString();
-                if (n.endsWith(".yschem") || n.endsWith(".schem")) {
+                if (n.endsWith(".yschem") || n.endsWith(".schem")
+                        || n.endsWith(".schematic") || n.endsWith(".litematic")) {
                     names.add(n);
                 }
             }
@@ -597,7 +684,7 @@ public final class WorldEditOps {
         }
     }
 
-    private void schemSave(Player player, String name) {
+    private void schemSave(Player player, String name, String formatHint) {
         Optional<CuboidSelection> opt = requireSel(player);
         if (opt.isEmpty()) {
             return;
@@ -608,12 +695,29 @@ public final class WorldEditOps {
             player.sendMessage("§cWorld not loaded.");
             return;
         }
+        String fmt = formatHint == null ? ".yschem" : formatHint.toLowerCase(Locale.ROOT);
+        if (!fmt.startsWith(".")) {
+            fmt = "." + fmt;
+        }
+        if (name.endsWith(".schem") || name.endsWith(".yschem") || name.endsWith(".schematic")) {
+            int dot = name.lastIndexOf('.');
+            fmt = name.substring(dot);
+            name = name.substring(0, dot);
+        }
+        final String base = name;
+        final String format = fmt;
         YapSched.global(plugin, () -> {
             try {
                 Schematic schem = SchematicIO.capture(sel, world);
-                Path file = plugin.schematicsDir().resolve(name + ".yschem");
-                SchematicIO.save(file, schem);
-                player.sendMessage("§aSaved §f" + name + ".yschem §a(" + schem.blocks().size() + " blocks).");
+                if (".schem".equals(format)) {
+                    Path file = plugin.schematicsDir().resolve(base + ".schem");
+                    SpongeSchematicExporter.exportFile(file, schem);
+                    player.sendMessage("§aSaved §f" + base + ".schem §a(" + schem.blocks().size() + " blocks).");
+                } else {
+                    Path file = plugin.schematicsDir().resolve(base + ".yschem");
+                    SchematicIO.save(file, schem);
+                    player.sendMessage("§aSaved §f" + base + ".yschem §a(" + schem.blocks().size() + " blocks).");
+                }
             } catch (Exception e) {
                 player.sendMessage("§cSave failed: " + e.getMessage());
             }
@@ -628,13 +732,13 @@ public final class WorldEditOps {
         }
         YapSched.async(plugin, () -> {
             try {
-                Schematic schematic = file.toString().endsWith(".schem")
-                        ? SpongeSchematicImporter.importFile(file)
-                        : SchematicIO.load(file);
+                Schematic schematic = loadAnySchematic(file);
                 YapSched.global(plugin, () -> {
                     clipboard.loadSchematic(player.getUniqueId(), schematic, 0, 0, 0);
                     player.sendMessage("§aLoaded §f" + file.getFileName() + " §ainto clipboard slot "
-                            + clipboard.slot(player.getUniqueId()) + " (§f" + schematic.blocks().size() + "§a).");
+                            + clipboard.slot(player.getUniqueId()) + " (§f" + schematic.blocks().size() + "§a"
+                            + (schematic.entities().isEmpty() ? "" : ", §f" + schematic.entities().size() + " §aents")
+                            + ").");
                 });
             } catch (Exception e) {
                 YapSched.global(plugin, () -> player.sendMessage("§cLoad failed: " + e.getMessage()));
@@ -651,9 +755,7 @@ public final class WorldEditOps {
         Location loc = player.getLocation();
         YapSched.async(plugin, () -> {
             try {
-                Schematic schematic = file.toString().endsWith(".schem")
-                        ? SpongeSchematicImporter.importFile(file)
-                        : SchematicIO.load(file);
+                Schematic schematic = loadAnySchematic(file);
                 SchematicPaster paster = new SchematicPaster(plugin);
                 paster.paste(schematic, player.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
                         .thenAccept(count -> YapSched.global(plugin,
@@ -662,6 +764,20 @@ public final class WorldEditOps {
                 YapSched.global(plugin, () -> player.sendMessage("§cPaste failed: " + e.getMessage()));
             }
         });
+    }
+
+    private static Schematic loadAnySchematic(Path file) throws Exception {
+        String n = file.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (n.endsWith(".schem")) {
+            return SpongeSchematicImporter.importFile(file);
+        }
+        if (n.endsWith(".schematic")) {
+            return LegacySchematicImporter.importFile(file);
+        }
+        if (n.endsWith(".litematic")) {
+            return LitematicImporter.importFile(file);
+        }
+        return SchematicIO.load(file);
     }
 
     private void schemDelete(Player player, String name) {
@@ -679,16 +795,28 @@ public final class WorldEditOps {
     }
 
     private Path resolveSchemFile(String name) {
-        String base = name.endsWith(".yschem") || name.endsWith(".schem")
-                ? name.substring(0, name.lastIndexOf('.'))
-                : name;
+        String lower = name.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".yschem") || lower.endsWith(".schem")
+                || lower.endsWith(".schematic") || lower.endsWith(".litematic")) {
+            Path raw = plugin.schematicsDir().resolve(name);
+            return Files.isRegularFile(raw) ? raw : null;
+        }
+        String base = name;
         Path yschem = plugin.schematicsDir().resolve(base + ".yschem");
         Path schem = plugin.schematicsDir().resolve(base + ".schem");
+        Path schematic = plugin.schematicsDir().resolve(base + ".schematic");
+        Path litematic = plugin.schematicsDir().resolve(base + ".litematic");
         if (Files.isRegularFile(yschem)) {
             return yschem;
         }
         if (Files.isRegularFile(schem)) {
             return schem;
+        }
+        if (Files.isRegularFile(schematic)) {
+            return schematic;
+        }
+        if (Files.isRegularFile(litematic)) {
+            return litematic;
         }
         Path raw = plugin.schematicsDir().resolve(name);
         return Files.isRegularFile(raw) ? raw : null;
@@ -938,7 +1066,7 @@ public final class WorldEditOps {
 
     private boolean brushCmd(Player player, String[] args) {
         if (args.length < 1) {
-            player.sendMessage("§e//brush sphere|cyl|smooth|gravity|clipboard|butcher <radius> [pattern]");
+            player.sendMessage("§e//brush sphere|cyl|smooth|gravity|clipboard|butcher|erode|raise|lower|melt|fill|forest <radius> [pattern]");
             return true;
         }
         String type = args[0].toLowerCase(Locale.ROOT);
@@ -950,6 +1078,12 @@ public final class WorldEditOps {
             case "gravity", "grav" -> BrushService.BrushType.GRAVITY;
             case "clipboard", "schem", "paste" -> BrushService.BrushType.CLIPBOARD;
             case "butcher", "kill" -> BrushService.BrushType.BUTCHER;
+            case "erode" -> BrushService.BrushType.ERODE;
+            case "raise" -> BrushService.BrushType.RAISE;
+            case "lower" -> BrushService.BrushType.LOWER;
+            case "melt" -> BrushService.BrushType.MELT;
+            case "fill" -> BrushService.BrushType.FILL;
+            case "forest", "tree" -> BrushService.BrushType.FOREST;
             default -> BrushService.BrushType.SPHERE;
         };
         brush.setBrushFull(player.getUniqueId(), bt, radius, pattern);
@@ -1067,6 +1201,38 @@ public final class WorldEditOps {
         } catch (NumberFormatException e) {
             return def;
         }
+    }
+
+    private static long parseLong(String s, long def) {
+        try {
+            return Long.parseLong(s);
+        } catch (NumberFormatException e) {
+            return def;
+        }
+    }
+
+    private void maybeAutoRelight(Player player) {
+        boolean auto = plugin.worldConfig().autoRelight();
+        boolean deferLarge = plugin.worldConfig().deferRelightLarge();
+        PlayerEditState.EditBounds last = editState.lastEditBounds(player.getUniqueId());
+        Optional<CuboidSelection> sel = selection.selection(player.getUniqueId());
+        boolean hasBounds = sel.isPresent() || last != null;
+        if (!auto && !deferLarge) {
+            return;
+        }
+        // When defer-relight-large: always relight after paste that recorded bounds
+        if (!auto && deferLarge && last == null) {
+            return;
+        }
+        if (!hasBounds && !auto) {
+            return;
+        }
+        lighting.fixLastOrSelection(player, sel.orElse(null), last).thenAccept(n ->
+                YapSched.global(plugin, () -> {
+                    if (n > 0) {
+                        player.sendMessage("§aLighting refreshed §f" + n + " §achunks.");
+                    }
+                }));
     }
 
     private static double parseDouble(String s, double def) {

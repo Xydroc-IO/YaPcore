@@ -1,5 +1,6 @@
 package com.sk89q.worldedit;
 
+import com.sk89q.worldedit.extent.clipboard.ClipboardHolder;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.regions.CuboidRegion;
 import com.sk89q.worldedit.regions.Region;
@@ -11,6 +12,7 @@ public final class LocalSession {
     private BlockVector3 pos2;
     private Region selection;
     private int clipboardSlot;
+    private ClipboardHolder clipboardHolder;
 
     public void setPos1(BlockVector3 pos) {
         this.pos1 = pos;
@@ -44,6 +46,14 @@ public final class LocalSession {
 
     public void setClipboardSlot(int slot) {
         this.clipboardSlot = Math.max(0, slot);
+    }
+
+    public ClipboardHolder getClipboard() {
+        return clipboardHolder;
+    }
+
+    public void setClipboard(ClipboardHolder holder) {
+        this.clipboardHolder = holder;
     }
 
     private void refreshCuboid() {

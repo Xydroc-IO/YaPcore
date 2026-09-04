@@ -26,7 +26,7 @@ public final class SpongeSchematicImporter {
         }
     }
 
-    static Schematic fromCompound(MinimalNbt.Compound root, String label) throws IOException {
+    public static Schematic fromCompound(MinimalNbt.Compound root, String label) throws IOException {
         int width = root.getShort("Width", (short) 0);
         int height = root.getShort("Height", (short) 0);
         int length = root.getShort("Length", (short) 0);

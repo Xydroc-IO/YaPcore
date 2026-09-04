@@ -228,6 +228,40 @@ public final class GenerationService {
         return batch.apply(player, world, plans);
     }
 
+    /**
+     * Expression-driven fill inside selection. Places {@code pattern} where expression &gt; 0.5.
+     * Vars: {@code x,y,z} (0..1), {@code rx,ry,rz} (absolute), {@code h}, {@code noise}, {@code rand}.
+     */
+    public CompletableFuture<Integer> generate(Player player, CuboidSelection sel, String expression, String pattern) {
+        World world = Bukkit.getWorld(sel.world());
+        if (world == null || expression == null || expression.isBlank()) {
+            return CompletableFuture.completedFuture(0);
+        }
+        PatternEngine.Pattern pat = PatternEngine.parse(pattern == null ? "stone" : pattern);
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        var id = player.getUniqueId();
+        double sx = Math.max(1, sel.maxX() - sel.minX());
+        double sy = Math.max(1, sel.maxY() - sel.minY());
+        double sz = Math.max(1, sel.maxZ() - sel.minZ());
+        for (int x = sel.minX(); x <= sel.maxX(); x++) {
+            for (int y = sel.minY(); y <= sel.maxY(); y++) {
+                for (int z = sel.minZ(); z <= sel.maxZ(); z++) {
+                    if (masks != null && !masks.allows(id, world, x, y, z)) {
+                        continue;
+                    }
+                    double nx = (x - sel.minX()) / sx;
+                    double ny = (y - sel.minY()) / sy;
+                    double nz = (z - sel.minZ()) / sz;
+                    if (!ExpressionEngine.test(expression, nx, ny, nz, x, y, z, ny)) {
+                        continue;
+                    }
+                    plans.add(PatternEngine.toBatch(x, y, z, pat.resolve(world, x, y, z, null)));
+                }
+            }
+        }
+        return batch.apply(player, world, plans);
+    }
+
     public CompletableFuture<Integer> smooth(Player player, CuboidSelection sel, int iterations) {
         World world = Bukkit.getWorld(sel.world());
         if (world == null) {

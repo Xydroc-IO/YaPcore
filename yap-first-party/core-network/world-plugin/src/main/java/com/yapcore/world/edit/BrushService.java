@@ -29,7 +29,13 @@ public final class BrushService {
         SMOOTH,
         GRAVITY,
         CLIPBOARD,
-        BUTCHER
+        BUTCHER,
+        ERODE,
+        RAISE,
+        LOWER,
+        MELT,
+        FILL,
+        FOREST
     }
 
     private final JavaPlugin plugin;
@@ -138,6 +144,12 @@ public final class BrushService {
             case GRAVITY -> applyGravity(player, center, state);
             case CLIPBOARD -> applyClipboard(player, center, state);
             case BUTCHER -> applyButcher(player, center, state);
+            case ERODE -> applyErode(player, center, state);
+            case RAISE -> applyRaiseLower(player, center, state, 1);
+            case LOWER -> applyRaiseLower(player, center, state, -1);
+            case MELT -> applyMelt(player, center, state);
+            case FILL -> applyFill(player, center, state);
+            case FOREST -> applyForest(player, center, state);
             default -> applySphere(player, center, state);
         };
     }
@@ -352,6 +364,172 @@ public final class BrushService {
         return done;
     }
 
+    private CompletableFuture<Integer> applyErode(Player player, Location center, BrushState state) {
+        World world = center.getWorld();
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        int r = state.radius();
+        int cx = center.getBlockX();
+        int cy = center.getBlockY();
+        int cz = center.getBlockZ();
+        int rSq = r * r;
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        for (int x = -r; x <= r; x++) {
+            for (int y = -r; y <= r; y++) {
+                for (int z = -r; z <= r; z++) {
+                    if (x * x + y * y + z * z > rSq) {
+                        continue;
+                    }
+                    int wx = cx + x, wy = cy + y, wz = cz + z;
+                    var b = world.getBlockAt(wx, wy, wz);
+                    if (b.getType().isAir()) {
+                        continue;
+                    }
+                    int airNeighbors = 0;
+                    if (world.getBlockAt(wx + 1, wy, wz).getType().isAir()) airNeighbors++;
+                    if (world.getBlockAt(wx - 1, wy, wz).getType().isAir()) airNeighbors++;
+                    if (world.getBlockAt(wx, wy + 1, wz).getType().isAir()) airNeighbors++;
+                    if (world.getBlockAt(wx, wy - 1, wz).getType().isAir()) airNeighbors++;
+                    if (world.getBlockAt(wx, wy, wz + 1).getType().isAir()) airNeighbors++;
+                    if (world.getBlockAt(wx, wy, wz - 1).getType().isAir()) airNeighbors++;
+                    if (airNeighbors >= 2) {
+                        plans.add(new BlockBatch.Planned(wx, wy, wz, Material.AIR));
+                    }
+                }
+            }
+        }
+        return batch.apply(player, world, plans);
+    }
+
+    private CompletableFuture<Integer> applyRaiseLower(Player player, Location center, BrushState state, int dir) {
+        World world = center.getWorld();
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        int r = state.radius();
+        int cx = center.getBlockX();
+        int cy = center.getBlockY();
+        int cz = center.getBlockZ();
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        PatternEngine.Pattern pat = PatternEngine.parse(state.pattern());
+        for (int x = -r; x <= r; x++) {
+            for (int z = -r; z <= r; z++) {
+                if (x * x + z * z > r * r) {
+                    continue;
+                }
+                int hx = highestSolid(world, cx + x, cz + z, cy - r, cy + r);
+                if (hx == Integer.MIN_VALUE) {
+                    continue;
+                }
+                if (dir > 0) {
+                    int ty = hx + 1;
+                    if (ty <= cy + r) {
+                        plans.add(PatternEngine.toBatch(cx + x, ty, cz + z,
+                                pat.resolve(world, cx + x, ty, cz + z, null)));
+                    }
+                } else {
+                    plans.add(new BlockBatch.Planned(cx + x, hx, cz + z, Material.AIR));
+                }
+            }
+        }
+        return batch.apply(player, world, plans);
+    }
+
+    private CompletableFuture<Integer> applyMelt(Player player, Location center, BrushState state) {
+        World world = center.getWorld();
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        int r = state.radius();
+        int cx = center.getBlockX();
+        int cy = center.getBlockY();
+        int cz = center.getBlockZ();
+        int rSq = r * r;
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        for (int x = -r; x <= r; x++) {
+            for (int y = -r; y <= r; y++) {
+                for (int z = -r; z <= r; z++) {
+                    if (x * x + y * y + z * z > rSq) {
+                        continue;
+                    }
+                    Material t = world.getBlockAt(cx + x, cy + y, cz + z).getType();
+                    if (t == Material.SNOW || t == Material.SNOW_BLOCK || t == Material.ICE
+                            || t == Material.PACKED_ICE || t == Material.BLUE_ICE
+                            || t == Material.FROSTED_ICE) {
+                        plans.add(new BlockBatch.Planned(cx + x, cy + y, cz + z,
+                                t == Material.SNOW ? Material.AIR : Material.WATER));
+                    }
+                }
+            }
+        }
+        return batch.apply(player, world, plans);
+    }
+
+    private CompletableFuture<Integer> applyFill(Player player, Location center, BrushState state) {
+        World world = center.getWorld();
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        int r = state.radius();
+        int cx = center.getBlockX();
+        int cy = center.getBlockY();
+        int cz = center.getBlockZ();
+        PatternEngine.Pattern pat = PatternEngine.parse(state.pattern());
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        UUID id = player.getUniqueId();
+        for (int x = -r; x <= r; x++) {
+            for (int z = -r; z <= r; z++) {
+                if (x * x + z * z > r * r) {
+                    continue;
+                }
+                for (int y = -r; y <= 0; y++) {
+                    int wx = cx + x, wy = cy + y, wz = cz + z;
+                    if (!world.getBlockAt(wx, wy, wz).getType().isAir()) {
+                        continue;
+                    }
+                    if (masks != null && !masks.allows(id, world, wx, wy, wz)) {
+                        continue;
+                    }
+                    plans.add(PatternEngine.toBatch(wx, wy, wz, pat.resolve(world, wx, wy, wz, null)));
+                }
+            }
+        }
+        return batch.apply(player, world, plans);
+    }
+
+    private CompletableFuture<Integer> applyForest(Player player, Location center, BrushState state) {
+        World world = center.getWorld();
+        if (world == null) {
+            return CompletableFuture.completedFuture(0);
+        }
+        CompletableFuture<Integer> done = new CompletableFuture<>();
+        int r = state.radius();
+        YapSched.region(plugin, center, () -> {
+            int planted = 0;
+            int cx = center.getBlockX();
+            int cz = center.getBlockZ();
+            int cy = center.getBlockY();
+            for (int x = -r; x <= r; x += 2) {
+                for (int z = -r; z <= r; z += 2) {
+                    if (x * x + z * z > r * r) {
+                        continue;
+                    }
+                    int hx = highestSolid(world, cx + x, cz + z, cy - r, cy + r);
+                    if (hx == Integer.MIN_VALUE) {
+                        continue;
+                    }
+                    Location at = new Location(world, cx + x, hx + 1, cz + z);
+                    if (world.generateTree(at, org.bukkit.TreeType.TREE)) {
+                        planted++;
+                    }
+                }
+            }
+            done.complete(planted);
+        });
+        return done;
+    }
+
     private int clampRadius(int radius) {
         return Math.max(1, Math.min(radius, maxRadius));
     }
@@ -363,6 +541,12 @@ public final class BrushService {
             case "gravity", "grav" -> BrushType.GRAVITY;
             case "clipboard", "schem", "paste" -> BrushType.CLIPBOARD;
             case "butcher", "kill" -> BrushType.BUTCHER;
+            case "erode" -> BrushType.ERODE;
+            case "raise" -> BrushType.RAISE;
+            case "lower" -> BrushType.LOWER;
+            case "melt" -> BrushType.MELT;
+            case "fill" -> BrushType.FILL;
+            case "forest", "tree" -> BrushType.FOREST;
             default -> BrushType.SPHERE;
         };
     }

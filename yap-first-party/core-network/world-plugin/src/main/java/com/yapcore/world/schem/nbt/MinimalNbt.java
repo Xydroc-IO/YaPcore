@@ -149,8 +149,14 @@ public final class MinimalNbt {
             Map<Integer, String> out = new HashMap<>();
             for (var entry : palette.values.entrySet()) {
                 try {
+                    // Inverted form: int-key → state-string
                     out.put(Integer.parseInt(entry.getKey()), entry.getValue().asString(""));
-                } catch (NumberFormatException ignored) {
+                } catch (NumberFormatException e) {
+                    // Standard Sponge: state-string → int-value
+                    int idx = entry.getValue().asInt(-1);
+                    if (idx >= 0) {
+                        out.put(idx, entry.getKey());
+                    }
                 }
             }
             return out;

@@ -7,7 +7,8 @@ import org.bukkit.World;
 
 /**
  * Minimal EngineHub-compatible facade backed by YaPWorld (Folia-safe).
- * Not a full WorldEdit implementation — common soft-deps only.
+ * Phase 5: clipboard + schematic format classes for common soft-deps.
+ * Not a full WorldEdit implementation.
  */
 public final class WorldEdit {
 

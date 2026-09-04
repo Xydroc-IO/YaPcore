@@ -22,6 +22,7 @@ public final class SelectionEditService {
     private final BlockBatch batch;
     private MaskEngine masks;
     private SelectionShape shapes;
+    private PlayerEditState editState;
     private long maxChanges = 2_000_000L;
 
     public SelectionEditService(JavaPlugin plugin, UndoService undo) {
@@ -45,11 +46,29 @@ public final class SelectionEditService {
     }
 
     public void setEditState(PlayerEditState state) {
+        this.editState = state;
         batch.setEditState(state);
+    }
+
+    private long limitFor(Player player) {
+        if (editState == null) {
+            return maxChanges;
+        }
+        return editState.effectiveLimit(player.getUniqueId(), maxChanges);
     }
 
     public void setParallelChunks(int n) {
         batch.setParallelChunks(n);
+    }
+
+    public void setLargePasteTuning(int largeBlocks, int parallelLarge, boolean autoFast) {
+        batch.setLargePasteBlocks(largeBlocks);
+        batch.setParallelChunksLarge(parallelLarge);
+        batch.setAutoFastLarge(autoFast);
+    }
+
+    public void setProgressListener(BlockBatch.ProgressListener listener) {
+        batch.setProgressListener(listener);
     }
 
     public CompletableFuture<Integer> fill(Player player, CuboidSelection sel, Material material) {
@@ -69,7 +88,7 @@ public final class SelectionEditService {
         List<BlockBatch.Planned> plans = new ArrayList<>();
         List<BlockBatch.Encoded> encoded = new ArrayList<>();
         forEachShape(id, sel, (x, y, z) -> {
-            if (plans.size() + encoded.size() >= maxChanges) {
+            if (plans.size() + encoded.size() >= limitFor(player)) {
                 return;
             }
             if (masks != null && !masks.allows(id, world, x, y, z)) {
@@ -106,7 +125,7 @@ public final class SelectionEditService {
         PatternEngine.Pattern pat = PatternEngine.parse(toPattern);
         List<BlockBatch.Planned> plans = new ArrayList<>();
         forEachShape(id, sel, (x, y, z) -> {
-            if (plans.size() >= maxChanges) {
+            if (plans.size() >= limitFor(player)) {
                 return;
             }
             if (masks != null && !masks.allows(id, world, x, y, z)) {

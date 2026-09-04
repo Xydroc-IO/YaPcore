@@ -22,9 +22,14 @@ public final class WorldConfig {
     private long maxChanges = 2_000_000L;
     private int maxRadius = 128;
     private int parallelChunks = 4;
+    private int parallelChunksLarge = 12;
+    private int largePasteBlocks = 50_000;
+    private boolean autoFastLarge = true;
+    private boolean deferRelightLarge = true;
     private boolean progressMessages = true;
     private boolean cuiEnabled = true;
     private boolean clipboardWebEnabled = true;
+    private boolean autoRelight = false;
 
     public WorldConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -48,10 +53,15 @@ public final class WorldConfig {
         editorPublicHost = c.getString("editor.public-host", editorPublicHost);
         maxChanges = Math.max(1L, c.getLong("limits.max-changes", maxChanges));
         maxRadius = Math.max(1, Math.min(512, c.getInt("limits.max-radius", maxRadius)));
-        parallelChunks = Math.max(1, Math.min(16, c.getInt("limits.parallel-chunks", parallelChunks)));
+        parallelChunks = Math.max(1, Math.min(32, c.getInt("limits.parallel-chunks", parallelChunks)));
+        parallelChunksLarge = Math.max(1, Math.min(48, c.getInt("limits.parallel-chunks-large", parallelChunksLarge)));
+        largePasteBlocks = Math.max(1_000, c.getInt("limits.large-paste-blocks", largePasteBlocks));
+        autoFastLarge = c.getBoolean("limits.auto-fast-large", true);
+        deferRelightLarge = c.getBoolean("limits.defer-relight-large", true);
         progressMessages = c.getBoolean("limits.progress-messages", true);
         cuiEnabled = c.getBoolean("cui.enabled", true);
         clipboardWebEnabled = c.getBoolean("editor.clipboard-web", true);
+        autoRelight = c.getBoolean("limits.auto-relight", false);
     }
 
     public boolean allowLoad() {
@@ -118,6 +128,22 @@ public final class WorldConfig {
         return parallelChunks;
     }
 
+    public int parallelChunksLarge() {
+        return parallelChunksLarge;
+    }
+
+    public int largePasteBlocks() {
+        return largePasteBlocks;
+    }
+
+    public boolean autoFastLarge() {
+        return autoFastLarge;
+    }
+
+    public boolean deferRelightLarge() {
+        return deferRelightLarge;
+    }
+
     public boolean progressMessages() {
         return progressMessages;
     }
@@ -128,5 +154,9 @@ public final class WorldConfig {
 
     public boolean clipboardWebEnabled() {
         return clipboardWebEnabled;
+    }
+
+    public boolean autoRelight() {
+        return autoRelight;
     }
 }

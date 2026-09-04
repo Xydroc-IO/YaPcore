@@ -214,22 +214,58 @@ public final class TerrainService {
     }
 
     public CompletableFuture<Integer> deform(Player player, CuboidSelection sel, String expression) {
-        // Supported: raise N, lower N, sine, noise
-        String expr = expression == null ? "noise" : expression.toLowerCase(Locale.ROOT);
+        // raise N / lower N / noise — or expression as vertical offset (e.g. "noise*3", "y*2")
+        String expr = expression == null ? "noise" : expression.trim();
         World world = Bukkit.getWorld(sel.world());
         if (world == null) {
             return CompletableFuture.completedFuture(0);
         }
-        int amount = 2;
-        if (expr.startsWith("raise")) {
-            amount = parseTail(expr, 2);
-            return shiftHeights(player, world, sel, amount);
+        String lower = expr.toLowerCase(Locale.ROOT);
+        if (lower.startsWith("raise")) {
+            return shiftHeights(player, world, sel, parseTail(lower, 2));
         }
-        if (expr.startsWith("lower")) {
-            amount = parseTail(expr, 2);
-            return shiftHeights(player, world, sel, -amount);
+        if (lower.startsWith("lower")) {
+            return shiftHeights(player, world, sel, -parseTail(lower, 2));
         }
-        return shiftHeights(player, world, sel, 0); // noise path
+        if (lower.equals("noise") || lower.equals("sine")) {
+            return shiftHeights(player, world, sel, 0);
+        }
+        return deformExpression(player, world, sel, expr);
+    }
+
+    /** Expression returns vertical offset in blocks (rounded). */
+    private CompletableFuture<Integer> deformExpression(Player player, World world, CuboidSelection sel, String expr) {
+        List<BlockBatch.Planned> plans = new ArrayList<>();
+        double sx = Math.max(1, sel.maxX() - sel.minX());
+        double sy = Math.max(1, sel.maxY() - sel.minY());
+        double sz = Math.max(1, sel.maxZ() - sel.minZ());
+        for (int x = sel.minX(); x <= sel.maxX(); x++) {
+            for (int z = sel.minZ(); z <= sel.maxZ(); z++) {
+                Integer top = topSolid(world, x, z, sel.minY(), sel.maxY());
+                if (top == null) {
+                    continue;
+                }
+                double nx = (x - sel.minX()) / sx;
+                double nz = (z - sel.minZ()) / sz;
+                double ny = (top - sel.minY()) / sy;
+                double raw = ExpressionEngine.eval(expr, nx, ny, nz, x, top, z, ny);
+                int d = (int) Math.round(raw);
+                if (d == 0) {
+                    continue;
+                }
+                Material fill = world.getBlockAt(x, top, z).getType();
+                if (d > 0) {
+                    for (int y = 1; y <= d && top + y <= sel.maxY(); y++) {
+                        plans.add(new BlockBatch.Planned(x, top + y, z, fill.isAir() ? Material.STONE : fill));
+                    }
+                } else {
+                    for (int y = 0; y < -d && top - y >= sel.minY(); y++) {
+                        plans.add(new BlockBatch.Planned(x, top - y, z, Material.AIR));
+                    }
+                }
+            }
+        }
+        return batch.apply(player, world, plans);
     }
 
     private CompletableFuture<Integer> shiftHeights(Player player, World world, CuboidSelection sel, int delta) {

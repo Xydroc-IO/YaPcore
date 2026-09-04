@@ -89,7 +89,7 @@ public final class WorldPlugin extends JavaPlugin {
             cmd.setExecutor(commands);
             cmd.setTabCompleter(commands);
         }
-        getLogger().info("YaPWorld ready — FAWE-class Phase 4 (WE shim, CUI, tile-NBT, clipboard-web).");
+        getLogger().info("YaPWorld ready — FAWE-class Phase 5 (clipboard entities/flags, generate, brushes, schem interop).");
     }
 
     public void reloadWorld() {
@@ -130,12 +130,53 @@ public final class WorldPlugin extends JavaPlugin {
         selectionEditService.setMaxChanges(config.maxChanges());
         selectionEditService.setEditState(playerEditState);
         selectionEditService.setParallelChunks(config.parallelChunks());
+        selectionEditService.setLargePasteTuning(
+                config.largePasteBlocks(), config.parallelChunksLarge(), config.autoFastLarge());
+        if (config.progressMessages()) {
+            selectionEditService.setProgressListener((uuid, blocks, total, chunksDone, chunksTotal) -> {
+                Player p = getServer().getPlayer(uuid);
+                if (p == null || !p.isOnline() || chunksTotal < 4) {
+                    return;
+                }
+                if (chunksDone == chunksTotal || chunksDone % Math.max(1, chunksTotal / 10) == 0) {
+                    int pct = total <= 0 ? 0 : (int) Math.min(100, (blocks * 100L) / total);
+                    p.sendMessage("§7Edit… §f" + pct + "% §7(§f" + chunksDone + "§7/§f" + chunksTotal + " §7chunks)");
+                }
+            });
+        }
 
         clipboardService = new ClipboardService(this, undoService);
         clipboardService.setMasks(maskEngine);
         clipboardService.setShapes(selectionShape);
         clipboardService.setEditState(playerEditState);
         clipboardService.setParallelChunks(config.parallelChunks());
+        clipboardService.setLargePasteTuning(
+                config.largePasteBlocks(), config.parallelChunksLarge(), config.autoFastLarge());
+        clipboardService.setSelectHook((player, bounds) -> {
+            String worldName = bounds[0];
+            int minX = Integer.parseInt(bounds[1]);
+            int minY = Integer.parseInt(bounds[2]);
+            int minZ = Integer.parseInt(bounds[3]);
+            int maxX = Integer.parseInt(bounds[4]);
+            int maxY = Integer.parseInt(bounds[5]);
+            int maxZ = Integer.parseInt(bounds[6]);
+            selection.setPos1(player.getUniqueId(), worldName, minX, minY, minZ);
+            selection.setPos2(player.getUniqueId(), worldName, maxX, maxY, maxZ);
+            notifyCui(player);
+            player.sendMessage("§aSelection set to pasted region.");
+        });
+        if (config.progressMessages()) {
+            clipboardService.setProgressListener((uuid, blocks, total, chunksDone, chunksTotal) -> {
+                Player p = getServer().getPlayer(uuid);
+                if (p == null || !p.isOnline() || chunksTotal < 4) {
+                    return;
+                }
+                if (chunksDone == chunksTotal || chunksDone % Math.max(1, chunksTotal / 10) == 0) {
+                    int pct = total <= 0 ? 0 : (int) Math.min(100, (blocks * 100L) / total);
+                    p.sendMessage("§7Paste… §f" + pct + "% §7(§f" + chunksDone + "§7/§f" + chunksTotal + " §7chunks)");
+                }
+            });
+        }
 
         generationService = new GenerationService(this, undoService);
         generationService.setMasks(maskEngine);

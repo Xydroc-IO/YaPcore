@@ -18,6 +18,9 @@ permissions:
     default: op
   yapworld.load:
     default: op
+  yapworld.create:
+    default: op
+    description: Create worlds with type / environment / seed / generator
   yapworld.unload:
     default: op
   yapworld.teleport:

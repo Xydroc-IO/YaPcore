@@ -20,7 +20,12 @@ limits:
   max-changes: 2000000
   max-radius: 128
   parallel-chunks: 4
+  parallel-chunks-large: 12
+  large-paste-blocks: 50000
+  auto-fast-large: true
+  defer-relight-large: true
   progress-messages: true
+  auto-relight: false
 
 cui:
   enabled: true
