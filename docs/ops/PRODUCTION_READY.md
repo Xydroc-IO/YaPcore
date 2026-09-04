@@ -52,10 +52,10 @@ Confirm GitHub Actions CI is green on Java 25 (line limits, DB hygiene, plugin s
 
 Walk [SECRETS.md](../start/SECRETS.md) production order once. Confirm on this host:
 
-- [ ] `web-dashboard-bind=127.0.0.1` (or SSH tunnel only)
-- [ ] Link metrics not public ([EDGE_HARDEN.md](../network/EDGE_HARDEN.md))
-- [ ] Forwarding secret / DB passwords set and **not** in git
-- [ ] Public game edge is intentional (`exposed=true` only if you want public)
+- [x] `web-dashboard-bind=127.0.0.1` (or SSH tunnel only)
+- [x] Link metrics not public ([EDGE_HARDEN.md](../network/EDGE_HARDEN.md))
+- [x] Forwarding secret / DB passwords set and **not** in git
+- [x] Public game edge is intentional (`exposed=true` only if you want public)
 
 ### 2c — §E solo checklist (you + one JE client; Bedrock if you have it)
 
