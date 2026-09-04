@@ -1,10 +1,16 @@
-# Dependabot / CI placeholders — enable workflows when ready
-# See CONTRIBUTING.md for local test commands.
+# Dependabot / community links
+
 blank_issues_enabled: true
 contact_links:
   - name: Documentation
-    url: https://github.com/OWNER/YaPcore/blob/main/docs/README.md
-    about: Architecture, plugins, modules, networking
+    url: https://github.com/Xydroc-IO/YaPcore/blob/main/docs/README.md
+    about: Operator docs — install, plugins, networking, ops
   - name: Whitepaper
-    url: https://github.com/OWNER/YaPcore/blob/main/docs/whitepaper/YAPCORE_WHITEPAPER.md
-    about: Academic / technical architecture paper
+    url: https://github.com/Xydroc-IO/YaPcore/blob/main/docs/whitepaper/YAPCORE_WHITEPAPER.md
+    about: Technical architecture
+  - name: Releases
+    url: https://github.com/Xydroc-IO/YaPcore/releases/latest
+    about: Download linux/windows packages, suites, and resource pack
+  - name: Security
+    url: https://github.com/Xydroc-IO/YaPcore/blob/main/SECURITY.md
+    about: Report vulnerabilities privately — do not file public security issues

@@ -110,7 +110,7 @@ Summarized from git history; not separate tagged releases.
 | **YaP-Folia fork** | Managed Folia 26.2 build, sched compat agent, teleport transactions, region pool knobs |
 | **MMO content** | Tiered quest compendium (100 quests, 20 bosses), ability VFX, CLAY_BALL icon pack |
 | **World & admin** | YaPWorld in-game edit GUI, admin menu, kits, claim flags, regions plugin |
-| **Docs regroup** | `docs/` topic folders, PDF export, whitepaper v0.3 |
+| **Docs regroup** | `docs/` topic folders, whitepaper v0.3 (Markdown source of truth; PDFs not tracked) |
 
 ---
 
@@ -140,6 +140,9 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 | **Repo layout** | Optional Fabric client mods nested under [`client/`](../../client/) (`yap-visuals`, `yap-bag`, `yap-ultrawide`, Iris/Sodium/shaders) |
 | **YaPCommands** | YAML custom `/commands` (`yap-commands.jar`) with dashboard **Custom commands** CRUD — messages, player/console runs, aliases, cooldowns — [COMMANDS.md](../ops/COMMANDS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
 | **YaP Vehicles pack** | Fleet HD bodies replaced with [Automobility](https://github.com/FoundationGames/Automobility) MIT meshes (re-import: `scripts/import-automobility-vehicles.py`); trademark display names retired; `yapcore-default` GAMEPLAY pack refreshed — [VEHICLES.md](../plugins/VEHICLES.md) · [CREDITS.md](../../resourcepacks/CREDITS.md) |
+| **Packs / CDN** | Default `resource-pack-url` → GitHub `releases/latest/download/{file}`; SHA-1 hashed from the remote bytes clients download; `public-pack-port` 80/443 honored for nginx edge — [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) |
+| **GitHub release assets** | Tag `1.0.0.0` ships OS zips, suites, `yapcore-default.zip`, and optional Fabric clients (`yap-visuals`, `yap-bag`, `yap-ultrawide`) |
+| **Docs hygiene** | Generated PDFs / office dumps gitignored — publish Markdown only |
 
 ### Still open (not a version bump)
 
@@ -150,7 +153,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 - Finish live **12h soak-long** + in-game VFX / encyclopedia smoke before marketing the refreshed zip as soak-proven
 - Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production
 
-`releases/1.0.0.0/` was republished after specialty-container + Automobility vehicles pack + YaPCommands / YaPWorld refresh (`gradle publishReleasesFolder`, 2026-09-04).
+`releases/1.0.0.0/` was republished after pack CDN/SHA sync + client visuals refresh (`gradle publishReleasesFolder` + `./scripts/build-yap-client-render.sh`, 2026-09-04). Prior same-day refresh covered specialty-container + Automobility vehicles + YaPCommands / YaPWorld.
 
 ---
 

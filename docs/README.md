@@ -3,12 +3,14 @@
 ![YaPcore](../branding/yapcore-banner.png)
 
 Operator docs for install, configuration, plugins, and gameplay features.
+**Markdown is the source of truth** — do not commit PDFs or office exports (`docs/pdf/` is gitignored).
 
 | Next step | Doc |
 |-----------|-----|
 | First boot | [Quick Start](start/QUICK_START.md) |
 | Full index | [Wiki](WIKI.md) |
 | Architecture | [Whitepaper](whitepaper/YAPCORE_WHITEPAPER.md) |
+| Releases & assets | [RELEASES.md](start/RELEASES.md) |
 
 ---
 
@@ -23,6 +25,7 @@ Operator docs for install, configuration, plugins, and gameplay features.
 | [**data/**](data/) | YaPDB, MariaDB, Postgres, SQLite, playerdata |
 | [**mmo/**](mmo/) | Opt-in MMO gameplay |
 | [**gameplay/**](gameplay/) | Guilds, factions, regions |
+| [**folia/**](folia/) | YaP-Folia soak, cite, Canvas parity |
 | [**whitepaper/**](whitepaper/) | Technical architecture |
 
 ---
@@ -37,9 +40,12 @@ Operator docs for install, configuration, plugins, and gameplay features.
 | [PLUGINS.md](plugins/PLUGINS.md) | Shipped plugins |
 | [MODULES_AND_API.md](plugins/MODULES_AND_API.md) | Modules and API |
 | [YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) | Architecture deep dive |
+| [CLIENTS_AND_PACKS.md](network/CLIENTS_AND_PACKS.md) | Resource packs + optional Fabric clients |
 
 ---
 
 ## Contributing
 
-[CONTRIBUTING.md](../CONTRIBUTING.md) · [SECURITY.md](../SECURITY.md)
+[CONTRIBUTING.md](../CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) · [SECURITY.md](../SECURITY.md)
+
+Optional local PDF print (gitignored): `./scripts/export-docs-pdf.sh`

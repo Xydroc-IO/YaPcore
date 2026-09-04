@@ -1,56 +1,45 @@
 # Contributing to YaPcore
 
-Thanks for helping build a clean, professional Minecraft-class server engine.
+Thank you for contributing to a production Folia network stack.
 
 ## Ground rules
 
-1. **Keep the repo clean** — never commit build outputs, live Paper/Folia trees, worlds, logs,
-   plugin jars, bench workdirs, Link `link.properties`, or secrets. `.gitignore` enforces this;
-   see the hygiene table in [README.md](README.md) and [docs/start/RELEASES.md](docs/start/RELEASES.md).
+1. **Repository hygiene** — never commit build outputs, live Paper/Folia trees, worlds, logs, plugin jars, bench workdirs, Link `link.properties`, secrets, **PDFs**, or office dumps. Markdown under `docs/` is the documentation source of truth (optional local print: `./scripts/export-docs-pdf.sh`). See [README.md](README.md) and [RELEASES.md](docs/start/RELEASES.md).
 2. **Threading** — world / inventory / block changes on **SYNC**; DB/HTTP on **HEAVY**; menu polish on **UI**.
-3. **Size** — prefer ≤500 lines per domain file; split by package when a class grows
-   (see [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md)). Link JE outbound framing belongs in
-   `McOutboundPacketEncoder`, not a stacked compress+frame Netty pair.
-4. **Docs** — API or architecture changes update `docs/` and, when substantial, the [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md).
+3. **Size** — prefer ≤500 lines per domain file; split by package when a class grows ([whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md)). Link JE outbound framing belongs in `McOutboundPacketEncoder`, not a stacked compress+frame Netty pair.
+4. **Docs** — behavior or API changes update `docs/` Markdown (and the [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) when substantial). Do not add generated PDFs to PRs.
 
 ## Setup
 
 ```bash
-git clone <your-fork-url>
+git clone https://github.com/Xydroc-IO/YaPcore.git
 cd YaPcore
-chmod +x scripts/*.sh
+chmod +x scripts/*.sh scripts/db/*.sh scripts/yapctl
+./scripts/build-yap-folia.sh
 gradle shadowJar
 ./scripts/gui.sh
 ```
 
-- **Java 21+** to compile the YaPcore toolchain.
-- **Java 25+** to run Paper 26.2 / Phase 3 (`./scripts/start.sh`).
-
-Optional YaP Paperclip (Phase 3 NMS interior tick):
-
-```bash
-./scripts/fetch-folia.sh
-```
+- **Java 25+** to build and run the product path (YaP-Folia 26.2).
+- First boot: [QUICK_START.md](docs/start/QUICK_START.md).
 
 ## Pull requests
 
 - Use the PR template.
 - One logical change per PR when possible.
+- Include a short test plan (`gradle test`, smoke join, docs touchpoints).
 
 ## Modules & plugins
 
-First-party sources live under [`yap-first-party/`](yap-first-party/README.md) (by release tier).
-Do not vendor third-party plugins into this repository. Extend APIs so *others* can
-publish jars to the unified **`plugins/`** folder or to **`modules/`**.
-Gameplay encyclopedia: [docs/ops/TUNE.md](docs/ops/TUNE.md) (`yap-gameplay-knobs`).
-See [docs/plugins/PLUGIN_COMPAT.md](docs/plugins/PLUGIN_COMPAT.md).
+First-party sources live under [`yap-first-party/`](yap-first-party/README.md) (by release tier).  
+Do not vendor third-party plugins into this repository. Extend APIs so others can publish jars to `plugins/` or `modules/`.  
+Gameplay encyclopedia: [TUNE.md](docs/ops/TUNE.md). Compat: [PLUGIN_COMPAT.md](docs/plugins/PLUGIN_COMPAT.md).
 
-## Code of conduct
+## Conduct
 
 Be respectful. No harassment. Assume good faith in reviews.
 
 ## License
 
-YaPcore is licensed under the **[GNU GPLv3](LICENSE)** (or later). By opening a pull
-request, you agree that your contribution is licensed under the same terms.
-Details and third-party notices: [docs/start/LICENSING.md](docs/start/LICENSING.md).
+YaPcore is **[GNU GPLv3](LICENSE)** (or later). By opening a pull request, you agree that your contribution is licensed under the same terms.  
+Third-party notices: [LICENSING.md](docs/start/LICENSING.md).

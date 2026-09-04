@@ -35,6 +35,32 @@ gradle publishReleasesFolder
 
 The entire `releases/` directory is **gitignored** (local artifacts only). Rebuild anytime with the same task.
 
+## GitHub release assets (tag `1.0.0.0`)
+
+Attach (or refresh with `--clobber`) so `/releases/latest/download/{file}` works:
+
+| Asset | Role |
+|-------|------|
+| `yapcore-release-linux.zip` / `-windows.zip` | Full server boxes (CI also uploads these on tag) |
+| `yap-network-suite.zip` / `yap-gameplay-suite.zip` / `yap-addons-release.zip` | Standalone suites |
+| `yapcore-default.zip` | **Required** for pack CDN (`resource-pack-url` default) |
+| `yap-visuals-1.0.1.jar` | Optional Fabric visuals (Sodium+Iris+shaders) |
+| `yap-bag-1.0.0.jar` / `yap-ultrawide-1.0.0.jar` | Optional Fabric bag UI / ultrawide FOV |
+
+```bash
+gh release upload 1.0.0.0 \
+  releases/1.0.0.0/yapcore-release-linux.zip \
+  releases/1.0.0.0/yapcore-release-windows.zip \
+  releases/1.0.0.0/yap-network-suite.zip \
+  releases/1.0.0.0/yap-gameplay-suite.zip \
+  releases/1.0.0.0/yap-addons-release.zip \
+  resourcepacks/yapcore-default.zip \
+  dist/client-mods/yap-visuals-1.0.1.jar \
+  dist/client-mods/yap-bag-1.0.0.jar \
+  dist/client-mods/yap-ultrawide-1.0.0.jar \
+  --clobber -R Xydroc-IO/YaPcore
+```
+
 **After Link wire fixes:** `publishReleasesFolder` refreshes `yap-link.jar` inside the
 trees/zips. Also copy the shadow jar to **repo-root** `yap-link.jar` — the Swing/web
 GUI `LinkProcessManager` prefers that path over `build/libs`.
@@ -90,7 +116,7 @@ gradle publishReleasesFolder   # refreshes releases/1.0.0.0/ trees + zips
 
 Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 1.0.0.0” — do **not** change Gradle `version`.
 
-**Latest refresh:** 2026-09-04 — YaP Encyclopedia + Canvas heavypop cite (−8.09% vs Canvas / −16.56% vs stock); prior same-day refresh included Ability VFX V1–V4 + Ops Waves 1–5 (fullcite −5.53% / peak −12.4%).
+**Latest refresh:** 2026-09-04 — GitHub assets complete (OS zips, suites, `yapcore-default.zip`, client jars); pack URL/SHA sync; docs PDFs gitignored. Prior same-day: YaP Encyclopedia + Canvas heavypop cite (−8.09% vs Canvas / −16.56% vs stock); Ability VFX V1–V4 + Ops Waves 1–5.
 
 ## Version bump checklist (new tag only)
 

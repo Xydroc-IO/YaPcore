@@ -1,21 +1,18 @@
-name: Pull request
-about: Template for YaPcore PRs
-title: ""
-labels: []
-assignees: []
----
-
 ## Summary
+
 -
+
 -
 
 ## Test plan
+
 - [ ] `gradle test` (or targeted module tests)
-- [ ] `gradle shadowJar`
-- [ ] Manual join smoke (if networking touched)
-- [ ] Docs updated (if API/behavior changed)
+- [ ] `gradle shadowJar` / relevant assemble task
+- [ ] Manual join smoke (if networking / packs / Folia touched)
+- [ ] Docs updated (Markdown under `docs/` — no PDFs)
 
 ## Notes
+
 - Keep domain folders ≤500 lines where practical
-- World/inventory mutations must stay on SYNC
-- Contributions are **GPLv3** (see [LICENSE](../LICENSE) · [LICENSING.md](../docs/start/LICENSING.md))
+- World / inventory mutations must stay on **SYNC**
+- Contributions are **GPLv3** — [LICENSE](../LICENSE) · [LICENSING.md](../docs/start/LICENSING.md)

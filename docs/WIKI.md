@@ -65,9 +65,14 @@ Browse by folder: [docs/README.md](README.md).
 
 ---
 
-## Architecture — [`whitepaper/`](whitepaper/)
+## Architecture — [`whitepaper/`](whitepaper/) · Folia — [`folia/`](folia/)
 
 | Page | Description |
 |------|-------------|
 | [YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) | Technical architecture |
 | [YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md](whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) | Plain-English summary |
+| [YAP_FOLIA_SOAK.md](folia/YAP_FOLIA_SOAK.md) | Soak gates and knob profiles |
+| [REAL_GAINS.md](folia/REAL_GAINS.md) | Citeable Folia gains |
+| [CANVAS_PARITY.md](folia/CANVAS_PARITY.md) | vs Canvas |
+
+Docs are **Markdown only** in git. Optional local PDFs: `./scripts/export-docs-pdf.sh` (gitignored).
