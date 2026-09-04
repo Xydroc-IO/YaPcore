@@ -1,0 +1,8 @@
+scenario=fullcite / fullcite
+stock-folia  mspt_mean=24.7234  tps=20.000  label=stock-folia
+yap-folia    mspt_mean=21.6583  tps=20.000  label=yap-folia-chassis
+NOTE: yap row is game-tick MSPT only — YaP chassis JVM overhead is NOT in mspt_mean.
+yap knobs: entity=400 microtick_ms=8 hopper=64 async=True partition=True budget_mspt=12.0
+delta yap-stock = -3.0651 ms (-12.40%)
+NOTE: Cite only with mspt_mean≥~2 and fairness_check OK (see BENCH_VS_FOLIA.md).
+VERDICT: YaP-Folia FASTER than stock Folia by 12.4% (citeable; document knobs e.g. entity-tick-budget)

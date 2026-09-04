@@ -1,8 +1,10 @@
-# Optional Folia fork checks — runs when vendor/folia or fork scripts change.
-# Full jar build is expensive (JDK 25 + Paperweight); default job only validates patches.
+# Folia fork checks — patch validation on PRs; full jar build on main/nightly/manual.
 name: Folia fork
 
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * *" # nightly UTC
   pull_request:
     paths:
       - "vendor/folia/**"
@@ -20,6 +22,7 @@ on:
       - "scripts/vendor-folia.sh"
       - "scripts/folia-patch.sh"
       - "scripts/build-yap-folia.sh"
+      - "scripts/verify-yap-folia.sh"
 
 jobs:
   patch-check:
@@ -37,10 +40,25 @@ jobs:
       - name: Compile chassis FoliaFiles (no full Folia build)
         run: gradle compileJava --no-daemon -q
 
-  # Enable manually / on nightly when runners can afford Paperweight:
-  # build-yap-folia:
-  #   needs: patch-check
-  #   if: github.event_name == 'workflow_dispatch'
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 180
-  #   steps: ... ./scripts/build-yap-folia.sh
+  build-yap-folia:
+    needs: patch-check
+    # Full Paperweight build — PR stays on patch-check only
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Build YaP-Folia paperclip
+        env:
+          SKIP_SMOKE: "1"
+        run: ./scripts/verify-yap-folia.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yap-folia-${{ github.sha }}
+          path: lib/yap-folia-*.jar
+          retention-days: 7
+          if-no-files-found: error

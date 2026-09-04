@@ -9,7 +9,24 @@ Install, setup, and lifecycle helpers for operators.
 | `start.sh` / `stop.sh` / `status.sh` | Server lifecycle |
 | `gui.sh` / `start-prod.sh` | Swing panel / production launch |
 | `start-yap-link.sh` | Start YaP Link proxy |
-| `yapctl` | CLI helper |
+| `yapctl` | CLI helper (`soak-compat` / `soak-perf` / `soak-long`) |
+| `soak-yap-folia.sh` | Live Folia mem/crash soak (compat / perf / long) |
+| `verify-yap-folia.sh` | Patch check + build `lib/yap-folia-*.jar` (`SKIP_SMOKE=1` for CI) |
+| `bench/cite-fullcite.sh` | Stock Folia vs YaPcore fullcite — **ship knobs** cite gate (`knob_*` required) |
+| Docs | [YAP_FOLIA_SOAK](../docs/folia/YAP_FOLIA_SOAK.md), [CANVAS_PARITY](../docs/folia/CANVAS_PARITY.md), [REAL_GAINS](../docs/folia/REAL_GAINS.md) |
+| `bench/compare-folia.py` | MSPT A/B vs stock Folia (fairness + tie band) |
+| `bench/check-mspt-regression.sh` | Wrapper gate over compare-folia.py |
+| `bench/run-vs-folia.sh` | Multi-competitor MSPT runner |
+
+### Mem / uptime / Folia parity
+
+- Fast gates (CI): `gradle verifyConcurrency` + `gradle soakTest` + `scanFirstPartyFoliaCompat` + MSPT fixture compare
+- Chassis retention: `gradle endurance -Dyap.endurance.seconds=300`
+- Live Folia: `./scripts/yapctl soak-compat` then `soak-long` (**12h** default, **8h** floor)
+- Folia jar: nightly / main / `workflow_dispatch` builds via `.github/workflows/folia-fork.yml`
+- **Cite:** `./scripts/yapctl cite-fullcite` → `bench/results/cite-latest-*.json` (ship knobs; must be citeable ≥5%; currently **−12.4%**)
+- Target: flat Folia heap/thread slope for 12h continuous; optional scheduled restart is ops hygiene, not a substitute for fixing slope failures
+- Reports: `logs/soak/`, `logs/endurance/`, `bench/results/`
 
 ## First boot and setup
 

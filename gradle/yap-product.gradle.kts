@@ -139,6 +139,9 @@ tasks.register("installGameplayDefaults") {
     if (findProject(":abilities-plugin") != null) {
         dependsOn(":abilities-plugin:installIntoPlugins")
     }
+    if (findProject(":disasters-plugin") != null) {
+        dependsOn(":disasters-plugin:installIntoPlugins")
+    }
     if (findProject(":stacker-plugin") != null) {
         dependsOn(":stacker-plugin:installIntoPlugins")
     }
@@ -215,6 +218,7 @@ tasks.register("assemblePluginDist") {
         ":yap-mechanics-api:jar",
         ":yap-abilities-api:jar",
         ":abilities-plugin:shadowJar",
+        ":disasters-plugin:jar",
         ":yap-games-api:jar",
         ":yap-bedrock-ui-api:jar",
         ":yap-db-api:jar",
@@ -227,6 +231,10 @@ tasks.register("assemblePluginDist") {
         ":yap-regions-api:jar",
         ":yap-npcs-api:jar",
         ":yap-tab-api:jar",
+        ":yap-guard-api:jar",
+        ":yap-lagguard-api:jar",
+        ":yap-factions-api:jar",
+        ":yap-guilds-api:jar",
         ":finetune-modules:buildAllFineTuneModules",
         ":games-module:jar",
         ":games-ffa-module:jar",
@@ -302,6 +310,9 @@ tasks.register("assemblePluginDist") {
         if (findProject(":factions-plugin") != null) {
             copyNamed(jarOf(":factions-plugin", "shadowJar"), coreDir)
         }
+        if (findProject(":bedrock-ui-plugin") != null) {
+            copyNamed(jarOf(":bedrock-ui-plugin"), coreDir)
+        }
 
         copyNamed(jarOf(":vehicles-plugin"), gameplayDir)
         copyNamed(jarOf(":gameplay-knobs-plugin"), gameplayDir)
@@ -318,6 +329,9 @@ tasks.register("assemblePluginDist") {
         if (findProject(":mmo-content-plugin") != null) {
             copyNamed(jarOf(":mmo-content-plugin", "shadowJar"), gameplayDir)
         }
+        if (findProject(":mmo-bedrock-plugin") != null) {
+            copyNamed(jarOf(":mmo-bedrock-plugin"), gameplayDir)
+        }
         if (findProject(":guilds-plugin") != null) {
             copyNamed(jarOf(":guilds-plugin", "shadowJar"), gameplayDir)
         }
@@ -329,6 +343,9 @@ tasks.register("assemblePluginDist") {
         }
         if (findProject(":abilities-plugin") != null) {
             copyNamed(jarOf(":abilities-plugin", "shadowJar"), gameplayDir)
+        }
+        if (findProject(":disasters-plugin") != null) {
+            copyNamed(jarOf(":disasters-plugin"), gameplayDir)
         }
 
         copyNamed(jarOf(":yap-db-api"), apiDir)
@@ -366,6 +383,9 @@ tasks.register("assemblePluginDist") {
         }
         if (findProject(":yap-guilds-api") != null) {
             copyNamed(jarOf(":yap-guilds-api"), apiDir)
+        }
+        if (findProject(":yap-bedrock-ui-api") != null) {
+            copyNamed(jarOf(":yap-bedrock-ui-api"), apiDir)
         }
 
         // Fine-tune modules (drop into server modules/)

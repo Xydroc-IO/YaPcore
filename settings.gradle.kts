@@ -7,6 +7,9 @@ rootProject.name = "YaPcore"
 // First-party product sources — see yap-first-party/README.md
 // Gradle project names stay stable; only projectDir paths moved under yap-first-party/.
 
+include("bench-plugin")
+project(":bench-plugin").projectDir = file("yap-first-party/dev/bench-plugin")
+
 include("gameplay-knobs-plugin")
 project(":gameplay-knobs-plugin").projectDir = file("yap-first-party/gameplay/gameplay-knobs-plugin")
 
@@ -60,6 +63,9 @@ project(":moderation-plugin").projectDir = file("yap-first-party/core-network/mo
 
 include("essentials-plugin")
 project(":essentials-plugin").projectDir = file("yap-first-party/core-network/essentials-plugin")
+
+include("disasters-plugin")
+project(":disasters-plugin").projectDir = file("yap-first-party/gameplay/disasters-plugin")
 
 include("admin-plugin")
 project(":admin-plugin").projectDir = file("yap-first-party/core-network/admin-plugin")
@@ -197,9 +203,6 @@ project(":games-plugin").projectDir = file("yap-first-party/gameplay/games-plugi
 
 include("yap-games-api")
 project(":yap-games-api").projectDir = file("yap-first-party/api/yap-games-api")
-
-include("yap-abilities-api")
-project(":yap-abilities-api").projectDir = file("yap-first-party/api/yap-abilities-api")
 
 include("games-module")
 project(":games-module").projectDir = file("yap-first-party/modules/games-module")

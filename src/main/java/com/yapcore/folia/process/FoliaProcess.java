@@ -53,6 +53,9 @@ public final class FoliaProcess {
                     || System.getProperty("yap.bench.out") != null) {
                 LOG.info("Folia exited during bench (code=" + p.exitValue() + ") — exiting chassis");
                 System.exit(p.exitValue() == 0 ? 0 : 1);
+            } else {
+                LOG.warning("Folia child exited unexpectedly (code=" + p.exitValue()
+                        + ") — chassis stays up; restart Folia or stop the product");
             }
         });
         logPump = new Thread(this::pumpLogs, "yap-folia-log");

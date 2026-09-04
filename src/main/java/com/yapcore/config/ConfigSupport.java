@@ -23,4 +23,12 @@ public final class ConfigSupport {
             return fallback;
         }
     }
+
+    public static double parseDouble(Properties props, String key, double fallback) {
+        try {
+            return Double.parseDouble(props.getProperty(key, Double.toString(fallback)).trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
 }

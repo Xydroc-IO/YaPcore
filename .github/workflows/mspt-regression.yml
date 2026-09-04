@@ -1,0 +1,40 @@
+# Optional live MSPT A/B vs stock Folia — run on self-hosted / local; CI gates the compare script only.
+name: MSPT regression
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: Bench scenario
+        required: true
+        default: fullcite
+      seconds:
+        description: Sample seconds
+        required: true
+        default: "40"
+
+jobs:
+  compare-fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Fixture gate (compare-folia.py)
+        run: |
+          chmod +x scripts/bench/check-mspt-regression.sh
+          gradle checkMsptRegressionFixtures --no-daemon
+
+  # Live A/B is intentionally manual: needs Folia jars, bots, and a long runner.
+  # Local: build jars → run benches → ./scripts/bench/check-mspt-regression.sh stock.json yap.json
+  note:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Live fullcite A/B is local/self-hosted."
+          echo "1) ./scripts/fetch-folia.sh && ./scripts/build-yap-folia.sh"
+          echo "2) Run MSPT benches for stock Folia + yap-folia (same scenario/seconds/heap)"
+          echo "3) ./scripts/bench/check-mspt-regression.sh stock.json yap.json"
+          echo "Scenario input: ${{ github.event.inputs.scenario }} seconds=${{ github.event.inputs.seconds }}"

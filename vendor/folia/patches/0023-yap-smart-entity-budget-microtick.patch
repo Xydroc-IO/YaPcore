@@ -1,0 +1,385 @@
+From: YaPcore Agent 3 <agent-3@yapcore>
+Subject: [PATCH] YaP smart hot-region entity budget + microtick gate
+
+MSPT-gated engage (YapHotRegionGate), protect bosses/named/near-player,
+anti-starve deferred-age cap. Microtick shares budget-mspt-threshold.
+Post-applyAllPatches. Domain files ≤500 lines.
+---
+--- /dev/null
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapHotRegionGate.java
+@@ -0,0 +1,48 @@
++package io.papermc.paper.threadedregions;
++
++/**
++ * Shared per-region-tick MSPT sample for YaP budgets / microtick.
++ * Written from {@link TickRegions} after each region tick; read by entity budget gates.
++ */
++public final class YapHotRegionGate {
++
++    private static final ThreadLocal<Sample> CURRENT = new ThreadLocal<>();
++
++    private YapHotRegionGate() {
++    }
++
++    /** Record MSPT (ms) for the region tick currently completing / about to run entity phase. */
++    public static void noteMspt(final long msptMs) {
++        Sample s = CURRENT.get();
++        if (s == null) {
++            s = new Sample();
++            CURRENT.set(s);
++        }
++        s.msptMs = Math.max(0L, msptMs);
++        s.valid = true;
++    }
++
++    public static void clear() {
++        CURRENT.remove();
++    }
++
++    public static long lastMsptMs() {
++        final Sample s = CURRENT.get();
++        return s != null && s.valid ? s.msptMs : 0L;
++    }
++
++    /**
++     * @param thresholdMs engage when last MSPT ≥ this; {@code ≤0} means always engage when caller enabled
++     */
++    public static boolean hotEnough(final double thresholdMs) {
++        if (thresholdMs <= 0.0) {
++            return true;
++        }
++        return lastMsptMs() >= thresholdMs;
++    }
++
++    private static final class Sample {
++        long msptMs;
++        boolean valid;
++    }
++}
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapEntityTickBudget.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapEntityTickBudget.java
+@@ -1,25 +1,53 @@
+ package io.papermc.paper.threadedregions;
+ 
++import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.entity.Mob;
++import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
++import net.minecraft.world.entity.boss.wither.WitherBoss;
++import net.minecraft.world.entity.monster.ElderGuardian;
++import net.minecraft.world.entity.monster.warden.Warden;
++import net.minecraft.world.entity.player.Player;
++
++import java.util.Iterator;
++import java.util.List;
++import java.util.Map;
++import java.util.UUID;
++import java.util.concurrent.ConcurrentHashMap;
+ import java.util.concurrent.atomic.AtomicLong;
+ 
+ /**
+- * YaP Phase 3.2 — per-region entity tick budget for spawn-collapse / hot regions.
++ * YaP Phase 3.2 — per-region Mob AI tick budget for hot regions.
+  *
+- * <p>{@code -Dyap.folia.entity-tick-budget=N} — max Mob AI entities ticked per region tick
+- * (0 / unset = unlimited). Players / TNT / vehicles / items are never skipped.
++ * <p>{@code -Dyap.folia.entity-tick-budget=N} — max Mob AI ticks per region tick (0=off).
++ * <p>{@code -Dyap.folia.budget-mspt-threshold=M} — only engage when region MSPT ≥ M ms (0=always when N&gt;0).
++ * <p>{@code -Dyap.folia.entity-tick-max-deferred=A} — force-tick a mob after A consecutive skips (default 40).
+  *
+- * <p>Also respects {@link YapMicroTick} time-slice when enabled.
++ * <p>Never skips players / TNT / vehicles / items / bosses / named / near-player mobs.
++ * Also respects {@link YapMicroTick} when enabled.
+  */
+ public final class YapEntityTickBudget {
+ 
+     private static final ThreadLocal<Counter> CURRENT = new ThreadLocal<>();
+     private static final AtomicLong SKIPPED = new AtomicLong();
++    /** entity UUID → consecutive deferred ticks (global soft age; pruned opportunistically). */
++    private static final ConcurrentHashMap<UUID, Integer> DEFERRED_AGE = new ConcurrentHashMap<>();
++    private static final double NEAR_PLAYER_BLOCKS = Double.parseDouble(
++            System.getProperty("yap.folia.entity-tick-near-player-blocks", "48"));
+ 
+     private YapEntityTickBudget() {
+     }
+ 
+     public static int budget() {
+         return Integer.getInteger("yap.folia.entity-tick-budget", 0);
++    }
++
++    public static double msptThreshold() {
++        return Double.parseDouble(System.getProperty("yap.folia.budget-mspt-threshold", "12"));
++    }
++
++    public static int maxDeferred() {
++        return Math.max(1, Integer.getInteger("yap.folia.entity-tick-max-deferred", 40));
+     }
+ 
+     public static boolean enabled() {
+@@ -37,79 +65,139 @@
+         }
+         c.ticked = 0;
+         c.limit = budget();
++        c.active = YapHotRegionGate.hotEnough(msptThreshold());
+     }
+ 
+     public static void endTick() {
+         CURRENT.remove();
+-    }
+-
+-    /**
+-     * @param entity entity under consideration
+-     * @return true if this entity should be ticked; false to skip for this tick
+-     */
+-    public static boolean allowTick(final net.minecraft.world.entity.Entity entity) {
+-        // Always tick players, TNT, vehicles, items — budget / microtick only AI mobs.
+-        if (entity instanceof net.minecraft.world.entity.player.Player
++        // Opportunistic prune of stale deferred ages (cap map size)
++        if (DEFERRED_AGE.size() > 4096) {
++            final Iterator<Map.Entry<UUID, Integer>> it = DEFERRED_AGE.entrySet().iterator();
++            int drop = DEFERRED_AGE.size() - 2048;
++            while (drop-- > 0 && it.hasNext()) {
++                it.next();
++                it.remove();
++            }
++        }
++    }
++
++    public static boolean allowTick(final Entity entity) {
++        if (isAlwaysTick(entity)) {
++            clearDeferred(entity);
++            return true;
++        }
++        if (!(entity instanceof Mob)) {
++            return true;
++        }
++        if (isProtectedMob((Mob) entity)) {
++            clearDeferred(entity);
++            return true;
++        }
++        if (!enabled() && !YapMicroTick.enabled()) {
++            return true;
++        }
++
++        final UUID id = entity.getUUID();
++        final int age = DEFERRED_AGE.getOrDefault(id, 0);
++        if (age >= maxDeferred()) {
++            // Anti-starve: force a tick, then reset age
++            DEFERRED_AGE.remove(id);
++            if (enabled()) {
++                final Counter c = CURRENT.get();
++                if (c != null && c.active) {
++                    c.ticked++;
++                }
++            }
++            return YapMicroTick.allowMoreWork();
++        }
++
++        if (enabled()) {
++            final Counter c = CURRENT.get();
++            if (c != null && c.active) {
++                if (c.ticked >= c.limit) {
++                    SKIPPED.incrementAndGet();
++                    DEFERRED_AGE.put(id, age + 1);
++                    return false;
++                }
++                c.ticked++;
++            }
++        }
++        if (!YapMicroTick.allowMoreWork()) {
++            SKIPPED.incrementAndGet();
++            DEFERRED_AGE.put(id, age + 1);
++            return false;
++        }
++        clearDeferred(entity);
++        return true;
++    }
++
++    /** @deprecated use {@link #allowTick(Entity)} */
++    @Deprecated
++    public static boolean allowTick(final boolean isPlayer) {
++        if (isPlayer) {
++            return true;
++        }
++        return !enabled() && !YapMicroTick.enabled();
++    }
++
++    public static long skippedCount() {
++        return SKIPPED.get();
++    }
++
++    private static boolean isAlwaysTick(final Entity entity) {
++        return entity instanceof Player
+                 || entity instanceof net.minecraft.world.entity.item.PrimedTnt
+                 || entity instanceof net.minecraft.world.entity.vehicle.VehicleEntity
+                 || entity instanceof net.minecraft.world.entity.vehicle.minecart.AbstractMinecart
+                 || entity instanceof net.minecraft.world.entity.item.ItemEntity
+-                || entity instanceof net.minecraft.world.entity.ExperienceOrb
+-                || !(entity instanceof net.minecraft.world.entity.Mob)) {
+-            return true;
+-        }
+-        if (!enabled() && !YapMicroTick.enabled()) {
+-            return true;
+-        }
+-        if (enabled()) {
+-            final Counter c = CURRENT.get();
+-            if (c != null && c.ticked >= c.limit) {
+-                SKIPPED.incrementAndGet();
++                || entity instanceof net.minecraft.world.entity.ExperienceOrb;
++    }
++
++    private static boolean isProtectedMob(final Mob mob) {
++        if (mob.hasCustomName()) {
++            return true;
++        }
++        if (mob instanceof EnderDragon
++                || mob instanceof WitherBoss
++                || mob instanceof Warden
++                || mob instanceof ElderGuardian) {
++            return true;
++        }
++        return nearPlayer(mob);
++    }
++
++    private static boolean nearPlayer(final Mob mob) {
++        try {
++            final RegionizedWorldData wd = TickRegionScheduler.getCurrentRegionizedWorldData();
++            if (wd == null) {
+                 return false;
+             }
+-            if (c != null) {
+-                c.ticked++;
+-            }
+-        }
+-        if (!YapMicroTick.allowMoreWork()) {
+-            SKIPPED.incrementAndGet();
++            final List<ServerPlayer> locals = wd.getLocalPlayers();
++            if (locals == null || locals.isEmpty()) {
++                return false;
++            }
++            final double r2 = NEAR_PLAYER_BLOCKS * NEAR_PLAYER_BLOCKS;
++            for (final ServerPlayer p : locals) {
++                if (p != null && p.distanceToSqr(mob) <= r2) {
++                    return true;
++                }
++            }
++        } catch (final Throwable ignored) {
+             return false;
+         }
+-        return true;
+-    }
+-
+-    /** @deprecated use {@link #allowTick(net.minecraft.world.entity.Entity)} */
+-    @Deprecated
+-    public static boolean allowTick(final boolean isPlayer) {
+-        if (isPlayer) {
+-            return true;
+-        }
+-        if (!enabled() && !YapMicroTick.enabled()) {
+-            return true;
+-        }
+-        if (enabled()) {
+-            final Counter c = CURRENT.get();
+-            if (c != null && c.ticked >= c.limit) {
+-                SKIPPED.incrementAndGet();
+-                return false;
+-            }
+-            if (c != null) {
+-                c.ticked++;
+-            }
+-        }
+-        if (!YapMicroTick.allowMoreWork()) {
+-            SKIPPED.incrementAndGet();
+-            return false;
+-        }
+-        return true;
+-    }
+-
+-    public static long skippedCount() {
+-        return SKIPPED.get();
++        return false;
++    }
++
++    private static void clearDeferred(final Entity entity) {
++        try {
++            DEFERRED_AGE.remove(entity.getUUID());
++        } catch (final Throwable ignored) {
++        }
+     }
+ 
+     private static final class Counter {
+         int ticked;
+         int limit;
++        boolean active;
+     }
+ }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapMicroTick.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapMicroTick.java
+@@ -12,6 +12,7 @@
+  * <p>Knobs:
+  * <ul>
+  *   <li>{@code -Dyap.folia.microtick-budget-ms=N} — soft deadline for Mob AI phase (0=off)</li>
++ *   <li>{@code -Dyap.folia.budget-mspt-threshold=M} — only engage when region MSPT ≥ M (shared with entity budget)</li>
+  *   <li>Works together with {@link YapEntityTickBudget} count budget</li>
+  * </ul>
+  */
+@@ -27,6 +28,10 @@
+         return Integer.getInteger("yap.folia.microtick-budget-ms", 0);
+     }
+ 
++    public static double msptThreshold() {
++        return Double.parseDouble(System.getProperty("yap.folia.budget-mspt-threshold", "12"));
++    }
++
+     public static boolean enabled() {
+         return budgetMs() > 0;
+     }
+@@ -39,6 +44,12 @@
+         if (d == null) {
+             d = new Deadline();
+             CURRENT.set(d);
++        }
++        d.active = YapHotRegionGate.hotEnough(msptThreshold());
++        if (!d.active) {
++            d.exhausted = false;
++            d.deadlineNs = Long.MAX_VALUE;
++            return;
+         }
+         d.deadlineNs = System.nanoTime() + budgetMs() * 1_000_000L;
+         d.exhausted = false;
+@@ -54,11 +65,14 @@
+             return true;
+         }
+         final Deadline d = CURRENT.get();
+-        if (d == null || d.exhausted) {
+-            if (d != null && d.exhausted) {
+-                return false;
+-            }
++        if (d == null) {
+             return true;
++        }
++        if (!d.active) {
++            return true;
++        }
++        if (d.exhausted) {
++            return false;
+         }
+         if (System.nanoTime() >= d.deadlineNs) {
+             d.exhausted = true;
+@@ -75,5 +89,6 @@
+     private static final class Deadline {
+         long deadlineNs;
+         boolean exhausted;
++        boolean active;
+     }
+ }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/TickRegions.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/TickRegions.java
+@@ -497,6 +497,7 @@
+                 profiler.stopTick(); // Folia - profiler
+                 // YaP — hot-region force-partition / coalesce policy (MSPT of this tick)
+                 final long msptMs = Math.max(0L, (System.nanoTime() - startTime) / 1_000_000L);
++                YapHotRegionGate.noteMspt(msptMs); // next entity/microtick phase uses prior-tick MSPT
+                 YapSubRegionPartitioner.onTickComplete(this.region, msptMs);
+             }
+         }

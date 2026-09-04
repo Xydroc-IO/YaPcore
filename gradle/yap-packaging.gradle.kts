@@ -52,14 +52,27 @@ tasks.register("verifyConcurrency") {
 /** GAMEPLAY opt-in bundle (also shipped inside assembleRelease -PyapGameplay=true). */
 tasks.register("assembleGameplaySuite") {
     group = "distribution"
-    description = "Zip gameplay plugins + modules + yap-vehicles.zip → build/dist/yap-gameplay-suite.zip"
+    description = "Zip gameplay plugins + modules + packs → build/dist/yap-gameplay-suite.zip"
     dependsOn(
         "installGameplayDefaults",
         "prepareClientPack",
         ":vehicles-plugin:jar",
         ":stacker-plugin:jar",
         ":gameplay-knobs-plugin:jar",
+        ":skills-plugin:shadowJar",
+        ":combat-plugin:shadowJar",
+        ":crafting-plugin:shadowJar",
+        ":mmo-content-plugin:shadowJar",
+        ":mmo-bedrock-plugin:jar",
+        ":guilds-plugin:shadowJar",
+        ":games-plugin:shadowJar",
+        ":mechanics-plugin:jar",
+        ":abilities-plugin:shadowJar",
+        ":disasters-plugin:jar",
         ":vehicles-module:jar",
+        ":games-module:jar",
+        ":games-ffa-module:jar",
+        ":games-duels-module:jar",
         ":finetune-modules:buildAllFineTuneModules",
     )
     doLast {
@@ -75,8 +88,21 @@ tasks.register("assembleGameplaySuite") {
             jarOf(":vehicles-plugin") to "yap-vehicles.jar",
             jarOf(":stacker-plugin") to "yap-stacker.jar",
             jarOf(":gameplay-knobs-plugin") to "yap-gameplay-knobs.jar",
+            jarOf(":skills-plugin", "shadowJar") to "yap-skills.jar",
+            jarOf(":combat-plugin", "shadowJar") to "yap-combat.jar",
+            jarOf(":crafting-plugin", "shadowJar") to "yap-crafting.jar",
+            jarOf(":mmo-content-plugin", "shadowJar") to "yap-mmo-content.jar",
+            jarOf(":mmo-bedrock-plugin") to "yap-mmo-bedrock.jar",
+            jarOf(":guilds-plugin", "shadowJar") to "yap-guilds.jar",
+            jarOf(":games-plugin", "shadowJar") to "yap-games.jar",
+            jarOf(":mechanics-plugin") to "yap-mechanics.jar",
+            jarOf(":abilities-plugin", "shadowJar") to "yap-abilities.jar",
+            jarOf(":disasters-plugin") to "yap-disasters.jar",
         ).forEach { (src, name) -> src.copyTo(plugins.resolve(name), overwrite = true) }
         jarOf(":vehicles-module").copyTo(modules.resolve("yap-vehicles-module.jar"), overwrite = true)
+        jarOf(":games-module").copyTo(modules.resolve(jarOf(":games-module").name), overwrite = true)
+        jarOf(":games-ffa-module").copyTo(modules.resolve(jarOf(":games-ffa-module").name), overwrite = true)
+        jarOf(":games-duels-module").copyTo(modules.resolve(jarOf(":games-duels-module").name), overwrite = true)
         project.project(":finetune-modules").tasks.withType(Jar::class.java).forEach { jarTask ->
             if (!jarTask.enabled || jarTask.name == "jar") return@forEach
             val f = jarTask.archiveFile.get().asFile
@@ -86,6 +112,8 @@ tasks.register("assembleGameplaySuite") {
         }
         val vehPack = project.file("resourcepacks/yap-vehicles.zip")
         if (vehPack.isFile) vehPack.copyTo(packs.resolve("yap-vehicles.zip"), overwrite = true)
+        val abilPack = project.file("resourcepacks/yap-abilities.zip")
+        if (abilPack.isFile) abilPack.copyTo(packs.resolve("yap-abilities.zip"), overwrite = true)
         outDir.resolve("README.txt").writeText(
             """
             YaPcore GAMEPLAY suite (v1.0.0.0)

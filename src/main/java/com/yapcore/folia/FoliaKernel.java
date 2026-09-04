@@ -161,6 +161,16 @@ public final class FoliaKernel {
         if (entityTickBudget > 0) {
             cmd.add("-Dyap.folia.entity-tick-budget=" + entityTickBudget);
         }
+        // Shared MSPT gate for entity budget + microtick (always forward product value).
+        cmd.add("-Dyap.folia.budget-mspt-threshold=" + config.getFoliaBudgetMsptThreshold());
+        int maxDeferred = config.getFoliaEntityTickMaxDeferred();
+        if (maxDeferred != 40) {
+            cmd.add("-Dyap.folia.entity-tick-max-deferred=" + maxDeferred);
+        }
+        int hopperTickBudget = config.getFoliaHopperTickBudget();
+        if (hopperTickBudget > 0) {
+            cmd.add("-Dyap.folia.hopper-tick-budget=" + hopperTickBudget);
+        }
         if (config.isFoliaScoreboardSwmr()) {
             cmd.add("-Dyap.folia.scoreboard-swmr=true");
         }
@@ -193,6 +203,10 @@ public final class FoliaKernel {
             if (mspt != 20) {
                 cmd.add("-Dyap.folia.subregion-mspt-threshold=" + mspt);
             }
+            int msptClear = config.getFoliaSubregionMsptClear();
+            if (msptClear != 16) {
+                cmd.add("-Dyap.folia.subregion-mspt-clear=" + msptClear);
+            }
             int minSec = config.getFoliaSubregionMinSections();
             if (minSec != 4) {
                 cmd.add("-Dyap.folia.subregion-min-sections=" + minSec);
@@ -212,6 +226,10 @@ public final class FoliaKernel {
             int quietTicks = config.getFoliaSubregionCoalesceQuietTicks();
             if (quietTicks != 200) {
                 cmd.add("-Dyap.folia.subregion-coalesce-quiet-ticks=" + quietTicks);
+            }
+            long coalWall = config.getFoliaSubregionCoalesceMinWallMs();
+            if (coalWall != 30_000L) {
+                cmd.add("-Dyap.folia.subregion-coalesce-min-wall-ms=" + coalWall);
             }
             if (!config.isFoliaSubregionCarve()) {
                 cmd.add("-Dyap.folia.subregion-carve=false");

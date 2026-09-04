@@ -15,7 +15,15 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      - name: Make scripts executable
+        run: chmod +x scripts/bench/check-mspt-regression.sh scripts/verify-yap-folia.sh scripts/smoke-folia.sh scripts/bench/compare-folia.py || true
       - name: Build shadow JAR
         run: gradle shadowJar --no-daemon
-      - name: Unit tests
-        run: gradle test --no-daemon
+      - name: Concurrency + unit tests
+        run: gradle verifyConcurrency --no-daemon
+      - name: Short soak (retention)
+        run: gradle soakTest --no-daemon
+      - name: Folia-compat scan (first-party plugins)
+        run: gradle scanFirstPartyFoliaCompat --no-daemon
+      - name: MSPT compare script fixtures
+        run: gradle checkMsptRegressionFixtures --no-daemon

@@ -89,6 +89,7 @@ tasks.register("assembleRelease") {
             "yap-games.jar",
             "yap-mechanics.jar",
             "yap-abilities.jar",
+            "yap-disasters.jar",
         )
         val pluginJars = if (includeGameplay) {
             corePluginJars + gameplayPluginJars

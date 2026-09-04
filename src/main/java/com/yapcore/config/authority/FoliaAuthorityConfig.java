@@ -29,25 +29,31 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-sched-compat", "true");
         props.setProperty("folia-sched-compat-warn", "true");
         props.setProperty("folia-teleport-transactions", "true");
-        // Phase 3 perf knobs — product defaults OFF (safe). Enable for soak-perf / hot spawn.
-        props.setProperty("folia-async-chunk-save", "false");
-        props.setProperty("folia-entity-tick-budget", "0");
+        // Phase 3: async-chunk-save + hopper budget ON; smart Mob AI budget gated by MSPT.
+        props.setProperty("folia-async-chunk-save", "true");
+        props.setProperty("folia-entity-tick-budget", "400");
+        props.setProperty("folia-budget-mspt-threshold", "12");
+        props.setProperty("folia-entity-tick-max-deferred", "40");
+        props.setProperty("folia-hopper-tick-budget", "64");
         props.setProperty("folia-scoreboard-swmr", "true");
-        // Phase 4 region pool / micro-tick — defaults OFF (safe)
-        props.setProperty("folia-microtick-budget-ms", "0");
+        // Phase 4 — mild microtick (MSPT-gated; bosses/near-player never deferred)
+        props.setProperty("folia-microtick-budget-ms", "8");
         props.setProperty("folia-steal-threshold-ms", "3");
         props.setProperty("folia-task-slice-ms", "2");
         props.setProperty("folia-grid-exponent", "");
         props.setProperty("folia-region-metrics", "true");
-        // Phase 5 — true parallel sub-regions via force-partition (default OFF)
-        props.setProperty("folia-subregion-partition", "false");
+        // Phase 5 — parallel sub-regions (hysteresis + coalesce wall-clock; carve on)
+        props.setProperty("folia-subregion-partition", "true");
         props.setProperty("folia-subregion-shards", "2");
         props.setProperty("folia-subregion-mspt-threshold", "20");
+        props.setProperty("folia-subregion-mspt-clear", "16");
         props.setProperty("folia-subregion-min-sections", "4");
         props.setProperty("folia-subregion-min-entities", "32");
         props.setProperty("folia-subregion-coalesce-mspt", "8");
         props.setProperty("folia-subregion-coalesce-ticks", "100");
         props.setProperty("folia-subregion-coalesce-quiet-ticks", "200");
+        props.setProperty("folia-subregion-coalesce-min-wall-ms", "30000");
+        props.setProperty("folia-subregion-partition-delay-ticks", "600");
     }
 
     public boolean isFoliaAuthority() {
@@ -115,17 +121,38 @@ public final class FoliaAuthorityConfig {
         return Boolean.parseBoolean(props.getProperty("folia-teleport-transactions", "true"));
     }
 
-    /** Offload Moonrise flush off region thread ({@code -Dyap.folia.async-chunk-save}). Default off. */
+    /** Offload Moonrise flush off region thread ({@code -Dyap.folia.async-chunk-save}). Default on. */
     public boolean isFoliaAsyncChunkSave() {
-        return Boolean.parseBoolean(props.getProperty("folia-async-chunk-save", "false"));
+        return Boolean.parseBoolean(props.getProperty("folia-async-chunk-save", "true"));
     }
 
     /**
      * Max Mob AI ticks per region tick ({@code -Dyap.folia.entity-tick-budget}).
-     * {@code 0} = off. TNT/players/vehicles always tick.
+     * {@code 0} = off. TNT/players/vehicles/bosses/near-player never deferred.
      */
     public int getFoliaEntityTickBudget() {
-        return ConfigSupport.parseInt(props, "folia-entity-tick-budget", 0);
+        return ConfigSupport.parseInt(props, "folia-entity-tick-budget", 400);
+    }
+
+    /**
+     * Engage entity/microtick budgets only when prior-tick region MSPT ≥ this
+     * ({@code -Dyap.folia.budget-mspt-threshold}). {@code 0} = always when budgets set.
+     */
+    public double getFoliaBudgetMsptThreshold() {
+        return ConfigSupport.parseDouble(props, "folia-budget-mspt-threshold", 12.0);
+    }
+
+    /** Force-tick a mob after this many consecutive skips ({@code -Dyap.folia.entity-tick-max-deferred}). */
+    public int getFoliaEntityTickMaxDeferred() {
+        return ConfigSupport.parseInt(props, "folia-entity-tick-max-deferred", 40);
+    }
+
+    /**
+     * Max hopper transfers per region tick ({@code -Dyap.folia.hopper-tick-budget}).
+     * {@code 0} = off. Soft deferral only — does not affect TNT/players.
+     */
+    public int getFoliaHopperTickBudget() {
+        return ConfigSupport.parseInt(props, "folia-hopper-tick-budget", 0);
     }
 
     /** Allow Bukkit scoreboard mutations under SWMR ({@code -Dyap.folia.scoreboard-swmr}). Default off. */
@@ -135,10 +162,10 @@ public final class FoliaAuthorityConfig {
 
     /**
      * Soft deadline (ms) for Mob AI phase per region tick ({@code -Dyap.folia.microtick-budget-ms}).
-     * {@code 0} = off. Same-thread deferral — not true parallel sub-regions.
+     * {@code 0} = off. MSPT-gated; same-thread deferral — not true parallel sub-regions.
      */
     public int getFoliaMicrotickBudgetMs() {
-        return ConfigSupport.parseInt(props, "folia-microtick-budget-ms", 0);
+        return ConfigSupport.parseInt(props, "folia-microtick-budget-ms", 8);
     }
 
     /** WORK_STEALING steal threshold ms ({@code -Dyap.folia.steal-threshold-ms}). Default 3. */
@@ -166,10 +193,10 @@ public final class FoliaAuthorityConfig {
 
     /**
      * Force-partition hot regions into independent Folia shards that tick in parallel
-     * ({@code -Dyap.folia.subregion-partition}). Default off.
+     * ({@code -Dyap.folia.subregion-partition}). Default on (hysteresis + coalesce wall).
      */
     public boolean isFoliaSubregionPartition() {
-        return Boolean.parseBoolean(props.getProperty("folia-subregion-partition", "false"));
+        return Boolean.parseBoolean(props.getProperty("folia-subregion-partition", "true"));
     }
 
     public int getFoliaSubregionShards() {
@@ -178,6 +205,11 @@ public final class FoliaAuthorityConfig {
 
     public int getFoliaSubregionMsptThreshold() {
         return ConfigSupport.parseInt(props, "folia-subregion-mspt-threshold", 20);
+    }
+
+    /** Clear partition hot-streak below this MSPT ({@code -Dyap.folia.subregion-mspt-clear}). */
+    public int getFoliaSubregionMsptClear() {
+        return ConfigSupport.parseInt(props, "folia-subregion-mspt-clear", 16);
     }
 
     public int getFoliaSubregionMinSections() {
@@ -198,6 +230,11 @@ public final class FoliaAuthorityConfig {
 
     public int getFoliaSubregionCoalesceQuietTicks() {
         return ConfigSupport.parseInt(props, "folia-subregion-coalesce-quiet-ticks", 200);
+    }
+
+    /** Min wall-clock ms after partition before coalesce ({@code -Dyap.folia.subregion-coalesce-min-wall-ms}). */
+    public long getFoliaSubregionCoalesceMinWallMs() {
+        return ConfigSupport.parseLong(props, "folia-subregion-coalesce-min-wall-ms", 30_000L);
     }
 
     /** Corridor unload before force-partition ({@code -Dyap.folia.subregion-carve}). Default true. */

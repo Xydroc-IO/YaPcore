@@ -1,0 +1,471 @@
+package com.yapcore.bench;
+
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Hopper;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.TNTPrimed;
+import org.bukkit.entity.Villager;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+final class BenchSampler {
+    private final JavaPlugin plugin;
+    private final BenchWorldPrep worldPrep;
+
+    BenchSampler(JavaPlugin plugin, BenchWorldPrep worldPrep) {
+        this.plugin = plugin;
+        this.worldPrep = worldPrep;
+    }
+
+    record LoadSnapshot(int tntAlive, double fuseMean, int hoppers, int entitiesTotal,
+                                int players, int villagers, int loadedChunks,
+                                String entityTop) {
+    }
+
+    private LoadSnapshot snapshotLoad(World world) {
+        int tnt = 0;
+        long fuseSum = 0;
+        int hoppers = 0;
+        int entities = 0;
+        int villagers = 0;
+        java.util.Map<String, Integer> byType = new java.util.HashMap<>();
+        for (Entity e : world.getEntities()) {
+            entities++;
+            String key = e.getType().name();
+            byType.merge(key, 1, Integer::sum);
+            if (e instanceof TNTPrimed tntPrimed) {
+                tnt++;
+                fuseSum += tntPrimed.getFuseTicks();
+            }
+            if (e instanceof Villager) {
+                villagers++;
+            }
+        }
+        String entityTop = byType.entrySet().stream()
+                .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
+                .limit(12)
+                .map(en -> en.getKey() + "=" + en.getValue())
+                .reduce((a, b) -> a + "," + b)
+                .orElse("");
+        for (int[][] piles : BenchWorldPrep.HEAVY_PILES) {
+            int[] c = piles[0];
+            var chunk = world.getChunkAt(c[0], c[1]);
+            if (!chunk.isLoaded()) {
+                continue;
+            }
+            for (BlockState state : chunk.getTileEntities()) {
+                if (state instanceof Hopper) {
+                    hoppers++;
+                }
+            }
+        }
+        // highpop / near-spawn fixtures
+        for (int[] c : BenchWorldPrep.INTERIOR) {
+            var chunk = world.getChunkAt(c[0], c[1]);
+            if (!chunk.isLoaded()) {
+                continue;
+            }
+            for (BlockState state : chunk.getTileEntities()) {
+                if (state instanceof Hopper) {
+                    hoppers++;
+                }
+            }
+        }
+        double fuseMean = tnt == 0 ? 0.0 : (double) fuseSum / tnt;
+        return new LoadSnapshot(tnt, fuseMean, hoppers, entities,
+                Bukkit.getOnlinePlayers().size(), villagers, world.getLoadedChunks().length,
+                entityTop);
+    }
+
+    void sampleAndWrite(World world, String scenario, String label, String out,
+                                int warmupSec, int sampleSec, int expectedTnt) {
+        if (YapSched.isRegionized()) {
+            BenchRegionLoad.snapshotAsync(plugin, world, start -> {
+                plugin.getLogger().info("Load@sample-start players=" + start.players()
+                        + " entities=" + start.entitiesTotal()
+                        + " villagers=" + start.villagers()
+                        + " hoppers=" + start.hoppers()
+                        + " chunks=" + start.loadedChunks()
+                        + " tnt=" + start.tntAlive()
+                        + " types=" + start.entityTop());
+                runSampler(world, scenario, label, out, warmupSec, sampleSec, expectedTnt,
+                        toLegacySnapshot(start));
+            });
+            return;
+        }
+        LoadSnapshot start = snapshotLoad(world);
+        plugin.getLogger().info("Load@sample-start players=" + start.players()
+                + " entities=" + start.entitiesTotal()
+                + " villagers=" + start.villagers()
+                + " hoppers=" + start.hoppers()
+                + " chunks=" + start.loadedChunks()
+                + " tnt=" + start.tntAlive()
+                + " types=" + start.entityTop());
+        runSampler(world, scenario, label, out, warmupSec, sampleSec, expectedTnt, start);
+    }
+
+    static LoadSnapshot toLegacySnapshot(BenchRegionLoad.LoadSnapshot s) {
+        return new LoadSnapshot(s.tntAlive(), s.fuseMean(), s.hoppers(), s.entitiesTotal(),
+                s.players(), s.villagers(), s.loadedChunks(), s.entityTop());
+    }
+
+    void runSampler(World world, String scenario, String label, String out,
+                            int warmupSec, int sampleSec, int expectedTnt, LoadSnapshot start) {
+        List<Double> mspt = new ArrayList<>();
+        List<Double> tps1m = new ArrayList<>();
+        final int[] left = {sampleSec};
+        final YapTask[] sampler = new YapTask[1];
+        // Seconds into sample when to fire /save-all once (−1 = disabled). Used by async-save smoke.
+        final int saveAllAt = Integer.getInteger("yap.bench.save_all_at", -1);
+        final int[] saveFiredAt = {-1}; // sample index when save-all ran
+        // Folia: sample on the spawn/hot-region thread — getAverageTickTime() is region-local.
+        // spawncollapse / heavypop load lives around chunk (0,0); dual-lobe uses ±lobe_offset.
+        final int lobes = Math.max(1, Integer.getInteger("yap.bench.lobes", 1));
+        final int lobeOffset = Math.max(16, Integer.getInteger("yap.bench.lobe_offset_chunks", 40));
+        final int stripHalf = Integer.getInteger("yap.bench.strip_half_width", 0);
+        final boolean multiSample = lobes >= 2 || stripHalf > 0;
+        final int sampleCx = 0;
+        final int sampleCz = 0;
+        final int sampleCxEast = stripHalf > 0 ? Math.max(8, stripHalf - 4) : (lobes >= 2 ? lobeOffset : 0);
+        final int sampleCxWest = -sampleCxEast;
+        final double[] lastEast = {Double.NaN};
+        final double[] lastWest = {Double.NaN};
+        Runnable tick = () -> {
+            int elapsed = sampleSec - left[0];
+            if (saveAllAt >= 0 && saveFiredAt[0] < 0 && elapsed >= saveAllAt) {
+                try {
+                    // Dirty a few blocks so save-all has real Moonrise flush work.
+                    int y = world.getMinHeight() + 4;
+                    for (int dx = 0; dx < 8; dx++) {
+                        for (int dz = 0; dz < 8; dz++) {
+                            var block = world.getBlockAt(dx, y, dz);
+                            block.setType(block.getType(), false);
+                        }
+                    }
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "save-all");
+                    saveFiredAt[0] = mspt.size();
+                    plugin.getLogger().info("Bench save-all at sample_elapsed=" + elapsed
+                            + "s index=" + saveFiredAt[0]);
+                } catch (Throwable t) {
+                    plugin.getLogger().warning("save-all failed: " + t.getMessage());
+                    saveFiredAt[0] = mspt.size();
+                }
+            }
+            try {
+                if (multiSample) {
+                    // Max of lobe MSPTs — cite the hotter parallel region (fair vs single-blob stock).
+                    double a = lastWest[0];
+                    double b = lastEast[0];
+                    if (!Double.isNaN(a) && !Double.isNaN(b)) {
+                        mspt.add(Math.max(a, b));
+                    } else if (!Double.isNaN(a)) {
+                        mspt.add(a);
+                    } else if (!Double.isNaN(b)) {
+                        mspt.add(b);
+                    }
+                } else {
+                    mspt.add(Bukkit.getServer().getAverageTickTime());
+                }
+            } catch (UnsupportedOperationException uoe) {
+                // Not on a region thread somehow — skip sample
+                return;
+            }
+            double regionTps = Double.NaN;
+            try {
+                double[] rt = Bukkit.getServer().getTPS();
+                if (YapSched.isRegionized()) {
+                    try {
+                        java.lang.reflect.Method m = Bukkit.getServer().getClass()
+                                .getMethod("getRegionTPS", org.bukkit.World.class, int.class, int.class);
+                        Object regObj = m.invoke(Bukkit.getServer(), world, sampleCx, sampleCz);
+                        if (regObj instanceof double[] reg && reg.length > 0) {
+                            regionTps = reg[0];
+                        }
+                    } catch (ReflectiveOperationException ignored) {
+                        // Paper API without Folia region TPS
+                    }
+                }
+                tps1m.add(!Double.isNaN(regionTps) ? regionTps : (rt.length > 0 ? rt[0] : 0));
+            } catch (Throwable t) {
+                double[] tps = Bukkit.getServer().getTPS();
+                tps1m.add(tps.length > 0 ? tps[0] : 0);
+            }
+            left[0]--;
+            if (left[0] <= 0) {
+                sampler[0].cancel();
+                if (YapSched.isRegionized()) {
+                    BenchRegionLoad.snapshotAsync(plugin, world, endR -> {
+                        LoadSnapshot end = toLegacySnapshot(endR);
+                        plugin.getLogger().info("Load@sample-end players=" + end.players()
+                                + " entities=" + end.entitiesTotal()
+                                + " chunks=" + end.loadedChunks());
+                        writeJson(scenario, label, out, warmupSec, sampleSec, mspt, tps1m,
+                                expectedTnt, start, end, saveAllAt, saveFiredAt[0]);
+                        plugin.getLogger().info("Bench complete — shutting down");
+                        YapSched.globalLater(plugin, Bukkit::shutdown, 20L);
+                    });
+                } else {
+                    LoadSnapshot end = snapshotLoad(world);
+                    plugin.getLogger().info("Load@sample-end players=" + end.players()
+                            + " entities=" + end.entitiesTotal()
+                            + " chunks=" + end.loadedChunks());
+                    writeJson(scenario, label, out, warmupSec, sampleSec, mspt, tps1m,
+                            expectedTnt, start, end, saveAllAt, saveFiredAt[0]);
+                    plugin.getLogger().info("Bench complete — shutting down");
+                    YapSched.globalLater(plugin, Bukkit::shutdown, 20L);
+                }
+            }
+        };
+        if (YapSched.isRegionized() && multiSample) {
+            plugin.getLogger().info("MSPT sampler dual chunks (" + sampleCxWest + ",0) & ("
+                    + sampleCxEast + ",0) — max of region-local getAverageTickTime()");
+            YapSched.regionChunkTimer(plugin, world, sampleCxWest, sampleCz, () -> {
+                try {
+                    lastWest[0] = Bukkit.getServer().getAverageTickTime();
+                } catch (UnsupportedOperationException ignored) {
+                    // not owning thread
+                }
+            }, 20L, 20L);
+            YapSched.regionChunkTimer(plugin, world, sampleCxEast, sampleCz, () -> {
+                try {
+                    lastEast[0] = Bukkit.getServer().getAverageTickTime();
+                } catch (UnsupportedOperationException ignored) {
+                    // not owning thread
+                }
+            }, 20L, 20L);
+            // Global 1 Hz combiner — reads last lobe samples (plain doubles, no world access).
+            sampler[0] = YapSched.globalTimer(plugin, tick, 20L, 20L);
+        } else if (YapSched.isRegionized()) {
+            plugin.getLogger().info("MSPT sampler on region chunk (" + sampleCx + "," + sampleCz
+                    + ") — Folia region-local getAverageTickTime()");
+            sampler[0] = YapSched.regionChunkTimer(plugin, world, sampleCx, sampleCz, tick, 20L, 20L);
+        } else {
+            sampler[0] = YapSched.globalTimer(plugin, tick, 20L, 20L);
+        }
+    }
+
+    void writeJson(String scenario, String label, String outPath,
+                           int warmup, int sampleSec, List<Double> mspt, List<Double> tps,
+                           int expectedTnt, LoadSnapshot start, LoadSnapshot end) {
+        writeJson(scenario, label, outPath, warmup, sampleSec, mspt, tps,
+                expectedTnt, start, end, -1, -1);
+    }
+
+    void writeJson(String scenario, String label, String outPath,
+                           int warmup, int sampleSec, List<Double> mspt, List<Double> tps,
+                           int expectedTnt, LoadSnapshot start, LoadSnapshot end,
+                           int saveAllAt, int saveFiredAt) {
+        double mean = mean(mspt);
+        double p50 = percentile(mspt, 0.50);
+        double p95 = percentile(mspt, 0.95);
+        double tpsMean = mean(tps);
+        double msptPreSave = Double.NaN;
+        double msptSaveSpike = Double.NaN;
+        if (saveFiredAt >= 0 && saveFiredAt < mspt.size()) {
+            List<Double> before = mspt.subList(0, Math.max(0, saveFiredAt));
+            // Spike window: up to 8s after save-all (sampler is 1 Hz).
+            int endIdx = Math.min(mspt.size(), saveFiredAt + 8);
+            List<Double> after = mspt.subList(saveFiredAt, endIdx);
+            if (!before.isEmpty()) {
+                msptPreSave = mean(before);
+            }
+            if (!after.isEmpty()) {
+                double max = after.getFirst();
+                for (double d : after) {
+                    if (d > max) {
+                        max = d;
+                    }
+                }
+                msptSaveSpike = max;
+            }
+        }
+        double fuseDrop = start.fuseMean() - end.fuseMean();
+        double expectedFuseDrop = sampleSec * 20.0;
+        boolean fuseOk = start.tntAlive() == 0
+                || (fuseDrop >= expectedFuseDrop * 0.50 && end.tntAlive() >= start.tntAlive() * 0.98);
+        int targetPlayers = Integer.getInteger("yap.bench.players", 0);
+        // Highpop / fullcite: must HOLD population through the sample, not just
+        // clear the join gate. Start+end ≥90% of target — bleeding 250→130 fails.
+        int needHold = Math.max(1, (int) Math.ceil(targetPlayers * 0.90));
+        boolean playersOk = (!"highpop".equals(scenario) && !"fullcite".equals(scenario))
+                || (targetPlayers <= 0)
+                || (start.players() >= needHold && end.players() >= needHold);
+        // cite-stable = keepalive-only swarm (physics OFF). Not an MSPT gameplay cite.
+        String botLoad = System.getProperty("yap.bench.bot_load", "active");
+        if (botLoad == null || botLoad.isBlank()) {
+            botLoad = "active";
+        }
+        String measurementScope = System.getProperty("yap.bench.measurement_scope", "game_tick_mspt");
+        String gameXms = System.getProperty("yap.bench.game_xms", "");
+        String gameXmx = System.getProperty("yap.bench.game_xmx", "");
+        long gameJvmMaxMb = Runtime.getRuntime().maxMemory() / (1024L * 1024L);
+        boolean chassisPresent = Boolean.parseBoolean(System.getProperty("yap.bench.chassis_present", "false"));
+        int knobEntity = Integer.getInteger("yap.bench.knob_entity_tick_budget",
+                Integer.getInteger("yap.folia.entity-tick-budget", 0));
+        int knobMicro = Integer.getInteger("yap.bench.knob_microtick_budget_ms",
+                Integer.getInteger("yap.folia.microtick-budget-ms", 0));
+        int knobHopper = Integer.getInteger("yap.bench.knob_hopper_tick_budget",
+                Integer.getInteger("yap.folia.hopper-tick-budget", 0));
+        boolean knobAsync = Boolean.parseBoolean(System.getProperty("yap.bench.knob_async_chunk_save",
+                System.getProperty("yap.folia.async-chunk-save", "false")));
+        boolean knobPartition = Boolean.parseBoolean(System.getProperty("yap.bench.knob_subregion_partition",
+                System.getProperty("yap.folia.subregion-partition", "false")));
+        double knobBudgetMspt = Double.parseDouble(System.getProperty("yap.bench.knob_budget_mspt_threshold",
+                System.getProperty("yap.folia.budget-mspt-threshold", "12")));
+        String json = """
+                {
+                  "label": %s,
+                  "scenario": %s,
+                  "warmup_seconds": %d,
+                  "sample_seconds": %d,
+                  "samples": %d,
+                  "mspt_mean": %.4f,
+                  "mspt_p50": %.4f,
+                  "mspt_p95": %.4f,
+                  "tps_1m_mean": %.4f,
+                  "measurement_scope": %s,
+                  "game_jvm_xms": %s,
+                  "game_jvm_xmx": %s,
+                  "game_jvm_max_mb": %d,
+                  "chassis_present": %s,
+                  "knob_entity_tick_budget": %d,
+                  "knob_microtick_budget_ms": %d,
+                  "knob_hopper_tick_budget": %d,
+                  "knob_async_chunk_save": %s,
+                  "knob_subregion_partition": %s,
+                  "knob_budget_mspt_threshold": %.1f,
+                  "expected_tnt": %d,
+                  "tnt_start": %d,
+                  "tnt_end": %d,
+                  "fuse_mean_start": %.2f,
+                  "fuse_mean_end": %.2f,
+                  "fuse_drop": %.2f,
+                  "fuse_drop_expected": %.2f,
+                  "fuse_ticking_ok": %s,
+                  "hoppers_start": %d,
+                  "hoppers_end": %d,
+                  "entities_start": %d,
+                  "entities_end": %d,
+                  "players_start": %d,
+                  "players_end": %d,
+                  "players_target": %d,
+                  "players_ok": %s,
+                  "bot_load": %s,
+                  "villagers_start": %d,
+                  "chunks_loaded_start": %d,
+                  "chunks_loaded_end": %d,
+                  "entity_top_start": %s,
+                  "entity_top_end": %s,
+                  "save_all_at": %s,
+                  "save_fired_at_index": %s,
+                  "mspt_pre_save_mean": %s,
+                  "mspt_save_spike": %s,
+                  "timestamp": %s,
+                  "java": %s
+                }
+                """.formatted(
+                quote(label),
+                quote(scenario),
+                warmup,
+                sampleSec,
+                mspt.size(),
+                mean,
+                p50,
+                p95,
+                tpsMean,
+                quote(measurementScope),
+                quote(gameXms),
+                quote(gameXmx),
+                gameJvmMaxMb,
+                chassisPresent,
+                knobEntity,
+                knobMicro,
+                knobHopper,
+                knobAsync,
+                knobPartition,
+                knobBudgetMspt,
+                expectedTnt,
+                start.tntAlive(),
+                end.tntAlive(),
+                start.fuseMean(),
+                end.fuseMean(),
+                fuseDrop,
+                expectedFuseDrop,
+                fuseOk,
+                start.hoppers(),
+                end.hoppers(),
+                start.entitiesTotal(),
+                end.entitiesTotal(),
+                start.players(),
+                end.players(),
+                targetPlayers,
+                playersOk,
+                quote(botLoad),
+                start.villagers(),
+                start.loadedChunks(),
+                end.loadedChunks(),
+                quote(start.entityTop()),
+                quote(end.entityTop()),
+                saveAllAt >= 0 ? Integer.toString(saveAllAt) : "null",
+                saveFiredAt >= 0 ? Integer.toString(saveFiredAt) : "null",
+                Double.isNaN(msptPreSave) ? "null" : String.format(Locale.ROOT, "%.4f", msptPreSave),
+                Double.isNaN(msptSaveSpike) ? "null" : String.format(Locale.ROOT, "%.4f", msptSaveSpike),
+                quote(Instant.now().toString()),
+                quote(System.getProperty("java.version", "?"))
+        );
+        try {
+            Path p = Path.of(outPath);
+            if (!p.isAbsolute()) {
+                String home = System.getProperty("yapcore.home");
+                if (home != null && !home.isBlank()) {
+                    p = Path.of(home).resolve(outPath);
+                }
+            }
+            Files.createDirectories(p.getParent());
+            Files.writeString(p, json, StandardCharsets.UTF_8);
+            plugin.getLogger().info("Wrote " + p.toAbsolutePath()
+                    + " mspt_mean=" + String.format(Locale.ROOT, "%.3f", mean)
+                    + " players=" + start.players()
+                    + " tps=" + String.format(Locale.ROOT, "%.2f", tpsMean));
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to write results: " + e.getMessage());
+        }
+    }
+
+    static double mean(List<Double> v) {
+        if (v.isEmpty()) {
+            return 0;
+        }
+        double s = 0;
+        for (double d : v) {
+            s += d;
+        }
+        return s / v.size();
+    }
+
+    static double percentile(List<Double> v, double p) {
+        if (v.isEmpty()) {
+            return 0;
+        }
+        List<Double> sorted = new ArrayList<>(v);
+        sorted.sort(Double::compareTo);
+        int i = Math.min(sorted.size() - 1, Math.max(0, (int) Math.round(p * (sorted.size() - 1))));
+        return sorted.get(i);
+    }
+
+    static String quote(String s) {
+        return "\"" + s.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+    }
+}

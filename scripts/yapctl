@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Minimal operator control stub for YaPcore (Phase 5 lite).
-# Usage: ./scripts/yapctl start|stop|status|soak-compat|soak-perf|help
+# Usage: ./scripts/yapctl start|stop|status|soak-*|cite-fullcite|help
 set -euo pipefail
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 # shellcheck disable=SC1091
@@ -25,6 +25,12 @@ case "$CMD" in
   soak-perf)
     exec "$ROOT/scripts/soak-yap-folia.sh" perf "$@"
     ;;
+  soak-long)
+    exec "$ROOT/scripts/soak-yap-folia.sh" long "$@"
+    ;;
+  cite-fullcite|cite)
+    exec "$ROOT/scripts/bench/cite-fullcite.sh" "$@"
+    ;;
   build-folia)
     exec "$ROOT/scripts/build-yap-folia.sh" "$@"
     ;;
@@ -37,10 +43,12 @@ yapctl — thin wrapper over YaPcore scripts
   yapctl status           → scripts/status.sh
   yapctl build-folia      → scripts/build-yap-folia.sh
   yapctl soak-compat      → scripts/soak-yap-folia.sh compat
-  yapctl soak-perf        → scripts/soak-yap-folia.sh perf
+  yapctl soak-perf [min]  → short heap soak (default 30m)
+  yapctl soak-long [hrs]  → 12h default slope soak (8h floor)
+  yapctl cite-fullcite    → stock Folia vs YaPcore fullcite MSPT (cite gate)
 
-Recommended product jar: ./scripts/build-yap-folia.sh (default folia-jar-source=build).
-Stock Fill: folia-jar-source=fetch — see docs/YAP_FOLIA_SOAK.md.
+Uptime: 12h continuous flat heap/threads (8h floor). Restarts = ops hygiene.
+Cite: yapctl cite-fullcite → bench/results/cite-latest-*.json
 EOF
     ;;
   *)

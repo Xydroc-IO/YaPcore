@@ -28,6 +28,9 @@ replay_*.log
 /yapcore.jar
 /yapcore-*.jar
 yap-first-party/dev/bench-plugin/build/
+# Gradle/output under any first-party module (defense in depth with **/build/)
+yap-first-party/**/build/
+scripts/bench/**/node_modules/
 
 # =============================================================================
 # Minecraft / Paper runtime caches (created next to the process cwd)
@@ -163,16 +166,24 @@ vendor/folia/*.tmp
 # Bench runtime artifacts (scripts/bench/ stays tracked)
 # =============================================================================
 bench/
+!scripts/bench/
+!scripts/bench/**
+scripts/bench/bots/node_modules/
 
 # Dev-only plugins and stress harness (not shipped)
 yap-first-party/dev/
+# Cite / MSPT bench plugin is product-critical — keep sources tracked
+!yap-first-party/dev/bench-plugin/
+!yap-first-party/dev/bench-plugin/**
+yap-first-party/dev/bench-plugin/build/
 src/jcstress/
 
-# Generated PDFs — not tracked (Markdown only in docs/)
-docs/pdf/
+# Generated PDF intermediates (HTML); track PDFs for operator download.
+docs/pdf/*.html
+docs/pdf/.pdf-stems
 
-# Folia agent scratch notes
-vendor/folia/patches/AGENT*.md
+# Folia agent scratch notes — keep AGENT*.md for multi-agent patch ownership
+# (formerly ignored)
 
 # =============================================================================
 # Velocity / proxy / secrets

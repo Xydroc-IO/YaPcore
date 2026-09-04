@@ -63,8 +63,8 @@ dependencies {
     // Protocol catalog JSON (item/block/entity band tables)
     implementation("com.google.code.gson:gson:2.11.0")
     // Plugin back-compat (1.20–1.21 → 26.2) light ASM rewrite
-    implementation("org.ow2.asm:asm:9.7.1")
-    implementation("org.ow2.asm:asm-commons:9.7.1")
+    implementation("org.ow2.asm:asm:9.9.1")
+    implementation("org.ow2.asm:asm-commons:9.9.1")
 
     // JCIP / SpotBugs concurrency annotations (compile-time only)
     compileOnly("com.github.stephenc.jcip:jcip-annotations:1.0-1")
@@ -153,6 +153,7 @@ tasks.register<Test>("soakTest") {
     // Default short soak for CI; override with -Dyap.soak.seconds=86400
     systemProperty("yap.soak.seconds", System.getProperty("yap.soak.seconds", "30"))
     systemProperty("yap.soak.bots", System.getProperty("yap.soak.bots", "32"))
+    maxHeapSize = "2g"
 }
 
 tasks.register<JavaExec>("jcstress") {
@@ -210,6 +211,71 @@ tasks.register<JavaExec>("endurance") {
         jvmArgs(
             "-XX:StartFlightRecording=disk=true,dumponexit=true,filename=$jfr,settings=profile"
         )
+    }
+}
+
+tasks.register<JavaExec>("scanFirstPartyFoliaCompat") {
+    group = "verification"
+    description = "ASM scan first-party plugin jars for legacy BukkitScheduler + folia-supported"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.yapcore.tools.FoliaPluginBytecodeScan")
+    val distCore = layout.buildDirectory.dir("dist/yap-plugins/core-network")
+    val distGameplay = layout.buildDirectory.dir("dist/yap-plugins/gameplay")
+    val pluginsDir = layout.projectDirectory.dir("plugins")
+    doFirst {
+        val argsList = mutableListOf<String>()
+        if (distCore.get().asFile.isDirectory) {
+            argsList += distCore.get().asFile.absolutePath
+        }
+        if (distGameplay.get().asFile.isDirectory) {
+            argsList += distGameplay.get().asFile.absolutePath
+        }
+        if (argsList.isEmpty()) {
+            argsList += pluginsDir.asFile.absolutePath
+        }
+        args = argsList
+    }
+}
+
+tasks.register("checkMsptRegressionFixtures") {
+    group = "verification"
+    description = "Run compare-folia.py against tracked MSPT fixtures + official fullcite cite"
+    doLast {
+        val root = project.projectDir
+        val compare = root.resolve("scripts/bench/check-mspt-regression.sh")
+        val stock = root.resolve("src/test/resources/mspt/stock-folia-heavypop.json")
+        val yap = root.resolve("src/test/resources/mspt/yap-folia-heavypop.json")
+        val regress = root.resolve("src/test/resources/mspt/yap-folia-heavypop-regress.json")
+        val citeStock = root.resolve("src/test/resources/mspt/cite-fullcite-stock.json")
+        val citeYap = root.resolve("src/test/resources/mspt/cite-fullcite-yapcore.json")
+        fun run(vararg args: String): Int {
+            val pb = ProcessBuilder(*args).directory(root).inheritIO()
+            return pb.start().waitFor()
+        }
+        val ok = run(compare.absolutePath, stock.absolutePath, yap.absolutePath)
+        if (ok != 0) {
+            throw GradleException("expected pass fixture to exit 0, got $ok")
+        }
+        val fail = run(compare.absolutePath, stock.absolutePath, regress.absolutePath)
+        if (fail != 1) {
+            throw GradleException("expected regression fixture to exit 1, got $fail")
+        }
+        if (citeStock.isFile && citeYap.isFile) {
+            val env = mapOf(
+                "YAP_MSPT_STRICT_CITEABLE" to "1",
+                "YAP_MSPT_REQUIRE_CITEABLE" to "1",
+            )
+            val pb = ProcessBuilder(compare.absolutePath, citeStock.absolutePath, citeYap.absolutePath)
+                .directory(root)
+                .inheritIO()
+            pb.environment().putAll(env)
+            val citeRc = pb.start().waitFor()
+            if (citeRc != 0) {
+                throw GradleException("official fullcite cite must pass citeable gate, got $citeRc")
+            }
+            logger.lifecycle("Official fullcite cite gate OK")
+        }
+        logger.lifecycle("MSPT fixture gates OK (pass + expected fail)")
     }
 }
 

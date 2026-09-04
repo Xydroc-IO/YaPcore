@@ -113,9 +113,9 @@ proxies:
     online-mode: true
   proxy-protocol: false
   velocity:
-    enabled: false
-    online-mode: true
-    secret: ''
+    enabled: true
+    online-mode: false
+    secret: /EqJgkMojI1ENllqLeYMksVOYS3vCXRQk1oCE/n5xGI=
 scoreboards:
   save-empty-scoreboard-teams: true
   track-plugin-scoreboards: false
@@ -130,7 +130,7 @@ spark:
   enabled: true
 threaded-regions:
   grid-exponent: 4
-  scheduler: EDF
+  scheduler: WORK_STEALING
   threads: -1
 time:
   affects-all-worlds: false

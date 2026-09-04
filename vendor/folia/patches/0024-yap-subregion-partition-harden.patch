@@ -1,0 +1,639 @@
+From: YaPcore Agent 3 <agent-3@yapcore>
+Subject: [PATCH] YaP subregion partition hysteresis + coalesce wall clock
+
+Engage MSPT clear-band hysteresis; min wall-clock before coalesce;
+extract YapSubRegionCuts (≤500-line domain). Post-applyAllPatches.
+---
+--- /dev/null
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionCuts.java
+@@ -0,0 +1,189 @@
++package io.papermc.paper.threadedregions;
++
++import java.util.ArrayList;
++import java.util.Comparator;
++import java.util.List;
++
++/**
++ * Spatial cut helpers for {@link YapSubRegionPartitioner} (kept separate for ≤500-line domain files).
++ */
++final class YapSubRegionCuts {
++
++    private YapSubRegionCuts() {
++    }
++
++    /**
++     * Spatial cut: K=2 median X (fallback Z); K=3 X tertiles; K=4 median X then Z.
++     * Prefers a cut index where both sides of the boundary are empty sections.
++     */
++    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> cutSections(
++            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sections,
++            final int k) {
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted = new ArrayList<>(sections);
++        sorted.sort(Comparator
++                .comparingInt((ThreadedRegionizer.ThreadedRegionSection<R, S> s) -> s.sectionX)
++                .thenComparingInt(s -> s.sectionZ));
++
++        final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out = new ArrayList<>();
++        if (k <= 2 || sorted.size() < 4) {
++            final boolean sameX = sorted.get(0).sectionX == sorted.get(sorted.size() - 1).sectionX;
++            if (sameX) {
++                sorted.sort(Comparator.comparingInt(s -> s.sectionZ));
++            }
++            final int mid = preferEmptyCut(sorted, sorted.size() / 2);
++            if (mid < 0) {
++                return out;
++            }
++            out.add(new ArrayList<>(sorted.subList(0, Math.max(1, mid))));
++            out.add(new ArrayList<>(sorted.subList(Math.max(1, mid), sorted.size())));
++            return out;
++        }
++        if (k == 3) {
++            final int a = preferEmptyCut(sorted, sorted.size() / 3);
++            final int b = preferEmptyCut(sorted, (2 * sorted.size()) / 3);
++            if (a < 0 || b < 0) {
++                return out;
++            }
++            final int cutA = Math.max(1, a);
++            final int cutB = Math.max(cutA + 1, b);
++            out.add(new ArrayList<>(sorted.subList(0, cutA)));
++            out.add(new ArrayList<>(sorted.subList(cutA, cutB)));
++            out.add(new ArrayList<>(sorted.subList(cutB, sorted.size())));
++            return out;
++        }
++        final int midX = preferEmptyCut(sorted, sorted.size() / 2);
++        if (midX < 0) {
++            return out;
++        }
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> left =
++                new ArrayList<>(sorted.subList(0, Math.max(1, midX)));
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> right =
++                new ArrayList<>(sorted.subList(Math.max(1, midX), sorted.size()));
++        if (!splitByZ(left, out) || !splitByZ(right, out)) {
++            out.clear();
++        }
++        return out;
++    }
++
++    /** Median cut without empty-buffer requirement — used only to plan corridor carve. */
++    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> cutSectionsAggressive(
++            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sections,
++            final int k) {
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted = new ArrayList<>(sections);
++        sorted.sort(Comparator
++                .comparingInt((ThreadedRegionizer.ThreadedRegionSection<R, S> s) -> s.sectionX)
++                .thenComparingInt(s -> s.sectionZ));
++        final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out = new ArrayList<>();
++        if (sorted.size() < 2) {
++            return out;
++        }
++        final boolean sameX = sorted.get(0).sectionX == sorted.get(sorted.size() - 1).sectionX;
++        if (sameX) {
++            sorted.sort(Comparator.comparingInt(s -> s.sectionZ));
++        }
++        final int shards = Math.min(Math.max(2, k), sorted.size());
++        if (shards <= 2) {
++            final int mid = Math.max(1, Math.min(sorted.size() - 1, sorted.size() / 2));
++            out.add(new ArrayList<>(sorted.subList(0, mid)));
++            out.add(new ArrayList<>(sorted.subList(mid, sorted.size())));
++            return out;
++        }
++        final int step = sorted.size() / shards;
++        int prev = 0;
++        for (int i = 1; i < shards; ++i) {
++            final int cut = Math.max(prev + 1, Math.min(sorted.size() - (shards - i), i * step));
++            out.add(new ArrayList<>(sorted.subList(prev, cut)));
++            prev = cut;
++        }
++        out.add(new ArrayList<>(sorted.subList(prev, sorted.size())));
++        return out;
++    }
++
++    /**
++     * Folia-safe: non-empty sections of different shard groups must be farther apart than
++     * {@code 2 × emptySectionCreateRadius} (Chebyshev).
++     */
++    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    boolean groupsAreSpatiallyBuffered(final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups) {
++        final int createRadius = groups.get(0).get(0).regioniser.emptySectionCreateRadius;
++        final int minChebyshev = 2 * Math.max(1, createRadius) + 1;
++        final List<List<int[]>> nonEmpty = new ArrayList<>(groups.size());
++        for (final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> group : groups) {
++            final List<int[]> coords = new ArrayList<>();
++            for (final ThreadedRegionizer.ThreadedRegionSection<R, S> s : group) {
++                if (!s.isEmpty()) {
++                    coords.add(new int[]{s.sectionX, s.sectionZ});
++                }
++            }
++            if (coords.isEmpty()) {
++                return false;
++            }
++            nonEmpty.add(coords);
++        }
++        for (int i = 0; i < nonEmpty.size(); ++i) {
++            for (int j = i + 1; j < nonEmpty.size(); ++j) {
++                for (final int[] a : nonEmpty.get(i)) {
++                    for (final int[] b : nonEmpty.get(j)) {
++                        final int dx = Math.abs(a[0] - b[0]);
++                        final int dz = Math.abs(a[1] - b[1]);
++                        if (Math.max(dx, dz) < minChebyshev) {
++                            return false;
++                        }
++                    }
++                }
++            }
++        }
++        return true;
++    }
++
++    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    int preferEmptyCut(final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted, final int preferred) {
++        final int size = sorted.size();
++        if (size < 2) {
++            return -1;
++        }
++        final int lo = 1;
++        final int hi = size - 1;
++        final int start = Math.min(hi, Math.max(lo, preferred));
++        final int maxDrift = Math.max(2, size / 6);
++        for (int d = 0; d <= maxDrift; ++d) {
++            final int left = start - d;
++            final int right = start + d;
++            if (left >= lo && left <= hi && isEmptySidedCut(sorted, left)) {
++                return left;
++            }
++            if (d != 0 && right >= lo && right <= hi && isEmptySidedCut(sorted, right)) {
++                return right;
++            }
++        }
++        return -1;
++    }
++
++    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    boolean isEmptySidedCut(final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted, final int cut) {
++        return sorted.get(cut - 1).isEmpty() && sorted.get(cut).isEmpty();
++    }
++
++    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    boolean splitByZ(
++            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> in,
++            final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out) {
++        if (in.isEmpty()) {
++            return false;
++        }
++        if (in.size() == 1) {
++            out.add(in);
++            return true;
++        }
++        in.sort(Comparator.comparingInt(s -> s.sectionZ));
++        final int mid = preferEmptyCut(in, in.size() / 2);
++        if (mid < 0) {
++            return false;
++        }
++        out.add(new ArrayList<>(in.subList(0, mid)));
++        out.add(new ArrayList<>(in.subList(mid, in.size())));
++        return true;
++    }
++}
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
+@@ -5,7 +5,6 @@
+ import net.minecraft.server.level.ServerLevel;
+ import org.slf4j.Logger;
+ 
+-import java.util.ArrayList;
+ import java.util.Comparator;
+ import java.util.List;
+ import java.util.concurrent.ConcurrentHashMap;
+@@ -16,17 +15,17 @@
+  * YaP true parallel sub-region ticking via force-partition into independent Folia regions
+  * with merge-inhibition across shard boundaries.
+  *
+- * <p>Knobs (system properties, all product-safe defaults):
++ * <p>Knobs (system properties):
+  * <ul>
+  *   <li>{@code -Dyap.folia.subregion-partition=true} — enable (default false)</li>
+  *   <li>{@code -Dyap.folia.subregion-shards=2} — shards per partition (2–4)</li>
+- *   <li>{@code -Dyap.folia.subregion-mspt-threshold=20} — MSPT to request partition</li>
+- *   <li>{@code -Dyap.folia.subregion-min-sections=4} — min sections before partition</li>
+- *   <li>{@code -Dyap.folia.subregion-min-entities=32} — min entities before partition (avoids worldgen shred)</li>
+- *   <li>{@code -Dyap.folia.subregion-coalesce-mspt=8} — cool MSPT to allow coalesce</li>
+- *   <li>{@code -Dyap.folia.subregion-coalesce-ticks=100} — cool ticks before coalesce</li>
+- *   <li>{@code -Dyap.folia.subregion-coalesce-quiet-ticks=200} — post-partition quiet before cool-count completes</li>
+- *   <li>{@code -Dyap.folia.subregion-carve=true} — unload Folia-wide corridor before partition (default true)</li>
++ *   <li>{@code -Dyap.folia.subregion-mspt-threshold=20} — MSPT to advance engage streak</li>
++ *   <li>{@code -Dyap.folia.subregion-mspt-clear=N} — clear streak below this (default threshold−4)</li>
++ *   <li>{@code -Dyap.folia.subregion-min-sections=4} / {@code -min-entities=32}</li>
++ *   <li>{@code -Dyap.folia.subregion-coalesce-mspt=8} / {@code -coalesce-ticks=100}</li>
++ *   <li>{@code -Dyap.folia.subregion-coalesce-quiet-ticks=200}</li>
++ *   <li>{@code -Dyap.folia.subregion-coalesce-min-wall-ms=30000} — min wall time before coalesce</li>
++ *   <li>{@code -Dyap.folia.subregion-carve=true} — unload corridor before partition</li>
+  * </ul>
+  */
+ public final class YapSubRegionPartitioner {
+@@ -36,14 +35,16 @@
+     private static final boolean ENABLED = Boolean.getBoolean("yap.folia.subregion-partition");
+     private static final int SHARDS = Math.min(4, Math.max(2, Integer.getInteger("yap.folia.subregion-shards", 2)));
+     private static final int MSPT_THRESHOLD = Math.max(1, Integer.getInteger("yap.folia.subregion-mspt-threshold", 20));
++    /** Clear hot streak only below this — band between clear and threshold avoids thrash. */
++    private static final int MSPT_CLEAR = Math.max(1, Integer.getInteger(
++            "yap.folia.subregion-mspt-clear", Math.max(1, MSPT_THRESHOLD - 4)));
+     private static final int MIN_SECTIONS = Math.max(2, Integer.getInteger("yap.folia.subregion-min-sections", 4));
+     private static final int COALESCE_MSPT = Math.max(1, Integer.getInteger("yap.folia.subregion-coalesce-mspt", 8));
+     private static final int COALESCE_TICKS = Math.max(1, Integer.getInteger("yap.folia.subregion-coalesce-ticks", 100));
+-    /** After a force-partition, wait this many ticks before coalesce cool-counting can complete. */
+     private static final int COALESCE_QUIET = Math.max(0, Integer.getInteger("yap.folia.subregion-coalesce-quiet-ticks", 200));
+-    /** Do not partition empty / worldgen regions — require live entities in the region. */
++    private static final long COALESCE_MIN_WALL_NS = Math.max(0L,
++            Long.getLong("yap.folia.subregion-coalesce-min-wall-ms", 30_000L)) * 1_000_000L;
+     private static final int MIN_ENTITIES = Math.max(0, Integer.getInteger("yap.folia.subregion-min-entities", 32));
+-    /** Consecutive hot ticks above MSPT threshold before enqueueing partition (lets bench warmup finish). */
+     private static final int PARTITION_DELAY_TICKS = Math.max(0,
+             Integer.getInteger("yap.folia.subregion-partition-delay-ticks", 600));
+ 
+@@ -52,14 +53,12 @@
+     private static final LongAdder INHIBITED_MERGES = new LongAdder();
+     private static final LongAdder COALESCES = new LongAdder();
+ 
+-    /** region id → requested shard count */
+     private static final ConcurrentHashMap<Long, Integer> PARTITION_REQUESTS = new ConcurrentHashMap<>();
+-    /** shard group → consecutive cool ticks */
+     private static final ConcurrentHashMap<Long, Integer> GROUP_COOL_TICKS = new ConcurrentHashMap<>();
+-    /** shard group → last seen region ids in group (for coalesce) */
+     private static final ConcurrentHashMap<Long, ConcurrentHashMap<Long, Boolean>> GROUP_MEMBERS = new ConcurrentHashMap<>();
+-    /** region id → consecutive hot ticks while above MSPT threshold (unsharded only) */
+     private static final ConcurrentHashMap<Long, Integer> HOT_STREAK = new ConcurrentHashMap<>();
++    /** shard group → nanoTime when force-partition succeeded (anti-thrash wall clock). */
++    private static final ConcurrentHashMap<Long, Long> GROUP_PARTITIONED_AT_NS = new ConcurrentHashMap<>();
+ 
+     private YapSubRegionPartitioner() {
+     }
+@@ -93,7 +92,6 @@
+                 + " " + YapCorridorCarver.snapshot();
+     }
+ 
+-    /** Re-queue a partition request after corridor carve completes. */
+     public static void requestPartition(final long regionId, final int shardCount) {
+         if (!ENABLED || regionId == 0L) {
+             return;
+@@ -101,10 +99,6 @@
+         PARTITION_REQUESTS.put(regionId, Math.min(4, Math.max(2, shardCount)));
+     }
+ 
+-    /**
+-     * Two regions may merge only if neither has shard affinity, or both share the same
+-     * shard group <em>and</em> shard id (affinity cleared regions are mergeable).
+-     */
+     public static boolean canMerge(
+             final ThreadedRegionizer.ThreadedRegion<?, ?> a,
+             final ThreadedRegionizer.ThreadedRegion<?, ?> b) {
+@@ -114,7 +108,6 @@
+         final long ga = a.getYapShardGroup();
+         final long gb = b.getYapShardGroup();
+         if (ga == 0L || gb == 0L) {
+-            // One or both unsharded: only allow if neither is sharded (avoid absorbing a shard).
+             if (ga == 0L && gb == 0L) {
+                 return true;
+             }
+@@ -146,10 +139,9 @@
+             if (msptMs <= COALESCE_MSPT) {
+                 GROUP_COOL_TICKS.merge(group, 1, Integer::sum);
+             } else {
+-                // Hot tick resets cool progress, but do not wipe a post-partition quiet countdown
+                 GROUP_COOL_TICKS.compute(group, (k, v) -> {
+                     if (v == null || v.intValue() < 0) {
+-                        return v == null ? 0 : Integer.valueOf(v.intValue() + 1); // still advance quiet
++                        return v == null ? 0 : Integer.valueOf(v.intValue() + 1);
+                     }
+                     return 0;
+                 });
+@@ -157,8 +149,12 @@
+             return;
+         }
+ 
++        // Hysteresis: clear streak only when clearly cool; hold in the band without advancing.
++        if (msptMs < MSPT_CLEAR) {
++            HOT_STREAK.remove(region.id);
++            return;
++        }
+         if (msptMs < MSPT_THRESHOLD) {
+-            HOT_STREAK.remove(region.id);
+             return;
+         }
+         final int entities = data.getRegionStats().getEntityCount();
+@@ -167,11 +163,7 @@
+             return;
+         }
+         final int sections = region.getSectionCount();
+-        if (sections < MIN_SECTIONS) {
+-            HOT_STREAK.remove(region.id);
+-            return;
+-        }
+-        if (sections < SHARDS * 2) {
++        if (sections < MIN_SECTIONS || sections < SHARDS * 2) {
+             HOT_STREAK.remove(region.id);
+             return;
+         }
+@@ -184,7 +176,6 @@
+ 
+     /**
+      * Apply pending partition or coalesce while holding regionizer write lock and region is READY.
+-     * Invoked from {@link ThreadedRegionizer.ThreadedRegion#markNotTicking()}.
+      *
+      * @return true if the region still exists and is READY after this call
+      */
+@@ -197,7 +188,7 @@
+         final Integer requested = PARTITION_REQUESTS.remove(region.id);
+         if (requested != null && region.getYapShardGroup() == 0L) {
+             if (tryForcePartition(region, requested.intValue())) {
+-                return false; // old region dead; children scheduled via onRegionActive
++                return false;
+             }
+         }
+ 
+@@ -213,12 +204,12 @@
+         if (sections.size() < MIN_SECTIONS || sections.size() < shardCount) {
+             return false;
+         }
+-        // Prefer Folia-safe empty cut; fall back to median for carve planning.
+-        List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups = cutSections(sections, shardCount);
+-        if (groups.size() >= 2 && groupsAreSpatiallyBuffered(groups)) {
+-            // Pre-gapped / lobe layout — partition without carving.
++        List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups =
++                YapSubRegionCuts.cutSections(sections, shardCount);
++        if (groups.size() >= 2 && YapSubRegionCuts.groupsAreSpatiallyBuffered(groups)) {
++            // Pre-gapped layout — partition without carving.
+         } else if (groups.size() < 2) {
+-            groups = cutSectionsAggressive(sections, shardCount);
++            groups = YapSubRegionCuts.cutSectionsAggressive(sections, shardCount);
+         }
+         if (groups.size() < 2) {
+             return false;
+@@ -228,14 +219,11 @@
+                 return false;
+             }
+         }
+-        if (!groupsAreSpatiallyBuffered(groups)) {
++        if (!YapSubRegionCuts.groupsAreSpatiallyBuffered(groups)) {
+             if (YapCorridorCarver.isInFlight(region.id)) {
+-                // Carve settler owns the attempt — do not nest another carve.
+                 return false;
+             }
+             if (YapCorridorCarver.recentlyCarved(region.id)) {
+-                // Carve just finished — keep the request so delayed retries can partition
+-                // once the regionizer gap appears (do not drop + do not re-carve yet).
+                 PARTITION_REQUESTS.put(region.id, Math.min(4, Math.max(2, shardCount)));
+                 return false;
+             }
+@@ -259,6 +247,7 @@
+         final boolean ok = region.regioniser.forcePartition(region, groups);
+         if (ok) {
+             FORCE_PARTITIONS.increment();
++            HOT_STREAK.remove(region.id);
+             long quietGroup = 0L;
+             for (final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> g : groups) {
+                 if (!g.isEmpty()) {
+@@ -273,8 +262,11 @@
+                 }
+             }
+             YapCorridorCarver.onForcePartitionSuccess(region.id, quietGroup, world, gapPlan, anchor);
+-            if (quietGroup != 0L && COALESCE_QUIET > 0) {
+-                GROUP_COOL_TICKS.put(quietGroup, -COALESCE_QUIET);
++            if (quietGroup != 0L) {
++                if (COALESCE_QUIET > 0) {
++                    GROUP_COOL_TICKS.put(quietGroup, -COALESCE_QUIET);
++                }
++                GROUP_PARTITIONED_AT_NS.put(quietGroup, System.nanoTime());
+             }
+             LOGGER.info("YaP force-partition region #{} into {} shards (sections={})",
+                     region.id, groups.size(), sections.size());
+@@ -289,6 +281,11 @@
+         if (group == 0L) {
+             return;
+         }
++        final Long partitionedAt = GROUP_PARTITIONED_AT_NS.get(group);
++        if (partitionedAt != null && COALESCE_MIN_WALL_NS > 0L
++                && (System.nanoTime() - partitionedAt.longValue()) < COALESCE_MIN_WALL_NS) {
++            return;
++        }
+         final int cool = GROUP_COOL_TICKS.getOrDefault(group, 0);
+         if (cool < COALESCE_TICKS) {
+             return;
+@@ -297,7 +294,6 @@
+         if (members == null || members.size() < 2) {
+             return;
+         }
+-        // Collect READY regions in this group from the same regioniser (caller holds write lock)
+         final ObjectArrayList<ThreadedRegionizer.ThreadedRegion<R, S>> ready = new ObjectArrayList<>();
+         region.regioniser.computeForAllRegionsUnsynchronised(r -> {
+             if (r.getYapShardGroup() == group && r.isReady()) {
+@@ -311,12 +307,12 @@
+         }
+         ready.sort(Comparator.comparingLong(r -> r.id));
+         final ThreadedRegionizer.ThreadedRegion<R, S> target = ready.get(0);
+-        // Clear affinity so killAndMergeInto is allowed
+         for (final ThreadedRegionizer.ThreadedRegion<R, S> r : ready) {
+             r.clearYapShard();
+         }
+         GROUP_COOL_TICKS.remove(group);
+         GROUP_MEMBERS.remove(group);
++        GROUP_PARTITIONED_AT_NS.remove(group);
+         YapCorridorCarver.releaseGapHold(group);
+         boolean any = false;
+         for (int i = 1; i < ready.size(); ++i) {
+@@ -332,194 +328,6 @@
+         }
+     }
+ 
+-    /**
+-     * Spatial cut: K=2 median X (fallback Z); K=3 X tertiles; K=4 median X then Z.
+-     * Prefers a cut index where at least one side of the boundary is an empty section
+-     * (Folia-like buffer) to reduce hot cross-shard neighbor traffic; falls back to median.
+-     */
+-    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
+-    List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> cutSections(
+-            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sections,
+-            final int k) {
+-        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted = new ArrayList<>(sections);
+-        sorted.sort(Comparator
+-                .comparingInt((ThreadedRegionizer.ThreadedRegionSection<R, S> s) -> s.sectionX)
+-                .thenComparingInt(s -> s.sectionZ));
+-
+-        final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out = new ArrayList<>();
+-        if (k <= 2 || sorted.size() < 4) {
+-            // Prefer X variance; if all same X, sort by Z
+-            final boolean sameX = sorted.get(0).sectionX == sorted.get(sorted.size() - 1).sectionX;
+-            if (sameX) {
+-                sorted.sort(Comparator.comparingInt(s -> s.sectionZ));
+-            }
+-            final int mid = preferEmptyCut(sorted, sorted.size() / 2);
+-            if (mid < 0) {
+-                return out; // no Folia-safe empty buffer — refuse cut
+-            }
+-            out.add(new ArrayList<>(sorted.subList(0, Math.max(1, mid))));
+-            out.add(new ArrayList<>(sorted.subList(Math.max(1, mid), sorted.size())));
+-            return out;
+-        }
+-        if (k == 3) {
+-            final int a = preferEmptyCut(sorted, sorted.size() / 3);
+-            final int b = preferEmptyCut(sorted, (2 * sorted.size()) / 3);
+-            if (a < 0 || b < 0) {
+-                return out;
+-            }
+-            final int cutA = Math.max(1, a);
+-            final int cutB = Math.max(cutA + 1, b);
+-            out.add(new ArrayList<>(sorted.subList(0, cutA)));
+-            out.add(new ArrayList<>(sorted.subList(cutA, cutB)));
+-            out.add(new ArrayList<>(sorted.subList(cutB, sorted.size())));
+-            return out;
+-        }
+-        // k == 4: median X then median Z
+-        final int midX = preferEmptyCut(sorted, sorted.size() / 2);
+-        if (midX < 0) {
+-            return out;
+-        }
+-        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> left = new ArrayList<>(sorted.subList(0, Math.max(1, midX)));
+-        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> right = new ArrayList<>(sorted.subList(Math.max(1, midX), sorted.size()));
+-        if (!splitByZ(left, out) || !splitByZ(right, out)) {
+-            out.clear();
+-        }
+-        return out;
+-    }
+-
+-    /**
+-     * Median cut without empty-buffer requirement — used only to plan corridor carve.
+-     */
+-    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
+-    List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> cutSectionsAggressive(
+-            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sections,
+-            final int k) {
+-        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted = new ArrayList<>(sections);
+-        sorted.sort(Comparator
+-                .comparingInt((ThreadedRegionizer.ThreadedRegionSection<R, S> s) -> s.sectionX)
+-                .thenComparingInt(s -> s.sectionZ));
+-        final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out = new ArrayList<>();
+-        if (sorted.size() < 2) {
+-            return out;
+-        }
+-        final boolean sameX = sorted.get(0).sectionX == sorted.get(sorted.size() - 1).sectionX;
+-        if (sameX) {
+-            sorted.sort(Comparator.comparingInt(s -> s.sectionZ));
+-        }
+-        final int shards = Math.min(Math.max(2, k), sorted.size());
+-        if (shards <= 2) {
+-            final int mid = Math.max(1, Math.min(sorted.size() - 1, sorted.size() / 2));
+-            out.add(new ArrayList<>(sorted.subList(0, mid)));
+-            out.add(new ArrayList<>(sorted.subList(mid, sorted.size())));
+-            return out;
+-        }
+-        final int step = sorted.size() / shards;
+-        int prev = 0;
+-        for (int i = 1; i < shards; ++i) {
+-            final int cut = Math.max(prev + 1, Math.min(sorted.size() - (shards - i), i * step));
+-            out.add(new ArrayList<>(sorted.subList(prev, cut)));
+-            prev = cut;
+-        }
+-        out.add(new ArrayList<>(sorted.subList(prev, sorted.size())));
+-        return out;
+-    }
+-
+-    /**
+-     * Prefer a cut index near {@code preferred} where the section just before or at the cut is empty.
+-     * Returns {@code -1} when no empty-sided cut exists in {@code [1, size-1]} (caller must refuse partition).
+-     */
+-    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
+-    int preferEmptyCut(final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted, final int preferred) {
+-        final int size = sorted.size();
+-        if (size < 2) {
+-            return -1;
+-        }
+-        final int lo = 1;
+-        final int hi = size - 1;
+-        final int start = Math.min(hi, Math.max(lo, preferred));
+-        // Only accept empty buffers near the preferred cut — edge empties produce
+-        // tiny cold shards + one hot shard that still straddles dense load.
+-        final int maxDrift = Math.max(2, size / 6);
+-        for (int d = 0; d <= maxDrift; ++d) {
+-            final int left = start - d;
+-            final int right = start + d;
+-            if (left >= lo && left <= hi && isEmptySidedCut(sorted, left)) {
+-                return left;
+-            }
+-            if (d != 0 && right >= lo && right <= hi && isEmptySidedCut(sorted, right)) {
+-                return right;
+-            }
+-        }
+-        return -1;
+-    }
+-
+-    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
+-    boolean isEmptySidedCut(final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sorted, final int cut) {
+-        // cut splits [0, cut) | [cut, size). Require *both* boundary sections empty —
+-        // Folia-like double buffer. A single empty still leaves loaded|loaded adjacency
+-        // after the empty is absorbed and trips TickThread checks under dense entity load.
+-        return sorted.get(cut - 1).isEmpty() && sorted.get(cut).isEmpty();
+-    }
+-
+-    /**
+-     * Folia-safe: non-empty sections of different shard groups must be farther apart than
+-     * {@code 2 × emptySectionCreateRadius} (Chebyshev). Folia will not keep adjacent regions
+-     * independently ticking — they become inactive and must merge. Merge-inhibit alone is not enough.
+-     */
+-    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
+-    boolean groupsAreSpatiallyBuffered(final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups) {
+-        final int createRadius = groups.get(0).get(0).regioniser.emptySectionCreateRadius;
+-        final int minChebyshev = 2 * Math.max(1, createRadius) + 1;
+-        final List<List<int[]>> nonEmpty = new ArrayList<>(groups.size());
+-        for (final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> group : groups) {
+-            final List<int[]> coords = new ArrayList<>();
+-            for (final ThreadedRegionizer.ThreadedRegionSection<R, S> s : group) {
+-                if (!s.isEmpty()) {
+-                    coords.add(new int[]{s.sectionX, s.sectionZ});
+-                }
+-            }
+-            if (coords.isEmpty()) {
+-                return false; // empty-only shard is useless / unsafe topology
+-            }
+-            nonEmpty.add(coords);
+-        }
+-        for (int i = 0; i < nonEmpty.size(); ++i) {
+-            for (int j = i + 1; j < nonEmpty.size(); ++j) {
+-                for (final int[] a : nonEmpty.get(i)) {
+-                    for (final int[] b : nonEmpty.get(j)) {
+-                        final int dx = Math.abs(a[0] - b[0]);
+-                        final int dz = Math.abs(a[1] - b[1]);
+-                        if (Math.max(dx, dz) < minChebyshev) {
+-                            return false;
+-                        }
+-                    }
+-                }
+-            }
+-        }
+-        return true;
+-    }
+-
+-    private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
+-    boolean splitByZ(
+-            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> in,
+-            final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out) {
+-        if (in.isEmpty()) {
+-            return false;
+-        }
+-        if (in.size() == 1) {
+-            out.add(in);
+-            return true;
+-        }
+-        in.sort(Comparator.comparingInt(s -> s.sectionZ));
+-        final int mid = preferEmptyCut(in, in.size() / 2);
+-        if (mid < 0) {
+-            return false;
+-        }
+-        out.add(new ArrayList<>(in.subList(0, mid)));
+-        out.add(new ArrayList<>(in.subList(mid, in.size())));
+-        return true;
+-    }
+-
+     static long nextShardGroup() {
+         return SHARD_GROUP_GENERATOR.getAndIncrement();
+     }

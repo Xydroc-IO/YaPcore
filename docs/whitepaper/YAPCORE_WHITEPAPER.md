@@ -70,7 +70,7 @@ YaPcore contributes:
 
 - **Stock Paper plugins on YaP-Folia** are unsupported (same reality as upstream Folia). Prefer Folia-aware jars or YaP natives — [PLUGIN_COMPAT_MATRIX.md](../plugins/PLUGIN_COMPAT_MATRIX.md).
 - YaPcore is **not** a clean-room rewrite of Minecraft; it **forks Folia on purpose**.
-- We do **not** claim “faster than Paper/Leaf on every workload.” Population cite: **fullcite** (100 active bots + fixtures) — yapcore **−5.8%** vs stock Folia with ship knobs; highpop alone is a **tie** (−4.2%). **250 keepalive = HOLD-ONLY** — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
+- We do **not** claim “faster than Paper/Leaf on every workload.” Population cite: **fullcite** (100 active bots + fixtures) under the **ship Folia knob profile** (async-save, hopper budget, MSPT-gated entity/microtick budgets, subregion partition) — yapcore **−12.4%** vs stock Folia (`20260904TshipFc2`); knobs disclosed in bench JSON (`knob_*`). See [`YAP_FOLIA_SOAK.md`](../folia/YAP_FOLIA_SOAK.md). **250 keepalive = HOLD-ONLY**.
 - Bedrock play-depth is **join/spawn + play-depth smoke green**; some fidelity rows remain partial — [CROSSPLAY.md](../network/CROSSPLAY.md).
 - The Compatibility Bridge facade (non-game authority) remains **best-effort stubs** — [PAPER_API_COVERAGE.md](../plugins/PAPER_API_COVERAGE.md).
 
@@ -169,16 +169,15 @@ YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream 
 |-------|---------|---------|
 | `0000` | Branding → YaP-Folia | always |
 | `0001` | Cross-region teleport PREPARE/COMMIT/CONFIRM | **on** |
-| `0010` | Async chunk save (Moonrise flush off region thread) | **off** |
-| `0011` | Scoreboard SWMR | **off** |
-| `0012` | Per-region Mob AI tick budget | **off** (0) |
-| `0013` | Region pool metrics / microtick knobs | metrics on; budgets off |
-| `0014` | Force-partition hot regions | **off** |
-| `0015` | Defer neighbor/shape updates across shard borders | with partition |
+| `0010` | Async chunk save (Moonrise flush off region thread) | **on** (ship) |
+| `0011` | Scoreboard SWMR | **on** (ship) |
+| `0012` / `0023` | Smart Mob AI tick budget (MSPT-gated) | **400** (ship); 0=off |
+| `0013` | Region pool metrics / microtick knobs | microtick **8 ms** (ship) |
+| `0014`–`0019` / `0024` | Subregion partition + harden | **on** (ship; hysteresis) |
+| `0022` | Hopper BE transfer budget | **64** (ship) |
 
 Build: `./scripts/build-yap-folia.sh` → `lib/yap-folia-26.2.jar`.  
-Verify:  · Soak: .  
-Docs: [QUICK_START.md](../start/QUICK_START.md) · [QUICK_START.md](../start/QUICK_START.md).
+Docs: [YAP_FOLIA_SOAK.md](../folia/YAP_FOLIA_SOAK.md) · [REAL_GAINS.md](../folia/REAL_GAINS.md) · [QUICK_START.md](../start/QUICK_START.md).
 
 Stock Folia fallback: `folia-jar-source=fetch` + `./scripts/fetch-folia.sh` (bench / comparison only).
 
@@ -386,7 +385,7 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 | CORE+NETWORK plugins | **Shipped** |
 | GAMEPLAY + MMO M0–M7 | **Shipped** (opt-in install) |
 | PlayerData shops + AH | **On by default** (jobs remain off) |
-| Fair population MSPT gate | **Citeable** — fullcite 100 bots, yapcore −5.8% vs stock Folia (ship knobs) |
+| Fair population MSPT gate | **Citeable** — fullcite 100 bots, yapcore −12.4% vs stock Folia (**ship knobs** disclosed in JSON) |
 | Dashboard Phase 8 full tabs | **Partial / roadmap** |
 | PAPI eCloud | **Intentionally stubbed** |
 | Stock Paper jars on Folia | **Unsupported** |

@@ -275,6 +275,9 @@ public final class ServerConfig {
     public boolean isFoliaTeleportTransactions() { return folia.isFoliaTeleportTransactions(); }
     public boolean isFoliaAsyncChunkSave() { return folia.isFoliaAsyncChunkSave(); }
     public int getFoliaEntityTickBudget() { return folia.getFoliaEntityTickBudget(); }
+    public double getFoliaBudgetMsptThreshold() { return folia.getFoliaBudgetMsptThreshold(); }
+    public int getFoliaEntityTickMaxDeferred() { return folia.getFoliaEntityTickMaxDeferred(); }
+    public int getFoliaHopperTickBudget() { return folia.getFoliaHopperTickBudget(); }
     public boolean isFoliaScoreboardSwmr() { return folia.isFoliaScoreboardSwmr(); }
     public int getFoliaMicrotickBudgetMs() { return folia.getFoliaMicrotickBudgetMs(); }
     public long getFoliaStealThresholdMs() { return folia.getFoliaStealThresholdMs(); }
@@ -284,11 +287,13 @@ public final class ServerConfig {
     public boolean isFoliaSubregionPartition() { return folia.isFoliaSubregionPartition(); }
     public int getFoliaSubregionShards() { return folia.getFoliaSubregionShards(); }
     public int getFoliaSubregionMsptThreshold() { return folia.getFoliaSubregionMsptThreshold(); }
+    public int getFoliaSubregionMsptClear() { return folia.getFoliaSubregionMsptClear(); }
     public int getFoliaSubregionMinSections() { return folia.getFoliaSubregionMinSections(); }
     public int getFoliaSubregionMinEntities() { return folia.getFoliaSubregionMinEntities(); }
     public int getFoliaSubregionCoalesceMspt() { return folia.getFoliaSubregionCoalesceMspt(); }
     public int getFoliaSubregionCoalesceTicks() { return folia.getFoliaSubregionCoalesceTicks(); }
     public int getFoliaSubregionCoalesceQuietTicks() { return folia.getFoliaSubregionCoalesceQuietTicks(); }
+    public long getFoliaSubregionCoalesceMinWallMs() { return folia.getFoliaSubregionCoalesceMinWallMs(); }
     public boolean isFoliaSubregionCarve() { return folia.isFoliaSubregionCarve(); }
     public int getFoliaSubregionPartitionDelayTicks() { return folia.getFoliaSubregionPartitionDelayTicks(); }
     public int getFoliaSubregionGapMaintainInterval() { return folia.getFoliaSubregionGapMaintainInterval(); }

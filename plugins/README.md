@@ -17,11 +17,11 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | Tier | Gradle | What’s installed |
 |------|--------|------------------|
 | **CORE + NETWORK** | `gradle installProductDefaults` | Network + ops jars below |
-| **GAMEPLAY** | `gradle installGameplayDefaults` | Vehicles, stacker, knobs, MMO |
+| **GAMEPLAY** | `gradle installGameplayDefaults` | Vehicles, stacker, knobs, MMO, abilities, disasters |
 | **Full release box** | `gradle assembleRelease` | CORE + NETWORK + GAMEPLAY |
 | **Slim box** | `gradle assembleRelease -PyapGameplay=false` | CORE + NETWORK only |
 | **Fine-tune modules** | `gradle installFineTuneModules` | All packaging jars → `modules/` |
-| `Dist folder (all jars)` | `gradle assemblePluginDist` | `build/dist/yap-plugins/{core-network,gameplay,api,modules/…}/` |
+| Dist folder (all jars) | `gradle assemblePluginDist` | `build/dist/yap-plugins/{core-network,gameplay,api,modules/…}/` |
 
 ### CORE + NETWORK (every release)
 
@@ -35,11 +35,23 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-perms.jar` | Native permissions — groups, tracks, prefixes (`/yapperm`, `/promote`) |
 | `yap-playerdata.jar` | Cross-server data + offline `/login` + session lock + modular features |
 | `yap-moderation.jar` | Ban/mute/warn/kick + history (`/ban`, `/modhistory`) |
-| `yap-essentials.jar` | Essentials-class QoL (`/spawn`, `/tpa`, `/fly`, `/vanish`, …) |
+| `yap-essentials.jar` | Essentials-class QoL (`/spawn`, `/tpa`, `/fly`, `/vanish`, `/weather`, …) |
 | `yap-admin.jar` | In-game staff super menu (`/yapadmin`, `/staff`) — [ADMIN_MENU.md](../docs/ops/ADMIN_MENU.md) |
+| `yap-protect.jar` | Block logging / rollback |
+| `yap-world.jar` | Multi-world + WorldEdit-class tools (`/yapworld`) |
+| `WorldEdit.jar` | WorldEdit API shim (`yap-worldedit-shim`) |
+| `yap-regions.jar` | WorldGuard-class regions (`/region`) |
+| `yap-npcs.jar` | NPCs + quests (`/npc`, `/quests`) |
+| `yap-guard.jar` | Anti-cheat |
+| `yap-lagguard.jar` | Lag / entity budgets |
+| `yap-map.jar` | Web map render |
+| `yap-factions.jar` | Factions land claims |
 | `yap-packs.jar` | Multi-active resource packs (`/yappacks`) |
 | `yap-chat.jar` | Full chat suite + unsigned system chat fix |
+| `yap-tab.jar` | Tab list / nametags |
+| `yap-discord.jar` | Discord bridge |
 | `yap-floodgate.jar` | Velocity Bedrock identity without Floodgate jar |
+| `yap-bedrock-ui.jar` | Bedrock form UI bridge |
 
 ### GAMEPLAY (opt-in)
 
@@ -48,11 +60,21 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-vehicles.jar` | YaP Vehicles (fleet, fuel, upgrades, shop) |
 | `yap-gameplay-knobs.jar` | Purpur-class mob encyclopedia |
 | `yap-stacker.jar` | PDC mob/item/spawner stacker (`/yapstacker`) |
+| `yap-skills.jar` | MMO skills |
+| `yap-combat.jar` | Combat / spells / prayer |
+| `yap-crafting.jar` | Custom recipes + sell |
+| `yap-mmo-content.jar` | Bosses, hiscores, MMO content packs |
+| `yap-mmo-bedrock.jar` | Bedrock MMO UI (`/mmoui`) |
+| `yap-guilds.jar` | Player guilds |
+| `yap-games.jar` | Queue / duel / arena games |
+| `yap-mechanics.jar` | Stamina and shared mechanics |
+| `yap-abilities.jar` | Hotbar abilities / spells |
+| `yap-disasters.jar` | Extreme weather + disasters (`/yapdisaster`) |
 
 Plus GAMEPLAY fine-tune modules (`yap-vehicles-module`, `yap-stacker-module`,
-`yap-gameplay-knobs-module`) and vehicles overlay in `yapcore-default.zip` when
-`-PyapGameplay=true`. CORE fine-tune modules install with `installProductDefaults`
-(see [modules/README.md](../modules/README.md)).
+`yap-gameplay-knobs-module`, games modules) and vehicles/abilities overlays in
+`yapcore-default.zip` when `-PyapGameplay=true`. CORE fine-tune modules install
+with `installProductDefaults` (see [modules/README.md](../modules/README.md)).
 
 ### Optional third-party (not in git)
 
