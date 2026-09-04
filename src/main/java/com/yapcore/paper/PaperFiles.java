@@ -334,17 +334,22 @@ public final class PaperFiles {
     }
 
     /**
-     * Sync Paper for Velocity modern forwarding: {@code paper-global.yml},
+     * Sync Paper/Folia for Velocity modern forwarding: {@code paper-global.yml},
      * {@code spigot.yml} ({@code bungeecord: false}), and log the mode.
-     * Only runs when {@code velocity-enabled=true}; does not rewrite Paper configs
-     * when Velocity mode is off.
+     * When {@code velocity-enabled=false}, explicitly disables Folia/Paper Velocity
+     * so VIA_PROXY (chassis) joins are not kicked for missing Velocity player info.
      *
      * @param rootDir repo / process root (for resolving {@code velocity-secret-file})
-     * @param paperDir Paper working directory ({@code paper-kernel} by default)
+     * @param paperDir Paper/Folia working directory
      */
     public static void applyVelocitySupport(Path rootDir, Path paperDir, ServerConfig config)
             throws IOException {
         if (!config.isVelocityEnabled()) {
+            writePaperVelocityGlobal(paperDir, false, false, "");
+            ensureSpigotBungeeOff(paperDir);
+            String game = config.isFoliaAuthority() ? "YaP-Folia" : "Paper";
+            LOG.info("Velocity modern forwarding disabled for " + game
+                    + " — clients join via chassis VIA_PROXY / direct offline path");
             return;
         }
         String secret = resolveVelocitySecret(rootDir, config);
@@ -354,7 +359,7 @@ public final class PaperFiles {
         }
         writePaperVelocityGlobal(paperDir, true, config.isVelocityOnlineMode(), secret);
         ensureSpigotBungeeOff(paperDir);
-        String game = config.isFoliaAuthority() ? "Folia" : "Paper";
+        String game = config.isFoliaAuthority() ? "YaP-Folia" : "Paper";
         LOG.info("Velocity/YaP Link modern forwarding enabled for " + game + " (online-mode="
                 + config.isVelocityOnlineMode()
                 + ", bind="

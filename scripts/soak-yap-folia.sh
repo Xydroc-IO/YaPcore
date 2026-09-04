@@ -55,21 +55,25 @@ heap_mb() {
 }
 
 folia_pid() {
-  # Prefer the real Folia JVM only — avoid pgrep -f false positives (shells, soak script, cwd paths).
-  local pid=""
+  # Prefer the real YaP-Folia JVM only — never match shells whose argv mentions the jar name.
+  local pid="" comm=""
   while IFS= read -r pid; do
     [ -n "$pid" ] || continue
-    if [ -r "/proc/$pid/cmdline" ] && tr '\0' ' ' <"/proc/$pid/cmdline" | grep -Eq 'java.*(folia-26|yap-folia).*\.jar'; then
+    comm="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
+    [ "$comm" = "java" ] || continue
+    if [ -r "/proc/$pid/cmdline" ] && tr '\0' ' ' <"/proc/$pid/cmdline" | grep -Eq -- '-jar .*(folia-26|yap-folia).*\.jar'; then
       echo "$pid"
       return 0
     fi
-  done < <(pgrep -f '[j]ava.*(folia-26|yap-folia).*\.jar' 2>/dev/null || true)
-  # Fallback: child of chassis with folia-kernel cwd
+  done < <(pgrep -x java 2>/dev/null || true)
+  # Fallback: java child of chassis with folia jar on cmdline
   local cpid
   cpid="$(chassis_pid)"
   if [ -n "$cpid" ]; then
     for pid in $(pgrep -P "$cpid" 2>/dev/null || true); do
-      if [ -r "/proc/$pid/cmdline" ] && tr '\0' ' ' <"/proc/$pid/cmdline" | grep -Eq 'java.*(folia|yap-folia)'; then
+      comm="$(ps -p "$pid" -o comm= 2>/dev/null || true)"
+      [ "$comm" = "java" ] || continue
+      if [ -r "/proc/$pid/cmdline" ] && tr '\0' ' ' <"/proc/$pid/cmdline" | grep -Eq -- '-jar .*(folia|yap-folia).*\.jar'; then
         echo "$pid"
         return 0
       fi
@@ -109,7 +113,7 @@ wait_ready() {
       fi
     fi
     if yap_is_running && [ -n "$(folia_pid)" ]; then
-      # Chassis up + Folia child — treat as ready even if dashboard disabled
+      # Chassis up + YaP-Folia child — treat as ready even if dashboard disabled
       return 0
     fi
     sleep 2
@@ -120,20 +124,28 @@ wait_ready() {
 ensure_started() {
   if [ "${YAP_SOAK_SKIP_START:-0}" = "1" ]; then
     yap_is_running || { echo "YAP_SOAK_SKIP_START=1 but server not running" >&2; exit 1; }
+    SOAK_OWNED_SERVER=0
     return 0
   fi
   if yap_is_running; then
     echo "Server already running — reusing (set YAP_SOAK_SKIP_START=1 to silence)."
+    SOAK_OWNED_SERVER=0
     return 0
   fi
   echo "Starting YaPcore…"
   "$SCRIPT_DIR/start.sh" --nogui
   wait_ready 240 || { echo "Server did not become ready" >&2; exit 1; }
+  SOAK_OWNED_SERVER=1
 }
 
 maybe_stop() {
   if [ "${YAP_SOAK_KEEP:-0}" = "1" ]; then
     echo "YAP_SOAK_KEEP=1 — leaving server running"
+    return 0
+  fi
+  # Never stop a chassis we did not start (operator / Phase-2 join box).
+  if [ "${SOAK_OWNED_SERVER:-0}" != "1" ]; then
+    echo "Leaving pre-existing YaPcore running (soak did not start it)."
     return 0
   fi
   "$SCRIPT_DIR/stop.sh" || true
@@ -154,7 +166,7 @@ sample_row() {
   printf 't=%ss chassis_pid=%s folia_pid=%s chassis_heap=%sMB folia_heap=%sMB chassis_thr=%s folia_thr=%s\n' \
     "$elapsed" "${cpid:-?}" "${fpid:-?}" "${c_heap:-?}" "${f_heap:-?}" "${c_thr:-?}" "${f_thr:-?}" \
     | tee -a "$REPORT"
-  # Expose last Folia pid for callers via global
+  # Expose last YaP-Folia pid for callers via global
   LAST_FOLIA_PID="${fpid:-}"
   LAST_FOLIA_HEAP="${f_heap:-}"
 }
@@ -182,7 +194,7 @@ scan_logs_for_bad() {
 
 slope_fail() {
   # CSV: elapsed,chassis_pid,folia_pid,chassis_heap,folia_heap,chassis_thr,folia_thr
-  # Fail if Folia heap more than doubles from first third median to last third median (+256MB slack).
+  # Fail if YaP-Folia heap more than doubles from first third median to last third median (+256MB slack).
   python3 - "$CSV" <<'PY'
 import sys, statistics
 path = sys.argv[1]
@@ -262,7 +274,7 @@ run_perf() {
     elapsed=$(( now - start ))
     sample_row "$elapsed"
     if [ -n "$locked_folia" ] && [ -n "${LAST_FOLIA_PID:-}" ] && [ "$LAST_FOLIA_PID" != "$locked_folia" ]; then
-      echo "FAIL: Folia PID changed ${locked_folia} → ${LAST_FOLIA_PID} at t=${elapsed}s (child restart)" | tee -a "$REPORT"
+      echo "FAIL: YaP-Folia PID changed ${locked_folia} → ${LAST_FOLIA_PID} at t=${elapsed}s (child restart)" | tee -a "$REPORT"
       return 1
     fi
     tok="$(dashboard_token || true)"
@@ -299,10 +311,10 @@ run_long() {
   sample_row 0
   locked_folia="${LAST_FOLIA_PID:-}"
   if [ -z "$locked_folia" ]; then
-    echo "FAIL: could not resolve Folia JVM pid at soak start" | tee -a "$REPORT"
+    echo "FAIL: could not resolve YaP-Folia JVM pid at soak start" | tee -a "$REPORT"
     return 1
   fi
-  echo "Locked Folia pid=${locked_folia}" | tee -a "$REPORT"
+  echo "Locked YaP-Folia pid=${locked_folia}" | tee -a "$REPORT"
   while [ "$(date +%s)" -lt "$end" ]; do
     now="$(date +%s)"
     elapsed=$(( now - start ))
@@ -312,17 +324,17 @@ run_long() {
       return 1
     fi
     if [ -z "${LAST_FOLIA_PID:-}" ]; then
-      echo "FAIL: Folia child missing at t=${elapsed}s" | tee -a "$REPORT"
+      echo "FAIL: YaP-Folia child missing at t=${elapsed}s" | tee -a "$REPORT"
       return 1
     fi
     if [ "$LAST_FOLIA_PID" != "$locked_folia" ]; then
-      echo "FAIL: Folia PID changed ${locked_folia} → ${LAST_FOLIA_PID} at t=${elapsed}s (child restart)" | tee -a "$REPORT"
+      echo "FAIL: YaP-Folia PID changed ${locked_folia} → ${LAST_FOLIA_PID} at t=${elapsed}s (child restart)" | tee -a "$REPORT"
       return 1
     fi
     if [ -z "${LAST_FOLIA_HEAP:-}" ]; then
       blank_heap=$((blank_heap + 1))
       if [ "$blank_heap" -ge 3 ]; then
-        echo "FAIL: Folia heap unreadable for ${blank_heap} samples (pid=${LAST_FOLIA_PID})" | tee -a "$REPORT"
+        echo "FAIL: YaP-Folia heap unreadable for ${blank_heap} samples (pid=${LAST_FOLIA_PID})" | tee -a "$REPORT"
         return 1
       fi
     else
@@ -349,7 +361,7 @@ case "$MODE" in
     ;;
   help|-h|--help)
     cat <<'EOF'
-soak-yap-folia.sh — live Folia mem / crash soak
+soak-yap-folia.sh — live YaP-Folia mem / crash soak
 
   compat              Boot + dashboard/disasters smoke
   perf [minutes]      Heap samples under light churn (default 30)
