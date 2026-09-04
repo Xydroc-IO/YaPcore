@@ -107,10 +107,8 @@ public final class PublicEndpoint {
 
     public int advertisedPackPort() {
         int pub = config.getPublicPackPort();
-        // YaP always hosts the current zip on resource-pack-http-port (default 8081).
-        // public-pack-port=80 usually means nginx/CDN — often stale / hairpin-broken on LAN.
-        // Prefer the live pack HTTP unless the operator set an explicit non-80/443 edge port.
-        if (pub > 0 && pub != 80) {
+        // Explicit public-pack-port (including 80/443 for nginx/CDN) wins when set.
+        if (pub > 0) {
             return pub;
         }
         return config.getResourcePackHttpPort();
