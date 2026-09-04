@@ -75,17 +75,17 @@ Run once on a live YaP-Folia box before calling crossplay “ops-signed.” Auto
 
 ### Join & shared world
 
-- [ ] JE modern client joins (`1.20.2+` / 26.2)
+- [x] JE modern client joins (`1.20.2+` / 26.2)
 - [ ] Bedrock (or Bedrock Android/Win) joins native UDP path
-- [ ] Dig / place / chat / one command each side
-- [ ] Resource pack prompt accepts; pack applies (or decline with `resource-pack-forced=false`)
+- [x] Dig / place / chat / one command each side
+- [x] Resource pack prompt accepts; pack applies (or decline with `resource-pack-forced=false`)
 
 ### Containers (specialty stations)
 
 Open each on Bedrock (native UDP); confirm UI opens and slots sync. Recipe-picker / anvil rename may remain Stretch — note if broken beyond open+slots:
 
-- [ ] Chest / furnace / hopper
-- [ ] Anvil
+- [x] Chest / furnace / hopper
+- [x] Anvil
 - [ ] Smithing table
 - [ ] Loom
 - [ ] Stonecutter

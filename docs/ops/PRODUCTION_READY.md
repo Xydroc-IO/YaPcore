@@ -59,11 +59,15 @@ Walk [SECRETS.md](../start/SECRETS.md) production order once. Confirm on this ho
 
 ### 2c — §E solo checklist (you + one JE client; Bedrock if you have it)
 
+**Done (ops-signed minimum, 2026-09-04):** JE join via Link `:25565`, dig/place/chat/command, resource pack prompt, chest/furnace/hopper + anvil.
+
+Still optional before marketing full play depth: Bedrock device, remaining specialty stations, `/yapknobs` / ability / `/bag`.
+
 Do **not** wait for other humans. Tick in [CROSSPLAY.md §E](../network/CROSSPLAY.md) as you go:
 
-1. JE modern client → `yapcoremc.yaplabs.us:25565` (or LAN) — dig/place/chat/one command  
-2. Accept or decline resource pack  
-3. Open chest + furnace + anvil (minimum specialty set); note Stretch gaps  
+1. [x] JE modern client → `yapcoremc.yaplabs.us:25565` (or LAN) — dig/place/chat/one command  
+2. [x] Accept or decline resource pack  
+3. [x] Open chest + furnace + anvil (minimum specialty set); note Stretch gaps  
 4. Optional same session: Bedrock Android/Win on native UDP if you have a device  
 5. Optional: `/yapknobs status`, one ability cast, `/bag` page  
 
