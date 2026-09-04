@@ -40,6 +40,9 @@ project(":yap-db-plugin").projectDir = file("yap-first-party/core-network/yap-db
 include("packs-plugin")
 project(":packs-plugin").projectDir = file("yap-first-party/core-network/packs-plugin")
 
+include("commands-plugin")
+project(":commands-plugin").projectDir = file("yap-first-party/core-network/commands-plugin")
+
 include("chat-plugin")
 project(":chat-plugin").projectDir = file("yap-first-party/core-network/chat-plugin")
 

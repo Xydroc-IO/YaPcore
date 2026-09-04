@@ -11,6 +11,7 @@ import com.yapcore.web.api.DashboardAdminApi;
 import com.yapcore.web.api.DashboardConsoleApi;
 import com.yapcore.web.api.DashboardGameplayApi;
 import com.yapcore.web.api.DashboardKitsApi;
+import com.yapcore.web.api.DashboardCommandsApi;
 import com.yapcore.web.api.DashboardLinkConsoleApi;
 import com.yapcore.web.api.DashboardPlayersApi;
 import com.yapcore.web.api.DashboardPluginsApi;
@@ -47,6 +48,7 @@ public final class WebDashboard {
     private final DashboardLinkConsoleApi linkConsoleApi;
     private final DashboardGameplayApi gameplayApi;
     private final DashboardKitsApi kitsApi;
+    private final DashboardCommandsApi commandsApi;
     private final ChassisMetricsHandler metricsHandler;
     private final Consumer<String> consoleListener;
     private final Consumer<String> linkConsoleListener;
@@ -63,6 +65,7 @@ public final class WebDashboard {
         this.linkConsoleApi = new DashboardLinkConsoleApi(auth, server.getLinkProcess());
         this.gameplayApi = new DashboardGameplayApi(server, auth);
         this.kitsApi = new DashboardKitsApi(server, auth);
+        this.commandsApi = new DashboardCommandsApi(server, auth);
         this.metricsHandler = new ChassisMetricsHandler(server);
         this.consoleListener = line -> consoleApi.broadcastSse(line);
         this.linkConsoleListener = line -> linkConsoleApi.broadcastSse(line.trim());
@@ -134,6 +137,7 @@ public final class WebDashboard {
         http.createContext("/api/perms", gameplayApi::apiPerms);
         http.createContext("/api/playerdata", gameplayApi::apiPlayerdata);
         http.createContext("/api/kits", kitsApi::apiKits);
+        http.createContext("/api/commands", commandsApi::apiCommands);
         http.createContext("/api/discord", gameplayApi::apiDiscord);
         http.createContext("/api/tebex", gameplayApi::apiTebex);
         http.createContext("/api/tab", gameplayApi::apiTab);

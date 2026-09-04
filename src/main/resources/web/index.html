@@ -918,7 +918,7 @@
         <div class="card">
           <h3>World management</h3>
           <div class="form-grid">
-            <label>World name <input id="wldWorld" value="world"/></label>
+            <label>World name <input id="wldWorld" value="world" pattern="[A-Za-z0-9_-]+" title="Letters, digits, _ or -"/></label>
             <label>Brush max radius <input id="wldBrushInput" type="number" min="1" max="128" value="16"/></label>
           </div>
           <div class="btn-row">
@@ -926,6 +926,34 @@
             <button id="wldUnload">Unload world</button>
             <button id="wldSchemList">List schematics</button>
             <button id="wldSaveBrush">Save brush limit</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Create world</h3>
+          <p class="muted hint">Type / environment / seed apply when the world is generated for the first time. Generator is a plugin id (blank = vanilla).</p>
+          <div class="form-grid">
+            <label>Name <input id="wldCreateName" placeholder="flat_spawn" pattern="[A-Za-z0-9_-]+"/></label>
+            <label>Type
+              <select id="wldType">
+                <option value="NORMAL">Normal</option>
+                <option value="FLAT">Flat</option>
+                <option value="LARGE_BIOMES">Large biomes</option>
+                <option value="AMPLIFIED">Amplified</option>
+              </select>
+            </label>
+            <label>Environment
+              <select id="wldEnv">
+                <option value="overworld">Overworld</option>
+                <option value="nether">Nether</option>
+                <option value="end">The End</option>
+              </select>
+            </label>
+            <label>Seed <input id="wldSeed" placeholder="(random)" inputmode="numeric"/></label>
+            <label>Generator <input id="wldGenerator" placeholder="(vanilla)"/></label>
+            <label class="check"><input type="checkbox" id="wldStructures" checked/> Generate structures</label>
+          </div>
+          <div class="btn-row">
+            <button id="wldCreate" class="primary">Create world</button>
           </div>
         </div>
         <div class="toolbar">
@@ -1225,6 +1253,79 @@
           <button id="kitReload">Reload YaPPlayerData</button>
         </div>
         <pre id="kitOut" class="report"></pre>
+      </section>
+
+      <section id="tab-commands" class="panel">
+        <div class="page-header">
+          <h2>Custom commands</h2>
+          <p>Define in-game <code>/commands</code> in <code>plugins/YaPCommands/commands.yml</code>.
+            Placeholders: <code>{player}</code> <code>{uuid}</code> <code>{world}</code> <code>{args}</code> <code>{args0}</code>…
+            Permission default: <code>yapcommands.cmd.&lt;name&gt;</code> (or leave blank + require use perm).</p>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Commands</span><strong id="cmdCount">—</strong></div>
+          <div class="stat"><span>Jar</span><strong id="cmdJarOk">—</strong></div>
+          <div class="stat"><span>File</span><strong id="cmdFileOk">—</strong></div>
+        </div>
+        <label class="inline-check" style="display:flex;align-items:center;gap:10px;margin:8px 0 16px;font-size:13px;color:var(--muted)">
+          <input type="checkbox" id="cmdRequireUse" style="width:auto"/>
+          Require <code>yapcommands.use</code> for all custom commands
+        </label>
+        <div class="plugin-editor-layout">
+          <div class="card">
+            <h3>Commands</h3>
+            <div class="group-cards" id="cmdCards"></div>
+            <div class="form-grid" style="margin-top:12px">
+              <label>New command name <input id="cmdNewId" placeholder="discord"/></label>
+            </div>
+            <div class="btn-row">
+              <button id="cmdCreate" class="primary">New command</button>
+              <button id="cmdClone">Clone selected</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Edit · <span id="cmdEditLabel">—</span></h3>
+            <div class="form-grid">
+              <label>Name <input id="cmdId" readonly placeholder="—"/></label>
+              <label>Description <input id="cmdDesc" placeholder="Discord invite"/></label>
+              <label>Permission (blank = yapcommands.cmd.&lt;name&gt;) <input id="cmdPerm" placeholder=""/></label>
+              <label>Cooldown (seconds) <input id="cmdCooldown" type="number" min="0" value="0"/></label>
+            </div>
+            <label class="inline-check" style="display:flex;align-items:center;gap:10px;margin:12px 0;font-size:13px;color:var(--muted)">
+              <input type="checkbox" id="cmdEnabled" style="width:auto" checked/>
+              Enabled
+            </label>
+            <label class="inline-check" style="display:flex;align-items:center;gap:10px;margin:0 0 12px;font-size:13px;color:var(--muted)">
+              <input type="checkbox" id="cmdHidePerm" style="width:auto" checked/>
+              Hide “no permission” message
+            </label>
+            <label>Aliases (one per line or comma-separated)
+              <textarea id="cmdAliases" rows="2" placeholder="dc&#10;disc"></textarea>
+            </label>
+            <label>Messages to sender (one per line, &amp; colors)
+              <textarea id="cmdMessages" rows="4" placeholder="&amp;9Discord:&amp;f discord.gg/yap"></textarea>
+            </label>
+            <label>Run as player (one per line, no leading /)
+              <textarea id="cmdPlayerCmds" rows="2" placeholder="warp hub"></textarea>
+            </label>
+            <label>Run as console (one per line, <code>{player}</code> allowed)
+              <textarea id="cmdConsoleCmds" rows="2" placeholder="say {player} used /discord"></textarea>
+            </label>
+            <label>Broadcast (optional)
+              <input id="cmdBroadcast" placeholder=""/>
+            </label>
+            <div class="btn-row">
+              <button id="cmdSave" class="primary">Save command</button>
+              <button id="cmdDelete" class="danger">Delete</button>
+            </div>
+          </div>
+        </div>
+        <div class="toolbar">
+          <button id="cmdRefresh">Refresh</button>
+          <button id="cmdReload">Reload YaPCommands</button>
+          <button id="cmdSaveRequire">Save use-perm toggle</button>
+        </div>
+        <pre id="cmdOut" class="report"></pre>
       </section>
 
       <section id="tab-data" class="panel">
@@ -1763,6 +1864,7 @@
   <script src="/app-social-panels.js"></script>
   <script src="/app-plugin-editors.js"></script>
   <script src="/app-kits-panels.js"></script>
+  <script src="/app-commands-panels.js"></script>
   <script src="/app-core.js"></script>
 </body>
 </html>

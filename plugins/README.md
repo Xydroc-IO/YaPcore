@@ -47,6 +47,7 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-map.jar` | Web map render |
 | `yap-factions.jar` | Factions land claims |
 | `yap-packs.jar` | Multi-active resource packs (`/yappacks`) |
+| `yap-commands.jar` | YAML custom `/commands` + dashboard CRUD |
 | `yap-chat.jar` | Full chat suite + unsigned system chat fix |
 | `yap-tab.jar` | Tab list / nametags |
 | `yap-discord.jar` | Discord bridge |

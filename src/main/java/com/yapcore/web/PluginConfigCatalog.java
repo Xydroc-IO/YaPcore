@@ -21,6 +21,7 @@ public final class PluginConfigCatalog {
                 e("yap-protect", "YaPProtect", "YaPProtect", "config.yml", "yap-protect", "yapprotect reload"),
                 e("yap-world", "YaPWorld", "YaPWorld", "config.yml", "yap-world", "yapworld reload"),
                 e("yap-packs", "YaPPacks", "YaPPacks", "config.yml", "yap-packs", "yappacks reload"),
+                e("yap-commands", "YaPCommands", "YaPCommands", "config.yml", "yap-commands", "yapcommands reload"),
                 e("yap-chat", "YaPChat", "YaPChat", "config.yml", "yap-chat", "yapchat reload"),
                 e("yap-tab", "YaPTab", "YaPTab", "config.yml", "yap-tab", "yaptab reload"),
                 e("yap-discord", "YaPDiscord", "YaPDiscord", "config.yml", "yap-discord", "yapdiscord reload"),

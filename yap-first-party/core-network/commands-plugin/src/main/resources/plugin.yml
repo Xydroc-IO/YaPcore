@@ -1,0 +1,26 @@
+name: YaPCommands
+version: '1.0.0.0'
+main: com.yapcore.commands.CommandsPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Custom /commands from YAML — edit live from the YaP dashboard
+commands:
+  yapcommands:
+    description: Manage custom commands
+    usage: /yapcommands reload|list|info|toggle <name>
+    permission: yapcommands.admin
+    aliases: [ycmd, customcmd]
+permissions:
+  yapcommands.admin:
+    description: Manage and reload custom commands
+    default: op
+  yapcommands.use:
+    description: Use custom commands that require the base use node
+    default: true
+  yapcommands.bypass.cooldown:
+    description: Bypass custom command cooldowns
+    default: op
+  yapcommands.cmd.*:
+    description: Wildcard for per-command permissions
+    default: false

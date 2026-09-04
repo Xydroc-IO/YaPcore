@@ -1,0 +1,46 @@
+# Custom /commands — edit via dashboard Custom commands tab or this file.
+# Placeholders: {player} {uuid} {display} {world} {x} {y} {z} {args} {args0} {args1} …
+# permission: empty = anyone with yapcommands.use (if require-use-perm); or set yapcommands.cmd.<name>
+
+require-use-perm: true
+
+commands:
+  discord:
+    enabled: true
+    aliases: [dc, disc]
+    permission: ""
+    description: Discord invite
+    cooldown-seconds: 3
+    hide-no-permission: true
+    messages:
+      - "&9Discord:&f join at &bdiscord.gg/yap"
+    player-commands: []
+    console-commands: []
+    broadcast: ""
+  rules:
+    enabled: true
+    aliases: [rule]
+    permission: ""
+    description: Server rules
+    cooldown-seconds: 5
+    hide-no-permission: true
+    messages:
+      - "&eRules"
+      - "&7• Be respectful"
+      - "&7• No cheating or griefing"
+      - "&7• Follow staff instructions"
+    player-commands: []
+    console-commands: []
+    broadcast: ""
+  store:
+    enabled: true
+    aliases: [shop, buy]
+    permission: ""
+    description: Store link
+    cooldown-seconds: 3
+    hide-no-permission: true
+    messages:
+      - "&aStore:&f https://store.example.com"
+    player-commands: []
+    console-commands: []
+    broadcast: ""

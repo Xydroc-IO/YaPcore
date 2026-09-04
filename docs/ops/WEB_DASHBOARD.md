@@ -46,7 +46,7 @@ Login links include `?token=…` so the browser signs in automatically (token is
 | **Server** | Console, Server setup, YaP Link |
 | **People** | Players, Access & ranks, Rank pack |
 | **Content** | Plugins, Plugin settings, Modules, Packs, World, Regions, NPCs |
-| **Gameplay** | Essentials, Vehicles, Pregen, Player data, Kits, Tebex, Chat, Tab list, **MMO**, **Factions**, **Guilds**, **Games**, **Disasters**, **Stacker**, Map, Guard, Protect, Discord |
+| **Gameplay** | Essentials, Vehicles, Pregen, Player data, Kits, **Custom commands**, Tebex, Chat, Tab list, **MMO**, **Factions**, **Guilds**, **Games**, **Disasters**, **Stacker**, Map, Guard, Protect, Discord |
 
 Static assets: `src/main/resources/web/` — `app-shell.js`, `app-core.js`, `app-*-panels.js`, `style.css`.
 
@@ -79,7 +79,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Plugin settings** | `/api/plugin-config` | first-party YAML with plain-language titles + Yes/No | **save** + reload, **reload** |
 | **Modules** | `/api/modules` | module jars | install, remove |
 | **Packs** | `/api/packs` | resource packs, active set | setActive, add, remove, clear |
-| **World** | `/api/world` | schematics, brush max, load/unload flags | load, unload, reload, schem-list, **save-brush** |
+| **World** | `/api/world` | schematics, brush max, load/unload flags | create (type/env/seed/generator), load, unload, reload, schem-list, **save-brush** |
 | **Regions** | `/api/regions` | region table (JSON), flag names | **define** (cuboid coords), **flag-set**, list |
 | **NPCs** | `/api/npcs` | npc table, quest ids | create, remove, setquest, setdialogue, respawn, reload, info |
 | **Essentials** | `/api/essentials` | features, MOTD, rules, spawn | reload, broadcast, save-motd, save-rules, set-feature |
@@ -87,6 +87,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Pregen** | `/api/pregen` | job status | start, pause, resume, cancel |
 | **Player data** | `/api/playerdata` | economy, auth, feature toggles | reload, save, set-feature |
 | **Kits** | `/api/kits` | kits.yml definitions, items, armor slots | **save-kit**, **delete-kit**, **clone-kit**, give, grant, reload |
+| **Custom commands** | `/api/commands` | YaPCommands commands.yml | **save-command**, **delete-command**, **clone-command**, set-require-use, reload |
 | **Tebex store** | `/api/tebex` | jar present, secret masked, buy command, proxy, package recipes | **set-secret**, **save-settings**, reload, info, forcecheck |
 | **Chat** | `/api/chat` | channels, slow mode, filter, relay | reload, clearchat, **save-settings** |
 | **Tab list** | `/api/tab` | header/footer/sidebar/bossbar | save-header/footer/sidebar/settings/bossbar, reload |
@@ -143,6 +144,18 @@ MariaDB already stores `world`, `server_ctx`, and `expires_at` on user/group nod
 `GET/POST /api/kits` — `save-kit`, `delete-kit`, `clone-kit`, `give`, `grant`, `reload`. Item lines in POST: `MATERIAL|amount|slot|name|lore|enchants`. Players still need `yapdata.kit.<id>` (or `yapdata.kit.*`) on Access & ranks.
 
 `/createkit` Bukkit stacks stay readable; saving from the dashboard writes the material form (NBT beyond name/lore/enchants is dropped).
+
+### Custom commands (`yap-commands`)
+
+**Gameplay → Custom commands** edits `plugins/YaPCommands/commands.yml`:
+
+- Create / clone / delete `/name` entries
+- Messages (`&` colors), player-run commands, console-run commands (`{player}`), broadcast
+- Aliases, permission, cooldown, enable toggle, hide-no-permission
+- Master `require-use-perm` toggle; flat `config.yml` `enabled` also under Plugin settings
+- Saves YAML then runs `yapcommands reload`
+
+`GET/POST /api/commands` — `save-command`, `delete-command`, `clone-command`, `set-require-use`, `reload`.
 
 ### Tebex store
 

@@ -87,7 +87,7 @@ load `VehicleAPI` from `ServicesManager`. Runs on **YaP-Folia** (`folia-supporte
 **CORE + NETWORK (default)** on `gradle shadowJar` / `assembleRelease`:
 
 `yap-placeholderapi`, `yap-pregen`, `yap-plugin-compat`, `yap-db`, `yap-perms`,
-`yap-playerdata`, `yap-moderation`, `yap-essentials`, `yap-admin`, `yap-packs`, `yap-chat`, `yap-tab`,
+`yap-playerdata`, `yap-moderation`, `yap-essentials`, `yap-admin`, `yap-packs`, `yap-commands`, `yap-chat`, `yap-tab`,
 `yap-discord`, `yap-protect`, `yap-world`, `yap-regions`, `yap-guard`, `yap-lagguard`,
 `yap-map`, `yap-npcs`, `yap-factions`, `yap-floodgate`, `yap-bedrock-ui`, `yap-folia-bridge`.
 

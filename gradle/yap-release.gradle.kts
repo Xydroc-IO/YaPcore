@@ -69,6 +69,7 @@ tasks.register("assembleRelease") {
             "yap-map.jar",
             "yap-factions.jar",
             "yap-packs.jar",
+            "yap-commands.jar",
             "yap-chat.jar",
             "yap-tab.jar",
             "yap-discord.jar",

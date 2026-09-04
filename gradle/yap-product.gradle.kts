@@ -50,6 +50,9 @@ tasks.register("installProductDefaults") {
     if (findProject(":packs-plugin") != null) {
         dependsOn(":packs-plugin:installIntoPlugins")
     }
+    if (findProject(":commands-plugin") != null) {
+        dependsOn(":commands-plugin:installIntoPlugins")
+    }
     if (findProject(":chat-plugin") != null) {
         dependsOn(":chat-plugin:installIntoPlugins")
     }
@@ -190,6 +193,7 @@ tasks.register("assemblePluginDist") {
         ":world-plugin:shadowJar",
         ":worldedit-shim-plugin:shadowJar",
         ":packs-plugin:jar",
+        ":commands-plugin:jar",
         ":chat-plugin:jar",
         ":tab-plugin:shadowJar",
         ":discord-plugin:jar",
@@ -281,6 +285,9 @@ tasks.register("assemblePluginDist") {
             copyNamed(jarOf(":worldedit-shim-plugin", "shadowJar"), coreDir)
         }
         copyNamed(jarOf(":packs-plugin"), coreDir)
+        if (findProject(":commands-plugin") != null) {
+            copyNamed(jarOf(":commands-plugin"), coreDir)
+        }
         copyNamed(jarOf(":chat-plugin"), coreDir)
         if (findProject(":tab-plugin") != null) {
             copyNamed(jarOf(":tab-plugin", "shadowJar"), coreDir)

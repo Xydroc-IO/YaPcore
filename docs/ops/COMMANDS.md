@@ -87,6 +87,20 @@ Local chat: prefix message with `!` when in global channel.
 
 Chat line colors come from each YaPPerms rank (`name-color` / `chat-color`). Format tokens: `{prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}`.
 
+### YaPCommands (`yap-commands.jar`)
+
+Custom `/commands` from `plugins/YaPCommands/commands.yml` (also editable on the dashboard **Custom commands** tab).
+
+| Command | Permission | Description |
+|---------|------------|-------------|
+| `/yapcommands reload` | `yapcommands.admin` | Reload YAML and re-register commands |
+| `/yapcommands list` | `yapcommands.admin` | List defined commands |
+| `/yapcommands info <name>` | `yapcommands.admin` | Show one command |
+| `/yapcommands toggle <name>` | `yapcommands.admin` | Enable/disable without deleting |
+| `/<name>` (YAML) | `yapcommands.cmd.<name>` (or custom) | Player-facing custom command |
+
+Aliases: `/ycmd`, `/customcmd`. Base gate: `yapcommands.use` when `require-use-perm: true`. Placeholders: `{player}` `{uuid}` `{display}` `{world}` `{x}` `{y}` `{z}` `{args}` `{args0}`…
+
 ### YaPModeration (`yap-moderation.jar`)
 
 | Command | Permission | Description |

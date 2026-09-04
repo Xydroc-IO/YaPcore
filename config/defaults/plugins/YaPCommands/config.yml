@@ -1,0 +1,3 @@
+# YaPCommands — flat toggles (also editable under Plugin settings).
+# Command definitions live in commands.yml (dashboard Custom commands tab).
+enabled: true

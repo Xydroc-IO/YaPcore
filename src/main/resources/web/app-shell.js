@@ -30,6 +30,7 @@
       { tab: "pregen", icon: "⬡", label: "Pregen" },
       { tab: "data", icon: "💾", label: "Player data" },
       { tab: "kits", icon: "🎒", label: "Kits" },
+      { tab: "commands", icon: "/", label: "Custom commands" },
       { tab: "tebex", icon: "🛒", label: "Tebex store" },
       { tab: "chat", icon: "💬", label: "Chat" },
       { tab: "tab", icon: "📋", label: "Tab list" },
