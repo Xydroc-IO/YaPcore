@@ -286,8 +286,15 @@ tasks.register<Exec>("checkDomainLineLimits") {
     commandLine("bash", "scripts/check-domain-line-limits.sh")
 }
 
+tasks.register<Exec>("checkDbBootstrapHygiene") {
+    group = "verification"
+    description = "Fail if plugin db packages reintroduce raw YapDbProvider+Hikari open blocks"
+    workingDir = project.projectDir
+    commandLine("bash", "scripts/check-db-bootstrap-hygiene.sh")
+}
+
 tasks.named("check") {
-    dependsOn("checkDomainLineLimits")
+    dependsOn("checkDomainLineLimits", "checkDbBootstrapHygiene")
 }
 
 tasks.named<JavaExec>("run") {

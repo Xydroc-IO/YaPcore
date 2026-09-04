@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
       - name: Fixture gate (compare-folia.py)
         run: |
           chmod +x scripts/bench/check-mspt-regression.sh

@@ -24,10 +24,18 @@ dependencies {
     compileOnly(project(":yap-db-api"))
     compileOnly(project(":yap-perms-api"))
     compileOnly(project(":yap-moderation-api"))
-    compileOnly(project(":yap-moderation-api"))
 
     implementation("com.zaxxer:HikariCP:6.2.1")
     implementation("com.mysql:mysql-connector-j:9.1.0")
+
+    testImplementation("io.papermc.paper:paper-api:$paperApi")
+    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.shadowJar {

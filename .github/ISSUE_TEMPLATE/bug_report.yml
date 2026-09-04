@@ -27,7 +27,7 @@ body:
     id: version
     attributes:
       label: YaPcore / Java version
-      placeholder: "0.1.0 / Java 21"
+      placeholder: "1.0.0.0 / Java 25"
     validations:
       required: true
   - type: dropdown

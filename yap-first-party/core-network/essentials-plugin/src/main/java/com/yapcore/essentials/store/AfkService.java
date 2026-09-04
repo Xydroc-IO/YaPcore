@@ -11,11 +11,15 @@ public final class AfkService {
     private final Set<UUID> afk = ConcurrentHashMap.newKeySet();
 
     public boolean toggle(Player player) {
-        if (afk.contains(player.getUniqueId())) {
-            afk.remove(player.getUniqueId());
+        return toggle(player.getUniqueId());
+    }
+
+    public boolean toggle(UUID uuid) {
+        if (afk.contains(uuid)) {
+            afk.remove(uuid);
             return false;
         }
-        afk.add(player.getUniqueId());
+        afk.add(uuid);
         return true;
     }
 

@@ -24,6 +24,15 @@ dependencies {
     implementation(project(":yap-chat-api"))
     compileOnly(project(":yap-perms-api"))
     compileOnly(project(":yap-moderation-api"))
+
+    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.papermc.paper:paper-api:$paperApi")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.jar {

@@ -146,6 +146,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 
 ### Still open (not a version bump)
 
+- **Phase 1 engineering gates** — Done ([PRODUCTION_READY.md](../ops/PRODUCTION_READY.md)): Java 25 CI, DB bootstrap hygiene, protect/factions/essentials/chat/world unit suites
 - **Manual §E live checklist** — checklist lives in [CROSSPLAY.md](../network/CROSSPLAY.md); operator must tick join + specialty stations on a live box (cannot automate Xbox)
 - Bedrock recipe-picker / anvil rename polish (Stretch — not required for production launch)
 - Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))

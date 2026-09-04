@@ -267,7 +267,8 @@ public final class ChangeRepository {
         return value.length() <= 255 ? value : value.substring(0, 255);
     }
 
-    private static String truncate(String value) {
+    /** Package-visible for unit tests (block payload length caps). */
+    static String truncate(String value) {
         if (value == null) {
             return "";
         }

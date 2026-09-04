@@ -28,6 +28,7 @@ Browse by folder: [docs/README.md](README.md).
 | [PERMISSIONS.md](ops/PERMISSIONS.md) | Permission nodes |
 | [WEB_DASHBOARD.md](ops/WEB_DASHBOARD.md) | Browser panel (`:8080`) |
 | [TUNE.md](ops/TUNE.md) | Config hub |
+| [PRODUCTION_READY.md](ops/PRODUCTION_READY.md) | Phased soft-launch / ops-signed / soak-proven closeout |
 | [CODE_ELEGANCE_FOLLOWUP.md](ops/CODE_ELEGANCE_FOLLOWUP.md) | Post–500-line splits: DB, packages, tests |
 | [GRIM.md](ops/GRIM.md) | Optional Grim AC |
 | [ANTICHEAT.md](ops/ANTICHEAT.md) | AC strategy |

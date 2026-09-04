@@ -31,7 +31,7 @@ Thirteen first-party `*Database` classes under `yap-first-party/` now open via `
 2. **Pilot** — Done: protect + playerdata.
 3. **Rollout** — Done: all thirteen classes.
 4. **Docs** — Done: [YAPDB.md](../data/YAPDB.md) documents bootstrap.
-5. **Guard** — Optional: grep CI if new raw Hikari setup blocks reappear under `yap-first-party/**/db/`.
+5. **Guard** — Done: `scripts/check-db-bootstrap-hygiene.sh` + Gradle `checkDbBootstrapHygiene` + CI.
 
 ### Risk
 
@@ -136,24 +136,15 @@ Raise confidence on operator-critical plugins that today rely on manual smoke, w
 
 ### Phased steps
 
-1. **Harness** — Shared test fixtures pattern (temp dir, fake config, in-memory or H2/SQLite where SQL is involved); mirror `yap-db-api` dialect tests where useful.
-2. **Protect + factions** — Small JUnit sets on pure domain types extracted by the ≤500 splits; wire into existing `gradle test`.
-3. **Essentials + chat** — Same; no Folia server required for first slice.
-4. **World** — Parser / op dispatch unit tests; optional smoke only for WE integration.
-5. **Gate** — Document expected modules in PR template test plan; do not block CI on coverage %.
-
-### Risk
-
-| Risk | Mitigation |
-|------|------------|
-| Tests coupled to Bukkit | Test domain objects and static helpers first; mock only at edges |
-| Flaky SQL tests | Prefer dialect/unit over live MariaDB in default CI |
-| Slow suite | Keep Fray/jcstress chassis-only; plugin tests stay fast unit |
+1. **Harness** — Prefer pure domain + package-visible test hooks (e.g. chat filter apply, protect truncate).
+2. **Protect + factions** — Done (DurationParser, ChangeType, truncate caps; chat state; API role/relation/power).
+3. **Essentials + chat** — Done (AFK/TPA expiry; color/filter/channel/network format).
+4. **World** — Done (ExpressionEngine + SelectionShape).
+5. **Gate** — CI runs these module tests; PR template lists them. No coverage-% gate.
 
 ### Done bar
 
-- Protect, factions, essentials, chat, and world each have a non-empty `src/test` with ≥3 meaningful assertions each (not smoke-only “constructs”).
-- `gradle test` (product-relevant modules) green in CI with the new suites.
+- Protect, factions, essentials, chat, and world each have a non-empty `src/test` with ≥3 meaningful assertions — **met** (Phase 1 of [PRODUCTION_READY.md](PRODUCTION_READY.md)).
 - Chassis Fray/jcstress jobs unchanged in scope and still required.
 
 ---

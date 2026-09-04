@@ -14,11 +14,23 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "25"
       - name: Make scripts executable
         run: chmod +x scripts/*.sh scripts/bench/*.sh scripts/yapctl || true
       - name: Domain line limits (≤500)
         run: gradle checkDomainLineLimits --no-daemon
+      - name: DB bootstrap hygiene
+        run: gradle checkDbBootstrapHygiene --no-daemon
+      - name: High-value plugin unit suites
+        run: >
+          gradle --no-daemon
+          :yap-db-api:test
+          :protect-plugin:test
+          :factions-plugin:test
+          :essentials-plugin:test
+          :chat-plugin:test
+          :world-plugin:test
+          :yap-factions-api:test
       - name: Build shadow JAR
         run: gradle shadowJar --no-daemon
       - name: Concurrency + unit tests

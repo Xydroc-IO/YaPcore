@@ -25,6 +25,15 @@ dependencies {
     implementation(project(":yap-worldedit-compat"))
     compileOnly(project(":yap-perms-api"))
     compileOnly(project(":pregen-plugin"))
+
+    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation(project(":yap-world-api"))
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.shadowJar {

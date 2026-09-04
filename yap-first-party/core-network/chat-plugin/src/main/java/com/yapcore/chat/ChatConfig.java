@@ -144,6 +144,21 @@ public final class ChatConfig {
         return filterEnabled;
     }
 
+    /** Unit-test harness: set filter fields without Bukkit YAML. */
+    void applyFilterForTest(boolean enabled, boolean blockOnMatch, Set<String> words, String replacement) {
+        this.filterEnabled = enabled;
+        this.filterBlockOnMatch = blockOnMatch;
+        this.filterMode = blockOnMatch ? "block" : "replace";
+        this.filterWords = words == null ? Set.of() : Set.copyOf(words);
+        this.filterReplacement = replacement == null ? "***" : replacement;
+    }
+
+    /** Unit-test harness: channel map without Bukkit YAML. */
+    void applyChannelsForTest(String defaultChannelName, Map<String, ChannelDef> channelMap) {
+        this.defaultChannel = defaultChannelName == null ? "global" : defaultChannelName.toLowerCase(Locale.ROOT);
+        this.channels = channelMap == null ? Map.of() : Map.copyOf(channelMap);
+    }
+
     public Set<String> filterWords() {
         return filterWords;
     }
