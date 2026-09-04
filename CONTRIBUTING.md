@@ -39,6 +39,15 @@ First-party sources live under [`yap-first-party/`](yap-first-party/README.md) (
 Do not vendor third-party plugins into this repository. Extend APIs so others can publish jars to `plugins/` or `modules/`.  
 Gameplay encyclopedia: [TUNE.md](docs/ops/TUNE.md). Compat: [PLUGIN_COMPAT.md](docs/plugins/PLUGIN_COMPAT.md).
 
+### Package ownership
+
+| Root | Owns |
+|------|------|
+| `com.yaplabs.yapengine.*` | Concurrency / spatial **chassis** (`YapEngine`, sequencing, sync/lease/boundary, sandbox pools, chassis-adjacent Netty helpers). New chassis code goes here. |
+| `com.yapcore.*` | Product surface (gateway, crossplay, dashboard, Paper glue, first-party plugins, `yap-db-api`). |
+
+Do not duplicate chassis concepts under `com.yapcore`. Prefer product → chassis imports; see [CODE_ELEGANCE_FOLLOWUP.md](docs/ops/CODE_ELEGANCE_FOLLOWUP.md) Track 2.
+
 ## Conduct
 
 Be respectful. No harassment. Assume good faith in reviews.

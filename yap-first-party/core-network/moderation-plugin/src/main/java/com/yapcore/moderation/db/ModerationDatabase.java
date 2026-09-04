@@ -1,8 +1,8 @@
 package com.yapcore.moderation.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbBootstrap;
 import com.yapcore.db.YapDbEngine;
-import com.yapcore.db.YapDbProvider;
 import com.yapcore.db.YapSqlDialect;
 import com.yapcore.db.YapSqlDialects;
 import com.yapcore.moderation.ModerationConfig;
@@ -29,32 +29,27 @@ public final class ModerationDatabase implements AutoCloseable {
     }
 
     public void open() throws SQLException {
-        if (config.useSharedYapDb()) {
-            var opt = YapDbProvider.find();
-            if (opt.isPresent()) {
-                shared = opt.get();
-                usingShared = true;
-                dialect = shared.dialect();
-                migrate();
-                plugin.getLogger().info("YaPModeration using shared YaPDB pool");
-                return;
-            }
+        YapDbBootstrap.Settings settings = YapDbBootstrap.Settings.of(
+                "YaPModeration",
+                config.jdbcUrl(),
+                config.jdbcUser(),
+                config.jdbcPassword(),
+                config.poolMax(),
+                config.poolMinIdle(),
+                config.connectionTimeoutMs(),
+                config.useSharedYapDb());
+        var sharedOpt = YapDbBootstrap.openSharedOrEmpty(settings, YapDbBootstrap.warnTo(plugin.getLogger()));
+        if (sharedOpt.isPresent()) {
+            shared = sharedOpt.get();
+            usingShared = true;
+            dialect = shared.dialect();
+            migrate();
+            plugin.getLogger().info("YaPModeration using shared YaPDB pool");
+            return;
         }
         usingShared = false;
-        dialect = YapSqlDialects.fromJdbcUrl(config.jdbcUrl());
         HikariConfig hc = new HikariConfig();
-        hc.setJdbcUrl(config.jdbcUrl());
-        if (dialect.engine() != YapDbEngine.SQLITE) {
-            hc.setUsername(config.jdbcUser());
-            hc.setPassword(config.jdbcPassword());
-        }
-        hc.setMaximumPoolSize(dialect.preferMaxPoolSize(config.poolMax()));
-        hc.setMinimumIdle(dialect.engine() == YapDbEngine.SQLITE ? 1 : config.poolMinIdle());
-        hc.setConnectionTimeout(config.connectionTimeoutMs());
-        hc.setPoolName("YaPModeration");
-        if (dialect.preferMysqlPrepStmtCache()) {
-            hc.addDataSourceProperty("cachePrepStmts", "true");
-        }
+        dialect = YapDbBootstrap.configureEmbedded(hc, settings);
         embedded = new HikariDataSource(hc);
         migrate();
     }

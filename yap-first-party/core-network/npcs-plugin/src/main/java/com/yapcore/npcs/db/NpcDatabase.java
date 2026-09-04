@@ -1,8 +1,8 @@
 package com.yapcore.npcs.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbBootstrap;
 import com.yapcore.db.YapDbEngine;
-import com.yapcore.db.YapDbProvider;
 import com.yapcore.db.YapSqlDialect;
 import com.yapcore.db.YapSqlDialects;
 import com.yapcore.npcs.NpcsConfig;
@@ -36,9 +36,19 @@ public final class NpcDatabase implements AutoCloseable {
     }
 
     public void open() throws SQLException {
-        var found = YapDbProvider.find();
-        if (found.isPresent()) {
-            shared = found.get();
+        YapDbBootstrap.Settings settings = new YapDbBootstrap.Settings(
+                "YaPNpcs",
+                FALLBACK_JDBC,
+                "yap",
+                "yap",
+                4,
+                1,
+                30_000L,
+                true,
+                true);
+        var sharedOpt = YapDbBootstrap.openSharedOrEmpty(settings, YapDbBootstrap.warnTo(plugin.getLogger()));
+        if (sharedOpt.isPresent()) {
+            shared = sharedOpt.get();
             dialect = shared.dialect();
             usingShared = true;
             migrate();
@@ -46,21 +56,8 @@ public final class NpcDatabase implements AutoCloseable {
             return;
         }
         usingShared = false;
-        dialect = YapSqlDialects.fromJdbcUrl(FALLBACK_JDBC);
         HikariConfig hc = new HikariConfig();
-        hc.setJdbcUrl(FALLBACK_JDBC);
-        if (dialect.engine() != YapDbEngine.SQLITE) {
-            hc.setUsername("yap");
-            hc.setPassword("yap");
-        }
-        hc.setMaximumPoolSize(dialect.preferMaxPoolSize(4));
-        hc.setMinimumIdle(1);
-        hc.setPoolName("YaPNpcs");
-        if (dialect.preferMysqlPrepStmtCache()) {
-            hc.addDataSourceProperty("cachePrepStmts", "true");
-            hc.addDataSourceProperty("prepStmtCacheSize", "250");
-            hc.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        }
+        dialect = YapDbBootstrap.configureEmbedded(hc, settings);
         embedded = new HikariDataSource(hc);
         migrate();
         plugin.getLogger().warning("YaPNpcs using embedded pool (" + dialect.engine()

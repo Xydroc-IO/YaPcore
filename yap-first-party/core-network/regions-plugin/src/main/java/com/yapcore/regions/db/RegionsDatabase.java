@@ -1,8 +1,8 @@
 package com.yapcore.regions.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbBootstrap;
 import com.yapcore.db.YapDbEngine;
-import com.yapcore.db.YapDbProvider;
 import com.yapcore.db.YapSqlDialect;
 import com.yapcore.db.YapSqlDialects;
 import com.yapcore.regions.RegionsConfig;
@@ -29,9 +29,19 @@ public final class RegionsDatabase implements AutoCloseable {
     }
 
     public void open() throws SQLException {
-        var opt = YapDbProvider.find();
-        if (opt.isPresent()) {
-            shared = opt.get();
+        String jdbcUrl = "jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true";
+        YapDbBootstrap.Settings settings = YapDbBootstrap.Settings.of(
+                "YaPRegions",
+                jdbcUrl,
+                "yap",
+                "yap",
+                4,
+                1,
+                30_000L,
+                true);
+        var sharedOpt = YapDbBootstrap.openSharedOrEmpty(settings, YapDbBootstrap.warnTo(plugin.getLogger()));
+        if (sharedOpt.isPresent()) {
+            shared = sharedOpt.get();
             usingShared = true;
             dialect = shared.dialect();
             migrate();
@@ -39,18 +49,8 @@ public final class RegionsDatabase implements AutoCloseable {
             return;
         }
         usingShared = false;
-        String jdbcUrl = "jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true";
-        dialect = YapSqlDialects.fromJdbcUrl(jdbcUrl);
         HikariConfig hc = new HikariConfig();
-        hc.setJdbcUrl(jdbcUrl);
-        hc.setUsername("yap");
-        hc.setPassword("yap");
-        hc.setMaximumPoolSize(dialect.preferMaxPoolSize(4));
-        hc.setMinimumIdle(1);
-        hc.setPoolName("YaPRegions");
-        if (dialect.preferMysqlPrepStmtCache()) {
-            hc.addDataSourceProperty("cachePrepStmts", "true");
-        }
+        dialect = YapDbBootstrap.configureEmbedded(hc, settings);
         embedded = new HikariDataSource(hc);
         migrate();
         plugin.getLogger().warning("YaPRegions using embedded pool — configure YaPDB for production");

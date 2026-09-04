@@ -2,8 +2,8 @@ package com.yapcore.combat.db;
 
 import com.yapcore.combat.CombatConfig;
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbBootstrap;
 import com.yapcore.db.YapDbEngine;
-import com.yapcore.db.YapDbProvider;
 import com.yapcore.db.YapSqlDialect;
 import com.yapcore.db.YapSqlDialects;
 import com.zaxxer.hikari.HikariConfig;
@@ -33,34 +33,28 @@ public final class CombatDatabase implements AutoCloseable {
     }
 
     public void open() throws SQLException {
-        if (config.useSharedYapdb()) {
-            var found = YapDbProvider.find();
-            if (found.isPresent()) {
-                shared = found.get();
-                dialect = shared.dialect();
-                usingShared = true;
-                migrate();
-                plugin.getLogger().info("YaPCombat using shared YaPDB pool (" + dialect.engine() + ")");
-                return;
-            }
+        YapDbBootstrap.Settings settings = new YapDbBootstrap.Settings(
+                "YaPCombat",
+                config.jdbcUrl(),
+                config.jdbcUser(),
+                config.jdbcPassword(),
+                config.poolMax(),
+                config.poolMin(),
+                config.poolTimeoutMs(),
+                config.useSharedYapdb(),
+                true);
+        var sharedOpt = YapDbBootstrap.openSharedOrEmpty(settings, YapDbBootstrap.warnTo(plugin.getLogger()));
+        if (sharedOpt.isPresent()) {
+            shared = sharedOpt.get();
+            dialect = shared.dialect();
+            usingShared = true;
+            migrate();
+            plugin.getLogger().info("YaPCombat using shared YaPDB pool (" + dialect.engine() + ")");
+            return;
         }
         usingShared = false;
-        dialect = YapSqlDialects.fromJdbcUrl(config.jdbcUrl());
         HikariConfig hc = new HikariConfig();
-        hc.setJdbcUrl(config.jdbcUrl());
-        if (dialect.engine() != YapDbEngine.SQLITE) {
-            hc.setUsername(config.jdbcUser());
-            hc.setPassword(config.jdbcPassword());
-        }
-        hc.setMaximumPoolSize(dialect.preferMaxPoolSize(config.poolMax()));
-        hc.setMinimumIdle(dialect.engine() == YapDbEngine.SQLITE ? 1 : config.poolMin());
-        hc.setConnectionTimeout(config.poolTimeoutMs());
-        hc.setPoolName("YaPCombat");
-        if (dialect.preferMysqlPrepStmtCache()) {
-            hc.addDataSourceProperty("cachePrepStmts", "true");
-            hc.addDataSourceProperty("prepStmtCacheSize", "250");
-            hc.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        }
+        dialect = YapDbBootstrap.configureEmbedded(hc, settings);
         embedded = new HikariDataSource(hc);
         migrate();
         plugin.getLogger().warning("YaPCombat using embedded pool (" + dialect.engine()

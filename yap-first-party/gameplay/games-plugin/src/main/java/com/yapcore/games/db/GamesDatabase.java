@@ -1,8 +1,8 @@
 package com.yapcore.games.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbBootstrap;
 import com.yapcore.db.YapDbEngine;
-import com.yapcore.db.YapDbProvider;
 import com.yapcore.db.YapSqlDialect;
 import com.yapcore.db.YapSqlDialects;
 import com.yapcore.games.GamesConfig;
@@ -33,38 +33,33 @@ public final class GamesDatabase implements AutoCloseable {
     }
 
     public void open() throws SQLException {
-        if (config.useSharedYapdb()) {
-            var found = YapDbProvider.find();
-            if (found.isPresent()) {
-                shared = found.get();
-                dialect = shared.dialect();
-                usingShared = true;
-                migrate();
-                plugin.getLogger().info("YaPGames using shared YaPDB pool (" + dialect.engine() + ")");
-                return;
-            }
+        String jdbc = config.jdbcUrl() == null ? "" : config.jdbcUrl();
+        YapDbBootstrap.Settings settings = new YapDbBootstrap.Settings(
+                "YaPGames",
+                jdbc.isBlank() ? "jdbc:sqlite::memory:" : jdbc,
+                config.jdbcUser(),
+                config.jdbcPassword(),
+                config.poolMax(),
+                config.poolMin(),
+                config.poolTimeoutMs(),
+                config.useSharedYapdb(),
+                true);
+        var sharedOpt = YapDbBootstrap.openSharedOrEmpty(settings, YapDbBootstrap.warnTo(plugin.getLogger()));
+        if (sharedOpt.isPresent()) {
+            shared = sharedOpt.get();
+            dialect = shared.dialect();
+            usingShared = true;
+            migrate();
+            plugin.getLogger().info("YaPGames using shared YaPDB pool (" + dialect.engine() + ")");
+            return;
         }
         usingShared = false;
-        if (config.jdbcUrl() == null || config.jdbcUrl().isBlank()) {
+        if (jdbc.isBlank()) {
             plugin.getLogger().warning("YaPGames stats disabled — no JDBC URL");
             return;
         }
-        dialect = YapSqlDialects.fromJdbcUrl(config.jdbcUrl());
         HikariConfig hc = new HikariConfig();
-        hc.setJdbcUrl(config.jdbcUrl());
-        if (dialect.engine() != YapDbEngine.SQLITE) {
-            hc.setUsername(config.jdbcUser());
-            hc.setPassword(config.jdbcPassword());
-        }
-        hc.setMaximumPoolSize(dialect.preferMaxPoolSize(config.poolMax()));
-        hc.setMinimumIdle(dialect.engine() == YapDbEngine.SQLITE ? 1 : config.poolMin());
-        hc.setConnectionTimeout(config.poolTimeoutMs());
-        hc.setPoolName("YaPGames");
-        if (dialect.preferMysqlPrepStmtCache()) {
-            hc.addDataSourceProperty("cachePrepStmts", "true");
-            hc.addDataSourceProperty("prepStmtCacheSize", "250");
-            hc.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        }
+        dialect = YapDbBootstrap.configureEmbedded(hc, settings);
         embedded = new HikariDataSource(hc);
         migrate();
     }

@@ -15,12 +15,20 @@ public final class YapDbProvider {
 
     /** Registered service, if YaPDB is enabled and the pool is open. */
     public static Optional<YapDb> find() {
-        RegisteredServiceProvider<YapDb> rsp = Bukkit.getServicesManager().getRegistration(YapDb.class);
-        if (rsp == null) {
+        try {
+            if (Bukkit.getServer() == null) {
+                return Optional.empty();
+            }
+            RegisteredServiceProvider<YapDb> rsp = Bukkit.getServicesManager().getRegistration(YapDb.class);
+            if (rsp == null) {
+                return Optional.empty();
+            }
+            YapDb db = rsp.getProvider();
+            return db != null && db.isOpen() ? Optional.of(db) : Optional.empty();
+        } catch (Throwable ignored) {
+            // No Bukkit server (unit tests) or services manager unavailable
             return Optional.empty();
         }
-        YapDb db = rsp.getProvider();
-        return db != null && db.isOpen() ? Optional.of(db) : Optional.empty();
     }
 
     public static boolean available() {

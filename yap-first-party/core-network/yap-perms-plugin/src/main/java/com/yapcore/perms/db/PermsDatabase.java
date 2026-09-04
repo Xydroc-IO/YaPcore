@@ -1,8 +1,8 @@
 package com.yapcore.perms.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbBootstrap;
 import com.yapcore.db.YapDbEngine;
-import com.yapcore.db.YapDbProvider;
 import com.yapcore.db.YapSqlDialect;
 import com.yapcore.db.YapSqlDialects;
 import com.yapcore.perms.PermsConfig;
@@ -33,35 +33,27 @@ public final class PermsDatabase implements AutoCloseable {
     }
 
     public void open() throws SQLException {
-        if (config.useSharedYapDb()) {
-            var sharedOpt = YapDbProvider.find();
-            if (sharedOpt.isPresent()) {
-                shared = sharedOpt.get();
-                dialect = shared.dialect();
-                usingShared = true;
-                migrate();
-                plugin.getLogger().info("YaPPerms using shared YaPDB pool (" + shared.jdbcUrl() + ")");
-                return;
-            }
-            plugin.getLogger().warning("use-shared-yapdb=true but YaPDB unavailable — embedded pool");
+        YapDbBootstrap.Settings settings = YapDbBootstrap.Settings.of(
+                "YaPPerms",
+                config.jdbcUrl(),
+                config.jdbcUser(),
+                config.jdbcPassword(),
+                config.poolMax(),
+                config.poolMinIdle(),
+                config.connectionTimeoutMs(),
+                config.useSharedYapDb());
+        var sharedOpt = YapDbBootstrap.openSharedOrEmpty(settings, YapDbBootstrap.warnTo(plugin.getLogger()));
+        if (sharedOpt.isPresent()) {
+            shared = sharedOpt.get();
+            dialect = shared.dialect();
+            usingShared = true;
+            migrate();
+            plugin.getLogger().info("YaPPerms using shared YaPDB pool (" + shared.jdbcUrl() + ")");
+            return;
         }
         usingShared = false;
-        dialect = YapSqlDialects.fromJdbcUrl(config.jdbcUrl());
         HikariConfig hc = new HikariConfig();
-        hc.setJdbcUrl(config.jdbcUrl());
-        if (dialect.engine() != YapDbEngine.SQLITE) {
-            hc.setUsername(config.jdbcUser());
-            hc.setPassword(config.jdbcPassword());
-        }
-        int max = dialect.preferMaxPoolSize(config.poolMax());
-        int minIdle = dialect.engine() == YapDbEngine.SQLITE ? 1 : config.poolMinIdle();
-        hc.setMaximumPoolSize(max);
-        hc.setMinimumIdle(Math.min(minIdle, max));
-        hc.setConnectionTimeout(config.connectionTimeoutMs());
-        hc.setPoolName("YaPPerms");
-        if (dialect.preferMysqlPrepStmtCache()) {
-            hc.addDataSourceProperty("cachePrepStmts", "true");
-        }
+        dialect = YapDbBootstrap.configureEmbedded(hc, settings);
         embedded = new HikariDataSource(hc);
         migrate();
         plugin.getLogger().info("YaPPerms embedded pool ready (" + config.jdbcUrl() + ")");

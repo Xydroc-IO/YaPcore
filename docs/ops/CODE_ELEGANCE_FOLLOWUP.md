@@ -14,27 +14,9 @@ Post–≤500-line domain splits ([CONTRIBUTING.md](../../CONTRIBUTING.md)). Tho
 
 One supported path for “open shared YaPDB or fall back to embedded Hikari,” owned by `yap-db-api` (and/or a tiny helper jar), so first-party `*Database` classes keep only **schema migrate + query** logic.
 
-### Inventory (current)
+### Inventory
 
-Thirteen near-copies under `yap-first-party/`:
-
-| Class | Plugin |
-|-------|--------|
-| `Database` | playerdata |
-| `EssentialsDatabase` | essentials |
-| `NpcDatabase` | npcs |
-| `ProtectDatabase` | protect |
-| `FactionDatabase` | factions |
-| `RegionsDatabase` | regions |
-| `PermsDatabase` | perms |
-| `ModerationDatabase` | moderation |
-| `GuildDatabase` | guilds |
-| `ContentDatabase` | mmo-content |
-| `GamesDatabase` | games |
-| `SkillDatabase` | skills |
-| `CombatDatabase` | combat |
-
-Shared pattern: `YapDbProvider.find()` when `use-shared-yapdb` → else `HikariConfig` + dialect from JDBC URL → `migrate()`. See [YAPDB.md](../data/YAPDB.md).
+Thirteen first-party `*Database` classes under `yap-first-party/` now open via `YapDbBootstrap` (`yap-db-api`): prefer shared YaPDB, else configure caller-owned embedded Hikari. Plugins keep only schema migrate + query logic. See [YAPDB.md](../data/YAPDB.md).
 
 ### Non-goals
 
@@ -45,11 +27,11 @@ Shared pattern: `YapDbProvider.find()` when `use-shared-yapdb` → else `HikariC
 
 ### Phased steps
 
-1. **Extract API** — Add something like `YapDbBootstrap` / `YapEmbeddedPool` on `yap-db-api`: inputs = pool name, JDBC URL/user/pass, pool sizes, `preferShared`; output = `Handle` with `connection()`, `dialect()`, `usingShared()`, `close()`. Keep public `YapDb` / `YapDbProvider` unchanged.
-2. **Pilot** — Migrate **protect** + **playerdata** (representative DDL + config flags). Compile + open/close smoke with shared on and off.
-3. **Rollout** — Remaining eleven classes; leave only migrate/SQL in plugin types. Prefer one PR per tier (`core-network` then `gameplay`) if review bandwidth is tight.
-4. **Docs** — Update [YAPDB.md](../data/YAPDB.md) “for plugin authors” with the bootstrap helper; note soft-depend still required.
-5. **Guard** — Optional Spotless/ArchUnit or simple grep CI: fail if new `HikariConfig` appears under `yap-first-party/**/db/` outside the shared helper.
+1. **Extract API** — Done: `YapDbBootstrap` on `yap-db-api` (caller-owned `HikariConfig` for relocate safety). `YapDb` / `YapDbProvider` unchanged; provider is Bukkit-null-safe for unit tests.
+2. **Pilot** — Done: protect + playerdata.
+3. **Rollout** — Done: all thirteen classes.
+4. **Docs** — Done: [YAPDB.md](../data/YAPDB.md) documents bootstrap.
+5. **Guard** — Optional: grep CI if new raw Hikari setup blocks reappear under `yap-first-party/**/db/`.
 
 ### Risk
 
@@ -102,7 +84,7 @@ Product/protocol/ops stay `com.yapcore` (gateway, crossplay, dashboard, Paper ke
 
 | Phase | Action |
 |-------|--------|
-| **A — Policy** | Document ownership in this file + short note in CONTRIBUTING (new chassis code → `yapengine`; product → `yapcore`). Stop adding new dual homes. |
+| **A — Policy** | Done: ownership table in [CONTRIBUTING.md](../../CONTRIBUTING.md); detail in this file. Stop adding new dual homes. |
 | **B — Facades** | Where `yapcore` already wraps chassis (`YaPcoreEngine`, thin adapters), keep facades as the stable entry; deprecate direct deep imports from plugins if any appear. |
 | **C — Optional hard move** | Only for leaf types with zero external consumers: move package + leave `deprecated` type-forwarding stubs for one release. No hard move of `SequenceToken` / lease types without a compatibility window. |
 | **D — Brand decision** | Either (1) keep `yapengine` forever as the named chassis module, or (2) schedule a major-version package rename to `com.yapcore.engine.*` with stubs. Decide before Phase C expands. **Default recommendation:** keep `com.yaplabs.yapengine` as the chassis brand; do not rename unless shipping a major break anyway. |

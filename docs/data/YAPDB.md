@@ -64,6 +64,34 @@ compileOnly(project(":yap-db-api"))
 // runtime: yap-db.jar must be in plugins/
 ```
 
+### Preferred: `YapDbBootstrap`
+
+First-party plugins open pools through `YapDbBootstrap` so shared-YaPDB vs embedded Hikari stays one path.
+Callers still construct `HikariConfig` / `HikariDataSource` themselves (shade/relocate of Hikari keeps working).
+
+```java
+import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbBootstrap;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
+YapDbBootstrap.Settings settings = YapDbBootstrap.Settings.of(
+        "MyPlugin", jdbcUrl, user, pass, poolMax, poolMinIdle, timeoutMs, preferShared);
+var shared = YapDbBootstrap.openSharedOrEmpty(settings, YapDbBootstrap.warnTo(getLogger()));
+if (shared.isPresent()) {
+    YapDb db = shared.get();
+    // migrate + queries via db.connection() / db.dialect()
+    return;
+}
+HikariConfig hc = new HikariConfig();
+var dialect = YapDbBootstrap.configureEmbedded(hc, settings);
+HikariDataSource ds = new HikariDataSource(hc);
+```
+
+### Direct service lookup
+
+When you only need the shared pool (no embedded fallback):
+
 ```java
 import com.yapcore.db.YapDb;
 import com.yapcore.db.YapDbProvider;
