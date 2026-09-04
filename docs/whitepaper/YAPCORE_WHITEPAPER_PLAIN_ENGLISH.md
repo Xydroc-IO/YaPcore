@@ -1,7 +1,7 @@
 # YaPcore whitepaper — plain English edition
 
 **YapLabs · companion to the technical whitepaper**  
-Version **0.3** · September 2026  
+Version **0.4** · September 2026  
 Pairs with: [YAPCORE_WHITEPAPER.md](YAPCORE_WHITEPAPER.md) (`YAP-WP-16T-001`)
 
 This is the same story as the technical whitepaper, written for people who don’t live in systems engineering.  
@@ -21,7 +21,7 @@ Most Minecraft-style servers put almost everything important on **one main worke
 
 Ordering rules keep things from happening out of turn. Older-style plugins still work through a careful compatibility path when needed. Java and Bedrock players can join toward the same world story. New plugins are guided into lanes so heavy database work doesn’t freeze the fun parts of the game.
 
-On top of that stack we **ship** the plugins most networks used to assemble themselves: ranks, chat, moderation, player data / economy / shops / auction house, protect, world tools, regions, map, factions — plus an optional gameplay pack (vehicles, stacker, and a full skills/combat/crafting MMO).
+On top of that stack we **ship** the plugins most networks used to assemble themselves: ranks, chat, moderation, player data / economy / shops / auction house, protect, world tools, regions, map, factions, YAML custom commands — plus an optional gameplay pack (drivable vehicles with free Automobility-derived car models, stacker, and a full skills/combat/crafting MMO).
 
 ---
 
@@ -115,9 +115,9 @@ YaP first-party plugins declare `folia-supported: true` and schedule through tho
 
 ## 5. What you get “in the box”
 
-**Always (CORE+NETWORK):** shared MariaDB pool, ranks, player sync + economy + shops + AH + claims, moderation, essentials QoL, chat, packs, PlaceholderAPI, pregen, protect, world tools, regions, NPCs, TAB, Discord webhooks, anti-cheat lite, lag guard, web map, factions, Bedrock identity/UI bridge.
+**Always (CORE+NETWORK):** shared MariaDB pool, ranks, player sync + economy + shops + AH + claims, moderation, essentials QoL, YAML custom `/commands` (dashboard editable), chat, packs, PlaceholderAPI, pregen, protect, world tools (FAWE-class edit + schematics), regions, NPCs, TAB, Discord webhooks, anti-cheat lite, lag guard, web map, factions, Bedrock identity/UI bridge.
 
-**Optional (GAMEPLAY):** vehicles, mob stacker, gameplay knobs, and the MMO pack (13 skills, custom combat, crafting, quests/bosses, abilities, guilds, minigames, Bedrock MMO UI).
+**Optional (GAMEPLAY):** vehicles (custom physics + Automobility MIT fleet art in the client pack), mob stacker, gameplay knobs, and the MMO pack (13 skills, custom combat, crafting, quests/bosses, abilities, guilds, minigames, Bedrock MMO UI).
 
 Full tables: [technical whitepaper §6](YAPCORE_WHITEPAPER.md#6-shipped-first-party-plugins).
 
@@ -128,7 +128,7 @@ Full tables: [technical whitepaper §6](YAPCORE_WHITEPAPER.md#6-shipped-first-pa
 - **Java players** connect over TCP; version translation lives in our chassis (no separate Via jar).  
 - **Bedrock players** connect over UDP through our own crossplay path (no Geyser jar).  
 - **YaP Link** can sit in front when you run multiple game servers.  
-- Resource packs can be served over HTTP; ops use a browser dashboard on port **8080**.
+- Resource packs can be served over HTTP; the default GAMEPLAY pack includes Faithful + skies/water + Automobility-derived vehicle models (MIT) + MMO icons. Ops use a browser dashboard on port **8080** (including a **Custom commands** tab).
 
 ---
 

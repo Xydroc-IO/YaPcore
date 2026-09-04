@@ -1,9 +1,9 @@
 # YaPcore: YaP-Folia Game Authority, Slim Edge Chassis, Native Network Stack, and First-Party Plugin Suite
 
 **YapLabs Technical Whitepaper**  
-Version **0.3** · September 2026  
+Version **0.4** · September 2026  
 Document ID: `YAP-WP-16T-001`  
-Supersedes: v0.2 (August 2026)
+Supersedes: v0.3 (September 2026)
 
 > Prefer plain English? See [YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md](YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md).  
 > Operator rundown: [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
@@ -18,7 +18,7 @@ Minecraft-class game servers traditionally serialize world mutation, plugin call
 2. **YapEngine** — a slim chassis in the YaPcore parent process — owns the public edge: watchdog, Netty traffic/sequencing, Compatibility Bridge, UI sandboxes, and heavy I/O workers (**not** world tick).
 3. **YaP Link** — a first-party Velocity-class proxy (`0.6.0-phase6`) — fronts multi-backend networks.
 
-A **SequenceToken** model orders work across chassis streams. Folia-aware first-party plugins use an explicit **SYNC / HEAVY / UI** contract via [`YapSched`](../plugins/MODULES_AND_API.md). The product ships a **CORE+NETWORK** plugin suite (permissions, chat, moderation, playerdata/economy, protect, world, regions, map, …) and an opt-in **GAMEPLAY** tier (vehicles, stacker, knobs, and a full **MMO** stack M0–M7). Dual-stack **Java TCP + Bedrock UDP** is first-party (no Via\*/Geyser jars). Stock Fill Folia and Paper + Phase 3 spatial tick remain **legacy / bench** paths only.
+A **SequenceToken** model orders work across chassis streams. Folia-aware first-party plugins use an explicit **SYNC / HEAVY / UI** contract via [`YapSched`](../plugins/MODULES_AND_API.md). The product ships a **CORE+NETWORK** plugin suite (permissions, chat, moderation, playerdata/economy, protect, world, regions, map, custom commands, …) and an opt-in **GAMEPLAY** tier (vehicles with Automobility MIT fleet art, stacker, knobs, and a full **MMO** stack M0–M7). Dual-stack **Java TCP + Bedrock UDP** is first-party (no Via\*/Geyser jars). Stock Fill Folia and Paper + Phase 3 spatial tick remain **legacy / bench** paths only.
 
 This paper describes architecture, concurrency invariants, networking/crossplay, the shipped plugin and data plane, evaluation methodology, and honest product status as of September 2026.
 
@@ -331,7 +331,7 @@ Link plugins (`link-plugin.json`): chat-bridge, mod-sync, server-selector, tab-b
 | **Bedrock** | UDP path; Geyser-class hub in `com.yapcore.crossplay*` — **no Geyser jar**. |
 | **Shared listen** | Optional same port for JE+BE (`shared-listen-port=true`). |
 | **YaP Link** | Optional JE front + optional Bedrock UDP forwarder. |
-| **Packs HTTP** | Default pack `resourcepacks/yapcore-default.zip` on `:8081`. |
+| **Packs HTTP** | Default pack `resourcepacks/yapcore-default.zip` on `:8081` (Faithful + skies/water; GAMEPLAY adds Automobility MIT vehicle bodies + MMO icons — [CREDITS.md](../../resourcepacks/CREDITS.md)). |
 | **Publicity** | Domain / SRV / nginx + Cloudflare — [NETWORKING.md](../network/NETWORKING.md). |
 
 Same-machine clients must use `127.0.0.1` (hairpin NAT) — [NGINX_AND_LOCALHOST.md](../network/NGINX_AND_LOCALHOST.md).
