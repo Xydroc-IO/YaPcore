@@ -7,7 +7,6 @@ import com.yapcore.factions.FactionInvite;
 import com.yapcore.factions.FactionJoinMode;
 import com.yapcore.factions.FactionMember;
 import com.yapcore.factions.FactionRelation;
-import com.yapcore.factions.FactionRelationKey;
 import com.yapcore.factions.FactionRole;
 
 import java.sql.Connection;
@@ -18,7 +17,6 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,9 +25,13 @@ import java.util.UUID;
 public final class FactionRepository {
 
     private final FactionDatabase database;
+    private final FactionMemberInviteQueries members;
+    private final FactionClaimRelationQueries claims;
 
     public FactionRepository(FactionDatabase database) {
         this.database = database;
+        this.members = new FactionMemberInviteQueries(database);
+        this.claims = new FactionClaimRelationQueries(database);
     }
 
     public long create(Faction faction) throws SQLException {
@@ -88,7 +90,7 @@ public final class FactionRepository {
              PreparedStatement ps = c.prepareStatement("SELECT * FROM yap_factions WHERE id = ?")) {
             ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.of(mapFaction(rs)) : Optional.empty();
+                return rs.next() ? Optional.of(FactionSqlMapping.mapFaction(rs)) : Optional.empty();
             }
         }
     }
@@ -98,7 +100,7 @@ public final class FactionRepository {
              PreparedStatement ps = c.prepareStatement("SELECT * FROM yap_factions WHERE name = ?")) {
             ps.setString(1, name);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.of(mapFaction(rs)) : Optional.empty();
+                return rs.next() ? Optional.of(FactionSqlMapping.mapFaction(rs)) : Optional.empty();
             }
         }
     }
@@ -108,7 +110,7 @@ public final class FactionRepository {
              PreparedStatement ps = c.prepareStatement("SELECT * FROM yap_factions WHERE tag = ?")) {
             ps.setString(1, tag);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.of(mapFaction(rs)) : Optional.empty();
+                return rs.next() ? Optional.of(FactionSqlMapping.mapFaction(rs)) : Optional.empty();
             }
         }
     }
@@ -119,7 +121,7 @@ public final class FactionRepository {
              PreparedStatement ps = c.prepareStatement("SELECT * FROM yap_factions ORDER BY name");
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                out.add(mapFaction(rs));
+                out.add(FactionSqlMapping.mapFaction(rs));
             }
         }
         return out;
@@ -134,7 +136,7 @@ public final class FactionRepository {
             ps.setInt(2, offset);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    out.add(mapFaction(rs));
+                    out.add(FactionSqlMapping.mapFaction(rs));
                 }
             }
         }
@@ -247,378 +249,82 @@ public final class FactionRepository {
     }
 
     public void addMember(FactionMember member) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_faction_members (faction_id, player_uuid, role)
-                     VALUES (?, ?, ?)
-                     """)) {
-            ps.setLong(1, member.factionId());
-            ps.setString(2, member.playerId().toString());
-            ps.setString(3, member.role().name());
-            ps.executeUpdate();
-        }
+        members.addMember(member);
     }
 
     public void removeMember(long factionId, UUID playerId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM yap_faction_members WHERE faction_id = ? AND player_uuid = ?")) {
-            ps.setLong(1, factionId);
-            ps.setString(2, playerId.toString());
-            ps.executeUpdate();
-        }
+        members.removeMember(factionId, playerId);
     }
 
     public void updateMemberRole(long factionId, UUID playerId, FactionRole role) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_faction_members SET role = ? WHERE faction_id = ? AND player_uuid = ?")) {
-            ps.setString(1, role.name());
-            ps.setLong(2, factionId);
-            ps.setString(3, playerId.toString());
-            ps.executeUpdate();
-        }
+        members.updateMemberRole(factionId, playerId, role);
     }
 
     public Optional<FactionMember> member(UUID playerId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT faction_id, player_uuid, role FROM yap_faction_members WHERE player_uuid = ?")) {
-            ps.setString(1, playerId.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return Optional.empty();
-                }
-                return Optional.of(mapMember(rs));
-            }
-        }
+        return members.member(playerId);
     }
 
     public List<FactionMember> members(long factionId) throws SQLException {
-        List<FactionMember> out = new ArrayList<>();
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT faction_id, player_uuid, role FROM yap_faction_members WHERE faction_id = ? "
-                             + "ORDER BY FIELD(role, 'LEADER', 'OFFICER', 'MEMBER', 'RECRUIT'), player_uuid")) {
-            ps.setLong(1, factionId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    out.add(mapMember(rs));
-                }
-            }
-        }
-        return out;
+        return members.members(factionId);
     }
 
     public int memberCount(long factionId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT COUNT(*) FROM yap_faction_members WHERE faction_id = ?")) {
-            ps.setLong(1, factionId);
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                return rs.getInt(1);
-            }
-        }
+        return members.memberCount(factionId);
     }
 
     public void upsertInvite(FactionInvite invite) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
-                     "yap_faction_invites",
-                     List.of("faction_id", "player_uuid"),
-                     List.of("faction_id", "player_uuid", "invited_by", "expires_at"),
-                     Map.of("invited_by", "EXCLUDED.invited_by", "expires_at", "EXCLUDED.expires_at")))) {
-            ps.setLong(1, invite.factionId());
-            ps.setString(2, invite.playerId().toString());
-            ps.setString(3, invite.invitedBy().toString());
-            ps.setTimestamp(4, Timestamp.from(invite.expiresAt()));
-            ps.executeUpdate();
-        }
+        members.upsertInvite(invite);
     }
 
     public void deleteInvite(long factionId, UUID playerId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM yap_faction_invites WHERE faction_id = ? AND player_uuid = ?")) {
-            ps.setLong(1, factionId);
-            ps.setString(2, playerId.toString());
-            ps.executeUpdate();
-        }
+        members.deleteInvite(factionId, playerId);
     }
 
     public void deleteInvitesForPlayer(UUID playerId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("DELETE FROM yap_faction_invites WHERE player_uuid = ?")) {
-            ps.setString(1, playerId.toString());
-            ps.executeUpdate();
-        }
+        members.deleteInvitesForPlayer(playerId);
     }
 
     public Optional<FactionInvite> invite(long factionId, UUID playerId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT faction_id, player_uuid, invited_by, created_at, expires_at "
-                             + "FROM yap_faction_invites WHERE faction_id = ? AND player_uuid = ?")) {
-            ps.setLong(1, factionId);
-            ps.setString(2, playerId.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.of(mapInvite(rs)) : Optional.empty();
-            }
-        }
+        return members.invite(factionId, playerId);
     }
 
     public List<FactionInvite> invitesForPlayer(UUID playerId) throws SQLException {
-        List<FactionInvite> out = new ArrayList<>();
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT faction_id, player_uuid, invited_by, created_at, expires_at "
-                             + "FROM yap_faction_invites WHERE player_uuid = ?")) {
-            ps.setString(1, playerId.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    out.add(mapInvite(rs));
-                }
-            }
-        }
-        return out;
+        return members.invitesForPlayer(playerId);
     }
 
     public void setRelation(long factionA, long factionB, FactionRelation relation) throws SQLException {
-        FactionRelationKey.Pair pair = FactionRelationKey.of(factionA, factionB);
-        if (relation == FactionRelation.NEUTRAL) {
-            clearRelation(pair.lowId(), pair.highId());
-            return;
-        }
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
-                     "yap_faction_relations",
-                     List.of("faction_id_a", "faction_id_b"),
-                     List.of("faction_id_a", "faction_id_b", "relation"),
-                     Map.of("relation", "EXCLUDED.relation")))) {
-            ps.setLong(1, pair.lowId());
-            ps.setLong(2, pair.highId());
-            ps.setString(3, relation.name());
-            ps.executeUpdate();
-        }
+        claims.setRelation(factionA, factionB, relation);
     }
 
     public void clearRelation(long lowId, long highId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM yap_faction_relations WHERE faction_id_a = ? AND faction_id_b = ?")) {
-            ps.setLong(1, lowId);
-            ps.setLong(2, highId);
-            ps.executeUpdate();
-        }
+        claims.clearRelation(lowId, highId);
     }
 
     public Optional<FactionRelation> relation(long factionA, long factionB) throws SQLException {
-        if (factionA == factionB) {
-            return Optional.of(FactionRelation.NEUTRAL);
-        }
-        FactionRelationKey.Pair pair = FactionRelationKey.of(factionA, factionB);
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT relation FROM yap_faction_relations WHERE faction_id_a = ? AND faction_id_b = ?")) {
-            ps.setLong(1, pair.lowId());
-            ps.setLong(2, pair.highId());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return Optional.of(FactionRelation.NEUTRAL);
-                }
-                return FactionRelation.parse(rs.getString("relation"));
-            }
-        }
+        return claims.relation(factionA, factionB);
     }
 
     public void linkClaim(FactionClaimOverlay overlay) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
-                     "yap_faction_claims",
-                     List.of("claim_id"),
-                     List.of("claim_id", "faction_id", "power_cost"),
-                     Map.of("faction_id", "EXCLUDED.faction_id", "power_cost", "EXCLUDED.power_cost")))) {
-            ps.setLong(1, overlay.claimId());
-            ps.setLong(2, overlay.factionId());
-            ps.setInt(3, overlay.powerCost());
-            ps.executeUpdate();
-        }
+        claims.linkClaim(overlay);
     }
 
     public void unlinkClaim(long claimId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("DELETE FROM yap_faction_claims WHERE claim_id = ?")) {
-            ps.setLong(1, claimId);
-            ps.executeUpdate();
-        }
+        claims.unlinkClaim(claimId);
     }
 
     public Optional<FactionClaimOverlay> overlay(long claimId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT claim_id, faction_id, power_cost, linked_at FROM yap_faction_claims WHERE claim_id = ?")) {
-            ps.setLong(1, claimId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return Optional.empty();
-                }
-                Timestamp linked = rs.getTimestamp("linked_at");
-                return Optional.of(new FactionClaimOverlay(
-                        rs.getLong("claim_id"),
-                        rs.getLong("faction_id"),
-                        rs.getInt("power_cost"),
-                        linked == null ? Instant.EPOCH : linked.toInstant()));
-            }
-        }
+        return claims.overlay(claimId);
     }
 
     public List<FactionClaimOverlay> overlaysForFaction(long factionId) throws SQLException {
-        List<FactionClaimOverlay> out = new ArrayList<>();
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT claim_id, faction_id, power_cost, linked_at FROM yap_faction_claims WHERE faction_id = ?")) {
-            ps.setLong(1, factionId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Timestamp linked = rs.getTimestamp("linked_at");
-                    out.add(new FactionClaimOverlay(
-                            rs.getLong("claim_id"),
-                            rs.getLong("faction_id"),
-                            rs.getInt("power_cost"),
-                            linked == null ? Instant.EPOCH : linked.toInstant()));
-                }
-            }
-        }
-        return out;
+        return claims.overlaysForFaction(factionId);
     }
 
     public int totalOverlayPower(long factionId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT COALESCE(SUM(power_cost), 0) FROM yap_faction_claims WHERE faction_id = ?")) {
-            ps.setLong(1, factionId);
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                return rs.getInt(1);
-            }
-        }
+        return claims.totalOverlayPower(factionId);
     }
 
     public Map<String, Integer> dashboardCounts() throws SQLException {
-        Map<String, Integer> out = new HashMap<>();
-        try (Connection c = database.connection(); Statement st = c.createStatement()) {
-            try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM yap_factions")) {
-                rs.next();
-                out.put("factions", rs.getInt(1));
-            }
-            try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM yap_faction_members")) {
-                rs.next();
-                out.put("members", rs.getInt(1));
-            }
-            try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM yap_faction_claims")) {
-                rs.next();
-                out.put("claimOverlays", rs.getInt(1));
-            }
-            try (ResultSet rs = st.executeQuery(
-                    "SELECT COUNT(*) FROM yap_faction_relations WHERE relation = 'ALLY'")) {
-                rs.next();
-                out.put("alliances", rs.getInt(1));
-            }
-            try (ResultSet rs = st.executeQuery(
-                    "SELECT COUNT(*) FROM yap_faction_relations WHERE relation = 'ENEMY'")) {
-                rs.next();
-                out.put("enemies", rs.getInt(1));
-            }
-            try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM yap_faction_invites")) {
-                rs.next();
-                out.put("invites", rs.getInt(1));
-            }
-        }
-        return out;
-    }
-
-    private static Faction mapFaction(ResultSet rs) throws SQLException {
-        Timestamp created = rs.getTimestamp("created_at");
-        Timestamp shield = getTimestamp(rs, "shield_until");
-        return new Faction(
-                rs.getLong("id"),
-                rs.getString("name"),
-                rs.getString("tag"),
-                UUID.fromString(rs.getString("leader_uuid")),
-                rs.getInt("power"),
-                rs.getInt("max_power"),
-                getString(rs, "description", ""),
-                getString(rs, "motd", ""),
-                FactionJoinMode.parse(getString(rs, "join_mode", "OPEN")).orElse(FactionJoinMode.OPEN),
-                getDouble(rs, "bank_balance", 0),
-                mapHome(rs),
-                shield == null ? null : shield.toInstant(),
-                created == null ? Instant.EPOCH : created.toInstant());
-    }
-
-    private static FactionHome mapHome(ResultSet rs) throws SQLException {
-        String world = getString(rs, "home_world", null);
-        if (world == null || world.isBlank()) {
-            return FactionHome.unset();
-        }
-        return new FactionHome(
-                world,
-                getDouble(rs, "home_x", 0),
-                getDouble(rs, "home_y", 64),
-                getDouble(rs, "home_z", 0),
-                getFloat(rs, "home_yaw", 0),
-                getFloat(rs, "home_pitch", 0));
-    }
-
-    private static FactionMember mapMember(ResultSet rs) throws SQLException {
-        return new FactionMember(
-                rs.getLong("faction_id"),
-                UUID.fromString(rs.getString("player_uuid")),
-                FactionRole.parse(rs.getString("role")).orElse(FactionRole.MEMBER));
-    }
-
-    private static FactionInvite mapInvite(ResultSet rs) throws SQLException {
-        Timestamp created = rs.getTimestamp("created_at");
-        Timestamp expires = rs.getTimestamp("expires_at");
-        return new FactionInvite(
-                rs.getLong("faction_id"),
-                UUID.fromString(rs.getString("player_uuid")),
-                UUID.fromString(rs.getString("invited_by")),
-                created == null ? Instant.EPOCH : created.toInstant(),
-                expires == null ? Instant.EPOCH : expires.toInstant());
-    }
-
-    private static String getString(ResultSet rs, String column, String fallback) throws SQLException {
-        try {
-            String value = rs.getString(column);
-            return value == null ? fallback : value;
-        } catch (SQLException e) {
-            return fallback;
-        }
-    }
-
-    private static double getDouble(ResultSet rs, String column, double fallback) throws SQLException {
-        try {
-            return rs.getDouble(column);
-        } catch (SQLException e) {
-            return fallback;
-        }
-    }
-
-    private static float getFloat(ResultSet rs, String column, float fallback) throws SQLException {
-        try {
-            return rs.getFloat(column);
-        } catch (SQLException e) {
-            return fallback;
-        }
-    }
-
-    private static Timestamp getTimestamp(ResultSet rs, String column) throws SQLException {
-        try {
-            return rs.getTimestamp(column);
-        } catch (SQLException e) {
-            return null;
-        }
+        return claims.dashboardCounts();
     }
 }

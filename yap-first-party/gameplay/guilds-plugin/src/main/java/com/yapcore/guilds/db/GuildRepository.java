@@ -6,7 +6,6 @@ import com.yapcore.guilds.GuildInvite;
 import com.yapcore.guilds.GuildJoinMode;
 import com.yapcore.guilds.GuildMember;
 import com.yapcore.guilds.GuildRelation;
-import com.yapcore.guilds.GuildRelationKey;
 import com.yapcore.guilds.GuildRole;
 
 import java.sql.Connection;
@@ -17,7 +16,6 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,9 +24,13 @@ import java.util.UUID;
 public final class GuildRepository {
 
     private final GuildDatabase database;
+    private final GuildMemberInviteQueries members;
+    private final GuildRelationQueries relations;
 
     public GuildRepository(GuildDatabase database) {
         this.database = database;
+        this.members = new GuildMemberInviteQueries(database);
+        this.relations = new GuildRelationQueries(database);
     }
 
     public long create(Guild guild) throws SQLException {
@@ -57,9 +59,9 @@ public final class GuildRepository {
 
     public void deleteGuild(long guildId) throws SQLException {
         try (Connection c = database.connection()) {
-            deleteInvites(c, guildId);
-            deleteRelations(c, guildId);
-            deleteMembers(c, guildId);
+            GuildSqlMapping.deleteInvites(c, guildId);
+            GuildSqlMapping.deleteRelations(c, guildId);
+            GuildSqlMapping.deleteMembers(c, guildId);
             try (PreparedStatement ps = c.prepareStatement("DELETE FROM yap_guilds WHERE id = ?")) {
                 ps.setLong(1, guildId);
                 ps.executeUpdate();
@@ -72,7 +74,7 @@ public final class GuildRepository {
              PreparedStatement ps = c.prepareStatement("SELECT * FROM yap_guilds WHERE id = ?")) {
             ps.setLong(1, id);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.of(mapGuild(rs)) : Optional.empty();
+                return rs.next() ? Optional.of(GuildSqlMapping.mapGuild(rs)) : Optional.empty();
             }
         }
     }
@@ -82,7 +84,7 @@ public final class GuildRepository {
              PreparedStatement ps = c.prepareStatement("SELECT * FROM yap_guilds WHERE name = ?")) {
             ps.setString(1, name);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.of(mapGuild(rs)) : Optional.empty();
+                return rs.next() ? Optional.of(GuildSqlMapping.mapGuild(rs)) : Optional.empty();
             }
         }
     }
@@ -92,7 +94,7 @@ public final class GuildRepository {
              PreparedStatement ps = c.prepareStatement("SELECT * FROM yap_guilds WHERE tag = ?")) {
             ps.setString(1, tag);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.of(mapGuild(rs)) : Optional.empty();
+                return rs.next() ? Optional.of(GuildSqlMapping.mapGuild(rs)) : Optional.empty();
             }
         }
     }
@@ -103,7 +105,7 @@ public final class GuildRepository {
              PreparedStatement ps = c.prepareStatement("SELECT * FROM yap_guilds ORDER BY name");
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                out.add(mapGuild(rs));
+                out.add(GuildSqlMapping.mapGuild(rs));
             }
         }
         return out;
@@ -118,7 +120,7 @@ public final class GuildRepository {
             ps.setInt(2, offset);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    out.add(mapGuild(rs));
+                    out.add(GuildSqlMapping.mapGuild(rs));
                 }
             }
         }
@@ -208,295 +210,66 @@ public final class GuildRepository {
     }
 
     public void addMember(GuildMember member) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_guild_members (guild_id, player_uuid, role, contribution_xp)
-                     VALUES (?, ?, ?, ?)
-                     """)) {
-            ps.setLong(1, member.guildId());
-            ps.setString(2, member.playerId().toString());
-            ps.setString(3, member.role().name());
-            ps.setLong(4, member.contributionXp());
-            ps.executeUpdate();
-        }
+        members.addMember(member);
     }
 
     public void removeMember(long guildId, UUID playerId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM yap_guild_members WHERE guild_id = ? AND player_uuid = ?")) {
-            ps.setLong(1, guildId);
-            ps.setString(2, playerId.toString());
-            ps.executeUpdate();
-        }
+        members.removeMember(guildId, playerId);
     }
 
     public void updateMemberRole(long guildId, UUID playerId, GuildRole role) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_guild_members SET role = ? WHERE guild_id = ? AND player_uuid = ?")) {
-            ps.setString(1, role.name());
-            ps.setLong(2, guildId);
-            ps.setString(3, playerId.toString());
-            ps.executeUpdate();
-        }
+        members.updateMemberRole(guildId, playerId, role);
     }
 
     public void addContribution(long guildId, UUID playerId, long amount) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_guild_members SET contribution_xp = contribution_xp + ? "
-                             + "WHERE guild_id = ? AND player_uuid = ?")) {
-            ps.setLong(1, amount);
-            ps.setLong(2, guildId);
-            ps.setString(3, playerId.toString());
-            ps.executeUpdate();
-        }
+        members.addContribution(guildId, playerId, amount);
     }
 
     public Optional<GuildMember> member(UUID playerId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT guild_id, player_uuid, role, contribution_xp FROM yap_guild_members WHERE player_uuid = ?")) {
-            ps.setString(1, playerId.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.of(mapMember(rs)) : Optional.empty();
-            }
-        }
+        return members.member(playerId);
     }
 
     public List<GuildMember> members(long guildId) throws SQLException {
-        List<GuildMember> out = new ArrayList<>();
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT guild_id, player_uuid, role, contribution_xp FROM yap_guild_members WHERE guild_id = ? "
-                             + "ORDER BY contribution_xp DESC, FIELD(role, 'LEADER', 'OFFICER', 'VETERAN', 'MEMBER', 'RECRUIT')")) {
-            ps.setLong(1, guildId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    out.add(mapMember(rs));
-                }
-            }
-        }
-        return out;
+        return members.members(guildId);
     }
 
     public int memberCount(long guildId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT COUNT(*) FROM yap_guild_members WHERE guild_id = ?")) {
-            ps.setLong(1, guildId);
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                return rs.getInt(1);
-            }
-        }
+        return members.memberCount(guildId);
     }
 
     public void upsertInvite(GuildInvite invite) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
-                     "yap_guild_invites",
-                     List.of("guild_id", "player_uuid"),
-                     List.of("guild_id", "player_uuid", "invited_by", "expires_at"),
-                     Map.of("invited_by", "EXCLUDED.invited_by", "expires_at", "EXCLUDED.expires_at")))) {
-            ps.setLong(1, invite.guildId());
-            ps.setString(2, invite.playerId().toString());
-            ps.setString(3, invite.invitedBy().toString());
-            ps.setTimestamp(4, Timestamp.from(invite.expiresAt()));
-            ps.executeUpdate();
-        }
+        members.upsertInvite(invite);
     }
 
     public void deleteInvite(long guildId, UUID playerId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM yap_guild_invites WHERE guild_id = ? AND player_uuid = ?")) {
-            ps.setLong(1, guildId);
-            ps.setString(2, playerId.toString());
-            ps.executeUpdate();
-        }
+        members.deleteInvite(guildId, playerId);
     }
 
     public void deleteInvitesForPlayer(UUID playerId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("DELETE FROM yap_guild_invites WHERE player_uuid = ?")) {
-            ps.setString(1, playerId.toString());
-            ps.executeUpdate();
-        }
+        members.deleteInvitesForPlayer(playerId);
     }
 
     public Optional<GuildInvite> invite(long guildId, UUID playerId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT guild_id, player_uuid, invited_by, created_at, expires_at "
-                             + "FROM yap_guild_invites WHERE guild_id = ? AND player_uuid = ?")) {
-            ps.setLong(1, guildId);
-            ps.setString(2, playerId.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next() ? Optional.of(mapInvite(rs)) : Optional.empty();
-            }
-        }
+        return members.invite(guildId, playerId);
     }
 
     public List<GuildInvite> invitesForPlayer(UUID playerId) throws SQLException {
-        List<GuildInvite> out = new ArrayList<>();
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT guild_id, player_uuid, invited_by, created_at, expires_at "
-                             + "FROM yap_guild_invites WHERE player_uuid = ?")) {
-            ps.setString(1, playerId.toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    out.add(mapInvite(rs));
-                }
-            }
-        }
-        return out;
+        return members.invitesForPlayer(playerId);
     }
 
     public void setRelation(long guildA, long guildB, GuildRelation relation) throws SQLException {
-        GuildRelationKey.Pair pair = GuildRelationKey.of(guildA, guildB);
-        if (relation == GuildRelation.NEUTRAL) {
-            clearRelation(pair.lowId(), pair.highId());
-            return;
-        }
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
-                     "yap_guild_relations",
-                     List.of("guild_id_a", "guild_id_b"),
-                     List.of("guild_id_a", "guild_id_b", "relation"),
-                     Map.of("relation", "EXCLUDED.relation")))) {
-            ps.setLong(1, pair.lowId());
-            ps.setLong(2, pair.highId());
-            ps.setString(3, relation.name());
-            ps.executeUpdate();
-        }
+        relations.setRelation(guildA, guildB, relation);
     }
 
     public void clearRelation(long lowId, long highId) throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM yap_guild_relations WHERE guild_id_a = ? AND guild_id_b = ?")) {
-            ps.setLong(1, lowId);
-            ps.setLong(2, highId);
-            ps.executeUpdate();
-        }
+        relations.clearRelation(lowId, highId);
     }
 
     public Optional<GuildRelation> relation(long guildA, long guildB) throws SQLException {
-        if (guildA == guildB) {
-            return Optional.of(GuildRelation.NEUTRAL);
-        }
-        GuildRelationKey.Pair pair = GuildRelationKey.of(guildA, guildB);
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT relation FROM yap_guild_relations WHERE guild_id_a = ? AND guild_id_b = ?")) {
-            ps.setLong(1, pair.lowId());
-            ps.setLong(2, pair.highId());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    return Optional.of(GuildRelation.NEUTRAL);
-                }
-                return GuildRelation.parse(rs.getString("relation"));
-            }
-        }
+        return relations.relation(guildA, guildB);
     }
 
     public Map<String, Integer> dashboardCounts() throws SQLException {
-        Map<String, Integer> out = new HashMap<>();
-        try (Connection c = database.connection(); Statement st = c.createStatement()) {
-            try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM yap_guilds")) {
-                rs.next();
-                out.put("guilds", rs.getInt(1));
-            }
-            try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM yap_guild_members")) {
-                rs.next();
-                out.put("members", rs.getInt(1));
-            }
-            try (ResultSet rs = st.executeQuery(
-                    "SELECT COUNT(*) FROM yap_guild_relations WHERE relation = 'ALLY'")) {
-                rs.next();
-                out.put("alliances", rs.getInt(1));
-            }
-            try (ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM yap_guild_invites")) {
-                rs.next();
-                out.put("invites", rs.getInt(1));
-            }
-        }
-        return out;
-    }
-
-    private static void deleteInvites(Connection c, long guildId) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement("DELETE FROM yap_guild_invites WHERE guild_id = ?")) {
-            ps.setLong(1, guildId);
-            ps.executeUpdate();
-        }
-    }
-
-    private static void deleteRelations(Connection c, long guildId) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement(
-                "DELETE FROM yap_guild_relations WHERE guild_id_a = ? OR guild_id_b = ?")) {
-            ps.setLong(1, guildId);
-            ps.setLong(2, guildId);
-            ps.executeUpdate();
-        }
-    }
-
-    private static void deleteMembers(Connection c, long guildId) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement("DELETE FROM yap_guild_members WHERE guild_id = ?")) {
-            ps.setLong(1, guildId);
-            ps.executeUpdate();
-        }
-    }
-
-    private static Guild mapGuild(ResultSet rs) throws SQLException {
-        Timestamp created = rs.getTimestamp("created_at");
-        return new Guild(
-                rs.getLong("id"),
-                rs.getString("name"),
-                rs.getString("tag"),
-                UUID.fromString(rs.getString("leader_uuid")),
-                rs.getInt("level"),
-                rs.getLong("xp"),
-                rs.getString("description"),
-                rs.getString("motd"),
-                GuildJoinMode.parse(rs.getString("join_mode")).orElse(GuildJoinMode.OPEN),
-                rs.getDouble("bank_balance"),
-                mapHome(rs),
-                created == null ? Instant.EPOCH : created.toInstant());
-    }
-
-    private static GuildHome mapHome(ResultSet rs) throws SQLException {
-        String world = rs.getString("home_world");
-        if (world == null || world.isBlank()) {
-            return GuildHome.unset();
-        }
-        return new GuildHome(
-                world,
-                rs.getDouble("home_x"),
-                rs.getDouble("home_y"),
-                rs.getDouble("home_z"),
-                rs.getFloat("home_yaw"),
-                rs.getFloat("home_pitch"));
-    }
-
-    private static GuildMember mapMember(ResultSet rs) throws SQLException {
-        return new GuildMember(
-                rs.getLong("guild_id"),
-                UUID.fromString(rs.getString("player_uuid")),
-                GuildRole.parse(rs.getString("role")).orElse(GuildRole.MEMBER),
-                rs.getLong("contribution_xp"));
-    }
-
-    private static GuildInvite mapInvite(ResultSet rs) throws SQLException {
-        Timestamp created = rs.getTimestamp("created_at");
-        Timestamp expires = rs.getTimestamp("expires_at");
-        return new GuildInvite(
-                rs.getLong("guild_id"),
-                UUID.fromString(rs.getString("player_uuid")),
-                UUID.fromString(rs.getString("invited_by")),
-                created == null ? Instant.EPOCH : created.toInstant(),
-                expires == null ? Instant.EPOCH : expires.toInstant());
+        return relations.dashboardCounts();
     }
 }
