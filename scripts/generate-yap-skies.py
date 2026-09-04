@@ -281,13 +281,14 @@ def _atmosphere(dx, dy, dz, mode: str, cloud_tex: np.ndarray, wisp_tex: np.ndarr
         cloud_amt = np.clip(clouds * 1.2 + wisps * 0.4, 0.0, 1.0) * (0.30 + 0.50 * hz)
         cloud_blend = 0.78
     elif mode == "storm":
-        zenith = np.array([0.22, 0.26, 0.30])
-        horizon = np.array([0.36, 0.38, 0.40])
-        sun = np.array([0.42, 0.42, 0.40])
+        # Soft overcast — denser banks, but leave gaps so rain stays readable (vanilla-like).
+        zenith = np.array([0.42, 0.48, 0.54])
+        horizon = np.array([0.55, 0.58, 0.60])
+        sun = np.array([0.50, 0.52, 0.54])
         glow = np.zeros_like(up)
-        cloud_col = np.array([0.18, 0.20, 0.22]) + underside[..., None] * np.array([0.10, 0.11, 0.12])
-        cloud_amt = np.clip(clouds * 1.45 + wisps * 0.55, 0.0, 1.0) * (0.70 + 0.28 * up)
-        cloud_blend = 0.88
+        cloud_col = np.array([0.38, 0.40, 0.44]) + underside[..., None] * np.array([0.12, 0.13, 0.14])
+        cloud_amt = np.clip(clouds * 1.15 + wisps * 0.35, 0.0, 1.0) * (0.45 + 0.35 * up)
+        cloud_blend = 0.62
     elif mode == "end":
         zenith = np.array([0.05, 0.02, 0.09])
         horizon = np.array([0.22, 0.04, 0.28])
@@ -336,6 +337,11 @@ def make_skybox(mode: str, cloud_tex: np.ndarray, wisp_tex: np.ndarray) -> np.nd
         if mode in ("sunrise", "sunset"):
             lum = rgb.max(axis=2)
             tile[..., 3] = 255.0 * np.clip(lum * 1.35, 0.0, 1.0)
+        elif mode == "storm":
+            # Rain/thunder overlay must stay translucent — solid alpha blacks out the view.
+            dens = _sample_equirect(cloud_tex, dx, dy, dz)
+            veil = 0.18 + 0.34 * dens + 0.12 * np.clip(1.0 - dy, 0.0, 1.0)
+            tile[..., 3] = 255.0 * np.clip(veil, 0.12, 0.55)
         out[row * s : (row + 1) * s, col * s : (col + 1) * s] = tile
     return out
 

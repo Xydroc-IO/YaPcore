@@ -62,8 +62,10 @@ vec3 viewToScreen(vec3 view) {
 }
 
 vec3 applyFog(vec3 color, float dist, vec3 fogCol) {
+    // Distance fog only — rain adds a light mist with distance, not a flat veil.
     float f = 1.0 - exp(-dist * 0.008);
-    f = clamp(f + rainStrength * 0.25, 0.0, 1.0);
+    float rainMist = rainStrength * (1.0 - exp(-dist * 0.0045)) * 0.18;
+    f = clamp(f + rainMist, 0.0, 0.85);
     return mix(color, fogCol, f);
 }
 

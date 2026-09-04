@@ -49,7 +49,7 @@ float yapCloudDensity(vec3 worldPos, float rain) {
     // Slight puff at mid-height so slabs read as volumes.
     shape *= 0.75 + 0.25 * sin(h * 3.14159);
     dens *= shape;
-    dens *= mix(1.0, 1.35, rain);
+    dens *= mix(1.0, 1.12, rain);
     return clamp(dens, 0.0, 1.0);
 }
 
@@ -118,7 +118,7 @@ vec4 yapVolumetricClouds(vec3 worldDir, vec3 sunView, float rain) {
 
     vec3 accum = vec3(0.0);
     float transm = 1.0;
-    float optical = mix(1.35, 2.1, rain);
+    float optical = mix(1.35, 1.55, rain);
 
     for (int i = 0; i < CLOUD_STEPS; i++) {
         float dens = yapCloudDensity(pos, rain);

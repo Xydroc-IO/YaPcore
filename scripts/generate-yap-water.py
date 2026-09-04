@@ -177,20 +177,27 @@ def make_underwater(size: int = 128) -> np.ndarray:
 
 
 def make_rain(size: int = 64) -> np.ndarray:
+    """Sparse translucent streaks — close to vanilla readability, not a grey sheet."""
     img = np.zeros((size, size, 4), dtype=np.float64)
     rng = np.random.default_rng(42)
-    for _ in range(90):
+    for _ in range(28):
         x = int(rng.integers(0, size))
         y0 = int(rng.integers(0, size))
-        length = int(rng.integers(6, 18))
-        bright = float(rng.uniform(0.55, 0.95))
+        length = int(rng.integers(4, 11))
+        bright = float(rng.uniform(0.65, 1.0))
         for k in range(length):
             yy = (y0 + k) % size
-            img[yy, x, :3] = 220 * bright
-            img[yy, x, 3] = 140 * bright
-            if x + 1 < size:
-                img[yy, x + 1, :3] = 180 * bright
-                img[yy, x + 1, 3] = 70 * bright
+            # Cool white-blue streak, soft alpha (vanilla rain is very see-through).
+            img[yy, x, 0] = max(img[yy, x, 0], 200 * bright)
+            img[yy, x, 1] = max(img[yy, x, 1], 215 * bright)
+            img[yy, x, 2] = max(img[yy, x, 2], 235 * bright)
+            img[yy, x, 3] = max(img[yy, x, 3], 55 * bright)
+            # Faint neighbor only on longer drops
+            if length > 7 and x + 1 < size and k % 2 == 0:
+                img[yy, x + 1, 0] = max(img[yy, x + 1, 0], 170 * bright)
+                img[yy, x + 1, 1] = max(img[yy, x + 1, 1], 185 * bright)
+                img[yy, x + 1, 2] = max(img[yy, x + 1, 2], 210 * bright)
+                img[yy, x + 1, 3] = max(img[yy, x + 1, 3], 22 * bright)
     return img
 
 
@@ -198,14 +205,14 @@ def make_snow(size: int = 64) -> np.ndarray:
     img = np.zeros((size, size, 4), dtype=np.float64)
     rng = np.random.default_rng(7)
     yy, xx = np.mgrid[0:size, 0:size]
-    for _ in range(55):
+    for _ in range(40):
         cx = float(rng.uniform(0, size))
         cy = float(rng.uniform(0, size))
-        r = float(rng.uniform(1.2, 2.8))
+        r = float(rng.uniform(0.9, 2.0))
         d = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
         flake = _smoothstep(r, r * 0.2, d)
         img[..., :3] = np.maximum(img[..., :3], flake[..., None] * 245)
-        img[..., 3] = np.maximum(img[..., 3], flake * 200)
+        img[..., 3] = np.maximum(img[..., 3], flake * 110)
     return img
 
 

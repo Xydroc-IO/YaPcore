@@ -52,8 +52,9 @@ class PaperResourcePackSyncTest {
             props.load(in);
         }
         String packUrl = props.getProperty("resource-pack");
-        assertTrue(packUrl.startsWith("http://packs.example.com/pack/yap-active-bundle-"),
-                "expected merged bundle URL, got " + packUrl);
+        // public-pack-port=80 means CDN edge; PublicEndpoint advertises live pack HTTP (8081) instead.
+        assertTrue(packUrl.startsWith("http://packs.example.com:8081/pack/yap-active-bundle-"),
+                "expected merged bundle URL on pack HTTP port, got " + packUrl);
         assertTrue(packUrl.endsWith(".zip"));
         assertFalse(props.getProperty("resource-pack-sha1", "").isBlank());
         assertEquals(40, props.getProperty("resource-pack-sha1").length());
