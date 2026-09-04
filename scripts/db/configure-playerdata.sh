@@ -58,7 +58,10 @@ JDBC="jdbc:mysql://${HOST}:${PORT}/${DB}?useSSL=false&allowPublicKeyRetrieval=tr
 
 mkdir -p "$PLUGIN_DIR"
 
-DEFAULT_CFG="$REPO_ROOT/playerdata-plugin/src/main/resources/config.yml"
+DEFAULT_CFG="$REPO_ROOT/yap-first-party/core-network/playerdata-plugin/src/main/resources/config.yml"
+if [ ! -f "$DEFAULT_CFG" ]; then
+  DEFAULT_CFG="$REPO_ROOT/config/defaults/plugins/YaPPlayerData/config.yml"
+fi
 if [ ! -f "$CONFIG" ] && [ -f "$DEFAULT_CFG" ]; then
   cp "$DEFAULT_CFG" "$CONFIG"
 elif [ ! -f "$CONFIG" ]; then
@@ -116,7 +119,10 @@ echo ""
 YAPDB_DIR="$TARGET_ROOT/plugins/YaPDB"
 YAPDB_CFG="$YAPDB_DIR/config.yml"
 mkdir -p "$YAPDB_DIR"
-DEFAULT_YAPDB="$REPO_ROOT/yap-db-plugin/src/main/resources/config.yml"
+DEFAULT_YAPDB="$REPO_ROOT/yap-first-party/core-network/yap-db-plugin/src/main/resources/config.yml"
+if [ ! -f "$DEFAULT_YAPDB" ]; then
+  DEFAULT_YAPDB="$REPO_ROOT/config/defaults/plugins/YaPDB/config.yml"
+fi
 if [ ! -f "$YAPDB_CFG" ] && [ -f "$DEFAULT_YAPDB" ]; then
   cp "$DEFAULT_YAPDB" "$YAPDB_CFG"
 fi

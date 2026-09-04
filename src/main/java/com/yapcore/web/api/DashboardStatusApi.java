@@ -36,34 +36,48 @@ public final class DashboardStatusApi {
         if (!"GET".equalsIgnoreCase(ex.getRequestMethod()) || !auth.requireAuth(ex)) {
             return;
         }
-        Runtime rt = Runtime.getRuntime();
-        long used = (rt.totalMemory() - rt.freeMemory()) / (1024 * 1024);
-        long max = rt.maxMemory() / (1024 * 1024);
-        ServerConfig cfg = server.getConfig();
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("running", server.isRunning());
-        m.put("players", server.getOnlinePlayers());
-        m.put("maxPlayers", server.getMaxPlayers());
-        m.put("heapUsedMb", used);
-        m.put("heapMaxMb", max);
-        m.put("ramConfigMb", cfg.getRamMb());
-        m.put("serverName", cfg.getServerName());
-        m.put("motd", cfg.getMotd());
-        m.put("port", cfg.getPort());
-        m.put("bedrockPort", cfg.effectiveBedrockPort());
-        m.put("packHttpPort", cfg.getResourcePackHttpPort());
-        m.put("dashboardPort", cfg.getWebDashboardPort());
-        m.put("activePack", server.getResourcePacks().getActivePack()
-                .map(p -> p.getFileName()).orElse("none"));
-        m.put("javaClients", server.getGateway().getClients().countEdition(ClientEdition.JAVA));
-        m.put("bedrockClients", server.getGateway().getClients().countEdition(ClientEdition.BEDROCK));
-        m.put("ticks", server.getEngine().gameCore().getTickCounter());
-        m.put("linkProcessRunning", server.getLinkProcess().isRunning());
-        m.put("pid", ProcessHandle.current().pid());
-        m.put("statusText", server.statusReport());
-        m.put("networkHealth", buildNetworkHealth(cfg));
-        m.put("observability", metricsHandler.statusSnippet());
-        DashboardHttp.json(ex, 200, m);
+        try {
+            Runtime rt = Runtime.getRuntime();
+            long used = (rt.totalMemory() - rt.freeMemory()) / (1024 * 1024);
+            long max = rt.maxMemory() / (1024 * 1024);
+            ServerConfig cfg = server.getConfig();
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("running", server.isRunning());
+            m.put("players", server.getOnlinePlayers());
+            m.put("maxPlayers", server.getMaxPlayers());
+            m.put("heapUsedMb", used);
+            m.put("heapMaxMb", max);
+            m.put("ramConfigMb", cfg.getRamMb());
+            m.put("serverName", cfg.getServerName());
+            m.put("motd", cfg.getMotd());
+            m.put("port", cfg.getPort());
+            m.put("bedrockPort", cfg.effectiveBedrockPort());
+            m.put("packHttpPort", cfg.getResourcePackHttpPort());
+            m.put("dashboardPort", cfg.getWebDashboardPort());
+            m.put("activePack", server.getResourcePacks().getActivePack()
+                    .map(p -> p.getFileName()).orElse("none"));
+            m.put("javaClients", server.getGateway().getClients().countEdition(ClientEdition.JAVA));
+            m.put("bedrockClients", server.getGateway().getClients().countEdition(ClientEdition.BEDROCK));
+            m.put("ticks", server.getEngine().gameCore().getTickCounter());
+            m.put("linkProcessRunning", server.getLinkProcess().isRunning());
+            m.put("pid", ProcessHandle.current().pid());
+            m.put("statusText", server.statusReport());
+            try {
+                m.put("networkHealth", buildNetworkHealth(cfg));
+            } catch (Exception e) {
+                m.put("networkHealth", Map.of("error", String.valueOf(e.getMessage())));
+            }
+            try {
+                m.put("observability", metricsHandler.statusSnippet());
+            } catch (Exception e) {
+                m.put("observability", Map.of("error", String.valueOf(e.getMessage())));
+            }
+            DashboardHttp.json(ex, 200, m);
+        } catch (Exception e) {
+            DashboardHttp.json(ex, 500, Map.of(
+                    "ok", false,
+                    "error", e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage()));
+        }
     }
 
     public void apiConnect(HttpExchange ex) throws IOException {
