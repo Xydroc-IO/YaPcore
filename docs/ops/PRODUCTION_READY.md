@@ -35,13 +35,61 @@ gradle :protect-plugin:test :factions-plugin:test :essentials-plugin:test \
   :chat-plugin:test :world-plugin:test :yap-factions-api:test :yap-db-api:test
 ```
 
-## Phase 2 — Ops sign-off (human)
+## Phase 2 — Ops sign-off (solo operator)
 
-1. Push main so remote CI runs on Java 25
-2. [SECRETS.md](../start/SECRETS.md) production order
-3. [EDGE_HARDEN.md](../network/EDGE_HARDEN.md) binds (dashboard/metrics localhost)
-4. Tick [CROSSPLAY.md §E](../network/CROSSPLAY.md)
-5. Finish / record 12h soak ([YAP_FOLIA_SOAK.md](../folia/YAP_FOLIA_SOAK.md))
+You do **not** need a QA team. One person + this box is enough for ops-signed.
+Retail Xbox / multi-player grief load stays optional before marketing “full play depth.”
+
+### 2a — Push & CI (agent / you)
+
+```bash
+git push origin main
+```
+
+Confirm GitHub Actions CI is green on Java 25 (line limits, DB hygiene, plugin suites, shadowJar, concurrency).
+
+### 2b — Edge / secrets (solo, ~15 min)
+
+Walk [SECRETS.md](../start/SECRETS.md) production order once. Confirm on this host:
+
+- [ ] `web-dashboard-bind=127.0.0.1` (or SSH tunnel only)
+- [ ] Link metrics not public ([EDGE_HARDEN.md](../network/EDGE_HARDEN.md))
+- [ ] Forwarding secret / DB passwords set and **not** in git
+- [ ] Public game edge is intentional (`exposed=true` only if you want public)
+
+### 2c — §E solo checklist (you + one JE client; Bedrock if you have it)
+
+Do **not** wait for other humans. Tick in [CROSSPLAY.md §E](../network/CROSSPLAY.md) as you go:
+
+1. JE modern client → `yapcoremc.yaplabs.us:25565` (or LAN) — dig/place/chat/one command  
+2. Accept or decline resource pack  
+3. Open chest + furnace + anvil (minimum specialty set); note Stretch gaps  
+4. Optional same session: Bedrock Android/Win on native UDP if you have a device  
+5. Optional: `/yapknobs status`, one ability cast, `/bag` page  
+
+Xbox retail = later marketing bar, not soft-launch.
+
+### 2d — Soak (already runnable alone)
+
+`./scripts/yapctl soak-long 12` samples heap/threads while the server stays up.
+No players required. When the log prints PASS (or you hit 8h floor), record in
+[REAL_GAINS.md](../folia/REAL_GAINS.md) / [RELEASE_NOTES.md](../start/RELEASE_NOTES.md).
+
+Check progress:
+
+```bash
+tail -5 logs/soak/soak-long-*.log
+./scripts/yapctl status   # or ./scripts/status.sh
+```
+
+### Solo “ops-signed” bar
+
+| Required | Optional later |
+|----------|----------------|
+| 2a CI green | Xbox retail Bedrock |
+| 2b edge/secrets | Multi-player load party |
+| 2c JE join + packs + 2–3 containers | Full specialty station matrix |
+| 2d soak 8h+ floor (12h preferred) | Live VFX spam party |
 
 ## Phase 3 — Tag / marketing polish
 
