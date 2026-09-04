@@ -180,7 +180,7 @@ scan_logs_for_bad() {
     local recent
     recent="$(tail -c 80000 "$log" 2>/dev/null || true)"
     if printf '%s\n' "$recent" | grep -E 'OutOfMemoryError|owning region|Cannot modify|TickThread' >/dev/null 2>&1; then
-      echo "WARN: suspicious lines in recent folia-kernel/logs/latest.log" | tee -a "$REPORT"
+      echo "FAIL: suspicious lines in recent folia-kernel/logs/latest.log" | tee -a "$REPORT"
       printf '%s\n' "$recent" | grep -E 'OutOfMemoryError|owning region|Cannot modify|TickThread' | tail -n 20 | tee -a "$REPORT" || true
       bad=1
     fi
@@ -327,9 +327,14 @@ run_long() {
       echo "FAIL: YaP-Folia child missing at t=${elapsed}s" | tee -a "$REPORT"
       return 1
     fi
-    if [ "$LAST_FOLIA_PID" != "$locked_folia" ]; then
-      echo "FAIL: YaP-Folia PID changed ${locked_folia} → ${LAST_FOLIA_PID} at t=${elapsed}s (child restart)" | tee -a "$REPORT"
-      return 1
+    if [ -n "$locked_folia" ] && [ "$LAST_FOLIA_PID" != "$locked_folia" ]; then
+      if [ "${YAP_SOAK_KEEP:-0}" = "1" ] || [ "${YAP_SOAK_RELOCK:-0}" = "1" ]; then
+        echo "WARN: YaP-Folia PID changed ${locked_folia} → ${LAST_FOLIA_PID} at t=${elapsed}s — re-locking (KEEP/RELOCK)" | tee -a "$REPORT"
+        locked_folia="$LAST_FOLIA_PID"
+      else
+        echo "FAIL: YaP-Folia PID changed ${locked_folia} → ${LAST_FOLIA_PID} at t=${elapsed}s (child restart)" | tee -a "$REPORT"
+        return 1
+      fi
     fi
     if [ -z "${LAST_FOLIA_HEAP:-}" ]; then
       blank_heap=$((blank_heap + 1))
