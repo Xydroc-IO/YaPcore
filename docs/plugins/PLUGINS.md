@@ -81,6 +81,9 @@ like mods. See [MODULES_AND_API.md](MODULES_AND_API.md).
 Real vehicle mechanics for plugin authors (cars / bikes / custom chassis — **not**
 minecarts or boats): [VEHICLES.md](VEHICLES.md). Soft-depend `YaPVehicles` and
 load `VehicleAPI` from `ServicesManager`. Runs on **YaP-Folia** (`folia-supported: true`).
+HD fleet bodies in the client pack are converted from
+[Automobility](https://github.com/FoundationGames/Automobility) (MIT) — see
+[CREDITS.md](../../resourcepacks/CREDITS.md).
 
 ## Shipped jars
 

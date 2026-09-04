@@ -27,6 +27,7 @@ responsible for complying with each when you ship or run a server.
 | **Grim Anticheat** (optional AC) | **GPLv3** | `./scripts/fetch-grim.sh` → `plugins/grim.jar`; notices in `third-party/grim/` |
 | **Minecraft server software** | Mojang EULA | You must accept `eula=true`; not open source |
 | **Faithful 64x** (default pack) | See `resourcepacks/FAITHFUL_LICENSE.txt` | Bundled in release zips when present |
+| **Automobility** vehicle meshes (GAMEPLAY pack) | **MIT** | Converted into `yap-vehicles` / `yapcore-default`; see `resourcepacks/yap-vehicles/AUTOMOBILITY_LICENSE.txt` and `CREDITS.md` |
 | **Sodium** (optional client) | **PolyForm Shield 1.0.0** | Official jar pin only — [yap-sodium/](../../client/yap-sodium/); notices in `third-party/sodium/` |
 | **YaP Iris** (optional client) | **LGPL-3.0** (+ **AGPL-3.0** glsl-transformer) | Fork under [yap-iris/](../../client/yap-iris/); notices in `third-party/iris/` |
 | **YaP Shaders** (optional client) | **GPLv3** | First-party Iris pack [yap-shaders/](../../client/yap-shaders/) |
@@ -89,7 +90,8 @@ Operator-facing legal docs (templates, not legal advice):
 
 ## Default resource pack
 
-The default client pack may include **Faithful 64x**, **YaP Skies**, and YaP vehicle overlays.
+The default client pack may include **Faithful 64x**, **YaP Skies**, YaP vehicle overlays
+(Automobility-derived fleet bodies under MIT — see `CREDITS.md`), and MMO ability icons.
 Credits and pack-specific licenses: `resourcepacks/CREDITS.md`,
 `resourcepacks/FAITHFUL_LICENSE.txt`.
 

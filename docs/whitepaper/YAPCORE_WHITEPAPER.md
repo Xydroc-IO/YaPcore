@@ -224,6 +224,7 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-playerdata.jar` | YaPPlayerData | Cross-server sync, auth, economy, homes/warps/kits/mail, **chest shops**, **AH**, claims |
 | `yap-moderation.jar` | YaPModeration | Ban / mute / warn / kick + history |
 | `yap-essentials.jar` | YaPEssentials | Essentials-class QoL (`/spawn`, `/tpa`, `/fly`, `/vanish`, …) |
+| `yap-commands.jar` | YaPCommands | YAML custom `/commands` (dashboard CRUD) |
 | `yap-chat.jar` | YaPChat | Channels, PM, filter, staff chat |
 | `yap-packs.jar` | YaPPacks | Multi resource-pack push |
 | `yap-floodgate.jar` | YaPFloodgate | Bedrock identity without Floodgate jar |
@@ -232,7 +233,7 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-pregen.jar` | YaPPregen | Folia-safe chunk pre-generator |
 | `yap-folia-bridge.jar` | YaPFoliaBridge | Folia surface / scheduler smoke |
 | `yap-protect.jar` | YaPProtect | CoreProtect-class audit / rollback / restore |
-| `yap-world.jar` | YaPWorld | FAWE-class edit (masks, brushes, schems) + world mgmt |
+| `yap-world.jar` | YaPWorld | FAWE-class edit (masks, brushes, generate, lighting, schems) + world mgmt |
 | `yap-regions.jar` | YaPRegions | WorldGuard-class cuboid flags |
 | `yap-npcs.jar` | YaPNpcs | Quest NPCs + dialogue |
 | `yap-tab.jar` | YaPTab | Tab list / header / footer / sidebar |
@@ -247,7 +248,7 @@ Sources live under `yap-first-party/`. Install tiers:
 
 | Jar | Plugin | Role |
 |-----|--------|------|
-| `yap-vehicles.jar` | YaPVehicles | Real vehicle mechanics (not minecarts) |
+| `yap-vehicles.jar` | YaPVehicles | Real vehicle mechanics (not minecarts); Automobility MIT fleet pack |
 | `yap-stacker.jar` | YaPStacker | PDC mob / item / spawner stacker |
 | `yap-gameplay-knobs.jar` | YaPGameplayKnobs | YaP encyclopedia (Purpur-inspired; original code) |
 | `yap-skills.jar` | YaPSkills | 13 RS-style skills + `/skills` GUI |

@@ -149,7 +149,8 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
 - Finish live **12h soak-long** + in-game VFX / encyclopedia smoke before marketing the refreshed zip as soak-proven
 - Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production
-- Republish `releases/1.0.0.0/` zips after specialty-container + vehicles pack refresh (`gradle publishReleasesFolder`)
+
+`releases/1.0.0.0/` was republished after specialty-container + Automobility vehicles pack + YaPCommands / YaPWorld refresh (`gradle publishReleasesFolder`, 2026-09-04).
 
 ---
 

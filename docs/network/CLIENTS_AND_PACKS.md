@@ -106,8 +106,9 @@ resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
 Publish the **offer** zip (single file or `yap-active-bundle-*.zip`) to the edge docroot after changing actives.
 
 **Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Skies + YaP Water + YaP Vehicles + YaP Abilities) — built on
-`gradle prepareClientPack`. Credit / license: `resourcepacks/CREDITS.md`,
-`FAITHFUL_LICENSE.txt`.
+`gradle prepareClientPack` (GAMEPLAY: `YAP_INCLUDE_VEHICLES=1`). Credit / license:
+`resourcepacks/CREDITS.md`, `FAITHFUL_LICENSE.txt`, and (vehicles)
+`yap-vehicles/AUTOMOBILITY_LICENSE.txt` (Automobility MIT meshes).
 
 **Publish for Cloudflare:** after rebuilding the zip, copy it into nginx’s docroot
 (and optionally a hash-suffixed name so CF cannot serve a stale zip). Minecraft
