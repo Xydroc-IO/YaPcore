@@ -324,11 +324,11 @@ public final class FactionRepository {
 
     public void upsertInvite(FactionInvite invite) throws SQLException {
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_faction_invites (faction_id, player_uuid, invited_by, expires_at)
-                     VALUES (?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE invited_by = VALUES(invited_by), expires_at = VALUES(expires_at)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
+                     "yap_faction_invites",
+                     List.of("faction_id", "player_uuid"),
+                     List.of("faction_id", "player_uuid", "invited_by", "expires_at"),
+                     Map.of("invited_by", "EXCLUDED.invited_by", "expires_at", "EXCLUDED.expires_at")))) {
             ps.setLong(1, invite.factionId());
             ps.setString(2, invite.playerId().toString());
             ps.setString(3, invite.invitedBy().toString());
@@ -391,11 +391,11 @@ public final class FactionRepository {
             return;
         }
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_faction_relations (faction_id_a, faction_id_b, relation)
-                     VALUES (?, ?, ?)
-                     ON DUPLICATE KEY UPDATE relation = VALUES(relation)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
+                     "yap_faction_relations",
+                     List.of("faction_id_a", "faction_id_b"),
+                     List.of("faction_id_a", "faction_id_b", "relation"),
+                     Map.of("relation", "EXCLUDED.relation")))) {
             ps.setLong(1, pair.lowId());
             ps.setLong(2, pair.highId());
             ps.setString(3, relation.name());
@@ -434,11 +434,11 @@ public final class FactionRepository {
 
     public void linkClaim(FactionClaimOverlay overlay) throws SQLException {
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_faction_claims (claim_id, faction_id, power_cost)
-                     VALUES (?, ?, ?)
-                     ON DUPLICATE KEY UPDATE faction_id = VALUES(faction_id), power_cost = VALUES(power_cost)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
+                     "yap_faction_claims",
+                     List.of("claim_id"),
+                     List.of("claim_id", "faction_id", "power_cost"),
+                     Map.of("faction_id", "EXCLUDED.faction_id", "power_cost", "EXCLUDED.power_cost")))) {
             ps.setLong(1, overlay.claimId());
             ps.setLong(2, overlay.factionId());
             ps.setInt(3, overlay.powerCost());

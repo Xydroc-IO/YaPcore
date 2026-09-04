@@ -27,6 +27,7 @@ dependencies {
     }
     implementation(project(":yap-playerdata-api"))
     implementation(project(":yap-regions-api"))
+    compileOnly(project(":yap-db-api"))
 
     compileOnly(project(":yap-factions-api"))
 

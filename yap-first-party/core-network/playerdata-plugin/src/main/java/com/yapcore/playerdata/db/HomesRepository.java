@@ -7,8 +7,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import static java.util.Map.entry;
 
 public final class HomesRepository {
     private final Database database;
@@ -59,13 +62,20 @@ public final class HomesRepository {
     }
 
     public void upsert(UUID uuid, LocationRow loc) throws SQLException {
+        String sql = database.dialect().upsert(
+                "homes",
+                List.of("uuid", "name"),
+                List.of("uuid", "name", "server_id", "world", "x", "y", "z", "yaw", "pitch"),
+                Map.ofEntries(
+                        entry("server_id", "EXCLUDED.server_id"),
+                        entry("world", "EXCLUDED.world"),
+                        entry("x", "EXCLUDED.x"),
+                        entry("y", "EXCLUDED.y"),
+                        entry("z", "EXCLUDED.z"),
+                        entry("yaw", "EXCLUDED.yaw"),
+                        entry("pitch", "EXCLUDED.pitch")));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO homes (uuid, name, server_id, world, x, y, z, yaw, pitch)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE server_id=VALUES(server_id), world=VALUES(world),
-                       x=VALUES(x), y=VALUES(y), z=VALUES(z), yaw=VALUES(yaw), pitch=VALUES(pitch)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, loc.name().toLowerCase(Locale.ROOT));
             ps.setString(3, loc.serverId());

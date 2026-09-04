@@ -1,10 +1,13 @@
 package com.yapcore.perms.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbEngine;
+import com.yapcore.db.YapDbProvider;
+import com.yapcore.db.YapSqlDialect;
+import com.yapcore.db.YapSqlDialects;
 import com.yapcore.perms.PermsConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.Connection;
@@ -18,17 +21,23 @@ public final class PermsDatabase implements AutoCloseable {
     private HikariDataSource embedded;
     private YapDb shared;
     private boolean usingShared;
+    private YapSqlDialect dialect = YapSqlDialects.mysql();
 
     public PermsDatabase(JavaPlugin plugin, PermsConfig config) {
         this.plugin = plugin;
         this.config = config;
     }
 
+    public YapSqlDialect dialect() {
+        return dialect;
+    }
+
     public void open() throws SQLException {
         if (config.useSharedYapDb()) {
-            var reg = Bukkit.getServicesManager().getRegistration(YapDb.class);
-            if (reg != null && reg.getProvider().isOpen()) {
-                shared = reg.getProvider();
+            var sharedOpt = YapDbProvider.find();
+            if (sharedOpt.isPresent()) {
+                shared = sharedOpt.get();
+                dialect = shared.dialect();
                 usingShared = true;
                 migrate();
                 plugin.getLogger().info("YaPPerms using shared YaPDB pool (" + shared.jdbcUrl() + ")");
@@ -37,15 +46,22 @@ public final class PermsDatabase implements AutoCloseable {
             plugin.getLogger().warning("use-shared-yapdb=true but YaPDB unavailable — embedded pool");
         }
         usingShared = false;
+        dialect = YapSqlDialects.fromJdbcUrl(config.jdbcUrl());
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(config.jdbcUrl());
-        hc.setUsername(config.jdbcUser());
-        hc.setPassword(config.jdbcPassword());
-        hc.setMaximumPoolSize(config.poolMax());
-        hc.setMinimumIdle(config.poolMinIdle());
+        if (dialect.engine() != YapDbEngine.SQLITE) {
+            hc.setUsername(config.jdbcUser());
+            hc.setPassword(config.jdbcPassword());
+        }
+        int max = dialect.preferMaxPoolSize(config.poolMax());
+        int minIdle = dialect.engine() == YapDbEngine.SQLITE ? 1 : config.poolMinIdle();
+        hc.setMaximumPoolSize(max);
+        hc.setMinimumIdle(Math.min(minIdle, max));
         hc.setConnectionTimeout(config.connectionTimeoutMs());
         hc.setPoolName("YaPPerms");
-        hc.addDataSourceProperty("cachePrepStmts", "true");
+        if (dialect.preferMysqlPrepStmtCache()) {
+            hc.addDataSourceProperty("cachePrepStmts", "true");
+        }
         embedded = new HikariDataSource(hc);
         migrate();
         plugin.getLogger().info("YaPPerms embedded pool ready (" + config.jdbcUrl() + ")");
@@ -72,21 +88,21 @@ public final class PermsDatabase implements AutoCloseable {
                     CREATE TABLE IF NOT EXISTS yap_perms_group_nodes (
                       group_name VARCHAR(32) NOT NULL,
                       node VARCHAR(128) NOT NULL,
-                      value TINYINT(1) NOT NULL,
+                      value %s NOT NULL,
                       world VARCHAR(64) NOT NULL DEFAULT '',
                       server_ctx VARCHAR(64) NOT NULL DEFAULT '',
                       expires_at TIMESTAMP NULL,
                       PRIMARY KEY (group_name, node, world, server_ctx)
                     )
-                    """);
+                    """.formatted(dialect.booleanType()));
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_perms_users (
                       uuid CHAR(36) PRIMARY KEY,
                       name VARCHAR(16) NOT NULL,
                       primary_group VARCHAR(32) NOT NULL DEFAULT 'default',
-                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                      %s
                     )
-                    """);
+                    """.formatted(dialect.timestampTouchColumn("updated_at")));
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_perms_user_parents (
                       uuid CHAR(36) NOT NULL,
@@ -98,13 +114,13 @@ public final class PermsDatabase implements AutoCloseable {
                     CREATE TABLE IF NOT EXISTS yap_perms_user_nodes (
                       uuid CHAR(36) NOT NULL,
                       node VARCHAR(128) NOT NULL,
-                      value TINYINT(1) NOT NULL,
+                      value %s NOT NULL,
                       world VARCHAR(64) NOT NULL DEFAULT '',
                       server_ctx VARCHAR(64) NOT NULL DEFAULT '',
                       expires_at TIMESTAMP NULL,
                       PRIMARY KEY (uuid, node, world, server_ctx)
                     )
-                    """);
+                    """.formatted(dialect.booleanType()));
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_perms_tracks (
                       name VARCHAR(32) NOT NULL,
@@ -133,7 +149,7 @@ public final class PermsDatabase implements AutoCloseable {
     }
 
     /** Existing 1.0 installs had (group/uuid, node) only — add context + expiry. */
-    private static void migrateNodeContexts(Statement st) {
+    private void migrateNodeContexts(Statement st) {
         addColumn(st, "yap_perms_group_nodes", "world", "VARCHAR(64) NOT NULL DEFAULT ''");
         addColumn(st, "yap_perms_group_nodes", "server_ctx", "VARCHAR(64) NOT NULL DEFAULT ''");
         addColumn(st, "yap_perms_group_nodes", "expires_at", "TIMESTAMP NULL");

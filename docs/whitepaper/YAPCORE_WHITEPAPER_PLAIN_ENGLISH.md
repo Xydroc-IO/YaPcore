@@ -115,7 +115,7 @@ YaP first-party plugins declare `folia-supported: true` and schedule through tho
 
 ## 5. What you get “in the box”
 
-**Always (CORE+NETWORK):** shared MariaDB pool, ranks, player sync + economy + shops + AH + claims, moderation, essentials QoL, YAML custom `/commands` (dashboard editable), chat, packs, PlaceholderAPI, pregen, protect, world tools (FAWE-class edit + schematics), regions, NPCs, TAB, Discord webhooks, anti-cheat lite, lag guard, web map, factions, Bedrock identity/UI bridge.
+**Always (CORE+NETWORK):** shared SQL pool (MariaDB / Postgres / SQLite), ranks, player sync + economy + shops + AH + claims, moderation, essentials QoL, YAML custom `/commands` (dashboard editable), chat, packs, PlaceholderAPI, pregen, protect, world tools (FAWE-class edit + schematics), regions, NPCs, TAB, Discord webhooks, anti-cheat lite, lag guard, web map, factions, Bedrock identity/UI bridge.
 
 **Optional (GAMEPLAY):** vehicles (custom physics + Automobility MIT fleet art in the client pack), mob stacker, gameplay knobs, and the MMO pack (13 skills, custom combat, crafting, quests/bosses, abilities, guilds, minigames, Bedrock MMO UI).
 

@@ -36,7 +36,7 @@ Install, setup, and lifecycle helpers for operators.
 | `apply-production-profile.sh` | Public production keys |
 | `setup-velocity-forwarding.sh` | Velocity forwarding secret |
 | `nginx-setup.sh` | nginx edge template install |
-| `db/*.sh` | MariaDB + JDBC setup |
+| `db/*.sh` | MariaDB / Postgres / SQLite JDBC setup |
 | `windows/*.ps1` | Windows equivalents |
 | `content/generate-mmo-quest-compendium.py` | Validate MMO quest YAML objective types (Wave 3) |
 | `generate-ability-pack.py` | Regenerate bulk ability YAML with V2 element/archetype VFX kits (`docs/mmo/MMO_ABILITY_VFX.md`) |

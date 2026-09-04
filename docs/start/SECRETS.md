@@ -20,6 +20,7 @@ cp deploy/mariadb/.env.example deploy/mariadb/.env   # edit passwords first
 |--------|----------|--------------|-------|
 | **MariaDB app password** | `deploy/mariadb/.env` → `YAP_DB_PASSWORD` | No | `./configure-db.sh` copies into `plugins/YaPDB/config.yml` |
 | **MariaDB root password** | `deploy/mariadb/.env` → `YAP_DB_ROOT_PASSWORD` | No | Docker only; change before exposing DB |
+| **Postgres password** | `deploy/postgres/.env` → `YAP_DB_PASSWORD` | No | `./configure-db.sh --engine postgres` |
 | **JDBC password (fallback)** | `plugins/YaPPlayerData/config.yml` → `jdbc.password` | No | Used only if YaPDB missing |
 | **Web dashboard token** | `config/server.properties` → `web-dashboard-token` | **Yes** — Admin → rotate token | Auto-generated on first boot if empty |
 | **Minecraft OPs** | `config/server.properties` → `ops` | **Yes** — Access & ranks | Comma-separated names |
@@ -78,6 +79,9 @@ Tracked templates use placeholders only: `config/defaults/`, `*.example`, `deplo
 |-----|--------|
 | [DEFAULTS.md](DEFAULTS.md) | First-boot seed layout |
 | [MARIADB.md](../data/MARIADB.md) | Docker MariaDB setup |
+| [POSTGRES.md](../data/POSTGRES.md) | Docker Postgres setup |
+| [SQLITE.md](../data/SQLITE.md) | Single-node SQLite |
+| [YAPDB.md](../data/YAPDB.md) | Shared pool + engines |
 | [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) | Token login, Admin tab |
 | [DISCORD_RELAY.md](../ops/DISCORD_RELAY.md) | Webhook + inbound setup |
 | [EDGE_HARDEN.md](../network/EDGE_HARDEN.md) | Public exposure checklist |

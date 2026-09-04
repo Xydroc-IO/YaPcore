@@ -15,7 +15,7 @@ public final class ProxySessionLock {
 
     public static Optional<String> lockHolder(Connection c, UUID uuid) throws Exception {
         try (PreparedStatement ps = c.prepareStatement(
-                "SELECT lock_server FROM yap_players WHERE uuid = ?")) {
+                "SELECT lock_server, lock_until FROM players WHERE uuid = ?")) {
             ps.setString(1, uuid.toString());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {

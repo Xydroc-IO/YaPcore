@@ -11,7 +11,7 @@ import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Bukkit YAML ItemStack[] ↔ bytes for MEDIUMBLOB columns.
+ * Bukkit YAML ItemStack[] ↔ bytes for dialect blob columns.
  */
 public final class ItemSerializer {
 

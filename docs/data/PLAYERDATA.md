@@ -1,22 +1,28 @@
 # YaP PlayerData — cross-server sync, offline auth, claims, taxes, NPC traders, GUIs
 
-First-party **`yap-playerdata.jar`** (`YaPPlayerData`) — shared MariaDB across
+First-party **`yap-playerdata.jar`** (`YaPPlayerData`) — shared SQL across
 **YaP Link** (or Velocity) backends running **YaP-Folia**.
 
 ## Database setup (required)
 
-See **[MARIADB.md](MARIADB.md)** and **[YAPDB.md](YAPDB.md)** — Docker MariaDB + shared `yap-db.jar` pool:
+See **[YAPDB.md](YAPDB.md)** — shared `yap-db.jar` pool. Default is MariaDB; Postgres and SQLite are also supported:
 
 ```bash
-# Linux (preferred one-shot)
+# MariaDB (default, multi-backend OK)
 ./scripts/db/ensure-db.sh --server-id lobby
 
-# Windows PowerShell
+# PostgreSQL (multi-backend OK)
+./scripts/db/ensure-postgres.sh --server-id lobby
+
+# SQLite (single-node only)
+./scripts/db/configure-db.sh --engine sqlite --server-id lobby
+
+# Windows PowerShell (MariaDB)
 .\scripts\windows\Start-MariaDB.ps1
 .\scripts\windows\Configure-Db.ps1 -ServerId lobby
 ```
 
-YaPPlayerData prefers the shared YaPDB pool (`use-shared-yapdb: true`). Multi-backend: same JDBC, unique `server-id`.
+YaPPlayerData prefers the shared YaPDB pool (`use-shared-yapdb: true`). Multi-backend: same JDBC, unique `server-id` (MariaDB or Postgres — not SQLite).
 
 ## Session lock (double-login)
 

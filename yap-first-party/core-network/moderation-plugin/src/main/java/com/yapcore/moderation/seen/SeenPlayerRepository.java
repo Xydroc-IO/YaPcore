@@ -1,5 +1,7 @@
 package com.yapcore.moderation.seen;
 
+import com.yapcore.db.YapDbEngine;
+import com.yapcore.db.YapSqlDialect;
 import com.yapcore.moderation.db.ModerationDatabase;
 
 import java.io.IOException;
@@ -27,9 +29,11 @@ public final class SeenPlayerRepository {
     }
 
     private final ModerationDatabase database;
+    private final YapSqlDialect dialect;
 
     public SeenPlayerRepository(ModerationDatabase database) {
         this.database = database;
+        this.dialect = database.dialect();
     }
 
     public void migrate() throws SQLException {
@@ -41,21 +45,48 @@ public final class SeenPlayerRepository {
                       nickname VARCHAR(64) NOT NULL DEFAULT '',
                       last_ip VARCHAR(45) NOT NULL DEFAULT '',
                       first_seen BIGINT NOT NULL,
-                      last_seen BIGINT NOT NULL,
-                      INDEX idx_seen_name (username),
-                      INDEX idx_seen_ip (last_ip),
-                      INDEX idx_seen_last (last_seen)
+                      last_seen BIGINT NOT NULL
                     )
                     """);
-            st.execute("""
+            createIndex(st, "idx_seen_name", "yap_seen_players", "username");
+            createIndex(st, "idx_seen_ip", "yap_seen_players", "last_ip");
+            createIndex(st, "idx_seen_last", "yap_seen_players", "last_seen");
+            st.execute(seedFromKnownIpsSql());
+        }
+    }
+
+    private String seedFromKnownIpsSql() {
+        String select = """
+                SELECT k.uuid, '', '', k.ip_address, k.last_seen, k.last_seen
+                FROM yap_mod_known_ips k
+                INNER JOIN (
+                  SELECT uuid, MAX(last_seen) AS mx FROM yap_mod_known_ips GROUP BY uuid
+                ) latest ON latest.uuid = k.uuid AND latest.mx = k.last_seen
+                """;
+        return switch (dialect.engine()) {
+            case MYSQL -> """
                     INSERT IGNORE INTO yap_seen_players
                       (uuid, username, nickname, last_ip, first_seen, last_seen)
-                    SELECT k.uuid, '', '', k.ip_address, k.last_seen, k.last_seen
-                    FROM yap_mod_known_ips k
-                    INNER JOIN (
-                      SELECT uuid, MAX(last_seen) AS mx FROM yap_mod_known_ips GROUP BY uuid
-                    ) latest ON latest.uuid = k.uuid AND latest.mx = k.last_seen
-                    """);
+                    """ + select;
+            case POSTGRES -> """
+                    INSERT INTO yap_seen_players
+                      (uuid, username, nickname, last_ip, first_seen, last_seen)
+                    """ + select + " ON CONFLICT DO NOTHING";
+            case SQLITE -> """
+                    INSERT OR IGNORE INTO yap_seen_players
+                      (uuid, username, nickname, last_ip, first_seen, last_seen)
+                    """ + select;
+        };
+    }
+
+    private void createIndex(Statement st, String name, String table, String cols) {
+        try {
+            String sql = dialect.engine() == YapDbEngine.MYSQL
+                    ? "CREATE INDEX " + name + " ON " + table + " (" + cols + ")"
+                    : "CREATE INDEX IF NOT EXISTS " + name + " ON " + table + " (" + cols + ")";
+            st.execute(sql);
+        } catch (SQLException ignored) {
+            // already exists
         }
     }
 
@@ -67,17 +98,17 @@ public final class SeenPlayerRepository {
         String name = truncate(username, 16);
         String nick = truncate(nickname == null ? "" : nickname, 64);
         String lastIp = ip == null ? "" : ip.trim();
+        String sql = dialect.upsert(
+                "yap_seen_players",
+                List.of("uuid"),
+                List.of("uuid", "username", "nickname", "last_ip", "first_seen", "last_seen"),
+                Map.of(
+                        "username", "EXCLUDED.username",
+                        "nickname", "CASE WHEN EXCLUDED.nickname = '' THEN nickname ELSE EXCLUDED.nickname END",
+                        "last_ip", "CASE WHEN EXCLUDED.last_ip = '' THEN last_ip ELSE EXCLUDED.last_ip END",
+                        "last_seen", "EXCLUDED.last_seen"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_seen_players
-                       (uuid, username, nickname, last_ip, first_seen, last_seen)
-                     VALUES (?,?,?,?,?,?)
-                     ON DUPLICATE KEY UPDATE
-                       username = VALUES(username),
-                       nickname = IF(VALUES(nickname) = '', nickname, VALUES(nickname)),
-                       last_ip = IF(VALUES(last_ip) = '', last_ip, VALUES(last_ip)),
-                       last_seen = VALUES(last_seen)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, name);
             ps.setString(3, nick);
@@ -171,17 +202,23 @@ public final class SeenPlayerRepository {
 
     public Map<String, String> knownIpsByUuid() throws SQLException {
         Map<String, String> out = new LinkedHashMap<>();
+        String aggSql = switch (dialect.engine()) {
+            case MYSQL -> "SELECT uuid, GROUP_CONCAT(ip_address ORDER BY last_seen DESC SEPARATOR ',') AS ips "
+                    + "FROM yap_mod_known_ips GROUP BY uuid";
+            case POSTGRES -> "SELECT uuid, string_agg(ip_address, ',' ORDER BY last_seen DESC) AS ips "
+                    + "FROM yap_mod_known_ips GROUP BY uuid";
+            case SQLITE -> "SELECT uuid, GROUP_CONCAT(ip_address) AS ips "
+                    + "FROM (SELECT uuid, ip_address FROM yap_mod_known_ips ORDER BY last_seen DESC) "
+                    + "GROUP BY uuid";
+        };
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "SELECT uuid, GROUP_CONCAT(ip_address ORDER BY last_seen DESC SEPARATOR ',') AS ips "
-                             + "FROM yap_mod_known_ips GROUP BY uuid")) {
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String uuid = rs.getString("uuid");
-                    String ips = rs.getString("ips");
-                    if (uuid != null && ips != null && !ips.isBlank()) {
-                        out.put(uuid, ips);
-                    }
+             PreparedStatement ps = c.prepareStatement(aggSql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                String uuid = rs.getString("uuid");
+                String ips = rs.getString("ips");
+                if (uuid != null && ips != null && !ips.isBlank()) {
+                    out.put(uuid, ips);
                 }
             }
         } catch (SQLException e) {
@@ -213,14 +250,17 @@ public final class SeenPlayerRepository {
             return;
         }
         String name = truncate(username, 16);
+        String sql = dialect.insertIgnore(
+                "yap_seen_players",
+                List.of("uuid", "username", "nickname", "last_ip", "first_seen", "last_seen"));
         try (Connection c = database.connection();
-             PreparedStatement ins = c.prepareStatement("""
-                     INSERT IGNORE INTO yap_seen_players
-                       (uuid, username, nickname, last_ip, first_seen, last_seen)
-                     VALUES (?, ?, '', '', 0, 0)
-                     """)) {
+             PreparedStatement ins = c.prepareStatement(sql)) {
             ins.setString(1, uuid.toString());
             ins.setString(2, name);
+            ins.setString(3, "");
+            ins.setString(4, "");
+            ins.setLong(5, 0L);
+            ins.setLong(6, 0L);
             ins.executeUpdate();
         }
         applyUsername(uuid, name);

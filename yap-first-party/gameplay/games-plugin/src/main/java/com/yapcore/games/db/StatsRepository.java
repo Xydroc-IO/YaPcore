@@ -1,5 +1,6 @@
 package com.yapcore.games.db;
 
+import com.yapcore.db.YapSqlDialect;
 import com.yapcore.games.GameModeId;
 import com.yapcore.games.PlayerGameStats;
 
@@ -8,7 +9,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -24,15 +27,19 @@ public final class StatsRepository {
         if (!database.isOpen()) {
             return;
         }
+        YapSqlDialect dialect = database.dialect();
+        Map<String, String> set = new LinkedHashMap<>();
+        set.put("wins", "wins + EXCLUDED.wins");
+        set.put("kills", "kills + EXCLUDED.kills");
+        set.put("deaths", "deaths + EXCLUDED.deaths");
+        set.put("updated_at", dialect.nowFn());
+        String sql = dialect.upsert(
+                "yap_games_stats",
+                List.of("player_uuid", "mode_id"),
+                List.of("player_uuid", "mode_id", "wins", "kills", "deaths"),
+                set);
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_games_stats (player_uuid, mode_id, wins, kills, deaths)
-                     VALUES (?, ?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE
-                       wins = wins + VALUES(wins),
-                       kills = kills + VALUES(kills),
-                       deaths = deaths + VALUES(deaths)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, playerId.toString());
             ps.setString(2, mode.id());
             ps.setInt(3, won ? 1 : 0);

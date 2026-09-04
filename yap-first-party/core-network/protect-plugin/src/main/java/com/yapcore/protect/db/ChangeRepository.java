@@ -190,9 +190,10 @@ public final class ChangeRepository {
         String placeholders = String.join(",", ids.stream().map(id -> "?").toList());
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_protect_changes SET rolled_back = 1 WHERE id IN (" + placeholders + ")")) {
+                     "UPDATE yap_protect_changes SET rolled_back = ? WHERE id IN (" + placeholders + ")")) {
+            ps.setBoolean(1, true);
             for (int i = 0; i < ids.size(); i++) {
-                ps.setLong(i + 1, ids.get(i));
+                ps.setLong(i + 2, ids.get(i));
             }
             ps.executeUpdate();
         }
@@ -205,9 +206,10 @@ public final class ChangeRepository {
         String placeholders = String.join(",", ids.stream().map(id -> "?").toList());
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_protect_changes SET rolled_back = 0 WHERE id IN (" + placeholders + ")")) {
+                     "UPDATE yap_protect_changes SET rolled_back = ? WHERE id IN (" + placeholders + ")")) {
+            ps.setBoolean(1, false);
             for (int i = 0; i < ids.size(); i++) {
-                ps.setLong(i + 1, ids.get(i));
+                ps.setLong(i + 2, ids.get(i));
             }
             ps.executeUpdate();
         }

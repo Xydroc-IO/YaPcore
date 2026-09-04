@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -50,11 +51,10 @@ public final class RecipeUnlockRepository {
     }
 
     public void unlockSync(UUID playerId, String recipeId) throws SQLException {
+        String sql = database.dialect().insertIgnore(
+                "yap_mmo_recipe_unlocks", List.of("player_uuid", "recipe_id"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT IGNORE INTO yap_mmo_recipe_unlocks (player_uuid, recipe_id)
-                     VALUES (?, ?)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, playerId.toString());
             ps.setString(2, recipeId);
             ps.executeUpdate();

@@ -20,7 +20,7 @@ Operator docs for install, configuration, plugins, and gameplay features.
 | [**ops/**](ops/) | Commands, permissions, dashboard, tune |
 | [**network/**](network/) | Ports, crossplay, nginx, YaP Link, edge hardening |
 | [**plugins/**](plugins/) | Plugin list, modules, vehicles, stacker, compat |
-| [**data/**](data/) | YaPDB, MariaDB, playerdata |
+| [**data/**](data/) | YaPDB, MariaDB, Postgres, SQLite, playerdata |
 | [**mmo/**](mmo/) | Opt-in MMO gameplay |
 | [**gameplay/**](gameplay/) | Guilds, factions, regions |
 | [**whitepaper/**](whitepaper/) | Technical architecture |

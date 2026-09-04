@@ -17,6 +17,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
+import static java.util.Map.entry;
+
 public final class PermsRepository {
 
     public record GroupRow(String name, int weight, String prefix, String suffix,
@@ -189,10 +191,11 @@ public final class PermsRepository {
 
     void setGroupNode(Connection c, String group, String node, boolean value,
                               String world, String server, Instant expires) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement(
-                "INSERT INTO yap_perms_group_nodes (group_name, node, value, world, server_ctx, expires_at) "
-                        + "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE value=VALUES(value), "
-                        + "expires_at=VALUES(expires_at)")) {
+        try (PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
+                "yap_perms_group_nodes",
+                List.of("group_name", "node", "world", "server_ctx"),
+                List.of("group_name", "node", "value", "world", "server_ctx", "expires_at"),
+                Map.of("value", "EXCLUDED.value", "expires_at", "EXCLUDED.expires_at")))) {
             ps.setString(1, group.toLowerCase());
             ps.setString(2, node);
             ps.setInt(3, value ? 1 : 0);
@@ -272,11 +275,17 @@ public final class PermsRepository {
 
     void upsertGroup(Connection c, String name, int weight, String prefix, String suffix,
                              String nameColor, String chatColor) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement(
-                "INSERT INTO yap_perms_groups (name, weight, prefix, suffix, name_color, chat_color) "
-                        + "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE weight=VALUES(weight), "
-                        + "prefix=VALUES(prefix), suffix=VALUES(suffix), "
-                        + "name_color=VALUES(name_color), chat_color=VALUES(chat_color)")) {
+        String sql = database.dialect().upsert(
+                "yap_perms_groups",
+                List.of("name"),
+                List.of("name", "weight", "prefix", "suffix", "name_color", "chat_color"),
+                Map.ofEntries(
+                        entry("weight", "EXCLUDED.weight"),
+                        entry("prefix", "EXCLUDED.prefix"),
+                        entry("suffix", "EXCLUDED.suffix"),
+                        entry("name_color", "EXCLUDED.name_color"),
+                        entry("chat_color", "EXCLUDED.chat_color")));
+        try (PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, name.toLowerCase());
             ps.setInt(2, weight);
             ps.setString(3, prefix == null ? "" : prefix);
@@ -405,13 +414,14 @@ public final class PermsRepository {
 
     public int purgeExpired() throws SQLException {
         int n = 0;
+        String now = database.dialect().nowFn();
         try (Connection c = database.connection()) {
             try (PreparedStatement ps = c.prepareStatement(
-                    "DELETE FROM yap_perms_user_nodes WHERE expires_at IS NOT NULL AND expires_at <= NOW()")) {
+                    "DELETE FROM yap_perms_user_nodes WHERE expires_at IS NOT NULL AND expires_at <= " + now)) {
                 n += ps.executeUpdate();
             }
             try (PreparedStatement ps = c.prepareStatement(
-                    "DELETE FROM yap_perms_group_nodes WHERE expires_at IS NOT NULL AND expires_at <= NOW()")) {
+                    "DELETE FROM yap_perms_group_nodes WHERE expires_at IS NOT NULL AND expires_at <= " + now)) {
                 n += ps.executeUpdate();
             }
         }

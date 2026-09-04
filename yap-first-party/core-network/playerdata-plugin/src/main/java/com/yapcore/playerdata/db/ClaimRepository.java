@@ -207,11 +207,13 @@ public final class ClaimRepository {
     }
 
     public void setTrust(long claimId, UUID player, TrustLevel level) throws SQLException {
+        String sql = database.dialect().upsert(
+                "claim_trust",
+                List.of("claim_id", "player_uuid"),
+                List.of("claim_id", "player_uuid", "level"),
+                Map.of("level", "EXCLUDED.level"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO claim_trust (claim_id, player_uuid, level) VALUES (?, ?, ?)
-                     ON DUPLICATE KEY UPDATE level = VALUES(level)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, claimId);
             ps.setString(2, player.toString());
             ps.setString(3, level.name());
@@ -242,7 +244,7 @@ public final class ClaimRepository {
         }
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(
-                     "INSERT IGNORE INTO claim_balances (uuid, blocks) VALUES (?, ?)")) {
+                     database.dialect().insertIgnore("claim_balances", List.of("uuid", "blocks")))) {
             ps.setString(1, uuid.toString());
             ps.setInt(2, defaultBlocks);
             ps.executeUpdate();
@@ -251,11 +253,13 @@ public final class ClaimRepository {
     }
 
     public void setBlocks(UUID uuid, int blocks) throws SQLException {
+        String sql = database.dialect().upsert(
+                "claim_balances",
+                List.of("uuid"),
+                List.of("uuid", "blocks"),
+                Map.of("blocks", "EXCLUDED.blocks"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO claim_balances (uuid, blocks) VALUES (?, ?)
-                     ON DUPLICATE KEY UPDATE blocks = VALUES(blocks)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setInt(2, Math.max(0, blocks));
             ps.executeUpdate();

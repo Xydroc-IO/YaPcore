@@ -1,10 +1,13 @@
 package com.yapcore.npcs.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbEngine;
+import com.yapcore.db.YapDbProvider;
+import com.yapcore.db.YapSqlDialect;
+import com.yapcore.db.YapSqlDialects;
 import com.yapcore.npcs.NpcsConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.Connection;
@@ -13,37 +16,55 @@ import java.sql.Statement;
 
 public final class NpcDatabase implements AutoCloseable {
 
+    private static final String FALLBACK_JDBC =
+            "jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true";
+
     private final JavaPlugin plugin;
     private final NpcsConfig config;
     private HikariDataSource embedded;
     private YapDb shared;
     private boolean usingShared;
+    private YapSqlDialect dialect = YapSqlDialects.mysql();
 
     public NpcDatabase(JavaPlugin plugin, NpcsConfig config) {
         this.plugin = plugin;
         this.config = config;
     }
 
+    public YapSqlDialect dialect() {
+        return dialect;
+    }
+
     public void open() throws SQLException {
-        var reg = Bukkit.getServicesManager().getRegistration(YapDb.class);
-        if (reg != null && reg.getProvider().isOpen()) {
-            shared = reg.getProvider();
+        var found = YapDbProvider.find();
+        if (found.isPresent()) {
+            shared = found.get();
+            dialect = shared.dialect();
             usingShared = true;
             migrate();
-            plugin.getLogger().info("YaPNpcs using shared YaPDB pool");
+            plugin.getLogger().info("YaPNpcs using shared YaPDB pool (" + dialect.engine() + ")");
             return;
         }
         usingShared = false;
+        dialect = YapSqlDialects.fromJdbcUrl(FALLBACK_JDBC);
         HikariConfig hc = new HikariConfig();
-        hc.setJdbcUrl("jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true");
-        hc.setUsername("yap");
-        hc.setPassword("yap");
-        hc.setMaximumPoolSize(4);
+        hc.setJdbcUrl(FALLBACK_JDBC);
+        if (dialect.engine() != YapDbEngine.SQLITE) {
+            hc.setUsername("yap");
+            hc.setPassword("yap");
+        }
+        hc.setMaximumPoolSize(dialect.preferMaxPoolSize(4));
         hc.setMinimumIdle(1);
         hc.setPoolName("YaPNpcs");
+        if (dialect.preferMysqlPrepStmtCache()) {
+            hc.addDataSourceProperty("cachePrepStmts", "true");
+            hc.addDataSourceProperty("prepStmtCacheSize", "250");
+            hc.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        }
         embedded = new HikariDataSource(hc);
         migrate();
-        plugin.getLogger().warning("YaPNpcs using embedded pool — configure YaPDB for production");
+        plugin.getLogger().warning("YaPNpcs using embedded pool (" + dialect.engine()
+                + ") — configure YaPDB for production");
     }
 
     public void migrate() throws SQLException {
@@ -70,11 +91,14 @@ public final class NpcDatabase implements AutoCloseable {
                       quest_id VARCHAR(64) NOT NULL,
                       objective_id VARCHAR(64) NOT NULL,
                       progress INT NOT NULL DEFAULT 0,
-                      completed TINYINT(1) NOT NULL DEFAULT 0,
-                      PRIMARY KEY (player_uuid, quest_id, objective_id),
-                      INDEX idx_player (player_uuid)
+                      completed %s NOT NULL DEFAULT 0,
+                      PRIMARY KEY (player_uuid, quest_id, objective_id)
                     )
-                    """);
+                    """.formatted(dialect.booleanType()));
+            try {
+                st.execute("CREATE INDEX IF NOT EXISTS idx_player ON yap_quest_progress (player_uuid)");
+            } catch (SQLException ignored) {
+            }
         }
     }
 

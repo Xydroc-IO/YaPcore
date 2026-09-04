@@ -236,6 +236,12 @@ tasks.register("assembleRelease") {
                 // .env is gitignored; ship example only
                 exclude(".env")
             }
+            project.copy {
+                from(project.file("deploy/postgres"))
+                into(dest.resolve("deploy/postgres"))
+                exclude("**/generated/**")
+                exclude(".env")
+            }
             // Optional Folia jar cache if present on builder host.
             // Prefer shipping yap-folia when built; stock folia-* remains fallback.
             val libDir = project.file("lib")
@@ -340,10 +346,20 @@ tasks.register("assembleRelease") {
             include("*.sh")
         }
         writeLinuxWrappers(linux)
-        listOf("start-mariadb", "stop-mariadb", "configure-playerdata", "configure-db").forEach { name ->
+        listOf(
+            "start-mariadb",
+            "stop-mariadb",
+            "start-postgres",
+            "ensure-postgres",
+            "status-postgres",
+            "configure-playerdata",
+            "configure-db",
+            "ensure-db",
+        ).forEach { name ->
             val script = when (name) {
                 "configure-playerdata" -> "configure-playerdata.sh"
                 "configure-db" -> "configure-db.sh"
+                "ensure-db" -> "ensure-db.sh"
                 else -> "$name.sh"
             }
             val wrapper = linux.resolve("$name.sh")
@@ -370,6 +386,8 @@ tasks.register("assembleRelease") {
               chmod +x *.sh scripts/*.sh scripts/db/*.sh scripts/yapctl
               ./scripts/seed-defaults.sh   # first boot configs (safe if already present)
               ./configure-db.sh --server-id lobby   # MariaDB + JDBC (recommended)
+              # or: ./ensure-postgres.sh --server-id lobby
+              # or: ./configure-db.sh --engine sqlite --server-id lobby
               ./start.sh --fg
               ./gui.sh
               ./stop.sh
@@ -381,14 +399,13 @@ tasks.register("assembleRelease") {
               config/defaults/ is copied into place on first start (never overwrites).
               See docs/start/DEFAULTS.md
 
-            MariaDB (YaPPlayerData — single or multi-backend)
-            -------------------------------------------------
-              ./start-mariadb.sh
-              ./configure-playerdata.sh
-              ./configure-db.sh --server-id lobby
+            Database (YaPDB — MariaDB default; Postgres / SQLite also supported)
+            -------------------------------------------------------------------
+              ./start-mariadb.sh && ./configure-db.sh --server-id lobby
+              ./ensure-postgres.sh --server-id lobby
+              ./configure-db.sh --engine sqlite --server-id lobby
               # multi-backend: ./configure-db.sh --host <db-ip> --server-id survival
-              ./stop-mariadb.sh
-              See docs/data/MARIADB.md
+              See docs/data/YAPDB.md · MARIADB.md · POSTGRES.md · SQLITE.md
 
             Folia (product game authority)
             ------------------------------
@@ -457,11 +474,11 @@ tasks.register("assembleRelease") {
 
             Pick your OS folder (each is a full self-contained server tree):
 
-              linux/     → bash: start, nginx-setup, start-mariadb, configure-db, configure-playerdata
+              linux/     → bash: start, nginx-setup, start-mariadb, start-postgres, configure-db, ensure-db, ensure-postgres
               windows/   → cmd:  start, nginx-setup, start-mariadb, configure-db, configure-playerdata
 
-            Both include deploy/nginx and deploy/mariadb.
-            See linux/RELEASE.txt, windows/RELEASE.txt, docs/start/RELEASES.md, docs/start/WINDOWS.md, docs/data/MARIADB.md.
+            Both include deploy/nginx, deploy/mariadb, and deploy/postgres.
+            See linux/RELEASE.txt, windows/RELEASE.txt, docs/start/RELEASES.md, docs/data/YAPDB.md.
 
             Standalone zips (also in build/dist/):
               yap-network-suite.zip   YaP Link + link plugins

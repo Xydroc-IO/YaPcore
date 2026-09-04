@@ -1,11 +1,14 @@
 package com.yapcore.npcs.db;
 
+import com.yapcore.db.YapSqlDialect;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -62,23 +65,27 @@ public final class QuestRepository {
 
     public int increment(UUID playerUuid, String questId, String objectiveId, int amount, int required)
             throws SQLException {
+        YapSqlDialect dialect = database.dialect();
+        Map<String, String> set = new LinkedHashMap<>();
+        set.put("progress", "LEAST(progress + ?, ?)");
+        set.put("completed", "CASE WHEN LEAST(progress + ?, ?) >= ? THEN 1 ELSE completed END");
+        String sql = dialect.upsert(
+                "yap_quest_progress",
+                List.of("player_uuid", "quest_id", "objective_id"),
+                List.of("player_uuid", "quest_id", "objective_id", "progress", "completed"),
+                set);
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_quest_progress (player_uuid, quest_id, objective_id, progress, completed)
-                     VALUES (?, ?, ?, ?, 0)
-                     ON DUPLICATE KEY UPDATE
-                       progress = LEAST(progress + ?, ?),
-                       completed = IF(LEAST(progress + ?, ?) >= ?, 1, completed)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, playerUuid.toString());
             ps.setString(2, questId);
             ps.setString(3, objectiveId);
             ps.setInt(4, amount);
-            ps.setInt(5, amount);
-            ps.setInt(6, required);
-            ps.setInt(7, amount);
-            ps.setInt(8, required);
+            ps.setInt(5, 0);
+            ps.setInt(6, amount);
+            ps.setInt(7, required);
+            ps.setInt(8, amount);
             ps.setInt(9, required);
+            ps.setInt(10, required);
             ps.executeUpdate();
         }
         return getProgress(playerUuid, questId, objectiveId);
@@ -128,14 +135,22 @@ public final class QuestRepository {
             ps.setString(2, questId);
             ps.executeUpdate();
         }
+        YapSqlDialect dialect = database.dialect();
+        Map<String, String> set = new LinkedHashMap<>();
+        set.put("completed", "1");
+        set.put("progress", "1");
+        String sql = dialect.upsert(
+                "yap_quest_progress",
+                List.of("player_uuid", "quest_id", "objective_id"),
+                List.of("player_uuid", "quest_id", "objective_id", "progress", "completed"),
+                set);
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_quest_progress (player_uuid, quest_id, objective_id, progress, completed)
-                     VALUES (?, ?, '__turned_in__', 1, 1)
-                     ON DUPLICATE KEY UPDATE completed = 1, progress = 1
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, playerUuid.toString());
             ps.setString(2, questId);
+            ps.setString(3, "__turned_in__");
+            ps.setInt(4, 1);
+            ps.setInt(5, 1);
             ps.executeUpdate();
         }
     }

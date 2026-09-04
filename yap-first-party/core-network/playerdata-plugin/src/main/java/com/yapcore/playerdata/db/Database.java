@@ -1,5 +1,10 @@
 package com.yapcore.playerdata.db;
 
+import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbEngine;
+import com.yapcore.db.YapDbProvider;
+import com.yapcore.db.YapSqlDialect;
+import com.yapcore.db.YapSqlDialects;
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.sync.ItemSerializer;
 import com.zaxxer.hikari.HikariConfig;
@@ -11,6 +16,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 
 /**
  * Schema migration + connections. Prefers shared YaPDB ({@code yap-db.jar});
@@ -20,23 +26,29 @@ public final class Database implements AutoCloseable {
 
     private final JavaPlugin plugin;
     private final PlayerDataConfig config;
-    private YapDbBridge.Handle shared;
+    private YapDb shared;
     private HikariDataSource dataSource;
     private boolean usingShared;
+    private YapSqlDialect dialect = YapSqlDialects.mysql();
 
     public Database(JavaPlugin plugin, PlayerDataConfig config) {
         this.plugin = plugin;
         this.config = config;
     }
 
+    public YapSqlDialect dialect() {
+        return dialect;
+    }
+
     public void open() throws SQLException {
         if (config.useSharedYapDb()) {
-            var opt = YapDbBridge.find(plugin.getLogger());
+            var opt = YapDbProvider.find();
             if (opt.isPresent()) {
                 shared = opt.get();
+                dialect = shared.dialect();
                 usingShared = true;
                 migrate();
-                plugin.getLogger().info("Using shared YaPDB pool (" + shared.url() + ")");
+                plugin.getLogger().info("Using shared YaPDB pool (" + shared.jdbcUrl() + ")");
                 return;
             }
             plugin.getLogger().warning("use-shared-yapdb=true but YaPDB is not available — using embedded pool. "
@@ -44,23 +56,35 @@ public final class Database implements AutoCloseable {
         }
 
         usingShared = false;
+        dialect = YapSqlDialects.fromJdbcUrl(config.jdbcUrl());
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(config.jdbcUrl());
-        hc.setUsername(config.jdbcUser());
-        hc.setPassword(config.jdbcPassword());
-        hc.setMaximumPoolSize(config.poolMax());
-        hc.setMinimumIdle(config.poolMinIdle());
+        if (dialect.engine() != YapDbEngine.SQLITE) {
+            hc.setUsername(config.jdbcUser());
+            hc.setPassword(config.jdbcPassword());
+        }
+        int max = dialect.preferMaxPoolSize(config.poolMax());
+        int minIdle = dialect.engine() == YapDbEngine.SQLITE ? 1 : config.poolMinIdle();
+        hc.setMaximumPoolSize(max);
+        hc.setMinimumIdle(Math.min(minIdle, max));
         hc.setConnectionTimeout(config.connectionTimeoutMs());
         hc.setPoolName("YaPPlayerData");
-        hc.addDataSourceProperty("cachePrepStmts", "true");
-        hc.addDataSourceProperty("prepStmtCacheSize", "250");
-        hc.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        if (dialect.preferMysqlPrepStmtCache()) {
+            hc.addDataSourceProperty("cachePrepStmts", "true");
+            hc.addDataSourceProperty("prepStmtCacheSize", "250");
+            hc.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        }
         dataSource = new HikariDataSource(hc);
         migrate();
-        plugin.getLogger().info("Embedded MariaDB/MySQL pool ready (" + config.jdbcUrl() + ")");
+        plugin.getLogger().info("Embedded pool ready (" + config.jdbcUrl() + ")");
     }
 
     private void migrate() throws SQLException {
+        String blob = dialect.blobType();
+        String bool = dialect.booleanType();
+        String boolFalse = dialect.engine() == YapDbEngine.POSTGRES ? "FALSE" : "0";
+        String pk = dialect.autoIncrementPk();
+        String touchUpdated = dialect.timestampTouchColumn("updated_at");
         try (Connection c = connection(); Statement st = c.createStatement()) {
             st.execute("""
                     CREATE TABLE IF NOT EXISTS players (
@@ -72,13 +96,13 @@ public final class Database implements AutoCloseable {
                       health DOUBLE NOT NULL DEFAULT 20,
                       food INT NOT NULL DEFAULT 20,
                       saturation FLOAT NOT NULL DEFAULT 5,
-                      inventory MEDIUMBLOB NOT NULL,
-                      enderchest MEDIUMBLOB NOT NULL,
+                      inventory %s NOT NULL,
+                      enderchest %s NOT NULL,
                       lock_server VARCHAR(64) NULL,
                       lock_until TIMESTAMP NULL,
-                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                      %s
                     )
-                    """);
+                    """.formatted(blob, blob, touchUpdated));
             st.execute("""
                     CREATE TABLE IF NOT EXISTS player_profiles (
                       uuid CHAR(36) NOT NULL,
@@ -88,12 +112,12 @@ public final class Database implements AutoCloseable {
                       health DOUBLE NOT NULL DEFAULT 20,
                       food INT NOT NULL DEFAULT 20,
                       saturation FLOAT NOT NULL DEFAULT 5,
-                      inventory MEDIUMBLOB NOT NULL,
-                      enderchest MEDIUMBLOB NOT NULL,
-                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                      inventory %s NOT NULL,
+                      enderchest %s NOT NULL,
+                      %s,
                       PRIMARY KEY (uuid, profile)
                     )
-                    """);
+                    """.formatted(blob, blob, touchUpdated));
             st.execute("""
                     CREATE TABLE IF NOT EXISTS homes (
                       uuid CHAR(36) NOT NULL,
@@ -123,15 +147,15 @@ public final class Database implements AutoCloseable {
                     """);
             st.execute("""
                     CREATE TABLE IF NOT EXISTS mail (
-                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      id %s,
                       to_uuid CHAR(36) NOT NULL,
                       from_name VARCHAR(16) NOT NULL,
                       message VARCHAR(512) NOT NULL,
-                      read_flag TINYINT(1) NOT NULL DEFAULT 0,
-                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                      INDEX (to_uuid)
+                      read_flag %s NOT NULL DEFAULT %s,
+                      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                     )
-                    """);
+                    """.formatted(pk, bool, boolFalse));
+            createIndex(st, "idx_mail_to_uuid", "mail", "to_uuid");
             st.execute("""
                     CREATE TABLE IF NOT EXISTS kit_cooldowns (
                       uuid CHAR(36) NOT NULL,
@@ -148,17 +172,17 @@ public final class Database implements AutoCloseable {
             }
             st.execute("""
                     CREATE TABLE IF NOT EXISTS kit_grants (
-                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      id %s,
                       uuid CHAR(36) NOT NULL,
                       kit VARCHAR(32) NOT NULL,
                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                      delivered_at TIMESTAMP NULL,
-                      INDEX (uuid, delivered_at)
+                      delivered_at TIMESTAMP NULL
                     )
-                    """);
+                    """.formatted(pk));
+            createIndex(st, "idx_kit_grants_uuid_delivered", "kit_grants", "uuid, delivered_at");
             st.execute("""
                     CREATE TABLE IF NOT EXISTS shops (
-                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      id %s,
                       owner_uuid CHAR(36) NOT NULL,
                       server_id VARCHAR(64) NOT NULL,
                       world VARCHAR(64) NOT NULL,
@@ -168,9 +192,9 @@ public final class Database implements AutoCloseable {
                       material VARCHAR(64) NOT NULL,
                       amount INT NOT NULL DEFAULT 1,
                       price DECIMAL(20,2) NOT NULL,
-                      UNIQUE KEY shop_loc (server_id, world, x, y, z)
+                      UNIQUE (server_id, world, x, y, z)
                     )
-                    """);
+                    """.formatted(pk));
             st.execute("""
                     CREATE TABLE IF NOT EXISTS job_progress (
                       uuid CHAR(36) NOT NULL,
@@ -182,18 +206,18 @@ public final class Database implements AutoCloseable {
                     """);
             st.execute("""
                     CREATE TABLE IF NOT EXISTS auctions (
-                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      id %s,
                       seller_uuid CHAR(36) NOT NULL,
                       seller_name VARCHAR(16) NOT NULL,
                       price DECIMAL(20,2) NOT NULL,
-                      item_blob MEDIUMBLOB NOT NULL,
+                      item_blob %s NOT NULL,
                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                       expires_at TIMESTAMP NOT NULL
                     )
-                    """);
+                    """.formatted(pk, blob));
             st.execute("""
                     CREATE TABLE IF NOT EXISTS claims (
-                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      id %s,
                       owner_uuid CHAR(36) NOT NULL,
                       server_id VARCHAR(64) NOT NULL,
                       world VARCHAR(64) NOT NULL,
@@ -204,12 +228,12 @@ public final class Database implements AutoCloseable {
                       name VARCHAR(32) NULL,
                       parent_id BIGINT NULL,
                       tax_due DECIMAL(20,2) NOT NULL DEFAULT 0,
-                      tax_frozen TINYINT(1) NOT NULL DEFAULT 0,
-                      INDEX claims_server_world (server_id, world),
-                      INDEX claims_owner (owner_uuid),
-                      INDEX claims_parent (parent_id)
+                      tax_frozen %s NOT NULL DEFAULT %s
                     )
-                    """);
+                    """.formatted(pk, bool, boolFalse));
+            createIndex(st, "idx_claims_server_world", "claims", "server_id, world");
+            createIndex(st, "idx_claims_owner", "claims", "owner_uuid");
+            createIndex(st, "idx_claims_parent", "claims", "parent_id");
             st.execute("""
                     CREATE TABLE IF NOT EXISTS claim_trust (
                       claim_id BIGINT NOT NULL,
@@ -234,7 +258,7 @@ public final class Database implements AutoCloseable {
                     """);
             st.execute("""
                     CREATE TABLE IF NOT EXISTS npc_traders (
-                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      id %s,
                       server_id VARCHAR(64) NOT NULL,
                       world VARCHAR(64) NOT NULL,
                       x DOUBLE NOT NULL,
@@ -244,19 +268,19 @@ public final class Database implements AutoCloseable {
                       name VARCHAR(64) NOT NULL,
                       entity_uuid CHAR(36) NULL
                     )
-                    """);
+                    """.formatted(pk));
             st.execute("""
                     CREATE TABLE IF NOT EXISTS npc_offers (
-                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      id %s,
                       trader_id BIGINT NOT NULL,
                       mode VARCHAR(8) NOT NULL,
                       material VARCHAR(64) NOT NULL,
                       amount INT NOT NULL DEFAULT 1,
                       price DECIMAL(20,2) NOT NULL,
-                      stock INT NOT NULL DEFAULT -1,
-                      INDEX (trader_id)
+                      stock INT NOT NULL DEFAULT -1
                     )
-                    """);
+                    """.formatted(pk));
+            createIndex(st, "idx_npc_offers_trader", "npc_offers", "trader_id");
             st.execute("""
                     CREATE TABLE IF NOT EXISTS auth_accounts (
                       uuid CHAR(36) PRIMARY KEY,
@@ -265,7 +289,7 @@ public final class Database implements AutoCloseable {
                       registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                       last_login TIMESTAMP NULL,
                       last_ip VARCHAR(64) NULL,
-                      UNIQUE KEY auth_username (username)
+                      UNIQUE (username)
                     )
                     """);
             st.execute("""
@@ -273,16 +297,27 @@ public final class Database implements AutoCloseable {
                       uuid CHAR(36) NOT NULL,
                       profile VARCHAR(64) NOT NULL,
                       page INT NOT NULL,
-                      contents MEDIUMBLOB NOT NULL,
-                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                      contents %s NOT NULL,
+                      %s,
                       PRIMARY KEY (uuid, profile, page)
                     )
-                    """);
+                    """.formatted(blob, touchUpdated));
             tryAlter(st, "ALTER TABLE claims ADD COLUMN parent_id BIGINT NULL");
             tryAlter(st, "ALTER TABLE claims ADD COLUMN tax_due DECIMAL(20,2) NOT NULL DEFAULT 0");
-            tryAlter(st, "ALTER TABLE claims ADD COLUMN tax_frozen TINYINT(1) NOT NULL DEFAULT 0");
+            tryAlter(st, "ALTER TABLE claims ADD COLUMN tax_frozen " + bool + " NOT NULL DEFAULT " + boolFalse);
             tryAlter(st, "ALTER TABLE players ADD COLUMN play_minutes INT NOT NULL DEFAULT 0");
             migrateLegacyProfiles(c);
+        }
+    }
+
+    private void createIndex(Statement st, String name, String table, String cols) {
+        try {
+            String sql = dialect.engine() == YapDbEngine.MYSQL
+                    ? "CREATE INDEX " + name + " ON " + table + " (" + cols + ")"
+                    : "CREATE INDEX IF NOT EXISTS " + name + " ON " + table + " (" + cols + ")";
+            st.execute(sql);
+        } catch (SQLException ignored) {
+            // already exists
         }
     }
 
@@ -303,14 +338,13 @@ public final class Database implements AutoCloseable {
                 return;
             }
         }
+        String sql = dialect.insertIgnore(
+                "player_profiles",
+                List.of("uuid", "profile", "xp", "level", "health", "food", "saturation", "inventory", "enderchest"));
         try (Statement st = c.createStatement();
              ResultSet rs = st.executeQuery(
                      "SELECT uuid, xp, level, health, food, saturation, inventory, enderchest FROM players")) {
-            try (PreparedStatement ins = c.prepareStatement("""
-                    INSERT IGNORE INTO player_profiles
-                    (uuid, profile, xp, level, health, food, saturation, inventory, enderchest)
-                    VALUES (?, 'global', ?, ?, ?, ?, ?, ?, ?)
-                    """)) {
+            try (PreparedStatement ins = c.prepareStatement(sql)) {
                 while (rs.next()) {
                     byte[] inv = rs.getBytes("inventory");
                     byte[] ender = rs.getBytes("enderchest");
@@ -321,13 +355,14 @@ public final class Database implements AutoCloseable {
                         ender = ItemSerializer.empty(27);
                     }
                     ins.setString(1, rs.getString("uuid"));
-                    ins.setInt(2, rs.getInt("xp"));
-                    ins.setInt(3, rs.getInt("level"));
-                    ins.setDouble(4, rs.getDouble("health"));
-                    ins.setInt(5, rs.getInt("food"));
-                    ins.setFloat(6, rs.getFloat("saturation"));
-                    ins.setBytes(7, inv);
-                    ins.setBytes(8, ender);
+                    ins.setString(2, "global");
+                    ins.setInt(3, rs.getInt("xp"));
+                    ins.setInt(4, rs.getInt("level"));
+                    ins.setDouble(5, rs.getDouble("health"));
+                    ins.setInt(6, rs.getInt("food"));
+                    ins.setFloat(7, rs.getFloat("saturation"));
+                    ins.setBytes(8, inv);
+                    ins.setBytes(9, ender);
                     ins.addBatch();
                 }
                 ins.executeBatch();
@@ -337,10 +372,10 @@ public final class Database implements AutoCloseable {
 
     public Connection connection() throws SQLException {
         if (usingShared) {
-            if (shared == null || !shared.open()) {
+            if (shared == null || !shared.isOpen()) {
                 throw new SQLException("Shared YaPDB pool is not open");
             }
-            return shared.borrow();
+            return shared.connection();
         }
         if (dataSource == null || dataSource.isClosed()) {
             throw new SQLException("Database pool is not open");
@@ -350,7 +385,7 @@ public final class Database implements AutoCloseable {
 
     public boolean isOpen() {
         if (usingShared) {
-            return shared != null && shared.open();
+            return shared != null && shared.isOpen();
         }
         return dataSource != null && !dataSource.isClosed();
     }

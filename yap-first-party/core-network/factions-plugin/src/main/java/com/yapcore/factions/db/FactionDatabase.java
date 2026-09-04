@@ -1,10 +1,13 @@
 package com.yapcore.factions.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbEngine;
+import com.yapcore.db.YapDbProvider;
+import com.yapcore.db.YapSqlDialect;
+import com.yapcore.db.YapSqlDialects;
 import com.yapcore.factions.FactionsConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.Connection;
@@ -18,17 +21,23 @@ public final class FactionDatabase implements AutoCloseable {
     private HikariDataSource embedded;
     private YapDb shared;
     private boolean usingShared;
+    private YapSqlDialect dialect = YapSqlDialects.mysql();
 
     public FactionDatabase(JavaPlugin plugin, FactionsConfig config) {
         this.plugin = plugin;
         this.config = config;
     }
 
+    public YapSqlDialect dialect() {
+        return dialect;
+    }
+
     public void open() throws SQLException {
         if (config.useSharedYapdb()) {
-            var reg = Bukkit.getServicesManager().getRegistration(YapDb.class);
-            if (reg != null && reg.getProvider().isOpen()) {
-                shared = reg.getProvider();
+            var sharedOpt = YapDbProvider.find();
+            if (sharedOpt.isPresent()) {
+                shared = sharedOpt.get();
+                dialect = shared.dialect();
                 usingShared = true;
                 migrate();
                 plugin.getLogger().info("YaPFactions using shared YaPDB pool");
@@ -36,14 +45,22 @@ public final class FactionDatabase implements AutoCloseable {
             }
         }
         usingShared = false;
+        dialect = YapSqlDialects.fromJdbcUrl(config.jdbcUrl());
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(config.jdbcUrl());
-        hc.setUsername(config.jdbcUser());
-        hc.setPassword(config.jdbcPassword());
-        hc.setMaximumPoolSize(config.poolMax());
-        hc.setMinimumIdle(config.poolMin());
+        if (dialect.engine() != YapDbEngine.SQLITE) {
+            hc.setUsername(config.jdbcUser());
+            hc.setPassword(config.jdbcPassword());
+        }
+        int max = dialect.preferMaxPoolSize(config.poolMax());
+        int minIdle = dialect.engine() == YapDbEngine.SQLITE ? 1 : config.poolMin();
+        hc.setMaximumPoolSize(max);
+        hc.setMinimumIdle(Math.min(minIdle, max));
         hc.setConnectionTimeout(config.poolTimeoutMs());
         hc.setPoolName("YaPFactions");
+        if (dialect.preferMysqlPrepStmtCache()) {
+            hc.addDataSourceProperty("cachePrepStmts", "true");
+        }
         embedded = new HikariDataSource(hc);
         migrate();
         plugin.getLogger().warning("YaPFactions using embedded pool — configure YaPDB for production");
@@ -53,17 +70,17 @@ public final class FactionDatabase implements AutoCloseable {
         try (Connection c = connection(); Statement st = c.createStatement()) {
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_factions (
-                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      id %s,
                       name VARCHAR(32) NOT NULL,
                       tag VARCHAR(8) NOT NULL,
                       leader_uuid CHAR(36) NOT NULL,
                       power INT NOT NULL DEFAULT 0,
                       max_power INT NOT NULL DEFAULT 50,
                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                      UNIQUE KEY uniq_faction_name (name),
-                      UNIQUE KEY uniq_faction_tag (tag)
+                      UNIQUE (name),
+                      UNIQUE (tag)
                     )
-                    """);
+                    """.formatted(dialect.autoIncrementPk()));
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_faction_members (
                       faction_id BIGINT NOT NULL,
@@ -71,10 +88,10 @@ public final class FactionDatabase implements AutoCloseable {
                       role VARCHAR(16) NOT NULL DEFAULT 'MEMBER',
                       joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                       PRIMARY KEY (faction_id, player_uuid),
-                      UNIQUE KEY uniq_faction_player (player_uuid),
-                      INDEX idx_faction_members_faction (faction_id)
+                      UNIQUE (player_uuid)
                     )
                     """);
+            st.execute("CREATE INDEX IF NOT EXISTS idx_faction_members_faction ON yap_faction_members (faction_id)");
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_faction_relations (
                       faction_id_a BIGINT NOT NULL,
@@ -88,10 +105,10 @@ public final class FactionDatabase implements AutoCloseable {
                       claim_id BIGINT NOT NULL PRIMARY KEY,
                       faction_id BIGINT NOT NULL,
                       power_cost INT NOT NULL DEFAULT 1,
-                      linked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                      INDEX idx_faction_claims_faction (faction_id)
+                      linked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                     )
                     """);
+            st.execute("CREATE INDEX IF NOT EXISTS idx_faction_claims_faction ON yap_faction_claims (faction_id)");
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_faction_invites (
                       faction_id BIGINT NOT NULL,
@@ -99,10 +116,10 @@ public final class FactionDatabase implements AutoCloseable {
                       invited_by CHAR(36) NOT NULL,
                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                       expires_at TIMESTAMP NOT NULL,
-                      PRIMARY KEY (faction_id, player_uuid),
-                      INDEX idx_faction_invites_player (player_uuid)
+                      PRIMARY KEY (faction_id, player_uuid)
                     )
                     """);
+            st.execute("CREATE INDEX IF NOT EXISTS idx_faction_invites_player ON yap_faction_invites (player_uuid)");
             migrateV2(st);
         }
     }

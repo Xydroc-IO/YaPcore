@@ -29,7 +29,7 @@ public final class ModerationRepository {
                      """
                              INSERT INTO yap_mod_punishments
                              (type, target_uuid, target_name, actor_uuid, actor_name, reason, ip_address, created_at, expires_at, active)
-                             VALUES (?,?,?,?,?,?,?,?,?,1)
+                             VALUES (?,?,?,?,?,?,?,?,?,?)
                              """,
                      Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, type.name());
@@ -41,6 +41,7 @@ public final class ModerationRepository {
             ps.setString(7, ip);
             ps.setLong(8, now);
             ps.setLong(9, expiresAt);
+            ps.setBoolean(10, true);
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 long id = keys.next() ? keys.getLong(1) : 0L;
@@ -53,9 +54,11 @@ public final class ModerationRepository {
     public void deactivateType(UUID targetUuid, PunishmentType type) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_mod_punishments SET active=0 WHERE target_uuid=? AND type=? AND active=1")) {
-            ps.setString(1, targetUuid.toString());
-            ps.setString(2, type.name());
+                     "UPDATE yap_mod_punishments SET active=? WHERE target_uuid=? AND type=? AND active=?")) {
+            ps.setBoolean(1, false);
+            ps.setString(2, targetUuid.toString());
+            ps.setString(3, type.name());
+            ps.setBoolean(4, true);
             ps.executeUpdate();
         }
     }
@@ -63,9 +66,11 @@ public final class ModerationRepository {
     public void deactivateIp(String ip) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_mod_punishments SET active=0 WHERE ip_address=? AND type=? AND active=1")) {
-            ps.setString(1, ip);
-            ps.setString(2, PunishmentType.IP_BAN.name());
+                     "UPDATE yap_mod_punishments SET active=? WHERE ip_address=? AND type=? AND active=?")) {
+            ps.setBoolean(1, false);
+            ps.setString(2, ip);
+            ps.setString(3, PunishmentType.IP_BAN.name());
+            ps.setBoolean(4, true);
             ps.executeUpdate();
         }
     }
@@ -78,11 +83,12 @@ public final class ModerationRepository {
                              SELECT id, type, target_uuid, target_name, actor_uuid, actor_name, reason, ip_address,
                                     created_at, expires_at, active
                              FROM yap_mod_punishments
-                             WHERE target_uuid=? AND type=? AND active=1
+                             WHERE target_uuid=? AND type=? AND active=?
                              ORDER BY id DESC LIMIT 1
                              """)) {
             ps.setString(1, targetUuid.toString());
             ps.setString(2, type.name());
+            ps.setBoolean(3, true);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     return Optional.empty();
@@ -100,11 +106,12 @@ public final class ModerationRepository {
                              SELECT id, type, target_uuid, target_name, actor_uuid, actor_name, reason, ip_address,
                                     created_at, expires_at, active
                              FROM yap_mod_punishments
-                             WHERE ip_address=? AND type=? AND active=1
+                             WHERE ip_address=? AND type=? AND active=?
                              ORDER BY id DESC LIMIT 1
                              """)) {
             ps.setString(1, ip);
             ps.setString(2, PunishmentType.IP_BAN.name());
+            ps.setBoolean(3, true);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     return Optional.empty();
@@ -141,8 +148,10 @@ public final class ModerationRepository {
         long now = System.currentTimeMillis();
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_mod_punishments SET active=0 WHERE active=1 AND expires_at > 0 AND expires_at <= ?")) {
-            ps.setLong(1, now);
+                     "UPDATE yap_mod_punishments SET active=? WHERE active=? AND expires_at > 0 AND expires_at <= ?")) {
+            ps.setBoolean(1, false);
+            ps.setBoolean(2, true);
+            ps.setLong(3, now);
             ps.executeUpdate();
         }
     }
@@ -163,7 +172,7 @@ public final class ModerationRepository {
                 rs.getString("ip_address"),
                 rs.getLong("created_at"),
                 rs.getLong("expires_at"),
-                rs.getInt("active") == 1
+                rs.getBoolean("active")
         );
     }
 
@@ -176,10 +185,11 @@ public final class ModerationRepository {
                              SELECT id, type, target_uuid, target_name, actor_uuid, actor_name, reason, ip_address,
                                     created_at, expires_at, active
                              FROM yap_mod_punishments
-                             WHERE active=1 AND type IN ('BAN','IP_BAN')
+                             WHERE active=? AND type IN ('BAN','IP_BAN')
                              ORDER BY id DESC LIMIT ?
                              """)) {
-            ps.setInt(1, Math.max(1, limit));
+            ps.setBoolean(1, true);
+            ps.setInt(2, Math.max(1, limit));
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     out.add(readRow(rs));

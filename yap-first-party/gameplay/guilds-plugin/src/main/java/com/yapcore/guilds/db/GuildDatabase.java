@@ -1,10 +1,13 @@
 package com.yapcore.guilds.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbEngine;
+import com.yapcore.db.YapDbProvider;
+import com.yapcore.db.YapSqlDialect;
+import com.yapcore.db.YapSqlDialects;
 import com.yapcore.guilds.GuildsConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.Connection;
@@ -18,17 +21,23 @@ public final class GuildDatabase implements AutoCloseable {
     private HikariDataSource embedded;
     private YapDb shared;
     private boolean usingShared;
+    private YapSqlDialect dialect = YapSqlDialects.mysql();
 
     public GuildDatabase(JavaPlugin plugin, GuildsConfig config) {
         this.plugin = plugin;
         this.config = config;
     }
 
+    public YapSqlDialect dialect() {
+        return dialect;
+    }
+
     public void open() throws SQLException {
         if (config.useSharedYapdb()) {
-            var reg = Bukkit.getServicesManager().getRegistration(YapDb.class);
-            if (reg != null && reg.getProvider().isOpen()) {
-                shared = reg.getProvider();
+            var sharedOpt = YapDbProvider.find();
+            if (sharedOpt.isPresent()) {
+                shared = sharedOpt.get();
+                dialect = shared.dialect();
                 usingShared = true;
                 migrate();
                 plugin.getLogger().info("YaPGuilds using shared YaPDB pool");
@@ -36,14 +45,22 @@ public final class GuildDatabase implements AutoCloseable {
             }
         }
         usingShared = false;
+        dialect = YapSqlDialects.fromJdbcUrl(config.jdbcUrl());
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(config.jdbcUrl());
-        hc.setUsername(config.jdbcUser());
-        hc.setPassword(config.jdbcPassword());
-        hc.setMaximumPoolSize(config.poolMax());
-        hc.setMinimumIdle(config.poolMin());
+        if (dialect.engine() != YapDbEngine.SQLITE) {
+            hc.setUsername(config.jdbcUser());
+            hc.setPassword(config.jdbcPassword());
+        }
+        int max = dialect.preferMaxPoolSize(config.poolMax());
+        int minIdle = dialect.engine() == YapDbEngine.SQLITE ? 1 : config.poolMin();
+        hc.setMaximumPoolSize(max);
+        hc.setMinimumIdle(Math.min(minIdle, max));
         hc.setConnectionTimeout(config.poolTimeoutMs());
         hc.setPoolName("YaPGuilds");
+        if (dialect.preferMysqlPrepStmtCache()) {
+            hc.addDataSourceProperty("cachePrepStmts", "true");
+        }
         embedded = new HikariDataSource(hc);
         migrate();
         plugin.getLogger().warning("YaPGuilds using embedded pool — configure YaPDB for production");
@@ -53,7 +70,7 @@ public final class GuildDatabase implements AutoCloseable {
         try (Connection c = connection(); Statement st = c.createStatement()) {
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_guilds (
-                      id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                      id %s,
                       name VARCHAR(32) NOT NULL,
                       tag VARCHAR(8) NOT NULL,
                       leader_uuid CHAR(36) NOT NULL,
@@ -70,10 +87,10 @@ public final class GuildDatabase implements AutoCloseable {
                       home_yaw FLOAT NULL,
                       home_pitch FLOAT NULL,
                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                      UNIQUE KEY uniq_guild_name (name),
-                      UNIQUE KEY uniq_guild_tag (tag)
+                      UNIQUE (name),
+                      UNIQUE (tag)
                     )
-                    """);
+                    """.formatted(dialect.autoIncrementPk()));
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_guild_members (
                       guild_id BIGINT NOT NULL,
@@ -82,10 +99,10 @@ public final class GuildDatabase implements AutoCloseable {
                       contribution_xp BIGINT NOT NULL DEFAULT 0,
                       joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                       PRIMARY KEY (guild_id, player_uuid),
-                      UNIQUE KEY uniq_guild_player (player_uuid),
-                      INDEX idx_guild_members_guild (guild_id)
+                      UNIQUE (player_uuid)
                     )
                     """);
+            st.execute("CREATE INDEX IF NOT EXISTS idx_guild_members_guild ON yap_guild_members (guild_id)");
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_guild_relations (
                       guild_id_a BIGINT NOT NULL,
@@ -101,10 +118,10 @@ public final class GuildDatabase implements AutoCloseable {
                       invited_by CHAR(36) NOT NULL,
                       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                       expires_at TIMESTAMP NOT NULL,
-                      PRIMARY KEY (guild_id, player_uuid),
-                      INDEX idx_guild_invites_player (player_uuid)
+                      PRIMARY KEY (guild_id, player_uuid)
                     )
                     """);
+            st.execute("CREATE INDEX IF NOT EXISTS idx_guild_invites_player ON yap_guild_invites (player_uuid)");
         }
     }
 

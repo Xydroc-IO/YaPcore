@@ -1,6 +1,7 @@
 package com.yapcore.combat.db;
 
 import com.yapcore.combat.model.PlayerCombatState;
+import com.yapcore.db.YapSqlDialect;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,6 +9,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -48,22 +51,26 @@ public final class CombatRepository {
     }
 
     public void upsert(PlayerCombatState state) throws SQLException {
+        YapSqlDialect dialect = database.dialect();
+        Map<String, String> set = new LinkedHashMap<>();
+        set.put("current_hp", "EXCLUDED.current_hp");
+        set.put("current_prayer", "EXCLUDED.current_prayer");
+        set.put("last_food_tick", "EXCLUDED.last_food_tick");
+        set.put("buff_attack_until", "EXCLUDED.buff_attack_until");
+        set.put("buff_strength_until", "EXCLUDED.buff_strength_until");
+        set.put("buff_defence_until", "EXCLUDED.buff_defence_until");
+        set.put("potion_cooldowns", "EXCLUDED.potion_cooldowns");
+        set.put("active_prayers", "EXCLUDED.active_prayers");
+        set.put("updated_at", dialect.nowFn());
+        String sql = dialect.upsert(
+                "yap_combat_state",
+                List.of("player_uuid"),
+                List.of(
+                        "player_uuid", "current_hp", "current_prayer", "last_food_tick", "buff_attack_until",
+                        "buff_strength_until", "buff_defence_until", "potion_cooldowns", "active_prayers"),
+                set);
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_combat_state
-                       (player_uuid, current_hp, current_prayer, last_food_tick, buff_attack_until,
-                        buff_strength_until, buff_defence_until, potion_cooldowns, active_prayers)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE
-                       current_hp = VALUES(current_hp),
-                       current_prayer = VALUES(current_prayer),
-                       last_food_tick = VALUES(last_food_tick),
-                       buff_attack_until = VALUES(buff_attack_until),
-                       buff_strength_until = VALUES(buff_strength_until),
-                       buff_defence_until = VALUES(buff_defence_until),
-                       potion_cooldowns = VALUES(potion_cooldowns),
-                       active_prayers = VALUES(active_prayers)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, state.playerId().toString());
             ps.setInt(2, state.currentHp());
             ps.setInt(3, state.currentPrayer());

@@ -1,6 +1,10 @@
 package com.yapcore.essentials.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbEngine;
+import com.yapcore.db.YapDbProvider;
+import com.yapcore.db.YapSqlDialect;
+import com.yapcore.db.YapSqlDialects;
 import com.yapcore.essentials.EssentialsConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -14,7 +18,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+
+import static java.util.Map.entry;
 
 public final class EssentialsDatabase implements AutoCloseable {
 
@@ -23,17 +31,23 @@ public final class EssentialsDatabase implements AutoCloseable {
     private HikariDataSource embedded;
     private YapDb shared;
     private boolean usingShared;
+    private YapSqlDialect dialect = YapSqlDialects.mysql();
 
     public EssentialsDatabase(JavaPlugin plugin, EssentialsConfig config) {
         this.plugin = plugin;
         this.config = config;
     }
 
+    public YapSqlDialect dialect() {
+        return dialect;
+    }
+
     public void open() throws SQLException {
         if (config.useSharedYapDb()) {
-            var reg = Bukkit.getServicesManager().getRegistration(YapDb.class);
-            if (reg != null && reg.getProvider().isOpen()) {
-                shared = reg.getProvider();
+            var sharedOpt = YapDbProvider.find();
+            if (sharedOpt.isPresent()) {
+                shared = sharedOpt.get();
+                dialect = shared.dialect();
                 usingShared = true;
                 migrate();
                 plugin.getLogger().info("YaPEssentials using shared YaPDB pool (" + shared.jdbcUrl() + ")");
@@ -42,15 +56,22 @@ public final class EssentialsDatabase implements AutoCloseable {
             plugin.getLogger().warning("use-shared-yapdb=true but YaPDB unavailable — embedded pool");
         }
         usingShared = false;
+        dialect = YapSqlDialects.fromJdbcUrl(config.jdbcUrl());
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(config.jdbcUrl());
-        hc.setUsername(config.jdbcUser());
-        hc.setPassword(config.jdbcPassword());
-        hc.setMaximumPoolSize(config.poolMax());
-        hc.setMinimumIdle(config.poolMinIdle());
+        if (dialect.engine() != YapDbEngine.SQLITE) {
+            hc.setUsername(config.jdbcUser());
+            hc.setPassword(config.jdbcPassword());
+        }
+        int max = dialect.preferMaxPoolSize(config.poolMax());
+        int minIdle = dialect.engine() == YapDbEngine.SQLITE ? 1 : config.poolMinIdle();
+        hc.setMaximumPoolSize(max);
+        hc.setMinimumIdle(Math.min(minIdle, max));
         hc.setConnectionTimeout(config.connectionTimeoutMs());
         hc.setPoolName("YaPEssentials");
-        hc.addDataSourceProperty("cachePrepStmts", "true");
+        if (dialect.preferMysqlPrepStmtCache()) {
+            hc.addDataSourceProperty("cachePrepStmts", "true");
+        }
         embedded = new HikariDataSource(hc);
         migrate();
         plugin.getLogger().info("YaPEssentials embedded pool ready (" + config.jdbcUrl() + ")");
@@ -98,15 +119,20 @@ public final class EssentialsDatabase implements AutoCloseable {
     }
 
     public void saveSpawn(String scopeKey, Location location) throws SQLException {
+        String sql = dialect.upsert(
+                "yap_essentials_spawn",
+                List.of("scope_key"),
+                List.of("scope_key", "world", "x", "y", "z", "yaw", "pitch", "updated_at"),
+                Map.ofEntries(
+                        entry("world", "EXCLUDED.world"),
+                        entry("x", "EXCLUDED.x"),
+                        entry("y", "EXCLUDED.y"),
+                        entry("z", "EXCLUDED.z"),
+                        entry("yaw", "EXCLUDED.yaw"),
+                        entry("pitch", "EXCLUDED.pitch"),
+                        entry("updated_at", "EXCLUDED.updated_at")));
         try (Connection c = connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_essentials_spawn
-                       (scope_key, world, x, y, z, yaw, pitch, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE
-                       world=VALUES(world), x=VALUES(x), y=VALUES(y), z=VALUES(z),
-                       yaw=VALUES(yaw), pitch=VALUES(pitch), updated_at=VALUES(updated_at)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, scopeKey);
             ps.setString(2, location.getWorld().getName());
             ps.setDouble(3, location.getX());

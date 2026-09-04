@@ -22,7 +22,7 @@ A **SequenceToken** model orders work across chassis streams. Folia-aware first-
 
 This paper describes architecture, concurrency invariants, networking/crossplay, the shipped plugin and data plane, evaluation methodology, and honest product status as of September 2026.
 
-**Keywords:** game server concurrency; Folia fork; regionized tick; plugin compatibility; Minecraft protocol; dual-stack crossplay; generational ZGC; MariaDB; MMO progression.
+**Keywords:** game server concurrency; Folia fork; regionized tick; plugin compatibility; Minecraft protocol; dual-stack crossplay; generational ZGC; MariaDB; PostgreSQL; SQLite; MMO progression.
 
 ---
 
@@ -219,7 +219,7 @@ Sources live under `yap-first-party/`. Install tiers:
 
 | Jar | Plugin | Role |
 |-----|--------|------|
-| `yap-db.jar` | YaPDB | Shared MariaDB Hikari pool |
+| `yap-db.jar` | YaPDB | Shared Hikari pool (MariaDB / Postgres / SQLite) |
 | `yap-perms.jar` | YaPPerms | Groups, tracks, prefixes (`/yapperm`, `/promote`) |
 | `yap-playerdata.jar` | YaPPlayerData | Cross-server sync, auth, economy, homes/warps/kits/mail, **chest shops**, **AH**, claims |
 | `yap-moderation.jar` | YaPModeration | Ban / mute / warn / kick + history |
@@ -291,7 +291,7 @@ Nineteen `yap-*-api` jars under `yap-first-party/api/` for soft-depend authors. 
 
 ### 7.1 YaPDB
 
-`yap-db.jar` exposes a shared Hikari pool. Prefer `use-shared-yapdb: true` in consumers. Setup: `./scripts/db/ensure-db.sh --server-id lobby` — [YAPDB.md](../data/YAPDB.md) · [MARIADB.md](../data/MARIADB.md).
+`yap-db.jar` exposes a shared Hikari pool (MariaDB/MySQL, PostgreSQL, or SQLite via `YapSqlDialect`). Prefer `use-shared-yapdb: true` in consumers. Setup: `./scripts/db/ensure-db.sh --server-id lobby` (or `ensure-postgres.sh` / `--engine sqlite`) — [YAPDB.md](../data/YAPDB.md) · [MARIADB.md](../data/MARIADB.md) · [POSTGRES.md](../data/POSTGRES.md) · [SQLITE.md](../data/SQLITE.md).
 
 ### 7.2 YaPPlayerData
 
@@ -447,7 +447,7 @@ Future work emphasizes Stretch items (3D map, CFI, full RS) only under a separat
 | Plugin authors | [PLUGINS.md](../plugins/PLUGINS.md), [MODULES_AND_API.md](../plugins/MODULES_AND_API.md), [MODULES_AND_API.md](../plugins/MODULES_AND_API.md) |
 | Engine contributors | [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [QUICK_START.md](../start/QUICK_START.md) |
 | Network / crossplay | [YAP_LINK.md](../network/YAP_LINK.md), [CROSSPLAY.md](../network/CROSSPLAY.md), [CROSSPLAY.md](../network/CROSSPLAY.md) |
-| Data | [YAPDB.md](../data/YAPDB.md), [PLAYERDATA.md](../data/PLAYERDATA.md), [PERMISSIONS.md](../ops/PERMISSIONS.md) |
+| Data | [YAPDB.md](../data/YAPDB.md), [MARIADB.md](../data/MARIADB.md), [POSTGRES.md](../data/POSTGRES.md), [SQLITE.md](../data/SQLITE.md), [PLAYERDATA.md](../data/PLAYERDATA.md), [PERMISSIONS.md](../ops/PERMISSIONS.md) |
 | MMO | [MMO_PHASES.md](../mmo/MMO_PHASES.md), [MMO_SKILLS.md](../mmo/MMO_SKILLS.md), [MMO_COMBAT.md](../mmo/MMO_COMBAT.md) |
 | Comparison | [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) |
 

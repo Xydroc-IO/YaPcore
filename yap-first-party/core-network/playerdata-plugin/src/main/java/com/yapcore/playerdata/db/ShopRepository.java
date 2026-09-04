@@ -6,8 +6,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import static java.util.Map.entry;
 
 public final class ShopRepository {
     public record Shop(long id, UUID owner, String serverId, String world, int x, int y, int z,
@@ -41,13 +45,17 @@ public final class ShopRepository {
     }
 
     public void upsert(Shop shop) throws SQLException {
+        String sql = database.dialect().upsert(
+                "shops",
+                List.of("server_id", "world", "x", "y", "z"),
+                List.of("owner_uuid", "server_id", "world", "x", "y", "z", "material", "amount", "price"),
+                Map.ofEntries(
+                        entry("owner_uuid", "EXCLUDED.owner_uuid"),
+                        entry("material", "EXCLUDED.material"),
+                        entry("amount", "EXCLUDED.amount"),
+                        entry("price", "EXCLUDED.price")));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO shops (owner_uuid, server_id, world, x, y, z, material, amount, price)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE owner_uuid=VALUES(owner_uuid), material=VALUES(material),
-                       amount=VALUES(amount), price=VALUES(price)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, shop.owner().toString());
             ps.setString(2, shop.serverId());
             ps.setString(3, shop.world());

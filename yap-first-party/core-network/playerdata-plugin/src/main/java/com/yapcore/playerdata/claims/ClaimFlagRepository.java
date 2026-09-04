@@ -9,8 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class ClaimFlagRepository {
 
@@ -39,12 +39,13 @@ public final class ClaimFlagRepository {
     }
 
     public void set(long claimId, RegionFlag flag, FlagValue value) throws SQLException {
+        String sql = database.dialect().upsert(
+                "yap_claim_flags",
+                List.of("claim_id", "flag_name"),
+                List.of("claim_id", "flag_name", "flag_value"),
+                Map.of("flag_value", "EXCLUDED.flag_value"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_claim_flags (claim_id, flag_name, flag_value)
-                     VALUES (?, ?, ?)
-                     ON DUPLICATE KEY UPDATE flag_value = VALUES(flag_value)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, claimId);
             ps.setString(2, flag.name());
             ps.setString(3, value.name());

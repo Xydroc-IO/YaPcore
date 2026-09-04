@@ -11,7 +11,7 @@ plugin hunting — everything you need ships in the box.
 |-------------|--------|
 | **Java 25+** | YaP-Folia 26.2 needs JDK 25 at runtime |
 | **8 GB RAM** recommended | Default heap is 2 GB; raise `ram-mb` for production |
-| **Docker** (optional) | Easiest path for MariaDB — [MARIADB.md](../data/MARIADB.md) |
+| **Docker** (optional) | Easiest path for MariaDB/Postgres — [YAPDB.md](../data/YAPDB.md) |
 | **Git** (source path only) | Or download a release zip — [RELEASES.md](RELEASES.md) |
 
 **License:** YaPcore is **[GPLv3](../../LICENSE)** — [LICENSING.md](LICENSING.md).
@@ -129,7 +129,7 @@ After `installProductDefaults` / a release zip, you get:
 | `yap-moderation.jar` | LiteBans / BanManager — ban, mute, warn, history |
 | `yap-essentials.jar` | Essentials — spawn, tpa, fly, vanish, … |
 | `yap-playerdata.jar` | Cross-server data, offline `/login`, claims |
-| `yap-db.jar` | Shared MariaDB pool for all SQL plugins |
+| `yap-db.jar` | Shared SQL pool (MariaDB / Postgres / SQLite) for all SQL plugins |
 | `yap-packs.jar` | Multi-active resource packs |
 | `yap-floodgate.jar` | Bedrock identity without Floodgate jar |
 | `yap-placeholderapi.jar` | PlaceholderAPI (built-in) |
@@ -186,16 +186,22 @@ See [NETWORKING.md](../network/NETWORKING.md) · [CLOUDFLARE_AND_NGINX.md](../ne
 
 ---
 
-## Docker (MariaDB only)
+## Docker (database)
 
-YaPcore runs on the host JVM; Docker is provided for the **database**:
+YaPcore runs on the host JVM; Docker is provided for **MariaDB** or **Postgres**:
 
 ```bash
 ./scripts/db/start-mariadb.sh
 ./scripts/db/ensure-db.sh --server-id lobby
+
+# or Postgres:
+./scripts/db/ensure-postgres.sh --server-id lobby
+
+# or SQLite (no Docker):
+./scripts/db/configure-db.sh --engine sqlite --server-id lobby
 ```
 
-Compose: [`deploy/mariadb/docker-compose.yml`](../deploy/mariadb/docker-compose.yml).
+Compose: [`deploy/mariadb/`](../../deploy/mariadb/) · [`deploy/postgres/`](../../deploy/postgres/). Docs: [YAPDB.md](../data/YAPDB.md).
 
 ---
 
@@ -206,7 +212,7 @@ Compose: [`deploy/mariadb/docker-compose.yml`](../deploy/mariadb/docker-compose.
 | “Java 25 required” | Install JDK 25+; `java -version` |
 | YaP-Folia won't start | Run `./scripts/build-yap-folia.sh`; check `lib/yap-folia-*.jar` and `folia-kernel/` |
 | Stock Folia only | You set `folia-jar-source=fetch` — switch to `build` for product path |
-| No DB connection | Run `ensure-db.sh`; check Docker is running |
+| No DB connection | Run `ensure-db.sh` / `ensure-postgres.sh` / `--engine sqlite`; check Docker if using MariaDB/Postgres |
 | Can't join Java | Check port in boot banner; firewall; `online-mode` vs client auth |
 | Can't join Bedrock | `bedrock-enabled=true`; same port as Java when `shared-listen-port=true` |
 | Dashboard 401 | Paste token from console log into login screen |

@@ -23,7 +23,7 @@ Bedrock crossplay, YaP Link proxy, web dashboard, and the operator SMP commands 
 | **Plugins** | Full CORE+NETWORK stack: perms, chat, moderation, essentials, claims, regions, protect, world, tab, discord, guard, map, NPCs, … |
 | **Operator SMP** | `/bag` (3/5/7/9 pages), `/gm` + `/item`, `/eco`, per-rank name/chat colors, `/yapmod seen` |
 | **Gameplay (in the full box)** | MMO (100 quests, 20 bosses, abilities book + hotbar), vehicles, stacker, factions, guilds, **YaP Encyclopedia** (Purpur-inspired knobs) |
-| **Ops** | Web dashboard (`:8080`) — ranks, kit builder, plugin YAML editors, Swing GUI, seed defaults, MariaDB Docker package |
+| **Ops** | Web dashboard (`:8080`) — ranks, kit builder, plugin YAML editors, Swing GUI, seed defaults, MariaDB/Postgres Docker packages, SQLite single-node |
 | **Clients (optional)** | Fabric 26.2 under [`client/`](../../client/): **yap-visuals** (Sodium+Iris+shaders in one jar), **yap-bag**, **yap-ultrawide** — vanilla and Bedrock stay supported without them |
 | **Packs** | `yapcore-default` (Faithful + skies + vehicles + MMO icons) |
 | **Integrations** | Optional fetch scripts for **Grim AC** and **Tebex** (GPLv3, not bundled by default) |

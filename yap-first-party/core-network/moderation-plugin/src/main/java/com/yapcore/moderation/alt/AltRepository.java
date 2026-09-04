@@ -1,5 +1,7 @@
 package com.yapcore.moderation.alt;
 
+import com.yapcore.db.YapDbEngine;
+import com.yapcore.db.YapSqlDialect;
 import com.yapcore.moderation.db.ModerationDatabase;
 
 import java.sql.Connection;
@@ -9,14 +11,17 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public final class AltRepository {
 
     private final ModerationDatabase database;
+    private final YapSqlDialect dialect;
 
     public AltRepository(ModerationDatabase database) {
         this.database = database;
+        this.dialect = database.dialect();
     }
 
     public void migrate() throws SQLException {
@@ -26,10 +31,17 @@ public final class AltRepository {
                       uuid CHAR(36) NOT NULL,
                       ip_address VARCHAR(45) NOT NULL,
                       last_seen BIGINT NOT NULL,
-                      PRIMARY KEY (uuid, ip_address),
-                      INDEX idx_ip (ip_address)
+                      PRIMARY KEY (uuid, ip_address)
                     )
                     """);
+            try {
+                String sql = dialect.engine() == YapDbEngine.MYSQL
+                        ? "CREATE INDEX idx_yap_mod_known_ip ON yap_mod_known_ips (ip_address)"
+                        : "CREATE INDEX IF NOT EXISTS idx_yap_mod_known_ip ON yap_mod_known_ips (ip_address)";
+                st.execute(sql);
+            } catch (SQLException ignored) {
+                // already exists
+            }
         }
     }
 
@@ -37,10 +49,13 @@ public final class AltRepository {
         if (ip == null || ip.isBlank()) {
             return;
         }
+        String sql = dialect.upsert(
+                "yap_mod_known_ips",
+                List.of("uuid", "ip_address"),
+                List.of("uuid", "ip_address", "last_seen"),
+                Map.of("last_seen", "EXCLUDED.last_seen"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT INTO yap_mod_known_ips (uuid, ip_address, last_seen) VALUES (?,?,?) "
-                             + "ON DUPLICATE KEY UPDATE last_seen=VALUES(last_seen)")) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, ip);
             ps.setLong(3, System.currentTimeMillis());

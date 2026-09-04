@@ -30,6 +30,8 @@ while [ $# -gt 0 ]; do
     -h|--help)
       echo "Usage: $0 [--root DIR] [--host IP] [--server-id name] [--profile global|server] [--skip-start]"
       echo "  Starts packaged MariaDB (unless healthy / --skip-start), then configures YaPDB + playerdata."
+      echo "  For Postgres: ./scripts/db/ensure-postgres.sh"
+      echo "  For SQLite:   ./scripts/db/configure-db.sh --engine sqlite --server-id lobby"
       exit 0
       ;;
     *) echo "Unknown arg: $1"; exit 1 ;;

@@ -1,5 +1,6 @@
 package com.yapcore.regions.db;
 
+import com.yapcore.db.YapSqlDialect;
 import com.yapcore.regions.AdminRegion;
 import com.yapcore.regions.FlagValue;
 import com.yapcore.regions.RegionFlag;
@@ -18,9 +19,11 @@ import java.util.Optional;
 public final class AdminRegionRepository {
 
     private final RegionsDatabase database;
+    private final YapSqlDialect dialect;
 
     public AdminRegionRepository(RegionsDatabase database) {
         this.database = database;
+        this.dialect = database.dialect();
     }
 
     public List<AdminRegion> loadForServer(String serverId) throws SQLException {
@@ -149,12 +152,13 @@ public final class AdminRegionRepository {
     }
 
     public void setFlag(long regionId, RegionFlag flag, FlagValue value) throws SQLException {
+        String sql = dialect.upsert(
+                "yap_admin_region_flags",
+                List.of("region_id", "flag_name"),
+                List.of("region_id", "flag_name", "flag_value"),
+                Map.of("flag_value", "EXCLUDED.flag_value"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_admin_region_flags (region_id, flag_name, flag_value)
-                     VALUES (?, ?, ?)
-                     ON DUPLICATE KEY UPDATE flag_value = VALUES(flag_value)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setLong(1, regionId);
             ps.setString(2, flag.name());
             ps.setString(3, value.name());

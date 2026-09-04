@@ -1,9 +1,14 @@
-# Shared MariaDB/MySQL for all YaP plugins that need SQL.
-# Point every backend at the SAME database (Docker: deploy/mariadb/).
+# Shared SQL pool for YaP plugins (MariaDB/MySQL, PostgreSQL, or SQLite).
+# Point every backend at the SAME database for networked engines.
+# SQLite is single-node only — see docs/data/SQLITE.md.
 
 jdbc:
-  # Align with deploy/mariadb/.env.example. Prefer ./configure-db.sh after start-mariadb
-  # (auto-bumps port to 3316 when host :3306 is already taken).
+  # auto | mysql | postgres | sqlite — auto detects from url prefix
+  engine: auto
+  # MariaDB: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
+  # Postgres: jdbc:postgresql://127.0.0.1:5432/yap_playerdata
+  # SQLite:  jdbc:sqlite:data/yap.db
+  # Prefer ./scripts/db/configure-db.sh --engine <mysql|postgres|sqlite>
   url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
   user: yap
   password: change-me

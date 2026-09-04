@@ -295,11 +295,11 @@ public final class GuildRepository {
 
     public void upsertInvite(GuildInvite invite) throws SQLException {
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_guild_invites (guild_id, player_uuid, invited_by, expires_at)
-                     VALUES (?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE invited_by = VALUES(invited_by), expires_at = VALUES(expires_at)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
+                     "yap_guild_invites",
+                     List.of("guild_id", "player_uuid"),
+                     List.of("guild_id", "player_uuid", "invited_by", "expires_at"),
+                     Map.of("invited_by", "EXCLUDED.invited_by", "expires_at", "EXCLUDED.expires_at")))) {
             ps.setLong(1, invite.guildId());
             ps.setString(2, invite.playerId().toString());
             ps.setString(3, invite.invitedBy().toString());
@@ -362,11 +362,11 @@ public final class GuildRepository {
             return;
         }
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_guild_relations (guild_id_a, guild_id_b, relation)
-                     VALUES (?, ?, ?)
-                     ON DUPLICATE KEY UPDATE relation = VALUES(relation)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
+                     "yap_guild_relations",
+                     List.of("guild_id_a", "guild_id_b"),
+                     List.of("guild_id_a", "guild_id_b", "relation"),
+                     Map.of("relation", "EXCLUDED.relation")))) {
             ps.setLong(1, pair.lowId());
             ps.setLong(2, pair.highId());
             ps.setString(3, relation.name());

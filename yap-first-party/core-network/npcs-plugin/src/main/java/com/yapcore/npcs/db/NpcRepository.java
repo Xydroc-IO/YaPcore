@@ -1,5 +1,6 @@
 package com.yapcore.npcs.db;
 
+import com.yapcore.db.YapSqlDialect;
 import org.bukkit.Location;
 
 import java.sql.Connection;
@@ -7,7 +8,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -73,22 +76,26 @@ public final class NpcRepository {
     }
 
     public void upsert(NpcRecord npc) throws SQLException {
+        YapSqlDialect dialect = database.dialect();
+        Map<String, String> set = new LinkedHashMap<>();
+        set.put("display_name", "EXCLUDED.display_name");
+        set.put("world", "EXCLUDED.world");
+        set.put("x", "EXCLUDED.x");
+        set.put("y", "EXCLUDED.y");
+        set.put("z", "EXCLUDED.z");
+        set.put("yaw", "EXCLUDED.yaw");
+        set.put("entity_uuid", "EXCLUDED.entity_uuid");
+        set.put("dialogue", "EXCLUDED.dialogue");
+        set.put("quest_id", "EXCLUDED.quest_id");
+        String sql = dialect.upsert(
+                "yap_npcs",
+                List.of("server_id", "id"),
+                List.of(
+                        "id", "server_id", "display_name", "world", "x", "y", "z", "yaw",
+                        "entity_uuid", "dialogue", "quest_id"),
+                set);
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_npcs
-                     (id, server_id, display_name, world, x, y, z, yaw, entity_uuid, dialogue, quest_id)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE
-                       display_name = VALUES(display_name),
-                       world = VALUES(world),
-                       x = VALUES(x),
-                       y = VALUES(y),
-                       z = VALUES(z),
-                       yaw = VALUES(yaw),
-                       entity_uuid = VALUES(entity_uuid),
-                       dialogue = VALUES(dialogue),
-                       quest_id = VALUES(quest_id)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, npc.id());
             ps.setString(2, npc.serverId());
             ps.setString(3, npc.displayName());

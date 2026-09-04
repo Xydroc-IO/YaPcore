@@ -31,11 +31,8 @@ final class PermsStarterPack {
     }
 
     public void markStarterPackApplied() throws SQLException {
-        try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT INTO yap_perms_meta (meta_key, meta_value) VALUES ('starter_pack_applied','true') "
-                             + "ON DUPLICATE KEY UPDATE meta_value='true'")) {
-            ps.executeUpdate();
+        try (Connection c = database.connection()) {
+            markStarterPackAppliedInTx(c);
         }
     }
 
@@ -96,9 +93,13 @@ final class PermsStarterPack {
     }
 
     private void markStarterPackAppliedInTx(Connection c) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement(
-                "INSERT INTO yap_perms_meta (meta_key, meta_value) VALUES ('starter_pack_applied','true') "
-                        + "ON DUPLICATE KEY UPDATE meta_value='true'")) {
+        try (PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
+                "yap_perms_meta",
+                List.of("meta_key"),
+                List.of("meta_key", "meta_value"),
+                Map.of("meta_value", "EXCLUDED.meta_value")))) {
+            ps.setString(1, "starter_pack_applied");
+            ps.setString(2, "true");
             ps.executeUpdate();
         }
     }

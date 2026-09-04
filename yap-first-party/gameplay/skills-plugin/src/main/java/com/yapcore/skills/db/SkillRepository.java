@@ -1,5 +1,6 @@
 package com.yapcore.skills.db;
 
+import com.yapcore.db.YapSqlDialect;
 import com.yapcore.mmo.SkillId;
 import com.yapcore.mmo.SkillProgress;
 
@@ -8,7 +9,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -92,12 +95,18 @@ public final class SkillRepository {
     }
 
     public void upsert(SkillProgress progress) throws SQLException {
+        YapSqlDialect dialect = database.dialect();
+        Map<String, String> set = new LinkedHashMap<>();
+        set.put("xp", "EXCLUDED.xp");
+        set.put("level", "EXCLUDED.level");
+        set.put("updated_at", dialect.nowFn());
+        String sql = dialect.upsert(
+                "yap_skill_progress",
+                List.of("player_uuid", "skill_id"),
+                List.of("player_uuid", "skill_id", "xp", "level"),
+                set);
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_skill_progress (player_uuid, skill_id, xp, level)
-                     VALUES (?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE xp = VALUES(xp), level = VALUES(level)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, progress.playerId().toString());
             ps.setString(2, progress.skillId().id());
             ps.setDouble(3, progress.xp());

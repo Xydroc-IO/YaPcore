@@ -6,7 +6,9 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,12 +46,13 @@ public final class BackpackRepository {
 
     public void save(UUID uuid, String profile, int page, byte[] contents) throws SQLException {
         byte[] blob = contents != null ? contents : ItemSerializer.empty(45);
+        String sql = database.dialect().upsert(
+                "player_backpack_pages",
+                List.of("uuid", "profile", "page"),
+                List.of("uuid", "profile", "page", "contents"),
+                Map.of("contents", "EXCLUDED.contents"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO player_backpack_pages (uuid, profile, page, contents)
-                     VALUES (?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE contents = VALUES(contents)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, profile);
             ps.setInt(3, page);

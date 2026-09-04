@@ -8,6 +8,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -47,14 +48,17 @@ public final class KitRepository {
     }
 
     public void markClaimed(UUID uuid, String kit) throws SQLException {
+        String sql = database.dialect().upsert(
+                "kit_cooldowns",
+                List.of("uuid", "kit"),
+                List.of("uuid", "kit", "claimed_at", "uses"),
+                Map.of("claimed_at", "EXCLUDED.claimed_at", "uses", "uses + 1"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO kit_cooldowns (uuid, kit, claimed_at, uses) VALUES (?, ?, ?, 1)
-                     ON DUPLICATE KEY UPDATE claimed_at = VALUES(claimed_at), uses = uses + 1
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, kit);
             ps.setTimestamp(3, Timestamp.from(Instant.now()));
+            ps.setInt(4, 1);
             ps.executeUpdate();
         }
     }

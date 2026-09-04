@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -50,12 +51,15 @@ public final class JobRepository {
     }
 
     public void join(UUID uuid, String job) throws SQLException {
+        String sql = database.dialect().insertIgnore(
+                "job_progress",
+                List.of("uuid", "job", "xp", "level"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT IGNORE INTO job_progress (uuid, job, xp, level) VALUES (?, ?, 0, 1)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, job);
+            ps.setDouble(3, 0);
+            ps.setInt(4, 1);
             ps.executeUpdate();
         }
     }
@@ -78,11 +82,13 @@ public final class JobRepository {
             xp -= level * 100.0;
             level++;
         }
+        String sql = database.dialect().upsert(
+                "job_progress",
+                List.of("uuid", "job"),
+                List.of("uuid", "job", "xp", "level"),
+                Map.of("xp", "EXCLUDED.xp", "level", "EXCLUDED.level"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO job_progress (uuid, job, xp, level) VALUES (?, ?, ?, ?)
-                     ON DUPLICATE KEY UPDATE xp = VALUES(xp), level = VALUES(level)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, job);
             ps.setDouble(3, xp);

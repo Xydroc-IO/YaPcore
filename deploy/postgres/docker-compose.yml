@@ -1,0 +1,33 @@
+# YaPcore shared PostgreSQL for YaPDB / PlayerData
+# Single server or multi-backend: one DB, all backends use the same JDBC URL.
+#
+# Linux:   ./scripts/db/start-postgres.sh
+# Configure: ./scripts/db/configure-db.sh --engine postgres
+#
+# Requires Docker Engine or Docker Desktop.
+
+name: yapcore-postgres
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: yapcore-postgres
+    restart: unless-stopped
+    ports:
+      - "${YAP_PG_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${YAP_DB_NAME:-yap_playerdata}
+      POSTGRES_USER: ${YAP_DB_USER:-yap}
+      POSTGRES_PASSWORD: ${YAP_DB_PASSWORD:-change-me}
+    volumes:
+      - yapcore_postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+volumes:
+  yapcore_postgres_data:

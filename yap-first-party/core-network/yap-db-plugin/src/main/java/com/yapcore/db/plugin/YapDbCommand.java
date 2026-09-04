@@ -31,6 +31,7 @@ final class YapDbCommand implements CommandExecutor, TabCompleter {
             case "status" -> {
                 sender.sendMessage("YaPDB status:");
                 sender.sendMessage("  open: " + plugin.isOpen());
+                sender.sendMessage("  engine: " + plugin.engine());
                 sender.sendMessage("  pool: " + plugin.poolName());
                 sender.sendMessage("  jdbc: " + plugin.jdbcUrl());
             }

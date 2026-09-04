@@ -1,10 +1,13 @@
 package com.yapcore.games.db;
 
 import com.yapcore.db.YapDb;
+import com.yapcore.db.YapDbEngine;
+import com.yapcore.db.YapDbProvider;
+import com.yapcore.db.YapSqlDialect;
+import com.yapcore.db.YapSqlDialects;
 import com.yapcore.games.GamesConfig;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.Connection;
@@ -18,20 +21,26 @@ public final class GamesDatabase implements AutoCloseable {
     private HikariDataSource embedded;
     private YapDb shared;
     private boolean usingShared;
+    private YapSqlDialect dialect = YapSqlDialects.mysql();
 
     public GamesDatabase(JavaPlugin plugin, GamesConfig config) {
         this.plugin = plugin;
         this.config = config;
     }
 
+    public YapSqlDialect dialect() {
+        return dialect;
+    }
+
     public void open() throws SQLException {
         if (config.useSharedYapdb()) {
-            var reg = Bukkit.getServicesManager().getRegistration(YapDb.class);
-            if (reg != null && reg.getProvider().isOpen()) {
-                shared = reg.getProvider();
+            var found = YapDbProvider.find();
+            if (found.isPresent()) {
+                shared = found.get();
+                dialect = shared.dialect();
                 usingShared = true;
                 migrate();
-                plugin.getLogger().info("YaPGames using shared YaPDB pool");
+                plugin.getLogger().info("YaPGames using shared YaPDB pool (" + dialect.engine() + ")");
                 return;
             }
         }
@@ -40,14 +49,22 @@ public final class GamesDatabase implements AutoCloseable {
             plugin.getLogger().warning("YaPGames stats disabled — no JDBC URL");
             return;
         }
+        dialect = YapSqlDialects.fromJdbcUrl(config.jdbcUrl());
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(config.jdbcUrl());
-        hc.setUsername(config.jdbcUser());
-        hc.setPassword(config.jdbcPassword());
-        hc.setMaximumPoolSize(config.poolMax());
-        hc.setMinimumIdle(config.poolMin());
+        if (dialect.engine() != YapDbEngine.SQLITE) {
+            hc.setUsername(config.jdbcUser());
+            hc.setPassword(config.jdbcPassword());
+        }
+        hc.setMaximumPoolSize(dialect.preferMaxPoolSize(config.poolMax()));
+        hc.setMinimumIdle(dialect.engine() == YapDbEngine.SQLITE ? 1 : config.poolMin());
         hc.setConnectionTimeout(config.poolTimeoutMs());
         hc.setPoolName("YaPGames");
+        if (dialect.preferMysqlPrepStmtCache()) {
+            hc.addDataSourceProperty("cachePrepStmts", "true");
+            hc.addDataSourceProperty("prepStmtCacheSize", "250");
+            hc.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        }
         embedded = new HikariDataSource(hc);
         migrate();
     }
@@ -64,12 +81,14 @@ public final class GamesDatabase implements AutoCloseable {
                       wins INT NOT NULL DEFAULT 0,
                       kills INT NOT NULL DEFAULT 0,
                       deaths INT NOT NULL DEFAULT 0,
-                      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                        ON UPDATE CURRENT_TIMESTAMP,
-                      PRIMARY KEY (player_uuid, mode_id),
-                      INDEX idx_mode_wins (mode_id, wins DESC)
+                      %s,
+                      PRIMARY KEY (player_uuid, mode_id)
                     )
-                    """);
+                    """.formatted(dialect.timestampTouchColumn("updated_at")));
+            try {
+                st.execute("CREATE INDEX IF NOT EXISTS idx_mode_wins ON yap_games_stats (mode_id, wins DESC)");
+            } catch (SQLException ignored) {
+            }
         }
     }
 

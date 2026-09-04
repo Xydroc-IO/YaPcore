@@ -5,7 +5,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 /**
- * Shared MariaDB/MySQL access for YaP plugins.
+ * Shared SQL access for YaP plugins (MariaDB/MySQL, PostgreSQL, or SQLite).
  * Provided by the {@code YaPDB} plugin (one Hikari pool per JVM).
  */
 public interface YapDb {
@@ -22,4 +22,10 @@ public interface YapDb {
     String jdbcUrl();
 
     String poolName();
+
+    /** Detected / configured SQL engine for this pool. */
+    YapDbEngine engine();
+
+    /** Dialect helpers for portable DDL/DML. */
+    YapSqlDialect dialect();
 }

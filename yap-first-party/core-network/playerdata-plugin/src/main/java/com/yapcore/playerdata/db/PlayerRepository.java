@@ -9,8 +9,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+
+import static java.util.Map.entry;
 
 /**
  * Account (balance/lock) + inventory profile CRUD.
@@ -77,17 +81,22 @@ public final class PlayerRepository {
     }
 
     private void ensureAccount(UUID uuid, String name) throws SQLException {
+        String sql = database.dialect().insertIgnore(
+                "players",
+                List.of("uuid", "name", "balance", "xp", "level", "health", "food", "saturation",
+                        "inventory", "enderchest"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT IGNORE INTO players
-                     (uuid, name, balance, xp, level, health, food, saturation, inventory, enderchest)
-                     VALUES (?, ?, ?, 0, 0, 20, 20, 5, ?, ?)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, truncateName(name));
             ps.setDouble(3, config.startingBalance());
-            ps.setBytes(4, ItemSerializer.empty(41));
-            ps.setBytes(5, ItemSerializer.empty(27));
+            ps.setInt(4, 0);
+            ps.setInt(5, 0);
+            ps.setDouble(6, 20);
+            ps.setInt(7, 20);
+            ps.setFloat(8, 5);
+            ps.setBytes(9, ItemSerializer.empty(41));
+            ps.setBytes(10, ItemSerializer.empty(27));
             ps.executeUpdate();
         }
         if (name != null) {
@@ -101,16 +110,21 @@ public final class PlayerRepository {
     }
 
     private void ensureProfileRow(UUID uuid, String profile) throws SQLException {
+        String sql = database.dialect().insertIgnore(
+                "player_profiles",
+                List.of("uuid", "profile", "xp", "level", "health", "food", "saturation",
+                        "inventory", "enderchest"));
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT IGNORE INTO player_profiles
-                     (uuid, profile, xp, level, health, food, saturation, inventory, enderchest)
-                     VALUES (?, ?, 0, 0, 20, 20, 5, ?, ?)
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ps.setString(2, profile);
-            ps.setBytes(3, ItemSerializer.empty(41));
-            ps.setBytes(4, ItemSerializer.empty(27));
+            ps.setInt(3, 0);
+            ps.setInt(4, 0);
+            ps.setDouble(5, 20);
+            ps.setInt(6, 20);
+            ps.setFloat(7, 5);
+            ps.setBytes(8, ItemSerializer.empty(41));
+            ps.setBytes(9, ItemSerializer.empty(27));
             ps.executeUpdate();
         }
     }
@@ -125,15 +139,20 @@ public final class PlayerRepository {
                 bal.setString(3, record.uuid().toString());
                 bal.executeUpdate();
             }
-            try (PreparedStatement ps = c.prepareStatement("""
-                    INSERT INTO player_profiles
-                    (uuid, profile, xp, level, health, food, saturation, inventory, enderchest)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE
-                      xp = VALUES(xp), level = VALUES(level), health = VALUES(health),
-                      food = VALUES(food), saturation = VALUES(saturation),
-                      inventory = VALUES(inventory), enderchest = VALUES(enderchest)
-                    """)) {
+            String sql = database.dialect().upsert(
+                    "player_profiles",
+                    List.of("uuid", "profile"),
+                    List.of("uuid", "profile", "xp", "level", "health", "food", "saturation",
+                            "inventory", "enderchest"),
+                    Map.ofEntries(
+                            entry("xp", "EXCLUDED.xp"),
+                            entry("level", "EXCLUDED.level"),
+                            entry("health", "EXCLUDED.health"),
+                            entry("food", "EXCLUDED.food"),
+                            entry("saturation", "EXCLUDED.saturation"),
+                            entry("inventory", "EXCLUDED.inventory"),
+                            entry("enderchest", "EXCLUDED.enderchest")));
+            try (PreparedStatement ps = c.prepareStatement(sql)) {
                 ps.setString(1, record.uuid().toString());
                 ps.setString(2, profile);
                 ps.setInt(3, record.xp());

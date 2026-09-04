@@ -32,6 +32,7 @@ responsible for complying with each when you ship or run a server.
 | **YaP Iris** (optional client) | **LGPL-3.0** (+ **AGPL-3.0** glsl-transformer) | Fork under [yap-iris/](../../client/yap-iris/); notices in `third-party/iris/` |
 | **YaP Shaders** (optional client) | **GPLv3** | First-party Iris pack [yap-shaders/](../../client/yap-shaders/) |
 | **MariaDB Docker image** | GPLv2 (MariaDB) | Optional DB via `deploy/mariadb/` |
+| **PostgreSQL Docker image** | PostgreSQL License | Optional DB via `deploy/postgres/` |
 | **PlaceholderAPI compat layer** | **GPLv3** (YaP reimplementation) | `yap-placeholderapi.jar` |
 
 ### Folia / Paper (GPLv3)

@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -85,9 +86,11 @@ final class PermsUserStore {
     }
 
     private void ensureUser(Connection c, UUID uuid, String name, String defaultGroup) throws SQLException {
-        try (PreparedStatement ps = c.prepareStatement(
-                "INSERT INTO yap_perms_users (uuid, name, primary_group) VALUES (?,?,?) "
-                        + "ON DUPLICATE KEY UPDATE name=VALUES(name)")) {
+        try (PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
+                "yap_perms_users",
+                List.of("uuid"),
+                List.of("uuid", "name", "primary_group"),
+                Map.of("name", "EXCLUDED.name")))) {
             ps.setString(1, uuid.toString());
             ps.setString(2, name);
             ps.setString(3, defaultGroup);
@@ -109,8 +112,8 @@ final class PermsUserStore {
     public void addUserGroup(UUID uuid, String name, String group) throws SQLException {
         ensureUser(uuid, name, config.defaultGroup());
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT IGNORE INTO yap_perms_user_parents (uuid, group_name) VALUES (?,?)")) {
+             PreparedStatement ps = c.prepareStatement(database.dialect().insertIgnore(
+                     "yap_perms_user_parents", List.of("uuid", "group_name")))) {
             ps.setString(1, uuid.toString());
             ps.setString(2, group.toLowerCase());
             ps.executeUpdate();
@@ -125,10 +128,11 @@ final class PermsUserStore {
                             String world, String server, Instant expires) throws SQLException {
         ensureUser(uuid, name, config.defaultGroup());
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT INTO yap_perms_user_nodes (uuid, node, value, world, server_ctx, expires_at) "
-                             + "VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE value=VALUES(value), "
-                             + "expires_at=VALUES(expires_at)")) {
+             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
+                     "yap_perms_user_nodes",
+                     List.of("uuid", "node", "world", "server_ctx"),
+                     List.of("uuid", "node", "value", "world", "server_ctx", "expires_at"),
+                     Map.of("value", "EXCLUDED.value", "expires_at", "EXCLUDED.expires_at")))) {
             ps.setString(1, uuid.toString());
             ps.setString(2, node);
             ps.setInt(3, value ? 1 : 0);
@@ -150,11 +154,12 @@ final class PermsUserStore {
             ps.executeUpdate();
         }
     }
+
     public void addUserParent(UUID uuid, String name, String group) throws SQLException {
         ensureUser(uuid, name, config.defaultGroup());
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT IGNORE INTO yap_perms_user_parents (uuid, group_name) VALUES (?,?)")) {
+             PreparedStatement ps = c.prepareStatement(database.dialect().insertIgnore(
+                     "yap_perms_user_parents", List.of("uuid", "group_name")))) {
             ps.setString(1, uuid.toString());
             ps.setString(2, group.toLowerCase());
             ps.executeUpdate();
@@ -174,9 +179,11 @@ final class PermsUserStore {
     public void setUserMeta(UUID uuid, String name, String prefix, String suffix) throws SQLException {
         ensureUser(uuid, name, config.defaultGroup());
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement(
-                     "INSERT INTO yap_perms_user_meta (uuid, prefix, suffix) VALUES (?,?,?) "
-                             + "ON DUPLICATE KEY UPDATE prefix=VALUES(prefix), suffix=VALUES(suffix)")) {
+             PreparedStatement ps = c.prepareStatement(database.dialect().upsert(
+                     "yap_perms_user_meta",
+                     List.of("uuid"),
+                     List.of("uuid", "prefix", "suffix"),
+                     Map.of("prefix", "EXCLUDED.prefix", "suffix", "EXCLUDED.suffix")))) {
             ps.setString(1, uuid.toString());
             ps.setString(2, prefix);
             ps.setString(3, suffix);
@@ -199,6 +206,7 @@ final class PermsUserStore {
         names.addAll(user.extraGroups());
         return names;
     }
+
     public List<UserRow> listAllUsers() throws SQLException {
         List<UserRow> out = new ArrayList<>();
         try (Connection c = database.connection();

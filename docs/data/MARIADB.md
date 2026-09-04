@@ -4,6 +4,9 @@ YaPcore does **not** embed a database engine. Owners run one MariaDB instance
 (packaged via Docker). **`yap-db.jar` (YaPDB)** owns the shared Hikari pool on each
 **YaP-Folia** backend; **YaPPlayerData** and other SQL plugins borrow it.
 
+**Engine support:** MariaDB / MySQL (default), plus [PostgreSQL](POSTGRES.md) and
+[SQLite](SQLITE.md) via the same `YapSqlDialect` layer. Details: [YAPDB.md](YAPDB.md#supported-engines).
+
 Works the same on **Linux** and **Windows**.
 
 ## Recommended: Docker package

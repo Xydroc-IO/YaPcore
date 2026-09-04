@@ -14,7 +14,7 @@ that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when m
 | YaP Link + link plugins | Yes once `link.properties` seeded |
 | Resource pack prompt | Yes when `server.properties` comes from defaults/example |
 | YaPPerms starter ranks | Yes (`apply-starter-pack-on-first-boot` + `yap-ranks-auto-apply`) |
-| Economy / claims / moderation / SQL plugins | **Needs MariaDB** |
+| Economy / claims / moderation / SQL plugins | **Needs SQL** (MariaDB default; Postgres or SQLite OK — [YAPDB.md](../data/YAPDB.md)) |
 | Discord webhooks | Needs your webhook URLs |
 
 **Passwords & secrets:** every credential is operator-owned. See [SECRETS.md](SECRETS.md)
@@ -27,11 +27,14 @@ for MariaDB, dashboard token, forwarding secret, Discord inbound, and auth.
 ./scripts/build-yap-folia.sh        # once — lib/yap-folia-26.2.jar
 ./scripts/seed-defaults.sh          # or just ./start.sh (seeds automatically)
 ./configure-db.sh --server-id lobby # starts Docker MariaDB + writes JDBC
+# or: ./scripts/db/ensure-postgres.sh --server-id lobby
+# or: ./scripts/db/configure-db.sh --engine sqlite --server-id lobby
 ./start.sh --fg
 ```
 
 `configure-db.sh` / `ensure-db.sh` patch `plugins/YaPDB/config.yml` (and PlayerData)
 to match `deploy/mariadb/.env` — including port **3316** if host `:3306` was busy.
+Postgres uses `deploy/postgres/.env`; SQLite writes `data/yap.db`.
 
 ## Defaults pack layout
 

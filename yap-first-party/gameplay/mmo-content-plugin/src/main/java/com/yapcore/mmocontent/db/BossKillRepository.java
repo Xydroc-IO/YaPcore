@@ -1,10 +1,13 @@
 package com.yapcore.mmocontent.db;
 
+import com.yapcore.db.YapSqlDialect;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -17,14 +20,20 @@ public final class BossKillRepository {
     }
 
     public int increment(UUID playerUuid, String bossId) throws SQLException {
+        YapSqlDialect dialect = database.dialect();
+        Map<String, String> set = new LinkedHashMap<>();
+        set.put("kill_count", "kill_count + 1");
+        set.put("updated_at", dialect.nowFn());
+        String sql = dialect.upsert(
+                "yap_mmo_boss_kills",
+                List.of("player_uuid", "boss_id"),
+                List.of("player_uuid", "boss_id", "kill_count"),
+                set);
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO yap_mmo_boss_kills (player_uuid, boss_id, kill_count)
-                     VALUES (?, ?, 1)
-                     ON DUPLICATE KEY UPDATE kill_count = kill_count + 1
-                     """)) {
+             PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, playerUuid.toString());
             ps.setString(2, bossId);
+            ps.setInt(3, 1);
             ps.executeUpdate();
         }
         return getCount(playerUuid, bossId);
