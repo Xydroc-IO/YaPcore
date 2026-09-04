@@ -273,6 +273,7 @@ Nineteen `yap-*-api` jars under `yap-first-party/api/` for soft-depend authors. 
 |------------------|------------|
 | LuckPerms | YaPPerms |
 | EssentialsX (QoL) | YaPEssentials (+ playerdata for data/economy) |
+| MyCommand / custom `/commands` packs | YaPCommands (YAML + dashboard CRUD) |
 | CoreProtect | YaPProtect |
 | WorldEdit / FAWE-class ops | YaPWorld (Folia-safe; stock FAWE not used) |
 | WorldGuard | YaPRegions (+ playerdata claims) |
