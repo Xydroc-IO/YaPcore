@@ -191,7 +191,7 @@ tasks.register("assemblePluginDist") {
         ":worldedit-shim-plugin:shadowJar",
         ":packs-plugin:jar",
         ":chat-plugin:jar",
-        ":tab-plugin:jar",
+        ":tab-plugin:shadowJar",
         ":discord-plugin:jar",
         ":floodgate-plugin:jar",
         ":folia-bridge-plugin:jar",
@@ -283,7 +283,7 @@ tasks.register("assemblePluginDist") {
         copyNamed(jarOf(":packs-plugin"), coreDir)
         copyNamed(jarOf(":chat-plugin"), coreDir)
         if (findProject(":tab-plugin") != null) {
-            copyNamed(jarOf(":tab-plugin"), coreDir)
+            copyNamed(jarOf(":tab-plugin", "shadowJar"), coreDir)
         }
         if (findProject(":discord-plugin") != null) {
             copyNamed(jarOf(":discord-plugin"), coreDir)

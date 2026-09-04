@@ -169,7 +169,6 @@ public final class PermissionCatalog {
                 n("yapcombat.prayer", "/prayer", "Prayer system"),
                 n("yapcombat.admin", "Combat admin", "Reload combat"),
                 n("yapcraft.use", "/recipe /ycraft", "Custom recipes"),
-                n("yapcraft.sell", "/sell", "Sell crafted items"),
                 n("yapcraft.admin", "Crafting admin", "Reload crafting"),
                 n("yapguilds.use", "/g /guild", "Guild membership"),
                 n("yapguilds.create", "Create guild", "Found a guild"),
