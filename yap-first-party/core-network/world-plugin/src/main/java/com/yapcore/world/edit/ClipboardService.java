@@ -7,19 +7,13 @@ import com.yapcore.world.util.BlockCodec;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Registry;
 import org.bukkit.World;
-import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -121,6 +115,8 @@ public final class ClipboardService {
     private final BlockBatch batch;
     private final Map<UUID, Clipboard[]> clipSlots = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> activeSlot = new ConcurrentHashMap<>();
+    private final ClipboardEntityOps entityOps;
+    private final ClipboardTransforms transforms;
     private MaskEngine masks;
     private SelectionShape shapes;
     private PlayerEditState editState;
@@ -129,6 +125,8 @@ public final class ClipboardService {
     public ClipboardService(JavaPlugin plugin, UndoService undo) {
         this.plugin = plugin;
         this.batch = new BlockBatch(plugin, undo);
+        this.entityOps = new ClipboardEntityOps(plugin);
+        this.transforms = new ClipboardTransforms(this);
     }
 
     public void setMasks(MaskEngine masks) {
@@ -242,10 +240,11 @@ public final class ClipboardService {
                     }
                 }
             }
-            List<Schematic.EntityEntry> entities = captureEntities(world, sel);
+            List<Schematic.EntityEntry> entities = ClipboardEntityOps.captureEntities(world, sel);
             if (cut) {
                 for (Schematic.EntityEntry e : entities) {
-                    removeEntityAt(world, sel.minX() + e.dx(), sel.minY() + e.dy(), sel.minZ() + e.dz(), e.type());
+                    ClipboardEntityOps.removeEntityAt(world,
+                            sel.minX() + e.dx(), sel.minY() + e.dy(), sel.minZ() + e.dz(), e.type());
                 }
             }
             int sizeX = sel.maxX() - sel.minX() + 1;
@@ -320,11 +319,11 @@ public final class ClipboardService {
             }
             CompletableFuture<Integer> after = CompletableFuture.completedFuture(n);
             if (opts.biomes() && !clip.biomes().isEmpty()) {
-                after = after.thenCompose(count -> applyBiomes(world, clip.biomes(), originX, originY, originZ)
+                after = after.thenCompose(count -> entityOps.applyBiomes(world, clip.biomes(), originX, originY, originZ)
                         .thenApply(b -> count));
             }
             if (opts.entities() && !clip.entities().isEmpty()) {
-                after = after.thenCompose(count -> spawnEntities(world, clip.entities(), originX, originY, originZ)
+                after = after.thenCompose(count -> entityOps.spawnEntities(world, clip.entities(), originX, originY, originZ)
                         .thenApply(e -> count + e));
             }
             return after.thenApply(count -> {
@@ -342,272 +341,12 @@ public final class ClipboardService {
         });
     }
 
-    private CompletableFuture<Integer> applyBiomes(World world, List<BiomeEntry> biomes,
-                                                   int ox, int oy, int oz) {
-        CompletableFuture<Integer> done = new CompletableFuture<>();
-        if (biomes.isEmpty()) {
-            done.complete(0);
-            return done;
-        }
-        BiomeEntry first = biomes.get(0);
-        YapSched.region(plugin, new Location(world, ox + first.dx(), oy + first.dy(), oz + first.dz()), () -> {
-            int n = 0;
-            for (BiomeEntry b : biomes) {
-                Biome biome = matchBiome(b.biome());
-                if (biome == null) {
-                    continue;
-                }
-                world.setBiome(ox + b.dx(), oy + b.dy(), oz + b.dz(), biome);
-                n++;
-            }
-            done.complete(n);
-        });
-        return done;
-    }
-
-    private CompletableFuture<Integer> spawnEntities(World world, List<Schematic.EntityEntry> entities,
-                                                     int ox, int oy, int oz) {
-        CompletableFuture<Integer> done = new CompletableFuture<>();
-        if (entities.isEmpty()) {
-            done.complete(0);
-            return done;
-        }
-        Schematic.EntityEntry first = entities.get(0);
-        YapSched.region(plugin, new Location(world, ox + first.dx(), oy + first.dy(), oz + first.dz()), () -> {
-            int n = 0;
-            for (Schematic.EntityEntry e : entities) {
-                EntityType type;
-                try {
-                    type = EntityType.valueOf(e.type());
-                } catch (IllegalArgumentException ex) {
-                    continue;
-                }
-                if (!type.isSpawnable()) {
-                    continue;
-                }
-                Location loc = new Location(world, ox + e.dx() + 0.5, oy + e.dy(), oz + e.dz() + 0.5,
-                        e.yaw(), e.pitch());
-                Entity spawned = world.spawnEntity(loc, type);
-                if (spawned instanceof LivingEntity living && e.nbt() != null && e.nbt().startsWith("custom=")
-                        && e.nbt().length() > 7) {
-                    living.setCustomName(e.nbt().substring(7));
-                    living.setCustomNameVisible(true);
-                }
-                n++;
-            }
-            done.complete(n);
-        });
-        return done;
-    }
-
-    private static List<Schematic.EntityEntry> captureEntities(World world, CuboidSelection sel) {
-        List<Schematic.EntityEntry> entities = new ArrayList<>();
-        Location min = new Location(world, sel.minX(), sel.minY(), sel.minZ());
-        Location max = new Location(world, sel.maxX() + 1, sel.maxY() + 1, sel.maxZ() + 1);
-        Collection<Entity> nearby = world.getNearbyEntities(
-                min.toVector().getMidpoint(max.toVector()).toLocation(world),
-                (sel.maxX() - sel.minX()) / 2.0 + 1,
-                (sel.maxY() - sel.minY()) / 2.0 + 1,
-                (sel.maxZ() - sel.minZ()) / 2.0 + 1);
-        for (Entity e : nearby) {
-            if (e instanceof Player) {
-                continue;
-            }
-            Location loc = e.getLocation();
-            if (loc.getBlockX() < sel.minX() || loc.getBlockX() > sel.maxX()
-                    || loc.getBlockY() < sel.minY() || loc.getBlockY() > sel.maxY()
-                    || loc.getBlockZ() < sel.minZ() || loc.getBlockZ() > sel.maxZ()) {
-                continue;
-            }
-            String nbt = e instanceof LivingEntity living
-                    ? "custom=" + (living.getCustomName() == null ? "" : living.getCustomName())
-                    : "";
-            entities.add(new Schematic.EntityEntry(
-                    loc.getBlockX() - sel.minX(),
-                    loc.getBlockY() - sel.minY(),
-                    loc.getBlockZ() - sel.minZ(),
-                    e.getType().name(),
-                    loc.getYaw(),
-                    loc.getPitch(),
-                    nbt));
-        }
-        return entities;
-    }
-
-    private static void removeEntityAt(World world, int x, int y, int z, String typeName) {
-        EntityType type;
-        try {
-            type = EntityType.valueOf(typeName);
-        } catch (IllegalArgumentException e) {
-            return;
-        }
-        for (Entity e : world.getNearbyEntities(new Location(world, x + 0.5, y, z + 0.5), 0.6, 0.6, 0.6)) {
-            if (e instanceof Player) {
-                continue;
-            }
-            if (e.getType() == type) {
-                e.remove();
-                return;
-            }
-        }
-    }
-
     public boolean rotateY(UUID playerId, int degrees) {
-        Clipboard clip = clipboard(playerId);
-        if (clip == null) {
-            return false;
-        }
-        int turns = ((degrees / 90) % 4 + 4) % 4;
-        if (turns == 0) {
-            return true;
-        }
-        List<Schematic.BlockEntry> rotated = new ArrayList<>();
-        int minDx = Integer.MAX_VALUE;
-        int minDz = Integer.MAX_VALUE;
-        for (Schematic.BlockEntry e : clip.blocks()) {
-            int dx = e.dx();
-            int dy = e.dy();
-            int dz = e.dz();
-            for (int t = 0; t < turns; t++) {
-                int ndx = dz;
-                int ndz = -dx;
-                dx = ndx;
-                dz = ndz;
-            }
-            rotated.add(new Schematic.BlockEntry(dx, dy, dz, e.encoded(), e.tileNbt()));
-            minDx = Math.min(minDx, dx);
-            minDz = Math.min(minDz, dz);
-        }
-        List<Schematic.BlockEntry> normalized = new ArrayList<>();
-        int maxDx = 0;
-        int maxDy = 0;
-        int maxDz = 0;
-        for (Schematic.BlockEntry e : rotated) {
-            int dx = e.dx() - minDx;
-            int dz = e.dz() - minDz;
-            normalized.add(new Schematic.BlockEntry(dx, e.dy(), dz, e.encoded(), e.tileNbt()));
-            maxDx = Math.max(maxDx, dx);
-            maxDy = Math.max(maxDy, e.dy());
-            maxDz = Math.max(maxDz, dz);
-        }
-        List<Schematic.EntityEntry> ents = rotateEntities(clip.entities(), turns, minDx, minDz);
-        List<BiomeEntry> bios = rotateBiomes(clip.biomes(), turns, minDx, minDz);
-        int ox = clip.offsetX();
-        int oz = clip.offsetZ();
-        for (int t = 0; t < turns; t++) {
-            int nox = oz;
-            int noz = -ox;
-            ox = nox;
-            oz = noz;
-        }
-        ox -= minDx;
-        oz -= minDz;
-        putClipboard(playerId, new Clipboard(
-                clip.world(), normalized, ents, bios,
-                maxDx + 1, maxDy + 1, maxDz + 1, ox, clip.offsetY(), oz,
-                clip.originX(), clip.originY(), clip.originZ()));
-        return true;
-    }
-
-    private static List<Schematic.EntityEntry> rotateEntities(List<Schematic.EntityEntry> entities,
-                                                              int turns, int minDx, int minDz) {
-        List<Schematic.EntityEntry> out = new ArrayList<>();
-        for (Schematic.EntityEntry e : entities) {
-            int dx = e.dx();
-            int dz = e.dz();
-            float yaw = e.yaw();
-            for (int t = 0; t < turns; t++) {
-                int ndx = dz;
-                int ndz = -dx;
-                dx = ndx;
-                dz = ndz;
-                yaw += 90f;
-            }
-            out.add(new Schematic.EntityEntry(dx - minDx, e.dy(), dz - minDz, e.type(), yaw, e.pitch(), e.nbt()));
-        }
-        return out;
-    }
-
-    private static List<BiomeEntry> rotateBiomes(List<BiomeEntry> biomes, int turns, int minDx, int minDz) {
-        List<BiomeEntry> out = new ArrayList<>();
-        for (BiomeEntry b : biomes) {
-            int dx = b.dx();
-            int dz = b.dz();
-            for (int t = 0; t < turns; t++) {
-                int ndx = dz;
-                int ndz = -dx;
-                dx = ndx;
-                dz = ndz;
-            }
-            out.add(new BiomeEntry(dx - minDx, b.dy(), dz - minDz, b.biome()));
-        }
-        return out;
+        return transforms.rotateY(playerId, degrees);
     }
 
     public boolean flip(UUID playerId, char axis) {
-        Clipboard clip = clipboard(playerId);
-        if (clip == null) {
-            return false;
-        }
-        List<Schematic.BlockEntry> flipped = new ArrayList<>();
-        for (Schematic.BlockEntry e : clip.blocks()) {
-            int dx = e.dx();
-            int dy = e.dy();
-            int dz = e.dz();
-            if (axis == 'x' || axis == 'X') {
-                dx = clip.sizeX() - 1 - dx;
-            } else if (axis == 'z' || axis == 'Z') {
-                dz = clip.sizeZ() - 1 - dz;
-            } else if (axis == 'y' || axis == 'Y') {
-                dy = clip.sizeY() - 1 - dy;
-            } else {
-                return false;
-            }
-            flipped.add(new Schematic.BlockEntry(dx, dy, dz, e.encoded(), e.tileNbt()));
-        }
-        List<Schematic.EntityEntry> ents = new ArrayList<>();
-        for (Schematic.EntityEntry e : clip.entities()) {
-            int dx = e.dx();
-            int dy = e.dy();
-            int dz = e.dz();
-            if (axis == 'x' || axis == 'X') {
-                dx = clip.sizeX() - 1 - dx;
-            } else if (axis == 'z' || axis == 'Z') {
-                dz = clip.sizeZ() - 1 - dz;
-            } else {
-                dy = clip.sizeY() - 1 - dy;
-            }
-            ents.add(new Schematic.EntityEntry(dx, dy, dz, e.type(), e.yaw(), e.pitch(), e.nbt()));
-        }
-        List<BiomeEntry> bios = new ArrayList<>();
-        for (BiomeEntry b : clip.biomes()) {
-            int dx = b.dx();
-            int dy = b.dy();
-            int dz = b.dz();
-            if (axis == 'x' || axis == 'X') {
-                dx = clip.sizeX() - 1 - dx;
-            } else if (axis == 'z' || axis == 'Z') {
-                dz = clip.sizeZ() - 1 - dz;
-            } else {
-                dy = clip.sizeY() - 1 - dy;
-            }
-            bios.add(new BiomeEntry(dx, dy, dz, b.biome()));
-        }
-        int ox = clip.offsetX();
-        int oy = clip.offsetY();
-        int oz = clip.offsetZ();
-        if (axis == 'x' || axis == 'X') {
-            ox = clip.sizeX() - 1 - ox;
-        } else if (axis == 'z' || axis == 'Z') {
-            oz = clip.sizeZ() - 1 - oz;
-        } else {
-            oy = clip.sizeY() - 1 - oy;
-        }
-        putClipboard(playerId, new Clipboard(
-                clip.world(), flipped, ents, bios,
-                clip.sizeX(), clip.sizeY(), clip.sizeZ(), ox, oy, oz,
-                clip.originX(), clip.originY(), clip.originZ()));
-        return true;
+        return transforms.flip(playerId, axis);
     }
 
     public CompletableFuture<Integer> stack(Player player, CuboidSelection sel, Vector dir, int count) {
@@ -676,7 +415,7 @@ public final class ClipboardService {
                 if (clip.entities().isEmpty()) {
                     return CompletableFuture.completedFuture(blocks);
                 }
-                return spawnEntities(world, clip.entities(),
+                return entityOps.spawnEntities(world, clip.entities(),
                         sel.minX() + sx, sel.minY() + sy, sel.minZ() + sz)
                         .thenApply(e -> blocks);
             });
@@ -722,18 +461,5 @@ public final class ClipboardService {
     private static boolean isAirEncoded(String encoded) {
         return encoded == null || encoded.startsWith("AIR") || encoded.startsWith("minecraft:air")
                 || encoded.startsWith("CAVE_AIR") || encoded.startsWith("VOID_AIR");
-    }
-
-    private static Biome matchBiome(String name) {
-        if (name == null) {
-            return null;
-        }
-        String key = name.toLowerCase(Locale.ROOT).replace("minecraft:", "");
-        for (Biome b : Registry.BIOME) {
-            if (b.getKey().getKey().equalsIgnoreCase(key)) {
-                return b;
-            }
-        }
-        return null;
     }
 }
