@@ -6,7 +6,7 @@ folia-supported: true
 description: Bedrock MMO UI — FormService skills panel, XP/combat sidebar, recipe/hiscore forms
 authors: [YapLabs]
 depend: [YaPBedrockUI]
-softdepend: [YaPSkills, YaPCombat, YaPCrafting, YaPMmoContent, YaPFloodgate, YaPAbilities]
+softdepend: [YaPSkills, YaPCombat, YaPCrafting, yap-mmo-content, YaPFloodgate, YaPAbilities]
 commands:
   mmoui:
     description: Open Bedrock MMO UI hub

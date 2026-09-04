@@ -21,7 +21,7 @@ action bar / scoreboard mirroring.
 
 ## Dependencies
 
-`YaPSkills`, `YaPCombat`, `YaPCrafting`, `YaPMmoContent` (soft), `YaPNpcs` (soft, quests panel), `YaPAbilities` (soft), `YaPBedrockUI`, `YaPFloodgate` (soft).
+`YaPSkills`, `YaPCombat`, `YaPCrafting`, `yap-mmo-content` (soft), `YaPNpcs` (soft, quests panel), `YaPAbilities` (soft), `YaPBedrockUI`, `YaPFloodgate` (soft).
 
 Native YaPcore Bedrock sessions use chassis `FormService` (simple/modal/custom) +
 `BedrockUiBridge.pushActionBar` / `pushSidebar`.
