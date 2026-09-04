@@ -70,7 +70,7 @@ YaPcore contributes:
 
 - **Stock Paper plugins on YaP-Folia** are unsupported (same reality as upstream Folia). Prefer Folia-aware jars or YaP natives — [PLUGIN_COMPAT_MATRIX.md](../plugins/PLUGIN_COMPAT_MATRIX.md).
 - YaPcore is **not** a clean-room rewrite of Minecraft; it **forks Folia on purpose**.
-- We do **not** claim “faster than Paper/Leaf on every workload.” Population cite: **fullcite** (100 active bots + fixtures) under the **ship Folia knob profile** (async-save, hopper budget, MSPT-gated entity/microtick budgets, subregion partition) — yapcore **−12.4%** vs stock Folia (`20260904TshipFc2`); knobs disclosed in bench JSON (`knob_*`). See [`YAP_FOLIA_SOAK.md`](../folia/YAP_FOLIA_SOAK.md). **250 keepalive = HOLD-ONLY**.
+- We do **not** claim “faster than Paper/Leaf on every workload.” Population cite: **fullcite** (100 active bots + fixtures) under the **ship Folia knob profile** (async-save, hopper budget, MSPT-gated entity/microtick budgets, subregion partition) — yapcore **−12.4%** vs stock Folia (`20260904TshipFc2`); knobs disclosed in bench JSON (`knob_*`). Heavypop peer: **−8.09% vs Canvas** and **−16.56% vs stock** (`20260904T065505Z`) — [REAL_GAINS.md](../folia/REAL_GAINS.md) · [CANVAS_PARITY.md](../folia/CANVAS_PARITY.md). **250 keepalive = HOLD-ONLY**. Paper/Purpur single-thread MSPT is out of scope for that cite — [PAPER_PURPUR_SCALE.md](../folia/PAPER_PURPUR_SCALE.md).
 - Bedrock play-depth is **join/spawn + play-depth smoke green**; Wave 2 fidelity matrix
   (inventory/forms/G.33 heads) is in [CROSSPLAY.md](../network/CROSSPLAY.md) — Floodgate-only
   forms and anvil/smithing UIs are **Limited/Out**, not silent Partial.
@@ -89,7 +89,7 @@ YaPcore contributes:
 
 ## 2. Related work
 
-**Paper / Purpur / Pufferfish / Leaf** improve the classic Bukkit single-main-tick model (performance and/or knobs). **PaperMC Folia** introduces regionized multithreading for Bukkit-class servers. **YaPcore forks Folia** as **YaP-Folia** rather than shipping upstream Fill as the product jar. Peer Folia forks (e.g. Canvas) typically leave operators to assemble proxy + plugins themselves.
+**Paper / Purpur / Pufferfish / Leaf** improve the classic Bukkit single-main-tick model (performance and/or knobs). **PaperMC Folia** introduces regionized multithreading for Bukkit-class servers. **YaPcore forks Folia** as **YaP-Folia** rather than shipping upstream Fill as the product jar. Peer Folia forks (e.g. Canvas) typically leave operators to assemble proxy + plugins themselves. YaP ships a **Purpur-inspired encyclopedia** (`yap-gameplay-knobs` / `knobs.yml`) as original YaP code — not a Purpur port — so operators keep Folia without losing that config surface ([TUNE.md](../ops/TUNE.md)).
 
 **Netty-based proxies** (Velocity; YaP Link) separate player routing from world authority. **Geyser / Via\*** stacks provide dual-stack crossplay as separate jars; YaPcore embeds Via-class and Geyser-class code in chassis/`crossplay` packages.
 

@@ -22,7 +22,7 @@ Bedrock crossplay, YaP Link proxy, web dashboard, and the operator SMP commands 
 | **Network** | YaP Link native proxy, dual-stack gateway, Floodgate-class identity; offline-mode Mojang skins |
 | **Plugins** | Full CORE+NETWORK stack: perms, chat, moderation, essentials, claims, regions, protect, world, tab, discord, guard, map, NPCs, … |
 | **Operator SMP** | `/bag` (3/5/7/9 pages), `/gm` + `/item`, `/eco`, per-rank name/chat colors, `/yapmod seen` |
-| **Gameplay (in the full box)** | MMO (100 quests, 20 bosses, abilities book + hotbar), vehicles, stacker, factions, guilds |
+| **Gameplay (in the full box)** | MMO (100 quests, 20 bosses, abilities book + hotbar), vehicles, stacker, factions, guilds, **YaP Encyclopedia** (Purpur-inspired knobs) |
 | **Ops** | Web dashboard (`:8080`) — ranks, kit builder, plugin YAML editors, Swing GUI, seed defaults, MariaDB Docker package |
 | **Clients (optional)** | Fabric 26.2: **yap-visuals** (Sodium+Iris+shaders in one jar), **yap-bag**, **yap-ultrawide** — vanilla and Bedrock stay supported without them |
 | **Packs** | `yapcore-default` (Faithful + skies + vehicles + MMO icons) |
@@ -130,13 +130,17 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 | **Ops docs** | Public hostname `yapcoremc.yaplabs.us`, packs via nginx `:80`, grey-cloud game DNS |
 | **Ability VFX (V1–V4)** | Engine primitives (`at:`, shake, arcs, motion trails, new shapes), element/archetype kits for 227 bulk abilities, 12 hero casts, unique icons, Folia soak gates — [MMO_ABILITY_VFX.md](../mmo/MMO_ABILITY_VFX.md) |
 | **Ops Waves 1–5** | Folia-safe pregen/protect/regions; Bedrock inventory fidelity; quest PLAYTIME/ECONOMY/… objectives; Discord event webhooks; map markers; dashboard Access context/temp + social/stacker panels; cite fixtures −5.53% fullcite (peak −12.4%) — [REAL_GAINS.md](../folia/REAL_GAINS.md) |
+| **YaP Encyclopedia** | Real Purpur-inspired `knobs.yml` surface (original YaP code): full attributes, ride perms, per-mob specials, gameplay/blocks wiring, `/yapknobs status`; optional Folia NMS crop/fluid hooks (`0025-yap-encyclopedia-hooks`) — [TUNE.md](../ops/TUNE.md) |
+| **Cite vs Canvas** | Heavypop campaign `20260904T065505Z`: YaP **−8.09% vs Canvas** (citeable ≥5%), **−16.56% vs stock** under disclosed ship knobs — [CANVAS_PARITY.md](../folia/CANVAS_PARITY.md) · [REAL_GAINS.md](../folia/REAL_GAINS.md) |
+| **vs Paper/Purpur** | Honest scale/product framing (regionized + encyclopedia + suite); no single-thread MSPT claim — [PAPER_PURPUR_SCALE.md](../folia/PAPER_PURPUR_SCALE.md) |
 
 ### Still open (not a version bump)
 
 - Manual §E live checklist ([CROSSPLAY.md](../network/CROSSPLAY.md))
 - Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
-- Finish live **12h soak-long** + in-game VFX smoke before marketing the refreshed zip as soak-proven
+- Finish live **12h soak-long** + in-game VFX / encyclopedia smoke before marketing the refreshed zip as soak-proven
+- Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production
 
 ---
 

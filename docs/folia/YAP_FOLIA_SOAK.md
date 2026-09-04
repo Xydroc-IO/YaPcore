@@ -31,6 +31,7 @@ Scheduler: `folia-kernel/config/paper-global.yml` → `threaded-regions.schedule
 ./scripts/yapctl soak-perf 30         # heap/thread samples
 ./scripts/yapctl soak-long 12         # 12h default, 8h floor
 ./scripts/yapctl cite-fullcite        # stock Folia vs YaPcore ≥5% with **ship knobs**
+./scripts/bench/cite-canvas-heavypop.sh 40  # Canvas ≥5% heavypop campaign
 ```
 
 ## Profile: ship cite (default)
@@ -40,6 +41,8 @@ Scheduler: `folia-kernel/config/paper-global.yml` → `threaded-regions.schedule
 ./scripts/yapctl cite-fullcite
 
 # Heavypop + Canvas peer:
+./scripts/bench/cite-canvas-heavypop.sh 40
+# or:
 YAP_BENCH_COMPETITORS=folia,canvas,yapcore YAP_BENCH_SHUFFLE=0 \
 YAP_MSPT_REQUIRE_SHIP_KNOBS=1 \
 ./scripts/bench/run-vs-folia.sh heavypop 40

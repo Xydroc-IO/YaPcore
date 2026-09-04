@@ -90,7 +90,8 @@ gradle publishReleasesFolder   # refreshes releases/1.0.0.0/ trees + zips
 
 Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 1.0.0.0” — do **not** change Gradle `version`.
 
-**Latest refresh:** 2026-09-04 — Ability VFX V1–V4 + Ops Waves 1–5 (cite fixtures −5.53% fullcite / peak −12.4%).
+**Latest refresh:** 2026-09-04 — YaP Encyclopedia + Canvas heavypop cite (−8.09% vs Canvas / −16.56% vs stock); prior same-day refresh included Ability VFX V1–V4 + Ops Waves 1–5 (fullcite −5.53% / peak −12.4%).
+
 ## Version bump checklist (new tag only)
 
 1. Root `build.gradle.kts` `version = "…"`

@@ -92,7 +92,7 @@ load `VehicleAPI` from `ServicesManager`. Runs on **YaP-Folia** (`folia-supporte
 `yap-map`, `yap-npcs`, `yap-factions`, `yap-floodgate`, `yap-bedrock-ui`, `yap-folia-bridge`.
 
 **GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `-PyapGameplay=true`):
-`yap-vehicles`, `yap-stacker`, `yap-gameplay-knobs`, plus MMO:
+`yap-vehicles`, `yap-stacker`, `yap-gameplay-knobs` (YaP Encyclopedia — [TUNE.md](../ops/TUNE.md)), plus MMO:
 
 | Jar | Plugin |
 |-----|--------|

@@ -27,9 +27,10 @@ gradle assemblePluginDist          # …/modules/core + …/modules/gameplay
 
 See `modules/README.md` for the full jar table.
 
-Central configs: [TUNE.md](../ops/TUNE.md). Purpur-class mob encyclopedia is the Paper plugin
-`yap-gameplay-knobs` (`plugins/YaPGameplayKnobs/knobs.yml`) plus packaging module
-`provides: [gameplay-knobs]` (GAMEPLAY tier).
+Central configs: [TUNE.md](../ops/TUNE.md). The **YaP Encyclopedia** (Purpur-inspired, original YaP
+code — not a Purpur port) is the Paper plugin `yap-gameplay-knobs`
+(`plugins/YaPGameplayKnobs/knobs.yml`) plus packaging module `provides: [gameplay-knobs]`
+(GAMEPLAY tier). Optional Folia NMS crop/fluid hooks: patch `0025-yap-encyclopedia-hooks`.
 
 **Vehicles:** GAMEPLAY opt-in — Paper plugin `yap-vehicles` + module `provides: [vehicles]`.
 See [VEHICLES.md](VEHICLES.md). Control from GUI, **web dashboard**, or `/yapvehicle`.
