@@ -227,6 +227,7 @@ resourcepacks/**
 !resourcepacks/faithful-64x.zip
 !resourcepacks/yap-vehicles.zip
 !resourcepacks/yap-vehicles/
+!resourcepacks/yap-vehicles/**
 !resourcepacks/yap-abilities/
 !resourcepacks/yap-abilities/**
 !resourcepacks/yap-abilities.zip

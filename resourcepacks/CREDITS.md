@@ -34,6 +34,24 @@ First-party. Skies: `scripts/generate-yap-skies.py`. Water/weather:
 `scripts/generate-yap-water.py` (grayscale still/flow for biome tint; underwater,
 rain, snow, drips). No third-party photos or Complementary/BSL assets.
 
+## YaP Vehicles
+
+First-party upgrade icons + fleet body models under `yap-vehicles/`.
+
+**Fleet body meshes and textures** are converted from
+[Automobility](https://github.com/FoundationGames/Automobility) (MIT License,
+© FoundationGames). Full license text: `yap-vehicles/AUTOMOBILITY_LICENSE.txt`.
+Re-import with:
+
+```bash
+# clone Automobility somewhere, then:
+python3 scripts/import-automobility-vehicles.py
+```
+
+(The import script expects Automobility at `/tmp/yap-car-models/Automobility` by default.)
+
+YaP-authored upgrade item icons and packaging remain under YaPcore GPLv3.
+
 ## YaP Abilities
 
 First-party. `clay_ball` CustomModelData icons for skills and the 230+ ability book.

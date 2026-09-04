@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "yapvehicles:item/fuel_tank_xl"
+  }
+}

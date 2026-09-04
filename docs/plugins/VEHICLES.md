@@ -155,8 +155,9 @@ Lift kits change **ride height** in physics; wheel sizes **rescale WHEEL visuals
 | `truck_4x4` | 4×4 truck |
 | `monster_truck` | Monster truck |
 | `sport_car` | Sport |
-| `hypercar` | Hyper |
-| `lambo` / `ferrari` / `mclaren` / `porsche` | Exotics |
+| `hypercar` | Open racer |
+| `lambo` / `ferrari` / `mclaren` / `porsche` | Colored standards / motorcars |
+| `hoverbike` | Amethyst rickshaw |
 
 Glass uses clear `GLASS` BlockDisplays (see-through). Interiors include seats, dash, steering wheel, and console visible through the cabin.
 
@@ -164,11 +165,13 @@ Glass uses clear `GLASS` BlockDisplays (see-through). Interiors include seats, d
 
 With `visuals.high-res-models: true` (default), each fleet type attaches an
 **ItemDisplay** body using CustomModelData **77200–77210** from
-[`resourcepacks/yap-vehicles`](../resourcepacks/yap-vehicles/). Textures are
-**64×64**; JSON models live under `assets/yapvehicles/models/vehicle/`.
+[`resourcepacks/yap-vehicles`](../resourcepacks/yap-vehicles/). Meshes/textures
+are converted from [Automobility](https://github.com/FoundationGames/Automobility)
+(MIT); see [`CREDITS.md`](../../resourcepacks/CREDITS.md). JSON models live under
+`assets/yapvehicles/models/vehicle/`.
 
 ```java
-builder.bodyModel(HighResModels.LAMBO, 0, 0.5, 0, 2.2);
+builder.bodyModel(HighResModels.LAMBO, 0, 0.5, 0, 1.05);
 ```
 
 Clients must load `yapcore-default.zip` (or a pack that merges YaP Vehicles).
@@ -176,7 +179,8 @@ Without the pack, HD bodies look like blank paper — set
 `visuals.high-res-models: false` for BlockDisplay-only bodies.
 
 **Preview gallery:** [`resourcepacks/yap-vehicles/showcase/`](../resourcepacks/yap-vehicles/showcase/)
-— demo PNGs of every model (regenerate with `python3 scripts/generate-vehicle-showcase.py`).
+— demo PNGs of every model (regenerate via `scripts/import-automobility-vehicles.py`
+plus the showcase block in that workflow / CREDITS notes).
 
 ### Author API
 

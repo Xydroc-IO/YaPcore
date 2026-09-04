@@ -1,0 +1,6 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "yapvehicles:item/lift_2in"
+  }
+}

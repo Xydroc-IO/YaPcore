@@ -1,0 +1,188 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "item/paper"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 77101
+      },
+      "model": "yapvehicles:item/turbo_engine"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77102
+      },
+      "model": "yapvehicles:item/eco_carburetor"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77103
+      },
+      "model": "yapvehicles:item/sport_tires"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77104
+      },
+      "model": "yapvehicles:item/reinforced_armor"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77105
+      },
+      "model": "yapvehicles:item/fuel_tank_xl"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77106
+      },
+      "model": "yapvehicles:item/racing_suspension"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77107
+      },
+      "model": "yapvehicles:item/nitro_kit"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77110
+      },
+      "model": "yapvehicles:item/tires_street"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77111
+      },
+      "model": "yapvehicles:item/tires_offroad"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77112
+      },
+      "model": "yapvehicles:item/tires_mud"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77113
+      },
+      "model": "yapvehicles:item/tires_slick"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77114
+      },
+      "model": "yapvehicles:item/wheels_plus1"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77115
+      },
+      "model": "yapvehicles:item/wheels_plus2"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77116
+      },
+      "model": "yapvehicles:item/wheels_deep_dish"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77117
+      },
+      "model": "yapvehicles:item/wheels_monster"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77120
+      },
+      "model": "yapvehicles:item/lift_2in"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77121
+      },
+      "model": "yapvehicles:item/lift_4in"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77122
+      },
+      "model": "yapvehicles:item/lift_6in"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77123
+      },
+      "model": "yapvehicles:item/lift_monster"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77200
+      },
+      "model": "yapvehicles:item/vehicle_chassis"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77201
+      },
+      "model": "yapvehicles:item/vehicle_buggy"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77202
+      },
+      "model": "yapvehicles:item/vehicle_truck_4x4"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77203
+      },
+      "model": "yapvehicles:item/vehicle_monster_truck"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77204
+      },
+      "model": "yapvehicles:item/vehicle_sport_car"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77205
+      },
+      "model": "yapvehicles:item/vehicle_hypercar"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77206
+      },
+      "model": "yapvehicles:item/vehicle_lambo"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77207
+      },
+      "model": "yapvehicles:item/vehicle_ferrari"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77208
+      },
+      "model": "yapvehicles:item/vehicle_mclaren"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77209
+      },
+      "model": "yapvehicles:item/vehicle_porsche"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 77210
+      },
+      "model": "yapvehicles:item/vehicle_hoverbike"
+    }
+  ]
+}

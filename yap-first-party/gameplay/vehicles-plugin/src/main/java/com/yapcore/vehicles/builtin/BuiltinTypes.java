@@ -88,7 +88,7 @@ public final class BuiltinTypes {
 
     public static VehicleType hoverbike(VehiclesConfig config) {
         ChassisBlueprint raw = ChassisKit.bike();
-        var b = VehicleType.builder("hoverbike").displayName("Hoverbike").chassis(forVisuals(raw, config));
+        var b = VehicleType.builder("hoverbike").displayName("Amethyst Rickshaw").chassis(forVisuals(raw, config));
         attachHd(b, raw, config, HighResModels.HOVERBIKE, "hoverbike", () -> {
             b.visual(VehicleVisual.block(Material.CYAN_CONCRETE).offset(0, 0.55, 0).scale(0.7, 0.25, 1.2).build());
             b.visual(VehicleVisual.block(Material.SEA_LANTERN).offset(0, 0.2, 0).scale(0.55, 0.15, 0.55).build());
@@ -141,7 +141,7 @@ public final class BuiltinTypes {
 
     public static VehicleType hypercar(VehiclesConfig config) {
         ChassisBlueprint raw = ChassisKit.hyper();
-        var b = VehicleType.builder("hypercar").displayName("Hypercar").chassis(forVisuals(raw, config));
+        var b = VehicleType.builder("hypercar").displayName("Open Racer").chassis(forVisuals(raw, config));
         attachHd(b, raw, config, HighResModels.HYPERCAR, "hypercar", () -> {
             b.bodyPanel(raw, "hood", Material.BLACK_CONCRETE, 1.5, 0.22, 0.9);
             b.bodyPanel(raw, "bed", Material.BLACK_CONCRETE, 1.45, 0.2, 0.75);
@@ -155,7 +155,7 @@ public final class BuiltinTypes {
 
     public static VehicleType lambo(VehiclesConfig config) {
         ChassisBlueprint raw = ChassisKit.hyper();
-        var b = VehicleType.builder("lambo").displayName("Lambo SV").chassis(forVisuals(raw, config));
+        var b = VehicleType.builder("lambo").displayName("Lime Speeder").chassis(forVisuals(raw, config));
         attachHd(b, raw, config, HighResModels.LAMBO, "lambo", () -> {
             b.bodyPanel(raw, "hood", Material.LIME_CONCRETE, 1.55, 0.24, 0.95);
             b.bodyPanel(raw, "bed", Material.LIME_CONCRETE, 1.5, 0.22, 0.8);
@@ -168,7 +168,7 @@ public final class BuiltinTypes {
 
     public static VehicleType ferrari(VehiclesConfig config) {
         ChassisBlueprint raw = ChassisKit.hyper();
-        var b = VehicleType.builder("ferrari").displayName("Ferrari XX").chassis(forVisuals(raw, config));
+        var b = VehicleType.builder("ferrari").displayName("Magenta Coupe").chassis(forVisuals(raw, config));
         attachHd(b, raw, config, HighResModels.FERRARI, "ferrari", () -> {
             b.bodyPanel(raw, "hood", Material.RED_CONCRETE, 1.5, 0.24, 0.9);
             b.bodyPanel(raw, "bed", Material.RED_CONCRETE, 1.45, 0.22, 0.75);
@@ -181,7 +181,7 @@ public final class BuiltinTypes {
 
     public static VehicleType mclaren(VehiclesConfig config) {
         ChassisBlueprint raw = ChassisKit.hyper();
-        var b = VehicleType.builder("mclaren").displayName("McLaren GT").chassis(forVisuals(raw, config));
+        var b = VehicleType.builder("mclaren").displayName("Copper Motorcar").chassis(forVisuals(raw, config));
         attachHd(b, raw, config, HighResModels.MCLAREN, "mclaren", () -> {
             b.bodyPanel(raw, "hood", Material.ORANGE_CONCRETE, 1.48, 0.22, 0.88);
             b.bodyPanel(raw, "bed", Material.ORANGE_CONCRETE, 1.42, 0.2, 0.72);
@@ -194,7 +194,7 @@ public final class BuiltinTypes {
 
     public static VehicleType porsche(VehiclesConfig config) {
         ChassisBlueprint raw = ChassisKit.sport();
-        var b = VehicleType.builder("porsche").displayName("Porsche Turbo").chassis(forVisuals(raw, config));
+        var b = VehicleType.builder("porsche").displayName("Steel Motorcar").chassis(forVisuals(raw, config));
         attachHd(b, raw, config, HighResModels.PORSCHE, "porsche", () -> {
             b.bodyPanel(raw, "hood", Material.WHITE_CONCRETE, 1.35, 0.26, 0.8);
             b.bodyPanel(raw, "bed", Material.LIGHT_GRAY_CONCRETE, 1.3, 0.28, 0.85);
