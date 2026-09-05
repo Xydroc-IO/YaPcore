@@ -26,6 +26,8 @@ uniform float far;
 uniform vec3 skyColor;
 uniform vec3 fogColor;
 uniform float eyeAltitude;
+// Iris: WorldRenderingPhase ordinal (see MC_RENDER_STAGE_* macros)
+uniform int renderStage;
 
 uniform sampler2D texture;
 uniform sampler2D lightmap;

@@ -97,18 +97,23 @@ resource-pack-enabled=true
 resource-pack-files=yapcore-default.zip,my-overlay.zip
 resource-pack-forced=false
 resource-pack-prompt=This server offers a resource pack. Click Yes to download, or No to play without it.
-# Prefer GitHub Releases so every client hits the newest published zip:
-resource-pack-url=https://github.com/Xydroc-IO/YaPcore/releases/latest/download/{file}
-# Or self-host via nginx:
-# resource-pack-http-port=8081
+# Prefer self-hosted nginx so SHA-1 always matches the local zip after rebuild:
+# (leave resource-pack-url empty → PublicEndpoint uses public host + pack port)
+# resource-pack-url=
+# Or GitHub Releases (must re-upload zip after every rebuild or SHA fails):
+# resource-pack-url=https://github.com/Xydroc-IO/YaPcore/releases/latest/download/{file}
+resource-pack-http-port=8081
+resource-pack-prompt=This server offers a resource pack. Click Yes to download, or No to play without it.
 # resource-pack-public-host=yapcoremc.yaplabs.us
 # public-pack-port=80
 # resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
 ```
 
-Attach **`yapcore-default.zip`** (same bytes you built) as a release asset on each GitHub
-release. Tag **`1.0.0.0`** already publishes it — `/releases/latest/download/{file}` follows the
-newest release. YaP hashes the remote zip at boot so Paper’s SHA-1 matches what clients download.
+Attach **`yapcore-default.zip`** (same bytes you built) to nginx (`./scripts/sync-pack-to-nginx.sh`)
+and/or as a GitHub release asset. Tag **`1.0.0.0`** publishes it — `/releases/latest/download/{file}`
+follows the newest release. YaP hashes the **download URL** at boot so Paper’s SHA-1 matches
+what clients fetch. If the advertised SHA is from a newer local rebuild than GitHub/nginx,
+Minecraft shows **“1 of 1 pack failed to download.”**
 
 **Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Skies + YaP Water) — built on
 `gradle prepareClientPack`. Credit / license:

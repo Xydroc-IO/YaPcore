@@ -61,6 +61,10 @@ public final class ResourcePackManager {
         return gameRoot().resolve("plugins").resolve("YaPMap").resolve("map/tiles");
     }
 
+    private Path mapMeshesDir() {
+        return gameRoot().resolve("plugins").resolve("YaPMap").resolve("map/meshes");
+    }
+
     public void addListener(Consumer<List<ResourcePackInfo>> listener) {
         listeners.add(listener);
     }
@@ -81,7 +85,8 @@ public final class ResourcePackManager {
                 config.getResourcePackHttpPort(),
                 packsDir,
                 mapWebDir(),
-                mapTilesDir()
+                mapTilesDir(),
+                mapMeshesDir()
         );
         httpServer.start();
         writePluginManifest();

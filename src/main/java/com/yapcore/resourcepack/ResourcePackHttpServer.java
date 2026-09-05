@@ -16,7 +16,8 @@ import java.util.logging.Logger;
 /**
  * Lightweight HTTP host so Java and Bedrock clients can download the active pack
  * directly from the YaPcore process (seamless, no external CDN required).
- * Also serves YaPMap tiles and UI at {@code /map/} and {@code /tiles/} when configured.
+ * Also serves YaPMap UI / tiles / meshes at {@code /map/}, {@code /tiles/}, {@code /meshes/}
+ * when configured.
  */
 public final class ResourcePackHttpServer {
 
@@ -27,19 +28,26 @@ public final class ResourcePackHttpServer {
     private final Path packsDir;
     private final Path mapWebDir;
     private final Path mapTilesDir;
+    private final Path mapMeshesDir;
     private HttpServer http;
 
     public ResourcePackHttpServer(String bindHost, int port, Path packsDir) {
-        this(bindHost, port, packsDir, null, null);
+        this(bindHost, port, packsDir, null, null, null);
     }
 
     public ResourcePackHttpServer(String bindHost, int port, Path packsDir,
                                   Path mapWebDir, Path mapTilesDir) {
+        this(bindHost, port, packsDir, mapWebDir, mapTilesDir, null);
+    }
+
+    public ResourcePackHttpServer(String bindHost, int port, Path packsDir,
+                                  Path mapWebDir, Path mapTilesDir, Path mapMeshesDir) {
         this.bindHost = bindHost == null || bindHost.isBlank() ? "0.0.0.0" : bindHost;
         this.port = port;
         this.packsDir = packsDir;
         this.mapWebDir = mapWebDir;
         this.mapTilesDir = mapTilesDir;
+        this.mapMeshesDir = mapMeshesDir;
     }
 
     public int getPort() {
@@ -61,6 +69,10 @@ public final class ResourcePackHttpServer {
         if (mapTilesDir != null) {
             Files.createDirectories(mapTilesDir);
             http.createContext("/tiles/", this::serveMapTiles);
+        }
+        if (mapMeshesDir != null) {
+            Files.createDirectories(mapMeshesDir);
+            http.createContext("/meshes/", this::serveMapMeshes);
         }
         http.createContext("/health", ex -> {
             byte[] ok = "ok".getBytes();
@@ -172,15 +184,24 @@ public final class ResourcePackHttpServer {
     }
 
     private void serveMapTiles(HttpExchange exchange) throws IOException {
+        serveSafeFile(exchange, mapTilesDir, "/tiles/", "image/png");
+    }
+
+    private void serveMapMeshes(HttpExchange exchange) throws IOException {
+        serveSafeFile(exchange, mapMeshesDir, "/meshes/", "application/json; charset=utf-8");
+    }
+
+    private static void serveSafeFile(HttpExchange exchange, Path rootDir, String prefix, String contentType)
+            throws IOException {
         try {
             String path = exchange.getRequestURI().getPath();
-            String rel = path.substring("/tiles/".length());
+            String rel = path.substring(prefix.length());
             if (rel.contains("..") || rel.startsWith("/") || rel.contains("\\") || rel.isBlank()) {
                 exchange.sendResponseHeaders(400, -1);
                 return;
             }
-            Path file = mapTilesDir.resolve(rel).normalize();
-            Path root = mapTilesDir.toAbsolutePath().normalize();
+            Path file = rootDir.resolve(rel).normalize();
+            Path root = rootDir.toAbsolutePath().normalize();
             if (!file.startsWith(root)) {
                 exchange.sendResponseHeaders(403, -1);
                 return;
@@ -190,7 +211,7 @@ public final class ResourcePackHttpServer {
                 return;
             }
             Headers headers = exchange.getResponseHeaders();
-            headers.add("Content-Type", "image/png");
+            headers.add("Content-Type", contentType);
             headers.add("Cache-Control", "public, max-age=60");
             long size = Files.size(file);
             exchange.sendResponseHeaders(200, size);
