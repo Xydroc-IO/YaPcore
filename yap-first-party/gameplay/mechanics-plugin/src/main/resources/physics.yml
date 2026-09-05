@@ -1,7 +1,0 @@
-fall-damage-multiplier: 1.0
-projectile-damage-multiplier: 1.0
-knockback-multiplier: 1.0
-# Blocks that always cancel fall damage (e.g. hay bale style)
-soft-landing:
-  - HAY_BLOCK
-  - SLIME_BLOCK

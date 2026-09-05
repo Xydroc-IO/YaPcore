@@ -1,8 +1,0 @@
-name: YaPGamesFfaModule
-main: com.yapcore.games.module.FfaPackagingModule
-version: 1.0.0.0
-api: yap-module-1
-author: YapLabs
-description: FFA minigame packaging for YaPGames (requires plugins/yap-games.jar)
-provides: [games-ffa]
-requires: [games]
