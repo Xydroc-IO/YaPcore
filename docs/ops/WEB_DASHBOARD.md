@@ -178,6 +178,10 @@ Requires YaP-Folia running + `yap-moderation` / `yap-perms` / `yap-playerdata`. 
 
 **Gameplay → Skills** — thin progression (mining / woodcutting / strength). See [SKILLS.md](../plugins/SKILLS.md).
 
+### Dungeons (`yap-dungeons`)
+
+Instanced procedural dungeons (opt-in GAMEPLAY). See [DUNGEONS.md](../plugins/DUNGEONS.md). Commands: `/dungeon`, `/yapdungeons`.
+
 `GET/POST /api/skills` — jar presence, `enabled`, skill packs, online sample; reload via `yskills reload`.
 
 ### Factions (`yap-factions`)
@@ -255,7 +259,7 @@ These tabs **write plugin YAML** via `save-settings` (or equivalent) and reload 
 
 Serves tiles via YaPcore pack HTTP when `use-yapcore-server: true` (default). First render runs ~2s after plugin enable; full re-render on `render-interval-minutes`. Tune `sample-chunk-radius` and `max-height` on low-CPU hosts — see plugin `config.yml` comments.
 
-**Wave 4 markers** — live player markers via `/map/markers.json` (poll interval configurable). Optional NPC points and region outlines when YaPNpcs / YaPRegions are installed and toggled on in the Map tab. This is a **flat** Leaflet map; BlueMap-style **3D** mesh viewing is Stretch / out of scope until later.
+**Wave 4 markers** — live player markers via `/map/markers.json` (poll interval configurable). Optional NPC points and region outlines when YaPNpcs / YaPRegions are installed and toggled on in the Map tab. Flat Leaflet and optional **3D** voxel mesh (`?view=3d`) share the same markers feed; see [MAP.md](MAP.md).
 
 ### Discord tab
 

@@ -9,17 +9,17 @@ YaPcore aims for **one shared world** with first-party protocol coverage:
 **Supported JE floor: 1.20.2+** onto Folia/Paper 26.2. Bedrock smoke: `geyserParitySmoke=true` on 1.21.50.
 
 **Product note:** Default `game-authority=folia`. Phase 4 join/spawn + core play-depth are green.
-Wave 2 closes inventory/forms honesty for native Bedrock; Floodgate-only and some UIs are **Limited** / **Out** (not silent Partial).
+Inventory/forms honesty for native Bedrock is shipped; Floodgate-only forms are **Green** when the proxy runs Geyser+Floodgate (`floodgate:form`). Some complex UIs remain **Out** (not silent Partial).
 
 ## Connection paths
 
 | Path | Transport | Forms | Action bar / sidebar | Inventory authority |
 |------|-----------|-------|----------------------|---------------------|
-| Native YaPcore Bedrock | UDP dual-stack | Chassis `FormService` (simple/modal/custom) | `BedrockUiBridge` | Shadow + Paper inject |
-| Velocity/Geyser → YaPFloodgate | JE TCP to Folia | **Limited** — no chassis session; chat explains forms need native UDP | Paper action bar + scoreboard | Paper Bukkit inventory |
+| Native YaPcore Bedrock | UDP dual-stack | Chassis `FormService` + `BedrockCustomFormBuilder` (simple/modal/custom) | `BedrockUiBridge` | Shadow + Paper inject |
+| Velocity/Geyser → YaPFloodgate | JE TCP to Folia | **Green** — `floodgate:form` relay (requires Geyser+Floodgate on proxy) | Paper action bar + scoreboard | Paper Bukkit inventory |
 | YaP Link + Bedrock on YaPcore gateway | Proxy UDP terminating on chassis | Same as native | Same | Same |
 
-## Fidelity matrix (Wave 2)
+## Fidelity matrix
 
 | ID | Area | Status |
 |----|------|--------|
@@ -33,8 +33,9 @@ Wave 2 closes inventory/forms honesty for native Bedrock; Floodgate-only and som
 | G.34 | JE pack → BE offer | **Green** |
 | P4.6 | Chest / furnace / hopper open | **Green** (live Paper resync on push) |
 | P4.6 | Enchant / workbench / villager | **Green** (best-effort); XP/layout polish ongoing |
-| Forms (native UDP) | Simple / modal / custom | **Green** |
-| Forms (Floodgate-only) | Admin / custom forms | **Limited** — explicit user message; not Partial |
+| Forms (native UDP) | Simple / modal / custom (+ typed builder) | **Green** |
+| Forms (Floodgate-only) | Admin / custom forms via `floodgate:form` | **Green** — requires Geyser+Floodgate on proxy |
+| Admin hub (Bedrock) | `/yapadmin` simple form via YaPBedrockUI | **Green** (native or Floodgate; chest GUI fallback) |
 | Anvil / smithing / loom / stonecutter / cartography | Container UIs | **Green** — Paper-backed open + slot sync; **recipe pick** via CRAFT_RECIPE_OPTIONAL (stonecutter/loom/smithing/cartography); anvil rename FILTER_TEXT coded (deploy after soak) |
 | Full Geyser feature matrix | Every BE packet | **Out** — YaP intentional depth |
 
@@ -67,7 +68,7 @@ Bedrock UDP─┘  CrossplayHub                  └─ UnifiedPlayer roster
 ## Scope
 
 **Target:** Geyser-class + Via-class coverage in YaP code for supported bands.
-**Not claimed:** stock Geyser jar parity, Floodgate-only forms, or every complex JE container on Bedrock.
+**Not claimed:** stock Geyser jar parity end-to-end, or every complex JE container on Bedrock. Floodgate-only forms need Geyser+Floodgate on the proxy.
 
 ## §E — live operator checklist (production closeout)
 
@@ -102,6 +103,7 @@ Run once on a live YaP-Folia box before calling crossplay “ops-signed.” Auto
 
 - [ ] `/yapknobs status` (`nmsHooks: present=true` on YaP-Folia with patch 0025)
 - [ ] `/skills` open when `yap-skills.jar` is installed and enabled
+- [ ] `/dungeon` open when `yap-dungeons.jar` is installed and enabled
 
 Retail Xbox / full inv depth: validate on real hardware before marketing “full play depth.”
 
@@ -114,5 +116,6 @@ Retail Xbox / full inv depth: validate on real hardware before marketing “full
 ## Related
 
 - [VELOCITY.md](VELOCITY.md) — Floodgate behind proxy
-- Bedrock forms: native UDP session required; Floodgate-only forms stay **Limited** (this doc)
+- Bedrock forms: native UDP uses chassis `FormService`; Floodgate-only uses `floodgate:form` (Geyser+Floodgate on proxy)
+- Ops checklist: native UDP or Velocity+Geyser+Floodgate → `/yapadmin` or `BedrockUiServices.find().sendSimpleForm(...)` should open a form
 - [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md)

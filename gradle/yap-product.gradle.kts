@@ -93,13 +93,16 @@ tasks.register("installProductDefaults") {
 
 tasks.register("installGameplayDefaults") {
     group = "distribution"
-    description = "GAMEPLAY opt-in: Skills + Disasters + Stacker + GameplayKnobs (+ fine-tune modules)"
+    description = "GAMEPLAY opt-in: Skills + Dungeons + Disasters + Stacker + GameplayKnobs (+ fine-tune modules)"
     dependsOn(
         ":gameplay-knobs-plugin:installIntoPlugins",
         ":finetune-modules:installGameplayIntoModules",
     )
     if (findProject(":skills-plugin") != null) {
         dependsOn(":skills-plugin:installIntoPlugins")
+    }
+    if (findProject(":dungeons-plugin") != null) {
+        dependsOn(":dungeons-plugin:installIntoPlugins")
     }
     if (findProject(":disasters-plugin") != null) {
         dependsOn(":disasters-plugin:installIntoPlugins")
@@ -158,6 +161,8 @@ tasks.register("assemblePluginDist") {
         ":stacker-plugin:jar",
         ":yap-mmo-api:jar",
         ":skills-plugin:shadowJar",
+        ":yap-dungeons-api:jar",
+        ":dungeons-plugin:shadowJar",
         ":bedrock-ui-plugin:jar",
         ":disasters-plugin:jar",
         ":yap-bedrock-ui-api:jar",
@@ -165,6 +170,7 @@ tasks.register("assemblePluginDist") {
         ":yap-perms-api:jar",
         ":yap-moderation-api:jar",
         ":yap-chat-api:jar",
+        ":yap-discord-api:jar",
         ":yap-playerdata-api:jar",
         ":yap-protect-api:jar",
         ":yap-world-api:jar",
@@ -258,6 +264,9 @@ tasks.register("assemblePluginDist") {
         if (findProject(":skills-plugin") != null) {
             copyNamed(jarOf(":skills-plugin", "shadowJar"), gameplayDir)
         }
+        if (findProject(":dungeons-plugin") != null) {
+            copyNamed(jarOf(":dungeons-plugin", "shadowJar"), gameplayDir)
+        }
         if (findProject(":disasters-plugin") != null) {
             copyNamed(jarOf(":disasters-plugin"), gameplayDir)
         }
@@ -266,6 +275,9 @@ tasks.register("assemblePluginDist") {
         copyNamed(jarOf(":yap-perms-api"), apiDir)
         copyNamed(jarOf(":yap-moderation-api"), apiDir)
         copyNamed(jarOf(":yap-chat-api"), apiDir)
+        if (findProject(":yap-discord-api") != null) {
+            copyNamed(jarOf(":yap-discord-api"), apiDir)
+        }
         copyNamed(jarOf(":yap-playerdata-api"), apiDir)
         copyNamed(jarOf(":yap-protect-api"), apiDir)
         copyNamed(jarOf(":yap-world-api"), apiDir)
@@ -282,6 +294,9 @@ tasks.register("assemblePluginDist") {
         }
         if (findProject(":yap-mmo-api") != null) {
             copyNamed(jarOf(":yap-mmo-api"), apiDir)
+        }
+        if (findProject(":yap-dungeons-api") != null) {
+            copyNamed(jarOf(":yap-dungeons-api"), apiDir)
         }
         if (findProject(":yap-factions-api") != null) {
             copyNamed(jarOf(":yap-factions-api"), apiDir)

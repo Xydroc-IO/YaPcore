@@ -1,0 +1,403 @@
+# Overall min is always 10 for any entry (enforced in code).
+# Per-level mining/strength floors.
+levels:
+  1:
+    overall: 10
+    mining: 0
+    strength: 0
+  2:
+    overall: 10
+    mining: 0
+    strength: 0
+  3:
+    overall: 10
+    mining: 0
+    strength: 0
+  4:
+    overall: 10
+    mining: 0
+    strength: 0
+  5:
+    overall: 10
+    mining: 0
+    strength: 0
+  6:
+    overall: 10
+    mining: 15
+    strength: 0
+  7:
+    overall: 10
+    mining: 15
+    strength: 0
+  8:
+    overall: 10
+    mining: 15
+    strength: 0
+  9:
+    overall: 10
+    mining: 15
+    strength: 0
+  10:
+    overall: 10
+    mining: 15
+    strength: 0
+  11:
+    overall: 10
+    mining: 20
+    strength: 15
+  12:
+    overall: 10
+    mining: 20
+    strength: 15
+  13:
+    overall: 10
+    mining: 20
+    strength: 15
+  14:
+    overall: 10
+    mining: 20
+    strength: 15
+  15:
+    overall: 10
+    mining: 20
+    strength: 15
+  16:
+    overall: 10
+    mining: 30
+    strength: 25
+  17:
+    overall: 10
+    mining: 30
+    strength: 25
+  18:
+    overall: 10
+    mining: 30
+    strength: 25
+  19:
+    overall: 10
+    mining: 30
+    strength: 25
+  20:
+    overall: 10
+    mining: 30
+    strength: 25
+  21:
+    overall: 10
+    mining: 40
+    strength: 35
+  22:
+    overall: 10
+    mining: 40
+    strength: 35
+  23:
+    overall: 10
+    mining: 40
+    strength: 35
+  24:
+    overall: 10
+    mining: 40
+    strength: 35
+  25:
+    overall: 10
+    mining: 40
+    strength: 35
+  26:
+    overall: 10
+    mining: 50
+    strength: 45
+  27:
+    overall: 10
+    mining: 50
+    strength: 45
+  28:
+    overall: 10
+    mining: 50
+    strength: 45
+  29:
+    overall: 10
+    mining: 50
+    strength: 45
+  30:
+    overall: 10
+    mining: 50
+    strength: 45
+  31:
+    overall: 10
+    mining: 60
+    strength: 55
+  32:
+    overall: 10
+    mining: 60
+    strength: 55
+  33:
+    overall: 10
+    mining: 60
+    strength: 55
+  34:
+    overall: 10
+    mining: 60
+    strength: 55
+  35:
+    overall: 10
+    mining: 60
+    strength: 55
+  36:
+    overall: 10
+    mining: 70
+    strength: 65
+  37:
+    overall: 10
+    mining: 70
+    strength: 65
+  38:
+    overall: 10
+    mining: 70
+    strength: 65
+  39:
+    overall: 10
+    mining: 70
+    strength: 65
+  40:
+    overall: 10
+    mining: 70
+    strength: 65
+  41:
+    overall: 10
+    mining: 80
+    strength: 75
+  42:
+    overall: 10
+    mining: 80
+    strength: 75
+  43:
+    overall: 10
+    mining: 80
+    strength: 75
+  44:
+    overall: 10
+    mining: 80
+    strength: 75
+  45:
+    overall: 10
+    mining: 80
+    strength: 75
+  46:
+    overall: 10
+    mining: 90
+    strength: 85
+  47:
+    overall: 10
+    mining: 90
+    strength: 85
+  48:
+    overall: 10
+    mining: 90
+    strength: 85
+  49:
+    overall: 10
+    mining: 90
+    strength: 85
+  50:
+    overall: 10
+    mining: 90
+    strength: 85
+  51:
+    overall: 10
+    mining: 95
+    strength: 90
+  52:
+    overall: 10
+    mining: 95
+    strength: 90
+  53:
+    overall: 10
+    mining: 95
+    strength: 90
+  54:
+    overall: 10
+    mining: 95
+    strength: 90
+  55:
+    overall: 10
+    mining: 95
+    strength: 90
+  56:
+    overall: 10
+    mining: 95
+    strength: 90
+  57:
+    overall: 10
+    mining: 95
+    strength: 90
+  58:
+    overall: 10
+    mining: 95
+    strength: 90
+  59:
+    overall: 10
+    mining: 95
+    strength: 90
+  60:
+    overall: 10
+    mining: 95
+    strength: 90
+  61:
+    overall: 10
+    mining: 100
+    strength: 95
+  62:
+    overall: 10
+    mining: 100
+    strength: 95
+  63:
+    overall: 10
+    mining: 100
+    strength: 95
+  64:
+    overall: 10
+    mining: 100
+    strength: 95
+  65:
+    overall: 10
+    mining: 100
+    strength: 95
+  66:
+    overall: 10
+    mining: 100
+    strength: 95
+  67:
+    overall: 10
+    mining: 100
+    strength: 95
+  68:
+    overall: 10
+    mining: 100
+    strength: 95
+  69:
+    overall: 10
+    mining: 100
+    strength: 95
+  70:
+    overall: 10
+    mining: 100
+    strength: 95
+  71:
+    overall: 10
+    mining: 105
+    strength: 100
+  72:
+    overall: 10
+    mining: 105
+    strength: 100
+  73:
+    overall: 10
+    mining: 105
+    strength: 100
+  74:
+    overall: 10
+    mining: 105
+    strength: 100
+  75:
+    overall: 10
+    mining: 105
+    strength: 100
+  76:
+    overall: 10
+    mining: 105
+    strength: 100
+  77:
+    overall: 10
+    mining: 105
+    strength: 100
+  78:
+    overall: 10
+    mining: 105
+    strength: 100
+  79:
+    overall: 10
+    mining: 105
+    strength: 100
+  80:
+    overall: 10
+    mining: 105
+    strength: 100
+  81:
+    overall: 10
+    mining: 110
+    strength: 105
+  82:
+    overall: 10
+    mining: 110
+    strength: 105
+  83:
+    overall: 10
+    mining: 110
+    strength: 105
+  84:
+    overall: 10
+    mining: 110
+    strength: 105
+  85:
+    overall: 10
+    mining: 110
+    strength: 105
+  86:
+    overall: 10
+    mining: 110
+    strength: 105
+  87:
+    overall: 10
+    mining: 110
+    strength: 105
+  88:
+    overall: 10
+    mining: 110
+    strength: 105
+  89:
+    overall: 10
+    mining: 110
+    strength: 105
+  90:
+    overall: 10
+    mining: 110
+    strength: 105
+  91:
+    overall: 10
+    mining: 115
+    strength: 110
+  92:
+    overall: 10
+    mining: 115
+    strength: 110
+  93:
+    overall: 10
+    mining: 115
+    strength: 110
+  94:
+    overall: 10
+    mining: 115
+    strength: 110
+  95:
+    overall: 10
+    mining: 115
+    strength: 110
+  96:
+    overall: 10
+    mining: 115
+    strength: 110
+  97:
+    overall: 10
+    mining: 115
+    strength: 110
+  98:
+    overall: 10
+    mining: 115
+    strength: 110
+  99:
+    overall: 10
+    mining: 115
+    strength: 110
+  100:
+    overall: 10
+    mining: 115
+    strength: 110

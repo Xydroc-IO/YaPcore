@@ -1,0 +1,802 @@
+# Per-level combat / trap / boss scaling
+levels:
+  1:
+    rooms: 4
+    mobs-per-room: 3
+    hp-mult: 1.0
+    damage-mult: 1.0
+    elite-chance: 0.024
+    boss-max-health: 48.5
+    trap-damage: 2.4
+  2:
+    rooms: 4
+    mobs-per-room: 3
+    hp-mult: 1.12
+    damage-mult: 1.08
+    elite-chance: 0.028
+    boss-max-health: 57.0
+    trap-damage: 2.7
+  3:
+    rooms: 4
+    mobs-per-room: 3
+    hp-mult: 1.24
+    damage-mult: 1.16
+    elite-chance: 0.032
+    boss-max-health: 65.5
+    trap-damage: 3.0
+  4:
+    rooms: 4
+    mobs-per-room: 4
+    hp-mult: 1.36
+    damage-mult: 1.24
+    elite-chance: 0.036
+    boss-max-health: 74.0
+    trap-damage: 3.4
+  5:
+    rooms: 5
+    mobs-per-room: 4
+    hp-mult: 1.48
+    damage-mult: 1.32
+    elite-chance: 0.04
+    boss-max-health: 82.5
+    trap-damage: 3.8
+  6:
+    rooms: 5
+    mobs-per-room: 4
+    hp-mult: 1.6
+    damage-mult: 1.4
+    elite-chance: 0.044
+    boss-max-health: 91.0
+    trap-damage: 4.1
+  7:
+    rooms: 5
+    mobs-per-room: 4
+    hp-mult: 1.72
+    damage-mult: 1.48
+    elite-chance: 0.048
+    boss-max-health: 99.5
+    trap-damage: 4.4
+  8:
+    rooms: 5
+    mobs-per-room: 5
+    hp-mult: 1.84
+    damage-mult: 1.56
+    elite-chance: 0.052
+    boss-max-health: 108.0
+    trap-damage: 4.8
+  9:
+    rooms: 5
+    mobs-per-room: 5
+    hp-mult: 1.96
+    damage-mult: 1.64
+    elite-chance: 0.056
+    boss-max-health: 116.5
+    trap-damage: 5.2
+  10:
+    rooms: 6
+    mobs-per-room: 5
+    hp-mult: 2.08
+    damage-mult: 1.72
+    elite-chance: 0.06
+    boss-max-health: 125.0
+    trap-damage: 5.5
+  11:
+    rooms: 6
+    mobs-per-room: 5
+    hp-mult: 2.2
+    damage-mult: 1.8
+    elite-chance: 0.064
+    boss-max-health: 133.5
+    trap-damage: 5.8
+  12:
+    rooms: 6
+    mobs-per-room: 6
+    hp-mult: 2.32
+    damage-mult: 1.88
+    elite-chance: 0.068
+    boss-max-health: 142.0
+    trap-damage: 6.2
+  13:
+    rooms: 6
+    mobs-per-room: 6
+    hp-mult: 2.44
+    damage-mult: 1.96
+    elite-chance: 0.072
+    boss-max-health: 150.5
+    trap-damage: 6.5
+  14:
+    rooms: 6
+    mobs-per-room: 6
+    hp-mult: 2.56
+    damage-mult: 2.04
+    elite-chance: 0.076
+    boss-max-health: 159.0
+    trap-damage: 6.9
+  15:
+    rooms: 7
+    mobs-per-room: 6
+    hp-mult: 2.68
+    damage-mult: 2.12
+    elite-chance: 0.08
+    boss-max-health: 167.5
+    trap-damage: 7.2
+  16:
+    rooms: 7
+    mobs-per-room: 7
+    hp-mult: 2.8
+    damage-mult: 2.2
+    elite-chance: 0.084
+    boss-max-health: 176.0
+    trap-damage: 7.6
+  17:
+    rooms: 7
+    mobs-per-room: 7
+    hp-mult: 2.92
+    damage-mult: 2.28
+    elite-chance: 0.088
+    boss-max-health: 184.5
+    trap-damage: 7.9
+  18:
+    rooms: 7
+    mobs-per-room: 7
+    hp-mult: 3.04
+    damage-mult: 2.36
+    elite-chance: 0.092
+    boss-max-health: 193.0
+    trap-damage: 8.3
+  19:
+    rooms: 7
+    mobs-per-room: 7
+    hp-mult: 3.16
+    damage-mult: 2.44
+    elite-chance: 0.096
+    boss-max-health: 201.5
+    trap-damage: 8.6
+  20:
+    rooms: 8
+    mobs-per-room: 9
+    hp-mult: 3.28
+    damage-mult: 2.52
+    elite-chance: 0.1
+    boss-max-health: 210.0
+    trap-damage: 9.0
+  21:
+    rooms: 8
+    mobs-per-room: 9
+    hp-mult: 3.4
+    damage-mult: 2.6
+    elite-chance: 0.104
+    boss-max-health: 218.5
+    trap-damage: 9.3
+  22:
+    rooms: 8
+    mobs-per-room: 9
+    hp-mult: 3.52
+    damage-mult: 2.68
+    elite-chance: 0.108
+    boss-max-health: 227.0
+    trap-damage: 9.7
+  23:
+    rooms: 8
+    mobs-per-room: 9
+    hp-mult: 3.64
+    damage-mult: 2.76
+    elite-chance: 0.112
+    boss-max-health: 235.5
+    trap-damage: 10.0
+  24:
+    rooms: 8
+    mobs-per-room: 10
+    hp-mult: 3.76
+    damage-mult: 2.84
+    elite-chance: 0.116
+    boss-max-health: 244.0
+    trap-damage: 10.4
+  25:
+    rooms: 9
+    mobs-per-room: 10
+    hp-mult: 3.88
+    damage-mult: 2.92
+    elite-chance: 0.12
+    boss-max-health: 252.5
+    trap-damage: 10.8
+  26:
+    rooms: 9
+    mobs-per-room: 10
+    hp-mult: 4.0
+    damage-mult: 3.0
+    elite-chance: 0.124
+    boss-max-health: 261.0
+    trap-damage: 11.1
+  27:
+    rooms: 9
+    mobs-per-room: 10
+    hp-mult: 4.12
+    damage-mult: 3.08
+    elite-chance: 0.128
+    boss-max-health: 269.5
+    trap-damage: 11.4
+  28:
+    rooms: 9
+    mobs-per-room: 11
+    hp-mult: 4.24
+    damage-mult: 3.16
+    elite-chance: 0.132
+    boss-max-health: 278.0
+    trap-damage: 11.8
+  29:
+    rooms: 9
+    mobs-per-room: 11
+    hp-mult: 4.36
+    damage-mult: 3.24
+    elite-chance: 0.136
+    boss-max-health: 286.5
+    trap-damage: 12.1
+  30:
+    rooms: 10
+    mobs-per-room: 11
+    hp-mult: 4.48
+    damage-mult: 3.32
+    elite-chance: 0.14
+    boss-max-health: 295.0
+    trap-damage: 12.5
+  31:
+    rooms: 10
+    mobs-per-room: 11
+    hp-mult: 4.6
+    damage-mult: 3.4
+    elite-chance: 0.144
+    boss-max-health: 303.5
+    trap-damage: 12.8
+  32:
+    rooms: 10
+    mobs-per-room: 12
+    hp-mult: 4.72
+    damage-mult: 3.48
+    elite-chance: 0.148
+    boss-max-health: 312.0
+    trap-damage: 13.2
+  33:
+    rooms: 10
+    mobs-per-room: 12
+    hp-mult: 4.84
+    damage-mult: 3.56
+    elite-chance: 0.152
+    boss-max-health: 320.5
+    trap-damage: 13.5
+  34:
+    rooms: 10
+    mobs-per-room: 12
+    hp-mult: 4.96
+    damage-mult: 3.64
+    elite-chance: 0.156
+    boss-max-health: 329.0
+    trap-damage: 13.9
+  35:
+    rooms: 11
+    mobs-per-room: 12
+    hp-mult: 5.08
+    damage-mult: 3.72
+    elite-chance: 0.16
+    boss-max-health: 337.5
+    trap-damage: 14.2
+  36:
+    rooms: 11
+    mobs-per-room: 13
+    hp-mult: 5.2
+    damage-mult: 3.8
+    elite-chance: 0.164
+    boss-max-health: 346.0
+    trap-damage: 14.6
+  37:
+    rooms: 11
+    mobs-per-room: 13
+    hp-mult: 5.32
+    damage-mult: 3.88
+    elite-chance: 0.168
+    boss-max-health: 354.5
+    trap-damage: 14.9
+  38:
+    rooms: 11
+    mobs-per-room: 13
+    hp-mult: 5.44
+    damage-mult: 3.96
+    elite-chance: 0.172
+    boss-max-health: 363.0
+    trap-damage: 15.3
+  39:
+    rooms: 11
+    mobs-per-room: 13
+    hp-mult: 5.56
+    damage-mult: 4.04
+    elite-chance: 0.176
+    boss-max-health: 371.5
+    trap-damage: 15.6
+  40:
+    rooms: 12
+    mobs-per-room: 15
+    hp-mult: 5.68
+    damage-mult: 4.12
+    elite-chance: 0.18
+    boss-max-health: 380.0
+    trap-damage: 16.0
+  41:
+    rooms: 12
+    mobs-per-room: 15
+    hp-mult: 5.8
+    damage-mult: 4.2
+    elite-chance: 0.184
+    boss-max-health: 388.5
+    trap-damage: 16.4
+  42:
+    rooms: 12
+    mobs-per-room: 15
+    hp-mult: 5.92
+    damage-mult: 4.28
+    elite-chance: 0.188
+    boss-max-health: 397.0
+    trap-damage: 16.7
+  43:
+    rooms: 12
+    mobs-per-room: 15
+    hp-mult: 6.04
+    damage-mult: 4.36
+    elite-chance: 0.192
+    boss-max-health: 405.5
+    trap-damage: 17.0
+  44:
+    rooms: 12
+    mobs-per-room: 16
+    hp-mult: 6.16
+    damage-mult: 4.44
+    elite-chance: 0.196
+    boss-max-health: 414.0
+    trap-damage: 17.4
+  45:
+    rooms: 13
+    mobs-per-room: 16
+    hp-mult: 6.28
+    damage-mult: 4.52
+    elite-chance: 0.2
+    boss-max-health: 422.5
+    trap-damage: 17.8
+  46:
+    rooms: 13
+    mobs-per-room: 16
+    hp-mult: 6.4
+    damage-mult: 4.6
+    elite-chance: 0.204
+    boss-max-health: 431.0
+    trap-damage: 18.1
+  47:
+    rooms: 13
+    mobs-per-room: 16
+    hp-mult: 6.52
+    damage-mult: 4.68
+    elite-chance: 0.208
+    boss-max-health: 439.5
+    trap-damage: 18.4
+  48:
+    rooms: 13
+    mobs-per-room: 17
+    hp-mult: 6.64
+    damage-mult: 4.76
+    elite-chance: 0.212
+    boss-max-health: 448.0
+    trap-damage: 18.8
+  49:
+    rooms: 13
+    mobs-per-room: 17
+    hp-mult: 6.76
+    damage-mult: 4.84
+    elite-chance: 0.216
+    boss-max-health: 456.5
+    trap-damage: 19.1
+  50:
+    rooms: 14
+    mobs-per-room: 17
+    hp-mult: 6.88
+    damage-mult: 4.92
+    elite-chance: 0.22
+    boss-max-health: 465.0
+    trap-damage: 19.5
+  51:
+    rooms: 16
+    mobs-per-room: 17
+    hp-mult: 7.35
+    damage-mult: 5.25
+    elite-chance: 0.224
+    boss-max-health: 838.1
+    trap-damage: 30.0
+  52:
+    rooms: 16
+    mobs-per-room: 18
+    hp-mult: 7.82
+    damage-mult: 5.58
+    elite-chance: 0.228
+    boss-max-health: 861.6
+    trap-damage: 30.6
+  53:
+    rooms: 16
+    mobs-per-room: 18
+    hp-mult: 8.29
+    damage-mult: 5.91
+    elite-chance: 0.232
+    boss-max-health: 885.3
+    trap-damage: 31.1
+  54:
+    rooms: 16
+    mobs-per-room: 18
+    hp-mult: 8.76
+    damage-mult: 6.24
+    elite-chance: 0.236
+    boss-max-health: 909.4
+    trap-damage: 31.7
+  55:
+    rooms: 17
+    mobs-per-room: 18
+    hp-mult: 9.23
+    damage-mult: 6.57
+    elite-chance: 0.24
+    boss-max-health: 933.8
+    trap-damage: 32.2
+  56:
+    rooms: 17
+    mobs-per-room: 19
+    hp-mult: 9.7
+    damage-mult: 6.9
+    elite-chance: 0.244
+    boss-max-health: 958.4
+    trap-damage: 32.8
+  57:
+    rooms: 17
+    mobs-per-room: 19
+    hp-mult: 10.17
+    damage-mult: 7.23
+    elite-chance: 0.248
+    boss-max-health: 983.3
+    trap-damage: 33.4
+  58:
+    rooms: 17
+    mobs-per-room: 19
+    hp-mult: 10.64
+    damage-mult: 7.56
+    elite-chance: 0.252
+    boss-max-health: 1008.6
+    trap-damage: 33.9
+  59:
+    rooms: 17
+    mobs-per-room: 19
+    hp-mult: 11.11
+    damage-mult: 7.89
+    elite-chance: 0.256
+    boss-max-health: 1034.2
+    trap-damage: 34.5
+  60:
+    rooms: 18
+    mobs-per-room: 21
+    hp-mult: 11.58
+    damage-mult: 8.22
+    elite-chance: 0.26
+    boss-max-health: 1060.0
+    trap-damage: 35.0
+  61:
+    rooms: 18
+    mobs-per-room: 21
+    hp-mult: 12.05
+    damage-mult: 8.55
+    elite-chance: 0.264
+    boss-max-health: 1086.2
+    trap-damage: 35.5
+  62:
+    rooms: 18
+    mobs-per-room: 21
+    hp-mult: 12.52
+    damage-mult: 8.88
+    elite-chance: 0.268
+    boss-max-health: 1112.6
+    trap-damage: 36.1
+  63:
+    rooms: 18
+    mobs-per-room: 21
+    hp-mult: 12.99
+    damage-mult: 9.21
+    elite-chance: 0.272
+    boss-max-health: 1139.3
+    trap-damage: 36.6
+  64:
+    rooms: 18
+    mobs-per-room: 22
+    hp-mult: 13.46
+    damage-mult: 9.54
+    elite-chance: 0.276
+    boss-max-health: 1166.4
+    trap-damage: 37.2
+  65:
+    rooms: 19
+    mobs-per-room: 22
+    hp-mult: 13.93
+    damage-mult: 9.87
+    elite-chance: 0.28
+    boss-max-health: 1193.8
+    trap-damage: 37.8
+  66:
+    rooms: 19
+    mobs-per-room: 22
+    hp-mult: 14.4
+    damage-mult: 10.2
+    elite-chance: 0.284
+    boss-max-health: 1221.4
+    trap-damage: 38.3
+  67:
+    rooms: 19
+    mobs-per-room: 22
+    hp-mult: 14.87
+    damage-mult: 10.53
+    elite-chance: 0.288
+    boss-max-health: 1249.3
+    trap-damage: 38.9
+  68:
+    rooms: 19
+    mobs-per-room: 23
+    hp-mult: 15.34
+    damage-mult: 10.86
+    elite-chance: 0.292
+    boss-max-health: 1277.6
+    trap-damage: 39.4
+  69:
+    rooms: 19
+    mobs-per-room: 23
+    hp-mult: 15.81
+    damage-mult: 11.19
+    elite-chance: 0.296
+    boss-max-health: 1306.2
+    trap-damage: 40.0
+  70:
+    rooms: 20
+    mobs-per-room: 23
+    hp-mult: 16.28
+    damage-mult: 11.52
+    elite-chance: 0.3
+    boss-max-health: 1335.0
+    trap-damage: 40.5
+  71:
+    rooms: 20
+    mobs-per-room: 23
+    hp-mult: 16.75
+    damage-mult: 11.85
+    elite-chance: 0.304
+    boss-max-health: 1364.2
+    trap-damage: 41.0
+  72:
+    rooms: 20
+    mobs-per-room: 24
+    hp-mult: 17.22
+    damage-mult: 12.18
+    elite-chance: 0.308
+    boss-max-health: 1393.6
+    trap-damage: 41.6
+  73:
+    rooms: 20
+    mobs-per-room: 24
+    hp-mult: 17.69
+    damage-mult: 12.51
+    elite-chance: 0.312
+    boss-max-health: 1423.3
+    trap-damage: 42.1
+  74:
+    rooms: 20
+    mobs-per-room: 24
+    hp-mult: 18.16
+    damage-mult: 12.84
+    elite-chance: 0.316
+    boss-max-health: 1453.4
+    trap-damage: 42.7
+  75:
+    rooms: 21
+    mobs-per-room: 24
+    hp-mult: 18.63
+    damage-mult: 13.17
+    elite-chance: 0.32
+    boss-max-health: 1483.8
+    trap-damage: 43.2
+  76:
+    rooms: 21
+    mobs-per-room: 25
+    hp-mult: 19.1
+    damage-mult: 13.5
+    elite-chance: 0.324
+    boss-max-health: 1514.4
+    trap-damage: 43.8
+  77:
+    rooms: 21
+    mobs-per-room: 25
+    hp-mult: 19.57
+    damage-mult: 13.83
+    elite-chance: 0.328
+    boss-max-health: 1545.3
+    trap-damage: 44.4
+  78:
+    rooms: 21
+    mobs-per-room: 25
+    hp-mult: 20.04
+    damage-mult: 14.16
+    elite-chance: 0.332
+    boss-max-health: 1576.6
+    trap-damage: 44.9
+  79:
+    rooms: 21
+    mobs-per-room: 25
+    hp-mult: 20.51
+    damage-mult: 14.49
+    elite-chance: 0.336
+    boss-max-health: 1608.2
+    trap-damage: 45.5
+  80:
+    rooms: 22
+    mobs-per-room: 27
+    hp-mult: 20.98
+    damage-mult: 14.82
+    elite-chance: 0.34
+    boss-max-health: 1640.0
+    trap-damage: 46.0
+  81:
+    rooms: 22
+    mobs-per-room: 27
+    hp-mult: 21.45
+    damage-mult: 15.15
+    elite-chance: 0.344
+    boss-max-health: 1672.2
+    trap-damage: 46.5
+  82:
+    rooms: 22
+    mobs-per-room: 27
+    hp-mult: 21.92
+    damage-mult: 15.48
+    elite-chance: 0.348
+    boss-max-health: 1704.6
+    trap-damage: 47.1
+  83:
+    rooms: 22
+    mobs-per-room: 27
+    hp-mult: 22.39
+    damage-mult: 15.81
+    elite-chance: 0.352
+    boss-max-health: 1737.3
+    trap-damage: 47.6
+  84:
+    rooms: 22
+    mobs-per-room: 28
+    hp-mult: 22.86
+    damage-mult: 16.14
+    elite-chance: 0.356
+    boss-max-health: 1770.4
+    trap-damage: 48.2
+  85:
+    rooms: 23
+    mobs-per-room: 28
+    hp-mult: 23.33
+    damage-mult: 16.47
+    elite-chance: 0.36
+    boss-max-health: 1803.8
+    trap-damage: 48.8
+  86:
+    rooms: 23
+    mobs-per-room: 28
+    hp-mult: 23.8
+    damage-mult: 16.8
+    elite-chance: 0.364
+    boss-max-health: 1837.4
+    trap-damage: 49.3
+  87:
+    rooms: 23
+    mobs-per-room: 28
+    hp-mult: 24.27
+    damage-mult: 17.13
+    elite-chance: 0.368
+    boss-max-health: 1871.3
+    trap-damage: 49.9
+  88:
+    rooms: 23
+    mobs-per-room: 29
+    hp-mult: 24.74
+    damage-mult: 17.46
+    elite-chance: 0.372
+    boss-max-health: 1905.6
+    trap-damage: 50.4
+  89:
+    rooms: 23
+    mobs-per-room: 29
+    hp-mult: 25.21
+    damage-mult: 17.79
+    elite-chance: 0.376
+    boss-max-health: 1940.1
+    trap-damage: 51.0
+  90:
+    rooms: 24
+    mobs-per-room: 29
+    hp-mult: 25.68
+    damage-mult: 18.12
+    elite-chance: 0.38
+    boss-max-health: 1975.0
+    trap-damage: 51.5
+  91:
+    rooms: 24
+    mobs-per-room: 29
+    hp-mult: 26.15
+    damage-mult: 18.45
+    elite-chance: 0.384
+    boss-max-health: 2010.1
+    trap-damage: 52.0
+  92:
+    rooms: 24
+    mobs-per-room: 30
+    hp-mult: 26.62
+    damage-mult: 18.78
+    elite-chance: 0.388
+    boss-max-health: 2045.6
+    trap-damage: 52.6
+  93:
+    rooms: 24
+    mobs-per-room: 30
+    hp-mult: 27.09
+    damage-mult: 19.11
+    elite-chance: 0.392
+    boss-max-health: 2081.3
+    trap-damage: 53.1
+  94:
+    rooms: 24
+    mobs-per-room: 30
+    hp-mult: 27.56
+    damage-mult: 19.44
+    elite-chance: 0.396
+    boss-max-health: 2117.4
+    trap-damage: 53.7
+  95:
+    rooms: 24
+    mobs-per-room: 30
+    hp-mult: 28.03
+    damage-mult: 19.77
+    elite-chance: 0.4
+    boss-max-health: 2153.8
+    trap-damage: 54.2
+  96:
+    rooms: 24
+    mobs-per-room: 31
+    hp-mult: 28.5
+    damage-mult: 20.1
+    elite-chance: 0.404
+    boss-max-health: 2190.4
+    trap-damage: 54.8
+  97:
+    rooms: 24
+    mobs-per-room: 31
+    hp-mult: 28.97
+    damage-mult: 20.43
+    elite-chance: 0.408
+    boss-max-health: 2227.3
+    trap-damage: 55.3
+  98:
+    rooms: 24
+    mobs-per-room: 31
+    hp-mult: 29.44
+    damage-mult: 20.76
+    elite-chance: 0.412
+    boss-max-health: 2264.6
+    trap-damage: 55.9
+  99:
+    rooms: 24
+    mobs-per-room: 31
+    hp-mult: 29.91
+    damage-mult: 21.09
+    elite-chance: 0.416
+    boss-max-health: 2302.1
+    trap-damage: 56.5
+  100:
+    rooms: 24
+    mobs-per-room: 33
+    hp-mult: 30.38
+    damage-mult: 21.42
+    elite-chance: 0.42
+    boss-max-health: 2340.0
+    trap-damage: 57.0

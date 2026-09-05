@@ -37,6 +37,8 @@ See [STACKER.md](STACKER.md) (`/yapstacker`).
 
 **Skills:** Paper plugin `yap-skills` — thin mining / woodcutting / strength. See [SKILLS.md](SKILLS.md).
 
+**Dungeons:** Paper plugin `yap-dungeons` — procedural instances L1–50 + prestige 51–100; soft API `yap-dungeons-api`. See [DUNGEONS.md](DUNGEONS.md).
+
 GUI tabs: **Plugins**, **Modules**, and **Tune**. Headless: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 
 ### Example `module.yml`
@@ -99,5 +101,6 @@ Runtime matrix: `com.yapcore.api.ApiCoverage` (see source).
 - `examples/yap-allinone` — sample YaP plugin
 - `examples/yap-module-demo` — sample module
 - [SKILLS.md](SKILLS.md) — thin skills plugin
+- [DUNGEONS.md](DUNGEONS.md) — instanced procedural dungeons
 - [STACKER.md](STACKER.md) — mob/item stacker
 - `yap-first-party/modules/finetune-modules/` — first-party packaging modules source

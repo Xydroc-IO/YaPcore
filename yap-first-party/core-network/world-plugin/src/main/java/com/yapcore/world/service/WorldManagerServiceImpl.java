@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -95,6 +96,69 @@ public final class WorldManagerServiceImpl implements WorldManagerService {
             future.complete(Bukkit.unloadWorld(world, true));
         });
         return future;
+    }
+
+    @Override
+    public CompletableFuture<Boolean> deleteWorld(String name) {
+        CompletableFuture<Boolean> future = new CompletableFuture<>();
+        if (!config.allowUnload()) {
+            future.complete(false);
+            return future;
+        }
+        String worldName = sanitizeName(name);
+        if (worldName == null) {
+            future.complete(false);
+            return future;
+        }
+        // Refuse deleting the primary overworld-style folders by common names
+        String lower = worldName.toLowerCase(Locale.ROOT);
+        if ("world".equals(lower) || "world_nether".equals(lower) || "world_the_end".equals(lower)) {
+            future.complete(false);
+            return future;
+        }
+        YapSched.global(plugin, () -> {
+            try {
+                World world = Bukkit.getWorld(worldName);
+                if (world != null) {
+                    for (Player p : List.copyOf(world.getPlayers())) {
+                        World fallback = Bukkit.getWorlds().stream()
+                                .filter(w -> !w.equals(world))
+                                .findFirst()
+                                .orElse(null);
+                        if (fallback != null) {
+                            p.teleport(fallback.getSpawnLocation());
+                        }
+                    }
+                    if (!Bukkit.unloadWorld(world, false)) {
+                        future.complete(false);
+                        return;
+                    }
+                }
+                java.nio.file.Path folder = plugin.getServer().getWorldContainer().toPath().resolve(worldName);
+                if (java.nio.file.Files.exists(folder)) {
+                    deleteRecursive(folder);
+                }
+                future.complete(true);
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.WARNING, "Failed to delete world " + worldName, e);
+                future.complete(false);
+            }
+        });
+        return future;
+    }
+
+    private static void deleteRecursive(java.nio.file.Path path) throws java.io.IOException {
+        if (!java.nio.file.Files.exists(path)) {
+            return;
+        }
+        try (var walk = java.nio.file.Files.walk(path)) {
+            walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> {
+                try {
+                    java.nio.file.Files.deleteIfExists(p);
+                } catch (java.io.IOException ignored) {
+                }
+            });
+        }
     }
 
     @Override

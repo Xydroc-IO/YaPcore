@@ -181,6 +181,7 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 | Pregen | `/yappregen …` | [PREGEN.md](../plugins/PREGEN.md) |
 | Stacker | `/yapstacker …` | [STACKER.md](../plugins/STACKER.md) |
 | Skills | `/skills` · `/skill top` · `/yskills reload` | [SKILLS.md](../plugins/SKILLS.md) |
+| Dungeons | `/dungeon` · `/dungeon invite\|accept\|deny\|leave\|status` · `/yapdungeons …` | [DUNGEONS.md](../plugins/DUNGEONS.md) |
 | NPCs | `/npc …` · `/quests …` · `/npc shop …` · `/npc setspawn` | dashboard **NPCs** · [PLAYERDATA.md](../data/PLAYERDATA.md) (shop catalogs) |
 | Disasters | `/yapdisaster …` | dashboard **Disasters** tab |
 | Gameplay knobs | `/yapknobs …` | [TUNE.md](TUNE.md) |

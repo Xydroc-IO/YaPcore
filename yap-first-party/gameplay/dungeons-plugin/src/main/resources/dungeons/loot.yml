@@ -1,0 +1,1802 @@
+# Clear + chest loot per dungeon level
+levels:
+  1:
+    economy: 37
+    guaranteed:
+      - material: iron_ingot
+        amount: 2
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_sword
+        amount: 1
+        weight: 10
+        named: true
+      - material: arrow
+        amount: 1
+        weight: 5
+        named: true
+  2:
+    economy: 49
+    guaranteed:
+      - material: iron_ingot
+        amount: 2
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_sword
+        amount: 1
+        weight: 10
+        named: true
+      - material: arrow
+        amount: 1
+        weight: 5
+        named: true
+  3:
+    economy: 61
+    guaranteed:
+      - material: iron_ingot
+        amount: 2
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_sword
+        amount: 1
+        weight: 10
+        named: true
+      - material: arrow
+        amount: 1
+        weight: 5
+        named: true
+  4:
+    economy: 73
+    guaranteed:
+      - material: iron_ingot
+        amount: 2
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_sword
+        amount: 1
+        weight: 10
+        named: true
+      - material: arrow
+        amount: 1
+        weight: 5
+        named: true
+  5:
+    economy: 85
+    guaranteed:
+      - material: iron_ingot
+        amount: 2
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_sword
+        amount: 1
+        weight: 11
+        named: true
+      - material: arrow
+        amount: 1
+        weight: 5
+        named: true
+  6:
+    economy: 97
+    guaranteed:
+      - material: iron_ingot
+        amount: 2
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_sword
+        amount: 1
+        weight: 11
+        named: true
+      - material: arrow
+        amount: 1
+        weight: 5
+        named: true
+  7:
+    economy: 109
+    guaranteed:
+      - material: iron_ingot
+        amount: 2
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_sword
+        amount: 1
+        weight: 11
+        named: true
+      - material: arrow
+        amount: 1
+        weight: 5
+        named: true
+  8:
+    economy: 121
+    guaranteed:
+      - material: iron_ingot
+        amount: 2
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_sword
+        amount: 1
+        weight: 11
+        named: true
+      - material: arrow
+        amount: 1
+        weight: 5
+        named: true
+  9:
+    economy: 133
+    guaranteed:
+      - material: iron_ingot
+        amount: 2
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_sword
+        amount: 1
+        weight: 11
+        named: true
+      - material: arrow
+        amount: 1
+        weight: 5
+        named: true
+  10:
+    economy: 145
+    guaranteed:
+      - material: iron_ingot
+        amount: 3
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_sword
+        amount: 1
+        weight: 12
+        named: true
+      - material: arrow
+        amount: 1
+        weight: 6
+        named: true
+  11:
+    economy: 157
+    guaranteed:
+      - material: gold_ingot
+        amount: 3
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_chestplate
+        amount: 1
+        weight: 12
+        named: true
+      - material: bow
+        amount: 1
+        weight: 6
+        named: true
+  12:
+    economy: 169
+    guaranteed:
+      - material: gold_ingot
+        amount: 3
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_chestplate
+        amount: 1
+        weight: 12
+        named: true
+      - material: bow
+        amount: 1
+        weight: 6
+        named: true
+  13:
+    economy: 181
+    guaranteed:
+      - material: gold_ingot
+        amount: 3
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_chestplate
+        amount: 1
+        weight: 12
+        named: true
+      - material: bow
+        amount: 1
+        weight: 6
+        named: true
+  14:
+    economy: 193
+    guaranteed:
+      - material: gold_ingot
+        amount: 3
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_chestplate
+        amount: 1
+        weight: 12
+        named: true
+      - material: bow
+        amount: 1
+        weight: 6
+        named: true
+  15:
+    economy: 205
+    guaranteed:
+      - material: gold_ingot
+        amount: 3
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_chestplate
+        amount: 1
+        weight: 13
+        named: true
+      - material: bow
+        amount: 1
+        weight: 6
+        named: true
+  16:
+    economy: 217
+    guaranteed:
+      - material: gold_ingot
+        amount: 3
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_chestplate
+        amount: 1
+        weight: 13
+        named: true
+      - material: bow
+        amount: 1
+        weight: 6
+        named: true
+  17:
+    economy: 229
+    guaranteed:
+      - material: gold_ingot
+        amount: 3
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_chestplate
+        amount: 1
+        weight: 13
+        named: true
+      - material: bow
+        amount: 1
+        weight: 6
+        named: true
+  18:
+    economy: 241
+    guaranteed:
+      - material: gold_ingot
+        amount: 3
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_chestplate
+        amount: 1
+        weight: 13
+        named: true
+      - material: bow
+        amount: 1
+        weight: 6
+        named: true
+  19:
+    economy: 253
+    guaranteed:
+      - material: gold_ingot
+        amount: 3
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_chestplate
+        amount: 1
+        weight: 13
+        named: true
+      - material: bow
+        amount: 1
+        weight: 6
+        named: true
+  20:
+    economy: 265
+    guaranteed:
+      - material: gold_ingot
+        amount: 4
+        weight: 100
+      - material: golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: iron_chestplate
+        amount: 1
+        weight: 14
+        named: true
+      - material: bow
+        amount: 1
+        weight: 7
+        named: true
+  21:
+    economy: 277
+    guaranteed:
+      - material: diamond
+        amount: 4
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: diamond_sword
+        amount: 1
+        weight: 14
+        named: true
+      - material: blaze_rod
+        amount: 1
+        weight: 7
+        named: true
+  22:
+    economy: 289
+    guaranteed:
+      - material: diamond
+        amount: 4
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: diamond_sword
+        amount: 1
+        weight: 14
+        named: true
+      - material: blaze_rod
+        amount: 1
+        weight: 7
+        named: true
+  23:
+    economy: 301
+    guaranteed:
+      - material: diamond
+        amount: 4
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: diamond_sword
+        amount: 1
+        weight: 14
+        named: true
+      - material: blaze_rod
+        amount: 1
+        weight: 7
+        named: true
+  24:
+    economy: 313
+    guaranteed:
+      - material: diamond
+        amount: 4
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: diamond_sword
+        amount: 1
+        weight: 14
+        named: true
+      - material: blaze_rod
+        amount: 1
+        weight: 7
+        named: true
+  25:
+    economy: 325
+    guaranteed:
+      - material: diamond
+        amount: 4
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: diamond_sword
+        amount: 1
+        weight: 15
+        named: true
+      - material: blaze_rod
+        amount: 1
+        weight: 7
+        named: true
+  26:
+    economy: 337
+    guaranteed:
+      - material: diamond
+        amount: 4
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: diamond_sword
+        amount: 1
+        weight: 15
+        named: true
+      - material: blaze_rod
+        amount: 1
+        weight: 7
+        named: true
+  27:
+    economy: 349
+    guaranteed:
+      - material: diamond
+        amount: 4
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: diamond_sword
+        amount: 1
+        weight: 15
+        named: true
+      - material: blaze_rod
+        amount: 1
+        weight: 7
+        named: true
+  28:
+    economy: 361
+    guaranteed:
+      - material: diamond
+        amount: 4
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: diamond_sword
+        amount: 1
+        weight: 15
+        named: true
+      - material: blaze_rod
+        amount: 1
+        weight: 7
+        named: true
+  29:
+    economy: 373
+    guaranteed:
+      - material: diamond
+        amount: 4
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 1
+        weight: 80
+    rare:
+      - material: diamond_sword
+        amount: 1
+        weight: 15
+        named: true
+      - material: blaze_rod
+        amount: 1
+        weight: 7
+        named: true
+  30:
+    economy: 385
+    guaranteed:
+      - material: diamond
+        amount: 5
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_sword
+        amount: 1
+        weight: 16
+        named: true
+      - material: blaze_rod
+        amount: 1
+        weight: 8
+        named: true
+  31:
+    economy: 397
+    guaranteed:
+      - material: diamond
+        amount: 5
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_chestplate
+        amount: 1
+        weight: 16
+        named: true
+      - material: echo_shard
+        amount: 1
+        weight: 8
+        named: true
+  32:
+    economy: 409
+    guaranteed:
+      - material: diamond
+        amount: 5
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_chestplate
+        amount: 1
+        weight: 16
+        named: true
+      - material: echo_shard
+        amount: 1
+        weight: 8
+        named: true
+  33:
+    economy: 421
+    guaranteed:
+      - material: diamond
+        amount: 5
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_chestplate
+        amount: 1
+        weight: 16
+        named: true
+      - material: echo_shard
+        amount: 1
+        weight: 8
+        named: true
+  34:
+    economy: 433
+    guaranteed:
+      - material: diamond
+        amount: 5
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_chestplate
+        amount: 1
+        weight: 16
+        named: true
+      - material: echo_shard
+        amount: 1
+        weight: 8
+        named: true
+  35:
+    economy: 445
+    guaranteed:
+      - material: diamond
+        amount: 5
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_chestplate
+        amount: 1
+        weight: 17
+        named: true
+      - material: echo_shard
+        amount: 1
+        weight: 8
+        named: true
+  36:
+    economy: 457
+    guaranteed:
+      - material: diamond
+        amount: 5
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_chestplate
+        amount: 1
+        weight: 17
+        named: true
+      - material: echo_shard
+        amount: 1
+        weight: 8
+        named: true
+  37:
+    economy: 469
+    guaranteed:
+      - material: diamond
+        amount: 5
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_chestplate
+        amount: 1
+        weight: 17
+        named: true
+      - material: echo_shard
+        amount: 1
+        weight: 8
+        named: true
+  38:
+    economy: 481
+    guaranteed:
+      - material: diamond
+        amount: 5
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_chestplate
+        amount: 1
+        weight: 17
+        named: true
+      - material: echo_shard
+        amount: 1
+        weight: 8
+        named: true
+  39:
+    economy: 493
+    guaranteed:
+      - material: diamond
+        amount: 5
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_chestplate
+        amount: 1
+        weight: 17
+        named: true
+      - material: echo_shard
+        amount: 1
+        weight: 8
+        named: true
+  40:
+    economy: 505
+    guaranteed:
+      - material: diamond
+        amount: 6
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: diamond_chestplate
+        amount: 1
+        weight: 18
+        named: true
+      - material: echo_shard
+        amount: 1
+        weight: 9
+        named: true
+  41:
+    economy: 517
+    guaranteed:
+      - material: emerald
+        amount: 6
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_scrap
+        amount: 1
+        weight: 18
+        named: true
+      - material: totem_of_undying
+        amount: 1
+        weight: 9
+        named: true
+  42:
+    economy: 529
+    guaranteed:
+      - material: emerald
+        amount: 6
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_scrap
+        amount: 1
+        weight: 18
+        named: true
+      - material: totem_of_undying
+        amount: 1
+        weight: 9
+        named: true
+  43:
+    economy: 541
+    guaranteed:
+      - material: emerald
+        amount: 6
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_scrap
+        amount: 1
+        weight: 18
+        named: true
+      - material: totem_of_undying
+        amount: 1
+        weight: 9
+        named: true
+  44:
+    economy: 553
+    guaranteed:
+      - material: emerald
+        amount: 6
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_scrap
+        amount: 1
+        weight: 18
+        named: true
+      - material: totem_of_undying
+        amount: 1
+        weight: 9
+        named: true
+  45:
+    economy: 565
+    guaranteed:
+      - material: emerald
+        amount: 6
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_scrap
+        amount: 1
+        weight: 19
+        named: true
+      - material: totem_of_undying
+        amount: 1
+        weight: 9
+        named: true
+  46:
+    economy: 577
+    guaranteed:
+      - material: emerald
+        amount: 6
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_scrap
+        amount: 1
+        weight: 19
+        named: true
+      - material: totem_of_undying
+        amount: 1
+        weight: 9
+        named: true
+  47:
+    economy: 589
+    guaranteed:
+      - material: emerald
+        amount: 6
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_scrap
+        amount: 1
+        weight: 19
+        named: true
+      - material: totem_of_undying
+        amount: 1
+        weight: 9
+        named: true
+  48:
+    economy: 601
+    guaranteed:
+      - material: emerald
+        amount: 6
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_scrap
+        amount: 1
+        weight: 19
+        named: true
+      - material: totem_of_undying
+        amount: 1
+        weight: 9
+        named: true
+  49:
+    economy: 613
+    guaranteed:
+      - material: emerald
+        amount: 6
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_scrap
+        amount: 1
+        weight: 19
+        named: true
+      - material: totem_of_undying
+        amount: 1
+        weight: 9
+        named: true
+  50:
+    economy: 625
+    guaranteed:
+      - material: emerald
+        amount: 7
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_scrap
+        amount: 1
+        weight: 20
+        named: true
+      - material: totem_of_undying
+        amount: 2
+        weight: 10
+        named: true
+  51:
+    economy: 1045
+    guaranteed:
+      - material: netherite_ingot
+        amount: 7
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 20
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 10
+        named: true
+  52:
+    economy: 1065
+    guaranteed:
+      - material: netherite_ingot
+        amount: 7
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 20
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 10
+        named: true
+  53:
+    economy: 1085
+    guaranteed:
+      - material: netherite_ingot
+        amount: 7
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 20
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 10
+        named: true
+  54:
+    economy: 1105
+    guaranteed:
+      - material: netherite_ingot
+        amount: 7
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 20
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 10
+        named: true
+  55:
+    economy: 1125
+    guaranteed:
+      - material: netherite_ingot
+        amount: 7
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 21
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 10
+        named: true
+  56:
+    economy: 1145
+    guaranteed:
+      - material: netherite_ingot
+        amount: 7
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 21
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 10
+        named: true
+  57:
+    economy: 1165
+    guaranteed:
+      - material: netherite_ingot
+        amount: 7
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 21
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 10
+        named: true
+  58:
+    economy: 1185
+    guaranteed:
+      - material: netherite_ingot
+        amount: 7
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 21
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 10
+        named: true
+  59:
+    economy: 1205
+    guaranteed:
+      - material: netherite_ingot
+        amount: 7
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 2
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 21
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 10
+        named: true
+  60:
+    economy: 1225
+    guaranteed:
+      - material: netherite_ingot
+        amount: 8
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 22
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 11
+        named: true
+  61:
+    economy: 1245
+    guaranteed:
+      - material: netherite_ingot
+        amount: 8
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 22
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 11
+        named: true
+  62:
+    economy: 1265
+    guaranteed:
+      - material: netherite_ingot
+        amount: 8
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 22
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 11
+        named: true
+  63:
+    economy: 1285
+    guaranteed:
+      - material: netherite_ingot
+        amount: 8
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 22
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 11
+        named: true
+  64:
+    economy: 1305
+    guaranteed:
+      - material: netherite_ingot
+        amount: 8
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 22
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 11
+        named: true
+  65:
+    economy: 1325
+    guaranteed:
+      - material: netherite_ingot
+        amount: 8
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 23
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 11
+        named: true
+  66:
+    economy: 1345
+    guaranteed:
+      - material: netherite_ingot
+        amount: 8
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 23
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 11
+        named: true
+  67:
+    economy: 1365
+    guaranteed:
+      - material: netherite_ingot
+        amount: 8
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 23
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 11
+        named: true
+  68:
+    economy: 1385
+    guaranteed:
+      - material: netherite_ingot
+        amount: 8
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 23
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 11
+        named: true
+  69:
+    economy: 1405
+    guaranteed:
+      - material: netherite_ingot
+        amount: 8
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 23
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 11
+        named: true
+  70:
+    economy: 1425
+    guaranteed:
+      - material: netherite_ingot
+        amount: 9
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_sword
+        amount: 1
+        weight: 24
+        named: true
+      - material: dragon_breath
+        amount: 2
+        weight: 12
+        named: true
+  71:
+    economy: 1445
+    guaranteed:
+      - material: netherite_ingot
+        amount: 9
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 24
+        named: true
+      - material: nether_star
+        amount: 2
+        weight: 12
+        named: true
+  72:
+    economy: 1465
+    guaranteed:
+      - material: netherite_ingot
+        amount: 9
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 24
+        named: true
+      - material: nether_star
+        amount: 2
+        weight: 12
+        named: true
+  73:
+    economy: 1485
+    guaranteed:
+      - material: netherite_ingot
+        amount: 9
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 24
+        named: true
+      - material: nether_star
+        amount: 2
+        weight: 12
+        named: true
+  74:
+    economy: 1505
+    guaranteed:
+      - material: netherite_ingot
+        amount: 9
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 24
+        named: true
+      - material: nether_star
+        amount: 2
+        weight: 12
+        named: true
+  75:
+    economy: 1525
+    guaranteed:
+      - material: netherite_ingot
+        amount: 9
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 25
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 12
+        named: true
+  76:
+    economy: 1545
+    guaranteed:
+      - material: netherite_ingot
+        amount: 9
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 25
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 12
+        named: true
+  77:
+    economy: 1565
+    guaranteed:
+      - material: netherite_ingot
+        amount: 9
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 25
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 12
+        named: true
+  78:
+    economy: 1585
+    guaranteed:
+      - material: netherite_ingot
+        amount: 9
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 25
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 12
+        named: true
+  79:
+    economy: 1605
+    guaranteed:
+      - material: netherite_ingot
+        amount: 9
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 25
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 12
+        named: true
+  80:
+    economy: 1625
+    guaranteed:
+      - material: netherite_ingot
+        amount: 10
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 26
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 13
+        named: true
+  81:
+    economy: 1645
+    guaranteed:
+      - material: netherite_ingot
+        amount: 10
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 26
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 13
+        named: true
+  82:
+    economy: 1665
+    guaranteed:
+      - material: netherite_ingot
+        amount: 10
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 26
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 13
+        named: true
+  83:
+    economy: 1685
+    guaranteed:
+      - material: netherite_ingot
+        amount: 10
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 26
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 13
+        named: true
+  84:
+    economy: 1705
+    guaranteed:
+      - material: netherite_ingot
+        amount: 10
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 26
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 13
+        named: true
+  85:
+    economy: 1725
+    guaranteed:
+      - material: netherite_ingot
+        amount: 10
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 27
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 13
+        named: true
+  86:
+    economy: 1745
+    guaranteed:
+      - material: netherite_ingot
+        amount: 10
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 27
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 13
+        named: true
+  87:
+    economy: 1765
+    guaranteed:
+      - material: netherite_ingot
+        amount: 10
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 27
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 13
+        named: true
+  88:
+    economy: 1785
+    guaranteed:
+      - material: netherite_ingot
+        amount: 10
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 27
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 13
+        named: true
+  89:
+    economy: 1805
+    guaranteed:
+      - material: netherite_ingot
+        amount: 10
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 3
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 27
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 13
+        named: true
+  90:
+    economy: 1825
+    guaranteed:
+      - material: netherite_ingot
+        amount: 11
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 28
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 14
+        named: true
+  91:
+    economy: 1845
+    guaranteed:
+      - material: netherite_ingot
+        amount: 11
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 28
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 14
+        named: true
+  92:
+    economy: 1865
+    guaranteed:
+      - material: netherite_ingot
+        amount: 11
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 28
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 14
+        named: true
+  93:
+    economy: 1885
+    guaranteed:
+      - material: netherite_ingot
+        amount: 11
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 28
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 14
+        named: true
+  94:
+    economy: 1905
+    guaranteed:
+      - material: netherite_ingot
+        amount: 11
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 28
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 14
+        named: true
+  95:
+    economy: 1925
+    guaranteed:
+      - material: netherite_ingot
+        amount: 11
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 29
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 14
+        named: true
+  96:
+    economy: 1945
+    guaranteed:
+      - material: netherite_ingot
+        amount: 11
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 29
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 14
+        named: true
+  97:
+    economy: 1965
+    guaranteed:
+      - material: netherite_ingot
+        amount: 11
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 29
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 14
+        named: true
+  98:
+    economy: 1985
+    guaranteed:
+      - material: netherite_ingot
+        amount: 11
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 29
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 14
+        named: true
+  99:
+    economy: 2005
+    guaranteed:
+      - material: netherite_ingot
+        amount: 11
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 29
+        named: true
+      - material: nether_star
+        amount: 3
+        weight: 14
+        named: true
+  100:
+    economy: 2025
+    guaranteed:
+      - material: netherite_ingot
+        amount: 12
+        weight: 100
+      - material: enchanted_golden_apple
+        amount: 4
+        weight: 80
+    rare:
+      - material: netherite_chestplate
+        amount: 1
+        weight: 30
+        named: true
+      - material: nether_star
+        amount: 4
+        weight: 15
+        named: true

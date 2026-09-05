@@ -14,12 +14,12 @@ All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `p
 | `./scripts/build-yap-folia.sh` | `lib/yap-folia-26.2.jar` — **required for product path** |
 | `gradle assembleRelease` | `build/dist/yapcore-release/` — **linux/** + **windows/** full trees (all plugins) |
 | `gradle assembleRelease` | Slim CORE+NETWORK by default (`yapGameplay=false`) |
-| `gradle assembleRelease -PyapGameplay=true` | Full box including GAMEPLAY (skills / stacker / knobs / disasters) |
+| `gradle assembleRelease -PyapGameplay=true` | Full box including GAMEPLAY (skills / dungeons / stacker / knobs / disasters) |
 | `gradle assembleRelease -PyapGameplay=false` | Explicit slim CORE+NETWORK only |
 | `gradle publishReleasesFolder` | **`releases/<version>/`** — trees + linux/windows zips + suite zips |
 | Git tag `1.0.0.0` or `v*` push | GitHub Actions → `yapcore-release-linux.zip` + `-windows.zip` |
 | `gradle assembleNetworkSuite` | `build/dist/yap-network-suite.zip` — YaP Link + native link plugins |
-| `gradle assembleGameplaySuite` | `build/dist/yap-gameplay-suite.zip` — GAMEPLAY plugins (skills / stacker / knobs / disasters) |
+| `gradle assembleGameplaySuite` | `build/dist/yap-gameplay-suite.zip` — GAMEPLAY plugins (skills / dungeons / stacker / knobs / disasters) |
 | `gradle assemblePluginDist` | `build/dist/yap-plugins/` — flat jar mirror by tier |
 | `gradle assembleAllReleases` | Full box + standalone suite zips (under `build/dist/`) |
 
@@ -95,7 +95,7 @@ See [WINDOWS.md](WINDOWS.md) and [MARIADB.md](../data/MARIADB.md).
 | Zip | Contents | Default in full box? |
 |-----|----------|----------------------|
 | **yap-network-suite.zip** | Link proxy + chat/mod/selector/tab/discord bridge plugins | Yes (`link-data/plugins/`) |
-| **yap-gameplay-suite.zip** | yap-skills, yap-stacker, yap-gameplay-knobs, yap-disasters + stacker/knobs modules | Also included in the full box |
+| **yap-gameplay-suite.zip** | yap-skills, yap-dungeons, yap-stacker, yap-gameplay-knobs, yap-disasters + stacker/knobs modules | Also included in the full box |
 
 ## Repo layout discipline
 

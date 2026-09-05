@@ -95,6 +95,7 @@ Registered **in-process** by other YaP jars when installed (no jar drop needed):
 |--------|------------|--------|
 | yap-perms | `yapperms` | Permission / group placeholders |
 | skills | `yapskills` | Skills / levels — [SKILLS.md](SKILLS.md) |
+| dungeons | `yapdungeon` | Dungeon progress / run — [DUNGEONS.md](DUNGEONS.md) |
 | factions | `yapfactions` | Faction data |
 | stacker | `yapstacker` | See [STACKER.md](STACKER.md) |
 

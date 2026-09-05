@@ -11,7 +11,7 @@ paths moved under this tree. Rebuild with the same tasks as before.
 | Folder | Gradle tier | What’s inside |
 |--------|-------------|---------------|
 | [`core-network/`](core-network/) | CORE + NETWORK | Default server plugins (db, chat, packs, pregen, …) |
-| [`gameplay/`](gameplay/) | GAMEPLAY (opt-in) | Skills, stacker, gameplay knobs, disasters |
+| [`gameplay/`](gameplay/) | GAMEPLAY (opt-in) | Skills, dungeons, stacker, gameplay knobs, disasters |
 | [`api/`](api/) | API jars | Shared interfaces for plugins & Link plugins |
 | [`modules/`](modules/) | Fine-tune packaging | `finetune-modules/` → install to `modules/` |
 | [`link/`](link/) | YaP Link stack | Native proxy, protocol, API, link plugins |

@@ -59,6 +59,7 @@ tasks.register("assembleGameplaySuite") {
         ":stacker-plugin:jar",
         ":gameplay-knobs-plugin:jar",
         ":skills-plugin:shadowJar",
+        ":dungeons-plugin:shadowJar",
         ":disasters-plugin:jar",
         ":finetune-modules:buildAllFineTuneModules",
     )
@@ -74,6 +75,7 @@ tasks.register("assembleGameplaySuite") {
             jarOf(":stacker-plugin") to "yap-stacker.jar",
             jarOf(":gameplay-knobs-plugin") to "yap-gameplay-knobs.jar",
             jarOf(":skills-plugin", "shadowJar") to "yap-skills.jar",
+            jarOf(":dungeons-plugin", "shadowJar") to "yap-dungeons.jar",
             jarOf(":disasters-plugin") to "yap-disasters.jar",
         ).forEach { (src, name) -> src.copyTo(plugins.resolve(name), overwrite = true) }
         project.project(":finetune-modules").tasks.withType(Jar::class.java).forEach { jarTask ->
@@ -89,7 +91,7 @@ tasks.register("assembleGameplaySuite") {
             =================================
             Drop plugins/ and modules/ into your YaPcore server tree.
             Requires CORE+NETWORK release (yapcore.jar + yap-db + playerdata).
-            Docs: docs/plugins/STACKER.md · docs/ops/TUNE.md
+            Docs: docs/plugins/STACKER.md · docs/plugins/SKILLS.md · docs/plugins/DUNGEONS.md · docs/ops/TUNE.md
             Rebuild: gradle assembleGameplaySuite
             """.trimIndent() + "\n"
         )

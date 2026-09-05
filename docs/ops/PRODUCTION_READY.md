@@ -40,7 +40,7 @@ gradle :protect-plugin:test :factions-plugin:test :essentials-plugin:test \
 You do **not** need a QA team. One person + this box is enough for ops-signed.
 Retail Xbox / multi-player grief load stays optional before marketing “full play depth.”
 
-**Gameplay ship bar (current):** thin skills + stacker + encyclopedia knobs + disasters — see [SKILLS.md](../plugins/SKILLS.md) and [plugins/README.md](../../plugins/README.md). Full MMO / vehicles / abilities packs were removed from the product path.
+**Gameplay ship bar (current):** thin skills + dungeons + stacker + encyclopedia knobs + disasters — see [SKILLS.md](../plugins/SKILLS.md), [DUNGEONS.md](../plugins/DUNGEONS.md), and [plugins/README.md](../../plugins/README.md). Full MMO / vehicles / abilities packs were removed from the product path.
 
 ### 2a — Push & CI (agent / you)
 

@@ -116,6 +116,9 @@ project(":tab-plugin").projectDir = file("yap-first-party/core-network/tab-plugi
 include("discord-plugin")
 project(":discord-plugin").projectDir = file("yap-first-party/core-network/discord-plugin")
 
+include("yap-discord-api")
+project(":yap-discord-api").projectDir = file("yap-first-party/api/yap-discord-api")
+
 include("yap-sched")
 project(":yap-sched").projectDir = file("yap-first-party/engine/yap-sched")
 
@@ -181,6 +184,11 @@ project(":bedrock-ui-plugin").projectDir = file("yap-first-party/core-network/be
 include("skills-plugin")
 project(":skills-plugin").projectDir = file("yap-first-party/gameplay/skills-plugin")
 
+include("yap-dungeons-api")
+project(":yap-dungeons-api").projectDir = file("yap-first-party/api/yap-dungeons-api")
+
+include("dungeons-plugin")
+project(":dungeons-plugin").projectDir = file("yap-first-party/gameplay/dungeons-plugin")
 
 include("yap-factions-api")
 project(":yap-factions-api").projectDir = file("yap-first-party/api/yap-factions-api")

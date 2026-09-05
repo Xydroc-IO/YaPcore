@@ -233,6 +233,17 @@ Placeholders (PlaceholderAPI): `%yapskill_<skill>_level%`, `%yapskill_<skill>_xp
 
 Public leaderboard: `/skill top <skill> [page]` (no extra permission). See [SKILLS.md](../plugins/SKILLS.md).
 
+## YaPDungeons (`yap-dungeons.jar`, gameplay opt-in)
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapdungeons.use` | true | `/dungeon` menu, invites, leave, status |
+| `yapdungeons.portal.craft` | true | Craft dungeon portal item |
+| `yapdungeons.portal.place` | true | Place craftable portal / activate buildable frame |
+| `yapdungeons.admin` | op | `/yapdungeons reload\|forcestop\|giveportal` |
+
+Placeholders: `%yapdungeon_highest%`, `%yapdungeon_prestige%`, `%yapdungeon_in_run%`, … — [DUNGEONS.md](../plugins/DUNGEONS.md).
+
 ## YaPFactions (`yap-factions.jar`)
 
 | Node | Default | Grants |

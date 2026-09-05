@@ -49,7 +49,8 @@ Aliases: `/we`, `/worldedit`, `/mv`. Classic `//…` commands work like WorldEdi
 | `//limit` session override + progress messages | **Phase 5 done** |
 | WE shim clipboard + schematic format classes | **Phase 5 done** |
 | Large paste path (preload, high parallelism, auto-fast, % progress, deferred relight) | **Phase 5.1 done** |
-| NMS section placement / FAWE CFI | **Stretch** (Folia region-threading; next when still bottlenecked) |
+| CFI-lite (schem paste via BlockBatch; section-sorted planning) | **Done** (`limits.schem-use-block-batch`) |
+| NMS section placement / FAWE CFI | **Stretch** (Folia region-threading; kernel patch required) |
 
 ## WorldEdit-class commands
 
@@ -131,16 +132,24 @@ Dashboard **World → Create world** exposes the same pickers. Type/seed apply o
 | `yapworld.load` / `create` / `unload` / `teleport` | op | World mgmt (create supports type/env/seed/generator) |
 | `yapworld.admin` | op | Reload / status |
 
+`WorldManagerService.deleteWorld(name)` unloads and deletes a sanitized world folder (used by YaPDungeons ephemeral instances; refuses primary `world` / nether / end names). Requires unload to be allowed in config.
+
 ## Config
 
 `plugins/YaPWorld/config.yml` — max volume, brush radius, undo depth, `limits.*`
 (`max-changes`, `parallel-chunks`, `parallel-chunks-large`, `large-paste-blocks`,
-`auto-fast-large`, `defer-relight-large`, `progress-messages`, `auto-relight`),
+`auto-fast-large`, `defer-relight-large`, `progress-messages`, `auto-relight`,
+`schem-use-block-batch`),
 `cui.enabled`, browser editor port, `editor.clipboard-web`.
 
 Large pastes (≥ `large-paste-blocks`, default 50k): higher chunk wave size, chunk preload,
 auto skip-undo (unless you need history — set `auto-fast-large: false` or use small edits),
 percent progress, deferred `//fixlighting` after paste when `defer-relight-large: true`.
+
+**CFI-lite:** `//schem paste` / GUI / studio schem paste use the same `BlockBatch` path as
+`//paste` (parallel chunk waves, TE/NBT, undo, masks, progress). Set
+`limits.schem-use-block-batch: false` only to fall back to legacy 1-block-per-region.
+Full FAWE CFI (NMS section injection) remains Stretch.
 
 ## Related
 

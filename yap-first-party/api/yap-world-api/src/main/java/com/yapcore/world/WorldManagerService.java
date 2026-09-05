@@ -25,5 +25,11 @@ public interface WorldManagerService {
 
     CompletableFuture<Boolean> unloadWorld(String name);
 
+    /**
+     * Unload and permanently delete a world folder (ephemeral instances).
+     * Only sanitized folder names under the server root are accepted.
+     */
+    CompletableFuture<Boolean> deleteWorld(String name);
+
     CompletableFuture<Boolean> teleportToWorldSpawn(UUID playerUuid, String worldName);
 }

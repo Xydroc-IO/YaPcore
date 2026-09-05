@@ -29,7 +29,7 @@ Soft-depends on YaPEssentials, YaPModeration, YaPPerms, YaPWorld, YaPStacker, Ya
 - **Economy** — money grants via playerdata `/eco` (when economy present)
 - **Deep links** — `/yapperm gui`, `/yapworld gui`, `/yapstacker gui`, `/menu`
 - **Skills** — `/skills` when YaPSkills is installed
-
+- **Dungeons** — `/dungeon` when YaPDungeons is installed
 ## Permissions
 
 | Node | Default | Notes |

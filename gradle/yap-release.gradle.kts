@@ -76,6 +76,7 @@ tasks.register("assembleRelease") {
             "yap-gameplay-knobs.jar",
             "yap-stacker.jar",
             "yap-skills.jar",
+            "yap-dungeons.jar",
             "yap-disasters.jar",
         )
         val pluginJars = if (includeGameplay) {

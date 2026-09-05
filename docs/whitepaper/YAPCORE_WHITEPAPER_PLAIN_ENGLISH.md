@@ -48,15 +48,15 @@ Bedrock players also use a different connection style (UDP) than Java (TCP), but
 
 ### What we are *not* promising
 
-We don’t claim “every Paper plugin works on YaP-Folia day one” (same reality as Folia), and we’re not shipping stock Folia as the product jar. We grow compatibility based on what people actually need. Bedrock join and play-depth smoke are green; Wave 2 documents Limited/Out rows honestly (Floodgate-only forms Limited; specialty containers Green best-effort) instead of silent Partial.
+We don’t claim “every Paper plugin works on YaP-Folia day one” (same reality as Folia), and we’re not shipping stock Folia as the product jar. We grow compatibility based on what people actually need. Bedrock join and play-depth smoke are green; Wave 2 documents Floodgate-only forms as Green via `floodgate:form` (Geyser+Floodgate on proxy) and specialty containers Green best-effort instead of silent Partial.
 
 ### Where the product is today (September 2026)
 
 We use **YaP-Folia** for the real Minecraft game by default (`folia-jar-source=build`). **YapEngine** runs the
 **slim edge/I/O chassis** around it (not world tick). **YaP Link** is our Velocity-class front door
 (**phases 0–6 shipped**). Legacy **Paper + Phase 3** spatial tick is **done as code** but **off by default**.
-CORE+NETWORK plugins ship by default; GAMEPLAY (skills / stacker / knobs / disasters) is opt-in. Playerdata **shops + auction house** are **on** by default (jobs stay off when skills are used).
-The product is aimed at **busy / high-pop** servers. **Citeable** population MSPT uses **fullcite** (100 active bots + fixtures); peak **−12.4%** vs stock Folia with ship knobs (smart budget + microtick + subregion partition); latest ship-gate re-verify **−5.53%**; heavypop also **−8.09% vs Canvas** (citeable ≥5%) — join verified at 100/200 bots — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) · [REAL_GAINS.md](../folia/REAL_GAINS.md). The **YaP Encyclopedia** (Purpur-inspired mob/gameplay knobs; crop/fluid NMS opt-in via Folia 0025) ships in the gameplay box — [TUNE.md](../ops/TUNE.md) · [SKILLS.md](../plugins/SKILLS.md).
+CORE+NETWORK plugins ship by default; GAMEPLAY (skills / dungeons / stacker / knobs / disasters) is opt-in. Playerdata **shops + auction house** are **on** by default (jobs stay off when skills are used).
+The product is aimed at **busy / high-pop** servers. **Citeable** population MSPT uses **fullcite** (100 active bots + fixtures); peak **−12.4%** vs stock Folia with ship knobs (smart budget + microtick + subregion partition); latest ship-gate re-verify **−5.53%**; heavypop also **−8.09% vs Canvas** (citeable ≥5%) — join verified at 100/200 bots — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) · [REAL_GAINS.md](../folia/REAL_GAINS.md). The **YaP Encyclopedia** (Purpur-inspired mob/gameplay knobs; crop/fluid NMS opt-in via Folia 0025) ships in the gameplay box — [TUNE.md](../ops/TUNE.md) · [SKILLS.md](../plugins/SKILLS.md) · [DUNGEONS.md](../plugins/DUNGEONS.md).
 Phase 4 dual-stack join DoD is green.
 
 Details: [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) · [QUICK_START.md](../start/QUICK_START.md) ·
@@ -117,7 +117,7 @@ YaP first-party plugins declare `folia-supported: true` and schedule through tho
 
 **Always (CORE+NETWORK):** shared SQL pool (MariaDB / Postgres / SQLite), ranks, player sync + economy + shops + AH + claims, moderation, essentials QoL, YAML custom `/commands` (dashboard editable), chat, packs, PlaceholderAPI, pregen, protect, world tools (FAWE-class edit + schematics), regions, NPCs, TAB, Discord webhooks, anti-cheat lite, lag guard, web map, factions, Bedrock identity/UI bridge.
 
-**Optional (GAMEPLAY):** thin skills (mining / woodcutting / strength), mob stacker, Purpur-inspired encyclopedia knobs, disasters.
+**Optional (GAMEPLAY):** thin skills (mining / woodcutting / strength), procedural dungeons (L1–50 + prestige 51–100), mob stacker, Purpur-inspired encyclopedia knobs, disasters.
 
 Full tables: [technical whitepaper §6](YAPCORE_WHITEPAPER.md#6-shipped-first-party-plugins).
 
@@ -141,7 +141,7 @@ Unit tests cover plugin and API behavior. Operators validate with a local boot a
 ## 8. Honest caveats
 
 - Paper-only plugins are not a free pass on Folia.  
-- Protocol and Bedrock fidelity: Wave 2 matrix in CROSSPLAY (Floodgate-only forms Limited; anvil/smithing/loom/stonecutter/cartography Green best-effort).  
+- Protocol and Bedrock fidelity: Wave 2 matrix in CROSSPLAY (Floodgate-only forms Green via `floodgate:form`; anvil/smithing/loom/stonecutter/cartography Green best-effort).  
 - Fancy Folia performance patches stay **off** until load-tested on your hardware.  
 - Dashboard tabs for Factions, Disasters, Stacker, Skills, Protect, and Regions are interactive for ship ops; leftover plugins stay on Plugin settings by design.  
 - Pregen is Folia-safe (region-scheduled loads + chunk tickets).
@@ -163,7 +163,7 @@ For the full engineering write-up, tables, and status matrix, read [YAPCORE_WHIT
 | Non-tech / just curious | [YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md](../whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) |
 | Reading the engineer paper | [YAPCORE_WHITEPAPER.md](YAPCORE_WHITEPAPER.md) |
 | Running a server | [QUICK_START](../start/QUICK_START.md), [WEB_DASHBOARD](../ops/WEB_DASHBOARD.md) |
-| Writing plugins | [PLUGINS](../plugins/PLUGINS.md), [MODULES_AND_API](../plugins/MODULES_AND_API.md), [SKILLS](../plugins/SKILLS.md) |
+| Writing plugins | [PLUGINS](../plugins/PLUGINS.md), [MODULES_AND_API](../plugins/MODULES_AND_API.md), [SKILLS](../plugins/SKILLS.md), [DUNGEONS](../plugins/DUNGEONS.md) |
 | Working on the fork | [QUICK_START](../start/QUICK_START.md), [YAPCORE_WHITEPAPER.md](YAPCORE_WHITEPAPER.md) |
 
 ### Citation (technical paper)

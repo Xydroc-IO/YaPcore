@@ -1,0 +1,65 @@
+# Theme palettes by inclusive level band
+bands:
+  - min: 1
+    max: 10
+    floor: stone
+    wall: cobblestone
+    accent: stone_bricks
+    light: torch
+    ore: iron_ore
+    mobs: zombie,skeleton,spider
+    boss: zombie
+  - min: 11
+    max: 20
+    floor: deepslate
+    wall: cobbled_deepslate
+    accent: deepslate_bricks
+    light: lantern
+    ore: deepslate_iron_ore
+    mobs: zombie,skeleton,cave_spider
+    boss: zombie
+  - min: 21
+    max: 30
+    floor: blackstone
+    wall: polished_blackstone
+    accent: blackstone_bricks
+    light: soul_lantern
+    ore: nether_gold_ore
+    mobs: wither_skeleton,blaze,magma_cube
+    boss: blaze
+  - min: 31
+    max: 40
+    floor: deepslate
+    wall: sculk
+    accent: deepslate_tiles
+    light: soul_torch
+    ore: deepslate_diamond_ore
+    mobs: skeleton,cave_spider,zombie
+    boss: blaze
+  - min: 41
+    max: 50
+    floor: deepslate
+    wall: copper_block
+    accent: amethyst_block
+    light: sea_lantern
+    ore: deepslate_emerald_ore
+    mobs: vindicator,evoker,pillager
+    boss: evoker
+  - min: 51
+    max: 70
+    floor: obsidian
+    wall: crying_obsidian
+    accent: reinforced_deepslate
+    light: end_rod
+    ore: ancient_debris
+    mobs: wither_skeleton,enderman,blaze
+    boss: wither_skeleton
+  - min: 71
+    max: 100
+    floor: obsidian
+    wall: crying_obsidian
+    accent: reinforced_deepslate
+    light: end_rod
+    ore: ancient_debris
+    mobs: wither_skeleton,enderman,phantom
+    boss: wither_skeleton

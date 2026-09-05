@@ -1,0 +1,58 @@
+enabled: false
+
+use-shared-yapdb: true
+
+jdbc:
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
+  user: yap
+  password: change-me
+
+pool:
+  maximum-pool-size: 6
+  minimum-idle: 1
+  connection-timeout-ms: 10000
+
+packs-directory: dungeons
+
+invites:
+  expire-minutes: 30
+
+party:
+  max-size: 4
+
+lives:
+  base: 3
+  per-extra-member: 1
+  cap: 6
+
+instance:
+  idle-gc-minutes: 5
+  clear-gc-seconds: 45
+
+anti-farm:
+  daily-clear-soft-cap: 8
+  daily-economy-scale: 0.35
+
+portal:
+  block: END_PORTAL_FRAME
+  item: END_PORTAL_FRAME
+  # 3x3 shaped recipe (row-major) — craftable single-block portal
+  recipe:
+    - OBSIDIAN
+    - ENDER_EYE
+    - OBSIDIAN
+    - DEEPSLATE
+    - ENDER_EYE
+    - DEEPSLATE
+    - OBSIDIAN
+    - ENDER_EYE
+    - OBSIDIAN
+  # Standing multi-block frame (nether-portal style) at your base
+  structure:
+    enabled: true
+    frame: OBSIDIAN
+    interior: NETHER_PORTAL
+    activate-item: ENDER_EYE
+    # Outer size: 4 wide × 5 tall (inner opening 2×3)
+    width: 4
+    height: 5

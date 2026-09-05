@@ -18,7 +18,7 @@ Minecraft-class game servers traditionally serialize world mutation, plugin call
 2. **YapEngine** — a slim chassis in the YaPcore parent process — owns the public edge: watchdog, Netty traffic/sequencing, Compatibility Bridge, UI sandboxes, and heavy I/O workers (**not** world tick).
 3. **YaP Link** — a first-party Velocity-class proxy (`0.6.0-phase6`) — fronts multi-backend networks.
 
-A **SequenceToken** model orders work across chassis streams. Folia-aware first-party plugins use an explicit **SYNC / HEAVY / UI** contract via [`YapSched`](../plugins/MODULES_AND_API.md). The product ships a **CORE+NETWORK** plugin suite (permissions, chat, moderation, playerdata/economy, protect, world, regions, map, custom commands, …) and an opt-in **GAMEPLAY** tier (thin skills, stacker, encyclopedia knobs, disasters). Dual-stack **Java TCP + Bedrock UDP** is first-party (no Via\*/Geyser jars). Stock Fill Folia and Paper + Phase 3 spatial tick remain **legacy / bench** paths only.
+A **SequenceToken** model orders work across chassis streams. Folia-aware first-party plugins use an explicit **SYNC / HEAVY / UI** contract via [`YapSched`](../plugins/MODULES_AND_API.md). The product ships a **CORE+NETWORK** plugin suite (permissions, chat, moderation, playerdata/economy, protect, world, regions, map, custom commands, …) and an opt-in **GAMEPLAY** tier (thin skills, dungeons, stacker, encyclopedia knobs, disasters). Dual-stack **Java TCP + Bedrock UDP** is first-party (no Via\*/Geyser jars). Stock Fill Folia and Paper + Phase 3 spatial tick remain **legacy / bench** paths only.
 
 This paper describes architecture, concurrency invariants, networking/crossplay, the shipped plugin and data plane, evaluation methodology, and honest product status as of September 2026.
 
@@ -64,7 +64,7 @@ YaPcore contributes:
 5. Dual-stack **Java TCP + Bedrock UDP** ingress with optional shared listen port — first-party code, not Via\*/Geyser jars — [CROSSPLAY.md](../network/CROSSPLAY.md).
 6. A **three-tier extension model**: Folia-aware plugins (`plugin.yml`), YaP plugins (`yap.yml`), and fine-tune modules (`module.yml`) — [PLUGINS.md](../plugins/PLUGINS.md) · [MODULES_AND_API.md](../plugins/MODULES_AND_API.md).
 7. A **shipped first-party plugin suite** that replaces the common DIY glue stack for ~90% of survival/network operators — §6.
-8. An opt-in **GAMEPLAY tier** — thin skills, stacker, encyclopedia knobs, disasters — [SKILLS.md](../plugins/SKILLS.md) · [plugins/README.md](../../plugins/README.md).
+8. An opt-in **GAMEPLAY tier** — thin skills, dungeons, stacker, encyclopedia knobs, disasters — [SKILLS.md](../plugins/SKILLS.md) · [DUNGEONS.md](../plugins/DUNGEONS.md) · [plugins/README.md](../../plugins/README.md).
 
 ### 1.3 Non-goals
 
@@ -73,7 +73,7 @@ YaPcore contributes:
 - We do **not** claim “faster than Paper/Leaf on every workload.” Population cite: **fullcite** (100 active bots + fixtures) under the **ship Folia knob profile** (async-save, hopper budget, MSPT-gated entity/microtick budgets, subregion partition) — yapcore **−12.4%** vs stock Folia (`20260904TshipFc2`); knobs disclosed in bench JSON (`knob_*`). Heavypop peer: **−8.09% vs Canvas** and **−16.56% vs stock** (`20260904T065505Z`) — [REAL_GAINS.md](../folia/REAL_GAINS.md) · [CANVAS_PARITY.md](../folia/CANVAS_PARITY.md). **250 keepalive = HOLD-ONLY**. Paper/Purpur single-thread MSPT is out of scope for that cite — [PAPER_PURPUR_SCALE.md](../folia/PAPER_PURPUR_SCALE.md).
 - Bedrock play-depth is **join/spawn + play-depth smoke green**; Wave 2 fidelity matrix
   (inventory/forms/G.33 heads) is in [CROSSPLAY.md](../network/CROSSPLAY.md) — Floodgate-only
-  forms remain **Limited**; anvil/smithing/loom/stonecutter/cartography are **Green (best-effort)** Paper-backed.
+  forms are **Green** via `floodgate:form` (Geyser+Floodgate on proxy); anvil/smithing/loom/stonecutter/cartography are **Green (best-effort)** Paper-backed.
 - The Compatibility Bridge facade (non-game authority) remains **best-effort stubs** — [PAPER_API_COVERAGE.md](../plugins/PAPER_API_COVERAGE.md).
 
 ### 1.4 Audience
@@ -211,7 +211,7 @@ Sources live under `yap-first-party/`. Install tiers:
 | Tier | Gradle | Audience |
 |------|--------|----------|
 | **CORE+NETWORK** | `gradle installProductDefaults` | Every release |
-| **GAMEPLAY** | `gradle installGameplayDefaults` or `-PyapGameplay=true` | Opt-in skills / stacker / knobs / disasters |
+| **GAMEPLAY** | `gradle installGameplayDefaults` or `-PyapGameplay=true` | Opt-in skills / dungeons / stacker / knobs / disasters |
 | **Both** | `gradle installAllProductDefaults` | Full product box |
 | **Dist** | `gradle assemblePluginDist` | `build/dist/yap-plugins/{core-network,gameplay,api,modules}/` |
 
@@ -242,13 +242,14 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-lagguard.jar` | YaPLagGuard | Per-chunk lag governor |
 | `yap-map.jar` | YaPMap | Flat web map (Leaflet + PNG tiles + markers; no 3D) |
 | `yap-factions.jar` | YaPFactions | Factions overlay on playerdata claims |
-| `yap-bedrock-ui.jar` | YaPBedrockUI | Bedrock `FormService` bridge (Floodgate-only forms Limited) |
+| `yap-bedrock-ui.jar` | YaPBedrockUI | Bedrock `FormService` bridge + Floodgate-only `floodgate:form` relay |
 
 ### 6.2 GAMEPLAY (opt-in)
 
 | Jar | Plugin | Role |
 |-----|--------|------|
 | `yap-skills.jar` | YaPSkills | Thin skills — mining / woodcutting / strength + stored overall — [SKILLS.md](../plugins/SKILLS.md) |
+| `yap-dungeons.jar` | YaPDungeons | Procedural instances L1–50 + prestige 51–100 — [DUNGEONS.md](../plugins/DUNGEONS.md) |
 | `yap-stacker.jar` | YaPStacker | PDC mob / item / spawner stacker |
 | `yap-gameplay-knobs.jar` | YaPGameplayKnobs | Purpur-inspired encyclopedia; crop/fluid NMS opt-in via YaP-Folia 0025 |
 | `yap-disasters.jar` | YaPDisasters | Extreme weather + disasters |
@@ -257,7 +258,7 @@ Full MMO (combat, crafting, abilities, guilds, vehicles) was **removed** from th
 
 ### 6.3 APIs & modules
 
-API jars under `yap-first-party/api/` for soft-depend authors (including `yap-mmo-api` as the skills service surface). Fine-tune modules under `modules/` declare `provides` / `requires` and write `FINE_TUNE.txt` pointers at real config knobs — they are **packaging**, not alternate game engines.
+API jars under `yap-first-party/api/` for soft-depend authors (including `yap-mmo-api` as the skills service surface and `yap-dungeons-api` for dungeon runs/progress). Fine-tune modules under `modules/` declare `provides` / `requires` and write `FINE_TUNE.txt` pointers at real config knobs — they are **packaging**, not alternate game engines.
 
 ### 6.4 What first-party plugins intentionally replace
 
@@ -270,7 +271,7 @@ API jars under `yap-first-party/api/` for soft-depend authors (including `yap-mm
 | WorldEdit / FAWE-class ops | YaPWorld (Folia-safe; stock FAWE not used) |
 | WorldGuard | YaPRegions (+ playerdata claims) |
 | TAB / scoreboard | YaPTab |
-| DiscordSRV (MVP) | YaPDiscord |
+| DiscordSRV | YaPDiscord (slash A–C, console channel, slash API) |
 | Dynmap-class | YaPMap |
 | PlaceholderAPI | Bundled Clip-compatible engine |
 | Floodgate | YaPFloodgate |
@@ -362,7 +363,7 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 - Folia (and YaP-Folia) reject stock single-thread Paper plugins — operator education required.
 - Protocol version sprawl requires continuous registry/packet maintenance.
 - NUMA/ZGC gains are hardware-dependent.
-- Specialty JE containers on Bedrock (anvil/smithing/loom/stonecutter/cartography) are **Green (best-effort)** Paper-backed; recipe-picker / rename polish remains Stretch. Floodgate-only forms are **Limited** — see [CROSSPLAY.md](../network/CROSSPLAY.md).
+- Specialty JE containers on Bedrock (anvil/smithing/loom/stonecutter/cartography) are **Green (best-effort)** Paper-backed; recipe-picker / rename polish remains Stretch. Floodgate-only forms are **Green** via `floodgate:form` (requires Geyser+Floodgate on proxy) — see [CROSSPLAY.md](../network/CROSSPLAY.md).
 - YaP-Folia patch rebase risk when refreshing `UPSTREAM.lock`.
 - Phase 3 spatial edge cases apply only on the **legacy Paper** path.
 - Soft-depend plugin names are **case-sensitive** (`YaPPlayerData`); integrations must match `plugin.yml` `name:` exactly.
@@ -379,16 +380,16 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 | Phase 3 Paper spatial | **Complete as code** — **retired as product default** |
 | Phase 4 dual-stack join DoD | **Green** |
 | CORE+NETWORK plugins | **Shipped** |
-| GAMEPLAY (skills / stacker / knobs / disasters) | **Shipped** (opt-in install) |
+| GAMEPLAY (skills / dungeons / stacker / knobs / disasters) | **Shipped** (opt-in install) |
 | PlayerData shops + AH | **On by default** (jobs remain off) |
 | Fair population MSPT gate | **Citeable** — fullcite 100 bots; peak −12.4% (`shipFc2`); re-verify −5.53% (`20260904T040935Z`); **ship knobs** disclosed in JSON |
 | Dashboard Phase 8 | **Done (ship)** — Factions/Disasters/Stacker/Skills interactive; Protect restore; Regions flags; YAML leftovers documented |
-| Wave 2 Bedrock fidelity | **Done (ship)** — [CROSSPLAY.md](../network/CROSSPLAY.md) matrix; Floodgate forms Limited; specialty containers Green (best-effort) |
-| Wave 4 Discord / Map / PAPI | **Done (ship)** — event webhooks; flat map markers; curated local expansions |
+| Wave 2 Bedrock fidelity | **Done (ship)** — [CROSSPLAY.md](../network/CROSSPLAY.md) matrix; Floodgate forms Green (`floodgate:form`); specialty containers Green (best-effort) |
+| Wave 4 Discord / Map / PAPI | **Done (ship)** — event webhooks + account link/role sync; flat map markers; curated local expansions |
 | Wave 5 Access context/temp | **Done (ship)** — dashboard duration + world/server grants |
 | Encyclopedia NMS (0025) | **Shipped** (defaults off; `/yapknobs status` → `nmsHooks`) — [TUNE.md](../ops/TUNE.md) |
 | PAPI eCloud | **Intentionally local-only** (expansions folder) |
-| Stretch (Map 3D / full Floodgate forms / CFI) | **Separate plan only** — not stubbed (see §13.1) |
+| Stretch (Map 3D / CFI) | **Separate plan only** — not stubbed (see §13.1) |
 | Stock Paper jars on Folia | **Unsupported** |
 
 Ops notes: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
@@ -398,10 +399,8 @@ Ops notes: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 | Item | Why not in Waves 2–5 |
 |------|----------------------|
 | True BlueMap-style 3D mesh | Flat map + markers is product Map |
-| Full Floodgate-only forms | Needs native Bedrock session / protocol depth |
 | FAWE CFI / NMS section injection | Folia region-threading conflict |
 | Full MMO / vehicles / abilities stack | Removed from product; thin skills remain |
-| DiscordSRV account-link / slash matrix | Event webhooks are product Discord |
 | HelpChat eCloud full mirror | Curated expansions are product PAPI |
 | LuckPerms web pixel-clone | Access context/temp is product ops |
 
@@ -411,9 +410,9 @@ Stretch starts only with its own plan and done bars.
 
 ## 14. Conclusion
 
-YaPcore demonstrates a practical decomposition for Minecraft-class servers: **YaP-Folia** owns regionized game tick; **YapEngine** owns a slim edge/I/O chassis with an explicit plugin pool contract; **YaP Link** owns multi-backend routing; and a **first-party plugin + MariaDB data plane** replaces the usual DIY glue stack. Opt-in GAMEPLAY (skills, stacker, encyclopedia, disasters) extends the same Folia-safe patterns without claiming a full MMO stack.
+YaPcore demonstrates a practical decomposition for Minecraft-class servers: **YaP-Folia** owns regionized game tick; **YapEngine** owns a slim edge/I/O chassis with an explicit plugin pool contract; **YaP Link** owns multi-backend routing; and a **first-party plugin + MariaDB data plane** replaces the usual DIY glue stack. Opt-in GAMEPLAY (skills, dungeons, stacker, encyclopedia, disasters) extends the same Folia-safe patterns without claiming a full MMO stack.
 
-Future work emphasizes Stretch items (3D map, Floodgate forms, CFI) only under a separate plan, hot-region partition soak under load, and continued Folia upstream rebase hygiene.
+Future work emphasizes Stretch items (3D map, CFI) only under a separate plan, hot-region partition soak under load, and continued Folia upstream rebase hygiene.
 
 ---
 
@@ -424,7 +423,7 @@ Future work emphasizes Stretch items (3D map, Floodgate forms, CFI) only under a
 3. Netty project.
 4. PaperMC Folia — regionized threading for Bukkit servers.
 5. YapLabs — YaP-Folia patches (`vendor/folia/patches/`), YapEngine chassis notes, YaP Link native suite.
-6. YapLabs docs — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [SKILLS.md](../plugins/SKILLS.md), [TUNE.md](../ops/TUNE.md).
+6. YapLabs docs — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [SKILLS.md](../plugins/SKILLS.md), [DUNGEONS.md](../plugins/DUNGEONS.md), [TUNE.md](../ops/TUNE.md).
 
 ---
 
@@ -440,7 +439,7 @@ Future work emphasizes Stretch items (3D map, Floodgate forms, CFI) only under a
 | Engine contributors | [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [QUICK_START.md](../start/QUICK_START.md) |
 | Network / crossplay | [YAP_LINK.md](../network/YAP_LINK.md), [CROSSPLAY.md](../network/CROSSPLAY.md), [CROSSPLAY.md](../network/CROSSPLAY.md) |
 | Data | [YAPDB.md](../data/YAPDB.md), [MARIADB.md](../data/MARIADB.md), [POSTGRES.md](../data/POSTGRES.md), [SQLITE.md](../data/SQLITE.md), [PLAYERDATA.md](../data/PLAYERDATA.md), [PERMISSIONS.md](../ops/PERMISSIONS.md) |
-| GAMEPLAY | [SKILLS.md](../plugins/SKILLS.md), [STACKER.md](../plugins/STACKER.md), [TUNE.md](../ops/TUNE.md) |
+| GAMEPLAY | [SKILLS.md](../plugins/SKILLS.md), [DUNGEONS.md](../plugins/DUNGEONS.md), [STACKER.md](../plugins/STACKER.md), [TUNE.md](../ops/TUNE.md) |
 | Comparison | [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) |
 
 ### Appendix B — Quick install
