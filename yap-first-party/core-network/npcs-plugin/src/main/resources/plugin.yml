@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: Quest NPCs with dialogue and objective tracking (Folia-safe)
 website: https://github.com/yaplabs
-softdepend: [YaPDB, YaPPlayerData, yap-mmo-content, YaPSkills, YaPCrafting]
+softdepend: [YaPDB, YaPPlayerData, YaPSkills]
 commands:
   npc:
     description: Quest NPC admin

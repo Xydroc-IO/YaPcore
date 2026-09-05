@@ -6,12 +6,16 @@ import com.yapcore.essentials.listener.FreezeListener;
 import com.yapcore.essentials.listener.SocialSpyListener;
 import com.yapcore.essentials.listener.TeleportListener;
 import com.yapcore.essentials.listener.VanishListener;
+import com.yapcore.essentials.listener.WaterWavesListener;
 import com.yapcore.essentials.store.AfkService;
 import com.yapcore.essentials.store.BackStore;
 import com.yapcore.essentials.store.SpawnStore;
 import com.yapcore.essentials.store.StaffService;
 import com.yapcore.essentials.store.TpaService;
 import com.yapcore.essentials.store.VanishService;
+import com.yapcore.essentials.water.WaterWaves;
+import com.yapcore.sched.YapSched;
+import com.yapcore.sched.YapTask;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -26,6 +30,8 @@ public final class EssentialsPlugin extends JavaPlugin {
     private AfkService afk;
     private VanishService vanish;
     private StaffService staff;
+    private WaterWaves waterWaves;
+    private YapTask waterWavesTask;
 
     @Override
     public void onEnable() {
@@ -62,16 +68,30 @@ public final class EssentialsPlugin extends JavaPlugin {
             }
             pm.registerEvents(new FreezeListener(staff), this);
         }
+        startWaterWaves();
 
         getLogger().info("YaPEssentials ready (server-id=" + config.serverId()
-                + ", spawn-scope=" + config.spawnScopeKey() + ").");
+                + ", spawn-scope=" + config.spawnScopeKey()
+                + ", water-waves=" + config.waterWavesEnabled() + ").");
     }
 
     @Override
     public void onDisable() {
+        if (waterWavesTask != null) {
+            waterWavesTask.cancel();
+            waterWavesTask = null;
+        }
         if (database != null) {
             database.close();
         }
+    }
+
+    public EssentialsConfig essentialsConfig() {
+        return config;
+    }
+
+    public WaterWaves waterWaves() {
+        return waterWaves;
     }
 
     public void reloadEssentials() {
@@ -108,5 +128,19 @@ public final class EssentialsPlugin extends JavaPlugin {
         if (staff == null) {
             staff = new StaffService();
         }
+        if (waterWaves != null) {
+            waterWaves = new WaterWaves(this, this::essentialsConfig);
+        }
+    }
+
+    private void startWaterWaves() {
+        waterWaves = new WaterWaves(this, this::essentialsConfig);
+        getServer().getPluginManager().registerEvents(new WaterWavesListener(this), this);
+        waterWavesTask = YapSched.globalTimer(this, () -> {
+            if (waterWaves == null || !config.waterWavesEnabled()) {
+                return;
+            }
+            waterWaves.tick(getServer().getOnlinePlayers());
+        }, 10L, 2L);
     }
 }

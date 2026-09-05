@@ -121,7 +121,6 @@ public final class WebDashboard {
         http.createContext("/api/packs", pluginsApi::apiPacks);
         http.createContext("/api/console", consoleApi::apiConsole);
         http.createContext("/api/console/stream", consoleApi::apiConsoleStream);
-        http.createContext("/api/vehicles", gameplayApi::apiVehicles);
         http.createContext("/api/pregen", gameplayApi::apiPregen);
         http.createContext("/api/ranks", gameplayApi::apiRanks);
         http.createContext("/api/essentials", gameplayApi::apiEssentials);
@@ -145,10 +144,8 @@ public final class WebDashboard {
         http.createContext("/api/guard", gameplayApi::apiGuard);
         http.createContext("/api/regions", gameplayApi::apiRegions);
         http.createContext("/api/npcs", gameplayApi::apiNpcs);
-        http.createContext("/api/mmo", gameplayApi::apiMmo);
-        http.createContext("/api/games", gameplayApi::apiGames);
+        http.createContext("/api/skills", gameplayApi::apiSkills);
         http.createContext("/api/factions", gameplayApi::apiFactions);
-        http.createContext("/api/guilds", gameplayApi::apiGuilds);
         http.createContext("/metrics", metricsHandler::handle);
         http.createContext("/health", ex -> DashboardHttp.text(ex, 200, "ok"));
 

@@ -1,4 +1,4 @@
-enabled: true
+enabled: false
 
 # Shared MariaDB via YaPDB when available
 use-shared-yapdb: true

@@ -17,7 +17,7 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | Tier | Gradle | What’s installed |
 |------|--------|------------------|
 | **CORE + NETWORK** | `gradle installProductDefaults` | Network + ops jars below |
-| **GAMEPLAY** | `gradle installGameplayDefaults` | Vehicles, stacker, knobs, MMO, abilities, disasters |
+| **GAMEPLAY** | `gradle installGameplayDefaults` | Skills, stacker, knobs, disasters |
 | **Full release box** | `gradle assembleRelease` | CORE + NETWORK + GAMEPLAY |
 | **Slim box** | `gradle assembleRelease -PyapGameplay=false` | CORE + NETWORK only |
 | **Fine-tune modules** | `gradle installFineTuneModules` | All packaging jars → `modules/` |
@@ -42,9 +42,9 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `WorldEdit.jar` | WorldEdit API shim (`yap-worldedit-shim`) |
 | `yap-regions.jar` | WorldGuard-class regions (`/region`) |
 | `yap-npcs.jar` | NPCs + quests (`/npc`, `/quests`) |
-| `yap-guard.jar` | Anti-cheat |
+| `yap-guard.jar` | Lightweight movement heuristics (not Grim) — PvP: `./scripts/grim-ac.sh enable` |
 | `yap-lagguard.jar` | Lag / entity budgets |
-| `yap-map.jar` | Web map render |
+| `yap-map.jar` | Flat web map (Leaflet tiles + markers; no 3D) |
 | `yap-factions.jar` | Factions land claims |
 | `yap-packs.jar` | Multi-active resource packs (`/yappacks`) |
 | `yap-commands.jar` | YAML custom `/commands` + dashboard CRUD |
@@ -58,24 +58,14 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 
 | Jar | Role |
 |-----|------|
-| `yap-vehicles.jar` | YaP Vehicles (fleet, fuel, upgrades, shop) |
-| `yap-gameplay-knobs.jar` | Purpur-class mob encyclopedia |
+| `yap-skills.jar` | Thin skills — mining / woodcutting / strength (`/skills`) — [SKILLS.md](../docs/plugins/SKILLS.md) |
 | `yap-stacker.jar` | PDC mob/item/spawner stacker (`/yapstacker`) |
-| `yap-skills.jar` | MMO skills |
-| `yap-combat.jar` | Combat / spells / prayer |
-| `yap-crafting.jar` | Custom recipes + sell |
-| `yap-mmo-content.jar` | Bosses, hiscores, MMO content packs |
-| `yap-mmo-bedrock.jar` | Bedrock MMO UI (`/mmoui`) |
-| `yap-guilds.jar` | Player guilds |
-| `yap-games.jar` | Queue / duel / arena games |
-| `yap-mechanics.jar` | Stamina and shared mechanics |
-| `yap-abilities.jar` | Hotbar abilities / spells |
 | `yap-disasters.jar` | Extreme weather + disasters (`/yapdisaster`) |
+| `yap-gameplay-knobs.jar` | Purpur-inspired encyclopedia (event-wired; crop/fluid NMS opt-in via YaP-Folia 0025) |
 
-Plus GAMEPLAY fine-tune modules (`yap-vehicles-module`, `yap-stacker-module`,
-`yap-gameplay-knobs-module`, games modules) and vehicles/abilities overlays in
-`yapcore-default.zip` when `-PyapGameplay=true`. CORE fine-tune modules install
-with `installProductDefaults` (see [modules/README.md](../modules/README.md)).
+Plus GAMEPLAY fine-tune modules (`yap-stacker-module`, `yap-gameplay-knobs-module`)
+when `-PyapGameplay=true`. CORE fine-tune modules install with `installProductDefaults`
+(see [modules/README.md](../modules/README.md)).
 
 ### Optional third-party (not in git)
 
@@ -84,7 +74,7 @@ with `installProductDefaults` (see [modules/README.md](../modules/README.md)).
 | `tebex.jar` | `./scripts/fetch-tebex.sh` or `gradle fetchTebex` | Official **GPLv3** Folia store plugin — Hub only · [TEBEX.md](../docs/ops/TEBEX.md) |
 | `grim.jar` | `./scripts/fetch-grim.sh` or `gradle fetchGrim` | Official **GPLv3** Grim AC — auto-downloaded **disabled** on `seed-defaults.sh`; enable with `./scripts/grim-ac.sh enable` · [GRIM.md](../docs/ops/GRIM.md) |
 
-See [docs/plugins/VEHICLES.md](../docs/plugins/VEHICLES.md) · [docs/plugins/MODULES_AND_API.md](../docs/plugins/MODULES_AND_API.md) ·
+See [docs/plugins/SKILLS.md](../docs/plugins/SKILLS.md) · [docs/plugins/MODULES_AND_API.md](../docs/plugins/MODULES_AND_API.md) ·
 [docs/plugins/PLACEHOLDERAPI.md](../docs/plugins/PLACEHOLDERAPI.md) ·
 [docs/plugins/PLUGIN_BACKCOMPAT.md](../docs/plugins/PLUGIN_BACKCOMPAT.md) · [docs/plugins/PREGEN.md](../docs/plugins/PREGEN.md) ·
 [docs/plugins/STACKER.md](../docs/plugins/STACKER.md) · [docs/data/YAPDB.md](../docs/data/YAPDB.md) ·

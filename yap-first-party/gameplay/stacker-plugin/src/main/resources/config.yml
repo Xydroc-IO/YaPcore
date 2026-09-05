@@ -1,6 +1,6 @@
 # YaP Stacker — full mob / item / spawner stacking (PDC, no NMS)
 
-enabled: true
+enabled: false
 
 mobs:
   enabled: true

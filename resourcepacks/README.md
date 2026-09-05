@@ -14,14 +14,11 @@ resource-pack-forced=true
 ```
 
 - **Forced** (`resource-pack-forced=true`): decline → kick
-- **Default pack:** `yapcore-default.zip` = Faithful 64x + **YaP Skies** + **YaP Water** + YaP Vehicles + YaP Abilities
+- **Default pack:** `yapcore-default.zip` = Faithful 64x + **YaP Skies** + **YaP Water**
   (built by `gradle prepareClientPack` / `shadowJar`)
 - Skies overlay: [`yap-skies/`](yap-skies/) (`python3 scripts/generate-yap-skies.py`)
 - Water/weather: `python3 scripts/generate-yap-water.py` (into `yap-skies/`)
-- Standalone vehicles overlay: [`yap-vehicles.zip`](yap-vehicles.zip)
-- Vehicle model previews (docs): [`yap-vehicles/showcase/`](yap-vehicles/showcase/)
-- Standalone MMO icons overlay: [`yap-abilities.zip`](yap-abilities.zip) on **`clay_ball`** CMD
-  (source: [`yap-abilities/`](yap-abilities/), merged with GAMEPLAY pack)
+- Vehicles / abilities overlays were **removed** from the product pack (no `yap-vehicles/` / `yap-abilities/`)
 - Iris / Complementary volumetric shaders are still client-only — YaP ships an
   optional Fabric stack (official Sodium pin + YaP Iris + YaP Shaders); see
   [docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md)

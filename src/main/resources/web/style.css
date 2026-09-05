@@ -709,6 +709,8 @@ details.soft-details > summary + * { margin-top: 12px; }
   margin-bottom: 8px;
 }
 .list li .meta { color: var(--muted); font-size: 12px; }
+.plugin-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; }
+.plugin-actions button { font-size: 12px; padding: 6px 10px; }
 .inline { display: flex; gap: 10px; align-items: center; }
 .inline input { flex: 1; }
 

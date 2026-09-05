@@ -23,8 +23,6 @@ dependencies {
     implementation(project(":yap-sched"))
     implementation(project(":yap-mmo-api"))
     compileOnly(project(":yap-db-api"))
-    compileOnly(project(":yap-games-api"))
-    compileOnly(project(":yap-mechanics-api"))
     compileOnly(project(":placeholderapi-plugin"))
 
     implementation("com.zaxxer:HikariCP:6.2.1")

@@ -8,8 +8,8 @@ Built by `scripts/build-default-resourcepack.sh` on every product build:
 - **YaP Skies** (`yap-skies/`) — realistic sun, moon, multi-scale clouds, atmosphere, OptiFine skyboxes
 - **YaP Water** (same overlay) — animated water still/flow, underwater, rain/snow, drips
   (`scripts/generate-yap-water.py`)
-- **YaP Vehicles** (`yap-vehicles.zip`) — HD car models + upgrade icons
-- **YaP Abilities** (`yap-abilities.zip`) — MMO skill/ability icons on `clay_ball` CMD
+
+Vehicles and abilities overlays are **not** in the current product pack.
 
 `config/server.properties` → `resource-pack-file=yapcore-default.zip`
 
@@ -25,7 +25,7 @@ Built by `scripts/build-default-resourcepack.sh` on every product build:
 YaPcore redistributes this pack as a **server resource pack** under the terms of
 the Faithful License (credit + license link required; no paywall).
 
-YaP-authored overlays in this tree (skies, vehicles, abilities, etc.) follow YaPcore’s
+YaP-authored overlays in this tree (skies, water, etc.) follow YaPcore’s
 **[GPLv3](../LICENSE)** — [docs/start/LICENSING.md](../docs/start/LICENSING.md).
 
 ## YaP Skies + Water
@@ -34,29 +34,6 @@ First-party. Skies: `scripts/generate-yap-skies.py`. Water/weather:
 `scripts/generate-yap-water.py` (grayscale still/flow for biome tint; underwater,
 rain, snow, drips). No third-party photos or Complementary/BSL assets.
 
-## YaP Vehicles
-
-First-party upgrade icons + fleet body models under `yap-vehicles/`.
-
-**Fleet body meshes and textures** are converted from
-[Automobility](https://github.com/FoundationGames/Automobility) (MIT License,
-© FoundationGames). Full license text: `yap-vehicles/AUTOMOBILITY_LICENSE.txt`.
-Re-import with:
-
-```bash
-# clone Automobility somewhere, then:
-python3 scripts/import-automobility-vehicles.py
-```
-
-(The import script expects Automobility at `/tmp/yap-car-models/Automobility` by default.)
-
-YaP-authored upgrade item icons and packaging remain under YaPcore GPLv3.
-
-## YaP Abilities
-
-First-party. `clay_ball` CustomModelData icons for skills and the 230+ ability book.
-Source tree: `yap-abilities/`. Standalone zip: `yap-abilities.zip`. Merged into
-`yapcore-default.zip` when the GAMEPLAY pack is built (`YAP_INCLUDE_VEHICLES=1`).
 Vanilla clients get the sun / moon / clouds / `sky` core shader. Panoramic layers
 need a client skybox loader (OptiFine, Skyboxify, Celestial, or Nuit + Interop).
 
@@ -67,5 +44,4 @@ For wavy water and shader skies, players install **one** Fabric jar:
 - **yap-visuals** — nests official Sodium + YaP Iris; extracts YaP Shaders on launch
 
 Build: `./scripts/build-yap-client-render.sh` → `dist/client-mods/yap-visuals-*.jar`.
-See [docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md) and
-[docs/start/LICENSING.md](../docs/start/LICENSING.md).
+See [docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md).

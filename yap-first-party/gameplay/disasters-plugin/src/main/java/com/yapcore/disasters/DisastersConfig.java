@@ -43,7 +43,7 @@ public final class DisastersConfig {
     public void reload() {
         plugin.reloadConfig();
         FileConfiguration c = plugin.getConfig();
-        enabled = c.getBoolean("enabled", true);
+        enabled = c.getBoolean("enabled", false);
         broadcastStart = c.getBoolean("broadcast-start", true);
         broadcastEnd = c.getBoolean("broadcast-end", true);
         grief = c.getBoolean("grief", false);

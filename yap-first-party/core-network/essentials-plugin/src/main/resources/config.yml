@@ -70,3 +70,10 @@ features:
   suicide: true
   hat: true
   staff: true
+  water-waves: true
+
+# Server-side surface bobbing / entry splash (works without client shaders).
+water-waves:
+  splash: true
+  amplitude: 0.045
+  speed: 1.0

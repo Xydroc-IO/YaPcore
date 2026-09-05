@@ -60,6 +60,10 @@ public final class EssentialsConfig {
     private boolean featureSuicide = true;
     private boolean featureHat = true;
     private boolean featureStaff = true;
+    private boolean featureWaterWaves = true;
+    private boolean waterSplashEnabled = true;
+    private double waterWaveAmplitude = 0.045;
+    private double waterWaveSpeed = 1.0;
 
     public EssentialsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -130,6 +134,10 @@ public final class EssentialsConfig {
         featureSuicide = c.getBoolean("features.suicide", true);
         featureHat = c.getBoolean("features.hat", true);
         featureStaff = c.getBoolean("features.staff", true);
+        featureWaterWaves = c.getBoolean("features.water-waves", true);
+        waterSplashEnabled = c.getBoolean("water-waves.splash", true);
+        waterWaveAmplitude = c.getDouble("water-waves.amplitude", 0.045);
+        waterWaveSpeed = c.getDouble("water-waves.speed", 1.0);
     }
 
     public Location fileSpawn() {
@@ -241,7 +249,24 @@ public final class EssentialsConfig {
             case "suicide" -> featureSuicide;
             case "hat" -> featureHat;
             case "staff" -> featureStaff;
+            case "water-waves" -> featureWaterWaves;
             default -> true;
         };
+    }
+
+    public boolean waterWavesEnabled() {
+        return featureWaterWaves;
+    }
+
+    public boolean waterSplashEnabled() {
+        return waterSplashEnabled;
+    }
+
+    public double waterWaveAmplitude() {
+        return waterWaveAmplitude;
+    }
+
+    public double waterWaveSpeed() {
+        return waterWaveSpeed;
     }
 }

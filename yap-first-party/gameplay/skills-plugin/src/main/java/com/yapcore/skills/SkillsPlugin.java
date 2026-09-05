@@ -27,9 +27,7 @@ import java.util.List;
 public final class SkillsPlugin extends JavaPlugin {
 
     private static final List<String> DEFAULT_SKILL_PACKS = List.of(
-            "mining.yml", "woodcutting.yml", "fishing.yml", "cooking.yml", "smithing.yml", "crafting.yml",
-            "attack.yml", "strength.yml", "defence.yml", "hitpoints.yml",
-            "ranged.yml", "magic.yml", "prayer.yml");
+            "mining.yml", "woodcutting.yml", "strength.yml");
 
     private SkillsConfig config;
     private SkillDatabase database;

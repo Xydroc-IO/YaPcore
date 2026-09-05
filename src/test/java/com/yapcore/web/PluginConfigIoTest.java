@@ -66,8 +66,10 @@ class PluginConfigIoTest {
     void catalogCoversCoreAndGameplayPlugins() {
         assertTrue(PluginConfigCatalog.all().size() >= 30);
         assertTrue(PluginConfigCatalog.byId("yap-factions") != null);
-        assertTrue(PluginConfigCatalog.byId("yap-guilds") != null);
-        assertTrue(PluginConfigCatalog.byId("yap-combat") != null);
+        assertTrue(PluginConfigCatalog.byId("yap-skills") != null);
+        assertTrue(PluginConfigCatalog.byId("yap-disasters") != null);
         assertTrue(PluginConfigCatalog.byId("yap-db") != null);
+        assertTrue(PluginConfigCatalog.byId("yap-guilds") == null);
+        assertTrue(PluginConfigCatalog.byId("yap-combat") == null);
     }
 }

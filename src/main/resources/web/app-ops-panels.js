@@ -49,36 +49,119 @@
     }
   };
 
+  function pluginTierBadge(tier) {
+    const t = (tier || "THIRD_PARTY").toUpperCase();
+    if (t === "CORE") return `<span class="badge warn">CORE</span>`;
+    if (t === "GAMEPLAY") return `<span class="badge">GAMEPLAY</span>`;
+    if (t === "NETWORK") return `<span class="badge on">NETWORK</span>`;
+    return `<span class="badge">3rd-party</span>`;
+  }
+
+  async function pluginAction(body) {
+    const r = await api("/api/plugins", { method: "POST", body: JSON.stringify(body) });
+    if (r && r.needsRestart) {
+      alert((r.fileName || "Plugin") + ": Folia restart required for hard jar changes to take effect.");
+    } else if (r && r.reload) {
+      // soft reload attempted; keep quiet unless softEnabled flipped with no reload
+    }
+    return r;
+  }
+
   async function loadPlugins() {
     const d = await api("/api/plugins");
     const ul = $("pluginList");
     ul.innerHTML = "";
     (d.plugins || []).forEach((p) => {
       const li = document.createElement("li");
-      const badge = p.compatWarning
+      const softLabel = p.softSupported === false || p.softSupported === "false"
+        ? "soft n/a"
+        : (p.softEnabled === true || p.softEnabled === "true" ? "soft on" : p.softEnabled === false || p.softEnabled === "false" ? "soft off" : "soft ?");
+      const hardOn = p.hardEnabled === true || p.hardEnabled === "true";
+      const compat = p.compatWarning
         ? `<span class="badge warn">${p.compatStatus}${p.nativeAlternative ? " → " + p.nativeAlternative : ""}</span>`
         : p.compatStatus === "native"
           ? `<span class="badge on">native</span>`
           : p.compatStatus === "works"
             ? `<span class="badge">works</span>`
             : "";
-      li.innerHTML = `<div><strong>${p.fileName}</strong> ${badge}<div class="meta">${p.sizeLabel}${p.compatNote ? " · " + p.compatNote : ""}</div></div>`;
+      const title = p.title && p.title !== p.activeName ? p.title + " · " : "";
+      li.innerHTML = `<div><strong>${p.activeName || p.fileName}</strong> ${pluginTierBadge(p.tier)} ${compat}
+        <div class="meta">${title}${p.sizeLabel || ""} · ${softLabel} · hard ${hardOn ? "on" : "off"}${p.compatNote ? " · " + p.compatNote : ""}${!hardOn ? " · renamed .disabled" : ""}</div></div>`;
+      const actions = document.createElement("div");
+      actions.className = "plugin-actions";
+
+      if (p.softSupported !== false && p.softSupported !== "false") {
+        const softBtn = document.createElement("button");
+        const softOn = p.softEnabled === true || p.softEnabled === "true";
+        softBtn.textContent = softOn ? "Soft off" : "Soft on";
+        softBtn.title = "Writes enabled in plugin config (reload when available)";
+        softBtn.onclick = async () => {
+          try {
+            const force = p.protected === true || p.protected === "true"
+              ? confirm("CORE plugin — confirm soft " + (softOn ? "disable" : "enable") + "?")
+              : false;
+            if ((p.protected === true || p.protected === "true") && softOn && !force) return;
+            await pluginAction({
+              action: softOn ? "disable" : "enable",
+              fileName: p.fileName,
+              mode: "soft",
+              force: force ? "true" : "false",
+            });
+            loadPlugins();
+          } catch (e) { alert(e.message); }
+        };
+        actions.appendChild(softBtn);
+      }
+
+      const hardBtn = document.createElement("button");
+      hardBtn.textContent = hardOn ? "Hard off" : "Hard on";
+      hardBtn.title = "Rename jar ↔ .jar.disabled (Folia restart required)";
+      hardBtn.onclick = async () => {
+        try {
+          if (hardOn && !confirm("Hard-disable " + (p.activeName || p.fileName) + "? Jar will not load after Folia restart.")) return;
+          const force = (p.protected === true || p.protected === "true") && hardOn
+            ? confirm("CORE hard-disable requires force. Continue?")
+            : false;
+          if ((p.protected === true || p.protected === "true") && hardOn && !force) return;
+          await pluginAction({
+            action: hardOn ? "disable" : "enable",
+            fileName: p.fileName,
+            mode: "hard",
+            force: force ? "true" : "false",
+          });
+          loadPlugins();
+        } catch (e) { alert(e.message); }
+      };
+      actions.appendChild(hardBtn);
+
       const rm = document.createElement("button");
       rm.className = "danger";
-      rm.textContent = "Remove";
+      rm.textContent = "Uninstall";
       rm.onclick = async () => {
-        if (!confirm("Remove " + p.fileName + "?")) return;
-        await api("/api/plugins", { method: "DELETE", body: JSON.stringify({ fileName: p.fileName }) });
-        loadPlugins();
+        try {
+          if (!confirm("Delete " + p.fileName + " from plugins/? This cannot be undone.")) return;
+          let force = false;
+          if (p.protected === true || p.protected === "true") {
+            force = confirm("CORE uninstall requires force. Type OK in the next dialog…") &&
+              prompt("Type FORCE to uninstall CORE plugin " + p.fileName) === "FORCE";
+            if (!force) return;
+          }
+          await api("/api/plugins", {
+            method: "DELETE",
+            body: JSON.stringify({ fileName: p.fileName, force: force ? "true" : "false" }),
+          });
+          loadPlugins();
+        } catch (e) { alert(e.message); }
       };
-      li.appendChild(rm);
+      actions.appendChild(rm);
+      li.appendChild(actions);
       ul.appendChild(li);
     });
   }
   $("refreshPlugins").onclick = () => loadPlugins().catch((e) => alert(e.message));
   $("addPlugin").onclick = async () => {
     try {
-      await api("/api/plugins", { method: "POST", body: JSON.stringify({ path: $("pluginPath").value.trim() }) });
+      await pluginAction({ action: "install", path: $("pluginPath").value.trim() });
       $("pluginPath").value = "";
       loadPlugins();
     } catch (e) { alert(e.message); }
@@ -143,29 +226,6 @@
     });
   }
   $("refreshPacks").onclick = () => loadPacks().catch((e) => alert(e.message));
-
-  function renderVehicles() {
-    const grid = $("vehGrid");
-    grid.innerHTML = "";
-    YapDash.TYPES.forEach((t) => {
-      const b = document.createElement("button");
-      b.textContent = t;
-      b.onclick = () => veh("spawn", t);
-      grid.appendChild(b);
-    });
-  }
-  document.querySelectorAll("[data-veh]").forEach((b) => {
-    b.onclick = () => veh(b.dataset.veh);
-  });
-  async function veh(action, type) {
-    try {
-      const r = await api("/api/vehicles", {
-        method: "POST",
-        body: JSON.stringify({ action, type: type || "buggy" }),
-      });
-      $("vehOut").textContent = (r.command || "") + "\n" + (r.result || "");
-    } catch (e) { alert(e.message); }
-  }
 
   async function refreshPregen() {
     try {
@@ -510,14 +570,12 @@
     modules: loadModules,
     packs: loadPacks,
     settings: loadSettings,
-    vehicles: renderVehicles,
     pregen: refreshPregen,
     ranks: refreshRanks,
     essentials: refreshEssentials,
     link: () => { refreshLink(); connectLinkConsole(); },
     players: () => { if (YapDash.refreshPlayers) YapDash.refreshPlayers(); },
   });
-  YapDash.onBoot = () => renderVehicles();
 
   }
   window.YapDashRegisterOpsPanels = register;

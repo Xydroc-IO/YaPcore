@@ -2,6 +2,7 @@ package com.yapcore.admin;
 
 import com.yapcore.admin.action.AdminActions;
 import com.yapcore.admin.cmd.AdminCommands;
+import com.yapcore.admin.cmd.YapPluginsCommand;
 import com.yapcore.admin.gui.AdminMenuListener;
 import com.yapcore.admin.gui.AdminMenus;
 import com.yapcore.admin.session.AdminSession;
@@ -32,7 +33,13 @@ public final class AdminPlugin extends JavaPlugin {
             yapadmin.setExecutor(cmds);
             yapadmin.setTabCompleter(cmds);
         }
-        getLogger().info("YaPAdmin super menu ready (/yapadmin, /staff).");
+        YapPluginsCommand pluginsCmd = new YapPluginsCommand(this);
+        var yapplugins = getCommand("yapplugins");
+        if (yapplugins != null) {
+            yapplugins.setExecutor(pluginsCmd);
+            yapplugins.setTabCompleter(pluginsCmd);
+        }
+        getLogger().info("YaPAdmin ready (/yapadmin, /yapplugins).");
     }
 
     @Override

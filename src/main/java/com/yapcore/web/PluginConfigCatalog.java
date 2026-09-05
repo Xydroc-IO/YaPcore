@@ -39,19 +39,10 @@ public final class PluginConfigCatalog {
                 e("yap-pregen", "YaPPregen", "YaPPregen", "config.yml", "yap-pregen", ""),
                 e("yap-placeholderapi", "PlaceholderAPI", "PlaceholderAPI", "config.yml", "placeholderapi", "placeholderapi reload"),
                 e("yap-plugin-compat", "YaPPluginCompat", "YaPPluginCompat", "config.yml", "yap-plugin-compat", ""),
-                e("yap-vehicles", "YaPVehicles", "YaPVehicles", "config.yml", "yap-vehicles", ""),
                 e("yap-stacker", "YaPStacker", "YaPStacker", "config.yml", "yap-stacker", "yapstacker reload"),
                 e("yap-gameplay-knobs", "YaPGameplayKnobs", "YaPGameplayKnobs", "knobs.yml", "yap-gameplay-knobs", "yapknobs reload"),
                 e("yap-skills", "YaPSkills", "YaPSkills", "config.yml", "yap-skills", "yskills reload"),
-                e("yap-combat", "YaPCombat", "YaPCombat", "config.yml", "yap-combat", "yapcombat reload"),
-                e("yap-crafting", "YaPCrafting", "YaPCrafting", "config.yml", "yap-crafting", "ycraft reload"),
-                e("yap-mmo-content", "YaP MMO content", "yap-mmo-content", "config.yml", "yap-mmo-content", "yapmmo reload"),
-                e("yap-guilds", "YaPGuilds", "YaPGuilds", "config.yml", "yap-guilds", "yapguilds reload"),
-                e("yap-games", "YaPGames", "YaPGames", "config.yml", "yap-games", "ygames reload"),
-                e("yap-mechanics", "YaPMechanics", "YaPMechanics", "config.yml", "yap-mechanics", "ymechanics reload"),
-                e("yap-abilities", "YaPAbilities", "YaPAbilities", "config.yml", "yap-abilities", "yapabilities reload"),
-                e("yap-disasters", "YaPDisasters", "YaPDisasters", "config.yml", "yap-disasters", "yapdisaster reload"),
-                e("yap-mmo-bedrock", "YaPMmoBedrock", "YaPMmoBedrock", "config.yml", "yap-mmo-bedrock", "")
+                e("yap-disasters", "YaPDisasters", "YaPDisasters", "config.yml", "yap-disasters", "yapdisaster reload")
         );
     }
 

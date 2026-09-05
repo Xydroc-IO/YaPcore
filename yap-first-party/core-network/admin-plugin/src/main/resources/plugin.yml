@@ -14,9 +14,6 @@ softdepend:
   - YaPStacker
   - YaPPlayerData
   - YaPSkills
-  - YaPCombat
-  - yap-mmo-content
-  - YaPMMO
   - YaPDisasters
 commands:
   yapadmin:
@@ -24,6 +21,11 @@ commands:
     usage: /yapadmin
     permission: yapadmin.menu
     aliases: [staff, adminmenu, am]
+  yapplugins:
+    description: Soft/hard enable, disable, install, uninstall Folia plugins
+    usage: /yapplugins <list|enable|disable|install|uninstall>
+    permission: yapadmin.plugins
+    aliases: [yapplugin, yplugins]
 permissions:
   yapadmin.menu:
     description: Open the admin super menu
@@ -36,4 +38,7 @@ permissions:
     default: op
   yapadmin.economy:
     description: Economy grants from the admin menu
+    default: op
+  yapadmin.plugins:
+    description: Soft/hard plugin enable, disable, install, uninstall
     default: op

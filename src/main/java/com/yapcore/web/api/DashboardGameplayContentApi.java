@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-/** Dashboard routes: vehicles, pregen, ranks, essentials, disasters, stacker. */
+/** Dashboard routes: pregen, ranks, essentials, disasters, stacker. */
 public final class DashboardGameplayContentApi {
 
     private final YaPcoreServer server;
@@ -25,36 +25,6 @@ public final class DashboardGameplayContentApi {
     public DashboardGameplayContentApi(YaPcoreServer server, DashboardAuth auth) {
         this.server = server;
         this.auth = auth;
-    }
-
-    public void apiVehicles(HttpExchange ex) throws IOException {
-        if (!auth.requireAuth(ex)) {
-            return;
-        }
-        if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
-            DashboardHttp.json(ex, 200, Map.of(
-                    "types", List.of(
-                            "chassis", "buggy", "hoverbike", "truck_4x4", "monster_truck",
-                            "sport_car", "hypercar", "lambo", "ferrari", "mclaren", "porsche"),
-                    "hint", "POST {\"action\":\"spawn\",\"type\":\"lambo\"} or shop/upgrades commands"));
-            return;
-        }
-        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
-            Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
-            String action = body.getOrDefault("action", "spawn");
-            String type = body.getOrDefault("type", "buggy");
-            String cmd = switch (action) {
-                case "shop" -> "yapvehicle shop";
-                case "upgrades" -> "yapvehicle upgrades";
-                case "list" -> "yapvehicle list";
-                case "types" -> "yapvehicle types";
-                default -> "yapvehicle spawn " + type;
-            };
-            String result = server.executeCommand(cmd);
-            DashboardHttp.json(ex, 200, Map.of("ok", true, "command", cmd, "result", result == null ? "" : result));
-            return;
-        }
-        ex.sendResponseHeaders(405, -1);
     }
 
     public void apiPregen(HttpExchange ex) throws IOException {

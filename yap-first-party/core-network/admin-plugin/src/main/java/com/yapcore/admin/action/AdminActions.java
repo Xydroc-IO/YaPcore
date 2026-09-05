@@ -31,9 +31,9 @@ public final class AdminActions {
         return p != null && p.isEnabled();
     }
 
-    /** MMO content plugin name is lowercase with hyphens in plugin.yml. */
-    public boolean mmoContentEnabled() {
-        return pluginEnabled("yap-mmo-content") || pluginEnabled("YaPMMO");
+    /** Economy UI requires YaPPlayerData. */
+    public boolean economyPluginEnabled() {
+        return pluginEnabled("YaPPlayerData");
     }
 
     public Optional<ModerationService> moderation() {
@@ -134,11 +134,11 @@ public final class AdminActions {
             admin.sendMessage("§cNo permission (yapadmin.economy).");
             return;
         }
-        if (!mmoContentEnabled()) {
-            admin.sendMessage("§cYaP MMO content is not loaded.");
+        if (!economyPluginEnabled()) {
+            admin.sendMessage("§cYaPPlayerData is not loaded.");
             return;
         }
-        runAs(admin, "yapmmo givemoney " + target.getName() + " " + amount);
+        runAs(admin, "eco give " + target.getName() + " " + amount);
     }
 
     public void kick(Player admin, Player target, String reason) {

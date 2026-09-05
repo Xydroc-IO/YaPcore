@@ -94,7 +94,7 @@ public final class StackerConfig {
     public void reload() {
         plugin.reloadConfig();
         FileConfiguration c = plugin.getConfig();
-        enabled = c.getBoolean("enabled", true);
+        enabled = c.getBoolean("enabled", false);
 
         worlds = readStringSet(c.getStringList("worlds"));
         whitelist = parseTypes(c.getStringList("whitelist"), "whitelist");

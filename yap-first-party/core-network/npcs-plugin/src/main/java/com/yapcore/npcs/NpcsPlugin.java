@@ -39,7 +39,7 @@ public final class NpcsPlugin extends JavaPlugin {
             Class.forName("com.yapcore.mmo.event.BossKillEvent", false, getClass().getClassLoader());
             getServer().getPluginManager().registerEvents(new QuestMmoListener(questService), this);
         } catch (ClassNotFoundException | NoClassDefFoundError e) {
-            getLogger().info("YaP MMO not installed — boss/craft quest progress hooks skipped");
+            getLogger().info("MMO events not on classpath — boss/craft quest hooks skipped");
         }
         try {
             Class.forName("com.yapcore.playerdata.event.PlayerBalanceChangeEvent", false,
@@ -118,8 +118,6 @@ public final class NpcsPlugin extends JavaPlugin {
             getLogger().warning("Could not create quests dir: " + e.getMessage());
         }
         questLoader = new QuestPackLoader(questsDir);
-        Path mmoQuests = getDataFolder().getParentFile().toPath().resolve("yap-mmo-content/quests");
-        questLoader.registerDirectory(mmoQuests);
         questLoader.reload();
 
         npcService = new NpcServiceImpl(this, config, npcRepository);

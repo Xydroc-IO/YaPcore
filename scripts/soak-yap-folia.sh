@@ -10,6 +10,7 @@
 #   YAP_SOAK_SAMPLE_SEC=300    sample interval for long mode
 #   YAP_SOAK_KEEP=1            do not stop server when finished
 #   YAP_SOAK_SKIP_START=1      assume server already running
+#   YAP_SOAK_RELOCK=1          (opt-in) forgive Folia child PID change — not for production soaks
 set -euo pipefail
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
@@ -171,16 +172,29 @@ sample_row() {
   LAST_FOLIA_HEAP="${f_heap:-}"
 }
 
+# Byte offset into folia-kernel/logs/latest.log at soak start — only NEW lines FAIL.
+SOAK_LOG_OFFSET=0
+
+mark_soak_log_origin() {
+  local log="$ROOT/folia-kernel/logs/latest.log"
+  if [ -f "$log" ]; then
+    SOAK_LOG_OFFSET="$(wc -c <"$log" | tr -d ' ')"
+  else
+    SOAK_LOG_OFFSET=0
+  fi
+  echo "Soak log origin offset=${SOAK_LOG_OFFSET} (folia-kernel/logs/latest.log)" | tee -a "$REPORT"
+}
+
 scan_logs_for_bad() {
   local log="$ROOT/folia-kernel/logs/latest.log"
   local crash_dir="$ROOT/logs/crashes"
   local bad=0
   if [ -f "$log" ]; then
-    # Only the last 80KB — full latest.log retains older noise across restarts.
+    # Strict: only lines written since this soak started (not leftover history).
     local recent
-    recent="$(tail -c 80000 "$log" 2>/dev/null || true)"
+    recent="$(tail -c +"$((SOAK_LOG_OFFSET + 1))" "$log" 2>/dev/null || true)"
     if printf '%s\n' "$recent" | grep -E 'OutOfMemoryError|owning region|Cannot modify|TickThread' >/dev/null 2>&1; then
-      echo "FAIL: suspicious lines in recent folia-kernel/logs/latest.log" | tee -a "$REPORT"
+      echo "FAIL: suspicious lines in folia-kernel/logs/latest.log since soak start" | tee -a "$REPORT"
       printf '%s\n' "$recent" | grep -E 'OutOfMemoryError|owning region|Cannot modify|TickThread' | tail -n 20 | tee -a "$REPORT" || true
       bad=1
     fi
@@ -240,6 +254,7 @@ PY
 
 run_compat() {
   ensure_started
+  mark_soak_log_origin
   echo "elapsed,chassis_pid,folia_pid,chassis_heap_mb,folia_heap_mb,chassis_threads,folia_threads" >"$CSV"
   sample_row 0
   local tok
@@ -263,6 +278,7 @@ run_compat() {
 run_perf() {
   local minutes="${1:-30}"
   ensure_started
+  mark_soak_log_origin
   echo "elapsed,chassis_pid,folia_pid,chassis_heap_mb,folia_heap_mb,chassis_threads,folia_threads" >"$CSV"
   local end=$(( $(date +%s) + minutes * 60 ))
   local start now elapsed locked_folia
@@ -308,6 +324,7 @@ run_long() {
   local end=$(( $(date +%s) + hours * 3600 ))
   local start now elapsed locked_folia blank_heap=0
   start="$(date +%s)"
+  mark_soak_log_origin
   sample_row 0
   locked_folia="${LAST_FOLIA_PID:-}"
   if [ -z "$locked_folia" ]; then
@@ -328,8 +345,10 @@ run_long() {
       return 1
     fi
     if [ -n "$locked_folia" ] && [ "$LAST_FOLIA_PID" != "$locked_folia" ]; then
-      if [ "${YAP_SOAK_KEEP:-0}" = "1" ] || [ "${YAP_SOAK_RELOCK:-0}" = "1" ]; then
-        echo "WARN: YaP-Folia PID changed ${locked_folia} → ${LAST_FOLIA_PID} at t=${elapsed}s — re-locking (KEEP/RELOCK)" | tee -a "$REPORT"
+      # KEEP only means "don't stop the server when soak ends" — never forgive a child restart.
+      # Use YAP_SOAK_RELOCK=1 only for explicit operator recovery experiments.
+      if [ "${YAP_SOAK_RELOCK:-0}" = "1" ]; then
+        echo "WARN: YaP-Folia PID changed ${locked_folia} → ${LAST_FOLIA_PID} at t=${elapsed}s — re-locking (YAP_SOAK_RELOCK=1)" | tee -a "$REPORT"
         locked_folia="$LAST_FOLIA_PID"
       else
         echo "FAIL: YaP-Folia PID changed ${locked_folia} → ${LAST_FOLIA_PID} at t=${elapsed}s (child restart)" | tee -a "$REPORT"
@@ -372,7 +391,7 @@ soak-yap-folia.sh — live YaP-Folia mem / crash soak
   perf [minutes]      Heap samples under light churn (default 30)
   long [hours]        Slope soak (default 12, minimum 8)
 
-Env: YAP_SOAK_HOURS YAP_SOAK_SAMPLE_SEC YAP_SOAK_KEEP YAP_SOAK_SKIP_START YAP_SOAK_ALLOW_SHORT
+Env: YAP_SOAK_HOURS YAP_SOAK_SAMPLE_SEC YAP_SOAK_KEEP YAP_SOAK_SKIP_START YAP_SOAK_ALLOW_SHORT YAP_SOAK_RELOCK
 Reports: logs/soak/
 EOF
     exit 0

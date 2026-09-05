@@ -85,7 +85,7 @@ public final class SkillServiceImpl implements SkillService {
 
     @Override
     public CompletableFuture<SkillProgress> addXp(UUID playerId, SkillId skillId, double amount, XpSource source) {
-        if (amount <= 0 || com.yapcore.games.GameServices.suppressesSkillXp(playerId)) {
+        if (amount <= 0) {
             return get(playerId, skillId);
         }
         return CompletableFuture.supplyAsync(() -> applyXp(playerId, skillId, amount, source));

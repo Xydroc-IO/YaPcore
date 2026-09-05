@@ -1,6 +1,6 @@
 # Drop fine-tune modules here (`.jar` / `.yapmod`). See [docs/plugins/MODULES_AND_API.md](../docs/plugins/MODULES_AND_API.md).
 
-**Sources:** [`yap-first-party/modules/`](../yap-first-party/README.md) (`finetune-modules/`, `vehicles-module/`).
+**Sources:** [`yap-first-party/modules/`](../yap-first-party/README.md) (`finetune-modules/`).
 
 Modules are **operator packaging**: they declare `provides` / `requires`, check that the
 matching Paper plugin is online (when applicable), and write `FINE_TUNE.txt` under
@@ -10,7 +10,7 @@ matching Paper plugin is online (when applicable), and write `FINE_TUNE.txt` und
 
 ```bash
 gradle installProductDefaults      # CORE plugins + CORE fine-tune modules
-gradle installGameplayDefaults     # + vehicles/stacker/knobs plugins + modules
+gradle installGameplayDefaults     # + skills/stacker/knobs/disasters + GAMEPLAY modules
 gradle installFineTuneModules      # all fine-tune jars only → modules/
 gradle assemblePluginDist          # build/dist/yap-plugins/{…,modules/core,modules/gameplay}
 ```
@@ -33,11 +33,10 @@ gradle assemblePluginDist          # build/dist/yap-plugins/{…,modules/core,mo
 
 | Jar | `provides` | Points at |
 |-----|------------|-----------|
-| `yap-vehicles-module.jar` | `vehicles` | YaPVehicles engine |
 | `yap-stacker-module.jar` | `stacker` | YaPStacker |
 | `yap-gameplay-knobs-module.jar` | `gameplay-knobs` | `knobs.yml` encyclopedia |
 
 Remove a jar from `modules/` (and restart) to drop that packaging node from
 `provides` / Modules GUI — configs and Paper plugins remain until you remove those too.
 
-See [docs/ops/TUNE.md](../docs/ops/TUNE.md) · [docs/plugins/VEHICLES.md](../docs/plugins/VEHICLES.md).
+See [docs/ops/TUNE.md](../docs/ops/TUNE.md) · [docs/plugins/SKILLS.md](../docs/plugins/SKILLS.md) · [docs/plugins/STACKER.md](../docs/plugins/STACKER.md).

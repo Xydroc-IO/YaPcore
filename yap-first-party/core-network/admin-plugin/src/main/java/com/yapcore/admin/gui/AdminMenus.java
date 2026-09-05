@@ -97,15 +97,15 @@ public final class AdminMenus {
             inv.setItem(HUB_SERVER, AdminMenuHolder.icon(Material.COMMAND_BLOCK, "Server",
                     "Broadcast · status"));
         }
-        if (player.hasPermission("yapadmin.economy") && plugin.actions().mmoContentEnabled()) {
+        if (player.hasPermission("yapadmin.economy") && plugin.actions().pluginEnabled("YaPPlayerData")) {
             inv.setItem(HUB_ECONOMY, AdminMenuHolder.icon(Material.GOLD_INGOT, "Economy",
                     "Grant money to target / self"));
         }
         inv.setItem(HUB_LINKS, AdminMenuHolder.icon(Material.COMPASS, "Deep links",
                 "Ranks · World · Stacker · Menu"));
-        if (plugin.actions().pluginEnabled("YaPSkills") || plugin.actions().pluginEnabled("YaPCombat")) {
-            inv.setItem(HUB_COMBAT, AdminMenuHolder.icon(Material.BLAZE_ROD, "Combat / Skills",
-                    "Open skills · combat helpers"));
+        if (plugin.actions().pluginEnabled("YaPSkills")) {
+            inv.setItem(HUB_COMBAT, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, "Skills",
+                    "Open skills menu"));
         }
         inv.setItem(SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
         player.openInventory(inv);
@@ -430,17 +430,13 @@ public final class AdminMenus {
 
     public void openCombatSkills(Player player) {
         AdminMenuHolder holder = new AdminMenuHolder(AdminMenuHolder.Kind.COMBAT_SKILLS);
-        Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Combat / Skills", NamedTextColor.LIGHT_PURPLE));
+        Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Skills", NamedTextColor.GREEN));
         holder.bind(inv);
         AdminMenuHolder.fillAll(inv);
-        inv.setItem(SLOT_INFO, AdminMenuHolder.icon(Material.BLAZE_ROD, "Combat & skills",
-                "Shortcuts into MMO plugins"));
+        inv.setItem(SLOT_INFO, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, "Skills",
+                "Mining · woodcutting · strength"));
         if (plugin.actions().pluginEnabled("YaPSkills")) {
-            inv.setItem(20, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, "Skills menu", "/skills"));
-        }
-        if (plugin.actions().pluginEnabled("YaPCombat")) {
-            inv.setItem(22, AdminMenuHolder.icon(Material.GOLDEN_APPLE, "Heal self", "Combat HP restore"));
-            inv.setItem(24, AdminMenuHolder.icon(Material.ENCHANTED_BOOK, "Prayer list", "/prayer list"));
+            inv.setItem(22, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, "Skills menu", "/skills"));
         }
         inv.setItem(SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));

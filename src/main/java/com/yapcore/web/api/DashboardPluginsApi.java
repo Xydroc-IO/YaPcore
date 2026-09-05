@@ -3,6 +3,7 @@ package com.yapcore.web.api;
 import com.sun.net.httpserver.HttpExchange;
 import com.yapcore.module.ModuleManager;
 import com.yapcore.plugin.PluginManager;
+import com.yapcore.plugin.YapPluginControl;
 import com.yapcore.resourcepack.ResourcePackManager;
 import com.yapcore.server.YaPcoreServer;
 import com.yapcore.web.DashboardNetworkSnapshots;
@@ -20,6 +21,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public final class DashboardPluginsApi {
@@ -32,30 +34,29 @@ public final class DashboardPluginsApi {
         this.auth = auth;
     }
 
+    private YapPluginControl control() {
+        return new YapPluginControl(server.getRootDir(), server.getPluginManager());
+    }
+
     public void apiPlugins(HttpExchange ex) throws IOException {
         if (!auth.requireAuth(ex)) {
             return;
         }
-        PluginManager pm = server.getPluginManager();
+        YapPluginControl ctrl = control();
         if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
             List<Map<String, Object>> list = new ArrayList<>();
             List<String> names = new ArrayList<>();
-            for (var p : pm.listPlugins()) {
-                names.add(p.fileName());
-            }
-            List<Map<String, Object>> warnings = PluginCompatMatrix.warningsForInstalled(names);
-            for (var p : pm.listPlugins()) {
-                Lookup compat = PluginCompatMatrix.lookup(p.fileName());
-                Map<String, Object> row = new LinkedHashMap<>();
-                row.put("fileName", p.fileName());
-                row.put("sizeLabel", p.sizeLabel());
-                row.put("sizeBytes", p.sizeBytes());
+            for (Map<String, Object> row : ctrl.listDetailed()) {
+                String active = String.valueOf(row.getOrDefault("activeName", row.get("fileName")));
+                names.add(active);
+                Lookup compat = PluginCompatMatrix.lookup(active);
                 row.put("compatStatus", compat.status());
                 row.put("nativeAlternative", compat.nativeAlternative());
                 row.put("compatNote", compat.note());
                 row.put("compatWarning", compat.hasWarning());
                 list.add(row);
             }
+            List<Map<String, Object>> warnings = PluginCompatMatrix.warningsForInstalled(names);
             DashboardHttp.json(ex, 200, Map.of(
                     "plugins", list,
                     "compatWarnings", warnings,
@@ -65,22 +66,49 @@ public final class DashboardPluginsApi {
         if ("DELETE".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
             String name = body.getOrDefault("fileName", "");
-            boolean ok = pm.removePlugin(name);
-            DashboardHttp.json(ex, 200, Map.of("ok", ok));
+            boolean force = DashboardHttp.bool(body.getOrDefault("force", "false"));
+            try {
+                Map<String, Object> result = ctrl.uninstall(name, force);
+                DashboardHttp.json(ex, 200, result);
+            } catch (Exception e) {
+                DashboardHttp.json(ex, 400, Map.of("ok", false, "error", e.getMessage() == null ? "uninstall failed" : e.getMessage()));
+            }
             return;
         }
         if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
-            String path = body.getOrDefault("path", "");
-            if (path.isBlank()) {
-                DashboardHttp.json(ex, 400, Map.of("error", "provide path to a .jar on the server"));
-                return;
-            }
+            String action = body.getOrDefault("action", "").trim().toLowerCase(Locale.ROOT);
             try {
-                var info = pm.addPlugin(Path.of(path));
-                DashboardHttp.json(ex, 200, Map.of("ok", true, "fileName", info.fileName()));
+                if (action.isBlank() || "install".equals(action)) {
+                    String path = body.getOrDefault("path", "");
+                    if (path.isBlank()) {
+                        DashboardHttp.json(ex, 400, Map.of("error", "provide path to a .jar under YAPCORE_HOME"));
+                        return;
+                    }
+                    var info = ctrl.install(Path.of(path));
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "fileName", info.fileName(), "needsRestart", true));
+                    return;
+                }
+                if ("enable".equals(action) || "disable".equals(action)) {
+                    String fileName = body.getOrDefault("fileName", "");
+                    YapPluginControl.Mode mode = "hard".equalsIgnoreCase(body.getOrDefault("mode", "soft"))
+                            ? YapPluginControl.Mode.HARD
+                            : YapPluginControl.Mode.SOFT;
+                    boolean force = DashboardHttp.bool(body.getOrDefault("force", "false"));
+                    Map<String, Object> result = ctrl.setEnabled(fileName, "enable".equals(action), mode, force);
+                    if (mode == YapPluginControl.Mode.SOFT) {
+                        String reload = String.valueOf(result.getOrDefault("reload", ""));
+                        if (!reload.isBlank()) {
+                            String reloadOut = server.executeCommand(reload);
+                            result.put("reloadResult", reloadOut == null ? "" : reloadOut);
+                        }
+                    }
+                    DashboardHttp.json(ex, 200, result);
+                    return;
+                }
+                DashboardHttp.json(ex, 400, Map.of("error", "unknown action (install|enable|disable)"));
             } catch (Exception e) {
-                DashboardHttp.json(ex, 400, Map.of("ok", false, "error", e.getMessage()));
+                DashboardHttp.json(ex, 400, Map.of("ok", false, "error", e.getMessage() == null ? "failed" : e.getMessage()));
             }
             return;
         }

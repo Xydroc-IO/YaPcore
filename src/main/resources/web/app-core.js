@@ -4,11 +4,6 @@
   let es = null;
   let pollTimer = null;
 
-  const TYPES = [
-    "chassis", "buggy", "hoverbike", "truck_4x4", "monster_truck",
-    "sport_car", "hypercar", "lambo", "ferrari", "mclaren", "porsche"
-  ];
-
   function headers(json = true) {
     const h = { Authorization: "Bearer " + token };
     if (json) h["Content-Type"] = "application/json";
@@ -179,7 +174,7 @@
   });
 
   window.YapDash = {
-    $, api, netPost, bindClick, TYPES,
+    $, api, netPost, bindClick,
     tabLoads: { connect: loadConnect },
     refreshStatus, connectConsole, activateTab,
   };
@@ -191,7 +186,7 @@
   if (window.YapDashRegisterNetworkPanels) window.YapDashRegisterNetworkPanels(window.YapDash);
   if (window.YapDashRegisterFullPanels) window.YapDashRegisterFullPanels(window.YapDash);
   if (window.YapDashRegisterNpcPanels) window.YapDashRegisterNpcPanels(window.YapDash);
-  if (window.YapDashRegisterMmoPanels) window.YapDashRegisterMmoPanels(window.YapDash);
+  if (window.YapDashRegisterSkillsPanels) window.YapDashRegisterSkillsPanels(window.YapDash);
   if (window.YapDashRegisterDisastersPanels) window.YapDashRegisterDisastersPanels(window.YapDash);
   if (window.YapDashRegisterSocialPanels) window.YapDashRegisterSocialPanels(window.YapDash);
   if (window.YapDashRegisterPluginEditors) window.YapDashRegisterPluginEditors(window.YapDash);

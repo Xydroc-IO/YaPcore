@@ -23,7 +23,6 @@ public final class DashboardGameplayApi {
         this.modes = new DashboardGameplayModesApi(server, auth);
     }
 
-    public void apiVehicles(HttpExchange ex) throws IOException { content.apiVehicles(ex); }
     public void apiPregen(HttpExchange ex) throws IOException { content.apiPregen(ex); }
     public void apiRanks(HttpExchange ex) throws IOException { content.apiRanks(ex); }
     public void apiEssentials(HttpExchange ex) throws IOException { content.apiEssentials(ex); }
@@ -43,8 +42,6 @@ public final class DashboardGameplayApi {
     public void apiGuard(HttpExchange ex) throws IOException { network.apiGuard(ex); }
     public void apiRegions(HttpExchange ex) throws IOException { network.apiRegions(ex); }
     public void apiNpcs(HttpExchange ex) throws IOException { network.apiNpcs(ex); }
-    public void apiMmo(HttpExchange ex) throws IOException { modes.apiMmo(ex); }
+    public void apiSkills(HttpExchange ex) throws IOException { modes.apiSkills(ex); }
     public void apiFactions(HttpExchange ex) throws IOException { modes.apiFactions(ex); }
-    public void apiGuilds(HttpExchange ex) throws IOException { modes.apiGuilds(ex); }
-    public void apiGames(HttpExchange ex) throws IOException { modes.apiGames(ex); }
 }

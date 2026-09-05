@@ -39,7 +39,6 @@ Install, setup, and lifecycle helpers for operators.
 | `db/*.sh` | MariaDB / Postgres / SQLite JDBC setup |
 | `windows/*.ps1` | Windows equivalents |
 | `content/generate-mmo-quest-compendium.py` | Validate MMO quest YAML objective types (Wave 3) |
-| `generate-ability-pack.py` | Regenerate bulk ability YAML with V2 element/archetype VFX kits (`docs/mmo/MMO_ABILITY_VFX.md`) |
 | `generate-hero-ability-icons.py` | Unique 16×16 hero ability icons (CMD 78020–78031) |
 | `content/ability-vfx-soak-gate.py` | Offline YaP-Folia VFX authoring soak gate (V4) |
 
@@ -55,7 +54,7 @@ Install, setup, and lifecycle helpers for operators.
 
 | Script | Purpose |
 |--------|---------|
-| `fetch-tebex.sh` · `fetch-grim.sh` · `grim-ac.sh` | Optional Tebex / Grim AC |
+| `fetch-tebex.sh` · `fetch-grim.sh` · `grim-ac.sh` | Optional Tebex / Grim AC (**PvP: enable Grim**) |
 | `build-default-resourcepack.sh` · `fetch-faithful-64x.sh` · `generate-yap-skies.py` | Default resource pack + YaP Skies |
 
 See [docs/start/QUICK_START.md](../docs/start/QUICK_START.md) and [docs/start/WINDOWS.md](../docs/start/WINDOWS.md).

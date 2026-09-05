@@ -471,12 +471,16 @@
       </section>
 
       <section id="tab-plugins" class="panel">
+        <div class="page-header">
+          <h2>Plugins</h2>
+          <p><strong>Soft</strong> writes <code>enabled</code> in the plugin config (reload when the plugin supports it). <strong>Hard</strong> renames <code>*.jar</code> ↔ <code>*.jar.disabled</code> — Folia must restart to load/unload the jar. CORE jars need an explicit force confirm to disable or uninstall.</p>
+        </div>
         <div class="toolbar">
           <button id="refreshPlugins">Refresh</button>
         </div>
         <ul id="pluginList" class="list"></ul>
         <div class="inline">
-          <input id="pluginPath" placeholder="Host path to .jar to install"/>
+          <input id="pluginPath" placeholder="Path under YAPCORE_HOME to a .jar"/>
           <button id="addPlugin" class="primary">Install</button>
         </div>
       </section>
@@ -493,18 +497,6 @@
       <section id="tab-packs" class="panel">
         <div class="toolbar"><button id="refreshPacks">Refresh</button></div>
         <ul id="packList" class="list"></ul>
-      </section>
-
-      <section id="tab-vehicles" class="panel">
-        <p class="muted">Requires <code>yap-vehicles</code> plugin (shipped by default).</p>
-        <div class="veh-grid" id="vehGrid"></div>
-        <div class="toolbar">
-          <button data-veh="shop">Open shop cmd</button>
-          <button data-veh="list">List vehicles</button>
-          <button data-veh="types">List types</button>
-          <button data-veh="upgrades">List upgrades</button>
-        </div>
-        <pre id="vehOut" class="report"></pre>
       </section>
 
       <section id="tab-pregen" class="panel">
@@ -1621,68 +1613,42 @@
         <pre id="npcOut" class="report"></pre>
       </section>
 
-      <section id="tab-mmo" class="panel">
+      <section id="tab-skills" class="panel">
         <div class="page-header">
-          <h2>MMO</h2>
-          <p>Skills progression, combat abilities, hotbar bindings, hiscores, and boss totals.</p>
+          <h2>Skills</h2>
+          <p>Skill packs, levels, and leaderboard preview from yap-skills.</p>
         </div>
         <div class="grid stats">
-          <div class="stat"><span>Skills</span><strong id="mmoSkillsInstalled">—</strong></div>
-          <div class="stat"><span>Content</span><strong id="mmoContentInstalled">—</strong></div>
-          <div class="stat"><span>Abilities</span><strong id="mmoAbilitiesInstalled">—</strong></div>
-          <div class="stat"><span>Ability count</span><strong id="mmoAbilityCount">—</strong></div>
-          <div class="stat"><span>Skills loaded</span><strong id="mmoSkillCount">—</strong></div>
-          <div class="stat"><span>Bosses</span><strong id="mmoBossCount">—</strong></div>
-          <div class="stat"><span>Skill areas</span><strong id="mmoAreaCount">—</strong></div>
-          <div class="stat"><span>Hotbar keys</span><strong id="mmoHotbarKeys">—</strong></div>
-          <div class="stat"><span>Bar bindings</span><strong id="mmoBarPlayers">—</strong></div>
+          <div class="stat"><span>Plugin</span><strong id="skillsInstalled">—</strong></div>
+          <div class="stat"><span>Enabled</span><strong id="skillsEnabled">—</strong></div>
+          <div class="stat"><span>Skills loaded</span><strong id="skillsCount">—</strong></div>
+          <div class="stat"><span>Max level</span><strong id="skillsMaxLevel">—</strong></div>
         </div>
         <div class="card">
-          <h3>Ability engine</h3>
-          <p class="muted hint">Dual hotbar (build vs combat), ability book (Shift+F), keys 4–9 cast slots.</p>
-          <div class="grid stats compact">
-            <div class="stat"><span>Dual hotbar</span><strong id="mmoDualHotbar">—</strong></div>
-            <div class="stat"><span>Ability book</span><strong id="mmoAbilityBook">—</strong></div>
-            <div class="stat"><span>Shift+F book</span><strong id="mmoShiftFBook">—</strong></div>
-            <div class="stat"><span>Online w/ bindings</span><strong id="mmoOnlineBindings">—</strong></div>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Online combat bar bindings</h3>
+          <h3>Skill packs</h3>
           <div class="table-wrap">
             <table class="data-table">
-              <thead><tr><th>Player</th><th>Slots</th><th>Bound</th></tr></thead>
-              <tbody id="mmoBarBody"></tbody>
+              <thead><tr><th>Id</th><th>Display</th><th>Enabled</th></tr></thead>
+              <tbody id="skillsListBody"></tbody>
             </table>
           </div>
-          <p id="mmoBarEmpty" class="muted hint hidden">No online players with ability bar bindings yet.</p>
+          <p id="skillsListEmpty" class="muted hint hidden">No skill packs found under plugins/YaPSkills.</p>
         </div>
         <div class="card">
-          <h3>Hiscore preview · <span id="mmoHiscoreSkill" class="muted">mining</span></h3>
+          <h3>Leaderboard preview · <span id="skillsLbSkill" class="muted">—</span></h3>
           <div class="table-wrap">
             <table class="data-table">
               <thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>XP</th></tr></thead>
-              <tbody id="mmoHiscoreBody"></tbody>
+              <tbody id="skillsLbBody"></tbody>
             </table>
           </div>
-          <p id="mmoHiscoreEmpty" class="muted hint hidden">No hiscore rows — play in-game or check DB connectivity.</p>
-        </div>
-        <div class="card">
-          <h3>Boss kill totals</h3>
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead><tr><th>Boss</th><th>Kills</th></tr></thead>
-              <tbody id="mmoBossBody"></tbody>
-            </table>
-          </div>
-          <p id="mmoBossEmpty" class="muted hint hidden">No boss kills recorded yet.</p>
+          <p id="skillsLbEmpty" class="muted hint hidden">No leaderboard rows — play in-game or check DB connectivity.</p>
         </div>
         <div class="toolbar">
-          <button id="mmoRefresh">Refresh</button>
-          <button id="mmoReloadAbilities" class="secondary">Reload abilities</button>
-          <button id="mmoReloadContent" class="secondary">Reload MMO content</button>
+          <button id="skillsRefresh">Refresh</button>
+          <button id="skillsReload" class="secondary">Reload skills</button>
         </div>
-        <pre id="mmoOut" class="report muted-small"></pre>
+        <pre id="skillsOut" class="report muted-small"></pre>
       </section>
 
       <section id="tab-factions" class="panel">
@@ -1748,102 +1714,6 @@
         </div>
         <pre id="facOut" class="report muted-small"></pre>
       </section>
-
-      <section id="tab-guilds" class="panel">
-        <div class="page-header">
-          <h2>Guilds</h2>
-          <p>MMO guild levels, bank, and admin force-disband. Player create/join stays in-game.</p>
-        </div>
-        <div class="grid stats">
-          <div class="stat"><span>Plugin</span><strong id="gldInstalled">—</strong></div>
-          <div class="stat"><span>Guilds</span><strong id="gldCount">—</strong></div>
-          <div class="stat"><span>Members</span><strong id="gldMembers">—</strong></div>
-          <div class="stat"><span>Alliances</span><strong id="gldAllies">—</strong></div>
-          <div class="stat"><span>Invites</span><strong id="gldInvites">—</strong></div>
-        </div>
-        <div class="card">
-          <h3>Settings</h3>
-          <div class="feat-grid">
-            <label><input type="checkbox" id="gldEnabled"/> Enabled</label>
-            <label><input type="checkbox" id="gldBank"/> Bank enabled</label>
-          </div>
-          <div class="form-grid">
-            <label>Max level <input id="gldMaxLevel" type="number" min="1" value="50"/></label>
-            <label>Base max members <input id="gldBaseMembers" type="number" min="1" value="5"/></label>
-          </div>
-          <div class="btn-row">
-            <button id="gldSave" class="primary">Save settings</button>
-            <button id="gldReload" class="secondary">Reload plugin</button>
-            <button id="gldRefresh">Refresh</button>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Admin actions</h3>
-          <div class="form-grid">
-            <label>Guild <input id="gldAdminName" placeholder="name or tag"/></label>
-            <label>Level <input id="gldAdminLevel" type="number" min="1" value="1"/></label>
-            <label>XP <input id="gldAdminXp" type="number" placeholder="optional"/></label>
-          </div>
-          <div class="btn-row">
-            <button id="gldSetLevel" class="secondary">Set level</button>
-            <button id="gldDisband" class="danger">Force disband</button>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Preview</h3>
-          <p id="gldPreviewEmpty" class="muted hidden">No guilds loaded.</p>
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead><tr><th>Name</th><th>Tag</th><th>Level</th><th>XP</th></tr></thead>
-              <tbody id="gldPreviewBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <pre id="gldOut" class="report muted-small"></pre>
-      </section>
-
-      <section id="tab-games" class="panel">
-        <div class="page-header">
-          <h2>Games</h2>
-          <p>Minigame modes, arenas, match settings, and force-start from console.</p>
-        </div>
-        <div class="grid stats">
-          <div class="stat"><span>Plugin</span><strong id="gmsInstalled">—</strong></div>
-          <div class="stat"><span>Enabled</span><strong id="gmsEnabled">—</strong></div>
-          <div class="stat"><span>Modes</span><strong id="gmsModeCount">—</strong></div>
-          <div class="stat"><span>Arenas</span><strong id="gmsArenaCount">—</strong></div>
-        </div>
-        <div class="card">
-          <h3>Settings</h3>
-          <div class="feat-grid">
-            <label><input type="checkbox" id="gmsEnabledCb"/> Enabled</label>
-            <label><input type="checkbox" id="gmsBlockSkill"/> Block skill XP in match</label>
-            <label><input type="checkbox" id="gmsRewards"/> Rewards enabled</label>
-          </div>
-          <div class="form-grid">
-            <label>Countdown (sec) <input id="gmsCountdown" type="number" min="1" value="10"/></label>
-            <label>Lobby world <input id="gmsLobby" value="world"/></label>
-          </div>
-          <p class="muted">Modes: <span id="gmsModesList">—</span></p>
-          <p class="muted">Arenas: <span id="gmsArenasList">—</span></p>
-          <div class="btn-row">
-            <button id="gmsSave" class="primary">Save settings</button>
-            <button id="gmsReload" class="secondary">Reload plugin</button>
-            <button id="gmsList" class="secondary">List live</button>
-            <button id="gmsRefresh">Refresh</button>
-          </div>
-        </div>
-        <div class="card">
-          <h3>Force start</h3>
-          <div class="form-grid">
-            <label>Mode <select id="gmsForceMode"></select></label>
-          </div>
-          <div class="btn-row">
-            <button id="gmsForceStart" class="primary">Force start</button>
-          </div>
-        </div>
-        <pre id="gmsOut" class="report muted-small"></pre>
-      </section>
       </main>
     </div>
   </div>
@@ -1858,7 +1728,7 @@
   <script src="/app-network-panels.js"></script>
   <script src="/app-full-panels.js"></script>
   <script src="/app-npcs-panels.js"></script>
-  <script src="/app-mmo-panels.js"></script>
+  <script src="/app-skills-panels.js"></script>
   <script src="/app-disasters-panels.js"></script>
   <script src="/app-stacker-panels.js"></script>
   <script src="/app-social-panels.js"></script>

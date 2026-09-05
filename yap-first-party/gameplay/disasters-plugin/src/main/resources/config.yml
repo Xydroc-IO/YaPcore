@@ -2,7 +2,7 @@
 # Extreme weather / disaster FX. Grief is off by default.
 # When grief is on, claims + BUILD-deny regions stay safe (protect-* defaults).
 
-enabled: true
+enabled: false
 broadcast-start: true
 broadcast-end: true
 default-duration-seconds: 120

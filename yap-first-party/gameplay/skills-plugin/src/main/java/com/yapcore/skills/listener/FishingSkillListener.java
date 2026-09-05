@@ -3,7 +3,6 @@ package com.yapcore.skills.listener;
 import com.yapcore.mmo.SkillDefinition;
 import com.yapcore.mmo.SkillId;
 import com.yapcore.mmo.XpSource;
-import com.yapcore.mechanics.MechanicsServices;
 import com.yapcore.sched.YapSched;
 import com.yapcore.skills.SkillsPlugin;
 import org.bukkit.entity.Item;
@@ -38,9 +37,6 @@ public final class FishingSkillListener implements Listener {
         if (xp <= 0) {
             return;
         }
-        xp *= MechanicsServices.find()
-                .map(s -> s.fishingXpMultiplier(player))
-                .orElse(1.0);
         final double grant = xp;
         var skills = plugin.skillService();
         YapSched.async(plugin, () -> skills.addXp(player.getUniqueId(), FISHING, grant, XpSource.ACTION)

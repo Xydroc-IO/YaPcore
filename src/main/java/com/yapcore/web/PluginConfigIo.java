@@ -74,6 +74,11 @@ public final class PluginConfigIo {
             cur = DashboardNetworkSnapshots.mapOrCreate(cur, parts[i]);
         }
         String leaf = parts[parts.length - 1];
+        // Soft plugin toggles must be real booleans for Bukkit getBoolean().
+        if ("enabled".equals(leaf) || dottedKey.endsWith(".enabled")) {
+            cur.put(leaf, "true".equalsIgnoreCase(raw) || "1".equals(raw) || "yes".equalsIgnoreCase(raw));
+            return;
+        }
         Object existing = cur.get(leaf);
         cur.put(leaf, coerce(existing, raw));
     }

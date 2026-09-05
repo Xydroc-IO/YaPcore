@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build resourcepacks/yapcore-default.zip
-# Default (CORE): Faithful 64x + YaP Skies (or empty stub).
-# With YAP_INCLUDE_VEHICLES=1|true: overlay YaP Vehicles + YaP Abilities (GAMEPLAY).
+# Product default: Faithful 64x + YaP Skies + YaP Water.
+# Legacy: YAP_INCLUDE_VEHICLES=1 overlays yap-vehicles + yap-abilities when those trees exist (removed from product).
 set -eu
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 PACKS="$ROOT/resourcepacks"
@@ -20,6 +20,10 @@ want_vehicles=0
 case "$INCLUDE_VEHICLES" in
   1|true|TRUE|yes|YES) want_vehicles=1 ;;
 esac
+
+if [ "$want_vehicles" -eq 1 ]; then
+  echo "WARN: YAP_INCLUDE_VEHICLES=1 but vehicles/abilities packs were removed from product — failing if missing." >&2
+fi
 
 # Base: Faithful if available, else empty pack
 if [ -f "$FAITHFUL" ]; then
