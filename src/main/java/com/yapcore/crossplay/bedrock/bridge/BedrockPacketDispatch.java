@@ -102,6 +102,10 @@ public final class BedrockPacketDispatch {
                 ctx.containers.handleClientClose(user, decoded.body());
                 actions.add(new BedrockGameplayBridge.GameAction("CLOSE_CONTAINER", user, Map.of("pkt", kind.name())));
             }
+            case FILTER_TEXT -> {
+                ctx.containers.handleFilterText(user, decoded.body());
+                actions.add(new BedrockGameplayBridge.GameAction("FILTER_TEXT", user, Map.of("pkt", kind.name())));
+            }
             case ANIMATE ->
                     actions.add(new BedrockGameplayBridge.GameAction("ATTACK", user, Map.of("pkt", kind.name())));
             case MOB_EQUIPMENT -> {

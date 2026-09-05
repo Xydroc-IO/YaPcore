@@ -127,7 +127,20 @@ public final class InventoryCraftTrade {
                         new Slot(sell[0], sell[1]));
                 return true;
             }
+            return false;
         }
-        return false;
+        int resultSlot = BedrockPaperRecipes.specialtyResultSlot(w.type());
+        if (resultSlot < 0) {
+            return false;
+        }
+        int[] result = recipes.applySpecialtyPick(username, w.type(), netId);
+        if (result == null || result[0] <= 0) {
+            return false;
+        }
+        InventorySlotOps.setSlot(byUser, username, BedrockInventoryLayout.CONTAINER_BASE + resultSlot,
+                new Slot(result[0], result[1]));
+        InventorySlotOps.setSlot(byUser, username, BedrockInventoryLayout.CURSOR,
+                new Slot(result[0], result[1]));
+        return true;
     }
 }

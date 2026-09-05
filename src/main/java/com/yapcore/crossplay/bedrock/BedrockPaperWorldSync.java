@@ -70,6 +70,13 @@ public final class BedrockPaperWorldSync {
         backend.closeContainer(playerName);
     }
 
+    /**
+     * Stretch — apply Bedrock FILTER_TEXT rename onto the open Paper anvil view when present.
+     */
+    public void applyAnvilRename(String playerName, String text) {
+        backend.applyAnvilRename(playerName, text);
+    }
+
     public Object findOnlinePlayer(String username) {
         return backend.findOnlinePlayer(username);
     }

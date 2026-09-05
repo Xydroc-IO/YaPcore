@@ -107,6 +107,50 @@ final class PaperWorldContainers {
         }
     }
 
+    /**
+     * Stretch — set rename text on an open Paper anvil (AnvilView.setRepairItemName when present).
+     */
+    void applyAnvilRename(String playerName, String text) {
+        if (playerName == null || !backend.isEnabled()) {
+            return;
+        }
+        try {
+            backend.mainThread.runOnMain(() -> {
+                try {
+                    ClassLoader cl = backend.liveLoader();
+                    Class<?> bukkit = Class.forName("org.bukkit.Bukkit", true, cl);
+                    Object player = PaperWorldMainThread.findPlayer(bukkit, playerName);
+                    if (player == null) {
+                        return;
+                    }
+                    Object view = player.getClass().getMethod("getOpenInventory").invoke(player);
+                    if (view == null) {
+                        return;
+                    }
+                    String name = text == null ? "" : text;
+                    try {
+                        view.getClass().getMethod("setRepairItemName", String.class).invoke(view, name);
+                        return;
+                    } catch (NoSuchMethodException ignored) {
+                    }
+                    Object top = view.getClass().getMethod("getTopInventory").invoke(view);
+                    if (top == null) {
+                        return;
+                    }
+                    try {
+                        top.getClass().getMethod("setRepairItemName", String.class).invoke(top, name);
+                    } catch (NoSuchMethodException ignored) {
+                        PaperWorldSyncBackend.LOG.fine("anvil rename API absent on open inventory");
+                    }
+                } catch (Exception e) {
+                    PaperWorldSyncBackend.LOG.log(Level.FINE, "Paper applyAnvilRename failed", e);
+                }
+            });
+        } catch (Exception e) {
+            PaperWorldSyncBackend.LOG.log(Level.FINE, "Paper applyAnvilRename schedule failed", e);
+        }
+    }
+
     int[][] snapshotBlockInventory(int x, int y, int z, int slots) {
         if (!backend.isEnabled() || slots <= 0) {
             return null;

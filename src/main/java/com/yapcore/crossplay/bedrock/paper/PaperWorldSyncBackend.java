@@ -179,6 +179,10 @@ public final class PaperWorldSyncBackend {
         containers.closeContainer(playerName);
     }
 
+    public void applyAnvilRename(String playerName, String text) {
+        containers.applyAnvilRename(playerName, text);
+    }
+
     public Object findOnlinePlayer(String username) {
         return entities.findOnlinePlayer(username);
     }

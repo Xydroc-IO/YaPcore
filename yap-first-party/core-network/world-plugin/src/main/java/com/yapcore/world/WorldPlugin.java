@@ -1,6 +1,7 @@
 package com.yapcore.world;
 
 import com.sk89q.worldedit.extent.EditSession;
+import com.sk89q.worldedit.extent.clipboard.io.ClipboardFormat;
 import com.yapcore.world.cmd.WorldCommands;
 import com.yapcore.world.cmd.WorldEditOps;
 import com.yapcore.world.cui.WorldEditCuiBridge;
@@ -22,6 +23,7 @@ import com.yapcore.world.listener.ToolModeListener;
 import com.yapcore.world.listener.WorldEditSlashBridge;
 import com.yapcore.world.listener.WorldEditToolListener;
 import com.yapcore.world.schem.SchematicPaster;
+import com.yapcore.world.schem.YapClipboardLoader;
 import com.yapcore.world.service.EditApplyServiceImpl;
 import com.yapcore.world.service.SelectionServiceImpl;
 import com.yapcore.world.service.WorldManagerServiceImpl;
@@ -78,6 +80,8 @@ public final class WorldPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new WorldEditSlashBridge(this), this);
         getServer().getPluginManager().registerEvents(
                 new ToolModeListener(this, playerEditState, selection, selectionShape, terrainService), this);
+
+        ClipboardFormat.setLoader(new YapClipboardLoader());
 
         var sm = getServer().getServicesManager();
         sm.register(com.yapcore.world.WorldManagerService.class, worldManager, this, ServicePriority.Normal);
@@ -326,6 +330,7 @@ public final class WorldPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        ClipboardFormat.setLoader(null);
         if (editHttp != null) {
             editHttp.stop();
             editHttp = null;

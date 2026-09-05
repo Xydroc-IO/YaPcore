@@ -160,6 +160,25 @@ public final class BedrockContainerBridge {
                 + (d != null ? " win=" + d.windowId() : ""));
     }
 
+    /**
+     * Stretch: anvil rename via FILTER_TEXT. Echo server ack; apply Paper rename when anvil open.
+     * Specialty recipe picks (stonecutter/loom/smithing/cartography) go through CRAFT_RECIPE_OPTIONAL.
+     */
+    public void handleFilterText(String username, ByteBuf body) {
+        BedrockPacketCodec.FilterTextDecode d = BedrockPacketCodec.tryDecodeFilterText(body);
+        if (d == null || d.fromServer()) {
+            return;
+        }
+        String text = d.text() == null ? "" : d.text();
+        // Clients expect a from_server=true echo before accepting rename.
+        sender.accept(username, BedrockPacketCodec.filterText(text, true));
+        OpenWindow w = openByUser.get(username.toLowerCase());
+        if (w != null && w.type() == TYPE_ANVIL && paperWorld != null && paperWorld.isEnabled()) {
+            paperWorld.applyAnvilRename(username, text);
+            LOG.fine("BE anvil rename " + username + " → " + text);
+        }
+    }
+
     /** Map JE block material hint → container type. */
     public static int typeForBlock(String blockHint) {
         if (blockHint == null) {

@@ -56,6 +56,11 @@ public final class BedrockPacketCodec {
 
     public record ContainerCloseDecode(int windowId, boolean serverInitiated) {
     }
+
+    /** FILTER_TEXT (0xa3) — anvil rename / filterable text fields. */
+    public record FilterTextDecode(String text, boolean fromServer) {
+    }
+
     public enum StackActionType {
         TAKE, PLACE, SWAP, DROP, DESTROY, CONSUME, CREATE,
         CRAFT_RECIPE, CRAFT_RECIPE_AUTO, CRAFT_RECIPE_OPTIONAL, CRAFT_CREATIVE
@@ -144,6 +149,8 @@ public final class BedrockPacketCodec {
     public static ByteBuf containerSetData(int windowId, int property, int value) { return BedrockInventoryCodec.containerSetData(windowId, property, value); }
     public static ByteBuf updateTrade(int windowId, int windowType, int size, int tradeTier, boolean recipeAdded, boolean isEconomy, long traderEntityId, long playerEntityId, String displayName, java.util.List<int[]> offers) { return BedrockInventoryCodec.updateTrade(windowId, windowType, size, tradeTier, recipeAdded, isEconomy, traderEntityId, playerEntityId, displayName, offers); }
     public static ContainerCloseDecode tryDecodeContainerClose(ByteBuf body) { return BedrockInventoryCodec.tryDecodeContainerClose(body); }
+    public static FilterTextDecode tryDecodeFilterText(ByteBuf body) { return BedrockInventoryCodec.tryDecodeFilterText(body); }
+    public static ByteBuf filterText(String text, boolean fromServer) { return BedrockInventoryCodec.filterText(text, fromServer); }
     public static ByteBuf networkSettings(int compressionThreshold, int compressionAlgorithm, boolean clientThrottle, int clientThrottleThreshold, float clientThrottleScalar) { return BedrockLoginCodec.networkSettings(compressionThreshold, compressionAlgorithm, clientThrottle, clientThrottleThreshold, clientThrottleScalar); }
     public static ByteBuf networkSettingsUncompressed() { return BedrockLoginCodec.networkSettingsUncompressed(); }
     public static ByteBuf chunkRadiusUpdated(int radius) { return BedrockLoginCodec.chunkRadiusUpdated(radius); }

@@ -7,12 +7,14 @@ import java.io.IOException;
 
 /**
  * Minimal schematic format facade. Soft-deps can detect the class;
- * YaPWorld performs real I/O via its own SchematicIO / Sponge importer.
+ * YaPWorld registers a real {@link ClipboardLoader} on enable.
  */
 public enum ClipboardFormat {
     SCHEMATIC("schematic", "schematic"),
     SPONGE_SCHEMATIC("sponge.schematic", "schem"),
     YSCHEM("yap.schematic", "yschem");
+
+    private static volatile ClipboardLoader loader;
 
     private final String name;
     private final String extension;
@@ -28,6 +30,15 @@ public enum ClipboardFormat {
 
     public String getPrimaryFileExtension() {
         return extension;
+    }
+
+    /** YaPWorld binds a real loader; clear on disable. */
+    public static void setLoader(ClipboardLoader next) {
+        loader = next;
+    }
+
+    public static ClipboardLoader getLoader() {
+        return loader;
     }
 
     public static ClipboardFormat findByFile(File file) {
@@ -50,11 +61,27 @@ public enum ClipboardFormat {
         return null;
     }
 
-    /** No-op load — soft-deps should use YaPWorld services for real schematics. */
+    /**
+     * Load a schematic into a clipboard. Fail closed — never returns an empty
+     * clipboard for a real file (that caused silent air pastes for soft-deps).
+     */
     public Clipboard load(File file) throws IOException {
         if (file == null || !file.isFile()) {
-            throw new IOException("schematic not found");
+            throw new IOException("schematic not found: " + (file == null ? "null" : file.getAbsolutePath()));
         }
-        return new Clipboard();
+        ClipboardLoader bound = loader;
+        if (bound == null) {
+            throw new IOException(
+                    "WorldEdit shim: schematic load requires YaPWorld (ClipboardLoader not registered). "
+                            + "Use /schem via YaPWorld or ensure YaPWorld enabled before WorldEdit soft-deps.");
+        }
+        Clipboard clip = bound.load(this, file);
+        if (clip == null) {
+            throw new IOException("schematic load returned null: " + file.getName());
+        }
+        if (clip.size() == 0) {
+            throw new IOException("schematic is empty or unsupported: " + file.getName());
+        }
+        return clip;
     }
 }

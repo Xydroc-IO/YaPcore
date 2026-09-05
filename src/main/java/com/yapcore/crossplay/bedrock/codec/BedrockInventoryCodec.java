@@ -132,6 +132,31 @@ public final class BedrockInventoryCodec {
             return null;
         }
     }
+
+    /**
+     * FILTER_TEXT (0xa3) — client anvil rename / server echo.
+     * Body: string text + boolean from_server.
+     */
+    public static ByteBuf filterText(String text, boolean fromServer) {
+        ByteBuf out = Unpooled.buffer(32);
+        writeUnsignedVarInt(out, BedrockPacketIds.FILTER_TEXT.id);
+        writeString(out, text == null ? "" : text);
+        out.writeBoolean(fromServer);
+        return out;
+    }
+
+    public static BedrockPacketCodec.FilterTextDecode tryDecodeFilterText(ByteBuf body) {
+        int mark = body.readerIndex();
+        try {
+            String text = readString(body);
+            boolean fromServer = body.isReadable() && body.readBoolean();
+            return new BedrockPacketCodec.FilterTextDecode(text, fromServer);
+        } catch (Exception e) {
+            body.readerIndex(mark);
+            return null;
+        }
+    }
+
     public static ByteBuf creativeContentEmpty() {
         ByteBuf out = Unpooled.buffer(8);
         writeUnsignedVarInt(out, BedrockPacketIds.CREATIVE_CONTENT.id);
