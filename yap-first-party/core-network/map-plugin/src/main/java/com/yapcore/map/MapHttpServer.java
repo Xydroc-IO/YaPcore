@@ -133,7 +133,7 @@ public final class MapHttpServer {
         serveSafeFile(exchange, meshesDir, "/meshes/", null);
     }
 
-    private static void serveSafeFile(HttpExchange exchange, Path rootDir, String prefix, String contentType)
+    private static void serveSafeFile(HttpExchange exchange, Path rootDir, String prefix, String forcedContentType)
             throws IOException {
         try {
             String path = exchange.getRequestURI().getPath();
@@ -153,7 +153,7 @@ public final class MapHttpServer {
                 return;
             }
             Headers headers = exchange.getResponseHeaders();
-            String ct = contentType != null ? contentType : meshContentType(rel);
+            String ct = forcedContentType != null ? forcedContentType : meshContentType(rel);
             headers.add("Content-Type", ct);
             headers.add("Cache-Control", "public, max-age=60");
             long size = Files.size(file);

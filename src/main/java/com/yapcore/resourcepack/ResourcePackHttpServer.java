@@ -188,10 +188,10 @@ public final class ResourcePackHttpServer {
     }
 
     private void serveMapMeshes(HttpExchange exchange) throws IOException {
-        serveSafeFile(exchange, mapMeshesDir, "/meshes/", "application/json; charset=utf-8");
+        serveSafeFile(exchange, mapMeshesDir, "/meshes/", null);
     }
 
-    private static void serveSafeFile(HttpExchange exchange, Path rootDir, String prefix, String contentType)
+    private static void serveSafeFile(HttpExchange exchange, Path rootDir, String prefix, String forcedContentType)
             throws IOException {
         try {
             String path = exchange.getRequestURI().getPath();
@@ -211,7 +211,8 @@ public final class ResourcePackHttpServer {
                 return;
             }
             Headers headers = exchange.getResponseHeaders();
-            headers.add("Content-Type", contentType);
+            String ct = forcedContentType != null ? forcedContentType : contentType(rel);
+            headers.add("Content-Type", ct);
             headers.add("Cache-Control", "public, max-age=60");
             long size = Files.size(file);
             exchange.sendResponseHeaders(200, size);
@@ -236,6 +237,12 @@ public final class ResourcePackHttpServer {
         }
         if (name.endsWith(".json")) {
             return "application/json; charset=utf-8";
+        }
+        if (name.endsWith(".png")) {
+            return "image/png";
+        }
+        if (name.endsWith(".ymesh")) {
+            return "application/octet-stream";
         }
         return "application/octet-stream";
     }

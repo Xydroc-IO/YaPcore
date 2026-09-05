@@ -88,7 +88,7 @@ public final class DashboardMapServe {
         }
     }
 
-    private static void serveSafeFile(HttpExchange exchange, Path rootDir, String prefix, String contentType)
+    private static void serveSafeFile(HttpExchange exchange, Path rootDir, String prefix, String forcedContentType)
             throws IOException {
         try {
             if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
