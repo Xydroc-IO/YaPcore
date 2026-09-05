@@ -1,5 +1,7 @@
 package com.yapcore.lagguard;
 
+import java.util.List;
+
 public final class LagGuardServiceImpl implements LagGuardService {
 
     private final ChunkBudgetTracker tracker;
@@ -42,5 +44,10 @@ public final class LagGuardServiceImpl implements LagGuardService {
     @Override
     public boolean enabled() {
         return config.enabled();
+    }
+
+    @Override
+    public List<ChunkTrip> topChunks(int n) {
+        return tracker.topChunks(n);
     }
 }

@@ -47,7 +47,29 @@ public final class LagGuardCommands implements CommandExecutor, TabCompleter {
                         + " hopper=" + tracker.hopperThrottled()
                         + " redstone=" + tracker.redstoneThrottled());
             }
-            default -> sender.sendMessage("§7Usage: /yaplagguard status|reload");
+            case "top" -> {
+                int n = 10;
+                if (args.length >= 2) {
+                    try {
+                        n = Math.max(1, Math.min(50, Integer.parseInt(args[1])));
+                    } catch (NumberFormatException e) {
+                        sender.sendMessage("§cUsage: /yaplagguard top [n]");
+                        return true;
+                    }
+                }
+                var top = tracker.topChunks(n);
+                if (top.isEmpty()) {
+                    sender.sendMessage("§7No chunk trips recorded yet.");
+                    return true;
+                }
+                sender.sendMessage("§aHot chunks (top " + top.size() + "):");
+                int i = 1;
+                for (var c : top) {
+                    sender.sendMessage("§7" + i++ + ". §f" + c.world() + " §7" + c.cx() + "," + c.cz()
+                            + " §atrips=§f" + c.trips());
+                }
+            }
+            default -> sender.sendMessage("§7Usage: /yaplagguard status|reload|top [n]");
         }
         return true;
     }
@@ -56,7 +78,7 @@ public final class LagGuardCommands implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
-            for (String s : List.of("status", "reload")) {
+            for (String s : List.of("status", "reload", "top")) {
                 if (s.startsWith(args[0].toLowerCase(Locale.ROOT))) {
                     out.add(s);
                 }

@@ -11,6 +11,19 @@ max-entities-per-chunk: 72
 # Primed TNT entities allowed in one chunk at once (dupe/lag cannons)
 max-primed-tnt-per-chunk: 8
 
+# Per-chunk soft caps by entity category (0 = disabled for that category).
+# Checked on spawn before the global max-entities-per-chunk ceiling.
+entity-caps:
+  items: 40
+  mobs: 48
+  projectiles: 24
+
+# Soft-depend YaPRegions: skip LagGuard budgets inside these admin region names.
+# Empty = no region exemptions. Requires YaPRegions on the server to take effect.
+exempt-regions: []
+#  - spawn
+#  - hub
+
 # Hopper transfers cancelled per chunk per window when over budget
 max-hopper-transfers-per-window: 48
 hopper-window-ticks: 20
@@ -19,8 +32,40 @@ hopper-window-ticks: 20
 max-redstone-events-per-window: 96
 redstone-window-ticks: 20
 
+# Piston extend/retract events per chunk per window (0 = disabled)
+max-piston-events-per-window: 64
+piston-window-ticks: 20
+
+# Observer redstone updates per chunk per window (0 = disabled; counted separately from general redstone)
+max-observer-events-per-window: 64
+observer-window-ticks: 20
+
+# Minecart entities allowed per chunk (0 = disabled)
+max-minecarts-per-chunk: 16
+
+# OPTIONAL escalation: when trips in a chunk window exceed threshold, remove excess ground
+# Item entities once per window. DANGER — destroys player drops. Keep enabled: false unless
+# operators accept that risk. See docs/plugins/LAGGUARD.md.
+escalation:
+  enabled: false
+  trips-threshold: 50
+  window-ticks: 200
+  max-items-removed: 32
+
 # Write plugins/YaPLagGuard/stats.json for dashboard / Prometheus
 stats-write-interval-ticks: 100
 
 # Log when a budget trips (rate-limited internally)
 log-trips: true
+
+# Per-world budget multipliers (1.0 = default). Higher = more permissive.
+# Example: creative lab worlds can run denser redstone/hoppers.
+world-multipliers: {}
+#  creative: 2.0
+#  world_nether: 0.8
+
+# Alert when trips in a rolling minute exceed threshold (0 = disabled).
+# Optional Discord (or any) webhook URL for soft notifications.
+alert:
+  trips-per-minute: 0
+  webhook-url: ""

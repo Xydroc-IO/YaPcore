@@ -69,6 +69,19 @@ public final class LagGuardPlugin extends JavaPlugin {
         Path file = getDataFolder().toPath().resolve("stats.json");
         try {
             Files.createDirectories(file.getParent());
+            StringBuilder hot = new StringBuilder("[");
+            boolean first = true;
+            for (var c : tracker.topChunks(20)) {
+                if (!first) {
+                    hot.append(',');
+                }
+                first = false;
+                hot.append("{\"world\":\"").append(escapeJson(c.world())).append("\",")
+                        .append("\"cx\":").append(c.cx()).append(',')
+                        .append("\"cz\":").append(c.cz()).append(',')
+                        .append("\"trips\":").append(c.trips()).append('}');
+            }
+            hot.append(']');
             String json = "{\n"
                     + "  \"enabled\": " + config.enabled() + ",\n"
                     + "  \"trips\": " + tracker.trips() + ",\n"
@@ -77,12 +90,17 @@ public final class LagGuardPlugin extends JavaPlugin {
                     + "  \"hopperThrottled\": " + tracker.hopperThrottled() + ",\n"
                     + "  \"redstoneThrottled\": " + tracker.redstoneThrottled() + ",\n"
                     + "  \"maxEntitiesPerChunk\": " + config.maxEntitiesPerChunk() + ",\n"
-                    + "  \"maxPrimedTntPerChunk\": " + config.maxPrimedTntPerChunk() + "\n"
+                    + "  \"maxPrimedTntPerChunk\": " + config.maxPrimedTntPerChunk() + ",\n"
+                    + "  \"hotChunks\": " + hot + "\n"
                     + "}\n";
             Files.writeString(file, json, StandardCharsets.UTF_8);
         } catch (IOException e) {
             getLogger().fine("stats write failed: " + e.getMessage());
         }
+    }
+
+    private static String escapeJson(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     public ChunkBudgetTracker tracker() {

@@ -6,10 +6,11 @@ folia-supported: true
 author: YapLabs
 description: Per-chunk lag-machine governor (entities, TNT, hoppers, redstone)
 website: https://github.com/yaplabs
+softdepend: [YaPRegions]
 commands:
   yaplagguard:
     description: LagGuard admin
-    usage: /yaplagguard status|reload
+    usage: /yaplagguard status|reload|top [n]
     permission: yaplagguard.admin
     aliases: [lagguard, ylg]
 permissions:
