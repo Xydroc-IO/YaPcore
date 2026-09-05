@@ -155,16 +155,30 @@ window.YapDashRegisterFullPanels = function (YapDash) {
   });
 
   /* ——— Protect ——— */
-  function renderProtectLookup(rows) {
+  let protLookupCursor = null;
+  let protLookupMode = null; // { action, player?, radius? }
+  let protLookupRows = [];
+
+  function setProtMoreVisible(show) {
+    const btn = $("protLookupMoreBtn");
+    if (!btn) return;
+    btn.classList.toggle("hidden", !show);
+  }
+
+  function renderProtectLookup(rows, append) {
     const tbody = $("protLookupBody");
     const empty = $("protLookupEmpty");
     if (!tbody) return;
-    tbody.innerHTML = "";
+    if (!append) {
+      tbody.innerHTML = "";
+      protLookupRows = [];
+    }
     if (!rows || !rows.length) {
-      empty?.classList.remove("hidden");
+      if (!append) empty?.classList.remove("hidden");
       return;
     }
     empty?.classList.add("hidden");
+    protLookupRows = append ? protLookupRows.concat(rows) : rows.slice();
     rows.forEach((row) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${row.id ?? ""}</td><td>${row.changeType ?? ""}</td><td>${row.actorName ?? ""}</td>`
@@ -188,6 +202,15 @@ window.YapDashRegisterFullPanels = function (YapDash) {
       });
       tbody.appendChild(tr);
     });
+  }
+  async function runProtectLookup(body, append) {
+    const r = await netPost("/api/protect", body);
+    protLookupCursor = r.nextCursor || null;
+    setProtMoreVisible(!!r.hasMore && !!protLookupCursor);
+    renderProtectLookup(r.lookupRows || [], append);
+    const total = protLookupRows.length;
+    setOut("protOut", r.result || (total ? `${total} row(s)` + (r.hasMore ? "…" : "") : "No rows"));
+    return r;
   }
   async function refreshProtect() {
     try {
@@ -226,26 +249,34 @@ window.YapDashRegisterFullPanels = function (YapDash) {
   });
   $("protLookupBtn")?.addEventListener("click", async () => {
     const p = $("protLookupPlayer")?.value.trim() || "Steve";
+    protLookupMode = { action: "lookup", player: p, limit: "25" };
     try {
-      const r = await netPost("/api/protect", { action: "lookup", player: p, limit: "25" });
-      renderProtectLookup(r.lookupRows || []);
-      setOut("protOut", r.result || (r.lookupRows?.length ? `${r.lookupRows.length} row(s)` : "No rows"));
+      await runProtectLookup({ ...protLookupMode }, false);
     } catch (e) {
       renderProtectLookup([]);
+      setProtMoreVisible(false);
       setOut("protOut", e.message);
     }
   });
   $("protLookupRadiusBtn")?.addEventListener("click", async () => {
+    protLookupMode = {
+      action: "lookup-radius",
+      radius: $("protLookupRadius")?.value || "16",
+      limit: "25",
+    };
     try {
-      const r = await netPost("/api/protect", {
-        action: "lookup-radius",
-        radius: $("protLookupRadius")?.value || "16",
-        limit: "25",
-      });
-      renderProtectLookup(r.lookupRows || []);
-      setOut("protOut", r.result || (r.lookupRows?.length ? `${r.lookupRows.length} row(s)` : "No rows"));
+      await runProtectLookup({ ...protLookupMode }, false);
     } catch (e) {
       renderProtectLookup([]);
+      setProtMoreVisible(false);
+      setOut("protOut", e.message);
+    }
+  });
+  $("protLookupMoreBtn")?.addEventListener("click", async () => {
+    if (!protLookupMode || !protLookupCursor) return;
+    try {
+      await runProtectLookup({ ...protLookupMode, cursor: protLookupCursor }, true);
+    } catch (e) {
       setOut("protOut", e.message);
     }
   });

@@ -39,7 +39,7 @@ public final class DashboardGameplayNetworkApi {
         if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, Object> snap = new LinkedHashMap<>(DashboardNetworkSnapshots.discord(root));
             snap.put("ok", true);
-            snap.put("hint", "POST save-webhook | save-relay | save-events | test-webhook | reload");
+            snap.put("hint", "POST save-webhook | save-relay | save-events | save-inbound | test-webhook | reload");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -374,6 +374,55 @@ public final class DashboardGameplayNetworkApi {
             }
             String result = server.executeCommand(cmd);
             DashboardHttp.json(ex, 200, Map.of("ok", true, "command", cmd, "result", result == null ? "" : result));
+            return;
+        }
+        ex.sendResponseHeaders(405, -1);
+    }
+
+    public void apiLagGuard(HttpExchange ex) throws IOException {
+        if (!auth.requireAuth(ex)) {
+            return;
+        }
+        Path root = server.getRootDir();
+        if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, Object> snap = new LinkedHashMap<>(DashboardNetworkSnapshots.lagguard(root));
+            String status = server.executeCommand("yaplagguard status");
+            snap.put("ok", true);
+            snap.put("status", status == null ? "" : status);
+            snap.put("hint", "POST reload | save-settings");
+            DashboardHttp.json(ex, 200, snap);
+            return;
+        }
+        if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
+            String action = body.getOrDefault("action", "").toLowerCase();
+            if ("save-settings".equals(action)) {
+                try {
+                    DashboardNetworkSnapshotWriters.saveLagGuardSettings(root,
+                            body.containsKey("enabled") ? !"false".equalsIgnoreCase(body.get("enabled")) : null,
+                            body.containsKey("maxEntitiesPerChunk") ? Integer.parseInt(body.get("maxEntitiesPerChunk")) : null,
+                            body.containsKey("maxPrimedTntPerChunk") ? Integer.parseInt(body.get("maxPrimedTntPerChunk")) : null,
+                            body.containsKey("maxHopperTransfersPerWindow")
+                                    ? Integer.parseInt(body.get("maxHopperTransfersPerWindow")) : null,
+                            body.containsKey("hopperWindowTicks") ? Integer.parseInt(body.get("hopperWindowTicks")) : null,
+                            body.containsKey("maxRedstoneEventsPerWindow")
+                                    ? Integer.parseInt(body.get("maxRedstoneEventsPerWindow")) : null,
+                            body.containsKey("redstoneWindowTicks") ? Integer.parseInt(body.get("redstoneWindowTicks")) : null,
+                            body.containsKey("logTrips") ? !"false".equalsIgnoreCase(body.get("logTrips")) : null);
+                    server.executeCommand("yaplagguard reload");
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "action", action));
+                } catch (Exception e) {
+                    DashboardHttp.json(ex, 500, Map.of("error", e.getMessage() == null ? "save failed" : e.getMessage()));
+                }
+                return;
+            }
+            if ("reload".equals(action)) {
+                String result = server.executeCommand("yaplagguard reload");
+                DashboardHttp.json(ex, 200, Map.of("ok", true, "command", "yaplagguard reload",
+                        "result", result == null ? "" : result));
+                return;
+            }
+            DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
             return;
         }
         ex.sendResponseHeaders(405, -1);

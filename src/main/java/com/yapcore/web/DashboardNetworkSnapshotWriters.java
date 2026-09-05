@@ -193,6 +193,38 @@ public final class DashboardNetworkSnapshotWriters {
         DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }
 
+    public static void saveLagGuardSettings(Path root, Boolean enabled, Integer maxEntities, Integer maxTnt,
+                                            Integer maxHopper, Integer hopperWindow, Integer maxRedstone,
+                                            Integer redstoneWindow, Boolean logTrips) throws IOException {
+        Path file = root.resolve("plugins").resolve("YaPLagGuard").resolve("config.yml");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        if (enabled != null) {
+            yaml.put("enabled", enabled);
+        }
+        if (maxEntities != null) {
+            yaml.put("max-entities-per-chunk", Math.max(8, maxEntities));
+        }
+        if (maxTnt != null) {
+            yaml.put("max-primed-tnt-per-chunk", Math.max(1, maxTnt));
+        }
+        if (maxHopper != null) {
+            yaml.put("max-hopper-transfers-per-window", Math.max(1, maxHopper));
+        }
+        if (hopperWindow != null) {
+            yaml.put("hopper-window-ticks", Math.max(1, hopperWindow));
+        }
+        if (maxRedstone != null) {
+            yaml.put("max-redstone-events-per-window", Math.max(1, maxRedstone));
+        }
+        if (redstoneWindow != null) {
+            yaml.put("redstone-window-ticks", Math.max(1, redstoneWindow));
+        }
+        if (logTrips != null) {
+            yaml.put("log-trips", logTrips);
+        }
+        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+    }
+
     public static void saveProtectSettings(Path root, Boolean loggingEnabled, Boolean logBlocks,
                                            Boolean logContainers, Integer pruneDays) throws IOException {
         Path file = root.resolve("plugins").resolve("YaPProtect").resolve("config.yml");

@@ -89,6 +89,9 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
       $("dscInbound").textContent = r.discordToMc ? "on" : "off";
       $("dscMcRelay").value = r.mcToDiscord ? "true" : "false";
       $("dscDiscordMc").value = r.discordToMc ? "true" : "false";
+      if ($("dscInboundEnabled")) $("dscInboundEnabled").value = r.inboundEnabled ? "true" : "false";
+      if ($("dscInboundPort")) $("dscInboundPort").value = r.inboundPort ?? 8765;
+      if ($("dscInboundSecret") && !r.inboundSecretConfigured) $("dscInboundSecret").value = "";
       if ($("dscEvJoin")) $("dscEvJoin").checked = !!r.eventJoin;
       if ($("dscEvLeave")) $("dscEvLeave").checked = !!r.eventLeave;
       if ($("dscEvDeath")) $("dscEvDeath").checked = !!r.eventDeath;
@@ -137,6 +140,18 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
     });
     refreshDiscord();
   };
+  $("dscSaveInbound")?.addEventListener("click", async () => {
+    const body = {
+      action: "save-inbound",
+      enabled: $("dscInboundEnabled")?.value || "false",
+      port: String($("dscInboundPort")?.value || "8765"),
+    };
+    const secret = ($("dscInboundSecret")?.value || "").trim();
+    if (secret) body.secret = secret;
+    await netPost("/api/discord", body);
+    if ($("dscInboundSecret")) $("dscInboundSecret").value = "";
+    refreshDiscord();
+  });
 
   async function refreshTebex() {
     if (!$("tbxInstalled")) return;

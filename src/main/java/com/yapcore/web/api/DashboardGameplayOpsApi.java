@@ -62,13 +62,15 @@ public final class DashboardGameplayOpsApi {
                 }
                 return;
             }
+            String cursorArg = body.containsKey("cursor") && !body.get("cursor").isBlank()
+                    ? " --cursor " + body.get("cursor") : "";
             String cmd = switch (action) {
                 case "reload" -> "yapprotect reload";
                 case "prune" -> "yapprotect prune " + body.getOrDefault("days", "30");
                 case "lookup" -> "yapprotect dash-lookup user " + body.getOrDefault("player", "Steve") + " "
-                        + body.getOrDefault("limit", "10");
+                        + body.getOrDefault("limit", "10") + cursorArg;
                 case "lookup-radius" -> "yapprotect dash-lookup radius " + body.getOrDefault("radius", "16") + " "
-                        + body.getOrDefault("limit", "25");
+                        + body.getOrDefault("limit", "25") + cursorArg;
                 case "rollback" -> {
                     if (body.containsKey("player")) {
                         yield "yapprotect rollback user " + body.get("player") + " "
@@ -91,7 +93,10 @@ public final class DashboardGameplayOpsApi {
             resp.put("command", cmd);
             resp.put("result", result == null ? "" : result);
             if ("lookup".equals(action) || "lookup-radius".equals(action)) {
-                resp.put("lookupRows", DashboardProtectLookup.parseDashJson(result));
+                DashboardProtectLookup.Page page = DashboardProtectLookup.parsePage(result);
+                resp.put("lookupRows", page.rows());
+                resp.put("nextCursor", page.nextCursor());
+                resp.put("hasMore", page.hasMore());
             }
             DashboardHttp.json(ex, 200, resp);
             return;

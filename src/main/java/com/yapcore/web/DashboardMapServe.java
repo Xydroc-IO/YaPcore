@@ -112,7 +112,7 @@ public final class DashboardMapServe {
                 return;
             }
             Headers headers = exchange.getResponseHeaders();
-            String ct = contentType != null ? contentType : contentType(rel);
+            String ct = forcedContentType != null ? forcedContentType : guessContentType(rel);
             headers.add("Content-Type", ct);
             headers.add("Cache-Control", "public, max-age=60");
             long size = Files.size(file);
@@ -126,7 +126,7 @@ public final class DashboardMapServe {
         }
     }
 
-    private static String contentType(String name) {
+    private static String guessContentType(String name) {
         if (name.endsWith(".html")) {
             return "text/html; charset=utf-8";
         }
@@ -139,8 +139,11 @@ public final class DashboardMapServe {
         if (name.endsWith(".json")) {
             return "application/json; charset=utf-8";
         }
-        if (name.endsWith(".ymesh") || name.endsWith(".png")) {
-            return name.endsWith(".png") ? "image/png" : "application/octet-stream";
+        if (name.endsWith(".png")) {
+            return "image/png";
+        }
+        if (name.endsWith(".ymesh")) {
+            return "application/octet-stream";
         }
         return "application/octet-stream";
     }

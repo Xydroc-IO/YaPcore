@@ -130,9 +130,15 @@ public final class DashboardNetworkSnapshots {
         out.put("eventDeath", bool(events.get("death"), false));
         out.put("eventAdvancement", bool(events.get("advancement"), false));
         out.put("inboundEnabled", bool(nestedBool(yaml, "inbound", "enabled"), false));
+        out.put("inboundBind", str(nested(yaml, "inbound", "bind"), "127.0.0.1"));
         out.put("inboundPort", intVal(nested(yaml, "inbound", "port"), 8765));
         out.put("inboundSecretConfigured", !str(nested(yaml, "inbound", "secret"), "").isBlank()
                 && !"change-me".equals(str(nested(yaml, "inbound", "secret"), "")));
+        Map<String, Object> bot = map(yaml.get("bot"));
+        out.put("botEnabled", bool(bot.get("enabled"), false));
+        out.put("botTokenConfigured", !str(bot.get("token"), "").isBlank());
+        out.put("botGuildId", str(bot.get("guild-id"), ""));
+        out.put("botChatChannelId", str(bot.get("chat-channel-id"), ""));
         return out;
     }
 
@@ -240,6 +246,40 @@ public final class DashboardNetworkSnapshots {
             out.put("acHint", "Grim AC is enabled — YaPGuard movement checks should be off to avoid double punishment. See docs/ops/GRIM.md");
         } else if (grimDownloaded) {
             out.put("acHint", "Grim AC downloaded but disabled. Run ./scripts/grim-ac.sh enable and restart YaP-Folia for top-tier AC.");
+        }
+        return out;
+    }
+
+    public static Map<String, Object> lagguard(Path root) {
+        Map<String, Object> out = base(root, "yap-lagguard", "YaPLagGuard");
+        Map<String, Object> yaml = yaml(root, "YaPLagGuard", "config.yml");
+        out.put("enabled", bool(yaml.get("enabled"), true));
+        out.put("maxEntitiesPerChunk", intVal(yaml.get("max-entities-per-chunk"), 72));
+        out.put("maxPrimedTntPerChunk", intVal(yaml.get("max-primed-tnt-per-chunk"), 8));
+        out.put("maxHopperTransfersPerWindow", intVal(yaml.get("max-hopper-transfers-per-window"), 48));
+        out.put("hopperWindowTicks", intVal(yaml.get("hopper-window-ticks"), 20));
+        out.put("maxRedstoneEventsPerWindow", intVal(yaml.get("max-redstone-events-per-window"), 96));
+        out.put("redstoneWindowTicks", intVal(yaml.get("redstone-window-ticks"), 20));
+        out.put("logTrips", bool(yaml.get("log-trips"), true));
+        out.put("countersEphemeral", true);
+        out.put("countersNote", "Trip counters live in memory and stats.json; they reset on plugin reload/restart.");
+        out.put("hotChunks", List.of());
+        Path stats = root.resolve("plugins").resolve("YaPLagGuard").resolve("stats.json");
+        if (Files.isRegularFile(stats)) {
+            try {
+                String raw = Files.readString(stats);
+                out.put("statsJson", raw.trim());
+                try {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> parsed = new com.google.gson.Gson().fromJson(raw, Map.class);
+                    Object hot = parsed == null ? null : parsed.get("hotChunks");
+                    if (hot instanceof List<?> list) {
+                        out.put("hotChunks", list);
+                    }
+                } catch (Exception ignored) {
+                }
+            } catch (IOException ignored) {
+            }
         }
         return out;
     }

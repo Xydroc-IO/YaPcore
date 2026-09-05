@@ -105,6 +105,7 @@ public final class WebDashboard {
 
         http.createContext("/map/", DashboardMapServe.mapStatic(rootDir, server));
         http.createContext("/tiles/", DashboardMapServe.mapTiles(rootDir));
+        http.createContext("/meshes/", DashboardMapServe.mapMeshes(rootDir));
         http.createContext("/", this::serveStatic);
         http.createContext("/api/players", playersApi::apiPlayers);
         http.createContext("/api/access", accessApi::apiAccess);
@@ -142,6 +143,7 @@ public final class WebDashboard {
         http.createContext("/api/tab", gameplayApi::apiTab);
         http.createContext("/api/map", gameplayApi::apiMap);
         http.createContext("/api/guard", gameplayApi::apiGuard);
+        http.createContext("/api/lagguard", gameplayApi::apiLagGuard);
         http.createContext("/api/regions", gameplayApi::apiRegions);
         http.createContext("/api/npcs", gameplayApi::apiNpcs);
         http.createContext("/api/skills", gameplayApi::apiSkills);

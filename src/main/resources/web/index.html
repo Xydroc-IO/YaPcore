@@ -838,6 +838,7 @@
           <button id="protLookupBtn">Lookup user</button>
           <input id="protLookupRadius" type="number" min="1" max="128" value="16" style="width:5rem" title="Radius blocks"/>
           <button id="protLookupRadiusBtn">Lookup radius</button>
+          <button id="protLookupMoreBtn" class="hidden" type="button">Load more</button>
         </div>
         <div class="inline">
           <input id="protUserActionPlayer" placeholder="Player for rollback/restore"/>
@@ -1374,10 +1375,24 @@
         <label>MC → Discord chat
           <select id="dscMcRelay"><option value="false">off</option><option value="true">on</option></select>
         </label>
-        <label>Discord → MC inbound
+        <label>Discord → MC
           <select id="dscDiscordMc"><option value="false">off</option><option value="true">on</option></select>
           <button id="dscSaveRelay">Save relay toggles</button>
         </label>
+        <div class="card">
+          <h3>Inbound HTTP</h3>
+          <p class="muted hint">Bind defaults to localhost. Secret must not be <code>change-me</code> when enabled. Prefer the JDA bot for Discord→MC when possible.</p>
+          <label>Inbound enabled
+            <select id="dscInboundEnabled"><option value="false">off</option><option value="true">on</option></select>
+          </label>
+          <label class="field-block">Port
+            <input id="dscInboundPort" type="number" min="1024" max="65535" placeholder="8765"/>
+          </label>
+          <label class="field-block">Secret
+            <input id="dscInboundSecret" type="password" autocomplete="off" placeholder="long random secret"/>
+          </label>
+          <button id="dscSaveInbound" class="primary">Save inbound</button>
+        </div>
         <div class="toolbar"><button id="dscRefresh">Refresh</button><button id="dscReload">Reload plugin</button></div>
         <pre id="dscOut" class="report"></pre>
       </section>

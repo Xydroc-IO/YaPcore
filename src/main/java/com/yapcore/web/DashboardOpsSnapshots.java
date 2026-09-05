@@ -44,6 +44,8 @@ public final class DashboardOpsSnapshots {
         out.put("markersPlayers", DashboardNetworkSnapshots.bool(markers.get("players"), true));
         out.put("markersNpcs", DashboardNetworkSnapshots.bool(markers.get("npcs"), false));
         out.put("markersRegions", DashboardNetworkSnapshots.bool(markers.get("regions"), false));
+        out.put("markersPois", DashboardNetworkSnapshots.bool(markers.get("pois"), true));
+        out.put("markersClaims", DashboardNetworkSnapshots.bool(markers.get("claims"), false));
         out.put("markersPollSeconds", DashboardNetworkSnapshots.intVal(markers.get("poll-seconds"), 5));
         Path tiles = root.resolve("plugins").resolve("YaPMap").resolve("map/tiles");
         int tileCount = countFilesRecursive(tiles, ".png");
@@ -51,7 +53,84 @@ public final class DashboardOpsSnapshots {
         out.put("tilesDir", tiles.toString());
         out.put("webReady", Files.isRegularFile(root.resolve("plugins").resolve("YaPMap").resolve("web/index.html")));
         out.put("mapReady", tileCount > 0 && DashboardNetworkSnapshots.bool(out.get("webReady"), false));
+        Map<String, Object> renderStatus = loadRenderStatus(root);
+        out.put("lastRenderTime", renderStatus.getOrDefault("lastRenderTime", ""));
+        Object disk = renderStatus.get("tileDiskBytes");
+        out.put("tileDiskBytes", disk instanceof Number n ? n.longValue() : 0L);
+        out.put("renderStatus", DashboardNetworkSnapshots.str(renderStatus.get("renderStatus"), "unknown"));
+        out.put("dirtyChunkCount", DashboardNetworkSnapshots.intVal(renderStatus.get("dirtyChunkCount"), 0));
+        Object meshDisk = renderStatus.get("meshDiskBytes");
+        out.put("meshDiskBytes", meshDisk instanceof Number n ? n.longValue() : 0L);
+        out.put("meshChunkCount", DashboardNetworkSnapshots.intVal(renderStatus.get("meshChunkCount"), 0));
         return out;
+    }
+
+    static Map<String, Object> loadRenderStatus(Path root) {
+        Path file = root.resolve("plugins").resolve("YaPMap").resolve("render-status.json");
+        if (!Files.isRegularFile(file)) {
+            return Map.of();
+        }
+        try {
+            String raw = Files.readString(file).trim();
+            Map<String, Object> out = new LinkedHashMap<>();
+            putJsonString(out, raw, "renderStatus");
+            putJsonString(out, raw, "lastRenderTime");
+            putJsonNumber(out, raw, "lastRenderEpochMs");
+            putJsonNumber(out, raw, "dirtyChunkCount");
+            putJsonNumber(out, raw, "tileDiskBytes");
+            putJsonNumber(out, raw, "meshDiskBytes");
+            putJsonNumber(out, raw, "meshChunkCount");
+            return out;
+        } catch (IOException e) {
+            return Map.of();
+        }
+    }
+
+    private static void putJsonString(Map<String, Object> out, String raw, String key) {
+        String needle = "\"" + key + "\"";
+        int i = raw.indexOf(needle);
+        if (i < 0) {
+            return;
+        }
+        int colon = raw.indexOf(':', i + needle.length());
+        if (colon < 0) {
+            return;
+        }
+        int q1 = raw.indexOf('"', colon + 1);
+        if (q1 < 0) {
+            return;
+        }
+        int q2 = raw.indexOf('"', q1 + 1);
+        if (q2 < 0) {
+            return;
+        }
+        out.put(key, raw.substring(q1 + 1, q2));
+    }
+
+    private static void putJsonNumber(Map<String, Object> out, String raw, String key) {
+        String needle = "\"" + key + "\"";
+        int i = raw.indexOf(needle);
+        if (i < 0) {
+            return;
+        }
+        int colon = raw.indexOf(':', i + needle.length());
+        if (colon < 0) {
+            return;
+        }
+        int start = colon + 1;
+        while (start < raw.length() && Character.isWhitespace(raw.charAt(start))) {
+            start++;
+        }
+        int end = start;
+        while (end < raw.length() && (Character.isDigit(raw.charAt(end)) || raw.charAt(end) == '-')) {
+            end++;
+        }
+        if (end > start) {
+            try {
+                out.put(key, Long.parseLong(raw.substring(start, end)));
+            } catch (NumberFormatException ignored) {
+            }
+        }
     }
 
     static Map<String, String> loadServerProperties(Path root) {
