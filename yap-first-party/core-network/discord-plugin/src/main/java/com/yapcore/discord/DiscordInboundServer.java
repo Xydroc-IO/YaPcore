@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -36,8 +37,14 @@ public final class DiscordInboundServer {
         if (!config.discordToMc() || !config.inboundEnabled()) {
             return;
         }
+        if (config.inboundSecretUnsafe()) {
+            logger().warning("Discord inbound not started: set inbound.secret to a real value "
+                    + "(not blank / change-me) when inbound.enabled is true.");
+            return;
+        }
         try {
-            server = HttpServer.create(new InetSocketAddress(config.inboundPort()), 0);
+            InetSocketAddress addr = new InetSocketAddress(config.inboundBind(), config.inboundPort());
+            server = HttpServer.create(addr, 0);
             server.createContext(config.inboundPath(), this::handle);
             server.setExecutor(Executors.newCachedThreadPool(r -> {
                 Thread t = new Thread(r, "YaPDiscord-Inbound");
@@ -45,7 +52,8 @@ public final class DiscordInboundServer {
                 return t;
             }));
             server.start();
-            logger().info("Discord→MC inbound listening on :" + config.inboundPort() + config.inboundPath());
+            logger().info("Discord→MC inbound listening on "
+                    + config.inboundBind() + ":" + config.inboundPort() + config.inboundPath());
         } catch (IOException e) {
             logger().warning("Discord inbound server failed: " + e.getMessage());
         }
@@ -64,15 +72,23 @@ public final class DiscordInboundServer {
             return;
         }
         DiscordConfig config = plugin.config();
-        if (config == null || !config.discordToMc()) {
+        if (config == null || !config.discordToMc() || !config.inboundEnabled()) {
             respond(ex, 503, "{\"error\":\"relay disabled\"}");
+            return;
+        }
+        if (config.inboundSecretUnsafe()) {
+            respond(ex, 503, "{\"error\":\"inbound secret not configured\"}");
             return;
         }
         if (!authorized(ex, config.inboundSecret())) {
             respond(ex, 401, "{\"error\":\"unauthorized\"}");
             return;
         }
-        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        String body = readBodyLimited(ex.getRequestBody(), config.inboundMaxBodyBytes());
+        if (body == null) {
+            respond(ex, 413, "{\"error\":\"body too large\"}");
+            return;
+        }
         String author = extract(body, AUTHOR);
         if (author.isBlank()) {
             author = extract(body, USERNAME);
@@ -88,8 +104,22 @@ public final class DiscordInboundServer {
         if (author.isBlank()) {
             author = "Discord";
         }
-        plugin.mcRelay().relay(unescape(author), unescape(content));
+        String filtered = config.filterInboundContent(unescape(content));
+        if (filtered.isBlank()) {
+            respond(ex, 400, "{\"error\":\"content empty after filter\"}");
+            return;
+        }
+        plugin.mcRelay().relay(unescape(author), filtered);
         respond(ex, 200, "{\"ok\":true}");
+    }
+
+    /** @return body string, or null if over max */
+    private static String readBodyLimited(InputStream in, int maxBytes) throws IOException {
+        byte[] buf = in.readNBytes(maxBytes + 1);
+        if (buf.length > maxBytes) {
+            return null;
+        }
+        return new String(buf, StandardCharsets.UTF_8);
     }
 
     private static boolean authorized(HttpExchange ex, String secret) {

@@ -12,7 +12,7 @@ import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-/** Join / leave / death / advancement → Discord events webhook. */
+/** Join / leave / death / advancement → Discord (bot channel or events webhook). */
 public final class EventRelayListener implements Listener {
 
     private static final int COLOR_JOIN = 0x2ECC71;
@@ -33,8 +33,7 @@ public final class EventRelayListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        plugin.webhooks().sendEmbed(config.eventsWebhook(),
-                "Joined", "**" + player.getName() + "** joined the server", COLOR_JOIN);
+        plugin.relayEventEmbed("Joined", "**" + player.getName() + "** joined the server", COLOR_JOIN);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -44,8 +43,7 @@ public final class EventRelayListener implements Listener {
             return;
         }
         Player player = event.getPlayer();
-        plugin.webhooks().sendEmbed(config.eventsWebhook(),
-                "Left", "**" + player.getName() + "** left the server", COLOR_LEAVE);
+        plugin.relayEventEmbed("Left", "**" + player.getName() + "** left the server", COLOR_LEAVE);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -61,7 +59,7 @@ public final class EventRelayListener implements Listener {
         } else {
             detail = player.getName() + " died";
         }
-        plugin.webhooks().sendEmbed(config.eventsWebhook(), "Death", detail, COLOR_DEATH);
+        plugin.relayEventEmbed("Death", detail, COLOR_DEATH);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -81,6 +79,6 @@ public final class EventRelayListener implements Listener {
         if (!desc.isBlank()) {
             body += "\n" + desc;
         }
-        plugin.webhooks().sendEmbed(config.eventsWebhook(), "Advancement", body, COLOR_ADVANCEMENT);
+        plugin.relayEventEmbed("Advancement", body, COLOR_ADVANCEMENT);
     }
 }

@@ -10,6 +10,7 @@ relay:
   discord-to-mc: false
 
 # Server event posts to webhooks.events (or chat). All off by default.
+# When bot.enabled, the same toggles gate bot-channel posts.
 events:
   join: false
   leave: false
@@ -17,8 +18,84 @@ events:
   advancement: false
 
 # Inbound Discord→MC HTTP. Off by default (enable + set a real secret for production).
+# Prefer bot path when possible; inbound is for external automation.
 inbound:
   enabled: false
+  bind: "127.0.0.1"
   port: 8765
   secret: "change-me"
   path: "/discord/inbound"
+  # Reject bodies larger than this (bytes).
+  max-body-bytes: 8192
+
+# Optional JDA bot (gateway). Prefer over inbound HTTP for Discord→MC.
+# Requires MESSAGE CONTENT intent in the Discord Developer Portal when reading chat.
+# Enable Server Members Intent for role sync on account link.
+bot:
+  enabled: false
+  token: ""
+  guild-id: ""
+  chat-channel-id: ""
+  slash-commands: true
+  # Role snowflakes allowed for admin slash cmds (/broadcast). Empty = Discord Administrator only.
+  slash-roles:
+    admin: []
+
+# Applied to Discord→MC (bot + inbound).
+filters:
+  block-everyone: true
+  max-length: 500
+
+# Minecraft ↔ Discord account pairing (table yap_discord_links).
+# In-game: /discord link → Discord slash /link <code> (or DM the bot the code).
+# Status: /yapdiscord linked · Unlink: /yapdiscord unlink · Discord: /linked /unlink
+link:
+  enabled: true
+  # Prefer shared YaPDB when yap-db.jar is present; else local SQLite under plugins/YaPDiscord/
+  use-shared-yapdb: true
+  code-ttl-seconds: 600
+  role-sync:
+    enabled: true
+    # Discord role snowflake → YaPPerms group. Synced on successful link when YaPPerms is loaded.
+    # Without YaPPerms the map is stored and documented only (no sync).
+    roles: {}
+    # Example:
+    # roles:
+    #   "123456789012345678": "vip"
+    #   "234567890123456789": "mod"
+  # Optional nickname sync (bot needs Manage Nicknames for mc→discord).
+  nickname-sync:
+    enabled: false
+    # mc-to-discord | discord-to-mc
+    direction: mc-to-discord
+    # 0 = only on successful link; >0 = also periodically for online linked players
+    interval-minutes: 0
+
+# Guild text triggers in the mapped chat channel (or all guild when listen-all-guild).
+# playerlist / !playerlist → online names. !c <cmd> requires roles + whitelist (empty roles = !c off).
+text-commands:
+  enabled: true
+  playerlist: true
+  console-prefix: "!c"   # empty to disable
+  console-whitelist: ["tps", "list"]  # only these console cmds
+  require-roles: []  # Discord role IDs allowed for !c; empty = disabled !c
+  listen-all-guild: false
+
+# Periodic channel topic from template. Bot needs Manage Channels on the target channel.
+channel-updater:
+  enabled: false
+  channel-id: ""
+  interval-seconds: 60
+  topic-template: "Online: {online} | MSPT: {mspt}"
+
+# Dedicated Discord console channel (DiscordSRV-class). Prefer a private channel.
+# Outbound forwards Minecraft log lines (can be noisy) via a lightweight JUL Handler.
+console-channel:
+  enabled: false
+  channel-id: ""
+  inbound: true          # Discord → run as console (YapSched.global)
+  outbound: true         # Minecraft log lines → Discord
+  inbound-roles: []      # Discord role IDs allowed; empty = require Administrator
+  command-whitelist: []  # empty = allow all (dangerous); prefer ["tps","list","whitelist"]
+  outbound-filter: ["INFO", "WARN", "SEVERE"]  # log levels to forward
+  rate-limit-per-10s: 20

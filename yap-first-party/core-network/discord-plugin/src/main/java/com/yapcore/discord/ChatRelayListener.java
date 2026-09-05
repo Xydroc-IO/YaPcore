@@ -22,6 +22,6 @@ public final class ChatRelayListener implements Listener {
         }
         String message = PlainTextComponentSerializer.plainText().serialize(event.message());
         String line = "**" + event.getPlayer().getName() + ":** " + message;
-        plugin.webhooks().sendPlain(config.chatWebhook(), line);
+        plugin.relayMcChat(line);
     }
 }

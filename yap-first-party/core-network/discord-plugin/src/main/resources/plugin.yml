@@ -4,13 +4,42 @@ main: com.yapcore.discord.DiscordPlugin
 api-version: '1.21'
 folia-supported: true
 author: YapLabs
-description: Discord webhook bridge for moderation logs and optional chat relay
-softdepend: [YaPModeration, YaPChat]
+description: Discord webhook + optional JDA bot bridge for moderation, chat, events, and account link
+softdepend: [YaPModeration, YaPChat, YaPDB, YaPPerms]
 commands:
   yapdiscord:
-    description: Discord bridge admin
-    usage: /yapdiscord reload|test [moderation|chat]|say <message>
-    permission: yapdiscord.admin
+    description: Discord bridge admin + account link
+    usage: /yapdiscord link|unlink|linked|resync|broadcast|reload|bot status|test|say
+    permission: yapdiscord.use
+  discord:
+    description: Alias for /yapdiscord (account link)
+    usage: /discord link|unlink|linked
+    permission: yapdiscord.use
 permissions:
+  yapdiscord.use:
+    description: Base command access (link for players; admin subcommands still need yapdiscord.admin)
+    default: true
+  yapdiscord.link:
+    description: Generate Discord account link code
+    default: true
+  yapdiscord.unlink:
+    description: Unlink your Discord account
+    default: true
+  yapdiscord.linked:
+    description: Show your Discord link status
+    default: true
+  yapdiscord.linked.others:
+    description: View another player's Discord link status
+    default: op
+  yapdiscord.resync:
+    description: Re-apply Discord roles → YaPPerms for a player or all
+    default: op
+  yapdiscord.broadcast:
+    description: Broadcast a message to the Discord chat channel
+    default: op
   yapdiscord.admin:
     default: op
+    children:
+      yapdiscord.linked.others: true
+      yapdiscord.resync: true
+      yapdiscord.broadcast: true

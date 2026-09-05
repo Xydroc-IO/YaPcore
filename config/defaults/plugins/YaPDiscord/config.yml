@@ -19,6 +19,55 @@ events:
 # Inbound Discord→MC HTTP. Off by default (enable + set a real secret for production).
 inbound:
   enabled: false
+  bind: "127.0.0.1"
   port: 8765
   secret: "change-me"
   path: "/discord/inbound"
+  max-body-bytes: 8192
+
+bot:
+  enabled: false
+  token: ""
+  guild-id: ""
+  chat-channel-id: ""
+  slash-commands: true
+
+filters:
+  block-everyone: true
+  max-length: 500
+
+link:
+  enabled: true
+  use-shared-yapdb: true
+  code-ttl-seconds: 600
+  role-sync:
+    enabled: true
+    roles: {}
+  nickname-sync:
+    enabled: false
+    direction: mc-to-discord
+    interval-minutes: 0
+
+text-commands:
+  enabled: true
+  playerlist: true
+  console-prefix: "!c"
+  console-whitelist: ["tps", "list"]
+  require-roles: []
+  listen-all-guild: false
+
+channel-updater:
+  enabled: false
+  channel-id: ""
+  interval-seconds: 60
+  topic-template: "Online: {online} | MSPT: {mspt}"
+
+console-channel:
+  enabled: false
+  channel-id: ""
+  inbound: true
+  outbound: true
+  inbound-roles: []
+  command-whitelist: []
+  outbound-filter: ["INFO", "WARN", "SEVERE"]
+  rate-limit-per-10s: 20
