@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build resourcepacks/yapcore-default.zip
-# Product default: Faithful 64x + YaP Skies + YaP Water.
+# Product default: Faithful 64x + YaP Skies + YaP Water + YaP Foliage.
 # Legacy: YAP_INCLUDE_VEHICLES=1 overlays yap-vehicles + yap-abilities when those trees exist (removed from product).
 set -eu
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
@@ -30,22 +30,24 @@ if [ -f "$FAITHFUL" ]; then
   unzip -q -o "$FAITHFUL" -d "$STAGE"
 else
   mkdir -p "$STAGE"
-  printf '%s\n' '{"pack":{"pack_format":34,"description":"YaPcore default client pack"}}' \
+  printf '%s\n' '{"pack":{"description":"YaPcore default client pack","pack_format":88,"min_format":[88,0],"max_format":[88,0]}}' \
     >"$STAGE/pack.mcmeta"
 fi
 
-# Realistic sun / moon / clouds + atmosphere + water (CORE).
+# Realistic sun / moon / clouds + atmosphere + water + foliage (CORE).
 if [ ! -f "$SKIES_DIR/assets/minecraft/textures/environment/celestial/sun.png" ]; then
   python3 "$ROOT/scripts/generate-yap-skies.py"
 fi
 # Always refresh YaP water / weather overlays (fast; biome-tint grayscale).
 python3 "$ROOT/scripts/generate-yap-water.py"
+# Keep Faithful 64x foliage — strip any leftover YaP leaf/grass stomps.
+python3 "$ROOT/scripts/generate-yap-foliage.py"
 if [ -d "$SKIES_DIR/assets" ]; then
   mkdir -p "$STAGE/assets"
   cp -a "$SKIES_DIR/assets/." "$STAGE/assets/"
 fi
 
-DESC="YaPcore default — Faithful 64x + YaP Skies + YaP Water (CORE)"
+DESC="YaPcore default — Faithful 64x + YaP Skies + Water (CORE)"
 if [ "$want_vehicles" -eq 1 ]; then
   # Same path as vehicles: zip the overlay tree, then merge into the default pack.
   if [ -d "$ABIL_DIR/assets" ]; then
@@ -64,7 +66,7 @@ if [ "$want_vehicles" -eq 1 ]; then
     exit 1
   fi
   unzip -q -o "$VEH_ZIP" -d "$STAGE"
-  DESC="YaPcore default — Faithful 64x + YaP Skies + YaP Water + Vehicles + MMO icons (GAMEPLAY)"
+  DESC="YaPcore default — Faithful 64x + YaP Skies + Water + Vehicles + MMO icons (GAMEPLAY)"
 fi
 
 python3 - <<PY "$STAGE" "$DESC" "$want_vehicles"
@@ -113,11 +115,14 @@ if want_vehicles:
             rod.unlink(missing_ok=True)
 
 meta = stage / "pack.mcmeta"
+# MC 26.2 = resource pack format 88.0. Formats >64 require min_format/max_format;
+# claiming support via supported_formats alone gets the pack removed as incompatible.
 meta.write_text(json.dumps({
     "pack": {
-        "pack_format": 34,
-        "supported_formats": {"min_inclusive": 22, "max_inclusive": 99},
-        "description": desc
+        "description": desc,
+        "pack_format": 88,
+        "min_format": [88, 0],
+        "max_format": [88, 0]
     }
 }, indent=2) + "\n")
 PY

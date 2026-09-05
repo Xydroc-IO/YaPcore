@@ -6,8 +6,9 @@ Built by `scripts/build-default-resourcepack.sh` on every product build:
 
 - **Faithful 64x** (world textures) — see below
 - **YaP Skies** (`yap-skies/`) — realistic sun, moon, multi-scale clouds, atmosphere, OptiFine skyboxes
-- **YaP Water** (same overlay) — animated water still/flow, underwater, rain/snow, drips
-  (`scripts/generate-yap-water.py`)
+- **YaP Water / weather** (same overlay) — still/flow, underwater, drips (`scripts/generate-yap-water.py`)
+- **YaP Foliage** (same overlay) — denser Faithful-based leaf cutouts + `strict_cutout` mcmeta
+  (`scripts/generate-yap-foliage.py`)
 
 `config/server.properties` → `resource-pack-file=yapcore-default.zip`
 
@@ -23,23 +24,27 @@ Built by `scripts/build-default-resourcepack.sh` on every product build:
 YaPcore redistributes this pack as a **server resource pack** under the terms of
 the Faithful License (credit + license link required; no paywall).
 
-YaP-authored overlays in this tree (skies, water, etc.) follow YaPcore’s
+YaP-authored overlays in this tree (skies, water, foliage, etc.) follow YaPcore’s
 **[GPLv3](../LICENSE)** — [docs/start/LICENSING.md](../docs/start/LICENSING.md).
 
-## YaP Skies + Water
+## YaP Skies + Water + Foliage
 
 First-party. Skies: `scripts/generate-yap-skies.py`. Water/weather:
-`scripts/generate-yap-water.py` (grayscale still/flow for biome tint; underwater,
-rain, snow, drips). No third-party photos or Complementary/BSL assets.
+`scripts/generate-yap-water.py`. Foliage: `scripts/generate-yap-foliage.py`
+(densifies Faithful leaves, binary alpha, `strict_cutout`).
+No third-party photos or Complementary/BSL assets.
 
-Vanilla clients get the sun / moon / clouds / `sky` core shader. Panoramic layers
-need a client skybox loader (OptiFine, Skyboxify, Celestial, or Nuit + Interop).
+Vanilla clients get the sun / moon / clouds / `sky` core shader plus improved
+water and leaf textures. **Canopy / grass wind** needs YaP Shaders via yap-visuals.
+Panoramic sky layers need a client skybox loader (OptiFine, Skyboxify, Celestial, or Nuit + Interop).
 
 ## YaP client render stack (optional Fabric)
 
-For wavy water and shader skies, players install **one** Fabric jar:
+For wavy water, foliage wind, and shader skies, players install the Fabric client
+bundle (`client_mods.zip` / **yap-visuals**):
 
 - **yap-visuals** — nests official Sodium + YaP Iris; extracts YaP Shaders on launch
+- **yap-bag** / **yap-ultrawide** — optional UI / Hor+ FOV (also in `client_mods.zip`)
 
-Build: `./scripts/build-yap-client-render.sh` → `dist/client-mods/yap-visuals-*.jar`.
+Build: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.
 See [docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md).
