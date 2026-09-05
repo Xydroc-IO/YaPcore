@@ -4,7 +4,7 @@ main: com.yapcore.guard.GuardPlugin
 api-version: '1.21'
 folia-supported: true
 author: YapLabs
-description: Lightweight native anti-cheat (fly, speed, reach, scaffold)
+description: Lightweight movement heuristics (fly, speed, reach, scaffold) — not Grim; PvP use grim-ac.sh
 website: https://github.com/yaplabs
 commands:
   yapguard:

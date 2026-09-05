@@ -32,10 +32,13 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
         ridableTask = YapSched.globalTimer(this, this::tickRidables, 1L, 1L);
         applyServerBrand();
         EncyclopediaNms.syncFromConfig(knobs);
+        EncyclopediaNms.warnIfMisconfigured(getLogger(), knobs);
         getLogger().info("YaP Encyclopedia online — mobs=" + knobs.mobs().size()
                 + " specials=" + knobs.specialsWired()
-                + " attrKeys=" + AttributeApplier.supportedAttributeKeys());
+                + " attrKeys=" + AttributeApplier.supportedAttributeKeys()
+                + " nmsHooks=" + EncyclopediaNms.hooksPresent());
         getLogger().info("Edit plugins/YaPGameplayKnobs/knobs.yml · /yapknobs reload|status");
+        getLogger().info("Crop/fluid NMS needs YaP-Folia patch 0025 — defaults off; see docs/ops/TUNE.md");
     }
 
     @Override
@@ -125,9 +128,11 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
             knobs.reload();
             applyServerBrand();
             EncyclopediaNms.syncFromConfig(knobs);
+            EncyclopediaNms.warnIfMisconfigured(getLogger(), knobs);
             reapplyLoadedMobs();
             sender.sendMessage("Encyclopedia reloaded (" + knobs.mobs().size()
                     + " mobs, specials=" + knobs.specialsWired() + ") — re-applied to loaded entities.");
+            sender.sendMessage("nmsHooks: " + EncyclopediaNms.statusLine());
             return true;
         }
         if ("status".equalsIgnoreCase(args[0])) {

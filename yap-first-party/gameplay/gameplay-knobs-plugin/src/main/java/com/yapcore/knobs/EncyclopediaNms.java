@@ -44,10 +44,42 @@ public final class EncyclopediaNms {
         }
     }
 
+    /**
+     * True when knobs ask for NMS crop/fluid behavior that needs YapEncyclopediaHooks.
+     */
+    public static boolean configNeedsHooks(KnobsConfig config) {
+        if (config == null) {
+            return false;
+        }
+        KnobsConfig.GameplaySettings g = config.gameplay();
+        return g.cropGrowthNms() || !g.tickFluids();
+    }
+
+    /**
+     * Log + status helper when NMS knobs are on but Folia patch 0025 is missing.
+     */
+    public static void warnIfMisconfigured(java.util.logging.Logger log, KnobsConfig config) {
+        if (!configNeedsHooks(config)) {
+            return;
+        }
+        if (hooksPresent()) {
+            return;
+        }
+        log.warning("Encyclopedia NMS knobs enabled (crop-growth-nms and/or tick-fluids=false) "
+                + "but YapEncyclopediaHooks is absent — rebuild YaP-Folia with "
+                + "0025-yap-encyclopedia-hooks.patch (./scripts/build-yap-folia.sh). "
+                + "Event-wired knobs still work; NMS crop/fluid gates will not.");
+    }
+
     public static String statusLine() {
-        return "present=" + hooksPresent()
+        boolean present = hooksPresent();
+        String base = "present=" + present
                 + " crop=" + System.getProperty(PROP_CROP, "1.0")
                 + " cropNms=" + System.getProperty(PROP_CROP_NMS, "false")
                 + " fluids=" + System.getProperty(PROP_FLUIDS, "true");
+        if (!present) {
+            return base + " — rebuild YaP-Folia with 0025 for crop/fluid NMS";
+        }
+        return base;
     }
 }

@@ -44,7 +44,14 @@ shows async+hopper alone (~−7% heavypop); ship profile adds headroom under hot
 ./scripts/bench/cite-canvas-heavypop.sh 40  # Canvas ≥5% campaign (heavypop)
 ```
 
-Encyclopedia E2 NMS (`0025-yap-encyclopedia-hooks.patch`): defaults off; enable `gameplay.crop-growth-nms` only after `./scripts/build-yap-folia.sh` + soak-compat.
+Encyclopedia E2 NMS (`0025-yap-encyclopedia-hooks.patch`): **defaults off**. Not part of the soft-launch claim.
+Enable `gameplay.crop-growth-nms` / `tick-fluids=false` only after:
+
+1. `./scripts/build-yap-folia.sh` (post patches include `002*.patch`)
+2. `./scripts/yapctl soak-compat` PASS
+3. `/yapknobs status` shows `nmsHooks: present=true`
+
+Without the patch, enabling those knobs logs a WARNING (event-wired encyclopedia still works).
 
 ## Anti-gaming
 

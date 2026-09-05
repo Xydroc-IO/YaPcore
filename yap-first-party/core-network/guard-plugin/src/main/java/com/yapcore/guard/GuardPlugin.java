@@ -30,7 +30,9 @@ public final class GuardPlugin extends JavaPlugin {
             cmd.setTabCompleter(commands);
         }
 
-        getLogger().info("YaPGuard ready — max violations before kick=" + config.maxViolationsBeforeKick());
+        getLogger().info("YaPGuard ready — lightweight heuristics (not Grim). "
+                + "PvP: ./scripts/grim-ac.sh enable · maxViolations=" + config.maxViolationsBeforeKick()
+                + " sampleRandomly=" + config.sampleRandomly());
     }
 
     public void reloadGuard() {

@@ -69,7 +69,7 @@ public final class GuardListener implements Listener {
             checkFly(player, state);
         }
         if (config.speedEnabled()) {
-            checkSpeed(player);
+            checkSpeed(player, state);
         }
     }
 
@@ -82,6 +82,7 @@ public final class GuardListener implements Listener {
             state.flyAirborneStreak = 0;
             return;
         }
+        // Elytra / vehicle / riptide — clear grace (do not double-flag with Grim when both on)
         if (player.isGliding() || player.isInsideVehicle() || player.isRiptiding()) {
             state.flyAirborneStreak = 0;
             return;
@@ -108,6 +109,7 @@ public final class GuardListener implements Listener {
             state.flyAirborneStreak = 0;
             return;
         }
+        // Genuine falling
         if (player.getFallDistance() > 0.5f && player.getVelocity().getY() < -0.08) {
             state.flyAirborneStreak = 0;
             return;
@@ -117,11 +119,14 @@ public final class GuardListener implements Listener {
         if (state.flyAirborneStreak < config.flyMinAirborneChecks()) {
             return;
         }
-        if (Math.random() > config.flySensitivity()) {
+        // Hover / no-fall: airborne with near-zero fall distance after streak
+        boolean hoverNoFall = player.getFallDistance() < 0.2f
+                && Math.abs(player.getVelocity().getY()) < 0.12;
+        if (!GuardHeuristics.shouldFlagSample(true, config.flySensitivity(), config.sampleRandomly())) {
             return;
         }
         state.flyAirborneStreak = 0;
-        flag(player, "fly");
+        flag(player, hoverNoFall ? "nofall" : "fly");
     }
 
     /** Solid block within ~1.3 blocks under feet (covers stairs/slabs + laggy isOnGround). */
@@ -136,23 +141,14 @@ public final class GuardListener implements Listener {
         double feetY = loc.getY();
         for (double dy = 0.05; dy <= 1.35; dy += 0.45) {
             Block block = world.getBlockAt(x, (int) Math.floor(feetY - dy), z);
-            if (isGroundLike(block.getType())) {
+            if (GuardHeuristics.isGroundLike(block.getType())) {
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean isGroundLike(Material type) {
-        if (type.isAir()) {
-            return false;
-        }
-        return type.isSolid() || type.name().endsWith("_SLAB") || type.name().endsWith("_STAIRS")
-                || type.name().endsWith("_CARPET") || type == Material.SCAFFOLDING;
-    }
-
-    private void checkSpeed(Player player) {
-        ViolationTracker.PlayerState state = tracker.state(player.getUniqueId());
+    private void checkSpeed(Player player, ViolationTracker.PlayerState state) {
         Location loc = player.getLocation();
         long now = System.currentTimeMillis();
         if (!state.hasLastMove) {
@@ -175,21 +171,29 @@ public final class GuardListener implements Listener {
         state.lastZ = loc.getZ();
         state.lastMoveMs = now;
 
-        double allowed = config.maxBlocksPerTick();
-        if (player.isSprinting()) {
-            allowed *= 1.35;
+        if (player.isGliding() || player.isInsideVehicle() || player.isRiptiding()
+                || player.getGameMode() == GameMode.CREATIVE
+                || player.getGameMode() == GameMode.SPECTATOR) {
+            state.speedOverStreak = 0;
+            return;
         }
-        if (player.isGliding()) {
-            allowed *= 2.5;
-        }
-        allowed *= (0.5 + config.speedSensitivity());
+
+        double allowed = GuardHeuristics.speedAllowedBlocksPerTick(
+                config.maxBlocksPerTick(), config.speedSensitivity(),
+                player.isSprinting(), false);
 
         if (blocksPerTick <= allowed) {
+            state.speedOverStreak = 0;
             return;
         }
-        if (Math.random() > config.speedSensitivity()) {
+        state.speedOverStreak++;
+        if (state.speedOverStreak < config.speedConsecutiveHits()) {
             return;
         }
+        if (!GuardHeuristics.shouldFlagSample(true, config.speedSensitivity(), config.sampleRandomly())) {
+            return;
+        }
+        state.speedOverStreak = 0;
         flag(player, "speed");
     }
 
@@ -206,13 +210,16 @@ public final class GuardListener implements Listener {
             if (shouldBypass(player)) {
                 return;
             }
+            if (player.getGameMode() == GameMode.CREATIVE) {
+                return;
+            }
             Entity victim = event.getEntity();
             double max = config.maxReachDistance() + (1.0 - config.reachSensitivity()) * 1.5;
             double dist = player.getLocation().distance(victim.getLocation());
             if (dist <= max) {
                 return;
             }
-            if (Math.random() > config.reachSensitivity()) {
+            if (!GuardHeuristics.shouldFlagSample(true, config.reachSensitivity(), config.sampleRandomly())) {
                 return;
             }
             flag(player, "reach");
@@ -244,7 +251,7 @@ public final class GuardListener implements Listener {
             if (state.scaffoldPlaces <= limit) {
                 return;
             }
-            if (Math.random() > config.scaffoldSensitivity()) {
+            if (!GuardHeuristics.shouldFlagSample(true, config.scaffoldSensitivity(), config.sampleRandomly())) {
                 return;
             }
             flag(player, "scaffold");
@@ -263,6 +270,7 @@ public final class GuardListener implements Listener {
         long graceMs = config.joinGraceSeconds() * 1000L;
         state.joinGraceUntilMs = System.currentTimeMillis() + graceMs;
         state.flyAirborneStreak = 0;
+        state.speedOverStreak = 0;
     }
 
     private void flag(Player player, String check) {

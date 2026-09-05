@@ -12,10 +12,11 @@ usage() {
 Usage: $0 {status|enable|disable} [--root DIR]
 
 Grim AC is downloaded on first setup as grim.jar.disabled (not loaded by YaP-Folia).
-Use 'enable' when you want top-tier AC active — then restart YaP-Folia.
+Competitive / PvP networks: use 'enable', then restart YaP-Folia.
+YaPGuard alone is not gold-standard AC — see docs/ops/ANTICHEAT.md.
 
   status   — show whether Grim is missing, downloaded, or enabled
-  enable   — load grim.jar + turn off YaPGuard movement checks (avoids double punishment)
+  enable   — load grim.jar + turn off YaPGuard movement checks (avoids double punishment); restart Folia
   disable  — rename back to grim.jar.disabled (YaPGuard stays as configured)
 
 See docs/ops/GRIM.md

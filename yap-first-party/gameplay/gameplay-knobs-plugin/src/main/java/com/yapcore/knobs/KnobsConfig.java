@@ -164,7 +164,7 @@ public final class KnobsConfig {
             plugin.getLogger().log(Level.WARNING, "Could not merge knobs defaults", e);
         }
 
-        enabled = yaml.getBoolean("settings.enabled", true);
+        enabled = yaml.getBoolean("settings.enabled", false);
         projectilesBypassMobGriefing = yaml.getBoolean("settings.projectiles-bypass-mob-griefing", false);
         disableGiveDropping = yaml.getBoolean("settings.disable-give-dropping", false);
         serverModName = yaml.getString("settings.server-mod-name", "YaPcore");

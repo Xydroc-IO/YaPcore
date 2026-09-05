@@ -78,5 +78,7 @@ public final class ViolationTracker {
         public long joinGraceUntilMs;
         /** Consecutive suspicious fly samples before a violation counts. */
         public int flyAirborneStreak;
+        /** Consecutive overspeed samples before a speed violation. */
+        public int speedOverStreak;
     }
 }

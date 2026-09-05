@@ -25,7 +25,7 @@ case "$PHASE" in
   pre|post) ;;
   --list|list)
     echo "pre:"; ls -1 "$PATCH_DIR"/0000-*.patch 2>/dev/null || true
-    echo "post:"; ls -1 "$PATCH_DIR"/000[1-9]-*.patch "$PATCH_DIR"/001*.patch 2>/dev/null || true
+    echo "post:"; ls -1 "$PATCH_DIR"/000[1-9]-*.patch "$PATCH_DIR"/001*.patch "$PATCH_DIR"/002*.patch 2>/dev/null || true
     exit 0
     ;;
   *)

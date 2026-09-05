@@ -24,6 +24,10 @@ public final class GuardConfig {
     private boolean alertsEnabled = true;
     private int joinGraceSeconds = 10;
     private int flyMinAirborneChecks = 4;
+    /** When false (default), threshold breaches always flag — no random skip. */
+    private boolean sampleRandomly = false;
+    /** Consecutive overspeed samples before a speed violation. */
+    private int speedConsecutiveHits = 2;
 
     public GuardConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -37,6 +41,7 @@ public final class GuardConfig {
         speedEnabled = c.getBoolean("checks.speed.enabled", true);
         speedSensitivity = clamp01(c.getDouble("checks.speed.sensitivity", speedSensitivity));
         maxBlocksPerTick = Math.max(0.1, c.getDouble("checks.speed.max-blocks-per-tick", maxBlocksPerTick));
+        speedConsecutiveHits = Math.max(1, c.getInt("checks.speed.consecutive-hits", speedConsecutiveHits));
         reachEnabled = c.getBoolean("checks.reach.enabled", true);
         reachSensitivity = clamp01(c.getDouble("checks.reach.sensitivity", reachSensitivity));
         maxReachDistance = Math.max(3.0, c.getDouble("checks.reach.max-distance", maxReachDistance));
@@ -49,10 +54,11 @@ public final class GuardConfig {
         alertsEnabled = c.getBoolean("alerts-enabled", true);
         joinGraceSeconds = Math.max(0, c.getInt("join-grace-seconds", joinGraceSeconds));
         flyMinAirborneChecks = Math.max(1, c.getInt("checks.fly.min-airborne-checks", flyMinAirborneChecks));
+        sampleRandomly = c.getBoolean("sample-randomly", false);
     }
 
     private static double clamp01(double value) {
-        return Math.max(0.0, Math.min(1.0, value));
+        return GuardHeuristics.clamp01(value);
     }
 
     public boolean flyEnabled() {
@@ -121,6 +127,14 @@ public final class GuardConfig {
 
     public int flyMinAirborneChecks() {
         return flyMinAirborneChecks;
+    }
+
+    public boolean sampleRandomly() {
+        return sampleRandomly;
+    }
+
+    public int speedConsecutiveHits() {
+        return speedConsecutiveHits;
     }
 
     public void setAlertsEnabled(boolean alertsEnabled) {

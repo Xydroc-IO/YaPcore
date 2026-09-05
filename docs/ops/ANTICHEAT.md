@@ -1,12 +1,24 @@
 # Anti-cheat vs region protection
 
+**Competitive / PvP networks: use Grim.**  
+`./scripts/grim-ac.sh enable` then restart YaP-Folia. YaPGuard alone is **not** gold-standard AC.
+
 YaPcore splits these into **different plugins** on purpose.
 
 | Plugin | Role | WorldGuard / Matrix analog |
 |--------|------|----------------------------|
 | **YaPRegions** + **YaPPlayerData claims** | Cuboids, flags (pvp, build, entry, …) | **WorldGuard** |
 | **YaPProtect** | Block/container logging, rollback | **CoreProtect** |
-| **YaPGuard** | Lightweight movement/combat heuristics | **Not** WorldGuard — basic native AC |
+| **YaPGuard** | Lightweight movement/combat heuristics | **Not** WorldGuard — casual SMP default only |
+
+## Competitive rule
+
+| Network type | AC path |
+|--------------|---------|
+| Casual SMP / creative / low cheat pressure | YaPGuard (shipped, on by default) |
+| **PvP / competitive / public grief risk** | **Grim** — [GRIM.md](GRIM.md) · `./scripts/grim-ac.sh enable` |
+
+Do **not** market YaPGuard as a Grim/Matrix/Vulcan replacement.
 
 ## YaPGuard (native, shipped)
 
@@ -31,14 +43,14 @@ Manual fetch: `./scripts/fetch-grim.sh --disabled` or `gradle fetchGrim` — see
 
 | Option | Notes |
 |--------|--------|
-| **[Grim Anticheat](https://modrinth.com/plugin/grimac)** | **Recommended** heavy AC; `fetch-grim.sh` + [GRIM.md](GRIM.md) |
+| **[Grim Anticheat](https://modrinth.com/plugin/grimac)** | **Required** for competitive claims; `fetch-grim.sh` + [GRIM.md](GRIM.md) |
 | **Vulcan** (if your build supports Folia) | Verify version matrix before deploying |
 | **YaPGuard only** | Fine for casual SMP / creative / low cheat pressure |
 
 Product stance:
 
 1. **Regions / flags** → extend YaP natives (claims + `yap-regions`)
-2. **Heavy AC** → optional third-party jar; verify Folia support before deploy
+2. **Heavy AC** → **Grim** for competitive; verify Folia support before deploy
 3. **YaPGuard** → stays maintained as lightweight default, not a Matrix clone
 
 ## Permissions

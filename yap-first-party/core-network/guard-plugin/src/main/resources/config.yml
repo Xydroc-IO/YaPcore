@@ -1,12 +1,18 @@
+# YaPGuard — lightweight movement heuristics (not Grim).
+# Competitive / PvP: ./scripts/grim-ac.sh enable  then restart Folia.
+# See docs/ops/ANTICHEAT.md · docs/ops/GRIM.md
+
 checks:
   fly:
     enabled: true
-    sensitivity: 0.4
+    # Higher = more likely to flag when sample-randomly is true
+    sensitivity: 0.65
     min-airborne-checks: 4
   speed:
     enabled: true
-    sensitivity: 0.7
+    sensitivity: 0.75
     max-blocks-per-tick: 0.85
+    consecutive-hits: 2
   reach:
     enabled: true
     sensitivity: 0.8
@@ -16,6 +22,9 @@ checks:
     sensitivity: 0.7
     max-places-per-second: 8
     require-air-below: true
+
+# When false (default), threshold breaches always flag (no random skip).
+sample-randomly: false
 
 max-violations-before-kick: 12
 violation-decay-seconds: 45

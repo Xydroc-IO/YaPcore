@@ -1,8 +1,16 @@
 # Grim Anticheat (optional third-party)
 
+**Competitive / PvP: enable Grim.** YaPGuard is a lightweight heuristics default only —
+it is **not** sufficient for competitive anti-cheat claims. See [ANTICHEAT.md](ANTICHEAT.md).
+
 **Grim AC** is the recommended **heavy** anti-cheat for PvP / competitive networks.
 YaPcore ships **YaPGuard** as a lightweight native default (always on). **Grim is
 downloaded automatically on first setup** but **not loaded** until you enable it.
+
+```bash
+./scripts/grim-ac.sh enable   # → grim.jar + turns off YaPGuard movement checks
+# restart YaP-Folia (required)
+```
 
 ## First install (automatic)
 

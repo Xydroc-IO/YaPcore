@@ -1,7 +1,9 @@
 # YaP Encyclopedia — Purpur-inspired mob/gameplay surface (original YaP code, not a Purpur port).
 # Not affiliated with PurpurMC.
 # Wired: WASD ridables (+ yapknobs.ride.<mob>), attributes, AI, blocks, gameplay.*, per-mob specials.
-# E2 NMS (YaP-Folia): gameplay.crop-growth-nms + tick-fluids via YapEncyclopediaHooks.
+# E2 NMS (YaP-Folia patch 0025): gameplay.crop-growth-nms + tick-fluids via YapEncyclopediaHooks.
+# Defaults OFF/vanilla — not "full Purpur" without rebuilding YaP-Folia with 0025.
+# /yapknobs status shows nmsHooks present=true|false.
 # Edit this file (or plugins/YaPGameplayKnobs/knobs.yml after first run).
 #
 # attributes (any present key applied on spawn/load/reload):
@@ -18,7 +20,7 @@
 #
 
 settings:
-  enabled: true
+  enabled: false
   # Advertise a custom brand in server list (Paper may override)
   server-mod-name: "YaPcore"
   disable-give-dropping: false
