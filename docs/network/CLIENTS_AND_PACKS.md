@@ -157,20 +157,30 @@ See [NETWORKING.md](NETWORKING.md) and [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_
 
 Vanilla FOV is **vertical**. On 21:9 and 32:9 that becomes a fish-eye horizontal view.
 The server cannot fix projection. **yap-ultrawide** is a Fabric **client** mod (not a
-Folia plugin) that keeps the horizontal FOV you would have on 16:9.
+Folia plugin) that applies Hor+ with **separate profiles** for each panel class.
 
 | Piece | Where |
 |-------|--------|
 | YaP-Folia / YaPcore | Server — unchanged |
-| `yap-ultrawide-1.0.0.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
+| `yap-ultrawide-*.jar` (also in `client_mods.zip`) | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
 
 ```bash
 cd client/yap-ultrawide && ./gradlew build
 # → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.0.jar
+# or: ./scripts/build-yap-client-render.sh → dist/client-mods/client_mods.zip
 ```
 
-Vanilla, Bedrock, and players without the mod still join. Config:
-`.minecraft/config/yap-ultrawide.json` (`match_16_9` default, or `fixed_hfov`).
+Config: `.minecraft/config/yap-ultrawide.json`
+
+| Band | Typical panels | Default mode |
+|------|----------------|--------------|
+| `ultrawide_21_9` | 2560×1080, 3440×1440 (aspect ≈1.90–2.80) | `match_16_9` |
+| `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (≥2.80) | `match_21_9` + HFOV cap |
+
+`match_21_9` on 32:9 means “use the horizontal FOV a 21:9 panel would have” — it does
+**not** letterbox your 32:9 screen. For a locked cinematic feel use `fixed_hfov`.
+
+Vanilla, Bedrock, and players without the mod still join.
 See [yap-ultrawide/README.md](../../client/yap-ultrawide/README.md).
 
 ## Extra bag tabs — optional client mod
@@ -225,8 +235,9 @@ YaP Iris (jar-in-jar) and installs YaP Shaders on first launch.
 
 ```bash
 ./scripts/build-yap-client-render.sh
-# → dist/client-mods/yap-visuals-1.0.0.jar   (drop this alone into mods/)
-# → dist/client-mods/yap-client-visuals.zip  (Discord / site bundle)
+# → dist/client-mods/client_mods.zip         (release upload — bag + ultrawide + visuals)
+# → dist/client-mods/yap-visuals-*.jar       (also loose jars for local installs)
+# → dist/client-mods/yap-client-visuals.zip  (visuals-only Discord / site bundle)
 ```
 
 Install: Fabric Loader 0.19+ · MC 26.2 · **only** `yap-visuals-*.jar` in `.minecraft/mods/`

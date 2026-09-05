@@ -7,6 +7,23 @@ For build commands and zip layout see [RELEASES.md](RELEASES.md). For live statu
 
 ---
 
+## v1.0.0.0 — client visuals refresh (2026-09-05)
+
+Optional Fabric / pack polish on the same ship version (no version bump):
+
+| Area | Change |
+|------|--------|
+| **Release asset** | Upload **`client_mods.zip`** (yap-visuals + yap-bag + yap-ultrawide) instead of three loose jars |
+| **YaP Shaders** | Multi-dir Gerstner water; weather-driven species foliage wind; softer distance fog; leaf cutout path |
+| **Default pack** | Denser Faithful-based leaves (`strict_cutout`); water/weather overlay refresh |
+| **yap-ultrawide** | Separate **21:9** and **32:9** Hor+ profiles (`match_16_9` / `match_21_9` / `fixed_hfov` + HFOV cap) |
+| **yap-bag** | Screen mixins updated for MC 26.2 chest / inventory layout |
+
+Build: `./scripts/build-yap-client-render.sh` · `./scripts/build-default-resourcepack.sh`.
+Docs: [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md), [RELEASES.md](RELEASES.md).
+
+---
+
 ## v1.0.0.0 — 2026-09-02
 
 First shippable **YaP-Folia** network product release. This is the starting version —
@@ -138,7 +155,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 | **Repo layout** | Optional Fabric client mods nested under [`client/`](../../client/) (`yap-visuals`, `yap-bag`, `yap-ultrawide`, Iris/Sodium/shaders) |
 | **YaPCommands** | YAML custom `/commands` (`yap-commands.jar`) with dashboard **Custom commands** CRUD — messages, player/console runs, aliases, cooldowns — [COMMANDS.md](../ops/COMMANDS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
 | **Packs / CDN** | Default `resource-pack-url` → GitHub `releases/latest/download/{file}`; SHA-1 hashed from the remote bytes clients download; `public-pack-port` 80/443 honored for nginx edge — [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) |
-| **GitHub release assets** | Tag `1.0.0.0` ships OS zips, suites, `yapcore-default.zip`, and optional Fabric clients (`yap-visuals`, `yap-bag`, `yap-ultrawide`) |
+| **GitHub release assets** | Tag `1.0.0.0` ships OS zips, suites, `yapcore-default.zip`, and optional Fabric `client_mods.zip` (yap-visuals + yap-bag + yap-ultrawide) |
 | **Docs hygiene** | Generated PDFs / office dumps gitignored — publish Markdown only |
 
 ### Still open (not a version bump)

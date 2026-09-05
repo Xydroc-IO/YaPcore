@@ -45,8 +45,10 @@ Attach (or refresh with `--clobber`) so `/releases/latest/download/{file}` works
 | `yapcore-release-linux.zip` / `-windows.zip` | Full server boxes (CI also uploads these on tag) |
 | `yap-network-suite.zip` / `yap-gameplay-suite.zip` | Standalone suites |
 | `yapcore-default.zip` | **Required** for pack CDN (`resource-pack-url` default) |
-| `yap-visuals-1.0.1.jar` | Optional Fabric visuals (Sodium+Iris+shaders) |
-| `yap-bag-1.0.0.jar` / `yap-ultrawide-1.0.0.jar` | Optional Fabric bag UI / ultrawide FOV |
+| `client_mods.zip` | Optional Fabric clients — unzip → `client_mods/` with **yap-visuals**, **yap-bag**, **yap-ultrawide** |
+
+Build clients: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.
+Prefer the zip for releases (one upload). Loose jars stay under `dist/client-mods/` for local installs only.
 
 ```bash
 gh release upload 1.0.0.0 \
@@ -55,9 +57,7 @@ gh release upload 1.0.0.0 \
   releases/1.0.0.0/yap-network-suite.zip \
   releases/1.0.0.0/yap-gameplay-suite.zip \
   resourcepacks/yapcore-default.zip \
-  dist/client-mods/yap-visuals-1.0.1.jar \
-  dist/client-mods/yap-bag-1.0.0.jar \
-  dist/client-mods/yap-ultrawide-1.0.0.jar \
+  dist/client-mods/client_mods.zip \
   --clobber -R Xydroc-IO/YaPcore
 ```
 

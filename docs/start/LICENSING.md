@@ -65,10 +65,10 @@ never forced by the server.
 |-------|---------|-------|
 | **Sodium** | PolyForm Shield 1.0.0 | Official unmodified jar only. A YaP fork would compete with Sodium and is **not** allowed under PolyForm Shield. Pin + fetch: [yap-sodium/](../../client/yap-sodium/), `./scripts/fetch-sodium.sh` |
 | **YaP Iris** | LGPL-3.0 | LGPL fork of [Iris](https://github.com/IrisShaders/Iris) in [yap-iris/](../../client/yap-iris/). Embeds **glsl-transformer** (**AGPL-3.0**) — distributing the jar requires AGPL compliance for that dependency ([LICENSE-DEPENDENCIES](../../client/yap-iris/LICENSE-DEPENDENCIES)). Corresponding source: `client/yap-iris/` in this repo. |
-| **YaP Shaders** | GPLv3 | First-party Iris-format pack (water + skies). Not a Complementary/BSL fork. |
+| **YaP Shaders** | GPLv3 | First-party Iris-format pack (water + foliage wind + skies). Not a Complementary/BSL fork. |
 
-Build / bundle: `./scripts/build-yap-client-render.sh` → `dist/client-mods/`.
-Docs: [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md).
+Build / bundle: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`
+(and loose jars). Docs: [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md).
 
 YaPcore first-party code (chassis, plugins, Link) is **GPLv3** unless a file says
 otherwise.
@@ -90,8 +90,8 @@ Operator-facing legal docs (templates, not legal advice):
 
 ## Default resource pack
 
-The default client pack may include **Faithful 64x**, **YaP Skies**, and **YaP Water**.
-Credits and pack-specific licenses: `resourcepacks/CREDITS.md`,
+The default client pack may include **Faithful 64x**, **YaP Skies**, **YaP Water**,
+and **YaP Foliage**. Credits and pack-specific licenses: `resourcepacks/CREDITS.md`,
 `resourcepacks/FAITHFUL_LICENSE.txt`.
 
 ---
