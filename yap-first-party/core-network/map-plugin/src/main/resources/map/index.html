@@ -6,14 +6,72 @@
   <title>YaP Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
-    html, body, #map { height: 100%; margin: 0; }
+    html, body { height: 100%; margin: 0; }
     body { font-family: system-ui, sans-serif; background: #101418; color: #e8eef5; }
+    #map, #view3d { position: absolute; inset: 0; top: 44px; }
+    #view3d { display: none; }
+    #bar {
+      position: absolute; top: 0; left: 0; right: 0; height: 44px;
+      display: flex; align-items: center; gap: 12px; padding: 0 12px;
+      background: #1a222c; border-bottom: 1px solid #2a3542; z-index: 1000;
+      font-size: 14px;
+    }
+    #bar label { opacity: 0.75; }
+    #bar select {
+      background: #101418; color: #e8eef5; border: 1px solid #3a4654; border-radius: 4px;
+      padding: 4px 8px;
+    }
+    #coords { margin-left: auto; font-variant-numeric: tabular-nums; opacity: 0.9; }
+    #layer-wrap.hidden { display: none; }
   </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.1/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.1/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
+  <div id="bar">
+    <label for="mode">View</label>
+    <select id="mode">
+      <option value="flat">Flat</option>
+      <option value="3d">3D</option>
+    </select>
+    <label for="world">World</label>
+    <select id="world"></select>
+    <span id="layer-wrap">
+      <label for="layer">Layer</label>
+      <select id="layer"></select>
+    </span>
+    <span id="coords">—</span>
+  </div>
   <div id="map"></div>
+  <div id="view3d"></div>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="map-config.js"></script>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      var view = params.get('view') || 'flat';
+      if (view !== '3d') view = 'flat';
+      window.YAP_MAP_VIEW = view;
+      var modeSelect = document.getElementById('mode');
+      modeSelect.value = view;
+      modeSelect.addEventListener('change', function () {
+        params.set('view', modeSelect.value);
+        window.location.search = params.toString();
+      });
+      if (view === '3d') {
+        document.getElementById('map').style.display = 'none';
+        document.getElementById('view3d').style.display = 'block';
+        // Layer select stays visible — map-3d.js fills mesh layers (full/surface/cave).
+      }
+    })();
+  </script>
   <script src="map.js"></script>
+  <script type="module" src="map-3d.js"></script>
 </body>
 </html>

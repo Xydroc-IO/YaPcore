@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TileRendererTest {
@@ -16,12 +17,18 @@ class TileRendererTest {
         TileRenderer renderer = new TileRenderer(config, tempDir);
         Path tile = renderer.writeSampleTile("world", 0, 0);
         assertTrue(Files.isRegularFile(tile));
-        assertTrue(tile.toString().endsWith("world/0/0_0.png"));
+        assertTrue(tile.toString().endsWith("world/surface/0/0_0.png"));
 
         Path smokeRoot = Path.of("build/smoke-yap-map/tiles");
         Files.createDirectories(smokeRoot);
         TileRenderer smokeRenderer = new TileRenderer(config, smokeRoot);
         Path smokeTile = smokeRenderer.writeSampleTile("world", 0, 0);
         assertTrue(Files.isRegularFile(smokeTile));
+    }
+
+    @Test
+    void normalizeLayerDefaultsToSurface() {
+        assertEquals("surface", TileRenderer.normalizeLayer(null));
+        assertEquals("cave", TileRenderer.normalizeLayer("CAVE"));
     }
 }

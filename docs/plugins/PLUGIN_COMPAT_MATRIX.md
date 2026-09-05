@@ -29,7 +29,7 @@ dashboard Plugins tab).
 | Via\* / Geyser / Floodgate | Built-in Phase 4 stack |
 | Velocity | `yap-link.jar` |
 | DiscordSRV | `yap-discord.jar` |
-| Dynmap / BlueMap | `yap-map.jar` (flat tiles + markers; 3D Stretch) |
+| Dynmap / BlueMap | `yap-map.jar` (flat tiles + markers + optional 3D voxel mesh MVP) |
 | TAB / NametagEdit | `yap-tab.jar` |
 | Citizens | `yap-npcs.jar` |
 | LiteBans / AdvancedBan | `yap-moderation.jar` |

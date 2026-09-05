@@ -14,12 +14,62 @@ render-interval-minutes: 15
 max-height: 320
 # Chunk grid sampled per world (radius² tiles). Use 4–6 on small VPS; 8–12 on dedicated boxes.
 sample-chunk-radius: 8
-# Tiles land in plugins/YaPMap/map/tiles/ — prune old PNGs manually if disk is tight.
+# Where the tile grid starts (tiles are always indexed 0..radius-1 for Leaflet).
+render-origin:
+  # spawn = world spawn chunk; fixed = chunk-x / chunk-z below
+  mode: spawn
+  chunk-x: 0
+  chunk-z: 0
 
-# Live markers for the flat Leaflet map (Wave 4). BlueMap-style 3D is Stretch / later.
+# Flat layer modes (tiles under map/tiles/{world}/{layer}/{zoom}/…).
+layers:
+  surface: true
+  cave: true
+  # Cave / underground slice samples at or below this Y (nether uses roof-aware caps).
+  cave-max-y: 48
+  # Soft-blend block color with biome tint (~35%).
+  biome-tint: true
+
+# Tile + mesh retention — 0 disables that limit. /yapmap prune [days]
+retention:
+  max-age-days: 0
+  max-disk-mb: 0
+
+# Live markers for Flat and 3D viewers.
 markers:
   players: true
-  # When on, dashboard /map/markers.json may include YaPNpcs / YaPRegions points (plugin file is players-only).
+  # Soft-depend YaPNpcs / YaPRegions — filled in plugin markers.json (not dashboard-only).
   npcs: false
   regions: false
+  # Static pins from plugins/YaPMap/poi.json (example shipped in jar).
+  pois: true
+  # Soft-depend YaPPlayerData ClaimService.localClaims().
+  claims: false
+  # When claims are on, tint by YaPFactions overlay (hashed color) if available.
+  faction-colors: false
   poll-seconds: 5
+
+# Voxel mesh (3D) — greedy merged boxes (format v2) per sample-window chunk.
+mesh:
+  enabled: true
+  # Optional Y cap for mesh columns; omit or 0 to use max-height (nether still roof-capped ≤126).
+  # max-y: 320
+  # Layers to generate under map/meshes/{world}/{layer}/lod{N}/…
+  # full = all solids; surface / cave match flat tile sampling.
+  layers:
+    - full
+    - surface
+    - cave
+  default-layer: full
+  # Or set a single layer:  layer: full
+  # Stairs / slabs / carpets / fences as multi-box models (not full blockstates).
+  models: true
+  # Write compact .ymesh alongside JSON (viewer prefers binary).
+  binary: true
+  # Server LOD pyramid: 0 = full, 1 = merge/skip thin, 2 = coarser (0–2).
+  max-lod: 2
+  # When players near the sample-window edge, expand dirty mesh renders toward them
+  # and/or periodically re-center origin on average player chunk (background queue).
+  follow-players: false
+  # Extra chunks beyond sample-chunk-radius for mesh follow / edge expansion.
+  extra-radius: 0

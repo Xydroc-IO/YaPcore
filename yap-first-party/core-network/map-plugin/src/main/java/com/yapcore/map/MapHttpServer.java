@@ -22,17 +22,24 @@ public final class MapHttpServer {
     private final String bindHost;
     private final int port;
     private final Path tilesDir;
+    private final Path meshesDir;
     private final Supplier<String> markersJson;
     private HttpServer http;
 
     public MapHttpServer(String bindHost, int port, Path tilesDir) {
-        this(bindHost, port, tilesDir, null);
+        this(bindHost, port, tilesDir, null, null);
     }
 
     public MapHttpServer(String bindHost, int port, Path tilesDir, Supplier<String> markersJson) {
+        this(bindHost, port, tilesDir, null, markersJson);
+    }
+
+    public MapHttpServer(String bindHost, int port, Path tilesDir, Path meshesDir,
+                         Supplier<String> markersJson) {
         this.bindHost = bindHost == null || bindHost.isBlank() ? "127.0.0.1" : bindHost;
         this.port = port;
         this.tilesDir = tilesDir;
+        this.meshesDir = meshesDir;
         this.markersJson = markersJson;
     }
 
@@ -41,11 +48,17 @@ public final class MapHttpServer {
             return;
         }
         Files.createDirectories(tilesDir);
+        if (meshesDir != null) {
+            Files.createDirectories(meshesDir);
+        }
         InetSocketAddress addr = new InetSocketAddress(
                 "0.0.0.0".equals(bindHost) ? "0.0.0.0" : bindHost, port);
         http = HttpServer.create(addr, 0);
         http.createContext("/map/", this::serveMapStatic);
         http.createContext("/tiles/", this::serveTiles);
+        if (meshesDir != null) {
+            http.createContext("/meshes/", this::serveMeshes);
+        }
         http.createContext("/health", ex -> {
             byte[] ok = "ok".getBytes();
             ex.sendResponseHeaders(200, ok.length);
@@ -113,15 +126,24 @@ public final class MapHttpServer {
     }
 
     private void serveTiles(HttpExchange exchange) throws IOException {
+        serveSafeFile(exchange, tilesDir, "/tiles/", "image/png");
+    }
+
+    private void serveMeshes(HttpExchange exchange) throws IOException {
+        serveSafeFile(exchange, meshesDir, "/meshes/", null);
+    }
+
+    private static void serveSafeFile(HttpExchange exchange, Path rootDir, String prefix, String contentType)
+            throws IOException {
         try {
             String path = exchange.getRequestURI().getPath();
-            String rel = path.substring("/tiles/".length());
+            String rel = path.substring(prefix.length());
             if (rel.contains("..") || rel.startsWith("/") || rel.contains("\\") || rel.isBlank()) {
                 exchange.sendResponseHeaders(400, -1);
                 return;
             }
-            Path file = tilesDir.resolve(rel).normalize();
-            Path root = tilesDir.toAbsolutePath().normalize();
+            Path file = rootDir.resolve(rel).normalize();
+            Path root = rootDir.toAbsolutePath().normalize();
             if (!file.startsWith(root)) {
                 exchange.sendResponseHeaders(403, -1);
                 return;
@@ -131,7 +153,8 @@ public final class MapHttpServer {
                 return;
             }
             Headers headers = exchange.getResponseHeaders();
-            headers.add("Content-Type", "image/png");
+            String ct = contentType != null ? contentType : meshContentType(rel);
+            headers.add("Content-Type", ct);
             headers.add("Cache-Control", "public, max-age=60");
             long size = Files.size(file);
             exchange.sendResponseHeaders(200, size);
@@ -142,6 +165,16 @@ public final class MapHttpServer {
         } finally {
             exchange.close();
         }
+    }
+
+    private static String meshContentType(String name) {
+        if (name.endsWith(".ymesh")) {
+            return "application/octet-stream";
+        }
+        if (name.endsWith(".json")) {
+            return "application/json; charset=utf-8";
+        }
+        return "application/octet-stream";
     }
 
     private static String contentType(String name) {
@@ -156,6 +189,9 @@ public final class MapHttpServer {
         }
         if (name.endsWith(".json")) {
             return "application/json; charset=utf-8";
+        }
+        if (name.endsWith(".ymesh")) {
+            return "application/octet-stream";
         }
         return "application/octet-stream";
     }

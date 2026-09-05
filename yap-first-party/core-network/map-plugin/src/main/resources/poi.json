@@ -1,0 +1,4 @@
+[
+  {"name": "Spawn", "world": "world", "x": 0, "y": 64, "z": 0, "icon": "star"},
+  {"name": "Example POI", "world": "world", "x": 128, "y": 70, "z": -64, "icon": "pin"}
+]

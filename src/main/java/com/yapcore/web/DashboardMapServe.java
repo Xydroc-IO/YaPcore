@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-/** Serves YaPMap web UI and PNG tiles from disk (same origin as the admin dashboard). */
+/** Serves YaPMap web UI, PNG tiles, and JSON meshes from disk (same origin as the admin dashboard). */
 public final class DashboardMapServe {
 
     private DashboardMapServe() {
@@ -29,7 +29,12 @@ public final class DashboardMapServe {
 
     public static HttpHandler mapTiles(Path rootDir) {
         Path mapTilesDir = rootDir.resolve("plugins").resolve("YaPMap").resolve("map/tiles");
-        return exchange -> serveTiles(exchange, mapTilesDir);
+        return exchange -> serveSafeFile(exchange, mapTilesDir, "/tiles/", "image/png");
+    }
+
+    public static HttpHandler mapMeshes(Path rootDir) {
+        Path mapMeshesDir = rootDir.resolve("plugins").resolve("YaPMap").resolve("map/meshes");
+        return exchange -> serveSafeFile(exchange, mapMeshesDir, "/meshes/", null);
     }
 
     private static void serveMapStatic(HttpExchange exchange, Path mapWebDir, Path rootDir,
@@ -83,20 +88,21 @@ public final class DashboardMapServe {
         }
     }
 
-    private static void serveTiles(HttpExchange exchange, Path mapTilesDir) throws IOException {
+    private static void serveSafeFile(HttpExchange exchange, Path rootDir, String prefix, String contentType)
+            throws IOException {
         try {
             if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.sendResponseHeaders(405, -1);
                 return;
             }
             String path = exchange.getRequestURI().getPath();
-            String rel = path.substring("/tiles/".length());
+            String rel = path.substring(prefix.length());
             if (rel.contains("..") || rel.startsWith("/") || rel.contains("\\") || rel.isBlank()) {
                 exchange.sendResponseHeaders(400, -1);
                 return;
             }
-            Path file = mapTilesDir.resolve(rel).normalize();
-            Path root = mapTilesDir.toAbsolutePath().normalize();
+            Path file = rootDir.resolve(rel).normalize();
+            Path root = rootDir.toAbsolutePath().normalize();
             if (!file.startsWith(root)) {
                 exchange.sendResponseHeaders(403, -1);
                 return;
@@ -106,7 +112,8 @@ public final class DashboardMapServe {
                 return;
             }
             Headers headers = exchange.getResponseHeaders();
-            headers.add("Content-Type", "image/png");
+            String ct = contentType != null ? contentType : contentType(rel);
+            headers.add("Content-Type", ct);
             headers.add("Cache-Control", "public, max-age=60");
             long size = Files.size(file);
             exchange.sendResponseHeaders(200, size);
@@ -131,6 +138,9 @@ public final class DashboardMapServe {
         }
         if (name.endsWith(".json")) {
             return "application/json; charset=utf-8";
+        }
+        if (name.endsWith(".ymesh") || name.endsWith(".png")) {
+            return name.endsWith(".png") ? "image/png" : "application/octet-stream";
         }
         return "application/octet-stream";
     }

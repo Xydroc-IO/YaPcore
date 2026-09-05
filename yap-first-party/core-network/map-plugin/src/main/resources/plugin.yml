@@ -6,10 +6,11 @@ folia-supported: true
 author: YapLabs
 description: Flat web map with PNG tiles and Leaflet UI
 website: https://github.com/yaplabs
+softdepend: [YaPNpcs, YaPRegions, YaPPlayerData, YaPFactions]
 commands:
   yapmap:
     description: Map admin
-    usage: /yapmap reload|render
+    usage: /yapmap reload|render|prune
     permission: yapmap.admin
 permissions:
   yapmap.admin:
