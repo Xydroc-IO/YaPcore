@@ -101,7 +101,7 @@ Aliases: `/ycmd`, `/customcmd`. Base gate: `yapcommands.use` when `require-use-p
 | `/warn` `<player> [reason]` | `yapmod.warn` | Warn |
 | `/kick` `<player> [reason]` | `yapmod.kick` | Kick |
 | `/modhistory` `/history` `<player> [limit]` | `yapmod.history` | Punishment log |
-| `/modcheck` `/check` `/alts` `<player>` | `yapmod.history` | Status + linked alts |
+| `/modcheck` `/alts` `<player>` | `yapmod.history` | Status + linked alts (not `/check` — Essentials owns inspect) |
 | `/banlist` `[limit]` | `yapmod.history` | Active bans |
 | `/yapmod reload` | `yapmod.admin` | Reload config |
 | `/yapmod seen [json\|snapshot]` | `yapmod.admin` | List join history, dump JSON, or write dashboard snapshot |
@@ -141,12 +141,12 @@ Duration examples: `30m`, `2h`, `7d`, `1w`.
 | `/broadcast` `/bc` `<msg>` | `yapessentials.broadcast` | Server broadcast |
 | `/rules` `/motd` | `yapessentials.rules` | Info messages |
 | `/hat` | `yapessentials.hat` | Wear held item |
-| `/socialspy` `/ss` | `yapessentials.staff.socialspy` | Spy on PMs |
 | `/freeze` `<player>` | `yapessentials.staff.freeze` | Freeze player |
 | `/check` `<player>` | `yapessentials.staff.check` | Inspect player |
+| *(PM spy)* | `yapchat.socialspy` | Grant in YaPChat — no Essentials `/socialspy` |
 | `/yapess reload` | `yapessentials.admin` | Reload config |
 
-Feature toggles: `plugins/YaPEssentials/config.yml` — including `features.water-waves` (splash / wave amplitude; formerly a mechanics-plugin toggle).
+Feature toggles: `plugins/YaPEssentials/config.yml` — including `features.water-waves` (splash / wave amplitude).
 
 #### Cross-plugin ops map (intentional Essentials split)
 
@@ -181,6 +181,7 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 | Pregen | `/yappregen …` | [PREGEN.md](../plugins/PREGEN.md) |
 | Stacker | `/yapstacker …` | [STACKER.md](../plugins/STACKER.md) |
 | Skills | `/skills` · `/skill top` · `/yskills reload` | [SKILLS.md](../plugins/SKILLS.md) |
+| NPCs | `/npc …` · `/quests …` · `/npc shop …` · `/npc setspawn` | dashboard **NPCs** · [PLAYERDATA.md](../data/PLAYERDATA.md) (shop catalogs) |
 | Disasters | `/yapdisaster …` | dashboard **Disasters** tab |
 | Gameplay knobs | `/yapknobs …` | [TUNE.md](TUNE.md) |
 | Plugin compat | `/yapcompat …` | [PLUGIN_BACKCOMPAT.md](../plugins/PLUGIN_BACKCOMPAT.md) |

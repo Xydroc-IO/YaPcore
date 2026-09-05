@@ -96,27 +96,6 @@ final class EssentialsStaffCommands {
         return true;
     }
 
-    boolean socialSpy(CommandSender sender) {
-        if (ctx.disabled(sender, "staff")) {
-            return true;
-        }
-        if (Bukkit.getPluginManager().getPlugin("YaPChat") != null) {
-            sender.sendMessage("§ePM social spy is handled by YaPChat — grant §fyapchat.socialspy§e.");
-            return true;
-        }
-        if (!ctx.requirePlayer(sender)) {
-            return true;
-        }
-        if (!sender.hasPermission("yapessentials.ctx.staff.socialspy")) {
-            sender.sendMessage("§cNo permission.");
-            return true;
-        }
-        Player player = (Player) sender;
-        boolean on = ctx.staff.toggleSocialSpy(player);
-        player.sendMessage(on ? "§aSocial spy enabled." : "§eSocial spy disabled.");
-        return true;
-    }
-
     boolean freeze(CommandSender sender, String[] args) {
         if (ctx.disabled(sender, "staff")) {
             return true;

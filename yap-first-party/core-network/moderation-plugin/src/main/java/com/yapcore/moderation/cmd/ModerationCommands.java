@@ -61,7 +61,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
             case "warn" -> warn(sender, args);
             case "kick" -> kick(sender, args);
             case "modhistory", "history", "punishments" -> lookup.history(sender, args);
-            case "modcheck", "check", "alts" -> lookup.modCheck(sender, args);
+            case "modcheck", "alts" -> lookup.modCheck(sender, args);
             case "banlist" -> lookup.banList(sender, args);
             case "yapmod" -> yapmod(sender, args);
             default -> false;

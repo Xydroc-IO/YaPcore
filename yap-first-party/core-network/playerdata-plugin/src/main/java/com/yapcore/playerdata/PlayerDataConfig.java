@@ -129,6 +129,11 @@ public final class PlayerDataConfig {
         featureMail = c.getBoolean("features.mail", true);
         featureShops = economyEnabled && c.getBoolean("features.shops", true);
         featureJobs = economyEnabled && c.getBoolean("features.jobs", false);
+        if (featureJobs && org.bukkit.Bukkit.getPluginManager().getPlugin("YaPSkills") != null) {
+            featureJobs = false;
+            plugin.getLogger().warning(
+                    "features.jobs forced off — YaPSkills is loaded (use /skills, not /jobs)");
+        }
         featureAuctions = economyEnabled && c.getBoolean("features.auctions", true);
         featureTraders = economyEnabled && c.getBoolean("features.traders", true);
         featureBackpack = c.getBoolean("features.backpack", true);

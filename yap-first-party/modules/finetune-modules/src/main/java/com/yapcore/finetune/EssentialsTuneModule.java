@@ -18,7 +18,7 @@ public final class EssentialsTuneModule extends FineTuneModule {
         return List.of(
                 "Config: plugins/YaPEssentials/config.yml",
                 "QoL commands: /spawn /back /tpa /fly /vanish /repair …",
-                "Staff (features.staff): /socialspy /freeze /check",
+                "Staff (features.staff): /freeze /check — PM spy is YaPChat yapchat.socialspy",
                 "Set spawn: /setspawn (config + shared DB)",
                 "Docs: plugins/README.md"
         );

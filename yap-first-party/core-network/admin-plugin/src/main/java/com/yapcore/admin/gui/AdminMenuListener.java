@@ -190,8 +190,7 @@ public final class AdminMenuListener implements Listener {
             case 21 -> actions.closeAndRun(player, "vanish");
             case 22 -> actions.heal(player, player);
             case 23 -> actions.feed(player, player);
-            case 24 -> actions.closeAndRun(player, "socialspy");
-            case 25 -> {
+            case 24 -> {
                 if (player.hasPotionEffect(PotionEffectType.NIGHT_VISION)) {
                     player.removePotionEffect(PotionEffectType.NIGHT_VISION);
                     player.sendMessage("§7Night vision off.");

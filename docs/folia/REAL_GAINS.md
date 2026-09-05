@@ -37,13 +37,14 @@ shows async+hopper alone (~−7% heavypop); ship profile adds headroom under hot
 ## Stability
 
 ```bash
-./scripts/yapctl soak-compat   # PASS 20260904T033554Z (ship knobs ON)
+./scripts/yapctl soak-compat   # PASS 20260904T033554Z (ship knobs ON); also PASS after 0025 jar `20260905T010908Z`
 ./scripts/yapctl soak-perf 30  # PASS 20260904T033626Z
 ./scripts/yapctl cite-fullcite # PASS 20260904T040935Z (−5.53%; peak cite −12.40% at shipFc2)
-./scripts/yapctl soak-long 12  # background uptime; not a cite gate
+./scripts/yapctl soak-long 12  # PASS 20260905T031507Z — soak-proven (heap/thread slope OK; Folia pid locked 12h)
 ./scripts/bench/cite-canvas-heavypop.sh 40  # Canvas ≥5% campaign (heavypop)
 ```
 
+**Soak-proven stamp:** `logs/soak/soak-long-20260905T031507Z.log` — ship knobs on; encyclopedia NMS defaults off.
 Encyclopedia E2 NMS (`0025-yap-encyclopedia-hooks.patch`): **defaults off**. Not part of the soft-launch claim.
 Enable `gameplay.crop-growth-nms` / `tick-fluids=false` only after:
 

@@ -75,7 +75,6 @@ tracks:
 # The web rank editor also writes editor-nodes: (allow/deny) and editor-apply.yml.
 starter-grants:
   default:
-    - yapvehicles.drive
     - yapdata.menu
     - yapdata.balance
     - yapdata.pay
@@ -85,12 +84,10 @@ starter-grants:
     - yapdata.kit.starter
     - yapdata.mail
     - yapdata.shop
-    - yapdata.jobs
-    - yapdata.job.miner
-    - yapdata.job.lumberjack
     - yapdata.ah
     - yapdata.claim
     - yapdata.bag
+    - yapskills.use
     - yapchat.use
     - yapchat.msg
     - yapessentials.spawn
@@ -102,11 +99,8 @@ starter-grants:
     - yapessentials.motd
     - yapessentials.suicide
   vip:
-    - yapvehicles.command
-    - yapvehicles.spawn
     - yapdata.claims.wilderness
     - yapdata.kit.*
-    - yapdata.job.*
     - yapdata.bag.pages.5
     - yapessentials.hat
     - yapessentials.ptime
@@ -128,7 +122,6 @@ starter-grants:
     - yapdata.claims.admin
     - yapdata.bag.pages.7
     - yapdata.bag.see
-    - yapvehicles.destroy
     - yapstacker.gui
     - yapstacker.give
     - yapstacker.wand
@@ -173,10 +166,6 @@ starter-grants:
     - yapdb.admin
     - yappacks.admin
     - placeholderapi.admin
-    - yapvehicles.command
-    - yapvehicles.spawn
-    - yapvehicles.destroy
-    - yapvehicles.drive
     - yapperm.admin
     - yapmod.ban
     - yapmod.ipban
@@ -202,11 +191,8 @@ starter-grants:
     - yapguard.admin
     - yapguard.bypass
     - yap.bypass
-    - yap.bypass.mmo
+    - yapskills.bypass
     - yapskills.admin
-    - yapmechanics.admin
-    - yapcombat.admin
-    - yapabilities.admin
     - yaplagguard.bypass
     - yaplagguard.admin
     - yaptab.admin
@@ -216,7 +202,7 @@ starter-grants:
   owner:
     - "*"
     - yap.bypass
-    - yap.bypass.mmo
+    - yapskills.bypass
     - yapperm.promote
     - yapperm.demote
     - yapperm.admin

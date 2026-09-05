@@ -114,7 +114,7 @@ YaPcore is game server software. We do **not** warrant:
 - Uninterrupted or error-free operation  
 - Compatibility with every client mod, plugin, or hosting environment  
 - Protection against all security incidents or griefing  
-- Specific gameplay outcomes, economy balance, or MMO progression  
+- Specific gameplay outcomes, economy balance, or skills progression  
 
 You assume all risk for production use, public exposure, and player data.
 

@@ -110,7 +110,7 @@ public final class DashboardGameplayRegionsApi {
             snap.put("ok", true);
             snap.put("npcs", npcs);
             snap.put("npcCount", npcs.size());
-            snap.put("hint", "POST create | remove | setquest | setdialogue | setaction | respawn | reload | info");
+            snap.put("hint", "POST create | remove | setquest | setdialogue | setwarp | setspawn | setcommand | setplayer | shopenable | setaction | respawn | reload | info");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -129,7 +129,10 @@ public final class DashboardGameplayRegionsApi {
             resp.put("result", result == null ? "" : result);
             if ("list".equals(action) || "create".equals(action) || "remove".equals(action)
                     || "setquest".equals(action) || "setdialogue".equals(action)
-                    || "setaction".equals(action)) {
+                    || "setaction".equals(action) || "setwarp".equals(action)
+                    || "setspawn".equals(action) || "setcommand".equals(action)
+                    || "setplayer".equals(action) || "shopenable".equals(action)
+                    || "shopclear".equals(action)) {
                 resp.put("npcs", DashboardNpcUtil.parseListJson(server.executeCommand("npc list json")));
             }
             DashboardHttp.json(ex, 200, resp);
@@ -163,6 +166,55 @@ public final class DashboardGameplayRegionsApi {
                 String id = body.getOrDefault("id", "").trim();
                 String dialogue = body.getOrDefault("dialogue", "").trim();
                 yield id.isEmpty() || dialogue.isEmpty() ? null : "npc setdialogue " + id + " " + dialogue;
+            }
+            case "setwarp" -> {
+                String id = body.getOrDefault("id", "").trim();
+                if (id.isEmpty()) {
+                    yield null;
+                }
+                String warp = body.getOrDefault("warp", body.getOrDefault("warpName", "")).trim();
+                yield warp.isEmpty() ? "npc setwarp " + id : "npc setwarp " + id + " " + warp;
+            }
+            case "setspawn" -> {
+                String id = body.getOrDefault("id", "").trim();
+                if (id.isEmpty()) {
+                    yield null;
+                }
+                String flag = body.getOrDefault("spawn", body.getOrDefault("enabled", "on")).trim();
+                if (flag.isEmpty() || "true".equalsIgnoreCase(flag) || "1".equals(flag)) {
+                    flag = "on";
+                } else if ("false".equalsIgnoreCase(flag) || "0".equals(flag)) {
+                    flag = "off";
+                }
+                yield "npc setspawn " + id + " " + flag;
+            }
+            case "setcommand" -> {
+                String id = body.getOrDefault("id", "").trim();
+                if (id.isEmpty()) {
+                    yield null;
+                }
+                String cmd = body.getOrDefault("command", body.getOrDefault("consoleCommand", "")).trim();
+                yield cmd.isEmpty() ? "npc setcommand " + id : "npc setcommand " + id + " " + cmd;
+            }
+            case "setplayer" -> {
+                String id = body.getOrDefault("id", "").trim();
+                if (id.isEmpty()) {
+                    yield null;
+                }
+                String cmd = body.getOrDefault("playerCommand", body.getOrDefault("command", "")).trim();
+                yield cmd.isEmpty() ? "npc setplayer " + id : "npc setplayer " + id + " " + cmd;
+            }
+            case "shopenable" -> {
+                String id = body.getOrDefault("id", "").trim();
+                if (id.isEmpty()) {
+                    yield null;
+                }
+                String name = body.getOrDefault("catalogName", body.getOrDefault("name", "")).trim();
+                yield name.isEmpty() ? "npc shop enable " + id : "npc shop enable " + id + " " + name;
+            }
+            case "shopclear" -> {
+                String id = body.getOrDefault("id", "").trim();
+                yield id.isEmpty() ? null : "npc shop clear " + id;
             }
             case "setaction" -> {
                 String id = body.getOrDefault("id", "").trim();

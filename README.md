@@ -82,7 +82,7 @@ start.cmd -Fg
 
 Join `127.0.0.1:25566` (Java + Bedrock). Dashboard: `http://127.0.0.1:8080/`
 
-Also on the release: network / gameplay / addons suites, `yapcore-default.zip`, and optional Fabric client jars. Layout and rebuild: [RELEASES.md](docs/start/RELEASES.md).
+Also on the release: network / gameplay suites, `yapcore-default.zip`, and optional Fabric client jars. Layout and rebuild: [RELEASES.md](docs/start/RELEASES.md).
 
 ### Developers — build from source
 

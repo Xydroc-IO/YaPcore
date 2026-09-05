@@ -3,7 +3,6 @@ package com.yapcore.essentials;
 import com.yapcore.essentials.cmd.EssentialsCommands;
 import com.yapcore.essentials.db.EssentialsDatabase;
 import com.yapcore.essentials.listener.FreezeListener;
-import com.yapcore.essentials.listener.SocialSpyListener;
 import com.yapcore.essentials.listener.TeleportListener;
 import com.yapcore.essentials.listener.VanishListener;
 import com.yapcore.essentials.listener.WaterWavesListener;
@@ -47,7 +46,7 @@ public final class EssentialsPlugin extends JavaPlugin {
                 "invsee", "echest", "nick", "afk", "list", "ptime", "pweather", "weather",
                 "near", "workbench", "disposal",
                 "broadcast", "rules", "motd", "suicide", "hat", "tp", "tphere",
-                "socialspy", "freeze", "check", "yapess"
+                "freeze", "check", "yapess"
         };
         for (String name : names) {
             PluginCommand cmd = getCommand(name);
@@ -61,11 +60,6 @@ public final class EssentialsPlugin extends JavaPlugin {
         pm.registerEvents(new TeleportListener(back), this);
         pm.registerEvents(new VanishListener(vanish), this);
         if (config.feature("staff")) {
-            if (Bukkit.getPluginManager().getPlugin("YaPChat") == null) {
-                pm.registerEvents(new SocialSpyListener(staff), this);
-            } else {
-                getLogger().info("YaPChat detected — PM social spy uses yapchat.socialspy.");
-            }
             pm.registerEvents(new FreezeListener(staff), this);
         }
         startWaterWaves();

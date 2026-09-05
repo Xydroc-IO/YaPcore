@@ -81,7 +81,6 @@ public final class EssentialsCommands implements CommandExecutor, TabCompleter {
             case "hat" -> player.hat(sender);
             case "tp" -> teleport.tp(sender, args);
             case "tphere", "s" -> teleport.tpHere(sender, args);
-            case "socialspy", "ss" -> staff.socialSpy(sender);
             case "freeze" -> staff.freeze(sender, args);
             case "check" -> staff.check(sender, args);
             case "yapess" -> staff.yapess(sender, args);

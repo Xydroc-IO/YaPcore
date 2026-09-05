@@ -11,13 +11,21 @@ final class NpcActionsTest {
 
     @Test
     void parsesShopWarpAndCommandChain() {
-        List<NpcActions.Action> actions = NpcActions.parse("shop:12; warp:spawn; command:say hi {player}");
+        List<NpcActions.Action> actions = NpcActions.parse("shop:12; warp:mines; command:say hi {player}");
         assertEquals(3, actions.size());
         assertEquals(NpcActions.Kind.SHOP, actions.get(0).kind());
         assertEquals("12", actions.get(0).value());
         assertEquals(NpcActions.Kind.WARP, actions.get(1).kind());
-        assertEquals("spawn", actions.get(1).value());
+        assertEquals("mines", actions.get(1).value());
         assertEquals(NpcActions.Kind.COMMAND, actions.get(2).kind());
+    }
+
+    @Test
+    void parsesBareSpawnToken() {
+        List<NpcActions.Action> actions = NpcActions.parse("spawn;shop:1");
+        assertEquals(2, actions.size());
+        assertEquals(NpcActions.Kind.SPAWN, actions.get(0).kind());
+        assertEquals(NpcActions.Kind.SHOP, actions.get(1).kind());
     }
 
     @Test

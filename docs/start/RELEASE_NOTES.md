@@ -149,9 +149,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 - Anvil rename FILTER_TEXT path started (codec + Paper hook — deploy after soak)
 - Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
-- **12h soak-long** in progress / pending — required before marketing the zip as **soak-proven** (not required to soft-launch); VFX + `/yapknobs status` smoke while it runs
-  - **Ready wording when PASS prints** (swap the bullet above):
-    - **12h soak-long PASS** (`logs/soak/soak-long-YYYYMMDDTHHMMSSZ.log`) — zip may be marketed as **soak-proven**; heap/thread slope flat per [REAL_GAINS.md](../folia/REAL_GAINS.md)
+- **12h soak-long PASS** (`logs/soak/soak-long-20260905T031507Z.log`) — zip may be marketed as **soak-proven**; heap/thread slope flat (folia heap median early≈1012MB late≈1082MB; threads 137→137) per [REAL_GAINS.md](../folia/REAL_GAINS.md)
 - Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production (defaults stay **off**)
 `releases/1.0.0.0/` was republished after pack CDN/SHA sync + client visuals refresh (`gradle publishReleasesFolder` + `./scripts/build-yap-client-render.sh`, 2026-09-04).
 

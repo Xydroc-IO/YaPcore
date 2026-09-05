@@ -9,8 +9,6 @@ Built by `scripts/build-default-resourcepack.sh` on every product build:
 - **YaP Water** (same overlay) — animated water still/flow, underwater, rain/snow, drips
   (`scripts/generate-yap-water.py`)
 
-Vehicles and abilities overlays are **not** in the current product pack.
-
 `config/server.properties` → `resource-pack-file=yapcore-default.zip`
 
 ## Faithful 64x (base layer)

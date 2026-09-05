@@ -221,7 +221,7 @@ Sources live under `yap-first-party/`. Install tiers:
 |-----|--------|------|
 | `yap-db.jar` | YaPDB | Shared Hikari pool (MariaDB / Postgres / SQLite) |
 | `yap-perms.jar` | YaPPerms | Groups, tracks, prefixes (`/yapperm`, `/promote`) |
-| `yap-playerdata.jar` | YaPPlayerData | Cross-server sync, auth, economy, homes/warps/kits/mail, **chest shops**, **AH**, claims |
+| `yap-playerdata.jar` | YaPPlayerData | Cross-server sync, auth, economy, homes/warps/kits/mail, **chest shops**, **AH**, claims, NPC shop catalogs |
 | `yap-moderation.jar` | YaPModeration | Ban / mute / warn / kick + history |
 | `yap-essentials.jar` | YaPEssentials | Essentials-class QoL (`/spawn`, `/tpa`, `/fly`, `/vanish`, …) |
 | `yap-commands.jar` | YaPCommands | YAML custom `/commands` (dashboard CRUD) |
@@ -235,7 +235,7 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-protect.jar` | YaPProtect | CoreProtect-class audit / rollback / restore |
 | `yap-world.jar` | YaPWorld | FAWE-class edit (masks, brushes, generate, lighting, schems) + world mgmt |
 | `yap-regions.jar` | YaPRegions | WorldGuard-class cuboid flags |
-| `yap-npcs.jar` | YaPNpcs | Quest NPCs + dialogue + hub actions (shop/warp) |
+| `yap-npcs.jar` | YaPNpcs | Hub NPCs — dialogue, quests, `/npc shop` / warp / command |
 | `yap-tab.jar` | YaPTab | Tab list / header / footer / sidebar |
 | `yap-discord.jar` | YaPDiscord | Discord webhooks + relay |
 | `yap-guard.jar` | YaPGuard | Lightweight movement heuristics (not Grim); competitive → Grim |
@@ -248,16 +248,16 @@ Sources live under `yap-first-party/`. Install tiers:
 
 | Jar | Plugin | Role |
 |-----|--------|------|
-| `yap-skills.jar` | YaPSkills | Thin skills — mining / woodcutting / strength — [SKILLS.md](../plugins/SKILLS.md) |
+| `yap-skills.jar` | YaPSkills | Thin skills — mining / woodcutting / strength + stored overall — [SKILLS.md](../plugins/SKILLS.md) |
 | `yap-stacker.jar` | YaPStacker | PDC mob / item / spawner stacker |
 | `yap-gameplay-knobs.jar` | YaPGameplayKnobs | Purpur-inspired encyclopedia; crop/fluid NMS opt-in via YaP-Folia 0025 |
 | `yap-disasters.jar` | YaPDisasters | Extreme weather + disasters |
 
-Full MMO (combat, crafting, abilities, guilds, vehicles, quests) was **removed** from the product path; do not document those jars as shipped.
+Full MMO (combat, crafting, abilities, guilds, vehicles) was **removed** from the product path. Thin skills and hub NPCs (CORE) remain.
 
 ### 6.3 APIs & modules
 
-Nineteen `yap-*-api` jars under `yap-first-party/api/` for soft-depend authors. Fine-tune modules under `modules/` declare `provides` / `requires` and write `FINE_TUNE.txt` pointers at real config knobs — they are **packaging**, not alternate game engines. Games packaging modules (`yap-games-module`, FFA, duels) install with GAMEPLAY / `installFineTuneModules`.
+API jars under `yap-first-party/api/` for soft-depend authors (including `yap-mmo-api` as the skills service surface). Fine-tune modules under `modules/` declare `provides` / `requires` and write `FINE_TUNE.txt` pointers at real config knobs — they are **packaging**, not alternate game engines.
 
 ### 6.4 What first-party plugins intentionally replace
 
@@ -287,7 +287,7 @@ Nineteen `yap-*-api` jars under `yap-first-party/api/` for soft-depend authors. 
 
 ### 7.2 YaPPlayerData
 
-Cross-server inventory / XP / vitals sync, session lock (always on), optional offline `/login`, economy (`/bal` `/pay` + Vault), homes/warps/kits/mail, claims + tax, NPC traders (opt-in).
+Cross-server inventory / XP / vitals sync, session lock (always on), optional offline `/login`, economy (`/bal` `/pay` + Vault), homes/warps/kits/mail, claims + tax, NPC shop catalogs for YaPNpcs (`/npc shop`).
 
 **Default feature flags (September 2026):**
 
@@ -298,7 +298,7 @@ Cross-server inventory / XP / vitals sync, session lock (always on), optional of
 | **Chest shops** (`/shop`) | **on** |
 | **Auction house** (`/ah`) | **on** |
 | Jobs | **off** (keep off when YaPSkills is enabled — avoids double mining payouts) |
-| NPC traders | **off** (opt-in) |
+| NPC shop catalogs (`features.traders`) | **on** — administer via `/npc shop`, not a separate trader command |
 
 Smoke: . Docs: [PLAYERDATA.md](../data/PLAYERDATA.md).
 

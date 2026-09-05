@@ -177,11 +177,6 @@ commands:
     usage: /tphere <player>
     aliases: [s]
     permission: yapessentials.teleport
-  socialspy:
-    description: Toggle social spy
-    usage: /socialspy
-    aliases: [ss]
-    permission: yapessentials.staff.socialspy
   freeze:
     description: Freeze or unfreeze a player
     usage: /freeze <player>
@@ -261,8 +256,6 @@ permissions:
   yapessentials.hat:
     default: op
   yapessentials.teleport:
-    default: op
-  yapessentials.staff.socialspy:
     default: op
   yapessentials.staff.freeze:
     default: op

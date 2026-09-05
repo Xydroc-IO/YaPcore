@@ -18,7 +18,7 @@ resource-pack-forced=true
   (built by `gradle prepareClientPack` / `shadowJar`)
 - Skies overlay: [`yap-skies/`](yap-skies/) (`python3 scripts/generate-yap-skies.py`)
 - Water/weather: `python3 scripts/generate-yap-water.py` (into `yap-skies/`)
-- Vehicles / abilities overlays were **removed** from the product pack (no `yap-vehicles/` / `yap-abilities/`)
+- Default pack is Faithful 64x + YaP Skies + YaP Water (no vehicles/abilities overlays)
 - Iris / Complementary volumetric shaders are still client-only — YaP ships an
   optional Fabric stack (official Sodium pin + YaP Iris + YaP Shaders); see
   [docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md)

@@ -38,13 +38,12 @@ public final class PermissionCatalog {
                 n("yapdata.eco", "/eco give", "Give / take / set money"),
                 n("yapdata.shop", "/shop", "Chest shops"),
                 n("yapdata.ah", "/ah", "Auction house"),
-                n("yapdata.jobs", "/jobs", "Jobs GUI"),
-                n("yapcraft.sell", "/sell", "Sell items (crafting)")));
+                n("yapdata.jobs", "/jobs", "Jobs GUI (off when YaPSkills is loaded)")));
         out.add(cat("chat", "Chat", "Talk, private messages, and staff chat.",
                 n("yapchat.use", "Public chat", "Speak in public chat"),
                 n("yapchat.msg", "/msg /reply", "Private messages"),
                 n("yapchat.staff", "/staffchat", "Staff channel"),
-                n("yapchat.socialspy", "/socialspy", "See private messages"),
+                n("yapchat.socialspy", "Social spy", "See private messages (grant; no Essentials /socialspy)"),
                 n("yapchat.admin", "Chat admin", "Clear chat / reload"),
                 n("yapchat.bypass.filter", "Bypass filter", "Skip the word filter"),
                 n("yapchat.bypass.slow", "Bypass slow mode", "Skip chat cooldown")));
@@ -52,13 +51,9 @@ public final class PermissionCatalog {
                 n("yapdata.kit.adventurer", "Adventurer kit", "Claim the adventurer kit"),
                 n("yapdata.kit.vip", "VIP kit", "Claim the VIP kit"),
                 n("yapdata.kit.*", "All kits", "Claim every kit"),
-                n("yapdata.job.*", "All jobs", "Join any job"),
                 n("yapessentials.hat", "/hat", "Wear the held item"),
                 n("yapessentials.ptime", "/ptime", "Personal time of day"),
-                n("yapessentials.pweather", "/pweather", "Personal weather"),
-                n("yapvehicles.drive", "Drive vehicles", "Use vehicles"),
-                n("yapvehicles.command", "Vehicle commands", "Spawn / vehicle admin"),
-                n("yapvehicles.spawn", "Spawn vehicles", "Create a vehicle")));
+                n("yapessentials.pweather", "/pweather", "Personal weather")));
         out.add(cat("claims", "Claims & land", "Land claims and claim admin.",
                 n("yapdata.claim", "/claim", "Create and manage claims"),
                 n("yapdata.claims.wilderness", "Build in wilderness", "When require-claim-to-build is on"),
@@ -68,13 +63,12 @@ public final class PermissionCatalog {
                 n("yapmod.warn", "/warn", "Warn a player"),
                 n("yapmod.mute", "/mute /unmute", "Mute players"),
                 n("yapmod.kick", "/kick", "Kick players"),
-                n("yapmod.history", "/modhistory", "See punishment history"),
+                n("yapmod.history", "/modhistory /modcheck /alts", "Punishment history and alt lookup"),
                 n("yapessentials.vanish", "/vanish", "Invisible staff mode"),
                 n("yapessentials.invsee", "/invsee", "View inventories"),
                 n("yapessentials.echest", "/echest", "Ender chest"),
-                n("yapessentials.staff.socialspy", "Essentials socialspy", "Staff PM spy"),
                 n("yapessentials.staff.freeze", "/freeze", "Freeze a player"),
-                n("yapessentials.staff.check", "/check", "Staff inspect"),
+                n("yapessentials.staff.check", "/check", "Staff inspect (Essentials)"),
                 n("yapguard.alerts", "AC alerts", "See anti-cheat alerts"),
                 n("yapadmin.menu", "/yapadmin", "Staff admin menu")));
         out.add(cat("staff-move", "Staff movement", "Teleport and heal tools.",
@@ -110,8 +104,8 @@ public final class PermissionCatalog {
                 n("yapessentials.admin", "Essentials admin", "Reload essentials"),
                 n("yapguard.bypass", "Bypass anti-cheat", "Skip Guard checks"),
                 n("yapguard.admin", "Guard admin", "Reload Guard"),
-                n("yap.bypass", "Bypass all rules", "Skip land/chat/AC/MMO enforcement"),
-                n("yap.bypass.mmo", "Bypass MMO", "Skip combat/skills/mechanics/ability bar")));
+                n("yap.bypass", "Bypass all rules", "Skip land/chat/AC/skills enforcement"),
+                n("yapskills.bypass", "Bypass skills XP", "Skip skill XP gains")));
         out.add(cat("world", "World & build", "WorldEdit-class tools, protect, map.",
                 n("yapworld.admin", "World admin", "/yapworld status"),
                 n("yapworld.load", "/yapworld load", "Load a world"),
@@ -125,7 +119,7 @@ public final class PermissionCatalog {
                 n("yapprotect.rollback", "Protect rollback", "Undo grief"),
                 n("yapprotect.admin", "Protect admin", "Reload / prune"),
                 n("yapmap.admin", "Map admin", "Web map render"),
-                n("yapnpcs.admin", "/npc", "Create NPCs"),
+                n("yapnpcs.admin", "/npc", "Hub NPCs, shops, warps, dialogue"),
                 n("yapnpcs.quest", "/quests", "Player quests")));
         out.add(cat("vanilla", "Vanilla / server commands",
                 "Mojang command nodes. OP bypasses these; ranks do not unless granted.",
@@ -160,44 +154,25 @@ public final class PermissionCatalog {
                 n("bukkit.command.reload", "/reload", "Reload plugins", true),
                 n("bukkit.command.timings", "/timings", "Timings report"),
                 n("paper.command.paper", "/paper", "Paper admin command", true)));
-        out.add(cat("mmo", "MMO & abilities", "Skills, combat, crafting, guilds, games, mechanics, abilities.",
+        out.add(cat("skills", "Skills", "Thin skills — mining, woodcutting, strength + overall.",
                 n("yapskills.use", "/skills", "Open skills"),
                 n("yapskills.others", "Skills others", "View another player's skills"),
                 n("yapskills.admin", "Skills admin", "Reload / grant skills"),
-                n("yapcombat.use", "/combat", "Combat menu"),
-                n("yapcombat.cast", "/cast /spells", "Cast combat spells"),
-                n("yapcombat.prayer", "/prayer", "Prayer system"),
-                n("yapcombat.admin", "Combat admin", "Reload combat"),
-                n("yapcraft.use", "/recipe /ycraft", "Custom recipes"),
-                n("yapcraft.admin", "Crafting admin", "Reload crafting"),
-                n("yapguilds.use", "/g /guild", "Guild membership"),
-                n("yapguilds.create", "Create guild", "Found a guild"),
-                n("yapguilds.admin", "Guilds admin", "Reload / override guilds"),
-                n("yapgames.use", "/queue /duel /game", "Join minigames"),
-                n("yapgames.admin", "Games admin", "Arena / queue admin"),
-                n("yapmechanics.admin", "Mechanics admin", "Reload stamina / mechanics"),
-                n("yapmechanics.stamina.others", "Stamina others", "View others' stamina"),
-                n("yapabilities.use", "/ability /spell", "Use abilities"),
-                n("yapabilities.bar", "Ability bar", "Hotbar ability slots"),
-                n("yapabilities.bypass.lock", "Bypass ability lock", "Cast locked abilities"),
-                n("yapabilities.admin", "Abilities admin", "Reload abilities"),
-                n("yapmmo.hiscores", "/hiscores", "MMO hiscores"),
-                n("yapmmo.admin", "MMO admin", "Reload / give MMO content"),
-                n("yapmmo.bedrock.use", "/mmoui", "Bedrock MMO UI")));
+                n("yapskills.bypass", "Bypass skills XP", "Skip skill XP gains")));
         out.add(cat("extras", "Tools & extras", "Stacker, packs, placeholders, and other first-party tools.",
-                n("yapvehicles.destroy", "Destroy vehicles", "Remove spawned vehicles"),
                 n("yapstacker.gui", "Stacker GUI", "Open mob stacker"),
                 n("yapstacker.give", "Stacker give", "Give stacker items"),
                 n("yapstacker.wand", "Stacker wand", "Stacker selection wand"),
                 n("yapstacker.admin", "Stacker admin", "Reload stacker"),
-                n("yapnpcs.admin", "NPC admin", "Hub NPCs, shops, warps, dialogue"),
                 n("yappregen.admin", "Pregen admin", "Chunk pre-generator"),
                 n("yapknobs.reload", "Knobs reload", "Reload performance knobs"),
                 n("yapdb.admin", "Database admin", "YaPDB admin"),
                 n("yappacks.admin", "Packs admin", "Resource pack admin"),
                 n("yapcompat.status", "Compat status", "Plugin compatibility status"),
                 n("placeholderapi.parse", "Parse placeholders", "Use PlaceholderAPI"),
-                n("placeholderapi.admin", "Placeholder admin", "Reload PlaceholderAPI")));
+                n("placeholderapi.admin", "Placeholder admin", "Reload PlaceholderAPI"),
+                n("yapfactions.use", "/f", "Factions"),
+                n("yapfactions.admin", "Factions admin", "Override factions")));
         return out;
     }
 

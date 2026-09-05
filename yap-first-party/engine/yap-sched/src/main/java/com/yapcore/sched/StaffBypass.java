@@ -6,15 +6,18 @@ import org.bukkit.entity.Player;
 /**
  * Unified staff / creative bypass for YaP first-party rules.
  * <ul>
- *   <li>{@link #staff} — OP, {@code yap.bypass}, or playerdata admin: skip land/chat/AC rules</li>
- *   <li>{@link #creative} — creative/spectator: unrestricted creative play</li>
- *   <li>{@link #mmo} — skip MMO combat/skills/mechanics/ability-bar interference</li>
+ *   <li>{@link #staff} — OP, {@code yap.bypass}, or playerdata admin</li>
+ *   <li>{@link #creative} — creative/spectator</li>
+ *   <li>{@link #mmo} — skip skills XP (and legacy MMO-named bypass nodes)</li>
  *   <li>{@link #land} — skip claim/region build/access gates</li>
  * </ul>
  */
 public final class StaffBypass {
 
     public static final String ALL = "yap.bypass";
+    /** Preferred skills bypass. */
+    public static final String SKILLS = "yapskills.bypass";
+    /** Legacy alias — still honored. */
     public static final String MMO = "yap.bypass.mmo";
 
     private StaffBypass() {
@@ -40,15 +43,13 @@ public final class StaffBypass {
                 || player.hasPermission("yapregions.admin");
     }
 
-    /** MMO combat, skills, mechanics, ability bar, custom food. */
+    /** Skills XP (and any leftover MMO-named bypass grants). */
     public static boolean mmo(Player player) {
         return creative(player)
                 || staff(player)
+                || player.hasPermission(SKILLS)
                 || player.hasPermission(MMO)
-                || player.hasPermission("yapskills.admin")
-                || player.hasPermission("yapmechanics.admin")
-                || player.hasPermission("yapcombat.admin")
-                || player.hasPermission("yapabilities.admin");
+                || player.hasPermission("yapskills.admin");
     }
 
     /** Anti-cheat and similar enforcement. */

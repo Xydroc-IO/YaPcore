@@ -44,7 +44,7 @@ display data including:
 | Minecraft username, UUID | World files, `plugins/YaPPlayerdata/`, MariaDB | Gameplay, sync, ranks |
 | IP address | Server logs, moderation records, session lock | Security, bans, audit |
 | Chat messages | Logs, `YaPChat`, moderation plugin | Chat, filters, staff tools |
-| Inventory, location, stats | Playerdata / DB plugins | Progression, MMO, kits |
+| Inventory, location, stats | Playerdata / DB plugins | Progression, skills, kits |
 | Punishment history | `YaPModeration`, guard plugins | Bans, mutes, warnings |
 
 Retention is **controlled by you** (log rotation, DB backups, plugin config).

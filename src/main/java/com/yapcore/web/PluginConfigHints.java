@@ -143,7 +143,7 @@ public final class PluginConfigHints {
             Map.entry("yap-commands", "Master switch for YAML /commands (definitions on the Custom commands tab)."),
             Map.entry("yap-map", "Web map of the world."),
             Map.entry("yap-factions", "Claim land with a faction."),
-            Map.entry("yap-npcs", "Quest NPCs, dialogue, and hub actions (shop/warp/command)."),
+            Map.entry("yap-npcs", "Quest NPCs, dialogue, and hub actions (shop/warp/spawn/command)."),
             Map.entry("yap-regions", "Named areas with their own rules."),
             Map.entry("yap-lagguard", "Slows the world down when the server is busy."),
             Map.entry("yap-stacker", "Stacks nearby mobs to save performance."),

@@ -25,6 +25,15 @@ public final class NpcActionMutator {
         return Optional.empty();
     }
 
+    public static boolean hasSpawn(String actionRaw) {
+        for (NpcActions.Action a : NpcActions.parse(actionRaw)) {
+            if (a.kind() == NpcActions.Kind.SPAWN) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Replace all tokens of {@code kind}, keep others, append {@code token} if non-null. */
     public static String replaceKind(String existing, NpcActions.Kind kind, String tokenOrNull) {
         List<String> kept = new ArrayList<>();
@@ -39,12 +48,16 @@ public final class NpcActionMutator {
         return String.join(";", kept);
     }
 
-    private static String toToken(NpcActions.Action a) {
+    public static String toToken(NpcActions.Action a) {
+        if (a.kind() == NpcActions.Kind.SPAWN) {
+            return "spawn";
+        }
         String prefix = switch (a.kind()) {
             case SHOP -> "shop";
             case WARP -> "warp";
             case COMMAND -> "command";
             case PLAYER -> "player";
+            case SPAWN -> "spawn";
         };
         return prefix + ":" + a.value();
     }

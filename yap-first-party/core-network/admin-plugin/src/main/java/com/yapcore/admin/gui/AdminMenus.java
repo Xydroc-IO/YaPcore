@@ -214,8 +214,7 @@ public final class AdminMenus {
         inv.setItem(21, AdminMenuHolder.icon(Material.GLASS, "Vanish", "/vanish"));
         inv.setItem(22, AdminMenuHolder.icon(Material.GOLDEN_APPLE, "Heal", "Full heal"));
         inv.setItem(23, AdminMenuHolder.icon(Material.COOKED_BEEF, "Feed", "Full hunger"));
-        inv.setItem(24, AdminMenuHolder.icon(Material.SPYGLASS, "Social spy", "/socialspy"));
-        inv.setItem(25, AdminMenuHolder.icon(Material.ENDER_EYE, "Night vision", "Toggle NV 5m"));
+        inv.setItem(24, AdminMenuHolder.icon(Material.ENDER_EYE, "Night vision", "Toggle NV 5m"));
         inv.setItem(SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
         player.openInventory(inv);
@@ -393,7 +392,7 @@ public final class AdminMenus {
         String target = session.hasTarget() ? session.targetName() : player.getName() + " (self)";
         inv.setItem(SLOT_INFO, AdminMenuHolder.icon(Material.GOLD_INGOT, "Grant money",
                 "Target: " + target,
-                "Uses /yapmmo givemoney"));
+                "Uses /eco give"));
         int slot = 19;
         for (int amount : plugin.adminConfig().moneyAmounts()) {
             inv.setItem(slot++, AdminMenuHolder.icon(Material.EMERALD, "+" + amount,

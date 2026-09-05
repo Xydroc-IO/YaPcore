@@ -33,7 +33,7 @@ economy:
 
 # Feature modules (freeze: no new Essentials-class commands without product review).
 # shops + auctions on by default; NPC shop catalogs (features.traders) feed YaPNpcs /npc shop.
-# jobs stay off (overlaps YaPSkills mining payouts). Money features also require economy.enabled=true.
+# jobs stay off (overlaps YaPSkills). If enabled while YaPSkills is loaded, PlayerData forces jobs off.
 features:
   homes: true
   warps: true

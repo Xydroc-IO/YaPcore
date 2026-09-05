@@ -79,7 +79,7 @@ Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin
 | Homes / warps / kits / mail | on | `features.homes` … |
 | Claims | on | `features.claims` (+ `claims.*`) |
 | Shops / auctions (AH) | **on** | `features.shops` / `auctions` |
-| Jobs | **off** (keep off with YaPSkills) | `features.jobs` |
+| Jobs | **off** (forced off when YaPSkills is loaded) | `features.jobs` |
 | NPC shop catalogs | **on** | `features.traders` — used by YaPNpcs `/npc shop` (no `/trader`) |
 | Backpack `/bag` | **on** | `features.backpack` |
 
@@ -89,9 +89,8 @@ Money features require `economy.enabled: true`. When economy is off, shops/jobs/
 (`balance` / `deposit` / `withdraw` / `setBalance`). Deposits fire `PlayerBalanceChangeEvent` for quest
 `ECONOMY_EARN` hooks. Lifetime **playtime** is tracked as `players.play_minutes` (join/quit) and exposed via
 `PlayerDataService.playMinutes(UUID)` for quest `PLAYTIME` objectives.
-(`balance` / `deposit` / `withdraw` / `setBalance`). `/sell`, minigame rewards, Tab `{balance}`, and
-`/yapmmo givemoney` all go through that API. Vault remains an **optional** bridge (`YaPEconomy`) only if
-you drop `Vault.jar` for third-party plugins.
+`/eco give`, Tab `{balance}`, and other first-party payouts go through that API. Vault remains an
+**optional** bridge (`YaPEconomy`) only if you drop `Vault.jar` for third-party plugins.
 
 ```yaml
 # Default product features (economy on):

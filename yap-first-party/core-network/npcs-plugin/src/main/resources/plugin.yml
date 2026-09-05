@@ -4,13 +4,13 @@ main: com.yapcore.npcs.NpcsPlugin
 api-version: '1.21'
 folia-supported: true
 author: YapLabs
-description: Quest NPCs, dialogue, hub actions (shop/warp/command) — Folia-safe
+description: Quest NPCs, dialogue, hub actions (shop/warp/spawn/command) — Folia-safe
 website: https://github.com/yaplabs
 softdepend: [YaPDB, YaPPlayerData, YaPSkills]
 commands:
   npc:
     description: Quest NPC admin
-    usage: /npc create|remove|list|info|shop|setwarp|setcommand|setdialogue|setquest|respawn|reload
+    usage: /npc create|remove|list|info|shop|setwarp|setspawn|setcommand|setdialogue|setquest|respawn|reload
     permission: yapnpcs.admin
   quests:
     description: View quest progress

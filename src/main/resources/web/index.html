@@ -1602,15 +1602,35 @@
           <label class="field-block">Dialogue <span class="muted">(blank = default)</span>
             <textarea id="npcEditDialogue" rows="2" data-mc-color="insert" data-mc-preview="1" placeholder="Hello! Can I help you?"></textarea>
           </label>
-          <label class="field-block">Hub action <span class="muted">(/npc shop · setwarp · setcommand — or raw shop:12;warp:spawn)</span>
-            <input id="npcEditAction" placeholder="shop:1" list="npcActionHints"/>
+          <div class="form-grid">
+            <label class="check-row"><input type="checkbox" id="npcEditSpawn"/> Go to server spawn <span class="muted">(/spawn)</span></label>
+            <label>Warp name <span class="muted">(not “spawn”)</span>
+              <input id="npcEditWarp" placeholder="mines"/>
+            </label>
+            <label>Console command
+              <input id="npcEditCommand" placeholder="say hi {player}"/>
+            </label>
+            <label>Player command
+              <input id="npcEditPlayerCmd" placeholder="kit starter"/>
+            </label>
+          </div>
+          <div class="toolbar" style="margin:0.5rem 0">
+            <button type="button" id="npcShopEnable">Enable shop catalog</button>
+            <button type="button" id="npcShopClear" class="danger ghost">Clear shop</button>
+            <span id="npcShopHint" class="muted hint"></span>
+          </div>
+          <details class="field-block">
+            <summary>Advanced raw action</summary>
+            <p class="muted hint">Prefer the fields above. Raw form: <code>shop:12;warp:mines;spawn;command:…</code></p>
+            <input id="npcEditAction" placeholder="shop:1;spawn" list="npcActionHints"/>
             <datalist id="npcActionHints">
               <option value="shop:"></option>
-              <option value="warp:spawn"></option>
+              <option value="warp:mines"></option>
+              <option value="spawn"></option>
               <option value="command:say hi {player}"></option>
               <option value="player:kit starter"></option>
             </datalist>
-          </label>
+          </details>
           <button id="npcSaveEdit" class="primary">Save changes</button>
         </div>
 

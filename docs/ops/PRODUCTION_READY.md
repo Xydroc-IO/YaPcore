@@ -80,10 +80,11 @@ Xbox retail = later marketing bar, not soft-launch.
 ### 2d — Soak (already runnable alone)
 
 `./scripts/yapctl soak-long 12` samples heap/threads while YaP-Folia stays up.
-No players required. When the log prints PASS (or you hit 8h floor), record in
-[REAL_GAINS.md](../folia/REAL_GAINS.md) / [RELEASE_NOTES.md](../start/RELEASE_NOTES.md).
+No players required.
 
-Check progress:
+**Recorded PASS (2026-09-05):** `logs/soak/soak-long-20260905T031507Z.log` — **soak-proven**. Heap/thread slope within bounds; Folia pid locked 12h with ship knobs on.
+
+Check progress on a future soak:
 
 ```bash
 tail -5 logs/soak/soak-long-*.log

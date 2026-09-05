@@ -104,7 +104,7 @@ Dashboard **Access & ranks** has the same fields. Codes are `&a` green, `&b` aqu
 | `yapchat.use` | true | Public chat |
 | `yapchat.msg` | true | `/msg` `/reply` |
 | `yapchat.staff` | op | `/staffchat` staff channel |
-| `yapchat.socialspy` | op | See private messages |
+| `yapchat.socialspy` | op | See private messages (no Essentials `/socialspy`) |
 | `yapchat.admin` | op | `/clearchat` `/yapchat reload` |
 | `yapchat.bypass.filter` | op | Skip word filter |
 | `yapchat.bypass.slow` | op | Skip slow mode |
@@ -138,9 +138,8 @@ Dashboard **Access & ranks** has the same fields. Codes are `&a` green, `&b` aqu
 | `yapessentials.nick.others` | op | `/nick` for others |
 | `yapessentials.afk` / `.list` / `.rules` / `.motd` / `.suicide` | true | Player info |
 | `yapessentials.ptime` / `.pweather` / `.broadcast` / `.hat` | op | Client / broadcast |
-| `yapessentials.staff.socialspy` | op | `/socialspy` |
 | `yapessentials.staff.freeze` | op | `/freeze` |
-| `yapessentials.staff.check` | op | `/check` |
+| `yapessentials.staff.check` | op | `/check` (inspect; Moderation uses `/modcheck`) |
 | `yapessentials.admin` | op | `/yapess reload` |
 
 Toggle domains in `plugins/YaPEssentials/config.yml` under `features.*` (including `features.staff`).

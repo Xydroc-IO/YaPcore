@@ -37,8 +37,13 @@ permissions:
     description: View own permission info and open ranks GUI
     default: true
   yap.bypass:
-    description: Bypass all YaP land/chat/AC/MMO rules (admins and OPs)
+    description: Bypass all YaP land/chat/AC/skills rules (admins and OPs)
+    default: op
+  yapskills.bypass:
+    description: Skip skill XP gains
     default: op
   yap.bypass.mmo:
-    description: Bypass MMO combat/skills/mechanics/ability-bar restrictions
+    description: Legacy alias of yapskills.bypass
     default: op
+    children:
+      yapskills.bypass: true

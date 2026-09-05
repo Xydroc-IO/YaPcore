@@ -22,7 +22,7 @@ Soft-depends on YaPEssentials, YaPModeration, YaPPerms, YaPWorld, YaPStacker, Ya
 ## Hub sections
 
 - **Players** — online picker → TP to/here/spawn, freeze, invsee/echest, heal/feed/clear, promote/demote, kick/warn/mute 1h/tempban 1d, jump to Give
-- **Self tools** — fly, god, vanish, heal, feed, socialspy, night vision
+- **Self tools** — fly, god, vanish, heal, feed, night vision
 - **Give** — curated presets, kits (`/kit give`), paginated material browser (categories + amount 1/16/64)
 - **Moderation** — same player picker (actions gated by `yapmod.*`)
 - **Server** — broadcast presets, status (online/worlds/TPS), deep-link to Ranks GUI

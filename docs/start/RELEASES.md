@@ -19,10 +19,9 @@ All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `p
 | `gradle publishReleasesFolder` | **`releases/<version>/`** — trees + linux/windows zips + suite zips |
 | Git tag `1.0.0.0` or `v*` push | GitHub Actions → `yapcore-release-linux.zip` + `-windows.zip` |
 | `gradle assembleNetworkSuite` | `build/dist/yap-network-suite.zip` — YaP Link + native link plugins |
-| `gradle assembleGameplaySuite` | `build/dist/yap-gameplay-suite.zip` — GAMEPLAY plugins/modules (standalone) |
-| `gradle assembleAddonsRelease` | `build/dist/yap-addons-release.zip` — example vehicle addon |
+| `gradle assembleGameplaySuite` | `build/dist/yap-gameplay-suite.zip` — GAMEPLAY plugins (skills / stacker / knobs / disasters) |
 | `gradle assemblePluginDist` | `build/dist/yap-plugins/` — flat jar mirror by tier |
-| `gradle assembleAllReleases` | Full box + all standalone zips (under `build/dist/`) |
+| `gradle assembleAllReleases` | Full box + standalone suite zips (under `build/dist/`) |
 
 ## Durable release folder
 
@@ -32,7 +31,7 @@ gradle publishReleasesFolder
 # → releases/1.0.0.0/
 #      yapcore-release/linux/   yapcore-release/windows/
 #      yapcore-release-linux.zip  yapcore-release-windows.zip
-#      yap-network-suite.zip  yap-gameplay-suite.zip  yap-addons-release.zip
+#      yap-network-suite.zip  yap-gameplay-suite.zip
 ```
 
 The entire `releases/` directory is **gitignored** (local artifacts only). Rebuild anytime with the same task.
@@ -44,7 +43,7 @@ Attach (or refresh with `--clobber`) so `/releases/latest/download/{file}` works
 | Asset | Role |
 |-------|------|
 | `yapcore-release-linux.zip` / `-windows.zip` | Full server boxes (CI also uploads these on tag) |
-| `yap-network-suite.zip` / `yap-gameplay-suite.zip` / `yap-addons-release.zip` | Standalone suites |
+| `yap-network-suite.zip` / `yap-gameplay-suite.zip` | Standalone suites |
 | `yapcore-default.zip` | **Required** for pack CDN (`resource-pack-url` default) |
 | `yap-visuals-1.0.1.jar` | Optional Fabric visuals (Sodium+Iris+shaders) |
 | `yap-bag-1.0.0.jar` / `yap-ultrawide-1.0.0.jar` | Optional Fabric bag UI / ultrawide FOV |
@@ -55,7 +54,6 @@ gh release upload 1.0.0.0 \
   releases/1.0.0.0/yapcore-release-windows.zip \
   releases/1.0.0.0/yap-network-suite.zip \
   releases/1.0.0.0/yap-gameplay-suite.zip \
-  releases/1.0.0.0/yap-addons-release.zip \
   resourcepacks/yapcore-default.zip \
   dist/client-mods/yap-visuals-1.0.1.jar \
   dist/client-mods/yap-bag-1.0.0.jar \

@@ -2,6 +2,7 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
   const { $, api, netPost } = YapDash;
   let selectedId = "";
   let questIds = [];
+  let useRawAction = false;
 
   function setOut(text) {
     const el = $("npcOut");
@@ -10,6 +11,29 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
 
   function fmtCoord(v) {
     return typeof v === "number" ? v.toFixed(1) : (v ?? "—");
+  }
+
+  function parseAction(raw) {
+    const out = { shop: "", warp: "", command: "", player: "", spawn: false };
+    if (!raw) return out;
+    String(raw).split(";").forEach((part) => {
+      const t = part.trim();
+      if (!t) return;
+      const lower = t.toLowerCase();
+      if (lower === "spawn" || lower.startsWith("spawn:")) {
+        out.spawn = true;
+        return;
+      }
+      const colon = t.indexOf(":");
+      if (colon <= 0) return;
+      const type = t.slice(0, colon).trim().toLowerCase();
+      const value = t.slice(colon + 1).trim();
+      if (type === "shop" || type === "trader") out.shop = value;
+      else if (type === "warp") out.warp = value;
+      else if (type === "command" || type === "console" || type === "cmd") out.command = value;
+      else if (type === "player" || type === "playercmd" || type === "sudo") out.player = value;
+    });
+    return out;
   }
 
   function fillQuestSelect(sel, ids) {
@@ -66,6 +90,7 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
 
   function selectNpc(n) {
     selectedId = n.id;
+    useRawAction = false;
     $("npcEditId").textContent = n.id;
     $("npcEditName").value = n.displayName || n.id;
     $("npcEditWorld").value = n.world || "world";
@@ -75,7 +100,17 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
     $("npcEditYaw").value = n.yaw ?? 0;
     $("npcEditQuest").value = n.questId || "";
     $("npcEditDialogue").value = n.dialogue || "";
+    const parsed = parseAction(n.action || "");
+    if ($("npcEditSpawn")) $("npcEditSpawn").checked = parsed.spawn;
+    if ($("npcEditWarp")) $("npcEditWarp").value = parsed.warp;
+    if ($("npcEditCommand")) $("npcEditCommand").value = parsed.command;
+    if ($("npcEditPlayerCmd")) $("npcEditPlayerCmd").value = parsed.player;
     if ($("npcEditAction")) $("npcEditAction").value = n.action || "";
+    if ($("npcShopHint")) {
+      $("npcShopHint").textContent = parsed.shop
+        ? ("Shop catalog #" + parsed.shop + " — add offers in-game: /npc shop addbuy " + n.id + " <price>")
+        : "No shop linked.";
+    }
     document.querySelectorAll("#npcBody tr").forEach((tr) => {
       tr.classList.toggle("selected", tr.dataset.id === selectedId);
     });
@@ -92,6 +127,10 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
       fillQuestSelect($("npcNewQuest"), questIds);
       fillQuestSelect($("npcEditQuest"), questIds);
       renderTable(r.npcs || []);
+      if (selectedId) {
+        const n = (r.npcs || []).find((x) => x.id === selectedId);
+        if (n) selectNpc(n);
+      }
       setOut(r.installed ? "" : "Install yap-npcs and start the game server to manage NPCs.");
     } catch (e) {
       setOut(e.message);
@@ -138,6 +177,27 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
     } catch (e) { setOut(e.message); }
   });
 
+  $("npcEditAction")?.addEventListener("input", () => { useRawAction = true; });
+
+  $("npcShopEnable")?.addEventListener("click", async () => {
+    if (!selectedId) { alert("Select an NPC from the table."); return; }
+    try {
+      const r = await netPost("/api/npcs", { action: "shopenable", id: selectedId });
+      setOut(r.result || "Shop enabled.");
+      refreshNpcs();
+    } catch (e) { setOut(e.message); }
+  });
+
+  $("npcShopClear")?.addEventListener("click", async () => {
+    if (!selectedId) { alert("Select an NPC from the table."); return; }
+    if (!confirm("Clear shop catalog on " + selectedId + "?")) return;
+    try {
+      const r = await netPost("/api/npcs", { action: "shopclear", id: selectedId });
+      setOut(r.result || "Shop cleared.");
+      refreshNpcs();
+    } catch (e) { setOut(e.message); }
+  });
+
   $("npcSaveEdit")?.addEventListener("click", async () => {
     if (!selectedId) { alert("Select an NPC from the table."); return; }
     try {
@@ -160,11 +220,35 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
       if (dialogue) {
         await netPost("/api/npcs", { action: "setdialogue", id: selectedId, dialogue });
       }
-      await netPost("/api/npcs", {
-        action: "setaction",
-        id: selectedId,
-        npcAction: $("npcEditAction")?.value.trim() || "",
-      });
+      if (useRawAction) {
+        await netPost("/api/npcs", {
+          action: "setaction",
+          id: selectedId,
+          npcAction: $("npcEditAction")?.value.trim() || "",
+        });
+      } else {
+        const warp = ($("npcEditWarp")?.value || "").trim();
+        if (warp.toLowerCase() === "spawn") {
+          alert("Use the spawn checkbox for server spawn — warp name \"spawn\" is reserved.");
+          return;
+        }
+        await netPost("/api/npcs", {
+          action: "setspawn",
+          id: selectedId,
+          spawn: $("npcEditSpawn")?.checked ? "on" : "off",
+        });
+        await netPost("/api/npcs", { action: "setwarp", id: selectedId, warp });
+        await netPost("/api/npcs", {
+          action: "setcommand",
+          id: selectedId,
+          command: ($("npcEditCommand")?.value || "").trim(),
+        });
+        await netPost("/api/npcs", {
+          action: "setplayer",
+          id: selectedId,
+          playerCommand: ($("npcEditPlayerCmd")?.value || "").trim(),
+        });
+      }
       setOut("NPC updated.");
       refreshNpcs();
     } catch (e) { setOut(e.message); }

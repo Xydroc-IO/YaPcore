@@ -116,8 +116,8 @@ Raise confidence on operator-critical plugins that today rely on manual smoke, w
 | Area | Strength |
 |------|----------|
 | Chassis (`src/test`, yapengine) | Unit + Fray + jcstress (lease, boundary, sequencing) |
-| APIs / some plugins | `yap-db-api`, combat, abilities, playerdata, perms, … have some tests |
-| Gaps | **chat**, **factions**, **essentials**, **protect**, **world** (beyond WorldEdit-related paths), plus guilds/regions/moderation and others with **zero** `src/test` |
+| APIs / some plugins | `yap-db-api`, skills, playerdata, perms, npcs, … have some tests |
+| Gaps | **chat**, **factions**, **essentials**, **protect**, **world** (beyond WorldEdit-related paths), plus regions/moderation and others with **zero** `src/test` |
 
 ### Non-goals
 
@@ -132,7 +132,7 @@ Raise confidence on operator-critical plugins that today rely on manual smoke, w
 3. **essentials** — home/warp/kit permission gates and serialization round-trips.
 4. **chat** — format pipeline, mute/ignore, channel routing (pure string/state tests).
 5. **world** — selection/clipboard invariants and command parsing **without** full WE; leave WE shim as thin smoke if needed.
-6. Stretch: **regions**, **guilds**, **moderation** permission/ persistence helpers.
+6. Stretch: **regions**, **moderation** permission/persistence helpers.
 
 ### Phased steps
 

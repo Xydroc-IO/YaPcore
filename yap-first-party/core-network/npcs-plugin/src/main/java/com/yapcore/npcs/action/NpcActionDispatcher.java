@@ -8,9 +8,10 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 
-/** Dispatches hub NPC click actions (shop / warp / command). */
+/** Dispatches hub NPC click actions (shop / warp / spawn / command). */
 public final class NpcActionDispatcher {
 
     private final JavaPlugin plugin;
@@ -27,8 +28,16 @@ public final class NpcActionDispatcher {
         for (NpcActions.Action action : actions) {
             switch (action.kind()) {
                 case SHOP -> openShop(player, action.value());
-                case WARP -> YapSched.entity(plugin, player, () ->
-                        player.performCommand("warp " + action.value()));
+                case SPAWN -> YapSched.entity(plugin, player, () -> player.performCommand("spawn"));
+                case WARP -> {
+                    if ("spawn".equalsIgnoreCase(action.value().trim())) {
+                        plugin.getLogger().fine("legacy warp:spawn on NPC — treating as /spawn");
+                        YapSched.entity(plugin, player, () -> player.performCommand("spawn"));
+                    } else {
+                        YapSched.entity(plugin, player, () ->
+                                player.performCommand("warp " + action.value()));
+                    }
+                }
                 case COMMAND -> {
                     String cmd = action.value().replace("{player}", player.getName());
                     YapSched.global(plugin, () ->
@@ -69,5 +78,10 @@ public final class NpcActionDispatcher {
             player.sendMessage("§cCould not open shop.");
             plugin.getLogger().log(Level.WARNING, "open shop " + traderId, e);
         }
+    }
+
+    /** True when raw action tries to use warp name {@code spawn} for server spawn. */
+    public static boolean isReservedWarpSpawn(String warpName) {
+        return warpName != null && "spawn".equals(warpName.trim().toLowerCase(Locale.ROOT));
     }
 }
