@@ -8,7 +8,6 @@ import com.yapcore.world.schem.LegacySchematicImporter;
 import com.yapcore.world.schem.LitematicImporter;
 import com.yapcore.world.schem.Schematic;
 import com.yapcore.world.schem.SchematicIO;
-import com.yapcore.world.schem.SchematicPaster;
 import com.yapcore.world.schem.SpongeSchematicExporter;
 import com.yapcore.world.schem.SpongeSchematicImporter;
 import org.bukkit.Location;
@@ -279,10 +278,20 @@ final class WorldEditSchematicOps {
         YapSched.async(plugin, () -> {
             try {
                 Schematic schematic = loadAnySchematic(file);
-                SchematicPaster paster = new SchematicPaster(plugin);
-                paster.paste(schematic, player.getWorld(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
-                        .thenAccept(count -> YapSched.global(plugin,
-                                () -> player.sendMessage("§aPasted §f" + count + " §ablocks.")));
+                boolean large = plugin.paster().isLargePaste(schematic.blocks().size());
+                if (large) {
+                    YapSched.global(plugin, () -> player.sendMessage("§eLarge schem paste §7(§f"
+                            + schematic.blocks().size() + " §7blocks) — progress on."));
+                }
+                plugin.paster().paste(player, schematic, player.getWorld(),
+                                loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
+                        .thenAccept(count -> YapSched.global(plugin, () -> {
+                            player.sendMessage("§aPasted §f" + count + " §ablocks.");
+                            if (large && plugin.worldConfig().deferRelightLarge()) {
+                                player.sendMessage("§7Relighting…");
+                            }
+                            support.maybeAutoRelight(player);
+                        }));
             } catch (Exception e) {
                 YapSched.global(plugin, () -> player.sendMessage("§cPaste failed: " + e.getMessage()));
             }

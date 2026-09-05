@@ -26,6 +26,8 @@ limits:
   defer-relight-large: true
   progress-messages: true
   auto-relight: false
+  # CFI-lite: schem paste via BlockBatch (parallel waves/preload/undo/progress). false = legacy 1-block/region
+  schem-use-block-batch: true
 
 cui:
   enabled: true

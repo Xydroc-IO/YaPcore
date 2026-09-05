@@ -339,7 +339,7 @@ public final class WorldEditGuiListener implements Listener {
                         ? SpongeSchematicImporter.importFile(file)
                         : SchematicIO.load(file);
                 World target = player.getWorld();
-                paster.paste(schematic, target, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
+                paster.paste(player, schematic, target, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
                         .thenAccept(count -> YapSched.global(plugin,
                                 () -> player.sendMessage("§aPasted §f" + count + " §ablocks.")));
             } catch (Exception e) {

@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
@@ -54,10 +56,33 @@ public final class BlockBatch {
     private volatile PlayerEditState editState;
     private volatile BiConsumer<UUID, Integer> progressHook;
     private volatile ProgressListener progressListener;
+    private final ConcurrentHashMap<UUID, AtomicBoolean> cancelFlags = new ConcurrentHashMap<>();
 
     public BlockBatch(JavaPlugin plugin, UndoService undo) {
         this.plugin = plugin;
         this.undo = undo;
+    }
+
+    /** Request cancel of the player's in-flight apply (checked between chunk waves). */
+    public void requestCancel(UUID playerId) {
+        if (playerId == null) {
+            return;
+        }
+        cancelFlags.computeIfAbsent(playerId, id -> new AtomicBoolean(false)).set(true);
+    }
+
+    private void clearCancel(UUID playerId) {
+        if (playerId != null) {
+            cancelFlags.remove(playerId);
+        }
+    }
+
+    private boolean isCancelled(UUID playerId) {
+        if (playerId == null) {
+            return false;
+        }
+        AtomicBoolean flag = cancelFlags.get(playerId);
+        return flag != null && flag.get();
     }
 
     public void setParallelChunks(int n) {
@@ -96,13 +121,15 @@ public final class BlockBatch {
         if (planned.isEmpty()) {
             return CompletableFuture.completedFuture(0);
         }
+        UUID playerId = player != null ? player.getUniqueId() : null;
+        clearCancel(playerId);
         Map<Long, List<Planned>> byChunk = new HashMap<>();
         for (Planned p : planned) {
             long key = chunkKey(p.x(), p.z());
             byChunk.computeIfAbsent(key, k -> new ArrayList<>()).add(p);
         }
         boolean large = isLarge(planned.size());
-        boolean skipUndo = shouldSkipUndo(player, large);
+        boolean skipUndo = playerId == null || shouldSkipUndo(player, large);
         EditSession session = skipUndo ? null : new EditSession();
         AtomicInteger changed = new AtomicInteger();
         List<Map.Entry<Long, List<Planned>>> chunks = sortedChunkEntries(byChunk);
@@ -112,12 +139,13 @@ public final class BlockBatch {
 
         AtomicInteger chunksDone = new AtomicInteger();
         return applyPlannedParallel(world, chunks, session, changed, 0, wave,
-                player.getUniqueId(), totalBlocks, totalChunks, chunksDone)
+                playerId, totalBlocks, totalChunks, chunksDone)
                 .thenApply(v -> {
-                    if (session != null) {
-                        undo.push(player.getUniqueId(), session);
+                    if (session != null && playerId != null) {
+                        undo.push(playerId, session);
                     }
-                    notifyDone(player.getUniqueId(), changed.get());
+                    notifyDone(playerId, changed.get());
+                    clearCancel(playerId);
                     return changed.get();
                 });
     }
@@ -126,13 +154,22 @@ public final class BlockBatch {
         if (planned.isEmpty()) {
             return CompletableFuture.completedFuture(0);
         }
+        UUID playerId = player != null ? player.getUniqueId() : null;
+        clearCancel(playerId);
         Map<Long, List<Encoded>> byChunk = new HashMap<>();
         for (Encoded p : planned) {
             long key = chunkKey(p.x(), p.z());
             byChunk.computeIfAbsent(key, k -> new ArrayList<>()).add(p);
         }
+        // Within each chunk, section Y order improves Bukkit locality (CFI-lite planning)
+        for (List<Encoded> list : byChunk.values()) {
+            list.sort(Comparator.comparingInt((Encoded e) -> e.y() >> 4)
+                    .thenComparingInt(Encoded::y)
+                    .thenComparingInt(Encoded::x)
+                    .thenComparingInt(Encoded::z));
+        }
         boolean large = isLarge(planned.size());
-        boolean skipUndo = shouldSkipUndo(player, large);
+        boolean skipUndo = playerId == null || shouldSkipUndo(player, large);
         EditSession session = skipUndo ? null : new EditSession();
         AtomicInteger changed = new AtomicInteger();
         List<Map.Entry<Long, List<Encoded>>> chunks = sortedChunkEntries(byChunk);
@@ -142,17 +179,21 @@ public final class BlockBatch {
 
         AtomicInteger chunksDone = new AtomicInteger();
         return applyEncodedParallel(world, chunks, session, changed, 0, wave,
-                player.getUniqueId(), totalBlocks, totalChunks, chunksDone, skipUndo)
+                playerId, totalBlocks, totalChunks, chunksDone, skipUndo)
                 .thenApply(v -> {
-                    if (session != null) {
-                        undo.push(player.getUniqueId(), session);
+                    if (session != null && playerId != null) {
+                        undo.push(playerId, session);
                     }
-                    notifyDone(player.getUniqueId(), changed.get());
+                    notifyDone(playerId, changed.get());
+                    clearCancel(playerId);
                     return changed.get();
                 });
     }
 
     private boolean shouldSkipUndo(Player player, boolean large) {
+        if (player == null) {
+            return true;
+        }
         if (editState != null && editState.isFast(player.getUniqueId())) {
             return true;
         }
@@ -164,7 +205,7 @@ public final class BlockBatch {
     }
 
     private void notifyDone(UUID id, int changed) {
-        if (progressHook != null && changed > 0) {
+        if (id != null && progressHook != null && changed > 0) {
             progressHook.accept(id, changed);
         }
     }
@@ -200,7 +241,7 @@ public final class BlockBatch {
                                                          int offset, int waveSize,
                                                          UUID playerId, int totalBlocks, int totalChunks,
                                                          AtomicInteger chunksDone) {
-        if (offset >= chunks.size()) {
+        if (offset >= chunks.size() || isCancelled(playerId)) {
             return CompletableFuture.completedFuture(null);
         }
         int end = Math.min(offset + waveSize, chunks.size());
@@ -210,6 +251,9 @@ public final class BlockBatch {
             preload.add(new long[]{first.x() >> 4, first.z() >> 4});
         }
         return preloadChunkKeys(world, preload).thenCompose(v -> {
+            if (isCancelled(playerId)) {
+                return CompletableFuture.completedFuture(null);
+            }
             List<CompletableFuture<Void>> wave = new ArrayList<>();
             for (int i = offset; i < end; i++) {
                 List<Planned> chunkPlans = chunks.get(i).getValue();
@@ -220,9 +264,9 @@ public final class BlockBatch {
             return CompletableFuture.allOf(wave.toArray(CompletableFuture[]::new));
         }).thenCompose(v -> {
             int done = chunksDone.addAndGet(end - offset);
-            if (progressListener != null) {
+            if (playerId != null && progressListener != null) {
                 progressListener.onProgress(playerId, changed.get(), totalBlocks, done, totalChunks);
-            } else if (progressHook != null && totalChunks >= 8
+            } else if (playerId != null && progressHook != null && totalChunks >= 8
                     && (done % Math.max(1, totalChunks / 10) == 0 || done == totalChunks)) {
                 progressHook.accept(playerId, changed.get());
             }
@@ -237,7 +281,7 @@ public final class BlockBatch {
                                                          int offset, int waveSize,
                                                          UUID playerId, int totalBlocks, int totalChunks,
                                                          AtomicInteger chunksDone, boolean skipUndo) {
-        if (offset >= chunks.size()) {
+        if (offset >= chunks.size() || isCancelled(playerId)) {
             return CompletableFuture.completedFuture(null);
         }
         int end = Math.min(offset + waveSize, chunks.size());
@@ -247,6 +291,9 @@ public final class BlockBatch {
             preload.add(new long[]{first.x() >> 4, first.z() >> 4});
         }
         return preloadChunkKeys(world, preload).thenCompose(v -> {
+            if (isCancelled(playerId)) {
+                return CompletableFuture.completedFuture(null);
+            }
             List<CompletableFuture<Void>> wave = new ArrayList<>();
             for (int i = offset; i < end; i++) {
                 List<Encoded> chunkPlans = chunks.get(i).getValue();
@@ -257,9 +304,9 @@ public final class BlockBatch {
             return CompletableFuture.allOf(wave.toArray(CompletableFuture[]::new));
         }).thenCompose(v -> {
             int done = chunksDone.addAndGet(end - offset);
-            if (progressListener != null) {
+            if (playerId != null && progressListener != null) {
                 progressListener.onProgress(playerId, changed.get(), totalBlocks, done, totalChunks);
-            } else if (progressHook != null && totalChunks >= 8
+            } else if (playerId != null && progressHook != null && totalChunks >= 8
                     && (done % Math.max(1, totalChunks / 10) == 0 || done == totalChunks)) {
                 progressHook.accept(playerId, changed.get());
             }

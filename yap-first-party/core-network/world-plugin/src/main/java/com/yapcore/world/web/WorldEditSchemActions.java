@@ -114,7 +114,7 @@ final class WorldEditSchemActions {
             z = loc.getBlockZ();
         }
         Schematic schematic = SchematicCatalog.load(file);
-        int count = paster.paste(schematic, player.getWorld(), x, y, z).get(40, TimeUnit.SECONDS);
+        int count = paster.paste(player, schematic, player.getWorld(), x, y, z).get(40, TimeUnit.SECONDS);
         WorldEditActionHandler.ok(result, status, Map.of("message", "Pasted " + count + " blocks at " + x + ", " + y + ", " + z));
     }
 

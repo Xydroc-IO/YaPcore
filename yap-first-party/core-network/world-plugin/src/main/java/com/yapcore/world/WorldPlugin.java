@@ -109,9 +109,6 @@ public final class WorldPlugin extends JavaPlugin {
         } else {
             selection.setConfig(config);
         }
-        if (paster == null) {
-            paster = new SchematicPaster(this);
-        }
         if (maskEngine == null) {
             maskEngine = new MaskEngine();
         }
@@ -122,6 +119,31 @@ public final class WorldPlugin extends JavaPlugin {
             playerEditState = new PlayerEditState();
         }
         undoService = new UndoService(this, config.undoSessions());
+        if (paster == null) {
+            paster = new SchematicPaster(this, undoService);
+        } else {
+            paster.bind(undoService);
+        }
+        paster.setUseBlockBatch(config.schemUseBlockBatch());
+        paster.setMasks(maskEngine);
+        paster.setEditState(playerEditState);
+        paster.setParallelChunks(config.parallelChunks());
+        paster.setLargePasteTuning(
+                config.largePasteBlocks(), config.parallelChunksLarge(), config.autoFastLarge());
+        if (config.progressMessages()) {
+            paster.setProgressListener((uuid, blocks, total, chunksDone, chunksTotal) -> {
+                Player p = getServer().getPlayer(uuid);
+                if (p == null || !p.isOnline() || chunksTotal < 4) {
+                    return;
+                }
+                if (chunksDone == chunksTotal || chunksDone % Math.max(1, chunksTotal / 10) == 0) {
+                    int pct = total <= 0 ? 0 : (int) Math.min(100, (blocks * 100L) / total);
+                    p.sendMessage("§7Schem… §f" + pct + "% §7(§f" + chunksDone + "§7/§f" + chunksTotal + " §7chunks)");
+                }
+            });
+        } else {
+            paster.setProgressListener(null);
+        }
         brushService = new BrushService(this, undoService);
         brushService.setMaxRadius(config.maxBrushRadius());
         brushService.setParallelChunks(config.parallelChunks());
@@ -292,6 +314,10 @@ public final class WorldPlugin extends JavaPlugin {
 
     public ClipboardService clipboard() {
         return clipboardService;
+    }
+
+    public SchematicPaster paster() {
+        return paster;
     }
 
     public GenerationService generation() {

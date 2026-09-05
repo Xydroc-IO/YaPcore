@@ -30,6 +30,7 @@ public final class WorldConfig {
     private boolean cuiEnabled = true;
     private boolean clipboardWebEnabled = true;
     private boolean autoRelight = false;
+    private boolean schemUseBlockBatch = true;
 
     public WorldConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -62,6 +63,7 @@ public final class WorldConfig {
         cuiEnabled = c.getBoolean("cui.enabled", true);
         clipboardWebEnabled = c.getBoolean("editor.clipboard-web", true);
         autoRelight = c.getBoolean("limits.auto-relight", false);
+        schemUseBlockBatch = c.getBoolean("limits.schem-use-block-batch", true);
     }
 
     public boolean allowLoad() {
@@ -158,5 +160,9 @@ public final class WorldConfig {
 
     public boolean autoRelight() {
         return autoRelight;
+    }
+
+    public boolean schemUseBlockBatch() {
+        return schemUseBlockBatch;
     }
 }

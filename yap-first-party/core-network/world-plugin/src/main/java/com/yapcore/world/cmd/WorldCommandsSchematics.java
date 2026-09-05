@@ -134,7 +134,11 @@ final class WorldCommandsSchematics {
                         ? SpongeSchematicImporter.importFile(file)
                         : SchematicIO.load(file);
                 World target = player.getWorld();
-                paster.paste(schematic, target, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
+                if (paster.isLargePaste(schematic.blocks().size())) {
+                    YapSched.global(plugin, () -> player.sendMessage("§eLarge schem paste §7(§f"
+                            + schematic.blocks().size() + " §7blocks) — progress on."));
+                }
+                paster.paste(player, schematic, target, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
                         .thenAccept(count -> YapSched.global(plugin,
                                 () -> player.sendMessage("§aPasted §f" + count + " §ablocks.")));
             } catch (Exception e) {
