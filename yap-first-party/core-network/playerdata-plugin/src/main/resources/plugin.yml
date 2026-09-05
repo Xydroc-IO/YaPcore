@@ -135,11 +135,6 @@ commands:
     usage: /claim [tool|subdivide|tax|paytax|here|abandon|trust|untrust]
     aliases: [claims]
     permission: yapdata.claim
-  trader:
-    description: NPC traders admin
-    usage: /trader <create|remove|addbuy|addsell|list|reload>
-    permission: yapdata.trader.admin
-    aliases: [npctrader, traders]
   bag:
     description: Open extra bag pages
     usage: /bag [page] | /bag see <player> [page]
@@ -147,7 +142,7 @@ commands:
     aliases: [backpack, bp]
 permissions:
   yapdata.admin:
-    description: Reload, status, force-save, manage shops/auctions/claims/traders
+    description: Reload, status, force-save, manage shops/auctions/claims
     default: op
   yapdata.menu:
     description: Open /menu hub GUI
@@ -227,9 +222,6 @@ permissions:
   yapdata.claims.wilderness:
     description: Build in wilderness when require-claim-to-build is true
     default: false
-  yapdata.trader.admin:
-    description: Create and manage NPC traders
-    default: op
   yapdata.bag:
     description: Open /bag extra storage
     default: true

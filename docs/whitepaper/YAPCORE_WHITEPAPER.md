@@ -235,7 +235,7 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-protect.jar` | YaPProtect | CoreProtect-class audit / rollback / restore |
 | `yap-world.jar` | YaPWorld | FAWE-class edit (masks, brushes, generate, lighting, schems) + world mgmt |
 | `yap-regions.jar` | YaPRegions | WorldGuard-class cuboid flags |
-| `yap-npcs.jar` | YaPNpcs | Quest NPCs + dialogue |
+| `yap-npcs.jar` | YaPNpcs | Quest NPCs + dialogue + hub actions (shop/warp) |
 | `yap-tab.jar` | YaPTab | Tab list / header / footer / sidebar |
 | `yap-discord.jar` | YaPDiscord | Discord webhooks + relay |
 | `yap-guard.jar` | YaPGuard | Lightweight movement heuristics (not Grim); competitive → Grim |

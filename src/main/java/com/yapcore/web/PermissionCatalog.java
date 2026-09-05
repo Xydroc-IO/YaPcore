@@ -190,7 +190,7 @@ public final class PermissionCatalog {
                 n("yapstacker.give", "Stacker give", "Give stacker items"),
                 n("yapstacker.wand", "Stacker wand", "Stacker selection wand"),
                 n("yapstacker.admin", "Stacker admin", "Reload stacker"),
-                n("yapdata.trader.admin", "Trader admin", "Villager trader admin"),
+                n("yapnpcs.admin", "NPC admin", "Hub NPCs, shops, warps, dialogue"),
                 n("yappregen.admin", "Pregen admin", "Chunk pre-generator"),
                 n("yapknobs.reload", "Knobs reload", "Reload performance knobs"),
                 n("yapdb.admin", "Database admin", "YaPDB admin"),

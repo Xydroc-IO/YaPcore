@@ -1579,7 +1579,7 @@
           <h3>NPC list</h3>
           <div class="table-wrap">
             <table class="data-table">
-              <thead><tr><th>Id</th><th>Name</th><th>World</th><th>Location</th><th>Quest</th><th></th></tr></thead>
+              <thead><tr><th>Id</th><th>Name</th><th>World</th><th>Location</th><th>Quest</th><th>Action</th><th></th></tr></thead>
               <tbody id="npcBody"></tbody>
             </table>
           </div>
@@ -1602,6 +1602,15 @@
           <label class="field-block">Dialogue <span class="muted">(blank = default)</span>
             <textarea id="npcEditDialogue" rows="2" data-mc-color="insert" data-mc-preview="1" placeholder="Hello! Can I help you?"></textarea>
           </label>
+          <label class="field-block">Hub action <span class="muted">(/npc shop · setwarp · setcommand — or raw shop:12;warp:spawn)</span>
+            <input id="npcEditAction" placeholder="shop:1" list="npcActionHints"/>
+            <datalist id="npcActionHints">
+              <option value="shop:"></option>
+              <option value="warp:spawn"></option>
+              <option value="command:say hi {player}"></option>
+              <option value="player:kit starter"></option>
+            </datalist>
+          </label>
           <button id="npcSaveEdit" class="primary">Save changes</button>
         </div>
 
@@ -1616,13 +1625,14 @@
       <section id="tab-skills" class="panel">
         <div class="page-header">
           <h2>Skills</h2>
-          <p>Skill packs, levels, and leaderboard preview from yap-skills.</p>
+          <p>Mining, woodcutting, strength, and stored overall level (cap 120). Not an MMO suite.</p>
         </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="skillsInstalled">—</strong></div>
           <div class="stat"><span>Enabled</span><strong id="skillsEnabled">—</strong></div>
           <div class="stat"><span>Skills loaded</span><strong id="skillsCount">—</strong></div>
-          <div class="stat"><span>Max level</span><strong id="skillsMaxLevel">—</strong></div>
+          <div class="stat"><span>Skill max</span><strong id="skillsMaxLevel">—</strong></div>
+          <div class="stat"><span>Overall max</span><strong id="skillsOverallMax">—</strong></div>
         </div>
         <div class="card">
           <h3>Skill packs</h3>
@@ -1643,6 +1653,16 @@
             </table>
           </div>
           <p id="skillsLbEmpty" class="muted hint hidden">No leaderboard rows — play in-game or check DB connectivity.</p>
+        </div>
+        <div class="card">
+          <h3>Overall leaderboard</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Rank</th><th>Player</th><th>Level</th><th>XP</th></tr></thead>
+              <tbody id="skillsOverallLbBody"></tbody>
+            </table>
+          </div>
+          <p id="skillsOverallLbEmpty" class="muted hint hidden">No overall rows yet (needs yap_player_overall after skill XP).</p>
         </div>
         <div class="toolbar">
           <button id="skillsRefresh">Refresh</button>

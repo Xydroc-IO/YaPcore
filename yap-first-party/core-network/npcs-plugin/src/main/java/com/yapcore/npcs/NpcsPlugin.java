@@ -53,7 +53,7 @@ public final class NpcsPlugin extends JavaPlugin {
 
         PluginCommand npcCmd = getCommand("npc");
         if (npcCmd != null) {
-            NpcCommands npcCommands = new NpcCommands(npcService);
+            NpcCommands npcCommands = new NpcCommands(npcService, questService);
             npcCmd.setExecutor(npcCommands);
             npcCmd.setTabCompleter(npcCommands);
         }
@@ -114,6 +114,14 @@ public final class NpcsPlugin extends JavaPlugin {
         Path questsDir = getDataFolder().toPath().resolve("quests");
         try {
             Files.createDirectories(questsDir);
+            Path starter = questsDir.resolve("starter.yml");
+            if (!Files.exists(starter)) {
+                try (var in = getResource("quests/starter.yml")) {
+                    if (in != null) {
+                        Files.copy(in, starter);
+                    }
+                }
+            }
         } catch (Exception e) {
             getLogger().warning("Could not create quests dir: " + e.getMessage());
         }

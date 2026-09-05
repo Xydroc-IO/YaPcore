@@ -180,8 +180,8 @@ Grant `yapadmin.menu` (+ give/server) on `staff` / `admin` / `owner` ranks. Indi
 | `yapguard.bypass` | op | Skip anti-cheat checks |
 | `yapguard.alerts` | op | Staff violation alerts |
 | `yapmap.admin` | op | Map render config / reload |
-| `yapnpcs.admin` | op | `/npc create\|remove` |
-| `yapnpcs.quest` | true | `/quests list\|progress` |
+| `yapnpcs.admin` | op | `/npc create\|remove\|setaction` |
+| `yapnpcs.quests` | true | `/quests list\|progress` (`yapnpcs.quest` alias) |
 
 See [REGIONS.md](../gameplay/REGIONS.md) for claim flag commands (`/claim flag set`).
 

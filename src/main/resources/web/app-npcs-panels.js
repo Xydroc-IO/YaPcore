@@ -44,6 +44,7 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
         + `<td>${n.world || "—"}</td>`
         + `<td>${fmtCoord(n.x)}, ${fmtCoord(n.y)}, ${fmtCoord(n.z)}</td>`
         + `<td>${n.questId || "—"}</td>`
+        + `<td class="muted">${n.action || "—"}</td>`
         + `<td><button type="button" class="danger ghost npc-del" data-id="${n.id}">Remove</button></td>`;
       tr.onclick = (ev) => {
         if (ev.target.closest(".npc-del")) return;
@@ -74,6 +75,7 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
     $("npcEditYaw").value = n.yaw ?? 0;
     $("npcEditQuest").value = n.questId || "";
     $("npcEditDialogue").value = n.dialogue || "";
+    if ($("npcEditAction")) $("npcEditAction").value = n.action || "";
     document.querySelectorAll("#npcBody tr").forEach((tr) => {
       tr.classList.toggle("selected", tr.dataset.id === selectedId);
     });
@@ -158,6 +160,11 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
       if (dialogue) {
         await netPost("/api/npcs", { action: "setdialogue", id: selectedId, dialogue });
       }
+      await netPost("/api/npcs", {
+        action: "setaction",
+        id: selectedId,
+        npcAction: $("npcEditAction")?.value.trim() || "",
+      });
       setOut("NPC updated.");
       refreshNpcs();
     } catch (e) { setOut(e.message); }

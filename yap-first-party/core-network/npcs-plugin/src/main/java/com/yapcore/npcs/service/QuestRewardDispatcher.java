@@ -168,7 +168,7 @@ final class QuestRewardDispatcher {
         return true;
     }
 
-    /** {@code money:100} — routed to yapmmo givemoney when YaPMmoContent is loaded. */
+    /** {@code money:100} — deposits via YaPPlayerData when available. */
     private boolean dispatchMoneyReward(Player player, String reward) {
         if (reward == null || !reward.startsWith("money:")) {
             return false;
@@ -184,9 +184,22 @@ final class QuestRewardDispatcher {
             plugin.getLogger().warning("Invalid money reward: " + reward);
             return true;
         }
-        YapSched.global(plugin, () ->
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-                        "yapmmo givemoney " + player.getName() + " " + amount));
+        YapSched.global(plugin, () -> {
+            var reg = Bukkit.getServicesManager().getRegistration(
+                    com.yapcore.playerdata.PlayerDataService.class);
+            if (reg != null && reg.getProvider().economyEnabled()) {
+                var next = reg.getProvider().deposit(player.getUniqueId(), amount);
+                if (next.isPresent()) {
+                    YapSched.entity(plugin, player, () ->
+                            player.sendMessage("§a+$" + String.format("%.2f", amount)
+                                    + " §7(quest) · balance §f"
+                                    + reg.getProvider().formatMoney(next.get())));
+                    return;
+                }
+            }
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                    "eco give " + player.getName() + " " + amount);
+        });
         return true;
     }
 

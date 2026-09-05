@@ -22,7 +22,6 @@ import com.yapcore.playerdata.cmd.KitCommands;
 import com.yapcore.playerdata.cmd.MailCommands;
 import com.yapcore.playerdata.cmd.MenuCommand;
 import com.yapcore.playerdata.cmd.ShopCommands;
-import com.yapcore.playerdata.cmd.TraderCommands;
 import com.yapcore.playerdata.cmd.WarpCommands;
 import com.yapcore.playerdata.db.AuctionRepository;
 import com.yapcore.playerdata.db.AuthRepository;
@@ -46,7 +45,6 @@ import com.yapcore.playerdata.gui.Menus;
 import com.yapcore.playerdata.kit.KitDelivery;
 import com.yapcore.playerdata.kit.KitGrantService;
 import com.yapcore.playerdata.kit.KitSignListener;
-import com.yapcore.playerdata.npc.NpcTraderListener;
 import com.yapcore.playerdata.npc.NpcTraderService;
 import com.yapcore.playerdata.service.PlayerDataServiceImpl;
 import com.yapcore.playerdata.sync.JoinQuitListener;
@@ -141,6 +139,9 @@ public final class PlayerDataPlugin extends JavaPlugin {
         if (config.featureTraders()) {
             traders = new NpcTraderService(this, config, traderRepo, balances);
             traders.start();
+            getServer().getServicesManager().register(
+                    com.yapcore.playerdata.NpcTraderAccess.class,
+                    traders, this, ServicePriority.Normal);
         }
 
         menus = new Menus(this, config, sync, balances, homes, warps, kits, jobs, auctions, mail, claims);
@@ -168,9 +169,6 @@ public final class PlayerDataPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MenuListener(menus, traders), this);
         if (claims != null) {
             getServer().getPluginManager().registerEvents(new ClaimListener(this, claims), this);
-        }
-        if (traders != null) {
-            getServer().getPluginManager().registerEvents(new NpcTraderListener(traders), this);
         }
 
         if (config.economyEnabled()) {
@@ -281,12 +279,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
             bindDisabled("claim", "features.claims");
         }
 
-        if (config.featureTraders() && traders != null) {
-            TraderCommands traderCommands = new TraderCommands(traders, sync);
-            bind("trader", traderCommands, traderCommands);
-        } else {
-            bindDisabled("trader", config.economyEnabled() ? "features.traders" : "economy");
-        }
+        // NPC shops are administered via YaPNpcs (/npc shop). Offer catalogs stay here.
 
         if (config.economyEnabled() && config.syncEconomy()
                 && Bukkit.getPluginManager().getPlugin("Vault") != null) {
@@ -336,7 +329,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
             on.add("claims");
         }
         if (config.featureTraders()) {
-            on.add("traders");
+            on.add("npc-shops");
         }
         if (config.featureBackpack()) {
             on.add("backpack");
@@ -356,6 +349,11 @@ public final class PlayerDataPlugin extends JavaPlugin {
             backpack = null;
         }
         if (traders != null) {
+            try {
+                getServer().getServicesManager().unregister(
+                        com.yapcore.playerdata.NpcTraderAccess.class, traders);
+            } catch (Throwable ignored) {
+            }
             traders.stop();
             traders = null;
         }

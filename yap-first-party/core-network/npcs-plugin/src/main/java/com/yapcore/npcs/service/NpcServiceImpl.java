@@ -64,6 +64,22 @@ public final class NpcServiceImpl implements NpcService {
         if (world == null || world.isBlank()) {
             return false;
         }
+        String dialogue = null;
+        String questId = null;
+        String action = null;
+        UUID entityUuid = null;
+        try {
+            var existing = repository.get(config.serverId(), id);
+            if (existing.isPresent()) {
+                var old = existing.get();
+                dialogue = old.dialogue();
+                questId = old.questId();
+                action = old.action();
+                entityUuid = old.entityUuid();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "npc createAt lookup", e);
+        }
         var record = new NpcRepository.NpcRecord(
                 id,
                 config.serverId(),
@@ -73,9 +89,10 @@ public final class NpcServiceImpl implements NpcService {
                 y,
                 z,
                 yaw,
-                null,
-                null,
-                null);
+                entityUuid,
+                dialogue,
+                questId,
+                action);
         try {
             repository.upsert(record);
             spawnOrRefresh(record);
@@ -88,44 +105,45 @@ public final class NpcServiceImpl implements NpcService {
 
     @Override
     public boolean setQuestId(String id, String questId) {
-        try {
-            var opt = repository.get(config.serverId(), id);
-            if (opt.isEmpty()) {
-                return false;
-            }
-            var old = opt.get();
-            String q = questId == null || questId.isBlank() ? null : questId.trim();
-            var updated = new NpcRepository.NpcRecord(
-                    old.id(), old.serverId(), old.displayName(), old.world(),
-                    old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
-                    old.dialogue(), q);
-            repository.upsert(updated);
-            spawnOrRefresh(updated);
-            return true;
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "npc setquest", e);
-            return false;
-        }
+        return updateField(id, old -> new NpcRepository.NpcRecord(
+                old.id(), old.serverId(), old.displayName(), old.world(),
+                old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
+                old.dialogue(),
+                questId == null || questId.isBlank() ? null : questId.trim(),
+                old.action()), "npc setquest");
     }
 
     @Override
     public boolean setDialogue(String id, String dialogue) {
+        return updateField(id, old -> new NpcRepository.NpcRecord(
+                old.id(), old.serverId(), old.displayName(), old.world(),
+                old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
+                dialogue == null || dialogue.isBlank() ? null : dialogue,
+                old.questId(), old.action()), "npc setdialogue");
+    }
+
+    @Override
+    public boolean setAction(String id, String action) {
+        return updateField(id, old -> new NpcRepository.NpcRecord(
+                old.id(), old.serverId(), old.displayName(), old.world(),
+                old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
+                old.dialogue(), old.questId(),
+                action == null || action.isBlank() ? null : action.trim()), "npc setaction");
+    }
+
+    private boolean updateField(String id, java.util.function.Function<NpcRepository.NpcRecord, NpcRepository.NpcRecord> map,
+                                String logLabel) {
         try {
             var opt = repository.get(config.serverId(), id);
             if (opt.isEmpty()) {
                 return false;
             }
-            var old = opt.get();
-            String d = dialogue == null || dialogue.isBlank() ? null : dialogue;
-            var updated = new NpcRepository.NpcRecord(
-                    old.id(), old.serverId(), old.displayName(), old.world(),
-                    old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
-                    d, old.questId());
+            var updated = map.apply(opt.get());
             repository.upsert(updated);
             spawnOrRefresh(updated);
             return true;
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "npc setdialogue", e);
+            plugin.getLogger().log(Level.SEVERE, logLabel, e);
             return false;
         }
     }

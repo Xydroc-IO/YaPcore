@@ -4,7 +4,7 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 
-/** Persistent quest NPCs with dialogue and quest turn-in hooks. */
+/** Persistent quest NPCs with dialogue, quest turn-in, and hub actions. */
 public interface NpcService {
 
     boolean create(Player player, String id, String displayName);
@@ -17,6 +17,13 @@ public interface NpcService {
     boolean setQuestId(String id, String questId);
 
     boolean setDialogue(String id, String dialogue);
+
+    /**
+     * Hub click actions, semicolon-separated.
+     * Examples: {@code shop:12}, {@code warp:spawn}, {@code command:say hi {player}},
+     * {@code player:kit starter}. Blank clears.
+     */
+    boolean setAction(String id, String action);
 
     List<String> listIds();
 

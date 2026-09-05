@@ -130,7 +130,7 @@ public final class PlayerDataConfig {
         featureShops = economyEnabled && c.getBoolean("features.shops", true);
         featureJobs = economyEnabled && c.getBoolean("features.jobs", false);
         featureAuctions = economyEnabled && c.getBoolean("features.auctions", true);
-        featureTraders = economyEnabled && c.getBoolean("features.traders", false);
+        featureTraders = economyEnabled && c.getBoolean("features.traders", true);
         featureBackpack = c.getBoolean("features.backpack", true);
         backpackDefaultPages = Math.max(1, c.getInt("backpack.default-pages", 3));
         backpackMaxPages = Math.max(backpackDefaultPages, c.getInt("backpack.max-pages", 9));

@@ -167,7 +167,6 @@ starter-grants:
   admin:
     - yapdata.admin
     - yapdata.bag.pages.*
-    - yapdata.trader.admin
     - yapstacker.admin
     - yappregen.admin
     - yapknobs.reload

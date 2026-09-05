@@ -110,7 +110,7 @@ public final class DashboardGameplayRegionsApi {
             snap.put("ok", true);
             snap.put("npcs", npcs);
             snap.put("npcCount", npcs.size());
-            snap.put("hint", "POST create | remove | setquest | setdialogue | respawn | reload | info");
+            snap.put("hint", "POST create | remove | setquest | setdialogue | setaction | respawn | reload | info");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -128,7 +128,8 @@ public final class DashboardGameplayRegionsApi {
             resp.put("command", cmd);
             resp.put("result", result == null ? "" : result);
             if ("list".equals(action) || "create".equals(action) || "remove".equals(action)
-                    || "setquest".equals(action) || "setdialogue".equals(action)) {
+                    || "setquest".equals(action) || "setdialogue".equals(action)
+                    || "setaction".equals(action)) {
                 resp.put("npcs", DashboardNpcUtil.parseListJson(server.executeCommand("npc list json")));
             }
             DashboardHttp.json(ex, 200, resp);
@@ -162,6 +163,15 @@ public final class DashboardGameplayRegionsApi {
                 String id = body.getOrDefault("id", "").trim();
                 String dialogue = body.getOrDefault("dialogue", "").trim();
                 yield id.isEmpty() || dialogue.isEmpty() ? null : "npc setdialogue " + id + " " + dialogue;
+            }
+            case "setaction" -> {
+                String id = body.getOrDefault("id", "").trim();
+                if (id.isEmpty()) {
+                    yield null;
+                }
+                String actionVal = body.getOrDefault("npcAction", body.getOrDefault("actionValue", "")).trim();
+                // empty clears
+                yield actionVal.isEmpty() ? "npc setaction " + id : "npc setaction " + id + " " + actionVal;
             }
             case "create" -> {
                 String id = body.getOrDefault("id", "").trim();

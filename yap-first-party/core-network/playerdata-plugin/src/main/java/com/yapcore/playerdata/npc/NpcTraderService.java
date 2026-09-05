@@ -1,5 +1,6 @@
 package com.yapcore.playerdata.npc;
 
+import com.yapcore.playerdata.NpcTraderAccess;
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.NpcTraderRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
@@ -8,37 +9,31 @@ import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.World;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Villager;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * Persistent villager NPC traders with buy/sell offer GUIs.
+ * Offer catalogs + buy/sell GUIs for YaPNpcs hub shops.
+ * No standalone trader villagers — create/manage via {@code /npc shop}.
  */
-public final class NpcTraderService {
+public final class NpcTraderService implements NpcTraderAccess {
 
     private final JavaPlugin plugin;
     private final PlayerDataConfig config;
     private final NpcTraderRepository repo;
     private final BalanceStore balances;
-    private final NamespacedKey traderKey;
     private final Map<UUID, Map<Integer, Long>> offerClicks = new HashMap<>();
 
     public NpcTraderService(JavaPlugin plugin, PlayerDataConfig config,
@@ -47,152 +42,113 @@ public final class NpcTraderService {
         this.config = config;
         this.repo = repo;
         this.balances = balances;
-        this.traderKey = new NamespacedKey(plugin, "npc_trader_id");
-    }
-
-    public NamespacedKey traderKey() {
-        return traderKey;
     }
 
     public void start() {
-        YapSched.global(plugin, this::respawnAll);
+        YapSched.global(plugin, this::despawnLegacyEntities);
     }
 
     public void stop() {
-        // leave entities; they persist in world — entity_uuid updated on next start
         offerClicks.clear();
     }
 
-    public void respawnAll() {
+    /** Remove leftover /trader villager entities from older installs; catalogs stay. */
+    private void despawnLegacyEntities() {
         try {
+            int removed = 0;
             for (var t : repo.listForServer(config.serverId())) {
-                spawnOrRefresh(t);
+                if (t.entityUuid() == null) {
+                    continue;
+                }
+                Entity e = Bukkit.getEntity(t.entityUuid());
+                if (e != null) {
+                    e.remove();
+                    removed++;
+                }
+                repo.setEntityUuid(t.id(), null);
+            }
+            if (removed > 0) {
+                plugin.getLogger().info("Removed " + removed
+                        + " legacy trader villager(s) — shops are YaPNpcs-only now");
             }
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to spawn NPC traders", e);
+            plugin.getLogger().log(Level.WARNING, "legacy trader despawn", e);
         }
     }
 
-    public long createAt(Player player, String name) throws SQLException {
-        Location loc = player.getLocation();
-        var draft = new NpcTraderRepository.Trader(
-                0, config.serverId(), loc.getWorld().getName(),
-                loc.getX(), loc.getY(), loc.getZ(), loc.getYaw(),
-                name, null);
-        long id = repo.create(draft);
-        var saved = repo.get(id).orElseThrow();
-        spawnOrRefresh(saved);
-        return id;
+    @Override
+    public long createCatalog(String name) {
+        try {
+            String world = Bukkit.getWorlds().isEmpty() ? "world" : Bukkit.getWorlds().getFirst().getName();
+            var draft = new NpcTraderRepository.Trader(
+                    0, config.serverId(), world,
+                    0.5, -64, 0.5, 0f,
+                    name == null || name.isBlank() ? "Shop" : name, null);
+            return repo.create(draft);
+        } catch (SQLException e) {
+            throw new IllegalStateException("createCatalog failed: " + e.getMessage(), e);
+        }
     }
 
-    public boolean removeNearest(Player player, double radius) throws SQLException {
-        Optional<Long> id = findTraderIdNear(player.getLocation(), radius);
-        if (id.isEmpty()) {
+    @Override
+    public long addOffer(long traderId, String mode, Material material, int amount, double price, int stock) {
+        try {
+            return repo.addOffer(traderId, mode, material, amount, price, stock);
+        } catch (SQLException e) {
+            throw new IllegalStateException("addOffer failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<OfferView> listOffers(long traderId) {
+        try {
+            return repo.offers(traderId).stream()
+                    .map(o -> new OfferView(o.id(), o.mode(), o.material().name(),
+                            o.amount(), o.price(), o.stock()))
+                    .toList();
+        } catch (SQLException e) {
+            throw new IllegalStateException("listOffers failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean deleteOffer(long offerId) {
+        try {
+            return repo.deleteOffer(offerId);
+        } catch (SQLException e) {
+            throw new IllegalStateException("deleteOffer failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean deleteCatalog(long traderId) {
+        try {
+            return repo.delete(traderId);
+        } catch (SQLException e) {
+            throw new IllegalStateException("deleteCatalog failed: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public boolean tradersEnabled() {
+        return true;
+    }
+
+    @Override
+    public boolean traderExists(long traderId) {
+        try {
+            return repo.get(traderId).isPresent();
+        } catch (SQLException e) {
             return false;
         }
-        despawn(id.get());
-        return repo.delete(id.get());
     }
 
-    public Optional<Long> findTraderIdNear(Location loc, double radius) throws SQLException {
-        double best = radius * radius;
-        Long found = null;
-        for (var t : repo.listForServer(config.serverId())) {
-            if (!t.world().equals(loc.getWorld().getName())) {
-                continue;
-            }
-            double dx = t.x() - loc.getX();
-            double dy = t.y() - loc.getY();
-            double dz = t.z() - loc.getZ();
-            double d = dx * dx + dy * dy + dz * dz;
-            if (d <= best) {
-                best = d;
-                found = t.id();
-            }
-        }
-        return Optional.ofNullable(found);
-    }
-
-    public Optional<Long> traderIdFromEntity(Entity entity) {
-        if (entity == null) {
-            return Optional.empty();
-        }
-        Byte ignored = entity.getPersistentDataContainer().get(traderKey, PersistentDataType.BYTE);
-        String raw = entity.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "npc_trader_id_long"), PersistentDataType.STRING);
-        if (raw != null) {
-            try {
-                return Optional.of(Long.parseLong(raw));
-            } catch (NumberFormatException e) {
-                return Optional.empty();
-            }
-        }
-        // also check long stored as string key we set
-        return Optional.empty();
-    }
-
-    public Optional<Long> readTraderId(Entity entity) {
-        String raw = entity.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "trader_id"), PersistentDataType.STRING);
-        if (raw == null) {
-            return Optional.empty();
-        }
-        try {
-            return Optional.of(Long.parseLong(raw));
-        } catch (NumberFormatException e) {
-            return Optional.empty();
-        }
-    }
-
-    private void tag(Entity entity, long id) {
-        entity.getPersistentDataContainer().set(
-                new NamespacedKey(plugin, "trader_id"), PersistentDataType.STRING, Long.toString(id));
-        entity.getPersistentDataContainer().set(traderKey, PersistentDataType.BYTE, (byte) 1);
-    }
-
-    private void spawnOrRefresh(NpcTraderRepository.Trader t) throws SQLException {
-        World world = Bukkit.getWorld(t.world());
-        if (world == null) {
-            return;
-        }
-        if (t.entityUuid() != null) {
-            Entity existing = Bukkit.getEntity(t.entityUuid());
-            if (existing instanceof Villager v && !existing.isDead()) {
-                tag(v, t.id());
-                v.customName(Component.text(t.name(), NamedTextColor.GOLD));
-                v.setCustomNameVisible(true);
-                return;
-            }
-        }
-        Location loc = new Location(world, t.x(), t.y(), t.z(), t.yaw(), 0);
-        Villager v = (Villager) world.spawnEntity(loc, EntityType.VILLAGER);
-        v.setAI(false);
-        v.setInvulnerable(true);
-        v.setSilent(true);
-        v.setRemoveWhenFarAway(false);
-        v.setProfession(Villager.Profession.NITWIT);
-        v.customName(Component.text(t.name(), NamedTextColor.GOLD));
-        v.setCustomNameVisible(true);
-        tag(v, t.id());
-        repo.setEntityUuid(t.id(), v.getUniqueId());
-    }
-
-    private void despawn(long id) throws SQLException {
-        var opt = repo.get(id);
-        if (opt.isEmpty() || opt.get().entityUuid() == null) {
-            return;
-        }
-        Entity e = Bukkit.getEntity(opt.get().entityUuid());
-        if (e != null) {
-            e.remove();
-        }
-    }
-
+    @Override
     public void openTradeGui(Player player, long traderId) {
         try {
             var trader = repo.get(traderId);
             if (trader.isEmpty()) {
-                player.sendMessage("§cTrader gone.");
+                player.sendMessage("§cShop gone.");
                 return;
             }
             List<NpcTraderRepository.Offer> offers = repo.offers(traderId);
@@ -230,7 +186,7 @@ public final class NpcTraderService {
             offerClicks.put(player.getUniqueId(), meta);
             player.openInventory(inv);
         } catch (SQLException e) {
-            player.sendMessage("§cTrader error.");
+            player.sendMessage("§cShop error.");
             plugin.getLogger().log(Level.WARNING, "openTradeGui", e);
         }
     }
@@ -256,7 +212,6 @@ public final class NpcTraderService {
 
     private void executeTrade(Player player, long offerId) throws Exception {
         NpcTraderRepository.Offer offer = null;
-        // find offer among all — cheap enough
         for (var t : repo.listForServer(config.serverId())) {
             for (var o : repo.offers(t.id())) {
                 if (o.id() == offerId) {
@@ -272,7 +227,6 @@ public final class NpcTraderService {
             throw new IllegalStateException("Offer gone");
         }
         if (offer.mode().equalsIgnoreCase("BUY")) {
-            // player buys from NPC
             if (offer.stock() == 0) {
                 throw new IllegalStateException("Out of stock");
             }
@@ -288,7 +242,6 @@ public final class NpcTraderService {
             player.sendMessage("§aBought §f" + offer.amount() + "x " + offer.material()
                     + " §afor §f$" + String.format("%.2f", offer.price()));
         } else {
-            // player sells to NPC
             ItemStack need = new ItemStack(offer.material(), offer.amount());
             if (!player.getInventory().containsAtLeast(need, offer.amount())) {
                 throw new IllegalStateException("You don't have the items");
@@ -302,10 +255,6 @@ public final class NpcTraderService {
             player.sendMessage("§aSold §f" + offer.amount() + "x " + offer.material()
                     + " §afor §f$" + String.format("%.2f", offer.price()));
         }
-    }
-
-    public NpcTraderRepository repo() {
-        return repo;
     }
 
     public void clearClicks(Player player) {

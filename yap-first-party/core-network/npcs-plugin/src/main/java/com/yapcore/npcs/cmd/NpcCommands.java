@@ -1,25 +1,35 @@
 package com.yapcore.npcs.cmd;
 
+import com.yapcore.npcs.action.NpcActionMutator;
+import com.yapcore.npcs.action.NpcActions;
 import com.yapcore.npcs.db.NpcRepository;
 import com.yapcore.npcs.service.NpcServiceImpl;
+import com.yapcore.npcs.service.QuestServiceImpl;
+import com.yapcore.playerdata.NpcTraderAccess;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 public final class NpcCommands implements CommandExecutor, TabCompleter {
 
     private static final String JSON_PREFIX = "YAPNPC_JSON:";
 
     private final NpcServiceImpl npcs;
+    private final QuestServiceImpl quests;
 
-    public NpcCommands(NpcServiceImpl npcs) {
+    public NpcCommands(NpcServiceImpl npcs, QuestServiceImpl quests) {
         this.npcs = npcs;
+        this.quests = quests;
     }
 
     @Override
@@ -29,9 +39,10 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            sender.sendMessage("§e/npc create <id> [name] §7· §e/npc create <id> at <world> <x> <y> <z> [yaw] [name]");
-            sender.sendMessage("§e/npc remove <id> §7· §e/npc list [json] §7· §e/npc setquest <id> <questId>");
-            sender.sendMessage("§e/npc setdialogue <id> <text> §7· §e/npc respawn §7· §e/npc reload");
+            sender.sendMessage("§e/npc create|remove|list|info|respawn|reload");
+            sender.sendMessage("§e/npc setdialogue|setquest|setwarp|setcommand|setplayer <id> …");
+            sender.sendMessage("§e/npc shop <enable|addbuy|addsell|list|deloffer|clear> <id> …");
+            sender.sendMessage("§7Shop/warp/command: §f/npc shop§7 · §fsetwarp§7 · §fsetcommand");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -41,11 +52,16 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             case "list" -> handleList(sender, args);
             case "setquest" -> handleSetQuest(sender, args);
             case "setdialogue" -> handleSetDialogue(sender, args);
+            case "setaction" -> handleSetAction(sender, args);
+            case "setwarp" -> handleSetWarp(sender, args);
+            case "setcommand" -> handleSetCommand(sender, args, NpcActions.Kind.COMMAND, "command");
+            case "setplayer", "setplayercmd" -> handleSetCommand(sender, args, NpcActions.Kind.PLAYER, "player");
+            case "shop" -> handleShop(sender, args);
             case "respawn" -> handleRespawn(sender);
             case "reload" -> handleReload(sender);
             case "info" -> handleInfo(sender, args);
             default -> {
-                sender.sendMessage("§cUnknown subcommand.");
+                sender.sendMessage("§cUnknown subcommand. Try §e/npc§c for help.");
                 yield true;
             }
         };
@@ -102,6 +118,18 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cUsage: /npc remove <id>");
             return true;
         }
+        var opt = npcs.get(args[1]);
+        if (opt.isEmpty()) {
+            sender.sendMessage("§cNPC not found.");
+            return true;
+        }
+        // Drop linked shop catalog if present
+        NpcActionMutator.shopId(opt.get().action()).ifPresent(shopId -> {
+            NpcTraderAccess traders = traders();
+            if (traders != null) {
+                traders.deleteCatalog(shopId);
+            }
+        });
         if (npcs.remove(args[1])) {
             sender.sendMessage("§aRemoved NPC §f" + args[1]);
         } else {
@@ -153,6 +181,260 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean handleSetAction(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /npc setaction <id> [shop:12|warp:spawn|command:...|player:...]");
+            sender.sendMessage("§7Prefer §e/npc shop§7, §e/npc setwarp§7, §e/npc setcommand§7.");
+            return true;
+        }
+        String action = args.length >= 3 ? String.join(" ", copyFrom(args, 2)) : "";
+        if (npcs.setAction(args[1], action)) {
+            sender.sendMessage("§aAction for §f" + args[1] + " §7→ §f" + (action.isBlank() ? "(none)" : action));
+        } else {
+            sender.sendMessage("§cNPC not found.");
+        }
+        return true;
+    }
+
+    private boolean handleSetWarp(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /npc setwarp <id> [warpName]  §7(blank clears)");
+            return true;
+        }
+        var opt = npcs.get(args[1]);
+        if (opt.isEmpty()) {
+            sender.sendMessage("§cNPC not found.");
+            return true;
+        }
+        String warp = args.length >= 3 ? args[2].trim() : "";
+        String next = warp.isEmpty()
+                ? NpcActionMutator.replaceKind(opt.get().action(), NpcActions.Kind.WARP, null)
+                : NpcActionMutator.replaceKind(opt.get().action(), NpcActions.Kind.WARP, "warp:" + warp);
+        npcs.setAction(args[1], next);
+        sender.sendMessage("§aWarp for §f" + args[1] + " §7→ §f" + (warp.isEmpty() ? "(none)" : warp));
+        return true;
+    }
+
+    private boolean handleSetCommand(CommandSender sender, String[] args, NpcActions.Kind kind, String prefix) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /npc set" + prefix + " <id> [command…]  §7(blank clears; {player} ok)");
+            return true;
+        }
+        var opt = npcs.get(args[1]);
+        if (opt.isEmpty()) {
+            sender.sendMessage("§cNPC not found.");
+            return true;
+        }
+        String cmd = args.length >= 3 ? String.join(" ", copyFrom(args, 2)).trim() : "";
+        String token = cmd.isEmpty() ? null : prefix + ":" + cmd;
+        String next = NpcActionMutator.replaceKind(opt.get().action(), kind, token);
+        npcs.setAction(args[1], next);
+        sender.sendMessage("§a" + prefix + " for §f" + args[1] + " §7→ §f" + (cmd.isEmpty() ? "(none)" : cmd));
+        return true;
+    }
+
+    private boolean handleShop(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§e/npc shop enable <id> [catalogName]");
+            sender.sendMessage("§e/npc shop addbuy|addsell <id> <price> [stock=-1] §7(hold item)");
+            sender.sendMessage("§e/npc shop list|clear <id> §7· §e/npc shop deloffer <id> <offerId>");
+            return true;
+        }
+        String op = args[1].toLowerCase(Locale.ROOT);
+        return switch (op) {
+            case "enable", "create", "attach" -> shopEnable(sender, args);
+            case "addbuy", "buy" -> shopAddOffer(sender, args, "BUY");
+            case "addsell", "sell" -> shopAddOffer(sender, args, "SELL");
+            case "list" -> shopList(sender, args);
+            case "deloffer" -> shopDelOffer(sender, args);
+            case "clear", "disable" -> shopClear(sender, args);
+            default -> {
+                sender.sendMessage("§cUnknown shop op. Try §e/npc shop§c.");
+                yield true;
+            }
+        };
+    }
+
+    private boolean shopEnable(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /npc shop enable <id> [catalogName]");
+            return true;
+        }
+        String npcId = args[2];
+        var opt = npcs.get(npcId);
+        if (opt.isEmpty()) {
+            sender.sendMessage("§cNPC not found. Create it first: /npc create " + npcId);
+            return true;
+        }
+        NpcTraderAccess traders = traders();
+        if (traders == null) {
+            sender.sendMessage("§cYaPPlayerData traders off — set features.traders: true.");
+            return true;
+        }
+        Optional<Long> existing = NpcActionMutator.shopId(opt.get().action());
+        if (existing.isPresent() && traders.traderExists(existing.get())) {
+            sender.sendMessage("§aShop already linked §f#" + existing.get()
+                    + " §7— hold item · §e/npc shop addbuy " + npcId + " <price>");
+            return true;
+        }
+        String catalogName = args.length >= 4
+                ? String.join(" ", copyFrom(args, 3))
+                : (opt.get().displayName() == null ? npcId : opt.get().displayName());
+        long shopId = traders.createCatalog(catalogName);
+        String next = NpcActionMutator.replaceKind(opt.get().action(), NpcActions.Kind.SHOP, "shop:" + shopId);
+        npcs.setAction(npcId, next);
+        sender.sendMessage("§aShop enabled on §f" + npcId + " §7→ catalog §f#" + shopId);
+        sender.sendMessage("§7Hold item · §e/npc shop addbuy " + npcId + " <price> [stock]");
+        return true;
+    }
+
+    private boolean shopAddOffer(CommandSender sender, String[] args, String mode) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cPlayers only (need held item).");
+            return true;
+        }
+        if (args.length < 4) {
+            sender.sendMessage("§cUsage: /npc shop " + args[1] + " <id> <price> [stock=-1]");
+            return true;
+        }
+        String npcId = args[2];
+        var opt = npcs.get(npcId);
+        if (opt.isEmpty()) {
+            sender.sendMessage("§cNPC not found.");
+            return true;
+        }
+        NpcTraderAccess traders = traders();
+        if (traders == null) {
+            sender.sendMessage("§cYaPPlayerData traders off.");
+            return true;
+        }
+        long shopId = ensureShop(npcId, opt.get(), traders, sender);
+        if (shopId < 0) {
+            return true;
+        }
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        if (hand.getType().isAir()) {
+            sender.sendMessage("§cHold the item to trade.");
+            return true;
+        }
+        double price;
+        int stock = -1;
+        try {
+            price = Double.parseDouble(args[3]);
+            if (args.length >= 5) {
+                stock = Integer.parseInt(args[4]);
+            }
+        } catch (NumberFormatException e) {
+            sender.sendMessage("§cInvalid price/stock.");
+            return true;
+        }
+        long oid = traders.addOffer(shopId, mode, hand.getType(),
+                Math.max(1, hand.getAmount()), price, stock);
+        sender.sendMessage("§a" + mode + " offer §f#" + oid + " §a"
+                + hand.getAmount() + "x " + hand.getType()
+                + " @ $" + String.format("%.2f", price)
+                + " §7on §f" + npcId);
+        return true;
+    }
+
+    private boolean shopList(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /npc shop list <id>");
+            return true;
+        }
+        var opt = npcs.get(args[2]);
+        if (opt.isEmpty()) {
+            sender.sendMessage("§cNPC not found.");
+            return true;
+        }
+        NpcTraderAccess traders = traders();
+        if (traders == null) {
+            sender.sendMessage("§cYaPPlayerData traders off.");
+            return true;
+        }
+        Optional<Long> shopId = NpcActionMutator.shopId(opt.get().action());
+        if (shopId.isEmpty()) {
+            sender.sendMessage("§7No shop on this NPC. §e/npc shop enable " + args[2]);
+            return true;
+        }
+        var offers = traders.listOffers(shopId.get());
+        sender.sendMessage("§6Shop §f#" + shopId.get() + " §7on §f" + args[2]
+                + " §7(" + offers.size() + " offers)");
+        for (var o : offers) {
+            sender.sendMessage("§e#" + o.id() + " §f" + o.mode() + " "
+                    + o.amount() + "x " + o.material()
+                    + " §a$" + String.format("%.2f", o.price())
+                    + " §7stock=" + (o.stock() < 0 ? "∞" : o.stock()));
+        }
+        return true;
+    }
+
+    private boolean shopDelOffer(CommandSender sender, String[] args) {
+        if (args.length < 4) {
+            sender.sendMessage("§cUsage: /npc shop deloffer <id> <offerId>");
+            return true;
+        }
+        NpcTraderAccess traders = traders();
+        if (traders == null) {
+            sender.sendMessage("§cYaPPlayerData traders off.");
+            return true;
+        }
+        long oid;
+        try {
+            oid = Long.parseLong(args[3]);
+        } catch (NumberFormatException e) {
+            sender.sendMessage("§cInvalid offer id.");
+            return true;
+        }
+        if (traders.deleteOffer(oid)) {
+            sender.sendMessage("§aDeleted offer §f#" + oid);
+        } else {
+            sender.sendMessage("§cUnknown offer.");
+        }
+        return true;
+    }
+
+    private boolean shopClear(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /npc shop clear <id>");
+            return true;
+        }
+        String npcId = args[2];
+        var opt = npcs.get(npcId);
+        if (opt.isEmpty()) {
+            sender.sendMessage("§cNPC not found.");
+            return true;
+        }
+        NpcTraderAccess traders = traders();
+        Optional<Long> shopId = NpcActionMutator.shopId(opt.get().action());
+        if (shopId.isPresent() && traders != null) {
+            traders.deleteCatalog(shopId.get());
+        }
+        String next = NpcActionMutator.replaceKind(opt.get().action(), NpcActions.Kind.SHOP, null);
+        npcs.setAction(npcId, next);
+        sender.sendMessage("§aShop cleared from §f" + npcId);
+        return true;
+    }
+
+    private long ensureShop(String npcId, NpcRepository.NpcRecord npc, NpcTraderAccess traders,
+                            CommandSender sender) {
+        Optional<Long> existing = NpcActionMutator.shopId(npc.action());
+        if (existing.isPresent() && traders.traderExists(existing.get())) {
+            return existing.get();
+        }
+        long shopId = traders.createCatalog(npc.displayName() == null ? npcId : npc.displayName());
+        String next = NpcActionMutator.replaceKind(npc.action(), NpcActions.Kind.SHOP, "shop:" + shopId);
+        npcs.setAction(npcId, next);
+        sender.sendMessage("§7Auto-enabled shop catalog §f#" + shopId + " §7on §f" + npcId);
+        return shopId;
+    }
+
+    private static NpcTraderAccess traders() {
+        RegisteredServiceProvider<NpcTraderAccess> reg =
+                Bukkit.getServicesManager().getRegistration(NpcTraderAccess.class);
+        return reg == null ? null : reg.getProvider();
+    }
+
     private boolean handleRespawn(CommandSender sender) {
         npcs.respawnAll();
         sender.sendMessage("§aRespawning all NPCs…");
@@ -161,8 +443,11 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
 
     private boolean handleReload(CommandSender sender) {
         npcs.reloadConfig();
+        if (quests != null) {
+            quests.reloadQuests();
+        }
         npcs.respawnAll();
-        sender.sendMessage("§aYaPNpcs config reloaded and NPCs respawned.");
+        sender.sendMessage("§aYaPNpcs config + quest packs reloaded; NPCs respawned.");
         return true;
     }
 
@@ -181,6 +466,9 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7World §f" + npc.world() + " §7· §f" + fmt(npc.x()) + " " + fmt(npc.y()) + " " + fmt(npc.z()));
         sender.sendMessage("§7Quest §f" + (npc.questId() == null ? "—" : npc.questId()));
         sender.sendMessage("§7Dialogue §f" + (npc.dialogue() == null ? "(default)" : npc.dialogue()));
+        sender.sendMessage("§7Action §f" + (npc.action() == null || npc.action().isBlank() ? "—" : npc.action()));
+        NpcActionMutator.shopId(npc.action()).ifPresent(id ->
+                sender.sendMessage("§7Shop catalog §f#" + id + " §7— §e/npc shop list " + npc.id()));
         return true;
     }
 
@@ -200,7 +488,8 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
                     .append("\"z\":").append(n.z()).append(',')
                     .append("\"yaw\":").append(n.yaw()).append(',')
                     .append("\"questId\":").append(q(n.questId())).append(',')
-                    .append("\"dialogue\":").append(q(n.dialogue()))
+                    .append("\"dialogue\":").append(q(n.dialogue())).append(',')
+                    .append("\"action\":").append(q(n.action()))
                     .append('}');
         }
         return sb.append(']').toString();
@@ -247,14 +536,23 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return prefix(List.of("create", "remove", "list", "setquest", "setdialogue", "respawn", "reload", "info"), args[0]);
+            return prefix(List.of("create", "remove", "list", "setquest", "setdialogue", "setaction",
+                    "setwarp", "setcommand", "setplayer", "shop", "respawn", "reload", "info"), args[0]);
         }
         if (args.length == 2) {
             return switch (args[0].toLowerCase(Locale.ROOT)) {
-                case "remove", "setquest", "setdialogue", "info" -> prefix(npcs.listIds(), args[1]);
+                case "remove", "setquest", "setdialogue", "setaction", "setwarp",
+                     "setcommand", "setplayer", "setplayercmd", "info" -> prefix(npcs.listIds(), args[1]);
                 case "list" -> prefix(List.of("json"), args[1]);
+                case "shop" -> prefix(List.of("enable", "addbuy", "addsell", "list", "deloffer", "clear"), args[1]);
                 default -> List.of();
             };
+        }
+        if (args.length == 3 && "shop".equalsIgnoreCase(args[0])) {
+            return prefix(npcs.listIds(), args[2]);
+        }
+        if (args.length == 3 && "setaction".equalsIgnoreCase(args[0])) {
+            return prefix(List.of("shop:", "warp:", "command:", "player:"), args[2]);
         }
         return List.of();
     }

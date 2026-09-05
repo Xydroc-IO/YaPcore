@@ -27,7 +27,8 @@ public final class NpcRepository {
             float yaw,
             UUID entityUuid,
             String dialogue,
-            String questId
+            String questId,
+            String action
     ) {
         public Location toLocation(org.bukkit.World worldObj) {
             return new Location(worldObj, x, y, z, yaw, 0);
@@ -44,7 +45,7 @@ public final class NpcRepository {
         List<NpcRecord> out = new ArrayList<>();
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, server_id, display_name, world, x, y, z, yaw, entity_uuid, dialogue, quest_id
+                     SELECT id, server_id, display_name, world, x, y, z, yaw, entity_uuid, dialogue, quest_id, action
                      FROM yap_npcs WHERE server_id = ?
                      ORDER BY id
                      """)) {
@@ -61,7 +62,7 @@ public final class NpcRepository {
     public Optional<NpcRecord> get(String serverId, String id) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, server_id, display_name, world, x, y, z, yaw, entity_uuid, dialogue, quest_id
+                     SELECT id, server_id, display_name, world, x, y, z, yaw, entity_uuid, dialogue, quest_id, action
                      FROM yap_npcs WHERE server_id = ? AND id = ?
                      """)) {
             ps.setString(1, serverId);
@@ -87,12 +88,13 @@ public final class NpcRepository {
         set.put("entity_uuid", "EXCLUDED.entity_uuid");
         set.put("dialogue", "EXCLUDED.dialogue");
         set.put("quest_id", "EXCLUDED.quest_id");
+        set.put("action", "EXCLUDED.action");
         String sql = dialect.upsert(
                 "yap_npcs",
                 List.of("server_id", "id"),
                 List.of(
                         "id", "server_id", "display_name", "world", "x", "y", "z", "yaw",
-                        "entity_uuid", "dialogue", "quest_id"),
+                        "entity_uuid", "dialogue", "quest_id", "action"),
                 set);
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(sql)) {
@@ -107,6 +109,7 @@ public final class NpcRepository {
             ps.setString(9, npc.entityUuid() != null ? npc.entityUuid().toString() : null);
             ps.setString(10, npc.dialogue());
             ps.setString(11, npc.questId());
+            ps.setString(12, npc.action());
             ps.executeUpdate();
         }
     }
@@ -146,6 +149,7 @@ public final class NpcRepository {
                 rs.getFloat("yaw"),
                 entityUuid,
                 rs.getString("dialogue"),
-                rs.getString("quest_id"));
+                rs.getString("quest_id"),
+                rs.getString("action"));
     }
 }

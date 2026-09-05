@@ -80,7 +80,7 @@ Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin
 | Claims | on | `features.claims` (+ `claims.*`) |
 | Shops / auctions (AH) | **on** | `features.shops` / `auctions` |
 | Jobs | **off** (keep off with YaPSkills) | `features.jobs` |
-| NPC traders | **off** | `features.traders` |
+| NPC shop catalogs | **on** | `features.traders` — used by YaPNpcs `/npc shop` (no `/trader`) |
 | Backpack `/bag` | **on** | `features.backpack` |
 
 Money features require `economy.enabled: true`. When economy is off, shops/jobs/AH/traders and claim tax stay off even if their feature flags are true.
@@ -106,12 +106,15 @@ features:
   jobs: false
   auctions: true
   claims: true
-  traders: false
+  traders: true
   backpack: true
 backpack:
   default-pages: 3
   max-pages: 9
 ```
+
+**NPC shops:** administered only via **YaPNpcs** — `/npc shop enable|addbuy|list|clear`.
+PlayerData stores offer catalogs + opens the trade GUI; there is no `/trader` command.
 
 **Freeze lifted:** Essentials-class QoL lives in **`yap-essentials.jar`**. Playerdata stays the data/sync layer.
 
@@ -122,7 +125,7 @@ backpack:
 | Sync | Inv / XP / vitals · economy when enabled |
 | Fancy GUIs | `/menu` hub (icons match enabled modules) |
 | Claims | Shovel · subdivides · taxes (tax needs economy) |
-| NPC traders | `/trader` (opt-in; needs economy) |
+| NPC shop catalogs | Backend for `/npc shop` (YaPNpcs) |
 | Homes/warps/kits/mail | Cross-server |
 | Shops / AH | Chest shops (`/shop`) + auction house (`/ah`) |
 | Backpack | `/bag` paged extra storage (45 slots/page). Vanilla E inventory stays 36. Optional Fabric `yap-bag` adds a keybind and inventory tabs. |

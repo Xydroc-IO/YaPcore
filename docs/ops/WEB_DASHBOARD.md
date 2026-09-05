@@ -81,7 +81,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Packs** | `/api/packs` | resource packs, active set | setActive, add, remove, clear |
 | **World** | `/api/world` | schematics, brush max, load/unload flags | create (type/env/seed/generator), load, unload, reload, schem-list, **save-brush** |
 | **Regions** | `/api/regions` | region table (JSON), flag names | **define** (cuboid coords), **flag-set**, list |
-| **NPCs** | `/api/npcs` | npc table, quest ids | create, remove, setquest, setdialogue, respawn, reload, info |
+| **NPCs** | `/api/npcs` | npc table, quest ids | create, remove, setquest, setdialogue, setaction, respawn, reload, info |
 | **Essentials** | `/api/essentials` | features, MOTD, rules, spawn | reload, broadcast, save-motd, save-rules, set-feature |
 | **Pregen** | `/api/pregen` | job status | start, pause, resume, cancel |
 | **Player data** | `/api/playerdata` | economy, auth, feature toggles | reload, save, set-feature |
@@ -225,7 +225,9 @@ These ship as **Plugin settings** editors (or in-game hubs) on purpose — they 
 Dashboard drives the plugin directly:
 
 - Create NPC at world coordinates (console: `npc create <id> at <world> <x> <y> <z> [yaw] [name]`)
-- Edit display name, quest, dialogue; remove; respawn all; reload config
+- Edit display name, quest, dialogue, hub **action**; remove; respawn all; reload config + quest packs
+- Hub actions owned by `/npc`: `/npc shop enable|addbuy|list`, `/npc setwarp`, `/npc setcommand`
+- Shop catalogs live in YaPPlayerData; there is no separate `/trader` command
 - GET `/api/npcs` returns structured `npcs[]` from `npc list json`
 
 ### Regions (`yap-regions`)

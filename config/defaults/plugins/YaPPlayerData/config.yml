@@ -32,8 +32,9 @@ economy:
   enabled: true
 
 # Feature modules (freeze: no new Essentials-class commands without product review).
-# shops + auctions on by default; jobs stay off (overlaps YaPSkills mining payouts).
-# traders remain opt-in. Money features also require economy.enabled=true.
+# shops + auctions on by default; NPC shop catalogs feed YaPNpcs /npc shop.
+# NPC shop catalogs (features.traders) feed YaPNpcs /npc shop — no /trader command.
+# Money features also require economy.enabled=true.
 features:
   homes: true
   warps: true
@@ -43,7 +44,7 @@ features:
   jobs: false
   auctions: true
   claims: true
-  traders: false
+  traders: true
   backpack: true
 
 # Extra storage (not the vanilla E inventory). 45 slots per page; bottom row is tabs.

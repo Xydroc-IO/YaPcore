@@ -22,7 +22,7 @@ final class EconomyFeaturesConfigTest {
         assertTrue(yaml.contains("shops: true"), "features.shops should default on");
         assertTrue(yaml.contains("auctions: true"), "features.auctions should default on");
         assertTrue(yaml.contains("jobs: false"), "features.jobs should stay off with YaPSkills");
-        assertTrue(yaml.contains("traders: false"), "features.traders stay opt-in");
+        assertTrue(yaml.contains("traders: true"), "features.traders default on for YaPNpcs shop hubs");
         assertFalse(yaml.contains("shops: false"), "stale shops: false still in default config");
         assertFalse(yaml.contains("auctions: false"), "stale auctions: false still in default config");
     }

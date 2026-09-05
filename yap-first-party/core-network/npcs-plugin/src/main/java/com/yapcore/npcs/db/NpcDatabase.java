@@ -79,9 +79,15 @@ public final class NpcDatabase implements AutoCloseable {
                       entity_uuid CHAR(36) NULL,
                       dialogue TEXT NULL,
                       quest_id VARCHAR(64) NULL,
+                      action TEXT NULL,
                       PRIMARY KEY (server_id, id)
                     )
                     """);
+            try {
+                st.execute("ALTER TABLE yap_npcs ADD COLUMN action TEXT NULL");
+            } catch (SQLException ignored) {
+                // already present
+            }
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_quest_progress (
                       player_uuid CHAR(36) NOT NULL,
