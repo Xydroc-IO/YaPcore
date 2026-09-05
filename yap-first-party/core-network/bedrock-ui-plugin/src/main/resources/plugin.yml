@@ -3,6 +3,6 @@ version: 1.0.0.0
 main: com.yapcore.bedrockui.BedrockUiPlugin
 api-version: '1.21'
 folia-supported: true
-description: Bedrock FormService bridge — native UDP sessions only; Floodgate-only joins are Limited (no full forms)
+description: Bedrock FormService bridge — native UDP + Floodgate-only floodgate:form relay
 authors: [YapLabs]
 softdepend: [YaPFloodgate]

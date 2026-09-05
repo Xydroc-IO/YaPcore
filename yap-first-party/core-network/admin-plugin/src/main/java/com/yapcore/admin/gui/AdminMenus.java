@@ -68,6 +68,14 @@ public final class AdminMenus {
             player.sendMessage("§cNo permission.");
             return;
         }
+        if (AdminBedrockForms.tryOpenHub(plugin, player)) {
+            return;
+        }
+        openHubInventory(player);
+    }
+
+    /** JE chest hub (also used as fallback from Bedrock form callbacks). */
+    public void openHubInventory(Player player) {
         AdminMenuHolder holder = new AdminMenuHolder(AdminMenuHolder.Kind.HUB);
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("YaP Admin", NamedTextColor.GOLD));
         holder.bind(inv);

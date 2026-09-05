@@ -10,9 +10,15 @@ public final class BedrockUiServices {
     }
 
     public static Optional<BedrockUiService> find() {
-        var reg = Bukkit.getServicesManager().getRegistration(BedrockUiService.class);
-        if (reg != null) {
-            return Optional.of(reg.getProvider());
+        try {
+            if (Bukkit.getServer() != null) {
+                var reg = Bukkit.getServicesManager().getRegistration(BedrockUiService.class);
+                if (reg != null) {
+                    return Optional.of(reg.getProvider());
+                }
+            }
+        } catch (Throwable ignored) {
+            // Early boot / unit tests without a live Bukkit server
         }
         return BedrockUiBackend.get();
     }

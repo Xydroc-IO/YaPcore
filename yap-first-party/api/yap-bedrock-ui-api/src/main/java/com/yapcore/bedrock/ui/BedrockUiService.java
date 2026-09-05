@@ -36,4 +36,9 @@ public interface BedrockUiService {
             String button1,
             String button2,
             Consumer<BedrockFormResult> onResult);
+
+    /** Fluent custom form builder for the given player. */
+    default BedrockCustomFormBuilder customForm(Player player, String title) {
+        return new BedrockCustomFormBuilder(this, player, title);
+    }
 }

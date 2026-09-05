@@ -8,10 +8,11 @@ import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**
- * Soft bridge to YaPcore {@code FormService} + {@code BedrockUiBridge} when the dual-stack
- * gateway runs in the same JVM (native Bedrock sessions).
+ * Thin adapter to chassis {@code BedrockUiGatewayHolder} + {@code FormService}.
+ * Uses a single reflective resolve of the gateway holder (chassis is not a compile
+ * dependency of this plugin); subsequent calls use cached Method handles.
  */
-final class ChassisFormBridge {
+final class ChassisFormAdapter {
 
     private static final Logger LOG = Logger.getLogger("YaP.BedrockUI");
 
@@ -73,8 +74,7 @@ final class ChassisFormBridge {
             return -1;
         }
         try {
-            Object handler = onResult == null ? null : (Consumer<Object>) result ->
-                    onResult.accept(mapResult(result));
+            Object handler = wrap(onResult);
             Object id = sendSimple.invoke(formService, username, title, content, handler, (Object) buttons);
             return id instanceof Integer i ? i : -1;
         } catch (Exception e) {
@@ -90,8 +90,7 @@ final class ChassisFormBridge {
             return -1;
         }
         try {
-            Object handler = onResult == null ? null : (Consumer<Object>) result ->
-                    onResult.accept(mapResult(result));
+            Object handler = wrap(onResult);
             Object id = sendCustom.invoke(formService, username, title, json, handler);
             return id instanceof Integer i ? i : -1;
         } catch (Exception e) {
@@ -107,8 +106,7 @@ final class ChassisFormBridge {
             return -1;
         }
         try {
-            Object handler = onResult == null ? null : (Consumer<Object>) result ->
-                    onResult.accept(mapResult(result));
+            Object handler = wrap(onResult);
             Object id = sendModal.invoke(formService, username, title, content, button1, button2, handler);
             return id instanceof Integer i ? i : -1;
         } catch (Exception e) {
@@ -117,21 +115,32 @@ final class ChassisFormBridge {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private static Object wrap(Consumer<BedrockFormResult> onResult) {
+        if (onResult == null) {
+            return null;
+        }
+        return (Consumer<Object>) result -> onResult.accept(mapResult(result));
+    }
+
     private synchronized void resolve() {
         if (resolved) {
             return;
         }
         resolved = true;
         try {
-            Class<?> gatewayClass = Class.forName("com.yapcore.protocol.DualStackGateway");
-            Object gateway = findGatewayInstance(gatewayClass);
+            // Prefer BedrockUiGatewayHolder (stable plugin-facing entry) over DualStackGateway scan.
+            Class<?> holderClass = Class.forName("com.yapcore.crossplay.bedrock.BedrockUiGatewayHolder");
+            Object gateway = holderClass.getMethod("gateway").invoke(null);
             if (gateway == null) {
                 return;
             }
+            Class<?> gatewayClass = gateway.getClass();
             formService = gatewayClass.getMethod("formService").invoke(gateway);
             sessions = gatewayClass.getMethod("bedrockSessions").invoke(gateway);
             Object bedrockBridge = gatewayClass.getMethod("bedrockBridge").invoke(gateway);
             uiBridge = bedrockBridge.getClass().getMethod("ui").invoke(bedrockBridge);
+
             Class<?> formClass = Class.forName("com.yapcore.crossplay.form.FormService");
             sendSimple = formClass.getMethod(
                     "sendSimple", String.class, String.class, String.class, Consumer.class, String[].class);
@@ -139,23 +148,15 @@ final class ChassisFormBridge {
                     "sendCustom", String.class, String.class, String.class, Consumer.class);
             sendModal = formClass.getMethod(
                     "sendModal", String.class, String.class, String.class, String.class, String.class, Consumer.class);
+
             Class<?> uiClass = Class.forName("com.yapcore.crossplay.bedrock.bridge.BedrockUiBridge");
             pushActionBar = uiClass.getMethod("pushActionBar", String.class, String.class);
             pushSidebar = uiClass.getMethod("pushSidebar", String.class, String.class, String.class, List.class);
+
             Class<?> sessionsClass = Class.forName("com.yapcore.crossplay.bedrock.BedrockSessionManager");
             sessionByName = sessionsClass.getMethod("byUsername", String.class);
         } catch (Exception e) {
             LOG.fine("Chassis Bedrock UI not available: " + e.getMessage());
-        }
-    }
-
-    private static Object findGatewayInstance(Class<?> gatewayClass) {
-        try {
-            Class<?> holderClass = Class.forName("com.yapcore.crossplay.bedrock.BedrockUiGatewayHolder");
-            Method get = holderClass.getMethod("gateway");
-            return get.invoke(null);
-        } catch (Exception ignored) {
-            return null;
         }
     }
 

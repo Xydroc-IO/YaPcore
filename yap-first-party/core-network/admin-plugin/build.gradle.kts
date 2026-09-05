@@ -21,6 +21,7 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-sched"))
     compileOnly(project(":yap-moderation-api"))
+    compileOnly(project(":yap-bedrock-ui-api"))
 }
 
 tasks.jar {

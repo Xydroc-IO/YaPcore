@@ -13,14 +13,17 @@ public final class BedrockUiPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         service = new DelegatingBedrockUiService(this);
+        service.registerChannels();
         getServer().getServicesManager().register(
                 BedrockUiService.class, service, this, ServicePriority.Normal);
-        getLogger().info("YaP Bedrock UI bridge ready");
+        getLogger().info("YaP Bedrock UI bridge ready — native UDP forms + Floodgate-only "
+                + "floodgate:form relay. See docs/network/CROSSPLAY.md");
     }
 
     @Override
     public void onDisable() {
         if (service != null) {
+            service.unregisterChannels();
             getServer().getServicesManager().unregister(BedrockUiService.class, service);
         }
         BedrockUiBackend.clear();
