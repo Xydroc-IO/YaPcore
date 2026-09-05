@@ -2,6 +2,8 @@ package com.yapcore.regions;
 
 import com.yapcore.regions.cmd.RegionCommands;
 import com.yapcore.regions.db.AdminRegionRepository;
+import com.yapcore.regions.db.RegionMessageRepository;
+import com.yapcore.regions.db.RegionTemplateRepository;
 import com.yapcore.regions.db.RegionsDatabase;
 import com.yapcore.regions.listener.RegionListener;
 import com.yapcore.regions.service.RegionServiceImpl;
@@ -14,6 +16,8 @@ public final class RegionsPlugin extends JavaPlugin {
     private RegionsConfig config;
     private RegionsDatabase database;
     private AdminRegionRepository repository;
+    private RegionMessageRepository messages;
+    private RegionTemplateRepository templates;
     private RegionServiceImpl regionService;
     private RegionListener listener;
 
@@ -68,7 +72,15 @@ public final class RegionsPlugin extends JavaPlugin {
         if (repository == null) {
             repository = new AdminRegionRepository(database);
         }
-        regionService = new RegionServiceImpl(config, repository);
+        if (messages == null) {
+            messages = new RegionMessageRepository(database);
+        }
+        if (templates == null) {
+            templates = new RegionTemplateRepository(database);
+        }
+        if (regionService == null) {
+            regionService = new RegionServiceImpl(config, repository, messages, templates);
+        }
         regionService.reload();
     }
 

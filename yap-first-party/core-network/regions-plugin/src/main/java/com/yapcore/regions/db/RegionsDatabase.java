@@ -14,7 +14,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public final class RegionsDatabase implements AutoCloseable {
+public final class RegionsDatabase implements AutoCloseable, RegionSql {
 
     private final JavaPlugin plugin;
     private final RegionsConfig config;
@@ -70,9 +70,12 @@ public final class RegionsDatabase implements AutoCloseable {
                       max_y INT NOT NULL,
                       min_z INT NOT NULL,
                       max_z INT NOT NULL,
+                      priority INT NOT NULL DEFAULT 0,
                       UNIQUE (server_id, name)
                     )
                     """.formatted(dialect.autoIncrementPk()));
+            tryAlter(st, "ALTER TABLE yap_admin_regions ADD COLUMN priority INT NOT NULL DEFAULT 0");
+            tryAlter(st, "ALTER TABLE yap_admin_regions ADD COLUMN shape VARCHAR(16) NOT NULL DEFAULT 'CUBOID'");
             createIndex(st, "idx_yap_admin_region_server", "yap_admin_regions", "server_id");
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_admin_region_flags (
@@ -83,6 +86,34 @@ public final class RegionsDatabase implements AutoCloseable {
                     )
                     """);
             createIndex(st, "idx_yap_admin_region_flags", "yap_admin_region_flags", "region_id");
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS yap_admin_region_messages (
+                      region_id BIGINT NOT NULL,
+                      kind VARCHAR(16) NOT NULL,
+                      message_text TEXT NOT NULL,
+                      PRIMARY KEY (region_id, kind)
+                    )
+                    """);
+            createIndex(st, "idx_yap_admin_region_messages", "yap_admin_region_messages", "region_id");
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS yap_admin_region_vertices (
+                      region_id BIGINT NOT NULL,
+                      seq INT NOT NULL,
+                      x INT NOT NULL,
+                      z INT NOT NULL,
+                      PRIMARY KEY (region_id, seq)
+                    )
+                    """);
+            createIndex(st, "idx_yap_admin_region_vertices", "yap_admin_region_vertices", "region_id");
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS yap_admin_region_templates (
+                      server_id VARCHAR(64) NOT NULL,
+                      name VARCHAR(64) NOT NULL,
+                      flags_json TEXT NOT NULL,
+                      messages_json TEXT NOT NULL,
+                      PRIMARY KEY (server_id, name)
+                    )
+                    """);
         }
     }
 
@@ -94,6 +125,14 @@ public final class RegionsDatabase implements AutoCloseable {
             st.execute(sql);
         } catch (SQLException ignored) {
             // already exists
+        }
+    }
+
+    private static void tryAlter(Statement st, String sql) {
+        try {
+            st.execute(sql);
+        } catch (SQLException ignored) {
+            // column already exists
         }
     }
 

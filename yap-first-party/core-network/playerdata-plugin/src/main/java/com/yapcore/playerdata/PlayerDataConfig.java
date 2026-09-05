@@ -445,7 +445,7 @@ public final class PlayerDataConfig {
 
     public com.yapcore.regions.FlagValue defaultClaimFlag(com.yapcore.regions.RegionFlag flag) {
         return claimDefaultFlags.getOrDefault(flag, switch (flag) {
-            case PVP, FIRE_SPREAD -> com.yapcore.regions.FlagValue.DENY;
+            case PVP, FIRE_SPREAD, TNT, CREEPER_EXPLOSION -> com.yapcore.regions.FlagValue.DENY;
             default -> com.yapcore.regions.FlagValue.ALLOW;
         });
     }

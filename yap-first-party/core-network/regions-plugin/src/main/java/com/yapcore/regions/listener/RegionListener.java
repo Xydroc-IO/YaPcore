@@ -110,7 +110,13 @@ public final class RegionListener implements Listener {
         if (to.isPresent() && !regions.canEnter(event.getPlayer(), event.getTo())) {
             event.setCancelled(true);
             event.getPlayer().sendMessage("§cEntry denied in this admin region.");
+            return;
         }
+        Player player = event.getPlayer();
+        from.flatMap(r -> regions.message(r.id(), com.yapcore.regions.RegionMessageKind.FAREWELL))
+                .ifPresent(player::sendMessage);
+        to.flatMap(r -> regions.message(r.id(), com.yapcore.regions.RegionMessageKind.GREETING))
+                .ifPresent(player::sendMessage);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

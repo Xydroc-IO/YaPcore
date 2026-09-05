@@ -247,6 +247,14 @@ public final class Database implements AutoCloseable {
                     )
                     """);
             st.execute("""
+                    CREATE TABLE IF NOT EXISTS yap_claim_messages (
+                      claim_id BIGINT NOT NULL,
+                      kind VARCHAR(16) NOT NULL,
+                      message_text TEXT NOT NULL,
+                      PRIMARY KEY (claim_id, kind)
+                    )
+                    """);
+            st.execute("""
                     CREATE TABLE IF NOT EXISTS npc_traders (
                       id %s,
                       server_id VARCHAR(64) NOT NULL,

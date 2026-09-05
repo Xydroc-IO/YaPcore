@@ -7,6 +7,7 @@ import com.yapcore.playerdata.claims.TaxService;
 import com.yapcore.playerdata.db.ClaimRepository;
 import com.yapcore.regions.FlagValue;
 import com.yapcore.regions.RegionFlag;
+import com.yapcore.regions.RegionMessageKind;
 import com.yapcore.playerdata.gui.Menus;
 import com.yapcore.playerdata.sync.SyncService;
 import org.bukkit.Bukkit;
@@ -161,8 +162,11 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
                 case "flag" -> {
                     yield setClaimFlag(player, args);
                 }
+                case "message" -> {
+                    yield setClaimMessage(player, args);
+                }
                 default -> {
-                    player.sendMessage("Usage: /claim [tool|blocks|list|subdivide|tax|paytax|here|abandon|trust|flag]");
+                    player.sendMessage("Usage: /claim [tool|blocks|list|subdivide|tax|paytax|here|abandon|trust|flag|message]");
                     yield true;
                 }
             };
@@ -196,6 +200,55 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
         FlagValue value = FlagValue.parse(args[3]);
         claims.flags().setFlag(c.id(), flag, value);
         player.sendMessage("§aSet §f" + flag.name() + " §a→ §f" + value.name() + " §aon claim #" + c.id());
+        return true;
+    }
+
+    private boolean setClaimMessage(Player player, String[] args) throws Exception {
+        if (args.length < 3) {
+            player.sendMessage("Usage: /claim message set greeting|farewell <text>");
+            player.sendMessage("Usage: /claim message clear greeting|farewell");
+            return true;
+        }
+        var opt = claims.getAt(player.getLocation());
+        if (opt.isEmpty()) {
+            player.sendMessage("§cStand in your claim.");
+            return true;
+        }
+        Claim c = opt.get();
+        if (!c.owner().equals(player.getUniqueId()) && !player.hasPermission("yapdata.claims.admin")
+                && !claims.hasTrust(c, player.getUniqueId(), ClaimRepository.TrustLevel.MANAGE)) {
+            player.sendMessage("§cNo manage permission.");
+            return true;
+        }
+        String action = args[1].toLowerCase(Locale.ROOT);
+        if ("set".equals(action)) {
+            if (args.length < 4) {
+                player.sendMessage("Usage: /claim message set greeting|farewell <text>");
+                return true;
+            }
+            RegionMessageKind kind = RegionMessageKind.parse(args[2]).orElse(null);
+            if (kind == null) {
+                player.sendMessage("§cKind must be greeting or farewell.");
+                return true;
+            }
+            String text = String.join(" ", java.util.Arrays.copyOfRange(args, 3, args.length));
+            claims.setMessage(c.id(), kind, text);
+            player.sendMessage("§aSet §f" + kind.name().toLowerCase(Locale.ROOT)
+                    + " §amessage on claim #" + c.id());
+            return true;
+        }
+        if ("clear".equals(action)) {
+            RegionMessageKind kind = RegionMessageKind.parse(args[2]).orElse(null);
+            if (kind == null) {
+                player.sendMessage("§cKind must be greeting or farewell.");
+                return true;
+            }
+            claims.clearMessage(c.id(), kind);
+            player.sendMessage("§aCleared §f" + kind.name().toLowerCase(Locale.ROOT)
+                    + " §amessage on claim #" + c.id());
+            return true;
+        }
+        player.sendMessage("Usage: /claim message set|clear ...");
         return true;
     }
 
@@ -237,7 +290,13 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             return filter(args[0], "tool", "blocks", "list", "subdivide", "mode", "tax", "paytax",
-                    "here", "abandon", "trust", "untrust");
+                    "here", "abandon", "trust", "untrust", "flag", "message");
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("message")) {
+            return filter(args[1], "set", "clear");
+        }
+        if (args.length == 3 && args[0].equalsIgnoreCase("message")) {
+            return filter(args[2], "greeting", "farewell");
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("trust")) {
             return filter(args[2], "access", "build", "manage");

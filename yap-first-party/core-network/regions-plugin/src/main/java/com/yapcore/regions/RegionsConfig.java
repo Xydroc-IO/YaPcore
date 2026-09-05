@@ -12,7 +12,16 @@ public final class RegionsConfig {
         this.plugin = plugin;
     }
 
+    /** Fixed server id for unit tests (no Bukkit plugin). */
+    public RegionsConfig(String serverId) {
+        this.plugin = null;
+        this.serverId = serverId == null || serverId.isBlank() ? "default" : serverId.trim();
+    }
+
     public void reload() {
+        if (plugin == null) {
+            return;
+        }
         plugin.reloadConfig();
         FileConfiguration c = plugin.getConfig();
         serverId = c.getString("server-id", "default");

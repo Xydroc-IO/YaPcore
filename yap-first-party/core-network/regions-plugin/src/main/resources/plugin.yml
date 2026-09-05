@@ -4,13 +4,13 @@ main: com.yapcore.regions.RegionsPlugin
 api-version: '1.21'
 folia-supported: true
 author: YapLabs
-description: Admin cuboid regions with WorldGuard-class flags (Folia-safe)
+description: Admin cuboid and polygon regions with WorldGuard-class flags (Folia-safe)
 website: https://github.com/yaplabs
 softdepend: [YaPWorld, YaPDB]
 commands:
   region:
     description: Admin region management
-    usage: /region define <name>|flag set <name> <flag> <allow|deny>|list
+    usage: /region define <name>|flag set <name> <flag> <allow|deny>|priority <name> <int>|list
     permission: yapregions.admin
     aliases: [rg]
 permissions:

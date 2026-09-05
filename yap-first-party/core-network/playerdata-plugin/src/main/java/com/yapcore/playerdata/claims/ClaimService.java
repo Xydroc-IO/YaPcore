@@ -39,6 +39,7 @@ public final class ClaimService {
     private final PlayerDataConfig config;
     private final ClaimRepository repo;
     private final ClaimFlagService flags;
+    private final ClaimMessageRepository messages;
 
     private final List<Claim> local = new ArrayList<>();
     private final Map<UUID, Corner> pending = new ConcurrentHashMap<>();
@@ -49,10 +50,16 @@ public final class ClaimService {
 
     public ClaimService(JavaPlugin plugin, PlayerDataConfig config, ClaimRepository repo,
                         ClaimFlagService flags) {
+        this(plugin, config, repo, flags, null);
+    }
+
+    public ClaimService(JavaPlugin plugin, PlayerDataConfig config, ClaimRepository repo,
+                        ClaimFlagService flags, ClaimMessageRepository messages) {
         this.plugin = plugin;
         this.config = config;
         this.repo = repo;
         this.flags = flags;
+        this.messages = messages;
         this.creation = new ClaimCreationOps(this);
     }
 
@@ -88,6 +95,35 @@ public final class ClaimService {
         modes.clear();
         trustCache.clear();
         flags.invalidateAll();
+        if (messages != null) {
+            messages.invalidateAll();
+        }
+    }
+
+    public ClaimMessageRepository messages() {
+        return messages;
+    }
+
+    public java.util.Optional<String> message(long claimId, com.yapcore.regions.RegionMessageKind kind) {
+        if (messages == null) {
+            return java.util.Optional.empty();
+        }
+        return messages.get(claimId, kind);
+    }
+
+    public void setMessage(long claimId, com.yapcore.regions.RegionMessageKind kind, String text)
+            throws SQLException {
+        if (messages == null) {
+            throw new SQLException("Claim messages unavailable");
+        }
+        messages.set(claimId, kind, text);
+    }
+
+    public void clearMessage(long claimId, com.yapcore.regions.RegionMessageKind kind) throws SQLException {
+        if (messages == null) {
+            throw new SQLException("Claim messages unavailable");
+        }
+        messages.clear(claimId, kind);
     }
 
     public void reloadLocal() {
@@ -316,6 +352,58 @@ public final class ClaimService {
             return true;
         }
         return flags.resolveOrDefault(claim.get().id(), RegionFlag.MOB_SPAWNING) == FlagValue.ALLOW;
+    }
+
+    public boolean canDropItems(Player player, Location loc) {
+        if (!config.claimsEnabled()) {
+            return true;
+        }
+        Optional<Claim> claim = getAt(loc);
+        if (claim.isEmpty()) {
+            return true;
+        }
+        FlagValue drop = flags.resolveOrDefault(claim.get().id(), RegionFlag.ITEM_DROP);
+        return ClaimFlagDecision.allowPlayerAction(
+                drop, StaffBypass.land(player),
+                hasTrust(claim.get(), player.getUniqueId(), ClaimRepository.TrustLevel.ACCESS));
+    }
+
+    public boolean canPickupItems(Player player, Location loc) {
+        if (!config.claimsEnabled()) {
+            return true;
+        }
+        Optional<Claim> claim = getAt(loc);
+        if (claim.isEmpty()) {
+            return true;
+        }
+        FlagValue pickup = flags.resolveOrDefault(claim.get().id(), RegionFlag.ITEM_PICKUP);
+        return ClaimFlagDecision.allowPlayerAction(
+                pickup, StaffBypass.land(player),
+                hasTrust(claim.get(), player.getUniqueId(), ClaimRepository.TrustLevel.ACCESS));
+    }
+
+    public boolean isTntAllowed(Location loc) {
+        if (!config.claimsEnabled()) {
+            return true;
+        }
+        var claim = getAt(loc);
+        if (claim.isEmpty()) {
+            return true;
+        }
+        return ClaimFlagDecision.allowExplosion(
+                flags.resolveOrDefault(claim.get().id(), RegionFlag.TNT));
+    }
+
+    public boolean isCreeperExplosionAllowed(Location loc) {
+        if (!config.claimsEnabled()) {
+            return true;
+        }
+        var claim = getAt(loc);
+        if (claim.isEmpty()) {
+            return true;
+        }
+        return ClaimFlagDecision.allowExplosion(
+                flags.resolveOrDefault(claim.get().id(), RegionFlag.CREEPER_EXPLOSION));
     }
 
     private boolean flagAllowsBuild(Claim claim, Player player) {

@@ -5,6 +5,7 @@ import com.yapcore.playerdata.auth.AuthService;
 import com.yapcore.playerdata.claims.ClaimFlagRepository;
 import com.yapcore.playerdata.claims.ClaimFlagService;
 import com.yapcore.playerdata.claims.ClaimListener;
+import com.yapcore.playerdata.claims.ClaimMessageRepository;
 import com.yapcore.playerdata.claims.ClaimService;
 import com.yapcore.playerdata.claims.TaxService;
 import com.yapcore.playerdata.bag.BackpackChannel;
@@ -128,7 +129,8 @@ public final class PlayerDataPlugin extends JavaPlugin {
         if (config.featureClaims()) {
             ClaimFlagRepository flagRepo = new ClaimFlagRepository(database);
             ClaimFlagService flagService = new ClaimFlagService(flagRepo, config);
-            claims = new ClaimService(this, config, claimRepo, flagService);
+            ClaimMessageRepository messageRepo = new ClaimMessageRepository(database);
+            claims = new ClaimService(this, config, claimRepo, flagService, messageRepo);
             claims.start();
             if (config.claimsTaxEnabled()) {
                 taxes = new TaxService(this, config, claims, balances);

@@ -108,6 +108,10 @@ claims:
     entry: allow
     fire-spread: deny
     mob-spawning: allow
+    item-drop: allow
+    item-pickup: allow
+    tnt: deny
+    creeper-explosion: deny
 
 # Kit definitions live in kits.yml (shared across Hub + survival backends).
 # Optional overrides here still merge on reload. See docs/ops/TEBEX.md for store wiring.
