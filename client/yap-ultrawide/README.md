@@ -3,35 +3,59 @@
 Fabric **client** mod for Minecraft **26.2**. It does not go on YaPcore or Folia.
 
 On 21:9 and 32:9, vanilla’s vertical FOV slider becomes a fish-eye horizontal view.
-This mod keeps the **horizontal FOV you would have on 16:9**, then derives vertical FOV
-from the real window size (Hor+). 16:9 is left alone. Spyglass / zoom FOVs pass through.
+This mod applies **Hor+** with **separate profiles** for each panel class. 16:9 is
+unchanged. Spyglass / zoom FOVs pass through.
 
 ## Install
 
 1. Fabric Loader **0.19.3+** for Minecraft **26.2**
-2. Drop `yap-ultrawide-1.0.0.jar` into `.minecraft/mods/`
-3. Join YaPcore / Folia as usual (vanilla protocol)
-
-Vanilla clients still connect. They just keep vanilla FOV.
+2. Drop `yap-ultrawide-*.jar` into `.minecraft/mods/`
 
 ## Build
 
 ```bash
-cd client/yap-ultrawide
-./gradlew build
+cd client/yap-ultrawide && ./gradlew build
 ```
-
-Jar: `build/libs/yap-ultrawide-1.0.0.jar`
 
 ## Config
 
-Written on first launch: `.minecraft/config/yap-ultrawide.json`
+`.minecraft/config/yap-ultrawide.json`:
 
-| Key | Default | Meaning |
-|-----|---------|---------|
-| `enabled` | `true` | Master switch |
-| `mode` | `match_16_9` | Same HFOV as 16:9 at the vanilla slider. `fixed_hfov` locks `targetHorizontalFov` |
-| `targetHorizontalFov` | `100` | Used only in `fixed_hfov` |
-| `affectHudFov` | `true` | Also adjust first-person hand FOV |
+```json
+{
+  "enabled": true,
+  "affectHudFov": true,
+  "ultrawide_21_9": {
+    "mode": "match_16_9",
+    "targetHorizontalFov": 105.0,
+    "maxHorizontalFov": 110.0,
+    "fovScale": 1.0
+  },
+  "superwide_32_9": {
+    "mode": "match_21_9",
+    "targetHorizontalFov": 100.0,
+    "maxHorizontalFov": 100.0,
+    "fovScale": 0.95
+  }
+}
+```
 
-Aspect bands: **21:9** from 1.90 (2560×1080, 3440×1440, 3840×1600), **32:9** from 2.80 (3840×1080, 5120×1440).
+| Band | Typical panels |
+|------|----------------|
+| `ultrawide_21_9` | 2560×1080, 3440×1440, 3840×1600 (aspect ≈1.90–2.80) |
+| `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (aspect ≥2.80) |
+
+### Per-band keys
+
+| Key | Meaning |
+|-----|---------|
+| `mode` | `match_16_9` · `match_21_9` · `fixed_hfov` |
+| `targetHorizontalFov` | Locked HFOV when mode is `fixed_hfov` |
+| `maxHorizontalFov` | Hard HFOV cap (`0` = off) |
+| `fovScale` | Extra tighten (`0.90`–`1.0`) if edges still stretch |
+
+### 57" 32:9 tips
+
+Use `superwide_32_9` only (your panel is detected as that band). If edges still
+fish-eye: lower `maxHorizontalFov` to `95`, or `"mode": "fixed_hfov"` with
+`"targetHorizontalFov": 95`.

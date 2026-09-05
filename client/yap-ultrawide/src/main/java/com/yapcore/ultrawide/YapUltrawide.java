@@ -15,12 +15,23 @@ public final class YapUltrawide implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         config = UltrawideConfig.load();
-        LOGGER.info("YaP Ultrawide ready (mode={}, hud={}) — 21:9 and 32:9 Hor+",
-                config.mode, config.affectHudFov);
+        BandSettings u21 = config.ultrawide_21_9;
+        BandSettings s32 = config.superwide_32_9;
+        LOGGER.info("YaP Ultrawide ready — 21:9[{} maxH={} scale={}] 32:9[{} maxH={} scale={}] hud={}",
+                u21.mode, u21.maxHorizontalFov, u21.fovScale,
+                s32.mode, s32.maxHorizontalFov, s32.fovScale,
+                config.affectHudFov);
     }
 
     public static UltrawideConfig config() {
         return config;
+    }
+
+    /** Reload config from disk (after editing yap-ultrawide.json). */
+    public static void reload() {
+        config = UltrawideConfig.load();
+        LOGGER.info("YaP Ultrawide reloaded — 21:9={} 32:9={}",
+                config.ultrawide_21_9.mode, config.superwide_32_9.mode);
     }
 
     /**
@@ -51,9 +62,21 @@ public final class YapUltrawide implements ClientModInitializer {
         if (!band.ultrawide()) {
             return vanillaVerticalFov;
         }
-        if (cfg.match16x9()) {
-            return HorPlus.matchReferenceHorizontal(vanillaVerticalFov, aspect);
+
+        BandSettings bandCfg = cfg.forBand(band);
+        float vfov;
+        if (bandCfg.match21x9()) {
+            vfov = HorPlus.match21x9(vanillaVerticalFov, aspect);
+        } else if (bandCfg.match16x9()) {
+            vfov = HorPlus.match16x9(vanillaVerticalFov, aspect);
+        } else {
+            vfov = HorPlus.verticalForTargetHorizontal(bandCfg.targetHorizontalFov, aspect);
         }
-        return HorPlus.verticalForTargetHorizontal(cfg.targetHorizontalFov, aspect);
+
+        if (bandCfg.fovScale != 1.0f) {
+            vfov *= bandCfg.fovScale;
+        }
+        vfov = HorPlus.clampHorizontal(vfov, aspect, bandCfg.maxHorizontalFov);
+        return vfov;
     }
 }
