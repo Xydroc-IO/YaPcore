@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Build YaP client render stack → single yap-visuals.jar (Sodium + Iris + shaders).
+# Build YaP optional Fabric client mods → dist/client-mods/
+# Release upload: client_mods.zip (folder with bag + ultrawide + visuals jars).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${ROOT}/dist/client-mods"
+STAGING="${OUT}/_client_mods_staging/client_mods"
 mkdir -p "$OUT"
 
 echo "==> Fetch official Sodium (PolyForm Shield pin)"
@@ -48,22 +50,61 @@ if [[ -z "${VISUALS_JAR}" ]]; then
 fi
 cp -f "$VISUALS_JAR" "$OUT/"
 
+echo "==> Build YaP Bag"
+(
+  cd "${ROOT}/client/yap-bag"
+  ./gradlew --no-daemon build
+)
+BAG_JAR="$(ls -1t "${ROOT}/client/yap-bag/build/libs"/yap-bag-*.jar 2>/dev/null | grep -v sources | grep -v javadoc | head -1 || true)"
+if [[ -z "${BAG_JAR}" ]]; then
+  echo "ERROR: yap-bag jar not found" >&2
+  exit 1
+fi
+cp -f "$BAG_JAR" "$OUT/"
+
+echo "==> Build YaP Ultrawide"
+(
+  cd "${ROOT}/client/yap-ultrawide"
+  ./gradlew --no-daemon build
+)
+UW_JAR="$(ls -1t "${ROOT}/client/yap-ultrawide/build/libs"/yap-ultrawide-*.jar 2>/dev/null | grep -v sources | grep -v javadoc | head -1 || true)"
+if [[ -z "${UW_JAR}" ]]; then
+  echo "ERROR: yap-ultrawide jar not found" >&2
+  exit 1
+fi
+cp -f "$UW_JAR" "$OUT/"
+
 echo "==> Bundle install notes"
 cat > "${OUT}/INSTALL.txt" <<'EOF'
-YaP client visuals (optional — Fabric Java only)
+YaP optional Fabric client mods (Minecraft 26.2)
 
-RECOMMENDED — one jar:
-  1. Install Fabric Loader 0.19+ for Minecraft 26.2
-  2. Copy ONLY yap-visuals-*.jar into .minecraft/mods/
-  3. Launch once (installs yap-shaders + nests Sodium + YaP Iris)
-  4. Video Settings → Shader Packs if needed (usually auto-selected)
+Release zip: client_mods.zip
+  Unzip → client_mods/ with three jars. Copy all three into .minecraft/mods/
+  (or Prism instance mods/).
 
-Do not also install separate sodium / iris / yap-shaders (duplicates).
+  - yap-visuals-*.jar   Sodium + YaP Iris + shaders (one jar — do not also install sodium/iris)
+  - yap-bag-*.jar       Bag keybind / inventory tabs (/bag)
+  - yap-ultrawide-*.jar Hor+ FOV for ultrawide monitors
 
-Advanced — separate pieces still in this folder for debugging.
-Vanilla / Bedrock / no-mods clients still join YaPcore without these files.
+Requirements: Fabric Loader 0.19+ for Minecraft 26.2.
+
+Vanilla Java / Bedrock / no-mods clients still join YaPcore without these files.
 EOF
 
+# Release asset: one zip with a client_mods/ folder (upload this, not three jars).
+rm -rf "${OUT}/_client_mods_staging"
+mkdir -p "$STAGING"
+/bin/cp -f "$VISUALS_JAR" "$BAG_JAR" "$UW_JAR" "$STAGING/"
+/bin/cp -f "${OUT}/INSTALL.txt" "$STAGING/"
+CLIENT_MODS_ZIP="${OUT}/client_mods.zip"
+rm -f "$CLIENT_MODS_ZIP"
+(
+  cd "${OUT}/_client_mods_staging"
+  zip -qr "$CLIENT_MODS_ZIP" client_mods
+)
+rm -rf "${OUT}/_client_mods_staging"
+
+# Optional Discord/site visuals-only bundle (licenses + visuals jar).
 BUNDLE="${OUT}/yap-client-visuals.zip"
 rm -f "$BUNDLE"
 (
@@ -78,5 +119,7 @@ rm -f "$BUNDLE"
     LICENSE-DEPENDENCIES-Iris.txt
 )
 
-echo "Done. Primary artifact: $OUT/$(basename "$VISUALS_JAR")"
+echo "Done."
+echo "  Release upload: $CLIENT_MODS_ZIP"
+echo "  Contents: $(basename "$VISUALS_JAR") $(basename "$BAG_JAR") $(basename "$UW_JAR")"
 ls -lh "$OUT"
