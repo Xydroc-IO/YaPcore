@@ -51,6 +51,38 @@ public final class SkillsMenuHolder implements InventoryHolder {
         return stack;
     }
 
+    public static ItemStack overallLevelIcon(
+            int overallLevel,
+            int totalLevel,
+            double totalXp,
+            double xpIntoLevel,
+            double xpToNext,
+            int maxLevel) {
+        ItemStack stack = new ItemStack(Material.NETHER_STAR);
+        stack.editMeta(meta -> {
+            meta.displayName(Component.text("Overall Level")
+                    .color(NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
+            List<Component> lore = new ArrayList<>();
+            lore.add(Component.text("Level " + overallLevel + " / " + maxLevel)
+                    .color(NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.text("Total skill levels: " + totalLevel)
+                    .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+            lore.add(Component.text(String.format("Overall XP: %.0f", totalXp))
+                    .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
+            if (overallLevel < maxLevel) {
+                lore.add(Component.text(String.format("Progress: %.0f / %.0f", xpIntoLevel, xpToNext))
+                        .color(NamedTextColor.GREEN).decoration(TextDecoration.ITALIC, false));
+            } else {
+                lore.add(Component.text("Max overall level")
+                        .color(NamedTextColor.LIGHT_PURPLE).decoration(TextDecoration.ITALIC, false));
+            }
+            lore.add(Component.text("Gains XP from every skill action")
+                    .color(NamedTextColor.DARK_GRAY).decoration(TextDecoration.ITALIC, false));
+            meta.lore(lore);
+        });
+        return stack;
+    }
+
     public static ItemStack combatLevelIcon(int combatLevel, int maxLevel) {
         ItemStack stack = new ItemStack(Material.CLAY_BALL);
         stack.editMeta(meta -> {

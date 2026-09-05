@@ -2,7 +2,7 @@ package com.yapcore.mmo;
 
 /**
  * RuneScape-style cumulative XP curve (OSRS formula) with optional multiplier.
- * Level 1 requires 0 XP; level 99 is the default cap.
+ * Level 1 requires 0 XP; YaPSkills defaults to max level 120.
  */
 public final class XpTable {
 

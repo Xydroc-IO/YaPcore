@@ -1,5 +1,6 @@
 package com.yapcore.skills.gui;
 
+import com.yapcore.mmo.PlayerOverall;
 import com.yapcore.mmo.SkillDefinition;
 import com.yapcore.mmo.SkillProgress;
 import com.yapcore.mmo.XpTable;
@@ -24,7 +25,7 @@ public final class SkillsMenu {
             10, 11, 12, 14, 15, 16,
             19, 20, 21, 23, 24, 25
     };
-    private static final int COMBAT_SLOT = 13;
+    private static final int OVERALL_SLOT = 13;
 
     private final JavaPlugin plugin;
     private final SkillServiceImpl skills;
@@ -36,20 +37,31 @@ public final class SkillsMenu {
 
     public void open(Player viewer, UUID targetId, String targetName) {
         skills.getAll(targetId)
-                .orTimeout(2, TimeUnit.SECONDS)
+                .thenCombine(skills.overall(targetId), (all, overall) -> new Object[]{all, overall})
+                .orTimeout(3, TimeUnit.SECONDS)
                 .exceptionally(ex -> {
                     plugin.getLogger().log(Level.WARNING, "Skill menu lookup failed", ex);
-                    return List.of();
+                    return new Object[]{List.of(), PlayerOverall.fresh(targetId)};
                 })
-                .thenAccept(all -> YapSched.entity(plugin, viewer, () -> {
+                .thenAccept(pair -> YapSched.entity(plugin, viewer, () -> {
                     if (!viewer.isOnline()) {
                         return;
                     }
-                    openSync(viewer, targetId, targetName, all == null ? List.of() : all);
+                    @SuppressWarnings("unchecked")
+                    Collection<SkillProgress> all = (Collection<SkillProgress>) pair[0];
+                    PlayerOverall overall = (PlayerOverall) pair[1];
+                    openSync(viewer, targetId, targetName,
+                            all == null ? List.of() : all,
+                            overall == null ? PlayerOverall.fresh(targetId) : overall);
                 }));
     }
 
-    private void openSync(Player viewer, UUID targetId, String targetName, Collection<SkillProgress> progressList) {
+    private void openSync(
+            Player viewer,
+            UUID targetId,
+            String targetName,
+            Collection<SkillProgress> progressList,
+            PlayerOverall overall) {
         SkillsMenuHolder holder = new SkillsMenuHolder(targetId);
         var inv = Bukkit.createInventory(holder, 54,
                 Component.text("Skills — " + targetName, NamedTextColor.GOLD));
@@ -58,18 +70,27 @@ public final class SkillsMenu {
             inv.setItem(i, SkillsMenuHolder.filler());
         }
 
-        XpTable table = skills.xpTable();
+        XpTable skillTable = skills.xpTable();
+        XpTable overallTable = skills.overallXpTable();
         List<SkillDefinition> enabled = skills.definitions().stream()
                 .filter(SkillDefinition::enabled)
                 .sorted(Comparator.comparing(def -> def.display().toLowerCase()))
                 .toList();
 
-        int combatLevel = skills.combatLevel(targetId);
-        inv.setItem(COMBAT_SLOT, SkillsMenuHolder.combatLevelIcon(combatLevel, table.maxLevel()));
+        int totalLevel = skills.totalLevelOf(progressList);
+        double xpInto = overallTable.xpIntoLevel(overall.xp(), overall.level());
+        double xpToNext = overallTable.xpBetweenLevels(overall.level());
+        inv.setItem(OVERALL_SLOT, SkillsMenuHolder.overallLevelIcon(
+                overall.level(),
+                totalLevel,
+                overall.xp(),
+                xpInto,
+                xpToNext,
+                overallTable.maxLevel()));
 
         if (enabled.isEmpty()) {
             inv.setItem(SKILL_SLOTS[0], SkillsMenuHolder.skillIcon(
-                    org.bukkit.Material.BARRIER, 0, "No skills loaded", 1, 0, 0, 0, table.maxLevel()));
+                    org.bukkit.Material.BARRIER, 0, "No skills loaded", 1, 0, 0, 0, skillTable.maxLevel()));
         }
         int slotIndex = 0;
         for (SkillDefinition def : enabled) {
@@ -80,17 +101,17 @@ public final class SkillsMenu {
                     .filter(p -> p.skillId().equals(def.id()))
                     .findFirst()
                     .orElse(new SkillProgress(targetId, def.id(), 0, 1));
-            double xpInto = table.xpIntoLevel(progress.xp(), progress.level());
-            double xpToNext = table.xpBetweenLevels(progress.level());
+            double skillXpInto = skillTable.xpIntoLevel(progress.xp(), progress.level());
+            double skillXpToNext = skillTable.xpBetweenLevels(progress.level());
             inv.setItem(SKILL_SLOTS[slotIndex], SkillsMenuHolder.skillIcon(
                     def.icon(),
                     def.iconCmd(),
                     def.display(),
                     progress.level(),
                     progress.xp(),
-                    xpInto,
-                    xpToNext,
-                    table.maxLevel()));
+                    skillXpInto,
+                    skillXpToNext,
+                    skillTable.maxLevel()));
             slotIndex++;
         }
 

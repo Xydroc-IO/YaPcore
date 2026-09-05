@@ -118,11 +118,12 @@ public final class SkillsPlugin extends JavaPlugin {
         loader.reload();
 
         XpTable table = XpTable.runescape(config.maxLevel(), config.xpMultiplier());
+        XpTable overallTable = XpTable.runescape(config.overallMaxLevel(), config.overallXpMultiplier());
         var sm = getServer().getServicesManager();
         if (skillService != null) {
             sm.unregister(SkillService.class, skillService);
         }
-        skillService = new SkillServiceImpl(this, config, repository, loader, table);
+        skillService = new SkillServiceImpl(this, config, repository, loader, table, overallTable);
         menu = new SkillsMenu(this, skillService);
     }
 

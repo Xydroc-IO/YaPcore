@@ -1,6 +1,7 @@
 package com.yapcore.skills.db;
 
 import com.yapcore.db.YapSqlDialect;
+import com.yapcore.mmo.PlayerOverall;
 import com.yapcore.mmo.SkillId;
 import com.yapcore.mmo.SkillProgress;
 
@@ -64,6 +65,64 @@ public final class SkillRepository {
                             SkillId.of(skillId),
                             Math.max(0, rs.getDouble("xp")),
                             Math.max(1, rs.getInt("level"))));
+                }
+            }
+        }
+        return out;
+    }
+
+    public PlayerOverall getOverall(UUID uuid) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     SELECT xp, level FROM yap_player_overall WHERE player_uuid = ?
+                     """)) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return PlayerOverall.fresh(uuid);
+                }
+                return new PlayerOverall(
+                        uuid, Math.max(0, rs.getDouble("xp")), Math.max(1, rs.getInt("level")));
+            }
+        }
+    }
+
+    public void upsertOverall(PlayerOverall overall) throws SQLException {
+        YapSqlDialect dialect = database.dialect();
+        Map<String, String> set = new LinkedHashMap<>();
+        set.put("xp", "EXCLUDED.xp");
+        set.put("level", "EXCLUDED.level");
+        set.put("updated_at", dialect.nowFn());
+        String sql = dialect.upsert(
+                "yap_player_overall",
+                List.of("player_uuid"),
+                List.of("player_uuid", "xp", "level"),
+                set);
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, overall.playerId().toString());
+            ps.setDouble(2, overall.xp());
+            ps.setInt(3, overall.level());
+            ps.executeUpdate();
+        }
+    }
+
+    public List<LeaderboardEntry> topOverall(int offset, int limit) throws SQLException {
+        List<LeaderboardEntry> out = new ArrayList<>();
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     SELECT player_uuid, level, xp FROM yap_player_overall
+                     ORDER BY level DESC, xp DESC
+                     LIMIT ? OFFSET ?
+                     """)) {
+            ps.setInt(1, limit);
+            ps.setInt(2, offset);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(new LeaderboardEntry(
+                            UUID.fromString(rs.getString("player_uuid")),
+                            rs.getInt("level"),
+                            rs.getDouble("xp")));
                 }
             }
         }

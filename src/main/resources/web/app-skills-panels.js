@@ -63,6 +63,27 @@ window.YapDashRegisterSkillsPanels = function (YapDash) {
     });
   }
 
+  function renderOverallLeaderboard(rows) {
+    const tbody = $("skillsOverallLbBody");
+    const empty = $("skillsOverallLbEmpty");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    const list = Array.isArray(rows) ? rows : [];
+    if (!list.length) {
+      empty?.classList.remove("hidden");
+      return;
+    }
+    empty?.classList.add("hidden");
+    list.forEach((row, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>#${i + 1}</td>`
+        + `<td>${row.player || row.playerId || "—"}</td>`
+        + `<td>${row.level ?? "—"}</td>`
+        + `<td>${row.xp != null ? Math.floor(row.xp) : "—"}</td>`;
+      tbody.appendChild(tr);
+    });
+  }
+
   async function refreshSkillsPanel() {
     try {
       const data = await api("/api/skills");
@@ -70,8 +91,10 @@ window.YapDashRegisterSkillsPanels = function (YapDash) {
       setText("skillsEnabled", data.enabled === false ? "no" : (data.installed ? "yes" : "—"));
       setText("skillsCount", data.skillCount ?? 0);
       setText("skillsMaxLevel", data.maxLevel ?? "—");
+      setText("skillsOverallMax", data.overallMaxLevel ?? "—");
       renderSkillsList(data.skills);
       renderLeaderboard(data.leaderboardPreview);
+      renderOverallLeaderboard(data.overallLeaderboardPreview);
       setOut(data.error || "");
     } catch (e) {
       setOut(e.message);

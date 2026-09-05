@@ -24,4 +24,20 @@ public interface SkillService {
     Collection<SkillDefinition> definitions();
 
     XpTable xpTable();
+
+    /** Sum of XP across enabled skills (display / total_level helpers). */
+    CompletableFuture<Double> combinedSkillXp(UUID playerId);
+
+    /** Stored overall XP (feeds the overall level curve). */
+    CompletableFuture<Double> overallXp(UUID playerId);
+
+    /** Stored overall level (1..overall max). */
+    CompletableFuture<Integer> overallLevel(UUID playerId);
+
+    CompletableFuture<PlayerOverall> overall(UUID playerId);
+
+    /** Sum of enabled skill levels (e.g. 3 skills at 50 → 150). */
+    CompletableFuture<Integer> totalLevel(UUID playerId);
+
+    XpTable overallXpTable();
 }

@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
-/** {@code %yapskill_mining_level%}, {@code %yapskill_combat_level%}, {@code %yapskill_total_level%}. */
+/** {@code %yapskill_mining_level%}, {@code %yapskill_overall_level%}, {@code %yapskill_total_level%}. */
 public final class SkillsPlaceholders extends PlaceholderExpansion {
 
     private final SkillServiceImpl skills;
@@ -47,8 +47,18 @@ public final class SkillsPlaceholders extends PlaceholderExpansion {
             return null;
         }
         String lower = params.toLowerCase(Locale.ROOT);
+        if ("overall_level".equals(lower) || "overalllevel".equals(lower)
+                || "overall".equals(lower) || "level".equals(lower)) {
+            return Integer.toString(overallLevel(player.getUniqueId()));
+        }
+        if ("overall_xp".equals(lower) || "overallxp".equals(lower)) {
+            return String.format("%.0f", overallXp(player.getUniqueId()));
+        }
         if ("total_level".equals(lower) || "totallevel".equals(lower)) {
             return Integer.toString(totalLevel(player.getUniqueId()));
+        }
+        if ("combined_xp".equals(lower) || "combinedxp".equals(lower)) {
+            return String.format("%.0f", combinedSkillXp(player.getUniqueId()));
         }
         if ("combat_level".equals(lower) || "combatlevel".equals(lower)) {
             return Integer.toString(skills.combatLevel(player.getUniqueId()));
@@ -74,11 +84,33 @@ public final class SkillsPlaceholders extends PlaceholderExpansion {
         };
     }
 
+    private int overallLevel(java.util.UUID uuid) {
+        try {
+            return skills.overallLevel(uuid).orTimeout(2, TimeUnit.SECONDS).join();
+        } catch (Exception e) {
+            return 1;
+        }
+    }
+
+    private double overallXp(java.util.UUID uuid) {
+        try {
+            return skills.overallXp(uuid).orTimeout(2, TimeUnit.SECONDS).join();
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private double combinedSkillXp(java.util.UUID uuid) {
+        try {
+            return skills.combinedSkillXp(uuid).orTimeout(2, TimeUnit.SECONDS).join();
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     private int totalLevel(java.util.UUID uuid) {
         try {
-            return skills.getAll(uuid).orTimeout(2, TimeUnit.SECONDS).join().stream()
-                    .mapToInt(SkillProgress::level)
-                    .sum();
+            return skills.totalLevel(uuid).orTimeout(2, TimeUnit.SECONDS).join();
         } catch (Exception e) {
             return 0;
         }

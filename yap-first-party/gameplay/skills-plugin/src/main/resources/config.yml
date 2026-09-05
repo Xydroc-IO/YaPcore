@@ -14,7 +14,16 @@ pool:
   connection-timeout-ms: 10000
 
 xp-table:
-  max-level: 99
+  max-level: 120
+  multiplier: 1.0
+
+# First-class overall player level (stored XP in yap_player_overall).
+# Cap matches skills (120); skill XP also feeds overall at xp-share.
+overall:
+  max-level: 120
+  xp-share: 0.5
+  # When a skill is maxed, actions still feed overall (higher share).
+  maxed-xp-share: 0.75
   multiplier: 1.0
 
 feedback:

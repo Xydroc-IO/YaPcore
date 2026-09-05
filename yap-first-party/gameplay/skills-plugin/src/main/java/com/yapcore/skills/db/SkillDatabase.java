@@ -77,6 +77,19 @@ public final class SkillDatabase implements AutoCloseable {
                 st.execute("CREATE INDEX IF NOT EXISTS idx_skill_level ON yap_skill_progress (skill_id, level DESC)");
             } catch (SQLException ignored) {
             }
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS yap_player_overall (
+                      player_uuid CHAR(36) NOT NULL,
+                      xp DOUBLE NOT NULL DEFAULT 0,
+                      level INT NOT NULL DEFAULT 1,
+                      %s,
+                      PRIMARY KEY (player_uuid)
+                    )
+                    """.formatted(dialect.timestampTouchColumn("updated_at")));
+            try {
+                st.execute("CREATE INDEX IF NOT EXISTS idx_overall_level ON yap_player_overall (level DESC, xp DESC)");
+            } catch (SQLException ignored) {
+            }
         }
     }
 

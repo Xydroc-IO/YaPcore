@@ -14,8 +14,12 @@ public final class SkillsConfig {
     private int poolMax = 6;
     private int poolMin = 1;
     private long poolTimeoutMs = 10_000;
-    private int maxLevel = 99;
+    private int maxLevel = 120;
     private double xpMultiplier = 1.0;
+    private int overallMaxLevel = 120;
+    private double overallXpShare = 0.5;
+    private double overallXpMultiplier = 1.0;
+    private double overallMaxedXpShare = 0.75;
     private boolean actionBarXp = true;
     private boolean levelUpTitle = true;
     private boolean levelUpChat = true;
@@ -42,8 +46,12 @@ public final class SkillsConfig {
         poolMax = c.getInt("pool.maximum-pool-size", 6);
         poolMin = c.getInt("pool.minimum-idle", 1);
         poolTimeoutMs = c.getLong("pool.connection-timeout-ms", 10_000);
-        maxLevel = c.getInt("xp-table.max-level", 99);
+        maxLevel = c.getInt("xp-table.max-level", 120);
         xpMultiplier = c.getDouble("xp-table.multiplier", 1.0);
+        overallMaxLevel = Math.max(2, c.getInt("overall.max-level", 120));
+        overallXpShare = Math.max(0.0, c.getDouble("overall.xp-share", 0.5));
+        overallXpMultiplier = Math.max(0.01, c.getDouble("overall.multiplier", 1.0));
+        overallMaxedXpShare = Math.max(0.0, c.getDouble("overall.maxed-xp-share", 0.75));
         actionBarXp = c.getBoolean("feedback.action-bar-xp", true);
         levelUpTitle = c.getBoolean("feedback.level-up-title", true);
         levelUpChat = c.getBoolean("feedback.level-up-chat", true);
@@ -93,6 +101,23 @@ public final class SkillsConfig {
 
     public double xpMultiplier() {
         return xpMultiplier;
+    }
+
+    public int overallMaxLevel() {
+        return overallMaxLevel;
+    }
+
+    public double overallXpShare() {
+        return overallXpShare;
+    }
+
+    public double overallXpMultiplier() {
+        return overallXpMultiplier;
+    }
+
+    /** When a skill is already maxed, this share feeds overall (keeps endgame actions useful). */
+    public double overallMaxedXpShare() {
+        return overallMaxedXpShare;
     }
 
     public boolean actionBarXp() {

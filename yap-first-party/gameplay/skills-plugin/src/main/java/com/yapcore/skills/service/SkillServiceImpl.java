@@ -1,10 +1,10 @@
 package com.yapcore.skills.service;
 
 import com.yapcore.mmo.CombatLevelCalculator;
+import com.yapcore.mmo.PlayerOverall;
 import com.yapcore.mmo.SkillDefinition;
 import com.yapcore.mmo.SkillFeedbackServices;
 import com.yapcore.mmo.SkillId;
-import com.yapcore.skills.db.SkillRepository;
 import com.yapcore.mmo.SkillProgress;
 import com.yapcore.mmo.SkillService;
 import com.yapcore.mmo.XpSource;
@@ -12,6 +12,7 @@ import com.yapcore.mmo.XpTable;
 import com.yapcore.mmo.event.SkillLevelUpEvent;
 import com.yapcore.sched.YapSched;
 import com.yapcore.skills.SkillsConfig;
+import com.yapcore.skills.db.SkillRepository;
 import com.yapcore.skills.skill.SkillPackLoader;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
@@ -36,18 +37,21 @@ public final class SkillServiceImpl implements SkillService {
     private final SkillRepository repository;
     private final SkillPackLoader loader;
     private final XpTable xpTable;
+    private final XpTable overallXpTable;
 
     public SkillServiceImpl(
             JavaPlugin plugin,
             SkillsConfig config,
             SkillRepository repository,
             SkillPackLoader loader,
-            XpTable xpTable) {
+            XpTable xpTable,
+            XpTable overallXpTable) {
         this.plugin = plugin;
         this.config = config;
         this.repository = repository;
         this.loader = loader;
         this.xpTable = xpTable;
+        this.overallXpTable = overallXpTable;
     }
 
     @Override
@@ -130,6 +134,80 @@ public final class SkillServiceImpl implements SkillService {
         return xpTable;
     }
 
+    @Override
+    public XpTable overallXpTable() {
+        return overallXpTable;
+    }
+
+    @Override
+    public CompletableFuture<Double> combinedSkillXp(UUID playerId) {
+        return getAll(playerId).thenApply(this::sumXpEnabled);
+    }
+
+    @Override
+    public CompletableFuture<Double> overallXp(UUID playerId) {
+        return overall(playerId).thenApply(PlayerOverall::xp);
+    }
+
+    @Override
+    public CompletableFuture<Integer> overallLevel(UUID playerId) {
+        return overall(playerId).thenApply(PlayerOverall::level);
+    }
+
+    @Override
+    public CompletableFuture<PlayerOverall> overall(UUID playerId) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return repository.getOverall(playerId);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Override
+    public CompletableFuture<Integer> totalLevel(UUID playerId) {
+        return getAll(playerId).thenApply(this::totalLevelOf);
+    }
+
+    public int totalLevelOf(Collection<SkillProgress> progress) {
+        int total = 0;
+        int present = 0;
+        for (SkillProgress p : progress) {
+            if (isEnabledSkill(p.skillId())) {
+                total += p.level();
+                present++;
+            }
+        }
+        int missing = Math.max(0, enabledSkillCount() - present);
+        return total + missing;
+    }
+
+    public double sumXpEnabled(Collection<SkillProgress> progress) {
+        double sum = 0;
+        for (SkillProgress p : progress) {
+            if (isEnabledSkill(p.skillId())) {
+                sum += p.xp();
+            }
+        }
+        return sum;
+    }
+
+    private int enabledSkillCount() {
+        int n = 0;
+        for (SkillDefinition def : loader.skills().values()) {
+            if (def.enabled()) {
+                n++;
+            }
+        }
+        return Math.max(1, n);
+    }
+
+    private boolean isEnabledSkill(SkillId id) {
+        SkillDefinition def = loader.get(id);
+        return def != null && def.enabled();
+    }
+
     public Optional<SkillDefinition.BreakAction> breakAction(SkillId skillId, org.bukkit.Material material) {
         SkillDefinition def = loader.get(skillId);
         if (def == null || !def.enabled()) {
@@ -147,6 +225,19 @@ public final class SkillServiceImpl implements SkillService {
                 return repository.topBySkill(skillId, offset, pageSize);
             } catch (SQLException e) {
                 plugin.getLogger().log(Level.SEVERE, "skill top", e);
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public CompletableFuture<List<SkillRepository.LeaderboardEntry>> topOverall(int page, int pageSize) {
+        int safePage = Math.max(1, page);
+        int offset = (safePage - 1) * pageSize;
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return repository.topOverall(offset, pageSize);
+            } catch (SQLException e) {
+                plugin.getLogger().log(Level.SEVERE, "overall top", e);
                 throw new RuntimeException(e);
             }
         });
@@ -180,18 +271,67 @@ public final class SkillServiceImpl implements SkillService {
         try {
             SkillProgress cur = repository.get(playerId, skillId)
                     .orElse(new SkillProgress(playerId, skillId, 0, 1));
+            boolean skillMaxed = cur.level() >= xpTable.maxLevel();
             int oldLevel = cur.level();
-            double newXp = cur.xp() + amount;
-            int newLevel = xpTable.levelForXp(newXp);
-            if (newLevel > xpTable.maxLevel()) {
-                newLevel = xpTable.maxLevel();
-                newXp = xpTable.xpForLevel(newLevel);
+            SkillProgress progress = cur;
+            if (!skillMaxed) {
+                double newXp = cur.xp() + amount;
+                int newLevel = xpTable.levelForXp(newXp);
+                if (newLevel > xpTable.maxLevel()) {
+                    newLevel = xpTable.maxLevel();
+                    newXp = xpTable.xpForLevel(newLevel);
+                }
+                progress = persist(playerId, skillId, newXp, newLevel, source, oldLevel);
             }
-            return persist(playerId, skillId, newXp, newLevel, source, oldLevel);
+            // Overall keeps progressing from skill actions even after that skill is maxed.
+            double overallGrant = amount * config.overallXpShare();
+            if (skillMaxed) {
+                // Full share still applies; optional bonus so maxed skills remain meaningful.
+                overallGrant = amount * Math.max(config.overallXpShare(), config.overallMaxedXpShare());
+            }
+            grantOverallXp(playerId, overallGrant);
+            return progress;
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "skill addXp", e);
             throw new RuntimeException(e);
         }
+    }
+
+    private void grantOverallXp(UUID playerId, double amount) throws SQLException {
+        if (amount <= 0) {
+            return;
+        }
+        PlayerOverall cur = repository.getOverall(playerId);
+        int oldLevel = cur.level();
+        double newXp = cur.xp() + amount;
+        int newLevel = overallXpTable.levelForXp(newXp);
+        if (newLevel > overallXpTable.maxLevel()) {
+            newLevel = overallXpTable.maxLevel();
+            newXp = overallXpTable.xpForLevel(newLevel);
+        }
+        repository.upsertOverall(new PlayerOverall(playerId, newXp, newLevel));
+        if (newLevel > oldLevel) {
+            notifyOverallLevelUp(playerId, oldLevel, newLevel);
+        }
+    }
+
+    private void notifyOverallLevelUp(UUID playerId, int oldLevel, int newLevel) {
+        Player player = Bukkit.getPlayer(playerId);
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        YapSched.entity(plugin, player, () -> {
+            if (config.levelUpChat()) {
+                player.sendMessage("§aOverall level up! §7You are now overall level §e" + newLevel
+                        + "§7/§e" + overallXpTable.maxLevel());
+            }
+            if (config.levelUpTitle()) {
+                player.showTitle(Title.title(
+                        Component.text("Overall Level Up!"),
+                        Component.text(oldLevel + " → " + newLevel),
+                        Title.Times.times(Duration.ofMillis(250), Duration.ofSeconds(2), Duration.ofMillis(500))));
+            }
+        });
     }
 
     private SkillProgress persist(
@@ -243,7 +383,21 @@ public final class SkillServiceImpl implements SkillService {
         }
         SkillDefinition def = loader.get(skillId);
         String name = def == null ? skillId.id() : def.display();
-        String label = "+" + formatXp(amount) + " " + name + " XP";
+        boolean skillMaxed;
+        try {
+            skillMaxed = repository.get(player.getUniqueId(), skillId)
+                    .map(p -> p.level() >= xpTable.maxLevel())
+                    .orElse(false);
+        } catch (SQLException e) {
+            skillMaxed = false;
+        }
+        String label;
+        if (skillMaxed) {
+            double overallAmount = amount * Math.max(config.overallXpShare(), config.overallMaxedXpShare());
+            label = "+" + formatXp(overallAmount) + " Overall XP";
+        } else {
+            label = "+" + formatXp(amount) + " " + name + " XP";
+        }
         player.sendActionBar(Component.text(label));
         SkillFeedbackServices.find().ifPresent(bridge ->
                 bridge.onXpGain(player, skillId, amount, label));

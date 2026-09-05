@@ -38,8 +38,12 @@ public final class DashboardSkillsSnapshot {
         out.put("configPresent", Files.isRegularFile(configFile));
         out.put("skillCount", 0);
         out.put("skills", List.of());
-        out.put("combatLevelFormula", "OSRS-weighted: base + max(melee,ranged,magic)");
+        out.put("maxLevel", 120);
+        out.put("overallMaxLevel", 120);
+        out.put("overallXpShare", 0.5);
+        out.put("overallMaxedXpShare", 0.75);
         out.put("leaderboardPreview", Map.of());
+        out.put("overallLeaderboardPreview", List.of());
         out.put("onlineSample", List.of());
 
         if (!Files.isRegularFile(configFile)) {
@@ -48,13 +52,17 @@ public final class DashboardSkillsSnapshot {
         try {
             Map<String, Object> yaml = loadYaml(configFile);
             out.put("enabled", bool(yaml.get("enabled"), true));
-            out.put("maxLevel", intVal(nested(yaml, "xp-table", "max-level"), 99));
+            out.put("maxLevel", intVal(nested(yaml, "xp-table", "max-level"), 120));
+            out.put("overallMaxLevel", intVal(nested(yaml, "overall", "max-level"), 120));
+            out.put("overallXpShare", doubleVal(nested(yaml, "overall", "xp-share"), 0.5));
+            out.put("overallMaxedXpShare", doubleVal(nested(yaml, "overall", "maxed-xp-share"), 0.75));
             out.put("skillsDirectory", str(yaml.get("skills-directory"), "skills"));
             Path skillsDir = dataDir.resolve(str(yaml.get("skills-directory"), "skills"));
             List<Map<String, Object>> skills = listSkillPacks(skillsDir);
             out.put("skills", skills);
             out.put("skillCount", skills.size());
             out.put("leaderboardPreview", leaderboardPreview(yaml, skills));
+            out.put("overallLeaderboardPreview", queryOverallTop(yaml, 5));
         } catch (IOException e) {
             out.put("error", e.getMessage() == null ? "config read failed" : e.getMessage());
         }
@@ -88,6 +96,36 @@ public final class DashboardSkillsSnapshot {
             out.put(id, queryTop(jdbcUrl, user, password, id, 3));
         }
         return out;
+    }
+
+    private static List<Map<String, Object>> queryOverallTop(Map<String, Object> configYaml, int limit) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        String jdbcUrl = str(nested(configYaml, "jdbc", "url"), "");
+        if (jdbcUrl.isBlank()) {
+            return rows;
+        }
+        String user = str(nested(configYaml, "jdbc", "user"), "yap");
+        String password = str(nested(configYaml, "jdbc", "password"), "");
+        try (Connection c = DriverManager.getConnection(jdbcUrl, user, password);
+             PreparedStatement ps = c.prepareStatement("""
+                     SELECT player_uuid, level, xp FROM yap_player_overall
+                     ORDER BY level DESC, xp DESC
+                     LIMIT ?
+                     """)) {
+            ps.setInt(1, limit);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("playerId", rs.getString("player_uuid"));
+                    row.put("level", rs.getInt("level"));
+                    row.put("xp", rs.getDouble("xp"));
+                    rows.add(row);
+                }
+            }
+        } catch (Exception ignored) {
+            // DB may be offline — snapshot stays read-only without crashing
+        }
+        return rows;
     }
 
     private static List<Map<String, Object>> queryTop(
@@ -189,6 +227,19 @@ public final class DashboardSkillsSnapshot {
         if (val != null) {
             try {
                 return Integer.parseInt(String.valueOf(val));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return fallback;
+    }
+
+    private static double doubleVal(Object val, double fallback) {
+        if (val instanceof Number n) {
+            return n.doubleValue();
+        }
+        if (val != null) {
+            try {
+                return Double.parseDouble(String.valueOf(val));
             } catch (NumberFormatException ignored) {
             }
         }

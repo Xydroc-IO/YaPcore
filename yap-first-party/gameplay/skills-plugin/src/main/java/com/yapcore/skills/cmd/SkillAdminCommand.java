@@ -31,7 +31,7 @@ public final class SkillAdminCommand implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
             sender.sendMessage("§e/skill addxp <player> <skill> <amount>");
-            sender.sendMessage("§e/skill set <player> <skill> <level> §7· §e/skill top <skill> [page]");
+            sender.sendMessage("§e/skill set <player> <skill> <level> §7· §e/skill top <skill|overall> [page]");
             return true;
         }
         return switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -115,11 +115,7 @@ public final class SkillAdminCommand implements CommandExecutor, TabCompleter {
 
     private boolean handleTop(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("§cUsage: /skill top <skill> [page]");
-            return true;
-        }
-        SkillId skillId = parseSkill(args[1], sender);
-        if (skillId == null) {
+            sender.sendMessage("§cUsage: /skill top <skill|overall> [page]");
             return true;
         }
         int page = 1;
@@ -132,22 +128,40 @@ public final class SkillAdminCommand implements CommandExecutor, TabCompleter {
             }
         }
         final int requestPage = page;
+        if ("overall".equalsIgnoreCase(args[1]) || "level".equalsIgnoreCase(args[1])) {
+            skills.topOverall(requestPage, PAGE_SIZE).thenAccept(entries -> {
+                sender.sendMessage("§6Top §eoverall §6(page " + requestPage + ")");
+                printLeaderboard(sender, entries, requestPage);
+            });
+            return true;
+        }
+        SkillId skillId = parseSkill(args[1], sender);
+        if (skillId == null) {
+            return true;
+        }
         skills.topBySkill(skillId, requestPage, PAGE_SIZE).thenAccept(entries -> {
             sender.sendMessage("§6Top §e" + skillId.id() + " §6(page " + requestPage + ")");
-            if (entries.isEmpty()) {
-                sender.sendMessage("§7No entries yet.");
-                return;
-            }
-            int rank = (requestPage - 1) * PAGE_SIZE + 1;
-            for (SkillRepository.LeaderboardEntry entry : entries) {
-                String name = resolveName(entry.playerId());
-                sender.sendMessage("§7" + rank + ". §f" + name
-                        + " §7— level §e" + entry.level()
-                        + " §7(" + String.format("%.0f", entry.xp()) + " XP)");
-                rank++;
-            }
+            printLeaderboard(sender, entries, requestPage);
         });
         return true;
+    }
+
+    private void printLeaderboard(
+            CommandSender sender,
+            List<SkillRepository.LeaderboardEntry> entries,
+            int requestPage) {
+        if (entries.isEmpty()) {
+            sender.sendMessage("§7No entries yet.");
+            return;
+        }
+        int rank = (requestPage - 1) * PAGE_SIZE + 1;
+        for (SkillRepository.LeaderboardEntry entry : entries) {
+            String name = resolveName(entry.playerId());
+            sender.sendMessage("§7" + rank + ". §f" + name
+                    + " §7— level §e" + entry.level()
+                    + " §7(" + String.format("%.0f", entry.xp()) + " XP)");
+            rank++;
+        }
     }
 
     private static String resolveName(UUID uuid) {
@@ -174,7 +188,9 @@ public final class SkillAdminCommand implements CommandExecutor, TabCompleter {
             return prefix(subs, args[0]);
         }
         if (args.length == 2 && "top".equalsIgnoreCase(args[0])) {
-            return prefix(skillIds(), args[1]);
+            List<String> opts = new ArrayList<>(skillIds());
+            opts.add(0, "overall");
+            return prefix(opts, args[1]);
         }
         if (!sender.hasPermission("yapskills.admin")) {
             return List.of();
