@@ -130,6 +130,8 @@ public final class MapTelemetry {
                     if (name.endsWith(".json") && !"manifest.json".equals(name)) {
                         bytes.addAndGet(attrs.size());
                         chunks.incrementAndGet();
+                    } else if (name.endsWith(".ymesh")) {
+                        bytes.addAndGet(attrs.size());
                     } else if ("manifest.json".equals(name)) {
                         bytes.addAndGet(attrs.size());
                     }

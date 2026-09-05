@@ -197,7 +197,11 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor, TabC
                 + "defaultLayer:" + jsonString(config.enabledLayers().get(0)) + ","
                 + "meshLayers:[" + meshLayersJson + "],"
                 + "meshDefaultLayer:" + jsonString(config.meshDefaultLayer()) + ","
-                + "meshEnabled:" + config.meshEnabled()
+                + "meshEnabled:" + config.meshEnabled() + ","
+                + "meshBinary:" + config.meshBinary() + ","
+                + "meshMaxLod:" + config.meshMaxLod() + ","
+                + "meshFollowPlayers:" + config.meshFollowPlayers() + ","
+                + "meshExtraRadius:" + config.meshExtraRadius()
                 + "};\n";
         Files.writeString(web.resolve("map-config.js"), cfg, StandardCharsets.UTF_8);
         writeMarkersFile();
@@ -303,7 +307,8 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor, TabC
             String layer = key.substring(sep + 1);
             try {
                 MeshEncoder.writeManifest(meshesRoot(), world, layer,
-                        config.originChunkX(), config.originChunkZ(), config.sampleChunkRadius());
+                        config.originChunkX(), config.originChunkZ(), config.meshSampleRadius(),
+                        config.meshMaxLod());
             } catch (IOException e) {
                 getLogger().warning("Mesh manifest rebuild after prune failed for "
                         + world + "/" + layer + ": " + e.getMessage());

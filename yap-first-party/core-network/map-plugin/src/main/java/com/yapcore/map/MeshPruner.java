@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Mesh retention: delete chunk JSON older than max-age-days and/or trim oldest until under max-disk-mb.
+ * Mesh retention: delete chunk JSON / ymesh older than max-age-days and/or trim oldest until under max-disk-mb.
  * Skips {@code manifest.json}; callers should rebuild manifests after prune.
  */
 public final class MeshPruner {
@@ -42,7 +42,10 @@ public final class MeshPruner {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 String name = file.getFileName().toString();
-                if (!name.endsWith(".json") || "manifest.json".equals(name)) {
+                if ("manifest.json".equals(name)) {
+                    return FileVisitResult.CONTINUE;
+                }
+                if (!name.endsWith(".json") && !name.endsWith(MeshBinaryCodec.EXTENSION)) {
                     return FileVisitResult.CONTINUE;
                 }
                 files.add(new MeshFile(file, attrs.size(), attrs.lastModifiedTime()));
@@ -95,14 +98,18 @@ public final class MeshPruner {
     }
 
     /**
-     * Path shape: {@code meshesRoot/{world}/{layer}/{cx}_{cz}.json} or legacy
-     * {@code meshesRoot/{world}/{cx}_{cz}.json}.
+     * Path shape: {@code meshesRoot/{world}/{layer}/lodN/{cx}_{cz}.json|.ymesh} or legacy
+     * {@code meshesRoot/{world}/{layer}/{cx}_{cz}.json} / {@code meshesRoot/{world}/{cx}_{cz}.json}.
      */
     private static void trackAffected(Path meshesRoot, Path file, Set<String> affected) {
         try {
             Path rel = meshesRoot.relativize(file.toAbsolutePath().normalize());
             int names = rel.getNameCount();
-            if (names >= 3) {
+            if (names >= 4 && rel.getName(2).toString().startsWith("lod")) {
+                String world = rel.getName(0).toString();
+                String layer = rel.getName(1).toString();
+                affected.add(world + "|" + layer);
+            } else if (names >= 3) {
                 String world = rel.getName(0).toString();
                 String layer = rel.getName(1).toString();
                 affected.add(world + "|" + layer);
