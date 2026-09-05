@@ -1,40 +1,87 @@
 #ifndef YAP_WATER_GLSL
 #define YAP_WATER_GLSL
 
-#ifndef WAVE_STRENGTH
-#define WAVE_STRENGTH 1.0
-#endif
+// Multi-direction Gerstner waves — crossed swell + chop (not a single linear set).
+// No shore run-up: mesh stays on the water plane; banks stay dry.
 
-// Quiet multi-scale swell + chop (reads as real water, not arcade sine soup)
+vec2 yapGDir(float a, float b) {
+    return normalize(vec2(a, b));
+}
+
+void yapGerstner(inout float h, inout vec2 xzOff, vec2 xz, float t,
+                 vec2 dir, float amp, float wl, float speed, float steep) {
+    float k = 6.2831853 / max(wl, 0.5);
+    float phase = dot(dir, xz) * k - t * speed;
+    float s = sin(phase);
+    float c = cos(phase);
+    h += amp * s;
+    xzOff += dir * (steep * amp * c);
+}
+
 float yapWaveHeight(vec2 xz, float t) {
-    float s = clamp(WAVE_STRENGTH, 0.2, 1.8);
+    float s = clamp(WAVE_STRENGTH, 0.25, 2.0);
     float h = 0.0;
+    vec2 unused = vec2(0.0);
 
-    // Long ocean swell
-    h += 0.55 * sin(dot(xz, vec2(0.97, 0.18)) * 0.28 + t * 0.48);
-    h += 0.35 * sin(dot(xz, vec2(-0.62, 0.92)) * 0.42 + t * 0.37);
+    // Long swell from several headings
+    yapGerstner(h, unused, xz, t, yapGDir(0.92, 0.28), 0.42, 28.0, 0.55, 0.55);
+    yapGerstner(h, unused, xz, t, yapGDir(-0.48, 0.88), 0.30, 19.0, 0.42, 0.50);
+    yapGerstner(h, unused, xz, t, yapGDir(0.22, -0.97), 0.18, 37.0, 0.32, 0.40);
+
     // Mid chop
-    h += 0.22 * sin(dot(xz, vec2(0.78, 0.55)) * 0.95 - t * 0.82);
-    h += 0.14 * sin(dot(xz, vec2(-0.48, 0.84)) * 1.55 + t * 1.05);
-    // Fine ripple
-    h += 0.07 * sin(dot(xz, vec2(1.15, -0.38)) * 3.2 + t * 1.65);
-    h += 0.035 * sin(dot(xz, vec2(-0.88, 1.05)) * 5.8 - t * 2.15);
+    yapGerstner(h, unused, xz, t, yapGDir(0.78, 0.52), 0.12, 9.5, 0.95, 0.45);
+    yapGerstner(h, unused, xz, t, yapGDir(-0.62, 0.78), 0.08, 6.8, 1.15, 0.40);
 
-    // Soft crest pinch (subtle — not cartoon peaks)
-    h += 0.06 * sin(h * 1.8 + t * 0.4);
+    // Soft micro-ripple
+    yapGerstner(h, unused, xz, t, yapGDir(0.95, -0.30), 0.028, 3.2, 1.55, 0.25);
+    yapGerstner(h, unused, xz, t, yapGDir(-0.35, 0.94), 0.018, 2.1, 1.85, 0.20);
 
-    // ~8–12 cm at strength 1.0
-    return h * 0.072 * s;
+    h *= 1.0 + rainStrength * 0.38;
+    if (rainStrength > 0.01) {
+        h += rainStrength * 0.012 * sin(dot(xz, vec2(2.1, 1.7)) * 4.2 + t * 3.2);
+    }
+
+    // ~45–70 cm peak-to-trough at strength 1
+    return h * 0.72 * s;
+}
+
+vec2 yapWaveOffsetXZ(vec2 xz, float t) {
+    float s = clamp(WAVE_STRENGTH, 0.25, 2.0);
+    float h = 0.0;
+    vec2 off = vec2(0.0);
+
+    yapGerstner(h, off, xz, t, yapGDir(0.92, 0.28), 0.42, 28.0, 0.55, 0.55);
+    yapGerstner(h, off, xz, t, yapGDir(-0.48, 0.88), 0.30, 19.0, 0.42, 0.50);
+    yapGerstner(h, off, xz, t, yapGDir(0.78, 0.52), 0.12, 9.5, 0.95, 0.45);
+
+    // Small XZ only — no beach flooding
+    return off * 0.08 * s;
+}
+
+vec3 yapWaterDisplace(vec3 wp, float t) {
+    vec2 off = yapWaveOffsetXZ(wp.xz, t);
+    float h = yapWaveHeight(wp.xz + off * 0.15, t);
+
+    // Visible heave on open water; keep crests from climbing banks
+    float hMesh = h;
+    hMesh = min(hMesh, 0.14);
+    hMesh = max(hMesh, -0.18);
+    off *= 0.35;
+
+    return vec3(wp.x + off.x, wp.y + hMesh, wp.z + off.y);
 }
 
 vec3 yapWaterNormal(vec2 xz, float t, vec3 baseN) {
-    // Smaller epsilon → smoother normals (less sparkly plastic)
-    float e = 0.35;
-    float h0 = yapWaveHeight(xz, t);
-    float hx = yapWaveHeight(xz + vec2(e, 0.0), t);
-    float hz = yapWaveHeight(xz + vec2(0.0, e), t);
+    float e = 0.18;
+    vec2 o0 = yapWaveOffsetXZ(xz, t);
+    float h0 = yapWaveHeight(xz + o0 * 0.15, t);
+    float hx = yapWaveHeight(xz + vec2(e, 0.0) + yapWaveOffsetXZ(xz + vec2(e, 0.0), t) * 0.15, t);
+    float hz = yapWaveHeight(xz + vec2(0.0, e) + yapWaveOffsetXZ(xz + vec2(0.0, e), t) * 0.15, t);
+
     vec3 n = normalize(vec3((h0 - hx) / e, 1.0, (h0 - hz) / e));
-    float mixAmt = clamp(0.35 + WAVE_STRENGTH * 0.35, 0.35, 0.85);
+    float up = clamp(dot(normalize(baseN), vec3(0.0, 1.0, 0.0)), 0.0, 1.0);
+    float mixAmt = mix(0.45, 1.0, up);
+    mixAmt *= clamp(0.75 + WAVE_STRENGTH * 0.22, 0.75, 1.0);
     return normalize(mix(normalize(baseN), n, mixAmt));
 }
 
@@ -48,27 +95,25 @@ vec3 yapWaterSpecular(vec3 N, vec3 V, vec3 L) {
     vec3 H = normalize(V + L);
     float ndoth = max(dot(N, H), 0.0);
     float ndotl = max(dot(N, L), 0.0);
-    // Tiny hot sun glitter + soft mid lobe (Complementary-ish)
-    float hot = pow(ndoth, 480.0) * ndotl;
-    float mid = pow(ndoth, 64.0) * ndotl * 0.12;
-    return vec3(1.0, 1.02, 1.05) * (hot * 1.15 + mid);
+    float hot = pow(ndoth, 220.0) * ndotl * 0.85;
+    float mid = pow(ndoth, 42.0) * ndotl * 0.22;
+    float wide = pow(ndoth, 12.0) * ndotl * 0.08;
+    return vec3(0.92, 0.96, 1.05) * (hot + mid + wide);
 #else
     return vec3(0.0);
 #endif
 }
 
-// Natural coastal / lake water — muted, not neon teal
 vec3 yapWaterAlbedo(float depthMix, float rain) {
-    vec3 shallow = vec3(0.12, 0.32, 0.34);
-    vec3 deep = vec3(0.015, 0.055, 0.14);
-    vec3 storm = vec3(0.04, 0.07, 0.10);
-    vec3 body = mix(shallow, deep, pow(clamp(depthMix, 0.0, 1.0), 0.85));
-    return mix(body, storm, rain * 0.65);
+    vec3 shallow = vec3(0.06, 0.24, 0.30);
+    vec3 deep = vec3(0.008, 0.035, 0.11);
+    vec3 storm = vec3(0.025, 0.045, 0.07);
+    vec3 body = mix(shallow, deep, pow(clamp(depthMix, 0.0, 1.0), 0.78));
+    return mix(body, storm, rain * 0.72);
 }
 
-// Beer–Lambert style absorption through a water column
 vec3 yapWaterAbsorb(vec3 light, float thickness) {
-    vec3 coeff = vec3(0.55, 0.18, 0.10); // red dies first
+    vec3 coeff = vec3(0.58, 0.15, 0.08);
     float t = clamp(thickness, 0.0, 4.0);
     return light * exp(-coeff * t);
 }

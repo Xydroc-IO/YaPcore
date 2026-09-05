@@ -1,6 +1,8 @@
 #ifndef YAP_COMMON_GLSL
 #define YAP_COMMON_GLSL
 
+#include "/lib/options.glsl"
+
 const float PI = 3.14159265359;
 const float EPS = 1e-4;
 
@@ -8,6 +10,7 @@ uniform float frameTimeCounter;
 uniform vec3 sunPosition;
 uniform vec3 moonPosition;
 uniform float rainStrength;
+uniform float thunderStrength;
 uniform int worldTime;
 uniform float viewWidth;
 uniform float viewHeight;
@@ -34,13 +37,6 @@ uniform sampler2D colortex2;
 uniform sampler2D colortex3;
 uniform sampler2D noisetex;
 
-varying vec4 texcoord;
-varying vec4 lmcoord;
-varying vec4 glcolor;
-varying vec3 viewPos;
-varying vec3 worldPos;
-varying vec3 normal;
-
 float luma(vec3 c) {
     return dot(c, vec3(0.2126, 0.7152, 0.0722));
 }
@@ -62,22 +58,29 @@ vec3 viewToScreen(vec3 view) {
 }
 
 vec3 applyFog(vec3 color, float dist, vec3 fogCol) {
-    // Distance fog only — rain adds a light mist with distance, not a flat veil.
-    float f = 1.0 - exp(-dist * 0.008);
-    float rainMist = rainStrength * (1.0 - exp(-dist * 0.0045)) * 0.18;
-    f = clamp(f + rainMist, 0.0, 0.85);
+    // Gentle distance haze — old rate 0.008 washed mid-range into a white wall.
+    float rate = (isEyeInWater == 1) ? 0.022 : 0.0026;
+    float f = 1.0 - exp(-dist * rate);
+    float rainMist = rainStrength * (1.0 - exp(-dist * 0.0018)) * 0.10;
+    float cap = (isEyeInWater == 1) ? 0.78 : 0.48;
+    f = clamp(f + rainMist, 0.0, cap);
+    if (isEyeInWater == 1) {
+        fogCol = mix(fogCol, vec3(0.015, 0.08, 0.16), 0.80);
+    } else {
+        // Prefer sky tint over vanilla chalk fogColor
+        fogCol = mix(fogCol, skyColor, 0.55);
+        fogCol = mix(fogCol, vec3(0.42, 0.50, 0.60), 0.22);
+    }
     return mix(color, fogCol, f);
 }
 
-vec2 encodeNormal(vec3 n) {
-    n = normalize(n);
-    return n.xy * 0.5 + 0.5;
+vec3 encodeNormal(vec3 n) {
+    // Full XYZ — the old xy-only encode forced +Z and wrecked undersides/backfaces.
+    return normalize(n) * 0.5 + 0.5;
 }
 
-vec3 decodeNormal(vec2 e) {
-    vec2 f = e * 2.0 - 1.0;
-    float z = sqrt(max(1.0 - dot(f, f), 0.0));
-    return normalize(vec3(f, z));
+vec3 decodeNormal(vec3 e) {
+    return normalize(e * 2.0 - 1.0);
 }
 
 #endif

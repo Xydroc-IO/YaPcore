@@ -1,10 +1,6 @@
 #ifndef YAP_CLOUDS_GLSL
 #define YAP_CLOUDS_GLSL
 
-#ifndef CLOUD_STEPS
-#define CLOUD_STEPS 16
-#endif
-
 const float YAP_CLOUD_BOTTOM = 168.0;
 const float YAP_CLOUD_THICK  = 36.0;
 const float YAP_CLOUD_SCALE  = 0.00135;
@@ -27,7 +23,8 @@ float yapCloudNoise(vec2 p) {
 float yapCloudFbm(vec2 p) {
     float v = 0.0;
     float a = 0.5;
-    for (int i = 0; i < 5; i++) {
+    // 4 octaves (was 5) — enough banks without sky-pixel melt
+    for (int i = 0; i < 4; i++) {
         v += a * yapCloudNoise(p);
         p = p * 2.05 + vec2(17.1, 9.3);
         a *= 0.5;
@@ -39,30 +36,31 @@ float yapCloudDensity(vec3 worldPos, float rain) {
     vec2 drift = vec2(frameTimeCounter * 0.012, frameTimeCounter * 0.0045);
     vec2 uv = worldPos.xz * YAP_CLOUD_SCALE + drift;
     float banks = yapCloudFbm(uv * vec2(1.0, 0.55));
-    float detail = yapCloudFbm(uv * 3.4 + vec2(4.2, 1.7));
-    float field = banks * 0.72 + detail * 0.28;
-    float cover = mix(0.52, 0.34, rain);
-    float dens = smoothstep(cover, cover + 0.22, field);
+    float detail = yapCloudFbm(uv * 2.8 + vec2(4.2, 1.7));
+    float field = banks * 0.70 + detail * 0.30;
+    // Storm adds cover without turning into one flat slab
+    float cover = mix(0.50, 0.32, rain);
+    float dens = smoothstep(cover, cover + 0.20, field);
     dens *= dens;
     float h = (worldPos.y - YAP_CLOUD_BOTTOM) / YAP_CLOUD_THICK;
-    float shape = smoothstep(0.0, 0.18, h) * (1.0 - smoothstep(0.55, 1.0, h));
-    // Slight puff at mid-height so slabs read as volumes.
+    float shape = smoothstep(0.0, 0.16, h) * (1.0 - smoothstep(0.58, 1.0, h));
     shape *= 0.75 + 0.25 * sin(h * 3.14159);
     dens *= shape;
-    dens *= mix(1.0, 1.12, rain);
+    dens *= mix(1.0, 1.22, rain);
     return clamp(dens, 0.0, 1.0);
 }
 
 float yapCloudShadow(vec3 pos, vec3 sunDir, float rain) {
+    // 2 soft samples — 4× density FBM was a large share of sky cost
     float shadow = 1.0;
     vec3 p = pos;
-    vec3 stepDir = normalize(sunDir) * (YAP_CLOUD_THICK * 0.22);
-    for (int i = 0; i < 4; i++) {
+    vec3 stepDir = normalize(sunDir) * (YAP_CLOUD_THICK * 0.32);
+    for (int i = 0; i < 2; i++) {
         p += stepDir;
         float d = yapCloudDensity(p, rain);
-        shadow *= exp(-d * 1.8);
+        shadow *= exp(-d * 2.2);
     }
-    return mix(0.35, 1.0, shadow);
+    return mix(0.40, 1.0, shadow);
 }
 
 // Returns rgb = cloud lighting, a = opacity to composite over sky.
@@ -107,18 +105,25 @@ vec4 yapVolumetricClouds(vec3 worldDir, vec3 sunView, float rain) {
     vec3 stepV = rd * dt;
 
     vec3 sunDirWorld = normalize(mat3(gbufferModelViewInverse) * sunView);
-    float sunUp = clamp(sunDirWorld.y * 0.5 + 0.5, 0.0, 1.0);
-    float dayness = clamp(luma(skyColor) * 2.5, 0.0, 1.0);
+    float sunY = sunDirWorld.y;
+    float dayness = smoothstep(-0.12, 0.28, sunY);
+    dayness *= mix(1.0, 0.65, rain);
 
-    vec3 cloudLit = mix(vec3(0.55, 0.58, 0.70), vec3(0.96, 0.97, 0.99), dayness);
-    vec3 cloudShade = mix(vec3(0.12, 0.14, 0.20), vec3(0.55, 0.60, 0.72), dayness);
-    // Warm rim near the sun disk
+    vec3 cloudLit = mix(vec3(0.50, 0.54, 0.68), vec3(0.96, 0.97, 0.99), dayness);
+    vec3 cloudShade = mix(vec3(0.10, 0.12, 0.18), vec3(0.55, 0.60, 0.72), dayness);
+    // Dawn: warm lit edges toward sun, cool shade — not brown mud
+    float twilight = exp(-pow((sunY - 0.02) / 0.18, 2.0)) * smoothstep(-0.25, 0.0, sunY + 0.12);
+    cloudLit = mix(cloudLit, vec3(1.0, 0.72, 0.52), twilight * 0.35);
+    cloudShade = mix(cloudShade, vec3(0.35, 0.32, 0.42), twilight * 0.25);
+    // Storm: cooler grey, still readable banks (not black blobs)
+    cloudLit = mix(cloudLit, vec3(0.48, 0.50, 0.54), rain * 0.55);
+    cloudShade = mix(cloudShade, vec3(0.16, 0.17, 0.20), rain * 0.55);
     float towardSun = max(dot(rd, sunDirWorld), 0.0);
-    vec3 sunTint = mix(vec3(1.0), vec3(1.0, 0.78, 0.55), pow(towardSun, 4.0) * sunUp);
-
+    vec3 sunTint = mix(vec3(1.0), vec3(1.0, 0.82, 0.62), pow(towardSun, 4.0) * twilight * (1.0 - rain * 0.55));
+    sunTint = mix(sunTint, vec3(1.0), dayness * 0.5);
     vec3 accum = vec3(0.0);
     float transm = 1.0;
-    float optical = mix(1.35, 1.55, rain);
+    float optical = mix(1.35, 1.75, rain);
 
     for (int i = 0; i < CLOUD_STEPS; i++) {
         float dens = yapCloudDensity(pos, rain);

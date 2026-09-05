@@ -1,6 +1,7 @@
 #version 120
 
 #include "/lib/common.glsl"
+#include "/lib/varyings.glsl"
 
 void main() {
     vec4 view = gl_ModelViewMatrix * gl_Vertex;

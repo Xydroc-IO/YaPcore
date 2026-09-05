@@ -1,4 +1,9 @@
 option.WAVE_STRENGTH=Wave strength
+option.WIND=Foliage wind
+option.WIND_STRENGTH=Wind strength (scales weather wind; clear skies stay calm)
+screen.wind=Wind
+option.WIND.comment=Trees lean with weather wind. Clear = still; rain/thunder = sway. Species differ (birch soft, spruce stiff).
+option.WIND_STRENGTH.comment=Multiplier on rain/thunder wind. 0 forces off. Does not invent breeze on clear days.
 option.SSR=Screen-space reflections
 option.SSR_STEPS=SSR quality (steps)
 option.REFRACTION=Refraction
@@ -11,4 +16,6 @@ option.CLOUD_STEPS=Cloud quality (steps)
 profile.LOW=Low
 profile.MEDIUM=Medium
 profile.HIGH=High
+screen.wave=Waves
+screen.wind=Wind
 screen.clouds=Clouds

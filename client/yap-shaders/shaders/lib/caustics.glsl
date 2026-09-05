@@ -25,8 +25,9 @@ vec3 yapApplyCaustics(vec3 color, vec3 worldPos, vec3 N, vec3 L, float amount) {
 
 vec3 yapUnderwaterCaustics(vec3 color, vec2 uv, float t) {
 #ifdef CAUSTICS
-    float pat = yapCausticPattern(uv * vec2(aspectRatio, 1.0) * 2.2 + t * 0.05, t);
-    return color + vec3(0.12, 0.35, 0.42) * pat * 0.14;
+    // Subtle screen flecks only — must stay see-through over the world
+    float pat = yapCausticPattern(uv * vec2(aspectRatio, 1.0) * 1.6 + t * 0.04, t);
+    return color + vec3(0.10, 0.28, 0.34) * pat * 0.06;
 #else
     return color;
 #endif

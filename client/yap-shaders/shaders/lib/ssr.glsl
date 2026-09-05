@@ -1,12 +1,7 @@
 #ifndef YAP_SSR_GLSL
 #define YAP_SSR_GLSL
 
-#ifndef SSR_STEPS
-#define SSR_STEPS 24
-#endif
-
-// Screen-space reflection raymarch (YaP original).
-// rgb = color, a = 1 hit / 0 miss
+// Screen-space reflection raymarch (YaP original) — denser steps for wet look.
 vec4 yapSSR(vec3 viewPos, vec3 viewNormal, sampler2D colorTex, sampler2D depthTex) {
 #ifdef SSR
     vec3 V = normalize(viewPos);
@@ -16,7 +11,7 @@ vec4 yapSSR(vec3 viewPos, vec3 viewNormal, sampler2D colorTex, sampler2D depthTe
         return vec4(0.0);
     }
 
-    float stepSize = 0.35 + length(viewPos) * 0.012;
+    float stepSize = 0.28 + length(viewPos) * 0.010;
     vec3 ray = viewPos;
     vec2 hitUV = vec2(0.0);
     bool hit = false;
@@ -27,7 +22,7 @@ vec4 yapSSR(vec3 viewPos, vec3 viewNormal, sampler2D colorTex, sampler2D depthTe
     for (int i = 0; i < 64; i++) {
         if (i >= steps) break;
         ray += R * stepSize;
-        stepSize *= 1.045;
+        stepSize *= 1.035;
 
         vec3 screen = viewToScreen(ray);
         if (screen.x < 0.0 || screen.x > 1.0 || screen.y < 0.0 || screen.y > 1.0
@@ -41,7 +36,7 @@ vec4 yapSSR(vec3 viewPos, vec3 viewNormal, sampler2D colorTex, sampler2D depthTe
         vec3 sceneView = screenToView(vec3(screen.xy, sceneZ));
         float delta = ray.z - sceneView.z;
 
-        if (delta > 0.0 && delta < stepSize * 2.5) {
+        if (delta > 0.0 && delta < stepSize * 3.2) {
             hitUV = screen.xy;
             hit = true;
             break;

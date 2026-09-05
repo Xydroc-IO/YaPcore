@@ -1,21 +1,20 @@
 #version 120
 
 #include "/lib/common.glsl"
+#include "/lib/varyings.glsl"
 
 void main() {
     vec4 albedo = texture2D(texture, texcoord.st) * glcolor;
-    // Vanilla rain/snow is thin translucent streaks — keep it readable, not a grey sheet.
-    if (albedo.a < 0.05) discard;
+    if (albedo.a < 0.04) discard;
 
     float mist = clamp(rainStrength, 0.0, 1.0);
-    // Soften density and brighten toward cool rain-streak color.
-    albedo.a *= mix(0.42, 0.28, mist);
-    albedo.rgb = mix(albedo.rgb, vec3(0.78, 0.84, 0.92), 0.35);
-    albedo.rgb *= mix(1.0, 0.92, mist);
+    // Subtle streaks — previous boost made a white noise curtain
+    albedo.a = clamp(albedo.a * mix(0.55, 0.72, mist), 0.0, 0.42);
+    albedo.rgb = mix(albedo.rgb, vec3(0.70, 0.76, 0.84), 0.18);
     albedo.rgb *= texture2D(lightmap, lmcoord.st).rgb;
 
     /* DRAWBUFFERS:012 */
     gl_FragData[0] = albedo;
-    gl_FragData[1] = vec4(encodeNormal(normalize(normal)), 0.0, 1.0);
+    gl_FragData[1] = vec4(encodeNormal(normalize(normal)), 1.0);
     gl_FragData[2] = vec4(0.0, 0.0, 0.0, 1.0);
 }
