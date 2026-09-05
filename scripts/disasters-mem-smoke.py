@@ -112,6 +112,11 @@ def wait_ready(tok: str, timeout=120):
 def main() -> int:
     tok = token()
     wait_ready(tok)
+    snap = api("GET", "/api/disasters", tok=tok)
+    if not snap.get("enabled", True):
+        print("SKIP: YaPDisasters enabled=false — not spamming /yapdisaster (set enabled: true to exercise)")
+        print("PASS: disasters smoke skipped (plugin disabled)")
+        return 0
     parent, folia = pids()
     print(f"pids parent={parent} folia={folia}")
     h0 = heap_mb(folia) if folia else None
