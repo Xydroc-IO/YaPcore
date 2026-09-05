@@ -52,27 +52,14 @@ tasks.register("verifyConcurrency") {
 /** GAMEPLAY opt-in bundle (also shipped inside assembleRelease -PyapGameplay=true). */
 tasks.register("assembleGameplaySuite") {
     group = "distribution"
-    description = "Zip gameplay plugins + modules + packs → build/dist/yap-gameplay-suite.zip"
+    description = "Zip gameplay plugins + modules → build/dist/yap-gameplay-suite.zip"
     dependsOn(
         "installGameplayDefaults",
         "prepareClientPack",
-        ":vehicles-plugin:jar",
         ":stacker-plugin:jar",
         ":gameplay-knobs-plugin:jar",
         ":skills-plugin:shadowJar",
-        ":combat-plugin:shadowJar",
-        ":crafting-plugin:shadowJar",
-        ":mmo-content-plugin:shadowJar",
-        ":mmo-bedrock-plugin:jar",
-        ":guilds-plugin:shadowJar",
-        ":games-plugin:shadowJar",
-        ":mechanics-plugin:jar",
-        ":abilities-plugin:shadowJar",
         ":disasters-plugin:jar",
-        ":vehicles-module:jar",
-        ":games-module:jar",
-        ":games-ffa-module:jar",
-        ":games-duels-module:jar",
         ":finetune-modules:buildAllFineTuneModules",
     )
     doLast {
@@ -81,28 +68,14 @@ tasks.register("assembleGameplaySuite") {
         outDir.mkdirs()
         val plugins = outDir.resolve("plugins").also { it.mkdirs() }
         val modules = outDir.resolve("modules").also { it.mkdirs() }
-        val packs = outDir.resolve("resourcepacks").also { it.mkdirs() }
         fun jarOf(path: String, taskName: String = "jar"): java.io.File =
             project.project(path).tasks.named(taskName, Jar::class.java).get().archiveFile.get().asFile
         listOf(
-            jarOf(":vehicles-plugin") to "yap-vehicles.jar",
             jarOf(":stacker-plugin") to "yap-stacker.jar",
             jarOf(":gameplay-knobs-plugin") to "yap-gameplay-knobs.jar",
             jarOf(":skills-plugin", "shadowJar") to "yap-skills.jar",
-            jarOf(":combat-plugin", "shadowJar") to "yap-combat.jar",
-            jarOf(":crafting-plugin", "shadowJar") to "yap-crafting.jar",
-            jarOf(":mmo-content-plugin", "shadowJar") to "yap-mmo-content.jar",
-            jarOf(":mmo-bedrock-plugin") to "yap-mmo-bedrock.jar",
-            jarOf(":guilds-plugin", "shadowJar") to "yap-guilds.jar",
-            jarOf(":games-plugin", "shadowJar") to "yap-games.jar",
-            jarOf(":mechanics-plugin") to "yap-mechanics.jar",
-            jarOf(":abilities-plugin", "shadowJar") to "yap-abilities.jar",
             jarOf(":disasters-plugin") to "yap-disasters.jar",
         ).forEach { (src, name) -> src.copyTo(plugins.resolve(name), overwrite = true) }
-        jarOf(":vehicles-module").copyTo(modules.resolve("yap-vehicles-module.jar"), overwrite = true)
-        jarOf(":games-module").copyTo(modules.resolve(jarOf(":games-module").name), overwrite = true)
-        jarOf(":games-ffa-module").copyTo(modules.resolve(jarOf(":games-ffa-module").name), overwrite = true)
-        jarOf(":games-duels-module").copyTo(modules.resolve(jarOf(":games-duels-module").name), overwrite = true)
         project.project(":finetune-modules").tasks.withType(Jar::class.java).forEach { jarTask ->
             if (!jarTask.enabled || jarTask.name == "jar") return@forEach
             val f = jarTask.archiveFile.get().asFile
@@ -110,17 +83,13 @@ tasks.register("assembleGameplaySuite") {
                 f.copyTo(modules.resolve(f.name), overwrite = true)
             }
         }
-        val vehPack = project.file("resourcepacks/yap-vehicles.zip")
-        if (vehPack.isFile) vehPack.copyTo(packs.resolve("yap-vehicles.zip"), overwrite = true)
-        val abilPack = project.file("resourcepacks/yap-abilities.zip")
-        if (abilPack.isFile) abilPack.copyTo(packs.resolve("yap-abilities.zip"), overwrite = true)
         outDir.resolve("README.txt").writeText(
             """
             YaPcore GAMEPLAY suite (v1.0.0.0)
             =================================
             Drop plugins/ and modules/ into your YaPcore server tree.
             Requires CORE+NETWORK release (yapcore.jar + yap-db + playerdata).
-            Docs: docs/plugins/VEHICLES.md · docs/plugins/STACKER.md · docs/ops/TUNE.md
+            Docs: docs/plugins/STACKER.md · docs/ops/TUNE.md
             Rebuild: gradle assembleGameplaySuite
             """.trimIndent() + "\n"
         )
@@ -130,46 +99,13 @@ tasks.register("assembleGameplaySuite") {
     }
 }
 
-/** Example / third-party style addons shipped separately from the main box. */
-tasks.register("assembleAddonsRelease") {
-    group = "distribution"
-    description = "Zip example yap-vehicle-addon jar → build/dist/yap-addons-release.zip"
-    dependsOn(":yap-vehicle-addon:jar")
-    doLast {
-        val outDir = layout.buildDirectory.dir("dist/yap-addons-release").get().asFile
-        outDir.deleteRecursively()
-        outDir.mkdirs()
-        val addonJar = project.project(":yap-vehicle-addon").tasks.named("jar", Jar::class.java).get().archiveFile.get().asFile
-        addonJar.copyTo(outDir.resolve("plugins").also { it.mkdirs() }.resolve(addonJar.name), overwrite = true)
-        project.copy {
-            from(project.file("examples/yap-vehicle-addon"))
-            into(outDir.resolve("examples/yap-vehicle-addon"))
-            include("README.md", "src/**")
-        }
-        outDir.resolve("README.txt").writeText(
-            """
-            YaPcore add-ons (v1.0.0.0)
-            ==========================
-            plugins/     example vehicle addon jar (requires yap-vehicles)
-            examples/    source + README for authors
-            Docs: docs/plugins/VEHICLES.md · examples/yap-vehicle-addon/README.md
-            Rebuild: gradle assembleAddonsRelease
-            """.trimIndent() + "\n"
-        )
-        val zip = layout.buildDirectory.file("dist/yap-addons-release.zip").get().asFile
-        project.ant.withGroovyBuilder { "zip"("destfile" to zip, "basedir" to outDir) }
-        logger.lifecycle("Addons release: ${zip.absolutePath}")
-    }
-}
-
 tasks.register("assembleAllReleases") {
     group = "distribution"
-    description = "Full linux/windows box + network + gameplay + addons zips"
+    description = "Full linux/windows box + network + gameplay zips"
     dependsOn(
         "assembleRelease",
         "assembleNetworkSuite",
         "assembleGameplaySuite",
-        "assembleAddonsRelease",
     )
 }
 
@@ -178,7 +114,7 @@ tasks.register("assembleAllReleases") {
  *   releases/<version>/
  *     linux/  windows/
  *     yapcore-release-linux.zip  yapcore-release-windows.zip
- *     yap-network-suite.zip  yap-gameplay-suite.zip  yap-addons-release.zip
+ *     yap-network-suite.zip  yap-gameplay-suite.zip
  */
 tasks.register("publishReleasesFolder") {
     group = "distribution"
@@ -261,7 +197,6 @@ tasks.register("publishReleasesFolder") {
         listOf(
             "yap-network-suite.zip",
             "yap-gameplay-suite.zip",
-            "yap-addons-release.zip",
         ).forEach { name ->
             val src = dist.resolve(name)
             if (src.isFile) {
@@ -287,7 +222,6 @@ tasks.register("publishReleasesFolder") {
             Standalone suites:
               yap-network-suite.zip
               yap-gameplay-suite.zip
-              yap-addons-release.zip
 
             Rebuild:  gradle publishReleasesFolder
             Slim CORE+NETWORK only:  gradle assembleRelease -PyapGameplay=false

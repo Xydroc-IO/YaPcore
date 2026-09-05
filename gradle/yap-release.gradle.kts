@@ -1,21 +1,16 @@
-val yapGameplayProp: Provider<String> = providers.gradleProperty("yapGameplay").orElse("true")
+val yapGameplayProp: Provider<String> = providers.gradleProperty("yapGameplay").orElse("false")
 val yapGameplayEnabled: Boolean =
     yapGameplayProp.get() != "false" && yapGameplayProp.get() != "0"
 
 tasks.register<Exec>("prepareClientPack") {
     group = "distribution"
     description =
-        "Build yapcore-default.zip (Faithful CORE + YaP Skies + vehicles + abilities overlays)"
+        "Build yapcore-default.zip (Faithful CORE + YaP Skies overlays)"
     workingDir = project.projectDir
-    environment("YAP_INCLUDE_VEHICLES", if (yapGameplayEnabled) "1" else "0")
     commandLine("bash", "scripts/build-default-resourcepack.sh")
     outputs.file(project.file("resourcepacks/yapcore-default.zip"))
     inputs.dir(project.file("resourcepacks/yap-skies")).optional()
     inputs.file(project.file("scripts/generate-yap-skies.py")).optional()
-    inputs.dir(project.file("resourcepacks/yap-vehicles")).optional()
-    inputs.file(project.file("resourcepacks/yap-vehicles.zip")).optional()
-    inputs.dir(project.file("resourcepacks/yap-abilities")).optional()
-    inputs.file(project.file("resourcepacks/yap-abilities.zip")).optional()
     inputs.file(project.file("resourcepacks/faithful-64x.zip")).optional()
 }
 
@@ -78,18 +73,9 @@ tasks.register("assembleRelease") {
             "yap-folia-bridge.jar",
         )
         val gameplayPluginJars = listOf(
-            "yap-vehicles.jar",
             "yap-gameplay-knobs.jar",
             "yap-stacker.jar",
             "yap-skills.jar",
-            "yap-combat.jar",
-            "yap-crafting.jar",
-            "yap-mmo-content.jar",
-            "yap-mmo-bedrock.jar",
-            "yap-guilds.jar",
-            "yap-games.jar",
-            "yap-mechanics.jar",
-            "yap-abilities.jar",
             "yap-disasters.jar",
         )
         val pluginJars = if (includeGameplay) {
@@ -103,10 +89,6 @@ tasks.register("assembleRelease") {
             add("CREDITS.md")
             add("FAITHFUL_LICENSE.txt")
             add("README.md")
-            if (includeGameplay) {
-                add("yap-vehicles.zip")
-                add("yap-abilities.zip")
-            }
         }
         val linuxScripts = listOf(
             "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
@@ -202,7 +184,6 @@ tasks.register("assembleRelease") {
                 include("*.jar", "README.md")
                 if (!includeGameplay) {
                     exclude(
-                        "yap-vehicles-module.jar",
                         "yap-stacker-module.jar",
                         "yap-gameplay-knobs-module.jar",
                     )
@@ -313,7 +294,7 @@ tasks.register("assembleRelease") {
             yapcore.jar
             yap-link.jar          native network proxy (see docs/network/YAP_LINK_NATIVE.md)
             link-data/            Link config + plugins (link.properties, plugins/*.jar)
-            plugins/  all first-party jars (CORE+NETWORK+GAMEPLAY: vehicles, stacker, MMO, …)
+            plugins/  all first-party jars (CORE+NETWORK+GAMEPLAY: skills, stacker, disasters, …)
                       Optional: tebex.jar (GPLv3) via ./scripts/fetch-tebex.sh — Hub store
                       Optional: grim.jar.disabled (GPLv3) — fetched on seed-defaults; enable via grim-ac.sh
             modules/  CORE + GAMEPLAY fine-tune modules
@@ -482,8 +463,7 @@ tasks.register("assembleRelease") {
 
             Standalone zips (also in build/dist/):
               yap-network-suite.zip   YaP Link + link plugins
-              yap-gameplay-suite.zip  vehicles/stacker/knobs (+ modules)
-              yap-addons-release.zip  example vehicle addon
+              yap-gameplay-suite.zip  skills/stacker/knobs/disasters (+ modules)
             Full set: gradle assembleAllReleases
             """.trimIndent() + "\n"
         )
