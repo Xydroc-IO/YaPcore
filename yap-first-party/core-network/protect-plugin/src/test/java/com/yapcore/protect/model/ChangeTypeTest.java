@@ -12,7 +12,7 @@ class ChangeTypeTest {
         for (ChangeType type : ChangeType.values()) {
             assertEquals(type, ChangeType.valueOf(type.name()));
         }
-        assertEquals(5, ChangeType.values().length);
+        assertEquals(8, ChangeType.values().length);
     }
 
     @Test

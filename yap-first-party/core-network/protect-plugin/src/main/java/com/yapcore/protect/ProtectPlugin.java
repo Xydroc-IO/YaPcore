@@ -1,10 +1,12 @@
 package com.yapcore.protect;
 
 import com.yapcore.protect.cmd.ProtectCommands;
+import com.yapcore.protect.listener.InspectListener;
 import com.yapcore.protect.listener.BlockChangeListener;
 import com.yapcore.protect.listener.ContainerInventoryListener;
 import com.yapcore.protect.listener.ContainerAccessListener;
 import com.yapcore.protect.listener.EntityChangeListener;
+import com.yapcore.protect.listener.NaturalChangeListener;
 import com.yapcore.protect.service.ProtectServiceImpl;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.ServicePriority;
@@ -17,6 +19,7 @@ public final class ProtectPlugin extends JavaPlugin {
     private ProtectConfig config;
     private ProtectServiceImpl service;
     private ProtectCommands commands;
+    private InspectListener inspectListener;
     private boolean listenersRegistered;
 
     @Override
@@ -24,7 +27,6 @@ public final class ProtectPlugin extends JavaPlugin {
         saveDefaultConfig();
         config = new ProtectConfig(this);
         service = new ProtectServiceImpl(this);
-        commands = new ProtectCommands(service, config);
         try {
             config.reload();
             service.start(config);
@@ -40,6 +42,9 @@ public final class ProtectPlugin extends JavaPlugin {
             pm.registerEvents(new ContainerAccessListener(service), this);
             pm.registerEvents(new ContainerInventoryListener(service), this);
             pm.registerEvents(new EntityChangeListener(service), this);
+            pm.registerEvents(new NaturalChangeListener(service), this);
+            inspectListener = new InspectListener(service);
+            pm.registerEvents(inspectListener, this);
             listenersRegistered = true;
         }
 
@@ -47,10 +52,15 @@ public final class ProtectPlugin extends JavaPlugin {
 
         PluginCommand cmd = getCommand("yapprotect");
         if (cmd != null) {
+            commands = new ProtectCommands(service, config, inspectListener);
             cmd.setExecutor(commands);
             cmd.setTabCompleter(commands);
         }
-        getLogger().info("YaPProtect ready — logging + rollback (server-id=" + config.serverId() + ").");
+        getLogger().info("YaPProtect ready — logging + rollback + inspect (server-id=" + config.serverId() + ").");
+    }
+
+    public InspectListener inspectListener() {
+        return inspectListener;
     }
 
     public void reloadProtect() throws SQLException {

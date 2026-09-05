@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record ProtectChange(
         long id,
+        String serverId,
         ChangeType changeType,
         UUID actorUuid,
         String actorName,

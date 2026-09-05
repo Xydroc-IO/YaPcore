@@ -25,7 +25,28 @@ public interface ProtectService {
     CompletableFuture<List<BlockChangeRecord>> lookupTimeRange(String world, long fromEpochMs,
                                                                long toEpochMs, int limit);
 
+    /** Paginated actor lookup; {@code after} null starts from the newest row. */
+    CompletableFuture<ProtectLookupPage> lookupActorPage(UUID actorUuid, long fromEpochMs,
+                                                         long toEpochMs, int pageSize,
+                                                         ProtectLookupCursor after);
+
+    CompletableFuture<ProtectLookupPage> lookupBlockPage(String world, int x, int y, int z,
+                                                         long fromEpochMs, long toEpochMs,
+                                                         int pageSize, ProtectLookupCursor after);
+
+    CompletableFuture<ProtectLookupPage> lookupRadiusPage(String world, int cx, int cy, int cz,
+                                                          int radiusBlocks, long fromEpochMs,
+                                                          long toEpochMs, int pageSize,
+                                                          ProtectLookupCursor after);
+
+    CompletableFuture<ProtectLookupPage> lookupTimeRangePage(String world, long fromEpochMs,
+                                                             long toEpochMs, int pageSize,
+                                                             ProtectLookupCursor after);
+
     CompletableFuture<Integer> rollbackChanges(List<Long> changeIds);
+
+    /** Inverse of rollback for previously rolled-back restorable changes. */
+    CompletableFuture<Integer> restoreChanges(List<Long> changeIds);
 
     CompletableFuture<Long> pruneBefore(long epochMs);
 }

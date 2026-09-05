@@ -12,6 +12,9 @@ public final class ProtectConfig {
     private boolean logContainerAccess = true;
     private boolean logContainerInventory = true;
     private boolean logEntityChange = true;
+    private boolean logExplosion = true;
+    private boolean logLiquid = true;
+    private boolean logFire = true;
     private boolean useSharedYapDb = true;
     private String jdbcUrl = "jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true";
     private String jdbcUser = "yap";
@@ -21,7 +24,7 @@ public final class ProtectConfig {
     private long connectionTimeoutMs = 10_000L;
     private int pruneDays = 30;
     private int maxRollbackRadius = 32;
-    private int maxLookupLimit = 200;
+    private int maxLookupLimit = 50;
     private String serverId = "lobby";
 
     public ProtectConfig(JavaPlugin plugin) {
@@ -37,6 +40,9 @@ public final class ProtectConfig {
         logContainerAccess = c.getBoolean("logging.container-access", true);
         logContainerInventory = c.getBoolean("logging.container-inventory", true);
         logEntityChange = c.getBoolean("logging.entity-change", true);
+        logExplosion = c.getBoolean("logging.explosion", true);
+        logLiquid = c.getBoolean("logging.liquid-flow", true);
+        logFire = c.getBoolean("logging.fire", true);
         useSharedYapDb = c.getBoolean("database.use-shared-yapdb", true);
         jdbcUrl = c.getString("database.jdbc-url", jdbcUrl);
         jdbcUser = c.getString("database.user", jdbcUser);
@@ -46,7 +52,7 @@ public final class ProtectConfig {
         connectionTimeoutMs = c.getLong("database.connection-timeout-ms", connectionTimeoutMs);
         pruneDays = Math.max(0, c.getInt("retention.prune-days", pruneDays));
         maxRollbackRadius = Math.max(1, c.getInt("limits.max-rollback-radius", maxRollbackRadius));
-        maxLookupLimit = Math.max(1, Math.min(500, c.getInt("limits.max-lookup-limit", maxLookupLimit)));
+        maxLookupLimit = Math.max(1, Math.min(200, c.getInt("limits.max-lookup-limit", maxLookupLimit)));
         serverId = c.getString("server-id", serverId);
     }
 
@@ -72,6 +78,18 @@ public final class ProtectConfig {
 
     public boolean logEntityChange() {
         return logEntityChange;
+    }
+
+    public boolean logExplosion() {
+        return logExplosion;
+    }
+
+    public boolean logLiquid() {
+        return logLiquid;
+    }
+
+    public boolean logFire() {
+        return logFire;
     }
 
     public int maxRollbackRadius() {

@@ -1,6 +1,7 @@
 package com.yapcore.protect.cmd;
 
 import com.yapcore.protect.ProtectConfig;
+import com.yapcore.protect.listener.InspectListener;
 import com.yapcore.protect.service.ProtectServiceImpl;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
@@ -8,6 +9,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.Locale;
@@ -17,11 +19,13 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
     private final ProtectServiceImpl service;
     private ProtectConfig config;
     private final ProtectCommandOps ops;
+    private final InspectListener inspect;
 
-    public ProtectCommands(ProtectServiceImpl service, ProtectConfig config) {
+    public ProtectCommands(ProtectServiceImpl service, ProtectConfig config, InspectListener inspect) {
         this.service = service;
         this.config = config;
         this.ops = new ProtectCommandOps(service, config);
+        this.inspect = inspect;
     }
 
     public void setConfig(ProtectConfig config) {
@@ -37,8 +41,10 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
         return switch (args[0].toLowerCase(Locale.ROOT)) {
             case "reload" -> reload(sender);
             case "status" -> status(sender);
+            case "inspect" -> inspect(sender);
             case "lookup" -> ops.lookup(sender, args);
             case "dash-lookup" -> ops.dashLookup(sender, args);
+            case "export" -> ops.export(sender, args);
             case "rollback" -> ops.rollback(sender, args);
             case "restore" -> ops.restore(sender, args);
             case "prune" -> ops.prune(sender, args);
@@ -47,6 +53,22 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
                 yield true;
             }
         };
+    }
+
+    private boolean inspect(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cPlayers only.");
+            return true;
+        }
+        if (!player.hasPermission("yapprotect.lookup") && !player.hasPermission("yapprotect.admin")) {
+            sender.sendMessage("§cNo permission.");
+            return true;
+        }
+        boolean on = inspect.toggle(player);
+        sender.sendMessage(on
+                ? "§aInspect ON §7— left/right-click a block to see history (7d)."
+                : "§7Inspect OFF.");
+        return true;
     }
 
     private boolean reload(CommandSender sender) {
@@ -80,16 +102,19 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
     }
 
     private void help(CommandSender sender) {
-        sender.sendMessage("§e/yapprotect status|reload|lookup|rollback|restore|prune");
+        sender.sendMessage("§e/yapprotect status|reload|inspect|lookup|export|rollback|restore|prune");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return filter(List.of("status", "reload", "lookup", "rollback", "restore", "prune"), args[0]);
+            return filter(List.of("status", "reload", "inspect", "lookup", "export", "rollback", "restore", "prune"), args[0]);
         }
         if (args.length == 2 && "lookup".equalsIgnoreCase(args[0])) {
             return filter(List.of("user", "block", "radius", "time"), args[1]);
+        }
+        if (args.length == 2 && "export".equalsIgnoreCase(args[0])) {
+            return filter(List.of("user", "time"), args[1]);
         }
         if (args.length == 2 && "rollback".equalsIgnoreCase(args[0])) {
             return filter(List.of("radius", "time", "user"), args[1]);

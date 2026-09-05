@@ -1,5 +1,6 @@
 package com.yapcore.protect.db;
 
+import com.yapcore.protect.ProtectLookupCursor;
 import com.yapcore.protect.model.ChangeType;
 import com.yapcore.protect.model.ProtectChange;
 
@@ -14,10 +15,38 @@ import java.util.UUID;
 
 public final class ChangeRepository {
 
-    private final ProtectDatabase database;
+    private static final String SELECT_COLS =
+            "id, server_id, change_type, actor_uuid, actor_name, world, x, y, z, "
+                    + "block_before, block_after, epoch_ms, rolled_back";
+
+    private final SqlConnectionSource database;
+    private volatile String serverId;
 
     public ChangeRepository(ProtectDatabase database) {
+        this(database::connection, "lobby");
+    }
+
+    /** Test / alternate pools (e.g. in-memory SQLite). */
+    ChangeRepository(SqlConnectionSource database) {
+        this(database, "default");
+    }
+
+    ChangeRepository(SqlConnectionSource database, String serverId) {
         this.database = database;
+        this.serverId = serverId == null || serverId.isBlank() ? "default" : serverId;
+    }
+
+    public void setServerId(String serverId) {
+        this.serverId = serverId == null || serverId.isBlank() ? "default" : serverId;
+    }
+
+    public String serverId() {
+        return serverId;
+    }
+
+    @FunctionalInterface
+    interface SqlConnectionSource {
+        Connection connection() throws SQLException;
     }
 
     public long insert(String serverId, ChangeType type, UUID actorUuid, String actorName,
@@ -51,88 +80,190 @@ public final class ChangeRepository {
     }
 
     public List<ProtectChange> lookupActor(UUID actorUuid, long fromMs, long toMs, int limit) throws SQLException {
+        List<ProtectChange> rows = lookupActorPage(actorUuid, fromMs, toMs, limit, null);
+        return rows.size() > limit ? rows.subList(0, limit) : rows;
+    }
+
+    public List<ProtectChange> lookupActorPage(UUID actorUuid, long fromMs, long toMs, int limit,
+                                               ProtectLookupCursor after) throws SQLException {
+        String sql = """
+                SELECT %s
+                FROM yap_protect_changes
+                WHERE server_id = ? AND actor_uuid = ? AND epoch_ms BETWEEN ? AND ?
+                """.formatted(SELECT_COLS) + cursorClause(after) + """
+                 ORDER BY epoch_ms DESC, id DESC LIMIT ?
+                """;
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, change_type, actor_uuid, actor_name, world, x, y, z,
-                            block_before, block_after, epoch_ms, rolled_back
-                     FROM yap_protect_changes
-                     WHERE actor_uuid = ? AND epoch_ms BETWEEN ? AND ?
-                     ORDER BY epoch_ms DESC LIMIT ?
-                     """)) {
-            ps.setString(1, actorUuid.toString());
-            ps.setLong(2, fromMs);
-            ps.setLong(3, toMs);
-            ps.setInt(4, Math.max(1, Math.min(limit, 500)));
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            int i = 1;
+            ps.setString(i++, serverId);
+            ps.setString(i++, actorUuid.toString());
+            ps.setLong(i++, fromMs);
+            ps.setLong(i++, toMs);
+            i = bindCursor(ps, i, after);
+            ps.setInt(i, pageLimit(limit));
             return readAll(ps);
         }
     }
 
     public List<ProtectChange> lookupBlock(String world, int x, int y, int z,
                                            long fromMs, long toMs, int limit) throws SQLException {
+        List<ProtectChange> rows = lookupBlockPage(world, x, y, z, fromMs, toMs, limit, null);
+        return rows.size() > limit ? rows.subList(0, limit) : rows;
+    }
+
+    public List<ProtectChange> lookupBlockPage(String world, int x, int y, int z,
+                                               long fromMs, long toMs, int limit,
+                                               ProtectLookupCursor after) throws SQLException {
+        String sql = """
+                SELECT %s
+                FROM yap_protect_changes
+                WHERE server_id = ? AND world = ? AND x = ? AND y = ? AND z = ?
+                  AND epoch_ms BETWEEN ? AND ?
+                """.formatted(SELECT_COLS) + cursorClause(after) + """
+                 ORDER BY epoch_ms DESC, id DESC LIMIT ?
+                """;
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, change_type, actor_uuid, actor_name, world, x, y, z,
-                            block_before, block_after, epoch_ms, rolled_back
-                     FROM yap_protect_changes
-                     WHERE world = ? AND x = ? AND y = ? AND z = ?
-                       AND epoch_ms BETWEEN ? AND ?
-                     ORDER BY epoch_ms DESC LIMIT ?
-                     """)) {
-            ps.setString(1, world);
-            ps.setInt(2, x);
-            ps.setInt(3, y);
-            ps.setInt(4, z);
-            ps.setLong(5, fromMs);
-            ps.setLong(6, toMs);
-            ps.setInt(7, Math.max(1, Math.min(limit, 500)));
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            int i = 1;
+            ps.setString(i++, serverId);
+            ps.setString(i++, world);
+            ps.setInt(i++, x);
+            ps.setInt(i++, y);
+            ps.setInt(i++, z);
+            ps.setLong(i++, fromMs);
+            ps.setLong(i++, toMs);
+            i = bindCursor(ps, i, after);
+            ps.setInt(i, pageLimit(limit));
             return readAll(ps);
         }
     }
 
     public List<ProtectChange> lookupRadius(String world, int cx, int cy, int cz, int radius,
                                            long fromMs, long toMs, int limit) throws SQLException {
+        List<ProtectChange> rows = lookupRadiusPage(world, cx, cy, cz, radius, fromMs, toMs, limit, null);
+        return rows.size() > limit ? rows.subList(0, limit) : rows;
+    }
+
+    public List<ProtectChange> lookupRadiusPage(String world, int cx, int cy, int cz, int radius,
+                                                long fromMs, long toMs, int limit,
+                                                ProtectLookupCursor after) throws SQLException {
         int r = Math.max(0, radius);
+        String sql = """
+                SELECT %s
+                FROM yap_protect_changes
+                WHERE server_id = ? AND world = ?
+                  AND x BETWEEN ? AND ?
+                  AND y BETWEEN ? AND ?
+                  AND z BETWEEN ? AND ?
+                  AND epoch_ms BETWEEN ? AND ?
+                """.formatted(SELECT_COLS) + cursorClause(after) + """
+                 ORDER BY epoch_ms DESC, id DESC LIMIT ?
+                """;
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, change_type, actor_uuid, actor_name, world, x, y, z,
-                            block_before, block_after, epoch_ms, rolled_back
-                     FROM yap_protect_changes
-                     WHERE world = ?
-                       AND x BETWEEN ? AND ?
-                       AND y BETWEEN ? AND ?
-                       AND z BETWEEN ? AND ?
-                       AND epoch_ms BETWEEN ? AND ?
-                     ORDER BY epoch_ms DESC LIMIT ?
-                     """)) {
-            ps.setString(1, world);
-            ps.setInt(2, cx - r);
-            ps.setInt(3, cx + r);
-            ps.setInt(4, cy - r);
-            ps.setInt(5, cy + r);
-            ps.setInt(6, cz - r);
-            ps.setInt(7, cz + r);
-            ps.setLong(8, fromMs);
-            ps.setLong(9, toMs);
-            ps.setInt(10, Math.max(1, Math.min(limit, 500)));
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            int i = 1;
+            ps.setString(i++, serverId);
+            ps.setString(i++, world);
+            ps.setInt(i++, cx - r);
+            ps.setInt(i++, cx + r);
+            ps.setInt(i++, cy - r);
+            ps.setInt(i++, cy + r);
+            ps.setInt(i++, cz - r);
+            ps.setInt(i++, cz + r);
+            ps.setLong(i++, fromMs);
+            ps.setLong(i++, toMs);
+            i = bindCursor(ps, i, after);
+            ps.setInt(i, pageLimit(limit));
             return readAll(ps);
         }
     }
 
     public List<ProtectChange> lookupTimeRange(String world, long fromMs, long toMs, int limit) throws SQLException {
+        List<ProtectChange> rows = lookupTimeRangePage(world, fromMs, toMs, limit, null);
+        return rows.size() > limit ? rows.subList(0, limit) : rows;
+    }
+
+    public List<ProtectChange> lookupTimeRangePage(String world, long fromMs, long toMs, int limit,
+                                                   ProtectLookupCursor after) throws SQLException {
+        String sql = """
+                SELECT %s
+                FROM yap_protect_changes
+                WHERE server_id = ? AND world = ? AND epoch_ms BETWEEN ? AND ?
+                """.formatted(SELECT_COLS) + cursorClause(after) + """
+                 ORDER BY epoch_ms DESC, id DESC LIMIT ?
+                """;
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, change_type, actor_uuid, actor_name, world, x, y, z,
-                            block_before, block_after, epoch_ms, rolled_back
-                     FROM yap_protect_changes
-                     WHERE world = ? AND epoch_ms BETWEEN ? AND ?
-                     ORDER BY epoch_ms DESC LIMIT ?
-                     """)) {
-            ps.setString(1, world);
-            ps.setLong(2, fromMs);
-            ps.setLong(3, toMs);
-            ps.setInt(4, Math.max(1, Math.min(limit, 500)));
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            int i = 1;
+            ps.setString(i++, serverId);
+            ps.setString(i++, world);
+            ps.setLong(i++, fromMs);
+            ps.setLong(i++, toMs);
+            i = bindCursor(ps, i, after);
+            ps.setInt(i, pageLimit(limit));
             return readAll(ps);
         }
+    }
+
+    /** Uncapped (batched) fetch for bulk rollback — not for UI lookup. */
+    public List<ProtectChange> lookupActorAll(UUID actorUuid, long fromMs, long toMs) throws SQLException {
+        return fetchAll(cursor -> lookupActorPage(actorUuid, fromMs, toMs, 500, cursor));
+    }
+
+    public List<ProtectChange> lookupRadiusAll(String world, int cx, int cy, int cz, int radius,
+                                               long fromMs, long toMs) throws SQLException {
+        return fetchAll(cursor -> lookupRadiusPage(world, cx, cy, cz, radius, fromMs, toMs, 500, cursor));
+    }
+
+    public List<ProtectChange> lookupTimeRangeAll(String world, long fromMs, long toMs) throws SQLException {
+        return fetchAll(cursor -> lookupTimeRangePage(world, fromMs, toMs, 500, cursor));
+    }
+
+    @FunctionalInterface
+    private interface PageFetch {
+        List<ProtectChange> fetch(ProtectLookupCursor cursor) throws SQLException;
+    }
+
+    private static List<ProtectChange> fetchAll(PageFetch fetch) throws SQLException {
+        List<ProtectChange> all = new ArrayList<>();
+        ProtectLookupCursor cursor = null;
+        while (true) {
+            List<ProtectChange> page = fetch.fetch(cursor);
+            if (page.isEmpty()) {
+                break;
+            }
+            boolean more = page.size() > 500;
+            List<ProtectChange> slice = more ? page.subList(0, 500) : page;
+            all.addAll(slice);
+            if (!more) {
+                break;
+            }
+            ProtectChange last = slice.get(slice.size() - 1);
+            cursor = new ProtectLookupCursor(last.epochMs(), last.id());
+        }
+        return all;
+    }
+
+    private static String cursorClause(ProtectLookupCursor after) {
+        if (after == null) {
+            return "";
+        }
+        return " AND (epoch_ms < ? OR (epoch_ms = ? AND id < ?)) ";
+    }
+
+    private static int bindCursor(PreparedStatement ps, int i, ProtectLookupCursor after) throws SQLException {
+        if (after == null) {
+            return i;
+        }
+        ps.setLong(i++, after.epochMs());
+        ps.setLong(i++, after.epochMs());
+        ps.setLong(i++, after.id());
+        return i;
+    }
+
+    private static int pageLimit(int limit) {
+        return Math.max(1, Math.min(limit + 1, 501));
     }
 
     public List<ProtectChange> lookupActorInRadius(UUID actorUuid, String world, int cx, int cy, int cz,
@@ -140,27 +271,27 @@ public final class ChangeRepository {
         int r = Math.max(0, radius);
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, change_type, actor_uuid, actor_name, world, x, y, z,
-                            block_before, block_after, epoch_ms, rolled_back
+                     SELECT %s
                      FROM yap_protect_changes
-                     WHERE actor_uuid = ? AND world = ?
+                     WHERE server_id = ? AND actor_uuid = ? AND world = ?
                        AND x BETWEEN ? AND ?
                        AND y BETWEEN ? AND ?
                        AND z BETWEEN ? AND ?
                        AND epoch_ms BETWEEN ? AND ?
                      ORDER BY epoch_ms DESC LIMIT ?
-                     """)) {
-            ps.setString(1, actorUuid.toString());
-            ps.setString(2, world);
-            ps.setInt(3, cx - r);
-            ps.setInt(4, cx + r);
-            ps.setInt(5, cy - r);
-            ps.setInt(6, cy + r);
-            ps.setInt(7, cz - r);
-            ps.setInt(8, cz + r);
-            ps.setLong(9, fromMs);
-            ps.setLong(10, toMs);
-            ps.setInt(11, Math.max(1, Math.min(limit, 500)));
+                     """.formatted(SELECT_COLS))) {
+            ps.setString(1, serverId);
+            ps.setString(2, actorUuid.toString());
+            ps.setString(3, world);
+            ps.setInt(4, cx - r);
+            ps.setInt(5, cx + r);
+            ps.setInt(6, cy - r);
+            ps.setInt(7, cy + r);
+            ps.setInt(8, cz - r);
+            ps.setInt(9, cz + r);
+            ps.setLong(10, fromMs);
+            ps.setLong(11, toMs);
+            ps.setInt(12, Math.max(1, Math.min(limit, 500)));
             return readAll(ps);
         }
     }
@@ -171,13 +302,13 @@ public final class ChangeRepository {
         }
         String placeholders = String.join(",", ids.stream().map(id -> "?").toList());
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, change_type, actor_uuid, actor_name, world, x, y, z,
-                            block_before, block_after, epoch_ms, rolled_back
-                     FROM yap_protect_changes
-                     WHERE id IN (""" + placeholders + ") ORDER BY epoch_ms ASC")) {
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT " + SELECT_COLS
+                             + " FROM yap_protect_changes WHERE server_id = ? AND id IN ("
+                             + placeholders + ") ORDER BY epoch_ms ASC")) {
+            ps.setString(1, serverId);
             for (int i = 0; i < ids.size(); i++) {
-                ps.setLong(i + 1, ids.get(i));
+                ps.setLong(i + 2, ids.get(i));
             }
             return readAll(ps);
         }
@@ -190,10 +321,12 @@ public final class ChangeRepository {
         String placeholders = String.join(",", ids.stream().map(id -> "?").toList());
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_protect_changes SET rolled_back = ? WHERE id IN (" + placeholders + ")")) {
+                     "UPDATE yap_protect_changes SET rolled_back = ? WHERE server_id = ? AND id IN ("
+                             + placeholders + ")")) {
             ps.setBoolean(1, true);
+            ps.setString(2, serverId);
             for (int i = 0; i < ids.size(); i++) {
-                ps.setLong(i + 2, ids.get(i));
+                ps.setLong(i + 3, ids.get(i));
             }
             ps.executeUpdate();
         }
@@ -206,10 +339,12 @@ public final class ChangeRepository {
         String placeholders = String.join(",", ids.stream().map(id -> "?").toList());
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(
-                     "UPDATE yap_protect_changes SET rolled_back = ? WHERE id IN (" + placeholders + ")")) {
+                     "UPDATE yap_protect_changes SET rolled_back = ? WHERE server_id = ? AND id IN ("
+                             + placeholders + ")")) {
             ps.setBoolean(1, false);
+            ps.setString(2, serverId);
             for (int i = 0; i < ids.size(); i++) {
-                ps.setLong(i + 2, ids.get(i));
+                ps.setLong(i + 3, ids.get(i));
             }
             ps.executeUpdate();
         }
@@ -218,17 +353,21 @@ public final class ChangeRepository {
     public long pruneBefore(long epochMs) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(
-                     "DELETE FROM yap_protect_changes WHERE epoch_ms < ?")) {
-            ps.setLong(1, epochMs);
+                     "DELETE FROM yap_protect_changes WHERE server_id = ? AND epoch_ms < ?")) {
+            ps.setString(1, serverId);
+            ps.setLong(2, epochMs);
             return ps.executeUpdate();
         }
     }
 
     public long countAll() throws SQLException {
         try (Connection c = database.connection();
-             PreparedStatement ps = c.prepareStatement("SELECT COUNT(*) FROM yap_protect_changes");
-             ResultSet rs = ps.executeQuery()) {
-            return rs.next() ? rs.getLong(1) : 0L;
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT COUNT(*) FROM yap_protect_changes WHERE server_id = ?")) {
+            ps.setString(1, serverId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getLong(1) : 0L;
+            }
         }
     }
 
@@ -247,6 +386,7 @@ public final class ChangeRepository {
         UUID actor = actorRaw == null || actorRaw.isBlank() ? null : UUID.fromString(actorRaw);
         return new ProtectChange(
                 rs.getLong("id"),
+                rs.getString("server_id"),
                 ChangeType.valueOf(rs.getString("change_type")),
                 actor,
                 rs.getString("actor_name"),
@@ -258,13 +398,6 @@ public final class ChangeRepository {
                 rs.getString("block_after"),
                 rs.getLong("epoch_ms"),
                 rs.getBoolean("rolled_back"));
-    }
-
-    private static String truncateBlock(String value) {
-        if (value == null) {
-            return "";
-        }
-        return value.length() <= 255 ? value : value.substring(0, 255);
     }
 
     /** Package-visible for unit tests (block payload length caps). */

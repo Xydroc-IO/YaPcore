@@ -2,6 +2,8 @@ package com.yapcore.protect.cmd;
 
 import com.yapcore.protect.BlockChangeRecord;
 import com.yapcore.protect.ProtectConfig;
+import com.yapcore.protect.ProtectLookupCursor;
+import com.yapcore.protect.ProtectLookupPage;
 import com.yapcore.protect.service.ProtectServiceImpl;
 import com.yapcore.protect.util.DurationParser;
 import com.yapcore.sched.YapSched;
@@ -57,19 +59,23 @@ final class ProtectCommandOps {
 
     private boolean lookupUser(CommandSender sender, String[] args, long now, int limit) {
         if (args.length < 3) {
-            sender.sendMessage("§e/yapprotect lookup user <player> [limit] [duration]");
+            sender.sendMessage("§e/yapprotect lookup user <player> [limit] [duration] [--cursor token]");
             return true;
         }
         long durationMs = defaultDurationMs(args, 3);
-        if (args.length >= 4 && !looksLikeDuration(args[3])) {
+        if (args.length >= 4 && !looksLikeDuration(args[3]) && !isCursorFlag(args, 3)) {
             try {
                 limit = Integer.parseInt(args[3]);
             } catch (NumberFormatException ignored) {
             }
         }
+        ProtectLookupCursor cursor = parseCursor(args);
         UUID uuid = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
         long from = now - durationMs;
-        service.lookupActor(uuid, from, now, limit).thenAccept(list -> printLookup(sender, list));
+        int pageLimit = limit;
+        service.lookupActorPage(uuid, from, now, pageLimit, cursor)
+                .thenAccept(page -> printLookupPage(sender, page, "user " + args[2]
+                        + " " + pageLimit + " " + formatDurationHint(durationMs)));
         return true;
     }
 
@@ -98,8 +104,9 @@ final class ProtectCommandOps {
             return true;
         }
         long durationMs = defaultDurationMs(args, args.length >= 6 ? 6 : args.length);
-        service.lookupBlock(world, x, y, z, now - durationMs, now, limit)
-                .thenAccept(list -> printLookup(sender, list));
+        ProtectLookupCursor cursor = parseCursor(args);
+        service.lookupBlockPage(world, x, y, z, now - durationMs, now, limit, cursor)
+                .thenAccept(page -> printLookupPage(sender, page, "block"));
         return true;
     }
 
@@ -124,10 +131,13 @@ final class ProtectCommandOps {
             radius = config.maxRollbackRadius();
         }
         long durationMs = defaultDurationMs(args, 3);
+        ProtectLookupCursor cursor = parseCursor(args);
         var loc = player.getLocation();
-        service.lookupRadius(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(),
-                        radius, now - durationMs, now, limit)
-                .thenAccept(list -> printLookup(sender, list));
+        int finalRadius = radius;
+        service.lookupRadiusPage(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(),
+                        radius, now - durationMs, now, limit, cursor)
+                .thenAccept(page -> printLookupPage(sender, page,
+                        "radius " + finalRadius + " " + formatDurationHint(durationMs)));
         return true;
     }
 
@@ -155,8 +165,8 @@ final class ProtectCommandOps {
             sender.sendMessage("§cBad duration: " + args[durationArgIndex] + " §7(try 30m, 2h, 7d)");
             return true;
         }
-        service.lookupTimeRange(world, now - durationMs, now, limit)
-                .thenAccept(list -> printLookup(sender, list));
+        service.lookupTimeRangePage(world, now - durationMs, now, limit, parseCursor(args))
+                .thenAccept(page -> printLookupPage(sender, page, "time"));
         return true;
     }
 
@@ -357,30 +367,31 @@ final class ProtectCommandOps {
         }
         long now = System.currentTimeMillis();
         long from = now - TimeUnit.DAYS.toMillis(7);
+        ProtectLookupCursor cursor = parseCursor(args);
         try {
-            List<BlockChangeRecord> list;
+            ProtectLookupPage page;
             if ("user".equals(mode)) {
                 UUID uuid = Bukkit.getOfflinePlayer(args[2]).getUniqueId();
-                list = service.lookupActor(uuid, from, now, limit).get(8, TimeUnit.SECONDS);
+                page = service.lookupActorPage(uuid, from, now, limit, cursor).get(8, TimeUnit.SECONDS);
             } else if ("radius".equals(mode) && sender instanceof Player player) {
                 int radius = Integer.parseInt(args[2]);
                 var loc = player.getLocation();
-                list = service.lookupRadius(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(),
-                                loc.getBlockZ(), radius, from, now, limit)
+                page = service.lookupRadiusPage(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(),
+                                loc.getBlockZ(), radius, from, now, limit, cursor)
                         .get(8, TimeUnit.SECONDS);
             } else {
-                sender.sendMessage("§e/yapprotect dash-lookup user <player> [limit] | radius <blocks> [limit]");
+                sender.sendMessage("§e/yapprotect dash-lookup user <player> [limit] [--cursor t] | radius <blocks> [limit]");
                 return true;
             }
-            sender.sendMessage("DASH_JSON=" + toDashJson(list));
+            sender.sendMessage("DASH_JSON=" + toDashJson(page));
         } catch (NumberFormatException e) {
-            sender.sendMessage("DASH_JSON=[]");
+            sender.sendMessage("DASH_JSON={\"rows\":[],\"nextCursor\":null,\"hasMore\":false}");
             sender.sendMessage("§cInvalid number.");
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            sender.sendMessage("DASH_JSON=[]");
+            sender.sendMessage("DASH_JSON={\"rows\":[],\"nextCursor\":null,\"hasMore\":false}");
         } catch (ExecutionException | TimeoutException e) {
-            sender.sendMessage("DASH_JSON=[]");
+            sender.sendMessage("DASH_JSON={\"rows\":[],\"nextCursor\":null,\"hasMore\":false}");
             sender.sendMessage("§cLookup failed: " + e.getMessage());
         }
         return true;
@@ -409,8 +420,9 @@ final class ProtectCommandOps {
         return true;
     }
 
-    private static String toDashJson(List<BlockChangeRecord> list) {
-        StringBuilder sb = new StringBuilder("[");
+    private static String toDashJson(ProtectLookupPage page) {
+        StringBuilder sb = new StringBuilder("{\"rows\":[");
+        List<BlockChangeRecord> list = page.rows();
         for (int i = 0; i < list.size(); i++) {
             BlockChangeRecord row = list.get(i);
             if (i > 0) {
@@ -418,6 +430,7 @@ final class ProtectCommandOps {
             }
             sb.append('{')
                     .append("\"id\":").append(row.id()).append(',')
+                    .append("\"serverId\":\"").append(esc(row.serverId())).append("\",")
                     .append("\"changeType\":\"").append(esc(row.changeType())).append("\",")
                     .append("\"actorName\":\"").append(esc(row.actorName())).append("\",")
                     .append("\"world\":\"").append(esc(row.world())).append("\",")
@@ -426,10 +439,18 @@ final class ProtectCommandOps {
                     .append("\"z\":").append(row.z()).append(',')
                     .append("\"blockBefore\":\"").append(esc(row.blockBefore())).append("\",")
                     .append("\"blockAfter\":\"").append(esc(row.blockAfter())).append("\",")
-                    .append("\"epochMs\":").append(row.epochMs())
+                    .append("\"epochMs\":").append(row.epochMs()).append(',')
+                    .append("\"rolledBack\":").append(row.rolledBack()).append(',')
+                    .append("\"restorable\":").append(row.restorable())
                     .append('}');
         }
-        return sb.append(']').toString();
+        sb.append("],\"hasMore\":").append(page.hasMore()).append(',');
+        if (page.nextCursor() != null) {
+            sb.append("\"nextCursor\":\"").append(esc(page.nextCursor().encode())).append('"');
+        } else {
+            sb.append("\"nextCursor\":null");
+        }
+        return sb.append('}').toString();
     }
 
     private static String esc(String s) {
@@ -439,19 +460,51 @@ final class ProtectCommandOps {
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
-    private void printLookup(CommandSender sender, List<BlockChangeRecord> list) {
+    private void printLookupPage(CommandSender sender, ProtectLookupPage page, String continueHint) {
         YapSched.global(Bukkit.getPluginManager().getPlugin("YaPProtect"), () -> {
+            List<BlockChangeRecord> list = page.rows();
             if (list.isEmpty()) {
                 sender.sendMessage("§7No changes found.");
                 return;
             }
-            sender.sendMessage("§6Protect lookup §7(" + list.size() + "):");
+            sender.sendMessage("§6Protect lookup §7(" + list.size() + (page.hasMore() ? "+" : "") + "):");
             for (BlockChangeRecord row : list) {
+                String flags = (row.rolledBack() ? " §crolled-back" : "")
+                        + (row.restorable() ? "" : " §8(lookup-only)");
                 sender.sendMessage("§7#" + row.id() + " §8[" + row.changeType() + "] §f" + row.actorName()
                         + " §7@ §f" + row.world() + " " + row.x() + "," + row.y() + "," + row.z()
-                        + " §7" + row.blockBefore() + " → " + row.blockAfter());
+                        + " §7" + row.blockBefore() + " → " + row.blockAfter() + flags);
+            }
+            if (page.hasMore() && page.nextCursor() != null) {
+                sender.sendMessage("§7Next: §e/yapprotect lookup " + continueHint
+                        + " --cursor " + page.nextCursor().encode());
             }
         });
+    }
+
+    private static ProtectLookupCursor parseCursor(String[] args) {
+        for (int i = 0; i < args.length - 1; i++) {
+            if ("--cursor".equalsIgnoreCase(args[i])) {
+                return ProtectLookupCursor.decode(args[i + 1]).orElse(null);
+            }
+        }
+        return null;
+    }
+
+    private static boolean isCursorFlag(String[] args, int index) {
+        return index < args.length && "--cursor".equalsIgnoreCase(args[index]);
+    }
+
+    private static String formatDurationHint(long durationMs) {
+        long days = TimeUnit.MILLISECONDS.toDays(durationMs);
+        if (days >= 1) {
+            return days + "d";
+        }
+        long hours = TimeUnit.MILLISECONDS.toHours(durationMs);
+        if (hours >= 1) {
+            return hours + "h";
+        }
+        return Math.max(1, TimeUnit.MILLISECONDS.toMinutes(durationMs)) + "m";
     }
 
     private static long defaultDurationMs(String[] args, int durationIndex) {
@@ -465,18 +518,153 @@ final class ProtectCommandOps {
     }
 
     private static boolean looksLikeDuration(String token) {
-        if (token == null || token.isBlank()) {
+        if (token == null || token.isBlank() || "--cursor".equalsIgnoreCase(token)) {
             return false;
         }
         char last = token.charAt(token.length() - 1);
         return last == 's' || last == 'm' || last == 'h' || last == 'd' || last == 'w';
     }
 
+    boolean export(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("yapprotect.lookup") && !sender.hasPermission("yapprotect.admin")) {
+            sender.sendMessage("§cNo permission.");
+            return true;
+        }
+        if (args.length < 2) {
+            exportHelp(sender);
+            return true;
+        }
+        long now = System.currentTimeMillis();
+        return switch (args[1].toLowerCase(Locale.ROOT)) {
+            case "user" -> exportUser(sender, args, now);
+            case "time" -> exportTime(sender, args, now);
+            default -> {
+                exportHelp(sender);
+                yield true;
+            }
+        };
+    }
+
+    private boolean exportUser(CommandSender sender, String[] args, long now) {
+        if (args.length < 3) {
+            sender.sendMessage("§e/yapprotect export user <player> [duration] [csv|json]");
+            return true;
+        }
+        String playerName = args[2];
+        UUID uuid = Bukkit.getOfflinePlayer(playerName).getUniqueId();
+        long durationMs = TimeUnit.DAYS.toMillis(7);
+        String format = "csv";
+        for (int i = 3; i < args.length; i++) {
+            String token = args[i];
+            if (isExportFormat(token)) {
+                format = token.toLowerCase(Locale.ROOT);
+            } else if (looksLikeDuration(token)) {
+                try {
+                    durationMs = DurationParser.parseToMillis(token);
+                } catch (IllegalArgumentException e) {
+                    sender.sendMessage("§cBad duration: " + token);
+                    return true;
+                }
+            }
+        }
+        String finalFormat = format;
+        long from = now - durationMs;
+        service.exportActor(uuid, from, now).thenAccept(rows ->
+                writeExport(sender, rows, finalFormat, "user-" + sanitizeFileToken(playerName)));
+        return true;
+    }
+
+    private boolean exportTime(CommandSender sender, String[] args, long now) {
+        // /yapprotect export time [world] <duration> [csv|json]
+        if (args.length < 3) {
+            sender.sendMessage("§e/yapprotect export time [world] <duration> [csv|json]");
+            return true;
+        }
+        String world;
+        int durationIndex;
+        if (looksLikeDuration(args[2]) || isExportFormat(args[2])) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("§e/yapprotect export time <world> <duration> [csv|json]");
+                return true;
+            }
+            world = player.getWorld().getName();
+            durationIndex = 2;
+        } else {
+            world = args[2];
+            durationIndex = 3;
+        }
+        if (args.length <= durationIndex || !looksLikeDuration(args[durationIndex])) {
+            sender.sendMessage("§e/yapprotect export time [world] <duration> [csv|json]");
+            return true;
+        }
+        long durationMs;
+        try {
+            durationMs = DurationParser.parseToMillis(args[durationIndex]);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage("§cBad duration: " + args[durationIndex]);
+            return true;
+        }
+        String format = "csv";
+        for (int i = durationIndex + 1; i < args.length; i++) {
+            if (isExportFormat(args[i])) {
+                format = args[i].toLowerCase(Locale.ROOT);
+            }
+        }
+        String finalFormat = format;
+        String finalWorld = world;
+        service.exportTimeRange(world, now - durationMs, now).thenAccept(rows ->
+                writeExport(sender, rows, finalFormat, "time-" + sanitizeFileToken(finalWorld)));
+        return true;
+    }
+
+    private void writeExport(CommandSender sender, List<com.yapcore.protect.model.ProtectChange> rows,
+                             String format, String namePrefix) {
+        var plugin = Bukkit.getPluginManager().getPlugin("YaPProtect");
+        if (plugin == null) {
+            sender.sendMessage("§cYaPProtect not loaded.");
+            return;
+        }
+        try {
+            java.nio.file.Path dir = plugin.getDataFolder().toPath().resolve("exports");
+            java.nio.file.Files.createDirectories(dir);
+            String stamp = java.time.LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+            boolean json = "json".equalsIgnoreCase(format);
+            String fileName = namePrefix + "-" + stamp + (json ? ".json" : ".csv");
+            java.nio.file.Path out = dir.resolve(fileName);
+            String body = json
+                    ? com.yapcore.protect.util.ProtectExportFormatter.toJson(rows)
+                    : com.yapcore.protect.util.ProtectExportFormatter.toCsv(rows);
+            java.nio.file.Files.writeString(out, body, java.nio.charset.StandardCharsets.UTF_8);
+            YapSched.global(plugin, () -> sender.sendMessage(
+                    "§aExported §f" + rows.size() + " §arow(s) → §fplugins/YaPProtect/exports/" + fileName));
+        } catch (Exception e) {
+            YapSched.global(plugin, () -> sender.sendMessage("§cExport failed: " + e.getMessage()));
+        }
+    }
+
+    private static boolean isExportFormat(String token) {
+        return "csv".equalsIgnoreCase(token) || "json".equalsIgnoreCase(token);
+    }
+
+    private static String sanitizeFileToken(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "unknown";
+        }
+        String cleaned = raw.replaceAll("[^A-Za-z0-9._-]", "_");
+        return cleaned.length() > 48 ? cleaned.substring(0, 48) : cleaned;
+    }
+
+    private void exportHelp(CommandSender sender) {
+        sender.sendMessage("§e/yapprotect export user <player> [duration] [csv|json]");
+        sender.sendMessage("§e/yapprotect export time [world] <duration> [csv|json]");
+    }
+
     private void lookupHelp(CommandSender sender) {
-        sender.sendMessage("§e/yapprotect lookup user <player> [limit] [duration]");
-        sender.sendMessage("§e/yapprotect lookup block [x y z] [world] [duration]");
-        sender.sendMessage("§e/yapprotect lookup radius <blocks> [duration]");
-        sender.sendMessage("§e/yapprotect lookup time [world] <duration>");
+        sender.sendMessage("§e/yapprotect lookup user <player> [limit] [duration] [--cursor token]");
+        sender.sendMessage("§e/yapprotect lookup block [x y z] [world] [duration] [--cursor token]");
+        sender.sendMessage("§e/yapprotect lookup radius <blocks> [duration] [--cursor token]");
+        sender.sendMessage("§e/yapprotect lookup time [world] <duration> [--cursor token]");
     }
 
     private void rollbackHelp(CommandSender sender) {

@@ -5,10 +5,14 @@ logging:
   container-access: true
   container-inventory: true
   entity-change: true
+  explosion: true
+  liquid-flow: true
+  fire: true
 
 limits:
   max-rollback-radius: 32
-  max-lookup-limit: 200
+  # Default page size for lookups (cursor pagination; not a hard total cap)
+  max-lookup-limit: 50
 
 database:
   use-shared-yapdb: true

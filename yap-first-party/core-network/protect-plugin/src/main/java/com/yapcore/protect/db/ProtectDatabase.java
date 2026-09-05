@@ -76,9 +76,10 @@ public final class ProtectDatabase implements AutoCloseable {
                       rolled_back %s NOT NULL DEFAULT %s
                     )
                     """.formatted(dialect.autoIncrementPk(), longText, longText, bool, boolFalse));
-            createIndex(st, "idx_yap_protect_actor", "yap_protect_changes", "actor_uuid, epoch_ms");
-            createIndex(st, "idx_yap_protect_block", "yap_protect_changes", "world, x, y, z, epoch_ms");
-            createIndex(st, "idx_yap_protect_epoch", "yap_protect_changes", "epoch_ms");
+            createIndex(st, "idx_yap_protect_actor", "yap_protect_changes", "server_id, actor_uuid, epoch_ms");
+            createIndex(st, "idx_yap_protect_block", "yap_protect_changes", "server_id, world, x, y, z, epoch_ms");
+            createIndex(st, "idx_yap_protect_epoch", "yap_protect_changes", "server_id, epoch_ms");
+            createIndex(st, "idx_yap_protect_server", "yap_protect_changes", "server_id");
             widenPayloadColumns(st);
         }
     }

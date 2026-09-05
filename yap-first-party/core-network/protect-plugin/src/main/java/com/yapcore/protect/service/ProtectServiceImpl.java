@@ -2,6 +2,8 @@ package com.yapcore.protect.service;
 
 import com.yapcore.protect.BlockChangeRecord;
 import com.yapcore.protect.ProtectConfig;
+import com.yapcore.protect.ProtectLookupCursor;
+import com.yapcore.protect.ProtectLookupPage;
 import com.yapcore.protect.ProtectService;
 import com.yapcore.protect.db.ChangeRepository;
 import com.yapcore.protect.db.ProtectDatabase;
@@ -48,11 +50,15 @@ public final class ProtectServiceImpl implements ProtectService {
             database.open();
             repository = new ChangeRepository(database);
         }
+        repository.setServerId(config.serverId());
         schedulePrune();
     }
 
     public void reload(ProtectConfig config) {
         this.config = config;
+        if (repository != null) {
+            repository.setServerId(config.serverId());
+        }
         schedulePrune();
     }
 
@@ -90,14 +96,14 @@ public final class ProtectServiceImpl implements ProtectService {
     public CompletableFuture<List<BlockChangeRecord>> lookupActor(UUID actorUuid, long fromEpochMs,
                                                                     long toEpochMs, int limit) {
         return CompletableFuture.supplyAsync(() -> query(() ->
-                repository.lookupActor(actorUuid, fromEpochMs, toEpochMs, cap(limit))));
+                repository.lookupActor(actorUuid, fromEpochMs, toEpochMs, pageSize(limit))));
     }
 
     @Override
     public CompletableFuture<List<BlockChangeRecord>> lookupBlock(String world, int x, int y, int z,
                                                                   long fromEpochMs, long toEpochMs, int limit) {
         return CompletableFuture.supplyAsync(() -> query(() ->
-                repository.lookupBlock(world, x, y, z, fromEpochMs, toEpochMs, cap(limit))));
+                repository.lookupBlock(world, x, y, z, fromEpochMs, toEpochMs, pageSize(limit))));
     }
 
     @Override
@@ -107,14 +113,49 @@ public final class ProtectServiceImpl implements ProtectService {
         return CompletableFuture.supplyAsync(() -> query(() ->
                 repository.lookupRadius(world, cx, cy, cz,
                         Math.min(radiusBlocks, config.maxRollbackRadius()),
-                        fromEpochMs, toEpochMs, cap(limit))));
+                        fromEpochMs, toEpochMs, pageSize(limit))));
     }
 
     @Override
     public CompletableFuture<List<BlockChangeRecord>> lookupTimeRange(String world, long fromEpochMs,
                                                                       long toEpochMs, int limit) {
         return CompletableFuture.supplyAsync(() -> query(() ->
-                repository.lookupTimeRange(world, fromEpochMs, toEpochMs, cap(limit))));
+                repository.lookupTimeRange(world, fromEpochMs, toEpochMs, pageSize(limit))));
+    }
+
+    @Override
+    public CompletableFuture<ProtectLookupPage> lookupActorPage(UUID actorUuid, long fromEpochMs,
+                                                                long toEpochMs, int pageSize,
+                                                                ProtectLookupCursor after) {
+        return CompletableFuture.supplyAsync(() -> pageQuery(pageSize, () ->
+                repository.lookupActorPage(actorUuid, fromEpochMs, toEpochMs, pageSize(pageSize), after)));
+    }
+
+    @Override
+    public CompletableFuture<ProtectLookupPage> lookupBlockPage(String world, int x, int y, int z,
+                                                                long fromEpochMs, long toEpochMs,
+                                                                int pageSize, ProtectLookupCursor after) {
+        return CompletableFuture.supplyAsync(() -> pageQuery(pageSize, () ->
+                repository.lookupBlockPage(world, x, y, z, fromEpochMs, toEpochMs, pageSize(pageSize), after)));
+    }
+
+    @Override
+    public CompletableFuture<ProtectLookupPage> lookupRadiusPage(String world, int cx, int cy, int cz,
+                                                                 int radiusBlocks, long fromEpochMs,
+                                                                 long toEpochMs, int pageSize,
+                                                                 ProtectLookupCursor after) {
+        return CompletableFuture.supplyAsync(() -> pageQuery(pageSize, () ->
+                repository.lookupRadiusPage(world, cx, cy, cz,
+                        Math.min(radiusBlocks, config.maxRollbackRadius()),
+                        fromEpochMs, toEpochMs, pageSize(pageSize), after)));
+    }
+
+    @Override
+    public CompletableFuture<ProtectLookupPage> lookupTimeRangePage(String world, long fromEpochMs,
+                                                                    long toEpochMs, int pageSize,
+                                                                    ProtectLookupCursor after) {
+        return CompletableFuture.supplyAsync(() -> pageQuery(pageSize, () ->
+                repository.lookupTimeRangePage(world, fromEpochMs, toEpochMs, pageSize(pageSize), after)));
     }
 
     @Override
@@ -147,20 +188,43 @@ public final class ProtectServiceImpl implements ProtectService {
 
     public CompletableFuture<Integer> rollbackRadius(String world, int cx, int cy, int cz,
                                                      int radius, long fromMs, long toMs) {
-        return lookupRadius(world, cx, cy, cz, radius, fromMs, toMs, config.maxLookupLimit())
-                .thenCompose(rows -> rollbackChanges(rows.stream().map(BlockChangeRecord::id).toList()));
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                List<ProtectChange> all = repository.lookupRadiusAll(world, cx, cy, cz,
+                        Math.min(radius, config.maxRollbackRadius()), fromMs, toMs);
+                return rollbackChanges(all.stream().map(ProtectChange::id).toList()).join();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("rollbackRadius failed: " + e.getMessage());
+                return 0;
+            }
+        });
     }
 
     public CompletableFuture<Integer> rollbackTimeRange(String world, long fromMs, long toMs) {
-        return lookupTimeRange(world, fromMs, toMs, config.maxLookupLimit())
-                .thenCompose(rows -> rollbackChanges(rows.stream().map(BlockChangeRecord::id).toList()));
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                List<ProtectChange> all = repository.lookupTimeRangeAll(world, fromMs, toMs);
+                return rollbackChanges(all.stream().map(ProtectChange::id).toList()).join();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("rollbackTimeRange failed: " + e.getMessage());
+                return 0;
+            }
+        });
     }
 
     public CompletableFuture<Integer> rollbackUser(UUID actor, long fromMs, long toMs) {
-        return lookupActor(actor, fromMs, toMs, config.maxLookupLimit())
-                .thenCompose(rows -> rollbackChanges(rows.stream().map(BlockChangeRecord::id).toList()));
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                List<ProtectChange> all = repository.lookupActorAll(actor, fromMs, toMs);
+                return rollbackChanges(all.stream().map(ProtectChange::id).toList()).join();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("rollbackUser failed: " + e.getMessage());
+                return 0;
+            }
+        });
     }
 
+    @Override
     public CompletableFuture<Integer> restoreChanges(List<Long> changeIds) {
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -189,13 +253,51 @@ public final class ProtectServiceImpl implements ProtectService {
     }
 
     public CompletableFuture<Integer> restoreUser(UUID actor, long fromMs, long toMs) {
-        return lookupActor(actor, fromMs, toMs, config.maxLookupLimit())
-                .thenCompose(rows -> restoreChanges(rows.stream().map(BlockChangeRecord::id).toList()));
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                List<ProtectChange> all = repository.lookupActorAll(actor, fromMs, toMs);
+                return restoreChanges(all.stream().map(ProtectChange::id).toList()).join();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("restoreUser failed: " + e.getMessage());
+                return 0;
+            }
+        });
     }
 
     public CompletableFuture<Integer> restoreTimeRange(String world, long fromMs, long toMs) {
-        return lookupTimeRange(world, fromMs, toMs, config.maxLookupLimit())
-                .thenCompose(rows -> restoreChanges(rows.stream().map(BlockChangeRecord::id).toList()));
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                List<ProtectChange> all = repository.lookupTimeRangeAll(world, fromMs, toMs);
+                return restoreChanges(all.stream().map(ProtectChange::id).toList()).join();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("restoreTimeRange failed: " + e.getMessage());
+                return 0;
+            }
+        });
+    }
+
+    /** Full actor window for export (batched pages via repository). */
+    public CompletableFuture<List<ProtectChange>> exportActor(UUID actor, long fromMs, long toMs) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return repository.lookupActorAll(actor, fromMs, toMs);
+            } catch (SQLException e) {
+                plugin.getLogger().warning("exportActor failed: " + e.getMessage());
+                return List.of();
+            }
+        });
+    }
+
+    /** Full time-range window for export (batched pages via repository). */
+    public CompletableFuture<List<ProtectChange>> exportTimeRange(String world, long fromMs, long toMs) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return repository.lookupTimeRangeAll(world, fromMs, toMs);
+            } catch (SQLException e) {
+                plugin.getLogger().warning("exportTimeRange failed: " + e.getMessage());
+                return List.of();
+            }
+        });
     }
 
     private Comparator<ProtectChange> rollbackOrder() {
@@ -217,16 +319,24 @@ public final class ProtectServiceImpl implements ProtectService {
     }
 
     private boolean applyChangeRollback(ProtectChange change) {
+        if (!ProtectApplyRules.canRollback(change.changeType())) {
+            return false;
+        }
         return switch (change.changeType()) {
-            case BLOCK_BREAK, BLOCK_PLACE -> applyBlockState(change, change.blockBefore());
+            case BLOCK_BREAK, BLOCK_PLACE, EXPLOSION, LIQUID_FLOW, FIRE ->
+                    applyBlockState(change, change.blockBefore());
             case CONTAINER_INVENTORY -> applyInventoryState(change, change.blockBefore());
             default -> false;
         };
     }
 
     private boolean applyChangeRestore(ProtectChange change) {
+        if (!ProtectApplyRules.canRestore(change.changeType())) {
+            return false;
+        }
         return switch (change.changeType()) {
-            case BLOCK_BREAK, BLOCK_PLACE -> applyBlockState(change, change.blockAfter());
+            case BLOCK_BREAK, BLOCK_PLACE, EXPLOSION, LIQUID_FLOW, FIRE ->
+                    applyBlockState(change, change.blockAfter());
             case CONTAINER_INVENTORY -> applyInventoryState(change, change.blockAfter());
             default -> false;
         };
@@ -315,13 +425,29 @@ public final class ProtectServiceImpl implements ProtectService {
         }
     }
 
-    private int cap(int limit) {
-        return Math.min(limit, config == null ? 200 : config.maxLookupLimit());
+    private ProtectLookupPage pageQuery(int pageSize, QueryFn fn) {
+        try {
+            List<BlockChangeRecord> fetched = fn.run().stream().map(this::toRecord).toList();
+            return ProtectLookupPage.of(fetched, pageSize(pageSize));
+        } catch (SQLException e) {
+            plugin.getLogger().warning("protect page query failed: " + e.getMessage());
+            return new ProtectLookupPage(List.of(), null, false);
+        }
+    }
+
+    /** Page size for lookups — config value is the default page, not a hard total cap. */
+    private int pageSize(int limit) {
+        int max = config == null ? 50 : config.maxLookupLimit();
+        if (limit <= 0) {
+            return max;
+        }
+        return Math.min(limit, Math.max(max, 200));
     }
 
     private BlockChangeRecord toRecord(ProtectChange change) {
         return new BlockChangeRecord(
                 change.id(),
+                change.serverId(),
                 change.actorUuid(),
                 change.actorName(),
                 change.world(),
@@ -331,7 +457,8 @@ public final class ProtectServiceImpl implements ProtectService {
                 change.changeType().name(),
                 summarizePayload(change),
                 summarizePayloadAfter(change),
-                change.epochMs());
+                change.epochMs(),
+                change.rolledBack());
     }
 
     private static String summarizePayload(ProtectChange change) {

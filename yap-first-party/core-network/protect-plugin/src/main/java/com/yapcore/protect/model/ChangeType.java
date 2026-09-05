@@ -5,5 +5,8 @@ public enum ChangeType {
     BLOCK_PLACE,
     CONTAINER_ACCESS,
     CONTAINER_INVENTORY,
-    ENTITY_KILL
+    ENTITY_KILL,
+    EXPLOSION,
+    LIQUID_FLOW,
+    FIRE
 }
