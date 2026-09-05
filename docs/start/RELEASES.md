@@ -13,7 +13,9 @@ All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `p
 |------|--------|
 | `./scripts/build-yap-folia.sh` | `lib/yap-folia-26.2.jar` — **required for product path** |
 | `gradle assembleRelease` | `build/dist/yapcore-release/` — **linux/** + **windows/** full trees (all plugins) |
-| `gradle assembleRelease -PyapGameplay=false` | Slim CORE+NETWORK only (no vehicles / MMO / stacker) |
+| `gradle assembleRelease` | Slim CORE+NETWORK by default (`yapGameplay=false`) |
+| `gradle assembleRelease -PyapGameplay=true` | Full box including GAMEPLAY (skills / stacker / knobs / disasters) |
+| `gradle assembleRelease -PyapGameplay=false` | Explicit slim CORE+NETWORK only |
 | `gradle publishReleasesFolder` | **`releases/<version>/`** — trees + linux/windows zips + suite zips |
 | Git tag `1.0.0.0` or `v*` push | GitHub Actions → `yapcore-release-linux.zip` + `-windows.zip` |
 | `gradle assembleNetworkSuite` | `build/dist/yap-network-suite.zip` — YaP Link + native link plugins |
@@ -95,8 +97,7 @@ See [WINDOWS.md](WINDOWS.md) and [MARIADB.md](../data/MARIADB.md).
 | Zip | Contents | Default in full box? |
 |-----|----------|----------------------|
 | **yap-network-suite.zip** | Link proxy + chat/mod/selector/tab/discord bridge plugins | Yes (`link-data/plugins/`) |
-| **yap-gameplay-suite.zip** | yap-vehicles, yap-stacker, yap-gameplay-knobs + modules | Also included in the full box |
-| **yap-addons-release.zip** | `examples/yap-vehicle-addon` built jar + source | No — author reference |
+| **yap-gameplay-suite.zip** | yap-skills, yap-stacker, yap-gameplay-knobs, yap-disasters + stacker/knobs modules | Also included in the full box |
 
 ## Repo layout discipline
 
@@ -116,7 +117,7 @@ gradle publishReleasesFolder   # refreshes releases/1.0.0.0/ trees + zips
 
 Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 1.0.0.0” — do **not** change Gradle `version`.
 
-**Latest refresh:** 2026-09-04 — GitHub assets complete (OS zips, suites, `yapcore-default.zip`, client jars); pack URL/SHA sync; docs PDFs gitignored. Prior same-day: YaP Encyclopedia + Canvas heavypop cite (−8.09% vs Canvas / −16.56% vs stock); Ability VFX V1–V4 + Ops Waves 1–5.
+**Latest refresh:** 2026-09-04 — GitHub assets complete (OS zips, suites, `yapcore-default.zip`, client jars); pack URL/SHA sync; docs PDFs gitignored. Prior same-day: YaP Encyclopedia + Canvas heavypop cite (−8.09% vs Canvas / −16.56% vs stock); Ops Waves 1–5. Gameplay slimmed to skills / stacker / knobs / disasters (MMO / vehicles / abilities packs removed).
 
 ## Version bump checklist (new tag only)
 

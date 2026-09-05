@@ -65,12 +65,11 @@ OP still receives every node with `default: op` without YaPPerms attachments.
 | `default` | 0 | gray name | `&7` / `&f` | — | All players |
 | `vip` | 10 | `[VIP]` | `&a` / `&f` | default | Donors / trusted |
 | `staff` | 50 | `[Staff]` | `&b` / `&f` | vip | Helpers / junior–senior staff |
-| `admin` | 100 | `[Admin]` | `&c` / `&f` | staff | Server admins — includes `yap.bypass` + MMO admin nodes |
+| `admin` | 100 | `[Admin]` | `&c` / `&f` | staff | Server admins — includes `yap.bypass` |
 | `owner` | 200 | `[Owner]` | `&6` / `&f` | admin | Full access (`*` + `yap.bypass`) — network owners |
 
-**Bypass rules:** OP, `yap.bypass`, and creative/spectator skip land protection and MMO
-restrictions. Creative always gets vanilla-like build/combat (no skill gates, stamina,
-custom combat, or ability-bar locks). Admins get `yap.bypass` / `yap.bypass.mmo` in the
+**Bypass rules:** OP, `yap.bypass`, and creative/spectator skip land protection.
+Creative always gets vanilla-like build. Admins get `yap.bypass` in the
 starter pack — run `/yapperm applypack` after upgrading.
 
 Legacy group **`mod`** still exists (same general staff tools, not on the promote track). Prefer **`staff`**.
@@ -153,7 +152,7 @@ Toggle domains in `plugins/YaPEssentials/config.yml` under `features.*` (includi
 | `yapadmin.menu` | op | `/yapadmin` `/staff` open hub |
 | `yapadmin.give` | op | Give presets / materials / kits |
 | `yapadmin.server` | op | Broadcast presets, `/yapadmin reload` |
-| `yapadmin.economy` | op | Money grants (`/yapmmo givemoney`) |
+| `yapadmin.economy` | op | Money grants (`/eco`) |
 
 Grant `yapadmin.menu` (+ give/server) on `staff` / `admin` / `owner` ranks. Individual actions still need the underlying plugin nodes (`yapessentials.*`, `yapmod.*`, …). See [ADMIN_MENU.md](ADMIN_MENU.md).
 
@@ -231,15 +230,9 @@ Auth (`/register` `/login` …) stays ungated so offline login always works.
 | `yapskills.others` | op | `/skills <player>` |
 | `yapskills.admin` | op | `/skill addxp`, `/skill set`, `/yskills reload` |
 
-Placeholders (PlaceholderAPI): `%yapskill_<skill>_level%`, `%yapskill_<skill>_xp%`, `%yapskill_total_level%`, `%yapskill_combat_level%`.
+Placeholders (PlaceholderAPI): `%yapskill_<skill>_level%`, `%yapskill_<skill>_xp%`, `%yapskill_total_level%`.
 
-Public leaderboard: `/skill top <skill> [page]` (no extra permission).
-
-Bedrock MMO UI (`yap-mmo-bedrock.jar`, gameplay opt-in):
-
-| Node | Default | Grants |
-|------|---------|--------|
-| `yapmmo.bedrock.use` | true | `/mmoui`, Bedrock `/skills` form redirect |
+Public leaderboard: `/skill top <skill> [page]` (no extra permission). See [SKILLS.md](../plugins/SKILLS.md).
 
 ## YaPFactions (`yap-factions.jar`)
 
@@ -252,63 +245,6 @@ Bedrock MMO UI (`yap-mmo-bedrock.jar`, gameplay opt-in):
 | `yapfactions.admin` | op | `/yapfactions` admin commands |
 
 Dashboard: `GET /api/factions` (read-only snapshot).
-
-## YaPGuilds (`yap-guilds.jar`, gameplay opt-in)
-
-| Node | Default | Grants |
-|------|---------|--------|
-| `yapguilds.use` | true | `/g` commands |
-| `yapguilds.create` | true | `/g create` |
-| `yapguilds.admin` | op | `/yapguilds` admin commands |
-
-Dashboard: `GET /api/guilds` (read-only snapshot).
-
-## YaPCombat (`yap-combat.jar`, gameplay opt-in)
-
-| Node | Default | Grants |
-|------|---------|--------|
-| `yapcombat.use` | true | `/combat stats` |
-| `yapcombat.cast` | true | `/cast <spell>` |
-| `yapcombat.prayer` | true | `/prayer on/off/list` |
-| `yapcombat.admin` | op | `/combat reload`, `/yapcombat admin sethp` |
-
-See [MMO_RS_SKILLS.md](../mmo/MMO_RS_SKILLS.md) for spell book, prayer drain, and ranged accuracy.
-
-## YaPCrafting (`yap-crafting.jar`, gameplay opt-in)
-
-| Node | Default | Grants |
-|------|---------|--------|
-| `yapcraft.use` | true | Station crafting, `/recipe list` |
-| `yapcraft.sell` | true | `/sell` when economy enabled |
-| `yapcraft.admin` | op | `/ycraft reload` |
-
-## YaPGames (`yap-games.jar`, gameplay opt-in)
-
-| Node | Default | Grants |
-|------|---------|--------|
-| `yapgames.use` | true | `/queue`, `/duel`, `/game` |
-| `yapgames.admin` | op | `/ygames reload`, `list`, `forcestart`, `info`, `snapshot json` |
-
-Requires `yap-combat.jar` for custom PvP in arenas (global `pvp: false` is overridden in active matches).
-
-## YaPMmoContent (`yap-mmo-content.jar`, gameplay opt-in)
-
-| Node | Default | Grants |
-|------|---------|--------|
-| `yapmmo.hiscores` | true | `/hiscores <skill>` |
-| `yapmmo.admin` | op | `/yapmmo reload`, `/yapmmo snapshot`, quest reward hooks |
-
-Content packs: `plugins/yap-mmo-content/quests/starter_chain.yml`
-
-## YaPAbilities (`yap-abilities.jar`, gameplay opt-in)
-
-| Node | Default | Grants |
-|------|---------|--------|
-| `yapabilities.use` | true | `/ability list`, `/ability cast`, `/ability bar`, `/ability book`, `/abilities`, hotbar cast keys 4–9 |
-| `yapabilities.bar` | true | `/ability bind`, `/ability clear`, drag-bind in ability book |
-| `yapabilities.admin` | op | `/yapabilities reload` |
-
-233 combat abilities ship in YAML packs; `/cast` delegates when yap-abilities is loaded.
 
 ## Web rank editor
 

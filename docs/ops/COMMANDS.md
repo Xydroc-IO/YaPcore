@@ -54,21 +54,6 @@ See [PERMISSIONS.md](PERMISSIONS.md) for rank assignment.
 
 Aliases: `/yperms`, `/perms`
 
-### YaPAbilities (`yap-abilities.jar`)
-
-| Command | Permission | Description |
-|---------|------------|-------------|
-| `/abilities` `/ability` `/spell` | `yapabilities.use` | Open the ability book |
-| `/spell <ability> [1-6]` | `yapabilities.bar` | Put a spell on combat keys 4–9 |
-| `/ability add <ability> [1-6]` | `yapabilities.bar` | Same as `/spell` |
-| `/ability bind <1-6> <ability>` | `yapabilities.bar` | Place on a specific slot |
-| `/ability mode combat` | `yapabilities.use` | Show the combat hotbar (keys 4–9 cast) |
-| `/ability bar` | `yapabilities.use` | List current bindings |
-| `/ability info <ability>` | `yapabilities.use` | What the spell does, costs, and requirements |
-| `/ability tome` | `yapabilities.use` | Get an Ability Tome |
-
-Click a spell in the book to add it. Press **4–9** to cast. Middle-click (or `/ability mode`) switches back to the build hotbar.
-
 ### YaPChat (`yap-chat.jar`)
 
 | Command | Permission | Description |
@@ -161,7 +146,7 @@ Duration examples: `30m`, `2h`, `7d`, `1w`.
 | `/check` `<player>` | `yapessentials.staff.check` | Inspect player |
 | `/yapess reload` | `yapessentials.admin` | Reload config |
 
-Feature toggles: `plugins/YaPEssentials/config.yml`.
+Feature toggles: `plugins/YaPEssentials/config.yml` — including `features.water-waves` (splash / wave amplitude; formerly a mechanics-plugin toggle).
 
 #### Cross-plugin ops map (intentional Essentials split)
 
@@ -180,6 +165,12 @@ YaP does **not** clone EssentialsX’s entire command set into one jar. Use thes
 |---------|------------|-------------|
 | `/yapadmin` `/staff` `/adminmenu` `/am` | `yapadmin.menu` | Open staff super menu |
 | `/yapadmin reload` | `yapadmin.server` | Reload menu config |
+| `/yapplugins list` | `yapadmin.plugins` | Soft/hard state for each jar |
+| `/yapplugins enable\|disable <id> [soft\|hard] [--force]` | `yapadmin.plugins` | Soft = YAML `enabled`; hard = `.jar.disabled` (restart) |
+| `/yapplugins install <path>` | `yapadmin.plugins` | Copy jar from under server root into `plugins/` |
+| `/yapplugins uninstall <id> [--force]` | `yapadmin.plugins` | Delete jar; CORE needs `--force` |
+
+Soft vs hard and dashboard twins: [WEB_DASHBOARD.md](WEB_DASHBOARD.md) § Plugin manager. Folia does **not** hot-unload jars — hard changes need a Folia restart.
 
 In-game kitchen-sink hub: players, give (presets + kits + materials), moderation, self tools, economy, deep-links. See [ADMIN_MENU.md](ADMIN_MENU.md).
 
@@ -189,7 +180,8 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 |--------|---------|-----|
 | Pregen | `/yappregen …` | [PREGEN.md](../plugins/PREGEN.md) |
 | Stacker | `/yapstacker …` | [STACKER.md](../plugins/STACKER.md) |
-| Vehicles | `/yapvehicle …` | [VEHICLES.md](../plugins/VEHICLES.md) |
+| Skills | `/skills` · `/skill top` · `/yskills reload` | [SKILLS.md](../plugins/SKILLS.md) |
+| Disasters | `/yapdisaster …` | dashboard **Disasters** tab |
 | Gameplay knobs | `/yapknobs …` | [TUNE.md](TUNE.md) |
 | Plugin compat | `/yapcompat …` | [PLUGIN_BACKCOMPAT.md](../plugins/PLUGIN_BACKCOMPAT.md) |
 | PlaceholderAPI | `/papi …` | [PLACEHOLDERAPI.md](../plugins/PLACEHOLDERAPI.md) |

@@ -40,6 +40,8 @@ gradle :protect-plugin:test :factions-plugin:test :essentials-plugin:test \
 You do **not** need a QA team. One person + this box is enough for ops-signed.
 Retail Xbox / multi-player grief load stays optional before marketing “full play depth.”
 
+**Gameplay ship bar (current):** thin skills + stacker + encyclopedia knobs + disasters — see [SKILLS.md](../plugins/SKILLS.md) and [plugins/README.md](../../plugins/README.md). Full MMO / vehicles / abilities packs were removed from the product path.
+
 ### 2a — Push & CI (agent / you)
 
 ```bash
@@ -61,7 +63,9 @@ Walk [SECRETS.md](../start/SECRETS.md) production order once. Confirm on this ho
 
 **Done (ops-signed minimum, 2026-09-04):** JE join via Link `:25565`, dig/place/chat/command, resource pack prompt, chest/furnace/hopper + anvil.
 
-Still optional before marketing full play depth: Bedrock device, remaining specialty stations, `/yapknobs` / ability / `/bag`.
+**JE specialty set (same day):** smithing, loom, stonecutter, cartography, enchant — open + slots OK on Java.
+
+Still optional before marketing full play depth: Bedrock device + Bedrock specialty stations, `/yapknobs status`, `/skills`.
 
 Do **not** wait for other humans. Tick in [CROSSPLAY.md §E](../network/CROSSPLAY.md) as you go:
 
@@ -69,7 +73,7 @@ Do **not** wait for other humans. Tick in [CROSSPLAY.md §E](../network/CROSSPLA
 2. [x] Accept or decline resource pack  
 3. [x] Open chest + furnace + anvil (minimum specialty set); note Stretch gaps  
 4. Optional same session: Bedrock Android/Win on native UDP if you have a device  
-5. Optional: `/yapknobs status`, one ability cast, `/bag` page  
+5. Optional: `/yapknobs status`, `/skills`  
 
 Xbox retail = later marketing bar, not soft-launch.
 
@@ -104,7 +108,7 @@ tail -5 logs/soak/soak-long-*.log
 ## Phase 4 — Deferred elegance
 
 - Dual-package facades / hard moves ([CODE_ELEGANCE_FOLLOWUP.md](CODE_ELEGANCE_FOLLOWUP.md) Track 2 B–D)
-- Extra plugin suites (regions, guilds, moderation)
+- Extra plugin suites (regions, moderation, skills)
 - Do **not** gate CI on coverage %
 
 ## Related

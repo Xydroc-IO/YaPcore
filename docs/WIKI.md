@@ -56,14 +56,13 @@ Browse by folder: [docs/README.md](README.md).
 
 ---
 
-## Plugins, data, gameplay, MMO
+## Plugins, data, gameplay
 
 | Area | Index |
 |------|-------|
-| Plugins | [PLUGINS.md](plugins/PLUGINS.md) · [MODULES_AND_API.md](plugins/MODULES_AND_API.md) |
+| Plugins | [PLUGINS.md](plugins/PLUGINS.md) · [MODULES_AND_API.md](plugins/MODULES_AND_API.md) · [SKILLS.md](plugins/SKILLS.md) · [STACKER.md](plugins/STACKER.md) |
 | Data | [YAPDB.md](data/YAPDB.md) · [MARIADB.md](data/MARIADB.md) · [POSTGRES.md](data/POSTGRES.md) · [SQLITE.md](data/SQLITE.md) · [PLAYERDATA.md](data/PLAYERDATA.md) |
-| Gameplay | [GUILDS.md](gameplay/GUILDS.md) · [FACTIONS.md](gameplay/FACTIONS.md) · [REGIONS.md](gameplay/REGIONS.md) |
-| MMO (opt-in) | [MMO_PHASES.md](mmo/MMO_PHASES.md) · [MMO_CONTENT.md](mmo/MMO_CONTENT.md) |
+| Gameplay | [FACTIONS.md](gameplay/FACTIONS.md) · [REGIONS.md](gameplay/REGIONS.md) |
 
 ---
 

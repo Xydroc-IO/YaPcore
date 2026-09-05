@@ -32,11 +32,10 @@ code — not a Purpur port) is the Paper plugin `yap-gameplay-knobs`
 (`plugins/YaPGameplayKnobs/knobs.yml`) plus packaging module `provides: [gameplay-knobs]`
 (GAMEPLAY tier). Optional Folia NMS crop/fluid hooks: patch `0025-yap-encyclopedia-hooks`.
 
-**Vehicles:** GAMEPLAY opt-in — Paper plugin `yap-vehicles` + module `provides: [vehicles]`.
-See [VEHICLES.md](VEHICLES.md). Control from GUI, **web dashboard**, or `/yapvehicle`.
-
 **Stacker:** Paper plugin `yap-stacker` + optional module `provides: [stacker]`.
 See [STACKER.md](STACKER.md) (`/yapstacker`).
+
+**Skills:** Paper plugin `yap-skills` — thin mining / woodcutting / strength. See [SKILLS.md](SKILLS.md).
 
 GUI tabs: **Plugins**, **Modules**, and **Tune**. Headless: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 
@@ -99,6 +98,6 @@ Runtime matrix: `com.yapcore.api.ApiCoverage` (see source).
 - [PLUGINS.md](PLUGINS.md) — YaPPlugin dual-pool examples
 - `examples/yap-allinone` — sample YaP plugin
 - `examples/yap-module-demo` — sample module
-- [VEHICLES.md](VEHICLES.md) — vehicle API for Paper plugins
-- `examples/yap-vehicle-addon` — sample third-party vehicle type
+- [SKILLS.md](SKILLS.md) — thin skills plugin
+- [STACKER.md](STACKER.md) — mob/item stacker
 - `yap-first-party/modules/finetune-modules/` — first-party packaging modules source

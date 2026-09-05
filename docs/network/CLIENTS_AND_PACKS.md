@@ -110,10 +110,9 @@ Attach **`yapcore-default.zip`** (same bytes you built) as a release asset on ea
 release. Tag **`1.0.0.0`** already publishes it — `/releases/latest/download/{file}` follows the
 newest release. YaP hashes the remote zip at boot so Paper’s SHA-1 matches what clients download.
 
-**Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Skies + YaP Water + YaP Vehicles + YaP Abilities) — built on
-`gradle prepareClientPack` (GAMEPLAY: `YAP_INCLUDE_VEHICLES=1`). Credit / license:
-`resourcepacks/CREDITS.md`, `FAITHFUL_LICENSE.txt`, and (vehicles)
-`yap-vehicles/AUTOMOBILITY_LICENSE.txt` (Automobility MIT meshes).
+**Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Skies + YaP Water) — built on
+`gradle prepareClientPack`. Credit / license:
+`resourcepacks/CREDITS.md`, `FAITHFUL_LICENSE.txt`.
 
 **Publish for GitHub (recommended):**
 

@@ -18,11 +18,11 @@ Minecraft-class game servers traditionally serialize world mutation, plugin call
 2. **YapEngine** — a slim chassis in the YaPcore parent process — owns the public edge: watchdog, Netty traffic/sequencing, Compatibility Bridge, UI sandboxes, and heavy I/O workers (**not** world tick).
 3. **YaP Link** — a first-party Velocity-class proxy (`0.6.0-phase6`) — fronts multi-backend networks.
 
-A **SequenceToken** model orders work across chassis streams. Folia-aware first-party plugins use an explicit **SYNC / HEAVY / UI** contract via [`YapSched`](../plugins/MODULES_AND_API.md). The product ships a **CORE+NETWORK** plugin suite (permissions, chat, moderation, playerdata/economy, protect, world, regions, map, custom commands, …) and an opt-in **GAMEPLAY** tier (vehicles with Automobility MIT fleet art, stacker, knobs, and a full **MMO** stack M0–M7). Dual-stack **Java TCP + Bedrock UDP** is first-party (no Via\*/Geyser jars). Stock Fill Folia and Paper + Phase 3 spatial tick remain **legacy / bench** paths only.
+A **SequenceToken** model orders work across chassis streams. Folia-aware first-party plugins use an explicit **SYNC / HEAVY / UI** contract via [`YapSched`](../plugins/MODULES_AND_API.md). The product ships a **CORE+NETWORK** plugin suite (permissions, chat, moderation, playerdata/economy, protect, world, regions, map, custom commands, …) and an opt-in **GAMEPLAY** tier (thin skills, stacker, encyclopedia knobs, disasters). Dual-stack **Java TCP + Bedrock UDP** is first-party (no Via\*/Geyser jars). Stock Fill Folia and Paper + Phase 3 spatial tick remain **legacy / bench** paths only.
 
 This paper describes architecture, concurrency invariants, networking/crossplay, the shipped plugin and data plane, evaluation methodology, and honest product status as of September 2026.
 
-**Keywords:** game server concurrency; Folia fork; regionized tick; plugin compatibility; Minecraft protocol; dual-stack crossplay; generational ZGC; MariaDB; PostgreSQL; SQLite; MMO progression.
+**Keywords:** game server concurrency; Folia fork; regionized tick; plugin compatibility; Minecraft protocol; dual-stack crossplay; generational ZGC; MariaDB; PostgreSQL; SQLite.
 
 ---
 
@@ -64,7 +64,7 @@ YaPcore contributes:
 5. Dual-stack **Java TCP + Bedrock UDP** ingress with optional shared listen port — first-party code, not Via\*/Geyser jars — [CROSSPLAY.md](../network/CROSSPLAY.md).
 6. A **three-tier extension model**: Folia-aware plugins (`plugin.yml`), YaP plugins (`yap.yml`), and fine-tune modules (`module.yml`) — [PLUGINS.md](../plugins/PLUGINS.md) · [MODULES_AND_API.md](../plugins/MODULES_AND_API.md).
 7. A **shipped first-party plugin suite** that replaces the common DIY glue stack for ~90% of survival/network operators — §6.
-8. An opt-in **RuneScape-style MMO progression stack** (skills, combat, crafting, quests, abilities, Bedrock UI) — [MMO_PHASES.md](../mmo/MMO_PHASES.md).
+8. An opt-in **GAMEPLAY tier** — thin skills, stacker, encyclopedia knobs, disasters — [SKILLS.md](../plugins/SKILLS.md) · [plugins/README.md](../../plugins/README.md).
 
 ### 1.3 Non-goals
 
@@ -211,7 +211,7 @@ Sources live under `yap-first-party/`. Install tiers:
 | Tier | Gradle | Audience |
 |------|--------|----------|
 | **CORE+NETWORK** | `gradle installProductDefaults` | Every release |
-| **GAMEPLAY** | `gradle installGameplayDefaults` or `-PyapGameplay=true` | Opt-in survival / MMO |
+| **GAMEPLAY** | `gradle installGameplayDefaults` or `-PyapGameplay=true` | Opt-in skills / stacker / knobs / disasters |
 | **Both** | `gradle installAllProductDefaults` | Full product box |
 | **Dist** | `gradle assemblePluginDist` | `build/dist/yap-plugins/{core-network,gameplay,api,modules}/` |
 
@@ -238,30 +238,22 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-npcs.jar` | YaPNpcs | Quest NPCs + dialogue |
 | `yap-tab.jar` | YaPTab | Tab list / header / footer / sidebar |
 | `yap-discord.jar` | YaPDiscord | Discord webhooks + relay |
-| `yap-guard.jar` | YaPGuard | Lightweight anti-cheat heuristics |
+| `yap-guard.jar` | YaPGuard | Lightweight movement heuristics (not Grim); competitive → Grim |
 | `yap-lagguard.jar` | YaPLagGuard | Per-chunk lag governor |
-| `yap-map.jar` | YaPMap | Web flat map (Leaflet + PNG tiles + live markers; 3D Stretch) |
+| `yap-map.jar` | YaPMap | Flat web map (Leaflet + PNG tiles + markers; no 3D) |
 | `yap-factions.jar` | YaPFactions | Factions overlay on playerdata claims |
-| `yap-bedrock-ui.jar` | YaPBedrockUI | Bedrock `FormService` bridge |
+| `yap-bedrock-ui.jar` | YaPBedrockUI | Bedrock `FormService` bridge (Floodgate-only forms Limited) |
 
 ### 6.2 GAMEPLAY (opt-in)
 
 | Jar | Plugin | Role |
 |-----|--------|------|
-| `yap-vehicles.jar` | YaPVehicles | Real vehicle mechanics (not minecarts); Automobility MIT fleet pack |
+| `yap-skills.jar` | YaPSkills | Thin skills — mining / woodcutting / strength — [SKILLS.md](../plugins/SKILLS.md) |
 | `yap-stacker.jar` | YaPStacker | PDC mob / item / spawner stacker |
-| `yap-gameplay-knobs.jar` | YaPGameplayKnobs | YaP encyclopedia (Purpur-inspired; original code) |
-| `yap-skills.jar` | YaPSkills | 13 RS-style skills + `/skills` GUI |
-| `yap-combat.jar` | YaPCombat | Custom PvE combat, gear, food, potions, spells, prayer |
-| `yap-crafting.jar` | YaPCrafting | Recipes, stations, `/sell` |
-| `yap-mmo-content.jar` | YaPMmoContent | Quests v2, bosses, skill areas, hiscores |
-| `yap-abilities.jar` | YaPAbilities | Config-driven ability engine (230+) |
-| `yap-mechanics.jar` | YaPMechanics | Stamina, resource nodes, farming |
-| `yap-games.jar` | YaPGames | Minigames (arenas, queue, duels) |
-| `yap-guilds.jar` | YaPGuilds | MMO guilds |
-| `yap-mmo-bedrock.jar` | YaPMmoBedrock | Bedrock MMO forms UI |
+| `yap-gameplay-knobs.jar` | YaPGameplayKnobs | Purpur-inspired encyclopedia; crop/fluid NMS opt-in via YaP-Folia 0025 |
+| `yap-disasters.jar` | YaPDisasters | Extreme weather + disasters |
 
-**MMO milestones M0–M7** are shipped — [MMO_PHASES.md](../mmo/MMO_PHASES.md). Combat skill XP is owned by **YaPCombat** when loaded; YaPSkills provides a vanilla-damage fallback when combat is absent.
+Full MMO (combat, crafting, abilities, guilds, vehicles, quests) was **removed** from the product path; do not document those jars as shipped.
 
 ### 6.3 APIs & modules
 
@@ -332,7 +324,7 @@ Link plugins (`link-plugin.json`): chat-bridge, mod-sync, server-selector, tab-b
 | **Bedrock** | UDP path; Geyser-class hub in `com.yapcore.crossplay*` — **no Geyser jar**. |
 | **Shared listen** | Optional same port for JE+BE (`shared-listen-port=true`). |
 | **YaP Link** | Optional JE front + optional Bedrock UDP forwarder. |
-| **Packs HTTP** | Default pack `resourcepacks/yapcore-default.zip` on `:8081` (Faithful + skies/water; GAMEPLAY adds Automobility MIT vehicle bodies + MMO icons — [CREDITS.md](../../resourcepacks/CREDITS.md)). |
+| **Packs HTTP** | Default pack `resourcepacks/yapcore-default.zip` on `:8081` (Faithful + skies/water — [CREDITS.md](../../resourcepacks/CREDITS.md)). |
 | **Publicity** | Domain / SRV / nginx + Cloudflare — [NETWORKING.md](../network/NETWORKING.md). |
 
 Same-machine clients must use `127.0.0.1` (hairpin NAT) — [NGINX_AND_LOCALHOST.md](../network/NGINX_AND_LOCALHOST.md).
@@ -352,7 +344,7 @@ Phase 4 dual-stack **join DoD is green**; play-depth smoke green; Wave 2 matrix 
 | Release | `gradle assembleRelease` → `build/dist/yapcore-release/{linux,windows}/` |
 | Windows | Parity launchers — [WINDOWS.md](../start/WINDOWS.md) |
 
-Dashboard Phase 8 ops tabs are **shipped** (Factions / Guilds / Games interactive; Disasters + MMO reload) — see [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
+Dashboard Phase 8 ops tabs are **shipped** (Factions / Disasters / Stacker / Skills interactive) — see [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 
 ---
 
@@ -387,17 +379,16 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 | Phase 3 Paper spatial | **Complete as code** — **retired as product default** |
 | Phase 4 dual-stack join DoD | **Green** |
 | CORE+NETWORK plugins | **Shipped** |
-| GAMEPLAY + MMO M0–M7 | **Shipped** (opt-in install) |
-| Ability VFX V1–V4 | **Shipped** — kits + heroes + soak gates ([MMO_ABILITY_VFX.md](../mmo/MMO_ABILITY_VFX.md)) |
+| GAMEPLAY (skills / stacker / knobs / disasters) | **Shipped** (opt-in install) |
 | PlayerData shops + AH | **On by default** (jobs remain off) |
 | Fair population MSPT gate | **Citeable** — fullcite 100 bots; peak −12.4% (`shipFc2`); re-verify −5.53% (`20260904T040935Z`); **ship knobs** disclosed in JSON |
-| Dashboard Phase 8 full tabs | **Done (ship)** — Factions/Guilds/Games/Disasters/Stacker interactive; Protect restore; Regions flags; MMO reload; YAML-only leftovers documented |
+| Dashboard Phase 8 | **Done (ship)** — Factions/Disasters/Stacker/Skills interactive; Protect restore; Regions flags; YAML leftovers documented |
 | Wave 2 Bedrock fidelity | **Done (ship)** — [CROSSPLAY.md](../network/CROSSPLAY.md) matrix; Floodgate forms Limited; specialty containers Green (best-effort) |
-| Wave 3 MMO quest objectives | **Done (ship)** — PLAYTIME/ECONOMY/PLACE/ENCHANT/ANVIL/TALK; silent proxies removed |
-| Wave 4 Discord / Map / PAPI | **Done (ship)** — event webhooks; map markers; curated local expansions |
+| Wave 4 Discord / Map / PAPI | **Done (ship)** — event webhooks; flat map markers; curated local expansions |
 | Wave 5 Access context/temp | **Done (ship)** — dashboard duration + world/server grants |
+| Encyclopedia NMS (0025) | **Shipped** (defaults off; `/yapknobs status` → `nmsHooks`) — [TUNE.md](../ops/TUNE.md) |
 | PAPI eCloud | **Intentionally local-only** (expansions folder) |
-| Stretch (3D / CFI / full RS / clone mirrors) | **Separate plan only** — not stubbed (see §13.1) |
+| Stretch (Map 3D / full Floodgate forms / CFI) | **Separate plan only** — not stubbed (see §13.1) |
 | Stock Paper jars on Folia | **Unsupported** |
 
 Ops notes: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
@@ -407,8 +398,9 @@ Ops notes: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 | Item | Why not in Waves 2–5 |
 |------|----------------------|
 | True BlueMap-style 3D mesh | Flat map + markers is product Map |
+| Full Floodgate-only forms | Needs native Bedrock session / protocol depth |
 | FAWE CFI / NMS section injection | Folia region-threading conflict |
-| Full RuneScape skill/quest matrix | Wave 3 uses existing YaP systems |
+| Full MMO / vehicles / abilities stack | Removed from product; thin skills remain |
 | DiscordSRV account-link / slash matrix | Event webhooks are product Discord |
 | HelpChat eCloud full mirror | Curated expansions are product PAPI |
 | LuckPerms web pixel-clone | Access context/temp is product ops |
@@ -419,9 +411,9 @@ Stretch starts only with its own plan and done bars.
 
 ## 14. Conclusion
 
-YaPcore demonstrates a practical decomposition for Minecraft-class servers: **YaP-Folia** owns regionized game tick; **YapEngine** owns a slim edge/I/O chassis with an explicit plugin pool contract; **YaP Link** owns multi-backend routing; and a **first-party plugin + MariaDB data plane** replaces the usual DIY glue stack. Opt-in GAMEPLAY and MMO tiers extend the same Folia-safe patterns for vehicles and RS-style progression.
+YaPcore demonstrates a practical decomposition for Minecraft-class servers: **YaP-Folia** owns regionized game tick; **YapEngine** owns a slim edge/I/O chassis with an explicit plugin pool contract; **YaP Link** owns multi-backend routing; and a **first-party plugin + MariaDB data plane** replaces the usual DIY glue stack. Opt-in GAMEPLAY (skills, stacker, encyclopedia, disasters) extends the same Folia-safe patterns without claiming a full MMO stack.
 
-Future work emphasizes Stretch items (3D map, CFI, full RS) only under a separate plan, hot-region partition soak under load, and continued Folia upstream rebase hygiene.
+Future work emphasizes Stretch items (3D map, Floodgate forms, CFI) only under a separate plan, hot-region partition soak under load, and continued Folia upstream rebase hygiene.
 
 ---
 
@@ -432,7 +424,7 @@ Future work emphasizes Stretch items (3D map, CFI, full RS) only under a separat
 3. Netty project.
 4. PaperMC Folia — regionized threading for Bukkit servers.
 5. YapLabs — YaP-Folia patches (`vendor/folia/patches/`), YapEngine chassis notes, YaP Link native suite.
-6. YapLabs docs — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [MMO_PHASES.md](../mmo/MMO_PHASES.md).
+6. YapLabs docs — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [SKILLS.md](../plugins/SKILLS.md), [TUNE.md](../ops/TUNE.md).
 
 ---
 
@@ -448,7 +440,7 @@ Future work emphasizes Stretch items (3D map, CFI, full RS) only under a separat
 | Engine contributors | [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [QUICK_START.md](../start/QUICK_START.md) |
 | Network / crossplay | [YAP_LINK.md](../network/YAP_LINK.md), [CROSSPLAY.md](../network/CROSSPLAY.md), [CROSSPLAY.md](../network/CROSSPLAY.md) |
 | Data | [YAPDB.md](../data/YAPDB.md), [MARIADB.md](../data/MARIADB.md), [POSTGRES.md](../data/POSTGRES.md), [SQLITE.md](../data/SQLITE.md), [PLAYERDATA.md](../data/PLAYERDATA.md), [PERMISSIONS.md](../ops/PERMISSIONS.md) |
-| MMO | [MMO_PHASES.md](../mmo/MMO_PHASES.md), [MMO_SKILLS.md](../mmo/MMO_SKILLS.md), [MMO_COMBAT.md](../mmo/MMO_COMBAT.md) |
+| GAMEPLAY | [SKILLS.md](../plugins/SKILLS.md), [STACKER.md](../plugins/STACKER.md), [TUNE.md](../ops/TUNE.md) |
 | Comparison | [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) |
 
 ### Appendix B — Quick install
@@ -459,7 +451,7 @@ Future work emphasizes Stretch items (3D map, CFI, full RS) only under a separat
 ./scripts/db/ensure-db.sh --server-id lobby
 gradle installProductDefaults         # CORE+NETWORK → plugins/
 # optional:
-gradle installGameplayDefaults        # vehicles + stacker + MMO …
+gradle installGameplayDefaults        # skills + stacker + knobs + disasters
 gradle assembleRelease
 ./scripts/start.sh --fg
 # multi-backend:
@@ -485,7 +477,7 @@ gradle assembleRelease
 | Ver | Date | Notes |
 |-----|------|-------|
 | 0.2 | Aug 2026 | Three-layer architecture; chassis T1–16; Link phase6; Folia product path |
-| **0.3** | **Sep 2026** | Comprehensive plugin catalog; MMO M0–M7; data plane (shops/AH defaults); Link/crossplay/ops status; evaluation smokes; honest roadmap gaps |
+| **0.3** | **Sep 2026** | Plugin catalog slimmed to CORE+NETWORK + thin GAMEPLAY; data plane (shops/AH defaults); Link/crossplay/ops status; evaluation smokes; honest Stretch gaps |
 
 ### Appendix E — License
 

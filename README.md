@@ -40,7 +40,7 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 | **Microtick / µs chassis** | MSPT-gated **microtick** Mob AI budgets on Folia; YapEngine orders bridge/plugin work in **µs** (`SequenceToken`) — not a single-thread MSPT claim |
 | **Crossplay** | Java (1.20.2+) + Bedrock on one listen path — no Via\* / Geyser jars required |
 | **Network** | YaP Link native proxy, Floodgate-class identity, dual-stack gateway |
-| **Plugin suite** | First-party CORE + NETWORK; full box includes gameplay (vehicles, MMO, encyclopedia knobs, …) |
+| **Plugin suite** | First-party CORE + NETWORK; full box GAMEPLAY = skills / stacker / knobs / disasters |
 | **Ops** | Web dashboard (`:8080`), Swing GUI, seed defaults, MariaDB / Postgres / SQLite paths |
 | **Packs** | `yapcore-default.zip` via GitHub Releases CDN (`/releases/latest/download/…`) |
 | **Clients (optional)** | Fabric mods: visuals (Sodium + Iris + shaders), bag UI, ultrawide — vanilla/Bedrock still join |
@@ -106,7 +106,8 @@ gradle publishReleasesFolder
 # → releases/1.0.0.0/yapcore-release-{linux,windows}.zip
 ```
 
-Slim CORE+NETWORK only: `gradle assembleRelease -PyapGameplay=false`.
+Slim CORE+NETWORK is the **default** (`yapGameplay=false`). Opt in to GAMEPLAY
+(skills / stacker / knobs / disasters): `gradle assembleRelease -PyapGameplay=true`.
 
 ---
 
@@ -190,4 +191,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). One logical change per PR; keep build ou
 
 **YaPcore** first-party source is **[GNU GPLv3](LICENSE)** (same family as Paper / Folia).
 
-Minecraft (Mojang EULA), Faithful, Automobility meshes, and other bundled assets have separate terms — [LICENSING.md](docs/start/LICENSING.md). Branding marks: [branding/README.md](branding/README.md).
+Minecraft (Mojang EULA), Faithful, and other bundled assets have separate terms — [LICENSING.md](docs/start/LICENSING.md). Branding marks: [branding/README.md](branding/README.md).

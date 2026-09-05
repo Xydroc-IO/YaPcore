@@ -10,7 +10,7 @@ Built as `yap-admin.jar` (CORE + NETWORK product default).
 gradle :admin-plugin:installIntoPlugins
 ```
 
-Soft-depends on YaPEssentials, YaPModeration, YaPPerms, YaPWorld, YaPStacker, YaPPlayerData, YaPSkills, YaPCombat, YaPMMO — tiles hide when a plugin is missing.
+Soft-depends on YaPEssentials, YaPModeration, YaPPerms, YaPWorld, YaPStacker, YaPPlayerData, YaPSkills — tiles hide when a plugin is missing.
 
 ## Commands
 
@@ -26,9 +26,9 @@ Soft-depends on YaPEssentials, YaPModeration, YaPPerms, YaPWorld, YaPStacker, Ya
 - **Give** — curated presets, kits (`/kit give`), paginated material browser (categories + amount 1/16/64)
 - **Moderation** — same player picker (actions gated by `yapmod.*`)
 - **Server** — broadcast presets, status (online/worlds/TPS), deep-link to Ranks GUI
-- **Economy** — money grants via `/yapmmo givemoney` (when YaPMMO present)
+- **Economy** — money grants via playerdata `/eco` (when economy present)
 - **Deep links** — `/yapperm gui`, `/yapworld gui`, `/yapstacker gui`, `/menu`
-- **Combat / Skills** — `/skills`, heal, `/prayer list`
+- **Skills** — `/skills` when YaPSkills is installed
 
 ## Permissions
 

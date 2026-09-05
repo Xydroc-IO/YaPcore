@@ -46,7 +46,7 @@ Login links include `?token=…` so the browser signs in automatically (token is
 | **Server** | Console, Server setup, YaP Link |
 | **People** | Players, Access & ranks, Rank pack |
 | **Content** | Plugins, Plugin settings, Modules, Packs, World, Regions, NPCs |
-| **Gameplay** | Essentials, Vehicles, Pregen, Player data, Kits, **Custom commands**, Tebex, Chat, Tab list, **MMO**, **Factions**, **Guilds**, **Games**, **Disasters**, **Stacker**, Map, Guard, Protect, Discord |
+| **Gameplay** | Essentials, Pregen, Player data, Kits, **Custom commands**, Tebex, Chat, Tab list, **Skills**, **Factions**, **Disasters**, **Stacker**, Map, Guard, Protect, Discord |
 
 Static assets: `src/main/resources/web/` — `app-shell.js`, `app-core.js`, `app-*-panels.js`, `style.css`.
 
@@ -75,7 +75,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Players** | `/api/players` | online list, spawn, moderation flags | kick, ban, tempban, ipban, mute, warn, timeout, tp*, set-rank, promote, demote, **eco give/take/set/reset**, bal, history, check, banlist |
 | **Access & ranks** | `/api/access` | ops, auto-op, default group, groups, **tracks**, server-context, **permission catalog**, **group nodes** | save-group-nodes, save-ops, save-auto-op, set-default-group, op, deop, set-group, promote/demote (+ track), **user-perm / group-perm** (+ duration, world, server), **user-perm-unset / group-perm-unset**, dump, reload, applypack |
 | **Rank pack** | `/api/ranks` | pack applied, auto-apply | apply, force, reset-marker, status |
-| **Plugins** | `/api/plugins` | jar list + compat matrix | install, remove |
+| **Plugins** | `/api/plugins` | jar list, tier, soft/hard state, compat matrix | **install**, soft/hard **enable/disable**, **uninstall** (CORE needs `force`) |
 | **Plugin settings** | `/api/plugin-config` | first-party YAML with plain-language titles + Yes/No | **save** + reload, **reload** |
 | **Modules** | `/api/modules` | module jars | install, remove |
 | **Packs** | `/api/packs` | resource packs, active set | setActive, add, remove, clear |
@@ -83,7 +83,6 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Regions** | `/api/regions` | region table (JSON), flag names | **define** (cuboid coords), **flag-set**, list |
 | **NPCs** | `/api/npcs` | npc table, quest ids | create, remove, setquest, setdialogue, respawn, reload, info |
 | **Essentials** | `/api/essentials` | features, MOTD, rules, spawn | reload, broadcast, save-motd, save-rules, set-feature |
-| **Vehicles** | `/api/vehicles` | type list | spawn, shop, list, types, upgrades |
 | **Pregen** | `/api/pregen` | job status | start, pause, resume, cancel |
 | **Player data** | `/api/playerdata` | economy, auth, feature toggles | reload, save, set-feature |
 | **Kits** | `/api/kits` | kits.yml definitions, items, armor slots | **save-kit**, **delete-kit**, **clone-kit**, give, grant, reload |
@@ -95,10 +94,8 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Guard** | `/api/guard` | check toggles, kick threshold, decay, alerts | reload, player-status, **save-settings** |
 | **Protect** | `/api/protect` | logging, retention, status | reload, prune, lookup, lookup-radius, **rollback**, **restore**, **save-settings** |
 | **Stacker** | `/api/stacker` | enabled, mob/item/spawner toggles, kill mode, live stats | **save-settings**, reload, status, stats |
-| **MMO** | `/api/mmo` | skills, abilities, hiscores, boss kills, combat bar bindings | **reload-abilities**, **reload-mmo** |
+| **Skills** | `/api/skills` | jar presence, enable flag, thin skill packs, online sample | reload |
 | **Factions** | `/api/factions` | counts, preview, power/bank settings | **save-settings**, reload, setpower, setjoin, disband |
-| **Guilds** | `/api/guilds` | counts, preview, level/bank settings | **save-settings**, reload, setlevel, disband |
-| **Games** | `/api/games` | modes, arenas, match/reward toggles | **save-settings**, reload, list, forcestart |
 | **Disasters** | `/api/disasters` | extremes, random schedule, volcano sites | **save-settings**, reload, start, stop, random, site-* |
 
 Legacy routes (superseded by UI tabs): `/api/moderation` → **Players**; `/api/perms` → **Access & ranks**.
@@ -177,21 +174,11 @@ Staff moderation panel: **online** table plus **everyone who has ever joined** (
 
 Requires YaP-Folia running + `yap-moderation` / `yap-perms` / `yap-playerdata`. Snapshot is refreshed with `yapmod seen snapshot` when you hit Refresh.
 
-### MMO (`yap-skills`, `yap-abilities`, `yap-mmo-content`)
+### Skills (`yap-skills`)
 
-**Gameplay → MMO** tab — read-only progression overview plus ability hotbar status:
+**Gameplay → Skills** — thin progression (mining / woodcutting / strength). See [SKILLS.md](../plugins/SKILLS.md).
 
-- Skill/content jar presence, ability catalog count, boss/area counts
-- Dual hotbar + ability book flags (including Shift+F)
-- Online players with combat bar bindings (keys 4–9)
-- Hiscore preview + boss kill totals (live when Folia is running)
-
-| Action | POST `/api/mmo` |
-|--------|-----------------|
-| Reload ability YAML | `{"action":"reload-abilities"}` |
-| Reload MMO content | `{"action":"reload-mmo"}` |
-
-Live data uses console exports: `yapmmo snapshot json`, `yapabilities snapshot json`.
+`GET/POST /api/skills` — jar presence, `enabled`, skill packs, online sample; reload via `yskills reload`.
 
 ### Factions (`yap-factions`)
 
@@ -206,14 +193,6 @@ Live data uses console exports: `yapmmo snapshot json`, `yapabilities snapshot j
 | Force disband | `{"action":"disband","faction":"Tag"}` |
 
 Player create/join/claim stays in-game (`/f …`).
-
-### Guilds (`yap-guilds`)
-
-**Gameplay → Guilds** — counts + preview, level/bank settings, admin `setlevel` / force-disband via `/yapguilds …`.
-
-### Games (`yap-games`)
-
-**Gameplay → Games** — mode/arena inventory, match toggles, `ygames reload|list|forcestart`.
 
 ### Disasters (`yap-disasters`)
 
@@ -238,7 +217,6 @@ These ship as **Plugin settings** editors (or in-game hubs) on purpose — they 
 | LagGuard | Already on status metrics |
 | YaPAdmin | In-game staff hub (`/yapadmin`) |
 | gameplay-knobs | Tunables via Plugin settings |
-| skills / combat / crafting / mechanics | MMO tab + YAML packs |
 | floodgate / bedrock-ui / folia-bridge | Crossplay bridge config |
 | placeholderapi / plugin-compat | Expansion / soft-dep config |
 
@@ -305,10 +283,31 @@ Saves write `link-data/link.properties`. If Link is running, the dashboard sends
 
 Live log: **GET** `/api/link/console` · **SSE** `/api/link/console/stream?token=…`
 
-### Plugin compat (Plugins tab)
+### Plugin manager (Plugins tab)
 
 Each jar shows status from [PLUGIN_COMPAT_MATRIX.md](../plugins/PLUGIN_COMPAT_MATRIX.md):
 `native`, `works`, `broken`, `folia-build`, or `unknown`, plus native alternative hint.
+
+**Soft vs hard**
+
+| Action | What it does | When it applies |
+|--------|--------------|-----------------|
+| **Soft on/off** | Writes `enabled` (or knobs `settings.enabled`) in the plugin data folder | Immediately after that plugin’s reload command when one exists; otherwise restart Folia |
+| **Hard on/off** | Renames `foo.jar` ↔ `foo.jar.disabled` | **Next Folia start** (jar absent/present on the classpath). No live Folia unload. |
+| **Install** | Copies a `.jar` under `YAPCORE_HOME` into `plugins/` | Next Folia start |
+| **Uninstall** | Deletes the jar (or `.jar.disabled`) | Next Folia start to unload |
+
+CORE jars (`yap-db`, `yap-folia-bridge`, perms, playerdata, essentials, chat, moderation, protect, admin) require an explicit **force** confirm to soft-disable, hard-disable, or uninstall.
+
+API shape (flat JSON body):
+
+```json
+{"action":"enable","fileName":"yap-skills-1.0.0.0.jar","mode":"soft"}
+{"action":"disable","fileName":"yap-stacker-1.0.0.0.jar","mode":"hard","force":"false"}
+{"action":"install","path":"releases/yap-skills.jar"}
+```
+
+`DELETE /api/plugins` with `{"fileName":"…","force":"true"}` for uninstall. In-game mirror: `/yapplugins` — [COMMANDS.md](COMMANDS.md).
 
 ### Ranks via console / tab
 

@@ -110,7 +110,7 @@ gradle assembleRelease
 cd build/dist/yapcore-release/linux && ./start.sh --fg
 ```
 
-Add gameplay plugins (vehicles, stacker, MMO):
+Add optional gameplay plugins (skills, disasters, stacker, knobs):
 
 ```bash
 gradle assembleRelease -PyapGameplay=true
@@ -138,7 +138,7 @@ After `installProductDefaults` / a release zip, you get:
 Default rank ladder: `default` → `vip` → `mod` → `admin` (track **`yap`**).
 See [PERMISSIONS.md](../ops/PERMISSIONS.md).
 
-Default resource pack: **Faithful 64x** (+ vehicles overlay when gameplay tier enabled).
+Default resource pack: **Faithful 64x**.
 
 ---
 

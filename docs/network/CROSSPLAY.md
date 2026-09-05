@@ -34,8 +34,8 @@ Wave 2 closes inventory/forms honesty for native Bedrock; Floodgate-only and som
 | P4.6 | Chest / furnace / hopper open | **Green** (live Paper resync on push) |
 | P4.6 | Enchant / workbench / villager | **Green** (best-effort); XP/layout polish ongoing |
 | Forms (native UDP) | Simple / modal / custom | **Green** |
-| Forms (Floodgate-only) | MMO / admin forms | **Limited** — explicit user message; not Partial |
-| Anvil / smithing / loom / stonecutter / cartography | Container UIs | **Green** (best-effort) — Paper-backed open + slot sync; recipe-picker / anvil rename Stretch |
+| Forms (Floodgate-only) | Admin / custom forms | **Limited** — explicit user message; not Partial |
+| Anvil / smithing / loom / stonecutter / cartography | Container UIs | **Green** — Paper-backed open + slot sync; **recipe pick** via CRAFT_RECIPE_OPTIONAL (stonecutter/loom/smithing/cartography); anvil rename FILTER_TEXT coded (deploy after soak) |
 | Full Geyser feature matrix | Every BE packet | **Out** — YaP intentional depth |
 
 ## Streamlined one-port join
@@ -82,21 +82,26 @@ Run once on a live YaP-Folia box before calling crossplay “ops-signed.” Auto
 
 ### Containers (specialty stations)
 
-Open each on Bedrock (native UDP); confirm UI opens and slots sync. Recipe-picker / anvil rename may remain Stretch — note if broken beyond open+slots:
+**JE (2026-09-04):** open + slots work for the full specialty set below.
 
 - [x] Chest / furnace / hopper
 - [x] Anvil
-- [ ] Smithing table
-- [ ] Loom
-- [ ] Stonecutter
-- [ ] Cartography table
-- [ ] Enchant / workbench / villager (best-effort)
+- [x] Smithing table (JE)
+- [x] Loom (JE)
+- [x] Stonecutter (JE)
+- [x] Cartography table (JE)
+- [x] Enchant table (JE) — workbench / villager still best-effort as needed
+
+**Bedrock (native UDP)** — confirm UI opens, slots sync, and recipe pick selects a result:
+
+- [ ] Smithing / loom / stonecutter / cartography / enchant on Bedrock (recipe pick wired in chassis — retest after deploy)
+- [ ] Workbench / villager (best-effort) on Bedrock
+- [ ] Anvil rename text (FILTER_TEXT — retest after deploy)
 
 ### Optional smoke (gameplay box)
 
-- [ ] `/yapknobs status` (encyclopedia present)
-- [ ] Cast one hero ability (e.g. book / hotbar) — VFX visible, no kick
-- [ ] `/bag` open + page change
+- [ ] `/yapknobs status` (`nmsHooks: present=true` on YaP-Folia with patch 0025)
+- [ ] `/skills` open when `yap-skills.jar` is installed and enabled
 
 Retail Xbox / full inv depth: validate on real hardware before marketing “full play depth.”
 
@@ -108,6 +113,6 @@ Retail Xbox / full inv depth: validate on real hardware before marketing “full
 
 ## Related
 
-- [MMO_BEDROCK_UI.md](../mmo/MMO_BEDROCK_UI.md) — forms need native session
 - [VELOCITY.md](VELOCITY.md) — Floodgate behind proxy
+- Bedrock forms: native UDP session required; Floodgate-only forms stay **Limited** (this doc)
 - [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md)

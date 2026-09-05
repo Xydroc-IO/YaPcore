@@ -76,16 +76,7 @@ description: All-in-one store (GUI + economy + DB) without lag
 Same pools as YaP plugins; intended for **optional fine-tuning** operators add
 like mods. See [MODULES_AND_API.md](MODULES_AND_API.md).
 
-## 4. Vehicles (plugin + API)
-
-Real vehicle mechanics for plugin authors (cars / bikes / custom chassis — **not**
-minecarts or boats): [VEHICLES.md](VEHICLES.md). Soft-depend `YaPVehicles` and
-load `VehicleAPI` from `ServicesManager`. Runs on **YaP-Folia** (`folia-supported: true`).
-HD fleet bodies in the client pack are converted from
-[Automobility](https://github.com/FoundationGames/Automobility) (MIT) — see
-[CREDITS.md](../../resourcepacks/CREDITS.md).
-
-## Shipped jars
+## 4. Shipped jars
 
 **CORE + NETWORK (default)** on `gradle shadowJar` / `assembleRelease`:
 
@@ -95,19 +86,9 @@ HD fleet bodies in the client pack are converted from
 `yap-map`, `yap-npcs`, `yap-factions`, `yap-floodgate`, `yap-bedrock-ui`, `yap-folia-bridge`.
 
 **GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `-PyapGameplay=true`):
-`yap-vehicles`, `yap-stacker`, `yap-gameplay-knobs` (YaP Encyclopedia — [TUNE.md](../ops/TUNE.md)), plus MMO:
-
-| Jar | Plugin |
-|-----|--------|
-| `yap-skills.jar` | YaPSkills — 13 RS skills |
-| `yap-combat.jar` | YaPCombat — custom combat |
-| `yap-crafting.jar` | YaPCrafting — recipes |
-| `yap-mmo-content.jar` | YaPMmoContent — quests/bosses |
-| `yap-abilities.jar` | YaPAbilities — combat abilities |
-| `yap-mmo-bedrock.jar` | YaPMmoBedrock — Bedrock forms |
-| `yap-mechanics.jar` | YaPMechanics — stamina/nodes |
-| `yap-games.jar` | YaPGames — minigames |
-| `yap-guilds.jar` | YaPGuilds — guilds |
+`yap-skills` (thin mining/woodcutting/strength — [SKILLS.md](SKILLS.md)),
+`yap-stacker`, `yap-disasters`, `yap-gameplay-knobs` (YaP Encyclopedia — [TUNE.md](../ops/TUNE.md)).
+Factions ships in CORE+NETWORK.
 
 SQL plugin authors: `compileOnly(project(":yap-db-api"))` and soft-depend `YaPDB`
 ([YAPDB.md](../data/YAPDB.md)). Ranks: [PERMISSIONS.md](../ops/PERMISSIONS.md).

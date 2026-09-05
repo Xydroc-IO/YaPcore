@@ -94,10 +94,8 @@ Registered **in-process** by other YaP jars when installed (no jar drop needed):
 | Plugin | Identifier | Notes |
 |--------|------------|--------|
 | yap-perms | `yapperms` | Permission / group placeholders |
-| skills | `yapskills` | Skills / levels |
+| skills | `yapskills` | Skills / levels — [SKILLS.md](SKILLS.md) |
 | factions | `yapfactions` | Faction data |
-| guilds | `yapguilds` | Guild data |
-| games | (game-specific) | Match / arena helpers |
 | stacker | `yapstacker` | See [STACKER.md](STACKER.md) |
 
 ## Ops extras

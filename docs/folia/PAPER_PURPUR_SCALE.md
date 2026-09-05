@@ -9,7 +9,7 @@ bench. The product win is **regionized scale + encyclopedia + suite**.
 |--|----------------|---------------------|
 | Tick model | One main thread | Region thread pool |
 | Encyclopedia | Purpur `purpur.yml` (NMS fork) | YaP `knobs.yml` (plugin + optional Folia hooks) |
-| Network / MMO | Assemble plugins | First-party CORE+NETWORK + GAMEPLAY |
+| Network / survival | Assemble plugins | First-party CORE+NETWORK + GAMEPLAY |
 | Crossplay | Geyser/Via jars | First-party dual-stack |
 
 ## Fair benches (product claim)
