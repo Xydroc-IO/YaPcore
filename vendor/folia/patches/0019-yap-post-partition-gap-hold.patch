@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP gap hold, partition delay, carve integration
 
 Post-partition gap hold, partition hot-streak delay, carve scheduling,

@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP partition stability: min-entities + coalesce quiet + null-safe split
 
 Gate force-partition on live entity count (avoid worldgen shred), hold

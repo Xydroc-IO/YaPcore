@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP smart hot-region entity budget + microtick gate
 
 MSPT-gated engage (YapHotRegionGate), protect bosses/named/near-player,

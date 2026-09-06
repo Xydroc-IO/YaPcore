@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP async chunk save (Moonrise flush off region thread)
 
 Gated by -Dyap.folia.async-chunk-save=true. Post-applyAllPatches.

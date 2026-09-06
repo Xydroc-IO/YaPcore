@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP scoreboard SWMR restore
 
 Gated by -Dyap.folia.scoreboard-swmr=true. Post-applyAllPatches.

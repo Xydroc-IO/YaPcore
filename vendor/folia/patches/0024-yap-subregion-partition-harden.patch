@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP subregion partition hysteresis + coalesce wall clock
 
 Engage MSPT clear-band hysteresis; min wall-clock before coalesce;

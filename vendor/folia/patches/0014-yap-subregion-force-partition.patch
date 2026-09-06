@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP true parallel sub-region force-partition
 
 Force-partition hot regions into independent Folia shards with

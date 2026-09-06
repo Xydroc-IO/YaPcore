@@ -1,4 +1,4 @@
-From: YaPcore Encyclopedia <encyclopedia@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP encyclopedia NMS hooks (crop growth + fluid tick)
 
 Reads system properties written by YaPGameplayKnobs.

@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP entity tick budget (hot-region / spawncollapse)
 
 Gated by -Dyap.folia.entity-tick-budget=N (0=off). Budgets Mob AI only;

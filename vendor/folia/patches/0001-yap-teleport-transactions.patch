@@ -1,4 +1,4 @@
-From: YaPcore Agent 2 <agent-2@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Date: Mon, 24 Aug 2026 15:40:00 -0700
 Subject: [PATCH] YaP teleport transactions (cross-region PREPARE/COMMIT/CONFIRM)
 

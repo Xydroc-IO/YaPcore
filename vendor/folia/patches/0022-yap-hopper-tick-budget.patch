@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP hopper tick budget (hot-region BE deferral)
 
 Gated by -Dyap.folia.hopper-tick-budget=N (0=off). Caps HopperBlockEntity

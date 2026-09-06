@@ -1,8 +1,7 @@
 # YaP-Folia soak & knob profiles
 
 Operator guide for YaP-Folia performance knobs and soak gates.
-Patch inventory: [`vendor/folia/patches/AGENT3.md`](../../vendor/folia/patches/AGENT3.md) ·
-[`AGENT4.md`](../../vendor/folia/patches/AGENT4.md).
+Patch inventory: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md) · cites: [REAL_GAINS.md](REAL_GAINS.md).
 
 ## Product defaults (ship) — what we cite
 

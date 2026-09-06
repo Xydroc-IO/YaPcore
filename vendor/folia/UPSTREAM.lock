@@ -2,7 +2,7 @@
 # Do not edit by hand; refresh with: ./scripts/vendor-folia.sh --update-lock
 REPO=https://github.com/PaperMC/Folia.git
 BRANCH=ver/26.2.x
-COMMIT=68b2af18edf378b89dfbef1d86bd21759cb81aad
+COMMIT=14b7fee5c866fca9a40ede4a58998fb928140f65
 MC_VERSION=26.2
-PINNED_AT=2026-08-24
-NOTE=HEAD of ver/26.2.x at pin time (Update Paper)
+PINNED_AT=2026-09-06
+NOTE=Update Paper

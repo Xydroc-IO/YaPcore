@@ -1,3 +1,7 @@
+From: YapLabs <folia@yaplabs.com>
+Date: Sun, 06 Sep 2026 01:32:37 +0000
+Subject: [PATCH] YaP-Folia branding (Brand-Id yaplabs:yap-folia)
+
 diff --git a/folia-server/build.gradle.kts.patch b/folia-server/build.gradle.kts.patch
 index 354dcc7..285ddab 100644
 --- a/folia-server/build.gradle.kts.patch

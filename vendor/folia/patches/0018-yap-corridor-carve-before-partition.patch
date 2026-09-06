@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP corridor carve before force-partition
 
 Relocate via region-local entities; abort with zero mutation if relocate fails.

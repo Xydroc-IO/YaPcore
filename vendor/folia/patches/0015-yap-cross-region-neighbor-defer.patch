@@ -1,4 +1,4 @@
-From: YaPcore Agent 3 <agent-3@yapcore>
+From: YapLabs <folia@yaplabs.com>
 Subject: [PATCH] YaP defer cross-region neighbor updates at shard borders
 
 Defer foreign-pos CollectingNeighborUpdater.addAndRun onto owning region
