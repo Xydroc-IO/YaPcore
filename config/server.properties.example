@@ -7,6 +7,8 @@ motd=YaPcore · Folia Game · Yap Edge
 port=25566
 bind-host=0.0.0.0
 max-players=300
+# Heap: chassis uses ram-mb; managed Folia uses ~ram-mb/2. Host needs ~1.5×ram-mb + Link + DB.
+# Profiles: 2048 dev · 4096 small public · 8000 typical prod · 12288 heavy (see docs/ops/TUNE.md#memory--ram)
 ram-mb=2048
 ram-min-mb=512
 view-distance=10

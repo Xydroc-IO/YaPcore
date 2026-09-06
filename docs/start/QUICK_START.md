@@ -10,7 +10,7 @@ plugin hunting — everything you need ships in the box.
 | Requirement | Notes |
 |-------------|--------|
 | **Java 25+** | YaP-Folia 26.2 needs JDK 25 at runtime |
-| **8 GB RAM** recommended | Default heap is 2 GB; raise `ram-mb` for production |
+| **8 GB host RAM** minimum recommended | Default `ram-mb=2048`; public/soft-launch often `4096`–`8000`. Full min/optimal tables: [TUNE.md § Memory / RAM](../ops/TUNE.md#memory--ram) |
 | **Docker** (optional) | Easiest path for MariaDB/Postgres — [YAPDB.md](../data/YAPDB.md) |
 | **Git** (source path only) | Or download a release zip — [RELEASES.md](RELEASES.md) |
 

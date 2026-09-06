@@ -310,6 +310,9 @@ agent-tools/
 docs/pre release*
 docs/pre-release-scratch*
 
+# Private internal assessments / lab briefs (never publish)
+/private/
+
 # Captured retail Xbox Login JWTs (never commit)
 src/test/resources/xbox/retail-chain.json
 /build/xbox-chain-capture.json

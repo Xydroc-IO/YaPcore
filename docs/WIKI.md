@@ -27,7 +27,7 @@ Browse by folder: [docs/README.md](README.md).
 | [COMMANDS.md](ops/COMMANDS.md) | Console and in-game commands |
 | [PERMISSIONS.md](ops/PERMISSIONS.md) | Permission nodes |
 | [WEB_DASHBOARD.md](ops/WEB_DASHBOARD.md) | Browser panel (`:8080`) |
-| [TUNE.md](ops/TUNE.md) | Config hub |
+| [TUNE.md](ops/TUNE.md) | Config hub · memory / `ram-mb` min & optimal |
 | [PRODUCTION_READY.md](ops/PRODUCTION_READY.md) | Phased soft-launch / ops-signed / soak-proven closeout |
 | [CODE_ELEGANCE_FOLLOWUP.md](ops/CODE_ELEGANCE_FOLLOWUP.md) | Post–500-line splits: DB, packages, tests |
 | [YAP_FOLIA_PATCHES.md](folia/YAP_FOLIA_PATCHES.md) | YaP-Folia ordered patch inventory + knobs |
