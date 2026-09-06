@@ -53,7 +53,27 @@ public final class KnobsListener implements Listener {
             event.setCancelled(true);
             return;
         }
+        int maxPerChunk = knobs.maxPerChunkOrZero();
+        if (maxPerChunk > 0) {
+            int already = countSameTypeExcluding(entity);
+            if (MobChunkCapPolicy.overLimit(already, maxPerChunk)) {
+                event.setCancelled(true);
+                return;
+            }
+        }
         applyMob(entity, knobs);
+    }
+
+    private static int countSameTypeExcluding(LivingEntity entity) {
+        var chunk = entity.getLocation().getChunk();
+        var type = entity.getType();
+        int n = 0;
+        for (Entity e : chunk.getEntities()) {
+            if (e != entity && e.getType() == type) {
+                n++;
+            }
+        }
+        return n;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

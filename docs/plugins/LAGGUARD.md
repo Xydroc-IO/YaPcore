@@ -55,6 +55,10 @@ Category caps are checked **before** the global `max-entities-per-chunk` ceiling
 `0` to disable that category. World multipliers apply to enabled category caps the same way as
 other per-chunk budgets. TNT still uses `max-primed-tnt-per-chunk` only.
 
+**Per-type (creeper = N) caps** live on the YaP Encyclopedia (`mobs.<type>.max-per-chunk` in
+`knobs.yml`) — Purpur-style gameplay surface — not LagGuard. Both can apply; encyclopedia
+cancels that type, LagGuard still enforces category/global ceilings. See [TUNE.md](../ops/TUNE.md).
+
 ### Piston / observer / minecart
 
 - **Pistons:** `BlockPistonExtendEvent` / `BlockPistonRetractEvent` cancelled when the chunk

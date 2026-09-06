@@ -14,6 +14,42 @@ without forking engines — see [MODULES_AND_API.md](../plugins/MODULES_AND_API.
 
 Tune does **not** replace the admin menu; they target different operators and lifecycles.
 
+## Memory / RAM
+
+YaPcore runs **two heaps** from one `ram-mb` knob in `config/server.properties`:
+
+| Process | Heap |
+|---------|------|
+| **YapEngine chassis** (`yapcore.jar`) | `-Xmx` = `ram-mb` |
+| **YaP-Folia** (managed game JVM) | `-Xmx` ≈ `ram-mb / 2` (floor 512 MB) |
+
+YaP Link (if used) is a **separate** JVM (~512 MB–1 GB). MariaDB/Postgres and the OS need their own headroom.
+
+**Rule of thumb:** plan host RAM for about **`1.5 × ram-mb` + ~1 GB Link + DB + OS**. Do not set `ram-mb` above roughly half to two-thirds of free host RAM, or the machine will swap and feel worse than a smaller heap.
+
+### `ram-mb` (JVM) — min and optimal
+
+| Profile | `ram-mb` | Folia heap (~½) | When |
+|---------|----------|-----------------|------|
+| **Minimum (dev / empty)** | `2048` (ship default) | ~1 GB | Local smoke, 0–5 players |
+| **Minimum (public-safe)** | `4096` | ~2 GB | Small lobby / light SMP |
+| **Optimal (soft-launch / normal network)** | `8000` | ~4 GB | Typical production starting point |
+| **Heavy / prod launcher** | `12288` (`./scripts/start-prod.sh`, override with `--heap-gb=N`) | ~6 GB | Busy Folia, farms, large plugin surface |
+
+Change live via dashboard **Server setup** (`ram-mb`) or edit `config/server.properties`, then restart. Pin equal Xms/Xmx with `jvm-heap-pin=true` (default on prod paths).
+
+### Host machine RAM
+
+| Profile | Host RAM | Notes |
+|---------|----------|--------|
+| **Minimum** | **8 GB** | Matches [QUICK_START.md](../start/QUICK_START.md); keep heap at 2–4 GB |
+| **Optimal** | **16–32 GB** | Comfortable for `ram-mb=8000` + Link + SQL |
+| **Busy multi-backend** | **32 GB+** | Extra Folia backends, maps, and DB cache |
+
+### Soak / bench note (not a host requirement)
+
+12h soak-proven runs recorded YaP-Folia heap medians roughly **~1.0–1.1 GB** under that load profile ([REAL_GAINS.md](../folia/REAL_GAINS.md) / soak logs). That shows the game JVM can sit well under a 4 GB Folia cap on light–moderate load — size up for player count, farms, and map plugins, not for idle soak alone.
+
 ## Layout
 
 | Path | Role |
@@ -74,6 +110,7 @@ YaP encyclopedia (`yap-gameplay-knobs.jar`) — **original YaP code**, Purpur-in
 | **Breeding / water / XP / loot** | Wired | Event hooks |
 | **Mob grief bypass** | Wired | `bypass-mob-griefing` + `projectiles-bypass-mob-griefing` |
 | **Per-mob specials** | Wired | creeper fuse/radius/charged; phantom daylight/torch/grief; bee rain/night; enderman↔endermite; wolf rabid/milk; zombie reinforcements |
+| **Per-type chunk density** | Wired | `mobs.<type>.max-per-chunk` — Purpur-style cap; unset/`0` = off; counts entity instances (stacked = 1). Requires `settings.enabled: true`. LagGuard category caps and Folia entity-tick-budget stay complementary |
 | **Blocks** | Wired | barrel rows, anvil cost, beehive max bees, crying-obsidian portal, lightning-rod range, bed explode |
 | **gameplay.*** | Wired / Partial | blindness×, void fix, netherite fire resist, totem-in-void, crop slow via `BlockGrowEvent`; `tick-fluids` + fast crops need **E2 NMS** |
 | **server-mod-name** | Wired | Best-effort brand / `yap.encyclopedia.server-mod-name` |
@@ -115,6 +152,7 @@ mobs:
       disable-panic: true
       remove-goals: [PANIC]
   creeper:
+    # max-per-chunk: 8   # optional density; omit for vanilla
     explosion-radius: 3.0
     max-fuse-ticks: 30
 ```

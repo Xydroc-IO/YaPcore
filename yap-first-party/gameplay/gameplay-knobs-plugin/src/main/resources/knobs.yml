@@ -1,6 +1,7 @@
 # YaP Encyclopedia — Purpur-inspired mob/gameplay surface (original YaP code, not a Purpur port).
 # Not affiliated with PurpurMC.
-# Wired: WASD ridables (+ yapknobs.ride.<mob>), attributes, AI, blocks, gameplay.*, per-mob specials.
+# Wired: WASD ridables (+ yapknobs.ride.<mob>), attributes, AI, blocks, gameplay.*, per-mob specials,
+#        max-per-chunk (optional Purpur-style per-type density; unset = off).
 # E2 NMS (YaP-Folia patch 0025): gameplay.crop-growth-nms + tick-fluids via YapEncyclopediaHooks.
 # Defaults OFF/vanilla — not "full Purpur" without rebuilding YaP-Folia with 0025.
 # /yapknobs status shows nmsHooks present=true|false.
@@ -9,6 +10,10 @@
 # attributes (any present key applied on spawn/load/reload):
 #   max_health, scale, movement_speed, attack_damage, attack_knockback, armor,
 #   armor_toughness, follow_range, knockback_resistance, flying_speed, spawn_reinforcements, …
+#
+# Per-mob density (optional):
+#   max-per-chunk: 8   # cancel further spawns of this type in the chunk; omit/0 = off
+#   Counts entity instances (a stacked mob entity = 1). LagGuard category caps still apply.
 #
 # Per-mob AI example:
 #   ai:
@@ -343,6 +348,7 @@ mobs:
     always-drop-exp: false
     can-pick-up-loot: default
     breeding-delay-ticks: 6000
+    # max-per-chunk: 8   # optional — leave unset for vanilla density
     explosion-radius: 3.0
     max-fuse-ticks: 30
     charged: false

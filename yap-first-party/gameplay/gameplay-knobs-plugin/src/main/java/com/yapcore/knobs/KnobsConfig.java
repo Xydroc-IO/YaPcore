@@ -31,6 +31,8 @@ public final class KnobsConfig {
             int breedingDelayTicks,
             boolean retaliate,
             boolean bypassMobGriefing,
+            /** Null or {@code <= 0} = no per-chunk spawn cap. */
+            Integer maxPerChunk,
             Map<String, Double> attributes,
             boolean aware,
             boolean disableAi,
@@ -46,6 +48,11 @@ public final class KnobsConfig {
 
         public boolean hasAttr(String key) {
             return attributes.containsKey(key.toLowerCase(Locale.ROOT));
+        }
+
+        /** Effective cap; {@code 0} means off. */
+        public int maxPerChunkOrZero() {
+            return maxPerChunk == null || maxPerChunk <= 0 ? 0 : maxPerChunk;
         }
     }
 
@@ -206,6 +213,10 @@ public final class KnobsConfig {
                 List<String> remove = ai != null ? ai.getStringList("remove-goals") : List.of();
                 MobSpecials specials = MobSpecials.from(m);
                 specialsWired += specials.wiredCount();
+                Integer maxPerChunk = m.contains("max-per-chunk") ? m.getInt("max-per-chunk") : null;
+                if (maxPerChunk != null && maxPerChunk <= 0) {
+                    maxPerChunk = null;
+                }
                 mobs.put(key.toLowerCase(Locale.ROOT), new MobKnobs(
                         m.getBoolean("enabled", true),
                         m.getBoolean("ridable", false),
@@ -218,6 +229,7 @@ public final class KnobsConfig {
                         m.getInt("breeding-delay-ticks", 6000),
                         m.getBoolean("retaliate", true),
                         m.getBoolean("bypass-mob-griefing", false),
+                        maxPerChunk,
                         Collections.unmodifiableMap(attrs),
                         ai == null || ai.getBoolean("aware", true),
                         ai != null && ai.getBoolean("disable-ai", false),
