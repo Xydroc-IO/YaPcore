@@ -22,6 +22,15 @@ dependencies {
     implementation(project(":yap-sched"))
     compileOnly(project(":yap-regions-api"))
     compileOnly(project(":playerdata-plugin"))
+
+    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.papermc.paper:paper-api:$paperApi")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.jar {

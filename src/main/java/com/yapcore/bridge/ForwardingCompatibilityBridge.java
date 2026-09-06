@@ -6,8 +6,15 @@ import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 /**
- * Forwards legacy Spigot-compat mutations into the YapEngine Compatibility Bridge
- * so they execute on spatial tick boundaries with SequenceTokens.
+ * Production Compatibility Bridge: product API surface that forwards into
+ * {@link com.yaplabs.yapengine.bridge.CompatibilityBridge} so mutations run on
+ * spatial tick boundaries with SequenceTokens.
+ *
+ * <p>Created by {@link com.yapcore.YaPcoreEngine}; prefer
+ * {@link com.yapcore.YaPcoreEngine#bridge()} over constructing this directly.
+ * {@link #start()}/{@link #stop()} are intentional no-ops — the chassis owns
+ * the bridge thread. When the chassis supplier returns null, falls back to the
+ * thin base {@link CompatibilityBridge#submitLegacyMutation} (immediate exec).
  */
 public final class ForwardingCompatibilityBridge extends CompatibilityBridge {
 

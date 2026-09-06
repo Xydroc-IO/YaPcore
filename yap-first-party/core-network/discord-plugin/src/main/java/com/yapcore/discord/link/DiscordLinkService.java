@@ -187,6 +187,7 @@ public final class DiscordLinkService {
             name = link.mcUuid().toString();
         }
         syncRolesIfPresent(link.mcUuid(), name, link.discordId());
+        syncFactionDiscordRole(link.mcUuid());
         return true;
     }
 
@@ -235,6 +236,7 @@ public final class DiscordLinkService {
             repository.upsert(link);
             syncRolesIfPresent(pending.mcUuid(), pending.playerName(), discordId);
             syncNicknameIfPresent(pending.mcUuid(), pending.playerName(), discordId);
+            syncFactionDiscordRole(pending.mcUuid());
             notifyPlayerLinked(pending.mcUuid(), discordId);
             return LinkResult.ok(pending.playerName(), pending.mcUuid());
         } catch (SQLException e) {
@@ -250,6 +252,21 @@ public final class DiscordLinkService {
                 player.sendMessage("§aDiscord linked §7(id §f" + discordId + "§7).");
             }
         });
+    }
+
+    /**
+     * Soft-hook YaPFactions: if the linked player is in a faction with a mapped Discord role, grant it.
+     */
+    private void syncFactionDiscordRole(UUID mcUuid) {
+        try {
+            Class.forName("com.yapcore.factions.integration.FactionPerkIntegration")
+                    .getMethod("syncDiscordRoleForLinkedPlayer", UUID.class)
+                    .invoke(null, mcUuid);
+        } catch (ClassNotFoundException e) {
+            // YaPFactions not on classpath
+        } catch (ReflectiveOperationException e) {
+            plugin.getLogger().fine("faction discord role sync on link skipped: " + e.getMessage());
+        }
     }
 
     /**

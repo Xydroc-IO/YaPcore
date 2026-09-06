@@ -1,11 +1,10 @@
 package com.yapcore.plugin;
 
 import com.yapcore.bridge.CompatibilityBridge;
-import com.yapcore.core.GameCore;
+import com.yapcore.core.InventoryMutationCounter;
 import com.yapcore.model.GameEvent;
 import com.yapcore.util.ThreadMetrics;
 
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -29,16 +28,16 @@ public final class PluginSandboxPool {
     private final ExecutorService highSpeedPool;
     private final ExecutorService heavyIoPool;
     private final CompatibilityBridge bridge;
-    private final GameCore gameCore;
+    private final InventoryMutationCounter inventoryMutations;
     private final AtomicLong uiTasks = new AtomicLong();
     private final AtomicLong ioTasks = new AtomicLong();
 
-    // Simulated player balances for the store demo
+    // Simulated player balances for the store demo path
     private final AtomicLong demoBalanceCents = new AtomicLong(5_000);
 
-    public PluginSandboxPool(CompatibilityBridge bridge, GameCore gameCore) {
+    public PluginSandboxPool(CompatibilityBridge bridge, InventoryMutationCounter inventoryMutations) {
         this.bridge = bridge;
-        this.gameCore = gameCore;
+        this.inventoryMutations = inventoryMutations;
         this.highSpeedPool = Executors.newFixedThreadPool(2, uiFactory());
         this.heavyIoPool = Executors.newFixedThreadPool(4, ioFactory());
     }
@@ -75,7 +74,7 @@ public final class PluginSandboxPool {
 
     /**
      * High-speed GUI click / store routing. Database verification is offloaded
-     * to the Heavy I/O pool so UI and GameCore never block.
+     * to the Heavy I/O pool so UI and the game tick never block.
      */
     public void handleGuiEvent(GameEvent event) {
         String item = event.payload("item");
@@ -129,10 +128,10 @@ public final class PluginSandboxPool {
                         "StorePlugin",
                         "addItem:" + sku + "->" + player,
                         () -> {
-                            gameCore.inventoryMutationCounter().incrementAndGet();
-                            LOG.info(() -> "GameCore applied inventory add: "
+                            inventoryMutations.inventoryMutationCounter().incrementAndGet();
+                            LOG.info(() -> "Inventory applied: "
                                     + sku + " for " + player
-                                    + " (mutations=" + gameCore.getInventoryMutations() + ")");
+                                    + " (mutations=" + inventoryMutations.getInventoryMutations() + ")");
                         });
 
                 // UI confirmation back on high-speed pool
@@ -170,16 +169,6 @@ public final class PluginSandboxPool {
 
     public long getDemoBalanceCents() {
         return demoBalanceCents.get();
-    }
-
-    /** Demo helper to seed a store click through the same path TrafficCop uses. */
-    public Map<String, String> demoStorePayload(String item, String slot) {
-        return Map.of(
-                "item", item,
-                "slot", slot,
-                "action", "buy",
-                "page", "1"
-        );
     }
 
     private static ThreadFactory uiFactory() {

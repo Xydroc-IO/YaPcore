@@ -14,14 +14,23 @@ class MeshEncoderTest {
     @Test
     void encodeDecodeRoundTrip() {
         int[] packed = {1, 64, 2, 1, 1, 1, 0x5f9f35, 3, 65, 4, 2, 1, 1, 0x7d7d7d};
+        // Use milliblock values as produced by the mesher
+        packed = new int[] {
+                MeshUnits.ofBlocks(1), MeshUnits.ofBlocks(64), MeshUnits.ofBlocks(2),
+                MeshUnits.UNIT, MeshUnits.UNIT, MeshUnits.UNIT, 0x5f9f35,
+                MeshUnits.ofBlocks(3), MeshUnits.ofBlocks(65), MeshUnits.ofBlocks(4),
+                MeshUnits.ofBlocks(2), MeshUnits.UNIT, MeshUnits.UNIT, 0x7d7d7d
+        };
         ChunkMeshData data = ChunkMeshData.boxes(5, -3, packed);
         String json = MeshEncoder.encode(data);
         assertTrue(json.contains("\"v\":2"));
+        assertTrue(json.contains("\"u\":1000"));
         assertTrue(json.contains("\"cx\":5"));
         assertTrue(json.contains("\"cz\":-3"));
         assertTrue(json.contains("\"n\":2"));
         assertEquals(2, MeshEncoder.parseBlockCount(json));
         assertEquals(2, MeshEncoder.parseFormatVersion(json));
+        assertEquals(1000, MeshEncoder.parseUnit(json));
 
         ChunkMeshData decoded = MeshEncoder.decode(json);
         assertEquals(5, decoded.chunkX());
@@ -44,16 +53,26 @@ class MeshEncoderTest {
 
     @Test
     void writeChunkAndManifest(@TempDir Path tempDir) throws Exception {
-        ChunkMeshData a = ChunkMeshData.boxes(0, 0, new int[] {0, 64, 0, 1, 1, 1, 0x111111});
+        ChunkMeshData a = ChunkMeshData.boxes(0, 0, new int[] {
+                0, MeshUnits.ofBlocks(64), 0, MeshUnits.UNIT, MeshUnits.UNIT, MeshUnits.UNIT, 0x111111});
         ChunkMeshData b = ChunkMeshData.boxes(1, 0, new int[] {
-                1, 65, 1, 1, 1, 1, 0x222222, 2, 66, 2, 1, 1, 1, 0x333333});
-        Path pathA = MeshEncoder.writeChunk(tempDir, "world", MapLayerSampler.LAYER_FULL, a);
-        Path pathB = MeshEncoder.writeChunk(tempDir, "world", MapLayerSampler.LAYER_FULL, b);
+                MeshUnits.UNIT, MeshUnits.ofBlocks(65), MeshUnits.UNIT,
+                MeshUnits.UNIT, MeshUnits.UNIT, MeshUnits.UNIT, 0x222222,
+                MeshUnits.ofBlocks(2), MeshUnits.ofBlocks(66), MeshUnits.ofBlocks(2),
+                MeshUnits.UNIT, MeshUnits.UNIT, MeshUnits.UNIT, 0x333333});
+        Path pathA = MeshEncoder.writeChunk(tempDir, "world", MapLayerSampler.LAYER_FULL, 0, a, true);
+        Path pathB = MeshEncoder.writeChunk(tempDir, "world", MapLayerSampler.LAYER_FULL, 0, b, true);
         assertTrue(Files.isRegularFile(pathA));
-        assertTrue(pathA.toString().endsWith("world/full/0_0.json"));
+        assertTrue(pathA.toString().endsWith("world/full/lod0/0_0.json"));
         assertTrue(Files.isRegularFile(pathB));
+        assertTrue(Files.isRegularFile(
+                MeshEncoder.meshBinaryPath(tempDir, "world", MapLayerSampler.LAYER_FULL, 0, 0, 0)));
 
-        Path manifest = MeshEncoder.writeManifest(tempDir, "world", MapLayerSampler.LAYER_FULL, 10, 20, 8);
+        MeshEncoder.writeChunkLods(tempDir, "world", MapLayerSampler.LAYER_FULL, a, 2, true);
+        assertTrue(Files.isDirectory(MeshEncoder.lodDir(tempDir, "world", MapLayerSampler.LAYER_FULL, 1)));
+        assertTrue(Files.isDirectory(MeshEncoder.lodDir(tempDir, "world", MapLayerSampler.LAYER_FULL, 2)));
+
+        Path manifest = MeshEncoder.writeManifest(tempDir, "world", MapLayerSampler.LAYER_FULL, 10, 20, 8, 2);
         assertTrue(Files.isRegularFile(manifest));
         String body = Files.readString(manifest);
         assertTrue(body.contains("\"world\":\"world\""));
@@ -61,7 +80,9 @@ class MeshEncoderTest {
         assertTrue(body.contains("\"originChunkX\":10"));
         assertTrue(body.contains("\"originChunkZ\":20"));
         assertTrue(body.contains("\"radius\":8"));
-        assertTrue(body.contains("\"file\":\"0_0.json\""));
+        assertTrue(body.contains("\"maxLod\":2"));
+        assertTrue(body.contains("\"file\":\"lod0/0_0.json\""));
+        assertTrue(body.contains("\"ymesh\":\"lod0/0_0.ymesh\""));
         assertTrue(body.contains("\"blocks\":1"));
         assertTrue(body.contains("\"blocks\":2"));
     }

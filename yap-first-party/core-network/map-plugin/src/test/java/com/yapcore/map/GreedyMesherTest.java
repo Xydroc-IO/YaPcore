@@ -60,11 +60,11 @@ class GreedyMesherTest {
         assertEquals(1, data.blockCount());
         int[] p = data.packed();
         assertEquals(0, p[0]);
-        assertEquals(64, p[1]);
+        assertEquals(MeshUnits.ofBlocks(64), p[1]);
         assertEquals(0, p[2]);
-        assertEquals(4, p[3]);
-        assertEquals(4, p[4]);
-        assertEquals(4, p[5]);
+        assertEquals(MeshUnits.ofBlocks(4), p[3]);
+        assertEquals(MeshUnits.ofBlocks(4), p[4]);
+        assertEquals(MeshUnits.ofBlocks(4), p[5]);
         assertEquals(0x5f9f35, p[6]);
         assertEquals(1, data.chunkX());
         assertEquals(2, data.chunkZ());

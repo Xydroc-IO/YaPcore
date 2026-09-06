@@ -25,6 +25,15 @@ dependencies {
     compileOnly(project(":yap-perms-api"))
     compileOnly(project(":yap-mmo-api"))
     compileOnly(project(":yap-playerdata-api"))
+
+    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.papermc.paper:paper-api:$paperApi")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.shadowJar {

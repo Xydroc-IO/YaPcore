@@ -117,7 +117,8 @@ public final class PacksPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    private static String resolvePrompt(String prompt) {
+    /** Package-visible for unit tests (prompt fallbacks). */
+    static String resolvePrompt(String prompt) {
         if (prompt == null || prompt.isBlank()) {
             return "This server offers additional resource packs. Click Yes to download.";
         }
@@ -194,10 +195,12 @@ public final class PacksPlugin extends JavaPlugin implements Listener {
         return true;
     }
 
-    private record PackEntry(String file, String url, String sha1, UUID uuid) {
+    /** Package-visible for active.json parse unit tests. */
+    record PackEntry(String file, String url, String sha1, UUID uuid) {
     }
 
-    private record Manifest(boolean enabled, boolean forced, String prompt, List<PackEntry> packs) {
+    /** Package-visible for active.json parse unit tests. */
+    record Manifest(boolean enabled, boolean forced, String prompt, List<PackEntry> packs) {
         static Manifest empty() {
             return new Manifest(true, false, "", List.of());
         }

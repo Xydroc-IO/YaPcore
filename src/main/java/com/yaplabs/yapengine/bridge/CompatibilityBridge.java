@@ -10,8 +10,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 /**
- * Thread 9 — Compatibility Bridge.
- * Batches legacy plugin API mutations; drained at spatial tick end in µs order.
+ * Chassis Compatibility Bridge (Thread 9).
+ * Batches legacy plugin API mutations; drained at spatial tick end in µs
+ * SequenceToken order by spatial loops.
+ *
+ * <p>Owned by {@link com.yaplabs.yapengine.YapEngine}. Product callers use
+ * {@link com.yapcore.YaPcoreEngine#bridge()} /
+ * {@link com.yapcore.bridge.ForwardingCompatibilityBridge} rather than this
+ * type directly.
  */
 public final class CompatibilityBridge implements Runnable {
 

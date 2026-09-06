@@ -35,6 +35,7 @@ public final class PluginConfigCatalog {
                 e("yap-lagguard", "YaPLagGuard", "YaPLagGuard", "config.yml", "yap-lagguard", "yaplagguard reload"),
                 e("yap-map", "YaPMap", "YaPMap", "config.yml", "yap-map", "yapmap reload"),
                 e("yap-factions", "YaPFactions", "YaPFactions", "config.yml", "yap-factions", "yapfactions reload"),
+                e("yap-conquest", "YaPConquest", "YaPConquest", "config.yml", "yap-conquest", "yapconquest reload"),
                 e("yap-db", "YaPDB", "YaPDB", "config.yml", "yap-db", "yapdb reload"),
                 e("yap-pregen", "YaPPregen", "YaPPregen", "config.yml", "yap-pregen", ""),
                 e("yap-placeholderapi", "PlaceholderAPI", "PlaceholderAPI", "config.yml", "placeholderapi", "placeholderapi reload"),

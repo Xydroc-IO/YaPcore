@@ -1,11 +1,7 @@
 package com.yapcore.playerdata.claims;
 
-import com.yapcore.factions.FactionService;
-import com.yapcore.factions.FactionServices;
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.ClaimRepository;
-import com.yapcore.regions.FlagValue;
-import com.yapcore.regions.RegionFlag;
 import com.yapcore.sched.StaffBypass;
 import com.yapcore.sched.YapSched;
 import com.yapcore.sched.YapTask;
@@ -47,6 +43,7 @@ public final class ClaimService {
     private final Map<Long, Map<UUID, ClaimRepository.TrustLevel>> trustCache = new ConcurrentHashMap<>();
     private YapTask accrualTask;
     private final ClaimCreationOps creation;
+    private final ClaimAccessOps access;
 
     public ClaimService(JavaPlugin plugin, PlayerDataConfig config, ClaimRepository repo,
                         ClaimFlagService flags) {
@@ -61,6 +58,7 @@ public final class ClaimService {
         this.flags = flags;
         this.messages = messages;
         this.creation = new ClaimCreationOps(this);
+        this.access = new ClaimAccessOps(this);
     }
 
     public ClaimFlagService flags() {
@@ -218,272 +216,79 @@ public final class ClaimService {
     }
 
     public boolean canBuild(Player player, Location loc) {
-        if (!config.claimsEnabled()) {
-            return true;
-        }
-        if (StaffBypass.land(player)) {
-            return true;
-        }
-        Optional<Claim> claim = getAt(loc);
-        if (claim.isEmpty()) {
-            return !config.claimsRequireClaimToBuild() || player.hasPermission("yapdata.claims.wilderness");
-        }
-        Claim c = claim.get();
-        Optional<Boolean> factionBuild = factionBuildOverride(player, c);
-        if (factionBuild.isPresent()) {
-            return factionBuild.get();
-        }
-        if (!flagAllowsBuild(c, player)) {
-            return false;
-        }
-        if (c.taxFrozen()) {
-            return false;
-        }
-        Claim check = c;
-        if (c.isSubdivision()) {
-            // parent frozen freezes subs
-            Optional<Claim> parent = getTopLevelAt(loc);
-            if (parent.isPresent() && parent.get().taxFrozen()) {
-                return false;
-            }
-        }
-        return hasTrust(check, player.getUniqueId(), ClaimRepository.TrustLevel.BUILD);
+        return access.canBuild(player, loc);
     }
 
     public boolean canAccess(Player player, Location loc) {
-        if (!config.claimsEnabled()) {
-            return true;
-        }
-        if (StaffBypass.land(player)) {
-            return true;
-        }
-        Optional<Claim> claim = getAt(loc);
-        if (claim.isEmpty()) {
-            return true;
-        }
-        if (claim.get().taxFrozen() && !claim.get().owner().equals(player.getUniqueId())) {
-            return false;
-        }
-        if (!flagAllowsInteract(claim.get(), player)) {
-            return false;
-        }
-        return hasTrust(claim.get(), player.getUniqueId(), ClaimRepository.TrustLevel.ACCESS);
+        return access.canAccess(player, loc);
     }
 
     public boolean canEnter(Player player, Location loc) {
-        if (!config.claimsEnabled() || StaffBypass.land(player)) {
-            return true;
-        }
-        Optional<Claim> claim = getAt(loc);
-        if (claim.isEmpty()) {
-            return true;
-        }
-        FlagValue entry = flags.resolveOrDefault(claim.get().id(), RegionFlag.ENTRY);
-        if (entry == FlagValue.ALLOW) {
-            return true;
-        }
-        return hasTrust(claim.get(), player.getUniqueId(), ClaimRepository.TrustLevel.ACCESS);
+        return access.canEnter(player, loc);
     }
 
     public boolean isPvpAllowed(Player attacker, Player victim) {
-        if (!config.claimsEnabled()) {
-            return true;
-        }
-        var claim = getAt(victim.getLocation());
-        if (claim.isEmpty()) {
-            return true;
-        }
-        Optional<Boolean> factionPvp = factionPvpOverride(attacker, victim, claim.get().id());
-        if (factionPvp.isPresent()) {
-            return factionPvp.get();
-        }
-        FlagValue pvp = flags.resolveOrDefault(claim.get().id(), RegionFlag.PVP);
-        if (pvp == FlagValue.DENY) {
-            return StaffBypass.land(attacker)
-                    || hasTrust(claim.get(), attacker.getUniqueId(), ClaimRepository.TrustLevel.BUILD);
-        }
-        return true;
-    }
-
-    private Optional<Boolean> factionBuildOverride(Player player, Claim claim) {
-        Optional<FactionService> factions = FactionServices.find();
-        if (factions.isEmpty()) {
-            return Optional.empty();
-        }
-        return factions.get().evaluateBuild(player, claim.id(), claim.owner());
-    }
-
-    private Optional<Boolean> factionPvpOverride(Player attacker, Player victim, long claimId) {
-        Optional<FactionService> factions = FactionServices.find();
-        if (factions.isEmpty()) {
-            return Optional.empty();
-        }
-        return factions.get().evaluatePvp(attacker, victim, claimId);
+        return access.isPvpAllowed(attacker, victim);
     }
 
     public boolean isMobDamageAllowed(org.bukkit.entity.Player victim) {
-        if (!config.claimsEnabled()) {
-            return true;
-        }
-        var claim = getAt(victim.getLocation());
-        if (claim.isEmpty()) {
-            return true;
-        }
-        return flags.resolveOrDefault(claim.get().id(), RegionFlag.MOB_DAMAGE) == FlagValue.ALLOW;
+        return access.isMobDamageAllowed(victim);
     }
 
     public boolean isFireSpreadAllowed(Location loc) {
-        if (!config.claimsEnabled()) {
-            return true;
-        }
-        var claim = getAt(loc);
-        if (claim.isEmpty()) {
-            return true;
-        }
-        return flags.resolveOrDefault(claim.get().id(), RegionFlag.FIRE_SPREAD) == FlagValue.ALLOW;
+        return access.isFireSpreadAllowed(loc);
     }
 
     public boolean isMobSpawningAllowed(Location loc) {
-        if (!config.claimsEnabled()) {
-            return true;
-        }
-        var claim = getAt(loc);
-        if (claim.isEmpty()) {
-            return true;
-        }
-        return flags.resolveOrDefault(claim.get().id(), RegionFlag.MOB_SPAWNING) == FlagValue.ALLOW;
+        return access.isMobSpawningAllowed(loc);
     }
 
     public boolean canDropItems(Player player, Location loc) {
-        if (!config.claimsEnabled()) {
-            return true;
-        }
-        Optional<Claim> claim = getAt(loc);
-        if (claim.isEmpty()) {
-            return true;
-        }
-        FlagValue drop = flags.resolveOrDefault(claim.get().id(), RegionFlag.ITEM_DROP);
-        return ClaimFlagDecision.allowPlayerAction(
-                drop, StaffBypass.land(player),
-                hasTrust(claim.get(), player.getUniqueId(), ClaimRepository.TrustLevel.ACCESS));
+        return access.canDropItems(player, loc);
     }
 
     public boolean canPickupItems(Player player, Location loc) {
-        if (!config.claimsEnabled()) {
-            return true;
-        }
-        Optional<Claim> claim = getAt(loc);
-        if (claim.isEmpty()) {
-            return true;
-        }
-        FlagValue pickup = flags.resolveOrDefault(claim.get().id(), RegionFlag.ITEM_PICKUP);
-        return ClaimFlagDecision.allowPlayerAction(
-                pickup, StaffBypass.land(player),
-                hasTrust(claim.get(), player.getUniqueId(), ClaimRepository.TrustLevel.ACCESS));
+        return access.canPickupItems(player, loc);
     }
 
     public boolean isTntAllowed(Location loc) {
-        if (!config.claimsEnabled()) {
-            return true;
-        }
-        var claim = getAt(loc);
-        if (claim.isEmpty()) {
-            return true;
-        }
-        return ClaimFlagDecision.allowExplosion(
-                flags.resolveOrDefault(claim.get().id(), RegionFlag.TNT));
+        return access.isTntAllowed(loc);
     }
 
     public boolean isCreeperExplosionAllowed(Location loc) {
-        if (!config.claimsEnabled()) {
-            return true;
-        }
-        var claim = getAt(loc);
-        if (claim.isEmpty()) {
-            return true;
-        }
-        return ClaimFlagDecision.allowExplosion(
-                flags.resolveOrDefault(claim.get().id(), RegionFlag.CREEPER_EXPLOSION));
-    }
-
-    private boolean flagAllowsBuild(Claim claim, Player player) {
-        var explicit = flags.explicit(claim.id(), RegionFlag.BUILD);
-        if (explicit.isPresent() && explicit.get() == FlagValue.DENY) {
-            return false;
-        }
-        if (explicit.isPresent() && explicit.get() == FlagValue.ALLOW) {
-            return hasTrust(claim, player.getUniqueId(), ClaimRepository.TrustLevel.BUILD);
-        }
-        return true;
-    }
-
-    private boolean flagAllowsInteract(Claim claim, Player player) {
-        var explicit = flags.explicit(claim.id(), RegionFlag.INTERACT);
-        if (explicit.isPresent() && explicit.get() == FlagValue.DENY) {
-            return false;
-        }
-        return true;
+        return access.isCreeperExplosionAllowed(loc);
     }
 
     public boolean canOpenContainer(Player player, Location loc) {
-        if (!canAccess(player, loc)) {
-            return false;
+        return access.canOpenContainer(player, loc);
+    }
+
+    /** Used by YaPFactions upkeep when a linked claim cannot pay. */
+    public void setTaxFrozen(long claimId, boolean frozen) {
+        for (Claim claim : local) {
+            if (claim.id() == claimId) {
+                claim.setTaxFrozen(frozen);
+                try {
+                    repo.setTax(claimId, claim.taxDue(), frozen);
+                } catch (SQLException e) {
+                    plugin.getLogger().log(Level.WARNING, "setTaxFrozen " + claimId, e);
+                }
+                return;
+            }
         }
-        Optional<Claim> claim = getAt(loc);
-        if (claim.isEmpty()) {
-            return true;
+        try {
+            Optional<Claim> loaded = repo.get(claimId);
+            if (loaded.isPresent()) {
+                Claim claim = loaded.get();
+                repo.setTax(claimId, claim.taxDue(), frozen);
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "setTaxFrozen " + claimId, e);
         }
-        FlagValue chest = flags.resolveOrDefault(claim.get().id(), RegionFlag.CHEST_ACCESS);
-        if (chest == FlagValue.DENY) {
-            return false;
-        }
-        return hasTrust(claim.get(), player.getUniqueId(), ClaimRepository.TrustLevel.ACCESS);
     }
 
     public boolean hasTrust(Claim claim, UUID player, ClaimRepository.TrustLevel needed) {
-        if (claim.owner().equals(player)) {
-            return true;
-        }
-        // subclaim trust first; fall back to parent trust
-        Map<UUID, ClaimRepository.TrustLevel> map = trustCache.computeIfAbsent(claim.id(), id -> {
-            try {
-                return new ConcurrentHashMap<>(repo.trustMap(id));
-            } catch (SQLException e) {
-                return new ConcurrentHashMap<>();
-            }
-        });
-        ClaimRepository.TrustLevel level = map.get(player);
-        if (level != null && level.atLeast(needed)) {
-            return true;
-        }
-        if (claim.isSubdivision()) {
-            try {
-                Optional<Claim> parent = repo.get(claim.parentId());
-                if (parent.isPresent() && parent.get().owner().equals(player)) {
-                    return true;
-                }
-                if (parent.isPresent()) {
-                    return hasTrustDirect(parent.get(), player, needed);
-                }
-            } catch (SQLException ignored) {
-            }
-        }
-        return false;
-    }
-
-    private boolean hasTrustDirect(Claim claim, UUID player, ClaimRepository.TrustLevel needed) {
-        if (claim.owner().equals(player)) {
-            return true;
-        }
-        Map<UUID, ClaimRepository.TrustLevel> map = trustCache.computeIfAbsent(claim.id(), id -> {
-            try {
-                return new ConcurrentHashMap<>(repo.trustMap(id));
-            } catch (SQLException e) {
-                return new ConcurrentHashMap<>();
-            }
-        });
-        ClaimRepository.TrustLevel level = map.get(player);
-        return level != null && level.atLeast(needed);
+        return access.hasTrust(claim, player, needed);
     }
 
     public void invalidateTrust(long claimId) {
@@ -556,5 +361,9 @@ public final class ClaimService {
 
     java.util.Map<UUID, SelectMode> modesMutable() {
         return modes;
+    }
+
+    Map<Long, Map<UUID, ClaimRepository.TrustLevel>> trustCacheMutable() {
+        return trustCache;
     }
 }

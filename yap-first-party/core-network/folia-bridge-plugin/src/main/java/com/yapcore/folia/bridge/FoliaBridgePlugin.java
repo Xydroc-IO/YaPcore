@@ -25,7 +25,7 @@ public final class FoliaBridgePlugin extends JavaPlugin {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!"yapbridge".equalsIgnoreCase(command.getName())) {
+        if (!FoliaBridgeMeta.STATUS_COMMAND.equalsIgnoreCase(command.getName())) {
             return false;
         }
         sender.sendMessage("YaP Folia bridge OK | server=" + getServer().getName()

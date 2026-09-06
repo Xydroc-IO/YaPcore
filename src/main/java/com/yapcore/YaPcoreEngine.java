@@ -2,6 +2,7 @@ package com.yapcore;
 
 import com.yapcore.bridge.ForwardingCompatibilityBridge;
 import com.yapcore.console.ConsoleBus;
+import com.yapcore.core.InventoryMutationCounter;
 import com.yapcore.model.GameEvent;
 import com.yapcore.network.TrafficCop;
 import com.yapcore.plugin.PluginSandboxPool;
@@ -19,8 +20,17 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 /**
- * YaPcore facade over the YapLabs slim-chassis {@link YapEngine}.
- * Folia (embedded child JVM) owns game tick on the product path.
+ * Stable product entry over the YapLabs chassis {@link YapEngine}.
+ *
+ * <p>Prefer this type for boot, lifecycle, {@link #bridge()} (a
+ * {@link ForwardingCompatibilityBridge}), product {@link TrafficCop}, and
+ * dual-stack relay — not constructing {@link YapEngine} or a bare
+ * {@link com.yapcore.bridge.CompatibilityBridge} at call sites. Folia
+ * (embedded child JVM) owns game tick on the product path; chassis spatial /
+ * SequenceToken work stays under {@code com.yaplabs.yapengine}.
+ *
+ * @see com.yaplabs.yapengine.YapEngine
+ * @see com.yapcore.bridge.ForwardingCompatibilityBridge
  */
 public final class YaPcoreEngine {
 
@@ -41,7 +51,7 @@ public final class YaPcoreEngine {
     }
 
     public YaPcoreEngine(int port) {
-        CoreOpsAdapter coreOps = new CoreOpsAdapter();
+        InventoryMutationCounter coreOps = new CoreOpsAdapter();
         this.pluginPool = new PluginSandboxPool(facadeBridge, coreOps);
         this.trafficCop = new TrafficCop(eventStream, pluginPool, port, false);
     }
@@ -113,11 +123,6 @@ public final class YaPcoreEngine {
         return pluginPool;
     }
 
-    public boolean runLifecycleDemo() throws InterruptedException {
-        LOG.info("--- Lifecycle demo via YapEngine (UI → Heavy → Bridge → Spatial Core) ---");
-        return yapEngine.runItemClickSimulation();
-    }
-
     private void relayLoop() {
         while (!Thread.currentThread().isInterrupted() && yapEngine.isRunning()) {
             GameEvent event = eventStream.poll();
@@ -166,18 +171,10 @@ public final class YaPcoreEngine {
         public long getInventoryMutations() {
             return core.getInventoryOps();
         }
-
-        public AtomicLong inventoryMutationCounter() {
-            return new AtomicLong(core.getInventoryOps());
-        }
     }
 
-    private final class CoreOpsAdapter extends com.yapcore.core.GameCore {
+    private final class CoreOpsAdapter implements InventoryMutationCounter {
         private final AtomicLong mutations = new AtomicLong();
-
-        CoreOpsAdapter() {
-            super(new ConcurrentLinkedQueue<>(), facadeBridge);
-        }
 
         @Override
         public long getInventoryMutations() {
@@ -187,14 +184,6 @@ public final class YaPcoreEngine {
         @Override
         public AtomicLong inventoryMutationCounter() {
             return mutations;
-        }
-
-        @Override
-        public void start() {
-        }
-
-        @Override
-        public void stop() {
         }
     }
 }

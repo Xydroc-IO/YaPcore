@@ -22,6 +22,15 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-worldedit-compat"))
     compileOnly(project(":yap-world-api"))
+
+    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.papermc.paper:paper-api:$paperApi")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.shadowJar {

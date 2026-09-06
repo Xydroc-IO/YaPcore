@@ -43,10 +43,23 @@ Gameplay encyclopedia: [TUNE.md](docs/ops/TUNE.md). Compat: [PLUGIN_COMPAT.md](d
 
 | Root | Owns |
 |------|------|
-| `com.yaplabs.yapengine.*` | Concurrency / spatial **chassis** (`YapEngine`, sequencing, sync/lease/boundary, sandbox pools, chassis-adjacent Netty helpers). New chassis code goes here. |
+| `com.yaplabs.yapengine.*` | Concurrency / spatial **chassis** (`YapEngine`, sequencing, sync/lease/boundary, sandbox pools, chassis-adjacent Netty helpers). Brand decision: **keep forever** — not a rename candidate. New chassis code goes here. |
 | `com.yapcore.*` | Product surface (gateway, crossplay, dashboard, Paper glue, first-party plugins, `yap-db-api`). |
 
 Do not duplicate chassis concepts under `com.yapcore`. Prefer product → chassis imports; see [CODE_ELEGANCE_FOLLOWUP.md](docs/ops/CODE_ELEGANCE_FOLLOWUP.md) Track 2.
+
+**Allowed product → chassis imports** (core product only — not plugins):
+
+| Chassis type | Typical callers |
+|--------------|-----------------|
+| `YapEngine` | `YaPcoreEngine`, CrossplayHub / PaperKernel / GeyserStyleTranslator |
+| `NativeEventLoops` | Dual-stack gateway / `JavaListenerBoot` |
+| `SpatialQuadrant`, `BitwiseQuadrantIndex`, `SequenceToken` | CrossplayHub (and chassis-facing product adapters) |
+| `ParallelGameCore` | `YaPcoreEngine` (and gateway paths that already hold a chassis core) |
+
+**Plugins** under `yap-first-party/` must **not** import `com.yaplabs.yapengine.*`. Schedule with `YapSched`; register APIs on Bukkit `ServicesManager`.
+
+**CompatibilityBridge:** product code obtains the bridge via `YaPcoreEngine.bridge()` (a `ForwardingCompatibilityBridge`). Do **not** `new CompatibilityBridge()` for production lifecycle — the bare type is a thin submit/metrics fallback (immediate exec), not the chassis spatial drain path.
 
 ## Conduct
 

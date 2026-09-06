@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -101,55 +100,22 @@ public final class WebDashboard {
         InetSocketAddress addr = new InetSocketAddress(
                 "0.0.0.0".equals(bind) ? "0.0.0.0" : bind, port);
         http = HttpServer.create(addr, 0);
-        Path rootDir = server.getRootDir();
 
-        http.createContext("/map/", DashboardMapServe.mapStatic(rootDir, server));
-        http.createContext("/tiles/", DashboardMapServe.mapTiles(rootDir));
-        http.createContext("/meshes/", DashboardMapServe.mapMeshes(rootDir));
-        http.createContext("/", this::serveStatic);
-        http.createContext("/api/players", playersApi::apiPlayers);
-        http.createContext("/api/access", accessApi::apiAccess);
-        http.createContext("/api/admin", adminApi::apiAdmin);
-        http.createContext("/api/status", statusApi::apiStatus);
-        http.createContext("/api/connect", statusApi::apiConnect);
-        http.createContext("/api/config", statusApi::apiConfig);
-        http.createContext("/api/server/start", statusApi::apiStart);
-        http.createContext("/api/server/stop", statusApi::apiStop);
-        http.createContext("/api/command", statusApi::apiCommand);
-        http.createContext("/api/plugins", pluginsApi::apiPlugins);
-        http.createContext("/api/plugin-config", pluginsApi::apiPluginConfig);
-        http.createContext("/api/modules", pluginsApi::apiModules);
-        http.createContext("/api/packs", pluginsApi::apiPacks);
-        http.createContext("/api/console", consoleApi::apiConsole);
-        http.createContext("/api/console/stream", consoleApi::apiConsoleStream);
-        http.createContext("/api/pregen", gameplayApi::apiPregen);
-        http.createContext("/api/ranks", gameplayApi::apiRanks);
-        http.createContext("/api/essentials", gameplayApi::apiEssentials);
-        http.createContext("/api/link", gameplayApi::apiLink);
-        http.createContext("/api/link/console", linkConsoleApi::apiLinkConsole);
-        http.createContext("/api/link/console/stream", linkConsoleApi::apiLinkConsoleStream);
-        http.createContext("/api/protect", gameplayApi::apiProtect);
-        http.createContext("/api/disasters", gameplayApi::apiDisasters);
-        http.createContext("/api/stacker", gameplayApi::apiStacker);
-        http.createContext("/api/world", gameplayApi::apiWorld);
-        http.createContext("/api/chat", gameplayApi::apiChat);
-        http.createContext("/api/moderation", gameplayApi::apiModeration);
-        http.createContext("/api/perms", gameplayApi::apiPerms);
-        http.createContext("/api/playerdata", gameplayApi::apiPlayerdata);
-        http.createContext("/api/kits", kitsApi::apiKits);
-        http.createContext("/api/commands", commandsApi::apiCommands);
-        http.createContext("/api/discord", gameplayApi::apiDiscord);
-        http.createContext("/api/tebex", gameplayApi::apiTebex);
-        http.createContext("/api/tab", gameplayApi::apiTab);
-        http.createContext("/api/map", gameplayApi::apiMap);
-        http.createContext("/api/guard", gameplayApi::apiGuard);
-        http.createContext("/api/lagguard", gameplayApi::apiLagGuard);
-        http.createContext("/api/regions", gameplayApi::apiRegions);
-        http.createContext("/api/npcs", gameplayApi::apiNpcs);
-        http.createContext("/api/skills", gameplayApi::apiSkills);
-        http.createContext("/api/factions", gameplayApi::apiFactions);
-        http.createContext("/metrics", metricsHandler::handle);
-        http.createContext("/health", ex -> DashboardHttp.text(ex, 200, "ok"));
+        DashboardRouteRegistrar.register(
+                http,
+                server,
+                playersApi,
+                accessApi,
+                adminApi,
+                statusApi,
+                pluginsApi,
+                consoleApi,
+                linkConsoleApi,
+                gameplayApi,
+                kitsApi,
+                commandsApi,
+                metricsHandler,
+                this::serveStatic);
 
         http.setExecutor(Executors.newCachedThreadPool(r -> {
             Thread t = new Thread(r, "yap-web-dash");

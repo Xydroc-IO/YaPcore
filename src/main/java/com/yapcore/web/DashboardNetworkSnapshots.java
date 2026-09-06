@@ -20,58 +20,20 @@ public final class DashboardNetworkSnapshots {
     }
 
     public static Map<String, Object> protect(Path root) {
-        Map<String, Object> out = base(root, "yap-protect", "YaPProtect");
-        Map<String, Object> yaml = yaml(root, "YaPProtect", "config.yml");
-        Map<String, Object> logging = map(yaml.get("logging"));
-        out.put("loggingEnabled", bool(logging.get("enabled"), true));
-        out.put("logBlocks", bool(logging.get("block-break"), true));
-        out.put("logContainers", bool(logging.get("container-inventory"), true));
-        out.put("pruneDays", intVal(nested(yaml, "retention", "prune-days"), 30));
-        out.put("serverId", str(yaml.get("server-id"), "default"));
-        return out;
+        return DashboardNetworkPluginSnapshots.protect(root);
     }
 
     public static Map<String, Object> world(Path root) {
-        Map<String, Object> out = base(root, "yap-world", "YaPWorld");
-        Map<String, Object> yaml = yaml(root, "YaPWorld", "config.yml");
-        Map<String, Object> worlds = map(yaml.get("worlds"));
-        Map<String, Object> schem = map(yaml.get("schematics"));
-        out.put("allowLoad", bool(worlds.get("allow-load"), true));
-        out.put("allowUnload", bool(worlds.get("allow-unload"), true));
-        out.put("schematicsEnabled", bool(schem.get("enabled"), true));
-        out.put("schematicsFolder", str(schem.get("folder"), "schematics"));
-        out.put("brushMaxRadius", intVal(nested(yaml, "brush", "max-radius"), 16));
-        out.put("serverId", str(yaml.get("server-id"), "default"));
-        Path schemDir = root.resolve("plugins").resolve("YaPWorld").resolve(str(schem.get("folder"), "schematics"));
-        out.put("schematicCount", countFiles(schemDir, ".yschem", ".schem"));
-        return out;
+        return DashboardNetworkPluginSnapshots.world(root);
     }
 
     public static Map<String, Object> chat(Path root) {
-        Map<String, Object> out = base(root, "yap-chat", "YaPChat");
-        Map<String, Object> yaml = yaml(root, "YaPChat", "config.yml");
-        out.put("defaultChannel", str(yaml.get("default-channel"), "global"));
-        out.put("slowModeSeconds", intVal(yaml.get("slow-mode-seconds"), 0));
-        out.put("unsignedSystemChat", bool(yaml.get("unsigned-system-chat"), true));
-        out.put("networkEnabled", bool(nestedBool(yaml, "network", "enabled"), true));
-        Map<String, Object> filter = map(yaml.get("filter"));
-        out.put("filterEnabled", bool(filter.get("enabled"), true));
-        out.put("channels", channelNames(yaml.get("channels")));
-        out.put("channelFormats", parseChannelFormats(yaml.get("channels")));
-        out.put("serverId", str(yaml.get("server-id"), "default"));
-        return out;
+        return DashboardNetworkPluginSnapshots.chat(root);
     }
 
     public static Map<String, Object> moderation(Path root) {
-        Map<String, Object> out = base(root, "yap-moderation", "YaPModeration");
-        Map<String, Object> yaml = yaml(root, "YaPModeration", "config.yml");
-        out.put("serverId", str(yaml.get("server-id"), "default"));
-        out.put("useSharedYapdb", bool(yaml.get("use-shared-yapdb"), true));
-        out.put("kickMessage", str(yaml.get("kick-message"), ""));
-        out.put("banMessage", str(yaml.get("ban-message"), ""));
-        return out;
+        return DashboardNetworkPluginSnapshots.moderation(root);
     }
-
 
     public static Map<String, Object> perms(Path root) {
         Map<String, Object> out = base(root, "yap-perms", "YaPPerms");
@@ -101,84 +63,16 @@ public final class DashboardNetworkSnapshots {
     }
 
     public static Map<String, Object> playerdata(Path root) {
-        Map<String, Object> out = base(root, "yap-playerdata", "YaPPlayerData");
-        Map<String, Object> yaml = yaml(root, "YaPPlayerData", "config.yml");
-        out.put("serverId", str(yaml.get("server-id"), "default"));
-        out.put("economyEnabled", bool(nestedBool(yaml, "economy", "enabled"), true));
-        out.put("features", featureBools(yaml.get("features"), List.of(
-                "homes", "warps", "kits", "mail", "shops", "jobs", "auctions", "claims", "traders")));
-        out.put("authEnabled", bool(nestedBool(yaml, "auth", "enabled"), false));
-        out.put("syncInventory", bool(nestedBool(yaml, "sync", "inventory"), true));
-        out.put("claimsEnabled", bool(nestedBool(yaml, "claims", "enabled"), true));
-        out.put("maxHomes", intVal(map(yaml.get("homes")).get("max"), 3));
-        return out;
+        return DashboardNetworkPluginSnapshots.playerdata(root);
     }
 
     public static Map<String, Object> discord(Path root) {
-        Map<String, Object> out = base(root, "yap-discord", "YaPDiscord");
-        Map<String, Object> yaml = yaml(root, "YaPDiscord", "config.yml");
-        Map<String, Object> hooks = map(yaml.get("webhooks"));
-        Map<String, Object> events = map(yaml.get("events"));
-        out.put("moderationConfigured", !str(hooks.get("moderation"), "").isBlank());
-        out.put("chatConfigured", !str(hooks.get("chat"), "").isBlank());
-        out.put("eventsConfigured", !str(hooks.get("events"), "").isBlank()
-                || !str(hooks.get("chat"), "").isBlank());
-        out.put("mcToDiscord", bool(nestedBool(yaml, "relay", "mc-to-discord"), false));
-        out.put("discordToMc", bool(nestedBool(yaml, "relay", "discord-to-mc"), false));
-        out.put("eventJoin", bool(events.get("join"), false));
-        out.put("eventLeave", bool(events.get("leave"), false));
-        out.put("eventDeath", bool(events.get("death"), false));
-        out.put("eventAdvancement", bool(events.get("advancement"), false));
-        out.put("inboundEnabled", bool(nestedBool(yaml, "inbound", "enabled"), false));
-        out.put("inboundBind", str(nested(yaml, "inbound", "bind"), "127.0.0.1"));
-        out.put("inboundPort", intVal(nested(yaml, "inbound", "port"), 8765));
-        out.put("inboundSecretConfigured", !str(nested(yaml, "inbound", "secret"), "").isBlank()
-                && !"change-me".equals(str(nested(yaml, "inbound", "secret"), "")));
-        Map<String, Object> bot = map(yaml.get("bot"));
-        out.put("botEnabled", bool(bot.get("enabled"), false));
-        out.put("botTokenConfigured", !str(bot.get("token"), "").isBlank());
-        out.put("botGuildId", str(bot.get("guild-id"), ""));
-        out.put("botChatChannelId", str(bot.get("chat-channel-id"), ""));
-        return out;
+        return DashboardNetworkPluginSnapshots.discord(root);
     }
 
     /** Third-party Tebex Folia store plugin (`plugins/tebex.jar` → `plugins/Tebex/`). */
     public static Map<String, Object> tebex(Path root) {
-        Map<String, Object> out = base(root, "tebex", "Tebex");
-        Map<String, Object> yaml = yaml(root, "Tebex", "config.yml");
-        Map<String, Object> buy = map(yaml.get("buy-command"));
-        Map<String, Object> serverCfg = map(yaml.get("server"));
-        String secret = str(serverCfg.get("secret-key"), "");
-        boolean secretSet = !secret.isBlank();
-        out.put("secretConfigured", secretSet);
-        out.put("secretMasked", secretSet ? maskSecret(secret) : "");
-        out.put("buyCommandEnabled", bool(buy.get("enabled"), true));
-        out.put("buyCommandName", str(buy.get("name"), "buy"));
-        out.put("proxyMode", bool(serverCfg.get("proxy"), false));
-        out.put("verbose", bool(yaml.get("verbose"), false));
-        out.put("checkForUpdates", bool(yaml.get("check-for-updates"), true));
-        out.put("creatorUrl", "https://creator.tebex.io/");
-        out.put("docsUrl", "https://docs.tebex.io/creators/tebex-control-panel/game-servers/minecraft-java-edition");
-        out.put("yapDocs", "docs/ops/TEBEX.md");
-        out.put("fetchHint", "./scripts/fetch-tebex.sh");
-        out.put("packageRecipes", List.of(
-                Map.of(
-                        "name", "VIP rank",
-                        "commands", "yapperm user {username} parent set vip\nkit grant {username} vip"),
-                Map.of(
-                        "name", "Adventurer kit unlock",
-                        "commands", "yapperm user {username} permission set yapdata.kit.adventurer true\nkit grant {username} adventurer"),
-                Map.of(
-                        "name", "VIP kit unlock only",
-                        "commands", "yapperm user {username} permission set yapdata.kit.vip true")));
-        if (!bool(out.get("installed"), false)) {
-            out.put("setupHint", "Run ./scripts/fetch-tebex.sh (or gradle fetchTebex), restart YaP-Folia, then paste your game-server secret key.");
-        } else if (!secretSet) {
-            out.put("setupHint", "Paste the game-server secret from creator.tebex.io → Game Servers, then Save secret.");
-        } else {
-            out.put("setupHint", "Secret set. Create packages on Tebex with the console commands below ({username} placeholder).");
-        }
-        return out;
+        return DashboardNetworkPluginSnapshots.tebex(root);
     }
 
     public static String maskSecret(String secret) {
@@ -193,26 +87,8 @@ public final class DashboardNetworkSnapshots {
     }
 
     public static Map<String, Object> tab(Path root) {
-        Map<String, Object> out = base(root, "yap-tab", "YaPTab");
-        Map<String, Object> yaml = yaml(root, "YaPTab", "config.yml");
-        out.put("header", lines(yaml.get("header")));
-        out.put("footer", lines(yaml.get("footer")));
-        Map<String, Object> sidebar = map(yaml.get("sidebar"));
-        out.put("sidebarLines", lines(sidebar.get("lines")));
-        out.put("sidebarEnabled", bool(sidebar.get("enabled"), true));
-        out.put("nametagTeams", bool(yaml.get("nametag-teams"), true));
-        out.put("refreshSeconds", intVal(yaml.get("refresh-seconds"), 3));
-        out.put("networkSyncEnabled", bool(nestedBool(yaml, "network-sync", "enabled"), true));
-        Map<String, Object> bossbar = map(yaml.get("bossbar"));
-        out.put("bossBarEnabled", bool(bossbar.get("enabled"), false));
-        out.put("bossBarWelcomeOnJoin", bool(bossbar.get("welcome-on-join"), true));
-        out.put("bossBarTitle", str(bossbar.get("title"), "&6&lWelcome to YaP"));
-        out.put("bossBarSubtitle", str(bossbar.get("subtitle"), "&7Enjoy your stay"));
-        out.put("bossBarColor", str(bossbar.get("color"), "YELLOW"));
-        out.put("bossBarDurationSeconds", intVal(bossbar.get("duration-seconds"), 8));
-        return out;
+        return DashboardNetworkPluginSnapshots.tab(root);
     }
-
 
     public static Map<String, Object> map(Path root) {
         return DashboardOpsSnapshots.map(root);
@@ -227,73 +103,16 @@ public final class DashboardNetworkSnapshots {
     }
 
     public static Map<String, Object> guard(Path root) {
-        Map<String, Object> out = base(root, "yap-guard", "YaPGuard");
-        Map<String, Object> yaml = yaml(root, "YaPGuard", "config.yml");
-        Map<String, Object> checks = map(yaml.get("checks"));
-        out.put("flyEnabled", checkEnabled(checks, "fly"));
-        out.put("speedEnabled", checkEnabled(checks, "speed"));
-        out.put("reachEnabled", checkEnabled(checks, "reach"));
-        out.put("scaffoldEnabled", checkEnabled(checks, "scaffold"));
-        out.put("maxViolationsBeforeKick", intVal(yaml.get("max-violations-before-kick"), 8));
-        out.put("alertsEnabled", bool(yaml.get("alerts-enabled"), true));
-        out.put("violationDecaySeconds", intVal(yaml.get("violation-decay-seconds"), 45));
-        Path pluginsDir = root.resolve("plugins");
-        boolean grimEnabled = jarPresent(pluginsDir, "grim");
-        boolean grimDownloaded = grimEnabled || Files.isRegularFile(pluginsDir.resolve("grim.jar.disabled"));
-        out.put("grimInstalled", grimEnabled);
-        out.put("grimDownloaded", grimDownloaded);
-        if (grimEnabled) {
-            out.put("acHint", "Grim AC is enabled — YaPGuard movement checks should be off to avoid double punishment. See docs/ops/GRIM.md");
-        } else if (grimDownloaded) {
-            out.put("acHint", "Grim AC downloaded but disabled. Run ./scripts/grim-ac.sh enable and restart YaP-Folia for top-tier AC.");
-        }
-        return out;
+        return DashboardNetworkPluginSnapshots.guard(root);
     }
 
     public static Map<String, Object> lagguard(Path root) {
-        Map<String, Object> out = base(root, "yap-lagguard", "YaPLagGuard");
-        Map<String, Object> yaml = yaml(root, "YaPLagGuard", "config.yml");
-        out.put("enabled", bool(yaml.get("enabled"), true));
-        out.put("maxEntitiesPerChunk", intVal(yaml.get("max-entities-per-chunk"), 72));
-        out.put("maxPrimedTntPerChunk", intVal(yaml.get("max-primed-tnt-per-chunk"), 8));
-        out.put("maxHopperTransfersPerWindow", intVal(yaml.get("max-hopper-transfers-per-window"), 48));
-        out.put("hopperWindowTicks", intVal(yaml.get("hopper-window-ticks"), 20));
-        out.put("maxRedstoneEventsPerWindow", intVal(yaml.get("max-redstone-events-per-window"), 96));
-        out.put("redstoneWindowTicks", intVal(yaml.get("redstone-window-ticks"), 20));
-        out.put("logTrips", bool(yaml.get("log-trips"), true));
-        out.put("countersEphemeral", true);
-        out.put("countersNote", "Trip counters live in memory and stats.json; they reset on plugin reload/restart.");
-        out.put("hotChunks", List.of());
-        Path stats = root.resolve("plugins").resolve("YaPLagGuard").resolve("stats.json");
-        if (Files.isRegularFile(stats)) {
-            try {
-                String raw = Files.readString(stats);
-                out.put("statsJson", raw.trim());
-                try {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> parsed = new com.google.gson.Gson().fromJson(raw, Map.class);
-                    Object hot = parsed == null ? null : parsed.get("hotChunks");
-                    if (hot instanceof List<?> list) {
-                        out.put("hotChunks", list);
-                    }
-                } catch (Exception ignored) {
-                }
-            } catch (IOException ignored) {
-            }
-        }
-        return out;
+        return DashboardNetworkPluginSnapshots.lagguard(root);
     }
 
     public static Map<String, Object> regions(Path root) {
-        Map<String, Object> out = base(root, "yap-regions", "YaPRegions");
-        Map<String, Object> yaml = yaml(root, "YaPRegions", "config.yml");
-        out.put("serverId", str(yaml.get("server-id"), "default"));
-        out.put("flags", List.of(
-                "pvp", "mob-damage", "build", "interact", "entry", "chest-access", "fire-spread", "mob-spawning",
-                "item-drop", "item-pickup", "tnt", "creeper-explosion"));
-        return out;
+        return DashboardNetworkPluginSnapshots.regions(root);
     }
-
 
     static boolean checkEnabled(Map<String, Object> checks, String key) {
         return bool(map(checks.get(key)).get("enabled"), true);

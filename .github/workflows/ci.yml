@@ -31,6 +31,23 @@ jobs:
           :chat-plugin:test
           :world-plugin:test
           :yap-factions-api:test
+          :map-plugin:test
+          :regions-plugin:test
+          :discord-plugin:test
+          :lagguard-plugin:test
+      - name: Former zero-test plugin smokes
+        run: >
+          gradle --no-daemon
+          :admin-plugin:test
+          :commands-plugin:test
+          :floodgate-plugin:test
+          :folia-bridge-plugin:test
+          :packs-plugin:test
+          :plugin-compat-plugin:test
+          :tab-plugin:test
+          :worldedit-shim-plugin:test
+          :yap-db-plugin:test
+          :disasters-plugin:test
       - name: Build shadow JAR
         run: gradle shadowJar --no-daemon
       - name: Concurrency + unit tests

@@ -48,7 +48,6 @@ public final class ServerConsoleCommands {
                       dashboard            Web admin dashboard login link + token
                       ranks [status|apply] YaPPerms group pack (default/vip/mod/admin)
                       stop / end           Graceful shutdown
-                      demo                 Run store-purchase lifecycle demo
 
                       Minecraft / Paper / plugin commands (when Paper is running):
                       Type them here — e.g. give @p diamond 1, tp Steve 0 64 0,
@@ -145,15 +144,6 @@ public final class ServerConsoleCommands {
                 String reason = parts.length > 1 ? line.substring(cmd.length()).trim() : "manual";
                 Path file = CrashLogger.get().dump("manual-" + reason, null, Map.of("reason", reason));
                 yield file == null ? "Failed to write crash dump" : "Crash dump written: " + file;
-            }
-            case "demo" -> {
-                try {
-                    server.getEngine().runLifecycleDemo();
-                    yield "Demo finished";
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    yield "Demo interrupted";
-                }
             }
             case "stop", "end", "shutdown" -> {
                 LOG.info("Stop requested via console");

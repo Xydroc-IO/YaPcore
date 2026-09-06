@@ -3,89 +3,74 @@ package com.yapcore.bridge;
 import com.yapcore.util.ThreadMetrics;
 
 import java.util.Objects;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 /**
- * Thread 4 — Compatibility Bridge (The Synchronizer).
- * Intercepts legacy plugin API mutations and stages them as atomic runnables
- * for the Main Game Core to drain at the end of each tick.
+ * Thin product API for Compatibility Bridge legacy mutation staging + metrics.
+ *
+ * <p><b>Production:</b> obtain via {@link com.yapcore.YaPcoreEngine#bridge()},
+ * which returns a {@link ForwardingCompatibilityBridge} into the chassis
+ * spatial bridge. Do not {@code new CompatibilityBridge()} for live lifecycle.
+ *
+ * <p>This base class keeps {@link #submitLegacyMutation} and metrics only.
+ * There is no product GameCore drain and no standalone coordinator thread —
+ * fallback submit (when Forwarding's chassis bridge is null) runs the action
+ * immediately. {@link ForwardingCompatibilityBridge} overrides start/stop as
+ * no-ops because YapEngine owns Thread 9.
  */
-public class CompatibilityBridge implements Runnable {
+public class CompatibilityBridge {
 
     private static final Logger LOG = Logger.getLogger("YaPcore.Bridge");
 
-    private final ConcurrentLinkedQueue<RunnableTask> pending = new ConcurrentLinkedQueue<>();
-    private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicLong submitted = new AtomicLong();
     private final AtomicLong drained = new AtomicLong();
-    private volatile Thread bridgeThread;
 
+    /** No-op: production uses {@link ForwardingCompatibilityBridge}; chassis owns the thread. */
     public void start() {
-        if (!running.compareAndSet(false, true)) {
-            return;
-        }
-        bridgeThread = new Thread(this, "yap-core4-compatibility-bridge");
-        bridgeThread.setDaemon(false);
-        bridgeThread.start();
-        ThreadMetrics.record("CompatibilityBridge", "started");
+        ThreadMetrics.record("CompatibilityBridge", "started-noop");
     }
 
+    /** No-op: see {@link #start()}. */
     public void stop() {
-        running.set(false);
-        if (bridgeThread != null) {
-            bridgeThread.interrupt();
-        }
-        ThreadMetrics.record("CompatibilityBridge", "stopped");
+        ThreadMetrics.record("CompatibilityBridge", "stopped-noop");
     }
 
     public Thread getBridgeThread() {
-        return bridgeThread;
+        return null;
     }
 
     /**
-     * Plugin-facing interceptor: packages a legacy world mutation for Core 3.
+     * Plugin-facing interceptor: packages a legacy world mutation.
+     * Base fallback executes immediately (no product GameCore tick drain).
+     * {@link ForwardingCompatibilityBridge} forwards to the chassis spatial bridge.
      */
     public void submitLegacyMutation(String source, String description, Runnable action) {
         Objects.requireNonNull(action, "action");
-        RunnableTask task = new RunnableTask(source, description, action);
-        pending.offer(task);
         submitted.incrementAndGet();
         ThreadMetrics.bump("CompatibilityBridge", "queued");
-        LOG.fine(() -> "Staged legacy task from " + source + ": " + description);
+        LOG.fine(() -> "Fallback legacy task from " + source + ": " + description);
+        try {
+            action.run();
+            drained.incrementAndGet();
+            ThreadMetrics.bump("CompatibilityBridge", "drained");
+        } catch (RuntimeException ex) {
+            LOG.warning("Bridge task failed [" + description + "]: " + ex.getMessage());
+        }
     }
 
     /**
-     * Called by GameCore at the tick handoff window. Drains all pending tasks
-     * on the game thread — never while physics is mid-tick.
+     * No product GameCore calls this. Kept for API symmetry;
+     * {@link ForwardingCompatibilityBridge} returns 0 (chassis spatial loops drain).
      *
-     * @return number of tasks executed
+     * @return always 0 on the base type
      */
     public int drainForTick() {
-        int count = 0;
-        RunnableTask task;
-        com.yapcore.api.threading.ThreadPools.enter(com.yapcore.api.Pool.SYNC, "CompatibilityBridge");
-        try {
-            while ((task = pending.poll()) != null) {
-                try {
-                    task.run();
-                    drained.incrementAndGet();
-                    count++;
-                    ThreadMetrics.bump("CompatibilityBridge", "drained");
-                } catch (RuntimeException ex) {
-                    LOG.warning("Bridge task failed [" + task.description() + "]: " + ex.getMessage());
-                }
-            }
-        } finally {
-            com.yapcore.api.threading.ThreadPools.exit();
-        }
-        return count;
+        return 0;
     }
 
     public int pendingCount() {
-        return pending.size();
+        return 0;
     }
 
     public long getSubmitted() {
@@ -96,27 +81,8 @@ public class CompatibilityBridge implements Runnable {
         return drained.get();
     }
 
-    @Override
-    public void run() {
-        LOG.info("Compatibility Bridge online — intercepting legacy API calls");
-        while (running.get()) {
-            try {
-                // Coordinator idle loop: plugins push via submitLegacyMutation;
-                // Core 3 drains. We only keep the channel alive and log depth.
-                if (!pending.isEmpty()) {
-                    ThreadMetrics.bump("CompatibilityBridge", "queue-observed");
-                }
-                Thread.sleep(5);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-        }
-        LOG.info("Compatibility Bridge shut down");
-    }
-
     /**
-     * Atomic, thread-safe staged work unit for the game core handoff queue.
+     * Atomic staged work unit (API retained for callers that package mutations).
      */
     public static final class RunnableTask implements Runnable {
         private final String source;

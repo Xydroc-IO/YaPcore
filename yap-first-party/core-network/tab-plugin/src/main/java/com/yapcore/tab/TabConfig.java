@@ -65,7 +65,8 @@ public final class TabConfig {
         }
     }
 
-    private static BossBar.Color parseColor(String raw) {
+    /** Package-visible for unit tests. */
+    static BossBar.Color parseColor(String raw) {
         if (raw == null || raw.isBlank()) {
             return BossBar.Color.YELLOW;
         }

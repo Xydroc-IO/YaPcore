@@ -75,7 +75,7 @@ public final class DashboardMapServe {
                 return;
             }
             Headers headers = exchange.getResponseHeaders();
-            headers.add("Content-Type", contentType(rel));
+            headers.add("Content-Type", guessContentType(rel));
             headers.add("Cache-Control", "no-cache");
             long size = Files.size(file);
             exchange.sendResponseHeaders(200, size);

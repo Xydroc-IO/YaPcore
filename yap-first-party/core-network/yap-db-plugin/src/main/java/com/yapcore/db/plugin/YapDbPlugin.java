@@ -114,7 +114,8 @@ public final class YapDbPlugin extends JavaPlugin implements YapDb {
         }
     }
 
-    private static void ensureSqliteParent(String url) throws SQLException {
+    /** Package-visible for JDBC URL / path unit tests. */
+    static void ensureSqliteParent(String url) throws SQLException {
         String pathPart = url;
         int q = pathPart.indexOf('?');
         if (q >= 0) {

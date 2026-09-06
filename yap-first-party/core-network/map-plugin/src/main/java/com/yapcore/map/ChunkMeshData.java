@@ -7,7 +7,7 @@ import java.util.Arrays;
  *
  * <ul>
  *   <li>v1 (legacy): {@code [localX, y, localZ, rgb, …]} stride 4 — one unit cube per solid</li>
- *   <li>v2: {@code [lx,y,lz,sx,sy,sz,rgb,…]}} stride 7 — greedy/model boxes in milliblocks
+ *   <li>v2: {@code [lx,y,lz,sx,sy,sz,rgb,…]} stride 7 — greedy/model boxes in milliblocks
  *       ({@link MeshUnits#UNIT} = 1.0 block)</li>
  * </ul>
  * {@code rgb} is 0xRRGGBB.

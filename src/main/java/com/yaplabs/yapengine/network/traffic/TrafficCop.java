@@ -24,9 +24,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 /**
- * Thread 2 — Traffic Cop.
- * Native Epoll/KQueue ingest, Zstd packet compression, µs SequenceToken ordering
- * per player via {@link InteractionSequencer}.
+ * Chassis Traffic Cop (Thread 2) — native Epoll/KQueue ingest, Zstd compression,
+ * µs {@link SequenceToken} ordering per player via {@link InteractionSequencer}.
+ *
+ * <p>Owned by {@link com.yaplabs.yapengine.YapEngine}. Distinct from product
+ * {@link com.yapcore.network.TrafficCop} (GameEvent ingest for YaPcoreEngine /
+ * dual-stack). Both are live; neither is deprecated.
  */
 public final class TrafficCop implements Runnable {
 

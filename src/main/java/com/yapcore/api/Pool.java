@@ -9,6 +9,6 @@ public enum Pool {
     UI,
     /** Cores 9–12 — DB, HTTP, files, proxy sync */
     HEAVY,
-    /** Compatibility Bridge → GameCore tick handoff (world mutations) */
+    /** Compatibility Bridge → chassis / Folia tick handoff (world mutations) */
     SYNC
 }

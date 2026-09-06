@@ -24,10 +24,11 @@ public final class YapPluginCompatPlugin extends JavaPlugin {
             return false;
         }
         sender.sendMessage("§aYaP Plugin Compat (Tier A + light B)");
-        sender.sendMessage("§7Target: Paper 1.20–1.21 jars on Paper 26.2");
+        sender.sendMessage("§7Target: Paper " + PluginCompatTargets.SOURCE_RANGE
+                + " jars on Paper " + PluginCompatTargets.TARGET_PAPER);
         sender.sendMessage("§7Rewrites: Enchantment/Potion/Particle legacy fields, "
                 + "CraftBukkit v1_20_R*/v1_21_R* → unversioned");
-        sender.sendMessage("§7Backups: plugins/.yap-plugin-compat-backup/");
+        sender.sendMessage("§7Backups: plugins/" + PluginCompatTargets.BACKUP_DIR + "/");
         sender.sendMessage("§7Config: plugin-compat-enabled / rewrite / backup in server.properties");
         sender.sendMessage("§7Server: " + Bukkit.getVersion());
         return true;

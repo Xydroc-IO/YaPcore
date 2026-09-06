@@ -27,6 +27,15 @@ dependencies {
     implementation("com.mysql:mysql-connector-j:9.1.0")
     implementation("org.postgresql:postgresql:42.7.4")
     implementation("org.xerial:sqlite-jdbc:3.47.1.0")
+
+    testImplementation(platform("org.junit:junit-bom:5.11.3"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.papermc.paper:paper-api:$paperApi")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.shadowJar {

@@ -23,9 +23,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
 /**
- * Thread 2 — The Traffic Cop (Network I/O).
- * Netty pipeline ingests packets / GUI clicks, sanitizes them into immutable
- * GameEvent models, and pushes them onto a lock-free event stream.
+ * Product Traffic Cop — game-event Netty ingest for {@link com.yapcore.YaPcoreEngine}
+ * and dual-stack / demo paths.
+ *
+ * <p>Sanitizes packets into immutable {@link com.yapcore.model.GameEvent} models
+ * on a lock-free stream. Distinct from the chassis
+ * {@link com.yaplabs.yapengine.network.traffic.TrafficCop} (sequencer / Epoll path).
+ * Both are live; neither is deprecated.
  */
 public final class TrafficCop implements Runnable {
 
