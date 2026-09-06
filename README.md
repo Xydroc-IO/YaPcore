@@ -38,12 +38,14 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 |------------|----------------|
 | **Regionized + parallel ticks** | YaP-Folia regions + **subregion partition** (parallel shards when hot) — ship knobs on by default |
 | **Microtick / µs chassis** | MSPT-gated **microtick** Mob AI budgets on Folia; YapEngine orders bridge/plugin work in **µs** (`SequenceToken`) — not a single-thread MSPT claim |
-| **Crossplay** | Java (1.20.2+) + Bedrock on one listen path — no Via\* / Geyser jars required |
+| **Crossplay** | Java (1.20.2+) + Bedrock on one listen path — no Via\* / Geyser jars required; Bedrock form hubs for `/menu`, kits, ranks, admin |
 | **Network** | YaP Link native proxy, Floodgate-class identity, dual-stack gateway |
-| **Plugin suite** | First-party CORE + NETWORK; full box GAMEPLAY = skills / stacker / knobs / disasters |
-| **Ops** | Web dashboard (`:8080`), Swing GUI, seed defaults, MariaDB / Postgres / SQLite paths |
+| **Plugin suite** | First-party CORE + NETWORK; opt-in GAMEPLAY (skills / stacker / knobs / disasters / dungeons); opt-in Factions + Conquest |
+| **Ops** | Web dashboard (`:8080`), Swing GUI, seed defaults, MariaDB / Postgres / SQLite paths, shared messages + reload UX |
 | **Packs** | `yapcore-default.zip` via GitHub Releases CDN (`/releases/latest/download/…`) |
 | **Clients (optional)** | Fabric mods: visuals (Sodium + Iris + shaders), bag UI, ultrawide — vanilla/Bedrock still join |
+
+**Standing:** soft-launch / ops-signed / soak-proven **3/3** · enterprise hygiene **~90%** · domain ≤500 enforced — [PRODUCTION_READY.md](docs/ops/PRODUCTION_READY.md) · [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
 
 Version line: **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2** — see [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
 
@@ -168,8 +170,9 @@ Documentation is **Markdown in-repo** (`docs/`). Generated PDFs and office dumps
 | **Network / packs** | [CROSSPLAY](docs/network/CROSSPLAY.md) · [CLIENTS_AND_PACKS](docs/network/CLIENTS_AND_PACKS.md) |
 | **Folia / cite** | [YAP_FOLIA_SOAK](docs/folia/YAP_FOLIA_SOAK.md) · [REAL_GAINS](docs/folia/REAL_GAINS.md) · [CANVAS_PARITY](docs/folia/CANVAS_PARITY.md) |
 | **Public edge** | [EDGE_HARDEN](docs/network/EDGE_HARDEN.md) · [SECRETS](docs/start/SECRETS.md) |
+| **UX / messages** | [MESSAGES](docs/plugins/MESSAGES.md) · [CROSSPLAY](docs/network/CROSSPLAY.md) (Bedrock forms) |
 | **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
-| **Contributors** | [CONTRIBUTING](CONTRIBUTING.md) · [scripts/README](scripts/README.md) |
+| **Contributors** | [CONTRIBUTING](CONTRIBUTING.md) · [scripts/README](scripts/README.md) · domain ≤500 (`gradle checkDomainLineLimits`) |
 
 ---
 

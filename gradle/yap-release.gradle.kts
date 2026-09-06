@@ -63,6 +63,7 @@ tasks.register("assembleRelease") {
             "yap-lagguard.jar",
             "yap-map.jar",
             "yap-factions.jar",
+            "yap-conquest.jar",
             "yap-packs.jar",
             "yap-commands.jar",
             "yap-chat.jar",

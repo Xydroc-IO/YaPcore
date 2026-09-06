@@ -300,6 +300,8 @@ __pycache__/
 node_modules/
 .cursor/
 agent-transcripts/
+.agent-tools/
+agent-tools/
 .turbo/
 .cache/
 *.sublime-*

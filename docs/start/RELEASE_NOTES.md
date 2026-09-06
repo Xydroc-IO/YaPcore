@@ -5,7 +5,23 @@ Product version **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2**
 For build commands and zip layout see [RELEASES.md](RELEASES.md). For live status see
 [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
 
-**Engineering standing (2026-09-05):** production claims soft-launch / ops-signed / soak-proven **3/3**; enterprise hygiene **~90% accepted** (band **90–95%**). YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [PRODUCTION_READY.md](../ops/PRODUCTION_READY.md) · [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
+**Engineering standing (2026-09-05):** production claims soft-launch / ops-signed / soak-proven **3/3**; enterprise hygiene **~90% accepted** (band **90–95%**). Domain ≤500 line gate green. YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [PRODUCTION_READY.md](../ops/PRODUCTION_READY.md) · [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
+
+---
+
+## v1.0.0.0 — product polish P0/P1 (2026-09-05)
+
+Same ship version (no bump). Operator-facing consistency and ops reload parity:
+
+| Area | Change |
+|------|--------|
+| **Shared messages** | `yap-messages-api` — Adventure text, permission errors with nodes, `YapConfigReload` / `YapHelp` — [MESSAGES.md](../plugins/MESSAGES.md) |
+| **Defaults pack** | Full `config/defaults/plugins/` coverage for CORE+NETWORK + gameplay seeds (BedrockUI / FoliaBridge / WorldEdit shim N/A) — [DEFAULTS.md](DEFAULTS.md) |
+| **Bedrock hubs** | `/menu`, kits/homes/warps, ranks, admin forms via YaPBedrockUI (JE keeps chests) — [CROSSPLAY.md](../network/CROSSPLAY.md) |
+| **Ops / dashboard** | Catalog reload parity (admin, pregen, floodgate, dungeons, conquest, …); DB-not-ready / profile-loading UX; invalid YAML numbers → HTTP 400 |
+| **Factions / Conquest** | Survival guild polish + opt-in YaPConquest chunk land (still `enabled: false` by default) — [FACTIONS.md](../gameplay/FACTIONS.md) · [CONQUEST.md](../gameplay/CONQUEST.md) |
+
+Rebuild release trees: `./scripts/build-yap-folia.sh && gradle publishReleasesFolder -PyapGameplay=true`.
 
 ---
 

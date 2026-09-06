@@ -25,6 +25,7 @@ Internal engineering scorecard (policies, CI, ≤500 domain structure, DB bootst
 | CI high-value (protect/world/map/regions/discord/lagguard + smokes) | **Met** |
 | YaP-Folia provenance (YapLabs authors, patch inventory docs, fresh pin) | **Met** — [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) |
 | Path to ~95% | Deeper suites on protect/map/regions/discord (not more zeros); selective crossplay adapters |
+| Product polish P0/P1 | **Met** — shared messages, defaults pack, Bedrock hubs, catalog reload/DB UX — [MESSAGES.md](../plugins/MESSAGES.md) · [RELEASE_NOTES.md](../start/RELEASE_NOTES.md) |
 
 This is **not** a claim vs Paper MSPT. See [CODE_ELEGANCE_FOLLOWUP.md](CODE_ELEGANCE_FOLLOWUP.md) and whitepaper §13.
 

@@ -388,7 +388,8 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 | PlayerData shops + AH | **On by default** (jobs remain off) |
 | Fair population MSPT gate | **Citeable** — fullcite 100 bots; peak −12.4% (`shipFc2`); re-verify −5.53% (`20260904T040935Z`); **ship knobs** disclosed in JSON |
 | Dashboard Phase 8 | **Done (ship)** — Factions/Disasters/Stacker/Skills interactive; Protect restore; Regions flags; YAML leftovers documented |
-| Wave 2 Bedrock fidelity | **Done (ship)** — [CROSSPLAY.md](../network/CROSSPLAY.md) matrix; Floodgate forms Green (`floodgate:form`); specialty containers Green (best-effort) |
+| Wave 2 Bedrock fidelity | **Done (ship)** — [CROSSPLAY.md](../network/CROSSPLAY.md) matrix; Floodgate forms Green (`floodgate:form`); specialty containers Green (best-effort); P0 menu/kits/ranks/admin hubs |
+| Product polish P0/P1 | **Done (ship)** — `yap-messages-api`, full defaults pack, catalog reload parity, DB-not-ready UX — [MESSAGES.md](../plugins/MESSAGES.md) |
 | Wave 4 Discord / Map / PAPI | **Done (ship)** — event webhooks + account link/role sync; slash A–C + console channel + slash API; flat + BlueMap-class 3D mesh; curated local expansions |
 | Wave 5 Access context/temp | **Done (ship)** — dashboard duration + world/server grants |
 | Encyclopedia NMS (0025) | **Shipped** (defaults off; `/yapknobs status` → `nmsHooks`) — [TUNE.md](../ops/TUNE.md) |
