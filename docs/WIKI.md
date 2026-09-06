@@ -30,6 +30,7 @@ Browse by folder: [docs/README.md](README.md).
 | [TUNE.md](ops/TUNE.md) | Config hub |
 | [PRODUCTION_READY.md](ops/PRODUCTION_READY.md) | Phased soft-launch / ops-signed / soak-proven closeout |
 | [CODE_ELEGANCE_FOLLOWUP.md](ops/CODE_ELEGANCE_FOLLOWUP.md) | Post–500-line splits: DB, packages, tests |
+| [YAP_FOLIA_PATCHES.md](folia/YAP_FOLIA_PATCHES.md) | YaP-Folia ordered patch inventory + knobs |
 | [GRIM.md](ops/GRIM.md) | Optional Grim AC |
 | [ANTICHEAT.md](ops/ANTICHEAT.md) | AC strategy |
 | [ADMIN_MENU.md](ops/ADMIN_MENU.md) | In-game admin menu |

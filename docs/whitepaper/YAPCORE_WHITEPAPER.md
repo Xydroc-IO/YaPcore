@@ -240,8 +240,9 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-discord.jar` | YaPDiscord | Discord webhooks + relay |
 | `yap-guard.jar` | YaPGuard | Lightweight movement heuristics (not Grim); competitive → Grim |
 | `yap-lagguard.jar` | YaPLagGuard | Per-chunk lag governor |
-| `yap-map.jar` | YaPMap | Flat web map (Leaflet + PNG tiles + markers; no 3D) |
-| `yap-factions.jar` | YaPFactions | Factions overlay on playerdata claims |
+| `yap-map.jar` | YaPMap | Flat web map + BlueMap-class greedy/LOD 3D mesh (not full BlueMap textures) |
+| `yap-factions.jar` | YaPFactions | Factions overlay on playerdata claims (off by default) |
+| `yap-conquest.jar` | YaPConquest | Hardcore chunk conquest land (off by default) |
 | `yap-bedrock-ui.jar` | YaPBedrockUI | Bedrock `FormService` bridge + Floodgate-only `floodgate:form` relay |
 
 ### 6.2 GAMEPLAY (opt-in)

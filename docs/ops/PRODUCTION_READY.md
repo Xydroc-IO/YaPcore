@@ -13,6 +13,21 @@ Not Folia MSPT cite work ([REAL_GAINS.md](../folia/REAL_GAINS.md)).
 
 Soft-launch does **not** require soak-proven marketing language.
 
+## Enterprise hygiene standing (accepted)
+
+Internal engineering scorecard (policies, CI, ≤500 domain structure, DB bootstrap, tests, package ownership, production claims) — **~90% accepted** (target band **90–95%**).
+
+| Bar | State |
+|-----|--------|
+| Soft-launch / ops-signed / soak-proven | **3/3 met** |
+| Domain ≤500 + DB bootstrap + package ownership | **Met** (Track 1–2) |
+| Former zero-test plugin smokes + DualTrafficCop contract | **Met** |
+| CI high-value (protect/world/map/regions/discord/lagguard + smokes) | **Met** |
+| YaP-Folia provenance (YapLabs authors, patch inventory docs, fresh pin) | **Met** — [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) |
+| Path to ~95% | Deeper suites on protect/map/regions/discord (not more zeros); selective crossplay adapters |
+
+This is **not** a claim vs Paper MSPT. See [CODE_ELEGANCE_FOLLOWUP.md](CODE_ELEGANCE_FOLLOWUP.md) and whitepaper §13.
+
 ## Phase 0 — Baseline (done)
 
 - Domain ≤500 gate + splits
@@ -24,7 +39,9 @@ Soft-launch does **not** require soak-proven marketing language.
 
 - [x] `gradle checkDbBootstrapHygiene` + CI step
 - [x] CI / release workflows on **Java 25**
-- [x] High-value unit suites: protect, factions (+ API), essentials, chat, world
+- [x] High-value unit suites: protect, factions (+ API), essentials, chat, world, **map, regions, discord, lagguard**
+- [x] Former zero-test plugin smokes (admin, commands, floodgate, folia-bridge, packs, plugin-compat, tab, worldedit-shim, yap-db, disasters)
+- [x] Dual TrafficCop contract test (keep two — product GameEvent + chassis sequencer)
 - [x] PR template points at these modules
 
 Verify locally:
@@ -32,7 +49,9 @@ Verify locally:
 ```bash
 gradle checkDomainLineLimits checkDbBootstrapHygiene
 gradle :protect-plugin:test :factions-plugin:test :essentials-plugin:test \
-  :chat-plugin:test :world-plugin:test :yap-factions-api:test :yap-db-api:test
+  :chat-plugin:test :world-plugin:test :yap-factions-api:test :yap-db-api:test \
+  :map-plugin:test :regions-plugin:test :discord-plugin:test :lagguard-plugin:test
+gradle :test --tests 'com.yapcore.network.DualTrafficCopContractTest'
 ```
 
 ## Phase 2 — Ops sign-off (solo operator)
@@ -108,11 +127,13 @@ tail -5 logs/soak/soak-long-*.log
 
 ## Phase 4 — Deferred elegance
 
-- Dual-package facades / hard moves ([CODE_ELEGANCE_FOLLOWUP.md](CODE_ELEGANCE_FOLLOWUP.md) Track 2 B–D)
-- Extra plugin suites (regions, moderation, skills)
+- Dual TrafficCops stay dual (contract-tested); no merge — Track 2 Phase D
+- Deeper suites on protect/map/regions/discord (path ~90% → ~95%)
+- Selective crossplay Paper reflection → compile-time adapters
 - Do **not** gate CI on coverage %
 
 ## Related
 
 - [RELEASE_NOTES.md](../start/RELEASE_NOTES.md) — still-open ops items
 - [CODE_ELEGANCE_FOLLOWUP.md](CODE_ELEGANCE_FOLLOWUP.md) — DB / packages / thin tests
+- [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) — YaP-Folia patch inventory

@@ -60,23 +60,25 @@ A deliberate package story: product surface under `com.yapcore`, concurrency cha
 - ~35–38 Java files under `com.yaplabs.yapengine` (chassis: spatial, sequencing, sync/lease/boundary, sandbox, network traffic/compression, `YapEngine`).
 - Large `com.yapcore` tree (protocol, crossplay, web, paper glue, first-party plugins).
 - Cross-imports already exist (e.g. `YaPcoreEngine` → `YapEngine`, gateway → `NativeEventLoops`).
+- **Removed (dead product chassis):** `com.yapcore.core.GameCore` (20 TPS loop never started) and `com.yapcore.controller.EngineController` (zero callers). Live tick path is Folia + `YapEngine` / `ParallelGameCore`. Product `CompatibilityBridge` is now a thin submit/metrics API; `ForwardingCompatibilityBridge` remains the production facade.
 
 ### Non-goals
 
 - Big-bang relocate of all chassis types in one commit.
 - Renaming the runtime product / jar marketing names mid-release without a release-note plan.
 - Moving first-party plugins into `yapengine`.
+- Renaming live dual `TrafficCop` packages (both LIVE — product Netty edge vs chassis ingest).
 
 ### What stays under the yapengine brand
 
 Keep (or explicitly re-export) as the **concurrency / spatial chassis**:
 
-- `YapEngine`, `EngineController`, `CompatibilityBridge`
+- `YapEngine`, chassis `EngineController`, chassis `CompatibilityBridge`
 - `core.spatial.*`, `sequencing.*`, `sync.*` (lease, DLM, handoff, boundary)
 - Sandbox / IO roles used by the chassis (`PluginSandbox`, heavy/UI pools)
 - Chassis-adjacent network helpers still owned by the engine (`NativeEventLoops`, `TrafficCop`, compressors) until a dedicated `com.yapcore.network` cut is justified
 
-Product/protocol/ops stay `com.yapcore` (gateway, crossplay, dashboard, Paper kernel glue, plugins).
+Product/protocol/ops stay `com.yapcore` (gateway, crossplay, dashboard, Paper kernel glue, plugins). Product bridge facade: thin `com.yapcore.bridge.CompatibilityBridge` + `ForwardingCompatibilityBridge`.
 
 ### Migration strategy
 
@@ -85,9 +87,9 @@ Product/protocol/ops stay `com.yapcore` (gateway, crossplay, dashboard, Paper ke
 | Phase | Action |
 |-------|--------|
 | **A — Policy** | Done: ownership table in [CONTRIBUTING.md](../../CONTRIBUTING.md); detail in this file. Stop adding new dual homes. |
-| **B — Facades** | Where `yapcore` already wraps chassis (`YaPcoreEngine`, thin adapters), keep facades as the stable entry; deprecate direct deep imports from plugins if any appear. |
-| **C — Optional hard move** | Only for leaf types with zero external consumers: move package + leave `deprecated` type-forwarding stubs for one release. No hard move of `SequenceToken` / lease types without a compatibility window. |
-| **D — Brand decision** | Either (1) keep `yapengine` forever as the named chassis module, or (2) schedule a major-version package rename to `com.yapcore.engine.*` with stubs. Decide before Phase C expands. **Default recommendation:** keep `com.yaplabs.yapengine` as the chassis brand; do not rename unless shipping a major break anyway. |
+| **B — Facades** | **Done:** facades documented as stable product entry (`YaPcoreEngine` → `YapEngine` + `ForwardingCompatibilityBridge`); package-info ownership; CONTRIBUTING import allowlist; first-party plugins import zero `yapengine`. Dead product `GameCore` / `EngineController` removed; facades simplified. Hard package moves deferred to Phase C where still relevant. |
+| **C — Optional hard move** | Only for leaf types with zero external consumers: move package + leave `deprecated` type-forwarding stubs for one release. No hard move of `SequenceToken` / lease types without a compatibility window. **Not needed for GameCore** — the dual product GameCore is gone (deleted), so there is nothing to hard-move. Brand decision (Phase D) still stands; do **not** rename live dual `TrafficCop`s. |
+| **D — Brand decision** | **Decided:** keep `com.yaplabs.yapengine` forever as the named concurrency / spatial chassis brand. Do **not** schedule a rename to `com.yapcore.engine.*`. Product stays `com.yapcore.*`; dual-type facades (`CompatibilityBridge`, live dual `TrafficCop`s) are documented ownership, not interim rename scaffolding. Contract lock: `DualTrafficCopContractTest` asserts both cops start as distinct types/threads and product ingest relays into the chassis sequencer — **keep two; do not merge**. |
 
 ### Risk
 
@@ -99,9 +101,10 @@ Product/protocol/ops stay `com.yapcore` (gateway, crossplay, dashboard, Paper ke
 
 ### Done bar
 
-- Written ownership map (above) accepted; no new files that duplicate chassis concepts under the wrong root.
+- Written ownership map (CONTRIBUTING + package-info) accepted; brand keep forever (Phase D); Phase B facades documented — **met**.
+- Dead product `GameCore` / yapcore `EngineController` removed; dual GameCore no longer exists — Phase C hard-move for GameCore is **unnecessary**.
 - Cross-import graph is intentional (product → chassis), not bidirectional spaghetti.
-- If any hard moves landed: deprecated stubs compile for one release; changelog notes the FQCN change.
+- If any hard moves landed: deprecated stubs compile for one release; changelog notes the FQCN change. (Phase C — optional for remaining leaf types only; not GameCore / not TrafficCop rename.)
 
 ---
 
@@ -117,7 +120,8 @@ Raise confidence on operator-critical plugins that today rely on manual smoke, w
 |------|----------|
 | Chassis (`src/test`, yapengine) | Unit + Fray + jcstress (lease, boundary, sequencing) |
 | APIs / some plugins | `yap-db-api`, skills, playerdata, perms, npcs, … have some tests |
-| Gaps | **chat**, **factions**, **essentials**, **protect**, **world** (beyond WorldEdit-related paths), plus regions/moderation and others with **zero** `src/test` |
+| Former gaps (priority) | **protect**, **factions**, **essentials**, **chat**, **world** — covered (Phase 1) |
+| Smoke suite (former zero-test) | **admin**, **commands**, **floodgate**, **folia-bridge**, **packs**, **plugin-compat**, **tab**, **worldedit-shim**, **yap-db**, **disasters** — pure JUnit smoke/unit added (Track 3 stretch) |
 
 ### Non-goals
 
@@ -141,10 +145,12 @@ Raise confidence on operator-critical plugins that today rely on manual smoke, w
 3. **Essentials + chat** — Done (AFK/TPA expiry; color/filter/channel/network format).
 4. **World** — Done (ExpressionEngine + SelectionShape).
 5. **Gate** — CI runs these module tests; PR template lists them. No coverage-% gate.
+6. **Zero-test smoke** — Done: admin, commands, floodgate, folia-bridge, packs, plugin-compat, tab, worldedit-shim, yap-db, disasters (`*SmokeTest` / `*UnitTest`, ≥3 assertions each, no Bukkit server).
 
 ### Done bar
 
 - Protect, factions, essentials, chat, and world each have a non-empty `src/test` with ≥3 meaningful assertions — **met** (Phase 1 of [PRODUCTION_READY.md](PRODUCTION_READY.md)).
+- Former zero-test plugins listed above now have a pure Java smoke/unit suite — **met**.
 - Chassis Fray/jcstress jobs unchanged in scope and still required.
 
 ---
@@ -160,4 +166,12 @@ Raise confidence on operator-critical plugins that today rely on manual smoke, w
 
 ## Out of scope (later elegance)
 
-Dashboard HTTP monolith factoring, god-method cleanup below 500 lines, and third-party shim debt are **not** part of these three tracks.
+God-method cleanup below 500 lines and third-party shim debt are **not** part of these three tracks.
+Dashboard HTTP surface was thinned (`DashboardRouteRegistrar` + ops/network helpers) outside Track 1–3 — elegance only.
+
+## Standing (2026-09)
+
+Engineering hygiene **~90% accepted** (band **90–95%**). Tracks 1–3 met for soft-launch closeout.
+Remaining points to ~95%: deeper high-value suites (not more smoke zeros), selective crossplay adapters.
+YaP-Folia provenance polish met — [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
+Production claims: [PRODUCTION_READY.md](PRODUCTION_READY.md).

@@ -115,7 +115,7 @@ gradle publishReleasesFolder   # refreshes releases/1.0.0.0/ trees + zips
 
 Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 1.0.0.0” — do **not** change Gradle `version`.
 
-**Latest refresh:** 2026-09-04 — GitHub assets complete (OS zips, suites, `yapcore-default.zip`, client jars); pack URL/SHA sync; docs PDFs gitignored. Prior same-day: YaP Encyclopedia + Canvas heavypop cite (−8.09% vs Canvas / −16.56% vs stock); Ops Waves 1–5. Gameplay slimmed to skills / stacker / knobs / disasters (MMO / vehicles / abilities packs removed).
+**Latest refresh:** 2026-09-05 — enterprise hygiene ~90% accepted (band 90–95%); YaP-Folia provenance polish + UPSTREAM.lock refresh; plugin smokes + CI high-value expand; dashboard HTTP thinned. Prior 2026-09-04: GitHub assets complete; Encyclopedia + Canvas heavypop cite; Ops Waves 1–5.
 
 ## Version bump checklist (new tag only)
 
