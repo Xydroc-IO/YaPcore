@@ -1,6 +1,7 @@
 package com.yapcore.admin.cmd;
 
 import com.yapcore.admin.AdminPlugin;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -21,20 +22,20 @@ public final class AdminCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapadmin.menu")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapadmin.menu");
             return true;
         }
         if (args.length >= 1 && "reload".equalsIgnoreCase(args[0])) {
             if (!player.hasPermission("yapadmin.server")) {
-                player.sendMessage("§cNo permission.");
+                YapMessages.noPermission(player, "yapadmin.menu");
                 return true;
             }
             plugin.reloadAdminConfig();
-            player.sendMessage("§aYaPAdmin config reloaded.");
+            YapMessages.reloaded(player, "YaPAdmin");
             return true;
         }
         plugin.menus().openHub(player);

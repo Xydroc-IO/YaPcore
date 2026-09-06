@@ -10,6 +10,7 @@ import com.yapcore.regions.RegionFlag;
 import com.yapcore.regions.RegionMessageKind;
 import com.yapcore.playerdata.gui.Menus;
 import com.yapcore.playerdata.sync.SyncService;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -44,7 +45,7 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, "yapdata.claim")) {
@@ -152,11 +153,11 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
                 }
                 case "reload" -> {
                     if (!player.hasPermission("yapdata.admin")) {
-                        player.sendMessage("§cNo permission.");
+                        YapMessages.noPermission(player, "yapdata.admin");
                         yield true;
                     }
                     claims.reloadLocal();
-                    player.sendMessage("§aClaims reloaded.");
+                    YapMessages.reloaded(player, "Claims");
                     yield true;
                 }
                 case "flag" -> {

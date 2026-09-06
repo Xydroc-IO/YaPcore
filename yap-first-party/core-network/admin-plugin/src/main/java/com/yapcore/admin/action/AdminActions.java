@@ -3,6 +3,7 @@ package com.yapcore.admin.action;
 import com.yapcore.admin.AdminPlugin;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -65,7 +66,7 @@ public final class AdminActions {
 
     public void teleportToPlayer(Player admin, Player target) {
         if (!admin.hasPermission("yapessentials.teleport") && !admin.isOp()) {
-            admin.sendMessage("§cNo permission (yapessentials.teleport).");
+            YapMessages.noPermission(admin, "yapessentials.teleport");
             return;
         }
         teleport(admin, target.getLocation());
@@ -74,7 +75,7 @@ public final class AdminActions {
 
     public void teleportHere(Player admin, Player target) {
         if (!admin.hasPermission("yapessentials.teleport") && !admin.isOp()) {
-            admin.sendMessage("§cNo permission (yapessentials.teleport).");
+            YapMessages.noPermission(admin, "yapessentials.teleport");
             return;
         }
         teleport(target, admin.getLocation());
@@ -90,7 +91,7 @@ public final class AdminActions {
 
     public void giveItem(Player admin, Player target, Material material, int amount) {
         if (!admin.hasPermission("yapadmin.give")) {
-            admin.sendMessage("§cNo permission (yapadmin.give).");
+            YapMessages.noPermission(admin, "yapadmin.give");
             return;
         }
         if (material == null || !material.isItem()) {
@@ -118,7 +119,7 @@ public final class AdminActions {
     public void giveKit(Player admin, Player target, String kitId) {
         if (!admin.hasPermission("yapadmin.give") && !admin.hasPermission("yapdata.kit.give")
                 && !admin.hasPermission("yapdata.admin")) {
-            admin.sendMessage("§cNo permission for kits.");
+            YapMessages.noPermission(admin, "yapadmin.give");
             return;
         }
         if (!pluginEnabled("YaPPlayerData")) {
@@ -131,7 +132,7 @@ public final class AdminActions {
 
     public void giveMoney(Player admin, Player target, int amount) {
         if (!admin.hasPermission("yapadmin.economy")) {
-            admin.sendMessage("§cNo permission (yapadmin.economy).");
+            YapMessages.noPermission(admin, "yapadmin.economy");
             return;
         }
         if (!economyPluginEnabled()) {
@@ -143,7 +144,7 @@ public final class AdminActions {
 
     public void kick(Player admin, Player target, String reason) {
         if (!admin.hasPermission("yapmod.kick")) {
-            admin.sendMessage("§cNo permission (yapmod.kick).");
+            YapMessages.noPermission(admin, "yapmod.kick");
             return;
         }
         YapSched.entity(plugin, target, () ->
@@ -153,7 +154,7 @@ public final class AdminActions {
 
     public void warn(Player admin, Player target, String reason) {
         if (!admin.hasPermission("yapmod.warn")) {
-            admin.sendMessage("§cNo permission (yapmod.warn).");
+            YapMessages.noPermission(admin, "yapmod.warn");
             return;
         }
         moderation().ifPresentOrElse(svc -> {
@@ -172,7 +173,7 @@ public final class AdminActions {
 
     public void muteHour(Player admin, Player target, String reason) {
         if (!admin.hasPermission("yapmod.mute")) {
-            admin.sendMessage("§cNo permission (yapmod.mute).");
+            YapMessages.noPermission(admin, "yapmod.mute");
             return;
         }
         long expires = System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1);
@@ -191,7 +192,7 @@ public final class AdminActions {
 
     public void tempbanDay(Player admin, Player target, String reason) {
         if (!admin.hasPermission("yapmod.ban")) {
-            admin.sendMessage("§cNo permission (yapmod.ban).");
+            YapMessages.noPermission(admin, "yapmod.ban");
             return;
         }
         long expires = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1);
@@ -232,7 +233,7 @@ public final class AdminActions {
 
     public void clearInventory(Player admin, Player target) {
         if (!admin.hasPermission("yapessentials.clear") && !admin.isOp()) {
-            admin.sendMessage("§cNo permission (yapessentials.clear).");
+            YapMessages.noPermission(admin, "yapessentials.clear");
             return;
         }
         YapSched.entity(plugin, target, () -> target.getInventory().clear());
@@ -244,7 +245,7 @@ public final class AdminActions {
 
     public void broadcast(Player admin, String message) {
         if (!admin.hasPermission("yapadmin.server") && !admin.hasPermission("yapessentials.broadcast")) {
-            admin.sendMessage("§cNo permission for broadcast.");
+            YapMessages.noPermission(admin, "yapadmin.server");
             return;
         }
         if (pluginEnabled("YaPEssentials") && admin.hasPermission("yapessentials.broadcast")) {

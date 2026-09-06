@@ -1,5 +1,7 @@
 package com.yapcore.perms.gui;
 
+import com.yapcore.messages.YapMessages;
+
 import com.yapcore.perms.EffectiveUser;
 import com.yapcore.perms.PermsPlugin;
 import com.yapcore.perms.db.PermsRepository;
@@ -38,9 +40,17 @@ public final class RanksGui {
     public void openHub(Player player) {
         if (!player.hasPermission("yapperm.admin") && !player.hasPermission("yapperm.promote")
                 && !player.hasPermission("yapperm.user")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapperm.admin");
             return;
         }
+        if (PermsBedrockForms.tryOpenHub(plugin, player)) {
+            return;
+        }
+        openHubInventory(player);
+    }
+
+    /** JE chest hub (also used as fallback from Bedrock form callbacks). */
+    public void openHubInventory(Player player) {
         RanksGuiHolder holder = new RanksGuiHolder(RanksGuiHolder.Kind.HUB);
         Inventory inv = Bukkit.createInventory(holder, 45, Component.text("YaP Ranks", NamedTextColor.GOLD));
         holder.bind(inv);
@@ -71,6 +81,13 @@ public final class RanksGui {
     }
 
     public void openGroups(Player player) {
+        if (PermsBedrockForms.tryOpenGroups(plugin, player)) {
+            return;
+        }
+        openGroupsInventory(player);
+    }
+
+    public void openGroupsInventory(Player player) {
         RanksGuiHolder holder = new RanksGuiHolder(RanksGuiHolder.Kind.GROUPS);
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Rank groups", NamedTextColor.YELLOW));
         holder.bind(inv);
@@ -96,9 +113,16 @@ public final class RanksGui {
 
     public void openOnlinePlayers(Player player) {
         if (!player.hasPermission("yapperm.admin")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapperm.admin");
             return;
         }
+        if (PermsBedrockForms.tryOpenOnlinePlayers(plugin, player)) {
+            return;
+        }
+        openOnlinePlayersInventory(player);
+    }
+
+    public void openOnlinePlayersInventory(Player player) {
         RanksGuiHolder holder = new RanksGuiHolder(RanksGuiHolder.Kind.ONLINE_PLAYERS);
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Set player group", NamedTextColor.AQUA));
         holder.bind(inv);
@@ -126,6 +150,13 @@ public final class RanksGui {
     }
 
     public void openPickGroup(Player admin, UUID targetUuid, String targetName) {
+        if (PermsBedrockForms.tryOpenPickGroup(plugin, admin, targetUuid, targetName)) {
+            return;
+        }
+        openPickGroupInventory(admin, targetUuid, targetName);
+    }
+
+    public void openPickGroupInventory(Player admin, UUID targetUuid, String targetName) {
         RanksGuiHolder holder = new RanksGuiHolder(RanksGuiHolder.Kind.PICK_GROUP, targetUuid, targetName);
         Inventory inv = Bukkit.createInventory(holder, 54,
                 Component.text("Group → " + targetName, NamedTextColor.GREEN));
@@ -151,11 +182,7 @@ public final class RanksGui {
                     "Weight: " + group.weight(),
                     current ? "Current group" : "Click to assign"));
         }
-        playerOpen(admin, inv);
-    }
-
-    private static void playerOpen(Player player, Inventory inv) {
-        player.openInventory(inv);
+        admin.openInventory(inv);
     }
 
     private static Material iconForGroup(String name) {

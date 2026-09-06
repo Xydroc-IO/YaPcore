@@ -3,6 +3,7 @@ package com.yapcore.discord;
 import com.yapcore.discord.link.DiscordLink;
 import com.yapcore.discord.link.DiscordLinkService;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -42,7 +43,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
             case "broadcast", "bc" -> broadcastCmd(sender, args);
             case "reload" -> adminOnly(sender, () -> {
                 plugin.reloadDiscord();
-                sender.sendMessage("§aYaPDiscord reloaded.");
+                YapMessages.reloaded(sender, "YaPDiscord");
             });
             case "bot" -> botStatusCmd(sender, args);
             case "test" -> testCmd(sender, args);
@@ -57,7 +58,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
 
     private boolean adminOnly(CommandSender sender, Runnable action) {
         if (!sender.hasPermission("yapdiscord.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdiscord.admin");
             return true;
         }
         action.run();
@@ -66,7 +67,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
 
     private boolean botStatusCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapdiscord.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdiscord.admin");
             return true;
         }
         if (args.length < 2 || !"status".equalsIgnoreCase(args[1])) {
@@ -93,7 +94,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
 
     private boolean testCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapdiscord.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdiscord.admin");
             return true;
         }
         if (args.length < 2) {
@@ -120,7 +121,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
 
     private boolean sayCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapdiscord.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdiscord.admin");
             return true;
         }
         if (args.length < 2) {
@@ -135,7 +136,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
 
     private boolean linkCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapdiscord.link") && !sender.hasPermission("yapdiscord.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdiscord.link");
             return true;
         }
         DiscordConfig config = plugin.config();
@@ -153,7 +154,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
             return linkedSelf(sender, links);
         }
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         YapSched.async(plugin, () -> {
@@ -179,7 +180,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
 
     private boolean unlinkCmd(CommandSender sender) {
         if (!sender.hasPermission("yapdiscord.unlink") && !sender.hasPermission("yapdiscord.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdiscord.unlink");
             return true;
         }
         DiscordConfig config = plugin.config();
@@ -193,7 +194,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         YapSched.async(plugin, () -> {
@@ -217,7 +218,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
         if (args.length >= 2) {
             if (!sender.hasPermission("yapdiscord.linked.others")
                     && !sender.hasPermission("yapdiscord.admin")) {
-                sender.sendMessage("§cNo permission to view other players.");
+                YapMessages.noPermission(sender, "yapdiscord.linked.others");
                 return true;
             }
             String targetName = args[1];
@@ -240,11 +241,11 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
         if (!sender.hasPermission("yapdiscord.linked")
                 && !sender.hasPermission("yapdiscord.link")
                 && !sender.hasPermission("yapdiscord.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdiscord.linked");
             return true;
         }
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only for self status — use §e/yapdiscord linked <player>§c.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         YapSched.async(plugin, () -> {
@@ -271,7 +272,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
 
     private boolean resyncCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapdiscord.resync") && !sender.hasPermission("yapdiscord.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdiscord.resync");
             return true;
         }
         DiscordLinkService links = requireLinks(sender);
@@ -327,7 +328,7 @@ public final class DiscordCommands implements CommandExecutor, TabCompleter {
 
     private boolean broadcastCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapdiscord.broadcast") && !sender.hasPermission("yapdiscord.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdiscord.broadcast");
             return true;
         }
         if (args.length < 2) {

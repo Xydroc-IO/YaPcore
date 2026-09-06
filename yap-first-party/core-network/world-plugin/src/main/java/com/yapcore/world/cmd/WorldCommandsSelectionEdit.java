@@ -5,6 +5,7 @@ import com.yapcore.world.CuboidSelection;
 import com.yapcore.world.WorldPlugin;
 import com.yapcore.world.edit.SelectionEditService;
 import com.yapcore.world.service.SelectionServiceImpl;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -45,11 +46,11 @@ final class WorldCommandsSelectionEdit {
 
     boolean hollow(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.selection")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.selection");
             return true;
         }
         var opt = selection.selection(player.getUniqueId());
@@ -65,11 +66,11 @@ final class WorldCommandsSelectionEdit {
 
     boolean replace(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.selection")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.selection");
             return true;
         }
         if (args.length < 3) {
@@ -100,11 +101,11 @@ final class WorldCommandsSelectionEdit {
 
     private boolean runSelectionEdit(CommandSender sender, String[] args, String label, EditOp op) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.selection")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.selection");
             return true;
         }
         Material mat = Material.STONE;

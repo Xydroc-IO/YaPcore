@@ -1,0 +1,4 @@
+server-id: default
+
+dialogue:
+  default: "&7Hello, traveler!"

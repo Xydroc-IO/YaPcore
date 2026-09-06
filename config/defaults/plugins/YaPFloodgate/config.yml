@@ -1,0 +1,6 @@
+# Same key.pem as Floodgate on Velocity (copy from plugins/floodgate/key.pem on the proxy).
+# Leave empty to use UUID heuristic only (UUID MSB==0 → Bedrock XUID in LSB).
+key-file: key.pem
+
+# Username prefix Floodgate uses on Velocity (informational / strip for display).
+username-prefix: "."

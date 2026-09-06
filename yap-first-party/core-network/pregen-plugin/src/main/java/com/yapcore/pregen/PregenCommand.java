@@ -9,6 +9,7 @@ import com.yapcore.pregen.shape.SpiralShape;
 import com.yapcore.pregen.shape.WorldBorderShape;
 import com.yapcore.pregen.shape.WorldEditShape;
 import com.yapcore.pregen.shape.YapWorldShape;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -62,7 +63,7 @@ public final class PregenCommand implements CommandExecutor, TabCompleter {
             }
             case "reload" -> {
                 plugin.reloadPregenConfig();
-                sender.sendMessage("YaPPregen config reloaded");
+                YapMessages.reloaded(sender, "YaPPregen");
                 yield true;
             }
             default -> {

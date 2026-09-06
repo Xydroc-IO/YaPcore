@@ -37,6 +37,8 @@ See [STACKER.md](STACKER.md) (`/yapstacker`).
 
 **Skills:** Paper plugin `yap-skills` — thin mining / woodcutting / strength. See [SKILLS.md](SKILLS.md).
 
+**Shared messages (P0 polish):** [MESSAGES.md](MESSAGES.md) — `yap-messages-api` for Adventure text + permission errors with nodes.
+
 **Dungeons:** Paper plugin `yap-dungeons` — procedural instances L1–50 + prestige 51–100; soft API `yap-dungeons-api`. See [DUNGEONS.md](DUNGEONS.md).
 
 GUI tabs: **Plugins**, **Modules**, and **Tune**. Headless: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).

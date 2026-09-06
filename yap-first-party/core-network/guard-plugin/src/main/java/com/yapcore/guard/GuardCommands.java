@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import com.yapcore.messages.YapMessages;
 
 public final class GuardCommands implements CommandExecutor, TabCompleter {
 
@@ -33,7 +34,7 @@ public final class GuardCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapguard.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapguard.admin");
             return true;
         }
         if (args.length == 0) {
@@ -74,7 +75,7 @@ public final class GuardCommands implements CommandExecutor, TabCompleter {
 
     private boolean reload(CommandSender sender) {
         plugin.reloadGuard();
-        sender.sendMessage("§aYaPGuard reloaded.");
+        YapMessages.reloaded(sender, "YaPGuard");
         return true;
     }
 

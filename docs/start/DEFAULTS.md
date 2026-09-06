@@ -10,12 +10,14 @@ that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when m
 | Layer | OOTB |
 |-------|------|
 | Chat, Tab (sidebar), Guard, LagGuard, Packs, PluginCompat, PlaceholderAPI | Yes |
+| Admin menu, World tools, Regions, Npcs, Protect, Moderation, Pregen, Floodgate, Map | Yes (SQL plugins need MariaDB / shared YaPDB) |
 | YaP-Folia + first-party plugin jars | Yes (after `installAllProductDefaults` / release zip + `lib/yap-folia-*.jar`) |
 | YaP Link + link plugins | Yes once `link.properties` seeded |
 | Resource pack prompt | Yes when `server.properties` comes from defaults/example |
 | YaPPerms starter ranks | Yes (`apply-starter-pack-on-first-boot` + `yap-ranks-auto-apply`) |
 | YaPFactions / guilds | **Off** (`enabled: false`) — opt in for faction servers · [FACTIONS.md](../gameplay/FACTIONS.md) |
 | YaPConquest / chunk land | **Off** (`enabled: false`) — hardcore grid; needs YaPFactions · [CONQUEST.md](../gameplay/CONQUEST.md) |
+| YaPSkills / Stacker / Dungeons / GameplayKnobs | **Off** until opted in |
 | Economy / claims / moderation / SQL plugins | **Needs SQL** (MariaDB default; Postgres or SQLite OK — [YAPDB.md](../data/YAPDB.md)) |
 | Discord webhooks | Needs your webhook URLs |
 
@@ -50,8 +52,14 @@ config/defaults/
   plugins/YaPDiscord/…       # inbound off
   plugins/YaPFactions/…      # enabled: false (opt-in)
   plugins/YaPConquest/…      # enabled: false (opt-in chunk land)
-  plugins/YaPPerms|Chat|Tab|Essentials|Guard|LagGuard|Packs/…
+  plugins/YaPSkills|Stacker|Dungeons/…  # enabled: false (opt-in)
+  plugins/YaPGameplayKnobs/knobs.yml    # settings.enabled: false
+  plugins/YaPModeration|Admin|Protect|World|Regions|Npcs|Map|Floodgate|Pregen/…
+  plugins/PlaceholderAPI|YaPPluginCompat/…
+  plugins/YaPPerms|Chat|Tab|Essentials|Guard|LagGuard|Packs|Commands|Disasters/…
 ```
+
+**N/A (no YAML seed):** YaPBedrockUI, YaPFoliaBridge, WorldEdit shim.
 
 Operator files are never overwritten. To reset a plugin to ship defaults, delete its
 `plugins/<Name>/config.yml` and re-run `seed-defaults.sh` (or delete the whole folder
@@ -66,6 +74,8 @@ and let YaP-Folia re-extract from the jar after seed).
 | `internet-exposed` | `false` | `true` + nginx/Cloudflare |
 | `folia-jar-source` | `build` | keep `build` (YaP-Folia) |
 | Discord inbound | `false` | enable + strong `secret` |
+| YaPWorld editor.bind | `127.0.0.1` | `0.0.0.0` + firewall if remote editors |
+| YaPMap mesh.enabled | `false` | `true` when you want 3D tiles |
 
 ## Release note
 

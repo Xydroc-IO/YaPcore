@@ -10,6 +10,7 @@ import com.yapcore.world.schem.Schematic;
 import com.yapcore.world.schem.SchematicIO;
 import com.yapcore.world.schem.SpongeSchematicExporter;
 import com.yapcore.world.schem.SpongeSchematicImporter;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -139,7 +140,7 @@ final class WorldEditSchematicOps {
             return;
         }
         if (!player.hasPermission("yapworld.schematic")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapworld.schematic");
             return;
         }
         if (args.length < 1) {

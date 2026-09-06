@@ -22,12 +22,14 @@ dependencies {
     compileOnly("io.netty:netty-transport:4.2.15.Final")
     implementation(project(":yap-sched"))
     implementation(project(":yap-chat-api"))
+    implementation(project(":yap-messages-api"))
     compileOnly(project(":yap-perms-api"))
     compileOnly(project(":yap-moderation-api"))
 
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.papermc.paper:paper-api:$paperApi")
+    testImplementation(project(":yap-messages-api"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -41,7 +43,7 @@ tasks.jar {
         configurations.runtimeClasspath.get()
             .filter { f ->
                 val n = f.name
-                n.contains("yap-sched") || n.contains("yap-chat-api")
+                n.contains("yap-sched") || n.contains("yap-chat-api") || n.contains("yap-messages-api")
             }
             .map { zipTree(it) }
     })

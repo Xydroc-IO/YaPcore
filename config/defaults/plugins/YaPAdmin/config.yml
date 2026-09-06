@@ -1,0 +1,81 @@
+# YaPAdmin — in-game staff super menu
+# Docs: docs/ops/ADMIN_MENU.md
+
+kits:
+  - starter
+  - adventurer
+  - vip
+
+money-amounts:
+  - 100
+  - 1000
+  - 10000
+  - 100000
+
+broadcast-presets:
+  - "Server restart in 5 minutes — please find a safe place."
+  - "Welcome to the server! Use /menu for homes, warps, and kits."
+  - "Staff are online — open a ticket or ask in chat if you need help."
+
+# Curated give presets (material + default amount)
+presets:
+  - id: diamond_sword
+    material: DIAMOND_SWORD
+    amount: 1
+    name: "Diamond Sword"
+  - id: diamond_pickaxe
+    material: DIAMOND_PICKAXE
+    amount: 1
+    name: "Diamond Pickaxe"
+  - id: netherite_ingot
+    material: NETHERITE_INGOT
+    amount: 4
+    name: "Netherite Ingots"
+  - id: golden_apple
+    material: GOLDEN_APPLE
+    amount: 16
+    name: "Golden Apples"
+  - id: enchanted_golden_apple
+    material: ENCHANTED_GOLDEN_APPLE
+    amount: 4
+    name: "Notch Apples"
+  - id: cooked_beef
+    material: COOKED_BEEF
+    amount: 64
+    name: "Steak"
+  - id: arrow
+    material: ARROW
+    amount: 64
+    name: "Arrows"
+  - id: ender_pearl
+    material: ENDER_PEARL
+    amount: 16
+    name: "Ender Pearls"
+  - id: totem
+    material: TOTEM_OF_UNDYING
+    amount: 1
+    name: "Totem"
+  - id: cobblestone
+    material: COBBLESTONE
+    amount: 64
+    name: "Cobblestone"
+  - id: oak_log
+    material: OAK_LOG
+    amount: 64
+    name: "Oak Logs"
+  - id: torch
+    material: TORCH
+    amount: 64
+    name: "Torches"
+  - id: experience_bottle
+    material: EXPERIENCE_BOTTLE
+    amount: 64
+    name: "XP Bottles"
+  - id: elytra
+    material: ELYTRA
+    amount: 1
+    name: "Elytra"
+  - id: firework_rocket
+    material: FIREWORK_ROCKET
+    amount: 64
+    name: "Fireworks"

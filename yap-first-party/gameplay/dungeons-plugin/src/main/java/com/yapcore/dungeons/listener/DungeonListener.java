@@ -8,6 +8,7 @@ import com.yapcore.dungeons.portal.PortalStructure;
 import com.yapcore.dungeons.portal.PortalStructureTags;
 import com.yapcore.dungeons.service.DungeonInstanceManager;
 import com.yapcore.dungeons.service.LiveRun;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -159,7 +160,7 @@ public final class DungeonListener implements Listener {
         }
         event.setCancelled(true);
         if (!player.hasPermission("yapdungeons.portal.place")) {
-            player.sendMessage("§cNo permission to activate dungeon portals.");
+            YapMessages.noPermission(player, "yapdungeons.portal.place");
             return;
         }
         structure.fillInterior(frame);

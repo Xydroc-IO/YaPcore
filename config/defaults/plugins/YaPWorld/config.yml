@@ -1,0 +1,44 @@
+worlds:
+  allow-load: true
+  allow-unload: true
+
+selection:
+  enabled: true
+  max-volume: 2000000
+
+schematics:
+  enabled: true
+  folder: schematics
+
+brush:
+  max-radius: 32
+
+undo:
+  max-sessions: 25
+
+limits:
+  max-changes: 2000000
+  max-radius: 128
+  parallel-chunks: 4
+  parallel-chunks-large: 12
+  large-paste-blocks: 50000
+  auto-fast-large: true
+  defer-relight-large: true
+  progress-messages: true
+  auto-relight: false
+  # CFI-lite: schem paste via BlockBatch (parallel waves/preload/undo/progress). false = legacy 1-block/region
+  schem-use-block-batch: true
+
+cui:
+  enabled: true
+
+editor:
+  enabled: true
+  port: 8092
+  # LAN-safe: loopback only until you intentionally expose the editor
+  bind: "127.0.0.1"
+  # Hostname/IP players use in the browser (set to your server address)
+  public-host: "127.0.0.1"
+  clipboard-web: true
+
+server-id: lobby

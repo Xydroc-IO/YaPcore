@@ -4,6 +4,7 @@ import com.yapcore.protect.ProtectConfig;
 import com.yapcore.protect.listener.InspectListener;
 import com.yapcore.protect.service.ProtectServiceImpl;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -57,11 +58,11 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
 
     private boolean inspect(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapprotect.lookup") && !player.hasPermission("yapprotect.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapprotect.lookup");
             return true;
         }
         boolean on = inspect.toggle(player);
@@ -73,14 +74,14 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
 
     private boolean reload(CommandSender sender) {
         if (!sender.hasPermission("yapprotect.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapprotect.admin");
             return true;
         }
         var plugin = Bukkit.getPluginManager().getPlugin("YaPProtect");
         if (plugin instanceof com.yapcore.protect.ProtectPlugin protect) {
             try {
                 protect.reloadProtect();
-                sender.sendMessage("§aYaPProtect reloaded.");
+                YapMessages.reloaded(sender, "YaPProtect");
             } catch (java.sql.SQLException e) {
                 sender.sendMessage("§cReload failed: " + e.getMessage());
             }
@@ -90,7 +91,7 @@ public final class ProtectCommands implements CommandExecutor, TabCompleter {
 
     private boolean status(CommandSender sender) {
         if (!sender.hasPermission("yapprotect.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapprotect.admin");
             return true;
         }
         service.countAll().thenAccept(count -> YapSched.global(

@@ -1,6 +1,7 @@
 package com.yapcore.skills.cmd;
 
 import com.yapcore.skills.SkillsPlugin;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -16,7 +17,7 @@ public final class YSkillsCommand implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapskills.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapskills.admin");
             return true;
         }
         if (args.length == 0 || !"reload".equalsIgnoreCase(args[0])) {
@@ -25,7 +26,7 @@ public final class YSkillsCommand implements CommandExecutor {
         }
         plugin.reloadSkills();
         plugin.reregisterService();
-        sender.sendMessage("§aYaPSkills reloaded.");
+        YapMessages.reloaded(sender, "YaPSkills");
         return true;
     }
 }

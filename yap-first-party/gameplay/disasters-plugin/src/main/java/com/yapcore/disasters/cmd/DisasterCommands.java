@@ -5,6 +5,7 @@ import com.yapcore.disasters.DisastersPlugin;
 import com.yapcore.disasters.RandomEventScheduler;
 import com.yapcore.disasters.SkyWeather;
 import com.yapcore.disasters.VolcanoSite;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -31,7 +32,7 @@ public final class DisasterCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapdisasters.use")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdisasters.use");
             return true;
         }
         if (!plugin.config().enabled()) {
@@ -50,12 +51,14 @@ public final class DisasterCommands implements CommandExecutor, TabCompleter {
         String first = args[0].toLowerCase(Locale.ROOT);
         if ("reload".equals(first)) {
             if (!sender.hasPermission("yapdisasters.admin")) {
-                sender.sendMessage("§cNo permission.");
+                YapMessages.noPermission(sender, "yapdisasters.admin");
                 return true;
             }
             plugin.reloadDisasters();
-            sender.sendMessage("§aYaPDisasters reloaded. " + plugin.randomEvents().statusLine()
-                    + " · sites=" + plugin.volcanoSites().all().size());
+            YapMessages.reloaded(sender, "YaPDisasters");
+            YapMessages.send(sender, "&7{status} · sites={sites}",
+                    "status", plugin.randomEvents().statusLine(),
+                    "sites", String.valueOf(plugin.volcanoSites().all().size()));
             return true;
         }
         if ("stop".equals(first)) {
@@ -144,7 +147,7 @@ public final class DisasterCommands implements CommandExecutor, TabCompleter {
         String sub = args[1].toLowerCase(Locale.ROOT);
         if ("on".equals(sub) || "enable".equals(sub)) {
             if (!sender.hasPermission("yapdisasters.admin")) {
-                sender.sendMessage("§cNo permission.");
+                YapMessages.noPermission(sender, "yapdisasters.admin");
                 return true;
             }
             plugin.randomEvents().setRuntimeEnabled(true);
@@ -153,7 +156,7 @@ public final class DisasterCommands implements CommandExecutor, TabCompleter {
         }
         if ("off".equals(sub) || "disable".equals(sub)) {
             if (!sender.hasPermission("yapdisasters.admin")) {
-                sender.sendMessage("§cNo permission.");
+                YapMessages.noPermission(sender, "yapdisasters.admin");
                 return true;
             }
             plugin.randomEvents().setRuntimeEnabled(false);
@@ -201,7 +204,7 @@ public final class DisasterCommands implements CommandExecutor, TabCompleter {
         String sub = args[1].toLowerCase(Locale.ROOT);
         if ("add".equals(sub)) {
             if (!(sender instanceof Player player)) {
-                sender.sendMessage("§cPlayers only.");
+                YapMessages.playersOnly(sender);
                 return true;
             }
             if (args.length < 3) {

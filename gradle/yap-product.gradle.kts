@@ -174,6 +174,7 @@ tasks.register("assemblePluginDist") {
         ":yap-perms-api:jar",
         ":yap-moderation-api:jar",
         ":yap-chat-api:jar",
+        ":yap-messages-api:jar",
         ":yap-discord-api:jar",
         ":yap-playerdata-api:jar",
         ":yap-protect-api:jar",
@@ -283,6 +284,9 @@ tasks.register("assemblePluginDist") {
         copyNamed(jarOf(":yap-perms-api"), apiDir)
         copyNamed(jarOf(":yap-moderation-api"), apiDir)
         copyNamed(jarOf(":yap-chat-api"), apiDir)
+        if (findProject(":yap-messages-api") != null) {
+            copyNamed(jarOf(":yap-messages-api"), apiDir)
+        }
         if (findProject(":yap-discord-api") != null) {
             copyNamed(jarOf(":yap-discord-api"), apiDir)
         }

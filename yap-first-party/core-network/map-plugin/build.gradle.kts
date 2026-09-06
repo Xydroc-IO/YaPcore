@@ -22,6 +22,7 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     testImplementation("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-sched"))
+    implementation(project(":yap-messages-api"))
     compileOnly(project(":yap-regions-api"))
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")

@@ -2,6 +2,7 @@ package com.yapcore.playerdata.cmd;
 
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import com.yapcore.messages.YapMessages;
 
 /** Shared permission checks for YaPPlayerData commands / GUIs. */
 public final class Perms {
@@ -12,7 +13,7 @@ public final class Perms {
         if (sender.hasPermission(node)) {
             return true;
         }
-        sender.sendMessage("§cNo permission.");
+        YapMessages.noPermission(sender, node);
         return false;
     }
 

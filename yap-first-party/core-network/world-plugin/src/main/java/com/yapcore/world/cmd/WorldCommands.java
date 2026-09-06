@@ -11,6 +11,7 @@ import com.yapcore.world.schem.SchematicPaster;
 import com.yapcore.world.service.SelectionServiceImpl;
 import com.yapcore.world.service.WorldManagerServiceImpl;
 import com.yapcore.world.tool.WorldEditTool;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -102,11 +103,11 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
 
     private boolean weOp(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.selection") && !player.hasPermission("yapworld.brush")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.selection");
             return true;
         }
         String name = args[0];
@@ -121,11 +122,11 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
 
     private boolean tool(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.selection")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.selection");
             return true;
         }
         if (!config.selectionEnabled()) {
@@ -140,7 +141,7 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
 
     private boolean openGui(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only — use /yapworld status from console.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         plugin.openInGameGui(player);
@@ -149,7 +150,7 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
 
     private boolean openEditor(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         plugin.openBrowserEditor(player);
@@ -158,11 +159,11 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
 
     private boolean clearSel(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.selection")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.selection");
             return true;
         }
         selection.clearSelection(player.getUniqueId());
@@ -172,11 +173,11 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
 
     private boolean setPos(CommandSender sender, boolean pos1) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.selection")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.selection");
             return true;
         }
         var loc = player.getLocation();
@@ -194,11 +195,11 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
 
     private boolean brush(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.brush")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.brush");
             return true;
         }
         if (args.length < 2) {
@@ -234,11 +235,11 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
 
     private boolean undo(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.brush") && !player.hasPermission("yapworld.selection")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.brush");
             return true;
         }
         undoService.undo(player.getUniqueId()).thenAccept(count ->
@@ -248,11 +249,11 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
 
     private boolean redo(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.brush") && !player.hasPermission("yapworld.selection")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.brush");
             return true;
         }
         undoService.redo(player.getUniqueId()).thenAccept(count ->

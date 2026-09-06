@@ -36,6 +36,8 @@ Inventory/forms honesty for native Bedrock is shipped; Floodgate-only forms are 
 | Forms (native UDP) | Simple / modal / custom (+ typed builder) | **Green** |
 | Forms (Floodgate-only) | Admin / custom forms via `floodgate:form` | **Green** — requires Geyser+Floodgate on proxy |
 | Admin hub (Bedrock) | `/yapadmin` simple form via YaPBedrockUI | **Green** (native or Floodgate; chest GUI fallback) |
+| PlayerData hub (Bedrock) | `/menu` + kits/homes/warps forms via YaPBedrockUI | **Green** (soft-dep; JE keeps chest GUIs) |
+| YaPPerms ranks (Bedrock) | `/yapperm gui` / ranks form via YaPBedrockUI | **Green** (soft-dep; JE keeps chest GUI) |
 | Anvil / smithing / loom / stonecutter / cartography | Container UIs | **Green** — Paper-backed open + slot sync; **recipe pick** via CRAFT_RECIPE_OPTIONAL (stonecutter/loom/smithing/cartography); anvil rename FILTER_TEXT coded (deploy after soak) |
 | Full Geyser feature matrix | Every BE packet | **Out** — YaP intentional depth |
 
@@ -117,5 +119,6 @@ Retail Xbox / full inv depth: validate on real hardware before marketing “full
 
 - [VELOCITY.md](VELOCITY.md) — Floodgate behind proxy
 - Bedrock forms: native UDP uses chassis `FormService`; Floodgate-only uses `floodgate:form` (Geyser+Floodgate on proxy)
-- Ops checklist: native UDP or Velocity+Geyser+Floodgate → `/yapadmin` or `BedrockUiServices.find().sendSimpleForm(...)` should open a form
+- Ops checklist: native UDP or Velocity+Geyser+Floodgate → `/yapadmin`, `/menu`, `/yapperm gui`, or `BedrockUiServices.find().sendSimpleForm(...)` should open a form
+- Player hubs: with `yap-bedrock-ui.jar` loaded, Bedrock players get forms for `/menu`, `/kits`/`/kit`, `/homes`, `/warps`, and YaPPerms ranks GUI; JE keeps chest inventories. `/bag` opens the Paper chest (works on BE) or via the menu Bag button.
 - [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md)

@@ -5,6 +5,7 @@ import com.yapcore.npcs.action.NpcActions;
 import com.yapcore.npcs.service.NpcServiceImpl;
 import com.yapcore.npcs.service.QuestServiceImpl;
 import com.yapcore.playerdata.NpcTraderAccess;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -33,7 +34,7 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapnpcs.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapnpcs.admin");
             return true;
         }
         if (args.length == 0) {
@@ -194,7 +195,8 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             quests.reloadQuests();
         }
         npcs.respawnAll();
-        sender.sendMessage("§aYaPNpcs config + quest packs reloaded; NPCs respawned.");
+        YapMessages.reloaded(sender, "YaPNpcs");
+        YapMessages.send(sender, "&7Quest packs reloaded; NPCs respawned.");
         return true;
     }
 

@@ -1,6 +1,7 @@
 package com.yapcore.playerdata.cmd;
 
 import com.yapcore.playerdata.economy.BalanceStore;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -56,7 +57,7 @@ public final class BalanceCommands implements CommandExecutor, TabCompleter {
         }
         if (!sender.hasPermission("yapdata.balance.others") && !(sender instanceof Player p
                 && p.getName().equalsIgnoreCase(args[0]))) {
-            sender.sendMessage("No permission to view other balances.");
+            YapMessages.noPermission(sender, "yapdata.balance.others");
             return true;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
@@ -72,7 +73,7 @@ public final class BalanceCommands implements CommandExecutor, TabCompleter {
 
     private boolean pay(CommandSender sender, String[] args) {
         if (!(sender instanceof Player from)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, "yapdata.pay")) {

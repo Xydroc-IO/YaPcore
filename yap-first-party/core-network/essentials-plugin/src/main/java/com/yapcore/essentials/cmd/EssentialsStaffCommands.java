@@ -13,6 +13,7 @@ import com.yapcore.essentials.weather.WorldWeather;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.moderation.Punishment;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.GameMode;
@@ -42,7 +43,7 @@ final class EssentialsStaffCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.list")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         String names = Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.joining(", "));
@@ -55,7 +56,7 @@ final class EssentialsStaffCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.broadcast")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length < 1) {
@@ -73,7 +74,7 @@ final class EssentialsStaffCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.rules")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         for (String line : ctx.config.rules()) {
@@ -87,7 +88,7 @@ final class EssentialsStaffCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.motd")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         for (String line : ctx.config.motd()) {
@@ -101,7 +102,7 @@ final class EssentialsStaffCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.ctx.staff.freeze")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length < 1) {
@@ -123,7 +124,7 @@ final class EssentialsStaffCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.ctx.staff.check")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length < 1) {
@@ -198,12 +199,12 @@ final class EssentialsStaffCommands {
 
     boolean yapess(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapessentials.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length >= 1 && "reload".equalsIgnoreCase(args[0])) {
             ctx.plugin.reloadEssentials();
-            sender.sendMessage("§aYaPEssentials reloaded.");
+            YapMessages.reloaded(sender, "YaPEssentials");
             return true;
         }
         sender.sendMessage("§e/yapess reload");
@@ -221,7 +222,7 @@ final class EssentialsStaffCommands {
             return Bukkit.dispatchCommand(sender, "yapdisaster " + joined);
         }
         if (!sender.hasPermission("yapessentials.weather")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length == 0 || "gui".equalsIgnoreCase(args[0])) {

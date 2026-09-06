@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+import com.yapcore.messages.YapMessages;
 
 final class CommandsAdmin implements CommandExecutor, TabCompleter {
 
@@ -22,7 +23,7 @@ final class CommandsAdmin implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapcommands.admin")) {
-            sender.sendMessage(ChatColor.RED + "No permission.");
+            YapMessages.noPermission(sender, "yapcommands.admin");
             return true;
         }
         if (args.length == 0) {
@@ -33,8 +34,8 @@ final class CommandsAdmin implements CommandExecutor, TabCompleter {
         switch (sub) {
             case "reload" -> {
                 plugin.reloadAll();
-                sender.sendMessage(ChatColor.GREEN + "YaPCommands reloaded ("
-                        + plugin.registry().defs().size() + " defined).");
+                YapMessages.reloaded(sender, "YaPCommands");
+                YapMessages.send(sender, "&7({count} defined)", "count", String.valueOf(plugin.registry().defs().size()));
             }
             case "list" -> {
                 var defs = plugin.registry().defs();

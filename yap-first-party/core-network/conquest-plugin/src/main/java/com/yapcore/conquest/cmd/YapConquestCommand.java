@@ -4,6 +4,7 @@ import com.yapcore.conquest.ConquestPlugin;
 import com.yapcore.conquest.ConquestZoneType;
 import com.yapcore.conquest.service.ConquestServiceImpl;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -25,17 +26,17 @@ public final class YapConquestCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapconquest.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapconquest.admin");
             return true;
         }
         if (args.length >= 1 && "reload".equalsIgnoreCase(args[0])) {
             plugin.reloadConquest();
+            YapMessages.reloaded(sender, "YaPConquest");
             boolean on = plugin.featuresActive();
-            sender.sendMessage("§aYaPConquest reloaded — features "
-                    + (on ? "§aactive" : "§cdisabled (enabled: false or DB down)"));
+            YapMessages.send(sender, on ? "&7Features &aactive" : "&7Features &cdisabled (enabled: false or DB down)");
             if (on && plugin.conquestConfig() != null) {
-                sender.sendMessage("§7Zones: "
-                        + (plugin.conquestConfig().zonesEnabled() ? "§aenabled" : "§cdisabled"));
+                YapMessages.send(sender, plugin.conquestConfig().zonesEnabled()
+                        ? "&7Zones: &aenabled" : "&7Zones: &cdisabled");
             }
             return true;
         }

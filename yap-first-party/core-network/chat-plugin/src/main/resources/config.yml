@@ -43,8 +43,12 @@ filter:
   replacement: "***"
 
 messages:
+  prefix: ""
+  no-permission: "&cNo permission.&7 Need: &f{node}"
+  players-only: "&cPlayers only."
+  reloaded: "&a{plugin} reloaded."
+  failed: "&c{reason}"
   muted: "&cYou are muted. &7({reason})"
-  no-permission: "&cNo permission."
   pm-sent: "&7[&dYou → {target}&7] &f{message}"
   pm-received: "&7[&d{sender} → You&7] &f{message}"
   staff-format: "&8[&bStaff&8] &f{player}&7: &f{message}"
@@ -52,6 +56,11 @@ messages:
   socialspy: "&8[Spy] &7{sender} → {target}: &f{message}"
   slow-mode: "&cSlow mode — wait {seconds}s."
   filtered: "&cMessage blocked by filter."
+  channel-no-permission: "&cNo permission for &f{channel} &cchannel."
+  unknown-channel: "&cUnknown channel. Try: &f{channels}"
+  channel-set: "&aChat channel set to &f{channel}"
+  player-offline: "&cPlayer not online."
+  no-reply-target: "&cNo one to reply to."
 
 server-id: lobby
 

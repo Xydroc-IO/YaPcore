@@ -1,6 +1,7 @@
 package com.yapcore.skills.cmd;
 
 import com.yapcore.skills.gui.SkillsMenu;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -22,11 +23,11 @@ public final class SkillsCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!sender.hasPermission("yapskills.use")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapskills.use");
             return true;
         }
         if (args.length == 0) {
@@ -34,7 +35,7 @@ public final class SkillsCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (!sender.hasPermission("yapskills.others")) {
-            sender.sendMessage("§cNo permission to view other players.");
+            YapMessages.noPermission(sender, "yapskills.admin");
             return true;
         }
         Player target = Bukkit.getPlayerExact(args[0]);

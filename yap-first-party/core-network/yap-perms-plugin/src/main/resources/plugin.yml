@@ -8,7 +8,7 @@ description: Native first-party permissions — groups, inheritance, tracks, pre
 website: https://github.com/yaplabs
 load: STARTUP
 depend: [YaPDB]
-softdepend: [PlaceholderAPI, Vault]
+softdepend: [PlaceholderAPI, Vault, YaPBedrockUI]
 commands:
   yapperm:
     description: Manage YaP permissions

@@ -5,6 +5,7 @@ import com.yapcore.playerdata.db.AuctionRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
 import com.yapcore.playerdata.sync.ItemSerializer;
 import com.yapcore.playerdata.sync.SyncService;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -36,7 +37,7 @@ public final class AuctionCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, "yapdata.ah")) {

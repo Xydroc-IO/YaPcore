@@ -1,10 +1,11 @@
 package com.yapcore.chat.cmd;
 
 import com.yapcore.chat.ChatConfig;
-import com.yapcore.chat.ChatFormat;
 import com.yapcore.chat.ChatPlugin;
 import com.yapcore.chat.service.IgnoreService;
 import com.yapcore.chat.service.PlayerChannelService;
+import com.yapcore.messages.YapMessageBundle;
+import com.yapcore.messages.YapText;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -32,6 +33,10 @@ public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
         this.ignore = ignore;
     }
 
+    private YapMessageBundle msg() {
+        return config.messages();
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String name = command.getName().toLowerCase(Locale.ROOT);
@@ -47,27 +52,30 @@ public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
 
     private boolean channel(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            msg().playersOnly(sender);
             return true;
         }
         if (args.length < 1) {
             String current = channels.channel(player, config.defaultChannel());
-            player.sendMessage(ChatFormat.legacy("&eChannel: &f" + current));
-            player.sendMessage(ChatFormat.legacy("&7Available: &f" + listChannels(player)));
-            player.sendMessage(ChatFormat.legacy("&e/ch <channel> &7— switch  ·  &e!<msg> &7— one-shot local"));
+            msg().sendRaw(player, "&eChannel: &f{channel}", "channel", current);
+            msg().sendRaw(player, "&7Available: &f{channels}", "channels", listChannels(player));
+            msg().sendRaw(player, "&e/ch <channel> &7— switch  ·  &e!<msg> &7— one-shot local");
             return true;
         }
         String ch = args[0].toLowerCase(Locale.ROOT);
         if (!config.channels().containsKey(ch)) {
-            player.sendMessage(ChatFormat.legacy("&cUnknown channel. Try: &f" + listChannels(player)));
+            msg().send(player, "unknown-channel", "channels", listChannels(player));
             return true;
         }
         if (!config.canUseChannel(player, ch)) {
-            player.sendMessage(ChatFormat.legacy("&cNo permission for &f" + ch + "&c."));
+            ChatConfig.ChannelDef def = config.channel(ch);
+            String need = def.requiresPermission() ? def.permission() : "yapchat.use";
+            msg().send(player, "channel-no-permission", "channel", ch);
+            msg().noPermission(player, need);
             return true;
         }
         channels.setChannel(player, ch);
-        player.sendMessage(ChatFormat.legacy("&aChat channel set to &f" + ch));
+        msg().send(player, "channel-set", "channel", ch);
         return true;
     }
 
@@ -84,7 +92,7 @@ public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
 
     private boolean clearChat(CommandSender sender) {
         if (!sender.hasPermission("yapchat.admin")) {
-            sender.sendMessage(ChatFormat.legacy("&cNo permission."));
+            msg().noPermission(sender, "yapchat.admin");
             return true;
         }
         for (Player online : Bukkit.getOnlinePlayers()) {
@@ -92,60 +100,60 @@ public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
                 online.sendMessage(" ");
             }
         }
-        Bukkit.broadcastMessage(ChatFormat.color("&cChat cleared by &f" + sender.getName()));
+        Bukkit.broadcast(YapText.component("&cChat cleared by &f" + sender.getName()));
         return true;
     }
 
     private boolean ignore(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            msg().playersOnly(sender);
             return true;
         }
         if (args.length < 1) {
-            player.sendMessage(ChatFormat.legacy("&e/ignore <player>"));
+            msg().sendRaw(player, "&e/ignore <player>");
             return true;
         }
         Player target = Bukkit.getPlayer(args[0]);
         if (target == null) {
-            player.sendMessage(ChatFormat.legacy("&cPlayer not online."));
+            msg().send(player, "player-offline");
             return true;
         }
         if (ignore.toggle(player, target)) {
-            player.sendMessage(ChatFormat.legacy("&aIgnoring &f" + target.getName()));
+            msg().sendRaw(player, "&aIgnoring &f{player}", "player", target.getName());
         } else {
-            player.sendMessage(ChatFormat.legacy("&eNo longer ignoring &f" + target.getName()));
+            msg().sendRaw(player, "&eNo longer ignoring &f{player}", "player", target.getName());
         }
         return true;
     }
 
     private boolean unignore(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            msg().playersOnly(sender);
             return true;
         }
         if (args.length < 1) {
-            player.sendMessage(ChatFormat.legacy("&e/unignore <player>"));
+            msg().sendRaw(player, "&e/unignore <player>");
             return true;
         }
         Player target = Bukkit.getPlayer(args[0]);
         if (target != null) {
             ignore.toggle(player, target);
             if (!ignore.isIgnoring(player, target)) {
-                player.sendMessage(ChatFormat.legacy("&aUnignored &f" + target.getName()));
+                msg().sendRaw(player, "&aUnignored &f{player}", "player", target.getName());
             }
             return true;
         }
-        player.sendMessage(ChatFormat.legacy("&cPlayer must be online."));
+        msg().send(player, "player-offline");
         return true;
     }
 
     private boolean ignoreList(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            msg().playersOnly(sender);
             return true;
         }
         if (ignore.ignored(player).isEmpty()) {
-            player.sendMessage(ChatFormat.legacy("&7You are not ignoring anyone."));
+            msg().sendRaw(player, "&7You are not ignoring anyone.");
             return true;
         }
         String names = ignore.ignored(player).stream()
@@ -154,7 +162,7 @@ public final class ChatExtraCommands implements CommandExecutor, TabCompleter {
                     return p != null ? p.getName() : uuid.toString();
                 })
                 .collect(Collectors.joining(", "));
-        player.sendMessage(ChatFormat.legacy("&7Ignoring: &f" + names));
+        msg().sendRaw(player, "&7Ignoring: &f{list}", "list", names);
         return true;
     }
 

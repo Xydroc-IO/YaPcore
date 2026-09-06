@@ -1,6 +1,7 @@
 package com.yapcore.admin.cmd;
 
 import com.yapcore.admin.AdminPlugin;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -53,7 +54,7 @@ public final class YapPluginsCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapadmin.plugins")) {
-            sender.sendMessage("§cNo permission (yapadmin.plugins).");
+            YapMessages.noPermission(sender, "yapadmin.plugins");
             return true;
         }
         if (args.length == 0 || "help".equalsIgnoreCase(args[0])) {

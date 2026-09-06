@@ -24,7 +24,9 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-sched"))
     implementation(project(":yap-perms-api"))
+    implementation(project(":yap-messages-api"))
     compileOnly(project(":yap-db-api"))
+    compileOnly(project(":yap-bedrock-ui-api"))
     compileOnly("me.clip:placeholderapi:2.11.6")
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1") {
         exclude(group = "org.bukkit", module = "bukkit")

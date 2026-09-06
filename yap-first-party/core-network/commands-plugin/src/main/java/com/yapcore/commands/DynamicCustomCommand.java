@@ -11,6 +11,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.yapcore.messages.YapMessages;
 
 /** Runtime Bukkit command backed by a YAML definition. */
 public final class DynamicCustomCommand extends Command {
@@ -29,7 +30,7 @@ public final class DynamicCustomCommand extends Command {
         if (!def.aliases().isEmpty()) {
             setAliases(def.aliases());
         }
-        setPermissionMessage(def.hideNoPermission() ? "" : ChatColor.RED + "No permission.");
+        setPermissionMessage(def.hideNoPermission() ? "" : "&cNo permission.");
     }
 
     public CustomCommandDef def() {
@@ -45,7 +46,7 @@ public final class DynamicCustomCommand extends Command {
         if (plugin.requireUsePerm() && !sender.hasPermission("yapcommands.use")
                 && !sender.hasPermission("yapcommands.admin")) {
             if (!def.hideNoPermission()) {
-                sender.sendMessage(ChatColor.RED + "No permission.");
+                YapMessages.noPermission(sender, "yapcommands.use");
             }
             return true;
         }
@@ -53,7 +54,7 @@ public final class DynamicCustomCommand extends Command {
         if (!perm.isBlank() && !sender.hasPermission(perm) && !sender.hasPermission("yapcommands.admin")
                 && !sender.hasPermission("yapcommands.cmd.*")) {
             if (!def.hideNoPermission()) {
-                sender.sendMessage(ChatColor.RED + "No permission.");
+                YapMessages.noPermission(sender, "yapcommands.admin");
             }
             return true;
         }

@@ -9,6 +9,7 @@ import com.yapcore.essentials.store.StaffService;
 import com.yapcore.essentials.store.TpaService;
 import com.yapcore.essentials.store.VanishService;
 import com.yapcore.essentials.util.TeleportHelper;
+import com.yapcore.messages.YapMessages;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.moderation.Punishment;
 import com.yapcore.sched.YapSched;
@@ -55,7 +56,7 @@ final class EssentialsCommandSupport {
         if (sender instanceof Player) {
             return true;
         }
-        sender.sendMessage("Players only.");
+        YapMessages.playersOnly(sender);
         return false;
     }
 
@@ -63,37 +64,41 @@ final class EssentialsCommandSupport {
         if (config.feature(feature)) {
             return false;
         }
-        sender.sendMessage("§cThat feature is disabled on this server.");
+        YapMessages.send(sender, "&cThat feature is disabled on this server.");
         return true;
+    }
+
+    void noPerm(CommandSender sender, String node) {
+        YapMessages.noPermission(sender, node);
     }
 
     Player targetPlayer(CommandSender sender, String[] args, int otherArgIndex, String selfPerm) {
         if (sender instanceof Player player) {
             if (args.length > otherArgIndex && !sender.hasPermission(selfPerm)) {
-                sender.sendMessage("§cNo permission for others.");
+                YapMessages.noPermission(sender, selfPerm + ".others");
                 return null;
             }
             if (args.length > otherArgIndex) {
                 Player other = Bukkit.getPlayer(args[otherArgIndex]);
                 if (other == null) {
-                    sender.sendMessage("§cPlayer not online.");
+                    YapMessages.send(sender, "&cPlayer not online.");
                     return null;
                 }
                 return other;
             }
             if (!sender.hasPermission(selfPerm)) {
-                sender.sendMessage("§cNo permission.");
+                YapMessages.noPermission(sender, selfPerm);
                 return null;
             }
             return player;
         }
         if (args.length <= otherArgIndex) {
-            sender.sendMessage("Console must specify a player.");
+            YapMessages.send(sender, "&cConsole must specify a player.");
             return null;
         }
         Player other = Bukkit.getPlayer(args[otherArgIndex]);
         if (other == null) {
-            sender.sendMessage("§cPlayer not online.");
+            YapMessages.send(sender, "&cPlayer not online.");
             return null;
         }
         return other;
@@ -115,10 +120,10 @@ final class EssentialsCommandSupport {
 
     static void msg(CommandSender sender, Player target, String message) {
         if (sender.equals(target)) {
-            target.sendMessage("§a" + message);
+            YapMessages.send(target, "&a" + message);
         } else {
-            sender.sendMessage("§a" + target.getName() + ": " + message);
-            target.sendMessage("§a" + message);
+            YapMessages.send(sender, "&a" + target.getName() + ": " + message);
+            YapMessages.send(target, "&a" + message);
         }
     }
 

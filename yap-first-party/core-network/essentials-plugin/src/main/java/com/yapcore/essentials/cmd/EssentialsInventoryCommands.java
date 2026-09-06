@@ -12,6 +12,7 @@ import com.yapcore.essentials.util.TeleportHelper;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.moderation.Punishment;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.GameMode;
@@ -42,7 +43,7 @@ final class EssentialsInventoryCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.invsee")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length < 1) {
@@ -67,7 +68,7 @@ final class EssentialsInventoryCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.echest")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length < 1) {
@@ -92,7 +93,7 @@ final class EssentialsInventoryCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.workbench")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         Player player = (Player) sender;
@@ -108,7 +109,7 @@ final class EssentialsInventoryCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.disposal")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         Player player = (Player) sender;

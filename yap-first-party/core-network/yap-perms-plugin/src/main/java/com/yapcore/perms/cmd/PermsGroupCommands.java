@@ -1,5 +1,6 @@
 package com.yapcore.perms.cmd;
 
+import com.yapcore.messages.YapMessages;
 import com.yapcore.perms.ChatColors;
 import com.yapcore.perms.EffectiveUser;
 import com.yapcore.perms.PermsPlugin;
@@ -24,7 +25,7 @@ final class PermsGroupCommands {
 
     boolean groupCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapperm.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapperm.admin");
             return true;
         }
         if (args.length == 0) {

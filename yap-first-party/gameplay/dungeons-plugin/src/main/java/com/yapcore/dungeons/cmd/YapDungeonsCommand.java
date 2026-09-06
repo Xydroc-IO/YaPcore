@@ -2,6 +2,7 @@ package com.yapcore.dungeons.cmd;
 
 import com.yapcore.dungeons.DungeonsPlugin;
 import com.yapcore.dungeons.DungeonService;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -25,7 +26,7 @@ public final class YapDungeonsCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapdungeons.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdungeons.admin");
             return true;
         }
         if (args.length == 0) {
@@ -35,7 +36,7 @@ public final class YapDungeonsCommand implements CommandExecutor, TabCompleter {
         return switch (args[0].toLowerCase(Locale.ROOT)) {
             case "reload" -> {
                 plugin.reloadDungeons();
-                sender.sendMessage("§aYaPDungeons reloaded.");
+                YapMessages.reloaded(sender, "YaPDungeons");
                 yield true;
             }
             case "forcestop" -> {
@@ -49,7 +50,7 @@ public final class YapDungeonsCommand implements CommandExecutor, TabCompleter {
             }
             case "giveportal" -> {
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage("Players only for giveportal (or specify online player).");
+                    YapMessages.playersOnly(sender);
                     yield true;
                 }
                 Player target = player;

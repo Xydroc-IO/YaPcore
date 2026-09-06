@@ -3,6 +3,7 @@ package com.yapcore.factions.cmd;
 import com.yapcore.factions.FactionsPlugin;
 import com.yapcore.factions.FactionJoinMode;
 import com.yapcore.factions.service.FactionServiceImpl;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -27,14 +28,14 @@ public final class YapFactionsCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapfactions.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapfactions.admin");
             return true;
         }
         if (args.length >= 1 && "reload".equalsIgnoreCase(args[0])) {
             plugin.reloadFactions();
+            YapMessages.reloaded(sender, "YaPFactions");
             boolean on = plugin.featuresActive();
-            sender.sendMessage("§aYaPFactions reloaded — features "
-                    + (on ? "§aactive" : "§cdisabled (enabled: false or DB down)"));
+            YapMessages.send(sender, on ? "&7Features &aactive" : "&7Features &cdisabled (enabled: false or DB down)");
             return true;
         }
         if (factions == null || !plugin.featuresActive()) {

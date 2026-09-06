@@ -2,6 +2,7 @@ package com.yapcore.regions.cmd;
 
 import com.yapcore.regions.service.RegionServiceImpl;
 import com.yapcore.world.WorldServices;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -22,7 +23,7 @@ final class RegionDefineOps {
 
     boolean handlePolyAdd(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only. Console: /region definepoly <name> at <world> <ymin> <ymax> <x1> <z1> ...");
+            YapMessages.playersOnly(sender);
             return true;
         }
         var loc = player.getLocation();
@@ -35,7 +36,7 @@ final class RegionDefineOps {
 
     boolean handlePolyClear(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         regions.polyDrafts().clear(player.getUniqueId());

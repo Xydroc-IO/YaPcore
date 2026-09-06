@@ -1,5 +1,6 @@
 package com.yapcore.packs;
 
+import com.yapcore.messages.YapMessages;
 import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -182,7 +183,7 @@ public final class PacksPlugin extends JavaPlugin implements Listener {
         if ("reload".equalsIgnoreCase(args[0])) {
             reloadLocalConfig();
             reloadManifest();
-            sender.sendMessage("Reloaded (" + manifest.packs().size() + " packs).");
+            YapMessages.reloaded(sender, "YaPPacks");
             return true;
         }
         if ("push".equalsIgnoreCase(args[0]) && sender instanceof Player player) {

@@ -6,6 +6,7 @@ import com.yapcore.world.WorldPlugin;
 import com.yapcore.world.pregen.PregenBridge;
 import com.yapcore.world.service.SelectionServiceImpl;
 import com.yapcore.world.service.WorldManagerServiceImpl;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
@@ -28,17 +29,17 @@ final class WorldCommandsWorldOps {
 
     boolean reload(CommandSender sender) {
         if (!sender.hasPermission("yapworld.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.admin");
             return true;
         }
         plugin.reloadWorld();
-        sender.sendMessage("§aYaPWorld reloaded.");
+        YapMessages.reloaded(sender, "YaPWorld");
         return true;
     }
 
     boolean status(CommandSender sender) {
         if (!sender.hasPermission("yapworld.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.admin");
             return true;
         }
         sender.sendMessage("§aYaPWorld §7— worlds: §f" + String.join(", ", worlds.loadedWorlds())
@@ -48,7 +49,7 @@ final class WorldCommandsWorldOps {
 
     boolean load(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapworld.load") && !sender.hasPermission("yapworld.create")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.load");
             return true;
         }
         if (args.length < 2) {
@@ -62,7 +63,7 @@ final class WorldCommandsWorldOps {
 
     boolean create(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapworld.create") && !sender.hasPermission("yapworld.load")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.create");
             return true;
         }
         if (args.length < 2) {
@@ -142,7 +143,7 @@ final class WorldCommandsWorldOps {
 
     boolean unload(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapworld.unload")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.unload");
             return true;
         }
         if (args.length < 2) {
@@ -156,7 +157,7 @@ final class WorldCommandsWorldOps {
 
     boolean teleport(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapworld.teleport")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.teleport");
             return true;
         }
         if (args.length < 2) {
@@ -190,7 +191,7 @@ final class WorldCommandsWorldOps {
 
     boolean pregen(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapworld.pregen")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.pregen");
             return true;
         }
         if (args.length < 2) {
@@ -215,7 +216,7 @@ final class WorldCommandsWorldOps {
 
     private boolean pregenStart(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only for pregen start.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!PregenBridge.available()) {

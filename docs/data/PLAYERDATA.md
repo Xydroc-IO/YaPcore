@@ -72,6 +72,8 @@ Session lock and password auth are independent: lock always runs; auth is option
 
 Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin.
 
+**Bedrock hub forms (P0):** When `yap-bedrock-ui.jar` (YaPBedrockUI) is present, Floodgate/native Bedrock players get simple forms for `/menu` (bag/homes/kits/warps/balance + other feature buttons), kit claim, homes, and warps. JE keeps the chest GUIs. Soft-dep — without YaPBedrockUI, behavior is unchanged. See [CROSSPLAY.md](../network/CROSSPLAY.md).
+
 | Area | Default | Config |
 |------|---------|--------|
 | Auth `/login` | on | `auth.enabled` |
@@ -140,7 +142,7 @@ The vanilla **E** inventory cannot grow from the server. **`/bag`** (aliases `/b
 | Admin `yapdata.bag.pages.*` | `backpack.max-pages` (9) |
 | Staff `yapdata.bag.see` | `/bag see <player> [page]` |
 
-Vanilla Java and Bedrock use the command / hub icon. The optional **yap-bag** Fabric client (Minecraft 26.2) binds **B** and adds a Bag button on the inventory screen plus page tabs on the bag chest. Same items — the mod is not required.
+Vanilla Java and Bedrock use the command / hub icon. On Bedrock with YaPBedrockUI, the `/menu` Bag button opens `/bag` and prints a short tip; the bag itself remains a Paper double-chest (inventory authority works on BE). The optional **yap-bag** Fabric client (Minecraft 26.2) binds **B** and adds a Bag button on the inventory screen plus page tabs on the bag chest. Same items — the mod is not required.
 
 Existing ranks: `ranks apply force` (or dashboard) so starter-grants pick up the new bag nodes.
 

@@ -4,6 +4,7 @@ import com.yapcore.protect.ProtectConfig;
 import com.yapcore.protect.service.ProtectServiceImpl;
 import com.yapcore.protect.util.DurationParser;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -30,7 +31,7 @@ final class ProtectExportOps {
 
     boolean prune(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapprotect.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapprotect.admin");
             return true;
         }
         int days = config.pruneDays();
@@ -53,7 +54,7 @@ final class ProtectExportOps {
 
     boolean export(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapprotect.lookup") && !sender.hasPermission("yapprotect.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapprotect.lookup");
             return true;
         }
         if (args.length < 2) {

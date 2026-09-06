@@ -1,0 +1,76 @@
+http:
+  bind: 127.0.0.1
+  # Dedicated map port when use-yapcore-server is false (8081 is used by YaPcore pack HTTP)
+  port: 8082
+  # Serve /map/ and /tiles/ from YaPcore resource-pack-http-port (recommended)
+  use-yapcore-server: true
+
+worlds:
+  - world
+
+# Full re-render cadence. First render runs ~2s after plugin enable.
+render-interval-minutes: 15
+# Lower max-height on low-CPU hosts (e.g. 128 for overworld surface focus).
+max-height: 320
+# Chunk grid sampled per world (radius² tiles). Use 4–6 on small VPS; 8–12 on dedicated boxes.
+sample-chunk-radius: 8
+# Where the tile grid starts (tiles are always indexed 0..radius-1 for Leaflet).
+render-origin:
+  # spawn = world spawn chunk; fixed = chunk-x / chunk-z below
+  mode: spawn
+  chunk-x: 0
+  chunk-z: 0
+
+# Flat layer modes (tiles under map/tiles/{world}/{layer}/{zoom}/…).
+layers:
+  surface: true
+  cave: true
+  # Cave / underground slice samples at or below this Y (nether uses roof-aware caps).
+  cave-max-y: 48
+  # Soft-blend block color with biome tint (~35%).
+  biome-tint: true
+
+# Tile + mesh retention — 0 disables that limit. /yapmap prune [days]
+retention:
+  max-age-days: 0
+  max-disk-mb: 0
+
+# Live markers for Flat and 3D viewers.
+markers:
+  players: true
+  # Soft-depend YaPNpcs / YaPRegions — filled in plugin markers.json (not dashboard-only).
+  npcs: false
+  regions: false
+  # Static pins from plugins/YaPMap/poi.json (example shipped in jar).
+  pois: true
+  # Soft-depend YaPPlayerData ClaimService.localClaims().
+  claims: false
+  # When claims are on, tint by YaPFactions overlay (hashed color) if available.
+  faction-colors: false
+  poll-seconds: 5
+
+# Voxel mesh (3D) — greedy merged boxes (format v2) per sample-window chunk.
+# Off in shipped defaults (CPU/disk heavy); set true for 3D map.
+mesh:
+  enabled: false
+  # Optional Y cap for mesh columns; omit or 0 to use max-height (nether still roof-capped ≤126).
+  # max-y: 320
+  # Layers to generate under map/meshes/{world}/{layer}/lod{N}/…
+  # full = all solids; surface / cave match flat tile sampling.
+  layers:
+    - full
+    - surface
+    - cave
+  default-layer: full
+  # Or set a single layer:  layer: full
+  # Stairs / slabs / carpets / fences as multi-box models (not full blockstates).
+  models: true
+  # Write compact .ymesh alongside JSON (viewer prefers binary).
+  binary: true
+  # Server LOD pyramid: 0 = full, 1 = merge/skip thin, 2 = coarser (0–2).
+  max-lod: 2
+  # When players near the sample-window edge, expand dirty mesh renders toward them
+  # and/or periodically re-center origin on average player chunk (background queue).
+  follow-players: false
+  # Extra chunks beyond sample-chunk-radius for mesh follow / edge expansion.
+  extra-radius: 0

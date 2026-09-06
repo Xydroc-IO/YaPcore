@@ -3,6 +3,7 @@ package com.yapcore.playerdata.cmd;
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.MailRepository;
 import com.yapcore.playerdata.sync.SyncService;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -33,7 +34,7 @@ public final class MailCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, "yapdata.mail")) {

@@ -1,0 +1,30 @@
+logging:
+  enabled: true
+  block-break: true
+  block-place: true
+  container-access: true
+  container-inventory: true
+  entity-change: true
+  explosion: true
+  liquid-flow: true
+  fire: true
+
+limits:
+  max-rollback-radius: 32
+  # Default page size for lookups (cursor pagination; not a hard total cap)
+  max-lookup-limit: 50
+
+database:
+  use-shared-yapdb: true
+  # Fallback only when YaPDB is absent — prefer ./configure-db.sh
+  jdbc-url: "jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true"
+  user: yap
+  password: change-me
+  pool-max: 6
+  pool-min-idle: 1
+  connection-timeout-ms: 10000
+
+retention:
+  prune-days: 30
+
+server-id: lobby

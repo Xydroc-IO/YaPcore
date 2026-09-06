@@ -4,6 +4,7 @@ import com.yapcore.admin.AdminPlugin;
 import com.yapcore.bedrock.ui.BedrockFormResult;
 import com.yapcore.bedrock.ui.BedrockUiService;
 import com.yapcore.bedrock.ui.BedrockUiServices;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.entity.Player;
 
 import java.util.Optional;
@@ -56,14 +57,14 @@ public final class AdminBedrockForms {
                     if (player.hasPermission("yapadmin.give")) {
                         plugin.menus().openGiveHub(player);
                     } else {
-                        player.sendMessage("§cNo permission.");
+                        YapMessages.noPermission(player, "yapadmin.give");
                     }
                 }
                 case 3 -> {
                     if (player.hasPermission("yapadmin.server")) {
                         plugin.menus().openServerOps(player);
                     } else {
-                        player.sendMessage("§cNo permission.");
+                        YapMessages.noPermission(player, "yapadmin.server");
                     }
                 }
                 default -> {

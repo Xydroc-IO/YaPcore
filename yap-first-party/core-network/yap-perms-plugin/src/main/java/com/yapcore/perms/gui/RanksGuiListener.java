@@ -3,6 +3,7 @@ package com.yapcore.perms.gui;
 import com.yapcore.perms.PermsPlugin;
 import com.yapcore.perms.db.PermsRepository;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -87,7 +88,7 @@ public final class RanksGuiListener implements Listener {
         }
         if (slot == RanksGui.SLOT_RELOAD && player.hasPermission("yapperm.admin")) {
             plugin.reloadAll();
-            player.sendMessage("§aYaPPerms reloaded.");
+            YapMessages.reloaded(player, "YaPPerms");
             gui.openHub(player);
         }
     }

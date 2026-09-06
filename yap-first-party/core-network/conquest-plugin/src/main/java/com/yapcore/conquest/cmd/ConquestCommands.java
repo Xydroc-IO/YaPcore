@@ -9,6 +9,7 @@ import com.yapcore.conquest.service.ConquestServiceImpl;
 import com.yapcore.factions.Faction;
 import com.yapcore.factions.FactionServices;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -35,11 +36,11 @@ public final class ConquestCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapconquest.use")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapconquest.use");
             return true;
         }
         String sub = args.length == 0 ? "help" : args[0].toLowerCase(Locale.ROOT);

@@ -12,6 +12,7 @@ import com.yapcore.essentials.util.TeleportHelper;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.moderation.Punishment;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.GameMode;
@@ -155,7 +156,7 @@ final class EssentialsPlayerCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.speed")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length < 1) {
@@ -216,7 +217,7 @@ final class EssentialsPlayerCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.repair")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         Player player = (Player) sender;
@@ -279,7 +280,7 @@ final class EssentialsPlayerCommands {
             nickArg = args[0];
         } else {
             if (!sender.hasPermission("yapessentials.nick")) {
-                sender.sendMessage("§cNo permission.");
+                YapMessages.noPermission(sender);
                 return true;
             }
             target = (Player) sender;
@@ -309,7 +310,7 @@ final class EssentialsPlayerCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.afk")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         Player player = (Player) sender;
@@ -375,7 +376,7 @@ final class EssentialsPlayerCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.hat")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         Player player = (Player) sender;
@@ -399,7 +400,7 @@ final class EssentialsPlayerCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.suicide")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         Player player = (Player) sender;
@@ -416,7 +417,7 @@ final class EssentialsPlayerCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.near")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         Player player = (Player) sender;

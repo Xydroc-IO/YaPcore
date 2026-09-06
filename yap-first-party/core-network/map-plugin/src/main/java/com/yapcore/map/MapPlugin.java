@@ -2,6 +2,7 @@ package com.yapcore.map;
 
 import com.yapcore.sched.YapSched;
 import com.yapcore.sched.YapTask;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -249,12 +250,12 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor, TabC
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapmap.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmap.admin");
             return true;
         }
         if (args.length >= 1 && "reload".equalsIgnoreCase(args[0])) {
             reloadMap();
-            sender.sendMessage("§aYaPMap reloaded.");
+            YapMessages.reloaded(sender, "YaPMap");
             return true;
         }
         if (args.length >= 1 && "render".equalsIgnoreCase(args[0])) {

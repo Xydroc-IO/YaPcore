@@ -2,6 +2,7 @@ package com.yapcore.playerdata.cmd;
 
 import com.yapcore.playerdata.gui.Menus;
 import com.yapcore.playerdata.sync.SyncService;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -24,7 +25,7 @@ public final class MenuCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, "yapdata.menu")) {

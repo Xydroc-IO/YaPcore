@@ -2,6 +2,7 @@ package com.yapcore.knobs;
 
 import com.yapcore.sched.YapSched;
 import com.yapcore.sched.YapTask;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -122,7 +123,7 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
         }
         if ("reload".equalsIgnoreCase(args[0])) {
             if (!sender.hasPermission("yapknobs.reload")) {
-                sender.sendMessage("No permission.");
+                YapMessages.noPermission(sender, "yapknobs.reload");
                 return true;
             }
             knobs.reload();
@@ -130,9 +131,11 @@ public final class GameplayKnobsPlugin extends JavaPlugin {
             EncyclopediaNms.syncFromConfig(knobs);
             EncyclopediaNms.warnIfMisconfigured(getLogger(), knobs);
             reapplyLoadedMobs();
-            sender.sendMessage("Encyclopedia reloaded (" + knobs.mobs().size()
-                    + " mobs, specials=" + knobs.specialsWired() + ") — re-applied to loaded entities.");
-            sender.sendMessage("nmsHooks: " + EncyclopediaNms.statusLine());
+            YapMessages.reloaded(sender, "Encyclopedia");
+            YapMessages.send(sender, "&7({mobs} mobs, specials={specials}) — re-applied to loaded entities.",
+                    "mobs", String.valueOf(knobs.mobs().size()),
+                    "specials", String.valueOf(knobs.specialsWired()));
+            YapMessages.send(sender, "&7nmsHooks: {status}", "status", EncyclopediaNms.statusLine());
             return true;
         }
         if ("status".equalsIgnoreCase(args[0])) {

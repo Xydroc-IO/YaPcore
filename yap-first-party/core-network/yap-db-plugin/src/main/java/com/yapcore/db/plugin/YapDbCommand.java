@@ -8,6 +8,7 @@ import org.bukkit.command.TabCompleter;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
+import com.yapcore.messages.YapMessages;
 
 final class YapDbCommand implements CommandExecutor, TabCompleter {
 
@@ -20,7 +21,7 @@ final class YapDbCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapdb.admin")) {
-            sender.sendMessage("No permission.");
+            YapMessages.noPermission(sender, "yapdb.admin");
             return true;
         }
         if (args.length == 0) {
@@ -38,7 +39,7 @@ final class YapDbCommand implements CommandExecutor, TabCompleter {
             case "reload" -> {
                 try {
                     plugin.reloadPool();
-                    sender.sendMessage("§aYaPDB pool reloaded.");
+                    YapMessages.reloaded(sender, "YaPDB pool");
                 } catch (Exception e) {
                     sender.sendMessage("§cReload failed: " + e.getMessage());
                     plugin.getLogger().severe("yapdb reload: " + e.getMessage());

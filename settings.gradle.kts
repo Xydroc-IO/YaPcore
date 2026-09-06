@@ -74,6 +74,9 @@ project(":admin-plugin").projectDir = file("yap-first-party/core-network/admin-p
 include("yap-chat-api")
 project(":yap-chat-api").projectDir = file("yap-first-party/api/yap-chat-api")
 
+include("yap-messages-api")
+project(":yap-messages-api").projectDir = file("yap-first-party/api/yap-messages-api")
+
 include("yap-playerdata-api")
 project(":yap-playerdata-api").projectDir = file("yap-first-party/api/yap-playerdata-api")
 

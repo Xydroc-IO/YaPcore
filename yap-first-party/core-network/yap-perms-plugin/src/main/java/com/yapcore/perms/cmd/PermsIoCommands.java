@@ -1,5 +1,6 @@
 package com.yapcore.perms.cmd;
 
+import com.yapcore.messages.YapMessages;
 import com.yapcore.perms.PermsPlugin;
 import com.yapcore.perms.io.PermsDump;
 import com.yapcore.sched.YapSched;
@@ -20,7 +21,7 @@ final class PermsIoCommands {
 
     boolean dumpCmd(CommandSender sender) {
         if (!sender.hasPermission("yapperm.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapperm.admin");
             return true;
         }
         File file = new File(plugin.getDataFolder(), "editor-snapshot.yml");
@@ -35,7 +36,7 @@ final class PermsIoCommands {
 
     boolean editorApplyCmd(CommandSender sender) {
         if (!sender.hasPermission("yapperm.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapperm.admin");
             return true;
         }
         File pending = new File(plugin.getDataFolder(), "editor-apply.yml");
@@ -86,7 +87,7 @@ final class PermsIoCommands {
 
     boolean exportCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapperm.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapperm.admin");
             return true;
         }
         String name = args.length >= 1 ? args[0] : "export.yml";
@@ -105,7 +106,7 @@ final class PermsIoCommands {
 
     boolean importCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapperm.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapperm.admin");
             return true;
         }
         if (args.length < 1) {

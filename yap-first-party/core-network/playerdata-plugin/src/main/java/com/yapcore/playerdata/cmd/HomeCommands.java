@@ -5,6 +5,7 @@ import com.yapcore.playerdata.db.HomesRepository;
 import com.yapcore.playerdata.db.LocationRow;
 import com.yapcore.playerdata.sync.SyncService;
 import com.yapcore.playerdata.util.Teleports;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -33,7 +34,7 @@ public final class HomeCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, "yapdata.home")) {

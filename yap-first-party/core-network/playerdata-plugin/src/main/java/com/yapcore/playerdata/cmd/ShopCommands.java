@@ -4,6 +4,7 @@ import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.ShopRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
 import com.yapcore.playerdata.sync.SyncService;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Chest;
@@ -35,7 +36,7 @@ public final class ShopCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, "yapdata.shop")) {
@@ -145,7 +146,7 @@ public final class ShopCommands implements CommandExecutor, TabCompleter {
     /** Called from listener when buyer left-clicks chest. */
     public boolean tryBuy(Player buyer, ShopRepository.Shop shop, Chest chest) throws Exception {
         if (!buyer.hasPermission("yapdata.shop")) {
-            buyer.sendMessage("§cNo permission.");
+            YapMessages.noPermission(buyer, "yapdata.shop");
             return false;
         }
         if (shop.owner().equals(buyer.getUniqueId())) {

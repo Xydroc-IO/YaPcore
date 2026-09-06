@@ -1,6 +1,7 @@
 package com.yapcore.factions.cmd;
 
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -14,7 +15,7 @@ final class FactionMembershipCommands {
 
     boolean create(Player player, String[] args) {
         if (!player.hasPermission("yapfactions.create")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapfactions.create");
             return true;
         }
         if (args.length < 3) {

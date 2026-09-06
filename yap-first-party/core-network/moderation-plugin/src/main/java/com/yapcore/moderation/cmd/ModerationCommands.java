@@ -12,6 +12,7 @@ import com.yapcore.moderation.cmd.ModerationCmdSupport.Actor;
 import com.yapcore.moderation.db.ModerationRepository;
 import com.yapcore.moderation.seen.SeenPlayerRepository;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -70,12 +71,12 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
 
     private boolean yapmod(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapmod.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.admin");
             return true;
         }
         if (args.length >= 1 && "reload".equalsIgnoreCase(args[0])) {
             plugin.reloadPlugin();
-            sender.sendMessage("§aYaPModeration reloaded.");
+            YapMessages.reloaded(sender, "YaPModeration");
             return true;
         }
         if (args.length >= 1 && "seen".equalsIgnoreCase(args[0])) {
@@ -87,7 +88,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
 
     private boolean ban(CommandSender sender, String[] args, long expiresAt, boolean temp) {
         if (!sender.hasPermission("yapmod.ban")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.ban");
             return true;
         }
         if (args.length < 1) {
@@ -149,7 +150,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
 
     private boolean unban(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapmod.ban")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.ban");
             return true;
         }
         if (args.length < 1) {
@@ -170,7 +171,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
 
     private boolean ipBan(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapmod.ipban")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.ipban");
             return true;
         }
         if (args.length < 1) {
@@ -225,7 +226,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
 
     private boolean unbanIp(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapmod.ipban")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.ipban");
             return true;
         }
         if (args.length < 1) {
@@ -245,7 +246,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
 
     private boolean mute(CommandSender sender, String[] args, long expiresAt) {
         if (!sender.hasPermission("yapmod.mute")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.mute");
             return true;
         }
         if (args.length < 1) {
@@ -293,7 +294,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
 
     private boolean unmute(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapmod.mute")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.mute");
             return true;
         }
         if (args.length < 1) {
@@ -314,7 +315,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
 
     private boolean warn(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapmod.warn")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.warn");
             return true;
         }
         if (args.length < 1) {
@@ -347,7 +348,7 @@ public final class ModerationCommands implements CommandExecutor, TabCompleter {
 
     private boolean kick(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapmod.kick")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.kick");
             return true;
         }
         if (args.length < 1) {

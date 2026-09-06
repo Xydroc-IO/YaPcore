@@ -21,6 +21,7 @@ dependencies {
     val paperApi = providers.gradleProperty("paperApiVersion").getOrElse("26.2.build.112-stable")
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-sched"))
+    implementation(project(":yap-messages-api"))
     // Soft-deps alone don't load API classes when YaPModeration failed to enable — ship a copy.
     implementation(project(":yap-moderation-api"))
     implementation(project(":yap-chat-api"))

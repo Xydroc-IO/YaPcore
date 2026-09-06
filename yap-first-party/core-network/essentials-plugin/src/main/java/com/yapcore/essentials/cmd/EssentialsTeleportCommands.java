@@ -12,6 +12,7 @@ import com.yapcore.essentials.util.TeleportHelper;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.moderation.Punishment;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.GameMode;
@@ -42,7 +43,7 @@ final class EssentialsTeleportCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.spawn")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         Player player = (Player) sender;
@@ -65,7 +66,7 @@ final class EssentialsTeleportCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.setspawn")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         Player player = (Player) sender;
@@ -82,7 +83,7 @@ final class EssentialsTeleportCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.back")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         Player player = (Player) sender;
@@ -104,7 +105,7 @@ final class EssentialsTeleportCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.tpa")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length < 1) {
@@ -171,7 +172,7 @@ final class EssentialsTeleportCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.teleport")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length < 1) {
@@ -209,7 +210,7 @@ final class EssentialsTeleportCommands {
             return true;
         }
         if (!sender.hasPermission("yapessentials.teleport")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender);
             return true;
         }
         if (args.length < 1) {

@@ -15,6 +15,7 @@ import com.yapcore.world.schem.SchematicPaster;
 import com.yapcore.world.schem.SpongeSchematicImporter;
 import com.yapcore.world.service.SelectionServiceImpl;
 import com.yapcore.world.tool.WorldEditSession;
+import com.yapcore.messages.YapMessages;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -350,7 +351,7 @@ public final class WorldEditGuiListener implements Listener {
 
     private void startPregen(Player player) {
         if (!player.hasPermission("yapworld.pregen")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapworld.pregen");
             return;
         }
         if (!PregenBridge.available()) {

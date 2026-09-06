@@ -5,6 +5,7 @@ import com.yapcore.playerdata.bag.BackpackService;
 import com.yapcore.playerdata.db.BackpackRepository;
 import com.yapcore.playerdata.sync.SyncService;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -34,7 +35,7 @@ public final class BagCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, BackpackPages.NODE_USE)) {

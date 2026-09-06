@@ -1,0 +1,21 @@
+use-shared-yapdb: true
+
+jdbc:
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata
+  user: yap
+  password: change-me
+
+pool:
+  maximum-pool-size: 8
+  minimum-idle: 2
+  connection-timeout-ms: 10000
+
+messages:
+  ban-login: "&cYou are banned.\n&7Reason: &f{reason}\n&7Expires: &f{expires}\n&7By: &f{actor}"
+  ipban-login: "&cYour IP is banned.\n&7Reason: &f{reason}"
+  mute-chat: "&cYou are muted. &7({reason})"
+  kick: "&cYou were kicked.\n&7Reason: &f{reason}"
+  warn: "&cWarning: &f{reason}"
+
+alt:
+  notify-staff-on-join: true

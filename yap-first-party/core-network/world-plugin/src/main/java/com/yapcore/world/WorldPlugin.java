@@ -31,6 +31,7 @@ import com.yapcore.world.tool.WorldEditTool;
 import com.yapcore.world.web.WorldEditBrowser;
 import com.yapcore.world.web.WorldEditHttpServer;
 import com.yapcore.world.web.WorldEditSessionRegistry;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.ServicePriority;
@@ -269,7 +270,7 @@ public final class WorldPlugin extends JavaPlugin {
     public void openInGameGui(Player player) {
         if (!player.hasPermission("yapworld.selection") && !player.hasPermission("yapworld.brush")
                 && !player.hasPermission("yapworld.admin")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapworld.selection");
             return;
         }
         if (!config.selectionEnabled()) {
@@ -281,7 +282,7 @@ public final class WorldPlugin extends JavaPlugin {
 
     public void openBrowserEditor(Player player) {
         if (!canUseEditor(player)) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player);
             return;
         }
         if (!config.selectionEnabled()) {

@@ -9,6 +9,7 @@ import com.yapcore.playerdata.kit.KitGrantService;
 import com.yapcore.playerdata.kit.KitYaml;
 import com.yapcore.playerdata.sync.SyncService;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -97,7 +98,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
 
     private boolean openGui(CommandSender sender) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only — use kit list / kit give from console.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, "yapdata.kit")) {
@@ -129,7 +130,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
 
     private boolean listKits(CommandSender sender) {
         if (!isKitAdmin(sender)) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdata.kit.give");
             return true;
         }
         if (config.kits().isEmpty()) {
@@ -142,7 +143,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
 
     private boolean giveOrGrant(CommandSender sender, String sub, String[] args) {
         if (!isKitAdmin(sender)) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdata.kit.give");
             return true;
         }
         if (args.length < 3) {
@@ -200,11 +201,11 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
 
     private boolean createKit(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only — stand in the loadout and /createkit <name>.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!sender.hasPermission("yapdata.kit.create") && !sender.hasPermission("yapdata.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdata.kit.create");
             return true;
         }
         if (args.length < 1) {
@@ -237,7 +238,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
 
     private boolean deleteKit(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapdata.kit.create") && !sender.hasPermission("yapdata.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdata.kit.create");
             return true;
         }
         if (args.length < 1) {
@@ -257,7 +258,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
 
     private boolean showKit(CommandSender sender, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (args.length < 1) {
@@ -266,7 +267,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
         }
         String id = args[0].toLowerCase(Locale.ROOT);
         if (!Perms.hasKit(player, id) && !isKitAdmin(player)) {
-            player.sendMessage("§cNo permission for that kit.");
+            YapMessages.noPermission(player);
             return true;
         }
         menus.openKitPreview(player, id);
@@ -276,7 +277,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
     private boolean resetKit(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapdata.kit.reset") && !sender.hasPermission("yapdata.admin")
                 && !sender.hasPermission("yapdata.kit.give") && !(sender instanceof ConsoleCommandSender)) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdata.kit.reset");
             return true;
         }
         if (args.length < 1) {
@@ -307,7 +308,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
             switch (result.outcome()) {
                 case OK -> player.sendMessage("§aClaimed kit §f" + id);
                 case UNKNOWN -> player.sendMessage("§cUnknown kit.");
-                case NO_PERM -> player.sendMessage("§cNo permission for that kit.");
+                case NO_PERM -> YapMessages.noPermission(player);
                 case COOLDOWN -> player.sendMessage("§cKit on cooldown (" + result.detail() + " left).");
                 case MAX_USES -> player.sendMessage("§cKit used up (max " + result.detail() + ").");
                 case CANT_AFFORD -> player.sendMessage("§cThat kit costs §f$" + result.detail());

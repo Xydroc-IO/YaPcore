@@ -4,6 +4,7 @@ import com.yapcore.disasters.DisasterType;
 import com.yapcore.disasters.DisastersPlugin;
 import com.yapcore.disasters.SkyWeather;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -58,7 +59,7 @@ public final class DisasterGui implements Listener {
 
     public void open(Player player) {
         if (!player.hasPermission("yapdisasters.use")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapdisasters.use");
             return;
         }
         World world = player.getWorld();

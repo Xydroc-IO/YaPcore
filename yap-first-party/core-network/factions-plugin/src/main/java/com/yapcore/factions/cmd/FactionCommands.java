@@ -4,6 +4,7 @@ import com.yapcore.factions.FactionJoinMode;
 import com.yapcore.factions.FactionRelation;
 import com.yapcore.factions.FactionsConfig;
 import com.yapcore.factions.service.FactionServiceImpl;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -32,11 +33,11 @@ public final class FactionCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapfactions.use")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapfactions.use");
             return true;
         }
         if (args.length == 0) {

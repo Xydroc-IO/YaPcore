@@ -8,6 +8,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
 import java.util.Locale;
+import com.yapcore.messages.YapMessages;
 
 /**
  * Full PDC mob/item/spawner stacker for YaPcore / Paper. No NMS.
@@ -146,7 +147,7 @@ public final class StackerPlugin extends JavaPlugin {
         }
         if (!sender.hasPermission("yapstacker.admin")
                 && !"gui".equalsIgnoreCase(args[0])) {
-            sender.sendMessage("No permission.");
+            YapMessages.noPermission(sender, "yapstacker.admin");
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -155,15 +156,15 @@ public final class StackerPlugin extends JavaPlugin {
                 config.reload();
                 tasks.stop();
                 tasks.start();
-                sender.sendMessage("YaP Stacker reloaded.");
+                YapMessages.reloaded(sender, "YaP Stacker");
             }
             case "gui" -> {
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage("Players only.");
+                    YapMessages.playersOnly(sender);
                     return true;
                 }
                 if (!player.hasPermission("yapstacker.gui") && !player.hasPermission("yapstacker.admin")) {
-                    player.sendMessage("No permission.");
+                    YapMessages.noPermission(player, "yapstacker.gui");
                     return true;
                 }
                 adminGui.open(player);
@@ -176,7 +177,7 @@ public final class StackerPlugin extends JavaPlugin {
                             + " aura=" + metrics.auraKills());
             case "give" -> {
                 if (!sender.hasPermission("yapstacker.give") && !sender.hasPermission("yapstacker.admin")) {
-                    sender.sendMessage("No permission.");
+                    YapMessages.noPermission(sender, "yapstacker.give");
                     return true;
                 }
                 if (args.length < 2) {

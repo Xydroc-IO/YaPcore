@@ -1,5 +1,6 @@
 package com.yapcore.perms.cmd;
 
+import com.yapcore.messages.YapMessages;
 import com.yapcore.perms.PermsPlugin;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
@@ -20,7 +21,7 @@ final class PermsTrackCommands {
 
     boolean trackCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapperm.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapperm.admin");
             return true;
         }
         if (args.length == 0 || "list".equalsIgnoreCase(args[0])) {
@@ -109,7 +110,7 @@ final class PermsTrackCommands {
 
     boolean promote(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapperm.promote")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapperm.promote");
             return true;
         }
         if (args.length < 1) {
@@ -121,7 +122,7 @@ final class PermsTrackCommands {
 
     boolean demote(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapperm.demote")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapperm.demote");
             return true;
         }
         if (args.length < 1) {

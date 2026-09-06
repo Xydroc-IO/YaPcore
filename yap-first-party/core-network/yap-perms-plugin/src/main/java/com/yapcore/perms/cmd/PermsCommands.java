@@ -1,5 +1,6 @@
 package com.yapcore.perms.cmd;
 
+import com.yapcore.messages.YapMessages;
 import com.yapcore.perms.PermsPlugin;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
@@ -56,7 +57,7 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
         return switch (sub) {
             case "gui", "menu", "ranks" -> {
                 if (!(sender instanceof Player player)) {
-                    sender.sendMessage("Players only.");
+                    YapMessages.playersOnly(sender);
                     yield true;
                 }
                 plugin.ranksGui().openHub(player);
@@ -64,16 +65,16 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
             }
             case "reload" -> {
                 if (!sender.hasPermission("yapperm.admin")) {
-                    sender.sendMessage("§cNo permission.");
+                    YapMessages.noPermission(sender, "yapperm.admin");
                     yield true;
                 }
                 plugin.reloadAll();
-                sender.sendMessage("§aYaPPerms reloaded.");
+                YapMessages.reloaded(sender, "YaPPerms");
                 yield true;
             }
             case "applypack" -> {
                 if (!sender.hasPermission("yapperm.admin")) {
-                    sender.sendMessage("§cNo permission.");
+                    YapMessages.noPermission(sender, "yapperm.admin");
                     yield true;
                 }
                 YapSched.async(plugin, () -> {
@@ -107,7 +108,7 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
 
     private boolean checkCmd(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapperm.admin") && !sender.hasPermission("yapperm.user")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapperm.admin");
             return true;
         }
         if (args.length < 2) {

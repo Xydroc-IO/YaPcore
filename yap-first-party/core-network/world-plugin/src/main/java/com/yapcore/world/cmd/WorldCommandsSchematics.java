@@ -9,6 +9,7 @@ import com.yapcore.world.schem.SchematicIO;
 import com.yapcore.world.schem.SchematicPaster;
 import com.yapcore.world.schem.SpongeSchematicImporter;
 import com.yapcore.world.service.SelectionServiceImpl;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
@@ -41,11 +42,11 @@ final class WorldCommandsSchematics {
             return true;
         }
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapworld.schematic")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapworld.schematic");
             return true;
         }
         if (args.length < 2) {

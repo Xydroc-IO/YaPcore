@@ -3,6 +3,7 @@ package com.yapcore.dungeons.cmd;
 import com.yapcore.dungeons.DungeonRun;
 import com.yapcore.dungeons.DungeonService;
 import com.yapcore.dungeons.gui.DungeonMenu;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -28,11 +29,11 @@ public final class DungeonCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!player.hasPermission("yapdungeons.use")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapdungeons.use");
             return true;
         }
         if (args.length == 0 || "open".equalsIgnoreCase(args[0])) {

@@ -20,6 +20,7 @@ dependencies {
     val paperApi = providers.gradleProperty("paperApiVersion").getOrElse("26.2.build.112-stable")
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-sched"))
+    implementation(project(":yap-messages-api"))
     compileOnly(project(":yap-moderation-api"))
     compileOnly(project(":yap-bedrock-ui-api"))
 
@@ -36,7 +37,10 @@ tasks.test {
 tasks.jar {
     from({
         configurations.runtimeClasspath.get()
-            .filter { f -> f.name.contains("yap-sched") }
+            .filter { f ->
+            val n = f.name
+            n.contains("yap-sched") || n.contains("yap-messages-api")
+        }
             .map { zipTree(it) }
     })
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

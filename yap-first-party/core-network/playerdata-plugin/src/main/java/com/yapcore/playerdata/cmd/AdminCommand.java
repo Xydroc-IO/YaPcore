@@ -4,6 +4,7 @@ import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.auth.AuthService;
 import com.yapcore.playerdata.db.Database;
 import com.yapcore.playerdata.sync.SyncService;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -40,7 +41,7 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapdata.admin")) {
-            sender.sendMessage("No permission.");
+            YapMessages.noPermission(sender, "yapdata.admin");
             return true;
         }
         if (args.length == 0) {
@@ -51,7 +52,8 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             case "reload" -> {
                 plugin.reloadConfig();
                 config.reload();
-                sender.sendMessage("YaPPlayerData config reloaded (DB URL changes require restart).");
+                YapMessages.reloaded(sender, "YaPPlayerData");
+                YapMessages.send(sender, "&7DB URL changes require restart.");
             }
             case "status" -> {
                 sender.sendMessage("YaPPlayerData status:");

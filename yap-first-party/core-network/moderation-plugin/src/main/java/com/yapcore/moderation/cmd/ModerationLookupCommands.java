@@ -7,6 +7,7 @@ import com.yapcore.moderation.Punishment;
 import com.yapcore.moderation.alt.AltRepository;
 import com.yapcore.moderation.db.ModerationRepository;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
@@ -30,7 +31,7 @@ final class ModerationLookupCommands {
 
     boolean modCheck(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapmod.history")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.history");
             return true;
         }
         if (args.length < 1) {
@@ -67,7 +68,7 @@ final class ModerationLookupCommands {
 
     boolean banList(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapmod.history")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.history");
             return true;
         }
         int limit = 20;
@@ -97,7 +98,7 @@ final class ModerationLookupCommands {
 
     boolean history(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapmod.history")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapmod.history");
             return true;
         }
         if (args.length < 1) {

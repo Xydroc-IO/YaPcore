@@ -1,5 +1,6 @@
 package com.yapcore.chat;
 
+import com.yapcore.messages.YapMessageBundle;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -33,14 +34,7 @@ public final class ChatConfig {
     private Set<String> filterWords = Set.of();
     private String filterReplacement = "***";
     private Map<String, ChannelDef> channels = Map.of();
-    private String mutedMessage = "&cYou are muted.";
-    private String pmSent = "&7[You → {target}] {message}";
-    private String pmReceived = "&7[{sender} → You] {message}";
-    private String staffFormat = "&c[Staff] {player}: {message}";
-    private String adminFormat = "&4[Admin] {player}: {message}";
-    private String socialSpyFormat = "&8[Spy] {sender} → {target}: {message}";
-    private String slowModeMessage = "&cSlow mode.";
-    private String filteredMessage = "&cMessage blocked.";
+    private YapMessageBundle messages = YapMessageBundle.fromSection(null);
     private boolean networkEnabled = true;
     private String serverId = "lobby";
     private Set<String> networkRelayChannels = Set.of("global", "staff", "admin");
@@ -65,14 +59,7 @@ public final class ChatConfig {
         }
         filterReplacement = c.getString("filter.replacement", "***");
         channels = loadChannels(c.getConfigurationSection("channels"));
-        mutedMessage = c.getString("messages.muted", mutedMessage);
-        pmSent = c.getString("messages.pm-sent", pmSent);
-        pmReceived = c.getString("messages.pm-received", pmReceived);
-        staffFormat = c.getString("messages.staff-format", staffFormat);
-        adminFormat = c.getString("messages.admin-format", adminFormat);
-        socialSpyFormat = c.getString("messages.socialspy", socialSpyFormat);
-        slowModeMessage = c.getString("messages.slow-mode", slowModeMessage);
-        filteredMessage = c.getString("messages.filtered", filteredMessage);
+        messages = YapMessageBundle.fromSection(c.getConfigurationSection("messages"));
         networkEnabled = c.getBoolean("network.enabled", true);
         serverId = c.getString("server-id", serverId);
         networkRelayChannels = new HashSet<>();
@@ -178,36 +165,40 @@ public final class ChatConfig {
                                 "{prefix}{namecolor}{player}&7: {chatcolor}{message}", -1, "")));
     }
 
+    public YapMessageBundle messages() {
+        return messages;
+    }
+
     public String mutedMessage() {
-        return mutedMessage;
+        return messages.raw("muted", "&cYou are muted. &7({reason})");
     }
 
     public String pmSent() {
-        return pmSent;
+        return messages.raw("pm-sent", "&7[You → {target}] {message}");
     }
 
     public String pmReceived() {
-        return pmReceived;
+        return messages.raw("pm-received", "&7[{sender} → You] {message}");
     }
 
     public String staffFormat() {
-        return staffFormat;
+        return messages.raw("staff-format", "&c[Staff] {player}: {message}");
     }
 
     public String adminFormat() {
-        return adminFormat;
+        return messages.raw("admin-format", "&4[Admin] {player}: {message}");
     }
 
     public String socialSpyFormat() {
-        return socialSpyFormat;
+        return messages.raw("socialspy", "&8[Spy] {sender} → {target}: {message}");
     }
 
     public String slowModeMessage() {
-        return slowModeMessage;
+        return messages.raw("slow-mode", "&cSlow mode — wait {seconds}s.");
     }
 
     public String filteredMessage() {
-        return filteredMessage;
+        return messages.raw("filtered", "&cMessage blocked by filter.");
     }
 
     public boolean networkEnabled() {

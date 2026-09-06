@@ -4,6 +4,7 @@ import com.yapcore.admin.AdminConfig;
 import com.yapcore.admin.AdminPlugin;
 import com.yapcore.admin.action.AdminActions;
 import com.yapcore.admin.session.AdminSession;
+import com.yapcore.messages.YapMessages;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -65,7 +66,7 @@ public final class AdminMenus {
 
     public void openHub(Player player) {
         if (!player.hasPermission("yapadmin.menu")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapadmin.menu");
             return;
         }
         if (AdminBedrockForms.tryOpenHub(plugin, player)) {
@@ -230,7 +231,7 @@ public final class AdminMenus {
 
     public void openGiveHub(Player player) {
         if (!player.hasPermission("yapadmin.give")) {
-            player.sendMessage("§cNo permission.");
+            YapMessages.noPermission(player, "yapadmin.give");
             return;
         }
         AdminSession session = plugin.session(player.getUniqueId());

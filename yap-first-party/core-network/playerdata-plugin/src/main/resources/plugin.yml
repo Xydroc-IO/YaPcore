@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: Cross-server sync, offline /login, session lock, schema — data plane for YaPcore
 website: https://github.com/yaplabs
-softdepend: [Vault, PlaceholderAPI, YaPDB]
+softdepend: [Vault, PlaceholderAPI, YaPDB, YaPBedrockUI]
 commands:
   register:
     description: Register an offline password

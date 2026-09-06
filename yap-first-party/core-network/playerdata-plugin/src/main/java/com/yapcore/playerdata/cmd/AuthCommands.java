@@ -2,6 +2,7 @@ package com.yapcore.playerdata.cmd;
 
 import com.yapcore.playerdata.auth.AuthService;
 import com.yapcore.playerdata.db.AuthRepository;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -30,7 +31,7 @@ public final class AuthCommands implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String name = command.getName().toLowerCase(Locale.ROOT);
         if (!(sender instanceof Player player) && !name.equals("unregister")) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         return switch (name) {
@@ -64,7 +65,7 @@ public final class AuthCommands implements CommandExecutor, TabCompleter {
             }
             case "unregister" -> {
                 if (!sender.hasPermission("yapdata.admin")) {
-                    sender.sendMessage("No permission.");
+                    YapMessages.noPermission(sender, "yapdata.admin");
                     yield true;
                 }
                 if (args.length < 1) {

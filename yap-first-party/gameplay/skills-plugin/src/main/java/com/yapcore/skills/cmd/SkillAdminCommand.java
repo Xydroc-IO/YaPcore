@@ -4,6 +4,7 @@ import com.yapcore.mmo.SkillId;
 import com.yapcore.mmo.XpSource;
 import com.yapcore.skills.db.SkillRepository;
 import com.yapcore.skills.service.SkillServiceImpl;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
@@ -37,14 +38,14 @@ public final class SkillAdminCommand implements CommandExecutor, TabCompleter {
         return switch (args[0].toLowerCase(Locale.ROOT)) {
             case "addxp" -> {
                 if (!sender.hasPermission("yapskills.admin")) {
-                    sender.sendMessage("§cNo permission.");
+                    YapMessages.noPermission(sender, "yapskills.admin");
                     yield true;
                 }
                 yield handleAddXp(sender, args);
             }
             case "set", "setlevel" -> {
                 if (!sender.hasPermission("yapskills.admin")) {
-                    sender.sendMessage("§cNo permission.");
+                    YapMessages.noPermission(sender, "yapskills.admin");
                     yield true;
                 }
                 yield handleSetLevel(sender, args);

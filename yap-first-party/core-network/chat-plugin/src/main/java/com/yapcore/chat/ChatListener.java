@@ -44,7 +44,7 @@ public final class ChatListener implements Listener {
         if (!source.hasPermission("yapchat.use")) {
             event.setCancelled(true);
             event.viewers().clear();
-            source.sendMessage(ChatFormat.legacy(config.filteredMessage()));
+            config.messages().noPermission(source, "yapchat.use");
             return;
         }
 
@@ -52,16 +52,15 @@ public final class ChatListener implements Listener {
         if (mute.isPresent()) {
             event.setCancelled(true);
             event.viewers().clear();
-            source.sendMessage(ChatFormat.legacy(config.mutedMessage()
-                    .replace("{reason}", mute.get().reason())));
+            config.messages().sendRaw(source, config.mutedMessage(), "reason", mute.get().reason());
             return;
         }
 
         if (!slowMode.allow(source, config.slowModeSeconds())) {
             event.setCancelled(true);
             event.viewers().clear();
-            source.sendMessage(ChatFormat.legacy(config.slowModeMessage()
-                    .replace("{seconds}", String.valueOf(slowMode.remainingSeconds(source, config.slowModeSeconds())))));
+            config.messages().sendRaw(source, config.slowModeMessage(),
+                    "seconds", String.valueOf(slowMode.remainingSeconds(source, config.slowModeSeconds())));
             return;
         }
 
@@ -81,7 +80,10 @@ public final class ChatListener implements Listener {
         if (!config.canUseChannel(source, channel)) {
             event.setCancelled(true);
             event.viewers().clear();
-            source.sendMessage(ChatFormat.legacy("&cNo permission for &f" + channel + " &cchannel."));
+            ChatConfig.ChannelDef def = config.channel(channel);
+            String need = def.requiresPermission() ? def.permission() : "yapchat.use";
+            config.messages().send(source, "channel-no-permission", "channel", channel);
+            config.messages().noPermission(source, need);
             channels.setChannel(source, config.defaultChannel());
             return;
         }
@@ -91,7 +93,7 @@ public final class ChatListener implements Listener {
             if (filtered.blocked()) {
                 event.setCancelled(true);
                 event.viewers().clear();
-                source.sendMessage(ChatFormat.legacy(config.filteredMessage()));
+                config.messages().sendRaw(source, config.filteredMessage());
                 return;
             }
             if (filtered.matched()) {

@@ -1,0 +1,45 @@
+# Opt-in skills RPG. Leave false unless you want the progression system.
+enabled: false
+
+# Shared MariaDB via YaPDB when available
+use-shared-yapdb: true
+
+jdbc:
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
+  user: yap
+  password: change-me
+
+pool:
+  maximum-pool-size: 6
+  minimum-idle: 1
+  connection-timeout-ms: 10000
+
+xp-table:
+  max-level: 120
+  multiplier: 1.0
+
+# First-class overall player level (stored XP in yap_player_overall).
+# Cap matches skills (120); skill XP also feeds overall at xp-share.
+overall:
+  max-level: 120
+  xp-share: 0.5
+  # When a skill is maxed, actions still feed overall (higher share).
+  maxed-xp-share: 0.75
+  multiplier: 1.0
+
+feedback:
+  action-bar-xp: true
+  level-up-title: true
+  level-up-chat: true
+
+# When true, legacy playerdata jobs should stay disabled (features.jobs: false)
+prefer-over-jobs: true
+
+skills-directory: skills
+
+# Display-only combat level: floor((attack+strength+defence+hitpoints)/4)
+combat-level:
+  attack-skill: attack
+  strength-skill: strength
+  defence-skill: defence
+  hitpoints-skill: hitpoints

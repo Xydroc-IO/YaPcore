@@ -1,6 +1,7 @@
 package com.yapcore.playerdata.kit;
 
 import com.yapcore.playerdata.cmd.KitCommands;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
 import org.bukkit.event.EventHandler;
@@ -32,7 +33,7 @@ public final class KitSignListener implements Listener {
         }
         if (!event.getPlayer().hasPermission("yapdata.kit.create")
                 && !event.getPlayer().hasPermission("yapdata.admin")) {
-            event.getPlayer().sendMessage("§cNo permission to create kit signs.");
+            YapMessages.noPermission(event.getPlayer(), "yapdata.kit.create");
             event.setCancelled(true);
             return;
         }

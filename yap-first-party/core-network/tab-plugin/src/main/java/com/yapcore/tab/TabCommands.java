@@ -3,6 +3,7 @@ package com.yapcore.tab;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import com.yapcore.messages.YapMessages;
 
 public final class TabCommands implements CommandExecutor {
 
@@ -15,12 +16,12 @@ public final class TabCommands implements CommandExecutor {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yaptab.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yaptab.admin");
             return true;
         }
         if (args.length >= 1 && "reload".equalsIgnoreCase(args[0])) {
             plugin.reloadTab();
-            sender.sendMessage("§aYaPTab reloaded.");
+            YapMessages.reloaded(sender, "YaPTab");
             return true;
         }
         if (args.length >= 1 && "refresh".equalsIgnoreCase(args[0])) {

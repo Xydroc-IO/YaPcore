@@ -4,6 +4,7 @@ import com.yapcore.playerdata.claims.Claim;
 import com.yapcore.playerdata.claims.ClaimVisualizer;
 import com.yapcore.playerdata.cmd.Perms;
 import com.yapcore.playerdata.util.Teleports;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -206,7 +207,7 @@ final class MenuClickHandler {
         if (action.startsWith("join:")) {
             String id = action.substring(5);
             if (!Perms.hasJob(player, id)) {
-                player.sendMessage("§cNo permission for that job.");
+                YapMessages.noPermission(player);
                 return true;
             }
             menus.jobs.join(player.getUniqueId(), id);

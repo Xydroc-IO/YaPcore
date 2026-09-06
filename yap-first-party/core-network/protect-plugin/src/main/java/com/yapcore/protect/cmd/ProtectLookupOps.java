@@ -7,6 +7,7 @@ import com.yapcore.protect.ProtectLookupPage;
 import com.yapcore.protect.service.ProtectServiceImpl;
 import com.yapcore.protect.util.DurationParser;
 import com.yapcore.sched.YapSched;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -35,7 +36,7 @@ final class ProtectLookupOps {
 
     boolean lookup(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapprotect.lookup")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapprotect.lookup");
             return true;
         }
         if (args.length < 2) {
@@ -112,7 +113,7 @@ final class ProtectLookupOps {
 
     private boolean lookupRadius(CommandSender sender, String[] args, long now, int limit) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only for radius lookup.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (args.length < 3) {
@@ -172,7 +173,7 @@ final class ProtectLookupOps {
 
     boolean dashLookup(CommandSender sender, String[] args) {
         if (!sender.hasPermission("yapprotect.lookup")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapprotect.lookup");
             return true;
         }
         if (args.length < 3) {

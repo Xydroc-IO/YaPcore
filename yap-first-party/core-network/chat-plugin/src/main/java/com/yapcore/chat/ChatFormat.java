@@ -1,11 +1,12 @@
 package com.yapcore.chat;
 
+import com.yapcore.messages.YapMessageBundle;
+import com.yapcore.messages.YapText;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.moderation.Punishment;
 import com.yapcore.perms.YaPPerms;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -13,11 +14,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 public final class ChatFormat {
-
-    private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.builder()
-            .character(LegacyComponentSerializer.SECTION_CHAR)
-            .hexColors()
-            .build();
 
     private ChatFormat() {
     }
@@ -36,16 +32,16 @@ public final class ChatFormat {
             chatColor = perms.getChatColor(player.getUniqueId()).orElse("&f");
         }
         String rendered = channel.format()
-                .replace("{prefix}", color(prefix))
-                .replace("{suffix}", color(suffix))
-                .replace("{namecolor}", color(nameColor))
-                .replace("{name-color}", color(nameColor))
-                .replace("{chatcolor}", color(chatColor))
-                .replace("{chat-color}", color(chatColor))
+                .replace("{prefix}", prefix)
+                .replace("{suffix}", suffix)
+                .replace("{namecolor}", nameColor)
+                .replace("{name-color}", nameColor)
+                .replace("{chatcolor}", chatColor)
+                .replace("{chat-color}", chatColor)
                 .replace("{group}", perms != null ? perms.displayGroup(player.getUniqueId()) : "")
                 .replace("{player}", player.getName())
-                .replace("{message}", color(plainMessage));
-        return LEGACY.deserialize(color(rendered));
+                .replace("{message}", plainMessage == null ? "" : plainMessage);
+        return YapText.component(rendered);
     }
 
     public static Component formatNetwork(ChatConfig config, String channelName, String serverId,
@@ -59,13 +55,13 @@ public final class ChatFormat {
                 .replace("{chatcolor}", "&f")
                 .replace("{chat-color}", "&f")
                 .replace("{group}", "")
-                .replace("{player}", color("&7[" + serverId + "] &f" + senderName))
-                .replace("{message}", color(plainMessage));
-        return LEGACY.deserialize(color(rendered));
+                .replace("{player}", "&7[" + serverId + "] &f" + senderName)
+                .replace("{message}", plainMessage == null ? "" : plainMessage);
+        return YapText.component(rendered);
     }
 
     public static Component legacy(String raw) {
-        return LEGACY.deserialize(color(raw));
+        return YapText.component(raw);
     }
 
     /**
@@ -74,16 +70,11 @@ public final class ChatFormat {
      * to {@code MessageType.CHAT}, which clients flag as "Chat messages cannot be verified".
      */
     public static void sendSystem(Audience audience, Component message) {
-        if (audience == null || message == null) {
-            return;
-        }
-        if (audience instanceof Player player) {
-            player.sendMessage(message);
-            return;
-        }
-        audience.sendMessage(message);
+        YapMessageBundle.sendSystem(audience, message);
     }
 
+    /** @deprecated prefer {@link YapText#component(String)} / Adventure send */
+    @Deprecated
     public static String color(String raw) {
         if (raw == null) {
             return "";

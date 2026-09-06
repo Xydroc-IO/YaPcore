@@ -5,6 +5,7 @@ import com.yapcore.npcs.action.NpcActions;
 import com.yapcore.npcs.db.NpcRepository;
 import com.yapcore.npcs.service.NpcServiceImpl;
 import com.yapcore.playerdata.NpcTraderAccess;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -80,7 +81,7 @@ final class NpcShopOps {
 
     private boolean shopAddOffer(CommandSender sender, String[] args, String mode) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cPlayers only (need held item).");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (args.length < 4) {

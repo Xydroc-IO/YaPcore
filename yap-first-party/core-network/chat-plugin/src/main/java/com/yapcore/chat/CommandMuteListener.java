@@ -37,7 +37,6 @@ public final class CommandMuteListener implements Listener {
             }
         }
         event.setCancelled(true);
-        player.sendMessage(ChatFormat.legacy(config.mutedMessage()
-                .replace("{reason}", mute.get().reason())));
+        config.messages().sendRaw(player, config.mutedMessage(), "reason", mute.get().reason());
     }
 }

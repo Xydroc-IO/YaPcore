@@ -4,6 +4,7 @@ import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.JobRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
 import com.yapcore.playerdata.sync.SyncService;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -32,7 +33,7 @@ public final class JobCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, "yapdata.jobs")) {
@@ -55,7 +56,7 @@ public final class JobCommands implements CommandExecutor, TabCompleter {
                     return true;
                 }
                 if (!Perms.hasJob(player, id)) {
-                    player.sendMessage("§cNo permission for that job.");
+                    YapMessages.noPermission(player);
                     return true;
                 }
                 jobs.join(player.getUniqueId(), id);

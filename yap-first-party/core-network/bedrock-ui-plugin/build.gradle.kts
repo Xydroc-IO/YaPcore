@@ -20,6 +20,7 @@ dependencies {
     val paperApi = providers.gradleProperty("paperApiVersion").getOrElse("26.2.build.112-stable")
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-sched"))
+    implementation(project(":yap-messages-api"))
     implementation(project(":yap-bedrock-ui-api"))
     compileOnly(project(":yap-mmo-api"))
     compileOnly(project(":floodgate-plugin"))
@@ -38,7 +39,7 @@ tasks.jar {
         configurations.runtimeClasspath.get()
             .filter { f ->
                 val n = f.name
-                n.contains("yap-sched") || n.contains("yap-bedrock-ui-api")
+                n.contains("yap-sched") || n.contains("yap-messages-api") || n.contains("yap-bedrock-ui-api")
             }
             .map { zipTree(it) }
     })

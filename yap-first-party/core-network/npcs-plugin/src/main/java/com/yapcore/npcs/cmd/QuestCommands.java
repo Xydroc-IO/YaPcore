@@ -2,6 +2,7 @@ package com.yapcore.npcs.cmd;
 
 import com.yapcore.npcs.QuestProgress;
 import com.yapcore.npcs.service.QuestServiceImpl;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -22,11 +23,11 @@ public final class QuestCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!sender.hasPermission("yapnpcs.quests")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapnpcs.quests");
             return true;
         }
         if (args.length == 0 || "list".equalsIgnoreCase(args[0])) {

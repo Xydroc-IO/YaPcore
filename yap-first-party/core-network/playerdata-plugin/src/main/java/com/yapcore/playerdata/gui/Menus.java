@@ -42,7 +42,7 @@ public final class Menus {
     final PlayerDataPlugin plugin;
     final PlayerDataConfig config;
     final SyncService sync;
-    private final BalanceStore balances;
+    final BalanceStore balances;
     final HomesRepository homes;
     final WarpsRepository warps;
     final KitRepository kits;
@@ -80,6 +80,14 @@ public final class Menus {
         if (!Perms.require(player, "yapdata.menu")) {
             return;
         }
+        if (PlayerDataBedrockForms.tryOpenHub(this, player)) {
+            return;
+        }
+        openHubInventory(player);
+    }
+
+    /** JE chest hub (also fallback when Bedrock UI is unavailable). */
+    public void openHubInventory(Player player) {
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.HUB);
         Inventory inv = Bukkit.createInventory(holder, 45, Component.text("YaP Menu", NamedTextColor.GOLD));
         holder.bind(inv);
@@ -128,6 +136,13 @@ public final class Menus {
         if (!Perms.require(player, "yapdata.home")) {
             return;
         }
+        if (PlayerDataBedrockForms.tryOpenHomes(this, player)) {
+            return;
+        }
+        openHomesInventory(player);
+    }
+
+    public void openHomesInventory(Player player) {
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.HOMES);
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Homes", NamedTextColor.AQUA));
         holder.bind(inv);
@@ -162,6 +177,13 @@ public final class Menus {
         if (!Perms.require(player, "yapdata.warp")) {
             return;
         }
+        if (PlayerDataBedrockForms.tryOpenWarps(this, player)) {
+            return;
+        }
+        openWarpsInventory(player);
+    }
+
+    public void openWarpsInventory(Player player) {
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.WARPS);
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Warps", NamedTextColor.LIGHT_PURPLE));
         holder.bind(inv);
@@ -193,6 +215,13 @@ public final class Menus {
         if (!Perms.require(player, "yapdata.kit")) {
             return;
         }
+        if (PlayerDataBedrockForms.tryOpenKits(this, player)) {
+            return;
+        }
+        openKitsInventory(player);
+    }
+
+    public void openKitsInventory(Player player) {
         YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.KITS);
         Inventory inv = Bukkit.createInventory(holder, 45, Component.text("Kits", NamedTextColor.YELLOW));
         holder.bind(inv);

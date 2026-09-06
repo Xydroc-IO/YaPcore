@@ -2,6 +2,7 @@ package com.yapcore.regions.cmd;
 
 import com.yapcore.regions.RegionFlag;
 import com.yapcore.regions.service.RegionServiceImpl;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -27,7 +28,7 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yapregions.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapregions.admin");
             return true;
         }
         if (args.length == 0) {

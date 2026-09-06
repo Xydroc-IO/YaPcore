@@ -4,6 +4,7 @@ import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.db.LocationRow;
 import com.yapcore.playerdata.db.WarpsRepository;
 import com.yapcore.playerdata.util.Teleports;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -56,11 +57,11 @@ public final class WarpCommands implements CommandExecutor, TabCompleter {
 
     private boolean setWarp(CommandSender sender, String[] args) throws Exception {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!sender.hasPermission("yapdata.warp.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdata.warp.admin");
             return true;
         }
         if (args.length < 1) {
@@ -74,7 +75,7 @@ public final class WarpCommands implements CommandExecutor, TabCompleter {
 
     private boolean delWarp(CommandSender sender, String[] args) throws Exception {
         if (!sender.hasPermission("yapdata.warp.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yapdata.warp.admin");
             return true;
         }
         if (args.length < 1) {
@@ -91,7 +92,7 @@ public final class WarpCommands implements CommandExecutor, TabCompleter {
 
     private boolean warp(CommandSender sender, String[] args) throws Exception {
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
+            YapMessages.playersOnly(sender);
             return true;
         }
         if (!Perms.require(sender, "yapdata.warp")) {

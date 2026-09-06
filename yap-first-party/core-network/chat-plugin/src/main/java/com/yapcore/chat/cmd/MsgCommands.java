@@ -5,6 +5,8 @@ import com.yapcore.chat.ChatFormat;
 import com.yapcore.chat.ChatPlugin;
 import com.yapcore.chat.service.PlayerChannelService;
 import com.yapcore.chat.service.PrivateMessageService;
+import com.yapcore.messages.YapMessageBundle;
+import com.yapcore.messages.YapText;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -14,6 +16,7 @@ import org.bukkit.entity.Player;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class MsgCommands implements CommandExecutor, TabCompleter {
@@ -31,20 +34,24 @@ public final class MsgCommands implements CommandExecutor, TabCompleter {
         this.channels = channels;
     }
 
+    private YapMessageBundle msg() {
+        return config.messages();
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         String name = command.getName().toLowerCase(Locale.ROOT);
         if ("yapchat".equals(name)) {
             if (!sender.hasPermission("yapchat.admin")) {
-                sender.sendMessage(ChatFormat.legacy("&cNo permission."));
+                msg().noPermission(sender, "yapchat.admin");
                 return true;
             }
             if (args.length >= 1 && "reload".equalsIgnoreCase(args[0])) {
                 plugin.reloadChat();
-                sender.sendMessage(ChatFormat.legacy("&aYaPChat reloaded."));
+                msg().reloaded(sender, "YaPChat");
                 return true;
             }
-            sender.sendMessage(ChatFormat.legacy("&e/yapchat reload"));
+            msg().sendRaw(sender, "&e/yapchat reload");
             return true;
         }
         if ("staffchat".equals(name) || "sc".equals(name)) {
@@ -56,90 +63,83 @@ public final class MsgCommands implements CommandExecutor, TabCompleter {
         if ("reply".equals(name) || "r".equals(name)) {
             return reply(sender, args);
         }
-        return msg(sender, args);
+        return msgCmd(sender, args);
     }
 
-    /**
-     * No args → toggle sticky channel. With args → one-shot message to that channel.
-     */
     private boolean quickChannel(CommandSender sender, String[] args, String channelId,
                                  String oneShotFormat, String fallbackPerm) {
         ChatConfig.ChannelDef def = config.channel(channelId);
         String need = def.requiresPermission() ? def.permission() : fallbackPerm;
         if (!sender.hasPermission(need) && !config.canUseChannel(sender, channelId)) {
-            sender.sendMessage(ChatFormat.legacy("&cNo permission."));
+            msg().noPermission(sender, need);
             return true;
         }
         if (args.length < 1) {
             if (!(sender instanceof Player player)) {
-                sender.sendMessage(ChatFormat.legacy("&e/" + channelId + "chat <message>"));
+                msg().sendRaw(sender, "&e/" + channelId + "chat <message>");
                 return true;
             }
             String current = channels.channel(player, config.defaultChannel());
             if (channelId.equals(current)) {
                 channels.setChannel(player, config.defaultChannel());
-                player.sendMessage(ChatFormat.legacy("&eLeft &f" + channelId + " &echannel → &f"
-                        + config.defaultChannel()));
+                msg().sendRaw(player, "&eLeft &f{channel} &echannel → &f{default}",
+                        "channel", channelId, "default", config.defaultChannel());
             } else {
                 channels.setChannel(player, channelId);
-                player.sendMessage(ChatFormat.legacy("&aJoined &f" + channelId
-                        + " &achannel. &7Type again with no args to leave."));
+                msg().sendRaw(player, "&aJoined &f{channel} &achannel. &7Type again with no args to leave.",
+                        "channel", channelId);
             }
             return true;
         }
         String message = join(args, 0);
-        String line = ChatFormat.color(oneShotFormat
-                .replace("{player}", sender.getName())
-                .replace("{prefix}", "")
-                .replace("{suffix}", "")
-                .replace("{message}", message));
+        String line = YapText.apply(oneShotFormat,
+                Map.of("player", sender.getName(), "prefix", "", "suffix", "", "message", message));
         for (Player online : Bukkit.getOnlinePlayers()) {
             if (config.canUseChannel(online, channelId)) {
-                online.sendMessage(ChatFormat.legacy(line));
+                ChatFormat.sendSystem(online, YapText.component(line));
             }
         }
         return true;
     }
 
-    private boolean msg(CommandSender sender, String[] args) {
+    private boolean msgCmd(CommandSender sender, String[] args) {
         if (!(sender instanceof Player from)) {
-            sender.sendMessage("Players only.");
+            msg().playersOnly(sender);
             return true;
         }
         if (!from.hasPermission("yapchat.msg")) {
-            from.sendMessage(ChatFormat.legacy("&cNo permission."));
+            msg().noPermission(from, "yapchat.msg");
             return true;
         }
         if (args.length < 2) {
-            from.sendMessage(ChatFormat.legacy("&e/msg <player> <message>"));
+            msg().sendRaw(from, "&e/msg <player> <message>");
             return true;
         }
         Player to = Bukkit.getPlayer(args[0]);
         if (to == null) {
-            from.sendMessage(ChatFormat.legacy("&cPlayer not online."));
+            msg().send(from, "player-offline");
             return true;
         }
-        String message = join(args, 1);
-        deliverPrivate(from, to, message);
+        deliverPrivate(from, to, join(args, 1));
         return true;
     }
 
     private boolean reply(CommandSender sender, String[] args) {
         if (!(sender instanceof Player from)) {
-            sender.sendMessage("Players only.");
+            msg().playersOnly(sender);
             return true;
         }
         if (!from.hasPermission("yapchat.msg")) {
-            from.sendMessage(ChatFormat.legacy("&cNo permission."));
+            msg().noPermission(from, "yapchat.msg");
             return true;
         }
         if (args.length < 1) {
-            from.sendMessage(ChatFormat.legacy("&e/reply <message>"));
+            msg().sendRaw(from, "&e/reply <message>");
             return true;
         }
         Player to = pm.replyTarget(from);
         if (to == null) {
-            from.sendMessage(ChatFormat.legacy("&cNo one to reply to."));
+            msg().send(from, "no-reply-target");
             return true;
         }
         deliverPrivate(from, to, join(args, 0));
@@ -148,20 +148,14 @@ public final class MsgCommands implements CommandExecutor, TabCompleter {
 
     private void deliverPrivate(Player from, Player to, String message) {
         pm.sent(from, to);
-        from.sendMessage(ChatFormat.legacy(ChatFormat.color(config.pmSent()
-                .replace("{target}", to.getName())
-                .replace("{message}", message))));
-        to.sendMessage(ChatFormat.legacy(ChatFormat.color(config.pmReceived()
-                .replace("{sender}", from.getName())
-                .replace("{message}", message))));
+        msg().sendRaw(from, config.pmSent(), "target", to.getName(), "message", message);
+        msg().sendRaw(to, config.pmReceived(), "sender", from.getName(), "message", message);
         for (Player spy : Bukkit.getOnlinePlayers()) {
             if (spy.equals(from) || spy.equals(to) || !spy.hasPermission("yapchat.socialspy")) {
                 continue;
             }
-            spy.sendMessage(ChatFormat.legacy(ChatFormat.color(config.socialSpyFormat()
-                    .replace("{sender}", from.getName())
-                    .replace("{target}", to.getName())
-                    .replace("{message}", message))));
+            msg().sendRaw(spy, config.socialSpyFormat(),
+                    "sender", from.getName(), "target", to.getName(), "message", message);
         }
     }
 

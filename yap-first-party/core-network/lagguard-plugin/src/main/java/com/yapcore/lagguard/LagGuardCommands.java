@@ -8,6 +8,7 @@ import org.bukkit.command.TabCompleter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import com.yapcore.messages.YapMessages;
 
 public final class LagGuardCommands implements CommandExecutor, TabCompleter {
 
@@ -28,14 +29,14 @@ public final class LagGuardCommands implements CommandExecutor, TabCompleter {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission("yaplagguard.admin")) {
-            sender.sendMessage("§cNo permission.");
+            YapMessages.noPermission(sender, "yaplagguard.admin");
             return true;
         }
         String sub = args.length == 0 ? "status" : args[0].toLowerCase(Locale.ROOT);
         switch (sub) {
             case "reload" -> {
                 plugin.reloadLagGuard();
-                sender.sendMessage("§aYaPLagGuard reloaded.");
+                YapMessages.reloaded(sender, "YaPLagGuard");
             }
             case "status" -> {
                 sender.sendMessage("§aYaPLagGuard §7enabled=" + config.enabled()
