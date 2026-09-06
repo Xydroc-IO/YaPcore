@@ -2,6 +2,8 @@
 
 Optional gameplay plugin (`yap-dungeons.jar`). Procedural **instanced dungeons** with party invites, skill gates, shared lives, and ephemeral world cleanup.
 
+Layouts use **non-overlapping** rooms, framed **doorways**, themed **room templates** (entrance / combat / treasure / trap / boss), corridors with lighting, and a bedrock foundation pad so the dungeon sits as a readable complex rather than floating boxes.
+
 ## Progression
 
 | Band | Levels | Notes |

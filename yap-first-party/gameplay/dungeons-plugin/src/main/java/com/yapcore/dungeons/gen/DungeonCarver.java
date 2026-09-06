@@ -6,7 +6,6 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.block.Block;
-import org.bukkit.block.Chest;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -14,21 +13,25 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-/** Applies a planned layout into a Bukkit world (Folia region-safe chunks). */
+/** Applies a planned layout into a Bukkit world. */
 public final class DungeonCarver {
 
     public static final String BOSS_PDC_KEY = "yap_dungeon_boss";
     public static final String MOB_PDC_KEY = "yap_dungeon_mob";
 
     private final JavaPlugin plugin;
+    private final RoomTemplates templates;
 
     public DungeonCarver(JavaPlugin plugin) {
         this.plugin = plugin;
+        this.templates = new RoomTemplates(plugin);
     }
 
     public record BuildResult(Location entrance, Location bossArena, List<Location> chestLocations) {
@@ -44,32 +47,44 @@ public final class DungeonCarver {
             Consumer<String> progress) {
         CompletableFuture<BuildResult> future = new CompletableFuture<>();
         Random rng = new Random(seed ^ 0xD00DL);
+        RoomGraphBuilder.Room entranceRoom = layout.rooms().getFirst();
         Location entrance = new Location(world,
-                layout.rooms().getFirst().x() + layout.rooms().getFirst().sizeX() / 2.0,
+                entranceRoom.centerX() + 0.5,
                 layout.originY() + 1,
-                layout.rooms().getFirst().z() + layout.rooms().getFirst().sizeZ() / 2.0);
+                entranceRoom.centerZ() + 0.5);
         RoomGraphBuilder.Room bossRoom = layout.rooms().getLast();
         Location bossLoc = new Location(world,
-                bossRoom.x() + bossRoom.sizeX() / 2.0,
-                layout.originY() + 1,
-                bossRoom.z() + bossRoom.sizeZ() / 2.0);
+                bossRoom.centerX() + 0.5,
+                layout.originY() + 3,
+                bossRoom.centerZ() + 0.5);
         List<Location> chests = new ArrayList<>();
+        Map<Integer, RoomGraphBuilder.Room> byId = new HashMap<>();
+        for (RoomGraphBuilder.Room r : layout.rooms()) {
+            byId.put(r.id(), r);
+        }
 
         YapSched.global(plugin, () -> {
             try {
+                progress.accept("Laying foundation…");
+                layFoundation(world, layout, theme);
                 progress.accept("Carving rooms…");
                 for (RoomGraphBuilder.Room room : layout.rooms()) {
-                    carveRoom(world, room, layout.originY(), theme);
+                    carveRoomShell(world, room, layout.originY(), theme);
                 }
-                progress.accept("Carving corridors…");
+                progress.accept("Connecting corridors…");
                 for (RoomGraphBuilder.Corridor c : layout.corridors()) {
-                    RoomGraphBuilder.Room a = layout.rooms().get(c.fromId());
-                    RoomGraphBuilder.Room b = layout.rooms().get(c.toId());
+                    RoomGraphBuilder.Room a = byId.get(c.fromId());
+                    RoomGraphBuilder.Room b = byId.get(c.toId());
+                    if (a == null || b == null) {
+                        continue;
+                    }
                     carveCorridor(world, a, b, layout.originY(), theme);
+                    templates.carveDoorway(world, a, layout.originY(), b.centerX(), b.centerZ(), theme);
+                    templates.carveDoorway(world, b, layout.originY(), a.centerX(), a.centerZ(), theme);
                 }
-                progress.accept("Placing props…");
+                progress.accept("Decorating rooms…");
                 for (RoomGraphBuilder.Room room : layout.rooms()) {
-                    placeProps(world, room, layout.originY(), theme, diff, rng, runId, chests);
+                    templates.decorate(world, room, layout.originY(), theme, rng, runId, chests);
                 }
                 world.setSpawnLocation(entrance);
                 progress.accept("Spawning hostiles…");
@@ -92,7 +107,24 @@ public final class DungeonCarver {
         return future;
     }
 
-    private void carveRoom(World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme) {
+    private void layFoundation(World world, RoomGraphBuilder.Layout layout, ThemeTable.Theme theme) {
+        int y = layout.originY();
+        int minX = layout.minX() - 2;
+        int minZ = layout.minZ() - 2;
+        int maxX = layout.maxX() + 2;
+        int maxZ = layout.maxZ() + 2;
+        for (int x = minX; x < maxX; x++) {
+            for (int z = minZ; z < maxZ; z++) {
+                world.getBlockAt(x, y - 1, z).setType(Material.BEDROCK, false);
+                // Thin gravel rim so the complex sits on a pad instead of void
+                if (x == minX || z == minZ || x == maxX - 1 || z == maxZ - 1) {
+                    world.getBlockAt(x, y, z).setType(theme.wall(), false);
+                }
+            }
+        }
+    }
+
+    private void carveRoomShell(World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme) {
         int x0 = room.x();
         int z0 = room.z();
         int x1 = x0 + room.sizeX();
@@ -104,29 +136,28 @@ public final class DungeonCarver {
                 for (int yy = floor; yy <= ceil; yy++) {
                     Block b = world.getBlockAt(x, yy, z);
                     boolean edge = x == x0 || z == z0 || x == x1 - 1 || z == z1 - 1;
+                    boolean corner = (x == x0 || x == x1 - 1) && (z == z0 || z == z1 - 1);
                     if (yy == floor) {
                         b.setType(theme.floor(), false);
                     } else if (yy == ceil) {
-                        b.setType(theme.wall(), false);
+                        b.setType(corner ? theme.accent() : theme.wall(), false);
                     } else if (edge) {
-                        b.setType(theme.wall(), false);
+                        b.setType(corner ? theme.accent() : theme.wall(), false);
                     } else {
                         b.setType(Material.AIR, false);
                     }
                 }
             }
         }
-        // Accent pillars
-        world.getBlockAt(x0 + 2, floor + 1, z0 + 2).setType(theme.accent(), false);
-        world.getBlockAt(x1 - 3, floor + 1, z1 - 3).setType(theme.accent(), false);
-        world.getBlockAt(x0 + room.sizeX() / 2, floor + 4, z0 + room.sizeZ() / 2).setType(theme.light(), false);
     }
 
-    private void carveCorridor(World world, RoomGraphBuilder.Room a, RoomGraphBuilder.Room b, int y, ThemeTable.Theme theme) {
-        int ax = a.x() + a.sizeX() / 2;
-        int az = a.z() + a.sizeZ() / 2;
-        int bx = b.x() + b.sizeX() / 2;
-        int bz = b.z() + b.sizeZ() / 2;
+    private void carveCorridor(
+            World world, RoomGraphBuilder.Room a, RoomGraphBuilder.Room b, int y, ThemeTable.Theme theme) {
+        int ax = a.centerX();
+        int az = a.centerZ();
+        int bx = b.centerX();
+        int bz = b.centerZ();
+        // Orthogonal hallway: horizontal then vertical (deterministic order by seedless compare)
         int x = ax;
         int z = az;
         while (x != bx) {
@@ -142,39 +173,26 @@ public final class DungeonCarver {
     private void digHall(World world, int x, int y, int z, ThemeTable.Theme theme) {
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
+                world.getBlockAt(x + dx, y - 1, z + dz).setType(Material.BEDROCK, false);
                 world.getBlockAt(x + dx, y, z + dz).setType(theme.floor(), false);
                 world.getBlockAt(x + dx, y + 1, z + dz).setType(Material.AIR, false);
                 world.getBlockAt(x + dx, y + 2, z + dz).setType(Material.AIR, false);
-                world.getBlockAt(x + dx, y + 3, z + dz).setType(theme.wall(), false);
+                world.getBlockAt(x + dx, y + 3, z + dz).setType(Material.AIR, false);
+                // Walls only on corridor edges
+                if (Math.abs(dx) == 1 || Math.abs(dz) == 1) {
+                    world.getBlockAt(x + dx, y + 1, z + dz).setType(theme.wall(), false);
+                    world.getBlockAt(x + dx, y + 2, z + dz).setType(theme.wall(), false);
+                }
+                world.getBlockAt(x + dx, y + 4, z + dz).setType(theme.wall(), false);
             }
         }
-    }
-
-    private void placeProps(
-            World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme,
-            DifficultyTable.LevelDiff diff, Random rng, String runId, List<Location> chests) {
-        int cx = room.x() + room.sizeX() / 2;
-        int cz = room.z() + room.sizeZ() / 2;
-        if (room.kind() == RoomGraphBuilder.RoomKind.TREASURE || room.kind() == RoomGraphBuilder.RoomKind.BOSS) {
-            Block chestBlock = world.getBlockAt(cx, y + 1, cz);
-            chestBlock.setType(Material.CHEST, false);
-            if (chestBlock.getState() instanceof Chest chest) {
-                chest.getPersistentDataContainer().set(
-                        new org.bukkit.NamespacedKey(plugin, "yap_dungeon_chest"),
-                        PersistentDataType.STRING, runId);
-                chest.update();
-            }
-            chests.add(chestBlock.getLocation());
-        }
-        if (room.kind() == RoomGraphBuilder.RoomKind.TRAP) {
-            world.getBlockAt(cx, y, cz).setType(Material.MAGMA_BLOCK, false);
-            world.getBlockAt(cx + 1, y, cz).setType(Material.MAGMA_BLOCK, false);
-        }
-        // Ore veins
-        for (int i = 0; i < 3 + rng.nextInt(4); i++) {
-            int ox = room.x() + 1 + rng.nextInt(Math.max(1, room.sizeX() - 2));
-            int oz = room.z() + 1 + rng.nextInt(Math.max(1, room.sizeZ() - 2));
-            world.getBlockAt(ox, y, oz).setType(theme.ore(), false);
+        // Re-clear center walkway 1-wide (after edge walls)
+        world.getBlockAt(x, y + 1, z).setType(Material.AIR, false);
+        world.getBlockAt(x, y + 2, z).setType(Material.AIR, false);
+        world.getBlockAt(x, y + 3, z).setType(Material.AIR, false);
+        // Occasional ceiling light
+        if (((x + z) & 7) == 0) {
+            world.getBlockAt(x, y + 3, z).setType(theme.light(), false);
         }
     }
 
@@ -184,18 +202,18 @@ public final class DungeonCarver {
         int count = diff.mobsPerRoom();
         for (int i = 0; i < count; i++) {
             EntityType type = theme.mobs().get(rng.nextInt(theme.mobs().size()));
-            // Skip warden spam at low counts — still allowed by theme at high bands
             Location loc = new Location(world,
-                    room.x() + 2 + rng.nextInt(Math.max(1, room.sizeX() - 4)),
+                    room.x() + 3 + rng.nextInt(Math.max(1, room.sizeX() - 6)) + 0.5,
                     y + 1,
-                    room.z() + 2 + rng.nextInt(Math.max(1, room.sizeZ() - 4)));
+                    room.z() + 3 + rng.nextInt(Math.max(1, room.sizeZ() - 6)) + 0.5);
             LivingEntity entity = (LivingEntity) world.spawnEntity(loc, type);
             scale(entity, diff, rng.nextDouble() < diff.eliteChance());
             tag(entity, MOB_PDC_KEY, runId);
         }
     }
 
-    private void spawnBoss(World world, Location loc, ThemeTable.Theme theme, DifficultyTable.LevelDiff diff, String runId) {
+    private void spawnBoss(
+            World world, Location loc, ThemeTable.Theme theme, DifficultyTable.LevelDiff diff, String runId) {
         LivingEntity boss = (LivingEntity) world.spawnEntity(loc, theme.boss());
         boss.customName(net.kyori.adventure.text.Component.text("Dungeon Boss"));
         boss.setCustomNameVisible(true);

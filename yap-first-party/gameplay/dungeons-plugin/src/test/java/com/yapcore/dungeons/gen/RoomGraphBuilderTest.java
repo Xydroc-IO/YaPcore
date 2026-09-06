@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RoomGraphBuilderTest {
@@ -31,5 +32,29 @@ class RoomGraphBuilderTest {
             touched.add(c.toId());
         }
         assertTrue(touched.size() >= layout.rooms().size() - 1);
+    }
+
+    @Test
+    void roomsDoNotOverlap() {
+        for (long seed : new long[]{1L, 42L, 99L, 12345L, 99999L}) {
+            RoomGraphBuilder.Layout layout = new RoomGraphBuilder().build(seed, 12);
+            var rooms = layout.rooms();
+            for (int i = 0; i < rooms.size(); i++) {
+                for (int j = i + 1; j < rooms.size(); j++) {
+                    assertFalse(
+                            rooms.get(i).overlaps(rooms.get(j), RoomGraphBuilder.PAD),
+                            "overlap seed=" + seed + " " + i + " vs " + j);
+                }
+            }
+        }
+    }
+
+    @Test
+    void bossIsLastAndEntranceFirst() {
+        RoomGraphBuilder.Layout layout = new RoomGraphBuilder().build(7L, 8);
+        assertEquals(RoomGraphBuilder.RoomKind.ENTRANCE, layout.rooms().getFirst().kind());
+        assertEquals(RoomGraphBuilder.RoomKind.BOSS, layout.rooms().getLast().kind());
+        assertTrue(layout.maxX() > layout.minX());
+        assertTrue(layout.maxZ() >= layout.minZ());
     }
 }
