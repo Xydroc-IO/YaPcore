@@ -115,7 +115,7 @@ YaP first-party plugins declare `folia-supported: true` and schedule through tho
 
 ## 5. What you get “in the box”
 
-**Always (CORE+NETWORK):** shared SQL pool (MariaDB / Postgres / SQLite), ranks, player sync + economy + shops + AH + claims, moderation, essentials QoL, YAML custom `/commands` (dashboard editable), chat, packs, PlaceholderAPI, pregen, protect, world tools (FAWE-class edit + schematics), regions, NPCs, TAB, Discord webhooks, anti-cheat lite, lag guard, web map, factions, Bedrock identity/UI bridge.
+**Always (CORE+NETWORK):** shared SQL pool (MariaDB / Postgres / SQLite), ranks, player sync/data plane + essentials QoL (homes/bag/shops cmds on essentials, storage in playerdata), moderation, YAML custom `/commands` (dashboard editable), chat, packs, PlaceholderAPI, pregen, protect, world tools (FAWE-class edit + schematics), regions, NPCs, TAB, Discord webhooks, anti-cheat lite, lag guard, web map, factions, Bedrock identity/UI bridge.
 
 **Optional (GAMEPLAY):** thin skills (mining / woodcutting / strength), procedural dungeons (L1–50 + prestige 51–100), mob stacker, Purpur-inspired encyclopedia knobs, disasters.
 

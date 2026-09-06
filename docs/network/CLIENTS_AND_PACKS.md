@@ -190,11 +190,11 @@ See [yap-ultrawide/README.md](../../client/yap-ultrawide/README.md).
 
 ## Extra bag tabs — optional client mod
 
-`/bag` works for every client (vanilla Java, Bedrock, no mods). **yap-bag** is a Fabric **client** mod that adds a **B** keybind, a Bag button on the survival inventory, and page tabs on the bag chest. It only talks to YaPPlayerData (sends `/bag`). It is not a Folia plugin.
+`/bag` works for every client (vanilla Java, Bedrock, no mods). **yap-bag** is a Fabric **client** mod that adds a **B** keybind, a Bag button on the survival inventory, and page tabs on the bag chest. It sends `/bag` (YaPEssentials command, YaPPlayerData storage). It is not a Folia plugin.
 
 | Piece | Where |
 |-------|--------|
-| YaPPlayerData `/bag` | Server — required |
+| YaPEssentials `/bag` + YaPPlayerData storage | Server — required |
 | `yap-bag-1.0.0.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
 
 ```bash

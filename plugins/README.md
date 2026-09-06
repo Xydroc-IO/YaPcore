@@ -33,9 +33,9 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-pregen.jar` | Chunk pre-generator (`/yappregen`) |
 | `yap-db.jar` | Shared MariaDB Hikari pool (`YaPDB`) — `docs/data/YAPDB.md` / `docs/data/MARIADB.md` |
 | `yap-perms.jar` | Native permissions — groups, tracks, prefixes (`/yapperm`, `/promote`) |
-| `yap-playerdata.jar` | Cross-server data + offline `/login` + session lock + modular features |
+| `yap-playerdata.jar` | Cross-server sync, auth, session lock, schema — data plane ([PLAYERDATA.md](../docs/data/PLAYERDATA.md)) |
 | `yap-moderation.jar` | Ban/mute/warn/kick + history (`/ban`, `/modhistory`) |
-| `yap-essentials.jar` | Essentials-class QoL (`/spawn`, `/tpa`, `/fly`, `/vanish`, `/weather`, …) |
+| `yap-essentials.jar` | Essentials QoL + data-backed cmds (`/bag`, `/home`, `/kit`, `/bal`, `/shop`, …) |
 | `yap-admin.jar` | In-game staff super menu (`/yapadmin`, `/staff`) — [ADMIN_MENU.md](../docs/ops/ADMIN_MENU.md) |
 | `yap-protect.jar` | Block logging / rollback |
 | `yap-world.jar` | Multi-world + WorldEdit-class tools (`/yapworld`) |

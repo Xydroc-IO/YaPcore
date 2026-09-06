@@ -221,9 +221,9 @@ Sources live under `yap-first-party/`. Install tiers:
 |-----|--------|------|
 | `yap-db.jar` | YaPDB | Shared Hikari pool (MariaDB / Postgres / SQLite) |
 | `yap-perms.jar` | YaPPerms | Groups, tracks, prefixes (`/yapperm`, `/promote`) |
-| `yap-playerdata.jar` | YaPPlayerData | Cross-server sync, auth, economy, homes/warps/kits/mail, **chest shops**, **AH**, claims, NPC shop catalogs |
+| `yap-playerdata.jar` | YaPPlayerData | Cross-server sync, auth, economy/storage APIs, schema (homes/kits/shops/claims/bag), NPC shop catalogs |
 | `yap-moderation.jar` | YaPModeration | Ban / mute / warn / kick + history |
-| `yap-essentials.jar` | YaPEssentials | Essentials-class QoL (`/spawn`, `/tpa`, `/fly`, `/vanish`, …) |
+| `yap-essentials.jar` | YaPEssentials | Essentials QoL (`/spawn`, `/tpa`, `/fly`, …) + data-backed cmds (`/bag`, `/home`, `/kit`, `/bal`, `/shop`, `/ah`, `/claim`, `/menu`) |
 | `yap-commands.jar` | YaPCommands | YAML custom `/commands` (dashboard CRUD) |
 | `yap-chat.jar` | YaPChat | Channels, PM, filter, staff chat |
 | `yap-packs.jar` | YaPPacks | Multi resource-pack push |
@@ -288,7 +288,9 @@ API jars under `yap-first-party/api/` for soft-depend authors (including `yap-mm
 
 ### 7.2 YaPPlayerData
 
-Cross-server inventory / XP / vitals sync, session lock (always on), optional offline `/login`, economy (`/bal` `/pay` + Vault), homes/warps/kits/mail, claims + tax, NPC shop catalogs for YaPNpcs (`/npc shop`).
+Cross-server inventory / XP / vitals sync, session lock (always on), optional offline `/login`, economy balance API (`PlayerDataService` + optional Vault), schema/repos for homes/warps/kits/mail/shops/AH/claims/backpack, NPC shop catalogs for YaPNpcs (`/npc shop`).
+
+**Player-facing commands** for those features are owned by **YaPEssentials** (`PlayerFeatures` service). Keep both jars installed.
 
 **Default feature flags (September 2026):**
 
@@ -300,6 +302,7 @@ Cross-server inventory / XP / vitals sync, session lock (always on), optional of
 | **Auction house** (`/ah`) | **on** |
 | Jobs | **off** (keep off when YaPSkills is enabled — avoids double mining payouts) |
 | NPC shop catalogs (`features.traders`) | **on** — administer via `/npc shop`, not a separate trader command |
+| Backpack storage | **on** — `/bag` via Essentials |
 
 Smoke: . Docs: [PLAYERDATA.md](../data/PLAYERDATA.md).
 
@@ -385,21 +388,23 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 | Fair population MSPT gate | **Citeable** — fullcite 100 bots; peak −12.4% (`shipFc2`); re-verify −5.53% (`20260904T040935Z`); **ship knobs** disclosed in JSON |
 | Dashboard Phase 8 | **Done (ship)** — Factions/Disasters/Stacker/Skills interactive; Protect restore; Regions flags; YAML leftovers documented |
 | Wave 2 Bedrock fidelity | **Done (ship)** — [CROSSPLAY.md](../network/CROSSPLAY.md) matrix; Floodgate forms Green (`floodgate:form`); specialty containers Green (best-effort) |
-| Wave 4 Discord / Map / PAPI | **Done (ship)** — event webhooks + account link/role sync; flat map markers; curated local expansions |
+| Wave 4 Discord / Map / PAPI | **Done (ship)** — event webhooks + account link/role sync; slash A–C + console channel + slash API; flat + BlueMap-class 3D mesh; curated local expansions |
 | Wave 5 Access context/temp | **Done (ship)** — dashboard duration + world/server grants |
 | Encyclopedia NMS (0025) | **Shipped** (defaults off; `/yapknobs status` → `nmsHooks`) — [TUNE.md](../ops/TUNE.md) |
+| YaPMap 3D (greedy/LOD/binary/follow) | **Done (ship)** — [MAP.md](../ops/MAP.md); not full BlueMap texture/model parity |
+| YaPWorld CFI-lite | **Done (ship)** — schem paste via `BlockBatch`; full NMS CFI still Stretch |
 | PAPI eCloud | **Intentionally local-only** (expansions folder) |
-| Stretch (Map 3D / CFI) | **Separate plan only** — not stubbed (see §13.1) |
+| Stretch (full NMS CFI) | **Kernel plan only** — not stubbed (see §13.1) |
 | Stock Paper jars on Folia | **Unsupported** |
 
 Ops notes: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 
 ### 13.1 Stretch (deferred — no stub ship)
 
-| Item | Why not in Waves 2–5 |
-|------|----------------------|
-| True BlueMap-style 3D mesh | Flat map + markers is product Map |
-| FAWE CFI / NMS section injection | Folia region-threading conflict |
+| Item | Why deferred |
+|------|----------------|
+| FAWE CFI / NMS section injection | Folia region-threading — needs YaP-Folia kernel patch; CFI-lite (BlockBatch schem paste) is product |
+| Full BlueMap texture/UV / whole-world farm | Product Map ships greedy LOD binary 3D for sample window + follow-players |
 | Full MMO / vehicles / abilities stack | Removed from product; thin skills remain |
 | HelpChat eCloud full mirror | Curated expansions are product PAPI |
 | LuckPerms web pixel-clone | Access context/temp is product ops |
@@ -412,7 +417,7 @@ Stretch starts only with its own plan and done bars.
 
 YaPcore demonstrates a practical decomposition for Minecraft-class servers: **YaP-Folia** owns regionized game tick; **YapEngine** owns a slim edge/I/O chassis with an explicit plugin pool contract; **YaP Link** owns multi-backend routing; and a **first-party plugin + MariaDB data plane** replaces the usual DIY glue stack. Opt-in GAMEPLAY (skills, dungeons, stacker, encyclopedia, disasters) extends the same Folia-safe patterns without claiming a full MMO stack.
 
-Future work emphasizes Stretch items (3D map, CFI) only under a separate plan, hot-region partition soak under load, and continued Folia upstream rebase hygiene.
+Future work emphasizes full NMS CFI under a Folia kernel plan (only if still bottlenecked after CFI-lite), hot-region partition soak under load, and continued Folia upstream rebase hygiene.
 
 ---
 

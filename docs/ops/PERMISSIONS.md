@@ -186,12 +186,14 @@ See [REGIONS.md](../gameplay/REGIONS.md) for claim flag commands (`/claim flag s
 
 Dashboard: `POST /api/protect`, `POST /api/world`.
 
-## Playerdata command nodes
+## Playerdata permission nodes (cmds via YaPEssentials)
+
+Storage/feature flags live in YaPPlayerData; matching commands are registered by YaPEssentials (`PlayerFeatures`).
 
 | Node | Default | Command / feature |
 |------|---------|-------------------|
 | `yapdata.menu` | true | `/menu` |
-| `yapdata.bag` | true | `/bag` extra storage |
+| `yapdata.bag` | true | `/bag` extra storage (cmd via YaPEssentials) |
 | `yapdata.bag.pages.5` | false | At least 5 bag pages (VIP starter grant) |
 | `yapdata.bag.pages.7` | false | At least 7 bag pages (staff starter grant) |
 | `yapdata.bag.pages.*` | op | All configured bag pages |

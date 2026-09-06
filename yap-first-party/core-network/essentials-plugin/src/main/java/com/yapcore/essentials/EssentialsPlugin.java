@@ -13,11 +13,13 @@ import com.yapcore.essentials.store.StaffService;
 import com.yapcore.essentials.store.TpaService;
 import com.yapcore.essentials.store.VanishService;
 import com.yapcore.essentials.water.WaterWaves;
+import com.yapcore.playerdata.PlayerFeatures;
 import com.yapcore.sched.YapSched;
 import com.yapcore.sched.YapTask;
-import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.Optional;
 
 public final class EssentialsPlugin extends JavaPlugin {
 
@@ -31,6 +33,7 @@ public final class EssentialsPlugin extends JavaPlugin {
     private StaffService staff;
     private WaterWaves waterWaves;
     private YapTask waterWavesTask;
+    private PlayerFeatures playerFeatures;
 
     @Override
     public void onEnable() {
@@ -56,6 +59,9 @@ public final class EssentialsPlugin extends JavaPlugin {
             }
         }
 
+        Optional<PlayerFeatures> features = PlayerDataFeaturesBridge.attach(this);
+        playerFeatures = features.orElse(null);
+
         var pm = getServer().getPluginManager();
         pm.registerEvents(new TeleportListener(back), this);
         pm.registerEvents(new VanishListener(vanish), this);
@@ -66,11 +72,19 @@ public final class EssentialsPlugin extends JavaPlugin {
 
         getLogger().info("YaPEssentials ready (server-id=" + config.serverId()
                 + ", spawn-scope=" + config.spawnScopeKey()
-                + ", water-waves=" + config.waterWavesEnabled() + ").");
+                + ", water-waves=" + config.waterWavesEnabled()
+                + ", playerdata-qol=" + (playerFeatures != null) + ").");
     }
 
     @Override
     public void onDisable() {
+        if (playerFeatures != null) {
+            try {
+                playerFeatures.onHostDisable(this);
+            } catch (Throwable ignored) {
+            }
+            playerFeatures = null;
+        }
         if (waterWavesTask != null) {
             waterWavesTask.cancel();
             waterWavesTask = null;

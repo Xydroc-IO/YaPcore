@@ -75,13 +75,13 @@ Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin
 | Area | Default | Config |
 |------|---------|--------|
 | Auth `/login` | on | `auth.enabled` |
-| Economy `/bal` `/pay` `/eco` + native `PlayerDataService` | on | `economy.enabled` |
-| Homes / warps / kits / mail | on | `features.homes` … |
-| Claims | on | `features.claims` (+ `claims.*`) |
-| Shops / auctions (AH) | **on** | `features.shops` / `auctions` |
+| Economy balance API + optional Vault | on | `economy.enabled` — cmds `/bal` `/pay` `/eco` via Essentials |
+| Homes / warps / kits / mail | on | `features.homes` … — cmds via Essentials |
+| Claims | on | `features.claims` (+ `claims.*`) — `/claim` via Essentials |
+| Shops / auctions (AH) | **on** | `features.shops` / `auctions` — cmds via Essentials |
 | Jobs | **off** (forced off when YaPSkills is loaded) | `features.jobs` |
 | NPC shop catalogs | **on** | `features.traders` — used by YaPNpcs `/npc shop` (no `/trader`) |
-| Backpack `/bag` | **on** | `features.backpack` |
+| Backpack storage | **on** | `features.backpack` — `/bag` via Essentials |
 
 Money features require `economy.enabled: true`. When economy is off, shops/jobs/AH/traders and claim tax stay off even if their feature flags are true.
 
@@ -115,23 +115,22 @@ backpack:
 **NPC shops:** administered only via **YaPNpcs** — `/npc shop enable|addbuy|list|clear`.
 PlayerData stores offer catalogs + opens the trade GUI; there is no `/trader` command.
 
-**Freeze lifted:** Essentials-class QoL lives in **`yap-essentials.jar`**. Playerdata stays the data/sync layer.
+**Ownership:** YaPPlayerData is the **data plane** (sync, lock, auth, schema, `PlayerDataService`, storage for bag/homes/kits/…).  
+Player-facing QoL commands (`/bag`, `/home`, `/kit`, `/bal`, `/shop`, `/ah`, `/claim`, `/menu`, …) are owned by **`yap-essentials.jar`** and wired through the `PlayerFeatures` Bukkit service. Enable both jars.
 
 | Area | What |
 |------|------|
 | Auth | `/register` `/login` · freeze until auth · BCrypt |
 | Session lock | Cross-server dual-login kick · `/yapdata unlock` |
-| Sync | Inv / XP / vitals · economy when enabled |
-| Fancy GUIs | `/menu` hub (icons match enabled modules) |
-| Claims | Shovel · subdivides · taxes (tax needs economy) |
+| Sync | Inv / XP / vitals · economy balance rows when enabled |
 | NPC shop catalogs | Backend for `/npc shop` (YaPNpcs) |
-| Homes/warps/kits/mail | Cross-server |
-| Shops / AH | Chest shops (`/shop`) + auction house (`/ah`) |
-| Backpack | `/bag` paged extra storage (45 slots/page). Vanilla E inventory stays 36. Optional Fabric `yap-bag` adds a keybind and inventory tabs. |
+| Feature storage | Homes/warps/kits/mail/shops/AH/claims/backpack tables + repos |
+
+QoL UX (commands + GUIs + claim shovel) → **YaPEssentials** (requires this plugin).
 
 ### Backpack (extra bag space)
 
-The vanilla **E** inventory cannot grow from the server. `/bag` (aliases `/backpack` `/bp`) opens a double-chest GUI with **pages**. Bottom row is Prev / page tabs / Next. Contents live in MariaDB `player_backpack_pages` under the same `inventory-profile` as inv/enderchest, so they follow the player across backends.
+The vanilla **E** inventory cannot grow from the server. **`/bag`** (aliases `/backpack` `/bp`) is registered by **YaPEssentials** and opens a double-chest GUI with **pages** backed by YaPPlayerData (`player_backpack_pages`, same `inventory-profile` as inv/enderchest).
 
 | Who | Pages |
 |-----|-------|
@@ -147,7 +146,7 @@ Existing ranks: `ranks apply force` (or dashboard) so starter-grants pick up the
 
 ### Kits (EssentialsX-class)
 
-Kits live in **YaPPlayerData**. `/createkit` captures inventory, armor, and offhand with full item data (enchants, names, components).
+Kits are **stored** by YaPPlayerData (`kits.yml` + MariaDB). Commands (`/kit`, `/createkit`, …) are owned by **YaPEssentials**. `/createkit` captures inventory, armor, and offhand with full item data (enchants, names, components).
 
 | What | Where |
 |------|--------|

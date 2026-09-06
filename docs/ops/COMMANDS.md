@@ -145,8 +145,18 @@ Duration examples: `30m`, `2h`, `7d`, `1w`.
 | `/check` `<player>` | `yapessentials.staff.check` | Inspect player |
 | *(PM spy)* | `yapchat.socialspy` | Grant in YaPChat — no Essentials `/socialspy` |
 | `/yapess reload` | `yapessentials.admin` | Reload config |
+| `/menu` | `yapdata.menu` | Hub GUI (needs YaPPlayerData) |
+| `/bal` `/pay` `/eco` | `yapdata.balance` / `.pay` / `.eco` | Economy cmds (data in PlayerData) |
+| `/home` `/sethome` `/delhome` `/homes` | `yapdata.home` | Homes |
+| `/warp` `/warps` `/setwarp` `/delwarp` | `yapdata.warp` | Warps |
+| `/kit` `/kits` `/createkit` … | `yapdata.kit*` | Kits |
+| `/mail` | `yapdata.mail` | Mail |
+| `/shop` `/ah` `/jobs` | `yapdata.shop` / `.ah` / `.jobs` | Economy features |
+| `/claim` | `yapdata.claim` | Land claims UX |
+| `/bag` `/backpack` `/bp` | `yapdata.bag` | Extra bag pages |
 
-Feature toggles: `plugins/YaPEssentials/config.yml` — including `features.water-waves` (splash / wave amplitude).
+Feature toggles: `plugins/YaPEssentials/config.yml` — including `features.water-waves` (splash / wave amplitude).  
+PlayerData feature storage toggles: `plugins/YaPPlayerData/config.yml` (`features.*`, `economy.enabled`).
 
 #### Cross-plugin ops map (intentional Essentials split)
 
@@ -154,10 +164,10 @@ YaP does **not** clone EssentialsX’s entire command set into one jar. Use thes
 
 | EssentialsX-style need | YaP home |
 |------------------------|----------|
-| `/home` `/sethome` `/delhome` · `/warp` · `/kit` · `/mail` · `/bal` `/pay` `/eco` | **YaPPlayerData** — `homes.max` in config (dashboard Data tab shows max homes) |
+| `/home` `/sethome` `/delhome` · `/warp` · `/kit` · `/mail` · `/bal` `/pay` `/eco` · `/bag` · `/shop` `/ah` · `/claim` · `/menu` | **YaPEssentials** commands + **YaPPlayerData** storage (`homes.max` in PlayerData config) |
 | `/msg` `/reply` | **YaPChat** |
 | `/mute` `/ban` `/kick` / warnings | **YaPModeration** |
-| Spawn, TPA, GM, fly, vanish, weather QoL | **YaPEssentials** (this plugin) |
+| Spawn, TPA, GM, fly, vanish, weather QoL | **YaPEssentials** |
 
 ### YaPAdmin (`yap-admin.jar`)
 
@@ -187,11 +197,14 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 | Gameplay knobs | `/yapknobs …` | [TUNE.md](TUNE.md) |
 | Plugin compat | `/yapcompat …` | [PLUGIN_BACKCOMPAT.md](../plugins/PLUGIN_BACKCOMPAT.md) |
 | PlaceholderAPI | `/papi …` | [PLACEHOLDERAPI.md](../plugins/PLACEHOLDERAPI.md) |
-| Player data | `/yapdata …` · `/bal` `/pay` `/eco` · `/bag` `/backpack` · `/kit` `/kits` `/createkit` `/showkit` `/kitreset` | [PLAYERDATA.md](../data/PLAYERDATA.md) |
+| Player data | `/yapdata …` · auth `/login` `/register` | [PLAYERDATA.md](../data/PLAYERDATA.md) |
+| Essentials QoL + data-backed cmds | `/spawn` `/tpa` … · `/bal` `/bag` `/kit` `/home` `/shop` `/ah` `/claim` `/menu` | this section + [PLAYERDATA.md](../data/PLAYERDATA.md) |
 | Store / Tebex | Hub console: `yapperm …` · `kit grant …` | [TEBEX.md](TEBEX.md) |
 | Resource packs | `/yappacks …` | [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) |
 
-### YaPPlayerData kits (console / store)
+### YaPEssentials + PlayerData (bag / economy / kits)
+
+Commands are registered by **YaPEssentials**; storage and `kits.yml` live in **YaPPlayerData**.
 
 | Command | Description |
 |---------|-------------|

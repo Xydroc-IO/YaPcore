@@ -8,7 +8,6 @@ import com.yapcore.playerdata.claims.ClaimListener;
 import com.yapcore.playerdata.claims.ClaimMessageRepository;
 import com.yapcore.playerdata.claims.ClaimService;
 import com.yapcore.playerdata.claims.TaxService;
-import com.yapcore.playerdata.bag.BackpackChannel;
 import com.yapcore.playerdata.bag.BackpackListener;
 import com.yapcore.playerdata.bag.BackpackService;
 import com.yapcore.playerdata.cmd.AdminCommand;
@@ -48,13 +47,13 @@ import com.yapcore.playerdata.kit.KitGrantService;
 import com.yapcore.playerdata.kit.KitSignListener;
 import com.yapcore.playerdata.npc.NpcTraderService;
 import com.yapcore.playerdata.service.PlayerDataServiceImpl;
+import com.yapcore.playerdata.service.PlayerFeaturesImpl;
 import com.yapcore.playerdata.sync.JoinQuitListener;
 import com.yapcore.playerdata.sync.PlaytimeTracker;
 import com.yapcore.playerdata.sync.SessionLock;
 import com.yapcore.playerdata.sync.SyncService;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.ServicePriority;
-import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -63,7 +62,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Cross-server player data + optional modules (homes, claims, economy features).
+ * Cross-server player data plane: sync, session lock, auth, schema, service APIs.
+ * Player-facing QoL commands are owned by YaPEssentials via {@link PlayerFeatures}.
  */
 public final class PlayerDataPlugin extends JavaPlugin {
 
@@ -77,6 +77,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
     private Menus menus;
     private BackpackService backpack;
     private PlayerDataServiceImpl playerDataService;
+    private PlayerFeaturesImpl playerFeatures;
     private KitGrantService kitGrants;
     private PlaytimeTracker playtime;
 
@@ -113,8 +114,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
         playtime = new PlaytimeTracker(this, repository);
         playerDataService.bindPlaytime(playtime);
         getServer().getServicesManager().register(
-                com.yapcore.playerdata.PlayerDataService.class,
-                playerDataService, this, ServicePriority.Normal);
+                PlayerDataService.class, playerDataService, this, ServicePriority.Normal);
 
         HomesRepository homes = new HomesRepository(database);
         WarpsRepository warps = new WarpsRepository(database);
@@ -142,25 +142,24 @@ public final class PlayerDataPlugin extends JavaPlugin {
             traders = new NpcTraderService(this, config, traderRepo, balances);
             traders.start();
             getServer().getServicesManager().register(
-                    com.yapcore.playerdata.NpcTraderAccess.class,
-                    traders, this, ServicePriority.Normal);
+                    NpcTraderAccess.class, traders, this, ServicePriority.Normal);
         }
 
         menus = new Menus(this, config, sync, balances, homes, warps, kits, jobs, auctions, mail, claims);
+        playerFeatures = new PlayerFeaturesImpl(this);
 
         if (config.featureBackpack()) {
             BackpackRepository backpackRepo = new BackpackRepository(database);
             backpack = new BackpackService(this, config, sync, backpackRepo);
             menus.bindBackpack(backpack);
+            playerFeatures.bindBackpack(backpack);
             BagCommands bagCommands = new BagCommands(this, backpack, backpackRepo, sync);
-            bind("bag", bagCommands, bagCommands);
-            getServer().getPluginManager().registerEvents(new BackpackListener(backpack), this);
-            getServer().getMessenger().registerOutgoingPluginChannel(this, BackpackService.CHANNEL);
-            getServer().getMessenger().registerIncomingPluginChannel(
-                    this, BackpackService.CHANNEL, new BackpackChannel(this, backpack));
+            playerFeatures.put("bag", bagCommands, bagCommands);
+            playerFeatures.addListener(new BackpackListener(backpack));
         } else {
-            bindDisabled("bag", "features.backpack");
+            playerFeatures.putDisabled("bag", "features.backpack");
         }
+
         KitDelivery kitDelivery = new KitDelivery(this, config, kits, balances);
         kitGrants = config.featureKits() ? new KitGrantService(this, config, kits, sync, kitDelivery) : null;
 
@@ -168,20 +167,21 @@ public final class PlayerDataPlugin extends JavaPlugin {
                 new JoinQuitListener(this, sync, config.featureMail() ? mail : null, kitGrants), this);
         getServer().getPluginManager().registerEvents(playtime, this);
         getServer().getPluginManager().registerEvents(new AuthListener(auth, repository, config), this);
-        getServer().getPluginManager().registerEvents(new MenuListener(menus, traders), this);
+
+        playerFeatures.addListener(new MenuListener(menus, traders));
         if (claims != null) {
-            getServer().getPluginManager().registerEvents(new ClaimListener(this, claims), this);
+            playerFeatures.addListener(new ClaimListener(this, claims));
         }
 
         if (config.economyEnabled()) {
             BalanceCommands balanceCommands = new BalanceCommands(balances);
-            bind("bal", balanceCommands, balanceCommands);
-            bind("pay", balanceCommands, balanceCommands);
-            bind("eco", balanceCommands, balanceCommands);
+            playerFeatures.put("bal", balanceCommands, balanceCommands);
+            playerFeatures.put("pay", balanceCommands, balanceCommands);
+            playerFeatures.put("eco", balanceCommands, balanceCommands);
         } else {
-            bindDisabled("bal", "economy");
-            bindDisabled("pay", "economy");
-            bindDisabled("eco", "economy");
+            playerFeatures.putDisabled("bal", "economy");
+            playerFeatures.putDisabled("pay", "economy");
+            playerFeatures.putDisabled("eco", "economy");
         }
 
         AdminCommand admin = new AdminCommand(this, config, database, sync, auth);
@@ -195,93 +195,93 @@ public final class PlayerDataPlugin extends JavaPlugin {
         bind("unregister", authCommands, authCommands);
 
         MenuCommand menuCommand = new MenuCommand(menus, sync);
-        bind("menu", menuCommand, menuCommand);
+        playerFeatures.put("menu", menuCommand, menuCommand);
 
         if (config.featureHomes()) {
             HomeCommands homeCommands = new HomeCommands(config, homes, sync, menus);
-            bind("sethome", homeCommands, homeCommands);
-            bind("home", homeCommands, homeCommands);
-            bind("delhome", homeCommands, homeCommands);
-            bind("homes", homeCommands, homeCommands);
+            playerFeatures.put("sethome", homeCommands, homeCommands);
+            playerFeatures.put("home", homeCommands, homeCommands);
+            playerFeatures.put("delhome", homeCommands, homeCommands);
+            playerFeatures.put("homes", homeCommands, homeCommands);
         } else {
-            bindDisabled("sethome", "features.homes");
-            bindDisabled("home", "features.homes");
-            bindDisabled("delhome", "features.homes");
-            bindDisabled("homes", "features.homes");
+            playerFeatures.putDisabled("sethome", "features.homes");
+            playerFeatures.putDisabled("home", "features.homes");
+            playerFeatures.putDisabled("delhome", "features.homes");
+            playerFeatures.putDisabled("homes", "features.homes");
         }
 
         if (config.featureWarps()) {
             WarpCommands warpCommands = new WarpCommands(config, warps, menus);
-            bind("setwarp", warpCommands, warpCommands);
-            bind("delwarp", warpCommands, warpCommands);
-            bind("warp", warpCommands, warpCommands);
-            bind("warps", warpCommands, warpCommands);
+            playerFeatures.put("setwarp", warpCommands, warpCommands);
+            playerFeatures.put("delwarp", warpCommands, warpCommands);
+            playerFeatures.put("warp", warpCommands, warpCommands);
+            playerFeatures.put("warps", warpCommands, warpCommands);
         } else {
-            bindDisabled("setwarp", "features.warps");
-            bindDisabled("delwarp", "features.warps");
-            bindDisabled("warp", "features.warps");
-            bindDisabled("warps", "features.warps");
+            playerFeatures.putDisabled("setwarp", "features.warps");
+            playerFeatures.putDisabled("delwarp", "features.warps");
+            playerFeatures.putDisabled("warp", "features.warps");
+            playerFeatures.putDisabled("warps", "features.warps");
         }
 
         if (config.featureKits()) {
             KitCommands kitCommands = new KitCommands(this, config, kits, sync, kitGrants, kitDelivery, menus);
-            bind("kit", kitCommands, kitCommands);
-            bind("kits", kitCommands, kitCommands);
-            bind("createkit", kitCommands, kitCommands);
-            bind("delkit", kitCommands, kitCommands);
-            bind("showkit", kitCommands, kitCommands);
-            bind("kitreset", kitCommands, kitCommands);
-            bind("kitresetcooldown", kitCommands, kitCommands);
-            getServer().getPluginManager().registerEvents(new KitSignListener(this, kitCommands), this);
+            playerFeatures.put("kit", kitCommands, kitCommands);
+            playerFeatures.put("kits", kitCommands, kitCommands);
+            playerFeatures.put("createkit", kitCommands, kitCommands);
+            playerFeatures.put("delkit", kitCommands, kitCommands);
+            playerFeatures.put("showkit", kitCommands, kitCommands);
+            playerFeatures.put("kitreset", kitCommands, kitCommands);
+            playerFeatures.put("kitresetcooldown", kitCommands, kitCommands);
+            playerFeatures.addListener(new KitSignListener(this, kitCommands));
         } else {
-            bindDisabled("kit", "features.kits");
-            bindDisabled("kits", "features.kits");
-            bindDisabled("createkit", "features.kits");
-            bindDisabled("delkit", "features.kits");
-            bindDisabled("showkit", "features.kits");
-            bindDisabled("kitreset", "features.kits");
-            bindDisabled("kitresetcooldown", "features.kits");
+            playerFeatures.putDisabled("kit", "features.kits");
+            playerFeatures.putDisabled("kits", "features.kits");
+            playerFeatures.putDisabled("createkit", "features.kits");
+            playerFeatures.putDisabled("delkit", "features.kits");
+            playerFeatures.putDisabled("showkit", "features.kits");
+            playerFeatures.putDisabled("kitreset", "features.kits");
+            playerFeatures.putDisabled("kitresetcooldown", "features.kits");
         }
 
         if (config.featureMail()) {
             MailCommands mailCommands = new MailCommands(config, mail, sync, menus);
-            bind("mail", mailCommands, mailCommands);
+            playerFeatures.put("mail", mailCommands, mailCommands);
         } else {
-            bindDisabled("mail", "features.mail");
+            playerFeatures.putDisabled("mail", "features.mail");
         }
 
         if (config.featureShops()) {
             ShopCommands shopCommands = new ShopCommands(config, shops, balances, sync);
-            bind("shop", shopCommands, shopCommands);
-            getServer().getPluginManager().registerEvents(new ShopListener(shopCommands), this);
+            playerFeatures.put("shop", shopCommands, shopCommands);
+            playerFeatures.addListener(new ShopListener(shopCommands));
         } else {
-            bindDisabled("shop", config.economyEnabled() ? "features.shops" : "economy");
+            playerFeatures.putDisabled("shop", config.economyEnabled() ? "features.shops" : "economy");
         }
 
         if (config.featureJobs()) {
             JobCommands jobCommands = new JobCommands(config, jobs, sync, menus);
-            bind("jobs", jobCommands, jobCommands);
-            getServer().getPluginManager().registerEvents(
-                    new JobListener(this, config, jobs, balances, sync), this);
+            playerFeatures.put("jobs", jobCommands, jobCommands);
+            playerFeatures.addListener(new JobListener(this, config, jobs, balances, sync));
         } else {
-            bindDisabled("jobs", config.economyEnabled() ? "features.jobs" : "economy");
+            playerFeatures.putDisabled("jobs", config.economyEnabled() ? "features.jobs" : "economy");
         }
 
         if (config.featureAuctions()) {
             AuctionCommands auctionCommands = new AuctionCommands(config, auctions, balances, sync, menus);
-            bind("ah", auctionCommands, auctionCommands);
+            playerFeatures.put("ah", auctionCommands, auctionCommands);
         } else {
-            bindDisabled("ah", config.economyEnabled() ? "features.auctions" : "economy");
+            playerFeatures.putDisabled("ah", config.economyEnabled() ? "features.auctions" : "economy");
         }
 
         if (config.featureClaims() && claims != null) {
             ClaimCommands claimCommands = new ClaimCommands(this, claims, taxes, sync, menus);
-            bind("claim", claimCommands, claimCommands);
+            playerFeatures.put("claim", claimCommands, claimCommands);
         } else {
-            bindDisabled("claim", "features.claims");
+            playerFeatures.putDisabled("claim", "features.claims");
         }
 
-        // NPC shops are administered via YaPNpcs (/npc shop). Offer catalogs stay here.
+        getServer().getServicesManager().register(
+                PlayerFeatures.class, playerFeatures, this, ServicePriority.Normal);
 
         if (config.economyEnabled() && config.syncEconomy()
                 && Bukkit.getPluginManager().getPlugin("Vault") != null) {
@@ -297,11 +297,12 @@ public final class PlayerDataPlugin extends JavaPlugin {
             sync.beginJoin(online);
         }
 
-        getLogger().info("YaPPlayerData 0.6 — server-id=" + config.serverId()
+        getLogger().info("YaPPlayerData 0.7 — data plane server-id=" + config.serverId()
                 + " profile=" + config.inventoryProfile()
                 + " auth=" + (auth.isActive() ? "on" : "off")
                 + " economy=" + (config.economyEnabled() ? "on" : "off")
-                + " modules=" + enabledModulesSummary());
+                + " modules=" + enabledModulesSummary()
+                + " (QoL commands via YaPEssentials)");
     }
 
     private String enabledModulesSummary() {
@@ -341,19 +342,21 @@ public final class PlayerDataPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (backpack != null) {
-            backpack.flushAllOnlineBlocking();
+        if (playerFeatures != null) {
             try {
-                getServer().getMessenger().unregisterIncomingPluginChannel(this, BackpackService.CHANNEL);
-                getServer().getMessenger().unregisterOutgoingPluginChannel(this, BackpackService.CHANNEL);
+                getServer().getServicesManager().unregister(PlayerFeatures.class, playerFeatures);
             } catch (Throwable ignored) {
             }
+            playerFeatures.onHostDisable(this);
+            playerFeatures = null;
+        }
+        if (backpack != null) {
+            backpack.flushAllOnlineBlocking();
             backpack = null;
         }
         if (traders != null) {
             try {
-                getServer().getServicesManager().unregister(
-                        com.yapcore.playerdata.NpcTraderAccess.class, traders);
+                getServer().getServicesManager().unregister(NpcTraderAccess.class, traders);
             } catch (Throwable ignored) {
             }
             traders.stop();
@@ -382,8 +385,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
             economy = null;
         }
         if (playerDataService != null) {
-            getServer().getServicesManager().unregister(
-                    com.yapcore.playerdata.PlayerDataService.class, playerDataService);
+            getServer().getServicesManager().unregister(PlayerDataService.class, playerDataService);
             playerDataService = null;
         }
         if (database != null) {
@@ -415,22 +417,5 @@ public final class PlayerDataPlugin extends JavaPlugin {
         }
         cmd.setExecutor(exec);
         cmd.setTabCompleter(tabs);
-    }
-
-    private void bindDisabled(String name, String configKey) {
-        PluginCommand cmd = getCommand(name);
-        if (cmd == null) {
-            return;
-        }
-        cmd.setExecutor((sender, command, label, args) -> {
-            tellDisabled(sender, configKey);
-            return true;
-        });
-        cmd.setTabCompleter((sender, command, alias, args) -> List.of());
-    }
-
-    private static void tellDisabled(CommandSender sender, String configKey) {
-        sender.sendMessage("§cYaPPlayerData: that feature is disabled (§f"
-                + configKey + "§c in plugins/YaPPlayerData/config.yml).");
     }
 }
