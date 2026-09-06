@@ -1,12 +1,18 @@
 package com.yapcore.factions;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.Map;
 
 public final class FactionsConfig {
 
     private final JavaPlugin plugin;
-    private boolean enabled = true;
+    private boolean enabled;
     private boolean useSharedYapdb = true;
     private String jdbcUrl;
     private String jdbcUser;
@@ -14,6 +20,9 @@ public final class FactionsConfig {
     private int poolMax = 6;
     private int poolMin = 1;
     private long poolTimeoutMs = 10_000;
+    private String labelSingular = "Faction";
+    private String labelPlural = "Factions";
+    private String labelCommand = "f";
     private int baseMaxPower = 50;
     private int powerPerMember = 10;
     private int claimBlocksPerPower = 100;
@@ -27,6 +36,8 @@ public final class FactionsConfig {
     private String allyChatFormat;
     private String territoryEnterMessage;
     private String territoryLeaveMessage;
+    private boolean membersCanOpenChests = true;
+    private boolean alliesCanOpenChests = true;
     private int mapRadius = 4;
     private int mapCellBlocks = 32;
     private int nameMin = 3;
@@ -35,11 +46,23 @@ public final class FactionsConfig {
     private int tagMax = 6;
     private int descriptionMax = 200;
     private int motdMax = 200;
+    private int warpNameMax = 24;
+    private int maxWarps = 10;
     private boolean alliesCanBuild = true;
     private boolean enemyPvpOnly = true;
     private boolean bankEnabled = true;
     private double bankMinDeposit = 1.0;
     private double bankMinWithdraw = 1.0;
+    private boolean warpsRequireInTerritory = true;
+    private boolean upkeepEnabled;
+    private int upkeepPeriodHours = 24;
+    private double upkeepCostPerClaim = 10.0;
+    private int upkeepGraceHours = 48;
+    private boolean perksTabPrefix = true;
+    private boolean perksChatChannelToggle = true;
+    private String perksPrefixFormat = "&7[%tag%] ";
+    private boolean discordRoleSync;
+    private Map<String, String> discordRoles = Map.of();
 
     public FactionsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -57,6 +80,9 @@ public final class FactionsConfig {
         poolMax = c.getInt("pool.maximum-pool-size", 6);
         poolMin = c.getInt("pool.minimum-idle", 1);
         poolTimeoutMs = c.getLong("pool.connection-timeout-ms", 10_000);
+        labelSingular = c.getString("labels.singular", "Faction");
+        labelPlural = c.getString("labels.plural", "Factions");
+        labelCommand = c.getString("labels.command", "f");
         baseMaxPower = c.getInt("power.base-max", 50);
         powerPerMember = c.getInt("power.per-member", 10);
         claimBlocksPerPower = Math.max(1, c.getInt("power.claim-blocks-per-power", 100));
@@ -74,6 +100,8 @@ public final class FactionsConfig {
                 "§7Entering §f%faction% §7territory.");
         territoryLeaveMessage = c.getString("territory.leave-message",
                 "§7Leaving §f%faction% §7territory.");
+        membersCanOpenChests = c.getBoolean("territory.members-can-open-chests", true);
+        alliesCanOpenChests = c.getBoolean("territory.allies-can-open-chests", true);
         mapRadius = Math.max(1, c.getInt("map.radius", 4));
         mapCellBlocks = Math.max(8, c.getInt("map.cell-blocks", 32));
         nameMin = c.getInt("limits.name-min", 3);
@@ -82,11 +110,33 @@ public final class FactionsConfig {
         tagMax = c.getInt("limits.tag-max", 6);
         descriptionMax = c.getInt("limits.description-max", 200);
         motdMax = c.getInt("limits.motd-max", 200);
+        warpNameMax = Math.max(1, c.getInt("limits.warp-name-max", 24));
+        maxWarps = Math.max(1, c.getInt("limits.max-warps", 10));
         alliesCanBuild = c.getBoolean("relations.allies-can-build", true);
         enemyPvpOnly = c.getBoolean("relations.enemy-pvp-only", true);
         bankEnabled = c.getBoolean("bank.enabled", true);
         bankMinDeposit = c.getDouble("bank.min-deposit", 1.0);
         bankMinWithdraw = c.getDouble("bank.min-withdraw", 1.0);
+        warpsRequireInTerritory = c.getBoolean("warps.require-in-territory", true);
+        upkeepEnabled = c.getBoolean("upkeep.enabled", false);
+        upkeepPeriodHours = Math.max(1, c.getInt("upkeep.period-hours", 24));
+        upkeepCostPerClaim = Math.max(0, c.getDouble("upkeep.cost-per-linked-claim", 10.0));
+        upkeepGraceHours = Math.max(0, c.getInt("upkeep.grace-hours", 48));
+        perksTabPrefix = c.getBoolean("perks.tab-prefix", true);
+        perksChatChannelToggle = c.getBoolean("perks.chat-channel-toggle", true);
+        perksPrefixFormat = c.getString("perks.prefix-format", "&7[%tag%] ");
+        discordRoleSync = c.getBoolean("discord.role-sync", false);
+        Map<String, String> roles = new LinkedHashMap<>();
+        ConfigurationSection section = c.getConfigurationSection("discord.roles");
+        if (section != null) {
+            for (String key : section.getKeys(false)) {
+                String roleId = section.getString(key, "");
+                if (roleId != null && !roleId.isBlank()) {
+                    roles.put(key.trim().toUpperCase(Locale.ROOT), roleId.trim());
+                }
+            }
+        }
+        discordRoles = Collections.unmodifiableMap(roles);
     }
 
     public FactionPowerCalculator.Config powerConfig() {
@@ -125,6 +175,18 @@ public final class FactionsConfig {
         return poolTimeoutMs;
     }
 
+    public String labelSingular() {
+        return labelSingular;
+    }
+
+    public String labelPlural() {
+        return labelPlural;
+    }
+
+    public String labelCommand() {
+        return labelCommand;
+    }
+
     public int nameMin() {
         return nameMin;
     }
@@ -147,6 +209,14 @@ public final class FactionsConfig {
 
     public int motdMax() {
         return motdMax;
+    }
+
+    public int warpNameMax() {
+        return warpNameMax;
+    }
+
+    public int maxWarps() {
+        return maxWarps;
     }
 
     public boolean alliesCanBuild() {
@@ -197,6 +267,14 @@ public final class FactionsConfig {
         return territoryLeaveMessage;
     }
 
+    public boolean membersCanOpenChests() {
+        return membersCanOpenChests;
+    }
+
+    public boolean alliesCanOpenChests() {
+        return alliesCanOpenChests;
+    }
+
     public int mapRadius() {
         return mapRadius;
     }
@@ -215,5 +293,45 @@ public final class FactionsConfig {
 
     public double bankMinWithdraw() {
         return bankMinWithdraw;
+    }
+
+    public boolean warpsRequireInTerritory() {
+        return warpsRequireInTerritory;
+    }
+
+    public boolean upkeepEnabled() {
+        return upkeepEnabled;
+    }
+
+    public long upkeepPeriodTicks() {
+        return upkeepPeriodHours * 60L * 60L * 20L;
+    }
+
+    public double upkeepCostPerClaim() {
+        return upkeepCostPerClaim;
+    }
+
+    public int upkeepGraceHours() {
+        return upkeepGraceHours;
+    }
+
+    public boolean perksTabPrefix() {
+        return perksTabPrefix;
+    }
+
+    public boolean perksChatChannelToggle() {
+        return perksChatChannelToggle;
+    }
+
+    public String perksPrefixFormat() {
+        return perksPrefixFormat;
+    }
+
+    public boolean discordRoleSync() {
+        return discordRoleSync;
+    }
+
+    public Map<String, String> discordRoles() {
+        return discordRoles;
     }
 }

@@ -258,6 +258,18 @@ Placeholders: `%yapdungeon_highest%`, `%yapdungeon_prestige%`, `%yapdungeon_in_r
 
 Dashboard: `GET /api/factions` (read-only snapshot).
 
+## YaPConquest (`yap-conquest.jar`)
+
+Hardcore chunk land — [CONQUEST.md](../gameplay/CONQUEST.md). Off by default.
+
+| Node | Default | Grants |
+|------|---------|--------|
+| `yapconquest.use` | true | `/c` commands |
+| `yapconquest.admin` | op | `/yapconquest` admin + build/PvP/teleport bypass |
+
+Phase C toggles (all default off): overclaim, explosions, fly, combat-tag — [CONQUEST.md](../gameplay/CONQUEST.md).
+
+
 ## Web rank editor
 
 Dashboard **Access & ranks** is the YaP **ops surface** for permissions (not a LuckPerms web clone).

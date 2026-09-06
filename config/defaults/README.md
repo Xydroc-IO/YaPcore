@@ -11,6 +11,8 @@ First-boot / fresh-install configs copied by `./scripts/seed-defaults.sh`
 | `plugins/YaPDB/config.yml` | JDBC aligned with `deploy/mariadb/.env.example` |
 | `plugins/YaPPlayerData/config.yml` | LAN-friendly auth off; shared YaPDB |
 | `plugins/YaPDiscord/config.yml` | Discord inbound off until webhooks set |
+| `plugins/YaPFactions/config.yml` | Factions/guilds **off** (`enabled: false`) until opted in |
+| `plugins/YaPConquest/config.yml` | Chunk conquest **off** (`enabled: false`) until opted in |
 | `link.properties` | YaP Link single-backend + plugins on |
 
 After MariaDB is up, run `./configure-db.sh --server-id lobby` (or

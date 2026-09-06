@@ -40,7 +40,7 @@ the Compatibility Bridge (soft-fail). Prefer Folia authority for production plug
 
 | Bukkit call (facade) | YaPcore routing |
 |----------------------|-----------------|
-| `Bukkit.getScheduler().runTask(...)` | Compatibility Bridge → GameCore (SYNC) |
+| `Bukkit.getScheduler().runTask(...)` | Compatibility Bridge → chassis / Folia SYNC |
 | `runTaskAsynchronously(...)` | Heavy I/O pool |
 | inventory / block helpers | Bridged → SYNC where implemented |
 

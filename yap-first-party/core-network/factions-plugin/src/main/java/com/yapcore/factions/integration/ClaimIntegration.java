@@ -50,4 +50,8 @@ public final class ClaimIntegration {
     public static boolean isAdmin(Player player) {
         return player.hasPermission("yapdata.claims.admin");
     }
+
+    public static void setTaxFrozen(long claimId, boolean frozen) {
+        claims().ifPresent(s -> s.setTaxFrozen(claimId, frozen));
+    }
 }

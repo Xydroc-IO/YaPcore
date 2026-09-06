@@ -6,6 +6,7 @@ import com.yapcore.factions.FactionJoinMode;
 import com.yapcore.factions.FactionMember;
 import com.yapcore.factions.FactionRelation;
 import com.yapcore.factions.FactionRole;
+import com.yapcore.factions.FactionTerritoryRules;
 import com.yapcore.factions.integration.ClaimIntegration;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -79,32 +80,54 @@ final class FactionClaimGuardOps {
     }
 
     Optional<Boolean> evaluateBuild(Player player, long claimId, UUID claimOwnerId) {
+        return evaluateTerritory(player, claimId, claimOwnerId, null, true);
+    }
+
+    Optional<Boolean> evaluateContainer(Player player, long claimId, UUID claimOwnerId) {
+        return evaluateTerritory(player, claimId, claimOwnerId, null, false);
+    }
+
+    private Optional<Boolean> evaluateTerritory(
+            Player player, long claimId, UUID claimOwnerId, Player victim, boolean build) {
         Optional<FactionClaimOverlay> overlay = s.overlayForClaim(claimId);
         if (overlay.isEmpty()) {
             return Optional.empty();
         }
-        if (claimOwnerId.equals(player.getUniqueId())) {
-            return Optional.empty();
-        }
-        Optional<Faction> territoryFaction = s.getFaction(overlay.get().factionId());
-        if (territoryFaction.isPresent() && territoryFaction.get().isShielded()) {
-            Optional<FactionMember> member = s.member(player.getUniqueId());
-            if (member.isEmpty() || member.get().factionId() != overlay.get().factionId()) {
-                return Optional.of(false);
-            }
-        }
-        long factionId = overlay.get().factionId();
+        long territoryId = overlay.get().factionId();
+        Optional<Faction> territoryFaction = s.getFaction(territoryId);
+        boolean shielded = territoryFaction.isPresent() && territoryFaction.get().isShielded();
         Optional<FactionMember> member = s.member(player.getUniqueId());
-        if (member.isPresent() && member.get().factionId() == factionId) {
-            return Optional.of(true);
-        }
-        if (member.isPresent() && s.config.alliesCanBuild()) {
-            FactionRelation rel = s.relationBetween(member.get().factionId(), factionId);
-            if (rel == FactionRelation.ALLY) {
-                return Optional.of(true);
+        Long actorFaction = member.map(FactionMember::factionId).orElse(null);
+        FactionRelation actorToTerritory = actorFaction == null
+                ? FactionRelation.NEUTRAL
+                : s.relationBetween(actorFaction, territoryId);
+        Long victimFaction = null;
+        FactionRelation attackerToVictim = FactionRelation.NEUTRAL;
+        if (victim != null) {
+            Optional<FactionMember> vic = s.member(victim.getUniqueId());
+            victimFaction = vic.map(FactionMember::factionId).orElse(null);
+            if (actorFaction != null && victimFaction != null) {
+                attackerToVictim = s.relationBetween(actorFaction, victimFaction);
             }
         }
-        return Optional.of(false);
+        FactionTerritoryRules.Context ctx = new FactionTerritoryRules.Context(
+                true,
+                claimOwnerId.equals(player.getUniqueId()),
+                shielded,
+                s.config.shieldBlocksPvp(),
+                actorFaction,
+                victimFaction,
+                territoryId,
+                actorToTerritory,
+                attackerToVictim,
+                s.config.alliesCanBuild(),
+                s.config.enemyPvpOnly(),
+                s.config.membersCanOpenChests(),
+                s.config.alliesCanOpenChests());
+        if (build) {
+            return FactionTerritoryRules.evaluateBuild(ctx);
+        }
+        return FactionTerritoryRules.evaluateContainer(ctx);
     }
 
     Optional<Boolean> evaluatePvp(Player attacker, Player victim, long claimId) {
@@ -112,30 +135,32 @@ final class FactionClaimGuardOps {
         if (overlay.isEmpty()) {
             return Optional.empty();
         }
-        Optional<Faction> territoryFaction = s.getFaction(overlay.get().factionId());
-        if (territoryFaction.isPresent() && territoryFaction.get().isShielded() && s.config.shieldBlocksPvp()) {
-            return Optional.of(false);
-        }
+        long territoryId = overlay.get().factionId();
+        Optional<Faction> territoryFaction = s.getFaction(territoryId);
+        boolean shielded = territoryFaction.isPresent() && territoryFaction.get().isShielded();
         Optional<FactionMember> atk = s.member(attacker.getUniqueId());
         Optional<FactionMember> vic = s.member(victim.getUniqueId());
-        if (atk.isEmpty() || vic.isEmpty()) {
-            return Optional.empty();
+        Long actorFaction = atk.map(FactionMember::factionId).orElse(null);
+        Long victimFaction = vic.map(FactionMember::factionId).orElse(null);
+        FactionRelation attackerToVictim = FactionRelation.NEUTRAL;
+        if (actorFaction != null && victimFaction != null) {
+            attackerToVictim = s.relationBetween(actorFaction, victimFaction);
         }
-        long factionClaim = overlay.get().factionId();
-        if (atk.get().factionId() == vic.get().factionId()) {
-            return Optional.of(false);
-        }
-        FactionRelation rel = s.relationBetween(atk.get().factionId(), vic.get().factionId());
-        if (rel == FactionRelation.ALLY) {
-            return Optional.of(false);
-        }
-        if (rel == FactionRelation.ENEMY && s.config.enemyPvpOnly()) {
-            return Optional.of(true);
-        }
-        if (atk.get().factionId() == factionClaim || vic.get().factionId() == factionClaim) {
-            return Optional.of(rel == FactionRelation.ENEMY);
-        }
-        return Optional.empty();
+        FactionTerritoryRules.Context ctx = new FactionTerritoryRules.Context(
+                true,
+                false,
+                shielded,
+                s.config.shieldBlocksPvp(),
+                actorFaction,
+                victimFaction,
+                territoryId,
+                FactionRelation.NEUTRAL,
+                attackerToVictim,
+                s.config.alliesCanBuild(),
+                s.config.enemyPvpOnly(),
+                s.config.membersCanOpenChests(),
+                s.config.alliesCanOpenChests());
+        return FactionTerritoryRules.evaluatePvp(ctx);
     }
 
     Map<String, Object> dashboardSnapshot() {
@@ -225,6 +250,7 @@ final class FactionClaimGuardOps {
         Faction faction = s.resolveFactionRef(factionRef).orElseThrow(() -> new IllegalStateException("faction not found"));
         for (FactionMember m : s.repository.members(faction.id())) {
             s.chatState.clear(m.playerId());
+            s.clearMemberPerks(m.playerId(), faction);
         }
         s.repository.deleteFaction(faction.id());
         s.overlayCache.clear();
@@ -239,7 +265,7 @@ final class FactionClaimGuardOps {
             int cost = s.claimPowerCost(claimArea);
             Faction faction = s.repository.get(factionId).orElseThrow();
             int used = s.repository.totalOverlayPower(factionId);
-            if (used + cost > faction.maxPower()) {
+            if (!FactionTerritoryRules.canAffordClaim(used, cost, faction.maxPower())) {
                 throw new IllegalStateException("not enough faction power");
             }
             FactionClaimOverlay overlay = new FactionClaimOverlay(claimId, factionId, cost, Instant.now());

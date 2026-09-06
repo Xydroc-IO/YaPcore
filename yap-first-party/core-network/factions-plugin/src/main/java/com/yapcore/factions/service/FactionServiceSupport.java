@@ -9,6 +9,7 @@ import com.yapcore.factions.FactionRole;
 import com.yapcore.factions.FactionsConfig;
 import com.yapcore.factions.chat.FactionChatState;
 import com.yapcore.factions.db.FactionRepository;
+import com.yapcore.factions.integration.FactionPerkIntegration;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -197,11 +198,32 @@ final class FactionServiceSupport {
         repository.addMember(new FactionMember(factionId, playerId, role));
         refreshPower(factionId);
         Faction faction = repository.get(factionId).orElseThrow();
+        applyJoinPerks(playerId, faction);
         if (!faction.motd().isBlank()) {
             Player player = Bukkit.getPlayer(playerId);
             if (player != null && player.isOnline()) {
                 YapSched.entity(plugin, player, () -> player.sendMessage("§6" + faction.motd()));
             }
+        }
+    }
+
+    void applyJoinPerks(UUID playerId, Faction faction) {
+        if (config.perksTabPrefix()) {
+            FactionPerkIntegration.applyPrefix(plugin, playerId, faction.tag(), config.perksPrefixFormat());
+        }
+        if (config.discordRoleSync()) {
+            String roleId = config.discordRoles().get(faction.tag());
+            FactionPerkIntegration.syncDiscordRole(plugin, playerId, roleId, true);
+        }
+    }
+
+    void clearMemberPerks(UUID playerId, Faction faction) {
+        if (config.perksTabPrefix()) {
+            FactionPerkIntegration.clearPrefix(plugin, playerId);
+        }
+        if (config.discordRoleSync() && faction != null) {
+            String roleId = config.discordRoles().get(faction.tag());
+            FactionPerkIntegration.syncDiscordRole(plugin, playerId, roleId, false);
         }
     }
 

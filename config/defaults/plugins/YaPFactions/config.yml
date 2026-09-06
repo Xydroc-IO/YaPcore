@@ -1,0 +1,86 @@
+enabled: false
+# Opt-in faction/guild overlay. Leave false unless you run a faction server.
+# Enable: set enabled: true then /yapfactions reload (or restart).
+
+use-shared-yapdb: true
+
+jdbc:
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
+  user: yap
+  password: change-me
+
+pool:
+  maximum-pool-size: 6
+  minimum-idle: 1
+  connection-timeout-ms: 10000
+
+labels:
+  singular: Faction
+  plural: Factions
+  command: f
+
+power:
+  base-max: 50
+  per-member: 10
+  claim-blocks-per-power: 100
+  loss-on-death: 2
+  regen-amount: 1
+  regen-interval-minutes: 30
+
+shield:
+  seconds: 3600
+  blocks-pvp: true
+
+invites:
+  expire-hours: 48
+
+chat:
+  faction-format: "§7[§aF§7] §f%tag% §7| §f%player%§7: §f%message%"
+  ally-format: "§7[§bA§7] §f%tag% §7| §f%player%§7: §f%message%"
+
+territory:
+  enter-message: "§7Entering §f%faction% §7territory."
+  leave-message: "§7Leaving §f%faction% §7territory."
+  members-can-open-chests: true
+  allies-can-open-chests: true
+
+map:
+  radius: 4
+  cell-blocks: 32
+
+limits:
+  name-min: 3
+  name-max: 24
+  tag-min: 2
+  tag-max: 6
+  description-max: 200
+  motd-max: 200
+  warp-name-max: 24
+  max-warps: 10
+
+relations:
+  allies-can-build: true
+  enemy-pvp-only: true
+
+bank:
+  enabled: true
+  min-deposit: 1.0
+  min-withdraw: 1.0
+
+warps:
+  require-in-territory: true
+
+upkeep:
+  enabled: false
+  period-hours: 24
+  cost-per-linked-claim: 10.0
+  grace-hours: 48
+
+perks:
+  tab-prefix: true
+  chat-channel-toggle: true
+  prefix-format: "&7[%tag%] "
+
+discord:
+  role-sync: false
+  roles: {}

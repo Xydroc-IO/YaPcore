@@ -22,6 +22,7 @@ final class FactionSqlMapping {
     static Faction mapFaction(ResultSet rs) throws SQLException {
         Timestamp created = rs.getTimestamp("created_at");
         Timestamp shield = getTimestamp(rs, "shield_until");
+        Timestamp unpaid = getTimestamp(rs, "upkeep_unpaid_since");
         return new Faction(
                 rs.getLong("id"),
                 rs.getString("name"),
@@ -35,7 +36,8 @@ final class FactionSqlMapping {
                 getDouble(rs, "bank_balance", 0),
                 mapHome(rs),
                 shield == null ? null : shield.toInstant(),
-                created == null ? Instant.EPOCH : created.toInstant());
+                created == null ? Instant.EPOCH : created.toInstant(),
+                unpaid == null ? null : unpaid.toInstant());
     }
 
     static FactionHome mapHome(ResultSet rs) throws SQLException {

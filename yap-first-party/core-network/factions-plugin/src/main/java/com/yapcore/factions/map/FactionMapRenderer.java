@@ -24,7 +24,7 @@ public final class FactionMapRenderer {
         Location origin = player.getLocation();
         Optional<Faction> viewerFaction = factions.findByPlayer(player.getUniqueId());
         List<String> lines = new ArrayList<>();
-        lines.add("§6Faction map §7(" + cell + "m/cell)");
+        lines.add("§6" + config.labelSingular() + " map §7(" + cell + "m/cell)");
         for (int row = radius; row >= -radius; row--) {
             StringBuilder sb = new StringBuilder();
             for (int col = -radius; col <= radius; col++) {
@@ -33,15 +33,25 @@ public final class FactionMapRenderer {
                 Location sample = new Location(origin.getWorld(), x, origin.getY(), z);
                 char symbol = symbolAt(sample, viewerFaction.orElse(null), factions);
                 if (col == 0 && row == 0) {
-                    sb.append("§e").append(symbol).append("§7");
+                    sb.append("§e*");
                 } else {
-                    sb.append("§7").append(symbol);
+                    sb.append(colorFor(symbol)).append(symbol);
                 }
             }
             lines.add(sb.toString());
         }
-        lines.add("§8Legend: §e*§7you §a+§7own §b=§7ally §c-§7enemy §8.§7wild");
+        lines.add("§8Legend: §e*§7you §a+§7own §b=§7ally §c-§7enemy §8#§7other §8.§7wild");
         return lines;
+    }
+
+    private static String colorFor(char symbol) {
+        return switch (symbol) {
+            case '+' -> "§a";
+            case '=' -> "§b";
+            case '-' -> "§c";
+            case '#' -> "§8";
+            default -> "§7";
+        };
     }
 
     private static char symbolAt(Location loc, Faction viewerFaction, FactionServiceImpl factions) {

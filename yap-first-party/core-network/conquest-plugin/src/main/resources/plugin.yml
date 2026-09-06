@@ -1,0 +1,25 @@
+name: YaPConquest
+version: 1.0.0.0
+main: com.yapcore.conquest.ConquestPlugin
+api-version: '1.21'
+folia-supported: true
+description: Hardcore chunk conquest land — claim grid, power, build/PvP
+authors: [YapLabs]
+depend: [YaPDB]
+softdepend: [YaPFactions]
+commands:
+  c:
+    description: Conquest chunk commands
+    usage: /c help
+    aliases: [conquest]
+  yapconquest:
+    description: YaPConquest admin
+    usage: /yapconquest reload
+    aliases: [yapc]
+permissions:
+  yapconquest.use:
+    description: Basic conquest commands
+    default: true
+  yapconquest.admin:
+    description: /yapconquest admin + build/PvP bypass
+    default: op

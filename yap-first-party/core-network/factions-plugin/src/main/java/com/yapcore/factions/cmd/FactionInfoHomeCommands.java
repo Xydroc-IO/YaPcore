@@ -24,12 +24,12 @@ final class FactionInfoHomeCommands {
 
     boolean desc(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f desc <text>");
+            ctx.usage(player, "desc <text>");
             return true;
         }
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         String text = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length));
@@ -46,7 +46,7 @@ final class FactionInfoHomeCommands {
         if (args.length < 2) {
             var faction = ctx.factions.findByPlayer(player.getUniqueId());
             if (faction.isEmpty()) {
-                player.sendMessage("§cYou are not in a faction.");
+                ctx.notInOrg(player);
                 return true;
             }
             player.sendMessage("§6MOTD: §f" + (faction.get().motd().isBlank() ? "(none)" : faction.get().motd()));
@@ -54,7 +54,7 @@ final class FactionInfoHomeCommands {
         }
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         String text = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length));
@@ -70,7 +70,7 @@ final class FactionInfoHomeCommands {
     boolean joinMode(Player player, FactionJoinMode mode) {
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         ctx.factions.setJoinMode(member.get().factionId(), mode, player.getUniqueId()).thenRun(() ->
@@ -86,11 +86,11 @@ final class FactionInfoHomeCommands {
     boolean home(Player player) {
         var faction = ctx.factions.findByPlayer(player.getUniqueId());
         if (faction.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         if (!faction.get().home().isSet()) {
-            player.sendMessage("§cYour faction has no home set.");
+            player.sendMessage("§cYour " + ctx.singularLower() + " has no home set.");
             return true;
         }
         var home = faction.get().home();
@@ -107,11 +107,11 @@ final class FactionInfoHomeCommands {
     boolean setHome(Player player) {
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         ctx.factions.setHome(member.get().factionId(), player.getLocation(), player.getUniqueId()).thenRun(() ->
-                YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§aFaction home set.")))
+                YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§a" + ctx.singular() + " home set.")))
                 .exceptionally(ex -> {
                     YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§c" + FactionCommandSupport.rootMessage(ex)));
                     return null;
@@ -122,11 +122,11 @@ final class FactionInfoHomeCommands {
     boolean delHome(Player player) {
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         ctx.factions.clearHome(member.get().factionId(), player.getUniqueId()).thenRun(() ->
-                YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§aFaction home removed.")))
+                YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§a" + ctx.singular() + " home removed.")))
                 .exceptionally(ex -> {
                     YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§c" + FactionCommandSupport.rootMessage(ex)));
                     return null;
@@ -137,12 +137,12 @@ final class FactionInfoHomeCommands {
     boolean chat(Player player, String[] args) {
         if (args.length < 2) {
             ctx.factions.chatState().setChannel(player.getUniqueId(), FactionChatState.Channel.FACTION);
-            player.sendMessage("§aFaction chat enabled. Use §f/f chat off §ato disable.");
+            player.sendMessage("§a" + ctx.singular() + " chat enabled. Use §f/" + ctx.cmd() + " chat off §ato disable.");
             return true;
         }
         if ("off".equalsIgnoreCase(args[1])) {
             ctx.factions.chatState().setChannel(player.getUniqueId(), FactionChatState.Channel.PUBLIC);
-            player.sendMessage("§7Faction chat disabled.");
+            player.sendMessage("§7" + ctx.singular() + " chat disabled.");
             return true;
         }
         String message = String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length));
@@ -153,7 +153,7 @@ final class FactionInfoHomeCommands {
     boolean allyChat(Player player, String[] args) {
         if (args.length < 2) {
             ctx.factions.chatState().setChannel(player.getUniqueId(), FactionChatState.Channel.ALLY);
-            player.sendMessage("§aAlly chat enabled. Use §f/f ac off §ato disable.");
+            player.sendMessage("§aAlly chat enabled. Use §f/" + ctx.cmd() + " ac off §ato disable.");
             return true;
         }
         if ("off".equalsIgnoreCase(args[1])) {
@@ -174,13 +174,21 @@ final class FactionInfoHomeCommands {
             faction = ctx.factions.findByPlayer(player.getUniqueId()).orElse(null);
         }
         if (faction == null) {
-            player.sendMessage("§cFaction not found.");
+            player.sendMessage("§c" + ctx.singular() + " not found.");
             return true;
         }
+        int members = ctx.factions.listMembers(faction.id()).size();
+        int claims = ctx.factions.listClaims(faction.id()).size();
         player.sendMessage("§6--- §f" + faction.name() + " §7[" + faction.tag() + "] §6---");
         player.sendMessage("§7Power §f" + faction.power() + "§7/§f" + faction.maxPower()
+                + " §8(available/max)"
                 + (faction.isShielded() ? " §c[SHIELD]" : ""));
-        player.sendMessage("§7Leader §f" + Bukkit.getOfflinePlayer(faction.leaderId()).getName());
+        if (faction.isShielded() && faction.shieldUntil() != null) {
+            long secs = Math.max(0, faction.shieldUntil().getEpochSecond() - java.time.Instant.now().getEpochSecond());
+            player.sendMessage("§7Shield §f" + (secs / 60) + "m " + (secs % 60) + "s remaining");
+        }
+        player.sendMessage("§7Leader §f" + Bukkit.getOfflinePlayer(faction.leaderId()).getName()
+                + " §7· Members §f" + members + " §7· Land §f" + claims);
         player.sendMessage("§7Join §f" + faction.joinMode().name().toLowerCase(Locale.ROOT));
         if (!faction.description().isBlank()) {
             player.sendMessage("§7Desc §f" + faction.description());
@@ -194,16 +202,42 @@ final class FactionInfoHomeCommands {
         if (faction.home().isSet()) {
             player.sendMessage("§7Home §f" + faction.home().world());
         }
+        var relations = ctx.factions.relationsFor(faction.id());
+        if (!relations.isEmpty()) {
+            StringBuilder allies = new StringBuilder();
+            StringBuilder enemies = new StringBuilder();
+            for (var e : relations) {
+                Faction other = ctx.factions.getFaction(e.getKey()).orElse(null);
+                String tag = other == null ? "#" + e.getKey() : other.tag();
+                if (e.getValue() == FactionRelation.ALLY) {
+                    if (!allies.isEmpty()) {
+                        allies.append("§7, ");
+                    }
+                    allies.append("§b").append(tag);
+                } else if (e.getValue() == FactionRelation.ENEMY) {
+                    if (!enemies.isEmpty()) {
+                        enemies.append("§7, ");
+                    }
+                    enemies.append("§c").append(tag);
+                }
+            }
+            if (!allies.isEmpty()) {
+                player.sendMessage("§7Allies " + allies);
+            }
+            if (!enemies.isEmpty()) {
+                player.sendMessage("§7Enemies " + enemies);
+            }
+        }
         return true;
     }
 
     boolean list(Player player) {
         var all = ctx.factions.listFactions();
         if (all.isEmpty()) {
-            player.sendMessage("§7No factions yet.");
+            player.sendMessage("§7No " + ctx.pluralLower() + " yet.");
             return true;
         }
-        player.sendMessage("§6Factions §7(" + all.size() + ")");
+        player.sendMessage("§6" + ctx.plural() + " §7(" + all.size() + ")");
         for (Faction f : all) {
             player.sendMessage("§f" + f.name() + " §7[" + f.tag() + "] §8power "
                     + f.power() + "/" + f.maxPower());
@@ -219,7 +253,7 @@ final class FactionInfoHomeCommands {
             faction = ctx.factions.findByPlayer(player.getUniqueId()).orElse(null);
         }
         if (faction == null) {
-            player.sendMessage("§cFaction not found.");
+            ctx.notFound(player);
             return true;
         }
         List<FactionMember> members = ctx.factions.listMembers(faction.id());
@@ -234,7 +268,7 @@ final class FactionInfoHomeCommands {
     boolean claims(Player player) {
         var faction = ctx.factions.findByPlayer(player.getUniqueId());
         if (faction.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         List<FactionClaimOverlay> claims = ctx.factions.listClaims(faction.get().id());
@@ -255,20 +289,134 @@ final class FactionInfoHomeCommands {
             try {
                 page = Integer.parseInt(args[1]);
             } catch (NumberFormatException ignored) {
-                player.sendMessage("§eUsage: /f top [page]");
+                player.sendMessage("§eUsage: /" + ctx.cmd() + " top [page]");
                 return true;
             }
         }
         List<Faction> top = ctx.factions.topFactions(page, 10);
         if (top.isEmpty()) {
-            player.sendMessage("§7No factions yet.");
+            player.sendMessage("§7No " + ctx.plural().toLowerCase(Locale.ROOT) + " yet.");
             return true;
         }
-        player.sendMessage("§6Top factions §7(page " + page + ")");
+        player.sendMessage("§6Top " + ctx.plural().toLowerCase(Locale.ROOT) + " §7(page " + page + ")");
+        player.sendMessage("§8#  name              power     members land");
         int rank = (page - 1) * 10 + 1;
         for (Faction f : top) {
-            player.sendMessage("§7" + rank + ". §f" + f.name() + " §8" + f.power() + "/" + f.maxPower());
+            int members = ctx.factions.listMembers(f.id()).size();
+            int land = ctx.factions.listClaims(f.id()).size();
+            player.sendMessage(String.format(
+                    "§7%2d. §f%-16s §8%4d/%-4d §f%3d §8%4d",
+                    rank, f.name(), f.power(), f.maxPower(), members, land));
             rank++;
+        }
+        return true;
+    }
+
+    boolean setWarp(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage("§eUsage: /" + ctx.cmd() + " setwarp <name>");
+            return true;
+        }
+        var member = ctx.factions.member(player.getUniqueId());
+        if (member.isEmpty()) {
+            ctx.notInOrg(player);
+            return true;
+        }
+        ctx.factions.setWarp(member.get().factionId(), player.getUniqueId(), args[1], player.getLocation())
+                .thenRun(() -> YapSched.entity(ctx.plugin, player, () ->
+                        player.sendMessage("§aWarp §f" + args[1].toLowerCase(Locale.ROOT) + " §aset.")))
+                .exceptionally(ex -> {
+                    YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§c" + FactionCommandSupport.rootMessage(ex)));
+                    return null;
+                });
+        return true;
+    }
+
+    boolean delWarp(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage("§eUsage: /" + ctx.cmd() + " delwarp <name>");
+            return true;
+        }
+        var member = ctx.factions.member(player.getUniqueId());
+        if (member.isEmpty()) {
+            ctx.notInOrg(player);
+            return true;
+        }
+        ctx.factions.deleteWarp(member.get().factionId(), player.getUniqueId(), args[1])
+                .thenRun(() -> YapSched.entity(ctx.plugin, player, () ->
+                        player.sendMessage("§aWarp removed.")))
+                .exceptionally(ex -> {
+                    YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§c" + FactionCommandSupport.rootMessage(ex)));
+                    return null;
+                });
+        return true;
+    }
+
+    boolean warp(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage("§eUsage: /" + ctx.cmd() + " warp <name>");
+            return true;
+        }
+        var faction = ctx.factions.findByPlayer(player.getUniqueId());
+        if (faction.isEmpty()) {
+            ctx.notInOrg(player);
+            return true;
+        }
+        var warp = ctx.factions.warp(faction.get().id(), args[1]);
+        if (warp.isEmpty()) {
+            player.sendMessage("§cWarp not found.");
+            return true;
+        }
+        var world = Bukkit.getWorld(warp.get().world());
+        if (world == null) {
+            player.sendMessage("§cWarp world unavailable.");
+            return true;
+        }
+        var w = warp.get();
+        YapSched.entity(ctx.plugin, player, () ->
+                player.teleport(new org.bukkit.Location(world, w.x(), w.y(), w.z(), w.yaw(), w.pitch())));
+        return true;
+    }
+
+    boolean warps(Player player) {
+        var faction = ctx.factions.findByPlayer(player.getUniqueId());
+        if (faction.isEmpty()) {
+            ctx.notInOrg(player);
+            return true;
+        }
+        var list = ctx.factions.listWarps(faction.get().id());
+        if (list.isEmpty()) {
+            player.sendMessage("§7No warps set.");
+            return true;
+        }
+        player.sendMessage("§6Warps §7(" + list.size() + ")");
+        for (var w : list) {
+            player.sendMessage("§f" + w.name() + " §7@ §f" + w.world());
+        }
+        return true;
+    }
+
+    boolean upkeep(Player player) {
+        var faction = ctx.factions.findByPlayer(player.getUniqueId());
+        if (faction.isEmpty()) {
+            ctx.notInOrg(player);
+            return true;
+        }
+        if (!ctx.config.upkeepEnabled()) {
+            player.sendMessage("§7Upkeep is disabled.");
+            return true;
+        }
+        int claims = ctx.factions.listClaims(faction.get().id()).size();
+        double due = claims * ctx.config.upkeepCostPerClaim();
+        player.sendMessage("§6Upkeep §7every period · §f" + claims + " §7linked claims");
+        player.sendMessage("§7Cost §f" + String.format("%.2f", due)
+                + " §7· Bank §f" + String.format("%.2f", faction.get().bankBalance()));
+        if (faction.get().upkeepUnpaidSince() != null) {
+            long graceH = ctx.config.upkeepGraceHours();
+            long elapsedH = java.time.Duration.between(
+                    faction.get().upkeepUnpaidSince(), java.time.Instant.now()).toHours();
+            player.sendMessage("§cUnpaid since §f" + faction.get().upkeepUnpaidSince()
+                    + " §7· grace §f" + graceH + "h §7· elapsed §f" + elapsedH + "h");
         }
         return true;
     }
@@ -283,27 +431,27 @@ final class FactionInfoHomeCommands {
     boolean power(Player player) {
         var faction = ctx.factions.findByPlayer(player.getUniqueId());
         if (faction.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         Faction f = faction.get();
-        player.sendMessage("§7Faction power: §f" + f.power() + "§7/§f" + f.maxPower());
+        player.sendMessage("§7" + ctx.singular() + " power: §f" + f.power() + "§7/§f" + f.maxPower());
         return true;
     }
 
     boolean relation(Player player, String[] args, FactionRelation relation) {
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f " + relation.name().toLowerCase(Locale.ROOT) + " <faction>");
+            ctx.usage(player, relation.name().toLowerCase(Locale.ROOT) + " <" + ctx.singularLower() + ">");
             return true;
         }
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         var other = ctx.resolveFaction(args[1]);
         if (other.isEmpty()) {
-            player.sendMessage("§cFaction not found.");
+            ctx.notFound(player);
             return true;
         }
         ctx.factions.setRelation(member.get().factionId(), other.get().id(), relation, player.getUniqueId())

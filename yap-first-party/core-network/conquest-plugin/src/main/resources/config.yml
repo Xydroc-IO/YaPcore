@@ -1,0 +1,82 @@
+enabled: false
+# Opt-in hardcore chunk land. Requires YaPFactions (guild membership) when enabled.
+# Enable: set enabled: true then /yapconquest reload (or restart).
+
+use-shared-yapdb: true
+
+jdbc:
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
+  user: yap
+  password: change-me
+
+pool:
+  maximum-pool-size: 6
+  minimum-idle: 1
+  connection-timeout-ms: 10000
+
+power:
+  claim-cost: 1
+
+shield:
+  blocks-pvp: true
+
+relations:
+  allies-can-build: true
+  enemy-pvp-only: true
+
+territory:
+  enter-message: "§7Entering §f%faction% §7conquest land."
+  leave-message: "§7Leaving §f%faction% §7conquest land."
+
+map:
+  radius: 4
+
+zones:
+  enabled: false
+  warzone-worlds: []
+  safezone-worlds: []
+  warzone:
+    claimable: false
+    build: false
+    pvp: true
+    explode: true
+  safezone:
+    claimable: false
+    build: false
+    pvp: false
+    explode: false
+  wilderness:
+    claimable: true
+    override-build: false
+    build: true
+    override-pvp: false
+    pvp: true
+    override-explode: false
+    explode: true
+  enter-warzone: "§cEntering Warzone."
+  enter-safezone: "§aEntering Safezone."
+  enter-wilderness: "§7Entering Wilderness."
+
+# Phase C — each toggle defaults off
+overclaim:
+  enabled: false
+  # Enemy relation required (YaPFactions). Defender must have power < land cost.
+  require-enemy: true
+
+explosions:
+  enabled: false
+  # When enabled: deny|allow explosions in faction-claimed chunks (safezone still denies)
+  claimed: deny
+
+fly:
+  enabled: false
+  only-own-territory: true
+  # If false, also grants fly in ally territory
+  disable-on-leave: true
+
+combat-tag:
+  enabled: false
+  duration-seconds: 15
+  block-teleport: true
+  block-fly: true
+  message: "§cCombat tagged for §f%seconds%s§c."

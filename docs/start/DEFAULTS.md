@@ -14,6 +14,8 @@ that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when m
 | YaP Link + link plugins | Yes once `link.properties` seeded |
 | Resource pack prompt | Yes when `server.properties` comes from defaults/example |
 | YaPPerms starter ranks | Yes (`apply-starter-pack-on-first-boot` + `yap-ranks-auto-apply`) |
+| YaPFactions / guilds | **Off** (`enabled: false`) — opt in for faction servers · [FACTIONS.md](../gameplay/FACTIONS.md) |
+| YaPConquest / chunk land | **Off** (`enabled: false`) — hardcore grid; needs YaPFactions · [CONQUEST.md](../gameplay/CONQUEST.md) |
 | Economy / claims / moderation / SQL plugins | **Needs SQL** (MariaDB default; Postgres or SQLite OK — [YAPDB.md](../data/YAPDB.md)) |
 | Discord webhooks | Needs your webhook URLs |
 
@@ -46,6 +48,8 @@ config/defaults/
   plugins/YaPDB/config.yml
   plugins/YaPPlayerData/…    # auth.enabled=false for LAN
   plugins/YaPDiscord/…       # inbound off
+  plugins/YaPFactions/…      # enabled: false (opt-in)
+  plugins/YaPConquest/…      # enabled: false (opt-in chunk land)
   plugins/YaPPerms|Chat|Tab|Essentials|Guard|LagGuard|Packs/…
 ```
 

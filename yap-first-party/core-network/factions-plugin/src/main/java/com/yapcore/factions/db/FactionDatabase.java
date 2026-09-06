@@ -113,6 +113,19 @@ public final class FactionDatabase implements AutoCloseable {
                     )
                     """);
             st.execute("CREATE INDEX IF NOT EXISTS idx_faction_invites_player ON yap_faction_invites (player_uuid)");
+            st.execute("""
+                    CREATE TABLE IF NOT EXISTS yap_faction_warps (
+                      faction_id BIGINT NOT NULL,
+                      name VARCHAR(32) NOT NULL,
+                      world VARCHAR(64) NOT NULL,
+                      x DOUBLE NOT NULL,
+                      y DOUBLE NOT NULL,
+                      z DOUBLE NOT NULL,
+                      yaw FLOAT NOT NULL DEFAULT 0,
+                      pitch FLOAT NOT NULL DEFAULT 0,
+                      PRIMARY KEY (faction_id, name)
+                    )
+                    """);
             migrateV2(st);
         }
     }
@@ -129,6 +142,7 @@ public final class FactionDatabase implements AutoCloseable {
         tryAlter(st, "ALTER TABLE yap_factions ADD COLUMN home_yaw FLOAT NULL");
         tryAlter(st, "ALTER TABLE yap_factions ADD COLUMN home_pitch FLOAT NULL");
         tryAlter(st, "ALTER TABLE yap_factions ADD COLUMN shield_until TIMESTAMP NULL");
+        tryAlter(st, "ALTER TABLE yap_factions ADD COLUMN upkeep_unpaid_since TIMESTAMP NULL");
     }
 
     private static void tryAlter(Statement st, String sql) {

@@ -89,6 +89,9 @@ tasks.register("installProductDefaults") {
     if (findProject(":factions-plugin") != null) {
         dependsOn(":factions-plugin:installIntoPlugins")
     }
+    if (findProject(":conquest-plugin") != null) {
+        dependsOn(":conquest-plugin:installIntoPlugins")
+    }
 }
 
 tasks.register("installGameplayDefaults") {
@@ -157,6 +160,7 @@ tasks.register("assemblePluginDist") {
         ":lagguard-plugin:shadowJar",
         ":map-plugin:shadowJar",
         ":factions-plugin:shadowJar",
+        ":conquest-plugin:shadowJar",
         ":gameplay-knobs-plugin:jar",
         ":stacker-plugin:jar",
         ":yap-mmo-api:jar",
@@ -180,6 +184,7 @@ tasks.register("assemblePluginDist") {
         ":yap-guard-api:jar",
         ":yap-lagguard-api:jar",
         ":yap-factions-api:jar",
+        ":yap-conquest-api:jar",
         ":finetune-modules:buildAllFineTuneModules",
     )
 
@@ -255,6 +260,9 @@ tasks.register("assemblePluginDist") {
         if (findProject(":factions-plugin") != null) {
             copyNamed(jarOf(":factions-plugin", "shadowJar"), coreDir)
         }
+        if (findProject(":conquest-plugin") != null) {
+            copyNamed(jarOf(":conquest-plugin", "shadowJar"), coreDir)
+        }
         if (findProject(":bedrock-ui-plugin") != null) {
             copyNamed(jarOf(":bedrock-ui-plugin"), coreDir)
         }
@@ -300,6 +308,9 @@ tasks.register("assemblePluginDist") {
         }
         if (findProject(":yap-factions-api") != null) {
             copyNamed(jarOf(":yap-factions-api"), apiDir)
+        }
+        if (findProject(":yap-conquest-api") != null) {
+            copyNamed(jarOf(":yap-conquest-api"), apiDir)
         }
         if (findProject(":yap-bedrock-ui-api") != null) {
             copyNamed(jarOf(":yap-bedrock-ui-api"), apiDir)

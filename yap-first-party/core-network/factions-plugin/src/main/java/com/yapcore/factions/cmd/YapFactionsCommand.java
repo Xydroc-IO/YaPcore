@@ -32,8 +32,16 @@ public final class YapFactionsCommand implements CommandExecutor, TabCompleter {
         }
         if (args.length >= 1 && "reload".equalsIgnoreCase(args[0])) {
             plugin.reloadFactions();
-            sender.sendMessage("§aYaPFactions reloaded.");
+            boolean on = plugin.featuresActive();
+            sender.sendMessage("§aYaPFactions reloaded — features "
+                    + (on ? "§aactive" : "§cdisabled (enabled: false or DB down)"));
             return true;
+        }
+        if (factions == null || !plugin.featuresActive()) {
+            if (args.length >= 1 && !"reload".equalsIgnoreCase(args[0])) {
+                sender.sendMessage("§cYaPFactions features are not active. Enable in config then §f/yapfactions reload§c.");
+                return true;
+            }
         }
         if (args.length >= 2 && "snapshot".equalsIgnoreCase(args[0])) {
             Map<String, Object> snap = factions.dashboardSnapshot();
@@ -42,6 +50,14 @@ public final class YapFactionsCommand implements CommandExecutor, TabCompleter {
             } else {
                 sender.sendMessage("§7" + snap);
             }
+            return true;
+        }
+        if (args.length >= 1 && "upkeep".equalsIgnoreCase(args[0])) {
+            String ref = args.length >= 2 ? args[1] : null;
+            if (ref != null && "all".equalsIgnoreCase(ref)) {
+                ref = null;
+            }
+            plugin.runUpkeepNow(sender, ref);
             return true;
         }
         if (args.length >= 2 && "setpower".equalsIgnoreCase(args[0])) {
@@ -53,7 +69,7 @@ public final class YapFactionsCommand implements CommandExecutor, TabCompleter {
         if (args.length >= 2 && "disband".equalsIgnoreCase(args[0])) {
             return handleForceDisband(sender, args);
         }
-        sender.sendMessage("§eUsage: /yapfactions reload|snapshot json|setpower|setjoin|disband");
+        sender.sendMessage("§eUsage: /yapfactions reload|snapshot json|upkeep [faction|all]|setpower|setjoin|disband");
         return true;
     }
 
@@ -115,7 +131,7 @@ public final class YapFactionsCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
-            for (String sub : List.of("reload", "snapshot", "setpower", "setjoin", "disband")) {
+            for (String sub : List.of("reload", "snapshot", "upkeep", "setpower", "setjoin", "disband")) {
                 if (sub.startsWith(args[0].toLowerCase(Locale.ROOT))) {
                     out.add(sub);
                 }
@@ -123,6 +139,10 @@ public final class YapFactionsCommand implements CommandExecutor, TabCompleter {
         } else if (args.length == 2 && "snapshot".equalsIgnoreCase(args[0])) {
             if ("json".startsWith(args[1].toLowerCase(Locale.ROOT))) {
                 out.add("json");
+            }
+        } else if (args.length == 2 && "upkeep".equalsIgnoreCase(args[0])) {
+            if ("all".startsWith(args[1].toLowerCase(Locale.ROOT))) {
+                out.add("all");
             }
         }
         return out;

@@ -85,8 +85,13 @@ public final class FactionCommands implements CommandExecutor, TabCompleter {
             case "deposit" -> claimBank.deposit(player, args);
             case "withdraw" -> claimBank.withdraw(player, args);
             case "balance", "bank" -> claimBank.bank(player);
+            case "setwarp" -> infoHome.setWarp(player, args);
+            case "delwarp" -> infoHome.delWarp(player, args);
+            case "warp" -> infoHome.warp(player, args);
+            case "warps" -> infoHome.warps(player);
+            case "upkeep" -> infoHome.upkeep(player);
             default -> {
-                player.sendMessage("§cUnknown subcommand. Try §f/f help");
+                player.sendMessage("§cUnknown subcommand. Try §f/" + ctx.cmd() + " help");
                 yield true;
             }
         };
@@ -100,7 +105,7 @@ public final class FactionCommands implements CommandExecutor, TabCompleter {
                     "deny", "promote", "demote", "leader", "desc", "motd", "open", "closed", "inviteonly",
                     "home", "sethome", "delhome", "chat", "allychat", "info", "list", "members", "claims",
                     "top", "map", "power", "ally", "enemy", "neutral", "claim", "claimall", "unclaim",
-                    "deposit", "withdraw", "bank")) {
+                    "deposit", "withdraw", "bank", "setwarp", "delwarp", "warp", "warps", "upkeep")) {
                 if (sub.startsWith(args[0].toLowerCase(Locale.ROOT))) {
                     out.add(sub);
                 }

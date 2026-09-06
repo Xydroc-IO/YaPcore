@@ -1,4 +1,5 @@
 enabled: false
+# Opt-in: set enabled: true for faction/guild servers. Leave false for vanilla survival.
 
 use-shared-yapdb: true
 
@@ -11,6 +12,12 @@ pool:
   maximum-pool-size: 6
   minimum-idle: 1
   connection-timeout-ms: 10000
+
+# Branding — /f and /guild share the same system
+labels:
+  singular: Faction
+  plural: Factions
+  command: f
 
 power:
   base-max: 50
@@ -34,6 +41,8 @@ chat:
 territory:
   enter-message: "§7Entering §f%faction% §7territory."
   leave-message: "§7Leaving §f%faction% §7territory."
+  members-can-open-chests: true
+  allies-can-open-chests: true
 
 map:
   radius: 4
@@ -46,6 +55,8 @@ limits:
   tag-max: 6
   description-max: 200
   motd-max: 200
+  warp-name-max: 24
+  max-warps: 10
 
 relations:
   allies-can-build: true
@@ -55,3 +66,26 @@ bank:
   enabled: true
   min-deposit: 1.0
   min-withdraw: 1.0
+
+warps:
+  require-in-territory: true
+
+upkeep:
+  enabled: false
+  period-hours: 24
+  cost-per-linked-claim: 10.0
+  grace-hours: 48
+
+perks:
+  tab-prefix: true
+  chat-channel-toggle: true
+  prefix-format: "&7[%tag%] "
+
+# MC → Discord role grant when player is linked (requires YaPDiscord bot + Manage Roles)
+discord:
+  role-sync: false
+  # Faction tag → Discord role snowflake
+  roles: {}
+  # Example:
+  # roles:
+  #   ABC: "123456789012345678"

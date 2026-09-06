@@ -18,12 +18,13 @@ final class FactionMembershipCommands {
             return true;
         }
         if (args.length < 3) {
-            player.sendMessage("§eUsage: /f create <name> <tag>");
+            ctx.usage(player, "create <name> <tag>");
             return true;
         }
         ctx.factions.create(args[1], args[2], player.getUniqueId()).thenAccept(f ->
                 YapSched.entity(ctx.plugin, player, () ->
-                        player.sendMessage("§aCreated faction §f" + f.name() + " §7[" + f.tag() + "]")))
+                        player.sendMessage("§aCreated " + ctx.singularLower() + " §f" + f.name()
+                                + " §7[" + f.tag() + "]")))
                 .exceptionally(ex -> {
                     YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§c" + FactionCommandSupport.rootMessage(ex)));
                     return null;
@@ -34,11 +35,12 @@ final class FactionMembershipCommands {
     boolean disband(Player player) {
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         ctx.factions.disband(member.get().factionId(), player.getUniqueId()).thenRun(() ->
-                YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§aFaction disbanded.")))
+                YapSched.entity(ctx.plugin, player, () ->
+                        player.sendMessage("§a" + ctx.singular() + " disbanded.")))
                 .exceptionally(ex -> {
                     YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§c" + FactionCommandSupport.rootMessage(ex)));
                     return null;
@@ -48,12 +50,12 @@ final class FactionMembershipCommands {
 
     boolean join(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f join <faction>");
+            ctx.usage(player, "join <" + ctx.singularLower() + ">");
             return true;
         }
         var target = ctx.resolveFaction(args[1]);
         if (target.isEmpty()) {
-            player.sendMessage("§cFaction not found.");
+            ctx.notFound(player);
             return true;
         }
         ctx.factions.join(target.get().id(), player.getUniqueId()).thenRun(() ->
@@ -68,7 +70,8 @@ final class FactionMembershipCommands {
 
     boolean leave(Player player) {
         ctx.factions.leave(player.getUniqueId()).thenRun(() ->
-                YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§aLeft your faction.")))
+                YapSched.entity(ctx.plugin, player, () ->
+                        player.sendMessage("§aLeft your " + ctx.singularLower() + ".")))
                 .exceptionally(ex -> {
                     YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§c" + FactionCommandSupport.rootMessage(ex)));
                     return null;
@@ -78,12 +81,12 @@ final class FactionMembershipCommands {
 
     boolean kick(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f kick <player>");
+            ctx.usage(player, "kick <player>");
             return true;
         }
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         Player target = Bukkit.getPlayerExact(args[1]);
@@ -102,12 +105,12 @@ final class FactionMembershipCommands {
 
     boolean invite(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f invite <player>");
+            ctx.usage(player, "invite <player>");
             return true;
         }
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         Player target = Bukkit.getPlayerExact(args[1]);
@@ -127,12 +130,12 @@ final class FactionMembershipCommands {
 
     boolean accept(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f accept <faction>");
+            ctx.usage(player, "accept <" + ctx.singularLower() + ">");
             return true;
         }
         var target = ctx.resolveFaction(args[1]);
         if (target.isEmpty()) {
-            player.sendMessage("§cFaction not found.");
+            ctx.notFound(player);
             return true;
         }
         ctx.factions.acceptInvite(target.get().id(), player.getUniqueId()).thenRun(() ->
@@ -147,12 +150,12 @@ final class FactionMembershipCommands {
 
     boolean deny(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f deny <faction>");
+            ctx.usage(player, "deny <" + ctx.singularLower() + ">");
             return true;
         }
         var target = ctx.resolveFaction(args[1]);
         if (target.isEmpty()) {
-            player.sendMessage("§cFaction not found.");
+            ctx.notFound(player);
             return true;
         }
         ctx.factions.denyInvite(target.get().id(), player.getUniqueId()).thenRun(() ->
@@ -174,12 +177,12 @@ final class FactionMembershipCommands {
 
     private boolean roleChange(Player player, String[] args, boolean promote) {
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f " + (promote ? "promote" : "demote") + " <player>");
+            ctx.usage(player, (promote ? "promote" : "demote") + " <player>");
             return true;
         }
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         Player target = Bukkit.getPlayerExact(args[1]);
@@ -201,12 +204,12 @@ final class FactionMembershipCommands {
 
     boolean leader(Player player, String[] args) {
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f leader <player>");
+            ctx.usage(player, "leader <player>");
             return true;
         }
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         Player target = Bukkit.getPlayerExact(args[1]);

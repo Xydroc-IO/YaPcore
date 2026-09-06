@@ -12,18 +12,24 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Locale;
 import java.util.Optional;
 
-/** {@code %yapfaction_name%}, {@code %yapfaction_tag%}, {@code %yapfaction_power%}. */
+/** {@code %yapfaction_*%} and {@code %yapguild_*%} aliases. */
 public final class FactionsPlaceholders extends PlaceholderExpansion {
 
     private final FactionServiceImpl factions;
+    private final String identifier;
 
     public FactionsPlaceholders(FactionServiceImpl factions) {
+        this(factions, "yapfaction");
+    }
+
+    public FactionsPlaceholders(FactionServiceImpl factions, String identifier) {
         this.factions = factions;
+        this.identifier = identifier;
     }
 
     @Override
     public @NotNull String getIdentifier() {
-        return "yapfaction";
+        return identifier;
     }
 
     @Override
@@ -65,6 +71,8 @@ public final class FactionsPlaceholders extends PlaceholderExpansion {
             case "bank" -> String.format("%.2f", f.bankBalance());
             case "shielded" -> Boolean.toString(f.isShielded());
             case "join_mode", "joinmode" -> f.joinMode().name();
+            case "members" -> Integer.toString(factions.listMembers(f.id()).size());
+            case "claims", "land" -> Integer.toString(factions.listClaims(f.id()).size());
             default -> null;
         };
     }

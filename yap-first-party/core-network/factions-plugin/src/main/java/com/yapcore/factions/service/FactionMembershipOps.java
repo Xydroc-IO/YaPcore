@@ -52,10 +52,13 @@ final class FactionMembershipOps {
                         0,
                         FactionHome.unset(),
                         null,
-                        Instant.now());
+                        Instant.now(),
+                        null);
                 long id = s.repository.create(draft);
                 s.repository.addMember(new FactionMember(id, leaderId, FactionRole.LEADER));
-                return s.repository.get(id).orElseThrow();
+                Faction created = s.repository.get(id).orElseThrow();
+                s.applyJoinPerks(leaderId, created);
+                return created;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -69,8 +72,10 @@ final class FactionMembershipOps {
                 if (!actor.role().atLeast(FactionRole.LEADER)) {
                     throw new IllegalStateException("leader only");
                 }
+                Faction faction = s.repository.get(factionId).orElseThrow();
                 for (FactionMember m : s.repository.members(factionId)) {
                     s.chatState.clear(m.playerId());
+                    s.clearMemberPerks(m.playerId(), faction);
                 }
                 s.repository.deleteFaction(factionId);
                 s.overlayCache.clear();
@@ -98,7 +103,8 @@ final class FactionMembershipOps {
                     Faction faction = s.repository.get(factionId).orElseThrow();
                     YapSched.entity(s.plugin, target, () -> target.sendMessage(
                             "§aYou were invited to join §f" + faction.name()
-                                    + "§a. Use §f/f accept " + faction.name() + "§a or §f/f deny "
+                                    + "§a. Use §f/" + s.config.labelCommand() + " accept " + faction.name()
+                                    + "§a or §f/" + s.config.labelCommand() + " deny "
                                     + faction.name()));
                 }
             } catch (SQLException e) {
@@ -167,6 +173,10 @@ final class FactionMembershipOps {
                 }
                 s.repository.removeMember(member.factionId(), playerId);
                 s.chatState.clear(playerId);
+                Faction faction = s.repository.get(member.factionId()).orElse(null);
+                if (faction != null) {
+                    s.clearMemberPerks(playerId, faction);
+                }
                 s.refreshPower(member.factionId());
             } catch (SQLException e) {
                 throw new RuntimeException(e);
@@ -194,6 +204,10 @@ final class FactionMembershipOps {
                 }
                 s.repository.removeMember(factionId, targetId);
                 s.chatState.clear(targetId);
+                Faction faction = s.repository.get(factionId).orElse(null);
+                if (faction != null) {
+                    s.clearMemberPerks(targetId, faction);
+                }
                 s.refreshPower(factionId);
             } catch (SQLException e) {
                 throw new RuntimeException(e);

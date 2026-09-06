@@ -146,6 +146,27 @@ final class FactionClaimRelationQueries {
         }
     }
 
+    public List<Map.Entry<Long, FactionRelation>> relationsFor(long factionId) throws SQLException {
+        List<Map.Entry<Long, FactionRelation>> out = new ArrayList<>();
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT faction_id_a, faction_id_b, relation FROM yap_faction_relations "
+                             + "WHERE faction_id_a = ? OR faction_id_b = ?")) {
+            ps.setLong(1, factionId);
+            ps.setLong(2, factionId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    long a = rs.getLong("faction_id_a");
+                    long b = rs.getLong("faction_id_b");
+                    long other = a == factionId ? b : a;
+                    FactionRelation.parse(rs.getString("relation")).ifPresent(rel ->
+                            out.add(new java.util.AbstractMap.SimpleImmutableEntry<>(other, rel)));
+                }
+            }
+        }
+        return out;
+    }
+
     public Map<String, Integer> dashboardCounts() throws SQLException {
         Map<String, Integer> out = new HashMap<>();
         try (Connection c = database.connection(); Statement st = c.createStatement()) {

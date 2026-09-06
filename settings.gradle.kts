@@ -196,4 +196,10 @@ project(":yap-factions-api").projectDir = file("yap-first-party/api/yap-factions
 include("factions-plugin")
 project(":factions-plugin").projectDir = file("yap-first-party/core-network/factions-plugin")
 
+include("yap-conquest-api")
+project(":yap-conquest-api").projectDir = file("yap-first-party/api/yap-conquest-api")
+
+include("conquest-plugin")
+project(":conquest-plugin").projectDir = file("yap-first-party/core-network/conquest-plugin")
+
 

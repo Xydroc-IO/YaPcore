@@ -7,6 +7,7 @@ import com.yapcore.factions.FactionJoinMode;
 import com.yapcore.factions.FactionMember;
 import com.yapcore.factions.FactionRelation;
 import com.yapcore.factions.FactionService;
+import com.yapcore.factions.FactionWarp;
 import com.yapcore.factions.FactionsConfig;
 import com.yapcore.factions.chat.FactionChatState;
 import com.yapcore.factions.db.FactionRepository;
@@ -15,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +31,7 @@ public final class FactionServiceImpl implements FactionService {
     private final FactionEconomyHomeOps economyHome;
     private final FactionRelationChatOps relationChat;
     private final FactionClaimGuardOps claimGuard;
+    private final FactionWarpOps warps;
 
     public FactionServiceImpl(
             JavaPlugin plugin,
@@ -40,6 +43,7 @@ public final class FactionServiceImpl implements FactionService {
         this.economyHome = new FactionEconomyHomeOps(support);
         this.relationChat = new FactionRelationChatOps(support);
         this.claimGuard = new FactionClaimGuardOps(support);
+        this.warps = new FactionWarpOps(support);
     }
 
     public FactionChatState chatState() {
@@ -225,6 +229,26 @@ public final class FactionServiceImpl implements FactionService {
     }
 
     @Override
+    public CompletableFuture<Void> setWarp(long factionId, UUID actorId, String name, Location location) {
+        return warps.setWarp(factionId, actorId, name, location);
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteWarp(long factionId, UUID actorId, String name) {
+        return warps.deleteWarp(factionId, actorId, name);
+    }
+
+    @Override
+    public List<FactionWarp> listWarps(long factionId) {
+        return warps.listWarps(factionId);
+    }
+
+    @Override
+    public Optional<FactionWarp> warp(long factionId, String name) {
+        return warps.warp(factionId, name);
+    }
+
+    @Override
     public int claimPowerCost(int claimArea) {
         return support.claimPowerCost(claimArea);
     }
@@ -252,6 +276,11 @@ public final class FactionServiceImpl implements FactionService {
     @Override
     public Optional<Boolean> evaluateBuild(Player player, long claimId, UUID claimOwnerId) {
         return claimGuard.evaluateBuild(player, claimId, claimOwnerId);
+    }
+
+    @Override
+    public Optional<Boolean> evaluateContainer(Player player, long claimId, UUID claimOwnerId) {
+        return claimGuard.evaluateContainer(player, claimId, claimOwnerId);
     }
 
     @Override
@@ -286,5 +315,23 @@ public final class FactionServiceImpl implements FactionService {
 
     public void adminForceDisband(String factionRef) throws SQLException {
         claimGuard.adminForceDisband(factionRef);
+    }
+
+    public void adminDebitBank(long factionId, double amount) throws SQLException {
+        Faction faction = support.getFaction(factionId).orElseThrow();
+        double next = Math.max(0, faction.bankBalance() - amount);
+        support.repository.updateBank(factionId, next);
+    }
+
+    public void adminSetUpkeepUnpaidSince(long factionId, Instant since) throws SQLException {
+        support.repository.updateUpkeepUnpaidSince(factionId, since);
+    }
+
+    public List<Map.Entry<Long, FactionRelation>> relationsFor(long factionId) {
+        try {
+            return support.repository.relationsFor(factionId);
+        } catch (SQLException e) {
+            return List.of();
+        }
     }
 }

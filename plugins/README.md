@@ -45,7 +45,8 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-guard.jar` | Lightweight movement heuristics (not Grim) — PvP: `./scripts/grim-ac.sh enable` |
 | `yap-lagguard.jar` | Lag / entity budgets |
 | `yap-map.jar` | Flat web map (Leaflet tiles + markers; no 3D) |
-| `yap-factions.jar` | Factions land claims |
+| `yap-factions.jar` | Factions/guilds overlay on playerdata claims (off by default) |
+| `yap-conquest.jar` | Hardcore chunk conquest land (off by default; needs YaPFactions) |
 | `yap-packs.jar` | Multi-active resource packs (`/yappacks`) |
 | `yap-commands.jar` | YAML custom `/commands` + dashboard CRUD |
 | `yap-chat.jar` | Full chat suite + unsigned system chat fix |

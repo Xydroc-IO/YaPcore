@@ -16,7 +16,8 @@ public record Faction(
         double bankBalance,
         FactionHome home,
         Instant shieldUntil,
-        Instant createdAt) {
+        Instant createdAt,
+        Instant upkeepUnpaidSince) {
 
     public boolean isShielded() {
         return shieldUntil != null && shieldUntil.isAfter(Instant.now());

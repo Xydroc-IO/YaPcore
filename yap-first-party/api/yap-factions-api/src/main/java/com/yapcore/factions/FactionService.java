@@ -82,6 +82,14 @@ public interface FactionService {
 
     CompletableFuture<Void> unlinkClaim(long claimId, UUID actorId);
 
+    CompletableFuture<Void> setWarp(long factionId, UUID actorId, String name, Location location);
+
+    CompletableFuture<Void> deleteWarp(long factionId, UUID actorId, String name);
+
+    List<FactionWarp> listWarps(long factionId);
+
+    Optional<FactionWarp> warp(long factionId, String name);
+
     int claimPowerCost(int claimArea);
 
     int maxPowerForMembers(int memberCount);
@@ -91,6 +99,12 @@ public interface FactionService {
     void sendFactionChat(Player sender, String message);
 
     void sendAllyChat(Player sender, String message);
+
+    /**
+     * When a claim has a faction overlay, returns whether the player may open containers.
+     * Empty when the claim is not faction-linked (caller should use normal claim rules).
+     */
+    Optional<Boolean> evaluateContainer(Player player, long claimId, UUID claimOwnerId);
 
     /**
      * When a claim has a faction overlay, returns whether the player may build.

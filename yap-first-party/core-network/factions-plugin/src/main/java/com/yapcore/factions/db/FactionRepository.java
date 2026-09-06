@@ -8,6 +8,7 @@ import com.yapcore.factions.FactionJoinMode;
 import com.yapcore.factions.FactionMember;
 import com.yapcore.factions.FactionRelation;
 import com.yapcore.factions.FactionRole;
+import com.yapcore.factions.FactionWarp;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,11 +28,13 @@ public final class FactionRepository {
     private final FactionDatabase database;
     private final FactionMemberInviteQueries members;
     private final FactionClaimRelationQueries claims;
+    private final FactionWarpQueries warps;
 
     public FactionRepository(FactionDatabase database) {
         this.database = database;
         this.members = new FactionMemberInviteQueries(database);
         this.claims = new FactionClaimRelationQueries(database);
+        this.warps = new FactionWarpQueries(database);
     }
 
     public long create(Faction faction) throws SQLException {
@@ -59,6 +62,7 @@ public final class FactionRepository {
     }
 
     public void deleteFaction(long factionId) throws SQLException {
+        warps.deleteAll(factionId);
         try (Connection c = database.connection()) {
             try (PreparedStatement ps = c.prepareStatement("DELETE FROM yap_faction_invites WHERE faction_id = ?")) {
                 ps.setLong(1, factionId);
@@ -248,6 +252,20 @@ public final class FactionRepository {
         }
     }
 
+    public void updateUpkeepUnpaidSince(long factionId, Instant since) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "UPDATE yap_factions SET upkeep_unpaid_since = ? WHERE id = ?")) {
+            if (since == null) {
+                ps.setTimestamp(1, null);
+            } else {
+                ps.setTimestamp(1, Timestamp.from(since));
+            }
+            ps.setLong(2, factionId);
+            ps.executeUpdate();
+        }
+    }
+
     public void addMember(FactionMember member) throws SQLException {
         members.addMember(member);
     }
@@ -326,5 +344,29 @@ public final class FactionRepository {
 
     public Map<String, Integer> dashboardCounts() throws SQLException {
         return claims.dashboardCounts();
+    }
+
+    public List<Map.Entry<Long, FactionRelation>> relationsFor(long factionId) throws SQLException {
+        return claims.relationsFor(factionId);
+    }
+
+    public void upsertWarp(FactionWarp warp) throws SQLException {
+        warps.upsert(warp);
+    }
+
+    public void deleteWarp(long factionId, String name) throws SQLException {
+        warps.delete(factionId, name);
+    }
+
+    public Optional<FactionWarp> warp(long factionId, String name) throws SQLException {
+        return warps.get(factionId, FactionWarpQueries.normalizeName(name));
+    }
+
+    public List<FactionWarp> listWarps(long factionId) throws SQLException {
+        return warps.list(factionId);
+    }
+
+    public int warpCount(long factionId) throws SQLException {
+        return warps.count(factionId);
     }
 }

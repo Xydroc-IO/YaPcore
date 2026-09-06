@@ -20,7 +20,7 @@ final class FactionClaimBankCommands {
     boolean claim(Player player) {
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         Claim claim = ClaimIntegration.claimAt(player).orElse(null);
@@ -33,7 +33,7 @@ final class FactionClaimBankCommands {
             return true;
         }
         if (ctx.factions.overlayForClaim(claim.id()).isPresent()) {
-            player.sendMessage("§cThis claim is already faction-linked.");
+            player.sendMessage("§cThis claim is already " + ctx.singularLower() + "-linked.");
             return true;
         }
         long factionId = member.get().factionId();
@@ -51,7 +51,7 @@ final class FactionClaimBankCommands {
     boolean claimAll(Player player) {
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         List<Claim> claims = ClaimIntegration.manageableClaims(player);
@@ -89,7 +89,8 @@ final class FactionClaimBankCommands {
         }
         ctx.factions.unlinkClaim(claim.id(), player.getUniqueId()).thenRun(() ->
                 YapSched.entity(ctx.plugin, player, () ->
-                        player.sendMessage("§aClaim §f#" + claim.id() + " §aunlinked from faction.")))
+                        player.sendMessage("§aClaim §f#" + claim.id() + " §aunlinked from "
+                                + ctx.singularLower() + ".")))
                 .exceptionally(ex -> {
                     YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§c" + FactionCommandSupport.rootMessage(ex)));
                     return null;
@@ -99,16 +100,16 @@ final class FactionClaimBankCommands {
 
     boolean deposit(Player player, String[] args) {
         if (!ctx.config.bankEnabled()) {
-            player.sendMessage("§cFaction bank is disabled.");
+            player.sendMessage("§c" + ctx.singular() + " bank is disabled.");
             return true;
         }
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f deposit <amount>");
+            ctx.usage(player, "deposit <amount>");
             return true;
         }
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         double amount;
@@ -129,16 +130,16 @@ final class FactionClaimBankCommands {
 
     boolean withdraw(Player player, String[] args) {
         if (!ctx.config.bankEnabled()) {
-            player.sendMessage("§cFaction bank is disabled.");
+            player.sendMessage("§c" + ctx.singular() + " bank is disabled.");
             return true;
         }
         if (args.length < 2) {
-            player.sendMessage("§eUsage: /f withdraw <amount>");
+            ctx.usage(player, "withdraw <amount>");
             return true;
         }
         var member = ctx.factions.member(player.getUniqueId());
         if (member.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
         double amount;
@@ -160,10 +161,10 @@ final class FactionClaimBankCommands {
     boolean bank(Player player) {
         var faction = ctx.factions.findByPlayer(player.getUniqueId());
         if (faction.isEmpty()) {
-            player.sendMessage("§cYou are not in a faction.");
+            ctx.notInOrg(player);
             return true;
         }
-        player.sendMessage("§7Faction bank: §f" + String.format("%.2f", faction.get().bankBalance()));
+        player.sendMessage("§7" + ctx.singular() + " bank: §f" + String.format("%.2f", faction.get().bankBalance()));
         player.sendMessage("§7Your balance: §f" + String.format("%.2f", EconomyIntegration.balance(player)));
         return true;
     }
