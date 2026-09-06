@@ -72,7 +72,7 @@ Each OS folder is self-contained:
 - `yapcore.jar` — YaPcore chassis + embedded web dashboard
 - `lib/yap-folia-*.jar` — **YaP-Folia** game (when builder ran `build-yap-folia.sh`)
 - `yap-link.jar` + `link-data/` — native multi-backend proxy (`0.6.0-phase6`)
-- `plugins/` — CORE+NETWORK first-party stack
+- `plugins/` — CORE+NETWORK first-party stack (includes **yap-factions** + **yap-conquest**, both opt-in via `enabled: false`)
 - `modules/` — fine-tune packaging modules
 - `resourcepacks/` — default client pack
 - `config/`, `deploy/nginx`, `deploy/mariadb`, `docs/`, launch scripts
