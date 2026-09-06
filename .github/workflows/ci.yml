@@ -31,6 +31,8 @@ jobs:
           :chat-plugin:test
           :world-plugin:test
           :yap-factions-api:test
+          :yap-conquest-api:test
+          :conquest-plugin:test
           :map-plugin:test
           :regions-plugin:test
           :discord-plugin:test

@@ -39,7 +39,7 @@ This is **not** a claim vs Paper MSPT. See [CODE_ELEGANCE_FOLLOWUP.md](CODE_ELEG
 
 - [x] `gradle checkDbBootstrapHygiene` + CI step
 - [x] CI / release workflows on **Java 25**
-- [x] High-value unit suites: protect, factions (+ API), essentials, chat, world, **map, regions, discord, lagguard**
+- [x] High-value unit suites: protect, factions (+ API), essentials, chat, world, **map, regions, discord, lagguard**, **conquest (+ API)**
 - [x] Former zero-test plugin smokes (admin, commands, floodgate, folia-bridge, packs, plugin-compat, tab, worldedit-shim, yap-db, disasters)
 - [x] Dual TrafficCop contract test (keep two — product GameEvent + chassis sequencer)
 - [x] PR template points at these modules
@@ -50,6 +50,7 @@ Verify locally:
 gradle checkDomainLineLimits checkDbBootstrapHygiene
 gradle :protect-plugin:test :factions-plugin:test :essentials-plugin:test \
   :chat-plugin:test :world-plugin:test :yap-factions-api:test :yap-db-api:test \
+  :yap-conquest-api:test :conquest-plugin:test \
   :map-plugin:test :regions-plugin:test :discord-plugin:test :lagguard-plugin:test
 gradle :test --tests 'com.yapcore.network.DualTrafficCopContractTest'
 ```
