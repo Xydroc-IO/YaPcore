@@ -5,6 +5,7 @@ import com.yapcore.regions.RegionFlag;
 import com.yapcore.regions.RegionMessageKind;
 import com.yapcore.regions.RegionsPlugin;
 import com.yapcore.regions.service.RegionServiceImpl;
+import com.yapcore.messages.YapMessages;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -77,11 +78,12 @@ final class RegionMetaOps {
     boolean handleReload(CommandSender sender) {
         if (plugin instanceof RegionsPlugin regionsPlugin) {
             regionsPlugin.reloadRegions();
-            sender.sendMessage("§aReloaded YaPRegions (" + regions.listRegions().size() + " regions).");
         } else {
             regions.reload();
-            sender.sendMessage("§aReloaded region cache (" + regions.listRegions().size() + " regions).");
         }
+        YapMessages.reloaded(sender, "YaPRegions");
+        YapMessages.send(sender, "&7{count} regions loaded.",
+                "count", Integer.toString(regions.listRegions().size()));
         return true;
     }
 

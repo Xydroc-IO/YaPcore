@@ -31,8 +31,7 @@ public final class MenuCommand implements CommandExecutor, TabCompleter {
         if (!Perms.require(sender, "yapdata.menu")) {
             return true;
         }
-        if (!sync.isReady(player.getUniqueId())) {
-            player.sendMessage("§cStill loading your data…");
+        if (!sync.requireReady(player)) {
             return true;
         }
         menus.openHub(player);

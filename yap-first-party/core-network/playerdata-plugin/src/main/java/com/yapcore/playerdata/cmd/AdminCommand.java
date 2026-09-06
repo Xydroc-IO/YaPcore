@@ -45,15 +45,20 @@ public final class AdminCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            sender.sendMessage("Usage: /yapdata <reload|status|save|unlock>");
+            com.yapcore.messages.YapHelp.simple(sender, "YaPPlayerData",
+                    "/yapdata <reload|status|save|unlock>");
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "reload" -> {
-                plugin.reloadConfig();
-                config.reload();
-                YapMessages.reloaded(sender, "YaPPlayerData");
-                YapMessages.send(sender, "&7DB URL changes require restart.");
+                var result = com.yapcore.messages.YapConfigReload.run(() -> {
+                    plugin.reloadConfig();
+                    config.reload();
+                });
+                com.yapcore.messages.YapConfigReload.report(sender, plugin.getLogger(), "YaPPlayerData", result);
+                if (result.ok()) {
+                    YapMessages.send(sender, "&7DB URL changes require restart.");
+                }
             }
             case "status" -> {
                 sender.sendMessage("YaPPlayerData status:");

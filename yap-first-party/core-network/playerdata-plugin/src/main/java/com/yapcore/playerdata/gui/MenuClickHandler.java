@@ -21,7 +21,7 @@ final class MenuClickHandler {
 
     boolean handleClick(Player player, YapMenuHolder holder, int slot, boolean shift) {
         if (!menus.sync.isReady(player.getUniqueId()) && holder.kind() != YapMenuHolder.Kind.HUB) {
-            player.sendMessage("§cStill loading…");
+            com.yapcore.messages.YapMessages.profileLoading(player);
             return true;
         }
         ItemStack clicked = holder.getInventory().getItem(slot);
@@ -52,7 +52,7 @@ final class MenuClickHandler {
                 default -> true;
             };
         } catch (Exception e) {
-            player.sendMessage("§cError: " + e.getMessage());
+            com.yapcore.messages.YapMessages.commandFailed(player, e);
             menus.plugin.getLogger().log(Level.WARNING, "menu click", e);
             return true;
         }

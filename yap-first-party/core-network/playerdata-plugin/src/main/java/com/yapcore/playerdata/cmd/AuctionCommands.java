@@ -43,8 +43,7 @@ public final class AuctionCommands implements CommandExecutor, TabCompleter {
         if (!Perms.require(sender, "yapdata.ah")) {
             return true;
         }
-        if (!sync.isReady(player.getUniqueId())) {
-            player.sendMessage("§cStill loading your data…");
+        if (!sync.requireReady(player)) {
             return true;
         }
         try {
@@ -134,7 +133,7 @@ public final class AuctionCommands implements CommandExecutor, TabCompleter {
             player.sendMessage("§cInvalid number.");
             return true;
         } catch (Exception e) {
-            player.sendMessage("§cError: " + e.getMessage());
+            com.yapcore.messages.YapMessages.commandFailed(player, e);
             return true;
         }
     }

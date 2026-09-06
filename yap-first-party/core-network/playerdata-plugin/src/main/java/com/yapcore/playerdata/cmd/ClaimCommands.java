@@ -55,8 +55,7 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
             player.sendMessage("§cClaims disabled.");
             return true;
         }
-        if (!sync.isReady(player.getUniqueId())) {
-            player.sendMessage("§cStill loading…");
+        if (!sync.requireReady(player)) {
             return true;
         }
         try {
@@ -172,7 +171,7 @@ public final class ClaimCommands implements CommandExecutor, TabCompleter {
                 }
             };
         } catch (Exception e) {
-            player.sendMessage("§cError: " + e.getMessage());
+            com.yapcore.messages.YapMessages.commandFailed(player, e);
             return true;
         }
     }

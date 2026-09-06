@@ -85,8 +85,7 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
         if (!Perms.require(sender, "yapdata.kit")) {
             return true;
         }
-        if (!sync.isReady(player.getUniqueId())) {
-            player.sendMessage("§cStill loading your data…");
+        if (!sync.requireReady(player)) {
             return true;
         }
         if (args.length < 1) {
@@ -312,10 +311,10 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
                 case COOLDOWN -> player.sendMessage("§cKit on cooldown (" + result.detail() + " left).");
                 case MAX_USES -> player.sendMessage("§cKit used up (max " + result.detail() + ").");
                 case CANT_AFFORD -> player.sendMessage("§cThat kit costs §f$" + result.detail());
-                case NOT_READY -> player.sendMessage("§cStill loading your data…");
+                case NOT_READY -> com.yapcore.messages.YapMessages.profileLoading(player);
             }
         } catch (Exception e) {
-            player.sendMessage("§cDatabase error: " + e.getMessage());
+            com.yapcore.messages.YapMessages.commandFailed(player, e);
         }
         return true;
     }

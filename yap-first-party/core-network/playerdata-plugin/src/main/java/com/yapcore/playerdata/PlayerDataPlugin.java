@@ -174,7 +174,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
         }
 
         if (config.economyEnabled()) {
-            BalanceCommands balanceCommands = new BalanceCommands(balances);
+            BalanceCommands balanceCommands = new BalanceCommands(balances, sync);
             playerFeatures.put("bal", balanceCommands, balanceCommands);
             playerFeatures.put("pay", balanceCommands, balanceCommands);
             playerFeatures.put("eco", balanceCommands, balanceCommands);

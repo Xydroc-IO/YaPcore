@@ -41,8 +41,7 @@ public final class BagCommands implements CommandExecutor, TabCompleter {
         if (!Perms.require(sender, BackpackPages.NODE_USE)) {
             return true;
         }
-        if (!sync.isReady(player.getUniqueId())) {
-            player.sendMessage("§cStill loading your data…");
+        if (!sync.requireReady(player)) {
             return true;
         }
         if (args.length >= 1 && (args[0].equalsIgnoreCase("see") || args[0].equalsIgnoreCase("view"))) {
@@ -90,7 +89,7 @@ public final class BagCommands implements CommandExecutor, TabCompleter {
             try {
                 owner = repository.findOwnerByName(name);
             } catch (Exception e) {
-                YapSched.entity(plugin, viewer, () -> viewer.sendMessage("§cDatabase error: " + e.getMessage()));
+                YapSched.entity(plugin, viewer, () -> com.yapcore.messages.YapMessages.commandFailed(viewer, e));
                 return;
             }
             YapSched.entity(plugin, viewer, () -> {

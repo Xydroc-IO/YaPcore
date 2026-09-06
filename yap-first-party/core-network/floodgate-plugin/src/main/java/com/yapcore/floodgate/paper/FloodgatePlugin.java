@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
+import com.yapcore.messages.YapMessages;
 
 import java.nio.file.Path;
 import java.util.UUID;
@@ -69,6 +70,17 @@ public final class FloodgatePlugin extends JavaPlugin implements Listener {
         if (!command.getName().equalsIgnoreCase("yapfloodgate")) {
             return false;
         }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("reload")) {
+            if (!sender.hasPermission("yapfloodgate.admin")) {
+                YapMessages.noPermission(sender, "yapfloodgate.admin");
+                return true;
+            }
+            reloadConfig();
+            Path key = getDataFolder().toPath().resolve(getConfig().getString("key-file", "key.pem"));
+            runtime = new FloodgateRuntime(getLogger(), key);
+            YapMessages.reloaded(sender, "YaPFloodgate");
+            return true;
+        }
         Player target;
         if (args.length >= 1) {
             target = Bukkit.getPlayerExact(args[0]);
@@ -79,7 +91,7 @@ public final class FloodgatePlugin extends JavaPlugin implements Listener {
         } else if (sender instanceof Player p) {
             target = p;
         } else {
-            sender.sendMessage("Usage: /yapfloodgate <player>");
+            sender.sendMessage("Usage: /yapfloodgate [player]|reload");
             return true;
         }
         var info = runtime.get(target.getUniqueId());

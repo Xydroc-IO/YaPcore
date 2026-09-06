@@ -50,7 +50,7 @@ public final class WarpCommands implements CommandExecutor, TabCompleter {
                 default -> false;
             };
         } catch (Exception e) {
-            sender.sendMessage("§cDatabase error: " + e.getMessage());
+            com.yapcore.messages.YapMessages.commandFailed(sender, e);
             return true;
         }
     }

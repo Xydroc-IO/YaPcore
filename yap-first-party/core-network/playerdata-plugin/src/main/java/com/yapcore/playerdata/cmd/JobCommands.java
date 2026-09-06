@@ -39,8 +39,7 @@ public final class JobCommands implements CommandExecutor, TabCompleter {
         if (!Perms.require(sender, "yapdata.jobs")) {
             return true;
         }
-        if (!sync.isReady(player.getUniqueId())) {
-            player.sendMessage("§cStill loading your data…");
+        if (!sync.requireReady(player)) {
             return true;
         }
         try {
@@ -75,7 +74,7 @@ public final class JobCommands implements CommandExecutor, TabCompleter {
             player.sendMessage("Usage: /jobs [join|leave|list] [name]");
             return true;
         } catch (Exception e) {
-            player.sendMessage("§cError: " + e.getMessage());
+            com.yapcore.messages.YapMessages.commandFailed(player, e);
             return true;
         }
     }

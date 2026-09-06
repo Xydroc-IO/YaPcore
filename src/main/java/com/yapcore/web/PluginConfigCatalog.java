@@ -17,7 +17,7 @@ public final class PluginConfigCatalog {
                 e("yap-playerdata", "YaPPlayerData", "YaPPlayerData", "config.yml", "yap-playerdata", "yapdata reload"),
                 e("yap-moderation", "YaPModeration", "YaPModeration", "config.yml", "yap-moderation", "yapmod reload"),
                 e("yap-essentials", "YaPEssentials", "YaPEssentials", "config.yml", "yap-essentials", "yapess reload"),
-                e("yap-admin", "YaPAdmin", "YaPAdmin", "config.yml", "yap-admin", ""),
+                e("yap-admin", "YaPAdmin", "YaPAdmin", "config.yml", "yap-admin", "yapadmin reload"),
                 e("yap-protect", "YaPProtect", "YaPProtect", "config.yml", "yap-protect", "yapprotect reload"),
                 e("yap-world", "YaPWorld", "YaPWorld", "config.yml", "yap-world", "yapworld reload"),
                 e("yap-packs", "YaPPacks", "YaPPacks", "config.yml", "yap-packs", "yappacks reload"),
@@ -27,7 +27,9 @@ public final class PluginConfigCatalog {
                 e("yap-discord", "YaPDiscord", "YaPDiscord", "config.yml", "yap-discord", "yapdiscord reload"),
                 e("tebex", "Tebex store", "Tebex", "config.yml", "tebex", "tebex reload"),
                 e("yap-floodgate", "YaPFloodgate", "YaPFloodgate", "config.yml", "yap-floodgate", "yapfloodgate reload"),
+                // No runtime YAML reload — service bridge only
                 e("yap-bedrock-ui", "YaPBedrockUI", "YaPBedrockUI", "config.yml", "yap-bedrock-ui", ""),
+                // Status-only bridge; no hot config reload
                 e("yap-folia-bridge", "YaPFoliaBridge", "YaPFoliaBridge", "config.yml", "yap-folia-bridge", ""),
                 e("yap-regions", "YaPRegions", "YaPRegions", "config.yml", "yap-regions", "region reload"),
                 e("yap-npcs", "YaPNpcs", "YaPNpcs", "config.yml", "yap-npcs", "npc reload"),
@@ -37,8 +39,9 @@ public final class PluginConfigCatalog {
                 e("yap-factions", "YaPFactions", "YaPFactions", "config.yml", "yap-factions", "yapfactions reload"),
                 e("yap-conquest", "YaPConquest", "YaPConquest", "config.yml", "yap-conquest", "yapconquest reload"),
                 e("yap-db", "YaPDB", "YaPDB", "config.yml", "yap-db", "yapdb reload"),
-                e("yap-pregen", "YaPPregen", "YaPPregen", "config.yml", "yap-pregen", ""),
+                e("yap-pregen", "YaPPregen", "YaPPregen", "config.yml", "yap-pregen", "yappregen reload"),
                 e("yap-placeholderapi", "PlaceholderAPI", "PlaceholderAPI", "config.yml", "placeholderapi", "placeholderapi reload"),
+                // ASM rewrite is pre-load; no hot reload
                 e("yap-plugin-compat", "YaPPluginCompat", "YaPPluginCompat", "config.yml", "yap-plugin-compat", ""),
                 e("yap-stacker", "YaPStacker", "YaPStacker", "config.yml", "yap-stacker", "yapstacker reload"),
                 e("yap-gameplay-knobs", "YaPGameplayKnobs", "YaPGameplayKnobs", "knobs.yml", "yap-gameplay-knobs", "yapknobs reload"),

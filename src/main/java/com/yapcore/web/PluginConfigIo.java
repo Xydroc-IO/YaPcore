@@ -91,21 +91,21 @@ public final class PluginConfigIo {
             try {
                 return Integer.parseInt(raw == null ? "0" : raw.trim());
             } catch (NumberFormatException e) {
-                return existing;
+                throw new IllegalArgumentException("Invalid integer value: " + raw);
             }
         }
         if (existing instanceof Long) {
             try {
                 return Long.parseLong(raw == null ? "0" : raw.trim());
             } catch (NumberFormatException e) {
-                return existing;
+                throw new IllegalArgumentException("Invalid long value: " + raw);
             }
         }
         if (existing instanceof Double || existing instanceof Float) {
             try {
                 return Double.parseDouble(raw == null ? "0" : raw.trim());
             } catch (NumberFormatException e) {
-                return existing;
+                throw new IllegalArgumentException("Invalid number value: " + raw);
             }
         }
         if (existing instanceof List<?>) {

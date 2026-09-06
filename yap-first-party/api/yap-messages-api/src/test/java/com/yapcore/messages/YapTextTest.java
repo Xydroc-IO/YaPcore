@@ -28,6 +28,12 @@ class YapTextTest {
         assertEquals("1", m.get("a"));
         assertEquals("2", m.get("b"));
     }
+
+    @Test
+    void looksLikeDbDownDetectsPoolMessages() {
+        assertTrue(YapMessages.looksLikeDbDown(new RuntimeException("Shared YaPDB pool is not open")));
+        assertFalse(YapMessages.looksLikeDbDown(new RuntimeException("kit unknown")));
+    }
 }
 
 class YapMessageBundleTest {
@@ -45,5 +51,20 @@ class YapMessageBundleTest {
         YapMessageBundle b = new YapMessageBundle(
                 Map.of("muted", "&cMuted: {reason}"), false);
         assertEquals("&cMuted: spam", YapText.apply(b.raw("muted"), Map.of("reason", "spam")));
+    }
+}
+
+class YapConfigReloadTest {
+
+    @Test
+    void runCapturesExceptions() {
+        YapConfigReload.Result ok = YapConfigReload.run(() -> {
+        });
+        assertTrue(ok.ok());
+        YapConfigReload.Result bad = YapConfigReload.run(() -> {
+            throw new IllegalStateException("bad yaml");
+        });
+        assertFalse(bad.ok());
+        assertTrue(bad.errors().get(0).contains("bad yaml"));
     }
 }

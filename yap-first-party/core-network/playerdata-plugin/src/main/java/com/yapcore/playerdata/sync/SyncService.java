@@ -72,6 +72,18 @@ public final class SyncService {
         return ready.contains(uuid);
     }
 
+    /** @return true if profile is ready; otherwise tells the player and returns false. */
+    public boolean requireReady(Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (isReady(player.getUniqueId())) {
+            return true;
+        }
+        com.yapcore.messages.YapMessages.profileLoading(player);
+        return false;
+    }
+
     public boolean isLoading(UUID uuid) {
         return loading.contains(uuid);
     }

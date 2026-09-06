@@ -8,6 +8,8 @@ import org.bukkit.command.TabCompleter;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
+import com.yapcore.messages.YapConfigReload;
+import com.yapcore.messages.YapHelp;
 import com.yapcore.messages.YapMessages;
 
 final class YapDbCommand implements CommandExecutor, TabCompleter {
@@ -25,7 +27,7 @@ final class YapDbCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            sender.sendMessage("Usage: /yapdb <status|reload>");
+            YapHelp.simple(sender, "YaPDB", "/yapdb <status|reload>");
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -37,15 +39,16 @@ final class YapDbCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("  jdbc: " + plugin.jdbcUrl());
             }
             case "reload" -> {
-                try {
-                    plugin.reloadPool();
-                    YapMessages.reloaded(sender, "YaPDB pool");
-                } catch (Exception e) {
-                    sender.sendMessage("§cReload failed: " + e.getMessage());
-                    plugin.getLogger().severe("yapdb reload: " + e.getMessage());
-                }
+                var result = YapConfigReload.run(() -> {
+                    try {
+                        plugin.reloadPool();
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e.getMessage() == null ? "reload failed" : e.getMessage(), e);
+                    }
+                });
+                YapConfigReload.report(sender, plugin.getLogger(), "YaPDB", result);
             }
-            default -> sender.sendMessage("Usage: /yapdb <status|reload>");
+            default -> YapHelp.simple(sender, "YaPDB", "/yapdb <status|reload>");
         }
         return true;
     }

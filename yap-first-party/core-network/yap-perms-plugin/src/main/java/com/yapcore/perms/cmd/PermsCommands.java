@@ -1,5 +1,6 @@
 package com.yapcore.perms.cmd;
 
+import com.yapcore.messages.YapHelp;
 import com.yapcore.messages.YapMessages;
 import com.yapcore.perms.PermsPlugin;
 import com.yapcore.sched.YapSched;
@@ -49,7 +50,8 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
                 plugin.ranksGui().openHub(player);
                 return true;
             }
-            sender.sendMessage("§e/yapperm gui|user|group|track|check|export|import|dump|editor-apply|reload|applypack");
+            YapHelp.simple(sender, "YaPPerms",
+                    "/yapperm gui|user|group|track|check|export|import|dump|editor-apply|reload|applypack");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -100,7 +102,8 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
             case "dump" -> io.dumpCmd(sender);
             case "editor-apply" -> io.editorApplyCmd(sender);
             default -> {
-                sender.sendMessage("§e/yapperm gui|user|group|track|check|export|import|dump|editor-apply|reload|applypack");
+                YapHelp.simple(sender, "YaPPerms",
+                        "/yapperm gui|user|group|track|check|export|import|dump|editor-apply|reload|applypack");
                 yield true;
             }
         };
@@ -112,7 +115,7 @@ public final class PermsCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length < 2) {
-            sender.sendMessage("§e/yapperm check <player> <node> [world]");
+            YapHelp.usage(sender, "/yapperm check <player> <node> [world]");
             return true;
         }
         OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);

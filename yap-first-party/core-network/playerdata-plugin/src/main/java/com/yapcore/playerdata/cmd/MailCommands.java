@@ -40,8 +40,7 @@ public final class MailCommands implements CommandExecutor, TabCompleter {
         if (!Perms.require(sender, "yapdata.mail")) {
             return true;
         }
-        if (!sync.isReady(player.getUniqueId())) {
-            player.sendMessage("§cStill loading your data…");
+        if (!sync.requireReady(player)) {
             return true;
         }
         try {
@@ -85,7 +84,7 @@ public final class MailCommands implements CommandExecutor, TabCompleter {
                 }
             };
         } catch (Exception e) {
-            player.sendMessage("§cDatabase error: " + e.getMessage());
+            com.yapcore.messages.YapMessages.commandFailed(player, e);
             return true;
         }
     }

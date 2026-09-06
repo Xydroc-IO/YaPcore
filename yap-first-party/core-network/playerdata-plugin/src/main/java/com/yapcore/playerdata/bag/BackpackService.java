@@ -57,7 +57,7 @@ public final class BackpackService {
 
     public void openOwn(Player player, int requestedPage) {
         if (!sync.isReady(player.getUniqueId())) {
-            player.sendMessage("§cStill loading your data…");
+            com.yapcore.messages.YapMessages.profileLoading(player);
             return;
         }
         int pages = pagesFor(player);
@@ -67,7 +67,7 @@ public final class BackpackService {
 
     public void openSee(Player viewer, UUID owner, String ownerName, int requestedPage) {
         if (!sync.isReady(viewer.getUniqueId())) {
-            viewer.sendMessage("§cStill loading your data…");
+            com.yapcore.messages.YapMessages.profileLoading(viewer);
             return;
         }
         int pages = Math.max(1, config.backpackMaxPages());

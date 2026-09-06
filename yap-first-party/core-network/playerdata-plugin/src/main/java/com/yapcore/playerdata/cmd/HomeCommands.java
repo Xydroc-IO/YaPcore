@@ -40,8 +40,7 @@ public final class HomeCommands implements CommandExecutor, TabCompleter {
         if (!Perms.require(sender, "yapdata.home")) {
             return true;
         }
-        if (!sync.isReady(player.getUniqueId())) {
-            player.sendMessage("§cStill loading your data…");
+        if (!sync.requireReady(player)) {
             return true;
         }
         String cmd = command.getName().toLowerCase(Locale.ROOT);
@@ -57,7 +56,7 @@ public final class HomeCommands implements CommandExecutor, TabCompleter {
                 default -> false;
             };
         } catch (Exception e) {
-            player.sendMessage("§cDatabase error: " + e.getMessage());
+            com.yapcore.messages.YapMessages.commandFailed(player, e);
             return true;
         }
     }

@@ -42,8 +42,7 @@ public final class ShopCommands implements CommandExecutor, TabCompleter {
         if (!Perms.require(sender, "yapdata.shop")) {
             return true;
         }
-        if (!sync.isReady(player.getUniqueId())) {
-            player.sendMessage("§cStill loading your data…");
+        if (!sync.requireReady(player)) {
             return true;
         }
         if (args.length < 1) {
@@ -61,7 +60,7 @@ public final class ShopCommands implements CommandExecutor, TabCompleter {
                 }
             };
         } catch (Exception e) {
-            player.sendMessage("§cError: " + e.getMessage());
+            com.yapcore.messages.YapMessages.commandFailed(player, e);
             return true;
         }
     }

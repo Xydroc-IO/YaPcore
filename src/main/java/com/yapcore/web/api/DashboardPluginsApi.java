@@ -164,6 +164,8 @@ public final class DashboardPluginsApi {
                         "plugin", entry.id(),
                         "reload", result == null ? "" : result,
                         "fields", PluginConfigIo.flatten(PluginConfigIo.load(root, entry)).size()));
+            } catch (IllegalArgumentException e) {
+                DashboardHttp.json(ex, 400, Map.of("error", e.getMessage() == null ? "invalid field" : e.getMessage()));
             } catch (Exception e) {
                 DashboardHttp.json(ex, 500, Map.of("error", e.getMessage() == null ? "save failed" : e.getMessage()));
             }

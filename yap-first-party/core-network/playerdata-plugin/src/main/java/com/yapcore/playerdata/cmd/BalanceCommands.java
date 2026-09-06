@@ -1,6 +1,7 @@
 package com.yapcore.playerdata.cmd;
 
 import com.yapcore.playerdata.economy.BalanceStore;
+import com.yapcore.playerdata.sync.SyncService;
 import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -22,9 +23,11 @@ public final class BalanceCommands implements CommandExecutor, TabCompleter {
     private static final List<String> ECO_ACTIONS = List.of("give", "take", "set", "reset");
 
     private final BalanceStore store;
+    private final SyncService sync;
 
-    public BalanceCommands(BalanceStore store) {
+    public BalanceCommands(BalanceStore store, SyncService sync) {
         this.store = store;
+        this.sync = sync;
     }
 
     @Override
@@ -49,6 +52,9 @@ public final class BalanceCommands implements CommandExecutor, TabCompleter {
         if (args.length == 0) {
             if (!(sender instanceof Player player)) {
                 sender.sendMessage("Usage: /bal <player>");
+                return true;
+            }
+            if (!sync.requireReady(player)) {
                 return true;
             }
             double bal = store.getBalance(player.getUniqueId());
@@ -77,6 +83,9 @@ public final class BalanceCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (!Perms.require(sender, "yapdata.pay")) {
+            return true;
+        }
+        if (!sync.requireReady(from)) {
             return true;
         }
         if (args.length < 2) {
