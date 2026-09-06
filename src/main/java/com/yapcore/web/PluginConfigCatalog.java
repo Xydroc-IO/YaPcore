@@ -43,7 +43,8 @@ public final class PluginConfigCatalog {
                 e("yap-stacker", "YaPStacker", "YaPStacker", "config.yml", "yap-stacker", "yapstacker reload"),
                 e("yap-gameplay-knobs", "YaPGameplayKnobs", "YaPGameplayKnobs", "knobs.yml", "yap-gameplay-knobs", "yapknobs reload"),
                 e("yap-skills", "YaPSkills", "YaPSkills", "config.yml", "yap-skills", "yskills reload"),
-                e("yap-disasters", "YaPDisasters", "YaPDisasters", "config.yml", "yap-disasters", "yapdisaster reload")
+                e("yap-disasters", "YaPDisasters", "YaPDisasters", "config.yml", "yap-disasters", "yapdisaster reload"),
+                e("yap-dungeons", "YaPDungeons", "YaPDungeons", "config.yml", "yap-dungeons", "yapdungeons reload")
         );
     }
 

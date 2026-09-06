@@ -69,6 +69,7 @@ class PluginConfigIoTest {
         assertTrue(PluginConfigCatalog.byId("yap-conquest") != null);
         assertTrue(PluginConfigCatalog.byId("yap-skills") != null);
         assertTrue(PluginConfigCatalog.byId("yap-disasters") != null);
+        assertTrue(PluginConfigCatalog.byId("yap-dungeons") != null);
         assertTrue(PluginConfigCatalog.byId("yap-db") != null);
         assertTrue(PluginConfigCatalog.byId("yap-guilds") == null);
         assertTrue(PluginConfigCatalog.byId("yap-combat") == null);
