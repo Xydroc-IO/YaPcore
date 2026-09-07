@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "yap-staff",
+  "version": "${version}",
+  "name": "YaP Staff",
+  "description": "Full Fabric staff admin GUI: god/fly/vanish, item give browser, teleports, trolls, moderation, economy, server ops. Server enforces permissions via YaPAdmin.",
+  "authors": [
+    "YaP Labs"
+  ],
+  "contact": {
+    "homepage": "https://yaplabs.us",
+    "sources": "https://github.com/YapLabs/YaPcore"
+  },
+  "license": "GPL-3.0-or-later",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.yapcore.staff.YapStaffClient"
+    ]
+  },
+  "mixins": [
+    "yap-staff.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25"
+  }
+}

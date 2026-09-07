@@ -91,6 +91,8 @@ Shared listen port (`shared-listen-port=true`) uses the same number for JE TCP a
 **merged** into `yap-active-bundle-<hash>.zip` (later packs win on path conflicts) so every
 active pack applies without play-phase `addResourcePack`.  
 `resource-pack-forced=false` (default) lets players decline without being kicked.
+Modern JE clients on the Via edge still get the Yes/No prompt; only mid-band /
+legacy clients are auto-acked so they are not stuck on join.
 
 ```properties
 resource-pack-enabled=true
@@ -205,6 +207,24 @@ cd client/yap-bag && ./gradlew build
 Vanilla and Bedrock players keep `/bag` and the `/menu` Bag icon. Config: `.minecraft/config/yap-bag.json`.
 See [yap-bag/README.md](../../client/yap-bag/README.md).
 
+## Staff menu on Esc — optional client mod
+
+`/yapadmin` and `/menu` → Staff work for every client that has permission. **yap-staff** is a Fabric **client** mod that adds a **Staff menu** (Esc pause + keybind **R**): full native Screens for players, give, trolls, moderation, economy, ranks/perms, and more. Server still enforces `yapadmin.*` / `yapperm.*`. It is not a Folia plugin.
+
+| Piece | Where |
+|-------|--------|
+| YaPAdmin `/yapadmin` | Server — required |
+| `yap-staff-1.0.3.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
+
+```bash
+cd client/yap-staff && ./gradlew build
+# → client/yap-staff/build/libs/yap-staff-1.0.3.jar
+```
+
+Config: `.minecraft/config/yap-staff.json`. See [yap-staff/README.md](../../client/yap-staff/README.md) and [ADMIN_MENU.md](../ops/ADMIN_MENU.md).
+
+The Fabric **yap-staff** mod scrolls/scales to the window, uses a searchable player picker that returns to the calling tool, and includes a full YaPPerms ranks editor UI. Update **yap-admin.jar** for troll + give + Folia-safe `/yapadmin money`.
+
 ## Realistic skies
 
 **YaP Skies** + **YaP Water** ship in `yapcore-default.zip` and download with the pack prompt.
@@ -240,7 +260,7 @@ YaP Iris (jar-in-jar) and installs YaP Shaders on first launch.
 
 ```bash
 ./scripts/build-yap-client-render.sh
-# → dist/client-mods/client_mods.zip         (release upload — bag + ultrawide + visuals)
+# → dist/client-mods/client_mods.zip         (release upload — bag + staff + ultrawide + visuals)
 # → dist/client-mods/yap-visuals-*.jar       (also loose jars for local installs)
 # → dist/client-mods/yap-client-visuals.zip  (visuals-only Discord / site bundle)
 ```

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build YaP optional Fabric client mods → dist/client-mods/
-# Release upload: client_mods.zip (folder with bag + ultrawide + visuals jars).
+# Release upload: client_mods.zip (folder with bag + staff + ultrawide + visuals jars).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${ROOT}/dist/client-mods"
@@ -74,16 +74,29 @@ if [[ -z "${UW_JAR}" ]]; then
 fi
 cp -f "$UW_JAR" "$OUT/"
 
+echo "==> Build YaP Staff"
+(
+  cd "${ROOT}/client/yap-staff"
+  ./gradlew --no-daemon build
+)
+STAFF_JAR="$(ls -1t "${ROOT}/client/yap-staff/build/libs"/yap-staff-*.jar 2>/dev/null | grep -v sources | grep -v javadoc | head -1 || true)"
+if [[ -z "${STAFF_JAR}" ]]; then
+  echo "ERROR: yap-staff jar not found" >&2
+  exit 1
+fi
+cp -f "$STAFF_JAR" "$OUT/"
+
 echo "==> Bundle install notes"
 cat > "${OUT}/INSTALL.txt" <<'EOF'
 YaP optional Fabric client mods (Minecraft 26.2)
 
 Release zip: client_mods.zip
-  Unzip → client_mods/ with three jars. Copy all three into .minecraft/mods/
+  Unzip → client_mods/ with jars. Copy them into .minecraft/mods/
   (or Prism instance mods/).
 
   - yap-visuals-*.jar   Sodium + YaP Iris + shaders (one jar — do not also install sodium/iris)
   - yap-bag-*.jar       Bag keybind / inventory tabs (/bag)
+  - yap-staff-*.jar     Esc pause Staff menu (/yapadmin)
   - yap-ultrawide-*.jar Hor+ FOV for ultrawide monitors
 
 Requirements: Fabric Loader 0.19+ for Minecraft 26.2.
@@ -91,10 +104,10 @@ Requirements: Fabric Loader 0.19+ for Minecraft 26.2.
 Vanilla Java / Bedrock / no-mods clients still join YaPcore without these files.
 EOF
 
-# Release asset: one zip with a client_mods/ folder (upload this, not three jars).
+# Release asset: one zip with a client_mods/ folder (upload this, not loose jars).
 rm -rf "${OUT}/_client_mods_staging"
 mkdir -p "$STAGING"
-/bin/cp -f "$VISUALS_JAR" "$BAG_JAR" "$UW_JAR" "$STAGING/"
+/bin/cp -f "$VISUALS_JAR" "$BAG_JAR" "$UW_JAR" "$STAFF_JAR" "$STAGING/"
 /bin/cp -f "${OUT}/INSTALL.txt" "$STAGING/"
 CLIENT_MODS_ZIP="${OUT}/client_mods.zip"
 rm -f "$CLIENT_MODS_ZIP"
@@ -121,5 +134,5 @@ rm -f "$BUNDLE"
 
 echo "Done."
 echo "  Release upload: $CLIENT_MODS_ZIP"
-echo "  Contents: $(basename "$VISUALS_JAR") $(basename "$BAG_JAR") $(basename "$UW_JAR")"
+echo "  Contents: $(basename "$VISUALS_JAR") $(basename "$BAG_JAR") $(basename "$STAFF_JAR") $(basename "$UW_JAR")"
 ls -lh "$OUT"

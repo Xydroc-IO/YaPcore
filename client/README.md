@@ -10,6 +10,7 @@ plugins — they go in the player’s `.minecraft/mods/`, never `plugins/`.
 | [yap-sodium](yap-sodium/) | Official Sodium pin docs (PolyForm Shield — no fork) |
 | [yap-shaders](yap-shaders/) | First-party Iris water + skies pack |
 | [yap-bag](yap-bag/) | Bag keybind + inventory tabs (talks to YaPPlayerData `/bag`) |
+| [yap-staff](yap-staff/) | Esc / **R** full Staff GUI (ranks, economy, trolls, …) — jar **1.0.3+** |
 | [yap-ultrawide](yap-ultrawide/) | Hor+ FOV for 21:9 / 32:9 |
 
 Build all optional client jars + the release zip from repo root:
@@ -17,7 +18,7 @@ Build all optional client jars + the release zip from repo root:
 ```bash
 ./scripts/build-yap-client-render.sh
 # → dist/client-mods/client_mods.zip   (upload this on GitHub Releases)
-# → dist/client-mods/yap-visuals-*.jar, yap-bag-*.jar, yap-ultrawide-*.jar
+# → dist/client-mods/yap-visuals-*.jar, yap-bag-*.jar, yap-staff-*.jar, yap-ultrawide-*.jar
 ```
 
 Unzip `client_mods.zip` → `client_mods/` and drop those jars into `.minecraft/mods/`.

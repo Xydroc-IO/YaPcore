@@ -9,6 +9,25 @@ For build commands and zip layout see [RELEASES.md](RELEASES.md). For live statu
 
 ---
 
+## After 1.0.0.0 — staff client + pack/Via polish (2026-09-07)
+
+Same ship version (no product bump). Operator / client staff UX:
+
+| Area | Change |
+|------|--------|
+| **yap-staff 1.0.3** | Full Fabric staff GUI (players, give, trolls, mod, economy, **ranks/perms**, deep links); scrollable + window-scaled layout; searchable player picker returns to calling tool |
+| **YaPAdmin** | Trolls / give / money subcommands; economy deposits via `PlayerDataService` on the entity region thread (Folia-safe) |
+| **yap-bag** | Mixins target `AbstractContainerScreen` for MC 26.2 chest tabs |
+| **Via packs** | Forward optional Paper resource-pack prompts to modern JE (no longer auto-accept-only when unforced) |
+| **YaPTab** | Sidebar/footer resolve `{balance}` and `${balance}` |
+| **Packs / scripts** | GitHub Releases pack offer sync; Control Panel / `gui.sh` home resolution |
+
+Docs: [ADMIN_MENU.md](../ops/ADMIN_MENU.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) · [yap-staff/README.md](../../client/yap-staff/README.md).
+
+Build clients: `./scripts/build-yap-client-render.sh`. Rebuild admin/tab: `gradle :admin-plugin:jar :tab-plugin:shadowJar`.
+
+---
+
 ## v1.0.0.0 — product polish P0/P1 (2026-09-05)
 
 Same ship version (no bump). Operator-facing consistency and ops reload parity:
@@ -31,11 +50,12 @@ Optional Fabric / pack polish on the same ship version (no version bump):
 
 | Area | Change |
 |------|--------|
-| **Release asset** | Upload **`client_mods.zip`** (yap-visuals + yap-bag + yap-ultrawide) instead of three loose jars |
+| **Release asset** | Upload **`client_mods.zip`** (yap-visuals + yap-bag + yap-staff + yap-ultrawide) |
 | **YaP Shaders** | Multi-dir Gerstner water; weather-driven species foliage wind; softer distance fog; leaf cutout path |
 | **Default pack** | Denser Faithful-based leaves (`strict_cutout`); water/weather overlay refresh |
 | **yap-ultrawide** | Separate **21:9** and **32:9** Hor+ profiles (`match_16_9` / `match_21_9` / `fixed_hfov` + HFOV cap) |
 | **yap-bag** | Screen mixins updated for MC 26.2 chest / inventory layout |
+| **yap-staff** | Esc / **R** full Staff GUI (scroll/scale, ranks, searchable pick) — **1.0.3+** |
 
 Build: `./scripts/build-yap-client-render.sh` · `./scripts/build-default-resourcepack.sh`.
 Docs: [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md), [RELEASES.md](RELEASES.md).
@@ -59,14 +79,14 @@ Bedrock crossplay, YaP Link proxy, web dashboard, and the operator SMP commands 
 | **Operator SMP** | `/bag` (3/5/7/9 pages), `/gm` + `/item`, `/eco`, per-rank name/chat colors, `/yapmod seen` |
 | **Gameplay (opt-in)** | Thin skills (mining/woodcutting/strength), disasters, stacker, factions, **YaP Encyclopedia** (Purpur-inspired knobs). Gameplay jars default **off** until enabled. |
 | **Ops** | Web dashboard (`:8080`) — ranks, kit builder, plugin YAML editors, Swing GUI, seed defaults, MariaDB/Postgres Docker packages, SQLite single-node |
-| **Clients (optional)** | Fabric 26.2 under [`client/`](../../client/): **yap-visuals** (Sodium+Iris+shaders in one jar), **yap-bag**, **yap-ultrawide** — vanilla and Bedrock stay supported without them |
+| **Clients (optional)** | Fabric 26.2 under [`client/`](../../client/): **yap-visuals** (Sodium+Iris+shaders in one jar), **yap-bag**, **yap-staff**, **yap-ultrawide** — vanilla and Bedrock stay supported without them |
 | **Packs** | `yapcore-default` (Faithful + skies) |
 | **Integrations** | Optional fetch scripts for **Grim AC** and **Tebex** (GPLv3, not bundled by default) |
 
 ### Protocol & crossplay
 
 - **JE matrix 4/4 spawn** under compression (1.20.4, 1.21.1, and pinned mid bands).
-- **Optional resource packs** auto-acked when `resource-pack-forced=false` — fixes mid-client join timeouts.
+- **Optional packs on Via** — modern JE (≥1.20.2) get the Folia login Yes/No prompt; Via no longer auto-acks optional packs (that hid downloads). Mid-band clients still auto-ack.
 - **Bedrock 1.21.50** — RakNet login, spawn, dig/place, chat, commands; play-depth smoke green.
 - **Paper column stream** default for Bedrock terrain (flat chunks opt-in only).
 - **G.33** placed-skull block-actor sync + item-in-hand SkullOwner Name NBT; full profile-hash textures remain Stretch.
@@ -170,10 +190,10 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 | **Cite vs Canvas** | Heavypop campaign `20260904T065505Z`: YaP **−8.09% vs Canvas** (citeable ≥5%), **−16.56% vs stock** under disclosed ship knobs — [CANVAS_PARITY.md](../folia/CANVAS_PARITY.md) · [REAL_GAINS.md](../folia/REAL_GAINS.md) |
 | **vs Paper/Purpur** | Honest scale/product framing (regionized + encyclopedia + suite); no single-thread MSPT claim — [PAPER_PURPUR_SCALE.md](../folia/PAPER_PURPUR_SCALE.md) |
 | **Bedrock specialty containers** | Anvil, smithing, loom, stonecutter, cartography — open + slot sync + **recipe pick**; anvil rename FILTER_TEXT pending deploy — [CROSSPLAY.md](../network/CROSSPLAY.md) |
-| **Repo layout** | Optional Fabric client mods nested under [`client/`](../../client/) (`yap-visuals`, `yap-bag`, `yap-ultrawide`, Iris/Sodium/shaders) |
+| **Repo layout** | Optional Fabric client mods nested under [`client/`](../../client/) (`yap-visuals`, `yap-bag`, `yap-staff`, `yap-ultrawide`, Iris/Sodium/shaders) |
 | **YaPCommands** | YAML custom `/commands` (`yap-commands.jar`) with dashboard **Custom commands** CRUD — messages, player/console runs, aliases, cooldowns — [COMMANDS.md](../ops/COMMANDS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
 | **Packs / CDN** | Default `resource-pack-url` → GitHub `releases/latest/download/{file}`; SHA-1 hashed from the remote bytes clients download; `public-pack-port` 80/443 honored for nginx edge — [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) |
-| **GitHub release assets** | Tag `1.0.0.0` ships OS zips, suites, `yapcore-default.zip`, and optional Fabric `client_mods.zip` (yap-visuals + yap-bag + yap-ultrawide) |
+| **GitHub release assets** | Tag `1.0.0.0` ships OS zips, suites, `yapcore-default.zip`, and optional Fabric `client_mods.zip` (yap-visuals + yap-bag + yap-staff + yap-ultrawide) |
 | **Docs hygiene** | Generated PDFs / office dumps gitignored — publish Markdown only |
 | **Typical SMP defaults** | Chat slow-mode 3; claim tax off; map claim markers on; Disasters opt-in off; CHANGE_ME command links; generic Tab branding; dashboard **Opt-in** badge; seed↔jar drift CI — [DEFAULTS.md](DEFAULTS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
 

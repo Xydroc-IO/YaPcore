@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "com.yapcore.staff.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "OptionsMixin",
+    "MinecraftMixin",
+    "PauseScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
