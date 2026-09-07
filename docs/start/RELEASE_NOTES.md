@@ -15,16 +15,16 @@ Same ship version (no product bump). Operator / client staff UX:
 
 | Area | Change |
 |------|--------|
-| **yap-staff 1.0.3** | Full Fabric staff GUI (players, give, trolls, mod, economy, **ranks/perms**, deep links); scrollable + window-scaled layout; searchable player picker returns to calling tool |
+| **yap-staff 1.0.4** | Full Fabric staff GUI (players, give, trolls, mod, economy, **ranks/perms**, deep links); scrollable + window-scaled layout; searchable player picker returns to calling tool; **fix empty scroll body** (`arrangeElements` before `setMaxHeight`) |
 | **YaPAdmin** | Trolls / give / money subcommands; economy deposits via `PlayerDataService` on the entity region thread (Folia-safe) |
-| **yap-bag** | Mixins target `AbstractContainerScreen` for MC 26.2 chest tabs |
+| **yap-bag 1.0.1** | Mixins target `AbstractContainerScreen` for MC 26.2; **page tabs sit above 6-row bag** (was hard-coded 3-row offset covering slots) |
 | **Via packs** | Forward optional Paper resource-pack prompts to modern JE (no longer auto-accept-only when unforced) |
 | **YaPTab** | Sidebar/footer resolve `{balance}` and `${balance}` |
 | **Packs / scripts** | GitHub Releases pack offer sync; Control Panel / `gui.sh` home resolution |
 
-Docs: [ADMIN_MENU.md](../ops/ADMIN_MENU.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) · [yap-staff/README.md](../../client/yap-staff/README.md).
+Docs: [ADMIN_MENU.md](../ops/ADMIN_MENU.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) · [yap-staff/README.md](../../client/yap-staff/README.md) · [yap-bag/README.md](../../client/yap-bag/README.md).
 
-Build clients: `./scripts/build-yap-client-render.sh`. Rebuild admin/tab: `gradle :admin-plugin:jar :tab-plugin:shadowJar`.
+Build clients: `./scripts/build-yap-client-render.sh`. Rebuild admin/tab: `gradle :admin-plugin:jar :tab-plugin:shadowJar`. Republish trees: `gradle publishReleasesFolder -PyapGameplay=true`.
 
 ---
 
@@ -54,8 +54,8 @@ Optional Fabric / pack polish on the same ship version (no version bump):
 | **YaP Shaders** | Multi-dir Gerstner water; weather-driven species foliage wind; softer distance fog; leaf cutout path |
 | **Default pack** | Denser Faithful-based leaves (`strict_cutout`); water/weather overlay refresh |
 | **yap-ultrawide** | Separate **21:9** and **32:9** Hor+ profiles (`match_16_9` / `match_21_9` / `fixed_hfov` + HFOV cap) |
-| **yap-bag** | Screen mixins updated for MC 26.2 chest / inventory layout |
-| **yap-staff** | Esc / **R** full Staff GUI (scroll/scale, ranks, searchable pick) — **1.0.3+** |
+| **yap-bag** | Screen mixins updated for MC 26.2 chest / inventory layout — use **1.0.1+** (6-row tab offset) |
+| **yap-staff** | Esc / **R** full Staff GUI (scroll/scale, ranks, searchable pick) — **1.0.4+** |
 
 Build: `./scripts/build-yap-client-render.sh` · `./scripts/build-default-resourcepack.sh`.
 Docs: [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md), [RELEASES.md](RELEASES.md).
@@ -207,7 +207,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
 - **12h soak-long PASS** (`logs/soak/soak-long-20260905T031507Z.log`) — zip may be marketed as **soak-proven**; heap/thread slope flat (folia heap median early≈1012MB late≈1082MB; threads 137→137) per [REAL_GAINS.md](../folia/REAL_GAINS.md)
 - Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production (defaults stay **off**)
-`releases/1.0.0.0/` republished 2026-09-06 with typical SMP defaults (`gradle publishReleasesFolder -PyapGameplay=true`). Prior: pack CDN/SHA + client visuals (2026-09-04).
+`releases/1.0.0.0/` republished 2026-09-07 with staff/bag client fixes + pack/Via polish (`./scripts/build-yap-client-render.sh` then `gradle publishReleasesFolder -PyapGameplay=true`). Prior: typical SMP defaults (2026-09-06); pack CDN/SHA + client visuals (2026-09-04).
 
 ---
 

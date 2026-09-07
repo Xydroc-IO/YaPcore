@@ -68,4 +68,4 @@ Teleports and inventory mutations use `YapSched.entity`. Moderation DB calls go 
 
 ## Client mod
 
-See [`client/yap-staff/README.md`](../../client/yap-staff/README.md) — native Screens for every hub section (scrollable/scaled layout, searchable player select that returns to the calling tool, ranks catalog). Jar **1.0.3+**.
+See [`client/yap-staff/README.md`](../../client/yap-staff/README.md) — native Screens for every hub section (scrollable/scaled layout, searchable player select that returns to the calling tool, ranks catalog). Jar **1.0.4+**.

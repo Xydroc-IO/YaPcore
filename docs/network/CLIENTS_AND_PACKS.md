@@ -197,11 +197,11 @@ See [yap-ultrawide/README.md](../../client/yap-ultrawide/README.md).
 | Piece | Where |
 |-------|--------|
 | YaPEssentials `/bag` + YaPPlayerData storage | Server — required |
-| `yap-bag-1.0.0.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
+| `yap-bag-1.0.1.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
 
 ```bash
 cd client/yap-bag && ./gradlew build
-# → client/yap-bag/build/libs/yap-bag-1.0.0.jar
+# → client/yap-bag/build/libs/yap-bag-1.0.1.jar
 ```
 
 Vanilla and Bedrock players keep `/bag` and the `/menu` Bag icon. Config: `.minecraft/config/yap-bag.json`.
@@ -214,11 +214,11 @@ See [yap-bag/README.md](../../client/yap-bag/README.md).
 | Piece | Where |
 |-------|--------|
 | YaPAdmin `/yapadmin` | Server — required |
-| `yap-staff-1.0.3.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
+| `yap-staff-1.0.4.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
 
 ```bash
 cd client/yap-staff && ./gradlew build
-# → client/yap-staff/build/libs/yap-staff-1.0.3.jar
+# → client/yap-staff/build/libs/yap-staff-1.0.4.jar
 ```
 
 Config: `.minecraft/config/yap-staff.json`. See [yap-staff/README.md](../../client/yap-staff/README.md) and [ADMIN_MENU.md](../ops/ADMIN_MENU.md).

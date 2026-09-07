@@ -56,10 +56,12 @@ gh release upload 1.0.0.0 \
   releases/1.0.0.0/yapcore-release-windows.zip \
   releases/1.0.0.0/yap-network-suite.zip \
   releases/1.0.0.0/yap-gameplay-suite.zip \
-  resourcepacks/yapcore-default.zip \
-  dist/client-mods/client_mods.zip \
+  releases/1.0.0.0/yapcore-default.zip \
+  releases/1.0.0.0/client_mods.zip \
   --clobber -R Xydroc-IO/YaPcore
 ```
+
+Copy `dist/client-mods/client_mods.zip` (and `resourcepacks/yapcore-default.zip`) into `releases/1.0.0.0/` after building clients so the durable folder holds every GitHub asset.
 
 **After Link wire fixes:** `publishReleasesFolder` refreshes `yap-link.jar` inside the
 trees/zips. Also copy the shadow jar to **repo-root** `yap-link.jar` — the Swing/web

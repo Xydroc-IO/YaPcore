@@ -10,7 +10,7 @@ plugins — they go in the player’s `.minecraft/mods/`, never `plugins/`.
 | [yap-sodium](yap-sodium/) | Official Sodium pin docs (PolyForm Shield — no fork) |
 | [yap-shaders](yap-shaders/) | First-party Iris water + skies pack |
 | [yap-bag](yap-bag/) | Bag keybind + inventory tabs (talks to YaPPlayerData `/bag`) |
-| [yap-staff](yap-staff/) | Esc / **R** full Staff GUI (ranks, economy, trolls, …) — jar **1.0.3+** |
+| [yap-staff](yap-staff/) | Esc / **R** full Staff GUI (ranks, economy, trolls, …) — jar **1.0.4+** |
 | [yap-ultrawide](yap-ultrawide/) | Hor+ FOV for 21:9 / 32:9 |
 
 Build all optional client jars + the release zip from repo root:
