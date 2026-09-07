@@ -1,6 +1,6 @@
 # yap-staff
 
-Fabric **client** mod for Minecraft **26.2** (version **1.0.3**). Full staff admin GUI — not a one-button shim.
+Fabric **client** mod for Minecraft **26.2** (version **1.0.4**). Full staff admin GUI — not a one-button shim.
 
 Opens with **R** (Controls → Miscellaneous → Open YaP Staff) or **Esc → Staff menu**.
 
@@ -29,7 +29,7 @@ The **server** still enforces every permission (`yapadmin.*`, `yapessentials.*`,
 ## Install
 
 1. Fabric Loader **0.19.3+** for Minecraft **26.2**
-2. Drop `yap-staff-1.0.3.jar` into `.minecraft/mods/` (only one `yap-staff-*.jar`)
+2. Drop `yap-staff-1.0.4.jar` into `.minecraft/mods/` (only one `yap-staff-*.jar`)
 3. Join YaPcore / Folia with YaPAdmin loaded
 
 Also shipped in `client_mods.zip` from `./scripts/build-yap-client-render.sh`.
@@ -41,7 +41,7 @@ cd client/yap-staff
 ./gradlew build
 ```
 
-Jar: `build/libs/yap-staff-1.0.3.jar`
+Jar: `build/libs/yap-staff-1.0.4.jar`
 
 ## Config
 

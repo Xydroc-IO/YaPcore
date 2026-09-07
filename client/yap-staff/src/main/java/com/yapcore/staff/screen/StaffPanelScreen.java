@@ -59,6 +59,10 @@ public abstract class StaffPanelScreen extends Screen {
         }
         if (scroll != null) {
             scroll.setMinWidth(panelWidth());
+            // Arrange body first — setMaxHeight uses content.getHeight(); before arrange that
+            // is 0 and collapses the scroll container (empty menu). Vanilla RestrictionsScreen
+            // does the same: arrangeElements → setMaxHeight → parent arrange.
+            scroll.arrangeElements();
             scroll.setMaxHeight(Math.max(60, layout.getContentHeight()));
         }
         layout.arrangeElements();
