@@ -272,6 +272,7 @@ public final class TabServiceImpl implements com.yapcore.tab.TabService {
                     .replace("{rank}", perms.displayGroup(player.getUniqueId()));
         }
         out = out.replace("{balance}", formatBalance(player));
+        out = out.replace("${balance}", formatBalance(player));
         out = applyPapi(player, out);
         return out;
     }

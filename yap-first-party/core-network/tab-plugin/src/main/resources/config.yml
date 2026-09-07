@@ -9,7 +9,7 @@ header:
 
 footer:
   - "&7Online: &f{online}&7/&f{max}"
-  - "&7Rank: &f{rank} &8| &7Bal: &a${balance}"
+  - "&7Rank: &f{rank} &8| &7Bal: &a{balance}"
   - "&7Edit this footer in YaPTab config"
 
 sidebar:
@@ -17,7 +17,7 @@ sidebar:
   lines:
     - "&6&lInfo"
     - "&7Rank: &f{rank}"
-    - "&7Balance: &a${balance}"
+    - "&7Balance: &a{balance}"
     - ""
     - "&7World: &f{world}"
 
