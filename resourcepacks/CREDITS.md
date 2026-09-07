@@ -34,9 +34,10 @@ First-party. Skies: `scripts/generate-yap-skies.py`. Water/weather:
 (densifies Faithful leaves, binary alpha, `strict_cutout`).
 No third-party photos or Complementary/BSL assets.
 
-Vanilla clients get the sun / moon / clouds / `sky` core shader plus improved
+Vanilla clients get the sun / moon / clouds textures plus improved
 water and leaf textures. **Canopy / grass wind** needs YaP Shaders via yap-visuals.
 Panoramic sky layers need a client skybox loader (OptiFine, Skyboxify, Celestial, or Nuit + Interop).
+Custom core `sky` shaders are **not** shipped (they double the sun with Iris and can seam the sky).
 
 ## YaP client render stack (optional Fabric)
 
@@ -44,7 +45,7 @@ For wavy water, foliage wind, and shader skies, players install the Fabric clien
 bundle (`client_mods.zip` / **yap-visuals**):
 
 - **yap-visuals** — nests official Sodium + YaP Iris; extracts YaP Shaders on launch
-- **yap-bag** / **yap-ultrawide** — optional UI / Hor+ FOV (also in `client_mods.zip`)
+- **yap-bag** / **yap-staff** / **yap-ultrawide** — optional UI / Esc staff / Hor+ FOV (also in `client_mods.zip`)
 
 Build: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.
 See [docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md).

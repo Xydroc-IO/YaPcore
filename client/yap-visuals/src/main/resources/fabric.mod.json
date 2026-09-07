@@ -33,7 +33,8 @@
   ],
   "suggests": {
     "yap-ultrawide": "*",
-    "yap-bag": "*"
+    "yap-bag": "*",
+    "yap-staff": "*"
   },
   "custom": {
     "modmenu": {
