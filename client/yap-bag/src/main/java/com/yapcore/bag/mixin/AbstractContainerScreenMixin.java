@@ -4,6 +4,7 @@ import com.yapcore.bag.BagTitle;
 import com.yapcore.bag.YapBagClient;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
@@ -13,17 +14,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Chest page tabs for YaP /bag.
- * Extends {@link Screen} and positions via screen size — no parent @Shadow fields.
+ * Targets {@link AbstractContainerScreen#init()} — {@link ContainerScreen} does not
+ * declare {@code init} in 26.2, so a direct mixin on ContainerScreen fails to apply.
  */
-@Mixin(ContainerScreen.class)
-public abstract class ContainerScreenMixin extends Screen {
+@Mixin(AbstractContainerScreen.class)
+public abstract class AbstractContainerScreenMixin extends Screen {
 
-    protected ContainerScreenMixin(Component title) {
+    protected AbstractContainerScreenMixin(Component title) {
         super(title);
     }
 
     @Inject(method = "init", at = @At("TAIL"))
     private void yap$pageTabs(CallbackInfo ci) {
+        if (!((Object) this instanceof ContainerScreen)) {
+            return;
+        }
         if (!YapBagClient.config().enabled || !YapBagClient.config().chestTabs) {
             return;
         }

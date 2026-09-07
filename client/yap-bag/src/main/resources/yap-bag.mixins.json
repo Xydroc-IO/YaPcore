@@ -6,7 +6,7 @@
     "OptionsMixin",
     "MinecraftMixin",
     "InventoryScreenMixin",
-    "ContainerScreenMixin"
+    "AbstractContainerScreenMixin"
   ],
   "injectors": {
     "defaultRequire": 1

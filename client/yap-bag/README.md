@@ -11,6 +11,8 @@ adds a nicer way to open the **same** extra storage:
 
 Players without the mod keep `/bag`, `/backpack`, `/bp`, and the `/menu` Bag icon.
 
+Esc pause **Staff menu** is a separate mod: [yap-staff](../yap-staff/).
+
 ## Install
 
 1. Fabric Loader **0.19.3+** for Minecraft **26.2**
