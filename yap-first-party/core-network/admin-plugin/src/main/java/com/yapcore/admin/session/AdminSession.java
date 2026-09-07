@@ -18,6 +18,8 @@ public final class AdminSession {
     private MaterialCategory category = MaterialCategory.ALL;
     private boolean confirmClear;
     private Material pendingMaterial;
+    /** When true, player-head click opens troll menu instead of player actions. */
+    private boolean pickForTrolls;
 
     public UUID targetUuid() {
         return targetUuid;
@@ -90,5 +92,13 @@ public final class AdminSession {
 
     public void setPendingMaterial(Material pendingMaterial) {
         this.pendingMaterial = pendingMaterial;
+    }
+
+    public boolean pickForTrolls() {
+        return pickForTrolls;
+    }
+
+    public void setPickForTrolls(boolean pickForTrolls) {
+        this.pickForTrolls = pickForTrolls;
     }
 }

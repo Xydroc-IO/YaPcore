@@ -12,10 +12,12 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 import java.util.Locale;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /** Staff actions for the admin super menu (Folia-safe). */
@@ -139,7 +141,36 @@ public final class AdminActions {
             admin.sendMessage("§cYaPPlayerData is not loaded.");
             return;
         }
-        runAs(admin, "eco give " + target.getName() + " " + amount);
+        if (amount <= 0) {
+            admin.sendMessage("§cAmount must be positive.");
+            return;
+        }
+        var data = Bukkit.getServicesManager().load(com.yapcore.playerdata.PlayerDataService.class);
+        if (data == null || !data.economyEnabled()) {
+            admin.sendMessage("§cEconomy is disabled.");
+            return;
+        }
+        // Deposit on the target's region thread — never dispatch /eco via global scheduler (Folia).
+        YapSched.entity(plugin, target, () -> {
+            var next = data.deposit(target.getUniqueId(), amount);
+            YapSched.entity(plugin, admin, () -> {
+                if (next.isEmpty()) {
+                    admin.sendMessage("§cCould not deposit for §f" + target.getName() + "§c.");
+                    return;
+                }
+                admin.sendMessage("§aGave §f$" + amount + " §ato §f" + target.getName()
+                        + " §7(bal $" + String.format("%.2f", next.get()) + "§7).");
+                if (!target.equals(admin)) {
+                    target.sendMessage("§aYou received §f$" + amount + " §afrom staff."
+                            + " §7Balance: §f$" + String.format("%.2f", next.get()));
+                }
+            });
+        });
+    }
+
+    public void runAs(Player admin, String command) {
+        // Folia: command dispatch must run on the command sender's region thread.
+        YapSched.entity(plugin, admin, () -> Bukkit.dispatchCommand(admin, command));
     }
 
     public void kick(Player admin, Player target, String reason) {
@@ -231,6 +262,143 @@ public final class AdminActions {
         admin.sendMessage("§aFed §f" + target.getName() + "§a.");
     }
 
+    public void toggleNightVision(Player admin) {
+        YapSched.entity(plugin, admin, () -> {
+            if (admin.hasPotionEffect(PotionEffectType.NIGHT_VISION)) {
+                admin.removePotionEffect(PotionEffectType.NIGHT_VISION);
+                admin.sendMessage("§7Night vision off.");
+            } else {
+                admin.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 20 * 300, 0, false, false));
+                admin.sendMessage("§aNight vision on (5m).");
+            }
+        });
+    }
+
+    public boolean requireTroll(Player admin) {
+        if (!admin.hasPermission("yapadmin.troll") && !admin.isOp()) {
+            YapMessages.noPermission(admin, "yapadmin.troll");
+            return false;
+        }
+        return true;
+    }
+
+    /** Strike lightning at the target (does not set them on fire beyond the bolt). */
+    public void trollSmite(Player admin, Player target) {
+        if (!requireTroll(admin)) {
+            return;
+        }
+        YapSched.entity(plugin, target, () ->
+                target.getWorld().strikeLightning(target.getLocation()));
+        admin.sendMessage("§eSmote §f" + target.getName() + "§e.");
+    }
+
+    public void trollLaunch(Player admin, Player target) {
+        if (!requireTroll(admin)) {
+            return;
+        }
+        YapSched.entity(plugin, target, () ->
+                target.setVelocity(new Vector(0, 2.8, 0)));
+        admin.sendMessage("§eLaunched §f" + target.getName() + "§e.");
+    }
+
+    public void trollBurn(Player admin, Player target) {
+        if (!requireTroll(admin)) {
+            return;
+        }
+        YapSched.entity(plugin, target, () -> target.setFireTicks(20 * 8));
+        admin.sendMessage("§eSet §f" + target.getName() + " §eon fire.");
+    }
+
+    public void trollRocket(Player admin, Player target) {
+        if (!requireTroll(admin)) {
+            return;
+        }
+        YapSched.entity(plugin, target, () -> {
+            target.setVelocity(new Vector(0, 3.5, 0));
+            target.getWorld().strikeLightningEffect(target.getLocation());
+        });
+        admin.sendMessage("§eRocketed §f" + target.getName() + "§e.");
+    }
+
+    public void trollSquash(Player admin, Player target) {
+        if (!requireTroll(admin)) {
+            return;
+        }
+        YapSched.entity(plugin, target, () -> {
+            Location up = target.getLocation().clone().add(0, 25, 0);
+            target.teleport(up);
+            target.setVelocity(new Vector(0, -3.5, 0));
+        });
+        admin.sendMessage("§eSquashed §f" + target.getName() + "§e.");
+    }
+
+    public void trollBlind(Player admin, Player target) {
+        if (!requireTroll(admin)) {
+            return;
+        }
+        YapSched.entity(plugin, target, () ->
+                target.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 20 * 12, 0)));
+        admin.sendMessage("§eBlinded §f" + target.getName() + "§e.");
+    }
+
+    public void trollConfuse(Player admin, Player target) {
+        if (!requireTroll(admin)) {
+            return;
+        }
+        YapSched.entity(plugin, target, () ->
+                target.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 20 * 15, 1)));
+        admin.sendMessage("§eConfused §f" + target.getName() + "§e.");
+    }
+
+    public void trollSlap(Player admin, Player target) {
+        if (!requireTroll(admin)) {
+            return;
+        }
+        YapSched.entity(plugin, target, () -> {
+            Vector away = target.getLocation().toVector().subtract(admin.getLocation().toVector());
+            if (away.lengthSquared() < 0.01) {
+                away = new Vector(1, 0, 0);
+            }
+            away = away.normalize().multiply(1.8).setY(0.6);
+            target.setVelocity(away);
+            target.damage(0.1);
+        });
+        admin.sendMessage("§eSlapped §f" + target.getName() + "§e.");
+    }
+
+    public void trollDropHand(Player admin, Player target) {
+        if (!requireTroll(admin)) {
+            return;
+        }
+        YapSched.entity(plugin, target, () -> {
+            ItemStack hand = target.getInventory().getItemInMainHand();
+            if (hand == null || hand.getType().isAir()) {
+                admin.sendMessage("§c" + target.getName() + " holds nothing.");
+                return;
+            }
+            ItemStack drop = hand.clone();
+            target.getInventory().setItemInMainHand(null);
+            target.getWorld().dropItemNaturally(target.getLocation(), drop);
+            admin.sendMessage("§eDropped §f" + target.getName() + "§e's held item.");
+        });
+    }
+
+    public void runTroll(Player admin, Player target, String type) {
+        switch (type.toLowerCase(Locale.ROOT)) {
+            case "smite", "lightning", "strike" -> trollSmite(admin, target);
+            case "launch", "yeet" -> trollLaunch(admin, target);
+            case "burn", "fire" -> trollBurn(admin, target);
+            case "rocket" -> trollRocket(admin, target);
+            case "squash", "slam" -> trollSquash(admin, target);
+            case "blind" -> trollBlind(admin, target);
+            case "confuse", "nausea", "dizzy" -> trollConfuse(admin, target);
+            case "slap" -> trollSlap(admin, target);
+            case "drop", "drophand" -> trollDropHand(admin, target);
+            default -> admin.sendMessage("§cUnknown troll: " + type
+                    + " §7(smite, launch, burn, rocket, squash, blind, confuse, slap, drop)");
+        }
+    }
+
     public void clearInventory(Player admin, Player target) {
         if (!admin.hasPermission("yapessentials.clear") && !admin.isOp()) {
             YapMessages.noPermission(admin, "yapessentials.clear");
@@ -253,10 +421,6 @@ public final class AdminActions {
             return;
         }
         Bukkit.broadcast(Component.text("[Broadcast] " + message, NamedTextColor.GOLD));
-    }
-
-    public void runAs(Player admin, String command) {
-        YapSched.global(plugin, () -> Bukkit.dispatchCommand(admin, command));
     }
 
     public void closeAndRun(Player admin, String command) {

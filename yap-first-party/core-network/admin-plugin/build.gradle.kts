@@ -23,6 +23,7 @@ dependencies {
     implementation(project(":yap-messages-api"))
     compileOnly(project(":yap-moderation-api"))
     compileOnly(project(":yap-bedrock-ui-api"))
+    compileOnly(project(":yap-playerdata-api"))
 
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")

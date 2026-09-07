@@ -27,7 +27,8 @@ public final class AdminMenuHolder implements InventoryHolder {
         SERVER_OPS,
         ECONOMY,
         DEEP_LINKS,
-        COMBAT_SKILLS
+        COMBAT_SKILLS,
+        TROLLS
     }
 
     private final Kind kind;

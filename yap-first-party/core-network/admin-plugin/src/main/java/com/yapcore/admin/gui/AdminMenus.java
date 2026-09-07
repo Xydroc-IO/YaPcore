@@ -32,6 +32,7 @@ public final class AdminMenus {
     public static final int HUB_SELF = 12;
     public static final int HUB_GIVE = 14;
     public static final int HUB_MOD = 16;
+    public static final int HUB_TROLLS = 19;
     public static final int HUB_SERVER = 28;
     public static final int HUB_ECONOMY = 30;
     public static final int HUB_LINKS = 32;
@@ -102,6 +103,10 @@ public final class AdminMenus {
         }
         inv.setItem(HUB_MOD, AdminMenuHolder.icon(Material.IRON_SWORD, NamedTextColor.RED, "Moderation",
                 "Pick a player to kick / mute / ban"));
+        if (player.hasPermission("yapadmin.troll")) {
+            inv.setItem(HUB_TROLLS, AdminMenuHolder.icon(Material.LIGHTNING_ROD, NamedTextColor.GOLD, "Trolls",
+                    "Smite · launch · burn · more"));
+        }
         if (player.hasPermission("yapadmin.server")) {
             inv.setItem(HUB_SERVER, AdminMenuHolder.icon(Material.COMMAND_BLOCK, "Server",
                     "Broadcast · status"));
@@ -206,6 +211,59 @@ public final class AdminMenus {
         inv.setItem(31, AdminMenuHolder.icon(Material.BARRIER, NamedTextColor.DARK_RED, "Tempban 1d",
                 "Ban for one day"));
 
+        if (player.hasPermission("yapadmin.troll")) {
+            inv.setItem(33, AdminMenuHolder.icon(Material.LIGHTNING_ROD, NamedTextColor.GOLD, "Smite",
+                    "Strike with lightning"));
+            inv.setItem(34, AdminMenuHolder.icon(Material.FIREWORK_ROCKET, "Launch",
+                    "Yeet upward"));
+            inv.setItem(35, AdminMenuHolder.icon(Material.FLINT_AND_STEEL, "Burn",
+                    "Set on fire 8s"));
+            inv.setItem(36, AdminMenuHolder.icon(Material.ENDER_EYE, "Blind",
+                    "Blindness 12s"));
+            inv.setItem(37, AdminMenuHolder.icon(Material.SLIME_BALL, "Slap",
+                    "Knock away"));
+            inv.setItem(38, AdminMenuHolder.icon(Material.TNT, "Rocket",
+                    "High launch + bolt FX"));
+            inv.setItem(39, AdminMenuHolder.icon(Material.ANVIL, "Squash",
+                    "Drop from height"));
+            inv.setItem(40, AdminMenuHolder.icon(Material.POISONOUS_POTATO, "Confuse",
+                    "Nausea 15s"));
+            inv.setItem(41, AdminMenuHolder.icon(Material.DROPPER, "Drop hand",
+                    "Force-drop held item"));
+        }
+
+        inv.setItem(42, AdminMenuHolder.icon(Material.SPYGLASS, "Check",
+                "/check " + target.getName()));
+        inv.setItem(43, AdminMenuHolder.icon(Material.BOOK, "Mod history",
+                "/modhistory " + target.getName()));
+
+        inv.setItem(SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
+        inv.setItem(SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
+        player.openInventory(inv);
+    }
+
+    public void openTrolls(Player player, Player target) {
+        if (!player.hasPermission("yapadmin.troll")) {
+            YapMessages.noPermission(player, "yapadmin.troll");
+            return;
+        }
+        plugin.session(player.getUniqueId()).setTarget(target.getUniqueId(), target.getName());
+        AdminMenuHolder holder = new AdminMenuHolder(
+                AdminMenuHolder.Kind.TROLLS, target.getUniqueId(), target.getName());
+        Inventory inv = Bukkit.createInventory(holder, 54,
+                Component.text("Troll: " + target.getName(), NamedTextColor.GOLD));
+        holder.bind(inv);
+        AdminMenuHolder.fillAll(inv);
+        inv.setItem(SLOT_INFO, playerHead(target, "Trolling " + target.getName()));
+        inv.setItem(19, AdminMenuHolder.icon(Material.LIGHTNING_ROD, NamedTextColor.GOLD, "Smite", "Lightning"));
+        inv.setItem(20, AdminMenuHolder.icon(Material.FIREWORK_ROCKET, "Launch", "Yeet up"));
+        inv.setItem(21, AdminMenuHolder.icon(Material.FLINT_AND_STEEL, "Burn", "Fire 8s"));
+        inv.setItem(22, AdminMenuHolder.icon(Material.TNT, "Rocket", "Launch + bolt FX"));
+        inv.setItem(23, AdminMenuHolder.icon(Material.ANVIL, "Squash", "Drop from height"));
+        inv.setItem(24, AdminMenuHolder.icon(Material.ENDER_EYE, "Blind", "12s"));
+        inv.setItem(25, AdminMenuHolder.icon(Material.POISONOUS_POTATO, "Confuse", "Nausea"));
+        inv.setItem(28, AdminMenuHolder.icon(Material.SLIME_BALL, "Slap", "Knockback"));
+        inv.setItem(29, AdminMenuHolder.icon(Material.DROPPER, "Drop hand", "Drop held item"));
         inv.setItem(SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
         player.openInventory(inv);
@@ -224,6 +282,13 @@ public final class AdminMenus {
         inv.setItem(22, AdminMenuHolder.icon(Material.GOLDEN_APPLE, "Heal", "Full heal"));
         inv.setItem(23, AdminMenuHolder.icon(Material.COOKED_BEEF, "Feed", "Full hunger"));
         inv.setItem(24, AdminMenuHolder.icon(Material.ENDER_EYE, "Night vision", "Toggle NV 5m"));
+        inv.setItem(28, AdminMenuHolder.icon(Material.GRASS_BLOCK, "Survival", "/gms"));
+        inv.setItem(29, AdminMenuHolder.icon(Material.COMMAND_BLOCK, "Creative", "/gmc"));
+        inv.setItem(30, AdminMenuHolder.icon(Material.STONE, "Adventure", "/gma"));
+        inv.setItem(31, AdminMenuHolder.icon(Material.ENDER_PEARL, "Spectator", "/gmsp"));
+        inv.setItem(33, AdminMenuHolder.icon(Material.ANVIL, "Repair", "/repair"));
+        inv.setItem(34, AdminMenuHolder.icon(Material.SUGAR, "Speed walk 5", "/speed walk 5"));
+        inv.setItem(35, AdminMenuHolder.icon(Material.FEATHER, "Speed fly 5", "/speed fly 5"));
         inv.setItem(SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
         player.openInventory(inv);

@@ -91,6 +91,14 @@ public final class PlayerDataBedrockForms {
             buttons.add("Claims");
             actions.add(() -> menus.openClaims(player));
         }
+        if (player.hasPermission("yapadmin.menu")
+                && org.bukkit.Bukkit.getPluginManager().getPlugin("YaPAdmin") != null) {
+            buttons.add("Staff");
+            actions.add(() -> {
+                player.closeInventory();
+                YapSched.entity(menus.plugin, player, () -> player.performCommand("yapadmin"));
+            });
+        }
         buttons.add("Close");
         actions.add(() -> {
         });

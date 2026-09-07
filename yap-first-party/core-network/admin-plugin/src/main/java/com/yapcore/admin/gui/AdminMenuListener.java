@@ -14,8 +14,6 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 
 public final class AdminMenuListener implements Listener {
 
@@ -60,6 +58,7 @@ public final class AdminMenuListener implements Listener {
             case ECONOMY -> handleEconomy(player, slot, clicked);
             case DEEP_LINKS -> handleDeepLinks(player, slot);
             case COMBAT_SKILLS -> handleCombatSkills(player, slot);
+            case TROLLS -> handleTrolls(player, holder, slot);
             default -> {
             }
         }
@@ -78,7 +77,16 @@ public final class AdminMenuListener implements Listener {
             return;
         }
         switch (slot) {
-            case AdminMenus.HUB_PLAYERS, AdminMenus.HUB_MOD -> plugin.menus().openPlayers(player);
+            case AdminMenus.HUB_PLAYERS, AdminMenus.HUB_MOD -> {
+                plugin.session(player.getUniqueId()).setPickForTrolls(false);
+                plugin.menus().openPlayers(player);
+            }
+            case AdminMenus.HUB_TROLLS -> {
+                if (player.hasPermission("yapadmin.troll")) {
+                    plugin.session(player.getUniqueId()).setPickForTrolls(true);
+                    plugin.menus().openPlayers(player);
+                }
+            }
             case AdminMenus.HUB_SELF -> plugin.menus().openSelfTools(player);
             case AdminMenus.HUB_GIVE -> plugin.menus().openGiveHub(player);
             case AdminMenus.HUB_SERVER -> {
@@ -116,6 +124,12 @@ public final class AdminMenuListener implements Listener {
         Player target = meta.getOwningPlayer().getPlayer();
         if (target == null || !target.isOnline()) {
             player.sendMessage("§cPlayer is offline.");
+            return;
+        }
+        AdminSession session = plugin.session(player.getUniqueId());
+        if (session.pickForTrolls()) {
+            session.setPickForTrolls(false);
+            plugin.menus().openTrolls(player, target);
             return;
         }
         plugin.menus().openPlayerActions(player, target);
@@ -169,6 +183,48 @@ public final class AdminMenuListener implements Listener {
                 player.closeInventory();
                 actions.tempbanDay(player, target, DEFAULT_REASON);
             }
+            case 33 -> actions.trollSmite(player, target);
+            case 34 -> actions.trollLaunch(player, target);
+            case 35 -> actions.trollBurn(player, target);
+            case 36 -> actions.trollBlind(player, target);
+            case 37 -> actions.trollSlap(player, target);
+            case 38 -> actions.trollRocket(player, target);
+            case 39 -> actions.trollSquash(player, target);
+            case 40 -> actions.trollConfuse(player, target);
+            case 41 -> actions.trollDropHand(player, target);
+            case 42 -> actions.closeAndRun(player, "check " + target.getName());
+            case 43 -> actions.closeAndRun(player, "modhistory " + target.getName());
+            default -> {
+            }
+        }
+    }
+
+    private void handleTrolls(Player player, AdminMenuHolder holder, int slot) {
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.menus().openHub(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        Player target = holder.targetUuid() == null ? null : Bukkit.getPlayer(holder.targetUuid());
+        if (target == null || !target.isOnline()) {
+            player.sendMessage("§cPlayer is offline.");
+            plugin.menus().openHub(player);
+            return;
+        }
+        AdminActions actions = plugin.actions();
+        switch (slot) {
+            case 19 -> actions.trollSmite(player, target);
+            case 20 -> actions.trollLaunch(player, target);
+            case 21 -> actions.trollBurn(player, target);
+            case 22 -> actions.trollRocket(player, target);
+            case 23 -> actions.trollSquash(player, target);
+            case 24 -> actions.trollBlind(player, target);
+            case 25 -> actions.trollConfuse(player, target);
+            case 28 -> actions.trollSlap(player, target);
+            case 29 -> actions.trollDropHand(player, target);
             default -> {
             }
         }
@@ -190,15 +246,14 @@ public final class AdminMenuListener implements Listener {
             case 21 -> actions.closeAndRun(player, "vanish");
             case 22 -> actions.heal(player, player);
             case 23 -> actions.feed(player, player);
-            case 24 -> {
-                if (player.hasPotionEffect(PotionEffectType.NIGHT_VISION)) {
-                    player.removePotionEffect(PotionEffectType.NIGHT_VISION);
-                    player.sendMessage("§7Night vision off.");
-                } else {
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 20 * 300, 0, false, false));
-                    player.sendMessage("§aNight vision on (5m).");
-                }
-            }
+            case 24 -> actions.toggleNightVision(player);
+            case 28 -> actions.closeAndRun(player, "gms");
+            case 29 -> actions.closeAndRun(player, "gmc");
+            case 30 -> actions.closeAndRun(player, "gma");
+            case 31 -> actions.closeAndRun(player, "gmsp");
+            case 33 -> actions.closeAndRun(player, "repair");
+            case 34 -> actions.closeAndRun(player, "speed walk 5");
+            case 35 -> actions.closeAndRun(player, "speed fly 5");
             default -> {
             }
         }

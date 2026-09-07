@@ -109,6 +109,13 @@ final class MenuClickHandler {
                 }
                 yield true;
             }
+            case "Staff" -> {
+                if (player.hasPermission("yapadmin.menu")) {
+                    player.closeInventory();
+                    player.performCommand("yapadmin");
+                }
+                yield true;
+            }
             case "Close" -> {
                 player.closeInventory();
                 yield true;

@@ -128,6 +128,11 @@ public final class Menus {
         if (config.featureClaims() && claims != null) {
             inv.setItem(33, YapMenuHolder.icon(Material.GOLDEN_SHOVEL, "Claims", "Click to open"));
         }
+        if (player.hasPermission("yapadmin.menu")
+                && Bukkit.getPluginManager().getPlugin("YaPAdmin") != null) {
+            inv.setItem(37, YapMenuHolder.icon(Material.COMMAND_BLOCK, NamedTextColor.RED,
+                    "Staff", "Open admin super menu", "/yapadmin"));
+        }
         inv.setItem(40, YapMenuHolder.icon(Material.BARRIER, NamedTextColor.RED, "Close"));
         player.openInventory(inv);
     }

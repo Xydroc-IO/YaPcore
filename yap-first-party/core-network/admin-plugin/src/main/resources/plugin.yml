@@ -40,6 +40,9 @@ permissions:
   yapadmin.economy:
     description: Economy grants from the admin menu
     default: op
+  yapadmin.troll:
+    description: Staff trolls (smite, launch, burn, …)
+    default: op
   yapadmin.plugins:
     description: Soft/hard plugin enable, disable, install, uninstall
     default: op

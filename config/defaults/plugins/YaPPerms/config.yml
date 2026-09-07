@@ -184,6 +184,7 @@ starter-grants:
     - yapadmin.give
     - yapadmin.server
     - yapadmin.economy
+    - yapadmin.troll
     - yapregions.admin
     - yapworld.admin
     - yapworld.load
