@@ -49,6 +49,19 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 
 Version line: **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2** — see [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
 
+### Capacity (YaP-Folia)
+
+Honest product bars — not “unlimited players.” Scale is **regionized + multi-backend**, not one mega thread.
+
+| Bar | Players | Meaning |
+|-----|---------|---------|
+| **Citeable MSPT (stable)** | **~100 active** | Fullcite ship profile vs stock Folia / Canvas — [REAL_GAINS.md](docs/folia/REAL_GAINS.md) |
+| **Join verified** | **100 / 200** bots | Connection / routing checked; not a free MSPT blank check |
+| **Network scale** | Multi-backend via **YaP Link** | Split worlds/lobbies across YaP-Folia jars; proxy fronts the fleet |
+| **250 keepalive** | **Hold only** | Not a citeable ship claim — capacity testing, not marketing |
+
+Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, LagGuard, and sane farms. Past that, add backends or tighten density knobs — [YAP_FOLIA_SOAK.md](docs/folia/YAP_FOLIA_SOAK.md) · [TUNE.md](docs/ops/TUNE.md).
+
 ### Parallel ticks & microtick (why it’s not “stock Folia”)
 
 Classic Paper/Purpur keep one main world tick. **YaP-Folia** runs **regionized parallel ticks**, and the product ship profile adds:
@@ -161,18 +174,17 @@ Optional Fabric clients: [`client/`](client/).
 
 ## Documentation
 
-Documentation is **Markdown in-repo** (`docs/`). Generated PDFs and office dumps are gitignored — do not commit them.
+Operator and engineering docs live under [`docs/`](docs/) (Markdown). Start from the [Wiki](docs/WIKI.md).
 
 | Audience | Start here |
 |----------|------------|
 | **Operators** | [QUICK_START](docs/start/QUICK_START.md) → [WIKI](docs/WIKI.md) · [DEFAULTS](docs/start/DEFAULTS.md) |
 | **Commands / perms** | [COMMANDS](docs/ops/COMMANDS.md) · [PERMISSIONS](docs/ops/PERMISSIONS.md) · [Dashboard](docs/ops/WEB_DASHBOARD.md) |
 | **Network / packs** | [CROSSPLAY](docs/network/CROSSPLAY.md) · [CLIENTS_AND_PACKS](docs/network/CLIENTS_AND_PACKS.md) |
-| **Folia / cite** | [YAP_FOLIA_SOAK](docs/folia/YAP_FOLIA_SOAK.md) · [REAL_GAINS](docs/folia/REAL_GAINS.md) · [CANVAS_PARITY](docs/folia/CANVAS_PARITY.md) |
+| **Folia / capacity** | [REAL_GAINS](docs/folia/REAL_GAINS.md) · [YAP_FOLIA_SOAK](docs/folia/YAP_FOLIA_SOAK.md) · [CANVAS_PARITY](docs/folia/CANVAS_PARITY.md) |
 | **Public edge** | [EDGE_HARDEN](docs/network/EDGE_HARDEN.md) · [SECRETS](docs/start/SECRETS.md) |
-| **UX / messages** | [MESSAGES](docs/plugins/MESSAGES.md) · [CROSSPLAY](docs/network/CROSSPLAY.md) (Bedrock forms) |
-| **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
-| **Contributors** | [CONTRIBUTING](CONTRIBUTING.md) · [scripts/README](scripts/README.md) · domain ≤500 (`gradle checkDomainLineLimits`) |
+| **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) · [Plain English](docs/whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) |
+| **Contributors** | [CONTRIBUTING](CONTRIBUTING.md) · [scripts/README](scripts/README.md) |
 
 ---
 
@@ -186,7 +198,7 @@ Operators: keep secrets out of git ([SECRETS.md](docs/start/SECRETS.md)); put ga
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). One logical change per PR; keep build outputs, worlds, logs, secrets, and generated PDFs out of the tree.
+See [CONTRIBUTING.md](CONTRIBUTING.md). One logical change per PR; keep build outputs, worlds, logs, and secrets out of the tree.
 
 ---
 
