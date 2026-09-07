@@ -23,6 +23,7 @@ import java.security.MessageDigest;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
@@ -196,11 +197,25 @@ public final class PaperFiles {
             }
             String url = new PublicEndpoint(config).packUrl(fileName);
             String sha1;
-            if (looksAbsoluteHttp(url)) {
-                sha1 = sha1HexFromUrl(url);
-                LOG.info("Resource pack SHA-1 from remote URL (matches what clients download)");
+            String configuredSha = config.getResourcePackSha1();
+            if (looksAbsoluteHttp(url)
+                    && configuredSha != null
+                    && configuredSha.matches("(?i)[a-f0-9]{40}")) {
+                // Prefer explicit CDN hash from config (avoids blocking / clearing on slow GitHub).
+                sha1 = configuredSha.toLowerCase(Locale.ROOT);
+                LOG.info("Resource pack SHA-1 from config (CDN URL)");
+            } else if (looksAbsoluteHttp(url)) {
+                try {
+                    sha1 = sha1HexFromUrl(url);
+                    LOG.info("Resource pack SHA-1 from remote URL (matches what clients download)");
+                } catch (IOException remoteErr) {
+                    sha1 = sha1Hex(pack);
+                    LOG.warning("Remote pack SHA-1 failed (" + remoteErr.getMessage()
+                            + ") — using local zip hash until CDN is reachable: " + sha1);
+                }
             } else {
                 sha1 = sha1Hex(pack);
+                LOG.info("Resource pack SHA-1 from local zip");
             }
             String prompt = config.getResourcePackPrompt();
             if (prompt == null || prompt.isBlank()) {
@@ -266,8 +281,8 @@ public final class PaperFiles {
         for (int hop = 0; hop < maxHops; hop++) {
             HttpURLConnection conn = (HttpURLConnection) uri.toURL().openConnection();
             conn.setInstanceFollowRedirects(false);
-            conn.setConnectTimeout(15_000);
-            conn.setReadTimeout(180_000);
+            conn.setConnectTimeout(10_000);
+            conn.setReadTimeout(45_000);
             conn.setRequestProperty("User-Agent", "YaPcore-ResourcePack/1.0");
             conn.setRequestMethod("GET");
             int code = conn.getResponseCode();

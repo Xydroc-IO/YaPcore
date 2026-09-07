@@ -45,7 +45,7 @@ Attach (or refresh with `--clobber`) so `/releases/latest/download/{file}` works
 | `yapcore-release-linux.zip` / `-windows.zip` | Full server boxes (CI also uploads these on tag) |
 | `yap-network-suite.zip` / `yap-gameplay-suite.zip` | Standalone suites |
 | `yapcore-default.zip` | **Required** for pack CDN (`resource-pack-url` default) |
-| `client_mods.zip` | Optional Fabric clients — unzip → `client_mods/` with **yap-visuals**, **yap-bag**, **yap-ultrawide** |
+| `client_mods.zip` | Optional Fabric clients — unzip → `client_mods/` with **yap-visuals**, **yap-bag**, **yap-staff**, **yap-ultrawide** |
 
 Build clients: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.
 Prefer the zip for releases (one upload). Loose jars stay under `dist/client-mods/` for local installs only.

@@ -119,18 +119,16 @@ public final class DualStackGateway {
     }
 
     /**
-     * Forward Paper/Folia config-phase resource_pack_push only when packs are forced.
-     * Optional packs are auto-acked so mid clients are not blocked waiting for a download
-     * prompt; play-phase {@code addResourcePack} still applies when YaPPacks pushes extras.
+     * Forward Paper/Folia {@code resource_pack_push} to modern clients (≥1.20.2).
+     * Optional packs must be forwarded or Via auto-acks them and the client never
+     * downloads textures. Legacy / mid-band clients still auto-ack via
+     * {@code ViaProxyBackendHandler#shouldForwardResourcePack}.
      */
     public boolean resourcePackForwardEnabled() {
         if (!config.isResourcePackEnabled()) {
             return false;
         }
-        if (packs.getActivePacks().isEmpty()) {
-            return false;
-        }
-        return config.isResourcePackForced();
+        return !packs.getActivePacks().isEmpty();
     }
 
     public CrossplayHub crossplay() {

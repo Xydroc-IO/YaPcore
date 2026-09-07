@@ -53,6 +53,7 @@ Install, setup, and lifecycle helpers for operators.
 |--------|---------|
 | `fetch-tebex.sh` · `fetch-grim.sh` · `grim-ac.sh` | Optional Tebex / Grim AC (**PvP: enable Grim**) |
 | `build-default-resourcepack.sh` · `fetch-faithful-64x.sh` · `generate-yap-skies.py` · `generate-yap-water.py` · `generate-yap-foliage.py` | Default pack overlays |
-| `build-yap-client-render.sh` | Fabric `client_mods.zip` (yap-visuals + bag + ultrawide) |
+| `build-yap-client-render.sh` | Fabric `client_mods.zip` (yap-visuals + bag + staff + ultrawide) |
+| `sync-github-pack-offer.sh` | Hash GitHub Releases latest pack → Folia `resource-pack` + YaPPacks `active.json` |
 
 See [docs/start/QUICK_START.md](../docs/start/QUICK_START.md) and [docs/start/WINDOWS.md](../docs/start/WINDOWS.md).

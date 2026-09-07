@@ -236,6 +236,8 @@ public final class ServerConfig {
     public void setResourcePackPublicHost(String host) { resourcePack.setResourcePackPublicHost(host); }
     public String getResourcePackUrl() { return resourcePack.getResourcePackUrl(); }
     public void setResourcePackUrl(String url) { resourcePack.setResourcePackUrl(url); }
+    public String getResourcePackSha1() { return resourcePack.getResourcePackSha1(); }
+    public void setResourcePackSha1(String sha1) { resourcePack.setResourcePackSha1(sha1); }
     public boolean isResourcePackForced() { return resourcePack.isResourcePackForced(); }
     public void setResourcePackForced(boolean forced) { resourcePack.setResourcePackForced(forced); }
     public String getResourcePackPrompt() { return resourcePack.getResourcePackPrompt(); }

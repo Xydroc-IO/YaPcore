@@ -8,6 +8,7 @@ import com.yapcore.web.WebDashboard;
 
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -35,8 +36,9 @@ public final class Main {
         boolean forceGui = Arrays.asList(args).contains("--gui")
                 || Arrays.asList(args).contains("-gui");
 
-        Path root = Path.of(System.getProperty("yapcore.home", ".")).toAbsolutePath().normalize();
+        Path root = resolveHome();
         System.setProperty("yapcore.home", root.toString());
+        LOG.info("YaPcore home: " + root);
 
         ServerConfig config = ServerConfig.loadOrCreate(root.resolve("config").resolve("server.properties"));
         YaPcoreServer server = new YaPcoreServer(root, config);
@@ -129,6 +131,76 @@ public final class Main {
         if (server.isRunning()) {
             server.stop();
         }
+    }
+
+    /**
+     * Resolve install root without requiring the process cwd to be the repo.
+     * Order: {@code -Dyapcore.home} → {@code YAPCORE_HOME} → parent of {@code yapcore.jar}
+     * → walk up from cwd for markers → cwd.
+     */
+    private static Path resolveHome() {
+        String prop = System.getProperty("yapcore.home");
+        if (prop != null && !prop.isBlank() && !".".equals(prop.trim())) {
+            return Path.of(prop.trim()).toAbsolutePath().normalize();
+        }
+        String env = System.getenv("YAPCORE_HOME");
+        if (env != null && !env.isBlank()) {
+            Path fromEnv = Path.of(env.trim()).toAbsolutePath().normalize();
+            if (looksLikeHome(fromEnv)) {
+                return fromEnv;
+            }
+        }
+        Path fromJar = homeFromCodeSource();
+        if (fromJar != null && looksLikeHome(fromJar)) {
+            return fromJar;
+        }
+        Path cwd = Path.of(".").toAbsolutePath().normalize();
+        Path walk = cwd;
+        for (int i = 0; i < 8 && walk != null; i++) {
+            if (looksLikeHome(walk)) {
+                return walk;
+            }
+            Path parent = walk.getParent();
+            if (parent == null || parent.equals(walk)) {
+                break;
+            }
+            walk = parent;
+        }
+        return cwd;
+    }
+
+    private static boolean looksLikeHome(Path dir) {
+        return Files.isRegularFile(dir.resolve("build.gradle.kts"))
+                || Files.isRegularFile(dir.resolve("yapcore.jar"))
+                || Files.isRegularFile(dir.resolve("config").resolve("server.properties"));
+    }
+
+    private static Path homeFromCodeSource() {
+        try {
+            var loc = Main.class.getProtectionDomain().getCodeSource().getLocation();
+            if (loc == null) {
+                return null;
+            }
+            Path jarOrDir = Path.of(loc.toURI()).toAbsolutePath().normalize();
+            if (Files.isRegularFile(jarOrDir) && jarOrDir.getFileName().toString().endsWith(".jar")) {
+                Path parent = jarOrDir.getParent();
+                return parent != null ? parent : null;
+            }
+            // IDE / classes dir — walk up for markers
+            Path walk = jarOrDir;
+            for (int i = 0; i < 10 && walk != null; i++) {
+                if (looksLikeHome(walk)) {
+                    return walk;
+                }
+                Path parent = walk.getParent();
+                if (parent == null || parent.equals(walk)) {
+                    break;
+                }
+                walk = parent;
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     private static final class GraphicsEnvironmentCheck {

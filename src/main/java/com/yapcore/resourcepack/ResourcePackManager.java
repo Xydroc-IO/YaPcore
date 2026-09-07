@@ -388,12 +388,14 @@ public final class ResourcePackManager {
             json.append("  ]\n");
             json.append("}\n");
             Files.writeString(file, json.toString(), StandardCharsets.UTF_8);
-            // Mirror into paper-kernel/plugins when present (Phase 3 cwd)
-            Path paperPlugins = root.resolve("paper-kernel").resolve("plugins").resolve("YaPPacks");
-            if (Files.isDirectory(root.resolve("paper-kernel").resolve("plugins"))
-                    || Files.isSymbolicLink(root.resolve("paper-kernel").resolve("plugins"))) {
-                Files.createDirectories(paperPlugins);
-                Files.writeString(paperPlugins.resolve("active.json"), json.toString(), StandardCharsets.UTF_8);
+            // Mirror into Folia / Paper plugin trees when present
+            for (String kernel : List.of("folia-kernel", "paper-kernel")) {
+                Path kernelPlugins = root.resolve(kernel).resolve("plugins");
+                if (Files.isDirectory(kernelPlugins) || Files.isSymbolicLink(kernelPlugins)) {
+                    Path dest = kernelPlugins.resolve("YaPPacks");
+                    Files.createDirectories(dest);
+                    Files.writeString(dest.resolve("active.json"), json.toString(), StandardCharsets.UTF_8);
+                }
             }
             LOG.info("Wrote YaPPacks manifest (" + actives.size() + " pack(s)) → " + file);
         } catch (Exception e) {

@@ -23,7 +23,10 @@ public final class ResourcePackConfig {
         props.setProperty("resource-pack-files", "yapcore-default.zip");
         props.setProperty("resource-pack-http-port", "8081");
         props.setProperty("resource-pack-public-host", "");
-        props.setProperty("resource-pack-url", "");
+        // Product default: GitHub Releases CDN (tracks newest asset).
+        props.setProperty("resource-pack-url",
+                "https://github.com/Xydroc-IO/YaPcore/releases/latest/download/{file}");
+        props.setProperty("resource-pack-sha1", "");
         props.setProperty("resource-pack-forced", "false");
         props.setProperty("resource-pack-prompt",
                 "This server offers a resource pack. Click Yes to download, or No to play without it.");
@@ -118,6 +121,15 @@ public final class ResourcePackConfig {
 
     public void setResourcePackUrl(String url) {
         props.setProperty("resource-pack-url", url == null ? "" : url);
+    }
+
+    /** Optional precomputed SHA-1 of the CDN bytes (40 hex). Empty → hash at sync time. */
+    public String getResourcePackSha1() {
+        return props.getProperty("resource-pack-sha1", "");
+    }
+
+    public void setResourcePackSha1(String sha1) {
+        props.setProperty("resource-pack-sha1", sha1 == null ? "" : sha1.trim().toLowerCase());
     }
 
     public boolean isResourcePackForced() {
