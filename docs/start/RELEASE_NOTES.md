@@ -17,7 +17,7 @@ Same ship version (no product bump). Operator / client staff UX:
 |------|--------|
 | **yap-staff 1.0.4** | Full Fabric staff GUI (players, give, trolls, mod, economy, **ranks/perms**, deep links); scrollable + window-scaled layout; searchable player picker returns to calling tool; **fix empty scroll body** (`arrangeElements` before `setMaxHeight`) |
 | **YaPAdmin** | Trolls / give / money subcommands; economy deposits via `PlayerDataService` on the entity region thread (Folia-safe) |
-| **yap-bag 1.0.1** | Mixins target `AbstractContainerScreen` for MC 26.2; **page tabs sit above 6-row bag** (was hard-coded 3-row offset covering slots) |
+| **yap-bag 1.0.2** | Mixins target `AbstractContainerScreen` for MC 26.2; page tabs above 6/5-row panel; **`yap:bag` HELLO** → server omits bottom item-nav (45-slot GUI) |
 | **Via packs** | Forward optional Paper resource-pack prompts to modern JE (no longer auto-accept-only when unforced) |
 | **YaPTab** | Sidebar/footer resolve `{balance}` and `${balance}` |
 | **Packs / scripts** | GitHub Releases pack offer sync; Control Panel / `gui.sh` home resolution |
@@ -54,7 +54,7 @@ Optional Fabric / pack polish on the same ship version (no version bump):
 | **YaP Shaders** | Multi-dir Gerstner water; weather-driven species foliage wind; softer distance fog; leaf cutout path |
 | **Default pack** | Denser Faithful-based leaves (`strict_cutout`); water/weather overlay refresh |
 | **yap-ultrawide** | Separate **21:9** and **32:9** Hor+ profiles (`match_16_9` / `match_21_9` / `fixed_hfov` + HFOV cap) |
-| **yap-bag** | Screen mixins updated for MC 26.2 chest / inventory layout — use **1.0.1+** (6-row tab offset) |
+| **yap-bag** | Screen mixins updated for MC 26.2 chest / inventory layout — use **1.0.2+** (HELLO → no item-nav row) |
 | **yap-staff** | Esc / **R** full Staff GUI (scroll/scale, ranks, searchable pick) — **1.0.4+** |
 
 Build: `./scripts/build-yap-client-render.sh` · `./scripts/build-default-resourcepack.sh`.

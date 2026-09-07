@@ -197,14 +197,17 @@ See [yap-ultrawide/README.md](../../client/yap-ultrawide/README.md).
 | Piece | Where |
 |-------|--------|
 | YaPEssentials `/bag` + YaPPlayerData storage | Server — required |
-| `yap-bag-1.0.1.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
+| `yap-bag-1.0.2.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
 
 ```bash
 cd client/yap-bag && ./gradlew build
-# → client/yap-bag/build/libs/yap-bag-1.0.1.jar
+# → client/yap-bag/build/libs/yap-bag-1.0.2.jar
 ```
 
-Vanilla and Bedrock players keep `/bag` and the `/menu` Bag icon. Config: `.minecraft/config/yap-bag.json`.
+Vanilla and Bedrock players keep `/bag` and the `/menu` Bag icon (54-slot chest with
+bottom page chrome). With **yap-bag 1.0.2+**, the client sends `HELLO` on channel
+`yap:bag` and the server opens a **45-slot** chest — page changes use the top tabs only.
+Config: `.minecraft/config/yap-bag.json`.
 See [yap-bag/README.md](../../client/yap-bag/README.md).
 
 ## Staff menu on Esc — optional client mod
