@@ -16,7 +16,7 @@ Esc pause **Staff menu** is a separate mod: [yap-staff](../yap-staff/).
 ## Install
 
 1. Fabric Loader **0.19.3+** for Minecraft **26.2**
-2. Drop `yap-bag-1.0.0.jar` into `.minecraft/mods/`
+2. Drop `yap-bag-1.0.1.jar` into `.minecraft/mods/` (only one `yap-bag-*.jar`)
 3. Join YaPcore / Folia as usual (vanilla protocol)
 
 ## Build
@@ -26,7 +26,7 @@ cd client/yap-bag
 ./gradlew build
 ```
 
-Jar: `build/libs/yap-bag-1.0.0.jar`
+Jar: `build/libs/yap-bag-1.0.1.jar`
 
 ## Config
 
