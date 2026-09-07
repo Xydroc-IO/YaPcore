@@ -21,7 +21,7 @@ public abstract class MinecraftMixin {
             return;
         }
         if (YapBagClient.openKey().consumeClick()) {
-            YapBagClient.requestOpen(0);
+            YapBagClient.requestToggle();
         }
     }
 }

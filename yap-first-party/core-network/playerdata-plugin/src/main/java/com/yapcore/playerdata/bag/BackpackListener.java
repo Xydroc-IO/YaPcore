@@ -36,6 +36,14 @@ public final class BackpackListener implements Listener {
             return;
         }
         int slot = event.getRawSlot();
+        if (!holder.itemNav()) {
+            // Fabric tabs: entire top inventory is storage.
+            if (BackpackService.isNav(event.getCurrentItem())) {
+                event.setCancelled(true);
+                event.setCurrentItem(null);
+            }
+            return;
+        }
         if (slot < BackpackService.STORAGE_SLOTS) {
             if (BackpackService.isNav(event.getCurrentItem())) {
                 event.setCancelled(true);
@@ -53,19 +61,23 @@ public final class BackpackListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)
     public void onDrag(InventoryDragEvent event) {
         Inventory top = event.getView().getTopInventory();
-        if (BackpackInventories.bag(top) == null) {
+        BackpackHolder holder = BackpackInventories.bag(top);
+        if (holder == null) {
             return;
         }
         if (BackpackService.isNav(event.getOldCursor()) || BackpackService.isNav(event.getCursor())) {
             event.setCancelled(true);
             return;
         }
+        int topSize = holder.guiSize();
         for (int slot : event.getRawSlots()) {
-            if (slot >= BackpackService.STORAGE_SLOTS && slot < BackpackService.GUI_SIZE) {
+            if (holder.itemNav()
+                    && slot >= BackpackService.STORAGE_SLOTS
+                    && slot < topSize) {
                 event.setCancelled(true);
                 return;
             }
-            ItemStack existing = top.getItem(slot);
+            ItemStack existing = slot < topSize ? top.getItem(slot) : null;
             if (slot < BackpackService.STORAGE_SLOTS && BackpackService.isNav(existing)) {
                 event.setCancelled(true);
                 return;
@@ -91,5 +103,6 @@ public final class BackpackListener implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         backpack.cancelPending(event.getPlayer().getUniqueId());
+        backpack.clearBagClient(event.getPlayer().getUniqueId());
     }
 }

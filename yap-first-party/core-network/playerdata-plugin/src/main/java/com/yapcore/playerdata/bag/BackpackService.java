@@ -23,7 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 /**
- * Paged extra storage. 45 item slots per page; bottom row is page chrome.
+ * Paged extra storage. 45 item slots per page.
+ * Vanilla / Bedrock: 54-slot chest with bottom-row page chrome.
+ * Fabric yap-bag (HELLO on {@link #CHANNEL}): 45-slot chest; page tabs on the client.
  * Persists on close / page switch / shutdown — not on the inventory autosave path.
  */
 public final class BackpackService {
@@ -41,6 +43,8 @@ public final class BackpackService {
     private final BackpackRepository repository;
     private final ConcurrentHashMap<UUID, AtomicInteger> generations = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<UUID, Boolean> switching = new ConcurrentHashMap<>();
+    /** Players whose Fabric yap-bag sent HELLO this session. */
+    private final ConcurrentHashMap<UUID, Boolean> bagClients = new ConcurrentHashMap<>();
 
     public BackpackService(JavaPlugin plugin, PlayerDataConfig config, SyncService sync,
                            BackpackRepository repository) {
@@ -53,6 +57,22 @@ public final class BackpackService {
     public int pagesFor(Player player) {
         return BackpackPages.resolve(player::hasPermission,
                 config.backpackDefaultPages(), config.backpackMaxPages());
+    }
+
+    public void markBagClient(UUID playerId) {
+        if (playerId != null) {
+            bagClients.put(playerId, Boolean.TRUE);
+        }
+    }
+
+    public boolean hasBagClient(UUID playerId) {
+        return playerId != null && bagClients.containsKey(playerId);
+    }
+
+    public void clearBagClient(UUID playerId) {
+        if (playerId != null) {
+            bagClients.remove(playerId);
+        }
     }
 
     public void openOwn(Player player, int requestedPage) {
@@ -112,8 +132,11 @@ public final class BackpackService {
                     return;
                 }
                 ItemStack[] stored = ItemSerializer.deserialize(blob, STORAGE_SLOTS);
-                BackpackHolder holder = new BackpackHolder(owner, ownerName, page, pages, staffView);
-                Inventory inv = Bukkit.createInventory(holder, GUI_SIZE,
+                boolean itemNav = !hasBagClient(viewerId);
+                int guiSize = itemNav ? GUI_SIZE : STORAGE_SLOTS;
+                BackpackHolder holder = new BackpackHolder(
+                        owner, ownerName, page, pages, staffView, itemNav);
+                Inventory inv = Bukkit.createInventory(holder, guiSize,
                         Component.text(BackpackTitle.format(page, pages, staffView ? ownerName : null)));
                 holder.bind(inv);
                 for (int i = 0; i < STORAGE_SLOTS; i++) {
@@ -121,7 +144,9 @@ public final class BackpackService {
                         inv.setItem(i, stored[i]);
                     }
                 }
-                paintNav(inv, page, pages);
+                if (itemNav) {
+                    paintNav(inv, page, pages);
+                }
                 switching.put(viewerId, Boolean.TRUE);
                 try {
                     viewer.openInventory(inv);

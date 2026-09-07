@@ -6,7 +6,11 @@
     "OptionsMixin",
     "MinecraftMixin",
     "InventoryScreenMixin",
-    "AbstractContainerScreenMixin"
+    "AbstractContainerScreenMixin",
+    "ClientPacketListenerMixin"
+  ],
+  "mixins": [
+    "ServerboundCustomPayloadPacketMixin"
   ],
   "injectors": {
     "defaultRequire": 1

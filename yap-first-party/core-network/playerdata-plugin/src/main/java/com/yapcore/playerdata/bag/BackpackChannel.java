@@ -9,8 +9,12 @@ import org.bukkit.plugin.messaging.PluginMessageListener;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Optional Fabric client channel {@code yap:bag}. Vanilla / Bedrock use {@code /bag}.
- * Payload is UTF-8: {@code OPEN} or {@code OPEN|<page>}.
+ * Fabric client channel {@code yap:bag}.
+ * <ul>
+ *   <li>{@code HELLO} — client has page tabs; omit chest-item nav for that player</li>
+ *   <li>{@code OPEN} / {@code OPEN|&lt;page&gt;} — open bag (same as {@code /bag})</li>
+ * </ul>
+ * Vanilla / Bedrock never send this; they use {@code /bag} and get the bottom nav row.
  */
 public final class BackpackChannel implements PluginMessageListener {
 
@@ -27,16 +31,14 @@ public final class BackpackChannel implements PluginMessageListener {
         if (!BackpackService.CHANNEL.equals(channel) || player == null) {
             return;
         }
-        String text = new String(message == null ? new byte[0] : message, StandardCharsets.UTF_8).trim();
+        String text = decode(message);
         if (text.isEmpty()) {
             return;
         }
-        // Some clients prefix a VarInt length; strip non-text lead bytes.
-        int start = 0;
-        while (start < text.length() && text.charAt(start) < 32) {
-            start++;
+        if (text.regionMatches(true, 0, "HELLO", 0, 5)) {
+            backpack.markBagClient(player.getUniqueId());
+            return;
         }
-        text = text.substring(start);
         if (!text.regionMatches(true, 0, "OPEN", 0, 4)) {
             return;
         }
@@ -54,7 +56,21 @@ public final class BackpackChannel implements PluginMessageListener {
             if (!player.isOnline() || !Perms.require(player, BackpackPages.NODE_USE)) {
                 return;
             }
+            backpack.markBagClient(player.getUniqueId());
             backpack.openOwn(player, requested);
         });
+    }
+
+    private static String decode(byte[] message) {
+        String text = new String(message == null ? new byte[0] : message, StandardCharsets.UTF_8).trim();
+        if (text.isEmpty()) {
+            return "";
+        }
+        // Older / framed clients may prefix a VarInt length; strip non-text lead bytes.
+        int start = 0;
+        while (start < text.length() && text.charAt(start) < 32) {
+            start++;
+        }
+        return text.substring(start).trim();
     }
 }
