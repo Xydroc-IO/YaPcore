@@ -115,7 +115,7 @@ gradle publishReleasesFolder   # refreshes releases/1.0.0.0/ trees + zips
 
 Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 1.0.0.0” — do **not** change Gradle `version`.
 
-**Latest refresh:** 2026-09-05 — enterprise hygiene ~90% accepted (band 90–95%); YaP-Folia provenance polish + UPSTREAM.lock refresh; plugin smokes + CI high-value expand; dashboard HTTP thinned. Prior 2026-09-04: GitHub assets complete; Encyclopedia + Canvas heavypop cite; Ops Waves 1–5.
+**Latest refresh:** 2026-09-06 — typical SMP plugin defaults (chat slow-mode, claim tax off, map claim markers, Disasters opt-in off, Opt-in dashboard badge, seed↔jar drift CI). Prior 2026-09-05: enterprise hygiene ~90% accepted (band 90–95%); YaP-Folia provenance polish + UPSTREAM.lock refresh; plugin smokes + CI high-value expand; dashboard HTTP thinned. Prior 2026-09-04: GitHub assets complete; Encyclopedia + Canvas heavypop cite; Ops Waves 1–5.
 
 ## Version bump checklist (new tag only)
 

@@ -1,3 +1,8 @@
+# YaP Map — shipped defaults (typical SMP)
+# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
+# Prefer dashboard: Map / Plugin settings → Save → reload
+# HTTP stays on 127.0.0.1 — expose via nginx if players need the map.
+
 http:
   bind: 127.0.0.1
   # Dedicated map port when use-yapcore-server is false (8081 is used by YaPcore pack HTTP)
@@ -43,8 +48,8 @@ markers:
   regions: false
   # Static pins from plugins/YaPMap/poi.json (example shipped in jar).
   pois: true
-  # Soft-depend YaPPlayerData ClaimService.localClaims().
-  claims: false
+  # Soft-depend YaPPlayerData ClaimService.localClaims(). On by default for typical SMP.
+  claims: true
   # When claims are on, tint by YaPFactions overlay (hashed color) if available.
   faction-colors: false
   poll-seconds: 5

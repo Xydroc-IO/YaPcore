@@ -1,3 +1,8 @@
+# YaP PluginCompat — shipped defaults (typical SMP)
+# Opt-in plugins: leave enabled: false until you want them
+# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
+# Prefer dashboard: Plugin settings (or Gameplay tab) → Save → reload
+
 # Informational — rewrite is driven by YaPcore config/server.properties
 enabled: true
 target: "Paper 1.20-1.21 jars on Paper 26.2"

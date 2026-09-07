@@ -1,8 +1,10 @@
-# YaP Disasters — Phase 3–5a
-# Extreme weather / disaster FX. Grief is off by default.
-# When grief is on, claims + BUILD-deny regions stay safe (protect-* defaults).
+# YaP Disasters — shipped defaults (typical SMP)
+# Opt-in: leave enabled: false until you want extreme weather FX
+# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
+# Prefer dashboard: Plugin settings or Disasters tab → Save → reload
+# Grief stays off; when grief is on, claims + BUILD-deny regions stay safe.
 
-enabled: true
+enabled: false
 broadcast-start: true
 broadcast-end: true
 default-duration-seconds: 120
@@ -41,16 +43,10 @@ random:
     meteor: 5
     tsunami: 3
 
-# Phase 5a — soft volcano sites (tag real peaks; no worldgen)
+# Soft volcano sites (tag real peaks; no worldgen). Add sites when enabled — see docs/plugins/DUNGEONS.md siblings / disasters docs.
 volcano-sites-ambient: true
 volcano-site-snap-blocks: 48
-volcano-sites:
-  ember_peak:
-    world: world
-    x: 180
-    y: 96
-    z: -160
-    dormant: false
+volcano-sites: {}
 
 disasters:
   clear:

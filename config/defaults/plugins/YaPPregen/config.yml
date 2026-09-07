@@ -1,3 +1,8 @@
+# YaP Pregen — shipped defaults (typical SMP)
+# Opt-in plugins: leave enabled: false until you want them
+# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
+# Prefer dashboard: Plugin settings (or Gameplay tab) → Save → reload
+
 chunks-per-tick: 5
 # Paper-only global MSPT gate (ignored on Folia — MSPT is region-local)
 max-mspt: 40.0

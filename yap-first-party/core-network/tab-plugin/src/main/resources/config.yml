@@ -1,11 +1,16 @@
+# YaP Tab — shipped defaults (typical SMP)
+# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
+# Prefer dashboard: Plugin settings or Tab list tab → Save → reload
+# Edit header/footer branding for your server name and domain.
+
 header:
-  - "&6&lYaP Network"
+  - "&6&lYour Network"
   - "&7Welcome &f{player}"
 
 footer:
   - "&7Online: &f{online}&7/&f{max}"
   - "&7Rank: &f{rank} &8| &7Bal: &a${balance}"
-  - "&eyapcoremc.yaplabs.us"
+  - "&7Edit this footer in YaPTab config"
 
 sidebar:
   enabled: true
@@ -28,7 +33,7 @@ network-sync:
 bossbar:
   enabled: false
   welcome-on-join: true
-  title: "&6&lWelcome to YaP"
+  title: "&6&lWelcome"
   subtitle: "&7Enjoy your stay, &f{player}"
   color: YELLOW
   duration-seconds: 8

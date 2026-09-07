@@ -1,6 +1,8 @@
-# Custom /commands — edit via dashboard Custom commands tab or this file.
+# YaP Commands — shipped defaults (typical SMP)
+# Edit via dashboard Custom commands tab or this file, then reload.
 # Placeholders: {player} {uuid} {display} {world} {x} {y} {z} {args} {args0} {args1} …
 # permission: empty = anyone with yapcommands.use (if require-use-perm); or set yapcommands.cmd.<name>
+# Replace CHANGE_ME links with your Discord invite and store URL.
 
 require-use-perm: true
 
@@ -13,7 +15,7 @@ commands:
     cooldown-seconds: 3
     hide-no-permission: true
     messages:
-      - "&9Discord:&f join at &bdiscord.gg/yap"
+      - "&9Discord:&f join at &bCHANGE_ME"
     player-commands: []
     console-commands: []
     broadcast: ""
@@ -40,7 +42,7 @@ commands:
     cooldown-seconds: 3
     hide-no-permission: true
     messages:
-      - "&aStore:&f https://store.example.com"
+      - "&aStore:&f CHANGE_ME"
     player-commands: []
     console-commands: []
     broadcast: ""

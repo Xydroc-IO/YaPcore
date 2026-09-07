@@ -1,3 +1,4 @@
-# YaPCommands — flat toggles (also editable under Plugin settings).
+# YaP Commands — shipped defaults (typical SMP)
 # Command definitions live in commands.yml (dashboard Custom commands tab).
+# Prefer dashboard: Plugin settings → Save → reload
 enabled: true

@@ -1,3 +1,8 @@
+# YaP Packs — shipped defaults (typical SMP)
+# Opt-in plugins: leave enabled: false until you want them
+# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
+# Prefer dashboard: Plugin settings (or Gameplay tab) → Save → reload
+
 # Primary pack is offered by Paper server.properties (login Yes/No prompt).
 # Play-phase extras: Via remaps add_resource_pack + auto-acks Paper (see ViaProxyHandler).
 push-extras-on-join: true

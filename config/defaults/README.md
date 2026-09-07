@@ -3,6 +3,9 @@
 First-boot / fresh-install configs copied by `./scripts/seed-defaults.sh`
 (also invoked from `start.sh` via `yap_ensure_dirs`).
 
+**Profile:** typical SMP knobs (chat slow-mode, claim tax off, map claim markers on);
+opt-in gameplay stays **off**. Secrets/binds stay LAN-safe.
+
 **Never overwrites** existing operator files — only fills gaps.
 
 | Path | Purpose |
@@ -16,10 +19,11 @@ First-boot / fresh-install configs copied by `./scripts/seed-defaults.sh`
 | `plugins/YaPSkills/config.yml` | Skills RPG **off** until opted in |
 | `plugins/YaPStacker/config.yml` | Mob/item stacker **off** until opted in |
 | `plugins/YaPDungeons/config.yml` | Instanced dungeons **off** until opted in |
+| `plugins/YaPDisasters/config.yml` | Extreme weather **off** (`enabled: false`) until opted in |
 | `plugins/YaPGameplayKnobs/knobs.yml` | Encyclopedia knobs **off** (`settings.enabled: false`) |
-| `plugins/YaPModeration\|Admin\|Protect\|World\|Regions\|Npcs\|Map\|Floodgate\|Pregen/…` | Core+network seeds (LAN-safe binds / passwords) |
+| `plugins/YaPModeration\|Admin\|Protect\|World\|Regions\|Npcs\|Map\|Floodgate\|Pregen/…` | Core+network seeds (LAN-safe binds / passwords; typical SMP knobs) |
 | `plugins/PlaceholderAPI\|YaPPluginCompat/…` | Compat / placeholders |
-| `plugins/YaPPerms\|Chat\|Tab\|Essentials\|Guard\|LagGuard\|Packs\|Commands\|Disasters/…` | Core gameplay UX |
+| `plugins/YaPPerms\|Chat\|Tab\|Essentials\|Guard\|LagGuard\|Packs\|Commands/…` | Core gameplay UX (opt-ins stay off) |
 | `link.properties` | YaP Link single-backend + plugins on |
 
 **No config file (N/A):** `YaPBedrockUI`, `YaPFoliaBridge`, `WorldEdit` shim — jar-only / no YAML seed.

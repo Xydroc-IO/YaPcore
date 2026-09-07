@@ -1,3 +1,9 @@
+# YaP PlayerData — shipped defaults (typical SMP)
+# Opt-in plugins: leave enabled: false until you want them (Factions/Skills/…)
+# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
+# Prefer dashboard: Player data / Plugin settings → Save → reload
+# LAN/demo: auth.enabled=false. Public offline-mode: set auth.enabled=true.
+
 # Shared MariaDB/MySQL — prefer YaPDB (yap-db.jar) when installed
 use-shared-yapdb: true
 
@@ -95,8 +101,9 @@ claims:
   visual-seconds: 8
   subdivide-min-area: 4
   tax:
+    # Opt-in claim tax (GriefPrevention-style). Off by default — enable when you want upkeep.
     # Forced off when economy.enabled=false
-    enabled: true
+    enabled: false
     per-block-per-day: 0.01
     tick-minutes: 60
     freeze-at: 50.0

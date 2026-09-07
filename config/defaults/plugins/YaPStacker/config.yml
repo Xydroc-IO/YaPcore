@@ -1,3 +1,8 @@
+# YaP Stacker — shipped defaults (typical SMP)
+# Opt-in plugins: leave enabled: false until you want them
+# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
+# Prefer dashboard: Plugin settings (or Gameplay tab) → Save → reload
+
 # YaP Stacker — full mob / item / spawner stacking (PDC, no NMS)
 # Opt-in — leave false until you want stacking on a survival box.
 

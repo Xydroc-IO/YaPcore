@@ -17,7 +17,7 @@ that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when m
 | YaPPerms starter ranks | Yes (`apply-starter-pack-on-first-boot` + `yap-ranks-auto-apply`) |
 | YaPFactions / guilds | **Off** (`enabled: false`) — opt in for faction servers · [FACTIONS.md](../gameplay/FACTIONS.md) |
 | YaPConquest / chunk land | **Off** (`enabled: false`) — hardcore grid; needs YaPFactions · [CONQUEST.md](../gameplay/CONQUEST.md) |
-| YaPSkills / Stacker / Dungeons / GameplayKnobs | **Off** until opted in |
+| YaPSkills / Stacker / Dungeons / Disasters / GameplayKnobs | **Off** until opted in |
 | Economy / claims / moderation / SQL plugins | **Needs SQL** (MariaDB default; Postgres or SQLite OK — [YAPDB.md](../data/YAPDB.md)) |
 | Discord webhooks | Needs your webhook URLs |
 
@@ -52,11 +52,11 @@ config/defaults/
   plugins/YaPDiscord/…       # inbound off
   plugins/YaPFactions/…      # enabled: false (opt-in)
   plugins/YaPConquest/…      # enabled: false (opt-in chunk land)
-  plugins/YaPSkills|Stacker|Dungeons/…  # enabled: false (opt-in)
+  plugins/YaPSkills|Stacker|Dungeons|Disasters/…  # enabled: false (opt-in)
   plugins/YaPGameplayKnobs/knobs.yml    # settings.enabled: false
   plugins/YaPModeration|Admin|Protect|World|Regions|Npcs|Map|Floodgate|Pregen/…
   plugins/PlaceholderAPI|YaPPluginCompat/…
-  plugins/YaPPerms|Chat|Tab|Essentials|Guard|LagGuard|Packs|Commands|Disasters/…
+  plugins/YaPPerms|Chat|Tab|Essentials|Guard|LagGuard|Packs|Commands/…
 ```
 
 **N/A (no YAML seed):** YaPBedrockUI, YaPFoliaBridge, WorldEdit shim.
@@ -73,12 +73,18 @@ and let YaP-Folia re-extract from the jar after seed).
 | `auth.enabled` (PlayerData) | `false` | `true` on offline-mode public servers |
 | `internet-exposed` | `false` | `true` + nginx/Cloudflare |
 | `folia-jar-source` | `build` | keep `build` (YaP-Folia) |
-| Discord inbound | `false` | enable + strong `secret` |
+| Chat `slow-mode-seconds` | `3` | `0` for LAN/dev; keep or raise on busy public |
+| Claims `tax.enabled` | `false` | `true` only if you want claim upkeep |
+| Map `markers.claims` | `true` | leave on for SMP claim overlay |
+| Discord inbound / relay | `false` | webhook → `relay.mc-to-discord: true` → reload |
 | YaPWorld editor.bind | `127.0.0.1` | `0.0.0.0` + firewall if remote editors |
 | YaPMap mesh.enabled | `false` | `true` when you want 3D tiles |
+
+**Existing installs:** seeds never overwrite operator files. To pick up new shipped defaults, delete `plugins/<Name>/config.yml` (or the whole folder) and re-run `./scripts/seed-defaults.sh`.
 
 ## Release note
 
 `assembleRelease` copies `config/` (including `defaults/` and `*.example`).
 Plugin **jars** only go under `plugins/` — configs are created on first boot via seed + jar.
 Ship or build `lib/yap-folia-*.jar` for the product game path.
+Typical SMP knobs (chat slow-mode, claim tax off, map claim markers) live in seeds + jar resources; opt-in plugins stay `enabled: false`.

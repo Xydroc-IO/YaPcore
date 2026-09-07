@@ -50,6 +50,12 @@ Login links include `?token=…` so the browser signs in automatically (token is
 
 Static assets: `src/main/resources/web/` — `app-shell.js`, `app-core.js`, `app-*-panels.js`, `style.css`.
 
+## First-boot plugin config
+
+CORE + NETWORK plugins are ready with typical SMP defaults (chat slow-mode, economy/homes/claims, protect, lagguard). Opt-in jars (Factions, Conquest, Skills, Stacker, Dungeons, Disasters, GameplayKnobs) show an **Opt-in** badge on the **Plugins** tab — installed, soft-off until you enable them from Plugins or Plugin settings, then Save → reload.
+
+Secrets stay LAN-safe (`auth` off, dashboard/map binds on localhost). Walk [DEFAULTS.md](../start/DEFAULTS.md) LAN vs public before exposing the box.
+
 ## Admin tab (infrastructure)
 
 **`/api/admin`** — operator setup without editing files by hand:

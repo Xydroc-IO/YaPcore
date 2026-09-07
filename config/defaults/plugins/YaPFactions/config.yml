@@ -1,3 +1,8 @@
+# YaP Factions — shipped defaults (typical SMP)
+# Opt-in plugins: leave enabled: false until you want them
+# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
+# Prefer dashboard: Plugin settings (or Gameplay tab) → Save → reload
+
 enabled: false
 # Opt-in faction/guild overlay. Leave false unless you run a faction server.
 # Enable: set enabled: true then /yapfactions reload (or restart).

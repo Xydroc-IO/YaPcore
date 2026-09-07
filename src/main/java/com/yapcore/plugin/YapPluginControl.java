@@ -37,7 +37,13 @@ public final class YapPluginControl {
             "yap-chat", "yap-moderation", "yap-protect", "yap-admin");
 
     private static final Set<String> GAMEPLAY_TOKENS = Set.of(
-            "yap-stacker", "yap-gameplay-knobs", "yap-skills", "yap-disasters", "yap-factions");
+            "yap-stacker", "yap-gameplay-knobs", "yap-skills", "yap-disasters",
+            "yap-factions", "yap-conquest", "yap-dungeons");
+
+    /** Installed in the box but off by default — owners enable when ready. */
+    private static final Set<String> OPT_IN_TOKENS = Set.of(
+            "yap-factions", "yap-conquest", "yap-skills", "yap-stacker",
+            "yap-dungeons", "yap-disasters", "yap-gameplay-knobs");
 
     private final Path root;
     private final Path pluginsDir;
@@ -78,6 +84,8 @@ public final class YapPluginControl {
         row.put("hardEnabled", hardEnabled);
         row.put("tier", tier.name());
         row.put("protected", tier == Tier.CORE);
+        String token = jarToken(activeName);
+        row.put("optIn", OPT_IN_TOKENS.contains(token));
         row.put("catalogId", entry == null ? "" : entry.id());
         row.put("title", entry == null ? activeName : entry.title());
         row.put("reload", entry == null ? "" : entry.reload());
@@ -321,7 +329,7 @@ public final class YapPluginControl {
         if (CORE_TOKENS.contains(token)) {
             return Tier.CORE;
         }
-        if (GAMEPLAY_TOKENS.contains(token) || "yap-factions".equals(token)) {
+        if (GAMEPLAY_TOKENS.contains(token)) {
             return Tier.GAMEPLAY;
         }
         if (entry != null && token.startsWith("yap-")) {
@@ -331,5 +339,10 @@ public final class YapPluginControl {
             return Tier.NETWORK;
         }
         return Tier.THIRD_PARTY;
+    }
+
+    /** True for gameplay/network jars that ship installed but soft-off. */
+    public static boolean isOptIn(String jarFileName) {
+        return OPT_IN_TOKENS.contains(jarToken(jarFileName));
     }
 }

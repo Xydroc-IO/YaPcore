@@ -1,3 +1,11 @@
+# YaP Discord — shipped defaults (typical SMP)
+# Bridge stays off until you wire it. To go live:
+#   1) Set webhooks.chat (and/or bot.token + chat-channel-id)
+#   2) Set relay.mc-to-discord: true (and discord-to-mc if using inbound/bot)
+#   3) Reload via dashboard Discord tab or /yapdiscord reload
+# Go public: see docs/start/SECRETS.md — set a real inbound.secret before enabling inbound.
+# Prefer dashboard: Discord / Plugin settings → Save → reload
+
 # Optional Discord bridge — leave empty until you add webhook URLs.
 webhooks:
   moderation: ""

@@ -1,3 +1,7 @@
+# YaP Chat — shipped defaults (typical SMP)
+# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
+# Prefer dashboard: Plugin settings or Chat tab → Save → reload
+
 # Hide "Chat messages cannot be verified" on offline / Link / Via joins.
 unsigned-system-chat: true
 
@@ -27,8 +31,8 @@ channels:
 # Prefix local chat with ! (one-shot without switching channel)
 local-prefix: "!"
 
-# Slow mode (seconds between messages; 0 = off)
-slow-mode-seconds: 0
+# Slow mode (seconds between messages). Typical public SMP uses 3; set 0 for LAN/dev.
+slow-mode-seconds: 3
 
 # Basic word filter (case-insensitive substring match)
 filter:
@@ -38,6 +42,11 @@ filter:
   words:
     - fuck
     - shit
+    - bitch
+    - asshole
+    - nigger
+    - nigga
+    - retard
   replacement: "***"
 
 messages:

@@ -57,6 +57,11 @@
     return `<span class="badge">3rd-party</span>`;
   }
 
+  function pluginOptInBadge(p) {
+    if (p.optIn !== true && p.optIn !== "true") return "";
+    return `<span class="badge" title="Installed, off by default — enable when ready">Opt-in</span>`;
+  }
+
   async function pluginAction(body) {
     const r = await api("/api/plugins", { method: "POST", body: JSON.stringify(body) });
     if (r && r.needsRestart) {
@@ -85,8 +90,8 @@
             ? `<span class="badge">works</span>`
             : "";
       const title = p.title && p.title !== p.activeName ? p.title + " · " : "";
-      li.innerHTML = `<div><strong>${p.activeName || p.fileName}</strong> ${pluginTierBadge(p.tier)} ${compat}
-        <div class="meta">${title}${p.sizeLabel || ""} · ${softLabel} · hard ${hardOn ? "on" : "off"}${p.compatNote ? " · " + p.compatNote : ""}${!hardOn ? " · renamed .disabled" : ""}</div></div>`;
+      li.innerHTML = `<div><strong>${p.activeName || p.fileName}</strong> ${pluginTierBadge(p.tier)} ${pluginOptInBadge(p)} ${compat}
+        <div class="meta">${title}${p.sizeLabel || ""} · ${softLabel} · hard ${hardOn ? "on" : "off"}${p.optIn === true || p.optIn === "true" ? " · installed, off by default" : ""}${p.compatNote ? " · " + p.compatNote : ""}${!hardOn ? " · renamed .disabled" : ""}</div></div>`;
       const actions = document.createElement("div");
       actions.className = "plugin-actions";
 

@@ -175,6 +175,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 | **Packs / CDN** | Default `resource-pack-url` → GitHub `releases/latest/download/{file}`; SHA-1 hashed from the remote bytes clients download; `public-pack-port` 80/443 honored for nginx edge — [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) |
 | **GitHub release assets** | Tag `1.0.0.0` ships OS zips, suites, `yapcore-default.zip`, and optional Fabric `client_mods.zip` (yap-visuals + yap-bag + yap-ultrawide) |
 | **Docs hygiene** | Generated PDFs / office dumps gitignored — publish Markdown only |
+| **Typical SMP defaults** | Chat slow-mode 3; claim tax off; map claim markers on; Disasters opt-in off; CHANGE_ME command links; generic Tab branding; dashboard **Opt-in** badge; seed↔jar drift CI — [DEFAULTS.md](DEFAULTS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
 
 ### Still open (not a version bump)
 
@@ -186,7 +187,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
 - **12h soak-long PASS** (`logs/soak/soak-long-20260905T031507Z.log`) — zip may be marketed as **soak-proven**; heap/thread slope flat (folia heap median early≈1012MB late≈1082MB; threads 137→137) per [REAL_GAINS.md](../folia/REAL_GAINS.md)
 - Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production (defaults stay **off**)
-`releases/1.0.0.0/` was republished after pack CDN/SHA sync + client visuals refresh (`gradle publishReleasesFolder` + `./scripts/build-yap-client-render.sh`, 2026-09-04).
+`releases/1.0.0.0/` republished 2026-09-06 with typical SMP defaults (`gradle publishReleasesFolder -PyapGameplay=true`). Prior: pack CDN/SHA + client visuals (2026-09-04).
 
 ---
 

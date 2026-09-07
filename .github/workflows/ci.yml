@@ -21,6 +21,8 @@ jobs:
         run: gradle checkDomainLineLimits --no-daemon
       - name: DB bootstrap hygiene
         run: gradle checkDbBootstrapHygiene --no-daemon
+      - name: Defaults seed↔jar value drift
+        run: gradle checkDefaultsSeedJarDrift --no-daemon
       - name: High-value plugin unit suites
         run: >
           gradle --no-daemon
