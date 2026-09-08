@@ -49,12 +49,21 @@ public final class KnobsListener implements Listener {
         if (knobs == null) {
             return;
         }
-        if (!knobs.enabled()) {
+        CreatureSpawnEvent.SpawnReason reason = event.getSpawnReason();
+        boolean intentional = reason == CreatureSpawnEvent.SpawnReason.CUSTOM
+                || reason == CreatureSpawnEvent.SpawnReason.COMMAND
+                || reason == CreatureSpawnEvent.SpawnReason.SPAWNER_EGG
+                || reason == CreatureSpawnEvent.SpawnReason.SPAWNER;
+        // enabled: false blocks natural/world spawns only — staff /yapadmin spawnmob and eggs still work
+        if (!knobs.enabled() && !intentional) {
             event.setCancelled(true);
             return;
         }
+        if (!knobs.enabled()) {
+            return;
+        }
         int maxPerChunk = knobs.maxPerChunkOrZero();
-        if (maxPerChunk > 0) {
+        if (maxPerChunk > 0 && !intentional) {
             int already = countSameTypeExcluding(entity);
             if (MobChunkCapPolicy.overLimit(already, maxPerChunk)) {
                 event.setCancelled(true);
