@@ -21,14 +21,13 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:$paperApi")
     implementation(project(":yap-sched"))
     implementation(project(":yap-messages-api"))
-    compileOnly(project(":yap-moderation-api"))
-    compileOnly(project(":yap-bedrock-ui-api"))
-    compileOnly(project(":yap-playerdata-api"))
-    compileOnly(project(":yap-items-api"))
+    implementation(project(":yap-items-api"))
+    implementation(project(":yap-mmo-api"))
+    compileOnly(project(":placeholderapi-plugin"))
 
+    testImplementation("io.papermc.paper:paper-api:$paperApi")
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.papermc.paper:paper-api:$paperApi")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -40,13 +39,14 @@ tasks.jar {
     from({
         configurations.runtimeClasspath.get()
             .filter { f ->
-            val n = f.name
-            n.contains("yap-sched") || n.contains("yap-messages-api")
-        }
+                val n = f.name
+                n.contains("yap-sched") || n.contains("yap-messages-api")
+                        || n.contains("yap-items-api") || n.contains("yap-mmo-api")
+            }
             .map { zipTree(it) }
     })
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    archiveFileName.set("yap-admin.jar")
+    archiveFileName.set("yap-items.jar")
 }
 
 tasks.register<Copy>("installIntoPlugins") {

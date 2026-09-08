@@ -1,0 +1,44 @@
+name: YaPItems
+version: '1.0.0.0'
+main: com.yapcore.items.ItemsPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Custom items registry — abilities, furniture, recipes, combat gear tags
+website: https://github.com/yaplabs
+softdepend: [YaPPlayerData, YaPSkills, PlaceholderAPI]
+commands:
+  yapitems:
+    description: YaPItems admin — give, take, list, create, gui, furniture
+    usage: /yapitems <give|take|list|info|gui|reload|create|delete|cooldown|furniture>
+    aliases: [yitems]
+    permission: yapitems.use
+permissions:
+  yapitems.use:
+    description: Base YaPItems access (list/info; ungated item use)
+    default: true
+  yapitems.give:
+    description: Give custom items
+    default: op
+  yapitems.take:
+    description: Take custom items
+    default: op
+  yapitems.gui:
+    description: Open items browser
+    default: op
+  yapitems.create:
+    description: Create custom item definitions
+    default: op
+  yapitems.craft:
+    description: Craft registered custom recipes
+    default: true
+  yapitems.admin:
+    description: Full YaPItems admin (reload, create, delete, furniture) + all gated item/ability nodes
+    default: op
+    children:
+      yapitems.give: true
+      yapitems.take: true
+      yapitems.gui: true
+      yapitems.create: true
+      yapitems.use: true
+      yapitems.craft: true

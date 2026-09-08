@@ -171,6 +171,18 @@ public final class KitYaml {
                 // fall through to material form
             }
         }
+        Object yapItem = raw.get("yap-item");
+        if (yapItem == null) {
+            yapItem = raw.get("yap_item");
+        }
+        if (yapItem != null) {
+            String itemId = String.valueOf(yapItem);
+            int amount = raw.get("amount") instanceof Number n ? Math.max(1, n.intValue()) : 1;
+            ItemStack custom = resolveYapItem(itemId, amount);
+            if (custom != null) {
+                return new Parsed(custom, slot);
+            }
+        }
         Object matObj = raw.get("material");
         if (matObj == null) {
             matObj = raw.get("type");
@@ -186,6 +198,34 @@ public final class KitYaml {
         ItemStack stack = new ItemStack(material, amount);
         applyMeta(stack, raw);
         return new Parsed(stack, slot);
+    }
+
+    private static ItemStack resolveYapItem(String itemId, int amount) {
+        try {
+            Class<?> services = Class.forName("com.yapcore.items.api.ItemServices");
+            Object opt = services.getMethod("find").invoke(null);
+            boolean present = (boolean) opt.getClass().getMethod("isPresent").invoke(opt);
+            if (!present) {
+                org.bukkit.Bukkit.getLogger().warning("[YaPPlayerData] kit yap-item '" + itemId
+                        + "' skipped — YaPItems is not enabled");
+                return null;
+            }
+            Object service = opt.getClass().getMethod("get").invoke(opt);
+            Object created = service.getClass()
+                    .getMethod("create", String.class, int.class)
+                    .invoke(service, itemId, amount);
+            boolean ok = (boolean) created.getClass().getMethod("isPresent").invoke(created);
+            if (!ok) {
+                org.bukkit.Bukkit.getLogger().warning("[YaPPlayerData] kit yap-item '" + itemId
+                        + "' skipped — unknown item id");
+                return null;
+            }
+            return (ItemStack) created.getClass().getMethod("get").invoke(created);
+        } catch (ReflectiveOperationException e) {
+            org.bukkit.Bukkit.getLogger().warning("[YaPPlayerData] kit yap-item '" + itemId
+                    + "' skipped — " + e.getMessage());
+            return null;
+        }
     }
 
     private static void applyMeta(ItemStack stack, Map<String, Object> raw) {

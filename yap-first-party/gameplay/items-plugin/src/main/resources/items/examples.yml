@@ -1,0 +1,178 @@
+# Example custom items (CMD 12000–12999). Original YaP art in resourcepacks/yap-items/.
+# Abilities always get baked-in FX; params below tune the look. Set fx: false to mute.
+stormblade:
+  base: NETHERITE_SWORD
+  name: "&bStormblade"
+  lore:
+    - "&7Crackling edge forged in sky-fire"
+    - "&eRight-click: &flightning dash"
+  custom-model-data: 12001
+  unbreakable: true
+  glow: true
+  hide-flags: [ATTRIBUTES, ENCHANTS]
+  enchants:
+    sharpness: 5
+    unbreaking: 3
+  attributes:
+    attack_damage: 10
+    attack_speed: -2.4
+  gear:
+    attack: 8
+    strength: 2
+  ability:
+    trigger: RIGHT_CLICK
+    type: lightning_dash
+    cooldown: 8s
+    params:
+      range: 8
+      damage: 4
+      particle: ELECTRIC_SPARK
+      sound: ENTITY_LIGHTNING_BOLT_THUNDER
+      count: 40
+  recipe:
+    type: shaped
+    shape:
+      - " D "
+      - " D "
+      - " S "
+    ingredients:
+      D: DIAMOND
+      S: STICK
+  consume: false
+
+frostbane:
+  base: DIAMOND_SWORD
+  name: "&bFrostbane"
+  lore:
+    - "&7Icy pale blade"
+    - "&eRight-click: &fslow nearby foes"
+  custom-model-data: 12002
+  unbreakable: true
+  glow: true
+  enchants:
+    sharpness: 4
+  gear:
+    attack: 5
+    strength: 1
+  ability:
+    trigger: RIGHT_CLICK
+    type: area_effect
+    cooldown: 12s
+    params:
+      effect: SLOW
+      amplifier: 1
+      duration: 60
+      radius: 4
+      particle: SNOWFLAKE
+      sound: BLOCK_GLASS_BREAK
+      count: 48
+  consume: false
+
+emberpick:
+  base: NETHERITE_PICKAXE
+  name: "&6Emberpick"
+  lore:
+    - "&7Magma-veined mining tool"
+    - "&eRight-click: &fassist break"
+  custom-model-data: 12003
+  unbreakable: true
+  enchants:
+    efficiency: 5
+    fortune: 2
+  ability:
+    trigger: RIGHT_CLICK
+    type: break_block
+    cooldown: 3s
+    params:
+      message: "&6The emberpick bites deep."
+      particle: FLAME
+      sound: ITEM_FIRECHARGE_USE
+      count: 20
+  consume: false
+
+prism_charm:
+  base: AMETHYST_SHARD
+  name: "&dPrism Charm"
+  lore:
+    - "&7Floating crystal charm"
+    - "&eRight-click: &fheal"
+  custom-model-data: 12004
+  glow: true
+  ability:
+    trigger: RIGHT_CLICK
+    type: heal
+    cooldown: 15s
+    params:
+      amount: 6
+      particle: WITCH
+      sound: ENTITY_PLAYER_LEVELUP
+      count: 28
+  consume: false
+
+vault_key:
+  base: TRIPWIRE_HOOK
+  name: "&eVault Key"
+  lore:
+    - "&7Ornate gold key"
+    - "&8Kit / dungeon marker — no combat"
+  custom-model-data: 12005
+  glow: true
+  consume: false
+
+candy_cleaver:
+  base: GOLDEN_SWORD
+  name: "&cCandy Cleaver"
+  lore:
+    - "&7Bright striped novelty blade"
+    - "&eRight-click: &flaunch yourself"
+  custom-model-data: 12006
+  glow: true
+  enchants:
+    knockback: 2
+  ability:
+    trigger: RIGHT_CLICK
+    type: launch
+    cooldown: 6s
+    params:
+      power: 1.4
+      y: 0.6
+      particle: CLOUD
+      sound: ENTITY_FIREWORK_ROCKET_LAUNCH
+      count: 24
+  consume: false
+
+ward_totem:
+  base: TOTEM_OF_UNDYING
+  name: "&aWard Totem"
+  lore:
+    - "&7Small protective idol"
+    - "&eRight-click: &fresistance"
+  custom-model-data: 12007
+  ability:
+    trigger: RIGHT_CLICK
+    type: effect
+    cooldown: 20s
+    params:
+      effect: DAMAGE_RESISTANCE
+      amplifier: 0
+      duration: 100
+      particle: TOTEM_OF_UNDYING
+      sound: ITEM_TOTEM_USE
+      count: 36
+  consume: false
+
+stone_pedestal:
+  base: PAPER
+  name: "&fStone Pedestal"
+  lore:
+    - "&7Placeable prop"
+    - "&eSneak + right-click block to place"
+    - "&eLeft-click display to break"
+  custom-model-data: 12100
+  furniture:
+    enabled: true
+    scale: 1.0
+    solid: false
+    place-sound: BLOCK_STONE_PLACE
+    break-drops: true
+  consume: false

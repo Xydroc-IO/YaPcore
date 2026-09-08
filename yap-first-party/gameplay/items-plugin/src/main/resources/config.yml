@@ -1,0 +1,18 @@
+# YaPItems — Folia-safe custom items
+cmd-min: 12000
+cmd-max: 12999
+register-combat-service: true
+furniture:
+  max-per-chunk: 64
+  place-requires-sneak: true
+messages:
+  unknown-item: "&cUnknown item: &f{id}"
+  given: "&aGave &f{amount}x {id}&a to &f{player}"
+  taken: "&aRemoved &f{amount}x {id}&a from &f{player}"
+  cooldown: "&cAbility on cooldown (&f{seconds}s&c)"
+  no-permission: "&cYou cannot use this item."
+  placed-furniture: "&aPlaced &f{id}"
+  broke-furniture: "&aRemoved furniture &f{id}"
+  created: "&aCreated item &f{id}"
+  deleted: "&aDeleted item &f{id}"
+  reloaded: "&aYaPItems reloaded (&f{count}&a items)."

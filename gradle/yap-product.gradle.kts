@@ -113,6 +113,9 @@ tasks.register("installGameplayDefaults") {
     if (findProject(":stacker-plugin") != null) {
         dependsOn(":stacker-plugin:installIntoPlugins")
     }
+    if (findProject(":items-plugin") != null) {
+        dependsOn(":items-plugin:installIntoPlugins")
+    }
 }
 
 tasks.register("installAllProductDefaults") {
@@ -163,6 +166,8 @@ tasks.register("assemblePluginDist") {
         ":conquest-plugin:shadowJar",
         ":gameplay-knobs-plugin:jar",
         ":stacker-plugin:jar",
+        ":yap-items-api:jar",
+        ":items-plugin:jar",
         ":yap-mmo-api:jar",
         ":skills-plugin:shadowJar",
         ":yap-dungeons-api:jar",
@@ -270,6 +275,9 @@ tasks.register("assemblePluginDist") {
 
         copyNamed(jarOf(":gameplay-knobs-plugin"), gameplayDir)
         copyNamed(jarOf(":stacker-plugin"), gameplayDir)
+        if (findProject(":items-plugin") != null) {
+            copyNamed(jarOf(":items-plugin"), gameplayDir)
+        }
         if (findProject(":skills-plugin") != null) {
             copyNamed(jarOf(":skills-plugin", "shadowJar"), gameplayDir)
         }
@@ -292,6 +300,9 @@ tasks.register("assemblePluginDist") {
         }
         copyNamed(jarOf(":yap-playerdata-api"), apiDir)
         copyNamed(jarOf(":yap-protect-api"), apiDir)
+        if (findProject(":yap-items-api") != null) {
+            copyNamed(jarOf(":yap-items-api"), apiDir)
+        }
         copyNamed(jarOf(":yap-world-api"), apiDir)
         copyNamed(jarOf(":yap-regions-api"), apiDir)
         copyNamed(jarOf(":yap-npcs-api"), apiDir)
