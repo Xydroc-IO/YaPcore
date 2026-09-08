@@ -2,6 +2,7 @@ package com.yapcore.items.item;
 
 import org.bukkit.Material;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,7 +18,12 @@ public record ItemCreateRequest(
         List<AbilityWrite> abilities,
         boolean furniture,
         int gearAttack,
-        int gearStrength) {
+        int gearStrength,
+        Map<String, Integer> enchants) {
+
+    public ItemCreateRequest {
+        enchants = enchants == null ? Map.of() : Map.copyOf(new LinkedHashMap<>(enchants));
+    }
 
     /** One ability entry written under {@code abilities:}. */
     public record AbilityWrite(
@@ -51,6 +57,7 @@ public record ItemCreateRequest(
                     abilityParams == null ? Map.of() : abilityParams));
         }
         return new ItemCreateRequest(
-                id, base, name, lore, cmd, glow, unbreakable, abilities, furniture, gearAttack, gearStrength);
+                id, base, name, lore, cmd, glow, unbreakable, abilities, furniture, gearAttack, gearStrength,
+                Map.of());
     }
 }

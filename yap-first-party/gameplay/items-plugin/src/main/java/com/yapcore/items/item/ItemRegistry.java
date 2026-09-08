@@ -5,8 +5,6 @@ import com.yapcore.items.ability.AbilityDefinition;
 import com.yapcore.items.ability.AbilityType;
 import com.yapcore.mmo.GearBonus;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Registry;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
@@ -103,21 +101,23 @@ public final class ItemRegistry {
         }
         boolean unbreakable = ks.getBoolean("unbreakable", false);
         boolean glow = ks.getBoolean("glow", false);
-        List<ItemFlag> flags = new ArrayList<>();
-        for (String f : ks.getStringList("hide-flags")) {
-            try {
-                flags.add(ItemFlag.valueOf(f.trim().toUpperCase(Locale.ROOT).replace('-', '_')));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
         Map<Enchantment, Integer> enchants = new LinkedHashMap<>();
         ConfigurationSection enchSec = ks.getConfigurationSection("enchants");
         if (enchSec != null) {
             for (String ek : enchSec.getKeys(false)) {
-                Enchantment ench = enchantment(ek);
+                Enchantment ench = ItemFactory.resolveEnchantment(ek);
                 if (ench != null) {
                     enchants.put(ench, Math.max(1, enchSec.getInt(ek)));
+                } else {
+                    plugin.getLogger().warning("Item " + id + ": unknown enchant '" + ek + "'");
                 }
+            }
+        }
+        List<ItemFlag> flags = new ArrayList<>();
+        for (String f : ks.getStringList("hide-flags")) {
+            ItemFlag flag = parseItemFlag(f);
+            if (flag != null) {
+                flags.add(flag);
             }
         }
         Map<String, Double> attributes = new LinkedHashMap<>();
@@ -319,19 +319,25 @@ public final class ItemRegistry {
         }
     }
 
-    private static Enchantment enchantment(String name) {
-        String key = name.toLowerCase(Locale.ROOT).replace(' ', '_');
-        if (key.startsWith("minecraft:")) {
-            key = key.substring("minecraft:".length());
+    private static ItemFlag parseItemFlag(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
         }
+        String key = raw.trim().toUpperCase(Locale.ROOT).replace('-', '_');
         try {
-            Enchantment byKey = Registry.ENCHANTMENT.get(NamespacedKey.minecraft(key));
-            if (byKey != null) {
-                return byKey;
-            }
-        } catch (Exception ignored) {
+            return ItemFlag.valueOf(key);
+        } catch (IllegalArgumentException ignored) {
         }
-        return Enchantment.getByName(key.toUpperCase(Locale.ROOT));
+        // Allow short YAML forms: ENCHANTS → HIDE_ENCHANTS, ATTRIBUTES → HIDE_ATTRIBUTES
+        try {
+            return ItemFlag.valueOf("HIDE_" + key);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private static Enchantment enchantment(String name) {
+        return ItemFactory.resolveEnchantment(name);
     }
 
     public static void copyResourceIfMissing(JavaPlugin plugin, String path) throws IOException {

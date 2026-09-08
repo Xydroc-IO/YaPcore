@@ -1,10 +1,16 @@
 package com.yapcore.items.item;
 
 import com.yapcore.items.ItemsKeys;
+import io.papermc.paper.datacomponent.DataComponentTypes;
+import io.papermc.paper.datacomponent.item.ItemEnchantments;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
@@ -12,17 +18,20 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 /** Builds and recognizes tagged custom item stacks. */
 public final class ItemFactory {
 
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
+    private static volatile Map<String, Enchantment> enchantByKey;
 
     private final JavaPlugin plugin;
     private final ItemsKeys keys;
@@ -62,18 +71,50 @@ public final class ItemFactory {
             meta.setCustomModelData(def.customModelData());
         }
         meta.setUnbreakable(def.unbreakable());
-        if (def.glow()) {
-            meta.setEnchantmentGlintOverride(true);
-        }
+        boolean hideEnchants = false;
         for (ItemFlag flag : def.hideFlags()) {
             meta.addItemFlags(flag);
+            if (flag == ItemFlag.HIDE_ENCHANTS) {
+                hideEnchants = true;
+            }
         }
         meta.getPersistentDataContainer().set(keys.itemId(), PersistentDataType.STRING, def.id());
         meta.getPersistentDataContainer().set(keys.itemRev(), PersistentDataType.INTEGER, def.revision());
         applyAttributes(meta, def);
+
+        Map<Enchantment, Integer> enchants = new LinkedHashMap<>();
+        for (Map.Entry<Enchantment, Integer> e : def.enchants().entrySet()) {
+            if (e.getKey() != null && e.getValue() != null && e.getValue() > 0) {
+                enchants.put(e.getKey(), e.getValue());
+            }
+        }
+        // Glow with no enchants: seed a hidden enchant so the shine always renders on 26.2 clients.
+        if (def.glow() && enchants.isEmpty()) {
+            enchants.put(Enchantment.LUCK_OF_THE_SEA, 1);
+            if (!hideEnchants) {
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            }
+        }
+        for (Map.Entry<Enchantment, Integer> e : enchants.entrySet()) {
+            meta.addEnchant(e.getKey(), e.getValue(), true);
+        }
+        if (def.glow()) {
+            meta.setEnchantmentGlintOverride(Boolean.TRUE);
+        }
         stack.setItemMeta(meta);
-        for (Map.Entry<org.bukkit.enchantments.Enchantment, Integer> e : def.enchants().entrySet()) {
-            stack.addUnsafeEnchantment(e.getKey(), e.getValue());
+
+        // Authoritative 26.2 data-component write (survives meta/handle sync quirks).
+        if (!enchants.isEmpty()) {
+            ItemEnchantments.Builder builder = ItemEnchantments.itemEnchantments();
+            for (Map.Entry<Enchantment, Integer> e : enchants.entrySet()) {
+                builder.add(e.getKey(), e.getValue());
+            }
+            stack.setData(DataComponentTypes.ENCHANTMENTS, builder);
+        }
+        if (def.glow()) {
+            stack.setData(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE, Boolean.TRUE);
+        } else {
+            stack.unsetData(DataComponentTypes.ENCHANTMENT_GLINT_OVERRIDE);
         }
         return stack;
     }
@@ -88,7 +129,7 @@ public final class ItemFactory {
                 continue;
             }
             AttributeModifier mod = new AttributeModifier(
-                    new org.bukkit.NamespacedKey(plugin, "yap_" + def.id() + "_" + e.getKey()),
+                    new NamespacedKey(plugin, "yap_" + def.id() + "_" + e.getKey()),
                     e.getValue(),
                     AttributeModifier.Operation.ADD_NUMBER,
                     EquipmentSlotGroup.MAINHAND);
@@ -114,6 +155,69 @@ public final class ItemFactory {
                 }
             }
         };
+    }
+
+    /** Resolve enchantment id from YAML / CLI ({@code sharpness}, {@code minecraft:sharpness}). */
+    public static Enchantment resolveEnchantment(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        String key = name.toLowerCase(Locale.ROOT).replace(' ', '_');
+        if (key.startsWith("minecraft:")) {
+            key = key.substring("minecraft:".length());
+        }
+        Enchantment indexed = enchantIndex().get(key);
+        if (indexed != null) {
+            return indexed;
+        }
+        try {
+            Enchantment byAccess = RegistryAccess.registryAccess()
+                    .getRegistry(RegistryKey.ENCHANTMENT)
+                    .get(NamespacedKey.minecraft(key));
+            if (byAccess != null) {
+                return byAccess;
+            }
+        } catch (Exception ignored) {
+        }
+        try {
+            Enchantment byReg = Registry.ENCHANTMENT.get(NamespacedKey.minecraft(key));
+            if (byReg != null) {
+                return byReg;
+            }
+        } catch (Exception ignored) {
+        }
+        return Enchantment.getByName(key.toUpperCase(Locale.ROOT));
+    }
+
+    private static Map<String, Enchantment> enchantIndex() {
+        Map<String, Enchantment> cached = enchantByKey;
+        if (cached != null) {
+            return cached;
+        }
+        synchronized (ItemFactory.class) {
+            if (enchantByKey == null) {
+                enchantByKey = buildEnchantIndex();
+            }
+            return enchantByKey;
+        }
+    }
+
+    private static Map<String, Enchantment> buildEnchantIndex() {
+        Map<String, Enchantment> map = new LinkedHashMap<>();
+        for (Field field : Enchantment.class.getFields()) {
+            if (!Modifier.isStatic(field.getModifiers()) || field.getType() != Enchantment.class) {
+                continue;
+            }
+            try {
+                Object value = field.get(null);
+                if (value instanceof Enchantment ench) {
+                    map.put(ench.getKey().getKey(), ench);
+                    map.putIfAbsent(field.getName().toLowerCase(Locale.ROOT), ench);
+                }
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+        return Map.copyOf(map);
     }
 
     public Optional<String> idOf(ItemStack stack) {

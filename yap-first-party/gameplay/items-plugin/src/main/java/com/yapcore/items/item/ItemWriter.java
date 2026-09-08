@@ -39,6 +39,14 @@ public final class ItemWriter {
         if (req.unbreakable()) {
             yaml.set(base + ".unbreakable", true);
         }
+        if (req.enchants() != null && !req.enchants().isEmpty()) {
+            for (Map.Entry<String, Integer> e : req.enchants().entrySet()) {
+                if (e.getKey() == null || e.getKey().isBlank() || e.getValue() == null || e.getValue() < 1) {
+                    continue;
+                }
+                yaml.set(base + ".enchants." + e.getKey().toLowerCase(Locale.ROOT), e.getValue());
+            }
+        }
         if (req.abilities() != null && !req.abilities().isEmpty()) {
             java.util.List<java.util.Map<String, Object>> abilityMaps = new java.util.ArrayList<>();
             for (ItemCreateRequest.AbilityWrite ab : req.abilities()) {
