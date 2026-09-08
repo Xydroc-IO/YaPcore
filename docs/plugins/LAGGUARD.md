@@ -35,7 +35,7 @@ gradle installProductDefaults   # → plugins/yap-lagguard.jar
 | `escalation.window-ticks` | `200` | Escalation window |
 | `escalation.max-items-removed` | `32` | Cap on items removed per cull |
 | `stats-write-interval-ticks` | `100` | Writes `stats.json` for Prometheus/dashboard |
-| `log-trips` | `true` | Rate-limited trip logs |
+| `log-trips` | `false` | Rate-limited trip logs (off by default — budgets still enforce) |
 | `world-multipliers` | `{}` | Per-world budget multipliers (e.g. `creative: 2.0`) |
 | `alert.trips-per-minute` | `0` | Log (+ optional webhook) when trips/min exceed threshold; `0` disables |
 | `alert.webhook-url` | `""` | Discord-compatible webhook URL |

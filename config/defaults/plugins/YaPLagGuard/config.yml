@@ -27,5 +27,5 @@ redstone-window-ticks: 20
 # Write plugins/YaPLagGuard/stats.json for dashboard / Prometheus
 stats-write-interval-ticks: 100
 
-# Log when a budget trips (rate-limited internally)
-log-trips: true
+# Log when a budget trips (rate-limited). Off by default — trips still enforce; avoid console flood.
+log-trips: false
