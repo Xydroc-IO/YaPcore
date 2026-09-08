@@ -4,7 +4,6 @@ import com.yapcore.admin.AdminPlugin;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.sched.YapSched;
 import com.yapcore.messages.YapMessages;
-import com.yapcore.items.api.ItemServices;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -15,7 +14,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.Vector;
 
 import java.util.Locale;
 import java.util.Optional;
@@ -25,9 +23,13 @@ import java.util.concurrent.TimeUnit;
 public final class AdminActions {
 
     private final AdminPlugin plugin;
+    private final AdminTrollActions trolls;
+    private final AdminItemActions items;
 
     public AdminActions(AdminPlugin plugin) {
         this.plugin = plugin;
+        this.trolls = new AdminTrollActions(plugin);
+        this.items = new AdminItemActions(this);
     }
 
     public boolean pluginEnabled(String name) {
@@ -138,18 +140,29 @@ public final class AdminActions {
         YapSched.entity(plugin, host, () -> {
             Location loc = host.getLocation();
             int spawned = 0;
+            String lastFail = null;
             for (int i = 0; i < qty; i++) {
                 try {
-                    var entity = host.getWorld().spawnEntity(loc, type);
-                    if (entity != null) {
+                    var entity = host.getWorld().spawnEntity(loc, type,
+                            org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.COMMAND);
+                    if (entity != null && entity.isValid() && !entity.isDead()) {
                         spawned++;
+                    } else {
+                        lastFail = "spawn cancelled (check YaPGameplayKnobs mob enabled flags / LagGuard)";
+                        break;
                     }
                 } catch (Exception e) {
-                    plugin.getLogger().warning("spawnmob " + type + ": " + e.getMessage());
+                    lastFail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                    plugin.getLogger().warning("spawnmob " + type + ": " + lastFail);
                     break;
                 }
             }
             int n = spawned;
+            if (n <= 0) {
+                admin.sendMessage("§cSpawn failed for §f" + type.name().toLowerCase(Locale.ROOT)
+                        + (lastFail != null ? "§c: " + lastFail : "§c."));
+                return;
+            }
             admin.sendMessage("§aSpawned §f" + n + "× " + type.name().toLowerCase(Locale.ROOT)
                     + " §aat §f" + host.getName() + "§a.");
             if (!host.equals(admin)) {
@@ -316,128 +329,47 @@ public final class AdminActions {
     }
 
     public boolean requireTroll(Player admin) {
-        if (!admin.hasPermission("yapadmin.troll") && !admin.isOp()) {
-            YapMessages.noPermission(admin, "yapadmin.troll");
-            return false;
-        }
-        return true;
+        return trolls.requireTroll(admin);
     }
 
-    /** Strike lightning at the target (does not set them on fire beyond the bolt). */
     public void trollSmite(Player admin, Player target) {
-        if (!requireTroll(admin)) {
-            return;
-        }
-        YapSched.entity(plugin, target, () ->
-                target.getWorld().strikeLightning(target.getLocation()));
-        admin.sendMessage("§eSmote §f" + target.getName() + "§e.");
+        trolls.trollSmite(admin, target);
     }
 
     public void trollLaunch(Player admin, Player target) {
-        if (!requireTroll(admin)) {
-            return;
-        }
-        YapSched.entity(plugin, target, () ->
-                target.setVelocity(new Vector(0, 2.8, 0)));
-        admin.sendMessage("§eLaunched §f" + target.getName() + "§e.");
+        trolls.trollLaunch(admin, target);
     }
 
     public void trollBurn(Player admin, Player target) {
-        if (!requireTroll(admin)) {
-            return;
-        }
-        YapSched.entity(plugin, target, () -> target.setFireTicks(20 * 8));
-        admin.sendMessage("§eSet §f" + target.getName() + " §eon fire.");
+        trolls.trollBurn(admin, target);
     }
 
     public void trollRocket(Player admin, Player target) {
-        if (!requireTroll(admin)) {
-            return;
-        }
-        YapSched.entity(plugin, target, () -> {
-            target.setVelocity(new Vector(0, 3.5, 0));
-            target.getWorld().strikeLightningEffect(target.getLocation());
-        });
-        admin.sendMessage("§eRocketed §f" + target.getName() + "§e.");
+        trolls.trollRocket(admin, target);
     }
 
     public void trollSquash(Player admin, Player target) {
-        if (!requireTroll(admin)) {
-            return;
-        }
-        YapSched.entity(plugin, target, () -> {
-            Location up = target.getLocation().clone().add(0, 25, 0);
-            target.teleport(up);
-            target.setVelocity(new Vector(0, -3.5, 0));
-        });
-        admin.sendMessage("§eSquashed §f" + target.getName() + "§e.");
+        trolls.trollSquash(admin, target);
     }
 
     public void trollBlind(Player admin, Player target) {
-        if (!requireTroll(admin)) {
-            return;
-        }
-        YapSched.entity(plugin, target, () ->
-                target.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 20 * 12, 0)));
-        admin.sendMessage("§eBlinded §f" + target.getName() + "§e.");
+        trolls.trollBlind(admin, target);
     }
 
     public void trollConfuse(Player admin, Player target) {
-        if (!requireTroll(admin)) {
-            return;
-        }
-        YapSched.entity(plugin, target, () ->
-                target.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 20 * 15, 1)));
-        admin.sendMessage("§eConfused §f" + target.getName() + "§e.");
+        trolls.trollConfuse(admin, target);
     }
 
     public void trollSlap(Player admin, Player target) {
-        if (!requireTroll(admin)) {
-            return;
-        }
-        YapSched.entity(plugin, target, () -> {
-            Vector away = target.getLocation().toVector().subtract(admin.getLocation().toVector());
-            if (away.lengthSquared() < 0.01) {
-                away = new Vector(1, 0, 0);
-            }
-            away = away.normalize().multiply(1.8).setY(0.6);
-            target.setVelocity(away);
-            target.damage(0.1);
-        });
-        admin.sendMessage("§eSlapped §f" + target.getName() + "§e.");
+        trolls.trollSlap(admin, target);
     }
 
     public void trollDropHand(Player admin, Player target) {
-        if (!requireTroll(admin)) {
-            return;
-        }
-        YapSched.entity(plugin, target, () -> {
-            ItemStack hand = target.getInventory().getItemInMainHand();
-            if (hand == null || hand.getType().isAir()) {
-                admin.sendMessage("§c" + target.getName() + " holds nothing.");
-                return;
-            }
-            ItemStack drop = hand.clone();
-            target.getInventory().setItemInMainHand(null);
-            target.getWorld().dropItemNaturally(target.getLocation(), drop);
-            admin.sendMessage("§eDropped §f" + target.getName() + "§e's held item.");
-        });
+        trolls.trollDropHand(admin, target);
     }
 
     public void runTroll(Player admin, Player target, String type) {
-        switch (type.toLowerCase(Locale.ROOT)) {
-            case "smite", "lightning", "strike" -> trollSmite(admin, target);
-            case "launch", "yeet" -> trollLaunch(admin, target);
-            case "burn", "fire" -> trollBurn(admin, target);
-            case "rocket" -> trollRocket(admin, target);
-            case "squash", "slam" -> trollSquash(admin, target);
-            case "blind" -> trollBlind(admin, target);
-            case "confuse", "nausea", "dizzy" -> trollConfuse(admin, target);
-            case "slap" -> trollSlap(admin, target);
-            case "drop", "drophand" -> trollDropHand(admin, target);
-            default -> admin.sendMessage("§cUnknown troll: " + type
-                    + " §7(smite, launch, burn, rocket, squash, blind, confuse, slap, drop)");
-        }
+        trolls.runTroll(admin, target, type);
     }
 
     public void clearInventory(Player admin, Player target) {
@@ -469,47 +401,12 @@ public final class AdminActions {
         YapSched.entityLater(plugin, admin, () -> Bukkit.dispatchCommand(admin, command), 1L);
     }
 
-    /** Persist ability cooldown via YaPItems API (preferred over dispatching /yapitems). */
     public boolean setItemAbilityCooldown(Player admin, String itemId, String duration) {
-        if (!pluginEnabled("YaPItems")) {
-            admin.sendMessage("§cYaPItems is not installed.");
-            return false;
-        }
-        if (!admin.hasPermission("yapitems.admin") && !admin.hasPermission("yapitems.create") && !admin.isOp()) {
-            YapMessages.noPermission(admin, "yapitems.admin");
-            return false;
-        }
-        String id = itemId == null ? "" : itemId.trim().toLowerCase(Locale.ROOT);
-        String cd = duration == null ? "" : duration.trim().toLowerCase(Locale.ROOT);
-        var serviceOpt = ItemServices.find();
-        if (serviceOpt.isEmpty()) {
-            admin.sendMessage("§cYaPItems service is not ready.");
-            return false;
-        }
-        var service = serviceOpt.get();
-        try {
-            if (!service.setAbilityCooldown(id, cd)) {
-                admin.sendMessage("§cCould not set cooldown for §f" + id + "§c.");
-                return false;
-            }
-            String shown = service.abilityCooldown(id).orElse(cd);
-            admin.sendMessage("§aSet §f" + id + "§a ability cooldown to §f" + shown + "§a.");
-            return true;
-        } catch (AbstractMethodError | NoSuchMethodError e) {
-            // Older YaPItems jar without the new API methods.
-            closeAndRun(admin, "yapitems cooldown " + id + " " + cd);
-            return true;
-        }
+        return items.setItemAbilityCooldown(admin, itemId, duration);
     }
 
     public static String itemAbilityCooldownLabel(String itemId) {
-        try {
-            return ItemServices.find()
-                    .flatMap(s -> s.abilityCooldown(itemId))
-                    .orElse("none");
-        } catch (AbstractMethodError | NoSuchMethodError e) {
-            return "—";
-        }
+        return AdminItemActions.itemAbilityCooldownLabel(itemId);
     }
 
     public static String pretty(Material material) {

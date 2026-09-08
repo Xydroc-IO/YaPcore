@@ -6,6 +6,7 @@ import com.yapcore.admin.cmd.YapPluginsCommand;
 import com.yapcore.admin.gui.AdminMenuListener;
 import com.yapcore.admin.gui.AdminMenus;
 import com.yapcore.admin.session.AdminSession;
+import com.yapcore.admin.staff.StaffChannel;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Map;
@@ -17,6 +18,7 @@ public final class AdminPlugin extends JavaPlugin {
     private AdminConfig config;
     private AdminMenus menus;
     private AdminActions actions;
+    private StaffChannel staffChannel;
     private final Map<UUID, AdminSession> sessions = new ConcurrentHashMap<>();
 
     @Override
@@ -39,11 +41,17 @@ public final class AdminPlugin extends JavaPlugin {
             yapplugins.setExecutor(pluginsCmd);
             yapplugins.setTabCompleter(pluginsCmd);
         }
-        getLogger().info("YaPAdmin ready (/yapadmin, /yapplugins).");
+        staffChannel = new StaffChannel(this);
+        staffChannel.register();
+        getLogger().info("YaPAdmin ready (/yapadmin, /yapplugins, channel " + StaffChannel.CHANNEL + ").");
     }
 
     @Override
     public void onDisable() {
+        if (staffChannel != null) {
+            staffChannel.unregister();
+            staffChannel = null;
+        }
         sessions.clear();
     }
 
