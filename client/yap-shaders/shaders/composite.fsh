@@ -26,19 +26,20 @@ void main() {
 #endif
 
     float opaqueDepth = texture2D(depthtex1, uv).r;
-    // Only the water gbuffer flag — never guess from color (that painted waves onto grass/sky tint).
+    // mat.r: 0 = none · ~0.25 = waterfall (handled in gbuffer) · >0.5 = lake surface SSR
     bool water = mat.r > 0.5;
+    float surfaceW = smoothstep(0.50, 0.92, mat.r);
 
     // Surface treatment ABOVE-water only (underwater slab guard kept).
-    // Restored: world-space wave normals + full SSR (the “real water” look).
+    // Only flat / gentle water — steep falls must not get lake wave normals + SSR.
     if (depth < 1.0 && water && isEyeInWater == 0) {
         vec3 viewP = screenToView(vec3(uv, depth));
         vec3 wpos = (gbufferModelViewInverse * vec4(viewP, 1.0)).xyz + cameraPosition;
         vec3 Nworld = yapWaterNormal(wpos.xz, frameTimeCounter, vec3(0.0, 1.0, 0.0));
         vec3 N = normalize(mat3(gbufferModelView) * Nworld);
         vec3 Ng = decodeNormal(nrm.rgb);
-        // Prefer continuous wave field over block-face normals
-        N = normalize(mix(Ng, N, 0.92));
+        // Prefer continuous wave field on open water; keep face normals more for streams
+        N = normalize(mix(Ng, N, mix(0.45, 0.92, surfaceW)));
 
         vec3 V = normalize(-viewP);
         vec3 L = normalize(sunPosition);
@@ -55,7 +56,7 @@ void main() {
 
         vec3 refractCol = color;
 #ifdef REFRACTION
-        vec2 distort = N.xy * (0.070 + 0.045 * WAVE_STRENGTH);
+        vec2 distort = N.xy * ((0.070 + 0.045 * WAVE_STRENGTH) * surfaceW);
         distort.x *= aspectRatio;
         vec2 refrUV = clamp(uv + distort, vec2(0.002), vec2(0.998));
         refractCol = texture2D(colortex0, refrUV).rgb;
@@ -69,17 +70,21 @@ void main() {
         float cosNV = max(dot(N, V), 0.0);
         float F = yapFresnelSchlick(cosNV, 0.028);
         F = clamp(F + 0.08 * (1.0 - cosNV) + 0.05 * rainStrength, 0.10, 0.93);
+        F *= surfaceW;
 
         vec3 skyFallback = yapSkyReflectionFallback(reflect(-V, N), sunPosition, skyColor, fogColor);
-        vec4 ssr = yapSSR(viewP, N, colortex0, depthtex0);
-        vec3 refl = mix(skyFallback, ssr.rgb, clamp(ssr.a, 0.0, 1.0) * 0.96);
+        vec4 ssr = vec4(skyFallback, 0.0);
+#ifdef SSR
+        ssr = yapSSR(viewP, N, colortex0, depthtex0);
+#endif
+        vec3 refl = mix(skyFallback, ssr.rgb, clamp(ssr.a, 0.0, 1.0) * 0.96 * surfaceW);
 
         color = mix(refractCol, refl, F);
-        color += yapWaterSpecular(N, V, L);
+        color += yapWaterSpecular(N, V, L) * surfaceW;
 
         // Soft shore foam only — no beach wash / run-up
         float foam = 1.0 - smoothstep(0.02, 0.10, thick);
-        foam *= 0.22;
+        foam *= 0.22 * surfaceW;
         color = mix(color, vec3(0.78, 0.88, 0.92), foam * 0.18 * clamp(WAVE_STRENGTH, 0.4, 1.2));
 
         color = applyFog(color, length(viewP) * 0.45, fogColor);

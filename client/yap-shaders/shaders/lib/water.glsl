@@ -118,4 +118,35 @@ vec3 yapWaterAbsorb(vec3 light, float thickness) {
     return light * exp(-coeff * t);
 }
 
+// Vertical / steep water (falls & banks). Normals flow downward on the face —
+// do NOT use the horizontal lake Gerstner field (that turns falls into mirrors).
+vec3 yapWaterfallNormal(vec3 wp, float t, vec3 baseN) {
+    vec3 n0 = normalize(baseN);
+    // Tangent pointing roughly "down the face" in world space
+    vec3 down = vec3(0.0, -1.0, 0.0);
+    vec3 bitan = cross(n0, down);
+    if (dot(bitan, bitan) < 1e-4) {
+        bitan = cross(n0, vec3(1.0, 0.0, 0.0));
+    }
+    bitan = normalize(bitan);
+    vec3 tanD = normalize(cross(bitan, n0)); // down-ish along face
+
+    float u = dot(wp, bitan);
+    float v = dot(wp, tanD) - t * 2.4;
+    float ripple =
+          0.55 * sin(v * 3.1 + u * 0.7)
+        + 0.30 * sin(v * 7.2 - u * 1.4 + 1.7)
+        + 0.15 * sin(v * 13.0 + u * 2.2);
+    ripple *= 0.22 * clamp(WAVE_STRENGTH, 0.4, 1.6);
+
+    vec3 n = normalize(n0 + bitan * ripple * 0.55 + tanD * ripple);
+    return n;
+}
+
+vec3 yapWaterfallAlbedo(float rain) {
+    vec3 clearCol = vec3(0.10, 0.32, 0.38);
+    vec3 stormCol = vec3(0.06, 0.12, 0.16);
+    return mix(clearCol, stormCol, rain * 0.65);
+}
+
 #endif

@@ -5,13 +5,14 @@ foliage wind**, and **skies**.
 
 | Effect | Notes |
 |--------|--------|
-| Multi-direction Gerstner swell | Mesh heave + procedural normals (no shore run-up) |
+| Multi-direction Gerstner swell | Mesh heave + procedural normals (water only — glass/ice stay solid) |
 | Screen-space reflections (SSR) | Composite raymarch; sky fallback |
 | Refraction | Distorts terrain under the surface + absorption tint |
 | Fresnel / specular | Schlick + soft sun/moon sheen |
 | Shore foam | Thin water-column detection only (no land wash paint) |
+| Waterfalls | Separate cascade path (no lake SSR on vertical faces) |
 | Caustics | Solid beds / underwater (not cutout grass) |
-| **Foliage wind** | Shared wind direction; speed from rain/thunder (clear ≈ still); species stiffness (birch soft, spruce stiff); height bend trunk+canopy |
+| **Foliage wind** | Leaves / grass / vines only (log builds stay still); rain/thunder speed; species stiffness |
 | Atmosphere skies | Dawn/dusk without muddy vanilla fogColor |
 | Distance fog | Soft sky-tinted haze (not a white mid-range wall) |
 | Volumetric clouds | Raymarched cloud slab (toggle; profiles set step count) |

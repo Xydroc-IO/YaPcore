@@ -2,7 +2,6 @@
 
 #include "/lib/common.glsl"
 #include "/lib/varyings.glsl"
-#include "/lib/caustics.glsl"
 
 void main() {
     vec4 albedo = texture2D(texture, texcoord.st) * glcolor;
@@ -10,10 +9,9 @@ void main() {
     vec3 light = texture2D(lightmap, lmcoord.st).rgb;
     albedo.rgb *= light;
 
-    // Shore caustics on SOLID terrain only (sand/stone/dirt). Cutout grass/leaves
-    // stay dry — that was the “waves on land” bug.
+    // No terrain caustics — yapApplyCaustics on all solid blocks looked like water
+    // shimmer across dry land. Real water caustics stay in composite.fsh (water mat + underwater).
     vec3 N = normalize(normal);
-    albedo.rgb = yapApplyCaustics(albedo.rgb, worldPos, N, sunPosition, 0.22 * (1.0 - rainStrength));
 
     float dist = length(viewPos);
     albedo.rgb = applyFog(albedo.rgb, dist, fogColor);
