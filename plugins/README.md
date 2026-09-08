@@ -17,7 +17,7 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | Tier | Gradle | What’s installed |
 |------|--------|------------------|
 | **CORE + NETWORK** | `gradle installProductDefaults` | Network + ops jars below |
-| **GAMEPLAY** | `gradle installGameplayDefaults` | Skills, dungeons, stacker, knobs, disasters |
+| **GAMEPLAY** | `gradle installGameplayDefaults` | Skills, dungeons, stacker, items, knobs, disasters |
 | **Full release box** | `gradle assembleRelease` | CORE + NETWORK + GAMEPLAY |
 | **Slim box** | `gradle assembleRelease -PyapGameplay=false` | CORE + NETWORK only |
 | **Fine-tune modules** | `gradle installFineTuneModules` | All packaging jars → `modules/` |
@@ -62,6 +62,7 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-skills.jar` | Thin skills — mining / woodcutting / strength (`/skills`) — [SKILLS.md](../docs/plugins/SKILLS.md) |
 | `yap-dungeons.jar` | Instanced procedural dungeons L1–50 + prestige 51–100 — [DUNGEONS.md](../docs/plugins/DUNGEONS.md) |
 | `yap-stacker.jar` | PDC mob/item/spawner stacker (`/yapstacker`) |
+| `yap-items.jar` | Custom items — abilities, furniture, recipes (`/yapitems`) — [YAPITEMS.md](../docs/plugins/YAPITEMS.md) |
 | `yap-disasters.jar` | Extreme weather + disasters (`/yapdisaster`) |
 | `yap-gameplay-knobs.jar` | Purpur-inspired encyclopedia (event-wired; crop/fluid NMS opt-in via YaP-Folia 0025) |
 

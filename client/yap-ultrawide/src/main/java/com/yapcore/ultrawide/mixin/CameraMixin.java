@@ -13,6 +13,10 @@ public abstract class CameraMixin {
         return YapUltrawide.apply(original);
     }
 
+    /**
+     * Hands use {@code calculateHudFov}. Leave vanilla unless {@code affectHudFov}
+     * is opted in — Hor+ here zooms the arm and can hide held items on ultrawide.
+     */
     @ModifyReturnValue(method = "calculateHudFov(F)F", at = @At("RETURN"))
     private float yap$horPlusHud(float original) {
         if (!YapUltrawide.config().affectHudFov) {

@@ -88,8 +88,22 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
                  "expand", "contract", "shift", "outset", "inset", "chunk", "size", "distr",
                  "cyl", "hcyl", "sphere", "hsphere", "pyramid", "line", "drain", "smooth",
                  "overlay", "naturalize", "replacenear", "thru", "jumpto", "up", "ascend",
-                 "descend" -> weOp(sender, args);
-            case "schem", "schematic" -> schematics.schem(sender, args);
+                 "descend", "sel", "deselection", "selection", "mask", "gmask", "fast",
+                 "regen", "forest", "flora", "pumpkins", "setbiome", "biomeinfo", "biomelist",
+                 "deform", "twist", "center", "curve", "fixlighting", "fixlight", "relight",
+                 "generate", "limit", "count", "farwand", "clearhistory",
+                 "clipboard", "clearclipboard", "superpickaxe", "info", "tree", "none",
+                 "removeabove", "removebelow", "extinguish", "green", "snow", "thaw",
+                 "sizebrush", "brushsize", "mat" -> weOp(sender, args);
+            case "schem", "schematic" -> {
+                if (args.length >= 2) {
+                    String sub = args[1].toLowerCase(Locale.ROOT);
+                    if ("browse".equals(sub) || "gui".equals(sub) || "menu".equals(sub)) {
+                        yield openSchemGui(sender);
+                    }
+                }
+                yield schematics.schem(sender, args);
+            }
             case "brush" -> brush(sender, args);
             case "undo" -> undo(sender);
             case "redo" -> redo(sender);
@@ -145,6 +159,15 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         plugin.openInGameGui(player);
+        return true;
+    }
+
+    private boolean openSchemGui(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            YapMessages.playersOnly(sender);
+            return true;
+        }
+        plugin.openSchematicsGui(player);
         return true;
     }
 
@@ -204,13 +227,18 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
         }
         if (args.length < 2) {
             sender.sendMessage("§e/yapworld brush <radius> [material]");
+            sender.sendMessage("§e/yapworld brush sphere|cyl|smooth|… <radius> [pattern]");
             return true;
         }
+        // FAWE-style: /yapworld brush sphere 5 stone  →  same as //brush
         int radius;
         try {
             radius = Integer.parseInt(args[1]);
         } catch (NumberFormatException e) {
-            sender.sendMessage("§cInvalid radius.");
+            String[] rest = java.util.Arrays.copyOfRange(args, 1, args.length);
+            if (!editOps.dispatch(player, "brush", rest)) {
+                sender.sendMessage("§cUnknown brush. Try sphere|cyl|smooth|gravity|…");
+            }
             return true;
         }
         if (radius > config.maxBrushRadius()) {
@@ -311,7 +339,8 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
             return filter(worlds.loadedWorlds().stream().toList(), args[1]);
         }
         if (args.length == 2 && "schem".equalsIgnoreCase(args[0])) {
-            return filter(List.of("save", "paste", "import", "list", "load", "delete", "formats"), args[1]);
+            return filter(List.of("save", "paste", "import", "list", "load", "delete", "formats",
+                    "browse", "gui", "menu"), args[1]);
         }
         if (args.length == 2 && "pregen".equalsIgnoreCase(args[0])) {
             return filter(List.of("start", "status", "pause", "resume", "cancel"), args[1]);

@@ -23,8 +23,9 @@ cd client/yap-ultrawide && ./gradlew build
 
 ```json
 {
+  "configVersion": 2,
   "enabled": true,
-  "affectHudFov": true,
+  "affectHudFov": false,
   "ultrawide_21_9": {
     "mode": "match_16_9",
     "targetHorizontalFov": 105.0,
@@ -45,6 +46,12 @@ cd client/yap-ultrawide && ./gradlew build
 | `ultrawide_21_9` | 2560×1080, 3440×1440, 3840×1600 (aspect ≈1.90–2.80) |
 | `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (aspect ≥2.80) |
 
+### Global keys
+
+| Key | Meaning |
+|-----|---------|
+| `affectHudFov` | Hor+ on first-person hands / HUD. **Keep `false`** so held items stay on screen; `true` matches world FOV and can zoom weapons out of view |
+
 ### Per-band keys
 
 | Key | Meaning |
@@ -58,4 +65,4 @@ cd client/yap-ultrawide && ./gradlew build
 
 Use `superwide_32_9` only (your panel is detected as that band). If edges still
 fish-eye: lower `maxHorizontalFov` to `95`, or `"mode": "fixed_hfov"` with
-`"targetHorizontalFov": 95`.
+`"targetHorizontalFov": 95`. If hands/weapons vanish, ensure `affectHudFov` is `false`.

@@ -160,24 +160,41 @@ final class EssentialsPlayerCommands {
             return true;
         }
         if (args.length < 1) {
-            sender.sendMessage("§e/speed <0-10> [fly|walk]");
+            sender.sendMessage("§e/speed <0-10> [fly|walk]  §7or  §e/speed <fly|walk> <0-10>");
             return true;
         }
-        float speed;
-        try {
-            speed = Float.parseFloat(args[0]) / 10f;
-        } catch (NumberFormatException e) {
-            sender.sendMessage("§cInvalid speed.");
+        // Accept both "/speed 5 fly" and "/speed fly 5" (menus historically used the latter).
+        String mode = "walk";
+        Float level = null;
+        for (String arg : args) {
+            if (arg.equalsIgnoreCase("fly") || arg.equalsIgnoreCase("walk")) {
+                mode = arg.toLowerCase(java.util.Locale.ROOT);
+                continue;
+            }
+            try {
+                level = Float.parseFloat(arg);
+            } catch (NumberFormatException ignored) {
+                sender.sendMessage("§cInvalid speed. Use 0–10, optionally fly|walk.");
+                return true;
+            }
+        }
+        if (level == null) {
+            sender.sendMessage("§cMissing speed value (0–10).");
             return true;
         }
+        if (level < 0f || level > 10f) {
+            sender.sendMessage("§cSpeed must be between 0 and 10.");
+            return true;
+        }
+        float speed = EssentialsCommandSupport.clamp(level / 10f);
         Player player = (Player) sender;
-        boolean fly = args.length >= 2 && args[1].equalsIgnoreCase("fly");
-        if (fly) {
-            player.setFlySpeed(EssentialsCommandSupport.clamp(speed));
+        if ("fly".equals(mode)) {
+            player.setFlySpeed(speed);
+            YapMessages.send(player, "&aFly speed set to &f{level}&a/10.", "level", String.valueOf(level.intValue()));
         } else {
-            player.setWalkSpeed(EssentialsCommandSupport.clamp(speed));
+            player.setWalkSpeed(speed);
+            YapMessages.send(player, "&aWalk speed set to &f{level}&a/10.", "level", String.valueOf(level.intValue()));
         }
-        player.sendMessage("§aSpeed updated.");
         return true;
     }
 

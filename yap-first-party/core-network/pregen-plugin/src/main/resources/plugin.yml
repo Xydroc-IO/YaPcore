@@ -9,7 +9,7 @@ softdepend: [YaPWorld, WorldEdit]
 commands:
   yappregen:
     description: Pre-generate world chunks
-    usage: /yappregen <start|pause|resume|cancel|status|reload>
+    usage: /yappregen [start|pause|resume|cancel|status|reload]
     aliases: [pregen, yapchunky]
     permission: yappregen.admin
 permissions:

@@ -50,7 +50,12 @@ final class WorldCommandsSchematics {
             return true;
         }
         if (args.length < 2) {
-            sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats <name>");
+            sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats|browse <name>");
+            return true;
+        }
+        if ("browse".equalsIgnoreCase(args[1]) || "gui".equalsIgnoreCase(args[1])
+                || "menu".equalsIgnoreCase(args[1])) {
+            plugin.openSchematicsGui(player);
             return true;
         }
         if ("save".equalsIgnoreCase(args[1])) {
@@ -82,7 +87,7 @@ final class WorldCommandsSchematics {
         if ("formats".equalsIgnoreCase(args[1])) {
             return editOps.dispatch(player, "schem", new String[]{"formats"});
         }
-        sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats <name>");
+        sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats|browse <name>");
         return true;
     }
 

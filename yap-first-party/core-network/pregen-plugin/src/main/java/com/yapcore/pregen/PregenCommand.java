@@ -39,7 +39,8 @@ public final class PregenCommand implements CommandExecutor, TabCompleter {
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("Usage: /yappregen <start|pause|resume|cancel|status|reload>");
+            // Canonical bare invoke → status (deep links / menus)
+            sender.sendMessage(service.status("all"));
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);

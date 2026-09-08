@@ -280,6 +280,20 @@ public final class WorldPlugin extends JavaPlugin {
         worldEditGui.openMain(player);
     }
 
+    /** Chest GUI listing saved schematics (paste on click). */
+    public void openSchematicsGui(Player player) {
+        if (!player.hasPermission("yapworld.schematic") && !player.hasPermission("yapworld.selection")
+                && !player.hasPermission("yapworld.admin")) {
+            YapMessages.noPermission(player, "yapworld.schematic");
+            return;
+        }
+        if (!config.schematicsEnabled()) {
+            player.sendMessage("§cSchematics disabled.");
+            return;
+        }
+        worldEditGui.openSchematics(player);
+    }
+
     public void openBrowserEditor(Player player) {
         if (!canUseEditor(player)) {
             YapMessages.noPermission(player);

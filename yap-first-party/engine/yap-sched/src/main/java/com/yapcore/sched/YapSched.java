@@ -123,6 +123,42 @@ public final class YapSched {
         }
     }
 
+    /**
+     * Fixed-rate task on the entity's scheduler (Folia-safe).
+     * The callback receives the {@link YapTask} so it can cancel itself.
+     */
+    public static YapTask entityTimer(Plugin plugin, Entity entity,
+                                      java.util.function.Consumer<YapTask> task,
+                                      long delayTicks, long periodTicks) {
+        Objects.requireNonNull(plugin, "plugin");
+        Objects.requireNonNull(entity, "entity");
+        Objects.requireNonNull(task, "task");
+        long delay = Math.max(1L, delayTicks);
+        long period = Math.max(1L, periodTicks);
+        java.util.concurrent.atomic.AtomicReference<YapTask> ref =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        try {
+            ScheduledTask scheduled = entity.getScheduler().runAtFixedRate(plugin, st -> {
+                YapTask self = ref.get();
+                if (self != null) {
+                    task.accept(self);
+                }
+            }, null, delay, period);
+            YapTask wrapped = wrap(scheduled);
+            ref.set(wrapped);
+            return wrapped;
+        } catch (Throwable t) {
+            YapTask wrapped = globalTimer(plugin, () -> {
+                YapTask self = ref.get();
+                if (self != null) {
+                    task.accept(self);
+                }
+            }, delay, period);
+            ref.set(wrapped);
+            return wrapped;
+        }
+    }
+
     /** Run at a world block location's region. */
     public static void region(Plugin plugin, Location loc, Runnable task) {
         Objects.requireNonNull(plugin, "plugin");

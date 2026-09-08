@@ -71,15 +71,15 @@ final class EssentialsInventoryCommands {
             YapMessages.noPermission(sender);
             return true;
         }
-        if (args.length < 1) {
-            sender.sendMessage("§e/echest <player>");
-            return true;
-        }
         Player viewer = (Player) sender;
-        Player target = Bukkit.getPlayer(args[0]);
-        if (target == null) {
-            viewer.sendMessage("§cPlayer not online.");
-            return true;
+        // Canonical: /echest [player] — omit player to open your own (menus send bare /echest).
+        Player target = viewer;
+        if (args.length >= 1) {
+            target = Bukkit.getPlayer(args[0]);
+            if (target == null) {
+                viewer.sendMessage("§cPlayer not online.");
+                return true;
+            }
         }
         viewer.openInventory(target.getEnderChest());
         return true;

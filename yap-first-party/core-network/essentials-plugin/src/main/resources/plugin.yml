@@ -103,8 +103,8 @@ commands:
     usage: /invsee <player>
     permission: yapessentials.invsee
   echest:
-    description: Open another player's ender chest
-    usage: /echest <player>
+    description: Open your ender chest, or another player's
+    usage: /echest [player]
     aliases: [enderchest, ec]
     permission: yapessentials.echest
   nick:

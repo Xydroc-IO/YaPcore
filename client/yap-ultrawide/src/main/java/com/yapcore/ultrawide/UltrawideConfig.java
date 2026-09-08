@@ -19,10 +19,17 @@ import java.nio.file.Path;
  */
 public final class UltrawideConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    /** Bumped when defaults change in a way that should rewrite existing configs. */
+    private static final int CURRENT_VERSION = 2;
 
+    public int configVersion = 0;
     public boolean enabled = true;
-    /** Apply to first-person hand / HUD FOV as well as world FOV. */
-    public boolean affectHudFov = true;
+    /**
+     * Apply Hor+ to first-person hand / HUD FOV.
+     * Default {@code false}: matching world Hor+ zooms the hand camera and can
+     * push held items / weapons off the bottom of ultrawide screens.
+     */
+    public boolean affectHudFov = false;
 
     /** 21:9 ultrawide (≈1.90–2.80: 2560×1080, 3440×1440, …). */
     public BandSettings ultrawide_21_9;
@@ -84,6 +91,16 @@ public final class UltrawideConfig {
         ultrawide_21_9.normalize();
         superwide_32_9.normalize();
 
+        if (configVersion < CURRENT_VERSION) {
+            // v1 wrote affectHudFov=true; that Hor+-zooms hands and hides weapons on UW.
+            if (affectHudFov) {
+                affectHudFov = false;
+                YapUltrawide.LOGGER.info(
+                        "v2: affectHudFov set to false so held items stay visible (re-enable in yap-ultrawide.json if wanted)");
+            }
+            configVersion = CURRENT_VERSION;
+        }
+
         mode = null;
         targetHorizontalFov = null;
         maxHorizontalFov = null;
@@ -123,6 +140,7 @@ public final class UltrawideConfig {
 
     UltrawideConfig forWrite() {
         UltrawideConfig out = new UltrawideConfig();
+        out.configVersion = configVersion;
         out.enabled = enabled;
         out.affectHudFov = affectHudFov;
         out.ultrawide_21_9 = ultrawide_21_9;
