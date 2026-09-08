@@ -114,7 +114,8 @@ public final class PermCatalog {
                 n("yapguard.alerts", "AC alerts", "See anti-cheat alerts"),
                 n("yapadmin.menu", "/yapadmin", "Staff admin menu"),
                 n("yapadmin.troll", "Trolls", "Staff troll actions"),
-                n("yapadmin.give", "Give items", "yapadmin give")));
+                n("yapadmin.give", "Give items", "yapadmin give"),
+                n("yapadmin.spawnmob", "Spawn mobs", "yapadmin spawnmob")));
         out.add(cat("staff-move", "Staff tools", "TP / heal / fly",
                 n("yapessentials.teleport", "/tp /tphere", "Force teleport"),
                 n("yapessentials.setspawn", "/setspawn", "Set world spawn"),

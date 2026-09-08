@@ -14,24 +14,22 @@ public final class TrollsScreen extends StaffPanelScreen {
     @Override
     protected void addContents() {
         String target = YapStaffClient.session().hasTarget()
-                ? YapStaffClient.session().targetName()
-                : null;
-        addSubtitle(target == null
-                ? "Pick a player first."
-                : "Trolling: " + target + "  ·  needs yapadmin.troll");
+                ? "Player: " + YapStaffClient.session().targetName()
+                : "No player selected";
+        addSubtitle(target);
         addTargetBar();
 
         addButtonGrid(
                 troll("Smite", "smite", "Lightning strike"),
-                troll("Launch", "launch", "Yeet upward"),
-                troll("Burn", "burn", "Fire 8 seconds"),
-                troll("Rocket", "rocket", "High launch + bolt FX"),
+                troll("Launch", "launch", "Launch upward"),
+                troll("Burn", "burn", "Set on fire briefly"),
+                troll("Rocket", "rocket", "High launch with lightning"),
                 troll("Squash", "squash", "Drop from height"),
-                troll("Blind", "blind", "Blindness 12s"),
-                troll("Confuse", "confuse", "Nausea 15s"),
+                troll("Blind", "blind", "Blindness for 12 seconds"),
+                troll("Confuse", "confuse", "Nausea for 15 seconds"),
                 troll("Slap", "slap", "Knock away"),
                 troll("Drop hand", "drop", "Force-drop held item"),
-                action("Freeze", "Essentials freeze toggle", () -> {
+                action("Freeze", "Toggle freeze", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
                         StaffCmds.runFmt("freeze %s", p);
@@ -44,7 +42,7 @@ public final class TrollsScreen extends StaffPanelScreen {
         return action(label, tip, () -> {
             String p = StaffCmds.requireTarget();
             if (p != null) {
-                StaffCmds.runFmt("yapadmin troll %s %s", type, p);
+                StaffCmds.troll(type, p);
             }
         });
     }

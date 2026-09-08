@@ -18,32 +18,42 @@ public final class ServerOpsScreen extends StaffPanelScreen {
 
     @Override
     protected void addContents() {
-        addSubtitle("Broadcasts · weather · plugin reloads · staff chat");
+        addSection("Broadcast");
         addButtonGrid(
-                action("Broadcast #1", BROADCASTS[0], () ->
+                action("Restart notice", BROADCASTS[0], () ->
                         StaffCmds.runFmt("yapadmin broadcast %s", BROADCASTS[0])),
-                action("Broadcast #2", BROADCASTS[1], () ->
+                action("Welcome", BROADCASTS[1], () ->
                         StaffCmds.runFmt("yapadmin broadcast %s", BROADCASTS[1])),
-                action("Broadcast #3", BROADCASTS[2], () ->
-                        StaffCmds.runFmt("yapadmin broadcast %s", BROADCASTS[2])),
-                action("Clear weather", "/weather clear", () -> StaffCmds.run("weather clear")),
-                action("Rain", "/weather rain", () -> StaffCmds.run("weather rain")),
-                action("Thunder", "/weather thunder", () -> StaffCmds.run("weather thunder")),
-                action("Disasters GUI", "/yapdisaster", () -> {
-                    if (minecraft != null) {
-                        closeToGame();
-                    }
+                action("Staff online", BROADCASTS[2], () ->
+                        StaffCmds.runFmt("yapadmin broadcast %s", BROADCASTS[2]))
+        );
+
+        addSection("Weather");
+        addButtonGrid(
+                action("Clear", "Clear weather", () -> StaffCmds.run("weather clear")),
+                action("Rain", "Start rain", () -> StaffCmds.run("weather rain")),
+                action("Thunder", "Start thunderstorm", () -> StaffCmds.run("weather thunder")),
+                action("Disasters", "Open disasters panel", () -> {
+                    closeToGame();
                     StaffCmds.run("yapdisaster");
-                }),
-                action("Staff chat", "/staffchat", () -> StaffCmds.run("staffchat")),
-                action("Admin chat", "/adminchat", () -> StaffCmds.run("adminchat")),
-                action("Clear chat", "/clearchat", () -> StaffCmds.run("clearchat")),
-                action("Reload YaPAdmin", null, () -> StaffCmds.run("yapadmin reload")),
-                action("Reload Essentials", null, () -> StaffCmds.run("yapess reload")),
-                action("Reload Moderation", null, () -> StaffCmds.run("yapmod reload")),
-                action("Plugins list", "/yapplugins list", () -> StaffCmds.run("yapplugins list")),
-                action("Guard status", "/yapguard status", () -> StaffCmds.run("yapguard status")),
-                action("Knobs reload", "/yapknobs reload", () -> StaffCmds.run("yapknobs reload"))
+                })
+        );
+
+        addSection("Chat");
+        addButtonGrid(
+                action("Staff chat", "Toggle staff chat", () -> StaffCmds.run("staffchat")),
+                action("Admin chat", "Toggle admin chat", () -> StaffCmds.run("adminchat")),
+                action("Clear chat", "Clear the chat for everyone", () -> StaffCmds.run("clearchat"))
+        );
+
+        addSection("Reload");
+        addButtonGrid(
+                action("Reload Admin", "Reload YaPAdmin config", () -> StaffCmds.run("yapadmin reload")),
+                action("Reload Essentials", "Reload YaPEssentials", () -> StaffCmds.run("yapess reload")),
+                action("Reload Moderation", "Reload YaPModeration", () -> StaffCmds.run("yapmod reload")),
+                action("Plugins", "List plugins", () -> StaffCmds.run("yapplugins list")),
+                action("Guard", "Anti-cheat status", () -> StaffCmds.run("yapguard status")),
+                action("Knobs", "Reload gameplay knobs", () -> StaffCmds.run("yapknobs reload"))
         );
     }
 }

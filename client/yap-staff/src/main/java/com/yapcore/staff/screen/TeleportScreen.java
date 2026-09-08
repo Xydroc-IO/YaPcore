@@ -14,39 +14,44 @@ public final class TeleportScreen extends StaffPanelScreen {
     @Override
     protected void addContents() {
         String target = YapStaffClient.session().hasTarget()
-                ? YapStaffClient.session().targetName()
-                : null;
-        addSubtitle(target == null ? "Pick a player for target TPs." : "Target: " + target);
+                ? "Player: " + YapStaffClient.session().targetName()
+                : "No player selected";
+        addSubtitle(target);
         addTargetBar();
 
+        addSection("Player");
         addButtonGrid(
-                action("TP to player", "Requires target", () -> {
+                action("Go to player", "Teleport to selected player", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
                         StaffCmds.runFmt("yapadmin tp %s", p);
                     }
                 }),
-                action("Bring player here", "Requires target", () -> {
+                action("Bring here", "Teleport player to you", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
                         StaffCmds.runFmt("yapadmin tphere %s", p);
                     }
                 }),
-                action("Send to spawn", "Requires target", () -> {
+                action("Send to spawn", "Send player to world spawn", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
                         StaffCmds.runFmt("yapadmin tpspawn %s", p);
                     }
-                }),
-                action("My spawn", "/spawn", () -> StaffCmds.run("spawn")),
-                action("Back", "/back", () -> StaffCmds.run("back")),
-                action("World GUI", "/yapworld gui", () -> {
-                    if (minecraft != null) {
-                        closeToGame();
-                    }
+                })
+        );
+
+        addSection("Self");
+        addButtonGrid(
+                action("Spawn", "Go to spawn", () -> StaffCmds.run("spawn")),
+                action("Back", "Return to previous location", () -> StaffCmds.run("back")),
+                action("Nearby", "List nearby players", () -> StaffCmds.run("near")),
+                action("World panel", "Open YaPWorld chest GUI", () -> {
+                    closeToGame();
                     StaffCmds.run("yapworld gui");
                 }),
-                action("Near players", "/near", () -> StaffCmds.run("near"))
+                action("World edit…", "Native world edit tools", () ->
+                        open(new WorldEditHubScreen(this)))
         );
     }
 }

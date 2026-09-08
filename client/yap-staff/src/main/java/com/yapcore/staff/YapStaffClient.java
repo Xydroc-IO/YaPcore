@@ -20,6 +20,7 @@ public final class YapStaffClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         config = StaffConfig.load();
+        SESSION.loadRememberedFromConfig();
         openKey();
         LOGGER.info("YaP Staff {} ready — keybind + Esc pause open the full admin GUI",
                 net.fabricmc.loader.api.FabricLoader.getInstance()

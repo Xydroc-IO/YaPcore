@@ -9,6 +9,9 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
 
 public final class StaffConfig {
 
@@ -19,6 +22,8 @@ public final class StaffConfig {
     public boolean pauseButton = true;
     /** Keybind (default R) opens staff hub. */
     public boolean keybind = true;
+    /** Remembered YaPItems ids (created / synced from server). */
+    public LinkedHashSet<String> customItemIds = new LinkedHashSet<>();
 
     public static StaffConfig load() {
         Path path = FabricLoader.getInstance().getConfigDir().resolve("yap-staff.json");
@@ -28,19 +33,66 @@ public final class StaffConfig {
                 StaffConfig loaded = GSON.fromJson(reader, StaffConfig.class);
                 if (loaded != null) {
                     config = loaded;
+                    if (config.customItemIds == null) {
+                        config.customItemIds = new LinkedHashSet<>();
+                    }
                 }
             } catch (IOException e) {
                 YapStaffClient.LOGGER.warn("Could not read yap-staff.json", e);
             }
         }
+        config.save();
+        return config;
+    }
+
+    public void save() {
+        Path path = FabricLoader.getInstance().getConfigDir().resolve("yap-staff.json");
         try {
             Files.createDirectories(path.getParent());
             try (Writer writer = Files.newBufferedWriter(path)) {
-                GSON.toJson(config, writer);
+                GSON.toJson(this, writer);
             }
         } catch (IOException e) {
             YapStaffClient.LOGGER.warn("Could not write yap-staff.json", e);
         }
-        return config;
+    }
+
+    public void rememberItemId(String id) {
+        if (id == null || id.isBlank()) {
+            return;
+        }
+        if (customItemIds == null) {
+            customItemIds = new LinkedHashSet<>();
+        }
+        if (customItemIds.add(id.trim().toLowerCase(Locale.ROOT))) {
+            save();
+        }
+    }
+
+    public void forgetItemId(String id) {
+        if (id == null || id.isBlank() || customItemIds == null) {
+            return;
+        }
+        if (customItemIds.remove(id.trim().toLowerCase(Locale.ROOT))) {
+            save();
+        }
+    }
+
+    public void rememberItemIds(Set<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return;
+        }
+        if (customItemIds == null) {
+            customItemIds = new LinkedHashSet<>();
+        }
+        boolean changed = false;
+        for (String id : ids) {
+            if (id != null && !id.isBlank()) {
+                changed |= customItemIds.add(id.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        if (changed) {
+            save();
+        }
     }
 }

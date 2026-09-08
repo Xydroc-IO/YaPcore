@@ -14,6 +14,7 @@ softdepend:
   - YaPStacker
   - YaPPlayerData
   - YaPSkills
+  - YaPItems
   - YaPDisasters
   - YaPBedrockUI
 commands:
@@ -42,6 +43,9 @@ permissions:
     default: op
   yapadmin.troll:
     description: Staff trolls (smite, launch, burn, …)
+    default: op
+  yapadmin.spawnmob:
+    description: Spawn mobs at self or another player
     default: op
   yapadmin.plugins:
     description: Soft/hard plugin enable, disable, install, uninstall

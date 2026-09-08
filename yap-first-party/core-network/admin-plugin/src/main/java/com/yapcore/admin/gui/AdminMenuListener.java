@@ -3,12 +3,18 @@ package com.yapcore.admin.gui;
 import com.yapcore.admin.AdminConfig;
 import com.yapcore.admin.AdminPlugin;
 import com.yapcore.admin.action.AdminActions;
+import com.yapcore.admin.gui.AbilityCatalog;
+import com.yapcore.admin.gui.ItemTemplateCatalog;
 import com.yapcore.admin.session.AdminSession;
+import com.yapcore.admin.session.ItemCreateDraft;
+import com.yapcore.sched.YapSched;
+import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -59,6 +65,16 @@ public final class AdminMenuListener implements Listener {
             case DEEP_LINKS -> handleDeepLinks(player, slot);
             case COMBAT_SKILLS -> handleCombatSkills(player, slot);
             case TROLLS -> handleTrolls(player, holder, slot);
+            case CUSTOM_ITEMS -> handleCustomItems(player, slot);
+            case CUSTOM_ITEMS_BROWSE -> handleCustomItemsBrowse(player, slot, clicked, shift);
+            case CUSTOM_ITEMS_CREATE -> handleCustomItemsCreate(player, slot, clicked);
+            case CUSTOM_ITEMS_CREATE_BASE -> handleCustomItemsCreateBase(player, slot, clicked);
+            case CUSTOM_ITEMS_CREATE_BUILD -> handleCustomItemsCreateBuild(player, slot);
+            case CUSTOM_ITEMS_CREATE_ABILITY -> handleCustomItemsCreateAbility(player, slot, clicked);
+            case CUSTOM_ITEMS_CREATE_TRIGGERS -> handleCustomItemsCreateTriggers(player, slot, clicked);
+            case CUSTOM_ITEMS_COOLDOWN -> handleCustomItemsCooldown(player, slot, clicked);
+            case CUSTOM_ITEMS_COOLDOWN_EDIT -> handleCustomItemsCooldownEdit(player, slot, clicked);
+            case CUSTOM_ITEMS_MANAGE -> handleCustomItemsManage(player, slot);
             default -> {
             }
         }
@@ -89,6 +105,7 @@ public final class AdminMenuListener implements Listener {
             }
             case AdminMenus.HUB_SELF -> plugin.menus().openSelfTools(player);
             case AdminMenus.HUB_GIVE -> plugin.menus().openGiveHub(player);
+            case AdminMenus.HUB_ITEMS -> plugin.menus().openCustomItemsHub(player);
             case AdminMenus.HUB_SERVER -> {
                 if (player.hasPermission("yapadmin.server")) {
                     plugin.menus().openServerOps(player);
@@ -252,8 +269,8 @@ public final class AdminMenuListener implements Listener {
             case 30 -> actions.closeAndRun(player, "gma");
             case 31 -> actions.closeAndRun(player, "gmsp");
             case 33 -> actions.closeAndRun(player, "repair");
-            case 34 -> actions.closeAndRun(player, "speed walk 5");
-            case 35 -> actions.closeAndRun(player, "speed fly 5");
+            case 34 -> actions.closeAndRun(player, "speed 5 walk");
+            case 35 -> actions.closeAndRun(player, "speed 5 fly");
             default -> {
             }
         }
@@ -413,7 +430,8 @@ public final class AdminMenuListener implements Listener {
             if (plugin.actions().pluginEnabled("YaPDisasters")) {
                 plugin.actions().closeAndRun(player, "yapdisaster");
             } else {
-                plugin.actions().closeAndRun(player, "weather");
+                // Essentials /weather with no args prints clear|rain|… help (or disasters install tip).
+                plugin.actions().closeAndRun(player, "weather clear");
             }
             return;
         }
@@ -473,6 +491,8 @@ public final class AdminMenuListener implements Listener {
             case 20 -> actions.closeAndRun(player, "yapworld gui");
             case 21 -> actions.closeAndRun(player, "yapstacker gui");
             case 22 -> actions.closeAndRun(player, "menu");
+            case 23 -> actions.closeAndRun(player, "yapworld schem browse");
+            case 24 -> actions.closeAndRun(player, "yappregen status");
             default -> {
             }
         }
@@ -495,6 +515,498 @@ public final class AdminMenuListener implements Listener {
             default -> {
             }
         }
+    }
+
+    private void handleCustomItems(Player player, int slot) {
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.menus().openHub(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        AdminSession session = plugin.session(player.getUniqueId());
+        switch (slot) {
+            case 20 -> {
+                session.setMaterialPage(0);
+                plugin.menus().openCustomItemsBrowse(player);
+            }
+            case 22 -> plugin.menus().openCustomItemsCreate(player);
+            case 24 -> {
+                session.setMaterialPage(0);
+                plugin.menus().openCustomItemsCooldownBrowse(player);
+            }
+            case 29 -> plugin.actions().closeAndRun(player, "yapitems reload");
+            case 31 -> {
+                session.cycleGiveAmount();
+                plugin.menus().openCustomItemsHub(player);
+            }
+            default -> {
+            }
+        }
+    }
+
+    private void handleCustomItemsCooldown(Player player, int slot, ItemStack clicked) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        if (slot == AdminMenus.MAT_BACK) {
+            plugin.menus().openCustomItemsHub(player);
+            return;
+        }
+        if (slot == AdminMenus.MAT_PREV) {
+            session.setMaterialPage(Math.max(0, session.materialPage() - 1));
+            plugin.menus().openCustomItemsCooldownBrowse(player);
+            return;
+        }
+        if (slot == AdminMenus.MAT_NEXT) {
+            session.setMaterialPage(session.materialPage() + 1);
+            plugin.menus().openCustomItemsCooldownBrowse(player);
+            return;
+        }
+        if (clicked == null || clicked.getType().isAir()) {
+            return;
+        }
+        String id = plainName(clicked);
+        if (id.isBlank()) {
+            return;
+        }
+        session.setCustomItemId(id);
+        plugin.menus().openCustomItemsCooldownEdit(player);
+    }
+
+    private void handleCustomItemsCooldownEdit(Player player, int slot, ItemStack clicked) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.menus().openCustomItemsCooldownBrowse(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        if (slot == 40) {
+            String id = session.customItemId();
+            if (id.isBlank()) {
+                return;
+            }
+            session.setPendingAbilityCooldownChat(true);
+            player.closeInventory();
+            player.sendMessage("§eType ability cooldown for §f" + id + "§e (e.g. §f4s§e / §f2.5s§e / §f500ms§e).");
+            player.sendMessage("§7Or type §fcancel§7 to abort.");
+            return;
+        }
+        if (clicked == null || clicked.getType().isAir()) {
+            return;
+        }
+        String preset = plainName(clicked).replace("▶ ", "").trim();
+        if (!preset.matches("\\d+(\\.\\d+)?s")) {
+            return;
+        }
+        String id = session.customItemId();
+        if (id.isBlank()) {
+            return;
+        }
+        if (plugin.actions().setItemAbilityCooldown(player, id, preset)) {
+            plugin.menus().openCustomItemsCooldownEdit(player);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    public void onAbilityCooldownChat(AsyncChatEvent event) {
+        Player player = event.getPlayer();
+        AdminSession session = plugin.session(player.getUniqueId());
+        if (!session.pendingAbilityCooldownChat()) {
+            return;
+        }
+        event.setCancelled(true);
+        String raw = PlainTextComponentSerializer.plainText().serialize(event.message()).trim();
+        String id = session.customItemId();
+        YapSched.entity(plugin, player, () -> {
+            session.setPendingAbilityCooldownChat(false);
+            if (raw.equalsIgnoreCase("cancel") || raw.equalsIgnoreCase("c")) {
+                player.sendMessage("§7Cancelled.");
+                plugin.menus().openCustomItemsCooldownEdit(player);
+                return;
+            }
+            if (id.isBlank()) {
+                player.sendMessage("§cNo item selected.");
+                return;
+            }
+            if (!raw.matches("(?i)\\d+(\\.\\d+)?(ms|s|t|ticks)?")) {
+                player.sendMessage("§cInvalid duration. Examples: §f8s §7· §f2.5s §7· §f500ms");
+                session.setPendingAbilityCooldownChat(true);
+                return;
+            }
+            if (plugin.actions().setItemAbilityCooldown(player, id, raw)) {
+                plugin.menus().openCustomItemsCooldownEdit(player);
+            }
+        });
+    }
+
+    private void handleCustomItemsBrowse(Player player, int slot, ItemStack clicked, boolean shift) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        if (slot == AdminMenus.MAT_BACK) {
+            plugin.menus().openCustomItemsHub(player);
+            return;
+        }
+        if (slot == AdminMenus.MAT_PREV) {
+            session.setMaterialPage(Math.max(0, session.materialPage() - 1));
+            plugin.menus().openCustomItemsBrowse(player);
+            return;
+        }
+        if (slot == AdminMenus.MAT_NEXT) {
+            session.setMaterialPage(session.materialPage() + 1);
+            plugin.menus().openCustomItemsBrowse(player);
+            return;
+        }
+        if (slot == AdminMenus.MAT_AMOUNT) {
+            session.cycleGiveAmount();
+            plugin.menus().openCustomItemsBrowse(player);
+            return;
+        }
+        if (clicked == null || clicked.getType().isAir()) {
+            return;
+        }
+        String id = plainName(clicked);
+        if (id.isBlank()) {
+            return;
+        }
+        if (shift) {
+            int amount = 64;
+            String who = session.hasTarget() ? session.targetName() : player.getName();
+            plugin.actions().closeAndRun(player, "yapitems give " + id + " " + amount + " " + who);
+            return;
+        }
+        session.setCustomItemId(id);
+        plugin.menus().openCustomItemsManage(player);
+    }
+
+    private void handleCustomItemsManage(Player player, int slot) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        String id = session.customItemId();
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.menus().openCustomItemsBrowse(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        switch (slot) {
+            case 20 -> {
+                if (id.isBlank()) {
+                    return;
+                }
+                String who = session.hasTarget() ? session.targetName() : player.getName();
+                plugin.actions().closeAndRun(player, "yapitems give " + id + " " + session.giveAmount() + " " + who);
+            }
+            case 22 -> {
+                if (id.isBlank()) {
+                    return;
+                }
+                ItemCreateDraft draft = session.itemCreate();
+                if (!draft.loadFromCustomFile(id)) {
+                    player.sendMessage("§cCannot edit §f" + id + "§c — only items under §fitems/custom/§c.");
+                    return;
+                }
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 24 -> {
+                if (id.isBlank()) {
+                    return;
+                }
+                plugin.menus().openCustomItemsCooldownEdit(player);
+            }
+            case 31 -> {
+                if (id.isBlank()) {
+                    return;
+                }
+                plugin.actions().closeAndRun(player, "yapitems delete " + id);
+            }
+            default -> {
+            }
+        }
+    }
+
+    private void handleCustomItemsCreate(Player player, int slot, ItemStack clicked) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.menus().openCustomItemsHub(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        String group = switch (slot) {
+            case 19 -> "weapon";
+            case 21 -> "tool";
+            case 23 -> "gem";
+            case 25 -> "prop";
+            case 31 -> "other";
+            default -> null;
+        };
+        if (group == null) {
+            return;
+        }
+        session.setCreateTemplateGroup(group);
+        plugin.menus().openCustomItemsCreateBase(player);
+    }
+
+    private void handleCustomItemsCreateBase(Player player, int slot, ItemStack clicked) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.menus().openCustomItemsCreate(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        if (clicked == null || clicked.getType().isAir()) {
+            return;
+        }
+        String name = plainName(clicked).trim();
+        String template = null;
+        for (ItemTemplateCatalog.Entry e : ItemTemplateCatalog.byGroup(session.createTemplateGroup())) {
+            if (e.label().equalsIgnoreCase(name) || e.id().equalsIgnoreCase(name)) {
+                template = e.id();
+                break;
+            }
+        }
+        if (template == null) {
+            return;
+        }
+        ItemCreateDraft draft = session.itemCreate();
+        draft.setId("");
+        draft.setDisplayName("");
+        draft.setReplaceExisting(false);
+        draft.resetForTemplate(template);
+        plugin.menus().openCustomItemsCreateBuild(player);
+    }
+
+    private void handleCustomItemsCreateBuild(Player player, int slot) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        ItemCreateDraft d = session.itemCreate();
+        if (slot == AdminMenus.SLOT_BACK) {
+            if (d.replaceExisting()) {
+                plugin.menus().openCustomItemsManage(player);
+            } else {
+                plugin.menus().openCustomItemsCreateBase(player);
+            }
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        switch (slot) {
+            case 12 -> {
+                d.toggleGlow();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 13 -> {
+                d.toggleUnbreakable();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 19 -> {
+                d.setPendingChat(1);
+                player.closeInventory();
+                player.sendMessage("§eType the §fdisplay name§e for this item (e.g. §c&c&lGod Killer§e).");
+                player.sendMessage("§7Supports & color codes. Type §fcancel§7 to abort.");
+            }
+            case 20 -> {
+                d.setPendingChat(2);
+                player.closeInventory();
+                player.sendMessage("§eType the §finternal id§e (e.g. §fgod_killer§e). Letters, numbers, underscores.");
+                player.sendMessage("§7Type §fcancel§7 to abort.");
+            }
+            case 21 -> plugin.menus().openCustomItemsCreateAbility(player);
+            case 25 -> plugin.menus().openCustomItemsCreateTriggers(player);
+            case 22 -> {
+                d.cycleDamage();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 23 -> {
+                d.cycleRange();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 24 -> {
+                d.cycleCooldown();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 28 -> {
+                if (d.usesBreakVolume()) {
+                    d.cycleBreakRadius();
+                } else {
+                    d.cycleRadius();
+                }
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 29 -> {
+                d.cycleGearAttack();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 30 -> {
+                d.cycleGearStrength();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 31 -> {
+                d.cyclePotionEffect();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 32 -> {
+                d.cycleProjectileKind();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 34 -> {
+                if (d.usesBreakVolume()) {
+                    d.cycleBreakCount();
+                } else {
+                    d.cycleHealAmount();
+                }
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 37 -> {
+                d.cyclePotionDurationSec();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 38 -> {
+                d.cyclePotionAmplifier();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 39 -> {
+                d.cycleHealAmount();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 33 -> {
+                if (d.id().isBlank()) {
+                    player.sendMessage("§cSet an id first.");
+                    return;
+                }
+                plugin.actions().closeAndRun(player, d.buildCreateCommand());
+            }
+            default -> {
+            }
+        }
+    }
+
+    private void handleCustomItemsCreateAbility(Player player, int slot, ItemStack clicked) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.menus().openCustomItemsCreateBuild(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        ItemCreateDraft d = session.itemCreate();
+        if (slot == 8) {
+            d.toggleShowAllAbilities();
+            plugin.menus().openCustomItemsCreateAbility(player);
+            return;
+        }
+        if (clicked == null || clicked.getType().isAir() || clicked.getType() == Material.GRAY_STAINED_GLASS_PANE) {
+            return;
+        }
+        String name = plainName(clicked).replace("▶ ", "").trim();
+        if (name.isBlank()) {
+            return;
+        }
+        if ("No ability".equalsIgnoreCase(name) || "Clear abilities".equalsIgnoreCase(name)
+                || name.startsWith("No ability") || name.startsWith("Clear abilities")) {
+            d.setAbility("");
+            plugin.menus().openCustomItemsCreateAbility(player);
+            return;
+        }
+        if (name.equalsIgnoreCase("Show suited only") || name.equalsIgnoreCase("Show all abilities")) {
+            d.toggleShowAllAbilities();
+            plugin.menus().openCustomItemsCreateAbility(player);
+            return;
+        }
+        String id = AbilityCatalog.idByLabel(name);
+        if (id == null) {
+            return;
+        }
+        if ("none".equalsIgnoreCase(id)) {
+            d.setAbility("");
+        } else {
+            d.toggleAbility(id);
+        }
+        plugin.menus().openCustomItemsCreateAbility(player);
+    }
+
+    private void handleCustomItemsCreateTriggers(Player player, int slot, ItemStack clicked) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        ItemCreateDraft d = session.itemCreate();
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.menus().openCustomItemsCreateBuild(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        if (clicked == null || clicked.getType().isAir() || clicked.getType() == Material.BARRIER) {
+            return;
+        }
+        var slots = d.abilitySlots();
+        int index = 0;
+        int probe = 10;
+        while (probe < 44 && index < slots.size()) {
+            if (probe % 9 != 0 && probe % 9 != 8) {
+                if (probe == slot) {
+                    d.cycleTrigger(index);
+                    plugin.menus().openCustomItemsCreateTriggers(player);
+                    return;
+                }
+                index++;
+            }
+            probe++;
+        }
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    public void onItemCreateChat(AsyncChatEvent event) {
+        Player player = event.getPlayer();
+        AdminSession session = plugin.session(player.getUniqueId());
+        ItemCreateDraft draft = session.itemCreate();
+        int pending = draft.pendingChat();
+        if (pending == 0) {
+            return;
+        }
+        event.setCancelled(true);
+        String raw = PlainTextComponentSerializer.plainText().serialize(event.message()).trim();
+        YapSched.entity(plugin, player, () -> {
+            draft.setPendingChat(0);
+            if (raw.equalsIgnoreCase("cancel") || raw.equalsIgnoreCase("c")) {
+                player.sendMessage("§7Cancelled.");
+                plugin.menus().openCustomItemsCreateBuild(player);
+                return;
+            }
+            if (pending == 1) {
+                draft.setDisplayName(raw);
+                player.sendMessage("§aDisplay name set to §f" + raw);
+            } else if (pending == 2) {
+                draft.setId(raw);
+                if (draft.id().isBlank()) {
+                    player.sendMessage("§cId must be [a-z0-9_]+");
+                    draft.setPendingChat(2);
+                    return;
+                }
+                player.sendMessage("§aId set to §f" + draft.id());
+            }
+            plugin.menus().openCustomItemsCreateBuild(player);
+        });
     }
 
     private static String plainName(ItemStack item) {

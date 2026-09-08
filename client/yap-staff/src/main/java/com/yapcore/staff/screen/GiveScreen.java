@@ -32,29 +32,29 @@ public final class GiveScreen extends StaffPanelScreen {
     private static final String[] KITS = {"starter", "adventurer", "vip"};
 
     public GiveScreen(Screen parent) {
-        super(Component.literal("Give / spawn"), parent);
+        super(Component.literal("Give"), parent);
     }
 
     @Override
     protected void addContents() {
         var session = YapStaffClient.session();
-        String target = session.hasTarget() ? session.targetName() : "(self)";
+        String target = session.hasTarget() ? "Player: " + session.targetName() : "Giving to yourself";
 
         LinearLayout top = LinearLayout.vertical().spacing(4);
         top.addChild(new StringWidget(Component.literal(
-                "Target: " + target + "  ·  Amount: " + session.giveAmount() + "  ·  yapadmin.give"), this.font));
+                target + "  ·  Amount ×" + session.giveAmount()), this.font));
 
         LinearLayout controls = LinearLayout.horizontal().spacing(6);
         controls.addChild(Button.builder(Component.literal("Amount ×" + session.giveAmount()), b -> {
             session.cycleGiveAmount();
             rebuildWidgets();
         }).width(110).build());
-        controls.addChild(Button.builder(Component.literal("Pick target"), b ->
-                open(new PlayersScreen(this, true))).width(100).build());
-        controls.addChild(Button.builder(Component.literal("Clear target"), b -> {
+        controls.addChild(Button.builder(Component.literal("Select player…"), b ->
+                open(new PlayersScreen(this, true))).width(120).build());
+        controls.addChild(Button.builder(Component.literal("Clear"), b -> {
             session.clearTarget();
             rebuildWidgets();
-        }).width(100).build());
+        }).width(70).build());
         top.addChild(controls);
 
         EditBox search = new EditBox(this.font, 240, 20, Component.literal("Search items"));
@@ -67,8 +67,7 @@ public final class GiveScreen extends StaffPanelScreen {
         top.addChild(search);
         addBody(top);
 
-        // Presets
-        addSubtitle("Curated presets");
+        addSection("Presets");
         GridLayout presets = new GridLayout().columnSpacing(4).rowSpacing(3);
         GridLayout.RowHelper presetRows = presets.createRowHelper(4);
         for (String id : PRESETS) {
@@ -77,8 +76,7 @@ public final class GiveScreen extends StaffPanelScreen {
         }
         addBody(presets);
 
-        // Kits
-        addSubtitle("Kits (/kit give)");
+        addSection("Kits");
         LinearLayout kits = LinearLayout.horizontal().spacing(6);
         for (String kit : KITS) {
             kits.addChild(Button.builder(Component.literal(kit), b -> {
@@ -93,7 +91,6 @@ public final class GiveScreen extends StaffPanelScreen {
         }
         addBody(kits);
 
-        // Full browser
         List<String> ids = filteredItems(session.giveFilter());
         int maxPage = Math.max(0, (ids.size() - 1) / PAGE_SIZE);
         if (session.givePage() > maxPage) {
@@ -103,7 +100,7 @@ public final class GiveScreen extends StaffPanelScreen {
         int start = page * PAGE_SIZE;
         int end = Math.min(ids.size(), start + PAGE_SIZE);
 
-        addSubtitle("All items — page " + (page + 1) + "/" + (maxPage + 1) + " (" + ids.size() + ")");
+        addSection("All items — " + (page + 1) + "/" + (maxPage + 1));
         GridLayout grid = new GridLayout().columnSpacing(4).rowSpacing(3);
         GridLayout.RowHelper rows = grid.createRowHelper(4);
         for (int i = start; i < end; i++) {
@@ -126,12 +123,8 @@ public final class GiveScreen extends StaffPanelScreen {
 
     private void give(String materialId) {
         var session = YapStaffClient.session();
-        int amount = session.giveAmount();
-        if (session.hasTarget()) {
-            StaffCmds.runFmt("yapadmin give %s %d %s", materialId, amount, session.targetName());
-        } else {
-            StaffCmds.runFmt("yapadmin give %s %d", materialId, amount);
-        }
+        StaffCmds.give(materialId, session.giveAmount(),
+                session.hasTarget() ? session.targetName() : null);
     }
 
     private static List<String> filteredItems(String filter) {

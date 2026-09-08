@@ -30,15 +30,15 @@ public final class AdminBedrockForms {
             return false;
         }
         String content = ui.hasNativeSession(player)
-                ? "Pick a section (native Bedrock form)."
-                : "Pick a section (Floodgate form).";
+                ? "Network admin tools"
+                : "Network admin tools (Floodgate)";
         int id = ui.sendSimpleForm(
                 player,
                 "YaP Admin",
                 content,
                 result -> handleHubResult(plugin, player, result),
                 "Players",
-                "Self",
+                "Self tools",
                 "Give",
                 "Server",
                 "Close");

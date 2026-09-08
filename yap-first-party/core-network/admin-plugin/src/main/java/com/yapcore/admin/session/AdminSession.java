@@ -20,6 +20,12 @@ public final class AdminSession {
     private Material pendingMaterial;
     /** When true, player-head click opens troll menu instead of player actions. */
     private boolean pickForTrolls;
+    private String customItemId = "";
+    /** Template group for create wizard: weapon|tool|gem|prop|other */
+    private String createTemplateGroup = "weapon";
+    /** When true, next chat message is parsed as ability cooldown duration. */
+    private boolean pendingAbilityCooldownChat;
+    private final ItemCreateDraft itemCreate = new ItemCreateDraft();
 
     public UUID targetUuid() {
         return targetUuid;
@@ -100,5 +106,35 @@ public final class AdminSession {
 
     public void setPickForTrolls(boolean pickForTrolls) {
         this.pickForTrolls = pickForTrolls;
+    }
+
+    public String customItemId() {
+        return customItemId == null ? "" : customItemId;
+    }
+
+    public void setCustomItemId(String customItemId) {
+        this.customItemId = customItemId == null ? "" : customItemId.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    public String createTemplateGroup() {
+        return createTemplateGroup == null || createTemplateGroup.isBlank() ? "weapon" : createTemplateGroup;
+    }
+
+    public void setCreateTemplateGroup(String createTemplateGroup) {
+        this.createTemplateGroup = createTemplateGroup == null || createTemplateGroup.isBlank()
+                ? "weapon"
+                : createTemplateGroup.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    public boolean pendingAbilityCooldownChat() {
+        return pendingAbilityCooldownChat;
+    }
+
+    public void setPendingAbilityCooldownChat(boolean pendingAbilityCooldownChat) {
+        this.pendingAbilityCooldownChat = pendingAbilityCooldownChat;
+    }
+
+    public ItemCreateDraft itemCreate() {
+        return itemCreate;
     }
 }

@@ -15,38 +15,22 @@ import java.util.UUID;
 /** Typed holder for YaPAdmin menus. */
 public final class AdminMenuHolder implements InventoryHolder {
 
-    public enum Kind {
-        HUB,
-        PLAYERS,
-        PLAYER_ACTIONS,
-        SELF_TOOLS,
-        GIVE_HUB,
-        GIVE_PRESETS,
-        GIVE_KITS,
-        GIVE_MATERIALS,
-        SERVER_OPS,
-        ECONOMY,
-        DEEP_LINKS,
-        COMBAT_SKILLS,
-        TROLLS
-    }
-
-    private final Kind kind;
+    private final AdminMenuKind kind;
     private final UUID targetUuid;
     private final String targetName;
     private Inventory inventory;
 
-    public AdminMenuHolder(Kind kind) {
+    public AdminMenuHolder(AdminMenuKind kind) {
         this(kind, null, null);
     }
 
-    public AdminMenuHolder(Kind kind, UUID targetUuid, String targetName) {
+    public AdminMenuHolder(AdminMenuKind kind, UUID targetUuid, String targetName) {
         this.kind = kind;
         this.targetUuid = targetUuid;
         this.targetName = targetName;
     }
 
-    public Kind kind() {
+    public AdminMenuKind kind() {
         return kind;
     }
 

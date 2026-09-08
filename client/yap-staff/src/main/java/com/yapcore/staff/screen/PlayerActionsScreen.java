@@ -5,7 +5,7 @@ import com.yapcore.staff.YapStaffClient;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-/** Per-player kitchen sink: TP, inspect, heal, ranks, mod, trolls. */
+/** Per-player actions: TP, inspect, heal, ranks, mod, trolls. */
 public final class PlayerActionsScreen extends StaffPanelScreen {
 
     private final String playerName;
@@ -18,54 +18,64 @@ public final class PlayerActionsScreen extends StaffPanelScreen {
 
     @Override
     protected void addContents() {
-        addSubtitle("Target locked: " + playerName);
+        addSubtitle("Managing " + playerName);
         String p = playerName;
+
+        addSection("Teleport");
         addButtonGrid(
-                action("TP to", "Teleport to them", () -> StaffCmds.runFmt("yapadmin tp %s", p)),
-                action("TP here", "Bring them to you", () -> StaffCmds.runFmt("yapadmin tphere %s", p)),
-                action("TP spawn", "Send to world spawn", () -> StaffCmds.runFmt("yapadmin tpspawn %s", p)),
+                action("Go to", "Teleport to them", () -> StaffCmds.runFmt("yapadmin tp %s", p)),
+                action("Bring here", "Teleport them to you", () -> StaffCmds.runFmt("yapadmin tphere %s", p)),
+                action("Send to spawn", "Send to world spawn", () -> StaffCmds.runFmt("yapadmin tpspawn %s", p))
+        );
+
+        addSection("Inspect");
+        addButtonGrid(
                 action("Freeze", "Toggle freeze", () -> StaffCmds.runFmt("freeze %s", p)),
-                action("Invsee", "Open inventory", () -> {
-                    if (minecraft != null) {
-                        closeToGame();
-                    }
+                action("Inventory", "Open their inventory", () -> {
+                    closeToGame();
                     StaffCmds.runFmt("invsee %s", p);
                 }),
-                action("Ender chest", "Open echest", () -> {
-                    if (minecraft != null) {
-                        closeToGame();
-                    }
-                    StaffCmds.runFmt("echest %s", p);
+                action("Ender chest", "Open their ender chest", () -> {
+                    closeToGame();
+                    StaffCmds.echest(p);
                 }),
-                action("Heal", null, () -> StaffCmds.runFmt("yapadmin heal %s", p)),
-                action("Feed", null, () -> StaffCmds.runFmt("yapadmin feed %s", p)),
-                action("Clear inv", "Requires clear perm", () -> StaffCmds.runFmt("yapadmin clear %s", p)),
-                action("Promote", "/promote", () -> StaffCmds.runFmt("promote %s", p)),
-                action("Demote", "/demote", () -> StaffCmds.runFmt("demote %s", p)),
-                action("Ranks…", "Set primary · parents · perms", () ->
-                        open(new PlayerRanksScreen(this))),
-                action("Permissions…", "Allow / deny / unset nodes", () ->
-                        open(new PermEditorScreen(this, PermEditorScreen.Scope.USER, null))),
-                action("Give money…", "Economy grants for this player", () ->
-                        open(new EconomyScreen(this))),
-                action("Give items…", "Open give for this player", () ->
-                        open(new GiveScreen(this))),
-                action("Kick", null, () -> StaffCmds.runFmt("yapadmin kick %s Staff action", p)),
-                action("Warn", null, () -> StaffCmds.runFmt("yapadmin warn %s Staff action", p)),
-                action("Mute 1h", null, () -> StaffCmds.runFmt("yapadmin mute %s Staff action", p)),
-                action("Tempban 1d", null, () -> StaffCmds.runFmt("yapadmin tempban %s Staff action", p)),
-                action("Check", "/check", () -> StaffCmds.runFmt("check %s", p)),
-                action("Mod history", "/modhistory", () -> StaffCmds.runFmt("modhistory %s", p)),
-                action("Modcheck", "/modcheck", () -> StaffCmds.runFmt("modcheck %s", p)),
-                action("Trolls…", "Smite / launch / burn…", () ->
-                        open(new TrollsScreen(this))),
-                action("Bag see", "/bag see", () -> {
-                    if (minecraft != null) {
-                        closeToGame();
-                    }
+                action("Bag", "View their bag", () -> {
+                    closeToGame();
                     StaffCmds.runFmt("bag see %s", p);
                 }),
-                action("Creative them", "/gmc <player>", () -> StaffCmds.runFmt("gmc %s", p))
+                action("Check", "Staff inspect", () -> StaffCmds.runFmt("check %s", p)),
+                action("History", "Moderation history", () -> StaffCmds.runFmt("modhistory %s", p)),
+                action("Modcheck", "Moderation summary", () -> StaffCmds.runFmt("modcheck %s", p))
+        );
+
+        addSection("Care");
+        addButtonGrid(
+                action("Heal", "Restore health", () -> StaffCmds.runFmt("yapadmin heal %s", p)),
+                action("Feed", "Fill hunger", () -> StaffCmds.runFmt("yapadmin feed %s", p)),
+                action("Clear inv", "Clear their inventory", () -> StaffCmds.runFmt("yapadmin clear %s", p)),
+                action("Creative", "Set them to creative", () -> StaffCmds.runFmt("gmc %s", p))
+        );
+
+        addSection("Ranks & economy");
+        addButtonGrid(
+                action("Promote", "Promote on default track", () -> StaffCmds.runFmt("promote %s", p)),
+                action("Demote", "Demote on default track", () -> StaffCmds.runFmt("demote %s", p)),
+                action("Ranks…", "Primary rank and parents", () ->
+                        open(new PlayerRanksScreen(this))),
+                action("Permissions…", "Allow or deny nodes", () ->
+                        open(new PermEditorScreen(this, PermEditorScreen.Scope.USER, null))),
+                action("Money…", "Grant money", () -> open(new EconomyScreen(this))),
+                action("Give…", "Give items", () -> open(new GiveScreen(this))),
+                action("Spawn mobs…", "Spawn entities on them", () -> open(new MobsScreen(this)))
+        );
+
+        addSection("Moderation");
+        addButtonGrid(
+                action("Kick", "Remove from server", () -> StaffCmds.mod("kick", p, "Staff action")),
+                action("Warn", "Record a warning", () -> StaffCmds.mod("warn", p, "Staff action")),
+                action("Mute 1h", "Mute for one hour", () -> StaffCmds.mod("mute", p, "Staff action")),
+                action("Tempban 1d", "Ban for one day", () -> StaffCmds.mod("tempban", p, "Staff action")),
+                action("Trolls…", "Smite, launch, burn…", () -> open(new TrollsScreen(this)))
         );
     }
 }

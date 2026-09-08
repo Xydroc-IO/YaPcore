@@ -1,10 +1,12 @@
 package com.yapcore.staff.screen;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.AbstractScrollArea;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ScrollableLayout;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.layouts.GridLayout;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LayoutElement;
@@ -43,8 +45,11 @@ public abstract class StaffPanelScreen extends Screen {
         layout.addToContents(scroll);
 
         LinearLayout footer = LinearLayout.horizontal().spacing(8);
-        footer.addChild(Button.builder(CommonComponents.GUI_BACK, b -> onClose()).width(footerBtnWidth()).build());
-        footer.addChild(Button.builder(CommonComponents.GUI_DONE, b -> closeToGame()).width(footerBtnWidth()).build());
+        Button back = Button.builder(CommonComponents.GUI_BACK, b -> onClose()).width(footerBtnWidth()).build();
+        Button done = Button.builder(CommonComponents.GUI_DONE, b -> closeToGame()).width(footerBtnWidth()).build();
+        done.setTooltip(Tooltip.create(Component.literal("Close menu. The server still checks permissions.")));
+        footer.addChild(back);
+        footer.addChild(done);
         layout.addToFooter(footer);
         layout.visitWidgets(this::addRenderableWidget);
         repositionElements();
@@ -101,6 +106,35 @@ public abstract class StaffPanelScreen extends Screen {
         return this.height < 360 ? 3 : 6;
     }
 
+    protected void rebuildWidgets() {
+        double savedScroll = captureScrollAmount();
+        this.clearWidgets();
+        this.init();
+        restoreScrollAmount(savedScroll);
+    }
+
+    /** Keep the body scrolled where you were after option clicks rebuild the panel. */
+    private double captureScrollAmount() {
+        for (GuiEventListener child : this.children()) {
+            if (child instanceof AbstractScrollArea area) {
+                return area.scrollAmount();
+            }
+        }
+        return 0.0;
+    }
+
+    private void restoreScrollAmount(double amount) {
+        if (amount <= 0.0) {
+            return;
+        }
+        for (GuiEventListener child : this.children()) {
+            if (child instanceof AbstractScrollArea area) {
+                area.setScrollAmount(amount);
+                return;
+            }
+        }
+    }
+
     @Override
     public void onClose() {
         open(parent);
@@ -153,13 +187,18 @@ public abstract class StaffPanelScreen extends Screen {
         addBody(new StringWidget(Component.literal(text), this.font));
     }
 
+    /** Section label for grouped hub / tool screens. */
+    protected void addSection(String title) {
+        addSubtitle(title);
+    }
+
     /**
      * Compact target bar: current name + open searchable picker (scales to 200+ players).
      * Does not list every online name on this screen.
      */
     protected void addTargetBar() {
         var session = com.yapcore.staff.YapStaffClient.session();
-        String label = session.hasTarget() ? "Target: " + session.targetName() : "Target: (self / none)";
+        String label = session.hasTarget() ? "Player: " + session.targetName() : "No player selected";
         addSubtitle(label);
         LinearLayout row = LinearLayout.horizontal().spacing(6);
         int pickW = Math.min(160, Math.max(110, panelWidth() - 70));
@@ -168,7 +207,7 @@ public abstract class StaffPanelScreen extends Screen {
             session.setPlayerPage(0);
             open(new PlayersScreen(this, true));
         }).width(pickW).build());
-        row.addChild(Button.builder(Component.literal("Self"), b -> {
+        row.addChild(Button.builder(Component.literal("Clear"), b -> {
             session.clearTarget();
             rebuildWidgets();
         }).width(Math.min(70, Math.max(50, panelWidth() / 6))).build());

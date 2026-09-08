@@ -1,3 +1,5 @@
 {
-  "key.yap-staff.open": "Open YaP Staff"
+  "key.yap-staff.open": "Open YaP Staff",
+  "yap-staff.hub.title": "YaP Staff",
+  "yap-staff.hub.tagline": "Network admin tools"
 }

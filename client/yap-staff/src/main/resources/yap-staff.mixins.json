@@ -5,7 +5,8 @@
   "client": [
     "OptionsMixin",
     "MinecraftMixin",
-    "PauseScreenMixin"
+    "PauseScreenMixin",
+    "ChatComponentMixin"
   ],
   "injectors": {
     "defaultRequire": 1

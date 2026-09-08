@@ -14,72 +14,78 @@ public final class ModerationScreen extends StaffPanelScreen {
     @Override
     protected void addContents() {
         String target = YapStaffClient.session().hasTarget()
-                ? YapStaffClient.session().targetName()
-                : null;
-        addSubtitle(target == null ? "Pick a player first." : "Target: " + target);
+                ? "Player: " + YapStaffClient.session().targetName()
+                : "No player selected";
+        addSubtitle(target);
         addTargetBar();
 
+        addSection("Actions");
         addButtonGrid(
-                action("Kick", "yapmod.kick", () -> {
+                action("Kick", "Remove from the server", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
-                        StaffCmds.runFmt("yapadmin kick %s Staff action", p);
+                        StaffCmds.mod("kick", p, "Staff action");
                     }
                 }),
-                action("Warn", "yapmod.warn", () -> {
+                action("Warn", "Record a warning", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
-                        StaffCmds.runFmt("yapadmin warn %s Staff action", p);
+                        StaffCmds.mod("warn", p, "Staff action");
                     }
                 }),
-                action("Mute 1h", "yapmod.mute", () -> {
+                action("Mute 1h", "Mute for one hour", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
-                        StaffCmds.runFmt("yapadmin mute %s Staff action", p);
+                        StaffCmds.mod("mute", p, "Staff action");
                     }
                 }),
-                action("Tempban 1d", "yapmod.ban", () -> {
+                action("Tempban 1d", "Ban for one day", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
-                        StaffCmds.runFmt("yapadmin tempban %s Staff action", p);
+                        StaffCmds.mod("tempban", p, "Staff action");
                     }
                 }),
-                action("Unmute", "/unmute", () -> {
+                action("Unmute", "Clear active mute", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
                         StaffCmds.runFmt("unmute %s", p);
                     }
                 }),
-                action("Unban", "/unban", () -> {
+                action("Unban", "Clear active ban", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
                         StaffCmds.runFmt("unban %s", p);
                     }
-                }),
-                action("Banlist", "/banlist", () -> StaffCmds.run("banlist")),
-                action("Check", "/check", () -> {
+                })
+        );
+
+        addSection("Lookup");
+        addButtonGrid(
+                action("Ban list", "Show banned players", () -> StaffCmds.run("banlist")),
+                action("Check", "Staff inspect", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
                         StaffCmds.runFmt("check %s", p);
                     }
                 }),
-                action("Mod history", "/modhistory", () -> {
+                action("History", "Moderation history", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
                         StaffCmds.runFmt("modhistory %s", p);
                     }
                 }),
-                action("Alts", "/alts", () -> {
+                action("Alts", "Possible alternate accounts", () -> {
                     String p = StaffCmds.requireTarget();
                     if (p != null) {
                         StaffCmds.runFmt("alts %s", p);
                     }
                 }),
-                action("Protect lookup", "/yapprotect lookup", () -> {
-                    if (minecraft != null) {
+                action("Block lookup", "YaPProtect user history", () -> {
+                    String p = StaffCmds.requireTarget();
+                    if (p != null) {
                         closeToGame();
+                        StaffCmds.protectLookupUser(p);
                     }
-                    StaffCmds.run("yapprotect lookup");
                 })
         );
     }

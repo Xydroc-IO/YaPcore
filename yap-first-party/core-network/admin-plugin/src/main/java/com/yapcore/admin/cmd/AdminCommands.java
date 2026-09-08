@@ -94,6 +94,46 @@ public final class AdminCommands implements CommandExecutor, TabCompleter {
                 actions.giveItem(player, target, mat, amount);
                 yield true;
             }
+            case "spawnmob", "mob", "summon" -> {
+                // /yapadmin spawnmob <type> [amount] [player]
+                if (!player.hasPermission("yapadmin.spawnmob")) {
+                    YapMessages.noPermission(player, "yapadmin.spawnmob");
+                    yield true;
+                }
+                if (args.length < 2) {
+                    player.sendMessage("§cUsage: /yapadmin spawnmob <type> [amount] [player]");
+                    yield true;
+                }
+                org.bukkit.entity.EntityType type = parseEntityType(args[1]);
+                if (type == null) {
+                    player.sendMessage("§cUnknown entity: " + args[1]);
+                    yield true;
+                }
+                int amount = 1;
+                Player at = player;
+                if (args.length >= 3) {
+                    try {
+                        amount = Integer.parseInt(args[2]);
+                    } catch (NumberFormatException e) {
+                        Player named = Bukkit.getPlayerExact(args[2]);
+                        if (named == null) {
+                            player.sendMessage("§cPlayer offline or bad amount: " + args[2]);
+                            yield true;
+                        }
+                        at = named;
+                    }
+                }
+                if (args.length >= 4) {
+                    Player named = Bukkit.getPlayerExact(args[3]);
+                    if (named == null) {
+                        player.sendMessage("§cPlayer offline: " + args[3]);
+                        yield true;
+                    }
+                    at = named;
+                }
+                actions.spawnMobs(player, at, type, amount);
+                yield true;
+            }
             case "troll" -> {
                 // /yapadmin troll <type> <player>
                 if (args.length < 3) {
@@ -296,7 +336,7 @@ public final class AdminCommands implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             return filter(args[0], List.of(
-                    "reload", "give", "troll", "heal", "feed", "nv", "clear",
+                    "reload", "give", "spawnmob", "mob", "summon", "troll", "heal", "feed", "nv", "clear",
                     "tp", "tphere", "tpspawn", "kick", "warn", "mute", "tempban",
                     "money", "broadcast", "chest"));
         }
@@ -316,6 +356,21 @@ public final class AdminCommands implements CommandExecutor, TabCompleter {
             }
             return out;
         }
+        if (args.length == 2 && isSpawnMobSub(args[0])) {
+            String prefix = args[1].toUpperCase(Locale.ROOT);
+            List<String> out = new ArrayList<>();
+            for (org.bukkit.entity.EntityType t : org.bukkit.entity.EntityType.values()) {
+                if (t == org.bukkit.entity.EntityType.PLAYER
+                        || t == org.bukkit.entity.EntityType.UNKNOWN
+                        || !t.isSpawnable()) {
+                    continue;
+                }
+                if (t.name().startsWith(prefix) && out.size() < 40) {
+                    out.add(t.name().toLowerCase(Locale.ROOT));
+                }
+            }
+            return out;
+        }
         if (args.length >= 2 && needsPlayer(args[0])) {
             int playerArg = playerArgIndex(args[0]);
             if (args.length == playerArg + 1) {
@@ -331,7 +386,33 @@ public final class AdminCommands implements CommandExecutor, TabCompleter {
         if (args.length == 4 && "give".equalsIgnoreCase(args[0])) {
             return onlineNames(args[3]);
         }
+        if (args.length == 3 && isSpawnMobSub(args[0])) {
+            return onlineNames(args[2]);
+        }
+        if (args.length == 4 && isSpawnMobSub(args[0])) {
+            return onlineNames(args[3]);
+        }
         return List.of();
+    }
+
+    private static boolean isSpawnMobSub(String sub) {
+        String s = sub.toLowerCase(Locale.ROOT);
+        return "spawnmob".equals(s) || "mob".equals(s) || "summon".equals(s);
+    }
+
+    private static org.bukkit.entity.EntityType parseEntityType(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String key = raw.trim().toLowerCase(Locale.ROOT).replace('-', '_');
+        if (key.startsWith("minecraft:")) {
+            key = key.substring("minecraft:".length());
+        }
+        try {
+            return org.bukkit.entity.EntityType.valueOf(key.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     private static boolean needsPlayer(String sub) {

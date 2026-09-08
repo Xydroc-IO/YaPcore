@@ -4,6 +4,7 @@ import com.yapcore.admin.AdminPlugin;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.sched.YapSched;
 import com.yapcore.messages.YapMessages;
+import com.yapcore.items.api.ItemServices;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -116,6 +117,46 @@ public final class AdminActions {
         if (!target.equals(admin)) {
             admin.sendMessage("§aGave §f" + qty + "× " + pretty(material) + " §ato §f" + target.getName() + "§a.");
         }
+    }
+
+    /**
+     * Spawn living / spawnable entities at a player's feet (Folia entity thread).
+     * {@code at} null → spawn at admin.
+     */
+    public void spawnMobs(Player admin, Player at, org.bukkit.entity.EntityType type, int amount) {
+        if (!admin.hasPermission("yapadmin.spawnmob")) {
+            YapMessages.noPermission(admin, "yapadmin.spawnmob");
+            return;
+        }
+        if (type == null || type == org.bukkit.entity.EntityType.PLAYER
+                || !type.isSpawnable() || type == org.bukkit.entity.EntityType.UNKNOWN) {
+            admin.sendMessage("§cCannot spawn that entity type.");
+            return;
+        }
+        Player host = at != null ? at : admin;
+        int qty = Math.max(1, Math.min(64, amount));
+        YapSched.entity(plugin, host, () -> {
+            Location loc = host.getLocation();
+            int spawned = 0;
+            for (int i = 0; i < qty; i++) {
+                try {
+                    var entity = host.getWorld().spawnEntity(loc, type);
+                    if (entity != null) {
+                        spawned++;
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().warning("spawnmob " + type + ": " + e.getMessage());
+                    break;
+                }
+            }
+            int n = spawned;
+            admin.sendMessage("§aSpawned §f" + n + "× " + type.name().toLowerCase(Locale.ROOT)
+                    + " §aat §f" + host.getName() + "§a.");
+            if (!host.equals(admin)) {
+                host.sendMessage("§e" + admin.getName() + " §7spawned §f" + n + "× "
+                        + type.name().toLowerCase(Locale.ROOT) + " §7on you.");
+            }
+        });
     }
 
     public void giveKit(Player admin, Player target, String kitId) {
@@ -426,6 +467,49 @@ public final class AdminActions {
     public void closeAndRun(Player admin, String command) {
         admin.closeInventory();
         YapSched.entityLater(plugin, admin, () -> Bukkit.dispatchCommand(admin, command), 1L);
+    }
+
+    /** Persist ability cooldown via YaPItems API (preferred over dispatching /yapitems). */
+    public boolean setItemAbilityCooldown(Player admin, String itemId, String duration) {
+        if (!pluginEnabled("YaPItems")) {
+            admin.sendMessage("§cYaPItems is not installed.");
+            return false;
+        }
+        if (!admin.hasPermission("yapitems.admin") && !admin.hasPermission("yapitems.create") && !admin.isOp()) {
+            YapMessages.noPermission(admin, "yapitems.admin");
+            return false;
+        }
+        String id = itemId == null ? "" : itemId.trim().toLowerCase(Locale.ROOT);
+        String cd = duration == null ? "" : duration.trim().toLowerCase(Locale.ROOT);
+        var serviceOpt = ItemServices.find();
+        if (serviceOpt.isEmpty()) {
+            admin.sendMessage("§cYaPItems service is not ready.");
+            return false;
+        }
+        var service = serviceOpt.get();
+        try {
+            if (!service.setAbilityCooldown(id, cd)) {
+                admin.sendMessage("§cCould not set cooldown for §f" + id + "§c.");
+                return false;
+            }
+            String shown = service.abilityCooldown(id).orElse(cd);
+            admin.sendMessage("§aSet §f" + id + "§a ability cooldown to §f" + shown + "§a.");
+            return true;
+        } catch (AbstractMethodError | NoSuchMethodError e) {
+            // Older YaPItems jar without the new API methods.
+            closeAndRun(admin, "yapitems cooldown " + id + " " + cd);
+            return true;
+        }
+    }
+
+    public static String itemAbilityCooldownLabel(String itemId) {
+        try {
+            return ItemServices.find()
+                    .flatMap(s -> s.abilityCooldown(itemId))
+                    .orElse("none");
+        } catch (AbstractMethodError | NoSuchMethodError e) {
+            return "—";
+        }
     }
 
     public static String pretty(Material material) {
