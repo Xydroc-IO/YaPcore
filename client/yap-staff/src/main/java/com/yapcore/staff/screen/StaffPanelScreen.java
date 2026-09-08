@@ -3,6 +3,7 @@ package com.yapcore.staff.screen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractScrollArea;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ScrollableLayout;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
@@ -17,7 +18,7 @@ import net.minecraft.network.chat.Component;
 
 /**
  * Shared header/footer shell for staff screens.
- * Body scrolls and button/grid widths scale to the current window — no need to resize the game.
+ * Body scrolls and button/grid widths scale to the current window — works windowed or fullscreen.
  */
 public abstract class StaffPanelScreen extends Screen {
 
@@ -33,13 +34,15 @@ public abstract class StaffPanelScreen extends Screen {
 
     @Override
     protected void init() {
-        layout = new HeaderAndFooterLayout(this);
+        // Shorter chrome on low GUI-scale / windowed heights so the scroll body has room.
+        int chrome = this.height < 280 ? 24 : (this.height < 360 ? 28 : 33);
+        layout = new HeaderAndFooterLayout(this, chrome, chrome);
         body = LinearLayout.vertical().spacing(bodySpacing());
         layout.addTitleHeader(this.title, this.font);
         addContents();
 
         Minecraft mc = this.minecraft != null ? this.minecraft : Minecraft.getInstance();
-        int maxH = Math.max(60, layout.getContentHeight());
+        int maxH = Math.max(48, layout.getContentHeight());
         scroll = new ScrollableLayout(mc, body, maxH);
         scroll.setMinWidth(panelWidth());
         layout.addToContents(scroll);
@@ -68,20 +71,26 @@ public abstract class StaffPanelScreen extends Screen {
             // is 0 and collapses the scroll container (empty menu). Vanilla RestrictionsScreen
             // does the same: arrangeElements → setMaxHeight → parent arrange.
             scroll.arrangeElements();
-            scroll.setMaxHeight(Math.max(60, layout.getContentHeight()));
+            scroll.setMaxHeight(Math.max(48, layout.getContentHeight()));
         }
         layout.arrangeElements();
     }
 
     /** Usable content width that shrinks on small windows / grows (capped) on ultrawide. */
     protected int panelWidth() {
-        return Math.min(520, Math.max(220, this.width - 40));
+        int margin = this.width < 360 ? 16 : 32;
+        return Math.min(560, Math.max(180, this.width - margin));
     }
 
     protected int colWidth() {
-        int cols = gridColumns();
-        int gaps = Math.max(0, cols - 1) * 6;
-        return Math.max(90, (panelWidth() - gaps) / cols);
+        return colWidthFor(gridColumns());
+    }
+
+    /** Column width for a specific column count within {@link #panelWidth()}. */
+    protected int colWidthFor(int cols) {
+        int c = Math.max(1, cols);
+        int gaps = Math.max(0, c - 1) * 6;
+        return Math.max(70, (panelWidth() - gaps) / c);
     }
 
     protected int wideWidth() {
@@ -89,21 +98,58 @@ public abstract class StaffPanelScreen extends Screen {
     }
 
     protected int footerBtnWidth() {
-        return Math.min(120, Math.max(80, this.width / 5));
+        return Math.min(120, Math.max(72, this.width / 5));
     }
 
+    /**
+     * How many side-by-side action buttons fit. Windowed / high GUI scale → fewer columns.
+     * Scaled width ~427 is common on 854×480 at GUI scale 2.
+     */
     protected int gridColumns() {
-        if (this.width >= 900) {
+        if (this.width >= 780) {
             return 3;
         }
-        if (this.width >= 520) {
+        if (this.width >= 420) {
             return 2;
         }
         return 1;
     }
 
+    /** Cap a preferred column count to what actually fits this window. */
+    protected int preferredColumns(int preferred) {
+        return Math.max(1, Math.min(preferred, gridColumns()));
+    }
+
+    /** Dense chip rows (damage / cooldown values) — still respects narrow windows. */
+    protected int chipColumns(int valueCount) {
+        int want;
+        if (this.width < 360) {
+            want = 2;
+        } else if (this.width < 520) {
+            want = 3;
+        } else {
+            want = 4;
+        }
+        return Math.max(1, Math.min(want, valueCount));
+    }
+
+    protected int chipWidth(int cols) {
+        int c = Math.max(1, cols);
+        int gaps = Math.max(0, c - 1) * 4;
+        return Math.max(36, (panelWidth() - gaps) / c);
+    }
+
     protected int bodySpacing() {
-        return this.height < 360 ? 3 : 6;
+        return this.height < 300 ? 2 : (this.height < 360 ? 3 : 6);
+    }
+
+    /** Full-width edit box that fits the panel (not a fixed 220px that overflows). */
+    protected EditBox editBox(int height, Component message) {
+        return new EditBox(this.font, panelWidth(), height, message);
+    }
+
+    protected EditBox editBox(int width, int height, Component message) {
+        return new EditBox(this.font, Math.min(width, panelWidth()), height, message);
     }
 
     protected void rebuildWidgets() {
@@ -175,9 +221,9 @@ public abstract class StaffPanelScreen extends Screen {
         int cols = gridColumns();
         GridLayout grid = new GridLayout().columnSpacing(6).rowSpacing(this.height < 360 ? 2 : 4);
         GridLayout.RowHelper rows = grid.createRowHelper(cols);
+        int w = colWidthFor(cols);
         for (Button button : buttons) {
-            // Re-fit width to current column size (builders may have used stale width before layout).
-            button.setWidth(colWidth());
+            button.setWidth(w);
             rows.addChild(button);
         }
         addBody(grid);
@@ -201,7 +247,7 @@ public abstract class StaffPanelScreen extends Screen {
         String label = session.hasTarget() ? "Player: " + session.targetName() : "No player selected";
         addSubtitle(label);
         LinearLayout row = LinearLayout.horizontal().spacing(6);
-        int pickW = Math.min(160, Math.max(110, panelWidth() - 70));
+        int pickW = Math.min(160, Math.max(100, panelWidth() - 70));
         row.addChild(Button.builder(Component.literal("Select player…"), b -> {
             session.setPlayerFilter("");
             session.setPlayerPage(0);
@@ -210,7 +256,7 @@ public abstract class StaffPanelScreen extends Screen {
         row.addChild(Button.builder(Component.literal("Clear"), b -> {
             session.clearTarget();
             rebuildWidgets();
-        }).width(Math.min(70, Math.max(50, panelWidth() / 6))).build());
+        }).width(Math.min(70, Math.max(48, panelWidth() / 6))).build());
         addBody(row);
     }
 

@@ -1,6 +1,7 @@
 package com.yapcore.staff.screen;
 
 import com.yapcore.staff.AbilityCatalog;
+import com.yapcore.staff.EnchantCatalog;
 import com.yapcore.staff.ItemTemplateCatalog;
 import com.yapcore.staff.StaffCmds;
 import com.yapcore.staff.YapStaffClient;
@@ -8,7 +9,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.layouts.GridLayout;
-import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -49,8 +49,7 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
                 ? "Editing " + session.createIdDraft() + " — change options, then Save (overwrites YAML)."
                 : "Name the item, pick abilities + options, then Create.");
 
-        LinearLayout nameRow = LinearLayout.horizontal().spacing(6);
-        nameBox = new EditBox(this.font, 220, 20, Component.literal("Display name"));
+        nameBox = editBox(20, Component.literal("Display name"));
         nameBox.setValue(session.createDisplayName().isBlank() ? (editMode ? session.createIdDraft() : "God Killer") : session.createDisplayName());
         nameBox.setHint(Component.literal("Display name…"));
         nameBox.setMaxLength(64);
@@ -62,11 +61,9 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
                 idBox.setValue(auto);
             }
         });
-        nameRow.addChild(nameBox);
-        addBody(nameRow);
+        addBody(nameBox);
 
-        LinearLayout idRow = LinearLayout.horizontal().spacing(6);
-        idBox = new EditBox(this.font, 220, 20, Component.literal("Id"));
+        idBox = editBox(20, Component.literal("Id"));
         if (session.createIdDraft().isBlank() && !editMode) {
             session.setCreateIdDraft(autoId(nameBox.getValue()));
         }
@@ -77,14 +74,15 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
         if (!editMode) {
             idBox.setResponder(session::setCreateIdDraft);
         }
-        idRow.addChild(idBox);
-        addBody(idRow);
+        addBody(idBox);
 
         addSection("Base: " + ItemTemplateCatalog.label(session.createTemplate()));
         for (String group : ItemTemplateCatalog.groupOrder()) {
             addSection(ItemTemplateCatalog.groupTitle(group));
+            int tCols = preferredColumns(3);
             GridLayout templates = new GridLayout().columnSpacing(4).rowSpacing(3);
-            GridLayout.RowHelper tRows = templates.createRowHelper(3);
+            GridLayout.RowHelper tRows = templates.createRowHelper(tCols);
+            int tw = colWidthFor(tCols);
             for (ItemTemplateCatalog.Entry e : ItemTemplateCatalog.byGroup(group)) {
                 ItemTemplateCatalog.Entry entry = e;
                 tRows.addChild(Button.builder(Component.literal(
@@ -93,7 +91,7 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
                     session.setCreateTemplate(entry.id());
                     applyTemplateDefaults(session, entry);
                     rebuildWidgets();
-                }).width(Math.max(100, colWidth() - 4)).build());
+                }).width(tw).build());
             }
             addBody(templates);
         }
@@ -108,14 +106,14 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
         ), b -> {
             session.toggleCreateShowAllAbilities();
             rebuildWidgets();
-        }).width(Math.min(360, panelWidth() - 20)).build());
+        }).width(wideWidth()).build());
 
         addBody(Button.builder(Component.literal(
                 session.createAbilities().isEmpty() ? "▶ No ability" : "Clear abilities"
         ), b -> {
             session.toggleCreateAbility("none");
             rebuildWidgets();
-        }).width(Math.max(140, colWidth())).build());
+        }).width(colWidth()).build());
 
         for (String cat : AbilityCatalog.categoryOrder()) {
             java.util.List<AbilityCatalog.Info> catAbilities = session.createShowAllAbilities()
@@ -125,14 +123,16 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
                 continue;
             }
             addSection(AbilityCatalog.categoryTitle(cat));
+            int aCols = preferredColumns(2);
             GridLayout abilities = new GridLayout().columnSpacing(4).rowSpacing(3);
-            GridLayout.RowHelper aRows = abilities.createRowHelper(2);
+            GridLayout.RowHelper aRows = abilities.createRowHelper(aCols);
+            int aw = colWidthFor(aCols);
             for (AbilityCatalog.Info info : catAbilities) {
                 boolean sel = session.hasCreateAbility(info.id());
                 aRows.addChild(Button.builder(Component.literal((sel ? "▶ " : "") + info.label()), b -> {
                     session.toggleCreateAbility(info.id());
                     rebuildWidgets();
-                }).width(Math.max(140, colWidth())).build());
+                }).width(aw).build());
             }
             addBody(abilities);
         }
@@ -145,15 +145,17 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
                 }
             }
             addSection("Keybinds");
+            int bCols = preferredColumns(2);
             GridLayout binds = new GridLayout().columnSpacing(4).rowSpacing(3);
-            GridLayout.RowHelper bRows = binds.createRowHelper(2);
+            GridLayout.RowHelper bRows = binds.createRowHelper(bCols);
+            int bw = colWidthFor(bCols);
             for (String a : session.createAbilities()) {
                 String ability = a;
                 String label = AbilityCatalog.label(ability) + " → " + session.createAbilityTrigger(ability);
                 bRows.addChild(Button.builder(Component.literal(label), b -> {
                     session.cycleCreateAbilityTrigger(ability);
                     rebuildWidgets();
-                }).width(Math.max(140, colWidth())).build());
+                }).width(bw).build());
             }
             addBody(binds);
             addBody(new StringWidget(Component.literal(
@@ -228,22 +230,51 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
         addChipRow(GEAR, session.createGearAttack(), session::setCreateGearAttack);
 
         addSection("Item look");
-        LinearLayout lookRow = LinearLayout.horizontal().spacing(6);
-        lookRow.addChild(Button.builder(Component.literal(
+        int lookCols = preferredColumns(2);
+        GridLayout lookGrid = new GridLayout().columnSpacing(6).rowSpacing(3);
+        GridLayout.RowHelper lookRows = lookGrid.createRowHelper(lookCols);
+        int lw = colWidthFor(lookCols);
+        lookRows.addChild(Button.builder(Component.literal(
                 session.createGlow() ? "▶ Glow ON" : "Glow OFF"
         ), b -> {
             session.toggleCreateGlow();
             rebuildWidgets();
-        }).width(Math.max(110, colWidth())).build());
-        lookRow.addChild(Button.builder(Component.literal(
+        }).width(lw).build());
+        lookRows.addChild(Button.builder(Component.literal(
                 session.createUnbreakable() ? "▶ Unbreakable ON" : "Unbreakable OFF"
         ), b -> {
             session.toggleCreateUnbreakable();
             rebuildWidgets();
-        }).width(Math.max(140, colWidth())).build());
-        addBody(lookRow);
+        }).width(lw).build());
+        addBody(lookGrid);
         addBody(new StringWidget(Component.literal(
                 "Glow = enchantment shine · Unbreakable = never loses durability"), this.font));
+
+        addSection("Enchantments  ·  " + session.createEnchantsPrettyLabel());
+        addBody(Button.builder(Component.literal(
+                session.createEnchants().isEmpty() ? "No enchants" : "Clear enchants"
+        ), b -> {
+            session.clearCreateEnchants();
+            rebuildWidgets();
+        }).width(colWidth()).build());
+        int eCols = preferredColumns(2);
+        GridLayout enchGrid = new GridLayout().columnSpacing(4).rowSpacing(3);
+        GridLayout.RowHelper enchRows = enchGrid.createRowHelper(eCols);
+        int ew = colWidthFor(eCols);
+        for (EnchantCatalog.Info info : EnchantCatalog.forItemGroup(session.createItemGroup())) {
+            EnchantCatalog.Info entry = info;
+            int lvl = session.createEnchantLevel(entry.id());
+            String label = lvl > 0
+                    ? "▶ " + EnchantCatalog.labelWithLevel(entry.id(), lvl)
+                    : entry.label();
+            enchRows.addChild(Button.builder(Component.literal(label), b -> {
+                session.cycleCreateEnchant(entry.id());
+                rebuildWidgets();
+            }).width(ew).build());
+        }
+        addBody(enchGrid);
+        addBody(new StringWidget(Component.literal(
+                "Click to cycle level (off → I → … → max → off)"), this.font));
 
         addBody(new StringWidget(Component.literal(
                 colorless(session.createDisplayName())
@@ -293,13 +324,16 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
                     needPotionPower ? session.createPotionAmplifier() : null,
                     session.createGlow(),
                     session.createUnbreakable(),
+                    session.createEnchantsCompact().isBlank() ? null : session.createEnchantsCompact(),
                     editMode);
-        }).width(Math.min(280, panelWidth() - 20)).build());
+        }).width(Math.min(280, wideWidth())).build());
     }
 
     private void addChipRow(String[] values, String selected, java.util.function.Consumer<String> setter) {
+        int cols = chipColumns(values.length);
+        int w = chipWidth(cols);
         GridLayout grid = new GridLayout().columnSpacing(4).rowSpacing(3);
-        GridLayout.RowHelper rows = grid.createRowHelper(Math.min(4, values.length));
+        GridLayout.RowHelper rows = grid.createRowHelper(cols);
         for (String v : values) {
             String value = v;
             rows.addChild(Button.builder(Component.literal(
@@ -307,7 +341,7 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
             ), b -> {
                 setter.accept(value);
                 rebuildWidgets();
-            }).width(Math.max(56, (colWidth() - 12) / 2)).build());
+            }).width(w).build());
         }
         addBody(grid);
     }

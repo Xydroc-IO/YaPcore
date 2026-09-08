@@ -8,6 +8,9 @@
     "PauseScreenMixin",
     "ChatComponentMixin"
   ],
+  "mixins": [
+    "ServerboundCustomPayloadPacketMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   },

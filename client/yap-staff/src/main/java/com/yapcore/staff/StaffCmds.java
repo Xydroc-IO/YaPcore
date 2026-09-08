@@ -4,7 +4,10 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.common.ServerboundCustomPayloadPacket;
 import net.minecraft.network.protocol.game.ServerboundChatCommandPacket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -20,7 +23,13 @@ import java.util.StringJoiner;
  */
 public final class StaffCmds {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger("yap-staff");
     private static final long COOLDOWN_MS = 250L;
+    /**
+     * Vanilla chat_command decode kicks on long create lines (enchants, many flags).
+     * Keep short cmds on chat_command; relay the rest over {@code yap:staff}.
+     */
+    private static final int CHAT_COMMAND_SAFE_LEN = 200;
     private static long lastSendMs;
 
     private StaffCmds() {
@@ -41,10 +50,23 @@ public final class StaffCmds {
             return;
         }
         String trimmed = command.startsWith("/") ? command.substring(1) : command;
-        // Always send the unsigned chat_command packet. sendCommand / sendUnattendedCommand can
-        // route through signed-command confirm and has kicked with DecoderException on long
-        // yapitems create lines (legacy & names, spaces, many flags).
+        if (shouldUseStaffChannel(trimmed)) {
+            try {
+                connection.send(new ServerboundCustomPayloadPacket(StaffChannelPayload.run(trimmed)));
+                return;
+            } catch (Exception e) {
+                LOGGER.warn("yap:staff payload failed; falling back to chat_command (len={})", trimmed.length(), e);
+            }
+        }
         connection.send(new ServerboundChatCommandPacket(trimmed));
+    }
+
+    private static boolean shouldUseStaffChannel(String commandWithoutSlash) {
+        if (commandWithoutSlash.length() > CHAT_COMMAND_SAFE_LEN) {
+            return true;
+        }
+        String lower = commandWithoutSlash.toLowerCase(Locale.ROOT);
+        return lower.startsWith("yapitems create") || lower.startsWith("yapitems edit");
     }
 
     public static void runFmt(String format, Object... args) {
@@ -222,6 +244,32 @@ public final class StaffCmds {
             boolean glow,
             boolean unbreakable,
             boolean replace) {
+        customItemCreateFull(
+                id, template, name, abilitiesWithTriggers,
+                damageOrNull, rangeOrNull, cooldownOrNull, gearAttackOrNull,
+                effectOrNull, radiusOrNull, amountOrNull, projectileOrNull,
+                durationTicksOrNull, amplifierOrNull, glow, unbreakable, null, replace);
+    }
+
+    public static void customItemCreateFull(
+            String id,
+            String template,
+            String name,
+            java.util.Map<String, String> abilitiesWithTriggers,
+            String damageOrNull,
+            String rangeOrNull,
+            String cooldownOrNull,
+            String gearAttackOrNull,
+            String effectOrNull,
+            String radiusOrNull,
+            String amountOrNull,
+            String projectileOrNull,
+            String durationTicksOrNull,
+            String amplifierOrNull,
+            boolean glow,
+            boolean unbreakable,
+            String enchantsCompactOrNull,
+            boolean replace) {
         StringBuilder sb = new StringBuilder();
         sb.append("yapitems create ").append(id)
                 .append(" --template ").append(template);
@@ -285,6 +333,11 @@ public final class StaffCmds {
             sb.append(" --unbreakable");
         } else if (replace) {
             sb.append(" --no-unbreakable");
+        }
+        if (enchantsCompactOrNull != null && !enchantsCompactOrNull.isBlank()) {
+            sb.append(" --enchants ").append(enchantsCompactOrNull.trim().toLowerCase(Locale.ROOT));
+        } else if (replace) {
+            sb.append(" --no-enchants");
         }
         if (isFurnitureTemplate(template)) {
             sb.append(" --furniture");

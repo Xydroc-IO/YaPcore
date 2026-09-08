@@ -45,19 +45,20 @@ public final class GiveScreen extends StaffPanelScreen {
                 target + "  ·  Amount ×" + session.giveAmount()), this.font));
 
         LinearLayout controls = LinearLayout.horizontal().spacing(6);
+        int ctrlW = Math.min(110, Math.max(72, (panelWidth() - 12) / 3));
         controls.addChild(Button.builder(Component.literal("Amount ×" + session.giveAmount()), b -> {
             session.cycleGiveAmount();
             rebuildWidgets();
-        }).width(110).build());
+        }).width(ctrlW).build());
         controls.addChild(Button.builder(Component.literal("Select player…"), b ->
-                open(new PlayersScreen(this, true))).width(120).build());
+                open(new PlayersScreen(this, true))).width(Math.min(130, ctrlW + 20)).build());
         controls.addChild(Button.builder(Component.literal("Clear"), b -> {
             session.clearTarget();
             rebuildWidgets();
-        }).width(70).build());
+        }).width(Math.min(70, ctrlW)).build());
         top.addChild(controls);
 
-        EditBox search = new EditBox(this.font, 240, 20, Component.literal("Search items"));
+        EditBox search = editBox(20, Component.literal("Search items"));
         search.setValue(session.giveFilter());
         search.setHint(Component.literal("Search materials…"));
         search.setResponder(text -> {
@@ -68,18 +69,23 @@ public final class GiveScreen extends StaffPanelScreen {
         addBody(top);
 
         addSection("Presets");
+        int pCols = preferredColumns(4);
+        int pw = colWidthFor(pCols);
         GridLayout presets = new GridLayout().columnSpacing(4).rowSpacing(3);
-        GridLayout.RowHelper presetRows = presets.createRowHelper(4);
+        GridLayout.RowHelper presetRows = presets.createRowHelper(pCols);
         for (String id : PRESETS) {
             presetRows.addChild(Button.builder(Component.literal(pretty(id)), b -> give(id))
-                    .width(110).build());
+                    .width(pw).build());
         }
         addBody(presets);
 
         addSection("Kits");
-        LinearLayout kits = LinearLayout.horizontal().spacing(6);
+        int kCols = preferredColumns(3);
+        int kw = colWidthFor(kCols);
+        GridLayout kits = new GridLayout().columnSpacing(6).rowSpacing(3);
+        GridLayout.RowHelper kitRows = kits.createRowHelper(kCols);
         for (String kit : KITS) {
-            kits.addChild(Button.builder(Component.literal(kit), b -> {
+            kitRows.addChild(Button.builder(Component.literal(kit), b -> {
                 String who = session.hasTarget() ? session.targetName() : null;
                 if (who == null && minecraft != null && minecraft.player != null) {
                     who = minecraft.player.getGameProfile().name();
@@ -87,7 +93,7 @@ public final class GiveScreen extends StaffPanelScreen {
                 if (who != null) {
                     StaffCmds.runFmt("kit give %s %s", who, kit);
                 }
-            }).width(100).build());
+            }).width(kw).build());
         }
         addBody(kits);
 
@@ -101,11 +107,13 @@ public final class GiveScreen extends StaffPanelScreen {
         int end = Math.min(ids.size(), start + PAGE_SIZE);
 
         addSection("All items — " + (page + 1) + "/" + (maxPage + 1));
+        int gCols = preferredColumns(4);
+        int gw = colWidthFor(gCols);
         GridLayout grid = new GridLayout().columnSpacing(4).rowSpacing(3);
-        GridLayout.RowHelper rows = grid.createRowHelper(4);
+        GridLayout.RowHelper rows = grid.createRowHelper(gCols);
         for (int i = start; i < end; i++) {
             String id = ids.get(i);
-            rows.addChild(Button.builder(Component.literal(pretty(id)), b -> give(id)).width(110).build());
+            rows.addChild(Button.builder(Component.literal(pretty(id)), b -> give(id)).width(gw).build());
         }
         addBody(grid);
 

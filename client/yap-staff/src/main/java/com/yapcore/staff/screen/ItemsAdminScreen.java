@@ -47,27 +47,30 @@ public final class ItemsAdminScreen extends StaffPanelScreen {
         top.addChild(new StringWidget(Component.literal(
                 target + "  ·  Amount ×" + session.giveAmount()), this.font));
 
-        LinearLayout controls = LinearLayout.horizontal().spacing(6);
-        controls.addChild(Button.builder(Component.literal("Amount ×" + session.giveAmount()), b -> {
+        // Wrap via grid — a single row of 5 fixed buttons overflows windowed GUI scale.
+        int cCols = preferredColumns(3);
+        int cw = colWidthFor(cCols);
+        GridLayout controlGrid = new GridLayout().columnSpacing(4).rowSpacing(3);
+        GridLayout.RowHelper cRows = controlGrid.createRowHelper(cCols);
+        cRows.addChild(Button.builder(Component.literal("Amount ×" + session.giveAmount()), b -> {
             session.cycleGiveAmount();
             rebuildWidgets();
-        }).width(110).build());
-        controls.addChild(Button.builder(Component.literal("Select player…"), b ->
-                open(new PlayersScreen(this, true))).width(120).build());
-        controls.addChild(Button.builder(Component.literal("Reload"), b ->
-                StaffCmds.run("yapitems reload")).width(80).build());
-        controls.addChild(Button.builder(Component.literal("Sync list"), b -> {
-            StaffCmds.run("yapitems list --ids");
-        }).width(90).build());
-        controls.addChild(Button.builder(Component.literal("Server GUI"), b -> {
+        }).width(cw).build());
+        cRows.addChild(Button.builder(Component.literal("Select player…"), b ->
+                open(new PlayersScreen(this, true))).width(cw).build());
+        cRows.addChild(Button.builder(Component.literal("Reload"), b ->
+                StaffCmds.run("yapitems reload")).width(cw).build());
+        cRows.addChild(Button.builder(Component.literal("Sync list"), b ->
+                StaffCmds.run("yapitems list --ids")).width(cw).build());
+        cRows.addChild(Button.builder(Component.literal("Server GUI"), b -> {
             closeToGame();
             StaffCmds.run("yapitems gui");
-        }).width(100).build());
-        top.addChild(controls);
+        }).width(cw).build());
+        top.addChild(controlGrid);
         top.addChild(new StringWidget(Component.literal(
                 "Created items appear here after Sync list (or automatically on create)"), this.font));
 
-        EditBox search = new EditBox(this.font, 240, 20, Component.literal("Filter"));
+        EditBox search = editBox(20, Component.literal("Filter"));
         search.setValue(session.giveFilter());
         search.setHint(Component.literal("Filter item ids…"));
         search.setResponder(text -> {
@@ -77,7 +80,7 @@ public final class ItemsAdminScreen extends StaffPanelScreen {
         top.addChild(search);
 
         LinearLayout giveRow = LinearLayout.horizontal().spacing(6);
-        EditBox idBox = new EditBox(this.font, 180, 20, Component.literal("Item id"));
+        EditBox idBox = editBox(Math.max(100, panelWidth() - 100), 20, Component.literal("Item id"));
         idBox.setValue(session.itemsIdDraft());
         idBox.setHint(Component.literal("Give by id…"));
         idBox.setResponder(session::setItemsIdDraft);
@@ -88,34 +91,36 @@ public final class ItemsAdminScreen extends StaffPanelScreen {
                 session.rememberCustomItem(id);
                 give(id);
             }
-        }).width(80).build());
+        }).width(Math.min(80, Math.max(56, panelWidth() / 6))).build());
         top.addChild(giveRow);
 
         top.addChild(Button.builder(Component.literal("Set ability cooldown…"), b -> {
             String id = session.itemsIdDraft();
             open(new ItemsCooldownScreen(this, id));
-        }).width(Math.min(240, panelWidth() - 20)).build());
+        }).width(wideWidth()).build());
         top.addChild(Button.builder(Component.literal("Create custom item…"), b ->
-                open(new ItemsCreateScreen(this))).width(Math.min(240, panelWidth() - 20)).build());
+                open(new ItemsCreateScreen(this))).width(wideWidth()).build());
         top.addChild(new StringWidget(Component.literal(
                 "Builder: name · ability · damage · range · cooldown · gear"), this.font));
         addBody(top);
 
         addSection("Quick bases (opens builder)");
+        int qCols = preferredColumns(3);
+        int qw = colWidthFor(qCols);
         GridLayout create = new GridLayout().columnSpacing(4).rowSpacing(3);
-        GridLayout.RowHelper createRows = create.createRowHelper(3);
-        addQuick(createRows, session, "Sword…", "sword");
-        addQuick(createRows, session, "Axe…", "axe");
-        addQuick(createRows, session, "Pickaxe…", "pickaxe");
-        addQuick(createRows, session, "Shovel…", "shovel");
-        addQuick(createRows, session, "Bow…", "bow");
-        addQuick(createRows, session, "Amethyst…", "amethyst");
-        addQuick(createRows, session, "Emerald…", "emerald");
-        addQuick(createRows, session, "Nether star…", "nether_star");
-        addQuick(createRows, session, "Prop oak…", "prop_oak");
-        addQuick(createRows, session, "Prop chest…", "prop_chest");
-        addQuick(createRows, session, "Prop lantern…", "prop_lantern");
-        addQuick(createRows, session, "Key…", "key");
+        GridLayout.RowHelper createRows = create.createRowHelper(qCols);
+        addQuick(createRows, session, "Sword…", "sword", qw);
+        addQuick(createRows, session, "Axe…", "axe", qw);
+        addQuick(createRows, session, "Pickaxe…", "pickaxe", qw);
+        addQuick(createRows, session, "Shovel…", "shovel", qw);
+        addQuick(createRows, session, "Bow…", "bow", qw);
+        addQuick(createRows, session, "Amethyst…", "amethyst", qw);
+        addQuick(createRows, session, "Emerald…", "emerald", qw);
+        addQuick(createRows, session, "Nether star…", "nether_star", qw);
+        addQuick(createRows, session, "Prop oak…", "prop_oak", qw);
+        addQuick(createRows, session, "Prop chest…", "prop_chest", qw);
+        addQuick(createRows, session, "Prop lantern…", "prop_lantern", qw);
+        addQuick(createRows, session, "Key…", "key", qw);
         addBody(create);
 
         List<String> ids = filtered(session);
@@ -133,25 +138,26 @@ public final class ItemsAdminScreen extends StaffPanelScreen {
         for (int i = start; i < end; i++) {
             String id = ids.get(i);
             LinearLayout row = LinearLayout.horizontal().spacing(4);
+            int idW = Math.max(64, panelWidth() - 140);
             row.addChild(Button.builder(Component.literal(id), b -> {
                 session.setItemsIdDraft(id);
                 give(id);
-            }).width(Math.max(90, colWidth() - 160)).build());
+            }).width(idW).build());
             row.addChild(Button.builder(Component.literal("Edit"), b -> {
                 session.setItemsIdDraft(id);
                 session.setCreateIdDraft(id);
                 session.setCreateDisplayName(id);
                 open(new ItemsCreateScreen(this, true));
-            }).width(48).build());
+            }).width(44).build());
             row.addChild(Button.builder(Component.literal("Del"), b -> {
                 session.forgetCustomItem(id);
                 StaffCmds.customItemDelete(id);
                 rebuildWidgets();
-            }).width(40).build());
+            }).width(36).build());
             row.addChild(Button.builder(Component.literal("CD"), b -> {
                 session.setItemsIdDraft(id);
                 open(new ItemsCooldownScreen(this, id));
-            }).width(36).build());
+            }).width(32).build());
             rows.addChild(row);
         }
         addBody(grid);
@@ -181,7 +187,8 @@ public final class ItemsAdminScreen extends StaffPanelScreen {
             GridLayout.RowHelper rows,
             com.yapcore.staff.StaffSession session,
             String label,
-            String template) {
+            String template,
+            int width) {
         rows.addChild(Button.builder(Component.literal(label), b -> {
             session.setCreateTemplate(template);
             var entry = com.yapcore.staff.ItemTemplateCatalog.get(template);
@@ -190,7 +197,7 @@ public final class ItemsAdminScreen extends StaffPanelScreen {
                 session.setCreateAbility(ability == null || ability.isBlank() ? "none" : ability);
             }
             open(new ItemsCreateScreen(this));
-        }).width(Math.max(80, colWidth() - 4)).build());
+        }).width(width).build());
     }
 
     private static List<String> filtered(com.yapcore.staff.StaffSession session) {

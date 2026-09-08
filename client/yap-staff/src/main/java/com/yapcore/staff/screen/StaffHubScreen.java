@@ -18,7 +18,7 @@ public final class StaffHubScreen extends StaffPanelScreen {
         String target = YapStaffClient.session().hasTarget()
                 ? "Player: " + YapStaffClient.session().targetName()
                 : "No player selected";
-        addSubtitle("Network admin tools");
+        addSubtitle("Network admin tools · scroll if the window is short");
         addSubtitle(target);
 
         addSection("Players");

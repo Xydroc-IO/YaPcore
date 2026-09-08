@@ -1,10 +1,10 @@
 # yap-staff
 
-Fabric **client** mod for Minecraft **26.2** (version **1.0.24**). Branded **YaP Staff** admin GUI with sectioned tools.
+Fabric **client** mod for Minecraft **26.2** (version **1.0.27**). Branded **YaP Staff** admin GUI with sectioned tools.
 
 Opens with **R** (Controls → Miscellaneous → Open YaP Staff) or **Esc → Staff menu**.
 
-Menus **scroll** and **scale** to the game window (1–3 button columns). Option clicks **keep scroll position**.
+Menus **scroll** and **scale** to the game window (1–3 button columns; works windowed or fullscreen). Option clicks **keep scroll position**.
 
 ## What it includes
 
@@ -25,15 +25,16 @@ Menus **scroll** and **scale** to the game window (1–3 button columns). Option
 | **More…** | Stacker, regions, map, chest GUIs |
 | **Chest menu** | Folia `/yapadmin` chest hub |
 
-### Custom items create (1.0.24+)
+### Custom items create (1.0.25+)
 
 - Concrete bases by category (weapons, tools, gems, props)
 - Abilities filtered to the base group, listed by category (Combat / Movement / Self / Gathering / Utility)
 - Per-ability keybinds; break reach / blast / max blocks; self vs enemy potion options
 - **Glow** and **Unbreakable** toggles
-- Create uses compact `--abilities` + `--nameb64` over an unsigned command packet (avoids chat_command decode kicks)
+- **Enchant picker** — click cycles level (Sharpness, Unbreaking, Efficiency, …) suited to the item group
+- Create uses compact `--abilities` + `--nameb64`; long create/edit lines go over plugin channel **`yap:staff`** (avoids chat_command decode kicks)
 
-Requires server **yap-items.jar** + **yap-admin.jar**. See [YAPITEMS.md](../../docs/plugins/YAPITEMS.md).
+Requires server **yap-items.jar** + **yap-admin.jar** (with `yap:staff` channel). See [YAPITEMS.md](../../docs/plugins/YAPITEMS.md).
 
 **Player targeting:** **Select player…** returns to the calling tool. Hub → Players opens the full manage menu.
 
@@ -42,8 +43,8 @@ The **server** enforces permissions. Command shapes follow [Staff / menu contrac
 ## Install
 
 1. Fabric Loader **0.19.5+** for Minecraft **26.2**
-2. Drop `yap-staff-1.0.24.jar` into `.minecraft/mods/` (only one `yap-staff-*.jar`)
-3. Join YaPcore / Folia with YaPAdmin + YaPItems loaded
+2. Drop `yap-staff-1.0.27.jar` into `.minecraft/mods/` (only one `yap-staff-*.jar`)
+3. Join YaPcore / Folia with YaPAdmin + YaPItems loaded (**full Folia restart** after swapping `yap-admin.jar`)
 
 Also shipped in `client_mods.zip` from `./scripts/build-yap-client-render.sh`.
 
@@ -54,7 +55,7 @@ cd client/yap-staff
 ./gradlew build
 ```
 
-Jar: `build/libs/yap-staff-1.0.24.jar`
+Jar: `build/libs/yap-staff-1.0.27.jar`
 
 ## Config
 

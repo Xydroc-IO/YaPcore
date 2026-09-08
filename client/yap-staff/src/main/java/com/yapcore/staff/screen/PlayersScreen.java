@@ -46,7 +46,8 @@ public final class PlayersScreen extends StaffPanelScreen {
         }
 
         LinearLayout searchRow = LinearLayout.horizontal().spacing(6);
-        searchBox = new EditBox(this.font, 180, 20, Component.literal("Search"));
+        int searchW = Math.max(100, panelWidth() - 150);
+        searchBox = editBox(searchW, 20, Component.literal("Search"));
         searchBox.setValue(session.playerFilter());
         searchBox.setHint(Component.literal("Type name…"));
         searchBox.setMaxLength(32);
@@ -56,12 +57,12 @@ public final class PlayersScreen extends StaffPanelScreen {
         searchRow.addChild(Button.builder(Component.literal("Search"), b -> {
             session.setPlayerPage(0);
             rebuildWidgets();
-        }).width(70).build());
+        }).width(Math.min(70, Math.max(56, panelWidth() / 8))).build());
         searchRow.addChild(Button.builder(Component.literal("Clear"), b -> {
             session.setPlayerFilter("");
             session.setPlayerPage(0);
             rebuildWidgets();
-        }).width(60).build());
+        }).width(Math.min(60, Math.max(48, panelWidth() / 9))).build());
         addBody(searchRow);
 
         String selected = session.hasTarget() ? "Current target: " + session.targetName() : "Current target: (none)";
@@ -80,8 +81,10 @@ public final class PlayersScreen extends StaffPanelScreen {
             letters.add(Character.toUpperCase(name.charAt(0)));
         }
         if (!letters.isEmpty()) {
+            int letterCols = this.width < 360 ? 8 : (this.width < 520 ? 10 : 13);
             GridLayout letterGrid = new GridLayout().columnSpacing(2).rowSpacing(2);
-            GridLayout.RowHelper letterRows = letterGrid.createRowHelper(13);
+            GridLayout.RowHelper letterRows = letterGrid.createRowHelper(letterCols);
+            int letterW = Math.max(16, (panelWidth() - (letterCols - 1) * 2) / letterCols);
             for (Character letter : letters) {
                 char L = letter;
                 letterRows.addChild(Button.builder(Component.literal(String.valueOf(L)), b -> {
@@ -95,7 +98,7 @@ public final class PlayersScreen extends StaffPanelScreen {
                     }
                     session.setPlayerPage(jump);
                     rebuildWidgets();
-                }).width(18).build());
+                }).width(letterW).build());
             }
             addBody(letterGrid);
         }
