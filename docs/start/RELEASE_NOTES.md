@@ -16,8 +16,8 @@ Same ship version (no product bump). Custom items + client polish:
 | Area | Change |
 |------|--------|
 | **YaPItems** | New gameplay plugin: YAML registry, multi-ability keybinds, furniture, recipes, kits `yap-item:`, create/delete/cooldown CLI — [YAPITEMS.md](../plugins/YAPITEMS.md) |
-| **YaPAdmin** | Hub **Custom items** create wizard (categorized abilities, glow/unbreakable, break volume, potion options) |
-| **yap-staff 1.0.24** | Custom items screens; scroll position preserved; unsigned create command + `--nameb64` / `--abilities` (no chat_command kick) |
+| **YaPAdmin** | Hub **Custom items** create wizard (categorized abilities, glow/unbreakable, enchant picker, break volume, potion options) |
+| **yap-staff 1.0.25** | Custom items screens + enchant picker; scroll position preserved; unsigned create command + `--nameb64` / `--abilities` (no chat_command kick) |
 | **YaP Shaders** | Glass ≠ water; waterfall cascade path; wind on leaves/grass/vines only (log builds stay still) |
 | **Pack / kits** | `yap-items` overlay in `yapcore-default`; kit YAML `yap-item:` rows |
 

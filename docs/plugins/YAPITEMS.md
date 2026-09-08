@@ -55,6 +55,9 @@ Alias: `/yitems`.
 | `--gear-attack` / `--gear-strength` | Melee gear bonus tags |
 | `--glow` / `--no-glow` | Enchantment glint |
 | `--unbreakable` / `--no-unbreakable` | Never loses durability |
+| `--enchants sharpness:5,unbreaking:3` | Real enchantments (id:level list) |
+| `--enchant sharpness:5` | Same, repeatable |
+| `--no-enchants` / `--clear-enchants` | Clear enchants (with `--replace`) |
 | `--furniture` | Placeable prop |
 | `--replace` / `--force` | Overwrite existing **custom** item |
 
@@ -133,14 +136,14 @@ Requires YaPItems enabled (resolved via `ItemService`).
 
 When `register-combat-service: true`, YaPItems registers `CombatService` and `gearBonusFor` reads definition `gear:` tags.
 
-Real enchantments can still be authored under YAML `enchants:` (create UI does not yet pick enchants — use `glow` for shine only).
+Real enchantments live under YAML `enchants:` and can be set from create UIs (admin **Enchants…**, staff enchant grid) or CLI `--enchants` / `--enchant`. Use `glow` for shine without a real enchant.
 
 ## Superadmin UI
 
 | Surface | Path |
 |---------|------|
 | **YaPAdmin** chest | Hub → **Custom items** → create (category → base → build) · browse/manage · give · cooldown · reload |
-| **yap-staff** (1.0.24+) | Hub → **Custom items…** → create/edit (categorized abilities, glow/unbreakable, break volume) · browse · CD |
+| **yap-staff** (1.0.25+) | Hub → **Custom items…** → create/edit (categorized abilities, glow/unbreakable, enchant picker, break volume) · browse · CD |
 | **CLI** | `/yapitems create …` as above |
 
 Staff create sends an unsigned `chat_command` with compact `--abilities` and `--nameb64` when needed (avoids kick on long/fancy names). After installing plugin jars, **fully restart Folia** (hot-swap of nested classes is unsafe).

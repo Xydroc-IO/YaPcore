@@ -221,16 +221,16 @@ See [yap-bag/README.md](../../client/yap-bag/README.md).
 |-------|--------|
 | YaPAdmin `/yapadmin` | Server — required |
 | YaPItems `/yapitems` | Server — gameplay jar for custom items |
-| `yap-staff-1.0.24.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
+| `yap-staff-1.0.25.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
 
 ```bash
 cd client/yap-staff && ./gradlew build
-# → client/yap-staff/build/libs/yap-staff-1.0.24.jar
+# → client/yap-staff/build/libs/yap-staff-1.0.25.jar
 ```
 
 Config: `.minecraft/config/yap-staff.json`. See [yap-staff/README.md](../../client/yap-staff/README.md), [ADMIN_MENU.md](../ops/ADMIN_MENU.md), and [YAPITEMS.md](../plugins/YAPITEMS.md).
 
-The Fabric **yap-staff** mod scrolls/scales to the window (scroll position preserved on rebuild), uses a searchable player picker that returns to the calling tool, includes spawn-mobs + give + **YaPItems create** (glow / unbreakable / categorized abilities), and a full YaPPerms ranks editor UI. Update **yap-admin.jar** + **yap-items.jar** on the server.
+The Fabric **yap-staff** mod scrolls/scales to the window (scroll position preserved on rebuild), uses a searchable player picker that returns to the calling tool, includes spawn-mobs + give + **YaPItems create** (glow / unbreakable / enchant picker / categorized abilities), and a full YaPPerms ranks editor UI. Update **yap-admin.jar** + **yap-items.jar** on the server.
 
 ## Realistic skies / YaP Shaders
 
