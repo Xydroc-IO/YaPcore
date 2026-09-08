@@ -79,12 +79,13 @@ ranks apply
 /yapperm user YourName parent set admin
 ```
 
-9. Join from Minecraft:
+9. Join from Minecraft (skins need **YaP Link**):
 
 | Edition | Address |
 |---------|---------|
-| **Java** | `127.0.0.1:25566` (or port shown in boot banner) |
-| **Bedrock** | same IP, same port (dual-stack UDP+TCP) |
+| **Java (recommended)** | `127.0.0.1:25565` — YaP Link (modern forwarding / skins) |
+| **Java (direct, no skins)** | `127.0.0.1:25566` — chassis only; set `velocity-enabled=false` first |
+| **Bedrock** | `127.0.0.1` UDP **25565** when Link bedrock is on (or shared port per banner) |
 
 ---
 

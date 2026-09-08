@@ -111,9 +111,11 @@ srv-enabled=true
 srv-priority=0
 srv-weight=5
 
-# Proxy (optional multi-backend)
-velocity-enabled=false
-velocity-online-mode=true
+# Proxy — YaP Link modern forwarding (skins). Join :25565; set false only for direct :25566 without Link.
+velocity-enabled=true
+velocity-secret-file=forwarding.secret
+velocity-online-mode=false
+velocity-bind-localhost=true
 
 # JVM tuning
 jvm-gc=zgc

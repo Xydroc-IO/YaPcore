@@ -69,33 +69,68 @@ class PaperVelocitySupportTest {
     }
 
     @Test
-    void velocityWithoutSecretFailsClosed() throws Exception {
+    void velocityMissingSecretFileIsAutoCreated() throws Exception {
         Path root = temp.resolve("root2");
         Path paper = temp.resolve("paper2");
         Files.createDirectories(root);
+        Files.createDirectories(paper.resolve("config"));
+        Path cfgFile = root.resolve("server.properties");
+        Files.writeString(cfgFile, """
+                velocity-enabled=true
+                velocity-secret-file=forwarding.secret
+                velocity-online-mode=false
+                """, StandardCharsets.UTF_8);
+        ServerConfig config = new ServerConfig(cfgFile);
+        config.load();
+        PaperFiles.applyVelocitySupport(root, paper, config);
+        assertTrue(Files.isRegularFile(root.resolve("forwarding.secret")));
+        Yaml yaml = new Yaml();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> global = yaml.load(Files.readString(paper.resolve("config/paper-global.yml")));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> velocity = (Map<String, Object>) ((Map<?, ?>) global.get("proxies")).get("velocity");
+        assertEquals(Boolean.TRUE, velocity.get("enabled"));
+        assertFalse(((String) velocity.get("secret")).isBlank());
+    }
+
+    @Test
+    void velocityWithoutAnySecretFailsClosed() throws Exception {
+        Path root = temp.resolve("root2b");
+        Path paper = temp.resolve("paper2b");
+        Files.createDirectories(root);
         Files.createDirectories(paper);
         Path cfgFile = root.resolve("server.properties");
-        Files.writeString(cfgFile, "velocity-enabled=true\n", StandardCharsets.UTF_8);
+        Files.writeString(cfgFile, """
+                velocity-enabled=true
+                velocity-secret-file=
+                velocity-secret=
+                """, StandardCharsets.UTF_8);
         ServerConfig config = new ServerConfig(cfgFile);
         config.load();
         assertThrows(Exception.class, () -> PaperFiles.applyVelocitySupport(root, paper, config));
     }
 
     @Test
-    void velocityDisabledDoesNotTouchPaperGlobal() throws Exception {
+    void velocityDisabledClearsPaperVelocityBlock() throws Exception {
         Path root = temp.resolve("root3");
         Path paper = temp.resolve("paper3");
         Files.createDirectories(root);
         Path global = paper.resolve("config/paper-global.yml");
         Files.createDirectories(global.getParent());
-        Files.writeString(global, "proxies:\n  velocity:\n    enabled: false\n    secret: keep-me\n",
+        Files.writeString(global, "proxies:\n  velocity:\n    enabled: true\n    secret: keep-me\n",
                 StandardCharsets.UTF_8);
         Path cfgFile = root.resolve("server.properties");
         Files.writeString(cfgFile, "velocity-enabled=false\n", StandardCharsets.UTF_8);
         ServerConfig config = new ServerConfig(cfgFile);
         config.load();
         PaperFiles.applyVelocitySupport(root, paper, config);
-        assertTrue(Files.readString(global).contains("keep-me"));
         assertFalse(config.isVelocityEnabled());
+        Yaml yaml = new Yaml();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> loaded = yaml.load(Files.readString(global));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> velocity = (Map<String, Object>) ((Map<?, ?>) loaded.get("proxies")).get("velocity");
+        assertEquals(Boolean.FALSE, velocity.get("enabled"));
+        assertEquals("", velocity.get("secret"));
     }
 }

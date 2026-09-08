@@ -10,11 +10,13 @@ YaPcore (Folia/Paper) is a **game backend**. The public edge is a **proxy**:
 ## Quick setup (YaP Link)
 
 ```bash
-./scripts/setup-velocity-forwarding.sh --enable
-# sets game-authority=folia, velocity-enabled=true, velocity-online-mode=false
+# Product default already enables modern forwarding + seeds forwarding.secret.
+# To re-apply or toggle:
+./scripts/setup-velocity-forwarding.sh          # --enable (default)
+./scripts/setup-velocity-forwarding.sh --disable  # direct :25566 without Link
 ./scripts/start.sh
 ./scripts/start-yap-link.sh
-# players → Link :25565 → Folia loopback
+# players → Link :25565 → Via :25566 → Folia (skins)
 ```
 
 Smoke: 
@@ -96,10 +98,10 @@ Example snippet: [examples/velocity/](../examples/velocity/).
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `velocity-enabled` | `false` | Sync Paper for Velocity modern forwarding |
+| `velocity-enabled` | `true` | Sync Folia/Paper for Velocity/YaP Link modern forwarding (skins). Set `false` only for direct `:25566` without Link |
 | `velocity-secret` | *(empty)* | Inline secret |
-| `velocity-secret-file` | *(empty)* | Path to secret file (preferred); overrides inline when set |
-| `velocity-online-mode` | `true` | Must match Velocity `online-mode` |
+| `velocity-secret-file` | `forwarding.secret` | Path to secret file (preferred); auto-created on first boot if missing |
+| `velocity-online-mode` | `false` | Must match Link/Velocity `online-mode` (Link default is offline + Mojang texture lookup) |
 | `velocity-bind-localhost` | `true` | Paper JE listens on `127.0.0.1` only |
 
 Missing secret with `velocity-enabled=true` **fails boot** (fail-closed).

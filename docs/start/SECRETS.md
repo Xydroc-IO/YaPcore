@@ -39,12 +39,12 @@ cp deploy/mariadb/.env.example deploy/mariadb/.env   # edit passwords first
 
 1. Copy and edit `deploy/mariadb/.env` — **change both passwords** from `change-me` / `yaproot`.
 2. Run `./scripts/db/ensure-db.sh --server-id lobby`.
-3. Set `online-mode=true` (or Link + forwarding) in `config/server.properties` before going public.
+3. Prefer join via **YaP Link :25565** (modern forwarding ON by default for skins). Set `online-mode=true` on Link + `velocity-online-mode=true` for full premium auth when going public cracked-off.
 4. Bind dashboard to localhost: `web-dashboard-bind=127.0.0.1` / `web-dashboard-localhost-only=true` — [EDGE_HARDEN.md](../network/EDGE_HARDEN.md).
 5. Enable PlayerData auth if using offline-mode public: `auth.enabled: true`.
 6. Start server once; copy the generated **dashboard token** from the log (or rotate in Admin tab).
 7. Set Discord webhooks before enabling relay; set a strong `inbound.secret` if enabling inbound HTTP.
-8. Run `./scripts/setup-velocity-forwarding.sh` when using YaP Link or Velocity in front of Folia.
+8. Forwarding secret is auto-seeded; re-run `./scripts/setup-velocity-forwarding.sh` to refresh or `--disable` for direct `:25566`.
 9. Walk [CROSSPLAY.md §E](../network/CROSSPLAY.md) live checklist; start `./scripts/yapctl soak-long 12` in the background.
 
 ---

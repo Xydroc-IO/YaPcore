@@ -20,6 +20,6 @@ folia-jar-source=build
 game-authority=folia
 folia-embed=true
 
-# With YaP Link in front: velocity-enabled=true, online-mode=false, forwarding.secret
-# velocity-enabled=false
+# YaP Link in front is the product default (skins): velocity-enabled=true, online-mode=false
 # velocity-secret-file=forwarding.secret
+# Direct public Folia without Link: online-mode=true and velocity-enabled=false

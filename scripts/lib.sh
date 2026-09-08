@@ -200,10 +200,31 @@ yap_active_kernel_dir() {
   esac
 }
 
+# Shared forwarding.secret for YaP Link ↔ Folia modern player-info (skins).
+yap_ensure_forwarding_secret() {
+  local secret="$ROOT/forwarding.secret"
+  if [ ! -f "$secret" ]; then
+    if command -v openssl >/dev/null 2>&1; then
+      openssl rand -base64 32 | tr -d '\n' >"$secret"
+    else
+      # Fallback when openssl is missing
+      head -c 32 /dev/urandom | base64 | tr -d '\n' >"$secret" || true
+    fi
+    chmod 600 "$secret" 2>/dev/null || true
+    echo "Created $secret (YaP Link / Velocity modern forwarding)"
+  fi
+  mkdir -p "$ROOT/link-data"
+  if [ -f "$secret" ] && [ ! -f "$ROOT/link-data/forwarding.secret" ]; then
+    cp -f "$secret" "$ROOT/link-data/forwarding.secret"
+    chmod 600 "$ROOT/link-data/forwarding.secret" 2>/dev/null || true
+  fi
+}
+
 yap_ensure_dirs() {
   mkdir -p "$ROOT/config" "$ROOT/plugins" "$ROOT/logs" "$ROOT/lib" "$ROOT/$FOLIA_DIR"
   yap_ensure_unified_plugins
   yap_ensure_config_hub
+  yap_ensure_forwarding_secret
   # Shippable defaults (never overwrite operator files)
   if [ -x "$ROOT/scripts/seed-defaults.sh" ]; then
     bash "$ROOT/scripts/seed-defaults.sh" --root "$ROOT" || true

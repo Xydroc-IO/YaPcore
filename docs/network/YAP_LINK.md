@@ -55,15 +55,17 @@ them via modern `velocity:player_info`. For full premium auth + skins, set Link
 `online-mode=true` and matching `velocity-online-mode=true`.
 Same `forwarding.secret` next to Link’s `link.properties`.
 
-2. **Forwarding disabled** (common local Link → Via → YaP-Folia): Folia
-`proxies.velocity.enabled=false`. Link still bridges on Login Success; it does
-**not** require `velocity:player_info` when the backend never asks for it.
+2. **Forwarding disabled** (`velocity-enabled=false`): Folia
+`proxies.velocity.enabled=false`. Use for direct chassis `:25566` joins without Link.
+Link still bridges on Login Success but skins will not apply. Product **default is enabled**.
 
 ## Run
 
 ```bash
-# Enable Velocity modern forwarding on the Folia backend (shared secret)
-./scripts/setup-velocity-forwarding.sh --enable
+# Product default: velocity-enabled=true + forwarding.secret (skins).
+# Optional re-seed / toggle:
+./scripts/setup-velocity-forwarding.sh          # enable (default)
+./scripts/setup-velocity-forwarding.sh --disable  # direct joins without Link
 ./scripts/start.sh              # Folia game
 ./scripts/start-yap-link.sh     # native YaP Link
 # players → :25565

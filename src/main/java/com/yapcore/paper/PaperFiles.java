@@ -370,7 +370,7 @@ public final class PaperFiles {
         String secret = resolveVelocitySecret(rootDir, config);
         if (secret.isBlank()) {
             throw new IOException("velocity-enabled=true but no secret set — "
-                    + "set velocity-secret or velocity-secret-file (must match Velocity forwarding.secret)");
+                    + "set velocity-secret or velocity-secret-file (must match Velocity/YaP Link forwarding.secret)");
         }
         writePaperVelocityGlobal(paperDir, true, config.isVelocityOnlineMode(), secret);
         ensureSpigotBungeeOff(paperDir);
@@ -379,18 +379,44 @@ public final class PaperFiles {
                 + config.isVelocityOnlineMode()
                 + ", bind="
                 + (config.isVelocityBindLocalhost() ? "127.0.0.1" : "config bind")
-                + ") — players must join via YaP Link or Velocity");
+                + ") — players must join via YaP Link or Velocity (:25565)");
     }
 
+    /**
+     * Resolve the shared forwarding secret. When {@code velocity-secret-file} is set and
+     * missing, create a random secret so first boot with product defaults does not fail.
+     */
     static String resolveVelocitySecret(Path rootDir, ServerConfig config) throws IOException {
         String file = config.getVelocitySecretFile();
         if (file != null && !file.isBlank()) {
             Path path = Path.of(file);
             if (!path.isAbsolute()) {
-                path = rootDir.resolve(path);
+                path = rootDir.resolve(file);
             }
             if (!Files.isRegularFile(path)) {
-                throw new IOException("velocity-secret-file not found: " + path);
+                byte[] raw = new byte[32];
+                new java.security.SecureRandom().nextBytes(raw);
+                String generated = java.util.Base64.getEncoder().encodeToString(raw);
+                Files.writeString(path, generated, StandardCharsets.UTF_8);
+                try {
+                    path.toFile().setReadable(false, false);
+                    path.toFile().setWritable(false, false);
+                    path.toFile().setReadable(true, true);
+                    path.toFile().setWritable(true, true);
+                } catch (Exception ignored) {
+                    // best-effort chmod; Windows may no-op
+                }
+                LOG.info("Created " + path.getFileName() + " for YaP Link / Velocity modern forwarding");
+                Path linkCopy = rootDir.resolve("link-data").resolve(path.getFileName().toString());
+                try {
+                    Files.createDirectories(linkCopy.getParent());
+                    if (!Files.isRegularFile(linkCopy)) {
+                        Files.copy(path, linkCopy);
+                    }
+                } catch (IOException ignored) {
+                    // LinkProcessManager / start-yap-link.sh also copies
+                }
+                return generated;
             }
             return Files.readString(path, StandardCharsets.UTF_8).trim();
         }

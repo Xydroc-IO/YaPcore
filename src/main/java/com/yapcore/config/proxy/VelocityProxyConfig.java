@@ -12,10 +12,12 @@ public final class VelocityProxyConfig {
     }
 
     public static void applyDefaults(Properties props) {
-        props.setProperty("velocity-enabled", "false");
+        // Product default: YaP Link modern forwarding so premium skins reach Folia.
+        // Direct :25566 joins without Link will fail Velocity player_info — join :25565.
+        props.setProperty("velocity-enabled", "true");
         props.setProperty("velocity-secret", "");
-        props.setProperty("velocity-secret-file", "");
-        props.setProperty("velocity-online-mode", "true");
+        props.setProperty("velocity-secret-file", "forwarding.secret");
+        props.setProperty("velocity-online-mode", "false"); // match Link online-mode=false
         props.setProperty("velocity-bind-localhost", "true");
         props.setProperty("link-embed", "false");
         props.setProperty("link-embed-home", "link-data");
@@ -26,7 +28,7 @@ public final class VelocityProxyConfig {
      * forwarding ({@code paper-global.yml} + {@code online-mode=false}).
      */
     public boolean isVelocityEnabled() {
-        return Boolean.parseBoolean(props.getProperty("velocity-enabled", "false"));
+        return Boolean.parseBoolean(props.getProperty("velocity-enabled", "true"));
     }
 
     public void setVelocityEnabled(boolean enabled) {
@@ -47,7 +49,7 @@ public final class VelocityProxyConfig {
      * {@link #getVelocitySecret()} when non-blank.
      */
     public String getVelocitySecretFile() {
-        return props.getProperty("velocity-secret-file", "");
+        return props.getProperty("velocity-secret-file", "forwarding.secret");
     }
 
     public void setVelocitySecretFile(String path) {
@@ -59,7 +61,7 @@ public final class VelocityProxyConfig {
      * from the proxy (usual production setting).
      */
     public boolean isVelocityOnlineMode() {
-        return Boolean.parseBoolean(props.getProperty("velocity-online-mode", "true"));
+        return Boolean.parseBoolean(props.getProperty("velocity-online-mode", "false"));
     }
 
     public void setVelocityOnlineMode(boolean online) {
