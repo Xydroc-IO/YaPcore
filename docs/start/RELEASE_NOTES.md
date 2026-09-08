@@ -17,7 +17,7 @@ Same ship version (no product bump). Custom items + client polish:
 |------|--------|
 | **YaPItems** | New gameplay plugin: YAML registry, multi-ability keybinds, furniture, recipes, kits `yap-item:`, create/delete/cooldown CLI — [YAPITEMS.md](../plugins/YAPITEMS.md) |
 | **YaPAdmin** | Hub **Custom items** create wizard (categorized abilities, glow/unbreakable, enchant picker, break volume, potion options) |
-| **yap-staff 1.0.25** | Custom items screens + enchant picker; scroll position preserved; unsigned create command + `--nameb64` / `--abilities` (no chat_command kick) |
+| **yap-staff 1.0.27** | Custom items + enchant picker; `yap:staff` payload channel for long create/edit (avoids chat_command kick); `--nameb64` / `--abilities` |
 | **YaP Shaders** | Glass ≠ water; waterfall cascade path; wind on leaves/grass/vines only (log builds stay still) |
 | **Pack / kits** | `yap-items` overlay in `yapcore-default`; kit YAML `yap-item:` rows |
 
@@ -225,7 +225,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
 - **12h soak-long PASS** (`logs/soak/soak-long-20260905T031507Z.log`) — zip may be marketed as **soak-proven**; heap/thread slope flat (folia heap median early≈1012MB late≈1082MB; threads 137→137) per [REAL_GAINS.md](../folia/REAL_GAINS.md)
 - Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production (defaults stay **off**)
-`releases/1.0.0.0/` republished 2026-09-07 with staff/bag client fixes + pack/Via polish (`./scripts/build-yap-client-render.sh` then `gradle publishReleasesFolder -PyapGameplay=true`). Prior: typical SMP defaults (2026-09-06); pack CDN/SHA + client visuals (2026-09-04).
+`releases/1.0.0.0/` republished 2026-09-08 with YaPItems glow/staff channel + domain ≤500 splits + staff **1.0.27** (`./scripts/build-yap-client-render.sh` then `gradle publishReleasesFolder -PyapGameplay=true`). Prior: staff/bag polish (2026-09-07); typical SMP defaults (2026-09-06); pack CDN/SHA + client visuals (2026-09-04).
 
 ---
 

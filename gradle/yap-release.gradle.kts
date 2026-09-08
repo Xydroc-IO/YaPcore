@@ -76,6 +76,7 @@ tasks.register("assembleRelease") {
         val gameplayPluginJars = listOf(
             "yap-gameplay-knobs.jar",
             "yap-stacker.jar",
+            "yap-items.jar",
             "yap-skills.jar",
             "yap-dungeons.jar",
             "yap-disasters.jar",
