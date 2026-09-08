@@ -12,6 +12,9 @@ Replaces stock WorldEdit / FAWE on the YaPcore product path
   Left-click  = pos1
   Right-click = pos2
   Shift+RMB   = GUI
+/yapworld schem browse → schematics chest (click to paste)
+
+Staff client (**yap-staff**): Esc/R → **World edit** hub (native UI over the same commands).
 
 //gmask #air
 //set stone

@@ -13,6 +13,23 @@ Leading `/` is optional in the YaP console.
 
 ---
 
+## Staff / menu contracts
+
+Menus (Fabric **yap-staff**, YaPAdmin chest, Bedrock forms) must emit these **canonical** shapes. Parsers may accept aliases; UIs should not invent new orders.
+
+| Family | Canonical |
+|--------|-----------|
+| Speed | `/speed <0-10> [fly\|walk]` |
+| Ender chest | `/echest [player]` |
+| Give / money / mobs | `/yapadmin give\|money\|spawnmob <thing> [amount] [player]` |
+| Moderation | `/yapadmin kick\|warn\|mute\|tempban <player> [reason…]` |
+| Trolls | `/yapadmin troll <type> <player>` |
+| Protect lookup | `/yapprotect lookup user <player>` |
+| Pregen | `/yappregen` or `/yappregen status` |
+| World edit | `/yapworld <op> …` (same ops as `//…` where applicable) |
+
+---
+
 ## YaPcore builtins (console)
 
 | Command | Description |
@@ -122,13 +139,13 @@ Duration examples: `30m`, `2h`, `7d`, `1w`.
 | `/i` `/item` `<item>` `[amount]` `[player]` | `yapessentials.item` | Give items (e.g. `/i diamond 64`) |
 | `/fly` `[player]` | `yapessentials.fly` | Toggle flight |
 | `/god` `[player]` | `yapessentials.god` | God mode |
-| `/speed` `<0-10> [fly\|walk]` | `yapessentials.speed` | Move speed |
+| `/speed` `<0-10> [fly\|walk]` | `yapessentials.speed` | Move speed (also accepts `/speed fly\|walk <0-10>`) |
 | `/heal` `/feed` `[player]` | `yapessentials.heal` | Restore health/hunger |
 | `/repair` `[hand\|all]` | `yapessentials.repair` | Repair items |
 | `/clear` `[player]` | `yapessentials.clear` | Clear inventory |
 | `/vanish` `/v` `[player]` | `yapessentials.vanish` | Vanish |
 | `/invsee` `<player>` | `yapessentials.invsee` | View inventory |
-| `/echest` `/ec` `<player>` | `yapessentials.echest` | View ender chest |
+| `/echest` `/ec` `[player]` | `yapessentials.echest` | Open ender chest (omit player = self) |
 | `/nick` `<name\|off> [player]` | `yapessentials.nick` | Display name |
 | `/afk` | `yapessentials.afk` | AFK status |
 | `/list` `/online` `/who` | `yapessentials.list` | Online players |
@@ -190,6 +207,7 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 |--------|---------|-----|
 | Pregen | `/yappregen …` | [PREGEN.md](../plugins/PREGEN.md) |
 | Stacker | `/yapstacker …` | [STACKER.md](../plugins/STACKER.md) |
+| Custom items | `/yapitems …` · `/yitems` · create/edit/CD via admin **Custom items** or yap-staff | [YAPITEMS.md](../plugins/YAPITEMS.md) |
 | Skills | `/skills` · `/skill top` · `/yskills reload` | [SKILLS.md](../plugins/SKILLS.md) |
 | Dungeons | `/dungeon` · `/dungeon invite\|accept\|deny\|leave\|status` · `/yapdungeons …` | [DUNGEONS.md](../plugins/DUNGEONS.md) |
 | NPCs | `/npc …` · `/quests …` · `/npc shop …` · `/npc setspawn` | dashboard **NPCs** · [PLAYERDATA.md](../data/PLAYERDATA.md) (shop catalogs) |

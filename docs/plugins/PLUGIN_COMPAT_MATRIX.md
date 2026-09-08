@@ -35,6 +35,7 @@ dashboard Plugins tab).
 | LiteBans / AdvancedBan | `yap-moderation.jar` |
 | ChatControl / VentureChat | `yap-chat.jar` |
 | Matrix / Vulcan AC | `yap-guard.jar` |
+| ItemsAdder / Oraxen / Nexo | `yap-items.jar` + `yapcore-default` pack (CMD custom items; [YAPITEMS.md](YAPITEMS.md)) |
 
 ## Dashboard
 

@@ -155,6 +155,16 @@ Toggle domains in `plugins/YaPEssentials/config.yml` under `features.*` (includi
 
 Grant `yapadmin.menu` (+ give/server) on `staff` / `admin` / `owner` ranks. Individual actions still need the underlying plugin nodes (`yapessentials.*`, `yapmod.*`, …). See [ADMIN_MENU.md](ADMIN_MENU.md).
 
+### YaPItems (custom items)
+
+| Node | Default | Notes |
+|------|---------|-------|
+| `yapitems.use` | true | list / info |
+| `yapitems.give` / `take` / `gui` / `create` | op | staff tools |
+| `yapitems.admin` | op | reload / delete / cooldown / furniture |
+
+Possession is enough to **use** an item. See [YAPITEMS.md](../plugins/YAPITEMS.md).
+
 ## YaPProtect / YaPWorld
 
 | Node | Default | Command / feature |

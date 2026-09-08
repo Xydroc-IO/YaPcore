@@ -21,7 +21,7 @@ Operator docs for install, configuration, plugins, and gameplay features.
 | [**start/**](start/) | Quick start, releases, secrets, licensing, Windows |
 | [**ops/**](ops/) | Commands, permissions, dashboard, tune, [production ready](ops/PRODUCTION_READY.md), [code elegance](ops/CODE_ELEGANCE_FOLLOWUP.md) |
 | [**network/**](network/) | Ports, crossplay, nginx, YaP Link, edge hardening |
-| [**plugins/**](plugins/) | Plugin list, modules, skills, stacker, compat |
+| [**plugins/**](plugins/) | Plugin list, modules, skills, stacker, [items](plugins/YAPITEMS.md), compat |
 | [**data/**](data/) | YaPDB, MariaDB, Postgres, SQLite, playerdata |
 | [**gameplay/**](gameplay/) | Factions, regions |
 | [**folia/**](folia/) | YaP-Folia soak, cite, Canvas parity |

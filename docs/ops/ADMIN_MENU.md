@@ -1,7 +1,9 @@
 # YaPAdmin — in-game staff super menu
 
-Chest GUI hub for on-server staff, plus optional Fabric **yap-staff** client GUI.
+Chest GUI hub for on-server staff, plus optional Fabric **yap-staff** client GUI (branded **YaP Staff** hub with sectioned tools).
 Complements the [web dashboard](WEB_DASHBOARD.md) and desktop Control Panel.
+
+Menus and chat shortcuts follow the **Staff / menu contracts** in [COMMANDS.md](COMMANDS.md) so argument order stays consistent.
 
 ## Install
 
@@ -20,6 +22,7 @@ Soft-depends on YaPEssentials, YaPModeration, YaPPerms, YaPWorld, YaPStacker, Ya
 | `/yapadmin` `/staff` `/adminmenu` `/am` | `yapadmin.menu` | Open the hub chest GUI |
 | `/yapadmin reload` | `yapadmin.server` | Reload `plugins/YaPAdmin/config.yml` |
 | `/yapadmin give <mat> [amt] [player]` | `yapadmin.give` | Give items (client give browser) |
+| `/yapadmin spawnmob <type> [amt] [player]` | `yapadmin.spawnmob` | Spawn mobs at you or on a player (`mob` / `summon` aliases) |
 | `/yapadmin troll <type> <player>` | `yapadmin.troll` | Smite, launch, burn, rocket, squash, blind, confuse, slap, drop |
 | `/yapadmin tp` / `tphere` / `tpspawn` | `yapessentials.teleport` | Teleports |
 | `/yapadmin heal` / `feed` / `nv` / `clear` | menu | Self/target tools |
@@ -38,12 +41,15 @@ Also opens from:
 - **Players** — online picker → TP to/here/spawn, freeze, invsee/echest, heal/feed/clear, promote/demote, kick/warn/mute 1h/tempban 1d, trolls, check/history, jump to Give / money / ranks
 - **Self tools** — fly, god, vanish, heal, feed, night vision, gamemodes, repair, speed
 - **Give** — curated presets, kits (`/kit give`), paginated / searchable material browser (amount 1/16/64)
+- **Custom items** — YaPItems create / browse / give / edit / delete / ability cooldowns ([YAPITEMS.md](../plugins/YAPITEMS.md))
+- **Spawn mobs** (client) — searchable entity browser + presets; spawn at you or a selected player (`/yapadmin spawnmob`)
+- **World edit** (client) — YaPWorld wand/pos, clipboard, fill/set, schematics (name + chest browse), brush, worlds (`/yapworld …`)
 - **Trolls** — smite, launch, burn, rocket, squash, blind, confuse, slap, drop hand (`yapadmin.troll`)
 - **Moderation** — same player picker (actions gated by `yapmod.*`)
 - **Server** — broadcast presets, status, weather/disasters, reloads
 - **Economy** — money grants via YaPPlayerData deposit (`/yapadmin money`; Folia entity-thread safe)
 - **Ranks & perms** (client) — searchable YaPPerms editor (primary/parents, node allow/deny/unset, tracks); chest still deep-links `/yapperm gui`
-- **Deep links** — `/yapperm gui`, `/yapworld gui`, `/yapstacker gui`, `/menu`, skills, dungeons, …
+- **Deep links / More…** — ranks, world edit, schematics, pregen, stacker, menu, skills, …
 
 ## Permissions
 
@@ -51,6 +57,7 @@ Also opens from:
 |------|---------|-------|
 | `yapadmin.menu` | op | Open hub |
 | `yapadmin.give` | op | Presets / materials / kits |
+| `yapadmin.spawnmob` | op | Spawn entities at self or another player |
 | `yapadmin.server` | op | Broadcast + reload |
 | `yapadmin.economy` | op | Money grants |
 | `yapadmin.troll` | op | Staff trolls |
@@ -68,4 +75,4 @@ Teleports and inventory mutations use `YapSched.entity`. Moderation DB calls go 
 
 ## Client mod
 
-See [`client/yap-staff/README.md`](../../client/yap-staff/README.md) — native Screens for every hub section (scrollable/scaled layout, searchable player select that returns to the calling tool, ranks catalog). Jar **1.0.4+**.
+See [`client/yap-staff/README.md`](../../client/yap-staff/README.md) — native Screens for every hub section (sectioned layout, searchable player select, ranks, spawn mobs, world edit, **custom items**). Jar **1.0.24+**.

@@ -9,6 +9,24 @@ For build commands and zip layout see [RELEASES.md](RELEASES.md). For live statu
 
 ---
 
+## After 1.0.0.0 — YaPItems + staff create + shaders (2026-09-08)
+
+Same ship version (no product bump). Custom items + client polish:
+
+| Area | Change |
+|------|--------|
+| **YaPItems** | New gameplay plugin: YAML registry, multi-ability keybinds, furniture, recipes, kits `yap-item:`, create/delete/cooldown CLI — [YAPITEMS.md](../plugins/YAPITEMS.md) |
+| **YaPAdmin** | Hub **Custom items** create wizard (categorized abilities, glow/unbreakable, break volume, potion options) |
+| **yap-staff 1.0.24** | Custom items screens; scroll position preserved; unsigned create command + `--nameb64` / `--abilities` (no chat_command kick) |
+| **YaP Shaders** | Glass ≠ water; waterfall cascade path; wind on leaves/grass/vines only (log builds stay still) |
+| **Pack / kits** | `yap-items` overlay in `yapcore-default`; kit YAML `yap-item:` rows |
+
+Docs: [YAPITEMS.md](../plugins/YAPITEMS.md) · [ADMIN_MENU.md](../ops/ADMIN_MENU.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) · [yap-staff/README.md](../../client/yap-staff/README.md) · [yap-shaders/README.md](../../client/yap-shaders/README.md).
+
+Build: `gradle installGameplayDefaults` · `./scripts/build-yap-client-render.sh` · full Folia restart after jar swap.
+
+---
+
 ## After 1.0.0.0 — staff client + pack/Via polish (2026-09-07)
 
 Same ship version (no product bump). Operator / client staff UX:

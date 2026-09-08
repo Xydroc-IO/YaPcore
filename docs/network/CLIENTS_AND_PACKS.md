@@ -173,7 +173,7 @@ Folia plugin) that applies Hor+ with **separate profiles** for each panel class.
 
 ```bash
 cd client/yap-ultrawide && ./gradlew build
-# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.0.jar
+# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.1.jar
 # or: ./scripts/build-yap-client-render.sh → dist/client-mods/client_mods.zip
 ```
 
@@ -186,6 +186,9 @@ Config: `.minecraft/config/yap-ultrawide.json`
 
 `match_21_9` on 32:9 means “use the horizontal FOV a 21:9 panel would have” — it does
 **not** letterbox your 32:9 screen. For a locked cinematic feel use `fixed_hfov`.
+
+Hands / held items stay on **vanilla** HUD FOV by default (`affectHudFov: false`). Turning
+that on applies Hor+ to the arm camera and can zoom weapons off the bottom of the screen.
 
 Vanilla, Bedrock, and players without the mod still join.
 See [yap-ultrawide/README.md](../../client/yap-ultrawide/README.md).
@@ -212,25 +215,35 @@ See [yap-bag/README.md](../../client/yap-bag/README.md).
 
 ## Staff menu on Esc — optional client mod
 
-`/yapadmin` and `/menu` → Staff work for every client that has permission. **yap-staff** is a Fabric **client** mod that adds a **Staff menu** (Esc pause + keybind **R**): full native Screens for players, give, trolls, moderation, economy, ranks/perms, and more. Server still enforces `yapadmin.*` / `yapperm.*`. It is not a Folia plugin.
+`/yapadmin` and `/menu` → Staff work for every client that has permission. **yap-staff** is a Fabric **client** mod that adds a **Staff menu** (Esc pause + keybind **R**): full native Screens for players, give, **custom items**, trolls, moderation, economy, ranks/perms, world edit, and more. Server still enforces `yapadmin.*` / `yapperm.*` / `yapitems.*`. It is not a Folia plugin.
 
 | Piece | Where |
 |-------|--------|
 | YaPAdmin `/yapadmin` | Server — required |
-| `yap-staff-1.0.4.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
+| YaPItems `/yapitems` | Server — gameplay jar for custom items |
+| `yap-staff-1.0.24.jar` | Player `.minecraft/mods/` with Fabric Loader 0.19+ / MC 26.2 |
 
 ```bash
 cd client/yap-staff && ./gradlew build
-# → client/yap-staff/build/libs/yap-staff-1.0.4.jar
+# → client/yap-staff/build/libs/yap-staff-1.0.24.jar
 ```
 
-Config: `.minecraft/config/yap-staff.json`. See [yap-staff/README.md](../../client/yap-staff/README.md) and [ADMIN_MENU.md](../ops/ADMIN_MENU.md).
+Config: `.minecraft/config/yap-staff.json`. See [yap-staff/README.md](../../client/yap-staff/README.md), [ADMIN_MENU.md](../ops/ADMIN_MENU.md), and [YAPITEMS.md](../plugins/YAPITEMS.md).
 
-The Fabric **yap-staff** mod scrolls/scales to the window, uses a searchable player picker that returns to the calling tool, and includes a full YaPPerms ranks editor UI. Update **yap-admin.jar** for troll + give + Folia-safe `/yapadmin money`.
+The Fabric **yap-staff** mod scrolls/scales to the window (scroll position preserved on rebuild), uses a searchable player picker that returns to the calling tool, includes spawn-mobs + give + **YaPItems create** (glow / unbreakable / categorized abilities), and a full YaPPerms ranks editor UI. Update **yap-admin.jar** + **yap-items.jar** on the server.
 
-## Realistic skies
+## Realistic skies / YaP Shaders
 
 **YaP Skies** + **YaP Water** ship in `yapcore-default.zip` and download with the pack prompt.
+**YaP Shaders** (via **yap-visuals** / Iris) add waves, SSR, foliage wind, and skies.
+
+Shader notes (current pack):
+
+- **Glass / ice** are not treated as water (separate translucent path)
+- **Waterfalls** use a cascade look — no lake SSR on vertical faces
+- **Wind** moves leaves / grass / vines only — log houses stay still
+
+See [yap-shaders/README.md](../../client/yap-shaders/README.md).
 
 | Layer | Who sees it |
 |-------|-------------|
