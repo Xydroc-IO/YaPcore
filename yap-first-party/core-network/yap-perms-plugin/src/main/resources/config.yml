@@ -157,6 +157,11 @@ starter-grants:
     - minecraft.command.weather
     - yapadmin.menu
     - yapguard.alerts
+    - yapitems.give
+    - yapitems.take
+    - yapitems.gui
+    - yapitems.create
+    - yapitems.admin
   admin:
     - yapdata.admin
     - yapdata.bag.pages.*
@@ -199,6 +204,7 @@ starter-grants:
     - yapdiscord.admin
     - yapmap.admin
     - yapnpcs.admin
+    - yapitems.admin
   owner:
     - "*"
     - yap.bypass
