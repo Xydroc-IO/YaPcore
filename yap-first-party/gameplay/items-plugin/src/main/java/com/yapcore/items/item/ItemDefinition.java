@@ -19,6 +19,7 @@ public record ItemDefinition(
         int customModelData,
         boolean unbreakable,
         boolean glow,
+        boolean rainbow,
         List<ItemFlag> hideFlags,
         Map<Enchantment, Integer> enchants,
         Map<String, Double> attributes,

@@ -74,6 +74,9 @@ project(":essentials-plugin").projectDir = file("yap-first-party/core-network/es
 include("disasters-plugin")
 project(":disasters-plugin").projectDir = file("yap-first-party/gameplay/disasters-plugin")
 
+include("leveled-mobs-plugin")
+project(":leveled-mobs-plugin").projectDir = file("yap-first-party/gameplay/leveled-mobs-plugin")
+
 include("admin-plugin")
 project(":admin-plugin").projectDir = file("yap-first-party/core-network/admin-plugin")
 

@@ -26,7 +26,7 @@ Defaults seed: [`config/defaults/plugins/YaPItems/`](../../config/defaults/plugi
 
 | Command | Permission | Notes |
 |---------|------------|-------|
-| `/yapitems give <id> [amount] [player]` | `yapitems.give` | |
+| `/yapitems give <id> [amount] [player]` | `yapitems.give` | Rainbow pack ids: `rainbow_heart`, `rainbow_love`, `rainbow_blade`, `rainbow_axe`, `rainbow_bow`, `rainbow_wand`, `rainbow_star`, `rainbow_prism`, `rainbow_shield`, `rainbow_pick` |
 | `/yapitems take <id> [amount] [player]` | `yapitems.take` | |
 | `/yapitems list [filter]` | `yapitems.use` | `--ids` for compact id list (staff sync) |
 | `/yapitems info <id>` | `yapitems.use` | |
@@ -49,11 +49,14 @@ Alias: `/yitems`.
 | `--ability` + `--trigger` | Repeated ability blocks (legacy / admin) |
 | `--damage` | Ability damage (`-1` / `kill` = instakill) |
 | `--range` / `--radius` / `--amount` | Reach, AoE / break blast, heal HP or max break count |
-| `--effect` / `--duration` / `--amplifier` | Potion type + ticks + level |
+| `--effect` / `--duration` / `--amplifier` | Potion type(s) + ticks + level. Multiple: `--effect SPEED,STRENGTH,WATER_BREATHING` (max 6; shared duration/amplifier). Duration `-1` = unlimited. Amplifier `0`–`99` (level 1–100). **SPEED / JUMP_BOOST / LEVITATION / DOLPHINS_GRACE are soft-capped at amplifier 1 (level 2)** so movement stays playable. Underwater: `WATER_BREATHING`, `CONDUIT_POWER` |
+| `--sound` / `--particle` / `--count` | Override ability FX (Sound / Particle enum names; particle count). Particle `RAINBOW` = multi-color dust burst |
+| `--fx` / `--no-fx` | Enable or disable sound+particle burst |
 | `--projectile` | `snowball` / `arrow` / `egg` / `ender_pearl` / `fireball` |
 | `--cooldown` / `--cd` | Shared ability cooldown |
 | `--gear-attack` / `--gear-strength` | Melee gear bonus tags |
 | `--glow` / `--no-glow` | Enchantment glint |
+| `--rainbow` / `--no-rainbow` | Animated rainbow display name |
 | `--unbreakable` / `--no-unbreakable` | Never loses durability |
 | `--enchants sharpness:5,unbreaking:3` | Real enchantments (id:level list) |
 | `--enchant sharpness:5` | Same, repeatable |
@@ -82,7 +85,7 @@ my_blade:
     - trigger: RIGHT_CLICK
       type: effect
       cooldown: 12s
-      params: { effect: STRENGTH, duration: 100, amplifier: 1 }
+      params: { effects: [STRENGTH, SPEED], duration: 100, amplifier: 1 }
     - trigger: ATTACK
       type: smite_target
       cooldown: 3s

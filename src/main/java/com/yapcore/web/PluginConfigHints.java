@@ -52,7 +52,10 @@ public final class PluginConfigHints {
             Map.entry("filter.enabled", "Filter bad words"),
             Map.entry("slow-mode-seconds", "Seconds between messages"),
             Map.entry("resource-pack-file", "Pack file players download"),
-            Map.entry("online-mode", "Official Minecraft accounts only")
+            Map.entry("online-mode", "Official Minecraft accounts only"),
+            Map.entry("death.keep-inventory", "Keep items on death"),
+            Map.entry("death.keep-xp", "Keep XP on death"),
+            Map.entry("death.sync-gamerule", "Sync keepInventory gamerule")
     );
 
     private static final Map<String, String> HINTS = Map.ofEntries(
@@ -67,6 +70,10 @@ public final class PluginConfigHints {
             Map.entry("local-prefix", "Type ! before a message to talk only to people nearby."),
             Map.entry("filter.mode", "replace = stars out the word. block = refuse the message."),
             Map.entry("filter.words", "Comma-separated. Matching is not case-sensitive."),
+            Map.entry("death.keep-inventory", "On = players keep gear when they die. Off = vanilla drops."),
+            Map.entry("death.keep-xp", "Only used when keep-inventory is on."),
+            Map.entry("death.sync-gamerule", "Also set /gamerule keepInventory on every world when you reload."),
+
             Map.entry("homes.max", "How many /sethome spots a normal player can have."),
             Map.entry("auth.enabled", "Turn on only for a public offline-mode server. LAN/demo stays off."),
             Map.entry("settings.enabled", "Master switch for Purpur-inspired gameplay knobs. Leave off until you want them."),
@@ -89,6 +96,7 @@ public final class PluginConfigHints {
 
     private static final Map<String, String> GROUPS = Map.ofEntries(
             Map.entry("features", "What this plugin does"),
+            Map.entry("death", "Death & drops"),
             Map.entry("economy", "Money"),
             Map.entry("backpack", "Extra bag"),
             Map.entry("jdbc", "Database"),

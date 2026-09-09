@@ -22,10 +22,9 @@ public final class ItemCreateDraft {
     private int gearAttack = 0;
     private int gearStrength = 0;
     private boolean furniture;
-    private boolean glow;
-    private boolean unbreakable;
+    private final ItemCreateDraftLook look = new ItemCreateDraftLook();
     private final java.util.LinkedHashMap<String, Integer> enchants = new java.util.LinkedHashMap<>();
-    private String potionEffect = "SPEED";
+    private final java.util.LinkedHashSet<String> potionEffects = new java.util.LinkedHashSet<>();
     private double radius = 4;
     private double healAmount = 6;
     private String projectileKind = "snowball";
@@ -33,6 +32,7 @@ public final class ItemCreateDraft {
     private int breakCount = 1;
     private int potionDurationSec = 10;
     private int potionAmplifier = 0;
+    private final ItemCreateDraftFx fx = new ItemCreateDraftFx();
     private boolean showAllAbilities;
     /** When true, buildCreateCommand includes --replace (edit existing custom item). */
     private boolean replaceExisting;
@@ -47,6 +47,14 @@ public final class ItemCreateDraft {
 
     java.util.LinkedHashMap<String, Integer> enchantsMutable() {
         return enchants;
+    }
+
+    java.util.LinkedHashSet<String> potionEffectsMutable() {
+        return potionEffects;
+    }
+
+    {
+        potionEffects.add("SPEED");
     }
 
     public void resetForTemplate(String template) {
@@ -196,7 +204,7 @@ public final class ItemCreateDraft {
     }
 
     public String damageLabel() {
-        return damage < 0 ? "INSTAKILL" : trimNum(damage);
+        return damage < 0 ? "INSTAKILL" : ItemCreateDraftCommands.trimNum(damage);
     }
 
     public double range() {
@@ -240,17 +248,27 @@ public final class ItemCreateDraft {
     }
 
     public String potionEffect() {
-        return potionEffect == null || potionEffect.isBlank() ? "SPEED" : potionEffect;
+        return ItemCreateDraftCycles.primaryPotion(this);
+    }
+
+    public String potionEffectsCompact() {
+        return ItemCreateDraftCycles.potionCompact(this);
+    }
+
+    public String potionEffectsLabel() {
+        return ItemCreateDraftCycles.potionLabel(this);
     }
 
     public void setPotionEffect(String potionEffect) {
-        this.potionEffect = potionEffect == null || potionEffect.isBlank()
-                ? "SPEED"
-                : potionEffect.trim().toUpperCase(Locale.ROOT);
+        ItemCreateDraftCycles.setPrimaryPotion(this, potionEffect);
     }
 
-    public void cyclePotionEffect() {
-        ItemCreateDraftCycles.cyclePotionEffect(this);
+    public void clearPotionEffects() {
+        ItemCreateDraftCycles.clearPotions(this);
+    }
+
+    public void cyclePotionEffect(boolean shift) {
+        ItemCreateDraftCycles.cyclePotion(this, shift);
     }
 
     public double radius() {
@@ -270,7 +288,7 @@ public final class ItemCreateDraft {
     }
 
     public void setHealAmount(double healAmount) {
-        this.healAmount = Math.max(1, healAmount);
+        this.healAmount = Math.max(1, Math.min(100, healAmount));
     }
 
     public void cycleHealAmount() {
@@ -315,74 +333,42 @@ public final class ItemCreateDraft {
         ItemCreateDraftCycles.cycleBreakCount(this);
     }
 
+    /** Seconds of potion duration, or {@code -1} for unlimited. */
     public int potionDurationSec() {
-        return Math.max(1, potionDurationSec);
+        return potionDurationSec < 0 ? -1 : Math.max(1, potionDurationSec);
     }
-
+    public String potionDurationLabel() {
+        return potionDurationSec() < 0 ? "unlimited" : (potionDurationSec() + "s");
+    }
     void setPotionDurationSec(int potionDurationSec) {
-        this.potionDurationSec = Math.max(1, potionDurationSec);
+        this.potionDurationSec = potionDurationSec < 0 ? -1 : Math.max(1, potionDurationSec);
     }
-
-    public void cyclePotionDurationSec() {
-        ItemCreateDraftCycles.cyclePotionDurationSec(this);
-    }
-
-    public int potionAmplifier() {
-        return Math.max(0, potionAmplifier);
-    }
-
+    public void cyclePotionDurationSec() { ItemCreateDraftCycles.cyclePotionDurationSec(this); }
+    public int potionAmplifier() { return Math.max(0, potionAmplifier); }
     void setPotionAmplifier(int potionAmplifier) {
-        this.potionAmplifier = Math.max(0, potionAmplifier);
+        this.potionAmplifier = Math.max(0, Math.min(99, potionAmplifier));
     }
-
-    public void cyclePotionAmplifier() {
-        ItemCreateDraftCycles.cyclePotionAmplifier(this);
-    }
-
-    public boolean showAllAbilities() {
-        return showAllAbilities;
-    }
-
-    public void toggleShowAllAbilities() {
-        showAllAbilities = !showAllAbilities;
-    }
+    public void cyclePotionAmplifier() { ItemCreateDraftCycles.cyclePotionAmplifier(this); }
+    public ItemCreateDraftFx fx() { return fx; }
+    public boolean showAllAbilities() { return showAllAbilities; }
+    public void toggleShowAllAbilities() { showAllAbilities = !showAllAbilities; }
 
     public String itemGroup() {
         ItemTemplateCatalog.Entry e = ItemTemplateCatalog.get(template());
         return e == null ? "weapon" : e.group();
     }
 
-    public boolean furniture() {
-        return furniture;
-    }
-
-    public void setFurniture(boolean furniture) {
-        this.furniture = furniture;
-    }
-
-    public boolean glow() {
-        return glow;
-    }
-
-    public void setGlow(boolean glow) {
-        this.glow = glow;
-    }
-
-    public void toggleGlow() {
-        this.glow = !this.glow;
-    }
-
-    public boolean unbreakable() {
-        return unbreakable;
-    }
-
-    public void setUnbreakable(boolean unbreakable) {
-        this.unbreakable = unbreakable;
-    }
-
-    public void toggleUnbreakable() {
-        this.unbreakable = !this.unbreakable;
-    }
+    public boolean furniture() { return furniture; }
+    public void setFurniture(boolean furniture) { this.furniture = furniture; }
+    public boolean glow() { return look.glow(); }
+    public void setGlow(boolean glow) { look.setGlow(glow); }
+    public void toggleGlow() { look.toggleGlow(); }
+    public boolean unbreakable() { return look.unbreakable(); }
+    public void setUnbreakable(boolean unbreakable) { look.setUnbreakable(unbreakable); }
+    public void toggleUnbreakable() { look.toggleUnbreakable(); }
+    public boolean rainbow() { return look.rainbow(); }
+    public void setRainbow(boolean rainbow) { look.setRainbow(rainbow); }
+    public void toggleRainbow() { look.toggleRainbow(); }
 
     public java.util.Map<String, Integer> enchants() {
         return java.util.Collections.unmodifiableMap(enchants);
@@ -459,42 +445,12 @@ public final class ItemCreateDraft {
         return ItemCreateDraftCommands.buildCreateCommand(this);
     }
 
-    public boolean usesDamage() {
-        return ItemCreateDraftCommands.usesDamage(this);
-    }
-
-    public boolean usesRange() {
-        return ItemCreateDraftCommands.usesRange(this);
-    }
-
-    public boolean usesRadius() {
-        return ItemCreateDraftCommands.usesRadius(this);
-    }
-
-    public boolean usesPotion() {
-        return ItemCreateDraftCommands.usesPotion(this);
-    }
-
-    public boolean usesPotionPower() {
-        return ItemCreateDraftCommands.usesPotionPower(this);
-    }
-
-    public boolean usesHeal() {
-        return ItemCreateDraftCommands.usesHeal(this);
-    }
-
-    public boolean usesProjectile() {
-        return ItemCreateDraftCommands.usesProjectile(this);
-    }
-
-    public boolean usesBreakVolume() {
-        return ItemCreateDraftCommands.usesBreakVolume(this);
-    }
-
-    private static String trimNum(double v) {
-        if (Math.rint(v) == v) {
-            return Integer.toString((int) v);
-        }
-        return Double.toString(v);
-    }
+    public boolean usesDamage() { return ItemCreateDraftCommands.usesDamage(this); }
+    public boolean usesRange() { return ItemCreateDraftCommands.usesRange(this); }
+    public boolean usesRadius() { return ItemCreateDraftCommands.usesRadius(this); }
+    public boolean usesPotion() { return ItemCreateDraftCommands.usesPotion(this); }
+    public boolean usesPotionPower() { return ItemCreateDraftCommands.usesPotionPower(this); }
+    public boolean usesHeal() { return ItemCreateDraftCommands.usesHeal(this); }
+    public boolean usesProjectile() { return ItemCreateDraftCommands.usesProjectile(this); }
+    public boolean usesBreakVolume() { return ItemCreateDraftCommands.usesBreakVolume(this); }
 }

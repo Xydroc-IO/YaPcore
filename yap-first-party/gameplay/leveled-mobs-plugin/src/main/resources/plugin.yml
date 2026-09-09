@@ -1,0 +1,19 @@
+name: YaPLeveledMobs
+version: '1.0.0.0'
+main: com.yapcore.leveledmobs.LeveledMobsPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: First-party Folia-safe leveled mobs (distance / staff set)
+website: https://github.com/yaplabs
+softdepend: [YaPStacker, YaPGameplayKnobs, YaPDungeons, MythicMobs, Citizens]
+commands:
+  yaplevel:
+    description: Inspect / configure / set mob levels
+    usage: /yaplevel [toggle|strategy|min|max|blocks|nametag|reload|info|set <level>]
+    aliases: [ylevel, moblevel, lm]
+    permission: yapleveledmobs.admin
+permissions:
+  yapleveledmobs.admin:
+    description: Configure leveled mobs and set levels
+    default: op

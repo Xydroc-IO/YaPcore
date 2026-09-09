@@ -75,8 +75,8 @@ final class AbilityExecutor {
             return;
         }
         if (type == AbilityType.LAUNCH) {
-            double power = ability.paramDouble("power", 1.2);
-            double y = ability.paramDouble("y", 0.5);
+            double power = Math.min(ability.paramDouble("power", 1.2), 2.0);
+            double y = Math.min(Math.max(ability.paramDouble("y", 0.5), 0.0), 1.2);
             Vector dir = player.getLocation().getDirection().normalize().multiply(power);
             dir.setY(y);
             Location start = player.getLocation().clone().add(0, 1, 0);
@@ -90,9 +90,11 @@ final class AbilityExecutor {
             return;
         }
         if (type == AbilityType.DASH) {
-            double range = ability.paramDouble("range", 6);
+            // Cap dash impulse — UI range goes to 100, which previously meant velocity 25.
+            double range = Math.min(ability.paramDouble("range", 6), 12);
+            double speed = Math.min(range / 4.0, 2.5);
             Location start = player.getLocation().clone().add(0, 1, 0);
-            Vector dir = player.getLocation().getDirection().normalize().multiply(range / 4.0);
+            Vector dir = player.getLocation().getDirection().normalize().multiply(speed);
             Location end = start.clone().add(dir.clone().normalize().multiply(Math.min(range, 6)));
             player.setVelocity(dir);
             if (doFx) {
@@ -229,8 +231,11 @@ final class AbilityExecutor {
             return;
         }
         if (type == AbilityType.ABSORB) {
-            int amplifier = Math.max(0, ability.paramInt("amplifier", 1));
+            int amplifier = Math.max(0, Math.min(99, ability.paramInt("amplifier", 1)));
             int duration = ability.paramInt("duration", 200);
+            if (duration < 0) {
+                duration = -1;
+            }
             PotionEffectType absorb = potion("ABSORPTION");
             if (absorb != null) {
                 player.addPotionEffect(new PotionEffect(absorb, duration, amplifier));
@@ -261,7 +266,7 @@ final class AbilityExecutor {
             return;
         }
         if (type == AbilityType.BLINK) {
-            double range = ability.paramDouble("range", 8);
+            double range = Math.min(ability.paramDouble("range", 8), 48);
             Location start = player.getLocation().clone();
             Vector dir = player.getLocation().getDirection();
             if (dir.lengthSquared() < 1.0e-6) {
@@ -319,7 +324,7 @@ final class AbilityExecutor {
     }
 
     private void doLightningDash(Player player, AbilityDefinition ability, boolean doFx) {
-        double range = ability.paramDouble("range", 8);
+        double range = Math.min(ability.paramDouble("range", 8), 48);
         double damage = ability.paramDouble("damage", 4);
         Location start = player.getLocation().clone();
         Vector dir = player.getLocation().getDirection();
@@ -361,6 +366,7 @@ final class AbilityExecutor {
     /**
      * Walks along {@code dir} up to {@code range} and returns the farthest location where the
      * player can stand (feet + head clear). Stops before solids so ceilings/walls clip the dash.
+     * Snaps down onto solid ground so mid-air landings don't feel floaty / glitchy.
      */
     private static Location findDashDestination(Player player, Vector dir, double range) {
         Location start = player.getLocation();
@@ -369,7 +375,7 @@ final class AbilityExecutor {
         if (world == null || range <= 0) {
             return best;
         }
-        double step = 0.4;
+        double step = 0.35;
         double max = Math.max(step, range);
         for (double d = step; d <= max + 1.0e-6; d += step) {
             Location cand = start.clone().add(dir.clone().multiply(Math.min(d, max)));
@@ -378,14 +384,34 @@ final class AbilityExecutor {
             }
             best = cand;
         }
-        return best;
+        return snapDashToGround(world, best);
+    }
+
+    /** Drop onto the nearest solid under the feet (up to 10 blocks) while staying passable. */
+    private static Location snapDashToGround(World world, Location feet) {
+        Location loc = feet.clone();
+        // Prefer standing on a block: search downward from current feet.
+        for (int drop = 0; drop <= 10; drop++) {
+            Location tryFeet = loc.clone().subtract(0, drop, 0);
+            Location below = tryFeet.clone().subtract(0, 0.05, 0);
+            if (world.getBlockAt(below).getType().isSolid() && isPassableStanding(world, tryFeet)) {
+                tryFeet.setX(Math.floor(tryFeet.getX()) + 0.5);
+                tryFeet.setZ(Math.floor(tryFeet.getZ()) + 0.5);
+                tryFeet.setY(Math.floor(below.getY()) + 1.0);
+                return tryFeet;
+            }
+        }
+        // No ground nearby — keep air spot but center in the block for less wonky camera.
+        loc.setX(Math.floor(loc.getX()) + 0.5);
+        loc.setZ(Math.floor(loc.getZ()) + 0.5);
+        return loc;
     }
 
     private static boolean isPassableStanding(World world, Location feet) {
         int x = feet.getBlockX();
         int y = feet.getBlockY();
         int z = feet.getBlockZ();
-        if (y < world.getMinHeight() || y + 1 > world.getMaxHeight()) {
+        if (y < world.getMinHeight() || y + 1 >= world.getMaxHeight()) {
             return false;
         }
         return !world.getBlockAt(x, y, z).getType().isSolid()
@@ -421,16 +447,22 @@ final class AbilityExecutor {
         return hit == null ? null : hit.getHitEntity();
     }
 
-    private void applyEffect(Player player, AbilityDefinition ability, boolean doFx) {
+            private void applyEffect(Player player, AbilityDefinition ability, boolean doFx) {
         int duration = ability.paramInt("duration", 100);
-        int amplifier = ability.paramInt("amplifier", 0);
-        // Multi-effect: params.effects as list of names, or effect / effect2 / effect3
-        java.util.List<String> names = new java.util.ArrayList<>();
+        if (duration < 0) {
+            duration = -1; // Paper infinite
+        }
+        int baseAmplifier = Math.max(0, Math.min(99, ability.paramInt("amplifier", 0)));
+        // Multi-effect: params.effects list, and/or effect / effect2…effect6
+        java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>();
         Object rawList = ability.params().get("effects");
         if (rawList instanceof java.util.List<?> list) {
             for (Object o : list) {
                 if (o != null) {
-                    names.add(String.valueOf(o));
+                    String e = String.valueOf(o).trim();
+                    if (!e.isEmpty()) {
+                        names.add(e);
+                    }
                 }
             }
         }
@@ -453,6 +485,7 @@ final class AbilityExecutor {
             if (potionType == null) {
                 continue;
             }
+            int amplifier = PotionAmpLimits.clamp(name, baseAmplifier);
             player.addPotionEffect(new PotionEffect(potionType, duration, amplifier));
             any = true;
         }

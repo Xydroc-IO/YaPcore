@@ -96,7 +96,7 @@ tasks.register("installProductDefaults") {
 
 tasks.register("installGameplayDefaults") {
     group = "distribution"
-    description = "GAMEPLAY opt-in: Skills + Dungeons + Disasters + Stacker + GameplayKnobs (+ fine-tune modules)"
+    description = "GAMEPLAY opt-in: Skills + Dungeons + Disasters + LeveledMobs + Stacker + GameplayKnobs (+ fine-tune modules)"
     dependsOn(
         ":gameplay-knobs-plugin:installIntoPlugins",
         ":finetune-modules:installGameplayIntoModules",
@@ -109,6 +109,9 @@ tasks.register("installGameplayDefaults") {
     }
     if (findProject(":disasters-plugin") != null) {
         dependsOn(":disasters-plugin:installIntoPlugins")
+    }
+    if (findProject(":leveled-mobs-plugin") != null) {
+        dependsOn(":leveled-mobs-plugin:installIntoPlugins")
     }
     if (findProject(":stacker-plugin") != null) {
         dependsOn(":stacker-plugin:installIntoPlugins")
@@ -174,6 +177,7 @@ tasks.register("assemblePluginDist") {
         ":dungeons-plugin:shadowJar",
         ":bedrock-ui-plugin:jar",
         ":disasters-plugin:jar",
+        ":leveled-mobs-plugin:jar",
         ":yap-bedrock-ui-api:jar",
         ":yap-db-api:jar",
         ":yap-perms-api:jar",
@@ -286,6 +290,9 @@ tasks.register("assemblePluginDist") {
         }
         if (findProject(":disasters-plugin") != null) {
             copyNamed(jarOf(":disasters-plugin"), gameplayDir)
+        }
+        if (findProject(":leveled-mobs-plugin") != null) {
+            copyNamed(jarOf(":leveled-mobs-plugin"), gameplayDir)
         }
 
         copyNamed(jarOf(":yap-db-api"), apiDir)

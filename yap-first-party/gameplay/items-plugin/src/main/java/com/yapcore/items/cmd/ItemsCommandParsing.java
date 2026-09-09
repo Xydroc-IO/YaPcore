@@ -221,8 +221,28 @@ final class ItemsCommandParsing {
         putDoubleParam(params, flags, "amount");
         putDoubleParam(params, flags, "y");
         putDoubleParam(params, flags, "radius");
-        if (flags.containsKey("effect")) {
-            params.put("effect", flags.get("effect"));
+        if (flags.containsKey("effect") || flags.containsKey("effects")) {
+            String raw = flags.getOrDefault("effects", flags.get("effect"));
+            if (raw != null && !raw.isBlank()) {
+                if (raw.indexOf(',') >= 0 || raw.indexOf(';') >= 0 || raw.indexOf('+') >= 0 || raw.indexOf('|') >= 0) {
+                    java.util.List<String> list = new java.util.ArrayList<>();
+                    for (String part : raw.split("[,;+/|]+")) {
+                        String e = part.trim().toUpperCase(Locale.ROOT).replace(' ', '_');
+                        if (!e.isEmpty() && !list.contains(e)) {
+                            list.add(e);
+                        }
+                        if (list.size() >= 6) {
+                            break;
+                        }
+                    }
+                    if (!list.isEmpty()) {
+                        params.put("effects", list);
+                        params.put("effect", list.get(0));
+                    }
+                } else {
+                    params.put("effect", raw.trim().toUpperCase(Locale.ROOT).replace(' ', '_'));
+                }
+            }
         }
         if (flags.containsKey("instant-kill") || flags.containsKey("instakill") || flags.containsKey("kill")) {
             String raw = flags.getOrDefault("instant-kill", flags.getOrDefault("instakill", flags.get("kill")));
@@ -240,6 +260,10 @@ final class ItemsCommandParsing {
         }
         if (flags.containsKey("amplifier")) {
             putDoubleParam(params, flags, "amplifier");
+            Object amp = params.get("amplifier");
+            if (amp instanceof Number n) {
+                params.put("amplifier", Math.max(0, Math.min(99, n.intValue())));
+            }
         }
         if (flags.containsKey("text")) {
             params.put("text", flags.get("text"));
@@ -248,6 +272,32 @@ final class ItemsCommandParsing {
             String kind = flags.getOrDefault("projectile", flags.get("kind"));
             if (kind != null && !kind.isBlank()) {
                 params.put("projectile", kind.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        if (flags.containsKey("sound")) {
+            String sound = flags.get("sound");
+            if (sound != null && !sound.isBlank() && !"default".equalsIgnoreCase(sound)) {
+                params.put("sound", sound.trim().toUpperCase(Locale.ROOT).replace('.', '_').replace('-', '_'));
+            }
+        }
+        if (flags.containsKey("particle")) {
+            String particle = flags.get("particle");
+            if (particle != null && !particle.isBlank() && !"default".equalsIgnoreCase(particle)) {
+                params.put("particle", particle.trim().toUpperCase(Locale.ROOT).replace('.', '_').replace('-', '_'));
+            }
+        }
+        if (flags.containsKey("count")) {
+            putDoubleParam(params, flags, "count");
+        }
+        if (flags.containsKey("no-fx") || flags.containsKey("nofx")) {
+            params.put("fx", false);
+        } else if (flags.containsKey("fx")) {
+            String v = flags.get("fx");
+            if (v == null || v.isBlank()
+                    || "true".equalsIgnoreCase(v) || "yes".equalsIgnoreCase(v) || "1".equals(v) || "on".equalsIgnoreCase(v)) {
+                params.put("fx", true);
+            } else {
+                params.put("fx", false);
             }
         }
         return params;

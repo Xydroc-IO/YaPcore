@@ -75,7 +75,7 @@ commands:
     permission: yapessentials.god
   speed:
     description: Set walk/fly speed
-    usage: /speed <0-10> [fly|walk]
+    usage: /speed [player] <0-10> [fly|walk]
     permission: yapessentials.speed
   heal:
     description: Heal yourself or another player
@@ -318,8 +318,14 @@ permissions:
     default: op
   yapessentials.god:
     default: op
+  yapessentials.god.others:
+    default: op
+    description: Toggle god mode on other players
   yapessentials.speed:
     default: op
+  yapessentials.speed.others:
+    default: op
+    description: Set walk/fly speed on other players
   yapessentials.heal:
     default: op
   yapessentials.feed:
@@ -365,6 +371,12 @@ permissions:
     default: true
   yapessentials.hat:
     default: op
+  yapessentials.keepinventory:
+    description: Keep items on death (VIP perk; does not enable global keep-inventory)
+    default: false
+  yapessentials.keepinventory.xp:
+    description: Also keep XP on death (with keepinventory)
+    default: false
   yapessentials.teleport:
     default: op
   yapessentials.staff.freeze:

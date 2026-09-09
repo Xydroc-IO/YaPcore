@@ -164,14 +164,14 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
                 sender.sendMessage("§cPlayer not online here — use §fkit grant " + playerName + " " + kitId);
                 return true;
             }
-            grants.giveOnline(online, def, !force).thenAccept(ok ->
+            grants.giveOnline(online, def, !force).thenAccept(result ->
                     YapSched.global(plugin, () -> {
-                        if (ok) {
+                        if (result.outcome() == KitDelivery.Outcome.OK) {
                             sender.sendMessage("§aGave kit §f" + kitId + " §ato §f" + online.getName());
                             online.sendMessage("§aYou received kit §f" + kitId);
-                        } else {
-                            sender.sendMessage("§cGive failed.");
+                            return;
                         }
+                        sender.sendMessage("§cGive failed: §f" + describeGiveFailure(result));
                     }));
             return true;
         }
@@ -372,6 +372,21 @@ public final class KitCommands implements CommandExecutor, TabCompleter {
             return partial(args[1], config.kits().keySet());
         }
         return List.of();
+    }
+
+    private static String describeGiveFailure(KitDelivery.Result result) {
+        return switch (result.outcome()) {
+            case OK -> "ok";
+            case UNKNOWN -> result.detail() == null || result.detail().isBlank()
+                    ? "unknown kit or error"
+                    : result.detail();
+            case NO_PERM -> "player lacks kit permission";
+            case COOLDOWN -> "on cooldown (" + (result.detail().isBlank()
+                    ? result.secondsLeft() + "s" : result.detail()) + ") — use §e-force";
+            case MAX_USES -> "max uses reached (" + result.detail() + ")";
+            case CANT_AFFORD -> "can't afford (" + result.detail() + ")";
+            case NOT_READY -> "player left or data not ready";
+        };
     }
 
     private static boolean isKitAdmin(CommandSender sender) {

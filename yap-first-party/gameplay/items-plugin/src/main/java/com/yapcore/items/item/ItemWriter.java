@@ -36,6 +36,9 @@ public final class ItemWriter {
         if (req.glow()) {
             yaml.set(base + ".glow", true);
         }
+        if (req.rainbow()) {
+            yaml.set(base + ".rainbow", true);
+        }
         if (req.unbreakable()) {
             yaml.set(base + ".unbreakable", true);
         }

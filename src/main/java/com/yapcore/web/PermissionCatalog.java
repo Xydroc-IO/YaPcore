@@ -52,6 +52,8 @@ public final class PermissionCatalog {
                 n("yapdata.kit.vip", "VIP kit", "Claim the VIP kit"),
                 n("yapdata.kit.*", "All kits", "Claim every kit"),
                 n("yapessentials.hat", "/hat", "Wear the held item"),
+                n("yapessentials.keepinventory", "Keep inventory", "Keep items on death (VIP)"),
+                n("yapessentials.keepinventory.xp", "Keep XP", "Keep XP on death with keepinventory"),
                 n("yapessentials.ptime", "/ptime", "Personal time of day"),
                 n("yapessentials.pweather", "/pweather", "Personal weather")));
         out.add(cat("claims", "Claims & land", "Land claims and claim admin.",

@@ -133,20 +133,20 @@ public final class KitGrantService {
         return ok[0];
     }
 
-    public CompletableFuture<Boolean> giveOnline(Player player, KitDef def, boolean markCooldown) {
-        CompletableFuture<Boolean> done = new CompletableFuture<>();
+    public CompletableFuture<KitDelivery.Result> giveOnline(Player player, KitDef def, boolean markCooldown) {
+        CompletableFuture<KitDelivery.Result> done = new CompletableFuture<>();
         YapSched.entity(plugin, player, () -> {
             if (!player.isOnline()) {
-                done.complete(false);
+                done.complete(KitDelivery.Result.of(KitDelivery.Outcome.NOT_READY));
                 return;
             }
             try {
                 KitDelivery.Result result = delivery.claim(player, def.id(),
                         markCooldown ? KitDelivery.Mode.ADMIN : KitDelivery.Mode.ADMIN_FORCE);
-                done.complete(result.outcome() == KitDelivery.Outcome.OK);
+                done.complete(result);
             } catch (Exception e) {
                 plugin.getLogger().log(Level.WARNING, "Admin kit give failed", e);
-                done.complete(false);
+                done.complete(new KitDelivery.Result(KitDelivery.Outcome.UNKNOWN, 0, e.getMessage()));
             }
         });
         return done;

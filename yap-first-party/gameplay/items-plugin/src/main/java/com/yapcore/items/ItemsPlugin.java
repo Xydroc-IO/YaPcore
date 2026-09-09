@@ -11,6 +11,7 @@ import com.yapcore.items.gui.ItemsGuiListener;
 import com.yapcore.items.item.ItemFactory;
 import com.yapcore.items.item.ItemRegistry;
 import com.yapcore.items.item.ItemWriter;
+import com.yapcore.items.item.RainbowNameService;
 import com.yapcore.items.item.RecipeRegistrar;
 import com.yapcore.items.listener.ItemsListener;
 import com.yapcore.mmo.CombatService;
@@ -36,6 +37,7 @@ public final class ItemsPlugin extends JavaPlugin {
     private ItemsCombatService combatService;
     private ItemServiceImpl itemService;
     private ItemsPermissions permissions;
+    private RainbowNameService rainbowNames;
 
     @Override
     public void onEnable() {
@@ -53,11 +55,13 @@ public final class ItemsPlugin extends JavaPlugin {
         this.gui = new ItemsGui(this);
         this.itemService = new ItemServiceImpl(this);
         this.permissions = new ItemsPermissions(this);
+        this.rainbowNames = new RainbowNameService(this, keys, registry);
 
         registry.reload();
         permissions.sync(registry);
         furniture.load();
         recipes.registerAll();
+        rainbowNames.start();
 
         getServer().getServicesManager().register(ItemService.class, itemService, this, ServicePriority.Normal);
         if (config.registerCombatService()) {
@@ -80,6 +84,9 @@ public final class ItemsPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (rainbowNames != null) {
+            rainbowNames.stop();
+        }
         if (permissions != null) {
             permissions.clear();
         }
@@ -105,6 +112,10 @@ public final class ItemsPlugin extends JavaPlugin {
         File examples = new File(getDataFolder(), "items/examples.yml");
         if (!examples.isFile()) {
             saveResource("items/examples.yml", false);
+        }
+        File rainbow = new File(getDataFolder(), "items/rainbow.yml");
+        if (!rainbow.isFile()) {
+            saveResource("items/rainbow.yml", false);
         }
         File custom = new File(getDataFolder(), "items/custom");
         if (!custom.isDirectory()) {

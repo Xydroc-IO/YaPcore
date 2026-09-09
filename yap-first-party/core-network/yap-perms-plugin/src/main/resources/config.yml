@@ -139,6 +139,7 @@ starter-grants:
     - yapessentials.gamemode
     - yapessentials.item
     - yapessentials.speed
+    - yapessentials.speed.others
     - yapessentials.heal
     - yapessentials.feed
     - yapessentials.repair
@@ -153,6 +154,8 @@ starter-grants:
     - yapessentials.weather
     - yapessentials.ptime
     - yapessentials.pweather
+    - yapessentials.god
+    - yapessentials.god.others
     - yapdisasters.use
     - minecraft.command.weather
     - yapadmin.menu

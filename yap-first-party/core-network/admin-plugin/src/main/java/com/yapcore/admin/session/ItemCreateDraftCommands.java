@@ -32,10 +32,14 @@ final class ItemCreateDraftCommands {
             sb.append(" --amount ").append(d.breakCount());
         }
         if (usesPotion(d)) {
-            sb.append(" --effect ").append(d.potionEffect());
+            sb.append(" --effect ").append(d.potionEffectsCompact());
         }
         if (usesPotionPower(d)) {
-            sb.append(" --duration ").append(d.potionDurationSec() * 20);
+            if (d.potionDurationSec() < 0) {
+                sb.append(" --duration -1");
+            } else {
+                sb.append(" --duration ").append(d.potionDurationSec() * 20);
+            }
             sb.append(" --amplifier ").append(d.potionAmplifier());
         }
         if (usesHeal(d) && !usesBreakVolume(d)) {
@@ -43,6 +47,19 @@ final class ItemCreateDraftCommands {
         }
         if (usesProjectile(d)) {
             sb.append(" --projectile ").append(d.projectileKind());
+        }
+        ItemCreateDraftFx fx = d.fx();
+        if (!fx.enabled) {
+            sb.append(" --no-fx");
+        }
+        if (fx.sound != null && !fx.sound.isBlank()) {
+            sb.append(" --sound ").append(fx.sound);
+        }
+        if (fx.particle != null && !fx.particle.isBlank()) {
+            sb.append(" --particle ").append(fx.particle);
+        }
+        if (fx.count >= 0) {
+            sb.append(" --count ").append(fx.count);
         }
         if (d.gearAttack() > 0) {
             sb.append(" --gear-attack ").append(d.gearAttack());
@@ -54,6 +71,11 @@ final class ItemCreateDraftCommands {
             sb.append(" --glow");
         } else if (d.replaceExisting()) {
             sb.append(" --no-glow");
+        }
+        if (d.rainbow()) {
+            sb.append(" --rainbow");
+        } else if (d.replaceExisting()) {
+            sb.append(" --no-rainbow");
         }
         if (d.unbreakable()) {
             sb.append(" --unbreakable");
@@ -106,7 +128,7 @@ final class ItemCreateDraftCommands {
         return AbilityCatalog.anyNeeds(d.abilities(), AbilityCatalog.Info::needsBreakVolume);
     }
 
-    private static String trimNum(double v) {
+    static String trimNum(double v) {
         if (Math.rint(v) == v) {
             return Integer.toString((int) v);
         }

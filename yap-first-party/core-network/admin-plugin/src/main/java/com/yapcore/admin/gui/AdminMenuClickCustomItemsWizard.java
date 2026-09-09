@@ -73,7 +73,7 @@ final class AdminMenuClickCustomItemsWizard {
         plugin.menus().openCustomItemsCreateBuild(player);
     }
 
-    void handleCustomItemsCreateBuild(Player player, int slot) {
+    void handleCustomItemsCreateBuild(Player player, int slot, boolean shift) {
         AdminSession session = plugin.session(player.getUniqueId());
         ItemCreateDraft d = session.itemCreate();
         if (slot == AdminMenus.SLOT_BACK) {
@@ -95,6 +95,10 @@ final class AdminMenuClickCustomItemsWizard {
             }
             case 13 -> {
                 d.toggleUnbreakable();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 15 -> {
+                d.toggleRainbow();
                 plugin.menus().openCustomItemsCreateBuild(player);
             }
             case 14 -> plugin.menus().openCustomItemsCreateEnchants(player);
@@ -141,7 +145,7 @@ final class AdminMenuClickCustomItemsWizard {
                 plugin.menus().openCustomItemsCreateBuild(player);
             }
             case 31 -> {
-                d.cyclePotionEffect();
+                d.cyclePotionEffect(shift);
                 plugin.menus().openCustomItemsCreateBuild(player);
             }
             case 32 -> {
@@ -166,6 +170,22 @@ final class AdminMenuClickCustomItemsWizard {
             }
             case 39 -> {
                 d.cycleHealAmount();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 40 -> {
+                d.fx().toggleEnabled();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 41 -> {
+                d.fx().cycleSound();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 42 -> {
+                d.fx().cycleParticle();
+                plugin.menus().openCustomItemsCreateBuild(player);
+            }
+            case 43 -> {
+                d.fx().cycleCount();
                 plugin.menus().openCustomItemsCreateBuild(player);
             }
             case 33 -> {

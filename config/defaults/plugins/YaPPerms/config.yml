@@ -110,6 +110,7 @@ starter-grants:
     - yapessentials.hat
     - yapessentials.ptime
     - yapessentials.pweather
+    - yapessentials.keepinventory
   # Junior moderation (legacy) — prefer staff for new hires
   mod:
     - yapchat.staff

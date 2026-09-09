@@ -18,6 +18,8 @@ public final class AdminSession {
     private MaterialCategory category = MaterialCategory.ALL;
     private boolean confirmClear;
     private Material pendingMaterial;
+    /** When true, speed picker sets fly speed; otherwise walk. */
+    private boolean speedFly;
     /** When true, player-head click opens troll menu instead of player actions. */
     private boolean pickForTrolls;
     private String customItemId = "";
@@ -90,6 +92,14 @@ public final class AdminSession {
 
     public void setConfirmClear(boolean confirmClear) {
         this.confirmClear = confirmClear;
+    }
+
+    public boolean speedFly() {
+        return speedFly;
+    }
+
+    public void setSpeedFly(boolean speedFly) {
+        this.speedFly = speedFly;
     }
 
     public Material pendingMaterial() {

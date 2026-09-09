@@ -72,6 +72,15 @@ features:
   staff: true
   water-waves: true
 
+# Death drops — false = vanilla drops for everyone.
+# Players with yapessentials.keepinventory (e.g. VIP) still keep items when this is false.
+# Keep sync-gamerule false when using permission-only keep (gamerule would apply to all).
+death:
+  keep-inventory: false
+  keep-xp: false
+  # Mirror into vanilla /gamerule keepInventory for all loaded worlds on reload
+  sync-gamerule: true
+
 # Server-side surface bobbing / entry splash (works without client shaders).
 water-waves:
   splash: true

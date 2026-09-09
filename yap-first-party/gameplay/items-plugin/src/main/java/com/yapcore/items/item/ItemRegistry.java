@@ -101,6 +101,9 @@ public final class ItemRegistry {
         }
         boolean unbreakable = ks.getBoolean("unbreakable", false);
         boolean glow = ks.getBoolean("glow", false);
+        boolean rainbow = ks.getBoolean("rainbow", false)
+                || ks.getBoolean("rainbow-name", false)
+                || ks.getBoolean("name-rainbow", false);
         Map<Enchantment, Integer> enchants = new LinkedHashMap<>();
         ConfigurationSection enchSec = ks.getConfigurationSection("enchants");
         if (enchSec != null) {
@@ -186,6 +189,7 @@ public final class ItemRegistry {
                 cmd,
                 unbreakable,
                 glow,
+                rainbow,
                 List.copyOf(flags),
                 Map.copyOf(enchants),
                 Map.copyOf(attributes),
@@ -278,6 +282,15 @@ public final class ItemRegistry {
         return byId.size();
     }
 
+    public boolean hasRainbowItems() {
+        for (ItemDefinition def : byId.values()) {
+            if (def.rainbow()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public int loadRevision() {
         return loadRevision;
     }
@@ -309,6 +322,10 @@ public final class ItemRegistry {
         File examples = new File(plugin.getDataFolder(), "items/examples.yml");
         if (!examples.isFile()) {
             plugin.saveResource("items/examples.yml", false);
+        }
+        File rainbow = new File(plugin.getDataFolder(), "items/rainbow.yml");
+        if (!rainbow.isFile()) {
+            plugin.saveResource("items/rainbow.yml", false);
         }
         try (InputStream in = plugin.getResource("config.yml")) {
             if (in != null && !new File(plugin.getDataFolder(), "config.yml").isFile()) {

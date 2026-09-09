@@ -9,11 +9,13 @@ public final class ItemsKeys {
     private final NamespacedKey itemId;
     private final NamespacedKey itemRev;
     private final NamespacedKey furnitureId;
+    private final NamespacedKey rainbow;
 
     public ItemsKeys(JavaPlugin plugin) {
         this.itemId = new NamespacedKey(plugin, "yap_item_id");
         this.itemRev = new NamespacedKey(plugin, "yap_item_rev");
         this.furnitureId = new NamespacedKey(plugin, "yap_furniture_id");
+        this.rainbow = new NamespacedKey(plugin, "yap_rainbow");
     }
 
     public NamespacedKey itemId() {
@@ -26,5 +28,9 @@ public final class ItemsKeys {
 
     public NamespacedKey furnitureId() {
         return furnitureId;
+    }
+
+    public NamespacedKey rainbow() {
+        return rainbow;
     }
 }

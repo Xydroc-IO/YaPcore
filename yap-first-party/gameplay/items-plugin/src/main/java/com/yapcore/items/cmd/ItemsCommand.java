@@ -350,7 +350,9 @@ public final class ItemsCommand implements CommandExecutor, TabCompleter {
                     "--template", "--furniture", "--damage", "--range", "--power", "--radius",
                     "--effect", "--projectile", "--kind", "--amplifier", "--duration",
                     "--amount", "--gear-attack", "--gear-strength", "--lore", "--trigger",
-                    "--glow", "--glint", "--no-glow", "--unbreakable", "--no-unbreakable", "--breakable",
+                    "--sound", "--particle", "--count", "--fx", "--no-fx",
+                    "--glow", "--glint", "--no-glow", "--rainbow", "--rainbow-name", "--no-rainbow",
+                    "--unbreakable", "--no-unbreakable", "--breakable",
                     "--enchant", "--enchants", "--no-enchants", "--clear-enchants",
                     "--replace", "--force"), args[args.length - 1]);
         }
@@ -375,6 +377,7 @@ public final class ItemsCommand implements CommandExecutor, TabCompleter {
             if ("--effect".equals(prev)) {
                 return filter(List.of(
                         "SPEED", "STRENGTH", "REGENERATION", "RESISTANCE", "JUMP_BOOST",
+                        "WATER_BREATHING", "CONDUIT_POWER", "DOLPHINS_GRACE",
                         "INVISIBILITY", "FIRE_RESISTANCE", "HASTE", "NIGHT_VISION",
                         "SLOWNESS", "WEAKNESS", "POISON", "WITHER", "BLINDNESS", "NAUSEA", "LEVITATION"
                 ), args[args.length - 1]);

@@ -202,12 +202,43 @@ final class EssentialsStaffCommands {
             YapMessages.noPermission(sender);
             return true;
         }
-        if (args.length >= 1 && "reload".equalsIgnoreCase(args[0])) {
+        if (args.length == 0) {
+            sender.sendMessage("§e/yapess reload");
+            sender.sendMessage("§e/yapess keepinventory [on|off|toggle]");
+            sender.sendMessage("§7keep-inventory: §f" + (ctx.config.keepInventory() ? "on" : "off")
+                    + " §7keep-xp: §f" + (ctx.config.keepXp() ? "on" : "off"));
+            return true;
+        }
+        String sub = args[0].toLowerCase(Locale.ROOT);
+        if ("reload".equals(sub)) {
             ctx.plugin.reloadEssentials();
             YapMessages.reloaded(sender, "YaPEssentials");
             return true;
         }
-        sender.sendMessage("§e/yapess reload");
+        if ("keepinventory".equals(sub) || "keepinv".equals(sub) || "ki".equals(sub)) {
+            boolean next;
+            if (args.length >= 2) {
+                String mode = args[1].toLowerCase(Locale.ROOT);
+                if ("on".equals(mode) || "true".equals(mode) || "yes".equals(mode)) {
+                    next = true;
+                } else if ("off".equals(mode) || "false".equals(mode) || "no".equals(mode)) {
+                    next = false;
+                } else if ("toggle".equals(mode)) {
+                    next = !ctx.config.keepInventory();
+                } else {
+                    sender.sendMessage("§cUsage: /yapess keepinventory [on|off|toggle]");
+                    return true;
+                }
+            } else {
+                next = !ctx.config.keepInventory();
+            }
+            ctx.plugin.setKeepInventory(next);
+            sender.sendMessage(next
+                    ? "§aPlayers keep inventory on death."
+                    : "§ePlayers drop inventory on death (vanilla).");
+            return true;
+        }
+        sender.sendMessage("§e/yapess reload | keepinventory [on|off|toggle]");
         return true;
     }
 

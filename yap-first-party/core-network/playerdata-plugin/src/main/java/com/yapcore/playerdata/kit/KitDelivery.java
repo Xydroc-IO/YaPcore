@@ -49,7 +49,9 @@ public final class KitDelivery {
             return Result.of(Outcome.UNKNOWN);
         }
         boolean skipGates = mode == Mode.ADMIN || mode == Mode.ADMIN_FORCE || mode == Mode.GRANT;
-        boolean skipCooldown = mode == Mode.ADMIN_FORCE || mode == Mode.GRANT || mode == Mode.FIRST_JOIN;
+        // Admin /kit give must always deliver; only player self-claim hits delay.
+        boolean skipCooldown = mode == Mode.ADMIN || mode == Mode.ADMIN_FORCE
+                || mode == Mode.GRANT || mode == Mode.FIRST_JOIN;
         boolean skipCost = skipGates || mode == Mode.FIRST_JOIN;
         boolean skipUses = skipGates;
 

@@ -14,6 +14,7 @@ public record ItemCreateRequest(
         List<String> lore,
         int cmd,
         boolean glow,
+        boolean rainbow,
         boolean unbreakable,
         List<AbilityWrite> abilities,
         boolean furniture,
@@ -41,6 +42,7 @@ public record ItemCreateRequest(
             List<String> lore,
             int cmd,
             boolean glow,
+            boolean rainbow,
             boolean unbreakable,
             String abilityType,
             String abilityCooldown,
@@ -57,7 +59,7 @@ public record ItemCreateRequest(
                     abilityParams == null ? Map.of() : abilityParams));
         }
         return new ItemCreateRequest(
-                id, base, name, lore, cmd, glow, unbreakable, abilities, furniture, gearAttack, gearStrength,
+                id, base, name, lore, cmd, glow, rainbow, unbreakable, abilities, furniture, gearAttack, gearStrength,
                 Map.of());
     }
 }

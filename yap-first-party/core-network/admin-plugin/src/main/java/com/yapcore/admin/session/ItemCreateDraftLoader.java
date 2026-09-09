@@ -37,6 +37,7 @@ final class ItemCreateDraftLoader {
         d.setGlow(false);
         d.setUnbreakable(false);
         d.enchantsMutable().clear();
+        d.clearPotionEffects();
         d.setPendingChat(0);
         d.setEditingTriggerIndex(-1);
         d.setReplaceExisting(false);
@@ -81,6 +82,9 @@ final class ItemCreateDraftLoader {
         d.setGearStrength(yaml.getInt(clean + ".gear.strength", 0));
         d.setGlow(yaml.getBoolean(clean + ".glow", false));
         d.setUnbreakable(yaml.getBoolean(clean + ".unbreakable", false));
+        d.setRainbow(yaml.getBoolean(clean + ".rainbow", false)
+                || yaml.getBoolean(clean + ".rainbow-name", false)
+                || yaml.getBoolean(clean + ".name-rainbow", false));
         d.enchantsMutable().clear();
         org.bukkit.configuration.ConfigurationSection enchSec = yaml.getConfigurationSection(clean + ".enchants");
         if (enchSec != null) {
@@ -157,15 +161,63 @@ final class ItemCreateDraftLoader {
         }
         Object dur = map.get("duration");
         if (dur instanceof Number n) {
-            d.setPotionDurationSec(Math.max(1, n.intValue() / 20));
+            if (n.intValue() < 0) {
+                d.setPotionDurationSec(-1);
+            } else {
+                d.setPotionDurationSec(Math.max(1, n.intValue() / 20));
+            }
         }
         Object amp = map.get("amplifier");
         if (amp instanceof Number n) {
-            d.setPotionAmplifier(Math.max(0, n.intValue()));
+            d.setPotionAmplifier(Math.max(0, Math.min(99, n.intValue())));
+        }
+        Object sound = map.get("sound");
+        if (sound != null && !String.valueOf(sound).isBlank()) {
+            d.fx().sound = String.valueOf(sound).trim().toUpperCase(Locale.ROOT);
+        }
+        Object particle = map.get("particle");
+        if (particle != null && !String.valueOf(particle).isBlank()) {
+            d.fx().particle = String.valueOf(particle).trim().toUpperCase(Locale.ROOT);
+        }
+        Object count = map.get("count");
+        if (count instanceof Number n) {
+            d.fx().count = Math.max(0, n.intValue());
+        }
+        Object fxFlag = map.get("fx");
+        if (fxFlag instanceof Boolean b) {
+            d.fx().enabled = b;
+        } else if (fxFlag != null) {
+            d.fx().enabled = !"false".equalsIgnoreCase(String.valueOf(fxFlag))
+                    && !"0".equals(String.valueOf(fxFlag))
+                    && !"off".equalsIgnoreCase(String.valueOf(fxFlag));
         }
         Object eff = map.get("effect");
-        if (eff != null) {
-            d.setPotionEffect(String.valueOf(eff).toUpperCase(Locale.ROOT));
+        Object effects = map.get("effects");
+        if (effects instanceof java.util.List<?> list) {
+            StringBuilder csv = new StringBuilder();
+            for (Object o : list) {
+                if (o == null) {
+                    continue;
+                }
+                if (csv.length() > 0) {
+                    csv.append(',');
+                }
+                csv.append(o);
+            }
+            if (csv.length() > 0) {
+                ItemCreateDraftCycles.setPotionEffectsCsv(d, csv.toString());
+            }
+        } else if (eff != null) {
+            ItemCreateDraftCycles.setPotionEffectsCsv(d, String.valueOf(eff));
+        }
+        for (int i = 2; i <= 6; i++) {
+            Object extra = map.get("effect" + i);
+            if (extra != null) {
+                String key = String.valueOf(extra).trim().toUpperCase(Locale.ROOT).replace(' ', '_');
+                if (!key.isEmpty()) {
+                    d.potionEffectsMutable().add(key);
+                }
+            }
         }
         Object proj = map.get("projectile");
         if (proj == null) {

@@ -71,11 +71,27 @@ final class AbilityFx {
     void burstAt(Location loc, AbilityDefinition ability) {
         FxProfile d = defaults(ability);
         playSound(loc, ability.paramString("sound", d.sound()), 1f, 1f);
-        particleAt(loc, resolveParticle(ability), ability.paramInt("count", d.count()), 0.35, 0.55, 0.35, 0.04);
+        String particleName = ability.paramString("particle", d.particle());
+        // RAINBOW used to spawn colored dust "smoke" — cosmetic rainbow is mesh/name only.
+        if (particleName != null && "RAINBOW".equalsIgnoreCase(particleName.trim())) {
+            return;
+        }
+        int count = ability.paramInt("count", d.count());
+        particleAt(loc, particleOf(particleName), count, 0.35, 0.55, 0.35, 0.04);
     }
 
     Particle resolveParticle(AbilityDefinition ability) {
-        return particleOf(ability.paramString("particle", defaults(ability).particle()));
+        String name = ability.paramString("particle", defaults(ability).particle());
+        if (name != null && "RAINBOW".equalsIgnoreCase(name.trim())) {
+            return Particle.CRIT; // unused when burst skips RAINBOW
+        }
+        return particleOf(name);
+    }
+
+    /** Dust rainbow FX removed — rainbow is name + client mesh tint only. */
+    @Deprecated
+    static void rainbowBurst(Location loc, int count) {
+        // no-op
     }
 
     void playSound(Location loc, String name, float volume, float pitch) {
@@ -249,23 +265,60 @@ final class AbilityFx {
     }
 
     void areaEffect(Player player, AbilityDefinition ability, boolean doFx, java.util.function.Function<String, org.bukkit.potion.PotionEffectType> potionLookup) {
-        org.bukkit.potion.PotionEffectType potionType = potionLookup.apply(ability.paramString("effect", "SLOWNESS"));
+        java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>();
+        Object rawList = ability.params().get("effects");
+        if (rawList instanceof java.util.List<?> list) {
+            for (Object o : list) {
+                if (o != null) {
+                    String e = String.valueOf(o).trim();
+                    if (!e.isEmpty()) {
+                        names.add(e);
+                    }
+                }
+            }
+        }
+        String primary = ability.paramString("effect", null);
+        if (primary != null && !primary.isBlank()) {
+            names.add(primary);
+        }
+        for (int i = 2; i <= 6; i++) {
+            String extra = ability.paramString("effect" + i, null);
+            if (extra != null && !extra.isBlank()) {
+                names.add(extra);
+            }
+        }
+        if (names.isEmpty()) {
+            names.add("SLOWNESS");
+        }
         double radius = ability.paramDouble("radius", 4);
-        if (potionType != null) {
-            org.bukkit.potion.PotionEffect effect = new org.bukkit.potion.PotionEffect(
-                    potionType,
-                    ability.paramInt("duration", 60),
-                    ability.paramInt("amplifier", 0));
+        int duration = ability.paramInt("duration", 60);
+        if (duration < 0) {
+            duration = -1;
+        }
+        int baseAmplifier = Math.max(0, Math.min(99, ability.paramInt("amplifier", 0)));
+        java.util.List<org.bukkit.potion.PotionEffect> built = new java.util.ArrayList<>();
+        for (String name : names) {
+            org.bukkit.potion.PotionEffectType potionType = potionLookup.apply(name);
+            if (potionType != null) {
+                built.add(new org.bukkit.potion.PotionEffect(
+                        potionType, duration, PotionAmpLimits.clamp(name, baseAmplifier)));
+            }
+        }
+        if (!built.isEmpty()) {
             for (Entity nearby : player.getNearbyEntities(radius, radius, radius)) {
                 if (nearby instanceof org.bukkit.entity.LivingEntity living && nearby != player) {
-                    living.addPotionEffect(effect);
+                    for (org.bukkit.potion.PotionEffect effect : built) {
+                        living.addPotionEffect(effect);
+                    }
                     if (doFx) {
                         particleAt(living.getLocation().add(0, 1, 0), Particle.SNOWFLAKE, 8, 0.3, 0.4, 0.3, 0.01);
                     }
                 }
             }
             if (ability.paramBool("self", false)) {
-                player.addPotionEffect(effect);
+                for (org.bukkit.potion.PotionEffect effect : built) {
+                    player.addPotionEffect(effect);
+                }
             }
         }
         if (doFx) {

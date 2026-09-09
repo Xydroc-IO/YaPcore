@@ -1,10 +1,6 @@
 # YaP Skills — shipped defaults (typical SMP)
-# Opt-in plugins: leave enabled: false until you want them
-# Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
-# Prefer dashboard: Plugin settings (or Gameplay tab) → Save → reload
-
-# Opt-in skills RPG. Leave false unless you want the progression system.
-enabled: false
+# Enable for mining / woodcutting / strength + overall level progression.
+enabled: true
 
 # Shared MariaDB via YaPDB when available
 use-shared-yapdb: true

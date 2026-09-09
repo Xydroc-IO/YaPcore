@@ -2,6 +2,7 @@ package com.yapcore.essentials;
 
 import com.yapcore.essentials.cmd.EssentialsCommands;
 import com.yapcore.essentials.db.EssentialsDatabase;
+import com.yapcore.essentials.listener.DeathKeepListener;
 import com.yapcore.essentials.listener.FreezeListener;
 import com.yapcore.essentials.listener.TeleportListener;
 import com.yapcore.essentials.listener.VanishListener;
@@ -64,6 +65,7 @@ public final class EssentialsPlugin extends JavaPlugin {
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new TeleportListener(back), this);
+        pm.registerEvents(new DeathKeepListener(this), this);
         pm.registerEvents(new VanishListener(vanish), this);
         if (config.feature("staff")) {
             pm.registerEvents(new FreezeListener(staff), this);
@@ -72,6 +74,7 @@ public final class EssentialsPlugin extends JavaPlugin {
 
         getLogger().info("YaPEssentials ready (server-id=" + config.serverId()
                 + ", spawn-scope=" + config.spawnScopeKey()
+                + ", keep-inventory=" + config.keepInventory()
                 + ", water-waves=" + config.waterWavesEnabled()
                 + ", playerdata-qol=" + (playerFeatures != null) + ").");
     }
@@ -139,6 +142,20 @@ public final class EssentialsPlugin extends JavaPlugin {
         if (waterWaves != null) {
             waterWaves = new WaterWaves(this, this::essentialsConfig);
         }
+        applyKeepInventoryPolicy();
+    }
+
+    /** Persist + apply keep-inventory (config + optional gamerule). */
+    public void setKeepInventory(boolean keep) {
+        config.setKeepInventory(keep, config.keepXp());
+        applyKeepInventoryPolicy();
+    }
+
+    public void applyKeepInventoryPolicy() {
+        if (config == null || !config.syncKeepInventoryGamerule()) {
+            return;
+        }
+        KeepInventoryRules.sync(this, config.keepInventory());
     }
 
     private void startWaterWaves() {

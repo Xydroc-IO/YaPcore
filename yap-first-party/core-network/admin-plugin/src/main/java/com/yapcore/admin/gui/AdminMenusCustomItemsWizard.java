@@ -4,6 +4,7 @@ import com.yapcore.admin.AdminPlugin;
 import com.yapcore.admin.session.AdminSession;
 import com.yapcore.admin.session.ItemCreateAbilitySlot;
 import com.yapcore.admin.session.ItemCreateDraft;
+import com.yapcore.admin.session.ItemCreateDraftFx;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -84,7 +85,9 @@ final class AdminMenusCustomItemsWizard {
                 "Type: " + ItemTemplateCatalog.label(d.template()) + " · Abilities: " + d.abilitiesLabel(),
                 "Dmg " + d.damageLabel() + " · Range " + AdminMenuItemSupport.trim(d.range()) + " · CD " + d.cooldown(),
                 "Gear ATK " + d.gearAttack() + " · STR " + d.gearStrength(),
-                (d.glow() ? "Glow " : "No glow ") + "· " + (d.unbreakable() ? "Unbreakable" : "Breakable"),
+                (d.glow() ? "Glow " : "No glow ") + "· "
+                        + (d.rainbow() ? "Rainbow " : "No rainbow ") + "· "
+                        + (d.unbreakable() ? "Unbreakable" : "Breakable"),
                 "Enchants: " + d.enchantsLabel()));
         inv.setItem(12, AdminMenuHolder.icon(
                 d.glow() ? Material.GLOWSTONE_DUST : Material.GUNPOWDER,
@@ -95,6 +98,11 @@ final class AdminMenusCustomItemsWizard {
                 d.unbreakable() ? Material.BEDROCK : Material.IRON_INGOT,
                 d.unbreakable() ? "Unbreakable: ON" : "Unbreakable: OFF",
                 "Item never loses durability",
+                "Click to toggle"));
+        inv.setItem(15, AdminMenuHolder.icon(
+                d.rainbow() ? Material.MAGMA_CREAM : Material.SLIME_BALL,
+                d.rainbow() ? "Rainbow name: ON" : "Rainbow name: OFF",
+                "Animated rainbow display name",
                 "Click to toggle"));
         inv.setItem(14, AdminMenuHolder.icon(Material.ENCHANTED_BOOK,
                 "Enchants: " + d.enchants().size(),
@@ -135,18 +143,19 @@ final class AdminMenusCustomItemsWizard {
                     "Enemy potion / stomp / pull / push"));
         }
         if (d.usesPotion()) {
-            inv.setItem(31, AdminMenuHolder.icon(Material.POTION, "Potion: " + d.potionEffect(),
+            inv.setItem(31, AdminMenuHolder.icon(Material.POTION, "Potions: " + d.potionEffectsLabel(),
+                    "Click = add effect (max 6) · Shift = reset to SPEED",
                     d.abilities().contains("effect") && !d.abilities().contains("area_effect")
-                            ? "Self potion only"
+                            ? "Self potions"
                             : d.abilities().contains("area_effect") && !d.abilities().contains("effect")
-                            ? "Enemy AoE potion"
+                            ? "Enemy AoE potion(s)"
                             : "Self and/or enemy AoE"));
         }
         if (d.usesPotionPower()) {
-            inv.setItem(37, AdminMenuHolder.icon(Material.CLOCK, "Potion time: " + d.potionDurationSec() + "s",
-                    "Duration of potion effects"));
+            inv.setItem(37, AdminMenuHolder.icon(Material.CLOCK, "Potion time: " + d.potionDurationLabel(),
+                    "5s → 10m · unlimited (infinite)"));
             inv.setItem(38, AdminMenuHolder.icon(Material.GLOWSTONE_DUST, "Potion level: " + (d.potionAmplifier() + 1),
-                    "Amplifier 0 = I · 1 = II · 2 = III"));
+                    "Amplifier 0 = I · … · 99 = level 100"));
         }
         if (d.usesProjectile()) {
             inv.setItem(32, AdminMenuHolder.icon(Material.SNOWBALL, "Projectile: " + d.projectileKind(),
@@ -154,7 +163,20 @@ final class AdminMenusCustomItemsWizard {
         }
         if (d.usesHeal() && !d.usesBreakVolume()) {
             inv.setItem(39, AdminMenuHolder.icon(Material.GOLDEN_APPLE, "Heal HP: " + AdminMenuItemSupport.trim(d.healAmount()),
-                    "Hearts restored by Heal self"));
+                    "Hearts restored by Heal self (up to 100)"));
+        }
+        if (!d.abilities().isEmpty()) {
+            ItemCreateDraftFx fx = d.fx();
+            inv.setItem(40, AdminMenuHolder.icon(
+                    fx.enabled ? Material.LIME_DYE : Material.GRAY_DYE,
+                    fx.enabled ? "FX: ON" : "FX: OFF",
+                    "Toggle ability sound + particles"));
+            inv.setItem(41, AdminMenuHolder.icon(Material.NOTE_BLOCK, "Sound: " + fx.soundLabel(),
+                    "Click to cycle · DEFAULT = ability default"));
+            inv.setItem(42, AdminMenuHolder.icon(Material.FIREWORK_STAR, "Particle: " + fx.particleLabel(),
+                    "Click to cycle · DEFAULT = ability default"));
+            inv.setItem(43, AdminMenuHolder.icon(Material.GUNPOWDER, "Particle count: " + fx.countLabel(),
+                    "Click to cycle · DEFAULT = ability default"));
         }
         inv.setItem(29, AdminMenuHolder.icon(Material.DIAMOND_SWORD, "Gear attack: +" + d.gearAttack(),
                 "Click to cycle (melee bonus)"));

@@ -1,0 +1,236 @@
+# Rainbow cosmetics — animated name + client mesh tint (no dust particles).
+# /yapitems give rainbow_heart | rainbow_blade | …
+
+rainbow_heart:
+  base: HEART_OF_THE_SEA
+  name: "Rainbow Heart"
+  lore:
+    - "&7A prismatic heart that never sits still"
+    - "&eRight-click: &fheal"
+  custom-model-data: 12020
+  glow: true
+  rainbow: true
+  unbreakable: true
+  ability:
+    trigger: RIGHT_CLICK
+    type: heal
+    cooldown: 12s
+    params:
+      amount: 10
+      sound: ENTITY_PLAYER_LEVELUP
+      count: 28
+  consume: false
+
+rainbow_love:
+  base: GOLDEN_APPLE
+  name: "Rainbow Love"
+  lore:
+    - "&7Sweet prism candy"
+    - "&eRight-click: &fabsorption + regen"
+  custom-model-data: 12021
+  glow: true
+  rainbow: true
+  abilities:
+    - trigger: RIGHT_CLICK
+      type: absorb
+      cooldown: 20s
+      params:
+        amplifier: 1
+        duration: 200
+        sound: ENTITY_PLAYER_LEVELUP
+        count: 22
+    - trigger: TOGETHER
+      type: effect
+      cooldown: 20s
+      params:
+        effects: [REGENERATION]
+        amplifier: 1
+        duration: 100
+        fx: false
+  consume: false
+
+rainbow_blade:
+  base: NETHERITE_SWORD
+  name: "Rainbow Blade"
+  lore:
+    - "&7Spectrum-edged sword"
+    - "&eRight-click: &flightning dash"
+  custom-model-data: 12022
+  glow: true
+  rainbow: true
+  unbreakable: true
+  enchants:
+    sharpness: 5
+    unbreaking: 3
+  gear:
+    attack: 6
+    strength: 2
+  ability:
+    trigger: RIGHT_CLICK
+    type: lightning_dash
+    cooldown: 8s
+    params:
+      range: 8
+      damage: 6
+      sound: ENTITY_LIGHTNING_BOLT_THUNDER
+      count: 36
+  consume: false
+
+rainbow_axe:
+  base: NETHERITE_AXE
+  name: "Rainbow Axe"
+  lore:
+    - "&7Chroma cleaver"
+    - "&eRight-click: &fground slam"
+  custom-model-data: 12023
+  glow: true
+  rainbow: true
+  unbreakable: true
+  enchants:
+    sharpness: 4
+  gear:
+    attack: 5
+    strength: 1
+  ability:
+    trigger: RIGHT_CLICK
+    type: ground_slam
+    cooldown: 10s
+    params:
+      radius: 4
+      damage: 8
+      sound: ENTITY_GENERIC_EXPLODE
+      count: 28
+  consume: false
+
+rainbow_bow:
+  base: BOW
+  name: "Rainbow Bow"
+  lore:
+    - "&7Draws the whole spectrum"
+    - "&eRight-click: &fsnowball shot"
+  custom-model-data: 12024
+  glow: true
+  rainbow: true
+  unbreakable: true
+  enchants:
+    power: 4
+    infinity: 1
+  ability:
+    trigger: RIGHT_CLICK
+    type: projectile
+    cooldown: 2s
+    params:
+      projectile: snowball
+      sound: ENTITY_ARROW_SHOOT
+      count: 16
+  consume: false
+
+rainbow_wand:
+  base: BLAZE_ROD
+  name: "Rainbow Wand"
+  lore:
+    - "&7Caster's prism rod"
+    - "&eRight-click: &fspeed + jump (capped)"
+  custom-model-data: 12025
+  glow: true
+  rainbow: true
+  unbreakable: true
+  ability:
+    trigger: RIGHT_CLICK
+    type: effect
+    cooldown: 15s
+    params:
+      effects: [SPEED, JUMP_BOOST]
+      amplifier: 4
+      duration: 200
+      sound: BLOCK_BEACON_ACTIVATE
+      count: 32
+  consume: false
+
+rainbow_star:
+  base: NETHER_STAR
+  name: "Rainbow Star"
+  lore:
+    - "&7Pocket aurora"
+    - "&eRight-click: &fcleanse + absorb"
+  custom-model-data: 12026
+  glow: true
+  rainbow: true
+  abilities:
+    - trigger: RIGHT_CLICK
+      type: cleanse
+      cooldown: 18s
+      params:
+        sound: BLOCK_BEACON_POWER_SELECT
+        count: 24
+    - trigger: TOGETHER
+      type: absorb
+      cooldown: 18s
+      params:
+        amplifier: 2
+        duration: 160
+        fx: false
+  consume: false
+
+rainbow_prism:
+  base: AMETHYST_SHARD
+  name: "Rainbow Prism"
+  lore:
+    - "&7Faceted charm"
+    - "&eRight-click: &fheal burst"
+  custom-model-data: 12027
+  glow: true
+  rainbow: true
+  ability:
+    trigger: RIGHT_CLICK
+    type: heal
+    cooldown: 10s
+    params:
+      amount: 8
+      sound: BLOCK_AMETHYST_BLOCK_CHIME
+      count: 24
+  consume: false
+
+rainbow_shield:
+  base: SHIELD
+  name: "Rainbow Shield"
+  lore:
+    - "&7Painted ward"
+    - "&eRight-click: &fabsorption"
+  custom-model-data: 12028
+  glow: true
+  rainbow: true
+  unbreakable: true
+  ability:
+    trigger: RIGHT_CLICK
+    type: absorb
+    cooldown: 16s
+    params:
+      amplifier: 1
+      duration: 200
+      sound: ITEM_SHIELD_BLOCK
+      count: 20
+  consume: false
+
+rainbow_pick:
+  base: NETHERITE_PICKAXE
+  name: "Rainbow Pick"
+  lore:
+    - "&7Mines in every color"
+    - "&eRight-click: &fassist break"
+  custom-model-data: 12029
+  glow: true
+  rainbow: true
+  unbreakable: true
+  enchants:
+    efficiency: 5
+    fortune: 2
+  ability:
+    trigger: RIGHT_CLICK
+    type: break_block
+    cooldown: 3s
+    params:
+      range: 5
+      sound: BLOCK_AMETHYST_BLOCK_BREAK
+      count: 18
+  consume: false

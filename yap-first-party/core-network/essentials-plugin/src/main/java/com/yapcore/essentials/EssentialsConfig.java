@@ -64,6 +64,9 @@ public final class EssentialsConfig {
     private boolean waterSplashEnabled = true;
     private double waterWaveAmplitude = 0.045;
     private double waterWaveSpeed = 1.0;
+    private boolean keepInventory = false;
+    private boolean keepXp = false;
+    private boolean syncKeepInventoryGamerule = true;
 
     public EssentialsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -138,6 +141,10 @@ public final class EssentialsConfig {
         waterSplashEnabled = c.getBoolean("water-waves.splash", true);
         waterWaveAmplitude = c.getDouble("water-waves.amplitude", 0.045);
         waterWaveSpeed = c.getDouble("water-waves.speed", 1.0);
+
+        keepInventory = c.getBoolean("death.keep-inventory", false);
+        keepXp = c.getBoolean("death.keep-xp", false);
+        syncKeepInventoryGamerule = c.getBoolean("death.sync-gamerule", true);
     }
 
     public Location fileSpawn() {
@@ -268,5 +275,27 @@ public final class EssentialsConfig {
 
     public double waterWaveSpeed() {
         return waterWaveSpeed;
+    }
+
+    public boolean keepInventory() {
+        return keepInventory;
+    }
+
+    public boolean keepXp() {
+        return keepXp;
+    }
+
+    public boolean syncKeepInventoryGamerule() {
+        return syncKeepInventoryGamerule;
+    }
+
+    /** Persist keep-inventory and optionally XP; used by /yapess and admin menu. */
+    public void setKeepInventory(boolean keep, boolean alsoXp) {
+        this.keepInventory = keep;
+        this.keepXp = alsoXp;
+        FileConfiguration c = plugin.getConfig();
+        c.set("death.keep-inventory", keep);
+        c.set("death.keep-xp", alsoXp);
+        plugin.saveConfig();
     }
 }

@@ -66,7 +66,8 @@ public final class AdminActions {
             return;
         }
         Location copy = dest.clone();
-        YapSched.entity(plugin, who, () -> who.teleport(copy));
+        // Folia: sync teleport() throws UnsupportedOperationException under region threading.
+        who.teleportAsync(copy);
     }
 
     public void teleportToPlayer(Player admin, Player target) {

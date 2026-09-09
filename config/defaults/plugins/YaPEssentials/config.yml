@@ -72,3 +72,10 @@ features:
   suicide: true
   hat: true
   staff: true
+
+# Death drops — false = vanilla drops for everyone.
+# Players with yapessentials.keepinventory (e.g. VIP) still keep items when this is false.
+death:
+  keep-inventory: false
+  keep-xp: false
+  sync-gamerule: true

@@ -89,7 +89,8 @@ like mods. See [MODULES_AND_API.md](MODULES_AND_API.md).
 `yap-skills` (thin mining/woodcutting/strength — [SKILLS.md](SKILLS.md)),
 `yap-dungeons` (procedural instances L1–50 + prestige 51–100 — [DUNGEONS.md](DUNGEONS.md)),
 `yap-stacker`, `yap-items` (custom items — [YAPITEMS.md](YAPITEMS.md)),
-`yap-disasters`, `yap-gameplay-knobs` (YaP Encyclopedia — [TUNE.md](../ops/TUNE.md)).
+`yap-disasters`, `yap-leveled-mobs` (distance-based mob levels),
+`yap-gameplay-knobs` (YaP Encyclopedia — [TUNE.md](../ops/TUNE.md)).
 Factions ships in CORE+NETWORK.
 
 SQL plugin authors: `compileOnly(project(":yap-db-api"))` and soft-depend `YaPDB`

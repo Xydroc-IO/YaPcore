@@ -58,7 +58,10 @@ public final class ItemFactory {
             return stack;
         }
         if (def.name() != null && !def.name().isBlank()) {
-            meta.displayName(LEGACY.deserialize(def.name()));
+            String display = def.rainbow()
+                    ? RainbowNameService.colorize(def.name(), 0)
+                    : def.name();
+            meta.displayName(LEGACY.deserialize(display));
         }
         if (def.lore() != null && !def.lore().isEmpty()) {
             List<net.kyori.adventure.text.Component> lines = new ArrayList<>();
@@ -80,6 +83,11 @@ public final class ItemFactory {
         }
         meta.getPersistentDataContainer().set(keys.itemId(), PersistentDataType.STRING, def.id());
         meta.getPersistentDataContainer().set(keys.itemRev(), PersistentDataType.INTEGER, def.revision());
+        if (def.rainbow()) {
+            meta.getPersistentDataContainer().set(keys.rainbow(), PersistentDataType.BYTE, (byte) 1);
+        } else {
+            meta.getPersistentDataContainer().remove(keys.rainbow());
+        }
         applyAttributes(meta, def);
 
         Map<Enchantment, Integer> enchants = new LinkedHashMap<>();

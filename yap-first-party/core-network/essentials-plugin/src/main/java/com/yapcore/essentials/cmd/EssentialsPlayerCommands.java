@@ -152,18 +152,13 @@ final class EssentialsPlayerCommands {
         if (ctx.disabled(sender, "speed")) {
             return true;
         }
-        if (!ctx.requirePlayer(sender)) {
-            return true;
-        }
-        if (!sender.hasPermission("yapessentials.speed")) {
-            YapMessages.noPermission(sender);
-            return true;
-        }
         if (args.length < 1) {
-            sender.sendMessage("§e/speed <0-10> [fly|walk]  §7or  §e/speed <fly|walk> <0-10>");
+            sender.sendMessage("§e/speed [player] <0-10> [fly|walk]  §7or  §e/speed [player] <fly|walk> <0-10>");
             return true;
         }
-        // Accept both "/speed 5 fly" and "/speed fly 5" (menus historically used the latter).
+        // Parse optional player + mode + level. Accepts:
+        // /speed 5 fly | /speed fly 5 | /speed Steve 5 walk | /speed Steve fly 5
+        Player namedTarget = null;
         String mode = "walk";
         Float level = null;
         for (String arg : args) {
@@ -173,10 +168,23 @@ final class EssentialsPlayerCommands {
             }
             try {
                 level = Float.parseFloat(arg);
+                continue;
             } catch (NumberFormatException ignored) {
-                sender.sendMessage("§cInvalid speed. Use 0–10, optionally fly|walk.");
+                // fall through — may be a player name
+            }
+            Player found = org.bukkit.Bukkit.getPlayerExact(arg);
+            if (found == null) {
+                found = org.bukkit.Bukkit.getPlayer(arg);
+            }
+            if (found == null) {
+                YapMessages.send(sender, "&cUnknown player or invalid speed: &f{arg}", "arg", arg);
                 return true;
             }
+            if (namedTarget != null) {
+                YapMessages.send(sender, "&cSpecify only one player.");
+                return true;
+            }
+            namedTarget = found;
         }
         if (level == null) {
             sender.sendMessage("§cMissing speed value (0–10).");
@@ -186,14 +194,41 @@ final class EssentialsPlayerCommands {
             sender.sendMessage("§cSpeed must be between 0 and 10.");
             return true;
         }
-        float speed = EssentialsCommandSupport.clamp(level / 10f);
-        Player player = (Player) sender;
-        if ("fly".equals(mode)) {
-            player.setFlySpeed(speed);
-            YapMessages.send(player, "&aFly speed set to &f{level}&a/10.", "level", String.valueOf(level.intValue()));
+
+        Player target;
+        if (namedTarget != null) {
+            boolean self = sender instanceof Player p && p.getUniqueId().equals(namedTarget.getUniqueId());
+            if (!self && !sender.hasPermission("yapessentials.speed.others")) {
+                YapMessages.noPermission(sender, "yapessentials.speed.others");
+                return true;
+            }
+            if (self && !sender.hasPermission("yapessentials.speed")) {
+                YapMessages.noPermission(sender, "yapessentials.speed");
+                return true;
+            }
+            target = namedTarget;
         } else {
-            player.setWalkSpeed(speed);
-            YapMessages.send(player, "&aWalk speed set to &f{level}&a/10.", "level", String.valueOf(level.intValue()));
+            if (!(sender instanceof Player player)) {
+                YapMessages.send(sender, "&cConsole must specify a player.");
+                return true;
+            }
+            if (!sender.hasPermission("yapessentials.speed")) {
+                YapMessages.noPermission(sender, "yapessentials.speed");
+                return true;
+            }
+            target = player;
+        }
+
+        float speed = EssentialsCommandSupport.clamp(level / 10f);
+        int shown = Math.round(level);
+        if ("fly".equals(mode)) {
+            target.setFlySpeed(speed);
+            EssentialsCommandSupport.msg(sender, target,
+                    "Fly speed set to " + shown + "/10");
+        } else {
+            target.setWalkSpeed(speed);
+            EssentialsCommandSupport.msg(sender, target,
+                    "Walk speed set to " + shown + "/10");
         }
         return true;
     }

@@ -123,6 +123,21 @@ public final class EssentialsCommands implements CommandExecutor, TabCompleter {
             }
             return out;
         }
+        if (name.equals("yapess") && sender.hasPermission("yapessentials.admin")) {
+            String prefix = args[args.length - 1].toLowerCase(Locale.ROOT);
+            if (args.length == 1) {
+                return List.of("reload", "keepinventory").stream()
+                        .filter(s -> s.startsWith(prefix))
+                        .collect(Collectors.toList());
+            }
+            if (args.length == 2 && (args[0].equalsIgnoreCase("keepinventory")
+                    || args[0].equalsIgnoreCase("keepinv") || args[0].equalsIgnoreCase("ki"))) {
+                return List.of("on", "off", "toggle").stream()
+                        .filter(s -> s.startsWith(prefix))
+                        .collect(Collectors.toList());
+            }
+            return List.of();
+        }
         int playerArg = (name.equals("gm") || name.equals("egm")) ? 2 : 1;
         if (args.length == playerArg) {
             String prefix = args[playerArg - 1].toLowerCase(Locale.ROOT);

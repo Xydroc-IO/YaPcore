@@ -23,7 +23,9 @@ public final class Teleports {
             return false;
         }
         Location loc = new Location(world, row.x(), row.y(), row.z(), row.yaw(), row.pitch());
-        return player.teleport(loc);
+        // Folia requires teleportAsync under region threading.
+        player.teleportAsync(loc);
+        return true;
     }
 
     public static LocationRow fromPlayer(Player player, String name, String serverId) {

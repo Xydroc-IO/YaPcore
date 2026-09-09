@@ -62,6 +62,7 @@ tasks.register("assembleGameplaySuite") {
         ":skills-plugin:shadowJar",
         ":dungeons-plugin:shadowJar",
         ":disasters-plugin:jar",
+        ":leveled-mobs-plugin:jar",
         ":finetune-modules:buildAllFineTuneModules",
     )
     doLast {
@@ -79,6 +80,7 @@ tasks.register("assembleGameplaySuite") {
             jarOf(":skills-plugin", "shadowJar") to "yap-skills.jar",
             jarOf(":dungeons-plugin", "shadowJar") to "yap-dungeons.jar",
             jarOf(":disasters-plugin") to "yap-disasters.jar",
+            jarOf(":leveled-mobs-plugin") to "yap-leveled-mobs.jar",
         ).forEach { (src, name) -> src.copyTo(plugins.resolve(name), overwrite = true) }
         project.project(":finetune-modules").tasks.withType(Jar::class.java).forEach { jarTask ->
             if (!jarTask.enabled || jarTask.name == "jar") return@forEach

@@ -106,6 +106,13 @@ final class ItemsCreateCommand {
         if (flags.containsKey("no-glow") || flags.containsKey("noglow")) {
             glow = false;
         }
+        boolean rainbow = ItemsCommandParsing.flagEnabled(flags, "rainbow")
+                || ItemsCommandParsing.flagEnabled(flags, "rainbow-name")
+                || ItemsCommandParsing.flagEnabled(flags, "name-rainbow");
+        if (flags.containsKey("no-rainbow") || flags.containsKey("norainbow")
+                || flags.containsKey("no-rainbow-name")) {
+            rainbow = false;
+        }
         boolean unbreakable = ItemsCommandParsing.flagEnabled(flags, "unbreakable")
                 || ItemsCommandParsing.flagEnabled(flags, "unbreaking-inf")
                 || ItemsCommandParsing.flagEnabled(flags, "infinite-durability");
@@ -119,6 +126,12 @@ final class ItemsCreateCommand {
                 if (!flags.containsKey("glow") && !flags.containsKey("glint") && !flags.containsKey("shiny")
                         && !flags.containsKey("no-glow") && !flags.containsKey("noglow")) {
                     glow = existing.get().glow();
+                }
+                if (!flags.containsKey("rainbow") && !flags.containsKey("rainbow-name")
+                        && !flags.containsKey("name-rainbow")
+                        && !flags.containsKey("no-rainbow") && !flags.containsKey("norainbow")
+                        && !flags.containsKey("no-rainbow-name")) {
+                    rainbow = existing.get().rainbow();
                 }
                 if (!flags.containsKey("unbreakable") && !flags.containsKey("unbreaking-inf")
                         && !flags.containsKey("infinite-durability")
@@ -157,6 +170,7 @@ final class ItemsCreateCommand {
                 lore,
                 cmd,
                 glow,
+                rainbow,
                 unbreakable,
                 abilities,
                 furniture,

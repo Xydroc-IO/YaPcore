@@ -64,20 +64,112 @@ final class ItemCreateDraftCycles {
         d.setGearStrength(nextInt(presets, d.gearStrength()));
     }
 
+    static String primaryPotion(ItemCreateDraft d) {
+        var set = d.potionEffectsMutable();
+        return set.isEmpty() ? "SPEED" : set.iterator().next();
+    }
+
+    static String potionCompact(ItemCreateDraft d) {
+        var set = d.potionEffectsMutable();
+        return set.isEmpty() ? "SPEED" : String.join(",", set);
+    }
+
+    static String potionLabel(ItemCreateDraft d) {
+        var set = d.potionEffectsMutable();
+        return set.isEmpty() ? "SPEED" : String.join(" + ", set);
+    }
+
+    static void setPrimaryPotion(ItemCreateDraft d, String potionEffect) {
+        var set = d.potionEffectsMutable();
+        set.clear();
+        set.add(potionEffect == null || potionEffect.isBlank()
+                ? "SPEED" : potionEffect.trim().toUpperCase(java.util.Locale.ROOT));
+    }
+
+    static void clearPotions(ItemCreateDraft d) {
+        var set = d.potionEffectsMutable();
+        set.clear();
+        set.add("SPEED");
+    }
+
+    static void cyclePotion(ItemCreateDraft d, boolean shift) {
+        if (shift) {
+            clearPotions(d);
+        } else {
+            addNextPotionEffect(d);
+        }
+    }
+
     static void cyclePotionEffect(ItemCreateDraft d) {
-        String[] presets = {
-                "SPEED", "STRENGTH", "REGENERATION", "RESISTANCE", "JUMP_BOOST",
-                "INVISIBILITY", "FIRE_RESISTANCE", "HASTE", "NIGHT_VISION",
-                "SLOWNESS", "WEAKNESS", "POISON", "WITHER", "BLINDNESS", "NAUSEA", "LEVITATION"
-        };
+        addNextPotionEffect(d);
+    }
+
+    static final String[] POTION_PRESETS = {
+            "SPEED", "STRENGTH", "REGENERATION", "RESISTANCE", "JUMP_BOOST",
+            "WATER_BREATHING", "CONDUIT_POWER", "DOLPHINS_GRACE",
+            "INVISIBILITY", "FIRE_RESISTANCE", "HASTE", "NIGHT_VISION",
+            "SLOWNESS", "WEAKNESS", "POISON", "WITHER", "BLINDNESS", "NAUSEA", "LEVITATION"
+    };
+
+    static void addNextPotionEffect(ItemCreateDraft d) {
+        var set = d.potionEffectsMutable();
+        for (String p : POTION_PRESETS) {
+            if (!set.contains(p)) {
+                if (set.size() >= 6) {
+                    return;
+                }
+                set.add(p);
+                return;
+            }
+        }
+        // All selected — wrap by clearing to the next single after current first
+        String first = set.isEmpty() ? "SPEED" : set.iterator().next();
         int idx = 0;
-        for (int i = 0; i < presets.length; i++) {
-            if (presets[i].equalsIgnoreCase(d.potionEffect())) {
+        for (int i = 0; i < POTION_PRESETS.length; i++) {
+            if (POTION_PRESETS[i].equalsIgnoreCase(first)) {
                 idx = i;
                 break;
             }
         }
-        d.setPotionEffect(presets[(idx + 1) % presets.length]);
+        set.clear();
+        set.add(POTION_PRESETS[(idx + 1) % POTION_PRESETS.length]);
+    }
+
+    static void setPotionEffectsCsv(ItemCreateDraft d, String csv) {
+        var set = d.potionEffectsMutable();
+        set.clear();
+        if (csv == null || csv.isBlank()) {
+            set.add("SPEED");
+            return;
+        }
+        for (String part : csv.split("[,;+/|]+")) {
+            String e = part.trim().toUpperCase(java.util.Locale.ROOT).replace(' ', '_');
+            if (!e.isEmpty()) {
+                set.add(e);
+            }
+            if (set.size() >= 6) {
+                break;
+            }
+        }
+        if (set.isEmpty()) {
+            set.add("SPEED");
+        }
+    }
+
+    static void togglePotionEffect(ItemCreateDraft d, String id) {
+        if (id == null || id.isBlank()) {
+            return;
+        }
+        String key = id.trim().toUpperCase(java.util.Locale.ROOT).replace(' ', '_');
+        var set = d.potionEffectsMutable();
+        if (set.contains(key)) {
+            if (set.size() <= 1) {
+                return;
+            }
+            set.remove(key);
+        } else if (set.size() < 6) {
+            set.add(key);
+        }
     }
 
     static void cycleRadius(ItemCreateDraft d) {
@@ -86,7 +178,7 @@ final class ItemCreateDraftCycles {
     }
 
     static void cycleHealAmount(ItemCreateDraft d) {
-        double[] presets = {2, 4, 6, 8, 12, 20};
+        double[] presets = {2, 4, 6, 8, 12, 20, 40, 60, 80, 100};
         d.setHealAmount(next(presets, d.healAmount()));
     }
 
@@ -113,12 +205,14 @@ final class ItemCreateDraftCycles {
     }
 
     static void cyclePotionDurationSec(ItemCreateDraft d) {
-        int[] presets = {5, 10, 20, 30, 60};
+        // -1 = unlimited (Paper infinite potion ticks)
+        int[] presets = {5, 10, 20, 30, 60, 300, 600, -1};
         d.setPotionDurationSec(nextInt(presets, d.potionDurationSec()));
     }
 
     static void cyclePotionAmplifier(ItemCreateDraft d) {
-        int[] presets = {0, 1, 2};
+        // amplifier N → display level N+1 (up to 100)
+        int[] presets = {0, 1, 2, 4, 9, 19, 49, 99};
         d.setPotionAmplifier(nextInt(presets, d.potionAmplifier()));
     }
 

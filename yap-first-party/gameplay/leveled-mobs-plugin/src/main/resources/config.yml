@@ -1,0 +1,54 @@
+# YaPLeveledMobs — distance-from-spawn levels (Folia-safe)
+enabled: true
+
+# DISTANCE_FROM_SPAWN | RANDOM
+strategy: DISTANCE_FROM_SPAWN
+
+min-level: 1
+max-level: 50
+# Horizontal blocks from world spawn per +1 level (DISTANCE_FROM_SPAWN)
+blocks-per-level: 80
+
+# Attribute multipliers: final = base * (1 + (level - 1) * bonus)
+health-per-level: 0.08
+damage-per-level: 0.06
+
+# Outgoing mob → player damage scale (on top of attack attribute)
+outgoing-damage-per-level: 0.04
+# Incoming player → mob damage: 1 - (level-1)*value (clamped)
+incoming-damage-reduction-per-level: 0.01
+
+# Death rewards (light)
+xp-per-level: 0.05
+drop-quantity-per-level: 0.02
+
+nametag:
+  enabled: true
+  # Placeholders: {level} {type}
+  template: "&eLv.{level} &f{type}"
+  always-visible: true
+
+# Empty worlds list = all worlds
+worlds: []
+
+# Empty allow = all living types except deny / skips
+allow-types: []
+deny-types:
+  - ARMOR_STAND
+  - VILLAGER
+  - WANDERING_TRADER
+  - ENDER_DRAGON
+  - WITHER
+
+skip:
+  citizens: true
+  mythic-mobs: true
+  yap-bosses: true
+  dungeon-mobs: true
+
+# Spawn reasons that still get leveled (others ignored when list non-empty).
+# Empty = all reasons except those in skip-reasons.
+allow-spawn-reasons: []
+skip-spawn-reasons:
+  - CUSTOM
+  - COMMAND

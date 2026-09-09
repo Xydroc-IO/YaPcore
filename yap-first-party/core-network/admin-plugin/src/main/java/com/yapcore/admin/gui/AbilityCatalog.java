@@ -61,7 +61,7 @@ public final class AbilityCatalog {
                 "self", Set.of("gem", "other"), false, false, false, false, false, false, true, false);
         add("feed", "Feed self", "Restore hunger",
                 "self", Set.of("gem", "other"), false, false, false, false, false, false, false, false);
-        add("effect", "Self potion", "Potion on you — pick effect, time, strength",
+        add("effect", "Self potion(s)", "One or more potions on you — shared time/strength",
                 "self", Set.of("gem", "weapon", "other"), false, false, false, true, true, false, false, false);
         add("absorb", "Gold hearts", "Temporary yellow absorption hearts",
                 "self", Set.of("gem", "weapon", "other"), false, false, false, false, true, false, false, false);
