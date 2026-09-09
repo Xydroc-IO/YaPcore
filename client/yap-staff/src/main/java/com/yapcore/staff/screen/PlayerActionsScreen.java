@@ -52,6 +52,11 @@ public final class PlayerActionsScreen extends StaffPanelScreen {
         addButtonGrid(
                 action("Heal", "Restore health", () -> StaffCmds.runFmt("yapadmin heal %s", p)),
                 action("Feed", "Fill hunger", () -> StaffCmds.runFmt("yapadmin feed %s", p)),
+                action("God", "Toggle god mode for them", () -> StaffCmds.runFmt("god %s", p)),
+                action("Walk speed…", "Pick 1–10 for them", () ->
+                        open(new SpeedPickerScreen(this, p, false))),
+                action("Fly speed…", "Pick 1–10 for them", () ->
+                        open(new SpeedPickerScreen(this, p, true))),
                 action("Clear inv", "Clear their inventory", () -> StaffCmds.runFmt("yapadmin clear %s", p)),
                 action("Creative", "Set them to creative", () -> StaffCmds.runFmt("gmc %s", p))
         );

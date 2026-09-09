@@ -106,17 +106,20 @@ void main() {
     vec3 R = reflect(-V, Nview);
     vec3 skyR = yapSkyReflectionFallback(R, sunPosition, skyColor, fogColor);
     float cosNV = max(dot(Nview, V), 0.0);
-    float F = yapFresnelSchlick(cosNV, 0.028);
-    // Looking straight down still needs a wet sheen (aerial lakes)
-    F = clamp(F + 0.14 * (1.0 - cosNV), 0.12, 0.94);
+    float F = yapFresnelSchlick(cosNV, 0.020);
+    // Mild wet sheen when looking down — avoid mirror floors
+    F = clamp(F + 0.06 * (1.0 - cosNV), 0.06, 0.62);
     // Streams (partial surfaceAmt) get softer reflections
-    F *= mix(0.55, 1.0, smoothstep(0.45, 0.90, surfaceAmt));
+    F *= mix(0.45, 0.85, smoothstep(0.45, 0.90, surfaceAmt));
 
-    vec3 col = mix(absorb * 0.78, skyR * 1.02, F * 0.82);
-    col += yapWaterSpecular(Nview, V, L) * mix(0.55, 1.15, surfaceAmt);
+    // Prefer body tint over sky so open water isn't a mirror
+    vec3 col = mix(absorb * 0.94, skyR * 0.82, F * mix(0.48, 0.38, rainStrength));
+    col += yapWaterSpecular(Nview, V, L) * mix(0.22, 0.42, surfaceAmt);
 
-    float alpha = mix(0.28, 0.86, F);
+    float alpha = mix(0.28, 0.68, F);
     alpha *= mix(1.0, 0.88, cosNV);
+    // Rain: slightly more opaque so storm seas read as a sheet, not glitter
+    alpha = clamp(alpha + rainStrength * 0.08, 0.28, 0.78);
 
     /* DRAWBUFFERS:012 */
     gl_FragData[0] = vec4(col, alpha);

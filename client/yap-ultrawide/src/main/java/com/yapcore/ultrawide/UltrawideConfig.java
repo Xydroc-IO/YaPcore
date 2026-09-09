@@ -20,7 +20,7 @@ import java.nio.file.Path;
 public final class UltrawideConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     /** Bumped when defaults change in a way that should rewrite existing configs. */
-    private static final int CURRENT_VERSION = 2;
+    private static final int CURRENT_VERSION = 4;
 
     public int configVersion = 0;
     public boolean enabled = true;
@@ -97,6 +97,23 @@ public final class UltrawideConfig {
                 affectHudFov = false;
                 YapUltrawide.LOGGER.info(
                         "v2: affectHudFov set to false so held items stay visible (re-enable in yap-ultrawide.json if wanted)");
+            }
+            // v3: temporary tight 32:9 caps (felt too zoomed — superseded by v4)
+            // v4: open FOV — match_21_9 + higher HFOV / scale 1.0
+            if (configVersion < 4) {
+                if (ultrawide_21_9 != null) {
+                    ultrawide_21_9.mode = "match_16_9";
+                    ultrawide_21_9.maxHorizontalFov = 115.0f;
+                    ultrawide_21_9.fovScale = 1.0f;
+                    ultrawide_21_9.targetHorizontalFov = 110.0f;
+                }
+                if (superwide_32_9 != null) {
+                    superwide_32_9.mode = "match_21_9";
+                    superwide_32_9.maxHorizontalFov = 115.0f;
+                    superwide_32_9.fovScale = 1.0f;
+                    superwide_32_9.targetHorizontalFov = 110.0f;
+                }
+                YapUltrawide.LOGGER.info("v4: opened ultrawide FOV (32:9 match_21_9 / maxH 115)");
             }
             configVersion = CURRENT_VERSION;
         }

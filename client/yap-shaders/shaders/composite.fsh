@@ -21,7 +21,25 @@ void main() {
     if (depth >= 1.0 - 1e-5) {
         vec3 viewP = screenToView(vec3(uv, 1.0));
         vec3 worldDir = normalize(mat3(gbufferModelViewInverse) * viewP);
+        // Ultrawide: Iris horizon cone can miss frustum corners, leaving fogColor clear.
+        // Rebuild atmosphere for sky pixels; keep bright star samples from gbuffers.
+        vec3 prev = color;
+        vec3 atmo = yapAtmosphere(worldDir, sunPosition, skyColor, fogColor);
+        float keep = smoothstep(0.025, 0.14, length(prev - fogColor));
+        // Stars are much brighter than fog/atmosphere — preserve them
+        float starKeep = smoothstep(0.08, 0.35, luma(prev) - luma(atmo));
+        color = mix(atmo, prev, clamp(max(keep, starKeep), 0.0, 1.0));
         color = yapSkyWithClouds(worldDir, sunPosition, color, rainStrength);
+    }
+#else
+    if (depth >= 1.0 - 1e-5) {
+        vec3 viewP = screenToView(vec3(uv, 1.0));
+        vec3 worldDir = normalize(mat3(gbufferModelViewInverse) * viewP);
+        vec3 prev = color;
+        vec3 atmo = yapAtmosphere(worldDir, sunPosition, skyColor, fogColor);
+        float keep = smoothstep(0.025, 0.14, length(prev - fogColor));
+        float starKeep = smoothstep(0.08, 0.35, luma(prev) - luma(atmo));
+        color = mix(atmo, prev, clamp(max(keep, starKeep), 0.0, 1.0));
     }
 #endif
 
@@ -56,36 +74,43 @@ void main() {
 
         vec3 refractCol = color;
 #ifdef REFRACTION
-        vec2 distort = N.xy * ((0.070 + 0.045 * WAVE_STRENGTH) * surfaceW);
-        distort.x *= aspectRatio;
+        // Soft UV warp — strong N.xy offsets + faceted normals looked shredded
+        float refrAmt = (0.022 + 0.014 * WAVE_STRENGTH) * surfaceW * mix(1.0, 0.65, rainStrength);
+        vec2 distort = N.xy * refrAmt;
+        distort.x /= max(aspectRatio, 1.0);
+        // Distance soften: far water barely warps (avoids distant moiré)
+        float viewDist = length(viewP);
+        distort *= mix(1.0, 0.25, smoothstep(12.0, 70.0, viewDist));
         vec2 refrUV = clamp(uv + distort, vec2(0.002), vec2(0.998));
         refractCol = texture2D(colortex0, refrUV).rgb;
         refractCol = yapWaterAbsorb(refractCol, thick * 1.55);
         vec3 body = yapWaterAlbedo(depthMix, rainStrength);
-        refractCol = mix(refractCol, body, clamp(0.12 + depthMix * 0.55, 0.12, 0.80));
+        refractCol = mix(refractCol, body, clamp(0.14 + depthMix * 0.52, 0.14, 0.78));
 #else
         refractCol = mix(refractCol, yapWaterAlbedo(depthMix, rainStrength), 0.45);
 #endif
 
         float cosNV = max(dot(N, V), 0.0);
-        float F = yapFresnelSchlick(cosNV, 0.028);
-        F = clamp(F + 0.08 * (1.0 - cosNV) + 0.05 * rainStrength, 0.10, 0.93);
-        F *= surfaceW;
+        float F = yapFresnelSchlick(cosNV, 0.020);
+        // Cap reflections — high F made lakes look like polished mirrors
+        F = clamp(F + 0.035 * (1.0 - cosNV) + 0.02 * rainStrength, 0.05, 0.52);
+        F *= surfaceW * mix(1.0, 0.82, rainStrength);
 
         vec3 skyFallback = yapSkyReflectionFallback(reflect(-V, N), sunPosition, skyColor, fogColor);
         vec4 ssr = vec4(skyFallback, 0.0);
 #ifdef SSR
         ssr = yapSSR(viewP, N, colortex0, depthtex0);
 #endif
-        vec3 refl = mix(skyFallback, ssr.rgb, clamp(ssr.a, 0.0, 1.0) * 0.96 * surfaceW);
+        // Soften SSR so terrain reflections don't dominate the body color
+        vec3 refl = mix(skyFallback, ssr.rgb, clamp(ssr.a, 0.0, 1.0) * 0.65 * surfaceW);
 
-        color = mix(refractCol, refl, F);
-        color += yapWaterSpecular(N, V, L) * surfaceW;
+        color = mix(refractCol, refl, F * 0.70);
+        color += yapWaterSpecular(N, V, L) * surfaceW * mix(0.42, 0.18, rainStrength);
 
         // Soft shore foam only — no beach wash / run-up
         float foam = 1.0 - smoothstep(0.02, 0.10, thick);
-        foam *= 0.22 * surfaceW;
-        color = mix(color, vec3(0.78, 0.88, 0.92), foam * 0.18 * clamp(WAVE_STRENGTH, 0.4, 1.2));
+        foam *= 0.20 * surfaceW;
+        color = mix(color, vec3(0.78, 0.88, 0.92), foam * 0.16 * clamp(WAVE_STRENGTH, 0.4, 1.2));
 
         color = applyFog(color, length(viewP) * 0.45, fogColor);
     } else if (depth < 1.0 && isEyeInWater == 1) {

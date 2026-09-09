@@ -5,10 +5,10 @@ foliage wind**, and **skies**.
 
 | Effect | Notes |
 |--------|--------|
-| Multi-direction Gerstner swell | Mesh heave + procedural normals (water only — glass/ice stay solid) |
+| Multi-direction Gerstner swell | Procedural normals + tiny mesh hint (no block-size heave) |
 | Screen-space reflections (SSR) | Composite raymarch; sky fallback |
 | Refraction | Distorts terrain under the surface + absorption tint |
-| Fresnel / specular | Schlick + soft sun/moon sheen |
+| Fresnel / specular | Soft Schlick + sun sheen (capped so lakes aren't mirrors) |
 | Shore foam | Thin water-column detection only (no land wash paint) |
 | Waterfalls | Separate cascade path (no lake SSR on vertical faces) |
 | Caustics | Solid beds / underwater (not cutout grass) |

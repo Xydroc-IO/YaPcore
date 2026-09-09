@@ -30,10 +30,11 @@ public final class BandSettings {
 
     public static BandSettings superwide32Defaults() {
         BandSettings s = new BandSettings();
+        // Match 21:9 HFOV — match_16_9 + low caps felt heavily zoomed on 32:9
         s.mode = "match_21_9";
-        s.targetHorizontalFov = 100.0f;
-        s.maxHorizontalFov = 100.0f;
-        s.fovScale = 0.95f;
+        s.targetHorizontalFov = 110.0f;
+        s.maxHorizontalFov = 115.0f;
+        s.fovScale = 1.0f;
         return s;
     }
 

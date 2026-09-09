@@ -13,8 +13,9 @@ public final class StaffSessionItemCreate {
     private String createGearAttack = "0";
     private boolean createGlow = false;
     private boolean createUnbreakable = false;
+    private boolean createRainbow = false;
     private final java.util.LinkedHashMap<String, Integer> createEnchants = new java.util.LinkedHashMap<>();
-    private String createPotionEffect = "SPEED";
+    private final java.util.LinkedHashSet<String> createPotionEffects = new java.util.LinkedHashSet<>();
     private String createRadius = "4";
     private String createHealAmount = "6";
     private String createProjectileKind = "snowball";
@@ -22,10 +23,15 @@ public final class StaffSessionItemCreate {
     private String createBreakCount = "1";
     private String createPotionDurationSec = "10";
     private String createPotionAmplifier = "0";
+    private boolean createFxEnabled = true;
+    private String createFxSound = "DEFAULT";
+    private String createFxParticle = "DEFAULT";
+    private String createFxCount = "DEFAULT";
     private boolean createShowAllAbilities;
 
     {
         createAbilities.put("lightning_dash", "right_click");
+        createPotionEffects.add("SPEED");
     }
 
     public String createDisplayName() {
@@ -208,6 +214,18 @@ public final class StaffSessionItemCreate {
         this.createUnbreakable = !this.createUnbreakable;
     }
 
+    public boolean createRainbow() {
+        return createRainbow;
+    }
+
+    public void setCreateRainbow(boolean createRainbow) {
+        this.createRainbow = createRainbow;
+    }
+
+    public void toggleCreateRainbow() {
+        this.createRainbow = !this.createRainbow;
+    }
+
     public java.util.Map<String, Integer> createEnchants() {
         return java.util.Collections.unmodifiableMap(createEnchants);
     }
@@ -263,13 +281,42 @@ public final class StaffSessionItemCreate {
     }
 
     public String createPotionEffect() {
-        return createPotionEffect == null || createPotionEffect.isBlank() ? "SPEED" : createPotionEffect;
+        return createPotionEffects.isEmpty() ? "SPEED" : createPotionEffects.iterator().next();
+    }
+
+    public String createPotionEffectsCompact() {
+        return createPotionEffects.isEmpty() ? "SPEED" : String.join(",", createPotionEffects);
+    }
+
+    public String createPotionEffectsLabel() {
+        return createPotionEffects.isEmpty() ? "SPEED" : String.join(" + ", createPotionEffects);
+    }
+
+    public boolean hasCreatePotionEffect(String id) {
+        return id != null && createPotionEffects.contains(id.trim().toUpperCase(java.util.Locale.ROOT));
     }
 
     public void setCreatePotionEffect(String createPotionEffect) {
-        this.createPotionEffect = createPotionEffect == null || createPotionEffect.isBlank()
+        createPotionEffects.clear();
+        createPotionEffects.add(createPotionEffect == null || createPotionEffect.isBlank()
                 ? "SPEED"
-                : createPotionEffect.trim().toUpperCase(java.util.Locale.ROOT);
+                : createPotionEffect.trim().toUpperCase(java.util.Locale.ROOT));
+    }
+
+    /** Toggle a potion in the multi-select set (keeps at least one). */
+    public void toggleCreatePotionEffect(String id) {
+        if (id == null || id.isBlank()) {
+            return;
+        }
+        String key = id.trim().toUpperCase(java.util.Locale.ROOT);
+        if (createPotionEffects.contains(key)) {
+            if (createPotionEffects.size() <= 1) {
+                return;
+            }
+            createPotionEffects.remove(key);
+        } else if (createPotionEffects.size() < 6) {
+            createPotionEffects.add(key);
+        }
     }
 
     public void cycleCreatePotionEffect() {
@@ -278,15 +325,24 @@ public final class StaffSessionItemCreate {
                 "INVISIBILITY", "FIRE_RESISTANCE", "HASTE", "NIGHT_VISION",
                 "SLOWNESS", "WEAKNESS", "POISON", "WITHER", "BLINDNESS", "NAUSEA", "LEVITATION"
         };
-        String cur = createPotionEffect();
+        for (String p : opts) {
+            if (!createPotionEffects.contains(p)) {
+                if (createPotionEffects.size() < 6) {
+                    createPotionEffects.add(p);
+                }
+                return;
+            }
+        }
+        String first = createPotionEffect();
         int idx = 0;
         for (int i = 0; i < opts.length; i++) {
-            if (opts[i].equals(cur)) {
+            if (opts[i].equals(first)) {
                 idx = i;
                 break;
             }
         }
-        createPotionEffect = opts[(idx + 1) % opts.length];
+        createPotionEffects.clear();
+        createPotionEffects.add(opts[(idx + 1) % opts.length]);
     }
 
     public String createRadius() {
@@ -349,9 +405,14 @@ public final class StaffSessionItemCreate {
     }
 
     public void setCreatePotionDurationSec(String createPotionDurationSec) {
-        this.createPotionDurationSec = createPotionDurationSec == null || createPotionDurationSec.isBlank()
+        String raw = createPotionDurationSec == null || createPotionDurationSec.isBlank()
                 ? "10"
                 : createPotionDurationSec.trim();
+        if ("unlimited".equalsIgnoreCase(raw) || "infinite".equalsIgnoreCase(raw) || "inf".equalsIgnoreCase(raw)) {
+            this.createPotionDurationSec = "unlimited";
+            return;
+        }
+        this.createPotionDurationSec = raw;
     }
 
     public String createPotionAmplifier() {
@@ -364,14 +425,55 @@ public final class StaffSessionItemCreate {
                 : createPotionAmplifier.trim();
     }
 
-    /** Potion duration in Minecraft ticks for --duration. */
+    /** Potion duration in Minecraft ticks for --duration (-1 = unlimited). */
     public String createPotionDurationTicks() {
+        if ("unlimited".equalsIgnoreCase(createPotionDurationSec())) {
+            return "-1";
+        }
         try {
             int sec = Integer.parseInt(createPotionDurationSec());
             return Integer.toString(Math.max(1, sec) * 20);
         } catch (NumberFormatException e) {
             return "200";
         }
+    }
+
+    public boolean createFxEnabled() {
+        return createFxEnabled;
+    }
+
+    public void setCreateFxEnabled(boolean createFxEnabled) {
+        this.createFxEnabled = createFxEnabled;
+    }
+
+    public void toggleCreateFxEnabled() {
+        createFxEnabled = !createFxEnabled;
+    }
+
+    public String createFxSound() {
+        return createFxSound == null || createFxSound.isBlank() ? "DEFAULT" : createFxSound;
+    }
+
+    public void setCreateFxSound(String createFxSound) {
+        this.createFxSound = createFxSound == null || createFxSound.isBlank() ? "DEFAULT" : createFxSound.trim();
+    }
+
+    public String createFxParticle() {
+        return createFxParticle == null || createFxParticle.isBlank() ? "DEFAULT" : createFxParticle;
+    }
+
+    public void setCreateFxParticle(String createFxParticle) {
+        this.createFxParticle = createFxParticle == null || createFxParticle.isBlank()
+                ? "DEFAULT"
+                : createFxParticle.trim();
+    }
+
+    public String createFxCount() {
+        return createFxCount == null || createFxCount.isBlank() ? "DEFAULT" : createFxCount;
+    }
+
+    public void setCreateFxCount(String createFxCount) {
+        this.createFxCount = createFxCount == null || createFxCount.isBlank() ? "DEFAULT" : createFxCount.trim();
     }
 
     public boolean createShowAllAbilities() {

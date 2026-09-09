@@ -258,6 +258,9 @@ public final class StaffSession {
     public boolean createUnbreakable() { return itemCreate.createUnbreakable(); }
     public void setCreateUnbreakable(boolean createUnbreakable) { itemCreate.setCreateUnbreakable(createUnbreakable); }
     public void toggleCreateUnbreakable() { itemCreate.toggleCreateUnbreakable(); }
+    public boolean createRainbow() { return itemCreate.createRainbow(); }
+    public void setCreateRainbow(boolean v) { itemCreate.setCreateRainbow(v); }
+    public void toggleCreateRainbow() { itemCreate.toggleCreateRainbow(); }
     public java.util.Map<String, Integer> createEnchants() { return itemCreate.createEnchants(); }
     public int createEnchantLevel(String id) { return itemCreate.createEnchantLevel(id); }
     /** Cycle off → 1 → … → max → off. */
@@ -266,7 +269,11 @@ public final class StaffSession {
     public String createEnchantsCompact() { return itemCreate.createEnchantsCompact(); }
     public String createEnchantsPrettyLabel() { return itemCreate.createEnchantsPrettyLabel(); }
     public String createPotionEffect() { return itemCreate.createPotionEffect(); }
+    public String createPotionEffectsCompact() { return itemCreate.createPotionEffectsCompact(); }
+    public String createPotionEffectsLabel() { return itemCreate.createPotionEffectsLabel(); }
+    public boolean hasCreatePotionEffect(String id) { return itemCreate.hasCreatePotionEffect(id); }
     public void setCreatePotionEffect(String createPotionEffect) { itemCreate.setCreatePotionEffect(createPotionEffect); }
+    public void toggleCreatePotionEffect(String id) { itemCreate.toggleCreatePotionEffect(id); }
     public void cycleCreatePotionEffect() { itemCreate.cycleCreatePotionEffect(); }
     public String createRadius() { return itemCreate.createRadius(); }
     public void setCreateRadius(String createRadius) { itemCreate.setCreateRadius(createRadius); }
@@ -285,6 +292,15 @@ public final class StaffSession {
     public void setCreatePotionAmplifier(String createPotionAmplifier) { itemCreate.setCreatePotionAmplifier(createPotionAmplifier); }
     /** Potion duration in Minecraft ticks for --duration. */
     public String createPotionDurationTicks() { return itemCreate.createPotionDurationTicks(); }
+    public boolean createFxEnabled() { return itemCreate.createFxEnabled(); }
+    public void setCreateFxEnabled(boolean v) { itemCreate.setCreateFxEnabled(v); }
+    public void toggleCreateFxEnabled() { itemCreate.toggleCreateFxEnabled(); }
+    public String createFxSound() { return itemCreate.createFxSound(); }
+    public void setCreateFxSound(String v) { itemCreate.setCreateFxSound(v); }
+    public String createFxParticle() { return itemCreate.createFxParticle(); }
+    public void setCreateFxParticle(String v) { itemCreate.setCreateFxParticle(v); }
+    public String createFxCount() { return itemCreate.createFxCount(); }
+    public void setCreateFxCount(String v) { itemCreate.setCreateFxCount(v); }
     public boolean createShowAllAbilities() { return itemCreate.createShowAllAbilities(); }
     public void setCreateShowAllAbilities(boolean createShowAllAbilities) { itemCreate.setCreateShowAllAbilities(createShowAllAbilities); }
     public void toggleCreateShowAllAbilities() { itemCreate.toggleCreateShowAllAbilities(); }

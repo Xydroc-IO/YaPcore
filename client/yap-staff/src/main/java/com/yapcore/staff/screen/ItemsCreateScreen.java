@@ -18,11 +18,14 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
     private static final String[] DAMAGE = {"2", "4", "8", "12", "20", "40", "100", "200", "kill"};
     private static final String[] RANGE = {"4", "6", "8", "12", "16", "24", "32", "48", "64", "80", "100"};
     private static final String[] RADIUS = {"2", "3", "4", "5", "6", "8", "12"};
-    private static final String[] HEAL = {"2", "4", "6", "8", "12", "20"};
+    private static final String[] HEAL = {"2", "4", "6", "8", "12", "20", "40", "60", "80", "100"};
+    private static final String[] POTION_DURATION = {"5", "10", "20", "30", "60", "300", "600", "unlimited"};
+    private static final String[] POTION_AMP = {"0", "1", "2", "4", "9", "19", "49", "99"};
     private static final String[] COOLDOWNS = {"0s", "1s", "3s", "5s", "8s", "12s", "20s", "30s"};
     private static final String[] GEAR = {"0", "2", "5", "10", "20", "50", "100"};
     private static final String[] POTIONS = {
             "SPEED", "STRENGTH", "REGENERATION", "RESISTANCE", "JUMP_BOOST",
+            "WATER_BREATHING", "CONDUIT_POWER", "DOLPHINS_GRACE",
             "INVISIBILITY", "FIRE_RESISTANCE", "HASTE", "NIGHT_VISION",
             "SLOWNESS", "WEAKNESS", "POISON", "WITHER", "BLINDNESS", "NAUSEA", "LEVITATION"
     };
@@ -199,20 +202,23 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
         }
         if (hasSelfPotion || hasEnemyPotion) {
             addSection((hasSelfPotion && !hasEnemyPotion)
-                    ? "Self potion — which effect"
+                    ? "Self potions — tap to toggle (max 6)  ·  " + session.createPotionEffectsLabel()
                     : (hasEnemyPotion && !hasSelfPotion)
-                    ? "Enemy AoE potion — which effect"
-                    : "Potion effect (self and/or enemy AoE)");
-            addChipRow(POTIONS, session.createPotionEffect(), session::setCreatePotionEffect);
+                    ? "Enemy AoE potions — tap to toggle  ·  " + session.createPotionEffectsLabel()
+                    : "Potions (self and/or AoE) — tap to toggle  ·  " + session.createPotionEffectsLabel());
+            addMultiPotionRow(session);
         } else if (needPotion) {
-            addSection("Potion effect");
-            addChipRow(POTIONS, session.createPotionEffect(), session::setCreatePotionEffect);
+            addSection("Potion effects — tap to toggle  ·  " + session.createPotionEffectsLabel());
+            addMultiPotionRow(session);
         }
         if (needPotionPower) {
-            addSection("Potion duration  ·  " + session.createPotionDurationSec() + "s");
-            addChipRow(new String[]{"5", "10", "20", "30", "60"}, session.createPotionDurationSec(), session::setCreatePotionDurationSec);
+            String durLabel = "unlimited".equalsIgnoreCase(session.createPotionDurationSec())
+                    ? "unlimited"
+                    : (session.createPotionDurationSec() + "s");
+            addSection("Potion duration  ·  " + durLabel);
+            addChipRow(POTION_DURATION, session.createPotionDurationSec(), session::setCreatePotionDurationSec);
             addSection("Potion strength  ·  level " + (safeInt(session.createPotionAmplifier(), 0) + 1));
-            addChipRow(new String[]{"0", "1", "2"}, session.createPotionAmplifier(), session::setCreatePotionAmplifier);
+            addChipRow(POTION_AMP, session.createPotionAmplifier(), session::setCreatePotionAmplifier);
         }
         if (needProj) {
             addSection("Projectile type  ·  " + session.createProjectileKind());
@@ -223,6 +229,25 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
             addChipRow(HEAL, session.createHealAmount(), session::setCreateHealAmount);
         }
 
+        addSection("Ability FX  ·  sound / particles");
+        int fxCols = preferredColumns(2);
+        GridLayout fxGrid = new GridLayout().columnSpacing(6).rowSpacing(3);
+        GridLayout.RowHelper fxRows = fxGrid.createRowHelper(fxCols);
+        int fxw = colWidthFor(fxCols);
+        fxRows.addChild(Button.builder(Component.literal(
+                session.createFxEnabled() ? "▶ FX ON" : "FX OFF"
+        ), b -> {
+            session.toggleCreateFxEnabled();
+            rebuildWidgets();
+        }).width(fxw).build());
+        addBody(fxGrid);
+        addSection("Sound  ·  " + session.createFxSound());
+        addChipRow(com.yapcore.staff.FxCatalog.SOUNDS, session.createFxSound(), session::setCreateFxSound);
+        addSection("Particle  ·  " + session.createFxParticle());
+        addChipRow(com.yapcore.staff.FxCatalog.PARTICLES, session.createFxParticle(), session::setCreateFxParticle);
+        addSection("Particle count  ·  " + session.createFxCount());
+        addChipRow(com.yapcore.staff.FxCatalog.COUNTS, session.createFxCount(), session::setCreateFxCount);
+
         addSection("Ability cooldown  ·  " + session.createCooldown());
         addChipRow(COOLDOWNS, session.createCooldown(), session::setCreateCooldown);
 
@@ -230,7 +255,7 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
         addChipRow(GEAR, session.createGearAttack(), session::setCreateGearAttack);
 
         addSection("Item look");
-        int lookCols = preferredColumns(2);
+        int lookCols = preferredColumns(3);
         GridLayout lookGrid = new GridLayout().columnSpacing(6).rowSpacing(3);
         GridLayout.RowHelper lookRows = lookGrid.createRowHelper(lookCols);
         int lw = colWidthFor(lookCols);
@@ -246,9 +271,15 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
             session.toggleCreateUnbreakable();
             rebuildWidgets();
         }).width(lw).build());
+        lookRows.addChild(Button.builder(Component.literal(
+                session.createRainbow() ? "▶ Rainbow ON" : "Rainbow OFF"
+        ), b -> {
+            session.toggleCreateRainbow();
+            rebuildWidgets();
+        }).width(lw).build());
         addBody(lookGrid);
         addBody(new StringWidget(Component.literal(
-                "Glow = enchantment shine · Unbreakable = never loses durability"), this.font));
+                "Glow = shine · Unbreakable = no durability loss · Rainbow = animated name"), this.font));
 
         addSection("Enchantments  ·  " + session.createEnchantsPrettyLabel());
         addBody(Button.builder(Component.literal(
@@ -316,17 +347,38 @@ public final class ItemsCreateScreen extends StaffPanelScreen {
                     needRange || needBreak ? session.createRange() : null,
                     session.createCooldown(),
                     session.createGearAttack(),
-                    needPotion ? session.createPotionEffect() : null,
+                    needPotion ? session.createPotionEffectsCompact() : null,
                     radiusFlag,
                     amountFlag,
                     needProj ? session.createProjectileKind() : null,
                     needPotionPower ? session.createPotionDurationTicks() : null,
                     needPotionPower ? session.createPotionAmplifier() : null,
                     session.createGlow(),
+                    session.createRainbow(),
                     session.createUnbreakable(),
                     session.createEnchantsCompact().isBlank() ? null : session.createEnchantsCompact(),
+                    com.yapcore.staff.FxCatalog.toFlag(session.createFxSound()),
+                    com.yapcore.staff.FxCatalog.toFlag(session.createFxParticle()),
+                    com.yapcore.staff.FxCatalog.toFlag(session.createFxCount()),
+                    session.createFxEnabled(),
                     editMode);
         }).width(Math.min(280, wideWidth())).build());
+    }
+
+    private void addMultiPotionRow(com.yapcore.staff.StaffSession session) {
+        int cols = chipColumns(POTIONS.length);
+        int w = chipWidth(cols);
+        GridLayout grid = new GridLayout().columnSpacing(4).rowSpacing(3);
+        GridLayout.RowHelper rows = grid.createRowHelper(cols);
+        for (String v : POTIONS) {
+            String value = v;
+            boolean on = session.hasCreatePotionEffect(value);
+            rows.addChild(Button.builder(Component.literal(on ? "▶ " + value : value), b -> {
+                session.toggleCreatePotionEffect(value);
+                rebuildWidgets();
+            }).width(w).build());
+        }
+        addBody(grid);
     }
 
     private void addChipRow(String[] values, String selected, java.util.function.Consumer<String> setter) {

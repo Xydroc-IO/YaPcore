@@ -75,9 +75,19 @@ public final class StaffCmds {
 
     // --- Canonical builders (menus should prefer these) ---
 
-    /** Canonical: {@code /speed <0-10> [fly|walk]}. */
+    /** Canonical: {@code /speed [player] <0-10> [fly|walk]}. */
     public static void speed(int level, boolean fly) {
-        runFmt("speed %d %s", Math.max(0, Math.min(10, level)), fly ? "fly" : "walk");
+        speed(level, fly, null);
+    }
+
+    public static void speed(int level, boolean fly, String playerOrNull) {
+        int n = Math.max(0, Math.min(10, level));
+        String mode = fly ? "fly" : "walk";
+        if (playerOrNull == null || playerOrNull.isBlank()) {
+            runFmt("speed %d %s", n, mode);
+        } else {
+            runFmt("speed %s %d %s", playerOrNull, n, mode);
+        }
     }
 
     /** Canonical: {@code /echest [player]} — omit for self. */
@@ -270,6 +280,38 @@ public final class StaffCmds {
             boolean unbreakable,
             String enchantsCompactOrNull,
             boolean replace) {
+        customItemCreateFull(
+                id, template, name, abilitiesWithTriggers,
+                damageOrNull, rangeOrNull, cooldownOrNull, gearAttackOrNull,
+                effectOrNull, radiusOrNull, amountOrNull, projectileOrNull,
+                durationTicksOrNull, amplifierOrNull, glow, false, unbreakable, enchantsCompactOrNull,
+                null, null, null, true, replace);
+    }
+
+    public static void customItemCreateFull(
+            String id,
+            String template,
+            String name,
+            java.util.Map<String, String> abilitiesWithTriggers,
+            String damageOrNull,
+            String rangeOrNull,
+            String cooldownOrNull,
+            String gearAttackOrNull,
+            String effectOrNull,
+            String radiusOrNull,
+            String amountOrNull,
+            String projectileOrNull,
+            String durationTicksOrNull,
+            String amplifierOrNull,
+            boolean glow,
+            boolean rainbow,
+            boolean unbreakable,
+            String enchantsCompactOrNull,
+            String soundOrNull,
+            String particleOrNull,
+            String countOrNull,
+            boolean fxEnabled,
+            boolean replace) {
         StringBuilder sb = new StringBuilder();
         sb.append("yapitems create ").append(id)
                 .append(" --template ").append(template);
@@ -324,10 +366,27 @@ public final class StaffCmds {
         if (amplifierOrNull != null && !amplifierOrNull.isBlank()) {
             sb.append(" --amplifier ").append(amplifierOrNull);
         }
+        if (!fxEnabled) {
+            sb.append(" --no-fx");
+        }
+        if (soundOrNull != null && !soundOrNull.isBlank()) {
+            sb.append(" --sound ").append(soundOrNull.trim().toUpperCase(Locale.ROOT));
+        }
+        if (particleOrNull != null && !particleOrNull.isBlank()) {
+            sb.append(" --particle ").append(particleOrNull.trim().toUpperCase(Locale.ROOT));
+        }
+        if (countOrNull != null && !countOrNull.isBlank() && !"DEFAULT".equalsIgnoreCase(countOrNull)) {
+            sb.append(" --count ").append(countOrNull.trim());
+        }
         if (glow) {
             sb.append(" --glow");
         } else if (replace) {
             sb.append(" --no-glow");
+        }
+        if (rainbow) {
+            sb.append(" --rainbow");
+        } else if (replace) {
+            sb.append(" --no-rainbow");
         }
         if (unbreakable) {
             sb.append(" --unbreakable");

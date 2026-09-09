@@ -23,20 +23,20 @@ cd client/yap-ultrawide && ./gradlew build
 
 ```json
 {
-  "configVersion": 2,
+  "configVersion": 4,
   "enabled": true,
   "affectHudFov": false,
   "ultrawide_21_9": {
     "mode": "match_16_9",
-    "targetHorizontalFov": 105.0,
-    "maxHorizontalFov": 110.0,
+    "targetHorizontalFov": 110.0,
+    "maxHorizontalFov": 115.0,
     "fovScale": 1.0
   },
   "superwide_32_9": {
     "mode": "match_21_9",
-    "targetHorizontalFov": 100.0,
-    "maxHorizontalFov": 100.0,
-    "fovScale": 0.95
+    "targetHorizontalFov": 110.0,
+    "maxHorizontalFov": 115.0,
+    "fovScale": 1.0
   }
 }
 ```
@@ -63,6 +63,8 @@ cd client/yap-ultrawide && ./gradlew build
 
 ### 57" 32:9 tips
 
-Use `superwide_32_9` only (your panel is detected as that band). If edges still
-fish-eye: lower `maxHorizontalFov` to `95`, or `"mode": "fixed_hfov"` with
-`"targetHorizontalFov": 95`. If hands/weapons vanish, ensure `affectHudFov` is `false`.
+Use `superwide_32_9` only (your panel is detected as that band). Defaults are
+`match_21_9` with `maxHorizontalFov` 115. If still too zoomed in: raise FOV in
+vanilla video settings, or set `"maxHorizontalFov": 0` (no cap) / `"fovScale": 1.05`.
+If edges fish-eye too much: drop `maxHorizontalFov` toward `100`. Keep
+`affectHudFov` **false** so hands stay on screen.

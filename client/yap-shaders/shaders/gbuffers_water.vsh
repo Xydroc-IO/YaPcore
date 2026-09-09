@@ -15,13 +15,13 @@ void main() {
     vec4 view = gl_ModelViewMatrix * gl_Vertex;
     vec3 wp = (gbufferModelViewInverse * view).xyz + cameraPosition;
 
-    // Wave mesh heave only for real water — glass/ice share this program otherwise.
+    // Almost-flat mesh — Gerstner heave on 1m quads looked like ocean stair-steps.
     if (isWater) {
         vec3 nWorld = normalize(mat3(gbufferModelViewInverse) * gl_NormalMatrix * gl_Normal);
         float up = clamp(nWorld.y, 0.0, 1.0);
-        if (up > 0.30) {
+        if (up > 0.45) {
             vec3 disp = yapWaterDisplace(wp, frameTimeCounter);
-            wp = mix(wp, disp, smoothstep(0.30, 0.75, up));
+            wp = mix(wp, disp, smoothstep(0.45, 0.85, up) * 0.65);
         }
     }
 

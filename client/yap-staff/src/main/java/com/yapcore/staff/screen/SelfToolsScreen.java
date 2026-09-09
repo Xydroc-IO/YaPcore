@@ -40,8 +40,10 @@ public final class SelfToolsScreen extends StaffPanelScreen {
 
         addSection("Speed & inventory");
         addButtonGrid(
-                action("Walk speed 5", "Set walk speed to 5/10", () -> StaffCmds.speed(5, false)),
-                action("Fly speed 5", "Set fly speed to 5/10", () -> StaffCmds.speed(5, true)),
+                action("Walk speed…", "Pick 1–10 for yourself", () ->
+                        open(new SpeedPickerScreen(this, null, false))),
+                action("Fly speed…", "Pick 1–10 for yourself", () ->
+                        open(new SpeedPickerScreen(this, null, true))),
                 action("Clear inventory", "Clear your inventory", () -> StaffCmds.run("clear")),
                 action("Workbench", "Open a crafting table", () -> StaffCmds.run("workbench")),
                 action("Ender chest", "Open your ender chest", () -> StaffCmds.echest(null))

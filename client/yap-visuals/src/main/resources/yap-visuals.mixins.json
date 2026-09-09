@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "com.yapcore.visuals.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "ItemModelResolverMixin",
+    "ItemStackRenderStateMixin",
+    "LayerRenderStateMixin",
+    "ItemFeatureRendererMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
