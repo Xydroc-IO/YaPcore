@@ -66,7 +66,7 @@ Aliases: `/we`, `/worldedit`, `/mv`. Classic `//…` commands work like WorldEdi
 | Generate | `//cyl` `//sphere` `//pyramid` `//line` `//drain` `//regen` `//forest` `//flora` `//pumpkins` `//generate <expr> [pattern]` |
 | Biome/deform | `//setbiome` `//biomeinfo` `//biomelist` `//deform` `//twist` `//center` `//curve` `//fixlighting` |
 | Clipboard | `//copy [-m slot]` `//cut` `//paste [-a\|-e\|-b\|-o\|-s]` `//rotate` `//flip` `//stack` `//move` `//clipboard [slot]` |
-| Schematics | `//schem paste <name>` (or Schematics GUI / Admin → **World tools** → Schematics) shows particle/CUI preview. **Rotate** with `//schem rotate` / GUI **Rotate 90°** (shift = CCW); **Flip** with `//schem flip [x\|z]`. Place with **Confirm**, reposition with **Move here**, abort with **Cancel**. Chat: `//schem confirm` / `cancel` / `here` / `rotate` / `flip`. `-y` skips preview. Undo with `//undo` or **Undo** in the menu. Outline colour shifts with yaw (0° cyan · 90° green · 180° amber · 270° purple). |
+| Schematics | `//schem paste <name>` (or Schematics GUI / Admin → **World tools** → Schematics) shows particle/CUI preview, opens the schematics chest, and gives **hotbar tools** (Confirm · Move · Rotate · Flip · Cancel · Menu). Click those items or the chest footer buttons. Chat: `//schem confirm` / `cancel` / `here` / `rotate` / `flip`. `-y` skips preview. Undo with `//undo` or **Undo** in the menu. Outline colour shifts with yaw. |
 | Near/util | `//replacenear` `//removeabove` `//removebelow` `//extinguish` `//green` `//snow` `//thaw` |
 | Nav | `//thru` `//jumpto` `//up` `//ascend` `//descend` |
 | History | `//undo` `//redo` `//clearhistory` `//fast` `//limit [n]` |

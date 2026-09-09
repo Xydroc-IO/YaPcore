@@ -79,6 +79,9 @@ public final class ResourcePackManager {
 
     public synchronized void startHttp() throws IOException {
         ensureDirectory();
+        // Pull Bedrock .mcpack from GitHub latest when resource-pack-url points there,
+        // then serve it with application/zip (Bedrock cannot download GitHub Releases directly).
+        syncBedrockPackFromGitHub();
         // Always host packs/map on :8081 so operators can curl/test even when the login offer is off.
         httpServer = new ResourcePackHttpServer(
                 config.getBindHost(),
@@ -109,6 +112,66 @@ public final class ResourcePackManager {
                 probePackUrl(buildPublicUrl(pack.getFileName()));
             }
         }
+        String bedrock = config.getResourcePackBedrockFile();
+        if (bedrock != null && !bedrock.isBlank() && Files.isRegularFile(packsDir.resolve(bedrock))) {
+            probePackUrl(new PublicEndpoint(config).packUrlSelfHosted(bedrock));
+        }
+    }
+
+    /**
+     * When {@code resource-pack-url} is GitHub Releases, download the Bedrock
+     * {@code .mcpack} into {@code resourcepacks/} so the zip HTTP CDN serves
+     * the same bytes clients expect from {@code releases/latest}.
+     */
+    void syncBedrockPackFromGitHub() {
+        String override = config.getResourcePackUrl();
+        String file = config.getResourcePackBedrockFile();
+        if (override == null || override.isBlank() || file == null || file.isBlank()) {
+            return;
+        }
+        if (!isGithubAssetUrl(override)) {
+            return;
+        }
+        String url = override.replace("{file}", file);
+        Path dest = packsDir.resolve(file);
+        Thread t = new Thread(() -> {
+            try {
+                java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder()
+                        .followRedirects(java.net.http.HttpClient.Redirect.NORMAL)
+                        .connectTimeout(java.time.Duration.ofSeconds(20))
+                        .build();
+                var req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
+                        .timeout(java.time.Duration.ofMinutes(3))
+                        .GET()
+                        .build();
+                var res = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofInputStream());
+                if (res.statusCode() < 200 || res.statusCode() >= 300) {
+                    LOG.warning("GitHub pack sync HTTP " + res.statusCode() + " for " + url);
+                    return;
+                }
+                Path tmp = dest.resolveSibling(file + ".download");
+                try (InputStream in = res.body()) {
+                    Files.copy(in, tmp, StandardCopyOption.REPLACE_EXISTING);
+                }
+                long size = Files.size(tmp);
+                if (size < 1024) {
+                    Files.deleteIfExists(tmp);
+                    LOG.warning("GitHub pack sync too small (" + size + " B) — keeping existing " + file);
+                    return;
+                }
+                try {
+                    Files.move(tmp, dest, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                } catch (java.nio.file.AtomicMoveNotSupportedException e) {
+                    Files.move(tmp, dest, StandardCopyOption.REPLACE_EXISTING);
+                }
+                LOG.info("Synced Bedrock pack from GitHub latest → " + dest.getFileName()
+                        + " (" + size + " bytes); BE clients download via zip CDN");
+            } catch (Exception e) {
+                LOG.warning("GitHub pack sync failed: " + e.getMessage());
+            }
+        }, "yap-pack-github-sync");
+        t.setDaemon(true);
+        t.start();
     }
 
     private void probePackUrl(String url) {
@@ -401,8 +464,8 @@ public final class ResourcePackManager {
     }
 
     /**
-     * Bedrock pack download URL — always the zip-typed pack HTTP server.
-     * Never raw GitHub Releases ({@code application/octet-stream} → client kick).
+     * Bedrock pack download URL — zip-typed YaP/nginx CDN (same bytes as GitHub latest).
+     * Never raw github.com Releases URLs ({@code application/octet-stream} → client kick).
      */
     String bedrockPackUrl(String fileName, String clientAddress) {
         PublicEndpoint ep = new PublicEndpoint(config);
@@ -410,18 +473,11 @@ public final class ResourcePackManager {
         if (client != null) {
             return ep.packUrlForClient(fileName, client);
         }
-        // Explicit non-GitHub self-host (ignore resource-pack-url when it points at GitHub).
         String override = config.getResourcePackUrl();
         if (override != null && !override.isBlank() && !isGithubAssetUrl(override)) {
             return override.replace("{file}", fileName);
         }
-        String host = config.getResourcePackPublicHost();
-        if (host == null || host.isBlank()) {
-            host = PublicEndpoint.guessLocalIpv4().orElse("127.0.0.1");
-        } else {
-            host = host.replaceFirst("^https?://", "").split("/")[0].split(":")[0];
-        }
-        return "http://" + host + ":" + config.getResourcePackHttpPort() + "/pack/" + fileName;
+        return ep.packUrlSelfHosted(fileName);
     }
 
     private static boolean isGithubAssetUrl(String url) {

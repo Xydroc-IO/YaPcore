@@ -23,6 +23,7 @@ import com.yapcore.world.listener.ToolModeListener;
 import com.yapcore.world.listener.WorldEditSlashBridge;
 import com.yapcore.world.listener.WorldEditToolListener;
 import com.yapcore.world.schem.SchematicPastePreview;
+import com.yapcore.world.schem.SchematicPreviewControls;
 import com.yapcore.world.schem.SchematicPaster;
 import com.yapcore.world.schem.YapClipboardLoader;
 import com.yapcore.world.service.EditApplyServiceImpl;
@@ -48,6 +49,7 @@ public final class WorldPlugin extends JavaPlugin {
     private SelectionServiceImpl selection;
     private SchematicPaster paster;
     private SchematicPastePreview pastePreview;
+    private SchematicPreviewControls previewControls;
     private UndoService undoService;
     private BrushService brushService;
     private SelectionEditService selectionEditService;
@@ -84,6 +86,10 @@ public final class WorldPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new ToolModeListener(this, playerEditState, selection, selectionShape, terrainService), this);
         getServer().getPluginManager().registerEvents(pastePreview, this);
+        if (previewControls == null) {
+            previewControls = new SchematicPreviewControls(this);
+        }
+        getServer().getPluginManager().registerEvents(previewControls, this);
 
         ClipboardFormat.setLoader(new YapClipboardLoader());
 
@@ -345,6 +351,10 @@ public final class WorldPlugin extends JavaPlugin {
         return pastePreview;
     }
 
+    public SchematicPreviewControls previewControls() {
+        return previewControls;
+    }
+
     public UndoService undoService() {
         return undoService;
     }
@@ -388,6 +398,9 @@ public final class WorldPlugin extends JavaPlugin {
         ClipboardFormat.setLoader(null);
         if (pastePreview != null) {
             pastePreview.clearAll();
+        }
+        if (previewControls != null) {
+            previewControls.clearAll();
         }
         if (editHttp != null) {
             editHttp.stop();

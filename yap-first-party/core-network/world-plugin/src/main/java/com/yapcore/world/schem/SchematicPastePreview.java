@@ -89,9 +89,12 @@ public final class SchematicPastePreview implements Listener {
         player.sendMessage("§aSchem preview: §f" + label
                 + " §7(" + schematic.blocks().size() + " blocks, "
                 + b.sizeX() + "×" + b.sizeY() + "×" + b.sizeZ() + ")");
-        player.sendMessage("§7Outline active — §fConfirm§7 · §fMove here§7 · §fRotate§7 · §fCancel");
-        player.sendMessage("§8Chat: §f//schem rotate§8 · §f//schem flip§8 · §f//schem confirm");
         tipActionBar(player, next);
+        if (plugin.previewControls() != null) {
+            plugin.previewControls().give(player);
+        }
+        // Always open clickable schematics menu (Confirm / Move / Rotate).
+        plugin.openSchematicsGui(player);
     }
 
     /** Move pending preview origin to the player's feet. */
@@ -171,6 +174,9 @@ public final class SchematicPastePreview implements Listener {
             return false;
         }
         stopParticles(id);
+        if (plugin.previewControls() != null) {
+            plugin.previewControls().clear(player);
+        }
         WorldEditCuiBridge cui = plugin.cui();
         if (cui != null) {
             cui.update(player);
@@ -184,6 +190,9 @@ public final class SchematicPastePreview implements Listener {
         UUID id = player.getUniqueId();
         Pending cur = pending.remove(id);
         stopParticles(id);
+        if (plugin.previewControls() != null) {
+            plugin.previewControls().clear(player);
+        }
         WorldEditCuiBridge cui = plugin.cui();
         if (cui != null) {
             cui.update(player);
@@ -227,11 +236,18 @@ public final class SchematicPastePreview implements Listener {
     public void clear(UUID playerId) {
         pending.remove(playerId);
         stopParticles(playerId);
+        Player p = plugin.getServer().getPlayer(playerId);
+        if (p != null && plugin.previewControls() != null) {
+            plugin.previewControls().clear(p);
+        }
     }
 
     public void clearAll() {
         for (UUID id : particleTasks.keySet()) {
             stopParticles(id);
+        }
+        if (plugin.previewControls() != null) {
+            plugin.previewControls().clearAll();
         }
         pending.clear();
     }

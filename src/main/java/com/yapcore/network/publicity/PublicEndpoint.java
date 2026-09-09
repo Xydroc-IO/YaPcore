@@ -140,7 +140,15 @@ public final class PublicEndpoint {
         if (override != null && !override.isBlank()) {
             return override.replace("{file}", fileName);
         }
-        // Prefer pack-specific public host when set (LAN IP), else join host.
+        return packUrlSelfHosted(fileName);
+    }
+
+    /**
+     * Pack URL served by YaP {@code ResourcePackHttpServer} / nginx edge with
+     * {@code Content-Type: application/zip}. Never uses {@code resource-pack-url}
+     * (GitHub Releases are {@code application/octet-stream} — Bedrock rejects them).
+     */
+    public String packUrlSelfHosted(String fileName) {
         String host = firstNonBlank(
                 config.getResourcePackPublicHost(),
                 publicHost());
@@ -153,6 +161,11 @@ public final class PublicEndpoint {
         if (port == 80 || port == 443) {
             String scheme = port == 443 ? "https" : "http";
             return scheme + "://" + host + "/pack/" + fileName;
+        }
+        // When no public edge port, use the local pack HTTP port directly.
+        int localPort = config.getResourcePackHttpPort();
+        if (port == localPort || !hasNginxEdge()) {
+            return "http://" + host + ":" + localPort + "/pack/" + fileName;
         }
         return "http://" + host + ":" + port + "/pack/" + fileName;
     }
@@ -169,7 +182,8 @@ public final class PublicEndpoint {
                 return "http://" + lan + ":" + config.getResourcePackHttpPort() + "/pack/" + fileName;
             }
         }
-        return packUrl(fileName);
+        // Remote clients: zip-typed edge (never GitHub override).
+        return packUrlSelfHosted(fileName);
     }
 
     private boolean hasNginxEdge() {
