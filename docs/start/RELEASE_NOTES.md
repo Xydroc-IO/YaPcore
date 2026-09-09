@@ -9,7 +9,25 @@ For build commands and zip layout see [RELEASES.md](RELEASES.md). For live statu
 
 ---
 
+## After 1.0.0.0 — World tools + Bedrock pack CDN (2026-09-08 evening)
+
+Same ship version (no product bump). Operator build tools + crossplay pack path:
+
+| Area | Change |
+|------|--------|
+| **YaPAdmin World tools** | Single hub tile for world edit + schematics + live paste preview (confirm / move / rotate / flip / undo); Bedrock form hub entry |
+| **YaPWorld schem preview** | Interactive **Rotate 90°** (shift = CCW) and **Flip**; outline colour/yaw tip; `//schem rotate` / `flip`; `//rotate` prefers active preview |
+| **Bedrock packs** | Offer GitHub `releases/latest/download/{file}` (same CDN as JE); pack handshake defers JOIN/forms until after StartGame; mcpack `min_engine_version` pinned to 1.21.60 |
+| **yap-staff 1.0.30** | More… → World & build links for schematics + admin World tools |
+
+Docs: [ADMIN_MENU.md](../ops/ADMIN_MENU.md) · [YAPWORLD.md](../plugins/YAPWORLD.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md).
+
+Build: `./scripts/build-yap-client-render.sh` · `gradle publishReleasesFolder -PyapGameplay=true` · restart Folia after jar/plugin swap.
+
+---
+
 ## After 1.0.0.0 — YaPItems + staff create + shaders (2026-09-08)
+
 
 Same ship version (no product bump). Custom items + client polish:
 
@@ -225,7 +243,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
 - **12h soak-long PASS** (`logs/soak/soak-long-20260905T031507Z.log`) — zip may be marketed as **soak-proven**; heap/thread slope flat (folia heap median early≈1012MB late≈1082MB; threads 137→137) per [REAL_GAINS.md](../folia/REAL_GAINS.md)
 - Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production (defaults stay **off**)
-`releases/1.0.0.0/` republished 2026-09-08 with YaPItems glow/staff channel + domain ≤500 splits + staff **1.0.27** (`./scripts/build-yap-client-render.sh` then `gradle publishReleasesFolder -PyapGameplay=true`). Prior: staff/bag polish (2026-09-07); typical SMP defaults (2026-09-06); pack CDN/SHA + client visuals (2026-09-04).
+`releases/1.0.0.0/` republished 2026-09-08 evening with World tools + schem rotate/flip, Bedrock GitHub pack CDN / login handshake, mcpack 1.21.60 pin, and staff **1.0.30** (`./scripts/build-yap-client-render.sh` then `gradle publishReleasesFolder -PyapGameplay=true`). Prior same-day: YaPItems glow/staff channel + domain ≤500 splits + staff **1.0.27**. Earlier: staff/bag polish (2026-09-07); typical SMP defaults (2026-09-06); pack CDN/SHA + client visuals (2026-09-04).
 
 ---
 

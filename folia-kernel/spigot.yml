@@ -1,3 +1,15 @@
+# This is the Spigot configuration file for Paper.
+# As you can see, there's tons to configure. Some options may impact gameplay, so use
+# with caution, and make sure you know what each option does before configuring.
+#
+# If you need help with the configuration or have any questions related to Paper,
+# join us in our Discord or check the docs page.
+#
+# File Reference: https://docs.papermc.io/paper/reference/spigot-configuration/
+# Docs: https://docs.papermc.io/
+# Discord: https://discord.gg/papermc
+# Website: https://papermc.io/
+
 settings:
   debug: false
   bungeecord: false
@@ -154,8 +166,7 @@ players:
 config-version: 13
 stats:
   disable-saving: false
-  forced-stats: {
-    }
+  forced-stats: {}
 commands:
   log: true
   tab-complete: 0

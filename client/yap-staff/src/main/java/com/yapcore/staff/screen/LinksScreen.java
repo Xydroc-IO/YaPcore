@@ -23,9 +23,11 @@ public final class LinksScreen extends StaffPanelScreen {
 
         addSection("World & build");
         addButtonGrid(
-                link("World edit chest", "Open YaPWorld panel", "yapworld gui"),
                 action("World edit", "Native YaPWorld tools", () ->
                         open(new WorldEditHubScreen(this))),
+                link("World edit chest", "Open YaPWorld panel", "yapworld gui"),
+                link("Schematics", "Browse · paste preview", "yapworld schem browse"),
+                link("Admin World tools", "Chest World tools panel", "yapadmin"),
                 link("Pregen status", "Chunk pre-generator status", "yappregen status"),
                 link("Regions", "Region tools", "yapregions")
         );
