@@ -50,7 +50,7 @@ final class WorldCommandsSchematics {
             return true;
         }
         if (args.length < 2) {
-            sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats|browse|confirm|cancel|here|undo");
+            sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats|browse|confirm|cancel|here|rotate|flip|undo");
             return true;
         }
         if ("browse".equalsIgnoreCase(args[1]) || "gui".equalsIgnoreCase(args[1])
@@ -68,6 +68,18 @@ final class WorldCommandsSchematics {
         if ("here".equalsIgnoreCase(args[1]) || "move".equalsIgnoreCase(args[1])
                 || "reposition".equalsIgnoreCase(args[1])) {
             return editOps.dispatch(player, "schem", new String[]{"here"});
+        }
+        if ("rotate".equalsIgnoreCase(args[1]) || "rot".equalsIgnoreCase(args[1])) {
+            if (args.length >= 3) {
+                return editOps.dispatch(player, "schem", new String[]{"rotate", args[2]});
+            }
+            return editOps.dispatch(player, "schem", new String[]{"rotate"});
+        }
+        if ("flip".equalsIgnoreCase(args[1])) {
+            if (args.length >= 3) {
+                return editOps.dispatch(player, "schem", new String[]{"flip", args[2]});
+            }
+            return editOps.dispatch(player, "schem", new String[]{"flip"});
         }
         if ("undo".equalsIgnoreCase(args[1])) {
             return editOps.dispatch(player, "schem", new String[]{"undo"});
@@ -101,7 +113,7 @@ final class WorldCommandsSchematics {
         if ("formats".equalsIgnoreCase(args[1])) {
             return editOps.dispatch(player, "schem", new String[]{"formats"});
         }
-        sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats|browse|confirm|cancel|here|undo");
+        sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats|browse|confirm|cancel|here|rotate|flip|undo");
         return true;
     }
 

@@ -110,8 +110,15 @@ public final class AdminMenus {
         ops.openDeepLinks(player);
     }
 
-    public void openSchematics(Player player) {
+    /** Unified World edit + schematics + paste-preview panel. */
+    public void openWorldTools(Player player) {
         ops.openSchematics(player);
+    }
+
+    /** @deprecated use {@link #openWorldTools(Player)} */
+    @Deprecated
+    public void openSchematics(Player player) {
+        openWorldTools(player);
     }
 
     public void openCombatSkills(Player player) {

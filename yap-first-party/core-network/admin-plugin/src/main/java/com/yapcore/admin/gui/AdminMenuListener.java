@@ -65,7 +65,7 @@ public final class AdminMenuListener implements Listener {
             case SERVER_OPS -> ops.handleServerOps(player, slot, clicked);
             case ECONOMY -> ops.handleEconomy(player, slot, clicked);
             case DEEP_LINKS -> ops.handleDeepLinks(player, slot);
-            case SCHEMATICS -> ops.handleSchematics(player, slot);
+            case SCHEMATICS -> ops.handleSchematics(player, slot, shift);
             case COMBAT_SKILLS -> ops.handleCombatSkills(player, slot);
             case LEVELED_MOBS -> ops.handleLeveledMobs(player, slot, shift);
             case TROLLS -> core.handleTrolls(player, holder, slot);

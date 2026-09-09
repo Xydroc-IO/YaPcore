@@ -114,16 +114,33 @@ final class WorldEditSchematicOps {
 
     boolean rotate(Player player, String[] args) {
         int deg = args.length >= 1 ? WorldEditOpsSupport.parseInt(args[0], 90) : 90;
+        if (args.length >= 1 && ("ccw".equalsIgnoreCase(args[0]) || "left".equalsIgnoreCase(args[0]))) {
+            deg = -90;
+        } else if (args.length >= 1 && ("cw".equalsIgnoreCase(args[0]) || "right".equalsIgnoreCase(args[0]))) {
+            deg = 90;
+        }
+        // Prefer active schem preview — more interactive than silent clipboard-only rotate.
+        if (plugin.pastePreview() != null && plugin.pastePreview().has(player.getUniqueId())) {
+            var yaw = plugin.pastePreview().rotateY(player, deg);
+            return yaw.isPresent();
+        }
         if (clipboard.rotateY(player.getUniqueId(), deg)) {
             player.sendMessage("§aClipboard rotated §f" + deg + "°");
         } else {
-            player.sendMessage("§cClipboard empty.");
+            player.sendMessage("§cClipboard empty. §7Or start a schem preview: §f//schem paste <name>");
         }
         return true;
     }
 
     boolean flip(Player player, String[] args) {
         char axis = args.length >= 1 ? Character.toLowerCase(args[0].charAt(0)) : 'x';
+        if (plugin.pastePreview() != null && plugin.pastePreview().has(player.getUniqueId())) {
+            if (plugin.pastePreview().flip(player, axis)) {
+                return true;
+            }
+            player.sendMessage("§cBad flip axis (x/y/z).");
+            return true;
+        }
         if (clipboard.flip(player.getUniqueId(), axis)) {
             player.sendMessage("§aClipboard flipped on §f" + axis);
         } else {
@@ -142,7 +159,7 @@ final class WorldEditSchematicOps {
             return;
         }
         if (args.length < 1) {
-            player.sendMessage("§e//schem list|load|save|delete|formats|paste <name> [-y]|confirm|cancel|here|undo");
+            player.sendMessage("§e//schem list|load|save|delete|formats|paste <name> [-y]|confirm|cancel|here|rotate [90|ccw]|flip [x]|undo");
             return;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -183,6 +200,22 @@ final class WorldEditSchematicOps {
                     player.sendMessage("§eNo schem preview. §f//schem paste <name> §efirst.");
                 }
             }
+            case "rotate", "rot", "yaw" -> {
+                if (args.length >= 2 && ("ccw".equalsIgnoreCase(args[1]) || "left".equalsIgnoreCase(args[1]))) {
+                    schemRotate(player, -90);
+                } else if (args.length >= 2 && ("cw".equalsIgnoreCase(args[1]) || "right".equalsIgnoreCase(args[1]))) {
+                    schemRotate(player, 90);
+                } else {
+                    int deg = args.length >= 2 ? WorldEditOpsSupport.parseInt(args[1], 90) : 90;
+                    schemRotate(player, deg);
+                }
+            }
+            case "flip" -> {
+                char axis = args.length >= 2 ? Character.toLowerCase(args[1].charAt(0)) : 'x';
+                if (!plugin.pastePreview().flip(player, axis)) {
+                    player.sendMessage("§eNo schem preview (or bad axis). §f//schem paste <name> §efirst.");
+                }
+            }
             case "undo" -> plugin.undoService().undo(player.getUniqueId()).thenAccept(n ->
                     YapSched.global(plugin, () -> player.sendMessage("§aUndid §f" + n + " §ablocks.")));
             case "delete", "rm", "remove" -> {
@@ -193,7 +226,14 @@ final class WorldEditSchematicOps {
                 schemDelete(player, args[1]);
             }
             default -> player.sendMessage(
-                    "§e//schem list|load|save|delete|formats|paste <name> [-y]|confirm|cancel|here|undo");
+                    "§e//schem list|load|save|delete|formats|paste <name> [-y]|confirm|cancel|here|rotate|flip|undo");
+        }
+    }
+
+    private void schemRotate(Player player, int degrees) {
+        var yaw = plugin.pastePreview().rotateY(player, degrees);
+        if (yaw.isEmpty()) {
+            player.sendMessage("§eNo schem preview. §f//schem paste <name> §efirst.");
         }
     }
 

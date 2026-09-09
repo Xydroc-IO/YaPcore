@@ -100,18 +100,17 @@ final class AdminMenuClickOps {
         AdminActions actions = plugin.actions();
         switch (slot) {
             case 19 -> actions.closeAndRun(player, "yapperm gui");
-            case 20 -> actions.closeAndRun(player, "yapworld gui");
+            case 20 -> plugin.menus().openWorldTools(player);
             case 21 -> actions.closeAndRun(player, "yapstacker gui");
             case 22 -> actions.closeAndRun(player, "menu");
-            case 23 -> plugin.menus().openSchematics(player);
-            case 24 -> actions.closeAndRun(player, "yappregen status");
-            case 25 -> plugin.menus().openLeveledMobs(player);
+            case 23 -> actions.closeAndRun(player, "yappregen status");
+            case 24 -> plugin.menus().openLeveledMobs(player);
             default -> {
             }
         }
     }
 
-    void handleSchematics(Player player, int slot) {
+    void handleSchematics(Player player, int slot, boolean shift) {
         if (slot == AdminMenus.SLOT_BACK) {
             plugin.menus().openHub(player);
             return;
@@ -122,32 +121,48 @@ final class AdminMenuClickOps {
         }
         AdminActions actions = plugin.actions();
         switch (slot) {
+            case 19 -> actions.closeAndRun(player, "yapworld gui");
             case 20 -> actions.closeAndRun(player, "yapworld schem browse");
-            case 22 -> actions.closeAndRun(player, "yapworld gui");
+            case 21 -> actions.closeAndRun(player, "yapworld editor");
+            case 22 -> actions.closeAndRun(player, "yappregen status");
             case 28 -> {
-                // Place then leave menu so the world is visible.
                 actions.closeAndRun(player, "yapworld schem confirm");
             }
             case 29 -> {
                 player.closeInventory();
                 YapSched.entityLater(plugin, player, () -> {
                     Bukkit.dispatchCommand(player, "yapworld schem cancel");
-                    plugin.menus().openSchematics(player);
+                    plugin.menus().openWorldTools(player);
                 }, 1L);
             }
             case 30 -> {
-                // Close so feet position is intentional, move, reopen for Confirm.
                 player.closeInventory();
                 YapSched.entityLater(plugin, player, () -> {
                     Bukkit.dispatchCommand(player, "yapworld schem here");
-                    YapSched.entityLater(plugin, player, () -> plugin.menus().openSchematics(player), 2L);
+                    YapSched.entityLater(plugin, player, () -> plugin.menus().openWorldTools(player), 2L);
                 }, 1L);
             }
             case 31 -> {
                 player.closeInventory();
                 YapSched.entityLater(plugin, player, () -> {
                     Bukkit.dispatchCommand(player, "yapworld schem undo");
-                    YapSched.entityLater(plugin, player, () -> plugin.menus().openSchematics(player), 2L);
+                    YapSched.entityLater(plugin, player, () -> plugin.menus().openWorldTools(player), 2L);
+                }, 1L);
+            }
+            case 32 -> {
+                player.closeInventory();
+                String rot = shift ? "yapworld schem rotate ccw" : "yapworld schem rotate";
+                YapSched.entityLater(plugin, player, () -> {
+                    Bukkit.dispatchCommand(player, rot);
+                    YapSched.entityLater(plugin, player, () -> plugin.menus().openWorldTools(player), 2L);
+                }, 1L);
+            }
+            case 33 -> {
+                player.closeInventory();
+                String flip = shift ? "yapworld schem flip z" : "yapworld schem flip x";
+                YapSched.entityLater(plugin, player, () -> {
+                    Bukkit.dispatchCommand(player, flip);
+                    YapSched.entityLater(plugin, player, () -> plugin.menus().openWorldTools(player), 2L);
                 }, 1L);
             }
             default -> {

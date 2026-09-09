@@ -1,6 +1,7 @@
 package com.yapcore.world.edit;
 
 import com.yapcore.world.schem.Schematic;
+import com.yapcore.world.schem.SchematicTransforms;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +38,8 @@ final class ClipboardTransforms {
                 dx = ndx;
                 dz = ndz;
             }
-            rotated.add(new Schematic.BlockEntry(dx, dy, dz, e.encoded(), e.tileNbt()));
+            rotated.add(new Schematic.BlockEntry(dx, dy, dz,
+                    SchematicTransforms.rotateEncodedY(e.encoded(), turns), e.tileNbt()));
             minDx = Math.min(minDx, dx);
             minDz = Math.min(minDz, dz);
         }

@@ -50,7 +50,7 @@ final class AdminMenuClickCore {
                 }
             }
             case AdminMenus.HUB_LINKS -> plugin.menus().openDeepLinks(player);
-            case AdminMenus.HUB_SCHEMATICS -> plugin.menus().openSchematics(player);
+            case AdminMenus.HUB_SCHEMATICS -> plugin.menus().openWorldTools(player);
             case AdminMenus.HUB_COMBAT -> plugin.menus().openCombatSkills(player);
             default -> {
             }

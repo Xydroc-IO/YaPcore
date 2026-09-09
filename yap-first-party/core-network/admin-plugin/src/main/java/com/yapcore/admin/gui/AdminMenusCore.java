@@ -81,12 +81,12 @@ final class AdminMenusCore {
                     "Grant money to a player"));
         }
         inv.setItem(AdminMenuSlots.HUB_LINKS, AdminMenuHolder.icon(Material.COMPASS, "More…",
-                "Ranks, world edit, stacker, menu"));
+                "Ranks, stacker, menu, pregen…"));
         if (plugin.actions().pluginEnabled("YaPWorld")) {
-            inv.setItem(AdminMenuSlots.HUB_SCHEMATICS, AdminMenuHolder.icon(Material.MAP, NamedTextColor.AQUA,
-                    "Schematics",
-                    "Browse · confirm paste · move preview",
-                    "Place or reposition a pending outline"));
+            inv.setItem(AdminMenuSlots.HUB_SCHEMATICS, AdminMenuHolder.icon(Material.WOODEN_AXE, NamedTextColor.AQUA,
+                    "World tools",
+                    "World edit · schematics · paste preview",
+                    "One place for build tools"));
         }
         if (plugin.actions().pluginEnabled("YaPSkills")) {
             inv.setItem(AdminMenuSlots.HUB_COMBAT, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, "Skills",

@@ -41,6 +41,7 @@ public final class AdminBedrockForms {
                 "Self tools",
                 "Give",
                 "Server",
+                "World tools",
                 "Close");
         return id >= 0;
     }
@@ -65,6 +66,13 @@ public final class AdminBedrockForms {
                         plugin.menus().openServerOps(player);
                     } else {
                         YapMessages.noPermission(player, "yapadmin.server");
+                    }
+                }
+                case 4 -> {
+                    if (plugin.actions().pluginEnabled("YaPWorld")) {
+                        plugin.menus().openWorldTools(player);
+                    } else {
+                        player.sendMessage("§cYaPWorld is not loaded.");
                     }
                 }
                 default -> {

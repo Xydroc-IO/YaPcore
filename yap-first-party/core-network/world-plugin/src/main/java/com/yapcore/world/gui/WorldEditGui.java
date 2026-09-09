@@ -168,12 +168,22 @@ public final class WorldEditGui {
         WorldEditGuiHolder.fillBorder(inv);
 
         boolean preview = plugin.pastePreview() != null && plugin.pastePreview().has(player.getUniqueId());
+        int yaw = 0;
+        String previewName = null;
+        if (preview) {
+            var p = plugin.pastePreview().get(player.getUniqueId());
+            if (p.isPresent()) {
+                yaw = p.get().yawDegrees();
+                previewName = p.get().label();
+            }
+        }
         String previewLine = preview
-                ? "Preview active — use buttons below"
+                ? "Preview: " + previewName + " · " + yaw + "° — rotate / move / confirm"
                 : "Click a file → outline at your feet";
         inv.setItem(4, WorldEditGuiHolder.icon(Material.BOOKSHELF, "Saved schematics",
                 previewLine,
-                "Confirm places · Move here repositions · Cancel aborts"));
+                "Confirm places · Move · Rotate 90° · Cancel",
+                "Shift-click Rotate = counter-clockwise"));
 
         List<String> names = listSchematics();
         int slot = 9;
@@ -183,7 +193,7 @@ public final class WorldEditGui {
             }
             inv.setItem(slot++, WorldEditGuiHolder.icon(Material.PAPER, name,
                     "Click → preview outline at feet",
-                    "Then Confirm / Move here below"));
+                    "Then Confirm / Move / Rotate below"));
         }
         if (names.isEmpty()) {
             inv.setItem(22, WorldEditGuiHolder.icon(Material.BARRIER, "No schematics yet",
@@ -192,17 +202,32 @@ public final class WorldEditGui {
 
         // Bottom row actions (same inventory — no chat commands needed)
         inv.setItem(SCHEM_BACK, WorldEditGuiHolder.icon(Material.ARROW, "Back"));
-        inv.setItem(SCHEM_CONFIRM, WorldEditGuiHolder.icon(Material.LIME_CONCRETE, NamedTextColor.GREEN,
+        inv.setItem(SCHEM_CONFIRM, WorldEditGuiHolder.icon(
+                preview ? Material.LIME_CONCRETE : Material.GRAY_CONCRETE,
+                preview ? NamedTextColor.GREEN : NamedTextColor.GRAY,
                 "Confirm paste",
-                preview ? "Place the preview now" : "No preview — pick a schematic first"));
-        inv.setItem(SCHEM_MOVE, WorldEditGuiHolder.icon(Material.COMPASS, "Move here",
+                preview ? "Place “" + previewName + "” at " + yaw + "°" : "No preview — pick a schematic first"));
+        inv.setItem(SCHEM_MOVE, WorldEditGuiHolder.icon(
+                preview ? Material.COMPASS : Material.GRAY_CONCRETE, "Move here",
                 "Shift paste box to your feet",
                 "Walk first, then click"));
-        inv.setItem(SCHEM_CANCEL, WorldEditGuiHolder.icon(Material.RED_CONCRETE, NamedTextColor.RED,
+        inv.setItem(SCHEM_CANCEL, WorldEditGuiHolder.icon(
+                preview ? Material.RED_CONCRETE : Material.GRAY_CONCRETE,
+                preview ? NamedTextColor.RED : NamedTextColor.GRAY,
                 "Cancel preview",
                 "Abort pending paste"));
         inv.setItem(SCHEM_UNDO, WorldEditGuiHolder.icon(Material.ORANGE_CONCRETE, "Undo last edit",
                 "Undo last paste / fill"));
+        inv.setItem(SCHEM_ROTATE, WorldEditGuiHolder.icon(
+                preview ? Material.REPEATER : Material.GRAY_CONCRETE,
+                preview ? NamedTextColor.YELLOW : NamedTextColor.GRAY,
+                "Rotate 90°",
+                preview ? "Now at " + yaw + "° · click = CW · shift = CCW" : "No preview active",
+                "Also: //schem rotate · //rotate"));
+        inv.setItem(SCHEM_FLIP, WorldEditGuiHolder.icon(
+                preview ? Material.PISTON : Material.GRAY_CONCRETE,
+                "Flip X",
+                preview ? "Mirror east↔west · shift = Flip Z" : "No preview active"));
         player.openInventory(inv);
     }
 
@@ -212,6 +237,8 @@ public final class WorldEditGui {
     static final int SCHEM_MOVE = 47;
     static final int SCHEM_CANCEL = 48;
     static final int SCHEM_UNDO = 49;
+    static final int SCHEM_ROTATE = 50;
+    static final int SCHEM_FLIP = 51;
 
     List<String> listSchematics() {
         Path dir = plugin.schematicsDir();

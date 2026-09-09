@@ -76,7 +76,7 @@ public final class WorldEditGuiListener implements Listener {
         }
         int slot = event.getSlot();
         if (holder.kind() == WorldEditGuiHolder.Kind.SCHEMATICS) {
-            handleSchemClick(player, slot, event.getCurrentItem());
+            handleSchemClick(player, slot, event.getCurrentItem(), event.isShiftClick());
             return;
         }
         handleMainClick(player, event.getInventory(), slot);
@@ -203,7 +203,7 @@ public final class WorldEditGuiListener implements Listener {
         }
     }
 
-    private void handleSchemClick(Player player, int slot, ItemStack clicked) {
+    private void handleSchemClick(Player player, int slot, ItemStack clicked, boolean shift) {
         if (slot == WorldEditGui.SCHEM_BACK) {
             gui.openMain(player);
             return;
@@ -229,7 +229,6 @@ public final class WorldEditGuiListener implements Listener {
             if (!plugin.pastePreview().moveHere(player)) {
                 player.sendMessage("§eNo schem preview. §fClick a schematic §efirst.");
             } else {
-                // Keep menu open — walk then click Move again, or Confirm.
                 gui.openSchematics(player);
             }
             return;
@@ -249,6 +248,24 @@ public final class WorldEditGuiListener implements Listener {
                     }));
             return;
         }
+        if (slot == WorldEditGui.SCHEM_ROTATE) {
+            if (!plugin.pastePreview().has(player.getUniqueId())) {
+                player.sendMessage("§eNo schem preview. §fClick a schematic §efirst.");
+                return;
+            }
+            plugin.pastePreview().rotateY(player, shift ? -90 : 90);
+            gui.openSchematics(player);
+            return;
+        }
+        if (slot == WorldEditGui.SCHEM_FLIP) {
+            if (!plugin.pastePreview().has(player.getUniqueId())) {
+                player.sendMessage("§eNo schem preview. §fClick a schematic §efirst.");
+                return;
+            }
+            plugin.pastePreview().flip(player, shift ? 'z' : 'x');
+            gui.openSchematics(player);
+            return;
+        }
         if (clicked == null || clicked.getType() == Material.GRAY_STAINED_GLASS_PANE) {
             return;
         }
@@ -256,7 +273,8 @@ public final class WorldEditGuiListener implements Listener {
         if (name.isBlank() || "No schematics yet".equals(name) || "Back".equals(name)
                 || "Saved schematics".equals(name)
                 || "Confirm paste".equals(name) || "Move here".equals(name)
-                || "Cancel preview".equals(name) || "Undo last edit".equals(name)) {
+                || "Cancel preview".equals(name) || "Undo last edit".equals(name)
+                || "Rotate 90°".equals(name) || "Flip X".equals(name)) {
             return;
         }
         pasteSchematic(player, name);
