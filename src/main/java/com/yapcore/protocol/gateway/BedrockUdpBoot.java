@@ -183,6 +183,15 @@ public final class BedrockUdpBoot {
                     applyBedrockAction(action.type(), action.username(), action.payload(), peer.address());
                 }
             });
+            gateway.bedrockBridge().setJoinEmitter(action -> {
+                BedrockSessionManager.BedrockSession bs = bedrockSessions.byUsername(action.username());
+                InetSocketAddress addr = bs != null ? guidToAddr.get(bs.guid()) : null;
+                if (addr == null) {
+                    LOG.warning("BE deferred JOIN drop user=" + action.username() + " (no addr)");
+                    return;
+                }
+                applyBedrockAction(action.type(), action.username(), action.payload(), addr);
+            });
             rakNet.setDisconnectHandler(peer -> {
                 long guid = peer.state().clientGuid();
                 if (guid == 0L) {

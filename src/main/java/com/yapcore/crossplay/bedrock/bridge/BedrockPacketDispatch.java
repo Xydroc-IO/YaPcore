@@ -60,7 +60,7 @@ public final class BedrockPacketDispatch {
             case CLIENT_TO_SERVER_HANDSHAKE -> {
                 // Encryption handshake ack — pack/spawn path is separate.
             }
-            case RESOURCE_PACK_CLIENT_RESPONSE -> login.handlePackClientResponse(guid, decoded.body());
+            case RESOURCE_PACK_CLIENT_RESPONSE -> login.handlePackClientResponse(guid, decoded.body(), actions);
             case SET_LOCAL_PLAYER_AS_INITIALIZED -> {
                 // Client finished loading; do not send a second StartGame.
             }

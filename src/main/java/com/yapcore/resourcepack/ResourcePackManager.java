@@ -341,8 +341,13 @@ public final class ResourcePackManager {
     /**
      * Bedrock login CDN offer ({@code .mcpack} only). Uses
      * {@code resource-pack-bedrock-file}; never the Java Edition zip.
+     * <p>
+     * URL comes from the same {@code resource-pack-url} template as Java clients
+     * (product default: GitHub {@code releases/latest/download/{file}}).
+     *
+     * @param clientAddress peer address string (unused for CDN; kept for call-site compatibility)
      */
-    public Optional<ResourcePackOffer> createBedrockOffer() {
+    public Optional<ResourcePackOffer> createBedrockOffer(String clientAddress) {
         if (!config.isResourcePackEnabled()) {
             return Optional.empty();
         }
@@ -357,7 +362,7 @@ public final class ResourcePackManager {
         }
         Path path = packsDir.resolve(file);
         if (!Files.isRegularFile(path)) {
-            LOG.fine("Bedrock pack missing on disk: " + file);
+            LOG.fine("Bedrock pack missing on disk: " + path);
             return Optional.empty();
         }
         try {
@@ -365,9 +370,10 @@ public final class ResourcePackManager {
             UUID uuid = readMcpackHeaderUuid(path)
                     .orElseGet(() -> packUuid(info.getFileName(), info.getSha1Hex()));
             String prompt = config.getResourcePackPrompt();
+            String url = bedrockPackUrl(info.getFileName());
             return Optional.of(new ResourcePackOffer(
                     uuid.toString(),
-                    buildPublicUrl(info.getFileName()),
+                    url,
                     info.getSha1Hex(),
                     prompt == null || prompt.isBlank() ? info.getPrompt() : prompt,
                     config.isResourcePackForced(),
@@ -379,6 +385,19 @@ public final class ResourcePackManager {
             LOG.warning("Could not read Bedrock pack " + file + ": " + e.getMessage());
             return Optional.empty();
         }
+    }
+
+    /** No-arg convenience. */
+    public Optional<ResourcePackOffer> createBedrockOffer() {
+        return createBedrockOffer("");
+    }
+
+    /**
+     * Bedrock CDN URL — same public template as Java ({@code resource-pack-url} /
+     * GitHub latest by default). All editions download from one CDN.
+     */
+    String bedrockPackUrl(String fileName) {
+        return buildPublicUrl(fileName);
     }
 
     static Optional<UUID> readMcpackHeaderUuid(Path mcpack) {

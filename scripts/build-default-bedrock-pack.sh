@@ -115,7 +115,11 @@ header["name"] = "YaPcore Default (Bedrock)"
 header["description"] = desc
 header["uuid"] = header_uuid
 header["version"] = [1, 0, 0]
-# Keep min_engine_version from Faithful base when present.
+# Pin engine floor to current product BE pin (1.21.60). Faithful upstream may ship
+# min_engine_version 1.26.x which rejects every 1.21 client during pack download.
+header["min_engine_version"] = [1, 21, 60]
+# Drop PBR capability — cracked / non-RTX clients often fail the pack prompt.
+data.pop("capabilities", None)
 modules = data.get("modules") or []
 if modules:
     modules[0]["description"] = desc

@@ -21,6 +21,9 @@ public final class BedrockLoginFlow {
     private static final int PACK_HAVE_ALL = 3;
     private static final int PACK_COMPLETED = 4;
 
+    /** If client never answers ResourcePackClientResponse (common on bad CDN / mid-login forms). */
+    private static final long PACK_HANDSHAKE_TIMEOUT_MS = 8_000L;
+
     private final BedrockBridgeContext ctx;
     private final BedrockWorldPush world;
     private final BedrockInventoryPush inventory;
@@ -87,21 +90,22 @@ public final class BedrockLoginFlow {
             }
         }
         announce.release();
-        actions.add(new BedrockGameplayBridge.GameAction("JOIN", identity.username(), Map.of(
+
+        // Defer JOIN (crossplay + welcome form) until after StartGame — ModalFormRequest
+        // mid-pack handshake disconnects cracked / modern Bedrock clients.
+        ctx.pendingJoin.put(guid, Map.of(
                 "protocol", Integer.toString(proto),
                 "xuid", identity.xuid(),
                 "uuid", identity.javaUuid().toString(),
                 "floodgate", "true",
                 "runtimeId", Long.toString(runtime)
-        )));
+        ));
 
         // Strict Bedrock handshake: LOGIN_SUCCESS + ResourcePacksInfo only.
         // StartGame waits for ResourcePackClientResponse (see handlePackClientResponse).
-        // Sending StartGame in the same batch used to double-spawn when the client
-        // responded and sendSpawnSequence ran again — that disconnects modern BE.
         List<ByteBuf> out = new ArrayList<>();
         out.add(BedrockPacketCodec.playStatus(BedrockPacketCodec.PlayStatus.LOGIN_SUCCESS));
-        BedrockBridgeContext.PendingPack pending = resolvePendingPack();
+        BedrockBridgeContext.PendingPack pending = resolvePendingPack(address);
         if (pending != null) {
             ctx.pendingPack.put(guid, pending);
             out.add(BedrockPacketCodec.resourcePacksInfoOffer(
@@ -115,13 +119,14 @@ public final class BedrockLoginFlow {
         BedrockBridgeContext.LOG.info("BE login " + identity.username() + " xuid=" + identity.xuid()
                 + " uuid=" + identity.javaUuid()
                 + (pending != null ? " pack=" + pending.cdnUrl() : " pack=none"));
+        schedulePackHandshakeTimeout(guid);
     }
 
     /**
      * ResourcePackClientResponse → ResourcePackStack → StartGame (once).
      * Never re-sends StartGame after {@link BedrockBridgeContext.LoginPhase#SPAWNED}.
      */
-    void handlePackClientResponse(long guid, ByteBuf body) {
+    void handlePackClientResponse(long guid, ByteBuf body, List<BedrockGameplayBridge.GameAction> actions) {
         BedrockBridgeContext.LoginPhase phase = ctx.loginPhase.get(guid);
         if (phase == BedrockBridgeContext.LoginPhase.SPAWNED) {
             return;
@@ -141,6 +146,7 @@ public final class BedrockLoginFlow {
                 ctx.sessions.close(guid);
                 ctx.loginPhase.remove(guid);
                 ctx.pendingPack.remove(guid);
+                ctx.pendingJoin.remove(guid);
                 return;
             }
             // Declined optional pack — continue with empty stack.
@@ -164,7 +170,7 @@ public final class BedrockLoginFlow {
         }
 
         if (status == PACK_COMPLETED) {
-            finishLogin(guid);
+            finishLogin(guid, actions);
             return;
         }
 
@@ -172,7 +178,7 @@ public final class BedrockLoginFlow {
         if (phase == BedrockBridgeContext.LoginPhase.AWAITING_PACKS) {
             sendStackAndAwait(guid, ctx.pendingPack.get(guid));
         } else {
-            finishLogin(guid);
+            finishLogin(guid, actions);
         }
     }
 
@@ -188,8 +194,43 @@ public final class BedrockLoginFlow {
         ctx.send(guid, out);
     }
 
+    private void schedulePackHandshakeTimeout(long guid) {
+        final long g = guid;
+        Thread.ofVirtual().name("yap-be-pack-timeout-" + Long.toHexString(guid)).start(() -> {
+            try {
+                Thread.sleep(PACK_HANDSHAKE_TIMEOUT_MS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            BedrockBridgeContext.LoginPhase phase = ctx.loginPhase.get(g);
+            if (phase == null || phase == BedrockBridgeContext.LoginPhase.SPAWNED) {
+                return;
+            }
+            if (ctx.sessions.get(g) == null) {
+                return;
+            }
+            BedrockBridgeContext.LOG.warning("BE pack handshake timeout guid=" + Long.toHexString(g)
+                    + " phase=" + phase + " — continuing without pack");
+            ctx.pendingPack.remove(g);
+            if (phase == BedrockBridgeContext.LoginPhase.AWAITING_PACKS) {
+                sendStackAndAwait(g, null);
+                try {
+                    Thread.sleep(1_500L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+            if (ctx.loginPhase.get(g) != BedrockBridgeContext.LoginPhase.SPAWNED
+                    && ctx.sessions.get(g) != null) {
+                finishLogin(g, null);
+            }
+        });
+    }
+
     /** One-shot StartGame + world bootstrap. Safe to call multiple times. */
-    void finishLogin(long guid) {
+    void finishLogin(long guid, List<BedrockGameplayBridge.GameAction> actions) {
         BedrockBridgeContext.LoginPhase prev = ctx.loginPhase.put(guid, BedrockBridgeContext.LoginPhase.SPAWNED);
         if (prev == BedrockBridgeContext.LoginPhase.SPAWNED) {
             return;
@@ -233,6 +274,17 @@ public final class BedrockLoginFlow {
         out.add(BedrockPacketCodec.inventoryContent(0, ctx.inventory.storageNetworkIds(user)));
         out.addAll(ctx.entities.snapshotPackets(runtime));
         ctx.send(guid, out);
+
+        Map<String, String> joinPayload = ctx.pendingJoin.remove(guid);
+        if (joinPayload != null) {
+            BedrockGameplayBridge.GameAction join =
+                    new BedrockGameplayBridge.GameAction("JOIN", user, joinPayload);
+            if (actions != null) {
+                actions.add(join);
+            } else {
+                ctx.emitJoin.accept(join);
+            }
+        }
 
         final long g = guid;
         Thread.ofVirtual().name("yap-be-paper-chunks-" + user).start(() -> {
@@ -290,12 +342,13 @@ public final class BedrockLoginFlow {
             return;
         }
         if (ctx.loginPhase.get(guid) != BedrockBridgeContext.LoginPhase.SPAWNED) {
-            finishLogin(guid);
+            finishLogin(guid, null);
         }
     }
 
-    private BedrockBridgeContext.PendingPack resolvePendingPack() {
-        Optional<ResourcePackOffer> offer = ctx.resourcePackOffer.get();
+    private BedrockBridgeContext.PendingPack resolvePendingPack(String clientAddress) {
+        Optional<ResourcePackOffer> offer = ctx.resourcePackOffer.apply(
+                clientAddress == null ? "" : clientAddress);
         if (offer.isEmpty() || !isBedrockCompatiblePack(offer.get())) {
             return null;
         }
@@ -310,7 +363,7 @@ public final class BedrockLoginFlow {
         if (o == null || o.url() == null || o.url().isBlank()) {
             return false;
         }
-        String url = o.url().toLowerCase(java.util.Locale.ROOT);
-        return url.endsWith(".mcpack") || url.contains(".mcpack?");
+        String u = o.url().toLowerCase();
+        return u.contains(".mcpack") || o.bedrockCompatible();
     }
 }

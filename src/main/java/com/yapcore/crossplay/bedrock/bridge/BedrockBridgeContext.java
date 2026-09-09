@@ -15,8 +15,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 /** Shared mutable state for Bedrock gameplay bridge helpers. */
@@ -41,13 +42,22 @@ public final class BedrockBridgeContext {
     public final ConcurrentHashMap<Long, LoginPhase> loginPhase = new ConcurrentHashMap<>();
     /** Pack pending for ResourcePackStack after HAVE_ALL_PACKS (null = empty stack). */
     public final ConcurrentHashMap<Long, PendingPack> pendingPack = new ConcurrentHashMap<>();
+    /** JOIN payload deferred until StartGame (forms/crossplay must not run mid-pack handshake). */
+    public final ConcurrentHashMap<Long, Map<String, String>> pendingJoin = new ConcurrentHashMap<>();
 
     public BiConsumer<Long, List<ByteBuf>> outbound = (guid, packets) -> {
     };
     public volatile BedrockPaperWorldSync paperWorld;
     public LongConsumer compressionArmed;
-    /** When set, Bedrock login mirrors the active JE resource pack offer (G.34). */
-    public volatile Supplier<Optional<ResourcePackOffer>> resourcePackOffer = Optional::empty;
+    /**
+     * Bedrock CDN offer; arg is client address string (e.g. {@code /127.0.0.1:12345}).
+     * Empty → no pack / empty ResourcePacksInfo.
+     */
+    public volatile Function<String, Optional<ResourcePackOffer>> resourcePackOffer = a -> Optional.empty();
+    /** Async JOIN emit when finishLogin runs outside a game-batch actions list (timeout path). */
+    public volatile Consumer<com.yapcore.crossplay.bedrock.BedrockGameplayBridge.GameAction> emitJoin =
+            a -> {
+            };
 
     public enum LoginPhase {
         AWAITING_PACKS,

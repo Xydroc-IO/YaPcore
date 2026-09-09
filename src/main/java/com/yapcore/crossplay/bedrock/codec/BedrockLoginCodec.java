@@ -127,10 +127,11 @@ public final class BedrockLoginCodec {
         out.writeBoolean(false); // has_addons
         out.writeBoolean(false); // has_scripts
         out.writeBoolean(false); // force_disable_vibrant_visuals
-        UUID wt = packId != null ? packId : new UUID(0L, 0L);
+        // World template id must be nil — never the resource-pack UUID (crashes / kicks some BE clients).
+        UUID wt = new UUID(0L, 0L);
         out.writeLongLE(wt.getMostSignificantBits());
         out.writeLongLE(wt.getLeastSignificantBits());
-        writeString(out, version == null ? "0.0.0" : version);
+        writeString(out, "0.0.0");
         if (packId == null || cdnUrl == null || cdnUrl.isBlank()) {
             out.writeShortLE(0);
             return out;

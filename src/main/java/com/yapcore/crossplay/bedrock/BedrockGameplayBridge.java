@@ -42,8 +42,13 @@ public final class BedrockGameplayBridge {
         return ui;
     }
 
-    public void setResourcePackOfferSupplier(java.util.function.Supplier<java.util.Optional<com.yapcore.resourcepack.ResourcePackOffer>> supplier) {
-        ctx.resourcePackOffer = supplier != null ? supplier : java.util.Optional::empty;
+    public void setResourcePackOfferSupplier(java.util.function.Function<String, java.util.Optional<com.yapcore.resourcepack.ResourcePackOffer>> supplier) {
+        ctx.resourcePackOffer = supplier != null ? supplier : a -> java.util.Optional.empty();
+    }
+
+    public void setJoinEmitter(java.util.function.Consumer<GameAction> emitJoin) {
+        ctx.emitJoin = emitJoin != null ? emitJoin : a -> {
+        };
     }
 
     public void setPaperWorld(BedrockPaperWorldSync paperWorld) {
@@ -132,6 +137,7 @@ public final class BedrockGameplayBridge {
         ctx.columns.clear(guid);
         ctx.loginPhase.remove(guid);
         ctx.pendingPack.remove(guid);
+        ctx.pendingJoin.remove(guid);
         if (session != null && session.username() != null) {
             ctx.inventoryFingerprint.remove(session.username().toLowerCase());
         }
