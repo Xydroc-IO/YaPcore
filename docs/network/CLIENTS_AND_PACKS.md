@@ -94,6 +94,10 @@ active pack applies without play-phase `addResourcePack`.
 
 **Bedrock:** Java Edition `.zip` packs are **not** offered on the Bedrock login path (they disconnect modern BE clients).
 Bedrock receives `resource-pack-bedrock-file` (default `yapcore-default.mcpack`) when that file exists and packs are enabled.
+The Bedrock client requires CDN responses with **`Content-Type: application/zip`** and a correct **`Content-Length`**.
+GitHub Releases serve **`application/octet-stream`**, which modern BE rejects (immediate disconnect after login).
+YaP therefore offers Bedrock the same `.mcpack` bytes from **`ResourcePackHttpServer`** (`resource-pack-http-port`, default `:8081`) while Java clients still use `resource-pack-url` (GitHub latest by default).
+Keep `resourcepacks/yapcore-default.mcpack` in sync with the release asset you publish.
 Modern JE clients on the Via edge still get the Yes/No prompt; only mid-band /
 legacy clients are auto-acked so they are not stuck on join.
 

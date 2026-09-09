@@ -342,10 +342,13 @@ public final class ResourcePackManager {
      * Bedrock login CDN offer ({@code .mcpack} only). Uses
      * {@code resource-pack-bedrock-file}; never the Java Edition zip.
      * <p>
-     * URL comes from the same {@code resource-pack-url} template as Java clients
-     * (product default: GitHub {@code releases/latest/download/{file}}).
+     * Bedrock clients <strong>cannot</strong> download GitHub Releases directly —
+     * GitHub serves {@code application/octet-stream} and modern BE requires
+     * {@code application/zip} + {@code Content-Length}. JE still uses
+     * {@code resource-pack-url} (GitHub latest). Bedrock gets the same
+     * {@code .mcpack} bytes from {@link ResourcePackHttpServer}.
      *
-     * @param clientAddress peer address string (unused for CDN; kept for call-site compatibility)
+     * @param clientAddress peer address string (e.g. {@code /127.0.0.1:34956}); may be blank
      */
     public Optional<ResourcePackOffer> createBedrockOffer(String clientAddress) {
         if (!config.isResourcePackEnabled()) {
@@ -370,7 +373,12 @@ public final class ResourcePackManager {
             UUID uuid = readMcpackHeaderUuid(path)
                     .orElseGet(() -> packUuid(info.getFileName(), info.getSha1Hex()));
             String prompt = config.getResourcePackPrompt();
-            String url = bedrockPackUrl(info.getFileName());
+            String url = bedrockPackUrl(info.getFileName(), clientAddress);
+            String configured = config.getResourcePackUrl();
+            if (configured != null && isGithubAssetUrl(configured) && !url.equals(configured.replace("{file}", info.getFileName()))) {
+                LOG.info("BE pack CDN → " + url
+                        + " (GitHub Releases is application/octet-stream; Bedrock requires application/zip)");
+            }
             return Optional.of(new ResourcePackOffer(
                     uuid.toString(),
                     url,
@@ -393,11 +401,57 @@ public final class ResourcePackManager {
     }
 
     /**
-     * Bedrock CDN URL — same public template as Java ({@code resource-pack-url} /
-     * GitHub latest by default). All editions download from one CDN.
+     * Bedrock pack download URL — always the zip-typed pack HTTP server.
+     * Never raw GitHub Releases ({@code application/octet-stream} → client kick).
      */
-    String bedrockPackUrl(String fileName) {
-        return buildPublicUrl(fileName);
+    String bedrockPackUrl(String fileName, String clientAddress) {
+        PublicEndpoint ep = new PublicEndpoint(config);
+        java.net.InetSocketAddress client = parseLooseAddress(clientAddress);
+        if (client != null) {
+            return ep.packUrlForClient(fileName, client);
+        }
+        // Explicit non-GitHub self-host (ignore resource-pack-url when it points at GitHub).
+        String override = config.getResourcePackUrl();
+        if (override != null && !override.isBlank() && !isGithubAssetUrl(override)) {
+            return override.replace("{file}", fileName);
+        }
+        String host = config.getResourcePackPublicHost();
+        if (host == null || host.isBlank()) {
+            host = PublicEndpoint.guessLocalIpv4().orElse("127.0.0.1");
+        } else {
+            host = host.replaceFirst("^https?://", "").split("/")[0].split(":")[0];
+        }
+        return "http://" + host + ":" + config.getResourcePackHttpPort() + "/pack/" + fileName;
+    }
+
+    private static boolean isGithubAssetUrl(String url) {
+        String u = url.toLowerCase(Locale.ROOT);
+        return u.contains("github.com/") || u.contains("githubusercontent.com/");
+    }
+
+    private static java.net.InetSocketAddress parseLooseAddress(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String s = raw.trim();
+        if (s.startsWith("/")) {
+            s = s.substring(1);
+        }
+        int slash = s.lastIndexOf('/');
+        if (slash >= 0 && slash + 1 < s.length()) {
+            s = s.substring(slash + 1);
+        }
+        int colon = s.lastIndexOf(':');
+        if (colon <= 0 || colon >= s.length() - 1) {
+            return null;
+        }
+        try {
+            String host = s.substring(0, colon);
+            int port = Integer.parseInt(s.substring(colon + 1));
+            return new java.net.InetSocketAddress(host, port);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     static Optional<UUID> readMcpackHeaderUuid(Path mcpack) {
