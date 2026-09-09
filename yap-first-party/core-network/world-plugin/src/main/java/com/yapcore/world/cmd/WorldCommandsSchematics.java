@@ -50,13 +50,27 @@ final class WorldCommandsSchematics {
             return true;
         }
         if (args.length < 2) {
-            sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats|browse <name>");
+            sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats|browse|confirm|cancel|here|undo");
             return true;
         }
         if ("browse".equalsIgnoreCase(args[1]) || "gui".equalsIgnoreCase(args[1])
                 || "menu".equalsIgnoreCase(args[1])) {
             plugin.openSchematicsGui(player);
             return true;
+        }
+        if ("confirm".equalsIgnoreCase(args[1]) || "yes".equalsIgnoreCase(args[1])
+                || "apply".equalsIgnoreCase(args[1])) {
+            return editOps.dispatch(player, "schem", new String[]{"confirm"});
+        }
+        if ("cancel".equalsIgnoreCase(args[1]) || "abort".equalsIgnoreCase(args[1])) {
+            return editOps.dispatch(player, "schem", new String[]{"cancel"});
+        }
+        if ("here".equalsIgnoreCase(args[1]) || "move".equalsIgnoreCase(args[1])
+                || "reposition".equalsIgnoreCase(args[1])) {
+            return editOps.dispatch(player, "schem", new String[]{"here"});
+        }
+        if ("undo".equalsIgnoreCase(args[1])) {
+            return editOps.dispatch(player, "schem", new String[]{"undo"});
         }
         if ("save".equalsIgnoreCase(args[1])) {
             return schemSave(player, args);
@@ -87,7 +101,7 @@ final class WorldCommandsSchematics {
         if ("formats".equalsIgnoreCase(args[1])) {
             return editOps.dispatch(player, "schem", new String[]{"formats"});
         }
-        sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats|browse <name>");
+        sender.sendMessage("§e/yapworld schem save|paste|import|list|load|delete|formats|browse|confirm|cancel|here|undo");
         return true;
     }
 
@@ -122,33 +136,42 @@ final class WorldCommandsSchematics {
 
     private boolean schemPaste(Player player, String[] args) {
         if (args.length < 3) {
-            player.sendMessage("§e/yapworld schem paste <name>");
+            player.sendMessage("§e/yapworld schem paste <name> [-y]");
             return true;
         }
         String name = args[2];
-        Path yschem = plugin.schematicsDir().resolve(name + ".yschem");
-        Path schem = plugin.schematicsDir().resolve(name + ".schem");
-        Path file = Files.isRegularFile(yschem) ? yschem : schem;
-        if (!Files.isRegularFile(file)) {
-            player.sendMessage("§cSchematic not found (.yschem or .schem).");
+        boolean skipPreview = false;
+        for (int i = 3; i < args.length; i++) {
+            if ("-y".equalsIgnoreCase(args[i]) || "--yes".equalsIgnoreCase(args[i])) {
+                skipPreview = true;
+            }
+        }
+        Path file = com.yapcore.world.schem.SchematicCatalog.resolve(plugin.schematicsDir(), name);
+        if (file == null) {
+            player.sendMessage("§cSchematic not found.");
             return true;
         }
         var loc = player.getLocation();
+        String label = file.getFileName().toString();
+        boolean skip = skipPreview;
         YapSched.async(plugin, () -> {
             try {
-                Schematic schematic = file.toString().endsWith(".schem")
-                        ? SpongeSchematicImporter.importFile(file)
-                        : SchematicIO.load(file);
-                World target = player.getWorld();
-                if (paster.isLargePaste(schematic.blocks().size())) {
-                    YapSched.global(plugin, () -> player.sendMessage("§eLarge schem paste §7(§f"
-                            + schematic.blocks().size() + " §7blocks) — progress on."));
-                }
-                paster.paste(player, schematic, target, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
-                        .thenAccept(count -> YapSched.global(plugin,
-                                () -> player.sendMessage("§aPasted §f" + count + " §ablocks.")));
+                Schematic schematic = com.yapcore.world.schem.SchematicCatalog.load(file);
+                YapSched.global(plugin, () -> {
+                    if (skip) {
+                        paster.paste(player, schematic, player.getWorld(),
+                                        loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
+                                .thenAccept(count -> YapSched.global(plugin, () -> {
+                                    player.sendMessage("§aPasted §f" + count + " §ablocks.");
+                                    player.sendMessage("§7Wrong place? §f//undo §7to remove.");
+                                }));
+                        return;
+                    }
+                    plugin.pastePreview().begin(player, schematic, label,
+                            loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), false);
+                });
             } catch (Exception e) {
-                YapSched.global(plugin, () -> player.sendMessage("§cPaste failed: " + e.getMessage()));
+                YapSched.global(plugin, () -> player.sendMessage("§cLoad failed: " + e.getMessage()));
             }
         });
         return true;

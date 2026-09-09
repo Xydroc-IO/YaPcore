@@ -50,6 +50,7 @@ final class AdminMenuClickCore {
                 }
             }
             case AdminMenus.HUB_LINKS -> plugin.menus().openDeepLinks(player);
+            case AdminMenus.HUB_SCHEMATICS -> plugin.menus().openSchematics(player);
             case AdminMenus.HUB_COMBAT -> plugin.menus().openCombatSkills(player);
             default -> {
             }
@@ -109,6 +110,8 @@ final class AdminMenuClickCore {
             case 14 -> actions.closeAndRun(player, "freeze " + target.getName());
             case 15 -> actions.closeAndRun(player, "invsee " + target.getName());
             case 16 -> actions.closeAndRun(player, "echest " + target.getName());
+            case 17 -> plugin.menus().openSpeedPicker(player, target, false);
+            case 18 -> plugin.menus().openSpeedPicker(player, target, true);
             case 19 -> actions.heal(player, target);
             case 20 -> actions.feed(player, target);
             case 21 -> {
@@ -120,6 +123,7 @@ final class AdminMenuClickCore {
                 session.setConfirmClear(false);
                 actions.clearInventory(player, target);
             }
+            case 22 -> actions.closeAndRun(player, "god " + target.getName());
             case 23 -> actions.closeAndRun(player, "promote " + target.getName());
             case 24 -> actions.closeAndRun(player, "demote " + target.getName());
             case 25 -> plugin.menus().openGiveHub(player);
@@ -202,10 +206,54 @@ final class AdminMenuClickCore {
             case 30 -> actions.closeAndRun(player, "gma");
             case 31 -> actions.closeAndRun(player, "gmsp");
             case 33 -> actions.closeAndRun(player, "repair");
-            case 34 -> actions.closeAndRun(player, "speed 5 walk");
-            case 35 -> actions.closeAndRun(player, "speed 5 fly");
+            case 34 -> plugin.menus().openSpeedPicker(player, null, false);
+            case 35 -> plugin.menus().openSpeedPicker(player, null, true);
             default -> {
             }
+        }
+    }
+
+    void handleSpeedPicker(Player player, AdminMenuHolder holder, int slot) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        boolean fly = session.speedFly();
+        if (slot == AdminMenus.SLOT_BACK) {
+            Player target = holder.targetUuid() == null ? null : Bukkit.getPlayer(holder.targetUuid());
+            boolean self = target == null || target.getUniqueId().equals(player.getUniqueId());
+            if (self) {
+                plugin.menus().openSelfTools(player);
+            } else if (target != null && target.isOnline()) {
+                plugin.menus().openPlayerActions(player, target);
+            } else {
+                plugin.menus().openHub(player);
+            }
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        Player target = holder.targetUuid() == null ? null : Bukkit.getPlayer(holder.targetUuid());
+        if (target == null || !target.isOnline()) {
+            player.sendMessage("§cPlayer is offline.");
+            plugin.menus().openHub(player);
+            return;
+        }
+        int level = -1;
+        if (slot >= 10 && slot <= 19) {
+            level = slot - 9; // slots 10..19 → 1..10
+        } else if (slot == 22) {
+            level = fly ? 1 : 2;
+        }
+        if (level < 1) {
+            return;
+        }
+        String mode = fly ? "fly" : "walk";
+        boolean self = target.getUniqueId().equals(player.getUniqueId());
+        AdminActions actions = plugin.actions();
+        if (self) {
+            actions.closeAndRun(player, "speed " + level + " " + mode);
+        } else {
+            actions.closeAndRun(player, "speed " + target.getName() + " " + level + " " + mode);
         }
     }
 }

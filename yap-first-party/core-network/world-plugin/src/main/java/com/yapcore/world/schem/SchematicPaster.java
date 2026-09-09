@@ -126,7 +126,7 @@ public final class SchematicPaster {
                 ignoreAir, true, masks, id);
         List<BlockBatch.Encoded> plans = SchematicPastePlanner.plan(
                 schematic, originX, originY, originZ, world, opts);
-        return batch.applyEncoded(player, world, plans).thenCompose(n -> {
+        return batch.applyEncoded(player, world, plans, true).thenCompose(n -> {
             if (editState != null && player != null && !schematic.blocks().isEmpty()) {
                 Schematic.Bounds b = schematic.bounds();
                 editState.setLastEditBounds(player.getUniqueId(), world.getName(),

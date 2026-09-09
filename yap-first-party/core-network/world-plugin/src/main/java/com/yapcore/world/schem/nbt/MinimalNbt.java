@@ -136,9 +136,47 @@ public final class MinimalNbt {
             return v == null ? new int[0] : v.asInts();
         }
 
+        public long[] getLongArray(String key) {
+            TagValue v = values.get(key);
+            return v == null ? new long[0] : v.asLongs();
+        }
+
+        public String getString(String key, String def) {
+            TagValue v = values.get(key);
+            return v == null ? def : v.asString(def);
+        }
+
+        public List<TagValue> getList(String key) {
+            TagValue v = values.get(key);
+            return v == null ? List.of() : v.asList();
+        }
+
+        /** Named child compounds (e.g. Litematica {@code Regions}). */
+        public Map<String, Compound> childCompounds() {
+            Map<String, Compound> out = new LinkedHashMap<>();
+            for (var e : values.entrySet()) {
+                Compound c = e.getValue().asCompound();
+                if (c != null) {
+                    out.put(e.getKey(), c);
+                }
+            }
+            return out;
+        }
+
         public Compound getCompound(String key) {
             TagValue v = values.get(key);
             return v == null ? null : v.asCompound();
+        }
+
+        /** String-valued children (e.g. Litematica palette {@code Properties}). */
+        public Map<String, String> stringEntries() {
+            Map<String, String> out = new LinkedHashMap<>();
+            for (var e : values.entrySet()) {
+                if (e.getValue().kind == Tag.STRING) {
+                    out.put(e.getKey(), e.getValue().asString(""));
+                }
+            }
+            return out;
         }
 
         public Map<Integer, String> palette() {
@@ -262,11 +300,20 @@ public final class MinimalNbt {
             return kind == Tag.INT_ARRAY ? (int[]) value : new int[0];
         }
 
+        long[] asLongs() {
+            return kind == Tag.LONG_ARRAY ? (long[]) value : new long[0];
+        }
+
+        @SuppressWarnings("unchecked")
+        public List<TagValue> asList() {
+            return kind == Tag.LIST ? (List<TagValue>) value : List.of();
+        }
+
         String asString(String def) {
             return kind == Tag.STRING ? (String) value : def;
         }
 
-        Compound asCompound() {
+        public Compound asCompound() {
             return kind == Tag.COMPOUND ? (Compound) value : null;
         }
     }

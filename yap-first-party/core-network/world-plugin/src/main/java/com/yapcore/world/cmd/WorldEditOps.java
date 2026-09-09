@@ -382,7 +382,7 @@ public final class WorldEditOps {
         player.sendMessage("§eGenerate: §f//cyl //sphere //pyramid //line //drain //regen //forest //flora //generate <expr>");
         player.sendMessage("§eBiome/deform: §f//setbiome //biomeinfo //deform //twist //center //curve //fixlighting");
         player.sendMessage("§eClipboard: §f//copy //cut //paste [-a|-e|-b|-o|-s] //rotate //flip //stack //move");
-        player.sendMessage("§eSchem: §f//schem list|load|save|delete|formats|paste <name>");
+        player.sendMessage("§eSchem: §f//schem paste <name> §7→ preview · §fconfirm|cancel|here|undo §7· §f-y §7skip preview");
         player.sendMessage("§eBrush: §f//brush sphere|cyl|smooth|gravity|clipboard|butcher|erode|raise|lower|melt|fill|forest");
         player.sendMessage("§eTools: §f//farwand //superpickaxe //info //tree //none");
         player.sendMessage("§eHistory: §f//undo //redo §7· §eGUI: §f/yapworld");

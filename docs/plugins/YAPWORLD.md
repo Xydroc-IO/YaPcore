@@ -49,6 +49,7 @@ Aliases: `/we`, `/worldedit`, `/mv`. Classic `//…` commands work like WorldEdi
 | `//generate` + expression `//deform` subset | **Phase 5 done** |
 | Brushes: erode, raise, lower, melt, fill, forest | **Phase 5 done** |
 | `.schem` export + `.schematic` / `.litematic` import | **Phase 5 done** |
+| Real `.litematic` BlockStatePalette + bit-packed BlockStates | **Done** (native YaPWorld importer; multi-region merge) |
 | `//limit` session override + progress messages | **Phase 5 done** |
 | WE shim clipboard + schematic format classes | **Phase 5 done** |
 | Large paste path (preload, high parallelism, auto-fast, % progress, deferred relight) | **Phase 5.1 done** |
@@ -65,7 +66,7 @@ Aliases: `/we`, `/worldedit`, `/mv`. Classic `//…` commands work like WorldEdi
 | Generate | `//cyl` `//sphere` `//pyramid` `//line` `//drain` `//regen` `//forest` `//flora` `//pumpkins` `//generate <expr> [pattern]` |
 | Biome/deform | `//setbiome` `//biomeinfo` `//biomelist` `//deform` `//twist` `//center` `//curve` `//fixlighting` |
 | Clipboard | `//copy [-m slot]` `//cut` `//paste [-a\|-e\|-b\|-o\|-s]` `//rotate` `//flip` `//stack` `//move` `//clipboard [slot]` |
-| Schematics | `//schem list\|load\|save\|delete\|formats\|paste` (`.yschem` native; `.schem` import/export; `.schematic` / `.litematic` import) |
+| Schematics | `//schem paste <name>` (or Schematics GUI / Admin → Schematics → Browse) shows particle/CUI preview. Place with **Confirm**, reposition with **Move here**, abort with **Cancel** (same buttons in the schematics chest and admin Schematics panel). Chat: `//schem confirm` / `cancel` / `here`. `-y` skips preview. Undo with `//undo` or **Undo** in the menu. |
 | Near/util | `//replacenear` `//removeabove` `//removebelow` `//extinguish` `//green` `//snow` `//thaw` |
 | Nav | `//thru` `//jumpto` `//up` `//ascend` `//descend` |
 | History | `//undo` `//redo` `//clearhistory` `//fast` `//limit [n]` |

@@ -38,18 +38,18 @@ Also opens from:
 
 ## Hub sections (chest + client)
 
-- **Players** — online picker → TP to/here/spawn, freeze, invsee/echest, heal/feed/clear, promote/demote, kick/warn/mute 1h/tempban 1d, trolls, check/history, jump to Give / money / ranks
-- **Self tools** — fly, god, vanish, heal, feed, night vision, gamemodes, repair, speed
+- **Players** — online picker → TP to/here/spawn, freeze, invsee/echest, heal/feed/**god**/clear, **walk/fly speed 1–10**, promote/demote, kick/warn/mute 1h/tempban 1d, trolls, check/history, jump to Give / money / ranks
+- **Self tools** — fly, god, vanish, heal, feed, night vision, gamemodes, repair, **walk/fly speed 1–10**
 - **Give** — curated presets, kits (`/kit give`), paginated / searchable material browser (amount 1/16/64)
 - **Custom items** — YaPItems create / browse / give / edit / delete / ability cooldowns ([YAPITEMS.md](../plugins/YAPITEMS.md))
 - **Spawn mobs** (client) — searchable entity browser + presets; spawn at you or a selected player (`/yapadmin spawnmob`)
-- **World edit** (client) — YaPWorld wand/pos, clipboard, fill/set, schematics (name + chest browse), brush, worlds (`/yapworld …`)
+- **World edit** (client) — YaPWorld wand/pos, clipboard, fill/set, schematics (preview confirm/cancel/here/undo), brush, worlds (`/yapworld …`)
 - **Trolls** — smite, launch, burn, rocket, squash, blind, confuse, slap, drop hand (`yapadmin.troll`)
 - **Moderation** — same player picker (actions gated by `yapmod.*`)
 - **Server** — broadcast presets, status, weather/disasters, reloads
 - **Economy** — money grants via YaPPlayerData deposit (`/yapadmin money`; Folia entity-thread safe)
 - **Ranks & perms** (client) — searchable YaPPerms editor (primary/parents, node allow/deny/unset, tracks); chest still deep-links `/yapperm gui`
-- **Deep links / More…** — ranks, world edit, schematics, pregen, stacker, menu, skills, …
+- **Deep links / More…** — ranks, world edit, schematics, schem confirm/cancel/here/undo, pregen, stacker, menu, skills, …
 
 ## Permissions
 

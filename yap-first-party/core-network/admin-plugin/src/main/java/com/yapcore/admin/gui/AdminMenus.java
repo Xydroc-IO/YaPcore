@@ -19,6 +19,7 @@ public final class AdminMenus {
     public static final int HUB_SERVER = AdminMenuSlots.HUB_SERVER;
     public static final int HUB_ECONOMY = AdminMenuSlots.HUB_ECONOMY;
     public static final int HUB_LINKS = AdminMenuSlots.HUB_LINKS;
+    public static final int HUB_SCHEMATICS = AdminMenuSlots.HUB_SCHEMATICS;
     public static final int HUB_COMBAT = AdminMenuSlots.HUB_COMBAT;
 
     public static final int GIVE_PRESETS = AdminMenuSlots.GIVE_PRESETS;
@@ -77,6 +78,10 @@ public final class AdminMenus {
         core.openSelfTools(player);
     }
 
+    public void openSpeedPicker(Player player, Player target, boolean fly) {
+        core.openSpeedPicker(player, target, fly);
+    }
+
     public void openGiveHub(Player player) {
         give.openGiveHub(player);
     }
@@ -105,8 +110,16 @@ public final class AdminMenus {
         ops.openDeepLinks(player);
     }
 
+    public void openSchematics(Player player) {
+        ops.openSchematics(player);
+    }
+
     public void openCombatSkills(Player player) {
         ops.openCombatSkills(player);
+    }
+
+    public void openLeveledMobs(Player player) {
+        ops.openLeveledMobs(player);
     }
 
     public void openCustomItemsHub(Player player) {

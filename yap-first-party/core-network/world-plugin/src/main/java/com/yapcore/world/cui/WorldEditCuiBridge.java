@@ -87,6 +87,16 @@ public final class WorldEditCuiBridge implements PluginMessageListener {
         }
     }
 
+    /** Temporary cuboid outline (e.g. schem paste preview) without changing the real selection. */
+    public void showCuboid(Player player, int minX, int minY, int minZ, int maxX, int maxY, int maxZ) {
+        if (!enabled || player == null || !player.isOnline()) {
+            return;
+        }
+        send(player, "s|cuboid");
+        send(player, "p|0|" + minX + "|" + minY + "|" + minZ + "|0");
+        send(player, "p|1|" + maxX + "|" + maxY + "|" + maxZ + "|0");
+    }
+
     public void update(UUID playerId) {
         Player p = Bukkit.getPlayer(playerId);
         if (p != null) {

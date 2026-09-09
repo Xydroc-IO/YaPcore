@@ -4,12 +4,10 @@ import com.yapcore.sched.YapSched;
 import com.yapcore.world.CuboidSelection;
 import com.yapcore.world.WorldPlugin;
 import com.yapcore.world.edit.ClipboardService;
-import com.yapcore.world.schem.LegacySchematicImporter;
-import com.yapcore.world.schem.LitematicImporter;
 import com.yapcore.world.schem.Schematic;
+import com.yapcore.world.schem.SchematicCatalog;
 import com.yapcore.world.schem.SchematicIO;
 import com.yapcore.world.schem.SpongeSchematicExporter;
-import com.yapcore.world.schem.SpongeSchematicImporter;
 import com.yapcore.messages.YapMessages;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -144,7 +142,7 @@ final class WorldEditSchematicOps {
             return;
         }
         if (args.length < 1) {
-            player.sendMessage("§e//schem list|load|save|delete|formats|paste <name>");
+            player.sendMessage("§e//schem list|load|save|delete|formats|paste <name> [-y]|confirm|cancel|here|undo");
             return;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -159,17 +157,34 @@ final class WorldEditSchematicOps {
                 }
                 schemSave(player, args[1], args.length >= 3 ? args[2] : null);
             }
-            case "load", "paste" -> {
+            case "load" -> {
                 if (args.length < 2) {
-                    player.sendMessage("§e//schem " + sub + " <name>");
+                    player.sendMessage("§e//schem load <name>");
                     return;
                 }
-                if ("load".equals(sub)) {
-                    schemLoadClipboard(player, args[1]);
-                } else {
-                    schemPasteAtFeet(player, args[1]);
+                schemLoadClipboard(player, args[1]);
+            }
+            case "paste" -> {
+                if (args.length < 2) {
+                    player.sendMessage("§e//schem paste <name> [-y]");
+                    return;
+                }
+                boolean skipPreview = hasYesFlag(args);
+                schemPasteAtFeet(player, args[1], skipPreview);
+            }
+            case "confirm", "yes", "y", "apply" -> schemConfirm(player);
+            case "cancel", "no", "abort" -> {
+                if (!plugin.pastePreview().cancel(player)) {
+                    player.sendMessage("§eNo schem preview to cancel.");
                 }
             }
+            case "here", "move", "reposition" -> {
+                if (!plugin.pastePreview().moveHere(player)) {
+                    player.sendMessage("§eNo schem preview. §f//schem paste <name> §efirst.");
+                }
+            }
+            case "undo" -> plugin.undoService().undo(player.getUniqueId()).thenAccept(n ->
+                    YapSched.global(plugin, () -> player.sendMessage("§aUndid §f" + n + " §ablocks.")));
             case "delete", "rm", "remove" -> {
                 if (args.length < 2) {
                     player.sendMessage("§e//schem delete <name>");
@@ -177,8 +192,19 @@ final class WorldEditSchematicOps {
                 }
                 schemDelete(player, args[1]);
             }
-            default -> player.sendMessage("§e//schem list|load|save|delete|formats|paste <name>");
+            default -> player.sendMessage(
+                    "§e//schem list|load|save|delete|formats|paste <name> [-y]|confirm|cancel|here|undo");
         }
+    }
+
+    private static boolean hasYesFlag(String[] args) {
+        for (String a : args) {
+            if ("-y".equalsIgnoreCase(a) || "--yes".equalsIgnoreCase(a)
+                    || "-confirm".equalsIgnoreCase(a)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     void schemList(Player player) {
@@ -269,48 +295,63 @@ final class WorldEditSchematicOps {
         });
     }
 
-    void schemPasteAtFeet(Player player, String name) {
+    void schemPasteAtFeet(Player player, String name, boolean skipPreview) {
         Path file = resolveSchemFile(name);
         if (file == null) {
             player.sendMessage("§cSchematic not found.");
             return;
         }
         Location loc = player.getLocation();
+        String label = file.getFileName().toString();
         YapSched.async(plugin, () -> {
             try {
                 Schematic schematic = loadAnySchematic(file);
-                boolean large = plugin.paster().isLargePaste(schematic.blocks().size());
-                if (large) {
-                    YapSched.global(plugin, () -> player.sendMessage("§eLarge schem paste §7(§f"
-                            + schematic.blocks().size() + " §7blocks) — progress on."));
-                }
-                plugin.paster().paste(player, schematic, player.getWorld(),
-                                loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
-                        .thenAccept(count -> YapSched.global(plugin, () -> {
-                            player.sendMessage("§aPasted §f" + count + " §ablocks.");
-                            if (large && plugin.worldConfig().deferRelightLarge()) {
-                                player.sendMessage("§7Relighting…");
-                            }
-                            support.maybeAutoRelight(player);
-                        }));
+                YapSched.global(plugin, () -> {
+                    if (skipPreview) {
+                        boolean large = plugin.paster().isLargePaste(schematic.blocks().size());
+                        if (large) {
+                            player.sendMessage("§eLarge schem paste §7(§f"
+                                    + schematic.blocks().size() + " §7blocks) — progress on.");
+                        }
+                        plugin.paster().paste(player, schematic, player.getWorld(),
+                                        loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
+                                .thenAccept(count -> YapSched.global(plugin, () -> {
+                                    player.sendMessage("§aPasted §f" + count + " §ablocks.");
+                                    if (plugin.editState() != null
+                                            && plugin.editState().isFast(player.getUniqueId())) {
+                                        player.sendMessage(
+                                                "§7§oFast mode on — paste was not recorded for //undo.");
+                                    } else {
+                                        player.sendMessage(
+                                                "§7Wrong place? §f//undo §7(or §f//schem undo§7) to remove.");
+                                    }
+                                    if (large && plugin.worldConfig().deferRelightLarge()) {
+                                        player.sendMessage("§7Relighting…");
+                                    }
+                                    support.maybeAutoRelight(player);
+                                }));
+                        return;
+                    }
+                    plugin.pastePreview().begin(player, schematic, label,
+                            loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), false);
+                });
             } catch (Exception e) {
-                YapSched.global(plugin, () -> player.sendMessage("§cPaste failed: " + e.getMessage()));
+                YapSched.global(plugin, () -> player.sendMessage("§cLoad failed: " + e.getMessage()));
             }
         });
     }
 
+    void schemConfirm(Player player) {
+        if (!plugin.pastePreview().has(player.getUniqueId())) {
+            player.sendMessage("§eNo schem preview. §f//schem paste <name> §efirst.");
+            return;
+        }
+        plugin.pastePreview().confirm(player).thenAccept(count ->
+                YapSched.global(plugin, () -> support.maybeAutoRelight(player)));
+    }
+
     static Schematic loadAnySchematic(Path file) throws Exception {
-        String n = file.getFileName().toString().toLowerCase(Locale.ROOT);
-        if (n.endsWith(".schem")) {
-            return SpongeSchematicImporter.importFile(file);
-        }
-        if (n.endsWith(".schematic")) {
-            return LegacySchematicImporter.importFile(file);
-        }
-        if (n.endsWith(".litematic")) {
-            return LitematicImporter.importFile(file);
-        }
-        return SchematicIO.load(file);
+        return SchematicCatalog.load(file);
     }
 
     void schemDelete(Player player, String name) {

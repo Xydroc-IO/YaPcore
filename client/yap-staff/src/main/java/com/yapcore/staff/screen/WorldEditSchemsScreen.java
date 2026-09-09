@@ -32,22 +32,31 @@ public final class WorldEditSchemsScreen extends StaffPanelScreen {
         addSubtitle("By name");
         addButtonGrid(
                 action("Save sel", "pos1/pos2 → .yschem", () -> named("yapworld schem save %s")),
-                action("Paste", "At your feet", () -> named("yapworld schem paste %s")),
+                action("Paste", "Preview at your feet", () -> named("yapworld schem paste %s")),
+                action("Paste now", "Skip preview (-y)", () -> named("yapworld schem paste %s -y")),
                 action("Load clip", "Into clipboard", () -> named("yapworld schem load %s")),
                 action("Delete", "Remove file", () -> named("yapworld schem delete %s")),
                 closeRun("List (chat)", "yapworld schem list", "yapworld schem list"),
                 closeRun("Formats", "Supported types", "yapworld schem formats")
         );
 
+        addSubtitle("Paste preview");
+        addButtonGrid(
+                closeRun("Confirm", "Place pending preview", "yapworld schem confirm"),
+                closeRun("Cancel", "Abort pending preview", "yapworld schem cancel"),
+                closeRun("Move here", "Shift box to your feet", "yapworld schem here"),
+                closeRun("Undo", "Undo last paste/edit", "yapworld schem undo")
+        );
+
         addSubtitle("Browse");
         addButtonGrid(
-                closeRun("Chest browser", "Click a schem to paste", "yapworld schem browse"),
+                closeRun("Chest browser", "Click a schem to preview", "yapworld schem browse"),
                 closeRun("Full edit GUI", "Save / paste from panel", "yapworld gui")
         );
 
         LinearLayout tip = LinearLayout.vertical().spacing(2);
         tip.addChild(new StringWidget(Component.literal(
-                "Tip: set pos1/pos2 (or wand), then Save. Paste drops at your feet."), this.font));
+                "Tip: Paste shows an outline first — Confirm / Cancel / Move here. Undo if wrong."), this.font));
         addBody(tip);
     }
 

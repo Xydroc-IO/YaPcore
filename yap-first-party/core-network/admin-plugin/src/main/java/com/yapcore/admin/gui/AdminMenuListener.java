@@ -57,6 +57,7 @@ public final class AdminMenuListener implements Listener {
             case PLAYERS -> core.handlePlayers(player, slot, clicked);
             case PLAYER_ACTIONS -> core.handlePlayerActions(player, holder, slot);
             case SELF_TOOLS -> core.handleSelfTools(player, slot);
+            case SPEED_PICKER -> core.handleSpeedPicker(player, holder, slot);
             case GIVE_HUB -> give.handleGiveHub(player, slot);
             case GIVE_PRESETS -> give.handleGivePresets(player, slot, clicked, shift);
             case GIVE_KITS -> give.handleGiveKits(player, slot, clicked);
@@ -64,13 +65,15 @@ public final class AdminMenuListener implements Listener {
             case SERVER_OPS -> ops.handleServerOps(player, slot, clicked);
             case ECONOMY -> ops.handleEconomy(player, slot, clicked);
             case DEEP_LINKS -> ops.handleDeepLinks(player, slot);
+            case SCHEMATICS -> ops.handleSchematics(player, slot);
             case COMBAT_SKILLS -> ops.handleCombatSkills(player, slot);
+            case LEVELED_MOBS -> ops.handleLeveledMobs(player, slot, shift);
             case TROLLS -> core.handleTrolls(player, holder, slot);
             case CUSTOM_ITEMS -> customItemsBrowse.handleCustomItems(player, slot);
             case CUSTOM_ITEMS_BROWSE -> customItemsBrowse.handleCustomItemsBrowse(player, slot, clicked, shift);
             case CUSTOM_ITEMS_CREATE -> customItemsWizard.handleCustomItemsCreate(player, slot, clicked);
             case CUSTOM_ITEMS_CREATE_BASE -> customItemsWizard.handleCustomItemsCreateBase(player, slot, clicked);
-            case CUSTOM_ITEMS_CREATE_BUILD -> customItemsWizard.handleCustomItemsCreateBuild(player, slot);
+            case CUSTOM_ITEMS_CREATE_BUILD -> customItemsWizard.handleCustomItemsCreateBuild(player, slot, shift);
             case CUSTOM_ITEMS_CREATE_ABILITY -> customItemsWizard.handleCustomItemsCreateAbility(player, slot, clicked);
             case CUSTOM_ITEMS_CREATE_ENCHANTS -> customItemsWizard.handleCustomItemsCreateEnchants(player, slot, clicked);
             case CUSTOM_ITEMS_CREATE_TRIGGERS -> customItemsWizard.handleCustomItemsCreateTriggers(player, slot, clicked);

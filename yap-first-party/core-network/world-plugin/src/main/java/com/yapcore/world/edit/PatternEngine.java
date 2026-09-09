@@ -1,5 +1,6 @@
 package com.yapcore.world.edit;
 
+import com.yapcore.world.BlockStateAliases;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -124,19 +125,24 @@ public final class PatternEngine {
             }
             try {
                 String asString = mat.getKey().toString() + states;
-                BlockData data = Bukkit.createBlockData(asString);
+                BlockData data = BlockStateAliases.create(asString);
                 return (w, x, y, z, clip) -> Planned.of(data);
             } catch (IllegalArgumentException e) {
                 return (w, x, y, z, clip) -> Planned.of(mat);
             }
         }
-        Material mat = Material.matchMaterial(body);
-        if (mat != null && mat.isBlock()) {
-            return (w, x, y, z, clip) -> Planned.of(mat);
+        Material matched = Material.matchMaterial(BlockStateAliases.normalize(body));
+        if (matched == null) {
+            matched = Material.matchMaterial(body);
         }
-        // Try full block data string
+        if (matched != null && matched.isBlock()) {
+            final Material resolved = matched;
+            return (w, x, y, z, clip) -> Planned.of(resolved);
+        }
+        // Try full block data string (with legacy id remap)
         try {
-            BlockData data = Bukkit.createBlockData(body.contains(":") ? body : "minecraft:" + body.toLowerCase(Locale.ROOT));
+            String raw = body.contains(":") ? body : "minecraft:" + body.toLowerCase(Locale.ROOT);
+            BlockData data = BlockStateAliases.create(raw);
             return (w, x, y, z, clip) -> Planned.of(data);
         } catch (IllegalArgumentException ignored) {
             return (w, x, y, z, clip) -> Planned.of(Material.STONE);

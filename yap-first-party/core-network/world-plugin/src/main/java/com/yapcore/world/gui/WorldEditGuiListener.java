@@ -10,9 +10,9 @@ import com.yapcore.world.edit.SelectionEditService;
 import com.yapcore.world.edit.UndoService;
 import com.yapcore.world.pregen.PregenBridge;
 import com.yapcore.world.schem.Schematic;
+import com.yapcore.world.schem.SchematicCatalog;
 import com.yapcore.world.schem.SchematicIO;
 import com.yapcore.world.schem.SchematicPaster;
-import com.yapcore.world.schem.SpongeSchematicImporter;
 import com.yapcore.world.service.SelectionServiceImpl;
 import com.yapcore.world.tool.WorldEditSession;
 import com.yapcore.messages.YapMessages;
@@ -204,8 +204,49 @@ public final class WorldEditGuiListener implements Listener {
     }
 
     private void handleSchemClick(Player player, int slot, ItemStack clicked) {
-        if (slot == 45) {
+        if (slot == WorldEditGui.SCHEM_BACK) {
             gui.openMain(player);
+            return;
+        }
+        if (slot == WorldEditGui.SCHEM_CONFIRM) {
+            player.closeInventory();
+            if (!plugin.pastePreview().has(player.getUniqueId())) {
+                player.sendMessage("§eNo schem preview. §fClick a schematic §efirst.");
+                return;
+            }
+            plugin.pastePreview().confirm(player).thenAccept(count ->
+                    YapSched.global(plugin, () -> {
+                        if (count > 0) {
+                            player.sendMessage("§aPasted §f" + count + " §ablocks.");
+                            player.sendMessage("§7Wrong place? §fUndo §7in the Schematics menu.");
+                        } else {
+                            player.sendMessage("§cPaste failed or empty.");
+                        }
+                    }));
+            return;
+        }
+        if (slot == WorldEditGui.SCHEM_MOVE) {
+            if (!plugin.pastePreview().moveHere(player)) {
+                player.sendMessage("§eNo schem preview. §fClick a schematic §efirst.");
+            } else {
+                // Keep menu open — walk then click Move again, or Confirm.
+                gui.openSchematics(player);
+            }
+            return;
+        }
+        if (slot == WorldEditGui.SCHEM_CANCEL) {
+            if (!plugin.pastePreview().cancel(player)) {
+                player.sendMessage("§eNo schem preview to cancel.");
+            }
+            gui.openSchematics(player);
+            return;
+        }
+        if (slot == WorldEditGui.SCHEM_UNDO) {
+            undoService.undo(player.getUniqueId()).thenAccept(count ->
+                    YapSched.global(plugin, () -> {
+                        player.sendMessage("§aUndid §f" + count + " §ablocks.");
+                        gui.openSchematics(player);
+                    }));
             return;
         }
         if (clicked == null || clicked.getType() == Material.GRAY_STAINED_GLASS_PANE) {
@@ -213,7 +254,9 @@ public final class WorldEditGuiListener implements Listener {
         }
         String name = plainName(clicked);
         if (name.isBlank() || "No schematics yet".equals(name) || "Back".equals(name)
-                || "Saved schematics".equals(name)) {
+                || "Saved schematics".equals(name)
+                || "Confirm paste".equals(name) || "Move here".equals(name)
+                || "Cancel preview".equals(name) || "Undo last edit".equals(name)) {
             return;
         }
         pasteSchematic(player, name);
@@ -325,26 +368,25 @@ public final class WorldEditGuiListener implements Listener {
             player.sendMessage("§cSchematics disabled.");
             return;
         }
-        Path yschem = plugin.schematicsDir().resolve(name + ".yschem");
-        Path schem = plugin.schematicsDir().resolve(name + ".schem");
-        Path file = Files.isRegularFile(yschem) ? yschem : schem;
-        if (!Files.isRegularFile(file)) {
+        Path file = SchematicCatalog.resolve(plugin.schematicsDir(), name);
+        if (file == null) {
             player.sendMessage("§cSchematic not found.");
             return;
         }
         var loc = player.getLocation();
-        player.closeInventory();
+        String label = file.getFileName().toString();
+        // Keep/reopen schematics GUI so Confirm / Move here stay one click away.
         YapSched.async(plugin, () -> {
             try {
-                Schematic schematic = file.toString().endsWith(".schem")
-                        ? SpongeSchematicImporter.importFile(file)
-                        : SchematicIO.load(file);
-                World target = player.getWorld();
-                paster.paste(player, schematic, target, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ())
-                        .thenAccept(count -> YapSched.global(plugin,
-                                () -> player.sendMessage("§aPasted §f" + count + " §ablocks.")));
+                Schematic schematic = SchematicCatalog.load(file);
+                YapSched.global(plugin, () -> {
+                    plugin.pastePreview().begin(
+                            player, schematic, label,
+                            loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), false);
+                    gui.openSchematics(player);
+                });
             } catch (Exception e) {
-                YapSched.global(plugin, () -> player.sendMessage("§cPaste failed: " + e.getMessage()));
+                YapSched.global(plugin, () -> player.sendMessage("§cLoad failed: " + e.getMessage()));
             }
         });
     }

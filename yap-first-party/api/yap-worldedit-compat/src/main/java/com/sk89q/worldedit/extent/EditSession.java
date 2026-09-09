@@ -5,6 +5,7 @@ import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.world.World;
 import com.sk89q.worldedit.world.block.BlockState;
+import com.yapcore.world.BlockStateAliases;
 import com.yapcore.world.EditApplyService;
 import com.yapcore.world.WorldServices;
 import org.bukkit.Bukkit;
@@ -78,7 +79,7 @@ public class EditSession implements AutoCloseable {
             int n = 0;
             for (Queued q : queue) {
                 try {
-                    bw.getBlockAt(q.x, q.y, q.z).setBlockData(Bukkit.createBlockData(q.data), false);
+                    bw.getBlockAt(q.x, q.y, q.z).setBlockData(BlockStateAliases.createOrAir(q.data), false);
                     n++;
                 } catch (IllegalArgumentException ignored) {
                 }
@@ -93,7 +94,7 @@ public class EditSession implements AutoCloseable {
             int n = 0;
             for (Queued q : queue) {
                 try {
-                    bw.getBlockAt(q.x, q.y, q.z).setBlockData(Bukkit.createBlockData(q.data), false);
+                    bw.getBlockAt(q.x, q.y, q.z).setBlockData(BlockStateAliases.createOrAir(q.data), false);
                     n++;
                 } catch (IllegalArgumentException ignored) {
                 }
@@ -111,7 +112,7 @@ public class EditSession implements AutoCloseable {
         int n = 0;
         for (Queued q : queue) {
             try {
-                bw.getBlockAt(q.x, q.y, q.z).setBlockData(Bukkit.createBlockData(q.data), false);
+                bw.getBlockAt(q.x, q.y, q.z).setBlockData(BlockStateAliases.createOrAir(q.data), false);
                 n++;
             } catch (IllegalArgumentException ignored) {
             }

@@ -1,6 +1,6 @@
 package com.sk89q.worldedit.world.block;
 
-import org.bukkit.Bukkit;
+import com.yapcore.world.BlockStateAliases;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
 
@@ -17,12 +17,7 @@ public final class BlockState {
     }
 
     public static BlockState get(String id) {
-        try {
-            return new BlockState(Bukkit.createBlockData(id));
-        } catch (IllegalArgumentException e) {
-            Material mat = Material.matchMaterial(id);
-            return new BlockState(mat == null ? Material.AIR.createBlockData() : mat.createBlockData());
-        }
+        return new BlockState(BlockStateAliases.createOrAir(id));
     }
 
     public BlockData getBlockData() {

@@ -3,24 +3,23 @@ package com.yapcore.world.gui;
 import com.yapcore.world.CuboidSelection;
 import com.yapcore.world.WorldConfig;
 import com.yapcore.world.WorldPlugin;
+import com.yapcore.world.schem.SchematicCatalog;
 import com.yapcore.world.service.SelectionServiceImpl;
 import com.yapcore.world.tool.WorldEditSession;
 import com.yapcore.world.tool.WorldEditTool;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /** In-game world edit control panel. */
 public final class WorldEditGui {
@@ -167,10 +166,14 @@ public final class WorldEditGui {
         Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Schematics"));
         holder.bind(inv);
         WorldEditGuiHolder.fillBorder(inv);
+
+        boolean preview = plugin.pastePreview() != null && plugin.pastePreview().has(player.getUniqueId());
+        String previewLine = preview
+                ? "Preview active — use buttons below"
+                : "Click a file → outline at your feet";
         inv.setItem(4, WorldEditGuiHolder.icon(Material.BOOKSHELF, "Saved schematics",
-                "Click a file to paste at your feet",
-                "Back arrow returns to editor"));
-        inv.setItem(45, WorldEditGuiHolder.icon(Material.ARROW, "Back"));
+                previewLine,
+                "Confirm places · Move here repositions · Cancel aborts"));
 
         List<String> names = listSchematics();
         int slot = 9;
@@ -178,28 +181,49 @@ public final class WorldEditGui {
             if (slot >= 44) {
                 break;
             }
-            inv.setItem(slot++, WorldEditGuiHolder.icon(Material.PAPER, name, "Click to paste"));
+            inv.setItem(slot++, WorldEditGuiHolder.icon(Material.PAPER, name,
+                    "Click → preview outline at feet",
+                    "Then Confirm / Move here below"));
         }
         if (names.isEmpty()) {
             inv.setItem(22, WorldEditGuiHolder.icon(Material.BARRIER, "No schematics yet",
                     "Use Quick save in the editor"));
         }
+
+        // Bottom row actions (same inventory — no chat commands needed)
+        inv.setItem(SCHEM_BACK, WorldEditGuiHolder.icon(Material.ARROW, "Back"));
+        inv.setItem(SCHEM_CONFIRM, WorldEditGuiHolder.icon(Material.LIME_CONCRETE, NamedTextColor.GREEN,
+                "Confirm paste",
+                preview ? "Place the preview now" : "No preview — pick a schematic first"));
+        inv.setItem(SCHEM_MOVE, WorldEditGuiHolder.icon(Material.COMPASS, "Move here",
+                "Shift paste box to your feet",
+                "Walk first, then click"));
+        inv.setItem(SCHEM_CANCEL, WorldEditGuiHolder.icon(Material.RED_CONCRETE, NamedTextColor.RED,
+                "Cancel preview",
+                "Abort pending paste"));
+        inv.setItem(SCHEM_UNDO, WorldEditGuiHolder.icon(Material.ORANGE_CONCRETE, "Undo last edit",
+                "Undo last paste / fill"));
         player.openInventory(inv);
     }
+
+    /** Schematics browser bottom-row controls. */
+    static final int SCHEM_BACK = 45;
+    static final int SCHEM_CONFIRM = 46;
+    static final int SCHEM_MOVE = 47;
+    static final int SCHEM_CANCEL = 48;
+    static final int SCHEM_UNDO = 49;
 
     List<String> listSchematics() {
         Path dir = plugin.schematicsDir();
         List<String> out = new ArrayList<>();
-        try (Stream<Path> stream = Files.list(dir)) {
-            stream.filter(p -> {
-                String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
-                return n.endsWith(".yschem") || n.endsWith(".schem");
-            }).sorted(Comparator.comparing(p -> p.getFileName().toString())).forEach(p -> {
-                String file = p.getFileName().toString();
-                out.add(file.replace(".yschem", "").replace(".schem", ""));
-            });
-        } catch (IOException ignored) {
-            // empty list
+        for (Map<String, Object> info : SchematicCatalog.list(dir)) {
+            Object name = info.get("name");
+            Object format = info.get("format");
+            if (name != null) {
+                out.add(format != null && !"yschem".equals(format)
+                        ? name + "." + format
+                        : name.toString());
+            }
         }
         return out;
     }

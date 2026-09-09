@@ -129,7 +129,7 @@ public final class BlockBatch {
             byChunk.computeIfAbsent(key, k -> new ArrayList<>()).add(p);
         }
         boolean large = isLarge(planned.size());
-        boolean skipUndo = playerId == null || shouldSkipUndo(player, large);
+        boolean skipUndo = playerId == null || shouldSkipUndo(player, large, false);
         EditSession session = skipUndo ? null : new EditSession();
         AtomicInteger changed = new AtomicInteger();
         List<Map.Entry<Long, List<Planned>>> chunks = sortedChunkEntries(byChunk);
@@ -151,6 +151,14 @@ public final class BlockBatch {
     }
 
     public CompletableFuture<Integer> applyEncoded(Player player, World world, List<Encoded> planned) {
+        return applyEncoded(player, world, planned, false);
+    }
+
+    /**
+     * @param forceUndo when true, record undo even for large pastes (still skipped if //fast).
+     */
+    public CompletableFuture<Integer> applyEncoded(Player player, World world, List<Encoded> planned,
+                                                   boolean forceUndo) {
         if (planned.isEmpty()) {
             return CompletableFuture.completedFuture(0);
         }
@@ -169,7 +177,7 @@ public final class BlockBatch {
                     .thenComparingInt(Encoded::z));
         }
         boolean large = isLarge(planned.size());
-        boolean skipUndo = playerId == null || shouldSkipUndo(player, large);
+        boolean skipUndo = playerId == null || shouldSkipUndo(player, large, forceUndo);
         EditSession session = skipUndo ? null : new EditSession();
         AtomicInteger changed = new AtomicInteger();
         List<Map.Entry<Long, List<Encoded>>> chunks = sortedChunkEntries(byChunk);
@@ -190,12 +198,15 @@ public final class BlockBatch {
                 });
     }
 
-    private boolean shouldSkipUndo(Player player, boolean large) {
+    private boolean shouldSkipUndo(Player player, boolean large, boolean forceUndo) {
         if (player == null) {
             return true;
         }
         if (editState != null && editState.isFast(player.getUniqueId())) {
             return true;
+        }
+        if (forceUndo) {
+            return false;
         }
         return large && autoFastLarge;
     }

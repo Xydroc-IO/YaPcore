@@ -82,6 +82,12 @@ final class AdminMenusCore {
         }
         inv.setItem(AdminMenuSlots.HUB_LINKS, AdminMenuHolder.icon(Material.COMPASS, "More…",
                 "Ranks, world edit, stacker, menu"));
+        if (plugin.actions().pluginEnabled("YaPWorld")) {
+            inv.setItem(AdminMenuSlots.HUB_SCHEMATICS, AdminMenuHolder.icon(Material.MAP, NamedTextColor.AQUA,
+                    "Schematics",
+                    "Browse · confirm paste · move preview",
+                    "Place or reposition a pending outline"));
+        }
         if (plugin.actions().pluginEnabled("YaPSkills")) {
             inv.setItem(AdminMenuSlots.HUB_COMBAT, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, "Skills",
                     "Open the skills menu"));
@@ -158,6 +164,13 @@ final class AdminMenusCore {
                 "Restore hunger"));
         inv.setItem(21, AdminMenuHolder.icon(Material.LAVA_BUCKET, NamedTextColor.RED, "Clear inv",
                 "Requires confirm click twice"));
+        inv.setItem(22, AdminMenuHolder.icon(Material.TOTEM_OF_UNDYING, NamedTextColor.GOLD, "God",
+                "Toggle god mode for them",
+                "Requires yapessentials.god.others"));
+        inv.setItem(17, AdminMenuHolder.icon(Material.SUGAR, "Walk speed…",
+                "Pick 1–10 for them"));
+        inv.setItem(18, AdminMenuHolder.icon(Material.FEATHER, "Fly speed…",
+                "Pick 1–10 for them"));
         inv.setItem(23, AdminMenuHolder.icon(Material.EMERALD, "Promote",
                 "/promote " + target.getName()));
         inv.setItem(24, AdminMenuHolder.icon(Material.REDSTONE, "Demote",
@@ -252,8 +265,48 @@ final class AdminMenusCore {
         inv.setItem(30, AdminMenuHolder.icon(Material.STONE, "Adventure", "Set gamemode adventure"));
         inv.setItem(31, AdminMenuHolder.icon(Material.ENDER_PEARL, "Spectator", "Set gamemode spectator"));
         inv.setItem(33, AdminMenuHolder.icon(Material.ANVIL, "Repair", "Repair held item"));
-        inv.setItem(34, AdminMenuHolder.icon(Material.SUGAR, "Walk speed 5", "Set walk speed to 5/10"));
-        inv.setItem(35, AdminMenuHolder.icon(Material.FEATHER, "Fly speed 5", "Set fly speed to 5/10"));
+        inv.setItem(34, AdminMenuHolder.icon(Material.SUGAR, "Walk speed…",
+                "Pick 1–10 for yourself"));
+        inv.setItem(35, AdminMenuHolder.icon(Material.FEATHER, "Fly speed…",
+                "Pick 1–10 for yourself"));
+        inv.setItem(AdminMenuSlots.SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
+        inv.setItem(AdminMenuSlots.SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
+        player.openInventory(inv);
+    }
+
+    /**
+     * Speed level picker (1–10). {@code target == null} means apply to the admin (self).
+     */
+    void openSpeedPicker(Player player, Player target, boolean fly) {
+        AdminSession session = plugin.session(player.getUniqueId());
+        session.setSpeedFly(fly);
+        Player applyTo = target != null ? target : player;
+        session.setTarget(applyTo.getUniqueId(), applyTo.getName());
+        boolean self = applyTo.getUniqueId().equals(player.getUniqueId());
+        AdminMenuHolder holder = new AdminMenuHolder(
+                AdminMenuKind.SPEED_PICKER, applyTo.getUniqueId(), applyTo.getName());
+        String title = (fly ? "Fly" : "Walk") + " speed: " + (self ? "you" : applyTo.getName());
+        Inventory inv = Bukkit.createInventory(holder, 54,
+                Component.text(title, NamedTextColor.AQUA));
+        holder.bind(inv);
+        AdminMenuHolder.fillAll(inv);
+        inv.setItem(AdminMenuSlots.SLOT_INFO, AdminMenuHolder.icon(
+                fly ? Material.FEATHER : Material.SUGAR,
+                (fly ? "Fly" : "Walk") + " speed",
+                "Click a level 1–10",
+                self ? "Applies to you" : "Applies to " + applyTo.getName()));
+        for (int level = 1; level <= 10; level++) {
+            int slot = 9 + level; // 10..19
+            Material mat = level <= 3 ? Material.LIME_DYE
+                    : level <= 6 ? Material.YELLOW_DYE
+                    : level <= 8 ? Material.ORANGE_DYE
+                    : Material.RED_DYE;
+            inv.setItem(slot, AdminMenuHolder.icon(mat, NamedTextColor.YELLOW,
+                    String.valueOf(level),
+                    (fly ? "Fly" : "Walk") + " speed " + level + "/10"));
+        }
+        inv.setItem(22, AdminMenuHolder.icon(Material.IRON_NUGGET, "Reset default",
+                fly ? "Fly speed 1/10 (vanilla)" : "Walk speed 2/10 (vanilla)"));
         inv.setItem(AdminMenuSlots.SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(AdminMenuSlots.SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
         player.openInventory(inv);

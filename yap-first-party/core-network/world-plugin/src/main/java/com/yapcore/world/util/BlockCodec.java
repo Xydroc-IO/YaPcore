@@ -38,13 +38,30 @@ public final class BlockCodec {
         }
         int sep = encoded.indexOf('|');
         String materialName = sep >= 0 ? encoded.substring(0, sep) : encoded;
+        String statePart = sep >= 0 && sep + 1 < encoded.length() ? encoded.substring(sep + 1) : encoded;
         Material material = Material.matchMaterial(materialName);
         if (material == null) {
+            // Bare / mangled namespaced id (e.g. minecraft:player_head{facing…)
+            try {
+                block.setBlockData(com.yapcore.world.BlockStateAliases.create(statePart), false);
+            } catch (IllegalArgumentException ignored) {
+                // leave block unchanged
+            }
             return;
         }
         block.setType(material, false);
         if (sep >= 0 && sep + 1 < encoded.length()) {
-            block.setBlockData(org.bukkit.Bukkit.createBlockData(encoded.substring(sep + 1)));
+            try {
+                block.setBlockData(com.yapcore.world.BlockStateAliases.create(statePart), false);
+            } catch (IllegalArgumentException ignored) {
+                // material already set
+            }
+        } else if (materialName.indexOf('{') >= 0 || materialName.indexOf('[') >= 0) {
+            try {
+                block.setBlockData(com.yapcore.world.BlockStateAliases.create(materialName), false);
+            } catch (IllegalArgumentException ignored) {
+                // material already set
+            }
         }
     }
 }

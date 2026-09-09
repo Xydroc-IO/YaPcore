@@ -2,7 +2,7 @@ package com.yapcore.world.schem;
 
 import com.yapcore.world.schem.nbt.MinimalNbt;
 import com.yapcore.world.util.BlockCodec;
-import org.bukkit.Bukkit;
+import com.yapcore.world.BlockStateAliases;
 import org.bukkit.block.data.BlockData;
 
 import java.io.IOException;
@@ -51,8 +51,12 @@ public final class SpongeSchematicImporter {
                     if (state == null || isAir(state)) {
                         continue;
                     }
-                    BlockData data = Bukkit.createBlockData(normalizeState(state));
-                    blocks.add(new Schematic.BlockEntry(x, y, z, BlockCodec.encode(data)));
+                    try {
+                        BlockData data = BlockStateAliases.create(state);
+                        blocks.add(new Schematic.BlockEntry(x, y, z, BlockCodec.encode(data)));
+                    } catch (IllegalArgumentException ignored) {
+                        // Unknown / unmapped legacy block — skip rather than fail whole paste
+                    }
                 }
             }
         }
@@ -79,13 +83,7 @@ public final class SpongeSchematicImporter {
     }
 
     private static boolean isAir(String state) {
-        return state.equals("minecraft:air") || state.endsWith(":air");
-    }
-
-    private static String normalizeState(String state) {
-        if (state.contains("[")) {
-            return state;
-        }
-        return state;
+        String n = BlockStateAliases.normalize(state);
+        return n.equals("minecraft:air") || n.endsWith(":air") || n.equals("air");
     }
 }

@@ -46,6 +46,10 @@ class WorldEditShimSmokeTest {
         assertSame(we, WorldEdit.getInstance());
         assertNotNull(we.getSessionManager());
         assertNotNull(ClipboardFormat.SCHEMATIC);
+        assertNotNull(ClipboardFormat.LITEMATIC);
+        assertEquals("litematic", ClipboardFormat.LITEMATIC.getPrimaryFileExtension());
+        assertEquals(ClipboardFormat.LITEMATIC,
+                ClipboardFormat.findByFile(new java.io.File("build.litematic")));
 
         BlockVector3 min = BlockVector3.at(0, 64, 0);
         BlockVector3 max = BlockVector3.at(15, 80, 15);

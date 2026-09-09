@@ -12,6 +12,7 @@ import java.io.IOException;
 public enum ClipboardFormat {
     SCHEMATIC("schematic", "schematic"),
     SPONGE_SCHEMATIC("sponge.schematic", "schem"),
+    LITEMATIC("litematica", "litematic"),
     YSCHEM("yap.schematic", "yschem");
 
     private static volatile ClipboardLoader loader;
@@ -52,11 +53,11 @@ public enum ClipboardFormat {
         if (n.endsWith(".schematic")) {
             return SCHEMATIC;
         }
+        if (n.endsWith(".litematic")) {
+            return LITEMATIC;
+        }
         if (n.endsWith(".yschem")) {
             return YSCHEM;
-        }
-        if (n.endsWith(".litematic")) {
-            return SPONGE_SCHEMATIC;
         }
         return null;
     }

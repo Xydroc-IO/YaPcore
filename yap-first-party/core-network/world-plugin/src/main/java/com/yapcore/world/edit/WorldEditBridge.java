@@ -1,7 +1,7 @@
 package com.yapcore.world.edit;
 
 import com.sk89q.worldedit.extent.EditSession;
-import com.yapcore.world.util.BlockCodec;
+import com.yapcore.world.BlockStateAliases;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
@@ -32,15 +32,8 @@ public final class WorldEditBridge implements EditSession.YaPEditBridge {
     public CompletableFuture<Integer> apply(Player player, World world, List<EditSession.Queued> blocks) {
         List<BlockBatch.Planned> plans = new ArrayList<>(blocks.size());
         for (EditSession.Queued q : blocks) {
-            try {
-                BlockData data = org.bukkit.Bukkit.createBlockData(q.data());
-                plans.add(new BlockBatch.Planned(q.x(), q.y(), q.z(), data.getMaterial(), data));
-            } catch (IllegalArgumentException e) {
-                plans.add(new BlockBatch.Planned(q.x(), q.y(), q.z(),
-                        org.bukkit.Material.matchMaterial(q.data()) == null
-                                ? org.bukkit.Material.STONE
-                                : org.bukkit.Material.matchMaterial(q.data())));
-            }
+            BlockData data = BlockStateAliases.createOrAir(q.data());
+            plans.add(new BlockBatch.Planned(q.x(), q.y(), q.z(), data.getMaterial(), data));
         }
         return batch.apply(player, world, plans);
     }

@@ -17,6 +17,7 @@ final class AdminMenuSlots {
     static final int HUB_SERVER = 28;
     static final int HUB_ECONOMY = 30;
     static final int HUB_LINKS = 32;
+    static final int HUB_SCHEMATICS = 22;
     static final int HUB_COMBAT = 34;
 
     // Give hub

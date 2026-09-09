@@ -12,7 +12,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 
-/** Lists and inspects schematic files on disk. */
+/** Lists and inspects schematic files on disk (all supported formats). */
 public final class SchematicCatalog {
 
     private SchematicCatalog() {
@@ -35,8 +35,9 @@ public final class SchematicCatalog {
     public static Map<String, Object> inspect(Path file) {
         Map<String, Object> info = new LinkedHashMap<>();
         String filename = file.getFileName().toString();
-        String name = filename.replace(".yschem", "").replace(".schem", "");
-        String format = filename.toLowerCase(Locale.ROOT).endsWith(".schem") ? "schem" : "yschem";
+        String lower = filename.toLowerCase(Locale.ROOT);
+        String format = formatOf(lower);
+        String name = stripExtension(filename);
         info.put("name", name);
         info.put("format", format);
         info.put("filename", filename);
@@ -68,6 +69,16 @@ public final class SchematicCatalog {
 
     public static Path resolve(Path dir, String name) {
         String safe = sanitize(name);
+        String lower = name.toLowerCase(Locale.ROOT);
+        if (lower.endsWith(".yschem") || lower.endsWith(".schem")
+                || lower.endsWith(".schematic") || lower.endsWith(".litematic")) {
+            Path raw = dir.resolve(name);
+            if (Files.isRegularFile(raw)) {
+                return raw;
+            }
+            raw = dir.resolve(safe + extensionOf(lower));
+            return Files.isRegularFile(raw) ? raw : null;
+        }
         Path yschem = dir.resolve(safe + ".yschem");
         if (Files.isRegularFile(yschem)) {
             return yschem;
@@ -76,12 +87,31 @@ public final class SchematicCatalog {
         if (Files.isRegularFile(schem)) {
             return schem;
         }
+        Path schematic = dir.resolve(safe + ".schematic");
+        if (Files.isRegularFile(schematic)) {
+            return schematic;
+        }
+        Path litematic = dir.resolve(safe + ".litematic");
+        if (Files.isRegularFile(litematic)) {
+            return litematic;
+        }
         return null;
     }
 
+    /**
+     * Load any supported schematic format into a YaP {@link Schematic}.
+     * Used by //schem, GUI, web API, and the WorldEdit clipboard loader.
+     */
     public static Schematic load(Path file) throws IOException {
-        if (file.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".schem")) {
+        String n = file.getFileName().toString().toLowerCase(Locale.ROOT);
+        if (n.endsWith(".schem")) {
             return SpongeSchematicImporter.importFile(file);
+        }
+        if (n.endsWith(".schematic")) {
+            return LegacySchematicImporter.importFile(file);
+        }
+        if (n.endsWith(".litematic")) {
+            return LitematicImporter.importFile(file);
         }
         return SchematicIO.load(file);
     }
@@ -99,7 +129,7 @@ public final class SchematicCatalog {
         if (source == null) {
             throw new IOException("Schematic not found");
         }
-        String ext = source.getFileName().toString().endsWith(".schem") ? ".schem" : ".yschem";
+        String ext = extensionOf(source.getFileName().toString().toLowerCase(Locale.ROOT));
         Path target = dir.resolve(sanitize(to) + ext);
         if (Files.exists(target)) {
             throw new IOException("Target name already exists");
@@ -112,7 +142,7 @@ public final class SchematicCatalog {
         if (source == null) {
             throw new IOException("Schematic not found");
         }
-        String ext = source.getFileName().toString().endsWith(".schem") ? ".schem" : ".yschem";
+        String ext = extensionOf(source.getFileName().toString().toLowerCase(Locale.ROOT));
         Path target = dir.resolve(sanitize(to) + ext);
         if (Files.exists(target)) {
             throw new IOException("Target name already exists");
@@ -123,17 +153,23 @@ public final class SchematicCatalog {
     public static Path importBytes(Path dir, String filename, byte[] data) throws IOException {
         Files.createDirectories(dir);
         String lower = filename.toLowerCase(Locale.ROOT);
-        if (!lower.endsWith(".schem") && !lower.endsWith(".yschem")) {
-            filename = sanitize(filename) + ".schem";
+        String ext;
+        if (lower.endsWith(".litematic")) {
+            ext = ".litematic";
+        } else if (lower.endsWith(".schematic")) {
+            ext = ".schematic";
+        } else if (lower.endsWith(".yschem")) {
+            ext = ".yschem";
         } else {
-            filename = sanitize(filename.replace(".schem", "").replace(".yschem", ""))
-                    + (lower.endsWith(".yschem") ? ".yschem" : ".schem");
+            ext = ".schem";
         }
-        Path dest = dir.resolve(filename);
+        String base = sanitize(stripExtension(filename));
+        Path dest = dir.resolve(base + ext);
         Files.write(dest, data);
-        if (filename.endsWith(".schem")) {
-            Schematic imported = SpongeSchematicImporter.importFile(dest);
-            Path yschem = dir.resolve(filename.replace(".schem", ".yschem"));
+        // Validate + mirror foreign formats into native .yschem for tooling that only reads yschem
+        if (!ext.equals(".yschem")) {
+            Schematic imported = load(dest);
+            Path yschem = dir.resolve(base + ".yschem");
             SchematicIO.save(yschem, imported);
         }
         return dest;
@@ -141,10 +177,44 @@ public final class SchematicCatalog {
 
     static boolean isSchematicFile(Path p) {
         String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
-        return Files.isRegularFile(p) && (n.endsWith(".yschem") || n.endsWith(".schem"));
+        return Files.isRegularFile(p) && (n.endsWith(".yschem") || n.endsWith(".schem")
+                || n.endsWith(".schematic") || n.endsWith(".litematic"));
     }
 
     public static String sanitize(String name) {
-        return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_\\-]", "-");
+        String base = stripExtension(name);
+        return base.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_\\-]", "-");
+    }
+
+    static String stripExtension(String filename) {
+        String lower = filename.toLowerCase(Locale.ROOT);
+        for (String ext : List.of(".litematic", ".schematic", ".yschem", ".schem")) {
+            if (lower.endsWith(ext)) {
+                return filename.substring(0, filename.length() - ext.length());
+            }
+        }
+        return filename;
+    }
+
+    static String formatOf(String lowerFilename) {
+        if (lowerFilename.endsWith(".litematic")) {
+            return "litematic";
+        }
+        if (lowerFilename.endsWith(".schematic")) {
+            return "schematic";
+        }
+        if (lowerFilename.endsWith(".schem")) {
+            return "schem";
+        }
+        return "yschem";
+    }
+
+    static String extensionOf(String lowerFilename) {
+        return switch (formatOf(lowerFilename)) {
+            case "litematic" -> ".litematic";
+            case "schematic" -> ".schematic";
+            case "schem" -> ".schem";
+            default -> ".yschem";
+        };
     }
 }

@@ -22,6 +22,7 @@ import com.yapcore.world.listener.SelectionWandListener;
 import com.yapcore.world.listener.ToolModeListener;
 import com.yapcore.world.listener.WorldEditSlashBridge;
 import com.yapcore.world.listener.WorldEditToolListener;
+import com.yapcore.world.schem.SchematicPastePreview;
 import com.yapcore.world.schem.SchematicPaster;
 import com.yapcore.world.schem.YapClipboardLoader;
 import com.yapcore.world.service.EditApplyServiceImpl;
@@ -46,6 +47,7 @@ public final class WorldPlugin extends JavaPlugin {
     private WorldManagerServiceImpl worldManager;
     private SelectionServiceImpl selection;
     private SchematicPaster paster;
+    private SchematicPastePreview pastePreview;
     private UndoService undoService;
     private BrushService brushService;
     private SelectionEditService selectionEditService;
@@ -81,6 +83,7 @@ public final class WorldPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new WorldEditSlashBridge(this), this);
         getServer().getPluginManager().registerEvents(
                 new ToolModeListener(this, playerEditState, selection, selectionShape, terrainService), this);
+        getServer().getPluginManager().registerEvents(pastePreview, this);
 
         ClipboardFormat.setLoader(new YapClipboardLoader());
 
@@ -131,6 +134,9 @@ public final class WorldPlugin extends JavaPlugin {
         paster.setParallelChunks(config.parallelChunks());
         paster.setLargePasteTuning(
                 config.largePasteBlocks(), config.parallelChunksLarge(), config.autoFastLarge());
+        if (pastePreview == null) {
+            pastePreview = new SchematicPastePreview(this);
+        }
         if (config.progressMessages()) {
             paster.setProgressListener((uuid, blocks, total, chunksDone, chunksTotal) -> {
                 Player p = getServer().getPlayer(uuid);
@@ -335,6 +341,14 @@ public final class WorldPlugin extends JavaPlugin {
         return paster;
     }
 
+    public SchematicPastePreview pastePreview() {
+        return pastePreview;
+    }
+
+    public UndoService undoService() {
+        return undoService;
+    }
+
     public GenerationService generation() {
         return generationService;
     }
@@ -372,6 +386,9 @@ public final class WorldPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         ClipboardFormat.setLoader(null);
+        if (pastePreview != null) {
+            pastePreview.clearAll();
+        }
         if (editHttp != null) {
             editHttp.stop();
             editHttp = null;
