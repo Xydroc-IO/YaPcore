@@ -57,8 +57,13 @@ public final class BedrockPacketDispatch {
                 login.sendNetworkSettings(guid);
             }
             case LOGIN -> login.beginLogin(guid, address, decoded.body(), actions);
-            case CLIENT_TO_SERVER_HANDSHAKE, RESOURCE_PACK_CLIENT_RESPONSE, SET_LOCAL_PLAYER_AS_INITIALIZED ->
-                    login.sendSpawnSequence(guid, ctx.sessions.get(guid));
+            case CLIENT_TO_SERVER_HANDSHAKE -> {
+                // Encryption handshake ack — pack/spawn path is separate.
+            }
+            case RESOURCE_PACK_CLIENT_RESPONSE -> login.handlePackClientResponse(guid, decoded.body());
+            case SET_LOCAL_PLAYER_AS_INITIALIZED -> {
+                // Client finished loading; do not send a second StartGame.
+            }
             case MOVE_PLAYER -> {
                 var move = BedrockPacketCodec.tryDecodeMove(decoded.body());
                 if (move != null) {

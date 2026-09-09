@@ -309,17 +309,19 @@ public final class ResourcePackManager {
         String prompt = config.getResourcePackPrompt();
         boolean forced = config.isResourcePackForced();
         for (ResourcePackInfo pack : getActivePacks()) {
+            String name = pack.getFileName().toLowerCase(Locale.ROOT);
+            boolean javaOk = name.endsWith(".zip");
+            boolean bedrockOk = name.endsWith(".mcpack");
             String url = buildPublicUrl(pack.getFileName(), session);
-            boolean zip = pack.getFileName().toLowerCase(Locale.ROOT).endsWith(".zip")
-                    || pack.getFileName().toLowerCase(Locale.ROOT).endsWith(".mcpack");
             ResourcePackOffer offer = new ResourcePackOffer(
                     packUuid(pack.getFileName(), pack.getSha1Hex()).toString(),
                     url,
                     pack.getSha1Hex(),
                     prompt == null || prompt.isBlank() ? pack.getPrompt() : prompt,
                     forced,
-                    zip,
-                    true
+                    javaOk,
+                    bedrockOk,
+                    pack.getSizeBytes()
             );
             offers.add(offer);
         }
@@ -334,6 +336,77 @@ public final class ResourcePackManager {
     public Optional<ResourcePackOffer> createOffer(ClientSession session) {
         List<ResourcePackOffer> offers = createOffers(session);
         return offers.isEmpty() ? Optional.empty() : Optional.of(offers.get(0));
+    }
+
+    /**
+     * Bedrock login CDN offer ({@code .mcpack} only). Uses
+     * {@code resource-pack-bedrock-file}; never the Java Edition zip.
+     */
+    public Optional<ResourcePackOffer> createBedrockOffer() {
+        if (!config.isResourcePackEnabled()) {
+            return Optional.empty();
+        }
+        String file = config.getResourcePackBedrockFile();
+        if (file == null || file.isBlank()) {
+            return Optional.empty();
+        }
+        String lower = file.toLowerCase(Locale.ROOT);
+        if (!lower.endsWith(".mcpack")) {
+            LOG.warning("Ignoring resource-pack-bedrock-file (must end in .mcpack): " + file);
+            return Optional.empty();
+        }
+        Path path = packsDir.resolve(file);
+        if (!Files.isRegularFile(path)) {
+            LOG.fine("Bedrock pack missing on disk: " + file);
+            return Optional.empty();
+        }
+        try {
+            ResourcePackInfo info = fromPath(path);
+            UUID uuid = readMcpackHeaderUuid(path)
+                    .orElseGet(() -> packUuid(info.getFileName(), info.getSha1Hex()));
+            String prompt = config.getResourcePackPrompt();
+            return Optional.of(new ResourcePackOffer(
+                    uuid.toString(),
+                    buildPublicUrl(info.getFileName()),
+                    info.getSha1Hex(),
+                    prompt == null || prompt.isBlank() ? info.getPrompt() : prompt,
+                    config.isResourcePackForced(),
+                    false,
+                    true,
+                    info.getSizeBytes()
+            ));
+        } catch (IOException e) {
+            LOG.warning("Could not read Bedrock pack " + file + ": " + e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    static Optional<UUID> readMcpackHeaderUuid(Path mcpack) {
+        try (java.util.zip.ZipFile zip = new java.util.zip.ZipFile(mcpack.toFile())) {
+            java.util.zip.ZipEntry entry = zip.getEntry("manifest.json");
+            if (entry == null) {
+                return Optional.empty();
+            }
+            try (InputStream in = zip.getInputStream(entry)) {
+                String json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+                int h = json.indexOf("\"header\"");
+                if (h < 0) {
+                    return Optional.empty();
+                }
+                int u = json.indexOf("\"uuid\"", h);
+                if (u < 0) {
+                    return Optional.empty();
+                }
+                int q1 = json.indexOf('"', u + 6);
+                int q2 = json.indexOf('"', q1 + 1);
+                if (q1 < 0 || q2 < 0) {
+                    return Optional.empty();
+                }
+                return Optional.of(UUID.fromString(json.substring(q1 + 1, q2)));
+            }
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
     public String buildPublicUrl(String fileName) {

@@ -83,6 +83,7 @@ folia-jar-source=build
 resource-pack-enabled=true
 resource-pack-file=yapcore-default.zip
 resource-pack-files=yapcore-default.zip
+resource-pack-bedrock-file=yapcore-default.mcpack
 resource-pack-http-port=8081
 resource-pack-public-host=
 # {file} → active zip name. /releases/latest/download/ always tracks the newest release asset.

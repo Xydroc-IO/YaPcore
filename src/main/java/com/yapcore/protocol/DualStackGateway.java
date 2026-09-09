@@ -24,6 +24,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -71,12 +72,7 @@ public final class DualStackGateway {
         this.crossplay = crossplay;
         this.bedrockBridge = new BedrockGameplayBridge(
                 bedrockSessions, floodgateAuth, skinService, formService);
-        this.bedrockBridge.setResourcePackOfferSupplier(() -> {
-            if (!config.isResourcePackEnabled()) {
-                return Optional.empty();
-            }
-            return packs.createOffer(null);
-        });
+        this.bedrockBridge.setResourcePackOfferSupplier(packs::createBedrockOffer);
         if (crossplay != null) {
             crossplay.attachFloodgate(floodgateAuth, skinService, formService);
         }
@@ -254,7 +250,9 @@ public final class DualStackGateway {
                 "shared-port", Boolean.toString(config.isSharedListenPort())
         )));
 
-        var offers = packs.createOffers(session);
+        var offers = edition == ClientEdition.BEDROCK
+                ? List.<ResourcePackOffer>of()
+                : packs.createOffers(session);
         if (!offers.isEmpty()) {
             ResourcePackOffer o = offers.get(0);
             trafficCop.ingest(new GameEvent(

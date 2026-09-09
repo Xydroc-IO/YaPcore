@@ -230,6 +230,8 @@ public final class ServerConfig {
     public void setResourcePackFile(String fileName) { resourcePack.setResourcePackFile(fileName); }
     public List<String> getResourcePackFiles() { return resourcePack.getResourcePackFiles(); }
     public void setResourcePackFiles(List<String> fileNames) { resourcePack.setResourcePackFiles(fileNames); }
+    public String getResourcePackBedrockFile() { return resourcePack.getResourcePackBedrockFile(); }
+    public void setResourcePackBedrockFile(String fileName) { resourcePack.setResourcePackBedrockFile(fileName); }
     public int getResourcePackHttpPort() { return resourcePack.getResourcePackHttpPort(); }
     public void setResourcePackHttpPort(int port) { resourcePack.setResourcePackHttpPort(port); }
     public String getResourcePackPublicHost() { return resourcePack.getResourcePackPublicHost(); }

@@ -1,8 +1,9 @@
 # Third-party resource pack credits
 
-## YaPcore default pack (`yapcore-default.zip`)
+## YaPcore default pack (`yapcore-default.zip` / `.mcpack`)
 
-Built by `scripts/build-default-resourcepack.sh` on every product build:
+Built by `scripts/build-default-resourcepack.sh` (Java) and
+`scripts/build-default-bedrock-pack.sh` (Bedrock) on product builds:
 
 - **Faithful 64x** (world textures) — see below
 - **YaP Skies** (`yap-skies/`) — realistic sun, moon, multi-scale clouds, atmosphere, OptiFine skyboxes
@@ -10,7 +11,8 @@ Built by `scripts/build-default-resourcepack.sh` on every product build:
 - **YaP Foliage** (same overlay) — denser Faithful-based leaf cutouts + `strict_cutout` mcmeta
   (`scripts/generate-yap-foliage.py`)
 
-`config/server.properties` → `resource-pack-file=yapcore-default.zip`
+`config/server.properties` → `resource-pack-file=yapcore-default.zip` (Java)
+and `resource-pack-bedrock-file=yapcore-default.mcpack` (Bedrock).
 
 ## Faithful 64x (base layer)
 
@@ -19,7 +21,9 @@ Built by `scripts/build-default-resourcepack.sh` on every product build:
 - **Modrinth:** https://modrinth.com/resourcepack/faithful-64x
 - **License:** Faithful License — see `FAITHFUL_LICENSE.txt` and
   https://faithfulpack.net/license
-- **Shipped file:** `faithful-64x.zip` (Release 14 Chaos Cubed, game version 26.2)
+- **Shipped file (Java):** `faithful-64x.zip` (Release 14 Chaos Cubed, game version 26.2)
+- **Shipped file (Bedrock):** `faithful-64x-bedrock.mcpack` (fetched via
+  `scripts/fetch-faithful-64x-bedrock.sh`; not committed — rebuild locally)
 
 YaPcore redistributes this pack as a **server resource pack** under the terms of
 the Faithful License (credit + license link required; no paywall).

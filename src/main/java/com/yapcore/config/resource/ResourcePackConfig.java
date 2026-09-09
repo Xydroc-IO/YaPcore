@@ -21,6 +21,7 @@ public final class ResourcePackConfig {
         props.setProperty("resource-pack-dir", "resourcepacks");
         props.setProperty("resource-pack-file", "yapcore-default.zip");
         props.setProperty("resource-pack-files", "yapcore-default.zip");
+        props.setProperty("resource-pack-bedrock-file", "yapcore-default.mcpack");
         props.setProperty("resource-pack-http-port", "8081");
         props.setProperty("resource-pack-public-host", "");
         // Product default: GitHub Releases CDN (tracks newest asset).
@@ -93,6 +94,18 @@ public final class ResourcePackConfig {
         }
         props.setProperty("resource-pack-files", String.join(",", clean));
         props.setProperty("resource-pack-file", clean.isEmpty() ? "" : clean.get(0));
+    }
+
+    /**
+     * Bedrock-only pack ({@code .mcpack}). Empty → no Bedrock pack offer
+     * (JE {@code .zip} must never be sent on the Bedrock login path).
+     */
+    public String getResourcePackBedrockFile() {
+        return props.getProperty("resource-pack-bedrock-file", "yapcore-default.mcpack").trim();
+    }
+
+    public void setResourcePackBedrockFile(String fileName) {
+        props.setProperty("resource-pack-bedrock-file", fileName == null ? "" : fileName.trim());
     }
 
     public int getResourcePackHttpPort() {

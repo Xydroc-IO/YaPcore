@@ -14,6 +14,17 @@ tasks.register<Exec>("prepareClientPack") {
     inputs.file(project.file("resourcepacks/faithful-64x.zip")).optional()
 }
 
+tasks.register<Exec>("prepareClientPackBedrock") {
+    group = "distribution"
+    description =
+        "Build yapcore-default.mcpack (Faithful Bedrock + YaP overlays)"
+    workingDir = project.projectDir
+    commandLine("bash", "scripts/build-default-bedrock-pack.sh")
+    outputs.file(project.file("resourcepacks/yapcore-default.mcpack"))
+    inputs.dir(project.file("resourcepacks/yap-skies")).optional()
+    inputs.file(project.file("resourcepacks/faithful-64x-bedrock.mcpack")).optional()
+}
+
 tasks.register("assembleRelease") {
     group = "distribution"
     description =
@@ -22,6 +33,7 @@ tasks.register("assembleRelease") {
         tasks.named("distJar"),
         "installProductDefaults",
         "prepareClientPack",
+        "prepareClientPackBedrock",
         "assemblePluginDist",
         "assembleNetworkSuite",
         ":yap-link-native:shadowJar",
@@ -77,6 +89,7 @@ tasks.register("assembleRelease") {
             "yap-gameplay-knobs.jar",
             "yap-stacker.jar",
             "yap-items.jar",
+            "yap-leveled-mobs.jar",
             "yap-skills.jar",
             "yap-dungeons.jar",
             "yap-disasters.jar",
@@ -88,6 +101,7 @@ tasks.register("assembleRelease") {
         }
         val packFiles = buildList {
             add("yapcore-default.zip")
+            add("yapcore-default.mcpack")
             add("faithful-64x.zip")
             add("CREDITS.md")
             add("FAITHFUL_LICENSE.txt")
@@ -96,7 +110,8 @@ tasks.register("assembleRelease") {
         val linuxScripts = listOf(
             "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
             "start-yap-link.sh", "nginx-setup.sh", "setup-velocity-forwarding.sh",
-            "build-default-resourcepack.sh", "fetch-faithful-64x.sh",
+            "build-default-resourcepack.sh", "build-default-bedrock-pack.sh",
+            "fetch-faithful-64x.sh", "fetch-faithful-64x-bedrock.sh",
             "generate-yap-skies.py",
             "fetch-folia.sh", "fetch-tebex.sh", "fetch-grim.sh", "grim-ac.sh",
             "vendor-folia.sh", "folia-patch.sh", "build-yap-folia.sh",
@@ -303,6 +318,7 @@ tasks.register("assembleRelease") {
             modules/  CORE + GAMEPLAY fine-tune modules
                       (gradle installFineTuneModules · docs/plugins/MODULES_AND_API.md)
             resourcepacks/yapcore-default.zip
+            resourcepacks/yapcore-default.mcpack
             config/
             docs/
             lib/  (yap-folia-*.jar when built on host; else stock folia-*.jar)

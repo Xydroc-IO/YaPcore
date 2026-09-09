@@ -11,6 +11,7 @@ import com.yapcore.resourcepack.ResourcePackOffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -36,6 +37,10 @@ public final class BedrockBridgeContext {
     public final Map<Long, Integer> pendingProtocol = new ConcurrentHashMap<>();
     public final BedrockColumnStreamer columns = new BedrockColumnStreamer();
     public final ConcurrentHashMap<String, Long> inventoryFingerprint = new ConcurrentHashMap<>();
+    /** Per-guid Bedrock login/pack handshake phase. */
+    public final ConcurrentHashMap<Long, LoginPhase> loginPhase = new ConcurrentHashMap<>();
+    /** Pack pending for ResourcePackStack after HAVE_ALL_PACKS (null = empty stack). */
+    public final ConcurrentHashMap<Long, PendingPack> pendingPack = new ConcurrentHashMap<>();
 
     public BiConsumer<Long, List<ByteBuf>> outbound = (guid, packets) -> {
     };
@@ -43,6 +48,15 @@ public final class BedrockBridgeContext {
     public LongConsumer compressionArmed;
     /** When set, Bedrock login mirrors the active JE resource pack offer (G.34). */
     public volatile Supplier<Optional<ResourcePackOffer>> resourcePackOffer = Optional::empty;
+
+    public enum LoginPhase {
+        AWAITING_PACKS,
+        AWAITING_STACK_COMPLETE,
+        SPAWNED
+    }
+
+    public record PendingPack(UUID packId, String version, boolean forced, String cdnUrl, long sizeBytes) {
+    }
 
     public BedrockBridgeContext(BedrockSessionManager sessions,
                                 FloodgateAuth floodgate,

@@ -377,8 +377,8 @@ public final class RakNetReliability {
             Reliability rel = Reliability.of((flags >> 5) & 0x7);
             boolean split = (flags & 0x10) != 0;
             int bitLen = buf.readUnsignedShort();
-            // Match jsp-raknet / Cloudburst: length in bits >> 3 (not round-up)
-            int byteLen = bitLen >>> 3;
+            // Match wiki.vg / PocketMine: body length = ceil(bits / 8)
+            int byteLen = (bitLen + 7) >>> 3;
             if (byteLen <= 0) {
                 break;
             }
@@ -415,6 +415,18 @@ public final class RakNetReliability {
                 int splitId = buf.readUnsignedShort();
                 int splitIndex = buf.readInt();
                 ByteBuf fragment = buf.readRetainedSlice(byteLen);
+                if (splitCount <= 0 || splitCount > 512 || splitIndex < 0 || splitIndex >= splitCount) {
+                    // Invalid split meta — reassemble header+body as one payload so we
+                    // don't ACK-and-drop (seen on BE join right after pack handshake).
+                    ByteBuf recovered = Unpooled.buffer(10 + byteLen);
+                    recovered.writeInt(splitCount);
+                    recovered.writeShort(splitId);
+                    recovered.writeInt(splitIndex);
+                    recovered.writeBytes(fragment);
+                    fragment.release();
+                    frames.add(new Frame(rel, reliableIndex, sequenceIndex, orderIndex, orderChannel, recovered));
+                    continue;
+                }
                 splits++;
                 ByteBuf assembled = state.acceptSplit(splitId, splitCount, splitIndex, fragment);
                 if (assembled != null) {

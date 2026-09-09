@@ -158,12 +158,15 @@ public final class RakNetSessionManager {
                 if (decoded.datagramNumber() >= 0) {
                     replies.add(RakNetReliability.buildAck(decoded.datagramNumber()));
                 }
-                if (decoded.frames().isEmpty() && peekLen > 8) {
+                if (decoded.frames().isEmpty() && decoded.splitFragmentsAccepted() == 0 && peekLen > 8) {
                     StringBuilder hex = new StringBuilder(peek.length * 2);
                     for (byte b : peek) {
                         hex.append(String.format("%02x", b & 0xff));
                     }
-                    LOG.warning("RakNet 0 frames after decode bytes=" + peekLen + " hex=" + hex);
+                    LOG.warning("RakNet 0 frames after decode bytes=" + peekLen
+                            + " splitsAccepted=" + decoded.splitFragmentsAccepted()
+                            + " dg#" + decoded.datagramNumber()
+                            + " hex=" + hex);
                 }
                 for (RakNetReliability.Frame frame : decoded.frames()) {
                     ByteBuf payload = frame.payload();

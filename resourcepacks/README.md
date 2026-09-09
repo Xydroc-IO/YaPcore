@@ -10,12 +10,14 @@ HTTP/edge URL.
 ```properties
 resource-pack-enabled=true
 resource-pack-file=yapcore-default.zip
+resource-pack-bedrock-file=yapcore-default.mcpack
 resource-pack-forced=true
 ```
 
 - **Forced** (`resource-pack-forced=true`): decline → kick
-- **Default pack:** `yapcore-default.zip` = Faithful 64x + **YaP Skies** + **YaP Water**
-  (built by `gradle prepareClientPack` / `shadowJar`)
+- **Default Java pack:** `yapcore-default.zip` = Faithful 64x + **YaP Skies** + **YaP Water**
+  (built by `gradle prepareClientPack`)
+- **Default Bedrock pack:** `yapcore-default.mcpack` (built by `gradle prepareClientPackBedrock`)
 - Skies overlay: [`yap-skies/`](yap-skies/) (`python3 scripts/generate-yap-skies.py`)
 - Water/weather: `python3 scripts/generate-yap-water.py` (into `yap-skies/`)
 - Foliage: `python3 scripts/generate-yap-foliage.py` (dense Faithful-based leaf cutouts)

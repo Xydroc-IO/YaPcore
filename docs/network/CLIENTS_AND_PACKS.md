@@ -91,18 +91,22 @@ Shared listen port (`shared-listen-port=true`) uses the same number for JE TCP a
 **merged** into `yap-active-bundle-<hash>.zip` (later packs win on path conflicts) so every
 active pack applies without play-phase `addResourcePack`.  
 `resource-pack-forced=false` (default) lets players decline without being kicked.
+
+**Bedrock:** Java Edition `.zip` packs are **not** offered on the Bedrock login path (they disconnect modern BE clients).
+Bedrock receives `resource-pack-bedrock-file` (default `yapcore-default.mcpack`) when that file exists and packs are enabled.
 Modern JE clients on the Via edge still get the Yes/No prompt; only mid-band /
 legacy clients are auto-acked so they are not stuck on join.
 
 ```properties
 resource-pack-enabled=true
 resource-pack-files=yapcore-default.zip,my-overlay.zip
+resource-pack-bedrock-file=yapcore-default.mcpack
 resource-pack-forced=false
 resource-pack-prompt=This server offers a resource pack. Click Yes to download, or No to play without it.
 # Prefer self-hosted nginx so SHA-1 always matches the local zip after rebuild:
 # (leave resource-pack-url empty → PublicEndpoint uses public host + pack port)
 # resource-pack-url=
-# Or GitHub Releases (must re-upload zip after every rebuild or SHA fails):
+# Or GitHub Releases (must re-upload zip/.mcpack after every rebuild or SHA fails):
 # resource-pack-url=https://github.com/Xydroc-IO/YaPcore/releases/latest/download/{file}
 resource-pack-http-port=8081
 resource-pack-prompt=This server offers a resource pack. Click Yes to download, or No to play without it.
@@ -111,22 +115,27 @@ resource-pack-prompt=This server offers a resource pack. Click Yes to download, 
 # resource-pack-url=http://yapcoremc.yaplabs.us/pack/{file}
 ```
 
-Attach **`yapcore-default.zip`** (same bytes you built) to nginx (`./scripts/sync-pack-to-nginx.sh`)
-and/or as a GitHub release asset. Tag **`1.0.0.0`** publishes it — `/releases/latest/download/{file}`
-follows the newest release. YaP hashes the **download URL** at boot so Paper’s SHA-1 matches
-what clients fetch. If the advertised SHA is from a newer local rebuild than GitHub/nginx,
-Minecraft shows **“1 of 1 pack failed to download.”**
+Attach **`yapcore-default.zip`** and **`yapcore-default.mcpack`** (same bytes you built) to nginx
+(`./scripts/sync-pack-to-nginx.sh`) and/or as GitHub release assets. Tag **`1.0.0.0`** publishes them —
+`/releases/latest/download/{file}` follows the newest release. YaP hashes the **download URL** at boot so
+Paper’s SHA-1 matches what clients fetch. If the advertised SHA is from a newer local rebuild than
+GitHub/nginx, Minecraft shows **“1 of 1 pack failed to download.”**
 
-**Default pack:** `yapcore-default.zip` (Faithful 64x + YaP Skies + YaP Water) — built on
-`gradle prepareClientPack`. Credit / license:
+**Default packs:** `yapcore-default.zip` (Java) and `yapcore-default.mcpack` (Bedrock) —
+Faithful 64x + YaP Skies + YaP Water. Built on `gradle prepareClientPack` /
+`gradle prepareClientPackBedrock`. Credit / license:
 `resourcepacks/CREDITS.md`, `FAITHFUL_LICENSE.txt`.
 
 **Publish for GitHub (recommended):**
 
 ```bash
 ./scripts/build-default-resourcepack.sh
-gh release upload 1.0.0.0 resourcepacks/yapcore-default.zip --clobber -R Xydroc-IO/YaPcore
-# or create a new release and attach the zip — latest/download then picks it up
+./scripts/build-default-bedrock-pack.sh
+gh release upload 1.0.0.0 \
+  resourcepacks/yapcore-default.zip \
+  resourcepacks/yapcore-default.mcpack \
+  --clobber -R Xydroc-IO/YaPcore
+# or create a new release and attach the assets — latest/download then picks them up
 ```
 
 **Publish for Cloudflare / nginx (optional):** after rebuilding the zip, copy it into nginx’s docroot

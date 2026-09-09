@@ -44,7 +44,8 @@ Attach (or refresh with `--clobber`) so `/releases/latest/download/{file}` works
 |-------|------|
 | `yapcore-release-linux.zip` / `-windows.zip` | Full server boxes (CI also uploads these on tag) |
 | `yap-network-suite.zip` / `yap-gameplay-suite.zip` | Standalone suites |
-| `yapcore-default.zip` | **Required** for pack CDN (`resource-pack-url` default) |
+| `yapcore-default.zip` | **Required** for JE pack CDN (`resource-pack-url` default) |
+| `yapcore-default.mcpack` | **Required** for Bedrock pack CDN (`resource-pack-bedrock-file`) |
 | `client_mods.zip` | Optional Fabric clients — unzip → `client_mods/` with **yap-visuals**, **yap-bag**, **yap-staff**, **yap-ultrawide** |
 
 Build clients: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.
@@ -57,11 +58,14 @@ gh release upload 1.0.0.0 \
   releases/1.0.0.0/yap-network-suite.zip \
   releases/1.0.0.0/yap-gameplay-suite.zip \
   releases/1.0.0.0/yapcore-default.zip \
+  releases/1.0.0.0/yapcore-default.mcpack \
   releases/1.0.0.0/client_mods.zip \
   --clobber -R Xydroc-IO/YaPcore
 ```
 
-Copy `dist/client-mods/client_mods.zip` (and `resourcepacks/yapcore-default.zip`) into `releases/1.0.0.0/` after building clients so the durable folder holds every GitHub asset.
+Copy `dist/client-mods/client_mods.zip` (and `resourcepacks/yapcore-default.zip` /
+`resourcepacks/yapcore-default.mcpack`) into `releases/1.0.0.0/` after building so the durable
+folder holds every GitHub asset.
 
 **After Link wire fixes:** `publishReleasesFolder` refreshes `yap-link.jar` inside the
 trees/zips. Also copy the shadow jar to **repo-root** `yap-link.jar` — the Swing/web

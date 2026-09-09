@@ -168,13 +168,13 @@ public final class BedrockLoginCodec {
         if (packId == null) {
             return resourcePackStackEmpty();
         }
-        ByteBuf out = Unpooled.buffer(64);
+        ByteBuf out = Unpooled.buffer(96);
         writeUnsignedVarInt(out, BedrockPacketCodec.ID_RESOURCE_PACK_STACK);
         out.writeBoolean(mustAccept);
         writeUnsignedVarInt(out, 0); // behavior_packs
         writeUnsignedVarInt(out, 1); // resource_packs
-        out.writeLongLE(packId.getMostSignificantBits());
-        out.writeLongLE(packId.getLeastSignificantBits());
+        // Stack entries use string UUID + version + subpack name (not binary UUID).
+        writeString(out, packId.toString());
         writeString(out, version == null ? "0.0.0" : version);
         writeString(out, "");
         writeString(out, "1.21.50");

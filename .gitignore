@@ -247,6 +247,7 @@ resourcepacks/**
 !resourcepacks/yap-skies/
 !resourcepacks/yap-skies/**
 !resourcepacks/yapcore-default.zip
+!resourcepacks/yapcore-default.mcpack
 
 # =============================================================================
 # IDE / OS / editors

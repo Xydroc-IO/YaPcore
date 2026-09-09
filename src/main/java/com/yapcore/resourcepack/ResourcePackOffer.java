@@ -10,6 +10,17 @@ public record ResourcePackOffer(
         String prompt,
         boolean forced,
         boolean javaCompatible,
-        boolean bedrockCompatible
+        boolean bedrockCompatible,
+        long sizeBytes
 ) {
+    public ResourcePackOffer(
+            String packId,
+            String url,
+            String sha1Hex,
+            String prompt,
+            boolean forced,
+            boolean javaCompatible,
+            boolean bedrockCompatible) {
+        this(packId, url, sha1Hex, prompt, forced, javaCompatible, bedrockCompatible, 0L);
+    }
 }

@@ -130,6 +130,8 @@ public final class BedrockGameplayBridge {
         ctx.sessions.close(guid);
         ctx.chunkRadius.remove(guid);
         ctx.columns.clear(guid);
+        ctx.loginPhase.remove(guid);
+        ctx.pendingPack.remove(guid);
         if (session != null && session.username() != null) {
             ctx.inventoryFingerprint.remove(session.username().toLowerCase());
         }
