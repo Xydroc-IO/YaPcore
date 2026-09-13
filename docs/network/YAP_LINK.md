@@ -17,8 +17,11 @@ Players → YaP Link (:25565) → YaPcore Via (:25566) → YaP-Folia (:25567)
 | Path | Role |
 |------|------|
 | [`yap-first-party/link/native/`](../../yap-first-party/link/native/) | **Product proxy** (native) |
+| [`yap-first-party/link/bedrock/`](../../yap-first-party/link/bedrock/) | **Bedrock product path** (`bedrock-mode=native`) — RakNet + Floodgate + JE downstream translators |
 | [`yap-first-party/link/protocol/`](../../yap-first-party/link/protocol/) | Shared JE frame / zlib / forwarding wire |
 | [`yap-first-party/link/plugins/`](../../yap-first-party/link/plugins/) | Native Link plugins |
+
+**Bedrock:** default `bedrock-mode=native` — Link owns Bedrock UDP (`BedrockSessionHost`); chassis `bedrock-enabled=false`. See [CROSSPLAY.md](CROSSPLAY.md) and [LINK_NATIVE_PORT.md](../geyser-join-reference/LINK_NATIVE_PORT.md). Use `forwarder` for legacy Link→chassis UDP, or `geyser-backup` for Standalone.
 
 **Join wire (important):** Outbound packets use a **single** handler
 (`McOutboundPacketEncoder`) that applies optional zlib + length framing — the same
@@ -97,7 +100,7 @@ Open `./scripts/gui.sh` → **Link** tab (same controls as web dashboard):
 - **Start Link / Stop Link** — runs `yap-link.jar` as its own JVM (like Velocity)
 - **Configure…** — backends (hub, survival, …), try order, forced hosts, bind/MOTD
 - **Link console** — `help`, `reload`, `list`, `servers`, `say …`, `stop`
-- **Enable backend forwarding** — runs `setup-velocity-forwarding.sh --enable`
+- **Backend forwarding** — ON/OFF toggle (`setup-velocity-forwarding.sh --enable|--disable`). Restart Folia after changing.
 
 Requires `link-embed=false` (default).
 

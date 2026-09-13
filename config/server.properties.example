@@ -27,12 +27,18 @@ public-port=0
 public-bedrock-port=0
 public-pack-port=0
 
-# Editions & crossplay
+# Editions & crossplay — first-party Bedrock (YapGeyserSession), not GeyserMC jar
+# bedrock-mode=first-party | geyser-backup (Link tab before start)
 java-enabled=true
+bedrock-mode=first-party
 bedrock-enabled=true
 shared-listen-port=true
 crossplay-enabled=true
 backwards-compatible=true
+
+# Bedrock-feel parity (Phase 0). Keep false until presence/blocks ship.
+parity.bedrock-feel=false
+parity.bedrock-band=band_26_50
 
 # Game authority (product default)
 game-authority=folia

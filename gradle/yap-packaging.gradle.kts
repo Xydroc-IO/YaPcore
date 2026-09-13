@@ -212,6 +212,29 @@ tasks.register("publishReleasesFolder") {
             }
         }
 
+        // Phase 6: optional Fabric client_mods + default packs when pre-built
+        val clientMods = project.layout.projectDirectory.file("dist/client-mods/client_mods.zip").asFile
+        if (clientMods.isFile) {
+            clientMods.copyTo(dest.resolve("client_mods.zip"), overwrite = true)
+            logger.lifecycle("Copied client_mods.zip (${clientMods.length() / 1024} KiB)")
+        } else {
+            logger.warn("client_mods.zip missing — run ./scripts/build-yap-client-render.sh before upload")
+        }
+        val defaultPack = project.layout.projectDirectory.file("resourcepacks/yapcore-default.zip").asFile
+        if (defaultPack.isFile) {
+            defaultPack.copyTo(dest.resolve("yapcore-default.zip"), overwrite = true)
+        }
+        val defaultMcpack = project.layout.projectDirectory.file("resourcepacks/yapcore-default.mcpack").asFile
+        if (defaultMcpack.isFile) {
+            defaultMcpack.copyTo(dest.resolve("yapcore-default.mcpack"), overwrite = true)
+        }
+        val parityPin = project.layout.projectDirectory
+            .file("src/main/resources/protocol/bedrock/parity/band_26_50/provenance/manifest.v1.json").asFile
+        if (parityPin.isFile) {
+            dest.resolve("parity-band_26_50-provenance.manifest.v1.json")
+                .writeText(parityPin.readText())
+        }
+
         dest.resolve("README.txt").writeText(
             """
             YaPcore $ver — release folder
@@ -229,10 +252,18 @@ tasks.register("publishReleasesFolder") {
               yap-network-suite.zip
               yap-gameplay-suite.zip
 
-            Rebuild:  gradle publishReleasesFolder
+            Bedrock-feel parity (Phase 6):
+              client_mods.zip            → Fabric mods (presence/blocks/visuals/…)
+              yapcore-default.zip        → JE resource pack (incl. Bedrock block ports)
+              yapcore-default.mcpack     → Bedrock pack
+              parity-band_26_50-provenance.manifest.v1.json
+
+            Rebuild server:  gradle publishReleasesFolder
+            Rebuild clients: ./scripts/build-yap-client-render.sh
+            Parity smoke:    ./scripts/parity/smoke-bedrock-feel.sh
             Slim CORE+NETWORK only:  gradle assembleRelease -PyapGameplay=false
 
-            Docs: docs/start/RELEASES.md · docs/start/QUICK_START.md
+            Docs: docs/start/RELEASES.md · docs/product/BEDROCK_FEEL_MATRIX.md
             """.trimIndent() + "\n"
         )
 

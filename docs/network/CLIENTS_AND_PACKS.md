@@ -294,9 +294,10 @@ YaP Iris (jar-in-jar) and installs YaP Shaders on first launch.
 
 ```bash
 ./scripts/build-yap-client-render.sh
-# → dist/client-mods/client_mods.zip         (release upload — bag + staff + ultrawide + visuals)
+# → dist/client-mods/client_mods.zip         (release upload — visuals + bag + presence + blocks + staff + ultrawide)
 # → dist/client-mods/yap-visuals-*.jar       (also loose jars for local installs)
 # → dist/client-mods/yap-client-visuals.zip  (visuals-only Discord / site bundle)
+./scripts/parity/smoke-bedrock-feel.sh       # Phase 6 matrix smoke
 ```
 
 Install: Fabric Loader 0.19+ · MC 26.2 · **only** `yap-visuals-*.jar` in `.minecraft/mods/`

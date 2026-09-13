@@ -10,6 +10,32 @@ yap_require_java
 HOME_DIR="${1:-$ROOT/link-data}"
 mkdir -p "$HOME_DIR"
 
+# When YaPcore GUI/server is up, LinkProcessManager owns yap-link — a second
+# start-yap-link.sh steals :25565/:19132 and crash-loops both sides.
+if yap_is_running; then
+  if pgrep -f '(^|/)java .*-jar .*yap-link' >/dev/null 2>&1 \
+      && ss -ltn 2>/dev/null | grep -qE ':25565\s' \
+      && ss -lun 2>/dev/null | grep -qE ':19132\s'; then
+    echo "YaPcore is running and YaP Link already owns :25565 + :19132 — nothing to do."
+    exit 0
+  fi
+  echo "YaPcore is running for this install — LinkProcessManager owns the proxy." >&2
+  echo "Use the GUI/dashboard Link controls, or: scripts/stop.sh  then  $0" >&2
+  exit 1
+fi
+
+# Already-healthy standalone Link for this home.
+mapfile -t _EXISTING_LINK < <(yap_find_link_pids || true)
+if [ "${#_EXISTING_LINK[@]}" -gt 0 ] && [ -n "${_EXISTING_LINK[0]:-}" ]; then
+  if ss -ltn 2>/dev/null | grep -qE ':25565\s' \
+      && ss -lun 2>/dev/null | grep -qE ':19132\s'; then
+    echo "YaP Link already running (pid ${_EXISTING_LINK[*]}) on :25565 + :19132"
+    exit 0
+  fi
+  echo "Stale YaP Link pid(s) without binds — reaping before start"
+  yap_reap_link_pids
+fi
+
 if [ -f "$ROOT/forwarding.secret" ] && [ ! -f "$HOME_DIR/forwarding.secret" ]; then
   cp -f "$ROOT/forwarding.secret" "$HOME_DIR/forwarding.secret"
   echo "Copied forwarding.secret → $HOME_DIR"
@@ -40,7 +66,7 @@ if [ ! -f "$HOME_DIR/link.properties" ]; then
 bind=0.0.0.0:25565
 motd=YaP Link
 max-players=500
-online-mode=false
+online-mode=true
 player-info-forwarding-mode=modern
 forwarding-secret-file=forwarding.secret
 # Multi-backend example — adjust hosts/ports to your Folia boxes
@@ -52,7 +78,11 @@ force-default-server=true
 enable-server-command=true
 public-host=127.0.0.1
 public-port=0
-bedrock-enabled=false
+bedrock-enabled=true
+# Shared-port :25565 + phone default :19132
+bedrock-bind=0.0.0.0:25565,0.0.0.0:19132
+bedrock-also-19132=true
+bedrock-backend=127.0.0.1:25566
 floodgate-key-file=floodgate-key.pem
 # Code default is plugins-enabled=false; first-run seed opts in + installs jars above
 plugins-enabled=true

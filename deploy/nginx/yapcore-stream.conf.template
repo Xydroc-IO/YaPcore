@@ -1,13 +1,22 @@
-# YaPcore nginx stream — Java TCP + Bedrock UDP proxy
-# Installed by scripts/nginx-setup.sh into /etc/nginx/yapcore-stream.conf
-# Include from nginx.conf:   include /etc/nginx/yapcore-stream.conf;
+# YaPcore nginx stream — OPTIONAL game proxy (OFF by default when YaP Link owns :25565).
+# Installed only with: sudo ./scripts/nginx-setup.sh --with-stream
+#
+# Do NOT enable this while YaP Link binds public TCP/UDP :25565 — nginx will steal the
+# port and Java clients get "requires you to connect with Velocity" (bypass Link).
+# Prefer: YaP Link on :25565 + nginx HTTP packs only (yapcore-http).
+#
+# Link-native Bedrock (product default): Link answers Unconnected Ping on UDP :19132
+# and shared :25565. Do NOT add a Bedrock UDP stream block — it steals the port and
+# proxies to dead chassis UDP → Bedrock "loading ping".
+# Optional UDP below is ONLY for chassis-direct / forwarder shared-listen deploys
+# WITHOUT Link owning Bedrock (__NGINX_BEDROCK_UDP_BLOCK__).
 #
 # Cloudflare cannot orange-cloud Minecraft TCP/UDP. Point DNS-only A/AAAA
 # at this machine (or use Spectrum). Players join __NGINX_DOMAIN__:__NGINX_PUBLIC_PORT__
 # or use SRV → port __NGINX_PUBLIC_PORT__.
 
 stream {
-    # Java Edition (TCP) — public front → local YaPcore
+    # Java Edition (TCP) — public front → local YaPcore chassis (NOT YaP Link)
     upstream yapcore_java {
         server 127.0.0.1:__YAP_JAVA_PORT__;
     }
@@ -22,12 +31,5 @@ stream {
         proxy_socket_keepalive on;
     }
 
-    # Bedrock Edition (UDP) — same public port when shared-listen-port is used
-    server {
-        listen __NGINX_PUBLIC_PORT__ udp reuseport;
-        listen [::]:__NGINX_PUBLIC_PORT__ udp reuseport;
-        proxy_pass 127.0.0.1:__YAP_BEDROCK_PORT__;
-        proxy_timeout 1h;
-        proxy_responses 1;
-    }
+__NGINX_BEDROCK_UDP_BLOCK__
 }

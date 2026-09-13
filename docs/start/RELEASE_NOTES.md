@@ -9,6 +9,23 @@ For build commands and zip layout see [RELEASES.md](RELEASES.md). For live statu
 
 ---
 
+## After 1.0.0.0 — Bedrock-feel + native join + ≤500 domains (2026-09-13)
+
+Same ship version (no product bump). Crossplay join path, Bedrock-feel pillars, and domain hygiene:
+
+| Area | Change |
+|------|--------|
+| **Native join** | Geyser-style `YapGeyserSession` join port + Cloudburst codec path; Link Bedrock session/downstream module — [NATIVE_PORT.md](../geyser-join-reference/NATIVE_PORT.md) · [YAP_LINK_NATIVE.md](../network/YAP_LINK_NATIVE.md) |
+| **Bedrock-feel** | Parity catalogs/matrix (phases 0–6), movement/emotes/skin glue; Tailor + **yap-presence** / **yap-blocks** clients — [BEDROCK_FEEL_PARITY.md](../product/BEDROCK_FEEL_PARITY.md) |
+| **Domain ≤500** | Chassis + first-party oversize classes split to same-package helpers; `gradle checkDomainLineLimits` green |
+| **client_mods** | Zip now includes **yap-presence** + **yap-blocks** alongside visuals/bag/staff/ultrawide |
+
+Docs: [CROSSPLAY.md](../network/CROSSPLAY.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) · [RELEASES.md](RELEASES.md).
+
+Build: `./scripts/parity/smoke-bedrock-feel.sh` · `./scripts/build-yap-client-render.sh` · `gradle publishReleasesFolder -PyapGameplay=true` · copy shadow Link jar → repo-root `yap-link.jar`.
+
+---
+
 ## After 1.0.0.0 — World tools + Bedrock pack CDN (2026-09-08 evening)
 
 Same ship version (no product bump). Operator build tools + crossplay pack path:
@@ -243,7 +260,7 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
 - **12h soak-long PASS** (`logs/soak/soak-long-20260905T031507Z.log`) — zip may be marketed as **soak-proven**; heap/thread slope flat (folia heap median early≈1012MB late≈1082MB; threads 137→137) per [REAL_GAINS.md](../folia/REAL_GAINS.md)
 - Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production (defaults stay **off**)
-`releases/1.0.0.0/` republished 2026-09-08 evening with World tools + schem rotate/flip, Bedrock GitHub pack CDN / login handshake, mcpack 1.21.60 pin, and staff **1.0.30** (`./scripts/build-yap-client-render.sh` then `gradle publishReleasesFolder -PyapGameplay=true`). Prior same-day: YaPItems glow/staff channel + domain ≤500 splits + staff **1.0.27**. Earlier: staff/bag polish (2026-09-07); typical SMP defaults (2026-09-06); pack CDN/SHA + client visuals (2026-09-04).
+`releases/1.0.0.0/` republished 2026-09-13 with Bedrock-feel + native join, Link Bedrock module, presence/blocks clients, and domain ≤500 splits (`./scripts/build-yap-client-render.sh` then `gradle publishReleasesFolder -PyapGameplay=true`). Prior: World tools + schem rotate/flip + Bedrock pack CDN (2026-09-08 evening); YaPItems/staff **1.0.27** same day; staff/bag polish (2026-09-07); typical SMP defaults (2026-09-06); pack CDN/SHA + client visuals (2026-09-04).
 
 ---
 

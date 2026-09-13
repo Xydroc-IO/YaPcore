@@ -2,22 +2,28 @@
 
 YaPcore aims for **one shared world** with first-party protocol coverage:
 
-- **Bedrock:** `GeyserStyleTranslator` / CrossplayHub — not the Geyser jar
+- **Bedrock (product path):** YaP Link **native** (`bedrock-mode=native`) — `BedrockSessionHost` in `yap-link-bedrock`; chassis Bedrock UDP off. See [LINK_NATIVE_PORT.md](../geyser-join-reference/LINK_NATIVE_PORT.md).
+- **Bedrock (legacy forwarder):** Link UDP → chassis `YapGeyserSession` (`bedrock-mode=forwarder`)
 - **Older / other JE:** `ProtocolCompat` / `ViaStyleRemapper` — not Via\* jars
 - **Floodgate-class auth:** core `FloodgateAuth` + backend `yap-floodgate.jar` behind Velocity/Link
 
 **Supported JE floor: 1.20.2+** onto Folia/Paper 26.2. Bedrock smoke: `geyserParitySmoke=true` on 1.21.50.
 
-**Product note:** Default `game-authority=folia`. Phase 4 join/spawn + core play-depth are green.
-Inventory/forms honesty for native Bedrock is shipped; Floodgate-only forms are **Green** when the proxy runs Geyser+Floodgate (`floodgate:form`). Some complex UIs remain **Out** (not silent Partial).
+**Product note:** Default `game-authority=folia`. Default Bedrock path is **Link-native** (Phase 7). Chassis `bedrock-enabled=false` when native. Inventory/forms honesty for native Bedrock is in progress (Phases 4–6 code landed; playtest gate pending). Floodgate-only forms are **Green** when the proxy runs Geyser+Floodgate (`floodgate:form`). Some complex UIs remain **Out** (not silent Partial).
 
 ## Connection paths
 
 | Path | Transport | Forms | Action bar / sidebar | Inventory authority |
 |------|-----------|-------|----------------------|---------------------|
-| Native YaPcore Bedrock | UDP dual-stack | Chassis `FormService` + `BedrockCustomFormBuilder` (simple/modal/custom) | `BedrockUiBridge` | Shadow + Paper inject |
-| Velocity/Geyser → YaPFloodgate | JE TCP to Folia | **Green** — `floodgate:form` relay (requires Geyser+Floodgate on proxy) | Paper action bar + scoreboard | Paper Bukkit inventory |
-| YaP Link + Bedrock on YaPcore gateway | Proxy UDP terminating on chassis | Same as native | Same | Same |
+| **Link-native Bedrock** (`bedrock-mode=native`) | Link UDP `:19132` / shared `:25565` | Link form bridge + optional FormService hook | Stretch | JE downstream + translators |
+| Forwarder → chassis `YapGeyserSession` | Link UDP → chassis | Chassis `FormService` + `BedrockCustomFormBuilder` | `BedrockUiBridge` | Shadow + Paper inject |
+| Velocity/Geyser → YaPFloodgate (external networks only) | JE TCP to yap-folia | **Green** — `floodgate:form` relay | Paper action bar + scoreboard | Paper Bukkit inventory |
+
+**Phone join (product):** LAN `…:19132` (or shared `:25565` UDP) → **YaP Link-native** → Folia via Java downstream. Chassis Bedrock UDP stays off. **Not** the GeyserMC jar. JE stays on Link `:25565` TCP.
+
+**Bedrock path (pre-start):** dashboard Link tab → **Link-native** (default) | **Forwarder** | **Geyser backup**. See [YAP_LINK_NATIVE.md](YAP_LINK_NATIVE.md#pre-start-bedrock-path-toggle-gui--dashboard).
+
+**Do not install** `Geyser-Spigot.jar` / stock Floodgate on yap-folia for the product path — Bedrock is Link-native unless you explicitly select forwarder or Geyser backup.
 
 ## Fidelity matrix
 

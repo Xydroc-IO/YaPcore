@@ -4,6 +4,8 @@ Operator documentation for install, configuration, plugins, and gameplay.
 
 Browse by folder: [docs/README.md](README.md).
 
+**Product:** [Bedrock-feel parity](product/BEDROCK_FEEL_PARITY.md) · [matrix](product/BEDROCK_FEEL_MATRIX.md)
+
 ---
 
 ## Getting started — [`start/`](start/)
@@ -49,6 +51,8 @@ Browse by folder: [docs/README.md](README.md).
 | [YAP_LINK_NATIVE.md](network/YAP_LINK_NATIVE.md) | Native Link setup |
 | [VELOCITY.md](network/VELOCITY.md) | Velocity forwarding |
 | [CLIENTS_AND_PACKS.md](network/CLIENTS_AND_PACKS.md) | Clients and resource packs |
+| [BEDROCK_FEEL_PARITY.md](product/BEDROCK_FEEL_PARITY.md) | Bedrock-feel parity contract (port, don’t recreate) |
+| [BEDROCK_FEEL_MATRIX.md](product/BEDROCK_FEEL_MATRIX.md) | Parity pillar matrix |
 | [VANILLA_CLIENTS.md](network/VANILLA_CLIENTS.md) | Vanilla client support |
 | [EDGE_HARDEN.md](network/EDGE_HARDEN.md) | Public edge hardening |
 | [EDGE_RATE_LIMIT.md](network/EDGE_RATE_LIMIT.md) | Rate limits |

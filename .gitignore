@@ -324,3 +324,14 @@ xbox-client-jwt-capture.txt
 # Iris Distant Horizons compile-only API (needed to build yap-iris)
 !client/yap-iris/DHApi.jar
 dist/client-mods/
+
+# Geyser shallow clone for join-port reference (do not vendor full tree in commits)
+vendor/geyser-ref/
+
+# Local scratch / decompile / skin lab (never commit)
+/tmp/
+/skins/
+
+# Floodgate key material backups (live keys already gitignored under link-data/)
+*.pem.ec-backup
+*.pem.bak

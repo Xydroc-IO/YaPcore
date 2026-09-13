@@ -62,6 +62,30 @@ if [[ -z "${BAG_JAR}" ]]; then
 fi
 cp -f "$BAG_JAR" "$OUT/"
 
+echo "==> Build YaP Presence"
+(
+  cd "${ROOT}/client/yap-presence"
+  ./gradlew --no-daemon build
+)
+PRESENCE_JAR="$(ls -1t "${ROOT}/client/yap-presence/build/libs"/yap-presence-*.jar 2>/dev/null | grep -v sources | grep -v javadoc | head -1 || true)"
+if [[ -z "${PRESENCE_JAR}" ]]; then
+  echo "ERROR: yap-presence jar not found" >&2
+  exit 1
+fi
+cp -f "$PRESENCE_JAR" "$OUT/"
+
+echo "==> Build YaP Blocks"
+(
+  cd "${ROOT}/client/yap-blocks"
+  ./gradlew --no-daemon build
+)
+BLOCKS_JAR="$(ls -1t "${ROOT}/client/yap-blocks/build/libs"/yap-blocks-*.jar 2>/dev/null | grep -v sources | grep -v javadoc | head -1 || true)"
+if [[ -z "${BLOCKS_JAR}" ]]; then
+  echo "ERROR: yap-blocks jar not found" >&2
+  exit 1
+fi
+cp -f "$BLOCKS_JAR" "$OUT/"
+
 echo "==> Build YaP Ultrawide"
 (
   cd "${ROOT}/client/yap-ultrawide"
@@ -96,6 +120,8 @@ Release zip: client_mods.zip
 
   - yap-visuals-*.jar   Sodium + YaP Iris + shaders (one jar — do not also install sodium/iris)
   - yap-bag-*.jar       Bag keybind / inventory tabs (/bag)
+  - yap-presence-*.jar  YaP Tailor menu (Esc / P) — skins, wardrobe, emotes, geo (yap:presence)
+  - yap-blocks-*.jar    Bedrock catalog block HELLO (yap:blocks; visuals via server pack)
   - yap-staff-*.jar     Esc pause Staff menu (/yapadmin)
   - yap-ultrawide-*.jar Hor+ FOV for ultrawide monitors
 
@@ -107,7 +133,7 @@ EOF
 # Release asset: one zip with a client_mods/ folder (upload this, not loose jars).
 rm -rf "${OUT}/_client_mods_staging"
 mkdir -p "$STAGING"
-/bin/cp -f "$VISUALS_JAR" "$BAG_JAR" "$UW_JAR" "$STAFF_JAR" "$STAGING/"
+/bin/cp -f "$VISUALS_JAR" "$BAG_JAR" "$PRESENCE_JAR" "$BLOCKS_JAR" "$UW_JAR" "$STAFF_JAR" "$STAGING/"
 /bin/cp -f "${OUT}/INSTALL.txt" "$STAGING/"
 CLIENT_MODS_ZIP="${OUT}/client_mods.zip"
 rm -f "$CLIENT_MODS_ZIP"
@@ -134,5 +160,5 @@ rm -f "$BUNDLE"
 
 echo "Done."
 echo "  Release upload: $CLIENT_MODS_ZIP"
-echo "  Contents: $(basename "$VISUALS_JAR") $(basename "$BAG_JAR") $(basename "$STAFF_JAR") $(basename "$UW_JAR")"
+echo "  Contents: $(basename "$VISUALS_JAR") $(basename "$BAG_JAR") $(basename "$PRESENCE_JAR") $(basename "$BLOCKS_JAR") $(basename "$STAFF_JAR") $(basename "$UW_JAR")"
 ls -lh "$OUT"

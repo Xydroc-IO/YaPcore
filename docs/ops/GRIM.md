@@ -83,7 +83,7 @@ See [ANTICHEAT.md](ANTICHEAT.md) for the locked product split (regions ≠ AC).
 
 | Topic | Guidance |
 |-------|----------|
-| **Bedrock / Geyser-class** | Grim exempts Bedrock players; keep `yap-floodgate` on the **backend** (not only Link) so UUID/linking matches |
+| **Bedrock / Geyser-class** | Grim exempts Bedrock via `FloodgateApi.isFloodgatePlayer`. YaPFloodgate registers a minimal `org.geysermc.floodgate.api.FloodgateApi` (MSB=0 + remembered). Keep `yap-floodgate` on the **backend** |
 | **Via-class protocol** | First-party edge on YaPcore chassis — no Via jars on backend; Grim sees normalized Paper movement |
 | **Folia** | Use Modrinth builds with `folia` loader tag (`fetch-grim.sh` filters this) |
 | **Moderation** | Grim alerts → wire Discord webhook in Grim config or mirror to `yap-moderation` via console |

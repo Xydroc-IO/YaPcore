@@ -54,6 +54,17 @@ if [ -d "$ITEMS_DIR/assets" ]; then
   cp -a "$ITEMS_DIR/assets/." "$STAGE/assets/"
   DESC="YaPcore default — Faithful 64x + YaP Skies + Water + YaPItems (CORE)"
 fi
+
+# Phase 4: Bedrock catalog port block textures/models (CMD item models for Folia displays).
+BLOCKS_DIR="$PACKS/yap-bedrock-blocks"
+if [ -d "$BLOCKS_DIR/assets" ]; then
+  mkdir -p "$STAGE/assets"
+  cp -a "$BLOCKS_DIR/assets/." "$STAGE/assets/"
+  case "$DESC" in
+    *YaPItems*) DESC="$DESC + BedrockBlocks" ;;
+    *) DESC="YaPcore default — Faithful 64x + YaP Skies + Water + BedrockBlocks (CORE)" ;;
+  esac
+fi
 if [ "$want_vehicles" -eq 1 ]; then
   # Same path as vehicles: zip the overlay tree, then merge into the default pack.
   if [ -d "$ABIL_DIR/assets" ]; then

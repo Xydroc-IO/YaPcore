@@ -5,6 +5,7 @@
 # Requires: ngx_stream_limit_conn_module (usually built-in).
 #
 # Players → :25565 → 127.0.0.1:__YAP_JAVA_PORT__ (Link or Folia)
+# Do not listen UDP 19132 here — stock Geyser on Folia owns that port.
 
 stream {
     limit_conn_zone $binary_remote_addr zone=yap_addr:10m;

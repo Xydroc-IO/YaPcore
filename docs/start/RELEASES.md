@@ -46,9 +46,10 @@ Attach (or refresh with `--clobber`) so `/releases/latest/download/{file}` works
 | `yap-network-suite.zip` / `yap-gameplay-suite.zip` | Standalone suites |
 | `yapcore-default.zip` | **Required** for JE pack CDN (`resource-pack-url` default) |
 | `yapcore-default.mcpack` | **Required** for Bedrock pack CDN (`resource-pack-bedrock-file`) |
-| `client_mods.zip` | Optional Fabric clients — unzip → `client_mods/` with **yap-visuals**, **yap-bag**, **yap-staff**, **yap-ultrawide** |
+| `client_mods.zip` | Optional Fabric clients — unzip → `client_mods/` with **yap-visuals**, **yap-bag**, **yap-presence**, **yap-blocks**, **yap-staff**, **yap-ultrawide** |
 
-Build clients: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.
+Build clients: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.  
+Parity smoke: `./scripts/parity/smoke-bedrock-feel.sh`.  
 Prefer the zip for releases (one upload). Loose jars stay under `dist/client-mods/` for local installs only.
 
 ```bash

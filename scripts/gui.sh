@@ -69,5 +69,10 @@ elif [ ! -f "$ROOT/yapcore.jar" ]; then
 fi
 
 echo "YaPcore home: $ROOT (GUI, no rebuild)"
+# Mirror JVM stdout/stderr to logs/start-gui.out so ops aren't stuck on a stale file
+# when launched under systemd (stdout otherwise goes only to the journal).
+mkdir -p "$ROOT/logs"
+# shellcheck disable=SC2094
+exec > >(tee -a "$ROOT/logs/start-gui.out") 2>&1
 # Use bash so release zips that lost +x still launch (Ant zip historically stored 0644).
 exec bash "$SCRIPT_DIR/start.sh" --gui --fg

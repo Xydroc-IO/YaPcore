@@ -560,6 +560,127 @@ yap_is_running() {
   return 1
 }
 
+# True if cmdline is a YaP Link JVM (release or shadowJar), not a shell mentioning the path.
+yap_pid_is_yap_link() {
+  local pid="$1" cmd=""
+  [ -n "$pid" ] || return 1
+  [ -r "/proc/$pid/cmdline" ] || return 1
+  cmd="$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null || true)"
+  case "$cmd" in
+    *'/java '*|*' java '*|java\ *)
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+  case "$cmd" in
+    *-jar\ *yap-link.jar*|*-jar\ *yap-link-*.jar*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+# Link for this install: --home under $ROOT/link-data (or ROOT itself for odd setups).
+yap_pid_link_belongs_to_root() {
+  local pid="$1" cmd home root_real link_home
+  [ -n "$pid" ] || return 1
+  [ -r "/proc/$pid/cmdline" ] || return 1
+  cmd="$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null || true)"
+  root_real="$(yap_root_real)"
+  link_home="$root_real/link-data"
+  case "$cmd" in
+    *'--home '*)
+      home="${cmd#*--home }"
+      home="${home%% *}"
+      ;;
+    *)
+      home=""
+      ;;
+  esac
+  if [ -n "$home" ] && command -v readlink >/dev/null 2>&1; then
+    home="$(readlink -f "$home" 2>/dev/null || echo "$home")"
+  fi
+  if [ -n "$home" ]; then
+    [ "$home" = "$link_home" ] || [ "$home" = "$root_real" ]
+    return
+  fi
+  # No --home: match jar path under this ROOT only.
+  case "$cmd" in
+    *"$root_real"/*yap-link*.jar*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
+# Print live YaP Link JVM pids for this install (orphans from start-yap-link.sh / force-kill).
+yap_find_link_pids() {
+  local pid="" seen=" "
+  if command -v pgrep >/dev/null 2>&1; then
+    while IFS= read -r pid; do
+      [ -n "$pid" ] || continue
+      case "$seen" in
+        *" $pid "*) continue ;;
+      esac
+      if kill -0 "$pid" 2>/dev/null && yap_pid_is_yap_link "$pid" \
+          && yap_pid_link_belongs_to_root "$pid"; then
+        echo "$pid"
+        seen="$seen$pid "
+      fi
+    done < <(pgrep -f '(^|/)java .*-jar .*yap-link' 2>/dev/null || true)
+    return
+  fi
+  ps ax -o pid=,args= 2>/dev/null | awk '
+    /[j]ava .*-jar .*yap-link/ {print $1}
+  ' | while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    case "$seen" in
+      *" $pid "*) continue ;;
+    esac
+    if kill -0 "$pid" 2>/dev/null && yap_pid_is_yap_link "$pid" \
+        && yap_pid_link_belongs_to_root "$pid"; then
+      echo "$pid"
+      seen="$seen$pid "
+    fi
+  done
+}
+
+# Graceful then force-kill Link JVMs for this install (used by stop.sh / start guards).
+yap_reap_link_pids() {
+  local pid sig_wait=0
+  mapfile -t _YAP_LINK_PIDS < <(yap_find_link_pids || true)
+  if [ "${#_YAP_LINK_PIDS[@]}" -eq 0 ] || [ -z "${_YAP_LINK_PIDS[0]:-}" ]; then
+    return 0
+  fi
+  echo "Stopping YaP Link pid(s): ${_YAP_LINK_PIDS[*]}"
+  for pid in "${_YAP_LINK_PIDS[@]}"; do
+    [ -n "$pid" ] || continue
+    kill -TERM "$pid" 2>/dev/null || true
+  done
+  while [ "$sig_wait" -lt 20 ]; do
+    local any=0
+    for pid in "${_YAP_LINK_PIDS[@]}"; do
+      [ -n "$pid" ] || continue
+      if kill -0 "$pid" 2>/dev/null; then
+        any=1
+        break
+      fi
+    done
+    [ "$any" -eq 0 ] && break
+    sig_wait=$((sig_wait + 1))
+    sleep 0.25
+  done
+  for pid in "${_YAP_LINK_PIDS[@]}"; do
+    [ -n "$pid" ] || continue
+    if kill -0 "$pid" 2>/dev/null; then
+      echo "Force-killing YaP Link pid $pid"
+      kill -9 "$pid" 2>/dev/null || true
+    fi
+  done
+  rm -f "$ROOT/logs/yap-link-manual.pid" 2>/dev/null || true
+}
+
 # Resolve gradle / gradlew from PATH or project root (works when Konsole cwd ≠ ROOT).
 yap_gradle_bin() {
   if [ -x "$ROOT/gradlew" ]; then

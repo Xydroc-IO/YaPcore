@@ -141,12 +141,33 @@ protocol fixes so operators are not on a stale root jar.
 
 ---
 
-## Bedrock / Geyser
+## Bedrock / first-party Geyser port
 
-Bedrock UDP routing at Link is **shipped** (`BedrockUdpForwarder`) but **off by default**
-(`bedrock-enabled=false`). For single-box crossplay, use chassis dual-stack on the
-**YaP-Folia** backend. For BE-heavy multi-backend networks, enable Link Bedrock bind or
-use stock Velocity as a stand-in. See [YAP_LINK.md](YAP_LINK.md#bedrock--geyser).
+Bedrock UDP at Link (`BedrockUdpForwarder`) is **on** for first-party join:
+`bedrock-mode=first-party` (default), `bedrock-enabled=true`, binds `:25565` + `:19132` → chassis `:25566`.
+
+Join owner: chassis **`YapGeyserSession`** (`com.yapcore.crossplay.bedrock.geyserport`) —
+a native port of [GeyserMC/Geyser](https://github.com/GeyserMC/Geyser) join path
+(reference tree: `vendor/geyser-ref/`). **No GeyserMC jar on yap-folia.**
+
+**Phone / Bedrock:** LAN `10.0.0.215:19132` or public `host:19132` (UDP) → YaP Link → chassis.
+**Java Edition:** YaP Link `:25565` TCP → chassis → yap-folia `:25567` (modern forwarding).
+
+### Pre-start Bedrock path toggle (GUI / dashboard)
+
+On the **Link** tab (or `./scripts/set-bedrock-mode.sh`):
+
+| Mode | Who owns `:19132` |
+|------|-------------------|
+| **First-party (YaP)** (default) | Link `BedrockUdpForwarder` → chassis `YapGeyserSession` |
+| **Geyser backup** | `Geyser-Standalone` in `link-data/geyser/` → remote Link `:25565` |
+
+Stop servers → set mode → Save Bedrock path → start. Mode change is rejected while the stack is running.
+
+Geyser-Velocity jars do **not** load in `link-data/plugins/` (LinkPlugin API only). Backup uses Standalone.
+Stage `link-data/geyser/Geyser-Standalone.jar` before selecting backup. Folia keeps **`yap-floodgate.jar`**.
+
+See also [CROSSPLAY.md](CROSSPLAY.md) · [NATIVE_PORT.md](../geyser-join-reference/NATIVE_PORT.md).
 
 ---
 

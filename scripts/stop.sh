@@ -40,6 +40,8 @@ mapfile -t PIDS < <(yap_find_pids || true)
 if [ "${#PIDS[@]}" -eq 0 ] || [ -z "${PIDS[0]:-}" ]; then
   echo "YaPcore does not appear to be running."
   rm -f "$PID_FILE"
+  # Still reap orphan yap-link (manual start-yap-link.sh / force-killed parent).
+  yap_reap_link_pids
   yap_pause_end 0
   exit 0
 fi
@@ -98,8 +100,16 @@ if [ -f "$ROOT/logs/yap-stdin.keepalive.pid" ]; then
   rm -f "$ROOT/logs/yap-stdin.keepalive.pid" "$ROOT/logs/yap-stdin.keepalive"
 fi
 
+# YaPcore stop() should stop Link; force-kill / crashes leave orphans on :25565/:19132.
+yap_reap_link_pids
+
 if [ -n "$(yap_find_pids | head -n 1)" ]; then
   echo "YaPcore still appears to be running after stop." >&2
+  yap_pause_end 1
+  exit 1
+fi
+if [ -n "$(yap_find_link_pids | head -n 1)" ]; then
+  echo "YaP Link still appears to be running after stop." >&2
   yap_pause_end 1
   exit 1
 fi

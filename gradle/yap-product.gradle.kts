@@ -77,6 +77,12 @@ tasks.register("installProductDefaults") {
     if (findProject(":npcs-plugin") != null) {
         dependsOn(":npcs-plugin:installIntoPlugins")
     }
+    if (findProject(":tailor-plugin") != null) {
+        dependsOn(":tailor-plugin:installIntoPlugins")
+    }
+    if (findProject(":bedrock-blocks-plugin") != null) {
+        dependsOn(":bedrock-blocks-plugin:installIntoPlugins")
+    }
     if (findProject(":guard-plugin") != null) {
         dependsOn(":guard-plugin:installIntoPlugins")
     }

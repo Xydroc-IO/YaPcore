@@ -26,6 +26,9 @@ repositories {
     mavenCentral()
     maven("https://libraries.minecraft.net")
     maven("https://repo.papermc.io/repository/maven-public/")
+    // Cloudburst Protocol (Bedrock codecs used by Geyser) — snapshots + main for math
+    maven("https://repo.opencollab.dev/maven-snapshots/")
+    maven("https://repo.opencollab.dev/main")
 }
 
 sourceSets {
@@ -65,6 +68,12 @@ dependencies {
     // Plugin back-compat (1.20–1.21 → 26.2) light ASM rewrite
     implementation("org.ow2.asm:asm:9.9.1")
     implementation("org.ow2.asm:asm-commons:9.9.1")
+
+    // Cloudburst bedrock-codec — same lineage Geyser pins (Bedrock_v2168 / v2192).
+    // Snapshot resolves to latest Beta13 build that includes modern StartGame/LevelChunk.
+    implementation("org.cloudburstmc.protocol:bedrock-codec:3.0.0.Beta13-SNAPSHOT")
+    implementation("org.cloudburstmc.math:immutable:2.0")
+    implementation("org.cloudburstmc:nbt:3.0.5.Final")
 
     // JCIP / SpotBugs concurrency annotations (compile-time only)
     compileOnly("com.github.stephenc.jcip:jcip-annotations:1.0-1")
@@ -120,6 +129,36 @@ tasks.register<JavaExec>("runTestLab") {
     mainClass.set("com.yapcore.gui.TestLab")
     systemProperty("yapcore.home", project.projectDir.absolutePath)
     standardInput = System.`in`
+}
+
+tasks.register<JavaExec>("parityExtract") {
+    group = "parity"
+    description = "Extract Bedrock catalog block fixtures from Cloudburst palette"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.yapcore.crossplay.bedrock.parity.ParityTool")
+    val band = (findProperty("parityBand") as String?) ?: "band_26_50"
+    val root = (findProperty("parityRoot") as String?) ?: project.projectDir.absolutePath
+    args("extract", band, root)
+}
+
+tasks.register<JavaExec>("parityConvert") {
+    group = "parity"
+    description = "Convert Bedrock fixtures to JE intermediates + provenance"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.yapcore.crossplay.bedrock.parity.ParityTool")
+    val band = (findProperty("parityBand") as String?) ?: "band_26_50"
+    val root = (findProperty("parityRoot") as String?) ?: project.projectDir.absolutePath
+    args("convert", band, root)
+}
+
+tasks.register<JavaExec>("parityAll") {
+    group = "parity"
+    description = "Extract then convert Bedrock parity fixtures"
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("com.yapcore.crossplay.bedrock.parity.ParityTool")
+    val band = (findProperty("parityBand") as String?) ?: "band_26_50"
+    val root = (findProperty("parityRoot") as String?) ?: project.projectDir.absolutePath
+    args("all", band, root)
 }
 
 tasks.test {
@@ -329,6 +368,9 @@ tasks.shadowJar {
     archiveBaseName.set("yapcore")
     archiveClassifier.set("")
     archiveVersion.set(project.version.toString())
+    // bedrock-codec + math ship META-INF/services; INCLUDE so mergeServiceFiles can combine them.
+    // No relocate — Folia/Paper do not shade Cloudburst; keep org.cloudburstmc.* as-is in the fat jar.
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     mergeServiceFiles()
     manifest {
         attributes["Main-Class"] = "com.yapcore.Main"

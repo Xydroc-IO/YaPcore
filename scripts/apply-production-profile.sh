@@ -12,7 +12,7 @@ for a in "$@"; do
     -h|--help)
       echo "Usage: $0 [--with-link]"
       echo "  Applies production profile from config/defaults/server.properties.production"
-      echo "  --with-link  sets velocity forwarding (online-mode=false, keeps forwarding.secret)"
+      echo "  --with-link  sets velocity forwarding (Link online auth; Folia online-mode=false)"
       exit 0
       ;;
   esac
@@ -53,7 +53,7 @@ if with_link:
     text = setprop(text, "online-mode", "false")
     text = setprop(text, "velocity-enabled", "true")
     text = setprop(text, "velocity-secret-file", "forwarding.secret")
-    text = setprop(text, "velocity-online-mode", "false")
+    text = setprop(text, "velocity-online-mode", "true")
 else:
     text = setprop(text, "online-mode", "true")
     text = setprop(text, "velocity-enabled", "false")
@@ -61,7 +61,7 @@ else:
 cfg_path.write_text(text)
 print(f"Applied production profile → {cfg_path}")
 if with_link:
-    print("Link mode: online-mode=false, velocity-enabled=true")
+    print("Link mode: Folia online-mode=false, velocity-enabled=true, velocity-online-mode=true")
 else:
     print("Direct mode: online-mode=true, velocity-enabled=false")
 PY
