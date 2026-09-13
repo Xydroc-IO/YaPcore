@@ -26,6 +26,9 @@ public final class BedrockCombat {
 
     /** Guid → pending air-miss swing awaiting event-loop flush. */
     private static final ConcurrentHashMap<Long, Boolean> PENDING_MISS_SWING = new ConcurrentHashMap<>();
+    /** Guid → last air-miss flush millis (Geyser lastAirHitTick coalescing). */
+    private static final ConcurrentHashMap<Long, Long> LAST_MISS_SWING_MS = new ConcurrentHashMap<>();
+    private static final long MISS_SWING_COALESCE_MS = 100L;
 
     private BedrockCombat() {
     }
@@ -119,6 +122,12 @@ public final class BedrockCombat {
         if (!Boolean.TRUE.equals(PENDING_MISS_SWING.remove(session.guid()))) {
             return;
         }
+        long now = System.currentTimeMillis();
+        Long prev = LAST_MISS_SWING_MS.get(session.guid());
+        if (prev != null && (now - prev) < MISS_SWING_COALESCE_MS) {
+            return;
+        }
+        LAST_MISS_SWING_MS.put(session.guid(), now);
         if (session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
             return;
         }
