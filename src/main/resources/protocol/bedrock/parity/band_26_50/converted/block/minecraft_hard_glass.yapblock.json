@@ -1,0 +1,11 @@
+{
+  "format": "yap.blockstate/1",
+  "converter": "BlockStateConverter",
+  "bedrock_id": "minecraft:hard_glass",
+  "je_port_id": "yapbedrock:hard_glass",
+  "band": "band_26_50",
+  "bedrock_runtime_index": 8419,
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "bedrock_states": {},
+  "model": "yapbedrock:block/hard_glass"
+}

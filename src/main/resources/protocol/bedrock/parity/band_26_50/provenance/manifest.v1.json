@@ -1,0 +1,537 @@
+{
+  "band": "band_26_50",
+  "version": 1,
+  "rule": "sha256 of exact bytes used by convert golden tests; do not hand-edit converted outputs",
+  "entries": [
+    {
+      "role": "fixture-skin-geo",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/skin/geometry.humanoid.custom.json",
+      "sha256": "ec1772486bdb47568987ead1a66803f1c9e3b725e00ed3ee8a0e3ddd419ad3e7",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-skin-geo-slim",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/skin/geometry.humanoid.customSlim.json",
+      "sha256": "fc61d12c6e433d0af1fd40c428afe90cd64731d91c2c435a41cc7038fcd140d6",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-allow",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_allow.json",
+      "sha256": "a57db70144ce55a5a4d9aac30ebfb8b3a895c13b3514026402bc4ebd96c71b05",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_border_block",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_border_block.json",
+      "sha256": "5ad33d282975ac5aa40794a9b081588e5389c49e1a7f8d34dbcb89970e2a50d4",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_camera",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_camera.json",
+      "sha256": "dd3519c9951ae4006a9858e7810a9b30097bc57de9d008149dd79ecabdebf3bd",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_chalkboard",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_chalkboard.json",
+      "sha256": "f457a1da0c85560b95ff3c21bb48eab76bc0b41bfbe5c15380f343137722c3ca",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_colored_torch_blue",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_colored_torch_blue.json",
+      "sha256": "51e004a5e652160b09f9598688eb486ed1e80384a896b855c0a323764b8b124f",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_colored_torch_green",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_colored_torch_green.json",
+      "sha256": "2b0e8fb5329fa5d503a85aaff4877e780cb9925e2b5ba2d75a8b3284d406e445",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_colored_torch_purple",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_colored_torch_purple.json",
+      "sha256": "ae7c4a3a4f242ea26c313d805651e9e442e460127a5e1a51aa4e3df553ea34a2",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_colored_torch_red",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_colored_torch_red.json",
+      "sha256": "51a830bdfd013e1a8dc2514b9e0d94ada2ffb73c2b71e5cc629356bd5f39ba56",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_compound_creator",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_compound_creator.json",
+      "sha256": "4ca83bd08babcc1e422f3eb7045edb7a58dd23855e433640fd7a6c2ec7806b4b",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_deny",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_deny.json",
+      "sha256": "44b7a0b2fc1354837e28463452bd1b0fdaabfb25596cbacf1f6aa441d63c31a6",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_element_constructor",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_element_constructor.json",
+      "sha256": "45055dc09d1735f72deac4c3a3d620f3b30702ae9158e5b6d12b86bb1aca840d",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_frame",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_frame.json",
+      "sha256": "cb59a797beca5bb41004a213985cd5fceaed79376e0c09478a28a7ec9d154aef",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_glow_frame",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_glow_frame.json",
+      "sha256": "7bff26d14bd961b51bf5fef5e3daa0714d07b0cf9ab72df71c23e6f4f4ba77aa",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_hard_glass",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_hard_glass.json",
+      "sha256": "d9e755bba737dfbe1b7a9878c8321aaae8d0af6ece4c21d27cb76de4f87e3046",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_hard_glass_pane",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_hard_glass_pane.json",
+      "sha256": "4f32d0e0c3919b2d11a8ca9aefeedc1d02b41d74e77210e00d46dc4cff415832",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_invisible_bedrock",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_invisible_bedrock.json",
+      "sha256": "ee654ce71d06df40053067ab3db0fef9d0041e593f5fd91cef2ae3a66465efc3",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_lab_table",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_lab_table.json",
+      "sha256": "29ca307418d2699362de3a8dbdac57edff71afd568163ff2b0b9fe63285258fb",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_light_block_0",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_light_block_0.json",
+      "sha256": "e50c906e8e2a6756d22e87e2f9670ee6cc35d43a73afcc9aed2123fb76e1dfc0",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_light_block_15",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_light_block_15.json",
+      "sha256": "0fef73b9c2fa5441f47c22581fc67b162a204c8297f09710ff2643abe45e459f",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_light_block_7",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_light_block_7.json",
+      "sha256": "c3fa69ab4b2b73994953f67d4d29a4c8499416a11215ade92b545fea871d578d",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_material_reducer",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_material_reducer.json",
+      "sha256": "788ac84752330687db5dd26c6a28092b98660616da1bbc43914e46ff01d433ec",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_stonecutter_block",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_stonecutter_block.json",
+      "sha256": "bc3cb4c9d0d0e03fe57bd98d291a68b76e76a6d8d2e8613c76d8fbe8233701d0",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_underwater_tnt",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_underwater_tnt.json",
+      "sha256": "3535783e56352bbab532b31446721d085cb4f4b555f434a5361c0c1c36b8f57d",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-block-minecraft_underwater_torch",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_underwater_torch.json",
+      "sha256": "d92286308195dd07b76e54bec9ee4597818b47027afa584bf92c9d4ec7744732",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-emote-follow_me",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/emote/follow_me.emote.json",
+      "sha256": "061ec5931f5033a5924a652baa6921193b669a274a794ae9766d36bcab5ef8e9",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-emote-over_there",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/emote/over_there.emote.json",
+      "sha256": "4ebed2bc5a8a7d0f48d99a2fd4b7d65513d7599d6731fac4e9505104eaf34013",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-emote-simple_clap",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/emote/simple_clap.emote.json",
+      "sha256": "d0293845bb56743154e5359b3fde7fd4b90fda05d4859506c8ce1ebd2248d9e4",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-emote-wave",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/emote/wave.emote.json",
+      "sha256": "ec059016fd6d777b377e480c04943dd33e84715bbb353afcb697456ed6cf6910",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-ctrl_player_first_person_attack",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/ctrl_player_first_person_attack.json",
+      "sha256": "f0abef7c0b85c6e8a2ceecc13727807fc1582188bea6158cc2af168fb59c0943",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-ctrl_player_root",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/ctrl_player_root.json",
+      "sha256": "d80f911a328a26fa8546b5ff258b615d0713793abec9c1607bed3cb1053ee432",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-fp-attack",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/first_person_attack.json",
+      "sha256": "2aaa21becba65b2092ea3da4b4b979b5fee15e7dd6c389e67d0837303291e8a9",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-humanoid_base_pose",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/humanoid_base_pose.json",
+      "sha256": "b1dcf30c2f7edcd2bf2ee823740f2fa27b8c32446f6d6242cdb8ea1eb1c336fb",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-player_attack_positions",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_attack_positions.json",
+      "sha256": "391071421cbf91b6ee2e315f3fe994a1524d4e10eddcab8f03c37aa52f46a771",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-player_attack_rotations",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_attack_rotations.json",
+      "sha256": "a10615df91acb4133db9bd6e3c9c1d16c4535e0f4e1c451c7f665f7f61afcb88",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-player_first_person_crossbow_equipped",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_first_person_crossbow_equipped.json",
+      "sha256": "37878bf10bae845f98c01dee4704d80e18e523ef34bd708e151817fa21aa3dfd",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-player_first_person_crossbow_hold",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_first_person_crossbow_hold.json",
+      "sha256": "395e5d24784bc5b716da0c9fc23f163135f69a35463ad7451a3c8b5525435966",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-player_first_person_vr_attack_rotation",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_first_person_vr_attack_rotation.json",
+      "sha256": "2f9c0db3ebddcd30fdda43b88c20bdf0b1f254c8187ef9d9641ad1a198193384",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-player_riding_legs",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_riding_legs.json",
+      "sha256": "72d381bd51fc4b17e92081283a2eda6c5cfc782a6dbce129cb4dfc7fccf34678",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-player_sleeping",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_sleeping.json",
+      "sha256": "f64a11edc846647b7f09d2e6924906af848811d8f0b8796cf32e0b8264a52be1",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "fixture-anim-player_sneaking",
+      "path": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_sneaking.json",
+      "sha256": "da822c53708f4ee016324d706023bf7ec28fd7125e46bc87ef196f1c782083a8",
+      "source": "bedrock-extract-fixture"
+    },
+    {
+      "role": "converted-skin-geo",
+      "path": "protocol/bedrock/parity/band_26_50/converted/skin/geometry.humanoid.custom.yapgeo.json",
+      "sha256": "651294d5799e9621b387892ddead9c4e892dfa51d8f73f95093274de62b5e1ce",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/skin/geometry.humanoid.custom.json"
+    },
+    {
+      "role": "converted-skin-geo-slim",
+      "path": "protocol/bedrock/parity/band_26_50/converted/skin/geometry.humanoid.customSlim.yapgeo.json",
+      "sha256": "ece8ce29811620f030c69075be276e219a786d3210d89ab1031973aecb253f43",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/skin/geometry.humanoid.customSlim.json"
+    },
+    {
+      "role": "converted-block-allow",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_allow.yapblock.json",
+      "sha256": "342b4d11a10739a0a493d2a402c9fe209780f77dfe7a5e530969c3f51dfbb50d",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_allow.json"
+    },
+    {
+      "role": "converted-block-minecraft_border_block",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_border_block.yapblock.json",
+      "sha256": "68d9c81dd94fc00434ffa9d60c082bf9fec7748f1124542e2395f6c573092769",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_border_block.json"
+    },
+    {
+      "role": "converted-block-minecraft_camera",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_camera.yapblock.json",
+      "sha256": "cd4ca9071bc6774bf2edee3a5bf0b1c027d20cb59b32c02acb4035b11bb3c1e2",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_camera.json"
+    },
+    {
+      "role": "converted-block-minecraft_chalkboard",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_chalkboard.yapblock.json",
+      "sha256": "8c6087d7af75050cbfa662b914983ec24a5e045d252f63a3965ba99118ad94ad",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_chalkboard.json"
+    },
+    {
+      "role": "converted-block-minecraft_colored_torch_blue",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_colored_torch_blue.yapblock.json",
+      "sha256": "2cbc22fe8af34bb2662a28046dc14737f49f2a92c68f84b20906b4da5272a8f7",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_colored_torch_blue.json"
+    },
+    {
+      "role": "converted-block-minecraft_colored_torch_green",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_colored_torch_green.yapblock.json",
+      "sha256": "8abd85f128a77a751bbcdf75169dee78d205ccc2d3de0aa3e6934fc54afc9cc7",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_colored_torch_green.json"
+    },
+    {
+      "role": "converted-block-minecraft_colored_torch_purple",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_colored_torch_purple.yapblock.json",
+      "sha256": "07315f0e420d323c6472727f4ac7cb5f84065c2760e8bc487e0c75f93e526c26",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_colored_torch_purple.json"
+    },
+    {
+      "role": "converted-block-minecraft_colored_torch_red",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_colored_torch_red.yapblock.json",
+      "sha256": "65a1d119b2d4db395e97d9ff8486e8009166bcca2fc604175d683b698a4ccc04",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_colored_torch_red.json"
+    },
+    {
+      "role": "converted-block-minecraft_compound_creator",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_compound_creator.yapblock.json",
+      "sha256": "ad655e71f4f74204853d154b0bdadfb528bfce52c598d8080e12b741ffcb6357",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_compound_creator.json"
+    },
+    {
+      "role": "converted-block-minecraft_deny",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_deny.yapblock.json",
+      "sha256": "4a7d7ab3d47c2e24819b06f47a7cadf7e72235aaae9677600f738b3a5c98e4e4",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_deny.json"
+    },
+    {
+      "role": "converted-block-minecraft_element_constructor",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_element_constructor.yapblock.json",
+      "sha256": "c2f019af7814d5a70a50bee6af79207a274313ef8cf903cd72c73cc41885eafc",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_element_constructor.json"
+    },
+    {
+      "role": "converted-block-minecraft_frame",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_frame.yapblock.json",
+      "sha256": "d0ae5b9f08266798ae7336e79b32243d7736ae5790977487b81add9762ec8ad7",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_frame.json"
+    },
+    {
+      "role": "converted-block-minecraft_glow_frame",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_glow_frame.yapblock.json",
+      "sha256": "7bd515013aeeb375562ce12881ed20285e2a9a7ea4f68b0df678ef45071eef0a",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_glow_frame.json"
+    },
+    {
+      "role": "converted-block-minecraft_hard_glass",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_hard_glass.yapblock.json",
+      "sha256": "2433808bf38de0dddcb1fecf0e150985257940ead80f7f70d254e64b6fc590c6",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_hard_glass.json"
+    },
+    {
+      "role": "converted-block-minecraft_hard_glass_pane",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_hard_glass_pane.yapblock.json",
+      "sha256": "4c49fed6815f6e0e0638ddc65a94dc634e7ef3def96f48c6fec09615b70199ae",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_hard_glass_pane.json"
+    },
+    {
+      "role": "converted-block-minecraft_invisible_bedrock",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_invisible_bedrock.yapblock.json",
+      "sha256": "6b0fea6557cbc59b84d8e422e40a3ff2efbb73d625c97409a2b2224c82b5ae84",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_invisible_bedrock.json"
+    },
+    {
+      "role": "converted-block-minecraft_lab_table",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_lab_table.yapblock.json",
+      "sha256": "70ec79b40b6790876834a73144b4101d2d11f5e9d87aa55c085e750d7b467735",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_lab_table.json"
+    },
+    {
+      "role": "converted-block-minecraft_light_block_0",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_light_block_0.yapblock.json",
+      "sha256": "5ad74f30bf8b2c795e9cc4f5cf9811857db65cfa75dfe95c64f1a202fcfe7ad3",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_light_block_0.json"
+    },
+    {
+      "role": "converted-block-minecraft_light_block_15",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_light_block_15.yapblock.json",
+      "sha256": "339b3fec2ab841b12975b13c2796eedcedde8f441816e79ef312bd306140b277",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_light_block_15.json"
+    },
+    {
+      "role": "converted-block-minecraft_light_block_7",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_light_block_7.yapblock.json",
+      "sha256": "674719f782c7230b63eaa92d98280f4a3ed866aed4977095b69fb00179e0f5c9",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_light_block_7.json"
+    },
+    {
+      "role": "converted-block-minecraft_material_reducer",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_material_reducer.yapblock.json",
+      "sha256": "5586b8e4dc8c6af4df211f47d0c9888df3a0bec31dc7d938c32f34ce19d7770a",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_material_reducer.json"
+    },
+    {
+      "role": "converted-block-minecraft_stonecutter_block",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_stonecutter_block.yapblock.json",
+      "sha256": "6b88dc854669059f49a3dc43c241dfd1d8cb5832541d91092e6196269f3da699",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_stonecutter_block.json"
+    },
+    {
+      "role": "converted-block-minecraft_underwater_tnt",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_underwater_tnt.yapblock.json",
+      "sha256": "03c6a122e016ee8312e183db290e7d369a5b7132cd8b41d515faf63e4a33c189",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_underwater_tnt.json"
+    },
+    {
+      "role": "converted-block-minecraft_underwater_torch",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/minecraft_underwater_torch.yapblock.json",
+      "sha256": "cbfe014cf1a622ea71e8abb18de9945a1748a2814a7e5af4c2e298d050231186",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/block/minecraft_underwater_torch.json"
+    },
+    {
+      "role": "converted-emote-follow_me",
+      "path": "protocol/bedrock/parity/band_26_50/converted/emote/follow_me.yapemote.json",
+      "sha256": "ca341af336a8d8791630aa6ec614979187a9a3872a3f48c02f89c19a1f2a1be3",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/emote/follow_me.emote.json"
+    },
+    {
+      "role": "converted-emote-over_there",
+      "path": "protocol/bedrock/parity/band_26_50/converted/emote/over_there.yapemote.json",
+      "sha256": "72db43b353c61fb2a9f1fa05fceafbfea140126c50a34645b6b4a6765404f400",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/emote/over_there.emote.json"
+    },
+    {
+      "role": "converted-emote-simple_clap",
+      "path": "protocol/bedrock/parity/band_26_50/converted/emote/simple_clap.yapemote.json",
+      "sha256": "b9f34fde152e2094956aadc3451ab2a8125220e8162bde4f5384cef268ab4138",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/emote/simple_clap.emote.json"
+    },
+    {
+      "role": "converted-emote-wave",
+      "path": "protocol/bedrock/parity/band_26_50/converted/emote/wave.yapemote.json",
+      "sha256": "538422a02e4985116189dce43160980b9f36812728c97bdc57e3465460ab97ea",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/emote/wave.emote.json"
+    },
+    {
+      "role": "converted-anim-ctrl_player_first_person_attack",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/ctrl_player_first_person_attack.yapanim.json",
+      "sha256": "a8d1912db0cd02c293d394d030c4ccb4c6a2026f8849cd9df8d4b5af4e795576",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/ctrl_player_first_person_attack.json"
+    },
+    {
+      "role": "converted-anim-ctrl_player_root",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/ctrl_player_root.yapanim.json",
+      "sha256": "b147752c9e5c8990992ec2b6e35192add6549e56723df72c6c3da1285977d07c",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/ctrl_player_root.json"
+    },
+    {
+      "role": "converted-anim-fp-attack",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/first_person_attack.yapanim.json",
+      "sha256": "fd15c1e81d218de957625ace5f205459663e9f2f00e814782dc7943ea3c0ac22",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/first_person_attack.json"
+    },
+    {
+      "role": "converted-anim-humanoid_base_pose",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/humanoid_base_pose.yapanim.json",
+      "sha256": "49e3ff71565aa44b1197123a3ccf40c6a52720c722787036a103d32ef62bbff8",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/humanoid_base_pose.json"
+    },
+    {
+      "role": "converted-anim-player_attack_positions",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/player_attack_positions.yapanim.json",
+      "sha256": "8aa0bd28cd909e953776d3c10b3fcaf5b5cec5d112f727afb26464ab5866eed3",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_attack_positions.json"
+    },
+    {
+      "role": "converted-anim-player_attack_rotations",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/player_attack_rotations.yapanim.json",
+      "sha256": "1f99c1f941117732438305523ee72de4a993e3d7a5bbf51565bcc3b2c0257c95",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_attack_rotations.json"
+    },
+    {
+      "role": "converted-anim-player_first_person_crossbow_equipped",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/player_first_person_crossbow_equipped.yapanim.json",
+      "sha256": "fc380ffe50f66f98864ded4da711488b619cb98d745ff9c0428c03de72f9fb93",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_first_person_crossbow_equipped.json"
+    },
+    {
+      "role": "converted-anim-player_first_person_crossbow_hold",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/player_first_person_crossbow_hold.yapanim.json",
+      "sha256": "744ee0fab524df0b67aae0038f2fcd6fd70fdfd648cd3b33035a0151b3e00726",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_first_person_crossbow_hold.json"
+    },
+    {
+      "role": "converted-anim-player_first_person_vr_attack_rotation",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/player_first_person_vr_attack_rotation.yapanim.json",
+      "sha256": "1794635ac309ff8c66837d5a6af5aee36090fd1a85dbfd00912a28980ee618e3",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_first_person_vr_attack_rotation.json"
+    },
+    {
+      "role": "converted-anim-player_riding_legs",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/player_riding_legs.yapanim.json",
+      "sha256": "2d352c3be5c699c992b43e483fdb6d0b5221fe15cb479085c80ff211c51d896f",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_riding_legs.json"
+    },
+    {
+      "role": "converted-anim-player_sleeping",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/player_sleeping.yapanim.json",
+      "sha256": "820e5f987845744e70b0771485c53f4564c11728616b110cedefa7df327db45b",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_sleeping.json"
+    },
+    {
+      "role": "converted-anim-player_sneaking",
+      "path": "protocol/bedrock/parity/band_26_50/converted/animation/player_sneaking.yapanim.json",
+      "sha256": "ed8f7fa845c93e9be248504d113e516055aae38e33da62d086e5236e344f9897",
+      "source": "protocol/bedrock/parity/band_26_50/fixtures/animation/player_sneaking.json"
+    },
+    {
+      "role": "catalog-blocks-converted",
+      "path": "protocol/bedrock/parity/band_26_50/converted/block/",
+      "sha256": "c62d87a987ecbf99cb4cf1767856e4120fe0e3e9af0d191fd534e1b46ae3ddb4",
+      "source": "count=24"
+    },
+    {
+      "role": "catalog-blocks",
+      "path": "protocol/bedrock/parity/band_26_50/catalogs/blocks.v1.json",
+      "sha256": "4b4e80d9334955748e94bdedf7c956dcf2fb4351d9a03444bbbc8471fc4f7b1a"
+    },
+    {
+      "role": "catalog-emotes",
+      "path": "protocol/bedrock/parity/band_26_50/catalogs/emotes.v1.json",
+      "sha256": "0b1efb606a4a6bef7de0c1755a3d25835dcd271463ece9300195d01862b12070"
+    },
+    {
+      "role": "catalog-animations",
+      "path": "protocol/bedrock/parity/band_26_50/catalogs/animations.v1.json",
+      "sha256": "8c21373cefb51ca8ed3baf7ab0fa5b2c3d46fc9dd174579af876547994a42239"
+    },
+    {
+      "role": "catalog-movement",
+      "path": "protocol/bedrock/parity/band_26_50/catalogs/movement.v1.json",
+      "sha256": "5b291ee6188dc764aca34e896f7a1067bbfc454f9e1bdc95e72d3a12e1924f49"
+    }
+  ]
+}

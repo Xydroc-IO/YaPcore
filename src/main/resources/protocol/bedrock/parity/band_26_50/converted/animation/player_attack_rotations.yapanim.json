@@ -1,0 +1,33 @@
+{
+  "format": "yap.animation/1",
+  "converter": "AnimationConverter",
+  "source_format_version": "1.8.0",
+  "animations": {
+    "animation.player.attack.rotations": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "rotation": [
+            0.0,
+            "variable.attack_body_rot_y",
+            0.0
+          ]
+        },
+        "leftarm": {
+          "rotation": [
+            "-(math.sin((1 - math.pow((1 - variable.attack_time), 4)) * 180) * 1.2 + math.sin(variable.attack_time * 180)) * 10.0",
+            0.0,
+            0.0
+          ]
+        },
+        "rightarm": {
+          "rotation": [
+            "-(math.sin((1 - math.pow((1 - variable.attack_time), 4)) * 180) * 1.2 + math.sin(variable.attack_time * 180)) * 30.0",
+            "-(math.sin((1 - math.pow((1 - variable.attack_time), 4)) * 180) ? (-90.0 * math.sin((1 - math.pow((1 - variable.attack_time), 4)) * 180)) + 30.0 : 0.0)",
+            0.0
+          ]
+        }
+      }
+    }
+  }
+}

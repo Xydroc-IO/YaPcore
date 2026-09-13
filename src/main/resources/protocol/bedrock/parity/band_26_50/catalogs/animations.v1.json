@@ -1,0 +1,57 @@
+{
+  "band": "band_26_50",
+  "catalog": "animations",
+  "version": 2,
+  "rule": "Bedrock animation identifiers from Mojang bedrock-samples for band 26.50 (port via convert, not hand-keyed).",
+  "source": "mojang-bedrock-samples:v1.26.50.27-preview",
+  "entries": [
+    {
+      "id": "animation.player.attack.rotations",
+      "kind": "attack"
+    },
+    {
+      "id": "animation.player.attack.positions",
+      "kind": "attack"
+    },
+    {
+      "id": "animation.player.sleeping",
+      "kind": "sleep"
+    },
+    {
+      "id": "animation.player.sneaking",
+      "kind": "move"
+    },
+    {
+      "id": "animation.player.riding.legs",
+      "kind": "ride"
+    },
+    {
+      "id": "animation.player.first_person.attack_rotation",
+      "kind": "first_person"
+    },
+    {
+      "id": "animation.player.first_person.crossbow_equipped",
+      "kind": "first_person"
+    },
+    {
+      "id": "animation.player.first_person.crossbow_hold",
+      "kind": "first_person"
+    },
+    {
+      "id": "animation.player.first_person.vr_attack_rotation",
+      "kind": "first_person"
+    },
+    {
+      "id": "animation.humanoid.base_pose",
+      "kind": "idle"
+    },
+    {
+      "id": "controller.animation.player.root",
+      "kind": "controller"
+    },
+    {
+      "id": "controller.animation.player.first_person_attack",
+      "kind": "controller"
+    }
+  ]
+}

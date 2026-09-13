@@ -1,0 +1,13 @@
+{
+  "format": "yap.blockstate/1",
+  "converter": "BlockStateConverter",
+  "bedrock_id": "minecraft:colored_torch_purple",
+  "je_port_id": "yapbedrock:colored_torch_purple",
+  "band": "band_26_50",
+  "bedrock_runtime_index": 15930,
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "bedrock_states": {
+    "torch_facing_direction": "unknown"
+  },
+  "model": "yapbedrock:block/colored_torch_purple"
+}

@@ -1,0 +1,26 @@
+{
+  "format": "yap.animation/1",
+  "converter": "AnimationConverter",
+  "source_format_version": "1.8.0",
+  "animations": {
+    "animation.player.riding.legs": {
+      "loop": true,
+      "bones": {
+        "leftleg": {
+          "rotation": [
+            "-81.0 - this",
+            "-18.0 - this",
+            "-this"
+          ]
+        },
+        "rightleg": {
+          "rotation": [
+            "-81.0 - this",
+            "18.0 - this",
+            "-this"
+          ]
+        }
+      }
+    }
+  }
+}

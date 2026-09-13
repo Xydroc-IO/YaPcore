@@ -1,0 +1,32 @@
+{
+  "format": "yap.animation/1",
+  "converter": "AnimationConverter",
+  "source_format_version": "1.10.0",
+  "animation_controllers": {
+    "controller.animation.player.first_person_attack": {
+      "initial_state": "default",
+      "states": {
+        "default": {
+          "animations": [
+            "first_person_attack_rotation"
+          ],
+          "transitions": [
+            {
+              "vr_attack": "variable.is_using_vr"
+            }
+          ]
+        },
+        "vr_attack": {
+          "animations": [
+            "first_person_vr_attack_rotation"
+          ],
+          "transitions": [
+            {
+              "default": "!variable.is_using_vr"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

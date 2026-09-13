@@ -1,0 +1,26 @@
+{
+  "format_version": "1.8.0",
+  "_yap_source": "mojang-bedrock-samples:v1.26.50.27-preview",
+  "_yap_path": "animations/player.animation.json#animation.player.riding.legs",
+  "animations": {
+    "animation.player.riding.legs": {
+      "loop": true,
+      "bones": {
+        "leftleg": {
+          "rotation": [
+            "-81.0 - this",
+            "-18.0 - this",
+            "-this"
+          ]
+        },
+        "rightleg": {
+          "rotation": [
+            "-81.0 - this",
+            "18.0 - this",
+            "-this"
+          ]
+        }
+      }
+    }
+  }
+}

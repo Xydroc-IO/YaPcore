@@ -1,0 +1,29 @@
+{
+  "band": "band_26_50",
+  "catalog": "emotes",
+  "version": 2,
+  "rule": "Bedrock emote UUIDs + bone anims extracted from installed Bedrock persona pack (1.26.45.1). Only unencrypted free emotes that ship in resource_packs/persona/pieces are frozen here — marketplace/premium_cache packs are encrypted and excluded until decryptable.",
+  "source": "bedrock-on-linux:1.26.45.1/data/resource_packs/persona/pieces",
+  "entries": [
+    {
+      "id": "4c8ae710-df2e-47cd-814d-cc7bf21a3d67",
+      "name": "Wave",
+      "animation": "animation.overhead_wave"
+    },
+    {
+      "id": "9a469a61-c83b-4ba9-b507-bdbe64430582",
+      "name": "Simple Clap",
+      "animation": "animation.basic_clap"
+    },
+    {
+      "id": "ce5c0300-7f03-455d-aaf1-352e4927b54d",
+      "name": "Over There!",
+      "animation": "animation.communication_point"
+    },
+    {
+      "id": "17428c4c-3813-4ea1-b3a9-d6a32f83afca",
+      "name": "Follow Me",
+      "animation": "animation.communication_follow_me"
+    }
+  ]
+}

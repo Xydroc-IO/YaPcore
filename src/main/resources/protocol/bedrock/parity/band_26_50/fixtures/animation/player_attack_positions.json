@@ -1,0 +1,19 @@
+{
+  "format_version": "1.8.0",
+  "_yap_source": "mojang-bedrock-samples:v1.26.50.27-preview",
+  "_yap_path": "animations/player.animation.json#animation.player.attack.positions",
+  "animations": {
+    "animation.player.attack.positions": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      }
+    }
+  }
+}

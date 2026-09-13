@@ -1,0 +1,9 @@
+{
+  "band": "band_26_50",
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "id": "minecraft:colored_torch_blue",
+  "runtime_index": 7200,
+  "states": {
+    "torch_facing_direction": "unknown"
+  }
+}

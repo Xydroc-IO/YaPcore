@@ -1,0 +1,9 @@
+{
+  "band": "band_26_50",
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "id": "minecraft:element_constructor",
+  "runtime_index": 7730,
+  "states": {
+    "direction": 0
+  }
+}

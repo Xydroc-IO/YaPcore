@@ -17,7 +17,7 @@ public final class VelocityProxyConfig {
         props.setProperty("velocity-enabled", "true");
         props.setProperty("velocity-secret", "");
         props.setProperty("velocity-secret-file", "forwarding.secret");
-        props.setProperty("velocity-online-mode", "false"); // match Link online-mode=false
+        props.setProperty("velocity-online-mode", "false"); // match Link online-mode=false + Mojang UUID rewrite
         props.setProperty("velocity-bind-localhost", "true");
         props.setProperty("link-embed", "false");
         props.setProperty("link-embed-home", "link-data");

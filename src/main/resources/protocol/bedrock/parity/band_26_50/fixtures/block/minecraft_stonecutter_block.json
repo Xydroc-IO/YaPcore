@@ -1,0 +1,9 @@
+{
+  "band": "band_26_50",
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "id": "minecraft:stonecutter_block",
+  "runtime_index": 15700,
+  "states": {
+    "minecraft:cardinal_direction": "south"
+  }
+}

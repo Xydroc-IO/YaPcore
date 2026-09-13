@@ -1,0 +1,17 @@
+{
+  "format": "yap.blockstate/1",
+  "converter": "BlockStateConverter",
+  "bedrock_id": "minecraft:border_block",
+  "je_port_id": "yapbedrock:border_block",
+  "band": "band_26_50",
+  "bedrock_runtime_index": 9143,
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "bedrock_states": {
+    "wall_connection_type_east": "none",
+    "wall_connection_type_north": "none",
+    "wall_connection_type_south": "none",
+    "wall_connection_type_west": "none",
+    "wall_post_bit": 0
+  },
+  "model": "yapbedrock:block/border_block"
+}

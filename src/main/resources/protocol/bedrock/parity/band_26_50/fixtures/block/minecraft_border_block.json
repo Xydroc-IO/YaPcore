@@ -1,0 +1,13 @@
+{
+  "band": "band_26_50",
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "id": "minecraft:border_block",
+  "runtime_index": 9143,
+  "states": {
+    "wall_connection_type_east": "none",
+    "wall_connection_type_north": "none",
+    "wall_connection_type_south": "none",
+    "wall_connection_type_west": "none",
+    "wall_post_bit": 0
+  }
+}

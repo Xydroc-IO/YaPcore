@@ -1,0 +1,11 @@
+{
+  "band": "band_26_50",
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "id": "minecraft:frame",
+  "runtime_index": 6907,
+  "states": {
+    "facing_direction": 0,
+    "item_frame_map_bit": 0,
+    "item_frame_photo_bit": 0
+  }
+}

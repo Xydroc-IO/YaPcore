@@ -1,0 +1,19 @@
+{
+  "format": "yap.animation/1",
+  "converter": "AnimationConverter",
+  "source_format_version": "1.8.0",
+  "animations": {
+    "animation.humanoid.base_pose": {
+      "loop": true,
+      "bones": {
+        "waist": {
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      }
+    }
+  }
+}

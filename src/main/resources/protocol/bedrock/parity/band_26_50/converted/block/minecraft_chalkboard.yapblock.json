@@ -1,0 +1,13 @@
+{
+  "format": "yap.blockstate/1",
+  "converter": "BlockStateConverter",
+  "bedrock_id": "minecraft:chalkboard",
+  "je_port_id": "yapbedrock:chalkboard",
+  "band": "band_26_50",
+  "bedrock_runtime_index": 5803,
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "bedrock_states": {
+    "direction": 0
+  },
+  "model": "yapbedrock:block/chalkboard"
+}

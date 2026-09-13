@@ -1,0 +1,9 @@
+{
+  "band": "band_26_50",
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "id": "minecraft:lab_table",
+  "runtime_index": 7792,
+  "states": {
+    "direction": 0
+  }
+}

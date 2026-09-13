@@ -202,6 +202,8 @@ public final class ServerConfig {
     public void setJavaEnabled(boolean enabled) { protocol.setJavaEnabled(enabled); }
     public boolean isBedrockEnabled() { return protocol.isBedrockEnabled(); }
     public void setBedrockEnabled(boolean enabled) { protocol.setBedrockEnabled(enabled); }
+    public String getBedrockMode() { return protocol.getBedrockMode(); }
+    public void setBedrockMode(String mode) { protocol.setBedrockMode(mode); }
     public int getBedrockPort() { return protocol.getBedrockPort(); }
     public void setBedrockPort(int port) { protocol.setBedrockPort(port); }
     public boolean isSharedListenPort() { return protocol.isSharedListenPort(); }
@@ -215,6 +217,10 @@ public final class ServerConfig {
     public void setProtocolViaEnabled(boolean enabled) { protocol.setProtocolViaEnabled(enabled); }
     public boolean isProtocolGeyserEnabled() { return protocol.isProtocolGeyserEnabled(); }
     public void setProtocolGeyserEnabled(boolean enabled) { protocol.setProtocolGeyserEnabled(enabled); }
+    public boolean isParityBedrockFeel() { return protocol.isParityBedrockFeel(); }
+    public void setParityBedrockFeel(boolean enabled) { protocol.setParityBedrockFeel(enabled); }
+    public String getParityBedrockBand() { return protocol.getParityBedrockBand(); }
+    public void setParityBedrockBand(String band) { protocol.setParityBedrockBand(band); }
 
     public boolean isPluginCompatEnabled() { return pluginCompat.isPluginCompatEnabled(); }
     public void setPluginCompatEnabled(boolean enabled) { pluginCompat.setPluginCompatEnabled(enabled); }

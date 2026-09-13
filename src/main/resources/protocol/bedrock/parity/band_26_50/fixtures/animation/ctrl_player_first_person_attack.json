@@ -1,0 +1,32 @@
+{
+  "format_version": "1.10.0",
+  "_yap_source": "mojang-bedrock-samples:v1.26.50.27-preview",
+  "_yap_path": "animation_controllers/player.animation_controllers.json#controller.animation.player.first_person_attack",
+  "animation_controllers": {
+    "controller.animation.player.first_person_attack": {
+      "initial_state": "default",
+      "states": {
+        "default": {
+          "animations": [
+            "first_person_attack_rotation"
+          ],
+          "transitions": [
+            {
+              "vr_attack": "variable.is_using_vr"
+            }
+          ]
+        },
+        "vr_attack": {
+          "animations": [
+            "first_person_vr_attack_rotation"
+          ],
+          "transitions": [
+            {
+              "default": "!variable.is_using_vr"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "format": "yap.blockstate/1",
+  "converter": "BlockStateConverter",
+  "bedrock_id": "minecraft:light_block_15",
+  "je_port_id": "yapbedrock:light_block_15",
+  "band": "band_26_50",
+  "bedrock_runtime_index": 13401,
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "bedrock_states": {},
+  "model": "yapbedrock:block/light_block_15"
+}

@@ -1,0 +1,19 @@
+{
+  "format": "yap.animation/1",
+  "converter": "AnimationConverter",
+  "source_format_version": "1.8.0",
+  "animations": {
+    "animation.player.attack.positions": {
+      "loop": true,
+      "bones": {
+        "head": {
+          "rotation": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        }
+      }
+    }
+  }
+}

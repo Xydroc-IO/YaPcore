@@ -1,0 +1,66 @@
+{
+  "format": "yap.animation/1",
+  "converter": "AnimationConverter",
+  "source_format_version": "1.8.0",
+  "animations": {
+    "animation.player.sneaking": {
+      "loop": true,
+      "bones": {
+        "body": {
+          "position": [
+            0.0,
+            -2.0,
+            0.0
+          ]
+        },
+        "head": {
+          "position": [
+            0.0,
+            -1.0,
+            0.0
+          ]
+        },
+        "leftarm": {
+          "rotation": [
+            -5.7,
+            0.0,
+            0.0
+          ]
+        },
+        "leftleg": {
+          "rotation": [
+            -28.0,
+            -0.1,
+            -0.1
+          ]
+        },
+        "rightarm": {
+          "rotation": [
+            -5.7,
+            0.0,
+            0.0
+          ]
+        },
+        "rightleg": {
+          "rotation": [
+            -28.0,
+            0.1,
+            0.1
+          ]
+        },
+        "root": {
+          "rotation": [
+            "28.0 - this",
+            0.0,
+            0.0
+          ],
+          "position": [
+            0.0,
+            1.25,
+            9.0
+          ]
+        }
+      }
+    }
+  }
+}

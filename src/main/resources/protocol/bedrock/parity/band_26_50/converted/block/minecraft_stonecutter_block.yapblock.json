@@ -1,0 +1,13 @@
+{
+  "format": "yap.blockstate/1",
+  "converter": "BlockStateConverter",
+  "bedrock_id": "minecraft:stonecutter_block",
+  "je_port_id": "yapbedrock:stonecutter_block",
+  "band": "band_26_50",
+  "bedrock_runtime_index": 15700,
+  "source": "protocol/bedrock/cloudburst/band_26_50/block_palette.26_50.nbt",
+  "bedrock_states": {
+    "minecraft:cardinal_direction": "south"
+  },
+  "model": "yapbedrock:block/stonecutter_block"
+}
