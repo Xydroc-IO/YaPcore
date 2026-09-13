@@ -11,7 +11,12 @@
 
 **Do not** open a public GitHub issue for security flaws (RCE, auth bypass, path traversal on pack HTTP, secret leakage, etc.).
 
-Contact maintainers privately with:
+Contact maintainers privately (do not use public issues for security):
+
+- **Email:** [xydroc@yaplabs.us](mailto:xydroc@yaplabs.us)
+- **Discord:** username **xydroc** (server: [discord.gg/BXbyQk88Da](https://discord.gg/BXbyQk88Da)) — prefer email for sensitive details
+
+Include:
 
 - YaPcore version / git commit / release tag
 - Impact assessment (who can exploit, what is exposed)
@@ -19,6 +24,8 @@ Contact maintainers privately with:
 - Optional patch or mitigation
 
 We aim to **acknowledge within 72 hours**.
+
+For non-security bugs and operator help, see the README [Community & support](README.md#community--support) section.
 
 ## Operator hardening (baseline)
 

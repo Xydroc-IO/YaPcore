@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <strong>Production Folia network stack</strong> — regionized game tick, dual-stack Java + Bedrock,<br/>
-  first-party plugins, native proxy, Bedrock-feel parity, and operator tooling in one product line.
+  <strong>Production Folia network stack</strong> — regionized <em>and</em> parallel ticks (subregion shards + microtick),<br/>
+  dual-stack Java + Bedrock, first-party plugins, native proxy, Bedrock-feel parity, and operator tooling.
 </p>
 
 <p align="center">
@@ -16,6 +16,8 @@
   <img alt="Java" src="https://img.shields.io/badge/Java-25%2B-orange"/>
   <a href="docs/whitepaper/YAPCORE_WHITEPAPER.md"><img alt="Docs" src="https://img.shields.io/badge/docs-whitepaper-0A66C2"/></a>
   <a href="docs/start/AI_TRANSPARENCY.md"><img alt="AI transparency" src="https://img.shields.io/badge/AI-disclosed-6e40c9"/></a>
+  <a href="https://discord.gg/BXbyQk88Da"><img alt="Discord" src="https://img.shields.io/badge/Discord-YaPcore-5865F2"/></a>
+  <a href="https://ko-fi.com/xydroc"><img alt="Ko-fi" src="https://img.shields.io/badge/Ko--fi-support-ff5e5b"/></a>
 </p>
 
 | | |
@@ -25,6 +27,7 @@
 | **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) · [Plain English](docs/whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) |
 | **Crossplay** | [Crossplay](docs/network/CROSSPLAY.md) · [Bedrock-feel](docs/product/BEDROCK_FEEL_PARITY.md) · [YaP Link](docs/network/YAP_LINK.md) |
 | **Performance** | [REAL_GAINS](docs/folia/REAL_GAINS.md) · [YAP_FOLIA_SOAK](docs/folia/YAP_FOLIA_SOAK.md) · [Canvas parity](docs/folia/CANVAS_PARITY.md) |
+| **Help / contribute** | [Community & support](#community--support) · [Discord](https://discord.gg/BXbyQk88Da) · [CONTRIBUTING](CONTRIBUTING.md) |
 | **Legal** | [GPLv3](LICENSE) · [Licensing](docs/start/LICENSING.md) · [AI transparency](docs/start/AI_TRANSPARENCY.md) · [Privacy](docs/start/PRIVACY_POLICY.md) · [Terms](docs/start/TERMS_OF_USE.md) |
 
 > Independent project. Not affiliated with Mojang Studios, Microsoft, PaperMC, ViaVersion, or GeyserMC.
@@ -70,7 +73,7 @@ Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, L
 
 ### Parallel ticks & microtick (why it’s not “stock Folia”)
 
-Classic Paper/Purpur keep one main world tick. **YaP-Folia** runs **regionized parallel ticks**, and the product ship profile adds:
+Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes. **YaP-Folia goes further**: parallel **subregion** shards when hot, MSPT-gated **microtick** / entity / hopper budgets, plus YapEngine µs sequencing on the edge — not “regions alone.”
 
 | Knob (defaults) | Role |
 |-----------------|------|
@@ -203,6 +206,22 @@ Operator and engineering docs live under [`docs/`](docs/) (**Markdown is the sou
 
 ---
 
+## Community & support
+
+Bugs, operator help, and contributions are welcome. Prefer public GitHub issues for
+non-security bugs so others can find the trail; use Discord for live help.
+
+| Channel | Contact |
+|---------|---------|
+| **Email** | [xydroc@yaplabs.us](mailto:xydroc@yaplabs.us) |
+| **Discord** | Username **xydroc** · server invite: [discord.gg/BXbyQk88Da](https://discord.gg/BXbyQk88Da) |
+| **GitHub** | Issues / PRs on [Xydroc-IO/YaPcore](https://github.com/Xydroc-IO/YaPcore) · [CONTRIBUTING.md](CONTRIBUTING.md) |
+| **Security** | Private only — [SECURITY.md](SECURITY.md) (email maintainers; do not file public issues for RCE/auth) |
+| **Support the project** | [ko-fi.com/xydroc](https://ko-fi.com/xydroc) |
+
+
+---
+
 ## Security
 
 Report vulnerabilities privately — do **not** open a public issue for RCE, auth bypass, or pack-HTTP exposure. See [SECURITY.md](SECURITY.md).
@@ -214,6 +233,8 @@ Operators: keep secrets out of git ([SECRETS.md](docs/start/SECRETS.md)); put ga
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). One logical change per PR; keep build outputs, worlds, logs, and secrets out of the tree. Domain files under `src/main/java` and `yap-first-party/` must stay **≤500 lines**. AI-assisted patches are welcome when reviewed — [AI_TRANSPARENCY.md](docs/start/AI_TRANSPARENCY.md).
+
+Questions before a PR: Discord ([invite](https://discord.gg/BXbyQk88Da), user **xydroc**) or email [xydroc@yaplabs.us](mailto:xydroc@yaplabs.us).
 
 ---
 

@@ -72,3 +72,12 @@ Be respectful. No harassment. Assume good faith in reviews.
 
 YaPcore is **[GNU GPLv3](LICENSE)** (or later). By opening a pull request, you agree that your contribution is licensed under the same terms.  
 Third-party notices: [LICENSING.md](docs/start/LICENSING.md).
+
+## Contact
+
+- **Email:** [xydroc@yaplabs.us](mailto:xydroc@yaplabs.us)
+- **Discord:** username **xydroc** · invite [discord.gg/BXbyQk88Da](https://discord.gg/BXbyQk88Da)
+- **Support the project:** [ko-fi.com/xydroc](https://ko-fi.com/xydroc)
+
+Security vulnerabilities: [SECURITY.md](SECURITY.md) (private email — not public issues).
+

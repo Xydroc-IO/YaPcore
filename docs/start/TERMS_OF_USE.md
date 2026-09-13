@@ -174,9 +174,12 @@ If any provision is held invalid, the remaining provisions remain in effect.
 
 ## 13. Contact
 
-- **Questions about these Terms:** GitHub issue in the YaPcore repository  
+- **Email:** [xydroc@yaplabs.us](mailto:xydroc@yaplabs.us)  
+- **Discord:** username **xydroc** · [YaPcore Discord](https://discord.gg/BXbyQk88Da)  
+- **Questions about these Terms:** GitHub issue or email above  
 - **Privacy:** [Privacy Policy](PRIVACY_POLICY.md)  
-- **License compliance:** [LICENSING.md](LICENSING.md)
+- **License compliance:** [LICENSING.md](LICENSING.md)  
+- **Support the project:** [ko-fi.com/xydroc](https://ko-fi.com/xydroc)
 
 ---
 

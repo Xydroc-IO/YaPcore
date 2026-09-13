@@ -13,6 +13,7 @@ Enterprise operator and engineering documentation for YaPcore.
 | Architecture | [Whitepaper](whitepaper/YAPCORE_WHITEPAPER.md) |
 | Releases & assets | [RELEASES.md](start/RELEASES.md) |
 | AI disclosure | [AI_TRANSPARENCY.md](start/AI_TRANSPARENCY.md) |
+| Help / Discord | [discord.gg/BXbyQk88Da](https://discord.gg/BXbyQk88Da) · [xydroc@yaplabs.us](mailto:xydroc@yaplabs.us) · [Ko-fi](https://ko-fi.com/xydroc) |
 
 ---
 

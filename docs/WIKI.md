@@ -6,6 +6,8 @@ Browse by folder: [docs/README.md](README.md).
 
 **Product:** [Bedrock-feel parity](product/BEDROCK_FEEL_PARITY.md) · [matrix](product/BEDROCK_FEEL_MATRIX.md)
 
+**Community:** [Discord](https://discord.gg/BXbyQk88Da) · email [xydroc@yaplabs.us](mailto:xydroc@yaplabs.us) · Discord user **xydroc** · [Ko-fi](https://ko-fi.com/xydroc) · GitHub issues/PRs
+
 ---
 
 ## Getting started — [`start/`](start/)

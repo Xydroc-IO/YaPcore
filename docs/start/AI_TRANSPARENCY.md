@@ -81,4 +81,4 @@ Running YaPcore does **not** require AI tools. Binaries and release zips are ord
 
 ---
 
-*Questions about this disclosure: open a non-security GitHub Discussion or contact maintainers via the channels listed in [SECURITY.md](../../SECURITY.md) for private matters.*
+*Questions about this disclosure: email [xydroc@yaplabs.us](mailto:xydroc@yaplabs.us), Discord (**xydroc** / [invite](https://discord.gg/BXbyQk88Da)), or open a non-security GitHub Discussion. Private/security matters: [SECURITY.md](../../SECURITY.md).*
