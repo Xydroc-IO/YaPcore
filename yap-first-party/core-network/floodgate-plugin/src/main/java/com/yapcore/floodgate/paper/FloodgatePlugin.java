@@ -3,10 +3,12 @@ package com.yapcore.floodgate.paper;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -14,6 +16,7 @@ import com.yapcore.messages.YapMessages;
 import org.geysermc.floodgate.api.InstanceHolder;
 
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.UUID;
 
 /**
@@ -26,6 +29,8 @@ import java.util.UUID;
 public final class FloodgatePlugin extends JavaPlugin implements Listener {
 
     private FloodgateRuntime runtime;
+    /** Recent Bedrock→entity damage lines for `/yapfloodgate combat` (BE-COMBAT-01 evidence). */
+    private final ArrayDeque<String> recentBedrockHits = new ArrayDeque<>();
 
     @Override
     public void onEnable() {
@@ -60,6 +65,33 @@ public final class FloodgatePlugin extends JavaPlugin implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         runtime.forget(event.getPlayer().getUniqueId());
+    }
+
+    /**
+     * Live evidence for BE-COMBAT-01: Folia applied damage from a Floodgate/Bedrock attacker.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBedrockHit(EntityDamageByEntityEvent event) {
+        Entity damager = event.getDamager();
+        if (!(damager instanceof Player player)) {
+            return;
+        }
+        if (runtime == null || !runtime.isBedrock(player.getUniqueId())) {
+            return;
+        }
+        Entity victim = event.getEntity();
+        String line = "BE hit " + player.getName()
+                + " → " + victim.getType().name().toLowerCase()
+                + " id=" + victim.getEntityId()
+                + " dmg=" + String.format(java.util.Locale.ROOT, "%.2f", event.getFinalDamage())
+                + (event.isCancelled() ? " CANCELLED" : "");
+        getLogger().info(line);
+        synchronized (recentBedrockHits) {
+            recentBedrockHits.addLast(line);
+            while (recentBedrockHits.size() > 20) {
+                recentBedrockHits.removeFirst();
+            }
+        }
     }
 
     /** API for other YaP plugins. */
@@ -101,6 +133,23 @@ public final class FloodgatePlugin extends JavaPlugin implements Listener {
             sender.sendMessage(grimFloodgateDiagnostic());
             return true;
         }
+        if (args.length >= 1 && args[0].equalsIgnoreCase("combat")) {
+            if (!sender.hasPermission("yapfloodgate.admin")) {
+                YapMessages.noPermission(sender, "yapfloodgate.admin");
+                return true;
+            }
+            synchronized (recentBedrockHits) {
+                if (recentBedrockHits.isEmpty()) {
+                    sender.sendMessage("No Bedrock→entity damage yet (hit a mob on Bedrock).");
+                } else {
+                    sender.sendMessage("Recent Bedrock hits (" + recentBedrockHits.size() + "):");
+                    for (String line : recentBedrockHits) {
+                        sender.sendMessage("  " + line);
+                    }
+                }
+            }
+            return true;
+        }
         Player target;
         if (args.length >= 1) {
             target = Bukkit.getPlayerExact(args[0]);
@@ -111,7 +160,7 @@ public final class FloodgatePlugin extends JavaPlugin implements Listener {
         } else if (sender instanceof Player p) {
             target = p;
         } else {
-            sender.sendMessage("Usage: /yapfloodgate [player]|reload|grim");
+            sender.sendMessage("Usage: /yapfloodgate [player]|reload|grim|combat");
             return true;
         }
         var info = runtime.get(target.getUniqueId());
