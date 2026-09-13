@@ -54,6 +54,8 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-discord.jar` | Discord bridge |
 | `yap-floodgate.jar` | Velocity Bedrock identity without Floodgate jar |
 | `yap-bedrock-ui.jar` | Bedrock form UI bridge |
+| `yap-tailor.jar` | Skins / wardrobe / emotes / `yap:presence` channel — [BEDROCK_FEEL_PARITY.md](../docs/product/BEDROCK_FEEL_PARITY.md) |
+| `yap-bedrock-blocks.jar` | Catalog Bedrock port-blocks for JE (`yap:blocks`) |
 
 ### GAMEPLAY (opt-in)
 

@@ -26,6 +26,8 @@ Internal engineering scorecard (policies, CI, ≤500 domain structure, DB bootst
 | YaP-Folia provenance (YapLabs authors, patch inventory docs, fresh pin) | **Met** — [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) |
 | Path to ~95% | Deeper suites on protect/map/regions/discord (not more zeros); selective crossplay adapters |
 | Product polish P0/P1 | **Met** — shared messages, defaults pack, Bedrock hubs, catalog reload/DB UX — [MESSAGES.md](../plugins/MESSAGES.md) · [RELEASE_NOTES.md](../start/RELEASE_NOTES.md) |
+| AI transparency | **Disclosed** — [AI_TRANSPARENCY.md](../start/AI_TRANSPARENCY.md) |
+| Bedrock-feel + Link-native join | **Shipped** — [BEDROCK_FEEL_PARITY.md](../product/BEDROCK_FEEL_PARITY.md) · [CROSSPLAY.md](../network/CROSSPLAY.md) |
 
 This is **not** a claim vs Paper MSPT. See [CODE_ELEGANCE_FOLLOWUP.md](CODE_ELEGANCE_FOLLOWUP.md) and whitepaper §13.
 

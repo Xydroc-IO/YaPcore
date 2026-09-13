@@ -1,9 +1,9 @@
 # YaPcore: YaP-Folia Game Authority, Slim Edge Chassis, Native Network Stack, and First-Party Plugin Suite
 
 **YapLabs Technical Whitepaper**  
-Version **0.4** · September 2026  
+Version **0.5** · September 2026  
 Document ID: `YAP-WP-16T-001`  
-Supersedes: v0.3 (September 2026)
+Supersedes: v0.4 (September 2026)
 
 > Prefer plain English? See [YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md](YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md).  
 > Operator rundown: [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
@@ -18,11 +18,11 @@ Minecraft-class game servers traditionally serialize world mutation, plugin call
 2. **YapEngine** — a slim chassis in the YaPcore parent process — owns the public edge: watchdog, Netty traffic/sequencing, Compatibility Bridge, UI sandboxes, and heavy I/O workers (**not** world tick).
 3. **YaP Link** — a first-party Velocity-class proxy (`0.6.0-phase6`) — fronts multi-backend networks.
 
-A **SequenceToken** model orders work across chassis streams. Folia-aware first-party plugins use an explicit **SYNC / HEAVY / UI** contract via [`YapSched`](../plugins/MODULES_AND_API.md). The product ships a **CORE+NETWORK** plugin suite (permissions, chat, moderation, playerdata/economy, protect, world, regions, map, custom commands, …) and an opt-in **GAMEPLAY** tier (thin skills, dungeons, stacker, encyclopedia knobs, disasters). Dual-stack **Java TCP + Bedrock UDP** is first-party (no Via\*/Geyser jars). Stock Fill Folia and Paper + Phase 3 spatial tick remain **legacy / bench** paths only.
+A **SequenceToken** model orders work across chassis streams. Folia-aware first-party plugins use an explicit **SYNC / HEAVY / UI** contract via [`YapSched`](../plugins/MODULES_AND_API.md). The product ships a **CORE+NETWORK** plugin suite (permissions, chat, moderation, playerdata/economy, protect, world, regions, map, custom commands, Tailor presence, Bedrock port-blocks, …) and an opt-in **GAMEPLAY** tier (thin skills, dungeons, stacker, items, encyclopedia knobs, disasters). Dual-stack **Java TCP + Bedrock UDP** is first-party (no Via\*/Geyser jars on the product path). **YaP Link** owns the default **Link-native Bedrock join** (`yap-link-bedrock`); chassis UDP remains a forwarder/legacy path. **Bedrock-feel parity** converts pinned Bedrock extracts (skins, emotes, movement, catalog blocks) rather than recreating “close enough” assets — [BEDROCK_FEEL_PARITY.md](../product/BEDROCK_FEEL_PARITY.md). Domain `.java` files are capped at **≤500 lines**. Stock Fill Folia and Paper + Phase 3 spatial tick remain **legacy / bench** paths only.
 
-This paper describes architecture, concurrency invariants, networking/crossplay, the shipped plugin and data plane, evaluation methodology, and honest product status as of September 2026.
+This paper describes architecture, concurrency invariants, networking/crossplay, the shipped plugin and data plane, evaluation methodology, and honest product status as of September 2026. AI-assisted development is disclosed in [AI_TRANSPARENCY.md](../start/AI_TRANSPARENCY.md).
 
-**Keywords:** game server concurrency; Folia fork; regionized tick; plugin compatibility; Minecraft protocol; dual-stack crossplay; generational ZGC; MariaDB; PostgreSQL; SQLite.
+**Keywords:** game server concurrency; Folia fork; regionized tick; plugin compatibility; Minecraft protocol; dual-stack crossplay; Bedrock-feel parity; YaP Link; generational ZGC; MariaDB; PostgreSQL; SQLite; AI transparency.
 
 ---
 
@@ -61,10 +61,12 @@ YaPcore contributes:
 2. A **maintained Folia fork** (branding, teleport transactions, optional hot-region budgets / partition) — [QUICK_START.md](../start/QUICK_START.md).
 3. **SequenceToken** sequencing for ordered handoff across chassis threads — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
 4. A **Compatibility Bridge** that stages legacy Bukkit mutations onto the game-core drain window (non-product Paper path; best-effort on Folia via Folia APIs + `YapSched`).
-5. Dual-stack **Java TCP + Bedrock UDP** ingress with optional shared listen port — first-party code, not Via\*/Geyser jars — [CROSSPLAY.md](../network/CROSSPLAY.md).
-6. A **three-tier extension model**: Folia-aware plugins (`plugin.yml`), YaP plugins (`yap.yml`), and fine-tune modules (`module.yml`) — [PLUGINS.md](../plugins/PLUGINS.md) · [MODULES_AND_API.md](../plugins/MODULES_AND_API.md).
-7. A **shipped first-party plugin suite** that replaces the common DIY glue stack for ~90% of survival/network operators — §6.
-8. An opt-in **GAMEPLAY tier** — thin skills, dungeons, stacker, encyclopedia knobs, disasters — [SKILLS.md](../plugins/SKILLS.md) · [DUNGEONS.md](../plugins/DUNGEONS.md) · [plugins/README.md](../../plugins/README.md).
+5. Dual-stack **Java TCP + Bedrock UDP** ingress with optional shared listen port — first-party code, not Via\*/Geyser jars — [CROSSPLAY.md](../network/CROSSPLAY.md). Default Bedrock path is **Link-native** (`bedrock-mode=native`) with a Geyser-style join subset port (`YapGeyserSession` / `yap-link-bedrock`) — [NATIVE_PORT.md](../geyser-join-reference/NATIVE_PORT.md).
+6. **Bedrock-feel parity** — convert-verified catalogs for skins, emotes, movement, and port-blocks; optional Fabric **yap-presence** / **yap-blocks** — [BEDROCK_FEEL_PARITY.md](../product/BEDROCK_FEEL_PARITY.md).
+7. A **three-tier extension model**: Folia-aware plugins (`plugin.yml`), YaP plugins (`yap.yml`), and fine-tune modules (`module.yml`) — [PLUGINS.md](../plugins/PLUGINS.md) · [MODULES_AND_API.md](../plugins/MODULES_AND_API.md).
+8. A **shipped first-party plugin suite** that replaces the common DIY glue stack for ~90% of survival/network operators — §6.
+9. An opt-in **GAMEPLAY tier** — thin skills, dungeons, stacker, items, encyclopedia knobs, disasters — [SKILLS.md](../plugins/SKILLS.md) · [DUNGEONS.md](../plugins/DUNGEONS.md) · [plugins/README.md](../../plugins/README.md).
+10. Engineering hygiene: **≤500-line domain files** (`checkDomainLineLimits`) and disclosed **AI-assisted development** — [CONTRIBUTING.md](../../CONTRIBUTING.md) · [AI_TRANSPARENCY.md](../start/AI_TRANSPARENCY.md).
 
 ### 1.3 Non-goals
 
@@ -244,6 +246,8 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-factions.jar` | YaPFactions | Factions overlay on playerdata claims (off by default) |
 | `yap-conquest.jar` | YaPConquest | Hardcore chunk conquest land (off by default) |
 | `yap-bedrock-ui.jar` | YaPBedrockUI | Bedrock `FormService` bridge + Floodgate-only `floodgate:form` relay |
+| `yap-tailor.jar` | YaPTailor | Skins / wardrobe / emotes / `yap:presence` |
+| `yap-bedrock-blocks.jar` | YaPBedrockBlocks | Catalog Bedrock port-blocks (`yap:blocks`) |
 
 ### 6.2 GAMEPLAY (opt-in)
 
@@ -326,7 +330,7 @@ Link plugins (`link-plugin.json`): chat-bridge, mod-sync, server-selector, tab-b
 | Path | Notes |
 |------|-------|
 | **Java Edition** | Framed Netty; Via-class remapping in chassis (`com.yapcore.protocol.via*`). Target protocol ~**776** (26.2). JE floor **1.20.2+**. |
-| **Bedrock** | UDP path; Geyser-class hub in `com.yapcore.crossplay*` — **no Geyser jar**. |
+| **Bedrock** | Link-native join by default (`yap-link-bedrock`); chassis `com.yapcore.crossplay*` / Cloudburst codecs for forwarder & parity — **no Geyser jar**. |
 | **Shared listen** | Optional same port for JE+BE (`shared-listen-port=true`). |
 | **YaP Link** | Optional JE front + optional Bedrock UDP forwarder. |
 | **Packs HTTP** | Default pack `resourcepacks/yapcore-default.zip` on `:8081` (Faithful + skies/water — [CREDITS.md](../../resourcepacks/CREDITS.md)). |
@@ -389,6 +393,10 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 | Fair population MSPT gate | **Citeable** — fullcite 100 bots; peak −12.4% (`shipFc2`); re-verify −5.53% (`20260904T040935Z`); **ship knobs** disclosed in JSON |
 | Dashboard Phase 8 | **Done (ship)** — Factions/Disasters/Stacker/Skills interactive; Protect restore; Regions flags; YAML leftovers documented |
 | Wave 2 Bedrock fidelity | **Done (ship)** — [CROSSPLAY.md](../network/CROSSPLAY.md) matrix; Floodgate forms Green (`floodgate:form`); specialty containers Green (best-effort); P0 menu/kits/ranks/admin hubs |
+| Link-native Bedrock join | **Shipped (default)** — `bedrock-mode=native`; `yap-link-bedrock` session/downstream; join-port docs [NATIVE_PORT.md](../geyser-join-reference/NATIVE_PORT.md) |
+| Bedrock-feel parity (phases 0–6) | **Shipped (config off by default)** — catalogs + Tailor + presence/blocks clients — [BEDROCK_FEEL_MATRIX.md](../product/BEDROCK_FEEL_MATRIX.md) |
+| Domain ≤500 gate | **Enforced** — `gradle checkDomainLineLimits` |
+| AI transparency | **Disclosed** — [AI_TRANSPARENCY.md](../start/AI_TRANSPARENCY.md) |
 | Product polish P0/P1 | **Done (ship)** — `yap-messages-api`, full defaults pack, catalog reload parity, DB-not-ready UX — [MESSAGES.md](../plugins/MESSAGES.md) |
 | Wave 4 Discord / Map / PAPI | **Done (ship)** — event webhooks + account link/role sync; slash A–C + console channel + slash API; flat + BlueMap-class 3D mesh; curated local expansions |
 | Wave 5 Access context/temp | **Done (ship)** — dashboard duration + world/server grants |
@@ -444,7 +452,8 @@ Future work emphasizes full NMS CFI under a Folia kernel plan (only if still bot
 | Operators | [QUICK_START.md](../start/QUICK_START.md), [QUICK_START.md](../start/QUICK_START.md), [PLUGINS.md](../plugins/PLUGINS.md) |
 | Plugin authors | [PLUGINS.md](../plugins/PLUGINS.md), [MODULES_AND_API.md](../plugins/MODULES_AND_API.md), [MODULES_AND_API.md](../plugins/MODULES_AND_API.md) |
 | Engine contributors | [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md), [QUICK_START.md](../start/QUICK_START.md) |
-| Network / crossplay | [YAP_LINK.md](../network/YAP_LINK.md), [CROSSPLAY.md](../network/CROSSPLAY.md), [CROSSPLAY.md](../network/CROSSPLAY.md) |
+| Network / crossplay | [YAP_LINK.md](../network/YAP_LINK.md), [CROSSPLAY.md](../network/CROSSPLAY.md), [BEDROCK_FEEL_PARITY.md](../product/BEDROCK_FEEL_PARITY.md), [NATIVE_PORT.md](../geyser-join-reference/NATIVE_PORT.md) |
+| Legal / AI | [LICENSING.md](../start/LICENSING.md), [AI_TRANSPARENCY.md](../start/AI_TRANSPARENCY.md) |
 | Data | [YAPDB.md](../data/YAPDB.md), [MARIADB.md](../data/MARIADB.md), [POSTGRES.md](../data/POSTGRES.md), [SQLITE.md](../data/SQLITE.md), [PLAYERDATA.md](../data/PLAYERDATA.md), [PERMISSIONS.md](../ops/PERMISSIONS.md) |
 | GAMEPLAY | [SKILLS.md](../plugins/SKILLS.md), [DUNGEONS.md](../plugins/DUNGEONS.md), [STACKER.md](../plugins/STACKER.md), [TUNE.md](../ops/TUNE.md) |
 | Comparison | [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) |

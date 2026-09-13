@@ -1,7 +1,7 @@
 # YaPcore whitepaper — plain English edition
 
 **YapLabs · companion to the technical whitepaper**  
-Version **0.4** · September 2026  
+Version **0.5** · September 2026  
 Pairs with: [YAPCORE_WHITEPAPER.md](YAPCORE_WHITEPAPER.md) (`YAP-WP-16T-001`)
 
 This is the same story as the technical whitepaper, written for people who don’t live in systems engineering.  
@@ -21,7 +21,7 @@ Most Minecraft-style servers put almost everything important on **one main worke
 
 Ordering rules keep things from happening out of turn. Older-style plugins still work through a careful compatibility path when needed. Java and Bedrock players can join toward the same world story. New plugins are guided into lanes so heavy database work doesn’t freeze the fun parts of the game.
 
-On top of that stack we **ship** the plugins most networks used to assemble themselves: ranks, chat, moderation, player data / economy / shops / auction house, protect, world tools, regions, map, factions, YAML custom commands — plus an optional gameplay pack (thin skills, stacker, encyclopedia knobs, disasters).
+On top of that stack we **ship** the plugins most networks used to assemble themselves: ranks, chat, moderation, player data / economy / shops / auction house, protect, world tools, regions, map, factions, Tailor skins/emotes, Bedrock catalog blocks, YAML custom commands — plus an optional gameplay pack (thin skills, stacker, items, encyclopedia knobs, disasters). **Bedrock-feel** mode (off by default) asks Java clients for optional Fabric presence/blocks mods so skins and movement can match Bedrock extracts. We disclose that AI coding assistants help build YaPcore — humans still own review and releases ([AI_TRANSPARENCY.md](../start/AI_TRANSPARENCY.md)).
 
 ---
 
@@ -57,7 +57,7 @@ We use **YaP-Folia** for the real Minecraft game by default (`folia-jar-source=b
 (**phases 0–6 shipped**). Legacy **Paper + Phase 3** spatial tick is **done as code** but **off by default**.
 CORE+NETWORK plugins ship by default; GAMEPLAY (skills / dungeons / stacker / knobs / disasters) is opt-in. Playerdata **shops + auction house** are **on** by default (jobs stay off when skills are used).
 The product is aimed at **busy / high-pop** servers. **Citeable** population MSPT uses **fullcite** (100 active bots + fixtures); peak **−12.4%** vs stock Folia with ship knobs (smart budget + microtick + subregion partition); latest ship-gate re-verify **−5.53%**; heavypop also **−8.09% vs Canvas** (citeable ≥5%) — join verified at 100/200 bots — [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) · [REAL_GAINS.md](../folia/REAL_GAINS.md). The **YaP Encyclopedia** (Purpur-inspired mob/gameplay knobs; crop/fluid NMS opt-in via Folia 0025) ships in the gameplay box — [TUNE.md](../ops/TUNE.md) · [SKILLS.md](../plugins/SKILLS.md) · [DUNGEONS.md](../plugins/DUNGEONS.md).
-Phase 4 dual-stack join DoD is green.
+Phase 4 dual-stack join DoD is green. Link-native Bedrock join is the default product path; Bedrock-feel parity catalogs and clients shipped (config off until operators enable). Domain files stay ≤500 lines. AI assistance is disclosed.
 
 Details: [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) · [QUICK_START.md](../start/QUICK_START.md) ·
 [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) · [YAP_LINK.md](../network/YAP_LINK.md) ·

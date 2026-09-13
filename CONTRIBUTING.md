@@ -12,6 +12,9 @@ Thank you for contributing to a production Folia network stack.
    Link JE outbound framing belongs in `McOutboundPacketEncoder`, not a stacked compress+frame Netty pair.
    Follow-up elegance (DB bootstrap, packages, tests): [CODE_ELEGANCE_FOLLOWUP.md](docs/ops/CODE_ELEGANCE_FOLLOWUP.md).
 4. **Docs** — behavior or API changes update `docs/` Markdown (and the [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) when substantial).
+5. **AI assistance** — AI coding tools are allowed and already used on this project. You remain
+   responsible for every line you submit. Do not paste secrets into prompts. Prefer noting
+   material AI assistance in the PR description. Full policy: [AI_TRANSPARENCY.md](docs/start/AI_TRANSPARENCY.md).
 
 ## Setup
 

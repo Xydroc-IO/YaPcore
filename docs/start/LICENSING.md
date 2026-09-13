@@ -85,6 +85,7 @@ Operator-facing legal docs (templates, not legal advice):
 
 - [Privacy Policy](PRIVACY_POLICY.md)  
 - [Terms of Use](TERMS_OF_USE.md)
+- [AI Transparency](AI_TRANSPARENCY.md) — disclosure that YaPcore is developed with AI coding assistants; human maintainers remain accountable
 
 ---
 

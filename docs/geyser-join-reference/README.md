@@ -1,10 +1,11 @@
 # Geyser join reference (CFR + vendor/geyser-ref shallow clone)
 
-Source jar: `/home/xydroc/Downloads/Geyser-Spigot.jar`  
-Upstream clone: `vendor/geyser-ref/` (sparse)
+Source jar: local Geyser Spigot jar (operator lab)  
+Upstream clone: `vendor/geyser-ref/` (sparse; gitignored)
 
 **Native first-party port:** see **[`NATIVE_PORT.md`](NATIVE_PORT.md)** — package  
-`com.yapcore.crossplay.bedrock.geyserport` / **`YapGeyserSession`** is THE join path.
+`com.yapcore.crossplay.bedrock.geyserport` / **`YapGeyserSession`** is THE chassis join path.  
+Product default Bedrock path is **YaP Link-native** (`yap-link-bedrock`) — [LINK_NATIVE_PORT.md](LINK_NATIVE_PORT.md) · [YAP_LINK_NATIVE.md](../network/YAP_LINK_NATIVE.md).
 
 ## Honest scope
 

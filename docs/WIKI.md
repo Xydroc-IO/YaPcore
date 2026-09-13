@@ -19,6 +19,9 @@ Browse by folder: [docs/README.md](README.md).
 | [SECRETS.md](start/SECRETS.md) | Passwords and tokens |
 | [WINDOWS.md](start/WINDOWS.md) | Windows launchers |
 | [LICENSING.md](start/LICENSING.md) | License and legal |
+| [AI_TRANSPARENCY.md](start/AI_TRANSPARENCY.md) | AI-assisted development disclosure |
+| [PRIVACY_POLICY.md](start/PRIVACY_POLICY.md) | Privacy |
+| [TERMS_OF_USE.md](start/TERMS_OF_USE.md) | Terms of use |
 
 ---
 
@@ -48,11 +51,12 @@ Browse by folder: [docs/README.md](README.md).
 | [NETWORKING.md](network/NETWORKING.md) | Ports and domains |
 | [CROSSPLAY.md](network/CROSSPLAY.md) | Java + Bedrock |
 | [YAP_LINK.md](network/YAP_LINK.md) | Multi-backend proxy |
-| [YAP_LINK_NATIVE.md](network/YAP_LINK_NATIVE.md) | Native Link setup |
+| [YAP_LINK_NATIVE.md](network/YAP_LINK_NATIVE.md) | Native Link setup (incl. Bedrock path toggle) |
 | [VELOCITY.md](network/VELOCITY.md) | Velocity forwarding |
-| [CLIENTS_AND_PACKS.md](network/CLIENTS_AND_PACKS.md) | Clients and resource packs |
+| [CLIENTS_AND_PACKS.md](network/CLIENTS_AND_PACKS.md) | Clients and resource packs (presence / blocks) |
 | [BEDROCK_FEEL_PARITY.md](product/BEDROCK_FEEL_PARITY.md) | Bedrock-feel parity contract (port, don’t recreate) |
 | [BEDROCK_FEEL_MATRIX.md](product/BEDROCK_FEEL_MATRIX.md) | Parity pillar matrix |
+| [NATIVE_PORT.md](geyser-join-reference/NATIVE_PORT.md) | Geyser-style join subset port notes |
 | [VANILLA_CLIENTS.md](network/VANILLA_CLIENTS.md) | Vanilla client support |
 | [EDGE_HARDEN.md](network/EDGE_HARDEN.md) | Public edge hardening |
 | [EDGE_RATE_LIMIT.md](network/EDGE_RATE_LIMIT.md) | Rate limits |
@@ -81,4 +85,5 @@ Browse by folder: [docs/README.md](README.md).
 | [REAL_GAINS.md](folia/REAL_GAINS.md) | Citeable Folia gains |
 | [CANVAS_PARITY.md](folia/CANVAS_PARITY.md) | vs Canvas |
 
-Docs are **Markdown only** in git. Optional local PDFs: `./scripts/export-docs-pdf.sh` (gitignored).
+Docs are **Markdown only** in git. Optional local PDFs: `./scripts/export-docs-pdf.sh` (gitignored under `docs/pdf/`).  
+AI-assisted development is disclosed in [AI_TRANSPARENCY.md](start/AI_TRANSPARENCY.md).

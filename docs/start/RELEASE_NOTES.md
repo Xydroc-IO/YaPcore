@@ -9,6 +9,20 @@ For build commands and zip layout see [RELEASES.md](RELEASES.md). For live statu
 
 ---
 
+## After 1.0.0.0 — Docs / AI transparency (2026-09-13)
+
+Same ship version (no product bump). Documentation refresh for GitHub and operators:
+
+| Area | Change |
+|------|--------|
+| **README** | Product surface includes Link-native Bedrock, Bedrock-feel, Tailor / presence / blocks |
+| **AI disclosure** | [AI_TRANSPARENCY.md](AI_TRANSPARENCY.md) — AI-assisted development under human accountability |
+| **Whitepaper** | **v0.5** — native join, parity, ≤500 domain gate, AI note |
+| **Indexes** | Wiki / docs README / LICENSING / SECURITY / CONTRIBUTING / plugins lists updated |
+| **PDFs** | `./scripts/export-docs-pdf.sh` priority set expanded (local / gitignored) |
+
+---
+
 ## After 1.0.0.0 — Bedrock-feel + native join + ≤500 domains (2026-09-13)
 
 Same ship version (no product bump). Crossplay join path, Bedrock-feel pillars, and domain hygiene:

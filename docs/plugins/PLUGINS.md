@@ -83,7 +83,8 @@ like mods. See [MODULES_AND_API.md](MODULES_AND_API.md).
 `yap-placeholderapi`, `yap-pregen`, `yap-plugin-compat`, `yap-db`, `yap-perms`,
 `yap-playerdata`, `yap-moderation`, `yap-essentials`, `yap-admin`, `yap-packs`, `yap-commands`, `yap-chat`, `yap-tab`,
 `yap-discord`, `yap-protect`, `yap-world`, `yap-regions`, `yap-guard`, `yap-lagguard`,
-`yap-map`, `yap-npcs`, `yap-factions`, `yap-floodgate`, `yap-bedrock-ui`, `yap-folia-bridge`.
+`yap-map`, `yap-npcs`, `yap-factions`, `yap-floodgate`, `yap-bedrock-ui`, `yap-tailor`,
+`yap-bedrock-blocks`, `yap-folia-bridge`.
 
 **GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `-PyapGameplay=true`):
 `yap-skills` (thin mining/woodcutting/strength — [SKILLS.md](SKILLS.md)),

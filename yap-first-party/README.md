@@ -14,9 +14,11 @@ paths moved under this tree. Rebuild with the same tasks as before.
 | [`gameplay/`](gameplay/) | GAMEPLAY (opt-in) | Skills, dungeons, stacker, gameplay knobs, disasters |
 | [`api/`](api/) | API jars | Shared interfaces for plugins & Link plugins |
 | [`modules/`](modules/) | Fine-tune packaging | `finetune-modules/` → install to `modules/` |
-| [`link/`](link/) | YaP Link stack | Native proxy, protocol, API, link plugins |
+| [`link/`](link/) | YaP Link stack | Native proxy, **Bedrock session module**, protocol, API, link plugins |
 | [`engine/`](engine/) | Shared engine helpers | `yap-sched` (Folia scheduler bridge) |
 | [`dev/`](dev/) | Bench / smoke | MSPT bench, compat smoke (not shipped in release) |
+
+Domain `.java` files must stay **≤500 lines** ([CONTRIBUTING.md](../CONTRIBUTING.md)).
 
 ## Build & release
 
@@ -26,9 +28,11 @@ gradle installGameplayDefaults         # + GAMEPLAY plugins
 gradle installFineTuneModules          # fine-tune jars → modules/
 gradle assemblePluginDist              # build/dist/yap-plugins/{core-network,gameplay,api,…}
 gradle assembleRelease                 # full linux/windows release trees
+gradle checkDomainLineLimits           # ≤500-line domain gate
 ```
 
-**License:** first-party sources here are **[GPLv3](../LICENSE)** — [docs/start/LICENSING.md](../docs/start/LICENSING.md).
+**License:** first-party sources here are **[GPLv3](../LICENSE)** — [docs/start/LICENSING.md](../docs/start/LICENSING.md).  
+**AI disclosure:** [docs/start/AI_TRANSPARENCY.md](../docs/start/AI_TRANSPARENCY.md).
 
 See [`plugins/README.md`](../plugins/README.md) for jar names and tiers.
 See [`docs/plugins/MODULES_AND_API.md`](../docs/plugins/MODULES_AND_API.md) for module packaging.
@@ -38,9 +42,10 @@ See [`docs/plugins/MODULES_AND_API.md`](../docs/plugins/MODULES_AND_API.md) for 
 | Path | Gradle project |
 |------|----------------|
 | `link/native/` | `:yap-link-native` |
+| `link/bedrock/` | `:yap-link-bedrock` |
 | `link/api/` | `:yap-link-api` |
 | `link/protocol/` | `:yap-protocol` |
 | `link/plugins/*` | `:yap-link-plugin-*` |
 
 Jar: `yap-first-party/link/native/build/libs/yap-link.jar`  
-Docs: [`docs/network/YAP_LINK_NATIVE.md`](../docs/network/YAP_LINK_NATIVE.md)
+Docs: [`docs/network/YAP_LINK_NATIVE.md`](../docs/network/YAP_LINK_NATIVE.md) · [`docs/geyser-join-reference/NATIVE_PORT.md`](../docs/geyser-join-reference/NATIVE_PORT.md)

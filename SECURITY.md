@@ -26,3 +26,8 @@ We aim to **acknowledge within 72 hours**.
 - Keep dashboard tokens, DB passwords, Discord webhooks, and forwarding secrets out of git — [SECRETS.md](docs/start/SECRETS.md).
 - Understand `online-mode` / offline UUID implications on public networks.
 - Resource-pack URLs should serve trusted bytes; default CDN is GitHub Releases (`yapcore-default.zip`).
+- Do not paste production secrets or private keys into AI assistants — [AI_TRANSPARENCY.md](docs/start/AI_TRANSPARENCY.md).
+
+## AI-assisted development
+
+YaPcore is built with AI coding tools under human review. That does **not** change vulnerability reporting: still use the private channel above. See [AI_TRANSPARENCY.md](docs/start/AI_TRANSPARENCY.md).
