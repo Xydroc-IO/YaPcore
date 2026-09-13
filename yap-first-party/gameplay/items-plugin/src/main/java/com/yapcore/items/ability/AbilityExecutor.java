@@ -8,7 +8,6 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
-import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -16,7 +15,6 @@ import org.bukkit.entity.Snowball;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
 import java.util.Locale;
@@ -106,7 +104,7 @@ final class AbilityExecutor {
             return;
         }
         if (type == AbilityType.LIGHTNING) {
-            Location loc = targetLocation(player, ability.paramDouble("range", 20));
+            Location loc = AbilityDashSupport.targetLocation(player, ability.paramDouble("range", 20));
             if (doFx) {
                 AbilityFx.beam(player.getEyeLocation(), loc, Particle.ELECTRIC_SPARK, 20);
             }
@@ -121,14 +119,14 @@ final class AbilityExecutor {
             return;
         }
         if (type == AbilityType.SMITE_TARGET) {
-            Entity target = rayTarget(player, ability.paramDouble("range", 16));
+            Entity target = AbilityDashSupport.rayTarget(player, ability.paramDouble("range", 16));
             if (target != null) {
                 if (doFx) {
                     AbilityFx.beam(player.getEyeLocation(), target.getLocation().add(0, 1, 0), Particle.ELECTRIC_SPARK, 24);
                 }
                 target.getWorld().strikeLightningEffect(target.getLocation());
                 if (target instanceof LivingEntity living) {
-                    applyAbilityDamage(living, player, ability.paramDouble("damage", 6));
+                    AbilityDashSupport.applyAbilityDamage(living, player, ability.paramDouble("damage", 6));
                 }
                 if (doFx) {
                     fx.burstAt(target.getLocation().add(0, 1, 0), ability);
@@ -274,7 +272,7 @@ final class AbilityExecutor {
             } else {
                 dir.normalize();
             }
-            Location dest = findDashDestination(player, dir, range);
+            Location dest = AbilityDashSupport.findDashDestination(player, dir, range);
             dest.setYaw(start.getYaw());
             dest.setPitch(start.getPitch());
             if (doFx) {
@@ -293,7 +291,7 @@ final class AbilityExecutor {
             player.setVelocity(new Vector(0, ability.paramDouble("hop", 0.35), 0));
             for (Entity nearby : player.getNearbyEntities(radius, radius, radius)) {
                 if (nearby instanceof LivingEntity living && nearby != player) {
-                    applyAbilityDamage(living, player, damage);
+                    AbilityDashSupport.applyAbilityDamage(living, player, damage);
                     Vector knock = living.getLocation().toVector().subtract(origin.toVector());
                     if (knock.lengthSquared() > 1.0e-4) {
                         living.setVelocity(knock.normalize().multiply(0.8).setY(0.35));
@@ -334,7 +332,7 @@ final class AbilityExecutor {
             dir.normalize();
         }
         // Follow look direction in 3D (not flattened to current Y).
-        Location dest = findDashDestination(player, dir, range);
+        Location dest = AbilityDashSupport.findDashDestination(player, dir, range);
         dest.setYaw(start.getYaw());
         dest.setPitch(start.getPitch());
         if (doFx) {
@@ -358,96 +356,12 @@ final class AbilityExecutor {
         }
         for (Entity nearby : player.getNearbyEntities(3, 3, 3)) {
             if (nearby instanceof LivingEntity living && nearby != player) {
-                applyAbilityDamage(living, player, damage);
+                AbilityDashSupport.applyAbilityDamage(living, player, damage);
             }
         }
     }
 
-    /**
-     * Walks along {@code dir} up to {@code range} and returns the farthest location where the
-     * player can stand (feet + head clear). Stops before solids so ceilings/walls clip the dash.
-     * Snaps down onto solid ground so mid-air landings don't feel floaty / glitchy.
-     */
-    private static Location findDashDestination(Player player, Vector dir, double range) {
-        Location start = player.getLocation();
-        World world = start.getWorld();
-        Location best = start.clone();
-        if (world == null || range <= 0) {
-            return best;
-        }
-        double step = 0.35;
-        double max = Math.max(step, range);
-        for (double d = step; d <= max + 1.0e-6; d += step) {
-            Location cand = start.clone().add(dir.clone().multiply(Math.min(d, max)));
-            if (!isPassableStanding(world, cand)) {
-                break;
-            }
-            best = cand;
-        }
-        return snapDashToGround(world, best);
-    }
-
-    /** Drop onto the nearest solid under the feet (up to 10 blocks) while staying passable. */
-    private static Location snapDashToGround(World world, Location feet) {
-        Location loc = feet.clone();
-        // Prefer standing on a block: search downward from current feet.
-        for (int drop = 0; drop <= 10; drop++) {
-            Location tryFeet = loc.clone().subtract(0, drop, 0);
-            Location below = tryFeet.clone().subtract(0, 0.05, 0);
-            if (world.getBlockAt(below).getType().isSolid() && isPassableStanding(world, tryFeet)) {
-                tryFeet.setX(Math.floor(tryFeet.getX()) + 0.5);
-                tryFeet.setZ(Math.floor(tryFeet.getZ()) + 0.5);
-                tryFeet.setY(Math.floor(below.getY()) + 1.0);
-                return tryFeet;
-            }
-        }
-        // No ground nearby — keep air spot but center in the block for less wonky camera.
-        loc.setX(Math.floor(loc.getX()) + 0.5);
-        loc.setZ(Math.floor(loc.getZ()) + 0.5);
-        return loc;
-    }
-
-    private static boolean isPassableStanding(World world, Location feet) {
-        int x = feet.getBlockX();
-        int y = feet.getBlockY();
-        int z = feet.getBlockZ();
-        if (y < world.getMinHeight() || y + 1 >= world.getMaxHeight()) {
-            return false;
-        }
-        return !world.getBlockAt(x, y, z).getType().isSolid()
-                && !world.getBlockAt(x, y + 1, z).getType().isSolid();
-    }
-
-    /** Damage &lt; 0 (create UI "kill") or huge values = instant kill. */
-    private static void applyAbilityDamage(LivingEntity living, Player source, double damage) {
-        if (damage < 0 || damage >= 1_000_000D) {
-            living.setHealth(0.0);
-            return;
-        }
-        if (damage > 0) {
-            living.damage(damage, source);
-        }
-    }
-
-    private static Location targetLocation(Player player, double range) {
-        RayTraceResult hit = player.getWorld().rayTraceBlocks(
-                player.getEyeLocation(), player.getLocation().getDirection(), range);
-        if (hit != null && hit.getHitPosition() != null) {
-            return hit.getHitPosition().toLocation(player.getWorld());
-        }
-        return player.getEyeLocation().add(player.getLocation().getDirection().normalize().multiply(range));
-    }
-
-    private static Entity rayTarget(Player player, double range) {
-        RayTraceResult hit = player.getWorld().rayTraceEntities(
-                player.getEyeLocation(),
-                player.getLocation().getDirection(),
-                range,
-                e -> e instanceof LivingEntity && e != player);
-        return hit == null ? null : hit.getHitEntity();
-    }
-
-            private void applyEffect(Player player, AbilityDefinition ability, boolean doFx) {
+    private void applyEffect(Player player, AbilityDefinition ability, boolean doFx) {
         int duration = ability.paramInt("duration", 100);
         if (duration < 0) {
             duration = -1; // Paper infinite

@@ -1,0 +1,20 @@
+{
+  "band": "band_26_50",
+  "catalog": "emotes",
+  "version": 1,
+  "rule": "Bedrock emote UUIDs only. JE plays converted Bedrock anim assets keyed by these ids.",
+  "entries": [
+    {"id": "4c8ae710-df2e-47cd-814d-cc7bf21a3d67", "name": "Wave", "animation": "animation.player.emote.wave"},
+    {"id": "9a469a61-c83b-4ba9-b507-bdbe64430582", "name": "Simple Clap", "animation": "animation.player.emote.clap"},
+    {"id": "ce5c0300-7f03-455d-aaf1-352e4927b54d", "name": "Over There!", "animation": "animation.player.emote.over_there"},
+    {"id": "17428c4c-3813-4ea1-b3a9-d6a32f83afca", "name": "Follow Me", "animation": "animation.player.emote.follow_me"},
+    {"id": "7cec98d8-55cc-44fe-b0ae-2672b0b2bd37", "name": "The Hammer", "animation": "animation.player.emote.hammer"},
+    {"id": "86b34976-8f41-475b-a386-385080dc6e83", "name": "Diamonds To You!", "animation": "animation.player.emote.diamonds"},
+    {"id": "d7519b5a-45ec-4d27-997c-89d402c6b57f", "name": "The Pickaxe", "animation": "animation.player.emote.pickaxe"},
+    {"id": "71721c51-b7d1-46b1-b7ea-eb4c4126c3db", "name": "Over Here!", "animation": "animation.player.emote.over_here"},
+    {"id": "4ff73ed2-3c2f-4d74-9055-5fa24e59dc7a", "name": "Shrug", "animation": "animation.player.emote.shrug"},
+    {"id": "1ea5f771-827d-408d-ae8e-1af00d7aa416", "name": "Saluting", "animation": "animation.player.emote.salute"},
+    {"id": "d0c60245-538e-4ea2-bdd4-33477db5aa89", "name": "Victory Cheer", "animation": "animation.player.emote.victory"},
+    {"id": "20bcb500-af82-4c2f-9239-e78191c61375", "name": "Thinking", "animation": "animation.player.emote.thinking"}
+  ]
+}

@@ -1,0 +1,44 @@
+name: YaPTailor
+version: '1.0.0.0'
+main: com.yapcore.tailor.TailorPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: First-party skin and wardrobe tailor (FabricTailor-class)
+website: https://github.com/yaplabs
+softdepend: [YaPPerms, YaPDb, YaPBedrockUi, PlaceholderAPI, YaPNPcs]
+commands:
+  skin:
+    description: Change your skin, model, or cape
+    usage: /skin [set|clear|update|slim|wide|cape|setplayer|reload] …
+    aliases: [yapskin, setskin]
+    permission: yap.tailor.skin
+  wardrobe:
+    description: Open your skin wardrobe
+    usage: /wardrobe [rename <id> <name>|save <name>|delete <id>]
+    aliases: [skins, yapwardrobe]
+    permission: yap.tailor.wardrobe
+  emote:
+    description: Play a catalog Bedrock emote
+    usage: /emote [list|<name>]
+    aliases: [yapemote, bemote]
+    permission: yap.tailor.emote
+permissions:
+  yap.tailor.skin:
+    description: Use /skin for yourself
+    default: true
+  yap.tailor.wardrobe:
+    description: Use /wardrobe
+    default: true
+  yap.tailor.emote:
+    description: Play catalog emotes
+    default: true
+  yap.tailor.cape:
+    description: Set or clear a cape
+    default: true
+  yap.tailor.admin:
+    description: Reload and admin tailor tools
+    default: op
+  yap.tailor.setother:
+    description: Set another player's skin
+    default: op

@@ -63,8 +63,27 @@ class FloodgateUnitTest {
             assertNotNull(in);
             String yml = new String(in.readAllBytes(), StandardCharsets.UTF_8);
             assertTrue(yml.contains("main: com.yapcore.floodgate.paper.FloodgatePlugin"));
-            assertTrue(yml.contains("name: YaPFloodgate"));
+            // Grim softdepends plugin name "floodgate" — must match exactly.
+            assertTrue(yml.contains("name: floodgate"));
             assertTrue(yml.contains("yapfloodgate.admin"));
+            assertTrue(yml.contains("provides: [YaPFloodgate]") || yml.contains("YaPFloodgate"));
+        }
+    }
+
+    @Test
+    void grimFacingFloodgateApiExemptsMsbZero() {
+        FloodgateRuntime runtime = new FloodgateRuntime(Logger.getAnonymousLogger(), null);
+        YapFloodgateApi api = new YapFloodgateApi(runtime::isBedrock);
+        org.geysermc.floodgate.api.InstanceHolder.setApi(api);
+        try {
+            UUID bedrock = new UUID(0L, 0x1234L);
+            UUID javaLike = UUID.randomUUID();
+            assertTrue(org.geysermc.floodgate.api.FloodgateApi.getInstance().isFloodgatePlayer(bedrock));
+            assertFalse(org.geysermc.floodgate.api.FloodgateApi.getInstance().isFloodgatePlayer(javaLike));
+            assertTrue(api.isFloodgateId(bedrock));
+            assertFalse(api.isFloodgateId(javaLike));
+        } finally {
+            org.geysermc.floodgate.api.InstanceHolder.setApi(null);
         }
     }
 }

@@ -1,15 +1,19 @@
-name: YaPFloodgate
+name: floodgate
 version: '1.0.0.0'
 main: com.yapcore.floodgate.paper.FloodgatePlugin
 api-version: '1.21'
 folia-supported: true
 author: YapLabs
-description: Native Floodgate identity behind Velocity (no Floodgate jar) — isBedrock / XUID / link
+description: YaP Floodgate identity (registers org.geysermc.floodgate.api for Grim Bedrock exempt)
 website: https://github.com/yaplabs
+# Grim softdepends "floodgate" by name — must match or GeyserUtil.floodgate stays false
+# and Reach never exempts Bedrock players (BE-COMBAT-01).
+loadbefore: [GrimAC, grimac, Grim]
+provides: [YaPFloodgate]
 commands:
   yapfloodgate:
     description: Inspect Floodgate / Bedrock identity, or reload key config
-    usage: /yapfloodgate [player]|reload
+    usage: /yapfloodgate [player]|reload|grim
     permission: yapfloodgate.admin
 permissions:
   yapfloodgate.admin:

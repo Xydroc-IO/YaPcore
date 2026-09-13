@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "yap-presence",
+  "version": "${version}",
+  "name": "YaP Presence (Tailor)",
+  "description": "YaP Tailor menu (Esc / P): skins, wardrobe, emotes, geometry, movement, face_assist via yap:presence.",
+  "authors": [
+    "YaP Labs"
+  ],
+  "contact": {
+    "homepage": "https://yaplabs.us",
+    "sources": "https://github.com/YapLabs/YaPcore"
+  },
+  "license": "GPL-3.0-or-later",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.yapcore.presence.YapPresenceClient"
+    ]
+  },
+  "mixins": [
+    "yap-presence.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25"
+  }
+}

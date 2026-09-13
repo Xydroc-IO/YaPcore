@@ -93,8 +93,8 @@ public final class SchematicPastePreview implements Listener {
         if (plugin.previewControls() != null) {
             plugin.previewControls().give(player);
         }
-        // Always open clickable schematics menu (Confirm / Move / Rotate).
-        plugin.openSchematicsGui(player);
+        // Hotbar tools are primary — do not auto-open the chest GUI (it steals clicks).
+        player.sendMessage("§7Tip: right-click hotbar tools, or use the §fChest§7 tool for the menu.");
     }
 
     /** Move pending preview origin to the player's feet. */

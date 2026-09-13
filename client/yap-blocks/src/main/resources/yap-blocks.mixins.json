@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "com.yapcore.blocks.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "ClientPacketListenerMixin"
+  ],
+  "mixins": [
+    "ServerboundCustomPayloadPacketMixin",
+    "ClientboundCustomPayloadPacketMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "band": "band_26_50",
+  "catalog": "blocks",
+  "version": 1,
+  "rule": "Bedrock-keyed only. JE ports must convert from Bedrock extracts; do not invent yap: block ids for this catalog.",
+  "entries": [
+    {"id": "minecraft:allow", "kind": "exclusive", "reason": "Education/builder allow filter"},
+    {"id": "minecraft:deny", "kind": "exclusive", "reason": "Education/builder deny filter"},
+    {"id": "minecraft:border_block", "kind": "exclusive", "reason": "Structure border marker"},
+    {"id": "minecraft:invisible_bedrock", "kind": "exclusive", "reason": "Invisible barrier"},
+    {"id": "minecraft:camera", "kind": "exclusive", "reason": "Education camera block"},
+    {"id": "minecraft:chalkboard", "kind": "exclusive", "reason": "Education chalkboard"},
+    {"id": "minecraft:underwater_torch", "kind": "exclusive", "reason": "Torch that works underwater"},
+    {"id": "minecraft:underwater_tnt", "kind": "exclusive", "reason": "TNT that works underwater"},
+    {"id": "minecraft:colored_torch_red", "kind": "exclusive", "reason": "Education colored torch"},
+    {"id": "minecraft:colored_torch_blue", "kind": "exclusive", "reason": "Education colored torch"},
+    {"id": "minecraft:colored_torch_green", "kind": "exclusive", "reason": "Education colored torch"},
+    {"id": "minecraft:colored_torch_purple", "kind": "exclusive", "reason": "Education colored torch"},
+    {"id": "minecraft:hard_glass", "kind": "exclusive", "reason": "Blast-resistant glass"},
+    {"id": "minecraft:hard_glass_pane", "kind": "exclusive", "reason": "Blast-resistant glass pane"},
+    {"id": "minecraft:frame", "kind": "form_diff", "reason": "Item frame as block (JE entity)"},
+    {"id": "minecraft:glow_frame", "kind": "form_diff", "reason": "Glow item frame as block"},
+    {"id": "minecraft:compound_creator", "kind": "chemistry", "reason": "Chemistry station"},
+    {"id": "minecraft:material_reducer", "kind": "chemistry", "reason": "Chemistry station"},
+    {"id": "minecraft:lab_table", "kind": "chemistry", "reason": "Chemistry lab table"},
+    {"id": "minecraft:element_constructor", "kind": "chemistry", "reason": "Chemistry element constructor"},
+    {"id": "minecraft:light_block_0", "kind": "form_diff", "reason": "Discrete light block id (JE: light + level state)"},
+    {"id": "minecraft:light_block_7", "kind": "form_diff", "reason": "Discrete light block id mid"},
+    {"id": "minecraft:light_block_15", "kind": "form_diff", "reason": "Discrete light block id max"},
+    {"id": "minecraft:stonecutter_block", "kind": "legacy_name", "reason": "Bedrock legacy stonecutter block name"}
+  ]
+}

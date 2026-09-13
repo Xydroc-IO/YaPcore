@@ -1,0 +1,27 @@
+{
+  "required": true,
+  "package": "com.yapcore.presence.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "AbstractClientPlayerMixin",
+    "ClientPacketListenerMixin",
+    "AvatarRendererMixin",
+    "LivingEntityRendererAccess",
+    "LivingEntityRendererMixin",
+    "LocalPlayerMovementMixin",
+    "FaceAssistPlacementMixin",
+    "OptionsMixin",
+    "MinecraftMixin",
+    "PauseScreenMixin"
+  ],
+  "mixins": [
+    "ServerboundCustomPayloadPacketMixin",
+    "ClientboundCustomPayloadPacketMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}

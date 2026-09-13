@@ -191,8 +191,12 @@ final class WorldEditSchematicOps {
             }
             case "confirm", "yes", "y", "apply" -> schemConfirm(player);
             case "cancel", "no", "abort" -> {
-                if (!plugin.pastePreview().cancel(player)) {
-                    player.sendMessage("§eNo schem preview to cancel.");
+                boolean cancelled = plugin.pastePreview().cancel(player);
+                if (plugin.previewControls() != null) {
+                    plugin.previewControls().clear(player);
+                }
+                if (!cancelled) {
+                    player.sendMessage("§eNo schem preview to cancel — cleared schem tools if any.");
                 }
             }
             case "here", "move", "reposition" -> {

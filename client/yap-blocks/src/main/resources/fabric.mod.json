@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "yap-blocks",
+  "version": "${version}",
+  "name": "YaP Blocks",
+  "description": "Phase 4 JE Bedrock-feel: yap:blocks HELLO for catalog port blocks (visuals via server resource pack).",
+  "authors": [
+    "YaP Labs"
+  ],
+  "contact": {
+    "homepage": "https://yaplabs.us",
+    "sources": "https://github.com/YapLabs/YaPcore"
+  },
+  "license": "GPL-3.0-or-later",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.yapcore.blocks.YapBlocksClient"
+    ]
+  },
+  "mixins": [
+    "yap-blocks.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "band": "band_26_50",
+  "catalog": "movement",
+  "version": 1,
+  "rule": "Constants extracted/measured against Bedrock; JE must use these values (not invented YaP feel).",
+  "unit": "minecraft_bedrock_player_defaults",
+  "entries": [
+    {"id": "player.movement.speed", "value": 0.1, "note": "Base ground speed attribute default"},
+    {"id": "player.movement.sprint_multiplier", "value": 1.3, "note": "Sprint speed factor"},
+    {"id": "player.movement.sneak_multiplier", "value": 0.3, "note": "Sneak speed factor"},
+    {"id": "player.movement.jump_impulse", "value": 0.42, "note": "Vertical jump impulse"},
+    {"id": "player.movement.gravity", "value": 0.08, "note": "Per-tick gravity"},
+    {"id": "player.movement.drag", "value": 0.02, "note": "Air/ground drag term"},
+    {"id": "player.movement.fly_speed", "value": 0.05, "note": "Creative fly base"},
+    {"id": "player.reach.block", "value": 5.0, "note": "Default block interaction reach (survival)"},
+    {"id": "player.reach.entity", "value": 3.0, "note": "Default entity attack reach"},
+    {"id": "player.placement.face_assist", "value": 1.0, "note": "Bedrock-facing placement assist flag (1=on for parity profile)"}
+  ]
+}
