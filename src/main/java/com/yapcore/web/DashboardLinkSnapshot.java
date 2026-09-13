@@ -38,7 +38,9 @@ public final class DashboardLinkSnapshot {
             "ping-passthrough", "aggregate-player-count", "global-tab-list",
             "chat-relay-enabled", "chat-relay-channel", "chat-relay-format", "chat-join-announce",
             "plugins-enabled", "enable-server-command",
-            "bedrock-enabled", "bedrock-bind", "bedrock-backend", "floodgate-key-file",
+            "bedrock-enabled", "bedrock-bind", "bedrock-backend", "bedrock-mode", "floodgate-key-file",
+            "geyser-enabled", "geyser-home", "geyser-jar", "geyser-remote-host", "geyser-remote-port",
+            "geyser-bedrock-bind",
             "connect-timeout-ms", "login-timeout-ms", "read-timeout-sec",
             "backend-probe-interval-sec", "backend-probe-timeout-ms", "skip-down-on-forced-host");
 
@@ -80,9 +82,15 @@ public final class DashboardLinkSnapshot {
         out.put("pingPassthrough", Boolean.parseBoolean(props.getProperty("ping-passthrough", "true")));
         out.put("enableServerCommand", Boolean.parseBoolean(props.getProperty("enable-server-command", "true")));
         out.put("bedrockEnabled", Boolean.parseBoolean(props.getProperty("bedrock-enabled", "false")));
+        out.put("bedrockMode", props.getProperty("bedrock-mode", "native"));
         out.put("bedrockBind", props.getProperty("bedrock-bind", "0.0.0.0:19132"));
         out.put("bedrockBackend", props.getProperty("bedrock-backend", "127.0.0.1:25566"));
         out.put("floodgateKeyFile", props.getProperty("floodgate-key-file", "floodgate-key.pem"));
+        out.put("geyserEnabled", Boolean.parseBoolean(props.getProperty("geyser-enabled", "false")));
+        Path geyserJar = home.resolve(props.getProperty("geyser-home", "geyser"))
+                .resolve(props.getProperty("geyser-jar", "Geyser-Standalone.jar"));
+        out.put("geyserJar", geyserJar.toString());
+        out.put("geyserJarPresent", Files.isRegularFile(geyserJar));
         out.put("connectTimeoutMs", props.getProperty("connect-timeout-ms", "10000"));
         out.put("loginTimeoutMs", props.getProperty("login-timeout-ms", "30000"));
         out.put("servers", parseServers(props));

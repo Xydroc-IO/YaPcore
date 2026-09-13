@@ -2,6 +2,7 @@ package com.yapcore.web.api;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.yapcore.client.ClientEdition;
+import com.yapcore.config.BedrockModeApplier;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.server.YaPcoreServer;
 import com.yapcore.web.DashboardLinkSnapshot;
@@ -63,6 +64,11 @@ public final class DashboardStatusApi {
             m.put("pid", ProcessHandle.current().pid());
             m.put("statusText", server.statusReport());
             try {
+                m.put("bedrockFeel", buildBedrockFeel(cfg));
+            } catch (Exception e) {
+                m.put("bedrockFeel", Map.of("error", String.valueOf(e.getMessage())));
+            }
+            try {
                 m.put("networkHealth", buildNetworkHealth(cfg));
             } catch (Exception e) {
                 m.put("networkHealth", Map.of("error", String.valueOf(e.getMessage())));
@@ -114,6 +120,7 @@ public final class DashboardStatusApi {
             m.put("ram-min-mb", cfg.getRamMinMb());
             m.put("view-distance", cfg.getViewDistance());
             m.put("java-enabled", cfg.isJavaEnabled());
+            m.put("bedrock-mode", cfg.getBedrockMode());
             m.put("bedrock-enabled", cfg.isBedrockEnabled());
             m.put("shared-listen-port", cfg.isSharedListenPort());
             m.put("crossplay-enabled", cfg.isCrossplayEnabled());
@@ -134,7 +141,54 @@ public final class DashboardStatusApi {
         }
         if ("POST".equalsIgnoreCase(ex.getRequestMethod()) || "PUT".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
+            String requestedMode = body.containsKey("bedrock-mode")
+                    ? body.get("bedrock-mode")
+                    : body.get("bedrockMode");
+            boolean modeChanging = requestedMode != null
+                    && !BedrockModeApplier.normalize(requestedMode)
+                            .equals(BedrockModeApplier.normalize(cfg.getBedrockMode()));
+            if (modeChanging) {
+                if (server.isRunning() || server.getLinkProcess().isRunning()
+                        || server.getGeyserProcess().isRunning()) {
+                    DashboardHttp.json(ex, 409, Map.of(
+                            "ok", false,
+                            "error", "Stop the game stack before changing Bedrock path."));
+                    return;
+                }
+                Path linkDir = DashboardLinkSnapshot.resolveHome(
+                        server.getRootDir(), server.getConfig().getLinkEmbedHome());
+                Map<String, Object> applied = BedrockModeApplier.apply(
+                        server.getRootDir(), linkDir, cfg.getFile(), requestedMode);
+                cfg.load();
+                // Mode applier owns these derived flags; do not let the form override them.
+                body.remove("bedrock-mode");
+                body.remove("bedrockMode");
+                body.remove("bedrock-enabled");
+                body.remove("crossplay-enabled");
+                body.remove("shared-listen-port");
+                if (!body.isEmpty()) {
+                    applyConfig(cfg, body);
+                    cfg.save();
+                }
+                try {
+                    server.reloadLimitsFromConfig();
+                } catch (Exception ignored) {
+                }
+                DashboardHttp.json(ex, 200, Map.of(
+                        "ok", true,
+                        "bedrockMode", applied.get("bedrockMode"),
+                        "note", "Bedrock path updated on Link + chassis."));
+                return;
+            }
+            // Unchanged bedrock-mode is always posted by the form — ignore it so routine
+            // saves (MOTD, RAM, etc.) work while Folia/Link are running.
+            body.remove("bedrock-mode");
+            body.remove("bedrockMode");
             applyConfig(cfg, body);
+            // Keep Folia Velocity online-mode aligned with the shared product auth setting.
+            if (cfg.isVelocityEnabled()) {
+                cfg.setVelocityOnlineMode(cfg.isOnlineMode());
+            }
             cfg.save();
             try {
                 server.reloadLimitsFromConfig();
@@ -188,16 +242,48 @@ public final class DashboardStatusApi {
         DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result));
     }
 
+    private Map<String, Object> buildBedrockFeel(ServerConfig cfg) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        String band = cfg.getParityBedrockBand();
+        m.put("enabled", cfg.isParityBedrockFeel());
+        m.put("band", band);
+        Path root = server.getRootDir();
+        Path manifest = root.resolve(
+                "src/main/resources/protocol/bedrock/parity/" + band + "/provenance/manifest.v1.json");
+        Path releasePin = root.resolve("parity-" + band + "-provenance.manifest.v1.json");
+        m.put("provenancePresent", Files.isRegularFile(manifest) || Files.isRegularFile(releasePin));
+        m.put("provenancePath", "protocol/bedrock/parity/" + band + "/provenance/manifest.v1.json");
+        Path clientMods = root.resolve("dist/client-mods/client_mods.zip");
+        m.put("clientModsPresent", Files.isRegularFile(clientMods));
+        m.put("clientModsPath", "dist/client-mods/client_mods.zip");
+        Path pack = root.resolve("resourcepacks/yap-bedrock-blocks/EXTRACT_REPORT.json");
+        m.put("blockPackExtractOk", Files.isRegularFile(pack));
+        m.put("matrixDoc", "docs/product/BEDROCK_FEEL_MATRIX.md");
+        m.put("smokeScript", "scripts/parity/smoke-bedrock-feel.sh");
+        m.put("requiredJeMods", List.of("yap-presence", "yap-blocks"));
+        m.put("summary", cfg.isParityBedrockFeel()
+                ? ("Parity ON · band " + band + " · JE needs yap-presence HELLO")
+                : ("Parity OFF · band " + band + " (catalogs still load)"));
+        return m;
+    }
+
     private Map<String, Object> buildNetworkHealth(ServerConfig cfg) {
         Map<String, Object> h = new LinkedHashMap<>();
         Path root = server.getRootDir();
-        h.put("foliaRunning", server.isRunning());
-        h.put("bedrockEnabled", cfg.isBedrockEnabled());
-        h.put("crossplayEnabled", cfg.isCrossplayEnabled());
-        h.put("velocityEnabled", cfg.isVelocityEnabled());
-        h.put("linkEmbed", cfg.isLinkEmbed());
         var link = DashboardLinkSnapshot.snapshot(
                 root, cfg.getLinkEmbedHome(), cfg.isLinkEmbed(), cfg.isVelocityEnabled());
+        h.put("foliaRunning", server.isRunning());
+        boolean linkBedrock = Boolean.TRUE.equals(link.get("bedrockEnabled"));
+        String mode = String.valueOf(link.getOrDefault("bedrockMode", cfg.getBedrockMode()));
+        boolean geyserBackup = "geyser-backup".equals(mode) || Boolean.TRUE.equals(link.get("geyserEnabled"));
+        // Effective Bedrock for players: Link edge (native/forwarder) or Geyser — not chassis UDP alone.
+        h.put("bedrockEnabled", cfg.isCrossplayEnabled()
+                && (cfg.isBedrockEnabled() || linkBedrock || geyserBackup
+                || "native".equals(mode) || "forwarder".equals(mode) || "first-party".equals(mode)));
+        h.put("crossplayEnabled", cfg.isCrossplayEnabled());
+        h.put("bedrockMode", mode);
+        h.put("velocityEnabled", cfg.isVelocityEnabled());
+        h.put("linkEmbed", cfg.isLinkEmbed());
         h.put("linkProcessRunning", server.getLinkProcess().isRunning());
         h.put("linkConfigPresent", link.get("configPresent"));
         h.put("linkSuiteComplete", link.get("suiteComplete"));
@@ -259,6 +345,7 @@ public final class DashboardStatusApi {
                 case "ram-min-mb" -> cfg.setRamMinMb(DashboardHttp.parseInt(v, cfg.getRamMinMb()));
                 case "view-distance" -> cfg.setViewDistance(DashboardHttp.parseInt(v, cfg.getViewDistance()));
                 case "java-enabled" -> cfg.setJavaEnabled(DashboardHttp.bool(v));
+                case "bedrock-mode" -> cfg.setBedrockMode(v);
                 case "bedrock-enabled" -> cfg.setBedrockEnabled(DashboardHttp.bool(v));
                 case "shared-listen-port" -> cfg.setSharedListenPort(DashboardHttp.bool(v));
                 case "crossplay-enabled" -> cfg.setCrossplayEnabled(DashboardHttp.bool(v));

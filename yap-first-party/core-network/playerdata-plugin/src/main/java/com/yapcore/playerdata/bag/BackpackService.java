@@ -8,12 +8,14 @@ import com.yapcore.sched.YapSched;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -52,6 +54,10 @@ public final class BackpackService {
         this.config = config;
         this.sync = sync;
         this.repository = repository;
+    }
+
+    public JavaPlugin plugin() {
+        return plugin;
     }
 
     public int pagesFor(Player player) {
@@ -132,6 +138,17 @@ public final class BackpackService {
                     return;
                 }
                 ItemStack[] stored = ItemSerializer.deserialize(blob, STORAGE_SLOTS);
+                int removed = stripSchemPreviewTools(stored);
+                if (removed > 0 && !staffView) {
+                    byte[] cleaned = ItemSerializer.serialize(stored);
+                    YapSched.async(plugin, () -> {
+                        try {
+                            repository.save(owner, profile, page, cleaned);
+                        } catch (Exception e) {
+                            plugin.getLogger().log(Level.WARNING, "backpack schem-scrub save " + owner, e);
+                        }
+                    });
+                }
                 boolean itemNav = !hasBagClient(viewerId);
                 int guiSize = itemNav ? GUI_SIZE : STORAGE_SLOTS;
                 BackpackHolder holder = new BackpackHolder(
@@ -152,6 +169,9 @@ public final class BackpackService {
                     viewer.openInventory(inv);
                 } finally {
                     switching.remove(viewerId);
+                }
+                if (removed > 0 && viewerId.equals(owner)) {
+                    viewer.sendMessage("§eRemoved " + removed + " leftover schem tool(s) from this bag page.");
                 }
             });
         });
@@ -203,6 +223,117 @@ public final class BackpackService {
                 plugin.getLogger().log(Level.SEVERE, "backpack shutdown save " + player.getName(), e);
             }
         }
+    }
+
+    /**
+     * Strip YaPWorld schem-preview tools from every backpack page (async).
+     * Matches PDC / lore / custom-model / old hotbar materials (red concrete, chest, …).
+     */
+    public void purgeSchemPreviewToolsAsync(UUID owner, Player notify) {
+        if (owner == null) {
+            return;
+        }
+        String profile = config.inventoryProfile();
+        int max = Math.max(1, config.backpackMaxPages());
+        YapSched.async(plugin, () -> {
+            int total = 0;
+            for (int page = 1; page <= max; page++) {
+                try {
+                    byte[] blob = repository.loadOrEmpty(owner, profile, page, STORAGE_SLOTS);
+                    ItemStack[] stored = ItemSerializer.deserialize(blob, STORAGE_SLOTS);
+                    int removed = stripSchemPreviewTools(stored);
+                    if (removed > 0) {
+                        repository.save(owner, profile, page, ItemSerializer.serialize(stored));
+                        total += removed;
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().log(Level.WARNING, "backpack schem purge page " + page + " " + owner, e);
+                }
+            }
+            if (total > 0 && notify != null) {
+                int n = total;
+                YapSched.entity(plugin, notify, () -> {
+                    if (notify.isOnline()) {
+                        notify.sendMessage("§eCleared " + n + " leftover schem tool(s) from your YaP bag.");
+                    }
+                });
+            }
+        });
+    }
+
+    /** @return number of stacks removed */
+    static int stripSchemPreviewTools(ItemStack[] stored) {
+        if (stored == null) {
+            return 0;
+        }
+        int removed = 0;
+        for (int i = 0; i < stored.length; i++) {
+            if (isSchemPreviewTool(stored[i])) {
+                stored[i] = null;
+                removed++;
+            }
+        }
+        return removed;
+    }
+
+    /**
+     * Detect YaPWorld schem preview hotbar tools (current + legacy materials).
+     * Kept here so bag storage can scrub without depending on yap-world at compile time.
+     */
+    static boolean isSchemPreviewTool(ItemStack stack) {
+        if (stack == null || stack.getType().isAir() || !stack.hasItemMeta()) {
+            return false;
+        }
+        ItemMeta meta = stack.getItemMeta();
+        NamespacedKey key = NamespacedKey.fromString("yapworld:yap_schem_preview_action");
+        if (key != null) {
+            String action = meta.getPersistentDataContainer().get(key, PersistentDataType.STRING);
+            if (action != null && !action.isBlank()) {
+                return true;
+            }
+        }
+        if (meta.hasLore()) {
+            var lore = meta.lore();
+            if (lore != null) {
+                for (Component line : lore) {
+                    if (line == null) {
+                        continue;
+                    }
+                    String plain = PlainTextComponentSerializer.plainText().serialize(line);
+                    if ("Schem preview tool".equals(plain) || plain.startsWith("yap_schem:")) {
+                        return true;
+                    }
+                }
+            }
+        }
+        try {
+            if (meta.hasCustomModelData()) {
+                int cmd = meta.getCustomModelData();
+                if (cmd >= 91001 && cmd <= 91006) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        // Legacy hotbar materials only when they look like named aqua tools
+        if (meta.hasDisplayName()) {
+            String name = PlainTextComponentSerializer.plainText().serialize(meta.displayName());
+            boolean namedTool = name.equalsIgnoreCase("Confirm paste")
+                    || name.equalsIgnoreCase("Move here")
+                    || name.equalsIgnoreCase("Rotate 90°")
+                    || name.equalsIgnoreCase("Rotate 90")
+                    || name.equalsIgnoreCase("Flip")
+                    || name.equalsIgnoreCase("Cancel preview")
+                    || name.equalsIgnoreCase("Schematics menu");
+            if (namedTool) {
+                return switch (stack.getType()) {
+                    case LIME_DYE, LIME_CONCRETE, COMPASS, CLOCK, REPEATER, FEATHER, PISTON,
+                         BARRIER, RED_CONCRETE, NETHER_STAR, CHEST -> true;
+                    default -> false;
+                };
+            }
+        }
+        return false;
     }
 
     static boolean isNav(ItemStack stack) {

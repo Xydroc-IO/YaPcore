@@ -5,6 +5,7 @@ import com.yapcore.client.ClientEdition;
 import com.yapcore.client.ClientRegistry;
 import com.yapcore.compat.YaPBukkitServer;
 import com.yapcore.config.GameAuthorityProperties;
+import com.yapcore.config.LinkIdentityMirror;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.console.ConsoleBus;
 import com.yapcore.crash.CrashLogger;
@@ -58,6 +59,7 @@ public final class YaPcoreServer {
     private final FoliaKernel foliaKernel;
     private final PaperKernel paperKernel;
     private final LinkProcessManager linkProcess;
+    private final GeyserProcessManager geyserProcess;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicInteger onlinePlayers = new AtomicInteger(0);
     private final Path pidFile;
@@ -109,6 +111,7 @@ public final class YaPcoreServer {
         this.foliaKernel = new FoliaKernel(rootDir, config);
         this.paperKernel = new PaperKernel(rootDir, config, engine.yapEngine());
         this.linkProcess = new LinkProcessManager(rootDir, config);
+        this.geyserProcess = new GeyserProcessManager(rootDir, config);
 
         CrashLogger.get().configure(
                 rootDir.resolve(config.getLogsDir()).resolve("crashes"),
@@ -122,11 +125,21 @@ public final class YaPcoreServer {
             } catch (IOException e) {
                 LOG.warning("Could not sync game server.properties: " + e.getMessage());
             }
+            try {
+                LinkIdentityMirror.syncFromServerConfig(rootDir, cfg);
+            } catch (IOException e) {
+                LOG.warning("Could not mirror shared identity to Link: " + e.getMessage());
+            }
         });
         try {
             GameAuthorityProperties.sync(rootDir, config);
         } catch (IOException e) {
             LOG.warning("Could not sync game server.properties on boot: " + e.getMessage());
+        }
+        try {
+            LinkIdentityMirror.syncFromServerConfig(rootDir, config);
+        } catch (IOException e) {
+            LOG.warning("Could not mirror shared identity to Link on boot: " + e.getMessage());
         }
     }
 
@@ -152,6 +165,10 @@ public final class YaPcoreServer {
 
     public LinkProcessManager getLinkProcess() {
         return linkProcess;
+    }
+
+    public GeyserProcessManager getGeyserProcess() {
+        return geyserProcess;
     }
 
     GameKernel gameKernel() {
@@ -211,6 +228,18 @@ public final class YaPcoreServer {
         ProtocolCompat.start();
         try {
             resourcePacks.startHttp();
+            // Host BE/JE skins next to packs; advertise base for textures property
+            gateway.skinService().setSkinsDir(resourcePacks.skinsDir());
+            int packPort = config.getResourcePackHttpPort();
+            String host = new PublicEndpoint(config).publicHost();
+            if (host == null || host.isBlank()) {
+                host = PublicEndpoint.guessLocalIpv4().orElse("127.0.0.1");
+            }
+            String scheme = packPort == 443 ? "https" : "http";
+            String base = (packPort == 80 || packPort == 443)
+                    ? scheme + "://" + host
+                    : "http://" + host + ":" + packPort;
+            gateway.skinService().setPublicSkinBaseUrl(base);
         } catch (IOException e) {
             LOG.warning("Resource pack HTTP failed to start: " + e.getMessage());
         }
@@ -240,6 +269,19 @@ public final class YaPcoreServer {
         pluginRuntime.loadAll();
         moduleRuntime.loadAll();
         GameAuthorityBoot.maybeScheduleRanksAutoApply(this);
+        // Velocity/proxy mode: Start button / API must bring up Link's JE TCP + Bedrock UDP edge.
+        if (config.isVelocityEnabled() && !config.isLinkEmbed()) {
+            try {
+                linkProcess.start();
+            } catch (IOException e) {
+                LOG.warning("YaP Link auto-start failed: " + e.getMessage());
+            }
+            try {
+                geyserProcess.startIfBackupMode();
+            } catch (IOException e) {
+                LOG.warning("Geyser-Standalone backup start failed: " + e.getMessage());
+            }
+        }
     }
 
     public synchronized void stop() {
@@ -255,6 +297,7 @@ public final class YaPcoreServer {
             CrashLogger.get().dump("plugin-shutdown", e);
         }
         gateway.stop();
+        geyserProcess.stop();
         linkProcess.stop();
         paperKernel.stop();
         foliaKernel.stop();

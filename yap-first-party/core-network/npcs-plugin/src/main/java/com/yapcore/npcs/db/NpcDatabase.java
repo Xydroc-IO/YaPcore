@@ -80,13 +80,24 @@ public final class NpcDatabase implements AutoCloseable {
                       dialogue TEXT NULL,
                       quest_id VARCHAR(64) NULL,
                       action TEXT NULL,
+                      skin_url TEXT NULL,
+                      skin_slim %s NOT NULL DEFAULT 0,
                       PRIMARY KEY (server_id, id)
                     )
-                    """);
+                    """.formatted(dialect.booleanType()));
             try {
                 st.execute("ALTER TABLE yap_npcs ADD COLUMN action TEXT NULL");
             } catch (SQLException ignored) {
                 // already present
+            }
+            try {
+                st.execute("ALTER TABLE yap_npcs ADD COLUMN skin_url TEXT NULL");
+            } catch (SQLException ignored) {
+            }
+            try {
+                st.execute("ALTER TABLE yap_npcs ADD COLUMN skin_slim "
+                        + dialect.booleanType() + " NOT NULL DEFAULT 0");
+            } catch (SQLException ignored) {
             }
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_quest_progress (

@@ -284,8 +284,9 @@ public final class PacketFactory {
             flags |= 0x02;
         }
         buf.writeByte(flags);
-        buf.writeFloat(0.05f); // fly speed
-        buf.writeFloat(0.1f);  // walk speed
+        var move = com.yapcore.crossplay.bedrock.parity.MovementParityTable.loadDefault();
+        buf.writeFloat(move.flySpeedF()); // fly speed
+        buf.writeFloat(move.speedF()); // walk speed (protocol field = catalog speed)
         return buf;
     }
 

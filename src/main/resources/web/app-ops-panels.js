@@ -28,14 +28,23 @@
     const body = window.YapFriendlyForms
       ? window.YapFriendlyForms.collect($("settingsForm"))
       : {};
+    // Only send bedrock-mode when it actually changed — otherwise the API used to
+    // treat every save as a path switch and reject while Folia/Link are running.
+    const prevMode = String(settingsCfg["bedrock-mode"] || "native").toLowerCase();
+    const nextMode = String(body["bedrock-mode"] || "").toLowerCase();
+    if (!nextMode || nextMode === prevMode) {
+      delete body["bedrock-mode"];
+    }
     const out = $("settingsOut");
     try {
-      await api("/api/config", { method: "POST", body: JSON.stringify(body) });
-      Object.assign(settingsCfg, body);
+      const res = await api("/api/config", { method: "POST", body: JSON.stringify(body) });
+      await loadSettings();
       if (out) {
         out.hidden = false;
         out.className = "easy-save-msg ok";
-        out.textContent = "Saved. Restart the server if you changed ports or RAM.";
+        out.textContent = (res && res.note)
+          ? res.note + " Restart the stack for ports/RAM/Bedrock path."
+          : "Saved. Restart the server if you changed ports or RAM.";
       }
       await YapDash.refreshStatus();
     } catch (e) {
@@ -433,6 +442,9 @@
       $("linkSuite").textContent = r.suiteComplete ? "yes" : "partial";
       $("linkStart").disabled = r.linkEmbed || r.linkRunning;
       $("linkStop").disabled = r.linkEmbed || !r.linkRunning;
+      if ($("linkVelocityForwarding")) {
+        $("linkVelocityForwarding").value = r.velocityEnabled ? "true" : "false";
+      }
 
       $("linkBind").value = r.bind || "0.0.0.0:25565";
       $("linkMotd").value = r.motd || "YaP Link";
@@ -448,9 +460,25 @@
       $("linkChatChannel").value = r.chatRelayChannel || "network";
       $("linkChatFormat").value = r.chatRelayFormat || "[{server}] {name}: {message}";
       $("linkJoinAnnounce").value = r.chatJoinAnnounce ? "true" : "false";
-      $("linkBedrockEnabled").value = r.bedrockEnabled ? "true" : "false";
+      const mode = r.bedrockMode || "native";
+      $("linkBedrockMode").value =
+        mode === "geyser-backup" ? "geyser-backup"
+          : (mode === "forwarder" || mode === "first-party") ? "forwarder"
+            : "native";
       $("linkBedrockBind").value = r.bedrockBind || "0.0.0.0:19132";
       $("linkBedrockBackend").value = r.bedrockBackend || "127.0.0.1:25566";
+      const hint = $("linkBedrockModeHint");
+      if (hint) {
+        const jarNote = r.geyserJarPresent
+          ? "Geyser-Standalone.jar staged."
+          : "Geyser-Standalone.jar not staged yet (required for backup).";
+        const pathNote = mode === "geyser-backup"
+          ? "Geyser backup: Standalone owns :19132 → Link :25565. "
+          : mode === "forwarder" || mode === "first-party"
+            ? "Forwarder: Link UDP → chassis YapGeyserSession. "
+            : "Link-native: BedrockSessionHost on Link; chassis Bedrock UDP off. ";
+        hint.textContent = pathNote + jarNote + " Stop servers before switching.";
+      }
 
       const sel = r.selector || {};
       $("linkHub").value = sel.hubServer || "lobby";
@@ -515,7 +543,8 @@
       }
       $("linkOut").textContent = (r.note || r.result || "") + "\n" + JSON.stringify(r, null, 2);
       await refreshLink();
-    } catch (e) { alert(e.message); }
+      return r;
+    } catch (e) { alert(e.message); throw e; }
   }
 
   $("linkRefresh").onclick = () => { refreshLink(); connectLinkConsole(); };
@@ -524,17 +553,36 @@
     if (!confirm("Stop YaP Link?")) return;
     linkPost({ action: "stop" });
   };
-  $("linkEnableForwarding").onclick = () => linkPost({ action: "enable-backend-forwarding" });
+  $("linkSaveVelocityForwarding").onclick = async () => {
+    try {
+      const enabled = $("linkVelocityForwarding").value === "true";
+      const r = await linkPost({
+        action: "set-velocity-forwarding",
+        enabled: enabled ? "true" : "false",
+      });
+      if (r && r.note) alert(r.note);
+    } catch (err) {
+      /* linkPost already alerted */
+    }
+  };
   $("linkAddServer").onclick = () => $("linkServersBody").appendChild(linkServerRow("", "", ""));
   $("linkAddForced").onclick = () => $("linkForcedBody").appendChild(linkForcedRow("", ""));
+  $("linkSaveBedrockMode").onclick = async () => {
+    try {
+      const r = await linkPost({
+        action: "set-bedrock-mode",
+        bedrockMode: $("linkBedrockMode").value,
+      });
+      if (r && r.note) alert(r.note);
+      if (r && r.warning) alert(r.warning);
+    } catch (err) {
+      /* linkPost already alerted */
+    }
+  };
   $("linkSaveProxy").onclick = () => linkPost({
     action: "save-proxy",
     bind: $("linkBind").value.trim(),
-    motd: $("linkMotd").value.trim(),
-    maxPlayers: $("linkMaxPlayers").value.trim(),
-    onlineMode: $("linkOnlineMode").value,
-    publicHost: $("linkPublicHost").value.trim(),
-    publicPort: $("linkPublicPort").value.trim(),
+    // Identity (MOTD / max / online / public*) comes from Server setup — not saved here.
     pingPassthrough: $("linkPingPassthrough").value,
     aggregatePlayerCount: $("linkAggregateCount").value,
     globalTabList: $("linkGlobalTab").value,
@@ -543,7 +591,6 @@
     chatRelayChannel: $("linkChatChannel").value.trim(),
     chatRelayFormat: $("linkChatFormat").value.trim(),
     chatJoinAnnounce: $("linkJoinAnnounce").value,
-    bedrockEnabled: $("linkBedrockEnabled").value,
     bedrockBind: $("linkBedrockBind").value.trim(),
     bedrockBackend: $("linkBedrockBackend").value.trim(),
   });

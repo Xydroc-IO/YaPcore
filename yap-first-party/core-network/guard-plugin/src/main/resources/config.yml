@@ -16,7 +16,8 @@ checks:
   reach:
     enabled: true
     sensitivity: 0.8
-    max-distance: 3.5
+    # Bedrock catalog player.reach.entity
+    max-distance: 3.0
   scaffold:
     enabled: true
     sensitivity: 0.7

@@ -1,23 +1,32 @@
 package com.yapcore.resourcepack;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import com.yapcore.crossplay.skin.BedrockCanonicalSkin;
+import com.yapcore.crossplay.skin.SkinService;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Base64;
+import java.util.UUID;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
 import java.util.logging.Logger;
 
 /**
  * Lightweight HTTP host so Java and Bedrock clients can download the active pack
  * directly from the YaPcore process (seamless, no external CDN required).
  * Also serves YaPMap UI / tiles / meshes at {@code /map/}, {@code /tiles/}, {@code /meshes/}
- * when configured.
+ * when configured, Tailor skin apply at {@code POST /skin/apply}, and emote play at
+ * {@code POST /emote/play}.
  */
 public final class ResourcePackHttpServer {
 
@@ -29,29 +38,69 @@ public final class ResourcePackHttpServer {
     private final Path mapWebDir;
     private final Path mapTilesDir;
     private final Path mapMeshesDir;
+    private final Path skinsDir;
+    private volatile SkinService skinService;
+    private volatile BiConsumer<String, BedrockCanonicalSkin> skinApplyHandler;
+    private volatile EmotePlayHandler emotePlayHandler;
     private HttpServer http;
 
+    @FunctionalInterface
+    public interface EmotePlayHandler {
+        boolean play(String username, UUID uuid, String emoteId);
+    }
+
     public ResourcePackHttpServer(String bindHost, int port, Path packsDir) {
-        this(bindHost, port, packsDir, null, null, null);
+        this(bindHost, port, packsDir, null, null, null, null, null);
     }
 
     public ResourcePackHttpServer(String bindHost, int port, Path packsDir,
                                   Path mapWebDir, Path mapTilesDir) {
-        this(bindHost, port, packsDir, mapWebDir, mapTilesDir, null);
+        this(bindHost, port, packsDir, mapWebDir, mapTilesDir, null, null, null);
     }
 
     public ResourcePackHttpServer(String bindHost, int port, Path packsDir,
                                   Path mapWebDir, Path mapTilesDir, Path mapMeshesDir) {
+        this(bindHost, port, packsDir, mapWebDir, mapTilesDir, mapMeshesDir, null, null);
+    }
+
+    public ResourcePackHttpServer(String bindHost, int port, Path packsDir,
+                                  Path mapWebDir, Path mapTilesDir, Path mapMeshesDir,
+                                  Path skinsDir) {
+        this(bindHost, port, packsDir, mapWebDir, mapTilesDir, mapMeshesDir, skinsDir, null);
+    }
+
+    public ResourcePackHttpServer(String bindHost, int port, Path packsDir,
+                                  Path mapWebDir, Path mapTilesDir, Path mapMeshesDir,
+                                  Path skinsDir, SkinService skinService) {
         this.bindHost = bindHost == null || bindHost.isBlank() ? "0.0.0.0" : bindHost;
         this.port = port;
         this.packsDir = packsDir;
         this.mapWebDir = mapWebDir;
         this.mapTilesDir = mapTilesDir;
         this.mapMeshesDir = mapMeshesDir;
+        this.skinsDir = skinsDir;
+        this.skinService = skinService;
+    }
+
+    public Path getSkinsDir() {
+        return skinsDir;
     }
 
     public int getPort() {
         return port;
+    }
+
+    public void setSkinService(SkinService skinService) {
+        this.skinService = skinService;
+    }
+
+    /** Optional override; default applies via {@link SkinService#putCanonical}. */
+    public void setSkinApplyHandler(BiConsumer<String, BedrockCanonicalSkin> handler) {
+        this.skinApplyHandler = handler;
+    }
+
+    public void setEmotePlayHandler(EmotePlayHandler handler) {
+        this.emotePlayHandler = handler;
     }
 
     public synchronized void start() throws IOException {
@@ -74,6 +123,12 @@ public final class ResourcePackHttpServer {
             Files.createDirectories(mapMeshesDir);
             http.createContext("/meshes/", this::serveMapMeshes);
         }
+        if (skinsDir != null) {
+            Files.createDirectories(skinsDir);
+            http.createContext("/skin/", this::serveSkin);
+        }
+        http.createContext("/skin/apply", this::handleSkinApply);
+        http.createContext("/emote/play", this::handleEmotePlay);
         http.createContext("/health", ex -> {
             byte[] ok = "ok".getBytes();
             ex.sendResponseHeaders(200, ok.length);
@@ -91,6 +146,11 @@ public final class ResourcePackHttpServer {
         if (mapWebDir != null) {
             LOG.info("YaPMap UI at http://127.0.0.1:" + port + "/map/ (web=" + mapWebDir.toAbsolutePath() + ")");
         }
+        if (skinsDir != null) {
+            LOG.info("Skin HTTP at /skin/ (dir=" + skinsDir.toAbsolutePath() + ")");
+        }
+        LOG.info("Skin apply POST at /skin/apply");
+        LOG.info("Emote play POST at /emote/play");
     }
 
     public synchronized void stop() {
@@ -98,6 +158,140 @@ public final class ResourcePackHttpServer {
             http.stop(0);
             http = null;
             LOG.info("Resource pack HTTP server stopped");
+        }
+    }
+
+    private void handleEmotePlay(HttpExchange exchange) throws IOException {
+        try {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.getResponseHeaders().add("Allow", "POST");
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
+            byte[] bodyBytes;
+            try (InputStream in = exchange.getRequestBody()) {
+                bodyBytes = in.readAllBytes();
+            }
+            String body = new String(bodyBytes, StandardCharsets.UTF_8);
+            JsonObject o = JsonParser.parseString(body).getAsJsonObject();
+            String username = o.has("username") && !o.get("username").isJsonNull()
+                    ? o.get("username").getAsString() : "";
+            String emoteId = o.has("emoteId") && !o.get("emoteId").isJsonNull()
+                    ? o.get("emoteId").getAsString() : "";
+            if (username.isBlank() || emoteId.isBlank()) {
+                writeJson(exchange, 400, "{\"ok\":false,\"error\":\"username and emoteId required\"}");
+                return;
+            }
+            UUID uuid;
+            if (o.has("uuid") && !o.get("uuid").isJsonNull() && !o.get("uuid").getAsString().isBlank()) {
+                uuid = UUID.fromString(o.get("uuid").getAsString());
+            } else {
+                writeJson(exchange, 400, "{\"ok\":false,\"error\":\"uuid required\"}");
+                return;
+            }
+            EmotePlayHandler handler = emotePlayHandler;
+            if (handler == null) {
+                writeJson(exchange, 503, "{\"ok\":false,\"error\":\"emote service not wired\"}");
+                return;
+            }
+            boolean ok = handler.play(username, uuid, emoteId.trim());
+            if (!ok) {
+                writeJson(exchange, 400, "{\"ok\":false,\"error\":\"emote rejected (unknown or cooldown)\"}");
+                return;
+            }
+            writeJson(exchange, 200, "{\"ok\":true,\"emoteId\":\"" + emoteId.replace("\"", "") + "\"}");
+            LOG.info("Emote play via HTTP for " + username + " id=" + emoteId);
+        } catch (Exception e) {
+            LOG.warning("POST /emote/play failed: " + e.getMessage());
+            writeJson(exchange, 400, "{\"ok\":false,\"error\":\""
+                    + (e.getMessage() == null ? "bad request" : e.getMessage().replace("\"", "'"))
+                    + "\"}");
+        } finally {
+            exchange.close();
+        }
+    }
+
+    private void handleSkinApply(HttpExchange exchange) throws IOException {
+        try {
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.getResponseHeaders().add("Allow", "POST");
+                exchange.sendResponseHeaders(405, -1);
+                return;
+            }
+            byte[] bodyBytes;
+            try (InputStream in = exchange.getRequestBody()) {
+                bodyBytes = in.readAllBytes();
+            }
+            String body = new String(bodyBytes, StandardCharsets.UTF_8);
+            JsonObject o = JsonParser.parseString(body).getAsJsonObject();
+            String username = o.has("username") && !o.get("username").isJsonNull()
+                    ? o.get("username").getAsString() : "";
+            if (username.isBlank()) {
+                writeJson(exchange, 400, "{\"ok\":false,\"error\":\"username required\"}");
+                return;
+            }
+            BedrockCanonicalSkin skin;
+            if (o.has("bedrockCanonicalJson") && !o.get("bedrockCanonicalJson").isJsonNull()
+                    && !o.get("bedrockCanonicalJson").getAsString().isBlank()) {
+                skin = BedrockCanonicalSkin.fromJson(o.get("bedrockCanonicalJson").getAsString());
+            } else {
+                UUID uuid;
+                if (o.has("uuid") && !o.get("uuid").isJsonNull() && !o.get("uuid").getAsString().isBlank()) {
+                    uuid = UUID.fromString(o.get("uuid").getAsString());
+                } else {
+                    writeJson(exchange, 400, "{\"ok\":false,\"error\":\"uuid required\"}");
+                    return;
+                }
+                boolean slim = o.has("slim") && !o.get("slim").isJsonNull() && o.get("slim").getAsBoolean();
+                byte[] skinPng = decodeB64Field(o, "skinPngBase64");
+                byte[] capePng = decodeB64Field(o, "capePngBase64");
+                skin = BedrockCanonicalSkin.classicPng(uuid, skinPng, capePng, slim).ensureGeometryData();
+            }
+            BiConsumer<String, BedrockCanonicalSkin> handler = skinApplyHandler;
+            SkinService svc = skinService;
+            if (handler != null) {
+                handler.accept(username, skin);
+            } else if (svc != null) {
+                svc.putCanonical(username, skin);
+            } else {
+                writeJson(exchange, 503, "{\"ok\":false,\"error\":\"skin service not wired\"}");
+                return;
+            }
+            writeJson(exchange, 200, "{\"ok\":true,\"username\":\"" + username.replace("\"", "")
+                    + "\",\"contentSha256\":\"" + skin.ensureGeometryData().contentSha256() + "\"}");
+            LOG.info("Skin apply via HTTP for " + username);
+        } catch (Exception e) {
+            LOG.warning("POST /skin/apply failed: " + e.getMessage());
+            writeJson(exchange, 400, "{\"ok\":false,\"error\":\""
+                    + (e.getMessage() == null ? "bad request" : e.getMessage().replace("\"", "'"))
+                    + "\"}");
+        } finally {
+            exchange.close();
+        }
+    }
+
+    private static byte[] decodeB64Field(JsonObject o, String key) {
+        if (!o.has(key) || o.get(key).isJsonNull()) {
+            return null;
+        }
+        String s = o.get(key).getAsString();
+        if (s == null || s.isBlank()) {
+            return null;
+        }
+        try {
+            return Base64.getDecoder().decode(s.trim());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static void writeJson(HttpExchange exchange, int code, String json) throws IOException {
+        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
+        Headers headers = exchange.getResponseHeaders();
+        headers.add("Content-Type", "application/json; charset=utf-8");
+        exchange.sendResponseHeaders(code, bytes.length);
+        try (OutputStream out = exchange.getResponseBody()) {
+            out.write(bytes);
         }
     }
 
@@ -189,6 +383,10 @@ public final class ResourcePackHttpServer {
 
     private void serveMapMeshes(HttpExchange exchange) throws IOException {
         serveSafeFile(exchange, mapMeshesDir, "/meshes/", null);
+    }
+
+    private void serveSkin(HttpExchange exchange) throws IOException {
+        serveSafeFile(exchange, skinsDir, "/skin/", "image/png");
     }
 
     private static void serveSafeFile(HttpExchange exchange, Path rootDir, String prefix, String forcedContentType)

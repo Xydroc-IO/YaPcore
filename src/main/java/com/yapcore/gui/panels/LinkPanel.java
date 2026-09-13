@@ -117,9 +117,12 @@ public final class LinkPanel {
         actions.setOpaque(false);
         actions.add(startBtn);
         actions.add(stopBtn);
-        JButton setup = new JButton("Enable backend forwarding");
-        setup.addActionListener(e -> enableBackendForwarding());
-        actions.add(setup);
+        JButton setupOn = new JButton("Forwarding ON");
+        setupOn.addActionListener(e -> setBackendForwarding(true));
+        actions.add(setupOn);
+        JButton setupOff = new JButton("Forwarding OFF");
+        setupOff.addActionListener(e -> setBackendForwarding(false));
+        actions.add(setupOff);
         JButton configure = new JButton("Configure…");
         configure.addActionListener(e -> openSettings());
         actions.add(configure);
@@ -128,8 +131,9 @@ public final class LinkPanel {
         c.gridy++;
         panel.add(GuiTheme.tip(
                 "Runs <code>yap-link.jar</code> as its own process — like Velocity. "
-                        + "Players join Link's port; backends need <code>velocity-enabled=true</code> "
-                        + "and the same <code>forwarding.secret</code>."), c);
+                        + "Use <b>Forwarding ON/OFF</b> to toggle <code>velocity-enabled</code> "
+                        + "(same as <code>setup-velocity-forwarding.sh --enable|--disable</code>). "
+                        + "Restart Folia after changing."), c);
         return panel;
     }
 
@@ -262,25 +266,33 @@ public final class LinkPanel {
         refreshStatus();
     }
 
-    private void enableBackendForwarding() {
+    private void setBackendForwarding(boolean enable) {
+        String flag = enable ? "--enable" : "--disable";
         int ok = JOptionPane.showConfirmDialog(root,
-                "Run setup-velocity-forwarding.sh --enable?\n"
-                        + "Sets velocity-enabled=true and Folia backend forwarding.",
+                "Run setup-velocity-forwarding.sh " + flag + "?\n"
+                        + (enable
+                        ? "Sets velocity-enabled=true — join via YaP Link :25565."
+                        : "Sets velocity-enabled=false — direct chassis :25566."),
                 "Backend forwarding", JOptionPane.OK_CANCEL_OPTION);
         if (ok != JOptionPane.OK_OPTION) {
             return;
         }
         Path script = server.getRootDir().resolve("scripts/setup-velocity-forwarding.sh");
-        console.append("[Link] Running " + script.getFileName() + " --enable…\n");
+        console.append("[Link] Running " + script.getFileName() + " " + flag + "…\n");
         new SwingWorker<String, Void>() {
             @Override
             protected String doInBackground() throws Exception {
-                ProcessBuilder pb = new ProcessBuilder("bash", script.toString(), "--enable");
+                ProcessBuilder pb = new ProcessBuilder("bash", script.toString(), flag);
                 pb.directory(server.getRootDir().toFile());
                 pb.redirectErrorStream(true);
                 Process p = pb.start();
                 String out = new String(p.getInputStream().readAllBytes());
                 p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
+                try {
+                    server.getConfig().load();
+                } catch (Exception ignored) {
+                    // Folia paper-global applies on next start
+                }
                 return out + "\nexit=" + p.exitValue();
             }
 
@@ -288,9 +300,13 @@ public final class LinkPanel {
             protected void done() {
                 try {
                     console.append(get());
+                    if (!get().endsWith("\n")) {
+                        console.append("\n");
+                    }
                 } catch (Exception e) {
                     console.append("Failed: " + e.getMessage() + "\n");
                 }
+                refreshStatus();
             }
         }.execute();
     }

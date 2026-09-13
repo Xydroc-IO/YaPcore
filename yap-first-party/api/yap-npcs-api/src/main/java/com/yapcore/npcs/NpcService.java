@@ -25,6 +25,12 @@ public interface NpcService {
      */
     boolean setAction(String id, String action);
 
+    /** Persist a skin texture URL for player-like (Mannequin) NPC rendering. */
+    boolean setSkinUrl(String id, String skinUrl);
+
+    /** Slim (Alex) vs wide (Steve) arm model for the NPC skin. */
+    boolean setSkinSlim(String id, boolean slim);
+
     List<String> listIds();
 
     void respawnAll();

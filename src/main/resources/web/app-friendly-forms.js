@@ -16,6 +16,7 @@
       readonly: !!f.readonly,
       advanced: !!f.advanced,
       placeholder: f.placeholder || "",
+      options: Array.isArray(f.options) ? f.options : null,
     };
   }
 
@@ -36,6 +37,14 @@
     }
     if (f.type === "bool") {
       return switchHtml(name, val === "true" || val === "yes" || f.value === true);
+    }
+    if (f.type === "enum" && f.options && f.options.length) {
+      const opts = f.options.map((o) => {
+        const s = String(o);
+        const sel = s === val ? " selected" : "";
+        return `<option value="${escapeAttr(s)}"${sel}>${escapeAttr(s)}</option>`;
+      }).join("");
+      return `<select name="${escapeAttr(name)}" data-key="${escapeAttr(name)}">${opts}</select>`;
     }
     const type = f.secret ? "password" : (f.type === "number" ? "number" : "text");
     const ph = f.placeholder ? ` placeholder="${escapeAttr(f.placeholder)}"` : "";
@@ -100,30 +109,31 @@
   }
 
   const SETTINGS = [
-    { group: "What players see", blurb: "This is what shows up in the Minecraft server list.", fields: [
-      { key: "server-name", title: "Server name", hint: "Shows in the Minecraft server list." },
-      { key: "motd", title: "Welcome line", hint: "Short message under the name. Color codes like &a are ok." },
-      { key: "resource-pack-enabled", title: "Send our textures", hint: "Yes = players are offered the server pack on join.", type: "bool" },
+    { group: "What players see", blurb: "Same name and welcome line for Java and Bedrock — one shared world.", fields: [
+      { key: "server-name", title: "Server name", hint: "Shows in both Java and Bedrock server lists." },
+      { key: "motd", title: "Welcome line", hint: "Short message under the name for both editions. Color codes like &a are ok." },
+      { key: "resource-pack-enabled", title: "Send our textures", hint: "Yes = players are offered the server pack on join (Java zip + Bedrock mcpack).", type: "bool" },
       { key: "resource-pack-file", title: "Which pack file", hint: "Usually yapcore-default.zip. Leave this unless you added another pack." },
     ]},
-    { group: "Who can join", blurb: "How many people, and which Minecraft editions.", fields: [
-      { key: "max-players", title: "Player limit", hint: "How many people can be online at once.", type: "number" },
-      { key: "online-mode", title: "Official accounts only", hint: "Yes = Microsoft/Mojang login. No = LAN / cracked / YaP Link offline.", type: "bool" },
-      { key: "java-enabled", title: "Java Edition", hint: "PC / Mac / Linux Minecraft.", type: "bool" },
-      { key: "bedrock-enabled", title: "Bedrock Edition", hint: "Phones, consoles, and Windows Bedrock.", type: "bool" },
-      { key: "crossplay-enabled", title: "Java + Bedrock together", hint: "Keep on so both editions share the same world.", type: "bool" },
+    { group: "Who can join", blurb: "Java and Bedrock play together on this same world. These limits apply to everyone.", fields: [
+      { key: "max-players", title: "Player limit", hint: "Total slots for Java + Bedrock combined.", type: "number" },
+      { key: "online-mode", title: "Official accounts only", hint: "Yes = Microsoft/Mojang login for both editions. No = LAN / cracked / YaP Link offline.", type: "bool" },
+      { key: "java-enabled", title: "Allow Java Edition", hint: "PC / Mac / Linux Minecraft. Keep on for crossplay.", type: "bool" },
+      { key: "crossplay-enabled", title: "Shared world (crossplay)", hint: "Keep on so Java and Bedrock share the same Folia world.", type: "bool" },
+      { key: "bedrock-mode", title: "Bedrock join path", hint: "How Bedrock reaches this world. native = Link (recommended). Set before starting servers.", type: "enum", options: ["native", "forwarder", "geyser-backup"] },
       { key: "allow-localhost", title: "Allow this computer", hint: "Yes lets you join from the same machine that runs the server.", type: "bool" },
     ]},
-    { group: "How the world feels", blurb: "Higher numbers look nicer but need more RAM.", fields: [
+    { group: "How the world feels", blurb: "Higher numbers look nicer but need more RAM. Same for every player.", fields: [
       { key: "view-distance", title: "How far they can see", hint: "Chunks. 8–10 is smooth. Higher needs more RAM.", type: "number" },
       { key: "ram-mb", title: "Max memory (MB)", hint: "4096 is a good start for a small public box.", type: "number" },
       { key: "ram-min-mb", title: "Memory to reserve (MB)", hint: "Usually half of max, or 1024.", type: "number" },
     ]},
     { group: "Advanced network", advanced: true, blurb: "Leave these unless a guide told you to change a port or hostname.", fields: [
       { key: "bind-host", title: "Listen address", hint: "0.0.0.0 = all network cards. Leave this if you are not sure." },
-      { key: "port", title: "Java port", hint: "Default 25565. Players type this after the IP.", type: "number" },
-      { key: "bedrock-port", title: "Bedrock port", hint: "Default 19132 unless you share one port.", type: "number" },
-      { key: "shared-listen-port", title: "Same port for Java and Bedrock", hint: "Yes = one public port. No = separate Java + Bedrock ports.", type: "bool" },
+      { key: "port", title: "Game world port (Folia)", hint: "Backend world listen port (default 25566). Players join via Link, not this port.", type: "number" },
+      { key: "bedrock-port", title: "Bedrock advertise port", hint: "Usually 19132 for phones. Link binds this in native mode.", type: "number" },
+      { key: "bedrock-enabled", title: "Chassis Bedrock UDP", hint: "Derived from Bedrock path — native leaves this off (Link owns UDP).", type: "bool" },
+      { key: "shared-listen-port", title: "Same port for Java and Bedrock", hint: "Yes = one public port (forwarder). No = separate Java + Bedrock ports.", type: "bool" },
       { key: "public-host", title: "Public hostname", hint: "What you give players, e.g. play.example.com" },
       { key: "server-domain", title: "Domain", hint: "Used for links and the pack URL." },
       { key: "public-port", title: "Public Java port", hint: "Port people use from the internet if it differs from the listen port.", type: "number" },

@@ -40,6 +40,7 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
         if (args.length == 0) {
             sender.sendMessage("§e/npc create|remove|list|info|respawn|reload");
             sender.sendMessage("§e/npc setdialogue|setquest|setwarp|setspawn|setcommand|setplayer <id> …");
+            sender.sendMessage("§e/npc setskin <id> <url> · setskinslim <id> <true|false>");
             sender.sendMessage("§e/npc shop <enable|addbuy|addsell|list|deloffer|clear> <id> …");
             sender.sendMessage("§7Hub: §f/npc shop§7 · §fsetwarp§7 · §fsetspawn§7 · §fsetcommand§7 (not warp:spawn)");
             return true;
@@ -51,6 +52,8 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             case "list" -> handleList(sender, args);
             case "setquest" -> handleSetQuest(sender, args);
             case "setdialogue" -> handleSetDialogue(sender, args);
+            case "setskin" -> handleSetSkin(sender, args);
+            case "setskinslim" -> handleSetSkinSlim(sender, args);
             case "setaction" -> actionOps.handleSetAction(sender, args);
             case "setwarp" -> actionOps.handleSetWarp(sender, args);
             case "setspawn" -> actionOps.handleSetSpawn(sender, args);
@@ -183,6 +186,39 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean handleSetSkin(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /npc setskin <id> <url|clear>");
+            return true;
+        }
+        String url = args[2];
+        if ("clear".equalsIgnoreCase(url) || "none".equalsIgnoreCase(url) || "off".equalsIgnoreCase(url)) {
+            url = "";
+        }
+        if (npcs.setSkinUrl(args[1], url)) {
+            sender.sendMessage("§aSkin URL for §f" + args[1] + " §7→ §f"
+                    + (url.isBlank() ? "(cleared → villager)" : url));
+        } else {
+            sender.sendMessage("§cNPC not found.");
+        }
+        return true;
+    }
+
+    private boolean handleSetSkinSlim(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /npc setskinslim <id> <true|false>");
+            return true;
+        }
+        boolean slim = "true".equalsIgnoreCase(args[2]) || "slim".equalsIgnoreCase(args[2])
+                || "1".equals(args[2]) || "yes".equalsIgnoreCase(args[2]);
+        if (npcs.setSkinSlim(args[1], slim)) {
+            sender.sendMessage("§aSkin model for §f" + args[1] + " §7→ §f" + (slim ? "slim" : "wide"));
+        } else {
+            sender.sendMessage("§cNPC not found.");
+        }
+        return true;
+    }
+
     private boolean handleRespawn(CommandSender sender) {
         npcs.respawnAll();
         sender.sendMessage("§aRespawning all NPCs…");
@@ -218,6 +254,9 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7Quest §f" + (npc.questId() == null ? "—" : npc.questId()));
         sender.sendMessage("§7Dialogue §f" + (npc.dialogue() == null ? "(default)" : npc.dialogue()));
         sender.sendMessage("§7Action §f" + (npc.action() == null || npc.action().isBlank() ? "—" : npc.action()));
+        sender.sendMessage("§7Skin §f" + (npc.skinUrl() == null || npc.skinUrl().isBlank()
+                ? "— (villager)"
+                : npc.skinUrl() + " §7(" + (npc.skinSlim() ? "slim" : "wide") + ")"));
         if (NpcActionMutator.hasSpawn(npc.action())) {
             sender.sendMessage("§7Spawn §aon §7— click runs §f/spawn");
         }
@@ -233,16 +272,21 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
         }
         if (args.length == 1) {
             return NpcCommandParse.prefix(List.of("create", "remove", "list", "setquest", "setdialogue", "setaction",
-                    "setwarp", "setspawn", "setcommand", "setplayer", "shop", "respawn", "reload", "info"), args[0]);
+                    "setskin", "setskinslim", "setwarp", "setspawn", "setcommand", "setplayer", "shop",
+                    "respawn", "reload", "info"), args[0]);
         }
         if (args.length == 2) {
             return switch (args[0].toLowerCase(Locale.ROOT)) {
-                case "remove", "setquest", "setdialogue", "setaction", "setwarp", "setspawn",
-                     "setcommand", "setplayer", "setplayercmd", "info" -> NpcCommandParse.prefix(npcs.listIds(), args[1]);
+                case "remove", "setquest", "setdialogue", "setaction", "setskin", "setskinslim",
+                     "setwarp", "setspawn", "setcommand", "setplayer", "setplayercmd", "info"
+                        -> NpcCommandParse.prefix(npcs.listIds(), args[1]);
                 case "list" -> NpcCommandParse.prefix(List.of("json"), args[1]);
                 case "shop" -> NpcCommandParse.prefix(List.of("enable", "addbuy", "addsell", "list", "deloffer", "clear"), args[1]);
                 default -> List.of();
             };
+        }
+        if (args.length == 3 && "setskinslim".equalsIgnoreCase(args[0])) {
+            return NpcCommandParse.prefix(List.of("true", "false"), args[2]);
         }
         if (args.length == 3 && "shop".equalsIgnoreCase(args[0])) {
             return NpcCommandParse.prefix(npcs.listIds(), args[2]);

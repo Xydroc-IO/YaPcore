@@ -76,6 +76,12 @@ public final class ProtocolVersionRegistry {
         list.add(new ProtocolVersion(ClientEdition.BEDROCK, 712, "1.21.50", "Bedrock 1.21.50", true));
         list.add(new ProtocolVersion(ClientEdition.BEDROCK, 766, "1.21.50", "Bedrock 1.21.50 (proto 766)", true));
         list.add(new ProtocolVersion(ClientEdition.BEDROCK, 776, "1.21.60", "Bedrock 1.21.60+", true));
+        // Cloudburst/Geyser modern (26.40+). Client 2207 is ahead of open-source max (Geyser=2169);
+        // keep exact entries so DualStackGateway does not map 2207→776 for TrafficCop labels.
+        list.add(new ProtocolVersion(ClientEdition.BEDROCK, 2168, "26.40", "Bedrock 26.40", true));
+        list.add(new ProtocolVersion(ClientEdition.BEDROCK, 2169, "26.45", "Bedrock 26.45 (Geyser latest)", true));
+        list.add(new ProtocolVersion(ClientEdition.BEDROCK, 2192, "26.x", "Bedrock Cloudburst 2192", true));
+        list.add(new ProtocolVersion(ClientEdition.BEDROCK, 2207, "26.45", "Bedrock phone 2207", true));
 
         list.sort(Comparator.comparingInt(ProtocolVersion::protocolId));
         this.versions = Collections.unmodifiableList(list);

@@ -14,6 +14,7 @@ import com.yapcore.crossplay.raknet.RakNetSessionManager;
 import com.yapcore.crossplay.skin.SkinService;
 import com.yapcore.model.GameEvent;
 import com.yapcore.network.TrafficCop;
+import com.yapcore.network.publicity.PublicEndpoint;
 import com.yapcore.protocol.gateway.BedrockUdpBoot;
 import com.yapcore.protocol.gateway.JavaListenerBoot;
 import com.yapcore.resourcepack.ResourcePackManager;
@@ -75,6 +76,22 @@ public final class DualStackGateway {
         this.bedrockBridge.setResourcePackOfferSupplier(packs::createBedrockOffer);
         if (crossplay != null) {
             crossplay.attachFloodgate(floodgateAuth, skinService, formService);
+            java.util.function.Consumer<String> refresh = username -> {
+                var session = bedrockSessions.byUsername(username);
+                if (session == null) {
+                    return;
+                }
+                io.netty.buffer.ByteBuf pkt = skinService.clientboundSkinPacket(
+                        username, session.protocol() > 0 ? session.protocol() : 2207);
+                if (pkt == null) {
+                    return;
+                }
+                bedrockBridge.sendToGuid(session.guid(), pkt);
+            };
+            crossplay.translator().setSkinRefreshHook(refresh);
+            skinService.setOnSkinChanged(refresh);
+            crossplay.translator().setEmotePlayHook((uuid, username, emoteId, source) ->
+                    bedrockBridge.playEmote(uuid, username, emoteId, source));
         }
     }
 
@@ -191,6 +208,12 @@ public final class DualStackGateway {
         JavaListenerBoot.start(this);
         BedrockUdpBoot.start(this);
         BedrockUiGatewayHolder.attach(this);
+        // Phase 1 cosmetics: host skins next to packs; advertise base for JE textures + Tailor apply
+        skinService.setSkinsDir(packs.skinsDir());
+        skinService.setPublicSkinBaseUrl(new PublicEndpoint(config).packBaseUrl());
+        packs.setSkinService(skinService);
+        packs.setEmotePlayHandler((username, uuid, emoteId) ->
+                bedrockBridge.playEmote(uuid, username, emoteId, "HTTP").isPresent());
         LOG.info("Dual-stack gateway ready — Java=" + config.isJavaEnabled()
                 + " Bedrock=" + config.isBedrockEnabled()
                 + " shared-port=" + config.isSharedListenPort()

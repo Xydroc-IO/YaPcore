@@ -28,10 +28,29 @@ public final class NpcRepository {
             UUID entityUuid,
             String dialogue,
             String questId,
-            String action
+            String action,
+            String skinUrl,
+            boolean skinSlim
     ) {
         public Location toLocation(org.bukkit.World worldObj) {
             return new Location(worldObj, x, y, z, yaw, 0);
+        }
+
+        /** Back-compat constructor without skin fields. */
+        public NpcRecord(
+                String id,
+                String serverId,
+                String displayName,
+                String world,
+                double x,
+                double y,
+                double z,
+                float yaw,
+                UUID entityUuid,
+                String dialogue,
+                String questId,
+                String action) {
+            this(id, serverId, displayName, world, x, y, z, yaw, entityUuid, dialogue, questId, action, null, false);
         }
     }
 
@@ -45,7 +64,8 @@ public final class NpcRepository {
         List<NpcRecord> out = new ArrayList<>();
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, server_id, display_name, world, x, y, z, yaw, entity_uuid, dialogue, quest_id, action
+                     SELECT id, server_id, display_name, world, x, y, z, yaw, entity_uuid, dialogue, quest_id, action,
+                            skin_url, skin_slim
                      FROM yap_npcs WHERE server_id = ?
                      ORDER BY id
                      """)) {
@@ -62,7 +82,8 @@ public final class NpcRepository {
     public Optional<NpcRecord> get(String serverId, String id) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, server_id, display_name, world, x, y, z, yaw, entity_uuid, dialogue, quest_id, action
+                     SELECT id, server_id, display_name, world, x, y, z, yaw, entity_uuid, dialogue, quest_id, action,
+                            skin_url, skin_slim
                      FROM yap_npcs WHERE server_id = ? AND id = ?
                      """)) {
             ps.setString(1, serverId);
@@ -89,12 +110,14 @@ public final class NpcRepository {
         set.put("dialogue", "EXCLUDED.dialogue");
         set.put("quest_id", "EXCLUDED.quest_id");
         set.put("action", "EXCLUDED.action");
+        set.put("skin_url", "EXCLUDED.skin_url");
+        set.put("skin_slim", "EXCLUDED.skin_slim");
         String sql = dialect.upsert(
                 "yap_npcs",
                 List.of("server_id", "id"),
                 List.of(
                         "id", "server_id", "display_name", "world", "x", "y", "z", "yaw",
-                        "entity_uuid", "dialogue", "quest_id", "action"),
+                        "entity_uuid", "dialogue", "quest_id", "action", "skin_url", "skin_slim"),
                 set);
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(sql)) {
@@ -110,6 +133,8 @@ public final class NpcRepository {
             ps.setString(10, npc.dialogue());
             ps.setString(11, npc.questId());
             ps.setString(12, npc.action());
+            ps.setString(13, npc.skinUrl());
+            ps.setBoolean(14, npc.skinSlim());
             ps.executeUpdate();
         }
     }
@@ -138,6 +163,17 @@ public final class NpcRepository {
     private static NpcRecord map(ResultSet rs) throws SQLException {
         String entityRaw = rs.getString("entity_uuid");
         UUID entityUuid = entityRaw == null || entityRaw.isBlank() ? null : UUID.fromString(entityRaw);
+        boolean slim = false;
+        try {
+            slim = rs.getBoolean("skin_slim");
+        } catch (SQLException ignored) {
+            // column may be missing mid-migrate
+        }
+        String skinUrl = null;
+        try {
+            skinUrl = rs.getString("skin_url");
+        } catch (SQLException ignored) {
+        }
         return new NpcRecord(
                 rs.getString("id"),
                 rs.getString("server_id"),
@@ -150,6 +186,8 @@ public final class NpcRepository {
                 entityUuid,
                 rs.getString("dialogue"),
                 rs.getString("quest_id"),
-                rs.getString("action"));
+                rs.getString("action"),
+                skinUrl,
+                slim);
     }
 }

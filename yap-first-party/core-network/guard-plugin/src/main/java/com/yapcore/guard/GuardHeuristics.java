@@ -43,12 +43,22 @@ public final class GuardHeuristics {
 
     /**
      * Max horizontal/vertical travel allowed for one sample window (blocks per tick).
+     * Sprint multiplier defaults to Bedrock catalog {@code player.movement.sprint_multiplier} (1.3).
      */
     public static double speedAllowedBlocksPerTick(
             double maxBlocksPerTick, double speedSensitivity, boolean sprinting, boolean gliding) {
+        return speedAllowedBlocksPerTick(maxBlocksPerTick, speedSensitivity, sprinting, gliding, 1.3);
+    }
+
+    public static double speedAllowedBlocksPerTick(
+            double maxBlocksPerTick,
+            double speedSensitivity,
+            boolean sprinting,
+            boolean gliding,
+            double sprintMultiplier) {
         double allowed = maxBlocksPerTick;
         if (sprinting) {
-            allowed *= 1.35;
+            allowed *= sprintMultiplier;
         }
         if (gliding) {
             allowed *= 2.5;

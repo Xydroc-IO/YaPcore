@@ -5,6 +5,7 @@ import com.yapcore.client.ClientSession;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.crossplay.bedrock.BedrockPacketCodec;
 import com.yapcore.crossplay.bedrock.BedrockSessionManager;
+import com.yapcore.crossplay.bedrock.bridge.BedrockJoinProbe;
 import com.yapcore.crossplay.floodgate.FloodgateAuth;
 import com.yapcore.crossplay.raknet.RakNetReliability;
 import com.yapcore.crossplay.raknet.RakNetSessionManager;
@@ -49,6 +50,14 @@ public final class BedrockUdpBoot {
         ServerConfig config = gateway.config();
         if (!config.isBedrockEnabled()) {
             return;
+        }
+        // Eager-load Cloudburst palettes + vanilla biomes so boot logs show count>0 before first join.
+        try {
+            int biomes = com.yapcore.crossplay.bedrock.cloudburst.CloudburstPaletteRegistry.get()
+                    .biomes().getDefinitions().size();
+            LOG.info("Cloudburst palettes warm — biomes=" + biomes);
+        } catch (Exception e) {
+            LOG.warning("Cloudburst palette warm failed: " + e.getMessage());
         }
         EventLoopGroup group = new NioEventLoopGroup(2);
         Bootstrap udp = new Bootstrap();
@@ -125,6 +134,27 @@ public final class BedrockUdpBoot {
                     rakNet.peer(addr).setGameCompressionHeader(true);
                 }
             });
+            gateway.bedrockBridge().setEncryptionEnabled((guid, secretKey) -> {
+                InetSocketAddress addr = guidToAddr.get(guid);
+                if (addr == null) {
+                    LOG.warning("BE encryption arm drop guid=" + Long.toHexString(guid) + " (no addr)");
+                    return;
+                }
+                int proto = 0;
+                var sess = bedrockSessions.get(guid);
+                if (sess != null) {
+                    proto = sess.protocol();
+                }
+                if (proto <= 0) {
+                    proto = 712;
+                }
+                try {
+                    rakNet.peer(addr).enableEncryption(secretKey, proto);
+                } catch (Exception e) {
+                    LOG.warning("BE enableEncryption failed guid=" + Long.toHexString(guid)
+                            + ": " + e.getMessage());
+                }
+            });
             gateway.bedrockBridge().setOutbound((guid, packets) -> {
                 InetSocketAddress addr = guidToAddr.get(guid);
                 Channel bedrockChannel = gateway.bedrockChannel();
@@ -144,6 +174,9 @@ public final class BedrockUdpBoot {
                     batch.writeBytes(pkt);
                     pkt.release();
                     for (ByteBuf framed : rakNet.encapsulateGameDatagrams(peer, batch)) {
+                        if (BedrockJoinProbe.isActive(guid)) {
+                            BedrockJoinProbe.noteUdpOut(guid, framed.readableBytes());
+                        }
                         bedrockChannel.writeAndFlush(new DatagramPacket(framed, addr));
                     }
                     batch.release();
@@ -221,20 +254,27 @@ public final class BedrockUdpBoot {
             ByteBuf content = packet.content();
             InetSocketAddress sender = packet.sender();
 
-            if (config.isProtocolGeyserEnabled() && RakNetUnconnected.isUnconnectedPing(content)) {
+            // List ping is not Geyser gameplay — answer Unconnected Ping whenever chassis UDP is up.
+            if (RakNetUnconnected.isUnconnectedPing(content)) {
                 long pingTime = 0L;
                 try {
                     pingTime = RakNetUnconnected.readPingTime(content);
                 } catch (Exception ignored) {
                     pingTime = System.currentTimeMillis();
                 }
-                String motd = "MCPE;" + config.getMotd().replace(';', ' ') + ";"
-                        + protocols.recommended(ClientEdition.BEDROCK).protocolId() + ";"
-                        + protocols.recommended(ClientEdition.BEDROCK).minecraftVersion() + ";"
+                // BDS/wiki.vg trailing ports — modern clients ignore incomplete MOTDs ("loading ping").
+                int listenPort = config.effectiveBedrockPort();
+                var bed = protocols.recommended(ClientEdition.BEDROCK);
+                String name = RakNetUnconnected.sanitizeMotdPart(config.getMotd(), "YaPcore");
+                String motd = "MCPE;" + name + ";"
+                        + bed.protocolId() + ";"
+                        + bed.minecraftVersion() + ";"
                         + gateway.getClients().size() + ";"
                         + config.getMaxPlayers() + ";"
                         + Long.toUnsignedString(serverGuid) + ";"
-                        + "YaPcore;Survival;";
+                        + "YaPcore;Survival;1;"
+                        + listenPort + ";"
+                        + listenPort + ";";
                 ByteBuf pong = RakNetUnconnected.buildPong(pingTime, serverGuid, motd);
                 ctx.writeAndFlush(new DatagramPacket(pong, sender));
                 ThreadMetrics.bump("Gateway", "bedrock-ping");
@@ -248,9 +288,16 @@ public final class BedrockUdpBoot {
                         || RakNetReliability.isFrameSet(id)
                         || id == RakNetReliability.ID_ACK
                         || id == RakNetReliability.ID_NACK) {
+                    Long probeGuid = addrToGuid.get(sender.toString());
+                    if (probeGuid != null && BedrockJoinProbe.isActive(probeGuid)) {
+                        BedrockJoinProbe.noteUdpIn(probeGuid, content.readableBytes());
+                    }
                     ByteBuf copy = content.retainedDuplicate();
                     try {
                         for (ByteBuf reply : rakNet.handle(sender, copy)) {
+                            if (probeGuid != null && BedrockJoinProbe.isActive(probeGuid)) {
+                                BedrockJoinProbe.noteUdpOut(probeGuid, reply.readableBytes());
+                            }
                             ctx.writeAndFlush(new DatagramPacket(reply, sender));
                         }
                     } finally {

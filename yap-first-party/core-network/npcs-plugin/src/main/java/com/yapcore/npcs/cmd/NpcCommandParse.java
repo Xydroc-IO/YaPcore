@@ -30,7 +30,9 @@ final class NpcCommandParse {
                     .append("\"yaw\":").append(n.yaw()).append(',')
                     .append("\"questId\":").append(q(n.questId())).append(',')
                     .append("\"dialogue\":").append(q(n.dialogue())).append(',')
-                    .append("\"action\":").append(q(n.action()))
+                    .append("\"action\":").append(q(n.action())).append(',')
+                    .append("\"skinUrl\":").append(q(n.skinUrl())).append(',')
+                    .append("\"skinSlim\":").append(n.skinSlim())
                     .append('}');
         }
         return sb.append(']').toString();

@@ -1,6 +1,7 @@
 package com.yapcore.web.api;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.yapcore.config.BedrockModeApplier;
 import com.yapcore.server.YaPcoreServer;
 import com.yapcore.web.DashboardLinkSnapshot;
 import com.yapcore.web.TinyJson;
@@ -43,7 +44,8 @@ public final class DashboardGameplayLinkApi {
                     "gradle :yap-link-plugin-chat-bridge:installIntoLinkPlugins "
                             + ":yap-link-plugin-mod-sync:installIntoLinkPlugins "
                             + ":yap-link-plugin-server-selector:installIntoLinkPlugins");
-            snap.put("hint", "POST start | stop | command | enable-backend-forwarding | save-selector | save-flags | save-proxy | save-servers");
+            snap.put("hint", "POST start | stop | command | set-velocity-forwarding | set-bedrock-mode | save-proxy | …");
+            snap.put("velocityEnabled", velocity);
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -86,6 +88,33 @@ public final class DashboardGameplayLinkApi {
                     DashboardLinkSnapshot.saveProxySettings(root, linkHome, updates);
                     DashboardHttp.json(ex, 200, linkSaveResponse(action, root, linkHome));
                 }
+                case "set-bedrock-mode" -> {
+                    String mode = body.getOrDefault("bedrockMode",
+                            body.getOrDefault("bedrock-mode", "native"));
+                    if (server.isRunning() || server.getLinkProcess().isRunning()
+                            || server.getGeyserProcess().isRunning()) {
+                        DashboardHttp.json(ex, 409, Map.of(
+                                "ok", false,
+                                "error", "Stop the game stack (and Link/Geyser) before changing Bedrock path.",
+                                "hint", "Toggle → Save → then Start servers."));
+                        return;
+                    }
+                    Path linkDir = DashboardLinkSnapshot.resolveHome(root, linkHome);
+                    Map<String, Object> applied = BedrockModeApplier.apply(
+                            root, linkDir, server.getConfig().getFile(), mode);
+                    try {
+                        server.getConfig().load();
+                    } catch (IOException e) {
+                        applied.put("configReloadError", e.getMessage());
+                    }
+                    applied.put("action", action);
+                    applied.put("note", "Bedrock path set to " + applied.get("bedrockMode")
+                            + " — Link + chassis config updated. Start servers when ready.");
+                    Map<String, Object> snap = new LinkedHashMap<>(DashboardLinkSnapshot.snapshot(
+                            root, linkHome, linkEmbed, velocity));
+                    applied.put("config", snap);
+                    DashboardHttp.json(ex, 200, applied);
+                }
                 case "save-servers" -> {
                     try {
                         DashboardLinkSnapshot.saveServersFromJson(root, linkHome, rawBody);
@@ -118,33 +147,64 @@ public final class DashboardGameplayLinkApi {
                     DashboardHttp.json(ex, 200, Map.of("ok", true, "action", action, "result", result));
                 }
                 case "enable-backend-forwarding" -> {
-                    try {
-                        Path script = root.resolve("scripts/setup-velocity-forwarding.sh");
-                        if (!java.nio.file.Files.isRegularFile(script)) {
-                            DashboardHttp.json(ex, 404, Map.of("error", "missing scripts/setup-velocity-forwarding.sh"));
-                            return;
-                        }
-                        var lp = server.getLinkProcess();
-                        lp.appendLog("[Link] Running setup-velocity-forwarding.sh --enable…\n");
-                        ProcessBuilder pb = new ProcessBuilder("bash", script.toString(), "--enable");
-                        pb.directory(root.toFile());
-                        pb.redirectErrorStream(true);
-                        Process p = pb.start();
-                        String out = new String(p.getInputStream().readAllBytes());
-                        p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
-                        lp.appendLog(out + "\nexit=" + p.exitValue() + "\n");
-                        DashboardHttp.json(ex, 200, Map.of(
-                                "ok", true, "action", action, "exit", p.exitValue(), "output", out));
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        DashboardHttp.json(ex, 500, Map.of("error", "interrupted"));
+                    // Legacy alias — prefer set-velocity-forwarding with enabled=true|false
+                    runVelocityForwardingScript(ex, root, true);
+                }
+                case "set-velocity-forwarding", "disable-backend-forwarding" -> {
+                    boolean enable;
+                    if ("disable-backend-forwarding".equals(action)) {
+                        enable = false;
+                    } else {
+                        String raw = body.getOrDefault("enabled",
+                                body.getOrDefault("velocityEnabled",
+                                        body.getOrDefault("enable", "true")));
+                        enable = !"false".equalsIgnoreCase(raw) && !"0".equals(raw)
+                                && !"disable".equalsIgnoreCase(raw) && !"off".equalsIgnoreCase(raw);
                     }
+                    runVelocityForwardingScript(ex, root, enable);
                 }
                 default -> DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
             }
             return;
         }
         ex.sendResponseHeaders(405, -1);
+    }
+
+    private void runVelocityForwardingScript(HttpExchange ex, Path root, boolean enable) throws IOException {
+        try {
+            Path script = root.resolve("scripts/setup-velocity-forwarding.sh");
+            if (!java.nio.file.Files.isRegularFile(script)) {
+                DashboardHttp.json(ex, 404, Map.of("error", "missing scripts/setup-velocity-forwarding.sh"));
+                return;
+            }
+            String flag = enable ? "--enable" : "--disable";
+            var lp = server.getLinkProcess();
+            lp.appendLog("[Link] Running setup-velocity-forwarding.sh " + flag + "…\n");
+            ProcessBuilder pb = new ProcessBuilder("bash", script.toString(), flag);
+            pb.directory(root.toFile());
+            pb.redirectErrorStream(true);
+            Process p = pb.start();
+            String out = new String(p.getInputStream().readAllBytes());
+            p.waitFor(30, java.util.concurrent.TimeUnit.SECONDS);
+            lp.appendLog(out + "\nexit=" + p.exitValue() + "\n");
+            try {
+                server.getConfig().load();
+            } catch (IOException ignored) {
+                // disk updated; in-memory may refresh on next start
+            }
+            DashboardHttp.json(ex, 200, Map.of(
+                    "ok", true,
+                    "action", "set-velocity-forwarding",
+                    "velocityEnabled", enable,
+                    "exit", p.exitValue(),
+                    "output", out,
+                    "note", enable
+                            ? "Modern forwarding ON — join via YaP Link :25565."
+                            : "Modern forwarding OFF — direct chassis :25566; restart Folia to apply."));
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            DashboardHttp.json(ex, 500, Map.of("error", "interrupted"));
+        }
     }
 
     private Map<String, Object> linkSaveResponse(String action, Path root, String linkHome) {
@@ -168,11 +228,8 @@ public final class DashboardGameplayLinkApi {
     private static Map<String, String> linkProxyUpdatesFromBody(Map<String, String> body) {
         Map<String, String> updates = new LinkedHashMap<>();
         putIfPresent(body, updates, "bind");
-        putIfPresent(body, updates, "motd");
-        putIfPresent(body, updates, "max-players", "maxPlayers");
-        putBoolIfPresent(body, updates, "online-mode", "onlineMode");
-        putIfPresent(body, updates, "public-host", "publicHost");
-        putIfPresent(body, updates, "public-port", "publicPort");
+        // motd / max-players / online-mode / public-host / public-port are owned by
+        // Server setup and mirrored via LinkIdentityMirror — do not accept Link overrides.
         putBoolIfPresent(body, updates, "ping-passthrough", "pingPassthrough");
         putBoolIfPresent(body, updates, "aggregate-player-count", "aggregatePlayerCount");
         putBoolIfPresent(body, updates, "global-tab-list", "globalTabList");

@@ -1,9 +1,12 @@
 package com.yapcore.npcs.service;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import com.yapcore.npcs.NpcService;
 import com.yapcore.npcs.NpcsConfig;
 import com.yapcore.npcs.db.NpcRepository;
 import com.yapcore.sched.YapSched;
+import io.papermc.paper.datacomponent.item.ResolvableProfile;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -12,12 +15,18 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Mannequin;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.profile.PlayerTextures;
 
+import java.net.URI;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -67,6 +76,8 @@ public final class NpcServiceImpl implements NpcService {
         String dialogue = null;
         String questId = null;
         String action = null;
+        String skinUrl = null;
+        boolean skinSlim = false;
         UUID entityUuid = null;
         try {
             var existing = repository.get(config.serverId(), id);
@@ -75,6 +86,8 @@ public final class NpcServiceImpl implements NpcService {
                 dialogue = old.dialogue();
                 questId = old.questId();
                 action = old.action();
+                skinUrl = old.skinUrl();
+                skinSlim = old.skinSlim();
                 entityUuid = old.entityUuid();
             }
         } catch (SQLException e) {
@@ -92,7 +105,9 @@ public final class NpcServiceImpl implements NpcService {
                 entityUuid,
                 dialogue,
                 questId,
-                action);
+                action,
+                skinUrl,
+                skinSlim);
         try {
             repository.upsert(record);
             spawnOrRefresh(record);
@@ -110,7 +125,7 @@ public final class NpcServiceImpl implements NpcService {
                 old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
                 old.dialogue(),
                 questId == null || questId.isBlank() ? null : questId.trim(),
-                old.action()), "npc setquest");
+                old.action(), old.skinUrl(), old.skinSlim()), "npc setquest");
     }
 
     @Override
@@ -119,7 +134,7 @@ public final class NpcServiceImpl implements NpcService {
                 old.id(), old.serverId(), old.displayName(), old.world(),
                 old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
                 dialogue == null || dialogue.isBlank() ? null : dialogue,
-                old.questId(), old.action()), "npc setdialogue");
+                old.questId(), old.action(), old.skinUrl(), old.skinSlim()), "npc setdialogue");
     }
 
     @Override
@@ -128,7 +143,27 @@ public final class NpcServiceImpl implements NpcService {
                 old.id(), old.serverId(), old.displayName(), old.world(),
                 old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
                 old.dialogue(), old.questId(),
-                action == null || action.isBlank() ? null : action.trim()), "npc setaction");
+                action == null || action.isBlank() ? null : action.trim(),
+                old.skinUrl(), old.skinSlim()), "npc setaction");
+    }
+
+    @Override
+    public boolean setSkinUrl(String id, String skinUrl) {
+        return updateField(id, old -> new NpcRepository.NpcRecord(
+                old.id(), old.serverId(), old.displayName(), old.world(),
+                old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
+                old.dialogue(), old.questId(), old.action(),
+                skinUrl == null || skinUrl.isBlank() ? null : skinUrl.trim(),
+                old.skinSlim()), "npc setskin");
+    }
+
+    @Override
+    public boolean setSkinSlim(String id, boolean slim) {
+        return updateField(id, old -> new NpcRepository.NpcRecord(
+                old.id(), old.serverId(), old.displayName(), old.world(),
+                old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
+                old.dialogue(), old.questId(), old.action(),
+                old.skinUrl(), slim), "npc setskinslim");
     }
 
     private boolean updateField(String id, java.util.function.Function<NpcRepository.NpcRecord, NpcRepository.NpcRecord> map,
@@ -221,16 +256,34 @@ public final class NpcServiceImpl implements NpcService {
         if (world == null) {
             return;
         }
+        boolean useMannequin = npc.skinUrl() != null && !npc.skinUrl().isBlank();
+
         if (npc.entityUuid() != null) {
             Entity existing = Bukkit.getEntity(npc.entityUuid());
-            if (existing instanceof Villager villager && !existing.isDead()) {
-                tag(villager, npc.id());
-                villager.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
-                villager.setCustomNameVisible(true);
-                return;
+            if (existing != null && !existing.isDead()) {
+                if (useMannequin && existing instanceof Mannequin mannequin) {
+                    applyMannequin(mannequin, npc);
+                    return;
+                }
+                if (!useMannequin && existing instanceof Villager villager) {
+                    tag(villager, npc.id());
+                    villager.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
+                    villager.setCustomNameVisible(true);
+                    return;
+                }
+                // Wrong entity type for current skin config — respawn
+                existing.remove();
             }
         }
+
         Location loc = npc.toLocation(world);
+        if (useMannequin) {
+            Mannequin mannequin = (Mannequin) world.spawnEntity(loc, EntityType.MANNEQUIN);
+            applyMannequin(mannequin, npc);
+            repository.setEntityUuid(config.serverId(), npc.id(), mannequin.getUniqueId());
+            return;
+        }
+
         Villager villager = (Villager) world.spawnEntity(loc, EntityType.VILLAGER);
         villager.setAI(false);
         villager.setInvulnerable(true);
@@ -243,6 +296,59 @@ public final class NpcServiceImpl implements NpcService {
         repository.setEntityUuid(config.serverId(), npc.id(), villager.getUniqueId());
     }
 
+    private void applyMannequin(Mannequin mannequin, NpcRepository.NpcRecord npc) {
+        mannequin.setImmovable(true);
+        mannequin.setInvulnerable(true);
+        mannequin.setSilent(true);
+        mannequin.setRemoveWhenFarAway(false);
+        mannequin.setGravity(false);
+        mannequin.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
+        mannequin.setCustomNameVisible(true);
+        mannequin.setDescription(Component.empty());
+        tag(mannequin, npc.id());
+        try {
+            UUID profileUuid = UUID.nameUUIDFromBytes(("yap-npc:" + npc.id()).getBytes(StandardCharsets.UTF_8));
+            PlayerProfile profile = Bukkit.createProfile(profileUuid, truncateName(npc.displayName()));
+            PlayerTextures textures = profile.getTextures();
+            URL skin = URI.create(npc.skinUrl()).toURL();
+            PlayerTextures.SkinModel model = npc.skinSlim()
+                    ? PlayerTextures.SkinModel.SLIM
+                    : PlayerTextures.SkinModel.CLASSIC;
+            textures.setSkin(skin, model);
+            profile.setTextures(textures);
+            // Also set textures property for clients that read ProfileProperty
+            String value = buildTexturesValue(profileUuid, npc.displayName(), npc.skinUrl(), npc.skinSlim());
+            profile.setProperty(new ProfileProperty("textures", value));
+            mannequin.setProfile(ResolvableProfile.resolvableProfile(profile));
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to apply NPC skin for " + npc.id(), e);
+        }
+    }
+
+    private static String buildTexturesValue(UUID uuid, String name, String skinUrl, boolean slim) {
+        StringBuilder json = new StringBuilder(256);
+        json.append("{\"timestamp\":").append(System.currentTimeMillis())
+                .append(",\"profileId\":\"").append(uuid.toString().replace("-", ""))
+                .append("\",\"profileName\":\"").append(escape(name))
+                .append("\",\"textures\":{\"SKIN\":{\"url\":\"").append(escape(skinUrl)).append('"');
+        if (slim) {
+            json.append(",\"metadata\":{\"model\":\"slim\"}");
+        }
+        json.append("}}}");
+        return Base64.getEncoder().encodeToString(json.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String escape(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static String truncateName(String name) {
+        if (name == null || name.isBlank()) {
+            return "NPC";
+        }
+        return name.length() > 16 ? name.substring(0, 16) : name;
+    }
+
     private void despawn(NpcRepository.NpcRecord npc) {
         if (npc.entityUuid() == null) {
             return;
@@ -253,7 +359,7 @@ public final class NpcServiceImpl implements NpcService {
         }
     }
 
-    private void tag(Villager villager, String id) {
-        villager.getPersistentDataContainer().set(npcKey, PersistentDataType.STRING, id);
+    private void tag(Entity entity, String id) {
+        entity.getPersistentDataContainer().set(npcKey, PersistentDataType.STRING, id);
     }
 }

@@ -68,6 +68,17 @@
           <div class="stat"><span>PID</span><strong id="stPid">—</strong></div>
         </div>
         <div class="card health-card">
+          <h3>Bedrock-feel parity</h3>
+          <p id="stParitySummary" class="health-summary">—</p>
+          <div class="grid stats health-grid">
+            <div class="stat"><span>Mode</span><strong id="bfEnabled">—</strong></div>
+            <div class="stat"><span>Band</span><strong id="bfBand">—</strong></div>
+            <div class="stat"><span>Client mods</span><strong id="bfMods">—</strong></div>
+            <div class="stat"><span>Block pack</span><strong id="bfPack">—</strong></div>
+            <div class="stat"><span>Provenance</span><strong id="bfProv">—</strong></div>
+          </div>
+        </div>
+        <div class="card health-card">
           <h3>Network health</h3>
           <p id="stNetworkSummary" class="health-summary">—</p>
           <div class="grid stats health-grid">
@@ -428,7 +439,7 @@
       <section id="tab-settings" class="panel">
         <div class="page-header">
           <h2>Server setup</h2>
-          <p>Everyday switches for how the server looks and who can join. Read the gray help under each box. Leave anything you do not understand.</p>
+          <p>One shared world for Java and Bedrock. Changes here apply to both editions (MOTD, player limit, auth, packs). Read the gray help under each box.</p>
         </div>
         <div id="settingsForm" class="easy-form"></div>
         <div class="btn-row">
@@ -577,7 +588,7 @@
       </section>
 
       <section id="tab-link" class="panel">
-        <p class="muted">YaP Link — native network proxy (separate JVM, like Velocity). Configure backends (hub, survival, …), try order, and forced hosts here. Requires <code>link-embed=false</code>.</p>
+        <p class="muted">YaP Link — network edge for the <strong>same</strong> Folia world (Java + Bedrock). Configure backends, Bedrock path, and proxy-only options here. Shared settings (MOTD, max players, online mode, public host) are owned by <strong>Server setup</strong> and stay in sync automatically.</p>
         <div class="grid stats" id="linkStats">
           <div class="stat"><span>Process</span><strong id="linkRunning">—</strong></div>
           <div class="stat"><span>Link home</span><strong id="linkHome">—</strong></div>
@@ -588,23 +599,37 @@
         <div class="toolbar">
           <button id="linkStart" class="primary">Start Link</button>
           <button id="linkStop" class="danger">Stop Link</button>
-          <button id="linkEnableForwarding">Enable backend forwarding</button>
           <button id="linkRefresh">Refresh</button>
         </div>
 
+        <h3>Backend forwarding (Velocity modern)</h3>
+        <p class="muted hint">Toggle YaP Link → Folia modern forwarding. ON = join Link :25565 (skins). OFF = direct chassis :25566. Restart Folia after changing.</p>
+        <div class="form-grid">
+          <label>Forwarding
+            <select id="linkVelocityForwarding">
+              <option value="true">ON — via YaP Link</option>
+              <option value="false">OFF — direct chassis</option>
+            </select>
+          </label>
+        </div>
+        <div class="toolbar">
+          <button id="linkSaveVelocityForwarding" type="button">Save forwarding</button>
+        </div>
+
         <h3>Proxy settings</h3>
+        <p class="muted hint">Identity fields below are read-only — edit them in Server setup so Java and Bedrock stay identical.</p>
         <div class="form-grid">
           <label>Bind <input id="linkBind" placeholder="0.0.0.0:25565"/></label>
-          <label>MOTD <input id="linkMotd" data-mc-color="insert" placeholder="YaP Link"/></label>
-          <label>Max players <input id="linkMaxPlayers" type="number" min="1" value="500"/></label>
-          <label>Online mode
-            <select id="linkOnlineMode">
+          <label>MOTD (from Server setup) <input id="linkMotd" data-mc-color="insert" placeholder="YaPcore" readonly/></label>
+          <label>Max players (from Server setup) <input id="linkMaxPlayers" type="number" min="1" value="300" readonly/></label>
+          <label>Online mode (from Server setup)
+            <select id="linkOnlineMode" disabled>
               <option value="false">false (offline/cracked)</option>
               <option value="true">true (Mojang auth)</option>
             </select>
           </label>
-          <label>Public host <input id="linkPublicHost" placeholder="127.0.0.1"/></label>
-          <label>Public port <input id="linkPublicPort" placeholder="0 = bind port"/></label>
+          <label>Public host (from Server setup) <input id="linkPublicHost" placeholder="127.0.0.1" readonly/></label>
+          <label>Public port (from Server setup) <input id="linkPublicPort" placeholder="0 = bind port" readonly/></label>
           <label>Ping passthrough
             <select id="linkPingPassthrough"><option value="true">true</option><option value="false">false</option></select>
           </label>
@@ -625,13 +650,19 @@
           <label>Join announce
             <select id="linkJoinAnnounce"><option value="false">false</option><option value="true">true</option></select>
           </label>
-          <label>Bedrock enabled
-            <select id="linkBedrockEnabled"><option value="false">false</option><option value="true">true</option></select>
+          <label>Bedrock path (set before start)
+            <select id="linkBedrockMode">
+              <option value="native">Link-native (product)</option>
+              <option value="forwarder">Forwarder (chassis UDP)</option>
+              <option value="geyser-backup">Geyser backup</option>
+            </select>
           </label>
           <label>Bedrock bind <input id="linkBedrockBind" placeholder="0.0.0.0:19132"/></label>
           <label>Bedrock backend <input id="linkBedrockBackend" placeholder="127.0.0.1:25566"/></label>
+          <p class="muted hint" id="linkBedrockModeHint">Link-native owns Bedrock UDP (chassis bedrock-enabled=false). Forwarder = Link UDP → chassis. Geyser backup = Standalone on :19132. Stop servers before switching.</p>
         </div>
         <div class="toolbar">
+          <button id="linkSaveBedrockMode" type="button">Save Bedrock path</button>
           <button id="linkSaveProxy" class="primary">Save proxy settings</button>
         </div>
 

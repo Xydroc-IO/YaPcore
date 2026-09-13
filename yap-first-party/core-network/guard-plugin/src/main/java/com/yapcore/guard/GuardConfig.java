@@ -14,7 +14,7 @@ public final class GuardConfig {
     private double maxBlocksPerTick = 0.85;
     private boolean reachEnabled = true;
     private double reachSensitivity = 0.8;
-    private double maxReachDistance = 3.5;
+    private double maxReachDistance = 3.0;
     private boolean scaffoldEnabled = true;
     private double scaffoldSensitivity = 0.7;
     private int maxPlacesPerSecond = 8;

@@ -273,7 +273,22 @@ public final class PublicEndpoint {
     }
 
     public static Optional<String> guessLocalIpv4() {
-        List<String> found = new ArrayList<>();
+        // Prefer the address used for default internet route (skips docker/lxc/vpn bridges).
+        try (java.net.DatagramSocket probe = new java.net.DatagramSocket()) {
+            probe.connect(InetAddress.getByName("1.1.1.1"), 53);
+            InetAddress local = probe.getLocalAddress();
+            if (local instanceof Inet4Address v4
+                    && !v4.isLoopbackAddress()
+                    && !v4.isLinkLocalAddress()
+                    && !v4.isAnyLocalAddress()) {
+                return Optional.of(v4.getHostAddress());
+            }
+        } catch (Exception ignored) {
+            // fall through to NIC scan
+        }
+
+        List<String> preferred = new ArrayList<>();
+        List<String> other = new ArrayList<>();
         try {
             Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces();
             if (nics == null) {
@@ -283,17 +298,74 @@ public final class PublicEndpoint {
                 if (!nic.isUp() || nic.isLoopback() || nic.isVirtual()) {
                     continue;
                 }
+                String nicName = nic.getName() == null ? "" : nic.getName().toLowerCase(Locale.ROOT);
+                if (isIgnoredNic(nicName)) {
+                    continue;
+                }
                 for (InetAddress addr : Collections.list(nic.getInetAddresses())) {
-                    if (addr instanceof Inet4Address && !addr.isLoopbackAddress()
-                            && !addr.isLinkLocalAddress()) {
-                        found.add(addr.getHostAddress());
+                    if (!(addr instanceof Inet4Address) || addr.isLoopbackAddress()
+                            || addr.isLinkLocalAddress()) {
+                        continue;
+                    }
+                    String ip = addr.getHostAddress();
+                    if (isDockerOrBridgeIpv4(ip)) {
+                        continue;
+                    }
+                    if (nicName.startsWith("en") || nicName.startsWith("eth")
+                            || nicName.startsWith("wl") || nicName.startsWith("wlan")) {
+                        preferred.add(ip);
+                    } else {
+                        other.add(ip);
                     }
                 }
             }
         } catch (Exception ignored) {
             return Optional.empty();
         }
-        return found.stream().findFirst();
+        if (!preferred.isEmpty()) {
+            return Optional.of(preferred.get(0));
+        }
+        return other.stream().findFirst();
+    }
+
+    private static boolean isIgnoredNic(String name) {
+        return name.startsWith("docker")
+                || name.startsWith("br-")
+                || name.startsWith("veth")
+                || name.startsWith("lxc")
+                || name.startsWith("virbr")
+                || name.startsWith("zt")
+                || name.startsWith("tun")
+                || name.startsWith("tap")
+                || name.startsWith("wg")
+                || name.startsWith("wolfnet")
+                || name.equals("docker0");
+    }
+
+    /** Docker / LXC bridge pools — not reachable from phones on the home LAN. */
+    public static boolean isDockerOrBridgeIpv4(String ip) {
+        if (ip == null || ip.isBlank()) {
+            return false;
+        }
+        String[] p = ip.split("\\.");
+        if (p.length != 4) {
+            return false;
+        }
+        try {
+            int a = Integer.parseInt(p[0]);
+            int b = Integer.parseInt(p[1]);
+            // 172.16.0.0/12 used heavily by docker0 / br-*
+            if (a == 172 && b >= 16 && b <= 31) {
+                return true;
+            }
+            // Common LXC bridge
+            if (a == 10 && b == 0 && Integer.parseInt(p[2]) == 3) {
+                return true;
+            }
+        } catch (NumberFormatException ignored) {
+            return false;
+        }
+        return false;
     }
 
     private static boolean looksLikeDomain(String host) {

@@ -7,6 +7,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -17,6 +19,21 @@ public final class BackpackListener implements Listener {
 
     public BackpackListener(BackpackService backpack) {
         this.backpack = backpack;
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        // Delay until profile/sync settles, then scrub all bag pages.
+        org.bukkit.Bukkit.getRegionScheduler().runDelayed(
+                /* plugin via backpack */ backpack.plugin(),
+                player.getLocation(),
+                task -> {
+                    if (player.isOnline()) {
+                        backpack.purgeSchemPreviewToolsAsync(player.getUniqueId(), player);
+                    }
+                },
+                40L);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = false)

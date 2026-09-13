@@ -94,6 +94,15 @@
     $("stLinkProc").textContent = s.linkProcessRunning ? "running" : "stopped";
     $("stPid").textContent = s.pid != null ? String(s.pid) : "—";
     $("stReport").textContent = s.statusText || "";
+    const bf = s.bedrockFeel || {};
+    if ($("stParitySummary")) {
+      $("stParitySummary").textContent = bf.summary || "—";
+      $("bfEnabled").textContent = bf.enabled ? "ON" : "off";
+      $("bfBand").textContent = bf.band || "—";
+      $("bfMods").textContent = bf.clientModsPresent ? "yes" : "missing";
+      $("bfPack").textContent = bf.blockPackExtractOk ? "ok" : "—";
+      $("bfProv").textContent = bf.provenancePresent ? "ok" : "—";
+    }
     const nh = s.networkHealth || {};
     $("stNetworkSummary").textContent = nh.summary || "—";
     $("nhFolia").textContent = nh.foliaRunning ? "running" : "stopped";
