@@ -1,0 +1,247 @@
+package com.yapcore.link.bedrock.translator;
+
+import com.yapcore.link.bedrock.downstream.JavaDownstreamClient;
+import com.yapcore.link.bedrock.downstream.JavaPlayWire;
+import com.yapcore.link.bedrock.probe.BedrockJoinProbe;
+import com.yapcore.link.bedrock.session.LinkBedrockSession;
+import java.util.List;
+import java.util.logging.Logger;
+import org.cloudburstmc.math.vector.Vector3i;
+import org.cloudburstmc.protocol.bedrock.data.PlayerActionType;
+import org.cloudburstmc.protocol.bedrock.data.PlayerAuthInputData;
+import org.cloudburstmc.protocol.bedrock.data.PlayerBlockActionData;
+import org.cloudburstmc.protocol.bedrock.data.inventory.transaction.InventoryTransactionType;
+import org.cloudburstmc.protocol.bedrock.data.inventory.transaction.ItemUseTransaction;
+import org.cloudburstmc.protocol.bedrock.packet.InventoryTransactionPacket;
+import org.cloudburstmc.protocol.bedrock.packet.PlayerActionPacket;
+import org.cloudburstmc.protocol.bedrock.packet.PlayerAuthInputPacket;
+
+/**
+ * Bedrock break/place/attack → JE dig / use_item_on / interact.
+ *
+ * <p>With {@code serverAuthoritativeBlockBreaking=true} (StartGame), modern clients embed dig
+ * in {@link PlayerAuthInputPacket#getPlayerActions()} rather than classic {@link PlayerActionPacket}.
+ * Both paths share {@link #translateBlockAction}.
+ */
+public final class BedrockActionTranslator {
+
+    private static final Logger LOG = Logger.getLogger("YaP.Link.Bedrock");
+
+    private BedrockActionTranslator() {
+    }
+
+    public static void translatePlayerAction(LinkBedrockSession session, PlayerActionPacket act) {
+        if (session == null || act == null) {
+            return;
+        }
+        if (session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
+            return;
+        }
+        translateBlockAction(session, act.getAction(), act.getBlockPosition(), act.getFace(), "PlayerAction");
+    }
+
+    /**
+     * Geyser-style: when StartGame sets server-auth block breaking, digs arrive on AuthInput
+     * ({@link PlayerAuthInputData#PERFORM_BLOCK_ACTIONS} + {@code playerActions} list).
+     */
+    public static void translateAuthInputActions(LinkBedrockSession session, PlayerAuthInputPacket auth) {
+        if (session == null || auth == null) {
+            return;
+        }
+        if (session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
+            return;
+        }
+        List<PlayerBlockActionData> actions = auth.getPlayerActions();
+        boolean flagged = auth.getInputData() != null
+                && auth.getInputData().contains(PlayerAuthInputData.PERFORM_BLOCK_ACTIONS);
+        if (actions != null && !actions.isEmpty()) {
+            PlayerActionType first = actions.get(0).getAction();
+            BedrockJoinProbe.noteEvent(session.guid(),
+                    "auth blockActions n=" + actions.size()
+                            + " flagged=" + flagged
+                            + " first=" + first);
+            for (PlayerBlockActionData action : actions) {
+                if (action == null) {
+                    continue;
+                }
+                translateBlockAction(session, action.getAction(), action.getBlockPosition(),
+                        action.getFace(), "AuthInput");
+            }
+        }
+        ItemUseTransaction itemUse = auth.getItemUseTransaction();
+        if (itemUse != null && auth.getInputData() != null
+                && auth.getInputData().contains(PlayerAuthInputData.PERFORM_ITEM_INTERACTION)) {
+            translateItemUseTransaction(session, itemUse);
+        }
+        if (auth.getInputData() != null
+                && auth.getInputData().contains(PlayerAuthInputData.MISSED_SWING)) {
+            // Defer: same-burst ITEM_USE_ON_ENTITY attack must cancel this air-miss.
+            BedrockCombat.noteMissSwing(session);
+        }
+    }
+
+    static void translateBlockAction(LinkBedrockSession session,
+                                     PlayerActionType type,
+                                     Vector3i pos,
+                                     int face,
+                                     String via) {
+        if (type == null) {
+            return;
+        }
+        JavaDownstreamClient down = session.downstream();
+        if (down == null || down.phase() != JavaDownstreamClient.Phase.PLAY) {
+            return;
+        }
+        int x = pos != null ? pos.getX() : 0;
+        int y = pos != null ? pos.getY() : 0;
+        int z = pos != null ? pos.getZ() : 0;
+        int seq = session.nextBlockSequence();
+
+        if (type == PlayerActionType.START_BREAK) {
+            int startSeq = session.beginOrContinueDig(x, y, z);
+            if (startSeq < 0) {
+                // Duplicate START on same block — swing only (probe 043021 START/ABORT loop).
+                down.sendSwingArm(0);
+                BedrockDigEffects.continueBreak(session, x, y, z);
+                BedrockJoinProbe.noteEvent(session.guid(),
+                        "BE→JE dig START coalesce via=" + via + " @" + x + "," + y + "," + z);
+                return;
+            }
+            down.sendPlayerAction(JavaPlayWire.ACTION_START_DIG, x, y, z, face, startSeq);
+            BedrockDigEffects.startBreak(session, x, y, z);
+            BedrockJoinProbe.noteEvent(session.guid(),
+                    "BE→JE dig START via=" + via + " @" + x + "," + y + "," + z + " seq=" + startSeq);
+            LOG.info("BE→JE dig start via=" + via + " " + x + "," + y + "," + z
+                    + " user=" + session.username());
+        } else if (type == PlayerActionType.CONTINUE_BREAK
+                || type == PlayerActionType.BLOCK_CONTINUE_DESTROY) {
+            // Do NOT re-send START_DIG — resets Folia dig progress → START/ABORT loops.
+            if (!session.isDigging(x, y, z)) {
+                int startSeq = session.beginOrContinueDig(x, y, z);
+                if (startSeq >= 0) {
+                    down.sendPlayerAction(JavaPlayWire.ACTION_START_DIG, x, y, z, face, startSeq);
+                    BedrockDigEffects.startBreak(session, x, y, z);
+                }
+            } else {
+                BedrockDigEffects.continueBreak(session, x, y, z);
+            }
+            down.sendSwingArm(0);
+        } else if (type == PlayerActionType.ABORT_BREAK) {
+            down.sendPlayerAction(JavaPlayWire.ACTION_ABORT_DIG, x, y, z, face, seq);
+            BedrockDigEffects.stopBreak(session, x, y, z, false);
+            session.clearDig();
+            BedrockJoinProbe.noteEvent(session.guid(),
+                    "BE→JE dig ABORT via=" + via + " @" + x + "," + y + "," + z);
+        } else if (type == PlayerActionType.STOP_BREAK
+                || type == PlayerActionType.BLOCK_PREDICT_DESTROY) {
+            down.sendPlayerAction(JavaPlayWire.ACTION_STOP_DIG, x, y, z, face, seq);
+            down.sendSwingArm(0);
+            // Crack/break FX only — do NOT predict UpdateBlock air. Optimistic air lets the
+            // client fall into a hole before Folia confirms, then player_position + REJECT_BURIED
+            // rubberbands (MovePlayer TELEPORT). JE block_update drives air via JavaBlockUpdateTranslator.
+            BedrockDigEffects.stopBreak(session, x, y, z, true);
+            session.clearDig();
+            BedrockJoinProbe.noteEvent(session.guid(),
+                    "BE→JE dig STOP via=" + via + " @" + x + "," + y + "," + z + " seq=" + seq);
+            LOG.info("BE→JE dig stop via=" + via + " " + x + "," + y + "," + z
+                    + " user=" + session.username());
+        } else if (type == PlayerActionType.DIMENSION_CHANGE_SUCCESS
+                || type == PlayerActionType.DIMENSION_CHANGE_REQUEST_OR_CREATIVE_DESTROY_BLOCK) {
+            if (type == PlayerActionType.DIMENSION_CHANGE_REQUEST_OR_CREATIVE_DESTROY_BLOCK
+                    && pos != null) {
+                int startSeq = session.beginOrContinueDig(x, y, z);
+                if (startSeq < 0) {
+                    startSeq = session.nextBlockSequence();
+                }
+                down.sendPlayerAction(JavaPlayWire.ACTION_START_DIG, x, y, z, face, startSeq);
+                int seq2 = session.nextBlockSequence();
+                down.sendPlayerAction(JavaPlayWire.ACTION_STOP_DIG, x, y, z, face, seq2);
+                down.sendSwingArm(0);
+                BedrockDigEffects.stopBreak(session, x, y, z, true);
+                session.clearDig();
+                BedrockJoinProbe.noteEvent(session.guid(),
+                        "BE→JE dig CREATIVE via=" + via + " @" + x + "," + y + "," + z);
+            } else {
+                LOG.fine("BE PlayerAction dim/creative type=" + type + " user=" + session.username());
+            }
+        } else {
+            down.sendUseItemOn(x, y, z, face, 0.5f, 0.5f, 0.5f, false, 0, seq);
+            BedrockDigEffects.placeSound(session, x, y, z);
+            LOG.fine("BE→JE use_item_on via=" + via + " action=" + type + " @" + x + "," + y + "," + z);
+        }
+    }
+
+    public static void translateInventoryTransaction(LinkBedrockSession session,
+                                                     InventoryTransactionPacket tx) {
+        if (session == null || tx == null) {
+            return;
+        }
+        if (session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
+            return;
+        }
+        JavaDownstreamClient down = session.downstream();
+        if (down == null || down.phase() != JavaDownstreamClient.Phase.PLAY) {
+            return;
+        }
+        InventoryTransactionType type = tx.getTransactionType();
+        if (type == InventoryTransactionType.ITEM_USE_ON_ENTITY) {
+            long runtime = tx.getRuntimeEntityId();
+            // actionType 1 = attack (Geyser); 0 = interact/use.
+            if (runtime != 0L && tx.getActionType() == 1) {
+                BedrockCombat.translateAttack(session, runtime);
+            } else if (tx.getActionType() == 1 && session.lastAttackTarget() > 0) {
+                BedrockCombat.translateAttackJava(session, session.lastAttackTarget());
+            }
+            return;
+        }
+        if (type == InventoryTransactionType.ITEM_USE) {
+            Vector3i pos = tx.getBlockPosition();
+            if (pos == null) {
+                return;
+            }
+            int seq = session.nextBlockSequence();
+            int face = tx.getBlockFace();
+            // actionType 2 = break block (when inventoriesServerAuthoritative=false clients
+            // may still send destroy via InventoryTransaction).
+            if (tx.getActionType() == 2) {
+                int startSeq = session.beginOrContinueDig(pos.getX(), pos.getY(), pos.getZ());
+                if (startSeq < 0) {
+                    startSeq = session.nextBlockSequence();
+                }
+                down.sendPlayerAction(JavaPlayWire.ACTION_START_DIG,
+                        pos.getX(), pos.getY(), pos.getZ(), face, startSeq);
+                int seq2 = session.nextBlockSequence();
+                down.sendPlayerAction(JavaPlayWire.ACTION_STOP_DIG,
+                        pos.getX(), pos.getY(), pos.getZ(), face, seq2);
+                down.sendSwingArm(0);
+                BedrockDigEffects.stopBreak(session, pos.getX(), pos.getY(), pos.getZ(), true);
+                session.clearDig();
+                BedrockJoinProbe.noteEvent(session.guid(),
+                        "BE→JE dig DESTROY via=InventoryTransaction @"
+                                + pos.getX() + "," + pos.getY() + "," + pos.getZ());
+                return;
+            }
+            down.sendUseItemOn(pos.getX(), pos.getY(), pos.getZ(), face,
+                    0.5f, 0.5f, 0.5f, false, 0, seq);
+            LOG.fine("BE→JE place/use @" + pos.getX() + "," + pos.getY() + "," + pos.getZ()
+                    + " user=" + session.username());
+        }
+    }
+
+    private static void translateItemUseTransaction(LinkBedrockSession session, ItemUseTransaction itemUse) {
+        JavaDownstreamClient down = session.downstream();
+        if (down == null || down.phase() != JavaDownstreamClient.Phase.PLAY) {
+            return;
+        }
+        Vector3i pos = itemUse.getBlockPosition();
+        if (pos == null) {
+            return;
+        }
+        int seq = session.nextBlockSequence();
+        int face = itemUse.getBlockFace();
+        down.sendUseItemOn(pos.getX(), pos.getY(), pos.getZ(), face,
+                0.5f, 0.5f, 0.5f, false, 0, seq);
+        BedrockJoinProbe.noteEvent(session.guid(),
+                "BE→JE use_item_on via=AuthInputItemUse @" + pos.getX() + "," + pos.getY() + "," + pos.getZ());
+    }
+}

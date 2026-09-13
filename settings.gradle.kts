@@ -113,6 +113,18 @@ project(":yap-npcs-api").projectDir = file("yap-first-party/api/yap-npcs-api")
 include("npcs-plugin")
 project(":npcs-plugin").projectDir = file("yap-first-party/core-network/npcs-plugin")
 
+include("yap-tailor-api")
+project(":yap-tailor-api").projectDir = file("yap-first-party/api/yap-tailor-api")
+
+include("tailor-plugin")
+project(":tailor-plugin").projectDir = file("yap-first-party/core-network/tailor-plugin")
+
+include("yap-bedrock-blocks-api")
+project(":yap-bedrock-blocks-api").projectDir = file("yap-first-party/api/yap-bedrock-blocks-api")
+
+include("bedrock-blocks-plugin")
+project(":bedrock-blocks-plugin").projectDir = file("yap-first-party/core-network/bedrock-blocks-plugin")
+
 include("world-plugin")
 project(":world-plugin").projectDir = file("yap-first-party/core-network/world-plugin")
 
@@ -161,6 +173,9 @@ project(":yap-link-api").projectDir = file("yap-first-party/link/api")
 
 include("yap-link-native")
 project(":yap-link-native").projectDir = file("yap-first-party/link/native")
+
+include("yap-link-bedrock")
+project(":yap-link-bedrock").projectDir = file("yap-first-party/link/bedrock")
 
 include("yap-link-plugin-chat-bridge")
 project(":yap-link-plugin-chat-bridge").projectDir = file("yap-first-party/link/plugins/chat-bridge")

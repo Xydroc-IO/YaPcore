@@ -51,14 +51,22 @@ public final class MojangAuth {
 
     /**
      * Best-effort skin/textures lookup for offline-mode proxies.
-     * Keeps the caller's UUID unless {@code rewriteUuid} is true — only attaches
-     * signed {@code textures} properties so players keep offline playerdata.
+     * Only attaches signed {@code textures} properties (caller decides UUID rewrite).
      */
     public static List<ModernForwarding.Property> lookupTextures(String username) {
+        Profile profile = lookupProfile(username);
+        return profile == null || profile.properties() == null ? List.of() : profile.properties();
+    }
+
+    /**
+     * Best-effort Mojang profile (UUID + signed textures) for offline-mode proxies.
+     * Returns {@code null} when the username is unknown or the lookup fails.
+     */
+    public static Profile lookupProfile(String username) {
         try {
             UUID mojangId = lookupUuid(username);
             if (mojangId == null) {
-                return List.of();
+                return null;
             }
             String url = "https://sessionserver.mojang.com/session/minecraft/profile/"
                     + mojangId.toString().replace("-", "") + "?unsigned=false";
@@ -68,11 +76,11 @@ public final class MojangAuth {
                     .build();
             HttpResponse<String> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() != 200 || resp.body() == null || resp.body().isBlank()) {
-                return List.of();
+                return null;
             }
-            return parseProfile(resp.body(), username).properties();
+            return parseProfile(resp.body(), username);
         } catch (Exception e) {
-            return List.of();
+            return null;
         }
     }
 

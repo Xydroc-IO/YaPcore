@@ -2,6 +2,8 @@ package com.yapcore.link;
 
 import com.yapcore.link.backend.BackendMonitor;
 import com.yapcore.link.bedrock.BedrockUdpForwarder;
+import com.yapcore.link.bedrock.session.BedrockNativeConfig;
+import com.yapcore.link.bedrock.session.BedrockSessionHost;
 import com.yapcore.link.crypto.MinecraftCrypto;
 import com.yapcore.link.chat.ChatRelay;
 import com.yapcore.link.console.LinkConsole;
@@ -63,6 +65,7 @@ public final class LinkServer {
     private EventLoopGroup worker;
     private Channel bindChannel;
     private BedrockUdpForwarder bedrock;
+    private BedrockSessionHost bedrockNative;
     private Thread consoleThread;
     private LinkConsole console;
 
@@ -198,6 +201,21 @@ public final class LinkServer {
                                 .addLast("client", new ClientSession(LinkServer.this));
                     }
                 });
+        // Bedrock UDP before JE TCP so shared-port :25565 UDP is up even if something else
+        // already holds TCP :25565 (TCP/UDP are independent; phones need UDP first).
+        if (cfg.bedrockNativeEnabled()) {
+            bedrockNative = new BedrockSessionHost(toNativeConfig(cfg));
+            bedrockNative.start();
+        } else if (cfg.bedrockEnabled()) {
+            if (cfg.geyserEnabled()) {
+                LOG.warning("bedrock-mode conflict: forwarder and geyser both requested — starting forwarder only");
+            }
+            bedrock = new BedrockUdpForwarder(cfg, playerHub::onlineCount);
+            bedrock.start();
+        } else if (cfg.geyserEnabled()) {
+            LOG.info("Bedrock UDP off (bedrock-mode=geyser-backup) — Geyser-Standalone owns :19132");
+        }
+
         bindChannel = b.bind(cfg.bindHost(), cfg.bindPort()).sync().channel();
         LOG.info("JE listening on " + cfg.bindHost() + ":" + cfg.bindPort()
                 + " online-mode=" + cfg.onlineMode()
@@ -213,11 +231,6 @@ public final class LinkServer {
             } catch (IOException e) {
                 LOG.log(Level.WARNING, "metrics HTTP failed: " + e.getMessage(), e);
             }
-        }
-
-        if (cfg.bedrockEnabled()) {
-            bedrock = new BedrockUdpForwarder(cfg);
-            bedrock.start();
         }
 
         console = new LinkConsole(this);
@@ -246,6 +259,10 @@ public final class LinkServer {
         }
         pluginManager.disableAll();
         backendMonitor.stop();
+        if (bedrockNative != null) {
+            bedrockNative.stop();
+            bedrockNative = null;
+        }
         if (bedrock != null) {
             bedrock.stop();
             bedrock = null;
@@ -267,5 +284,73 @@ public final class LinkServer {
             boss = null;
         }
         LOG.info("YaP Link stopped");
+    }
+
+    private BedrockNativeConfig toNativeConfig(LinkConfig cfg) {
+        return new BedrockNativeConfig() {
+            @Override
+            public java.util.List<java.net.InetSocketAddress> bindAddresses() {
+                return cfg.bedrockBindAddresses();
+            }
+
+            @Override
+            public String motd() {
+                return cfg.motd();
+            }
+
+            @Override
+            public int maxPlayers() {
+                return cfg.maxPlayers();
+            }
+
+            @Override
+            public java.util.function.IntSupplier onlineCount() {
+                return playerHub::onlineCount;
+            }
+
+            @Override
+            public java.nio.file.Path linkHome() {
+                return cfg.home();
+            }
+
+            @Override
+            public String floodgateKeyPath() {
+                return cfg.floodgateKeyFile().toString();
+            }
+
+            @Override
+            public java.net.InetSocketAddress javaBackend() {
+                // Same target JE clients use (try=lobby) — never split-brain Bedrock onto a
+                // different world. bedrock-backend is only a fallback if try= is empty.
+                LinkConfig.Backend lobby = cfg.resolveTry();
+                if (lobby != null && lobby.host() != null && !lobby.host().isBlank()) {
+                    String beHost = cfg.bedrockBackendHost();
+                    int bePort = cfg.bedrockBackendPort();
+                    if (!lobby.host().equals(beHost) || lobby.port() != bePort) {
+                        LOG.warning("Bedrock backend mismatch: bedrock-backend="
+                                + beHost + ":" + bePort
+                                + " but JE lobby(try)=" + lobby.host() + ":" + lobby.port()
+                                + " — using JE lobby for JavaDownstream (same world)");
+                    }
+                    return new java.net.InetSocketAddress(lobby.host(), lobby.port());
+                }
+                return new java.net.InetSocketAddress(cfg.bedrockBackendHost(), cfg.bedrockBackendPort());
+            }
+
+            @Override
+            public int motdProtocol() {
+                return cfg.bedrockMotdProtocol();
+            }
+
+            @Override
+            public String motdVersion() {
+                return cfg.bedrockMotdVersion();
+            }
+
+            @Override
+            public String motdSub() {
+                return cfg.bedrockMotdSub();
+            }
+        };
     }
 }

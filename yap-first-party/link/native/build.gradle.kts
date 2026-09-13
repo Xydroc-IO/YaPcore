@@ -15,11 +15,14 @@ java {
 
 repositories {
     mavenCentral()
+    maven("https://repo.opencollab.dev/maven-snapshots/")
+    maven("https://repo.opencollab.dev/main")
 }
 
 dependencies {
     implementation(project(":yap-protocol"))
     implementation(project(":yap-link-api"))
+    implementation(project(":yap-link-bedrock"))
     implementation("io.netty:netty-all:4.1.115.Final")
     implementation("com.google.code.gson:gson:2.11.0")
 

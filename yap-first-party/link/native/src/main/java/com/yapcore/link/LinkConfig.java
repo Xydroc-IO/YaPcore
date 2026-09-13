@@ -19,8 +19,8 @@ import java.util.Properties;
 /** YaP Link configuration ({@code link.properties} or {@code link.toml} + forwarding secret). */
 public final class LinkConfig {
 
-    private final Path home;
-    private final Properties props = new Properties();
+    final Path home;
+    final Properties props = new Properties();
     private String forwardingSecret = "";
 
     private LinkConfig(Path home) {
@@ -39,7 +39,7 @@ public final class LinkConfig {
                 cfg.props.load(in);
             }
         } else {
-            cfg.applyDefaults();
+            LinkConfigDefaults.applyDefaults(cfg.props);
             cfg.saveProperties();
         }
         cfg.applyMissingDefaults();
@@ -47,63 +47,10 @@ public final class LinkConfig {
         return cfg;
     }
 
-    private void applyDefaults() {
-        props.setProperty("bind", "0.0.0.0:25565");
-        props.setProperty("motd", "YaP Link");
-        props.setProperty("max-players", "500");
-        props.setProperty("online-mode", "false");
-        props.setProperty("player-info-forwarding-mode", "modern");
-        props.setProperty("forwarding-secret-file", "forwarding.secret");
-        props.setProperty("show-ping-requests", "false");
-        props.setProperty("servers.lobby", "127.0.0.1:25566");
-        props.setProperty("try", "lobby");
-        props.setProperty("force-default-server", "true");
-        props.setProperty("enable-server-command", "true");
-        props.setProperty("public-host", "127.0.0.1");
-        props.setProperty("public-port", "0");
-        props.setProperty("bedrock-enabled", "false");
-        props.setProperty("bedrock-bind", "0.0.0.0:19132");
-        props.setProperty("bedrock-backend", "127.0.0.1:25566");
-        // Phase 1
-        props.setProperty("ping-passthrough", "true");
-        props.setProperty("backend-probe-interval-sec", "10");
-        props.setProperty("backend-probe-timeout-ms", "3000");
-        props.setProperty("connect-timeout-ms", "10000");
-        props.setProperty("login-timeout-ms", "30000");
-        props.setProperty("read-timeout-sec", "300");
-        props.setProperty("skip-down-on-forced-host", "false");
-        // Phase 2
-        props.setProperty("aggregate-player-count", "true");
-        props.setProperty("global-tab-list", "false");
-        props.setProperty("chat-relay-enabled", "true");
-        props.setProperty("chat-relay-channel", "network");
-        props.setProperty("chat-relay-format", "[{server}] {name}: {message}");
-        props.setProperty("chat-join-announce", "false");
-        // Phase 3+ — default OFF in code; first run / release seed sets plugins-enabled=true
-        props.setProperty("plugins-enabled", "false");
-        props.setProperty("floodgate-key-file", "floodgate-key.pem");
-        // Phase 0 — edge rate limits (defaults ON; loopback exempt)
-        props.setProperty("connect-rate-limit-enabled", "true");
-        props.setProperty("connect-rate-per-ip", "20");
-        props.setProperty("connect-rate-window-ms", "10000");
-        props.setProperty("handshake-rate-limit-enabled", "true");
-        props.setProperty("handshake-rate-per-ip", "40");
-        props.setProperty("handshake-rate-window-ms", "10000");
-        props.setProperty("login-rate-limit-enabled", "true");
-        props.setProperty("login-rate-per-ip", "10");
-        props.setProperty("login-rate-window-ms", "10000");
-        props.setProperty("rate-limit-exempt-loopback", "true");
-        props.setProperty("max-concurrent-per-ip-enabled", "true");
-        props.setProperty("max-concurrent-per-ip", "8");
-        props.setProperty("metrics-http-enabled", "true");
-        props.setProperty("metrics-http-bind", "127.0.0.1");
-        props.setProperty("metrics-http-port", "9091");
-    }
-
     private void applyMissingDefaults() {
         Properties d = new Properties();
         LinkConfig tmp = new LinkConfig(home);
-        tmp.applyDefaults();
+        LinkConfigDefaults.applyDefaults(tmp.props);
         d.putAll(tmp.props);
         for (String key : d.stringPropertyNames()) {
             if (!props.containsKey(key)) {
@@ -148,61 +95,33 @@ public final class LinkConfig {
         return sb.toString();
     }
 
-    public Path home() {
-        return home;
-    }
+    public Path home() { return home; }
 
-    public boolean pingPassthrough() {
-        return bool("ping-passthrough", true);
-    }
+    public boolean pingPassthrough() { return bool("ping-passthrough", true); }
 
-    public int backendProbeIntervalSec() {
-        return intProp("backend-probe-interval-sec", 10);
-    }
+    public int backendProbeIntervalSec() { return intProp("backend-probe-interval-sec", 10); }
 
-    public int backendProbeTimeoutMs() {
-        return intProp("backend-probe-timeout-ms", 3000);
-    }
+    public int backendProbeTimeoutMs() { return intProp("backend-probe-timeout-ms", 3000); }
 
-    public int connectTimeoutMs() {
-        return intProp("connect-timeout-ms", 10000);
-    }
+    public int connectTimeoutMs() { return intProp("connect-timeout-ms", 10000); }
 
-    public int loginTimeoutMs() {
-        return intProp("login-timeout-ms", 30000);
-    }
+    public int loginTimeoutMs() { return intProp("login-timeout-ms", 30000); }
 
-    public int readTimeoutSec() {
-        return intProp("read-timeout-sec", 300);
-    }
+    public int readTimeoutSec() { return intProp("read-timeout-sec", 300); }
 
-    public boolean skipDownOnForcedHost() {
-        return bool("skip-down-on-forced-host", false);
-    }
+    public boolean skipDownOnForcedHost() { return bool("skip-down-on-forced-host", false); }
 
-    public boolean aggregatePlayerCount() {
-        return bool("aggregate-player-count", true);
-    }
+    public boolean aggregatePlayerCount() { return bool("aggregate-player-count", true); }
 
-    public boolean globalTabList() {
-        return bool("global-tab-list", false);
-    }
+    public boolean globalTabList() { return bool("global-tab-list", false); }
 
-    public boolean chatRelayEnabled() {
-        return bool("chat-relay-enabled", true);
-    }
+    public boolean chatRelayEnabled() { return bool("chat-relay-enabled", true); }
 
-    public String chatRelayChannel() {
-        return props.getProperty("chat-relay-channel", "network");
-    }
+    public String chatRelayChannel() { return props.getProperty("chat-relay-channel", "network"); }
 
-    public String chatRelayFormat() {
-        return props.getProperty("chat-relay-format", "[{server}] {name}: {message}");
-    }
+    public String chatRelayFormat() { return props.getProperty("chat-relay-format", "[{server}] {name}: {message}"); }
 
-    public boolean chatJoinAnnounce() {
-        return bool("chat-join-announce", false);
-    }
+    public boolean chatJoinAnnounce() { return bool("chat-join-announce", false); }
 
     public String forcedHostServer(String hostname) {
         if (hostname == null || hostname.isBlank()) {
@@ -231,37 +150,21 @@ public final class LinkConfig {
         return map;
     }
 
-    public String bindHost() {
-        return hostPart(props.getProperty("bind", "0.0.0.0:25565"), "0.0.0.0");
-    }
+    public String bindHost() { return hostPart(props.getProperty("bind", "0.0.0.0:25565"), "0.0.0.0"); }
 
-    public int bindPort() {
-        return portPart(props.getProperty("bind", "0.0.0.0:25565"), 25565);
-    }
+    public int bindPort() { return portPart(props.getProperty("bind", "0.0.0.0:25565"), 25565); }
 
-    public String motd() {
-        return props.getProperty("motd", "YaP Link");
-    }
+    public String motd() { return props.getProperty("motd", "YaP Link"); }
 
-    public int maxPlayers() {
-        return intProp("max-players", 500);
-    }
+    public int maxPlayers() { return intProp("max-players", 500); }
 
-    public boolean onlineMode() {
-        return bool("online-mode", false);
-    }
+    public boolean onlineMode() { return bool("online-mode", false); }
 
-    public boolean showPingRequests() {
-        return bool("show-ping-requests", false);
-    }
+    public boolean showPingRequests() { return bool("show-ping-requests", false); }
 
-    public byte[] forwardingSecret() {
-        return forwardingSecret.getBytes(StandardCharsets.UTF_8);
-    }
+    public byte[] forwardingSecret() { return forwardingSecret.getBytes(StandardCharsets.UTF_8); }
 
-    public String forwardingSecretString() {
-        return forwardingSecret;
-    }
+    public String forwardingSecretString() { return forwardingSecret; }
 
     public Map<String, Backend> servers() {
         Map<String, Backend> map = new LinkedHashMap<>();
@@ -322,9 +225,7 @@ public final class LinkConfig {
         return null;
     }
 
-    public boolean enableServerCommand() {
-        return bool("enable-server-command", true);
-    }
+    public boolean enableServerCommand() { return bool("enable-server-command", true); }
 
     public String publicHost() {
         String h = props.getProperty("public-host", "127.0.0.1").trim();
@@ -336,106 +237,75 @@ public final class LinkConfig {
         return p > 0 ? p : bindPort();
     }
 
-    public boolean bedrockEnabled() {
-        return bool("bedrock-enabled", false);
-    }
+    public String bedrockMode() { return LinkConfigBedrock.bedrockMode(this); }
 
-    public String bedrockBindHost() {
-        return hostPart(props.getProperty("bedrock-bind", "0.0.0.0:19132"), "0.0.0.0");
-    }
+    public boolean bedrockNativeEnabled() { return LinkConfigBedrock.bedrockNativeEnabled(this); }
 
-    public int bedrockBindPort() {
-        return portPart(props.getProperty("bedrock-bind", "0.0.0.0:19132"), 19132);
-    }
+    public boolean bedrockEnabled() { return LinkConfigBedrock.bedrockEnabled(this); }
 
-    public String bedrockBackendHost() {
-        return hostPart(props.getProperty("bedrock-backend", "127.0.0.1:25566"), "127.0.0.1");
-    }
+    public boolean geyserEnabled() { return LinkConfigBedrock.geyserEnabled(this); }
 
-    public int bedrockBackendPort() {
-        return portPart(props.getProperty("bedrock-backend", "127.0.0.1:25566"), 25566);
-    }
+    public String geyserHomeRel() { return LinkConfigBedrock.geyserHomeRel(this); }
 
-    public boolean pluginsEnabled() {
-        return bool("plugins-enabled", false);
-    }
+    public String geyserJarName() { return LinkConfigBedrock.geyserJarName(this); }
 
-    public Path floodgateKeyFile() {
-        return home.resolve(props.getProperty("floodgate-key-file", "floodgate-key.pem").trim());
-    }
+    public String geyserRemoteHost() { return LinkConfigBedrock.geyserRemoteHost(this); }
 
-    public boolean connectRateLimitEnabled() {
-        return bool("connect-rate-limit-enabled", true);
-    }
+    public int geyserRemotePort() { return LinkConfigBedrock.geyserRemotePort(this); }
 
-    public int connectRatePerIp() {
-        return Math.max(1, intProp("connect-rate-per-ip", 20));
-    }
+    public String geyserBedrockBind() { return LinkConfigBedrock.geyserBedrockBind(this); }
 
-    public long connectRateWindowMs() {
-        return Math.max(100L, intProp("connect-rate-window-ms", 10_000));
-    }
+    public String bedrockBindHost() { return LinkConfigBedrock.bedrockBindHost(this); }
 
-    public boolean handshakeRateLimitEnabled() {
-        return bool("handshake-rate-limit-enabled", true);
-    }
+    public int bedrockBindPort() { return LinkConfigBedrock.bedrockBindPort(this); }
 
-    public int handshakeRatePerIp() {
-        return Math.max(1, intProp("handshake-rate-per-ip", 40));
-    }
+    public java.util.List<java.net.InetSocketAddress> bedrockBindAddresses() { return LinkConfigBedrock.bedrockBindAddresses(this); }
 
-    public long handshakeRateWindowMs() {
-        return Math.max(100L, intProp("handshake-rate-window-ms", 10_000));
-    }
+    public String bedrockBackendHost() { return LinkConfigBedrock.bedrockBackendHost(this); }
 
-    public boolean loginRateLimitEnabled() {
-        return bool("login-rate-limit-enabled", true);
-    }
+    public int bedrockBackendPort() { return LinkConfigBedrock.bedrockBackendPort(this); }
 
-    public int loginRatePerIp() {
-        return Math.max(1, intProp("login-rate-per-ip", 10));
-    }
+    public int bedrockMotdProtocol() { return LinkConfigBedrock.bedrockMotdProtocol(this); }
 
-    public long loginRateWindowMs() {
-        return Math.max(100L, intProp("login-rate-window-ms", 10_000));
-    }
+    public String bedrockMotdVersion() { return LinkConfigBedrock.bedrockMotdVersion(this); }
 
-    /** When true (default), 127.0.0.1 / ::1 skip rate + concurrent limits (smokes / local ops). */
-    public boolean rateLimitExemptLoopback() {
-        return bool("rate-limit-exempt-loopback", true);
-    }
+    public String bedrockMotdSub() { return LinkConfigBedrock.bedrockMotdSub(this); }
 
-    public boolean maxConcurrentPerIpEnabled() {
-        return bool("max-concurrent-per-ip-enabled", true);
-    }
+    public boolean pluginsEnabled() { return LinkConfigBedrock.pluginsEnabled(this); }
 
-    /** Max simultaneous TCP sessions per remote IP; {@code 0} disables. */
-    public int maxConcurrentPerIp() {
-        return Math.max(0, intProp("max-concurrent-per-ip", 8));
-    }
+    public Path floodgateKeyFile() { return LinkConfigBedrock.floodgateKeyFile(this); }
 
-    public boolean metricsHttpEnabled() {
-        return bool("metrics-http-enabled", true);
-    }
+    public BedrockTarget bedrockBackendFor(String serverName) { return LinkConfigBedrock.bedrockBackendFor(this, serverName); }
 
-    public String metricsHttpBind() {
-        String h = props.getProperty("metrics-http-bind", "127.0.0.1").trim();
-        return h.isEmpty() ? "127.0.0.1" : h;
-    }
+    public boolean connectRateLimitEnabled() { return LinkConfigRateLimits.connectRateLimitEnabled(this); }
 
-    public int metricsHttpPort() {
-        return intProp("metrics-http-port", 9091);
-    }
+    public int connectRatePerIp() { return LinkConfigRateLimits.connectRatePerIp(this); }
 
-    /** Per-backend Bedrock Geyser target; falls back to global {@code bedrock-backend}. */
-    public BedrockTarget bedrockBackendFor(String serverName) {
-        String key = "servers." + serverName + ".bedrock";
-        String raw = props.getProperty(key);
-        if (raw != null && !raw.isBlank()) {
-            return BedrockTarget.parse(raw);
-        }
-        return new BedrockTarget(bedrockBackendHost(), bedrockBackendPort());
-    }
+    public long connectRateWindowMs() { return LinkConfigRateLimits.connectRateWindowMs(this); }
+
+    public boolean handshakeRateLimitEnabled() { return LinkConfigRateLimits.handshakeRateLimitEnabled(this); }
+
+    public int handshakeRatePerIp() { return LinkConfigRateLimits.handshakeRatePerIp(this); }
+
+    public long handshakeRateWindowMs() { return LinkConfigRateLimits.handshakeRateWindowMs(this); }
+
+    public boolean loginRateLimitEnabled() { return LinkConfigRateLimits.loginRateLimitEnabled(this); }
+
+    public int loginRatePerIp() { return LinkConfigRateLimits.loginRatePerIp(this); }
+
+    public long loginRateWindowMs() { return LinkConfigRateLimits.loginRateWindowMs(this); }
+
+    public boolean rateLimitExemptLoopback() { return LinkConfigRateLimits.rateLimitExemptLoopback(this); }
+
+    public boolean maxConcurrentPerIpEnabled() { return LinkConfigRateLimits.maxConcurrentPerIpEnabled(this); }
+
+    public int maxConcurrentPerIp() { return LinkConfigRateLimits.maxConcurrentPerIp(this); }
+
+    public boolean metricsHttpEnabled() { return LinkConfigRateLimits.metricsHttpEnabled(this); }
+
+    public String metricsHttpBind() { return LinkConfigRateLimits.metricsHttpBind(this); }
+
+    public int metricsHttpPort() { return LinkConfigRateLimits.metricsHttpPort(this); }
 
     public record BedrockTarget(String host, int port) {
         static BedrockTarget parse(String raw) {
@@ -449,11 +319,11 @@ public final class LinkConfig {
         }
     }
 
-    private boolean bool(String key, boolean def) {
+    boolean bool(String key, boolean def) {
         return Boolean.parseBoolean(props.getProperty(key, Boolean.toString(def)));
     }
 
-    private int intProp(String key, int def) {
+    int intProp(String key, int def) {
         try {
             return Integer.parseInt(props.getProperty(key, Integer.toString(def)).trim());
         } catch (NumberFormatException e) {
@@ -461,7 +331,7 @@ public final class LinkConfig {
         }
     }
 
-    private static String hostPart(String bind, String def) {
+    static String hostPart(String bind, String def) {
         if (bind == null || bind.isBlank()) {
             return def;
         }
@@ -469,7 +339,7 @@ public final class LinkConfig {
         return colon <= 0 ? bind.trim() : bind.substring(0, colon).trim();
     }
 
-    private static int portPart(String bind, int def) {
+    static int portPart(String bind, int def) {
         if (bind == null || bind.isBlank()) {
             return def;
         }

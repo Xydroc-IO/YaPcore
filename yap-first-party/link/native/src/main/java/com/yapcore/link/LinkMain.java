@@ -44,7 +44,17 @@ public final class LinkMain {
         LOG.info("  try=" + config.tryOrder() + " → " + config.resolveTry());
         LOG.info("  forwarding=modern secret-file=forwarding.secret");
 
-        server.start();
+        try {
+            server.start();
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "YaP Link failed to start — exiting so the process is not left "
+                    + "zombie-alive without JE/UDP binds", e);
+            try {
+                server.stop();
+            } catch (Exception ignored) {
+            }
+            System.exit(1);
+        }
         Thread.currentThread().join();
     }
 

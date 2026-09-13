@@ -67,15 +67,23 @@ final class ClientSessionLoginFlow {
             return;
         }
 
-        // Offline proxy: still try Mojang texture lookup so premium skins forward to Folia.
-        // Does not rewrite UUID (keeps offline playerdata). Failures are silent.
+        // Offline proxy: Mojang profile lookup for premium skins + UUID rewrite so
+        // economy/playerdata match online identities without encryption handshake.
+        // Cracked / unknown names keep offline UUID. Failures are silent.
         if (session.properties == null || session.properties.isEmpty()) {
             try {
-                var textures = MojangAuth.lookupTextures(session.username);
-                if (!textures.isEmpty()) {
-                    session.properties = textures;
+                MojangAuth.Profile premium = MojangAuth.lookupProfile(session.username);
+                if (premium != null && premium.properties() != null && !premium.properties().isEmpty()) {
+                    session.properties = premium.properties();
+                    if (premium.id() != null) {
+                        session.playerId = premium.id();
+                    }
+                    if (premium.name() != null && !premium.name().isBlank()) {
+                        session.username = premium.name();
+                    }
                     LOG.info("SKIN offline-lookup ok user=" + session.username
-                            + " props=" + textures.size());
+                            + " uuid=" + session.playerId
+                            + " props=" + premium.properties().size());
                 }
             } catch (Exception e) {
                 LOG.log(Level.FINE, "offline skin lookup failed for " + session.username, e);
@@ -122,6 +130,7 @@ final class ClientSessionLoginFlow {
         session.username = profile.name();
         session.properties = profile.properties();
         LOG.info("AUTH ok user=" + session.username + " uuid=" + session.playerId + " addr=" + session.clientAddress);
+        LOG.info("SKIN online-auth ok user=" + session.username + " uuid=" + session.playerId);
 
         applyFloodgateIdentity();
         beginBackendConnect(ctx, session.server.redirects().take(session.playerId));
