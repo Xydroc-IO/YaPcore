@@ -11,14 +11,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class BedrockPacketCodecGameplayTest {
 
     @Test
-    void itemstatesLoadedAndStartGameIncludesThem() {
+    void itemRegistryCarriesItemstatesNotStartGame() {
         assertTrue(BedrockItemStates.all().size() > 1000);
-        ByteBuf pkt = BedrockPacketCodec.startGame(1, 1, "YaPcore", 0, 64, 0,
+        ByteBuf start = BedrockPacketCodec.startGame(1, 1, "YaPcore", 0, 64, 0,
                 java.util.UUID.randomUUID());
-        int size = pkt.readableBytes();
-        assertEquals(BedrockPacketIds.START_GAME.id, BedrockPacketCodec.decode(pkt).id());
-        assertTrue(size > 10_000, "itemstates should inflate start_game, got " + size);
-        pkt.release();
+        int startSize = start.readableBytes();
+        assertEquals(BedrockPacketIds.START_GAME.id, BedrockPacketCodec.decode(start).id());
+        // 776+: itemstates moved out of StartGame
+        assertTrue(startSize < 2_000, "start_game should be small without itemstates, got " + startSize);
+        start.release();
+        ByteBuf reg = BedrockPacketCodec.itemRegistry();
+        int regSize = reg.readableBytes();
+        assertEquals(BedrockPacketIds.ITEM_COMPONENT.id, BedrockPacketCodec.decode(reg).id());
+        assertTrue(regSize > 10_000, "item_registry should carry itemstates, got " + regSize);
+        reg.release();
     }
 
     @Test
@@ -156,13 +162,16 @@ class BedrockPacketCodecGameplayTest {
         ByteBuf start = BedrockPacketCodec.startGame(1, 1, "YaPcore", 0, 64, 0, uuid);
         int startSize = start.readableBytes();
         assertEquals(BedrockPacketCodec.ID_START_GAME, BedrockPacketCodec.decode(start).id());
-        assertTrue(startSize > 10_000, "itemstates inflate start_game, got " + startSize);
+        assertTrue(startSize < 2_000, "start_game without itemstates, got " + startSize);
         start.release();
 
-        ByteBuf creative = BedrockPacketCodec.creativeContentFull();
-        int creativeSize = creative.readableBytes();
+        ByteBuf reg = BedrockPacketCodec.itemRegistry();
+        assertEquals(BedrockPacketIds.ITEM_COMPONENT.id, BedrockPacketCodec.decode(reg).id());
+        assertTrue(reg.readableBytes() > 10_000);
+        reg.release();
+
+        ByteBuf creative = BedrockPacketCodec.creativeContentEmpty();
         assertEquals(BedrockPacketIds.CREATIVE_CONTENT.id, BedrockPacketCodec.decode(creative).id());
-        assertTrue(creativeSize > 5_000, "creative catalog size=" + creativeSize);
         creative.release();
 
         ByteBuf add = BedrockPacketCodec.addPlayer(uuid, "Steve", 7, 1f, 65f, 2f, 0f, 0f);

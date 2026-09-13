@@ -1,6 +1,5 @@
 package com.yapcore.crossplay.bedrock.codec;
 
-import com.yapcore.crossplay.bedrock.BedrockAvailableCommands;
 import com.yapcore.crossplay.bedrock.BedrockItemStates;
 import com.yapcore.crossplay.bedrock.BedrockPacketCodec;
 import com.yapcore.crossplay.bedrock.BedrockPacketIds;
@@ -8,7 +7,6 @@ import com.yapcore.crossplay.bedrock.BedrockPaperRecipes;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import java.util.List;
-import java.util.UUID;
 import static com.yapcore.crossplay.bedrock.codec.BedrockCodecBinary.*;
 
 public final class BedrockInventoryCodec {
@@ -158,10 +156,7 @@ public final class BedrockInventoryCodec {
     }
 
     public static ByteBuf creativeContentEmpty() {
-        ByteBuf out = Unpooled.buffer(8);
-        writeUnsignedVarInt(out, BedrockPacketIds.CREATIVE_CONTENT.id);
-        writeUnsignedVarInt(out, 0);
-        return out;
+        return BedrockInventoryCreativeCodec.creativeContentEmpty();
     }
 
     /**
@@ -169,26 +164,7 @@ public final class BedrockInventoryCodec {
      * Skips air; shield gets blocking_tick=0 extra.
      */
     public static ByteBuf creativeContentFull() {
-        List<BedrockItemStates.ItemState> states = BedrockItemStates.all();
-        ByteBuf out = Unpooled.buffer(Math.max(64, states.size() * 24));
-        writeUnsignedVarInt(out, BedrockPacketIds.CREATIVE_CONTENT.id);
-        int count = 0;
-        for (BedrockItemStates.ItemState s : states) {
-            if (s.runtimeId() == 0 || "minecraft:air".equals(s.name())) {
-                continue;
-            }
-            count++;
-        }
-        writeUnsignedVarInt(out, count);
-        int entryId = 1;
-        for (BedrockItemStates.ItemState s : states) {
-            if (s.runtimeId() == 0 || "minecraft:air".equals(s.name())) {
-                continue;
-            }
-            writeUnsignedVarInt(out, entryId++);
-            writeItemLegacy(out, s.runtimeId() & 0xFFFF);
-        }
-        return out;
+        return BedrockInventoryCreativeCodec.creativeContentFull();
     }
 
     /** ItemLegacy for creative / inventory (network_id != 0). */
@@ -203,18 +179,42 @@ public final class BedrockInventoryCodec {
     }
 
     /**
-     * ItemLegacy with optional SkullOwner name NBT (G.33 item-in-hand heads).
-     * Other NBT (full profile hash, enchant lists) is Stretch / still Limited.
+     * Item / ItemInstance body for 1.21.50–1.21.60 (Cloudburst v431+ {@code writeItem}):
+     * network_id, count, metadata, hasNetId[+id], block_runtime_id, user_data.
+     * Optional SkullOwner name NBT (G.33 item-in-hand heads).
      */
     static void writeItemLegacy(ByteBuf out, int networkId, int count, String skullOwner) {
         writeSignedVarInt(out, networkId);
         out.writeShortLE(Math.max(1, Math.min(64, count)));
         writeUnsignedVarInt(out, 0); // metadata
+        out.writeBoolean(false); // hasNetId (stack network id lives here for inventory slots)
         writeSignedVarInt(out, 0); // block_runtime_id
+        writeItemUserData(out, networkId, skullOwner);
+    }
+
+    /**
+     * NetworkItemStackDescriptor for proto ≥2168 (Cloudburst {@code writeNetworkItemStackDescriptor}):
+     * id/count as li16, then metadata / hasNetId / blockRuntimeId / user_data.
+     * Air still writes the full header (not a single zero varint).
+     */
+    static void writeNetworkItemStack(ByteBuf out, int networkId, int count, String skullOwner) {
+        boolean air = networkId == 0;
+        out.writeShortLE(air ? 0 : (networkId & 0xFFFF));
+        out.writeShortLE(air ? 0 : Math.max(1, Math.min(64, count)));
+        writeUnsignedVarInt(out, 0); // metadata / aux
+        out.writeBoolean(false); // hasNetId
+        writeUnsignedVarInt(out, 0); // block_runtime_id
+        if (air) {
+            writeUnsignedVarInt(out, 0); // empty user_data
+            return;
+        }
+        writeItemUserData(out, networkId, skullOwner);
+    }
+
+    private static void writeItemUserData(ByteBuf out, int networkId, String skullOwner) {
         ByteBuf extra = Unpooled.buffer(64);
         if (skullOwner != null && !skullOwner.isBlank()) {
             extra.writeShortLE(0xFFFF); // has network NBT
-            // Minimal compound: SkullOwner: { Name: "..." }
             writeBedrockString(extra, ""); // root name unused in network item NBT
             writeBedrockString(extra, "SkullOwner");
             extra.writeByte(10); // TAG_Compound
@@ -243,8 +243,12 @@ public final class BedrockInventoryCodec {
     }
 
     public static ByteBuf inventoryContentEmpty(int windowId, int size) {
+        return inventoryContentEmpty(windowId, size, 776);
+    }
+
+    public static ByteBuf inventoryContentEmpty(int windowId, int size, int protocol) {
         int[] air = new int[Math.max(0, size)];
-        return inventoryContent(windowId, air);
+        return inventoryContent(windowId, air, null, null, protocol);
     }
 
     /**
@@ -265,26 +269,49 @@ public final class BedrockInventoryCodec {
      * @param skullOwners optional parallel SkullOwner names for player heads (null elsewhere)
      */
     public static ByteBuf inventoryContent(int windowId, int[] networkIds, int[] counts, String[] skullOwners) {
-        ByteBuf out = Unpooled.buffer(32 + networkIds.length * 16);
+        return inventoryContent(windowId, networkIds, counts, skullOwners, 776);
+    }
+
+    /**
+     * InventoryContent (Cloudburst v748+): containerId, contents[], FullContainerName, storageItem.
+     * {@code protocol ≥ 2168} uses NetworkItemStackDescriptor; older uses Item with hasNetId.
+     */
+    public static ByteBuf inventoryContent(int windowId, int[] networkIds, int[] counts,
+                                           String[] skullOwners, int protocol) {
+        boolean modern = protocol >= 2168;
+        ByteBuf out = Unpooled.buffer(32 + networkIds.length * (modern ? 24 : 16));
         writeUnsignedVarInt(out, BedrockPacketCodec.ID_INVENTORY_CONTENT);
         writeUnsignedVarInt(out, windowId);
         writeUnsignedVarInt(out, networkIds.length);
         for (int i = 0; i < networkIds.length; i++) {
             int networkId = networkIds[i];
             if (networkId == 0) {
-                writeSignedVarInt(out, 0);
+                if (modern) {
+                    writeNetworkItemStack(out, 0, 0, null);
+                } else {
+                    writeSignedVarInt(out, 0); // classic Item air = single zigzag 0
+                }
             } else {
                 int c = 1;
                 if (counts != null && i < counts.length && counts[i] > 0) {
                     c = counts[i];
                 }
                 String owner = skullOwners != null && i < skullOwners.length ? skullOwners[i] : null;
-                writeItemLegacy(out, networkId, c, owner);
+                if (modern) {
+                    writeNetworkItemStack(out, networkId, c, owner);
+                } else {
+                    writeItemLegacy(out, networkId, c, owner);
+                }
             }
         }
-        out.writeByte(29); // inventory container
-        out.writeByte(0);
-        writeSignedVarInt(out, 0); // storage_item air
+        // FullContainerName: Cloudburst Bedrock_v407 typemap insert(28, INVENTORY) — confirmed.
+        out.writeByte(28);
+        out.writeBoolean(false);
+        if (modern) {
+            writeNetworkItemStack(out, 0, 0, null); // storage_item air
+        } else {
+            writeSignedVarInt(out, 0);
+        }
         return out;
     }
 

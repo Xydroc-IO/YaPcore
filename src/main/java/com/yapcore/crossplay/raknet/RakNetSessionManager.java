@@ -1,5 +1,6 @@
 package com.yapcore.crossplay.raknet;
 
+import com.yapcore.crossplay.bedrock.crypto.BedrockEncryption;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.logging.Logger;
+import javax.crypto.SecretKey;
 
 /**
  * Per-address RakNet connection state machine (open → connected → frames).
@@ -22,6 +24,14 @@ public final class RakNetSessionManager {
         private volatile Phase phase = Phase.UNCONNECTED;
         /** After NetworkSettings, modern BE batches need a compression-method byte. */
         private volatile boolean gameCompressionHeader = false;
+        /**
+         * After ServerToClientHandshake (Geyser enableEncryption). Encrypts outbound batches
+         * after compression; decrypts inbound before compression header.
+         */
+        private volatile BedrockEncryption.PeerCipher encryption;
+        /** Outbound encrypt-applied log budget (prove S2C encryption on wire). */
+        private final java.util.concurrent.atomic.AtomicInteger encryptAppliedLogs =
+                new java.util.concurrent.atomic.AtomicInteger();
 
         public RakNetPeer(InetSocketAddress address) {
             this.address = address;
@@ -49,6 +59,30 @@ public final class RakNetSessionManager {
 
         public void setGameCompressionHeader(boolean enabled) {
             this.gameCompressionHeader = enabled;
+        }
+
+        public boolean encryptionEnabled() {
+            return encryption != null;
+        }
+
+        /**
+         * Cloudburst {@code BedrockPeer.enableEncryption}: AES/CTR when protocol ≥428.
+         */
+        public void enableEncryption(SecretKey key, int protocolVersion) throws Exception {
+            if (encryption != null) {
+                throw new IllegalStateException("Encryption is already enabled");
+            }
+            if (key == null || !"AES".equals(key.getAlgorithm())) {
+                throw new IllegalArgumentException("Invalid key algorithm");
+            }
+            boolean useCtr = protocolVersion >= BedrockEncryption.CTR_PROTOCOL_FLOOR;
+            encryption = new BedrockEncryption.PeerCipher(key, useCtr);
+            LOG.info("RakNet encryption enabled " + address + " ctr=" + useCtr
+                    + " proto=" + protocolVersion);
+        }
+
+        public BedrockEncryption.PeerCipher encryption() {
+            return encryption;
         }
     }
 
@@ -119,6 +153,7 @@ public final class RakNetSessionManager {
             int mtu = 28 + content.readableBytes() + 1 + RakNetUnconnected.MAGIC.length + 8 + 1 + 2;
             peer.state().setMtu(mtu);
             peer.setPhase(Phase.OPENING);
+            LOG.info("RakNet OCR1 from " + sender + " mtu≈" + peer.state().mtu());
             return List.of(RakNetReliability.openConnectionReply1(serverGuid, false, peer.state().mtu()));
         }
 
@@ -134,6 +169,8 @@ public final class RakNetSessionManager {
                 peer.state().setMtu(mtu);
                 peer.state().setClientGuid(guid);
                 peer.setPhase(Phase.CONNECTING);
+                LOG.info("RakNet OCR2 from " + sender + " guid=" + Long.toHexString(guid)
+                        + " mtu=" + mtu);
                 return List.of(RakNetReliability.openConnectionReply2(
                         serverGuid,
                         RakNetReliability.InetAddrCookie.of(sender),
@@ -205,6 +242,8 @@ public final class RakNetSessionManager {
                         } else if (inner == RakNetReliability.ID_DISCONNECT) {
                             peer.setPhase(Phase.DISCONNECTED);
                             peer.state().setConnected(false);
+                            LOG.info("RakNet client disconnect " + sender
+                                    + " guid=" + Long.toHexString(peer.state().clientGuid()));
                             try {
                                 disconnectHandler.accept(peer);
                             } catch (Exception e) {
@@ -213,27 +252,84 @@ public final class RakNetSessionManager {
                             remove(sender);
                         } else if (inner == 0xfe) {
                             payload.readUnsignedByte();
-                            ByteBuf batch = payload;
-                            if (peer.gameCompressionHeader() && payload.isReadable()) {
-                                int method = payload.readUnsignedByte();
-                                if (method == 0) {
-                                    // deflate (raw) — inflate remaining into a new buffer
-                                    batch = inflateRaw(payload);
-                                    if (batch == null) {
-                                        LOG.warning("BE deflate batch inflate failed from " + sender);
-                                        continue;
+                            ByteBuf afterFe = payload;
+                            boolean decryptedOk = false;
+                            // JOIN INVARIANT #2 (locked 22:18 empty-world path — do not regress to IC-90):
+                            // Speculative decrypt + trailer verify. CTR is NOT advanced on trailer miss.
+                            // On trailer miss: ALWAYS process as plaintext leftover (Login retransmit /
+                            // mid-join race). NEVER drop when inboundSynchronized — that drop caused
+                            // post-connect IC-90 (SetLocalPlayerAsInitialized never arrived).
+                            // On unknown compression method AFTER decrypt: restore header (race).
+                            // Do NOT re-add "drop unknown after decrypt".
+                            if (peer.encryptionEnabled()) {
+                                try {
+                                    boolean wasSynced = peer.encryption().inboundSynchronized();
+                                    afterFe = peer.encryption().decrypt(payload);
+                                    decryptedOk = true;
+                                    if (!wasSynced) {
+                                        LOG.info("BE decrypt OK first inbound from " + sender
+                                                + " bytes=" + afterFe.readableBytes()
+                                                + " (ClientToServerHandshake / first enc batch)");
                                     }
-                                } else if (method != 0xff && method != 255) {
-                                    LOG.warning("BE compressed batch method=" + method
-                                            + " not supported — drop");
+                                } catch (BedrockEncryption.InvalidEncryptionTrailerException e) {
+                                    // Speculative decrypt left CTR unmoved — plaintext race (22:18).
+                                    boolean synced = peer.encryption().inboundSynchronized();
+                                    LOG.info("BE enc trailer miss from " + sender
+                                            + (synced
+                                            ? " (plaintext race after sync; CTR unmoved — NOT drop)"
+                                            : " (plaintext leftover before first enc batch) — no CTR advance"));
+                                    afterFe = payload;
+                                } catch (Exception e) {
+                                    LOG.warning("BE decrypt failed from " + sender + ": " + e.getMessage());
                                     continue;
                                 }
                             }
+                            ByteBuf batch = afterFe;
+                            if (peer.gameCompressionHeader() && afterFe.isReadable()) {
+                                int method = afterFe.readUnsignedByte();
+                                if (method == 0) {
+                                    // ZLIB/raw deflate — Geyser CompressionCodec header 0
+                                    batch = RakNetSessionCompression.inflateRaw(afterFe);
+                                    if (batch == null) {
+                                        LOG.warning("BE deflate batch inflate failed from " + sender);
+                                        if (afterFe != payload) {
+                                            afterFe.release();
+                                        }
+                                        continue;
+                                    }
+                                } else if (method == 0xff || method == 255) {
+                                    // NONE — payload is plaintext batch
+                                } else if (method == 1) {
+                                    // SNAPPY — not implemented; drop with clear reason
+                                    LOG.warning("BE compressed batch method=1 (SNAPPY) not supported — drop");
+                                    if (afterFe != payload) {
+                                        afterFe.release();
+                                    }
+                                    continue;
+                                } else {
+                                    // Unknown method (commonly 6 pre-enc, or post-decrypt first
+                                    // length-varint): restore byte and treat as uncompressed batch.
+                                    // The 22:18 empty-world join relied on this AFTER AES decrypt —
+                                    // dropping "unknown after decrypt" blocked SetLocalPlayerAsInitialized.
+                                    afterFe.readerIndex(afterFe.readerIndex() - 1);
+                                    String peekIds = RakNetSessionCompression.peekBatchPacketIds(afterFe, 4);
+                                    LOG.info("BE batch method=" + method
+                                            + " treated as uncompressed race (restored header byte)"
+                                            + (decryptedOk ? " enc=on" : "")
+                                            + " peekIds=[" + peekIds + "]");
+                                }
+                            }
                             LOG.info("RakNet game-batch from " + sender
-                                    + " bytes=" + batch.readableBytes());
+                                    + " bytes=" + batch.readableBytes()
+                                    + (peer.encryptionEnabled()
+                                    ? (decryptedOk ? " enc=on" : " enc=arming-plain")
+                                    : ""));
                             gamePacketHandler.accept(peer, batch.retainedDuplicate());
-                            if (batch != payload) {
+                            if (batch != afterFe) {
                                 batch.release();
+                            }
+                            if (afterFe != payload) {
+                                afterFe.release();
                             }
                         } else if (payload.readableBytes() > 64) {
                             // Likely assembled split without leading 0xfe (shouldn't happen)
@@ -267,13 +363,15 @@ public final class RakNetSessionManager {
     /**
      * Encapsulate a game batch into one or more RakNet datagrams (MTU-safe splits).
      * After NetworkSettings, prefixes compression method (0=deflate when large, else 255=none).
+     * After login encryption handshake, encrypts (compression ‖ trailer) like Cloudburst.
      */
     public List<ByteBuf> encapsulateGameDatagrams(RakNetPeer peer, ByteBuf gameBatch) {
         boolean header = peer != null && peer.gameCompressionHeader();
         ByteBuf body = gameBatch;
         int method = 0xff;
-        if (header && gameBatch.readableBytes() >= 256) {
-            ByteBuf deflated = deflateRaw(gameBatch);
+        // Match NetworkSettings threshold (Geyser zlib threshold=512).
+        if (header && gameBatch.readableBytes() >= 512) {
+            ByteBuf deflated = RakNetSessionCompression.deflateRaw(gameBatch);
             if (deflated != null && deflated.readableBytes() < gameBatch.readableBytes()) {
                 body = deflated;
                 method = 0;
@@ -281,15 +379,45 @@ public final class RakNetSessionManager {
                 deflated.release();
             }
         }
-        ByteBuf wrapped = Unpooled.buffer(body.readableBytes() + (header ? 2 : 1));
-        wrapped.writeByte(0xfe);
+        ByteBuf payload;
         if (header) {
-            wrapped.writeByte(method);
+            payload = Unpooled.buffer(body.readableBytes() + 1);
+            payload.writeByte(method);
+            payload.writeBytes(body);
+            if (body != gameBatch) {
+                body.release();
+            }
+        } else {
+            payload = body.retainedDuplicate();
+            if (body != gameBatch) {
+                body.release();
+            }
         }
-        wrapped.writeBytes(body);
-        if (body != gameBatch) {
-            body.release();
+        // Cloudburst: compress → encrypt → frame 0xfe (NetworkSettings compression header first)
+        if (peer != null && peer.encryptionEnabled()) {
+            try {
+                int plainLen = payload.readableBytes();
+                ByteBuf encrypted = peer.encryption().encrypt(payload);
+                payload.release();
+                payload = encrypted;
+                // Prove S2C game packets are encrypted on the wire after enableEncryption.
+                if (peer.encryptAppliedLogs.getAndIncrement() < 8) {
+                    LOG.info("BE encrypt applied outbound " + peer.address()
+                            + " plain=" + plainLen
+                            + " cipher=" + payload.readableBytes()
+                            + " method=" + (header ? method : -1)
+                            + " (compress→encrypt→0xfe)");
+                }
+            } catch (Exception e) {
+                payload.release();
+                LOG.warning("BE encrypt failed: " + e.getMessage());
+                return List.of();
+            }
         }
+        ByteBuf wrapped = Unpooled.buffer(payload.readableBytes() + 1);
+        wrapped.writeByte(0xfe);
+        wrapped.writeBytes(payload);
+        payload.release();
         return RakNetReliability.wrapReliableOrderedPossiblySplit(peer.state(), wrapped);
     }
 
@@ -307,69 +435,7 @@ public final class RakNetSessionManager {
         return first;
     }
 
-    private static ByteBuf deflateRaw(ByteBuf plain) {
-        byte[] in = new byte[plain.readableBytes()];
-        plain.getBytes(plain.readerIndex(), in);
-        java.util.zip.Deflater deflater = new java.util.zip.Deflater(java.util.zip.Deflater.DEFAULT_COMPRESSION, true);
-        try {
-            deflater.setInput(in);
-            deflater.finish();
-            byte[] buf = new byte[Math.max(64, in.length)];
-            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(in.length / 2);
-            while (!deflater.finished()) {
-                int n = deflater.deflate(buf);
-                if (n > 0) {
-                    baos.write(buf, 0, n);
-                } else {
-                    break;
-                }
-            }
-            return Unpooled.wrappedBuffer(baos.toByteArray());
-        } catch (Exception e) {
-            return null;
-        } finally {
-            deflater.end();
-        }
-    }
-
     private static String key(InetSocketAddress a) {
         return a.getAddress().getHostAddress() + ":" + a.getPort();
-    }
-
-    /** Minecraft Bedrock batch compression method 0 = raw deflate (no zlib wrapper). */
-    private static ByteBuf inflateRaw(ByteBuf compressed) {
-        byte[] in = new byte[compressed.readableBytes()];
-        compressed.getBytes(compressed.readerIndex(), in);
-        java.util.zip.Inflater inflater = new java.util.zip.Inflater(true);
-        try {
-            inflater.setInput(in);
-            byte[] buf = new byte[Math.max(8192, in.length * 4)];
-            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream(buf.length);
-            while (!inflater.finished()) {
-                int n = inflater.inflate(buf);
-                if (n > 0) {
-                    baos.write(buf, 0, n);
-                    if (baos.size() > 16 * 1024 * 1024) {
-                        return null;
-                    }
-                    continue;
-                }
-                if (inflater.needsInput()) {
-                    break;
-                }
-                if (n == 0) {
-                    break;
-                }
-            }
-            if (baos.size() == 0) {
-                return null;
-            }
-            return Unpooled.wrappedBuffer(baos.toByteArray());
-        } catch (Exception e) {
-            LOG.warning("inflateRaw: " + e.getMessage());
-            return null;
-        } finally {
-            inflater.end();
-        }
     }
 }

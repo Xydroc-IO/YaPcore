@@ -56,7 +56,7 @@ public final class FloodgateAuth {
 
         if (loginBody != null && loginBody.isReadable()) {
             try {
-                // packet_login: i32 protocol + encapsulated(varint) LoginTokens
+                // packet_login: i32 protocol BIG-ENDIAN (Cloudburst) + encapsulated LoginTokens
                 // LoginTokens: LittleString identity + LittleString client
                 if (loginBody.readableBytes() >= 4) {
                     protocol = loginBody.readInt();
@@ -259,11 +259,13 @@ public final class FloodgateAuth {
                             // UUID-as-identity for offline — keep xuid synthetic later
                         }
                     }
-                    if (p.identityPublicKey == null) {
-                        p.identityPublicKey = extractJsonString(json, "identityPublicKey");
+                    // Last JWT wins (Geyser identityClaims.parsedIdentityPublicKey).
+                    String scrapedKey = extractJsonString(json, "identityPublicKey");
+                    if (scrapedKey == null) {
+                        scrapedKey = extractJsonString(json, "cpk");
                     }
-                    if (p.identityPublicKey == null) {
-                        p.identityPublicKey = extractJsonString(json, "cpk");
+                    if (scrapedKey != null) {
+                        p.identityPublicKey = scrapedKey;
                     }
                 } catch (Exception ignored) {
                     // try next token

@@ -210,7 +210,10 @@ public enum BedrockPacketIds {
     REFRESH_ENTITLEMENTS(0x131),
     TOGGLE_CRAFTER_SLOT_REQUEST(0x132),
     SET_PLAYER_INVENTORY_OPTIONS(0x133),
-    SET_HUD(0x134);
+    SET_HUD(0x134),
+    /** Proto ~1.21+ — client loading-screen lifecycle (JOIN_PROBE saw before IC-90 disconnect). */
+    SERVERBOUND_LOADING_SCREEN(0x138),
+    CLIENT_CAMERA_AIM_ASSIST(0x141);
 
     public final int id;
 

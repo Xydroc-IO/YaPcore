@@ -111,9 +111,16 @@ public final class BedrockEntityTracker {
         Tracked next = new Tracked(prev.uniqueId(), prev.runtimeId(), prev.uuid(), prev.name(),
                 prev.actorType(), x, y, z, prev.player(), prev.health());
         byRuntime.put(runtimeId, next);
-        broadcast.accept(-1L, List.of(
-                BedrockPacketCodec.movePlayer(runtimeId, x, y, z, pitch, yaw, yaw, (byte) 0, true)
-        ));
+        if (prev.player()) {
+            broadcast.accept(-1L, List.of(
+                    BedrockPacketCodec.movePlayer(runtimeId, x, y, z, pitch, yaw, yaw, (byte) 0, true)
+            ));
+        } else {
+            // Mobs/animals/fish must use MOVE_ACTOR_ABSOLUTE — MovePlayer desyncs client AI.
+            broadcast.accept(-1L, List.of(
+                    BedrockPacketCodec.moveActorAbsolute(runtimeId, x, y, z, pitch, yaw, yaw, true, false)
+            ));
+        }
     }
 
     /** G.25 — push SET_ACTOR_DATA when health/nametag changes (or force). */

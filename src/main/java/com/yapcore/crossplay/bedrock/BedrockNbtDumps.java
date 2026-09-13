@@ -1,7 +1,10 @@
 package com.yapcore.crossplay.bedrock;
 
 import io.netty.buffer.ByteBuf;
+import org.cloudburstmc.nbt.NbtMap;
+import org.cloudburstmc.nbt.NbtUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.logging.Logger;
 
@@ -16,6 +19,7 @@ public final class BedrockNbtDumps {
 
     private static volatile byte[] biomeDump;
     private static volatile byte[] actorDump;
+    private static volatile NbtMap actorNbt;
 
     private BedrockNbtDumps() {
     }
@@ -29,6 +33,35 @@ public final class BedrockNbtDumps {
         BedrockPacketCodec.writeUnsignedVarInt(out, BedrockPacketIds.AVAILABLE_ACTOR_IDENTIFIERS.id);
         out.writeBytes(dump);
         return out;
+    }
+
+    /**
+     * Parsed actor-identifier compound for Cloudburst {@code AvailableEntityIdentifiersPacket}.
+     * Prefer this over empty NBT — Geyser always sends a full idlist.
+     */
+    public static NbtMap availableEntityIdentifiersNbt() {
+        NbtMap local = actorNbt;
+        if (local != null) {
+            return local;
+        }
+        synchronized (BedrockNbtDumps.class) {
+            if (actorNbt == null) {
+                byte[] dump = actors();
+                if (dump.length == 0) {
+                    actorNbt = NbtMap.EMPTY;
+                } else {
+                    try (var nbt = NbtUtils.createNetworkReader(new ByteArrayInputStream(dump))) {
+                        Object root = nbt.readTag();
+                        actorNbt = root instanceof NbtMap map ? map : NbtMap.EMPTY;
+                        LOG.info("Parsed actor identifiers NBT keys=" + actorNbt.keySet());
+                    } catch (Exception e) {
+                        LOG.warning("Actor identifiers NBT parse failed: " + e.getMessage());
+                        actorNbt = NbtMap.EMPTY;
+                    }
+                }
+            }
+            return actorNbt;
+        }
     }
 
     public static ByteBuf biomeDefinitionList() {

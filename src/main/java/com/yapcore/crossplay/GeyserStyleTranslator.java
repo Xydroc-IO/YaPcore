@@ -10,6 +10,7 @@ import com.yaplabs.yapengine.YapEngine;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 /**
@@ -32,11 +33,28 @@ public final class GeyserStyleTranslator {
     private volatile SkinService skins;
     private volatile FormService forms;
     private volatile BedrockPaperWorldSync paperWorld;
+    /** Optional hook: DualStackGateway looks up BE session and sends clientbound PlayerSkin. */
+    private volatile Consumer<String> skinRefreshHook;
+    /** Optional hook: DualStackGateway / bridge plays catalog emote (uuid, username, emoteId, source). */
+    private volatile EmotePlayHook emotePlayHook;
+
+    @FunctionalInterface
+    public interface EmotePlayHook {
+        void play(java.util.UUID uuid, String username, String emoteId, String source);
+    }
 
     public void attachUx(FloodgateAuth floodgate, SkinService skins, FormService forms) {
         this.floodgate = floodgate;
         this.skins = skins;
         this.forms = forms;
+    }
+
+    public void setSkinRefreshHook(Consumer<String> skinRefreshHook) {
+        this.skinRefreshHook = skinRefreshHook;
+    }
+
+    public void setEmotePlayHook(EmotePlayHook emotePlayHook) {
+        this.emotePlayHook = emotePlayHook;
     }
 
     public void attachPaperWorld(BedrockPaperWorldSync paperWorld) {
@@ -55,10 +73,9 @@ public final class GeyserStyleTranslator {
                 + " protocol-lane=" + (player.getEdition() == ClientEdition.BEDROCK
                 ? "Bedrock→Engine" : "Java→Engine")
                 + (player.getLinkedUuid() != null ? " uuid=" + player.getLinkedUuid() : ""));
-        if (forms != null && player.getEdition() == ClientEdition.BEDROCK) {
-            forms.sendSimple(player.getUsername(), "YaPcore",
-                    "Welcome to shared-world crossplay.", "Play");
-        }
+        // Do not send ModalFormRequest on join — cracked / modern Bedrock (proto≈2207)
+        // often disconnects immediately when a form arrives during/right after StartGame.
+        // Ops can still open forms later via FORM action / FormService.
     }
 
     public void onLeave(UnifiedPlayer player) {
@@ -191,7 +208,45 @@ public final class GeyserStyleTranslator {
             }
             case "SKIN" -> {
                 if (skins != null) {
-                    LOG.info("Skin refresh request " + player.getUsername());
+                    String user = player.getUsername();
+                    if (skins.get(user) == null) {
+                        java.util.UUID uuid = player.getLinkedUuid() != null
+                                ? player.getLinkedUuid()
+                                : player.getSessionId();
+                        skins.registerDefault(user, uuid);
+                    }
+                    Consumer<String> hook = skinRefreshHook;
+                    if (hook != null) {
+                        hook.accept(user);
+                        LOG.info("Skin refresh " + user + " (clientbound queued)");
+                    } else {
+                        LOG.info("Skin refresh " + user + " (re-registered; no outbound hook)");
+                    }
+                }
+            }
+            case "EMOTE" -> {
+                String emoteId = payload.getOrDefault("emoteId", payload.getOrDefault("id", ""));
+                if (emoteId.isBlank()) {
+                    LOG.fine("EMOTE missing emoteId from " + player.getUsername());
+                    break;
+                }
+                java.util.UUID uuid = player.getLinkedUuid() != null
+                        ? player.getLinkedUuid()
+                        : player.getSessionId();
+                String uuidOverride = payload.get("uuid");
+                if (uuidOverride != null && !uuidOverride.isBlank()) {
+                    try {
+                        uuid = java.util.UUID.fromString(uuidOverride.trim());
+                    } catch (IllegalArgumentException ignored) {
+                    }
+                }
+                EmotePlayHook hook = emotePlayHook;
+                if (hook != null) {
+                    hook.play(uuid, player.getUsername(), emoteId.trim(),
+                            player.getEdition() == ClientEdition.BEDROCK ? "BE" : "JE");
+                    LOG.fine(() -> "Xlate EMOTE " + player.getUsername() + " id=" + emoteId);
+                } else {
+                    LOG.fine("EMOTE no play hook for " + player.getUsername());
                 }
             }
             case "LINK" -> {

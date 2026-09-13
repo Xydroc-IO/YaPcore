@@ -1,6 +1,7 @@
 package com.yapcore.crossplay.bedrock.bridge;
 
 import com.yapcore.crossplay.bedrock.*;
+import com.yapcore.crossplay.bedrock.cloudburst.CloudburstPackets;
 import io.netty.buffer.ByteBuf;
 
 import java.util.ArrayList;
@@ -19,6 +20,24 @@ public final class BedrockInventoryPush {
 
     void pushInventory(long guid, String username) {
         ctx.inventory.ensure(username);
+        int proto = sessionProtocol(guid);
+        if (ctx.getCloudburst(guid) != null) {
+            // Modern bootstrap / refresh: empty Cloudburst stacks (full paper push still hand-roll for now).
+            BedrockPaperWorldSync sync = ctx.paperWorld;
+            if (sync != null && sync.isEnabled()) {
+                int[][] paper = sync.snapshotInventoryStacksLiveOnly(username, 36);
+                if (paper != null) {
+                    ctx.inventory.seedStorage(username, paper[0], paper[1]);
+                    ctx.inventoryFingerprint.put(username.toLowerCase(), fingerprintStacks(paper[0], paper[1]));
+                    String[] owners = sync.snapshotSkullOwnersLiveOnly(username, 36);
+                    ctx.send(guid, BedrockPacketCodec.inventoryContent(0, paper[0], paper[1], owners, proto));
+                    return;
+                }
+            }
+            int[] ids = ctx.inventory.storageNetworkIds(username);
+            ctx.sendPacket(guid, CloudburstPackets.inventoryContentEmpty(0, Math.max(36, ids.length)));
+            return;
+        }
         BedrockPaperWorldSync sync = ctx.paperWorld;
         if (sync != null && sync.isEnabled()) {
             int[][] paper = sync.snapshotInventoryStacksLiveOnly(username, 36);
@@ -26,14 +45,14 @@ public final class BedrockInventoryPush {
                 ctx.inventory.seedStorage(username, paper[0], paper[1]);
                 ctx.inventoryFingerprint.put(username.toLowerCase(), fingerprintStacks(paper[0], paper[1]));
                 String[] owners = sync.snapshotSkullOwnersLiveOnly(username, 36);
-                ctx.send(guid, BedrockPacketCodec.inventoryContent(0, paper[0], paper[1], owners));
+                ctx.send(guid, BedrockPacketCodec.inventoryContent(0, paper[0], paper[1], owners, proto));
                 return;
             }
         }
         int[] ids = ctx.inventory.storageNetworkIds(username);
         int[] counts = ctx.inventory.storageCounts(username);
         ctx.inventoryFingerprint.put(username.toLowerCase(), fingerprintStacks(ids, counts));
-        ctx.send(guid, BedrockPacketCodec.inventoryContent(0, ids, counts));
+        ctx.send(guid, BedrockPacketCodec.inventoryContent(0, ids, counts, null, proto));
     }
 
     void maybePushPaperInventory(long guid, String username) {
@@ -53,7 +72,7 @@ public final class BedrockInventoryPush {
         ctx.inventory.seedStorage(username, paper[0], paper[1]);
         ctx.inventoryFingerprint.put(username.toLowerCase(), fp);
         String[] owners = sync.snapshotSkullOwnersLiveOnly(username, 36);
-        ctx.send(guid, BedrockPacketCodec.inventoryContent(0, paper[0], paper[1], owners));
+        ctx.send(guid, BedrockPacketCodec.inventoryContent(0, paper[0], paper[1], owners, sessionProtocol(guid)));
     }
 
     void pushOpenContainer(long guid, String username) {
@@ -62,18 +81,19 @@ public final class BedrockInventoryPush {
             return;
         }
         int n = ctx.containers.slotsForType(w.type());
+        int proto = sessionProtocol(guid);
         BedrockPaperWorldSync sync = ctx.paperWorld;
         if (sync != null && sync.isEnabled()
                 && !BedrockContainerBridge.isVirtualContainer(w.type())) {
             int[][] live = sync.snapshotBlockInventory(w.x(), w.y(), w.z(), n);
             if (live != null && live.length >= 2) {
                 ctx.inventory.seedContainer(username, live[0], live[1]);
-                ctx.send(guid, BedrockPacketCodec.inventoryContent(w.windowId(), live[0], live[1]));
+                ctx.send(guid, BedrockPacketCodec.inventoryContent(w.windowId(), live[0], live[1], null, proto));
                 return;
             }
         }
         int[][] snap = ctx.inventory.containerSnapshot(username, n);
-        ctx.send(guid, BedrockPacketCodec.inventoryContent(w.windowId(), snap[0], snap[1]));
+        ctx.send(guid, BedrockPacketCodec.inventoryContent(w.windowId(), snap[0], snap[1], null, proto));
     }
 
     void pushOpenContainerProgress(long guid, String username) {
@@ -153,5 +173,10 @@ public final class BedrockInventoryPush {
             h = 31 * h + (c & 0xffffffffL);
         }
         return h;
+    }
+
+    private int sessionProtocol(long guid) {
+        BedrockSessionManager.BedrockSession s = ctx.sessions.get(guid);
+        return s != null && s.protocol() > 0 ? s.protocol() : 776;
     }
 }

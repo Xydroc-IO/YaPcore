@@ -37,6 +37,11 @@ public final class BedrockPaperWorldSync {
         return backend.hasInjectedPlayer(username);
     }
 
+    /** CraftPlayer (or Bukkit Player) for an injected Bedrock identity, if present. */
+    public Object getInjectedCraftPlayer(String username) {
+        return backend.getInjectedCraftPlayer(username);
+    }
+
     public void invalidateColumn(int cx, int cz) {
         backend.invalidateColumn(cx, cz);
     }

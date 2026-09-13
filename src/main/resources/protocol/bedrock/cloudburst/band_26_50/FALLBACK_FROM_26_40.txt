@@ -1,0 +1,14 @@
+Geyser master has no 26_50 palette assets (checked via GitHub API tree + HTTP 404).
+
+Searched:
+  - core/src/main/resources/bedrock/
+  - full git tree for *26_50*
+  - runtime_item_states.26_50.json / block_palette.26_50.nbt / item_components.26_50.nbt
+
+Fallback: copied band_26_40 assets into this directory renamed as:
+  - runtime_item_states.26_50.json  (from runtime_item_states.26_40.json)
+  - block_palette.26_50.nbt         (from block_palette.26_40.nbt)
+  - item_components.26_50.nbt       (from item_components.26_40.nbt)
+
+Source: https://raw.githubusercontent.com/GeyserMC/Geyser/master/core/src/main/resources/bedrock/
+Protocols: band_26_40 = 2168/2169; band_26_50 = 2192 (provisional until Geyser publishes 26_50)

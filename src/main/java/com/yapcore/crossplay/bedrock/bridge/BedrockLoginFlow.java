@@ -1,42 +1,68 @@
 package com.yapcore.crossplay.bedrock.bridge;
 
 import com.yapcore.crossplay.bedrock.*;
-import com.yapcore.crossplay.bedrock.codec.BedrockUiCodec;
+import com.yapcore.crossplay.bedrock.cloudburst.CloudburstCodecIndex;
+import com.yapcore.crossplay.bedrock.cloudburst.CloudburstPackets;
+import com.yapcore.crossplay.bedrock.cloudburst.CloudburstSession;
+import com.yapcore.crossplay.bedrock.geyserport.BedrockRequestChunkRadiusTranslator;
+import com.yapcore.crossplay.bedrock.geyserport.BedrockSetLocalPlayerAsInitializedTranslator;
+import com.yapcore.crossplay.bedrock.geyserport.LoginEncryptionUtils;
+import com.yapcore.crossplay.bedrock.geyserport.YapGeyserSession;
 import com.yapcore.crossplay.floodgate.FloodgateAuth;
-import com.yapcore.resourcepack.ResourcePackOffer;
 import io.netty.buffer.ByteBuf;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
-/** Login, spawn sequence, network settings, and chunk radius handling. */
+/**
+ * Thin Bedrock login/pack handshake wrapper.
+ *
+ * <p>Join state machine lives in {@link YapGeyserSession} (native Geyser join-path port).
+ * This class: Floodgate auth → encrypt → empty pack handshake → {@link YapGeyserSession#join}.
+ *
+ * <p>See {@code docs/geyser-join-reference/NATIVE_PORT.md}.
+ */
 public final class BedrockLoginFlow {
 
-    /** ResourcePackClientResponse status (wiki.vg / Cloudburst). */
     private static final int PACK_REFUSED = 1;
     private static final int PACK_SEND_PACKS = 2;
     private static final int PACK_HAVE_ALL = 3;
     private static final int PACK_COMPLETED = 4;
 
-    /** If client never answers ResourcePackClientResponse (common on bad CDN / mid-login forms). */
     private static final long PACK_HANDSHAKE_TIMEOUT_MS = 8_000L;
 
     private final BedrockBridgeContext ctx;
-    private final BedrockWorldPush world;
-    private final BedrockInventoryPush inventory;
+    private final ConcurrentHashMap<Long, YapGeyserSession> yapSessions = new ConcurrentHashMap<>();
 
     public BedrockLoginFlow(BedrockBridgeContext ctx, BedrockWorldPush world, BedrockInventoryPush inventory) {
         this.ctx = ctx;
-        this.world = world;
-        this.inventory = inventory;
+        // world/inventory retained via ctx for post-join push; join path is YapGeyserSession.
+    }
+
+    YapGeyserSession session(long guid) {
+        return yapSessions.get(guid);
+    }
+
+    public void removeSession(long guid) {
+        yapSessions.remove(guid);
     }
 
     void sendNetworkSettings(long guid) {
-        BedrockBridgeContext.LOG.info("BE network settings → guid=" + Long.toHexString(guid));
-        ctx.send(guid, BedrockPacketCodec.networkSettingsUncompressed());
+        BedrockBridgeContext.LOG.info("BE network settings → guid=" + Long.toHexString(guid)
+                + " (Geyser zlib threshold=512)");
+        CloudburstSession cb = ctx.getCloudburst(guid);
+        if (cb == null) {
+            Integer pending = ctx.pendingProtocol.get(guid);
+            if (pending != null && pending >= CloudburstCodecIndex.MIN_MODERN) {
+                cb = ctx.openCloudburst(guid, pending);
+            }
+        }
+        if (cb != null) {
+            ctx.sendPacket(guid, CloudburstPackets.networkSettingsGeyser());
+        } else {
+            ctx.send(guid, BedrockPacketCodec.networkSettingsGeyser());
+        }
         markCompressionHeader(guid);
     }
 
@@ -47,37 +73,49 @@ public final class BedrockLoginFlow {
     }
 
     void handleChunkRadius(long guid, ByteBuf body, List<BedrockGameplayBridge.GameAction> actions, String user) {
-        int radius = 8;
+        int requested = 8;
         try {
-            radius = Math.max(2, Math.min(16, BedrockPacketCodec.readUnsignedVarInt(body.duplicate())));
+            requested = Math.max(2, Math.min(16, BedrockPacketCodec.readUnsignedVarInt(body.duplicate())));
         } catch (Exception ignored) {
             // default
         }
-        ctx.chunkRadius.put(guid, radius);
-        ctx.columns.setRadius(guid, radius);
-        List<ByteBuf> out = new ArrayList<>();
-        out.add(BedrockPacketCodec.chunkRadiusUpdated(radius));
-        double[] spawn = world.paperSpawnOrDefault();
-        int sx = (int) Math.floor(spawn[0]);
-        int sy = (int) Math.floor(spawn[1]);
-        int sz = (int) Math.floor(spawn[2]);
-        out.add(BedrockPacketCodec.networkChunkPublisherUpdate(sx, sy, sz, radius * 16));
-        for (BedrockColumnStreamer.Column c : ctx.columns.initialRing(guid, sx, sz, 2)) {
-            out.add(world.chunkFor(c.cx(), c.cz()));
+        handleChunkRadius(guid, requested, actions, user);
+    }
+
+    void handleChunkRadius(long guid, int requestedRadius, List<BedrockGameplayBridge.GameAction> actions, String user) {
+        YapGeyserSession session = yapSessions.get(guid);
+        if (session != null) {
+            BedrockRequestChunkRadiusTranslator.translate(session, requestedRadius);
+            return;
         }
-        ctx.send(guid, out);
-        world.mirrorPaperPlayers();
-        actions.add(new BedrockGameplayBridge.GameAction("MOVE", user, Map.of("chunkRadius", Integer.toString(radius))));
+        // Pre-session race: store only.
+        ctx.chunkRadius.put(guid, Math.max(2, Math.min(32, requestedRadius)));
+        BedrockBridgeContext.LOG.info(
+                "BE REQUEST_CHUNK_RADIUS pre-session store " + user + " requested=" + requestedRadius);
     }
 
     void beginLogin(long guid, String address, ByteBuf body, List<BedrockGameplayBridge.GameAction> actions) {
+        BedrockBridgeContext.LoginPhase existingPhase = ctx.loginPhase.get(guid);
+        if (existingPhase != null || ctx.sessions.get(guid) != null) {
+            BedrockBridgeContext.LOG.info(
+                    "BE ignore duplicate Login guid=" + Long.toHexString(guid)
+                            + " phase=" + existingPhase
+                            + " (already in join — RakNet retransmit / race)");
+            return;
+        }
         FloodgateAuth.Identity identity = ctx.floodgate.authenticate(body, address);
         int proto = ctx.pendingProtocol.getOrDefault(guid, identity.protocol());
         if (proto <= 0) {
             proto = identity.protocol() > 0 ? identity.protocol() : 712;
         }
+        CloudburstSession cb = null;
+        if (proto >= CloudburstCodecIndex.MIN_MODERN) {
+            cb = ctx.openCloudburst(guid, proto);
+        }
         long runtime = ctx.runtimeIds.getAndIncrement();
         ctx.sessions.open(guid, identity.username(), proto, address);
+        BedrockJoinProbe.start(guid, identity.username(), proto, address);
+        BedrockJoinProbe.noteEvent(guid, "login_begin floodgate_ok");
         ctx.runtimeByGuid.put(guid, runtime);
         ctx.skins.registerDefault(identity.username(), identity.javaUuid());
         ctx.entities.addPlayer(runtime, runtime, identity.javaUuid(), identity.username(),
@@ -86,13 +124,21 @@ public final class BedrockLoginFlow {
                 identity.javaUuid(), identity.username(), runtime, 8.5f, 65.62f, -7.5f, 0f, 0f);
         for (Long other : ctx.sessions.allGuids()) {
             if (!other.equals(guid)) {
-                ctx.send(other, announce.retainedDuplicate());
+                if (ctx.getCloudburst(other) != null) {
+                    ctx.sendPacket(other, CloudburstPackets.addPlayer(
+                            identity.javaUuid(), identity.username(), runtime, 8.5f, 65.62f, -7.5f, 0f, 0f));
+                } else {
+                    ctx.send(other, announce.retainedDuplicate());
+                }
             }
         }
         announce.release();
 
-        // Defer JOIN (crossplay + welcome form) until after StartGame — ModalFormRequest
-        // mid-pack handshake disconnects cracked / modern Bedrock clients.
+        YapGeyserSession yap = YapGeyserSession.open(
+                ctx, guid, runtime, identity.username(), identity.javaUuid(), proto, cb);
+        yapSessions.put(guid, yap);
+
+        // Defer JOIN (crossplay + welcome form) until after StartGame.
         ctx.pendingJoin.put(guid, Map.of(
                 "protocol", Integer.toString(proto),
                 "xuid", identity.xuid(),
@@ -101,97 +147,116 @@ public final class BedrockLoginFlow {
                 "runtimeId", Long.toString(runtime)
         ));
 
-        // Strict Bedrock handshake: LOGIN_SUCCESS + ResourcePacksInfo only.
-        // StartGame waits for ResourcePackClientResponse (see handlePackClientResponse).
-        List<ByteBuf> out = new ArrayList<>();
-        out.add(BedrockPacketCodec.playStatus(BedrockPacketCodec.PlayStatus.LOGIN_SUCCESS));
-        BedrockBridgeContext.PendingPack pending = resolvePendingPack(address);
-        if (pending != null) {
-            ctx.pendingPack.put(guid, pending);
-            out.add(BedrockPacketCodec.resourcePacksInfoOffer(
-                    pending.packId(), pending.version(), pending.sizeBytes(), pending.cdnUrl(), pending.forced()));
-        } else {
-            ctx.pendingPack.remove(guid);
-            out.add(BedrockPacketCodec.resourcePacksInfoEmpty());
+        if (!LoginEncryptionUtils.encryptPlayerConnection(ctx, guid, identity, proto)) {
+            BedrockBridgeContext.LOG.warning(
+                    "BE encryption handshake failed for " + identity.username()
+                            + " — aborting login (Geyser always encrypts, incl. offline Floodgate)");
+            yapSessions.remove(guid);
+            return;
         }
-        ctx.loginPhase.put(guid, BedrockBridgeContext.LoginPhase.AWAITING_PACKS);
-        ctx.send(guid, out);
         BedrockBridgeContext.LOG.info("BE login " + identity.username() + " xuid=" + identity.xuid()
                 + " uuid=" + identity.javaUuid()
-                + (pending != null ? " pack=" + pending.cdnUrl() : " pack=none"));
+                + " pack=empty-handshake (no CDN) proto=" + proto + " enc=on path=yap-geyser-session");
         schedulePackHandshakeTimeout(guid);
     }
 
-    /**
-     * ResourcePackClientResponse → ResourcePackStack → StartGame (once).
-     * Never re-sends StartGame after {@link BedrockBridgeContext.LoginPhase#SPAWNED}.
-     */
+    void onEncryptionAcknowledged(long guid) {
+        LoginEncryptionUtils.sendLoginSuccessAndEmptyPacks(ctx, guid, protocolOf(guid));
+    }
+
     void handlePackClientResponse(long guid, ByteBuf body, List<BedrockGameplayBridge.GameAction> actions) {
+        int proto = protocolOf(guid);
+        int status = decodePackResponseStatus(body, proto);
+        handlePackClientResponseStatus(guid, status, actions);
+    }
+
+    void handlePackClientResponseStatus(long guid, int status, List<BedrockGameplayBridge.GameAction> actions) {
         BedrockBridgeContext.LoginPhase phase = ctx.loginPhase.get(guid);
-        if (phase == BedrockBridgeContext.LoginPhase.SPAWNED) {
+        if (phase == BedrockBridgeContext.LoginPhase.SPAWNED
+                || phase == BedrockBridgeContext.LoginPhase.AWAITING_CLIENT_INIT
+                || phase == BedrockBridgeContext.LoginPhase.BOOTSTRAPPING) {
             return;
         }
-        int status = -1;
-        if (body != null && body.isReadable()) {
-            status = body.readUnsignedByte();
-        }
+        int proto = protocolOf(guid);
         BedrockBridgeContext.LOG.info("BE pack response guid=" + Long.toHexString(guid)
-                + " status=" + status + " phase=" + phase);
+                + " status=" + status + " phase=" + phase + " proto=" + proto);
 
-        if (status == PACK_REFUSED) {
-            BedrockBridgeContext.PendingPack pending = ctx.pendingPack.get(guid);
-            if (pending != null && pending.forced()) {
-                BedrockBridgeContext.LOG.warning("BE pack refused (forced) — closing " + Long.toHexString(guid));
-                ctx.send(guid, BedrockPacketCodec.playStatus(BedrockPacketCodec.PlayStatus.LOGIN_FAILED_SERVER));
-                ctx.sessions.close(guid);
-                ctx.loginPhase.remove(guid);
-                ctx.pendingPack.remove(guid);
-                ctx.pendingJoin.remove(guid);
-                return;
+        if (phase == BedrockBridgeContext.LoginPhase.AWAITING_STACK_COMPLETE) {
+            if (status == PACK_COMPLETED || status < 0) {
+                join(guid, actions);
             }
-            // Declined optional pack — continue with empty stack.
-            ctx.pendingPack.remove(guid);
-            sendStackAndAwait(guid, null);
             return;
         }
 
-        if (status == PACK_SEND_PACKS) {
-            // Client wants chunked delivery (CDN failed / no CDN). We only support CDN
-            // .mcpack URLs — skip the pack and continue so join still works.
-            BedrockBridgeContext.LOG.warning("BE pack SEND_PACKS (CDN miss or no chunk support) — continuing without pack");
-            ctx.pendingPack.remove(guid);
-            sendStackAndAwait(guid, null);
+        if (phase != BedrockBridgeContext.LoginPhase.AWAITING_PACKS) {
+            BedrockBridgeContext.LOG.info("BE pack response ignored (phase=" + phase + ") guid="
+                    + Long.toHexString(guid) + " status=" + status);
+            if (status == PACK_COMPLETED) {
+                join(guid, actions);
+            }
             return;
         }
 
-        if (status == PACK_HAVE_ALL) {
-            sendStackAndAwait(guid, ctx.pendingPack.get(guid));
+        if (status == PACK_REFUSED || status == PACK_SEND_PACKS || status == PACK_HAVE_ALL || status < 0) {
+            if (status == PACK_SEND_PACKS) {
+                BedrockBridgeContext.LOG.info(
+                        "BE pack SEND_PACKS — Phase-1 empty stack (no CDN chunk delivery)");
+            }
+            ctx.pendingPack.remove(guid);
+            sendStackAndAwait(guid);
             return;
         }
 
         if (status == PACK_COMPLETED) {
-            finishLogin(guid, actions);
+            // Geyser UpstreamPacketHandler COMPLETED → connect/join directly.
+            join(guid, actions);
             return;
         }
 
-        // Unknown / empty status — still advance so clients are not stuck.
-        if (phase == BedrockBridgeContext.LoginPhase.AWAITING_PACKS) {
-            sendStackAndAwait(guid, ctx.pendingPack.get(guid));
-        } else {
-            finishLogin(guid, actions);
+        sendStackAndAwait(guid);
+    }
+
+    /** Floodgate auth already done — pack COMPLETED → {@link YapGeyserSession#join}. */
+    void join(long guid, List<BedrockGameplayBridge.GameAction> actions) {
+        YapGeyserSession session = yapSessions.get(guid);
+        if (session == null) {
+            BedrockBridgeContext.LOG.warning(
+                    "BE join without YapGeyserSession guid=" + Long.toHexString(guid));
+            return;
+        }
+        session.join(actions);
+    }
+
+    private static int decodePackResponseStatus(ByteBuf body, int protocol) {
+        if (body == null || !body.isReadable()) {
+            return -1;
+        }
+        ByteBuf b = body.duplicate();
+        try {
+            if (protocol >= 2168) {
+                int wire = BedrockPacketCodec.readUnsignedVarInt(b);
+                if (b.isReadable()) {
+                    BedrockPacketCodec.readString(b);
+                }
+                return wire + 1;
+            }
+            return b.readUnsignedByte();
+        } catch (Exception e) {
+            return -1;
         }
     }
 
-    private void sendStackAndAwait(long guid, BedrockBridgeContext.PendingPack pending) {
-        List<ByteBuf> out = new ArrayList<>();
-        if (pending != null) {
-            out.add(BedrockPacketCodec.resourcePackStackOffer(
-                    pending.packId(), pending.version(), pending.forced()));
+    private void sendStackAndAwait(long guid) {
+        int proto = protocolOf(guid);
+        CloudburstSession cb = ctx.getCloudburst(guid);
+        if (cb != null) {
+            ctx.sendPacket(guid, CloudburstPackets.resourcePackStackEmpty());
         } else {
-            out.add(BedrockPacketCodec.resourcePackStackEmpty());
+            ctx.send(guid, BedrockPacketCodec.resourcePackStackEmpty(proto));
         }
         ctx.loginPhase.put(guid, BedrockBridgeContext.LoginPhase.AWAITING_STACK_COMPLETE);
-        ctx.send(guid, out);
+        BedrockBridgeContext.LOG.info("BE ResourcePackStack empty → await COMPLETED guid="
+                + Long.toHexString(guid));
     }
 
     private void schedulePackHandshakeTimeout(long guid) {
@@ -204,17 +269,30 @@ public final class BedrockLoginFlow {
                 return;
             }
             BedrockBridgeContext.LoginPhase phase = ctx.loginPhase.get(g);
-            if (phase == null || phase == BedrockBridgeContext.LoginPhase.SPAWNED) {
+            if (phase == null
+                    || phase == BedrockBridgeContext.LoginPhase.SPAWNED
+                    || phase == BedrockBridgeContext.LoginPhase.AWAITING_CLIENT_INIT
+                    || phase == BedrockBridgeContext.LoginPhase.BOOTSTRAPPING) {
                 return;
             }
             if (ctx.sessions.get(g) == null) {
                 return;
             }
             BedrockBridgeContext.LOG.warning("BE pack handshake timeout guid=" + Long.toHexString(g)
-                    + " phase=" + phase + " — continuing without pack");
+                    + " phase=" + phase + " — empty stack + join()");
             ctx.pendingPack.remove(g);
+            if (phase == BedrockBridgeContext.LoginPhase.AWAITING_ENCRYPTION) {
+                LoginEncryptionUtils.sendLoginSuccessAndEmptyPacks(ctx, g, protocolOf(g));
+                try {
+                    Thread.sleep(1_500L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                phase = ctx.loginPhase.get(g);
+            }
             if (phase == BedrockBridgeContext.LoginPhase.AWAITING_PACKS) {
-                sendStackAndAwait(g, null);
+                sendStackAndAwait(g);
                 try {
                     Thread.sleep(1_500L);
                 } catch (InterruptedException e) {
@@ -222,148 +300,45 @@ public final class BedrockLoginFlow {
                     return;
                 }
             }
-            if (ctx.loginPhase.get(g) != BedrockBridgeContext.LoginPhase.SPAWNED
+            BedrockBridgeContext.LoginPhase after = ctx.loginPhase.get(g);
+            if (after != BedrockBridgeContext.LoginPhase.SPAWNED
+                    && after != BedrockBridgeContext.LoginPhase.AWAITING_CLIENT_INIT
+                    && after != BedrockBridgeContext.LoginPhase.BOOTSTRAPPING
                     && ctx.sessions.get(g) != null) {
-                finishLogin(g, null);
+                join(g, null);
             }
         });
     }
 
-    /** One-shot StartGame + world bootstrap. Safe to call multiple times. */
     void finishLogin(long guid, List<BedrockGameplayBridge.GameAction> actions) {
-        BedrockBridgeContext.LoginPhase prev = ctx.loginPhase.put(guid, BedrockBridgeContext.LoginPhase.SPAWNED);
-        if (prev == BedrockBridgeContext.LoginPhase.SPAWNED) {
-            return;
-        }
-        BedrockSessionManager.BedrockSession session = ctx.sessions.get(guid);
-        if (session == null) {
-            return;
-        }
-        Long runtimeObj = ctx.runtimeByGuid.get(guid);
-        if (runtimeObj == null) {
-            return;
-        }
-        long runtime = runtimeObj;
-        UUID uuid = ctx.floodgate.uuidFor(session.username());
-        String user = session.username();
-        double[] spawn = world.paperSpawnOrDefault();
-        int sx = (int) Math.floor(spawn[0]);
-        int sy = (int) Math.floor(spawn[1]);
-        int sz = (int) Math.floor(spawn[2]);
-
-        List<ByteBuf> out = new ArrayList<>();
-        out.add(BedrockPacketCodec.startGame(runtime, runtime, "YaPcore", sx, sy, sz, uuid));
-        out.add(BedrockPacketCodec.updateAttributesDefault(runtime));
-        out.add(BedrockPacketCodec.setTime(1000));
-        out.add(BedrockPacketCodec.setDifficulty(1));
-        out.add(BedrockPacketCodec.setCommandsEnabled(true));
-        out.add(BedrockPacketCodec.availableCommandsRich());
-        out.add(BedrockPacketCodec.creativeContentFull());
-        out.add(BedrockNbtDumps.availableEntityIdentifiers());
-        out.add(BedrockNbtDumps.biomeDefinitionList());
-        out.add(BedrockPacketCodec.playerListAddSelf(uuid, runtime, user));
-        out.add(BedrockPacketCodec.playStatus(BedrockPacketCodec.PlayStatus.PLAYER_SPAWN));
-        out.add(BedrockPacketCodec.chunkRadiusUpdated(8));
-        out.add(BedrockPacketCodec.networkChunkPublisherUpdate(sx, sy, sz, 128));
-        ctx.columns.setRadius(guid, 8);
-        List<BedrockColumnStreamer.Column> ring = ctx.columns.initialRing(guid, sx, sz, 2);
-        for (BedrockColumnStreamer.Column c : ring) {
-            out.add(BedrockPacketCodec.levelChunkFlat(c.cx(), c.cz()));
-        }
-        ctx.inventory.ensure(user);
-        out.add(BedrockPacketCodec.inventoryContent(0, ctx.inventory.storageNetworkIds(user)));
-        out.addAll(ctx.entities.snapshotPackets(runtime));
-        ctx.send(guid, out);
-
-        Map<String, String> joinPayload = ctx.pendingJoin.remove(guid);
-        if (joinPayload != null) {
-            BedrockGameplayBridge.GameAction join =
-                    new BedrockGameplayBridge.GameAction("JOIN", user, joinPayload);
-            if (actions != null) {
-                actions.add(join);
-            } else {
-                ctx.emitJoin.accept(join);
-            }
-        }
-
-        final long g = guid;
-        Thread.ofVirtual().name("yap-be-paper-chunks-" + user).start(() -> {
-            try {
-                List<ByteBuf> paperChunks = new ArrayList<>();
-                for (BedrockColumnStreamer.Column c : ring) {
-                    paperChunks.add(world.chunkFor(c.cx(), c.cz()));
-                }
-                if (!paperChunks.isEmpty()) {
-                    ctx.send(g, paperChunks);
-                }
-            } catch (Exception e) {
-                BedrockBridgeContext.LOG.fine("paper chunk warm: " + e.getMessage());
-            }
-        });
-        BedrockPaperWorldSync sync = ctx.paperWorld;
-        if (sync != null && sync.isEnabled()) {
-            final UUID u = uuid;
-            final double ix = spawn[0];
-            final double iy = spawn[1] + 0.1;
-            final double iz = spawn[2];
-            Thread.ofVirtual().name("yap-be-paper-inject-" + user).start(() -> {
-                boolean ok = sync.injectPlayer(user, u, ix, iy, iz);
-                if (!ok) {
-                    sync.injectBedrockPlayer(u, user);
-                    return;
-                }
-                try {
-                    Object player = sync.findOnlinePlayer(user);
-                    ctx.skins.applyToPaperPlayer(user, player);
-                } catch (Throwable e) {
-                    BedrockBridgeContext.LOG.fine("skin→Paper: " + e.getMessage());
-                }
-                int[][] paperStacks = sync.snapshotInventoryStacksLiveOnly(user, 36);
-                if (paperStacks != null) {
-                    ctx.inventory.seedStorage(user, paperStacks[0], paperStacks[1]);
-                    ctx.send(g, BedrockPacketCodec.inventoryContent(0, paperStacks[0], paperStacks[1]));
-                } else {
-                    int[] paperInv = sync.snapshotInventoryNetworkIds(user, 36);
-                    if (paperInv != null) {
-                        ctx.send(g, BedrockPacketCodec.inventoryContent(0, paperInv));
-                    }
-                }
-                BedrockBridgeContext.LOG.info("BE→Paper player online " + user);
-            });
-        }
-        world.mirrorPaperPlayers();
-        ctx.pendingPack.remove(guid);
-        BedrockBridgeContext.LOG.info("BE spawn ready " + user);
+        join(guid, actions);
     }
 
-    /** Kept for callers; never allocates a second runtime / StartGame. */
+    void onClientInitialized(long guid, List<BedrockGameplayBridge.GameAction> actions) {
+        YapGeyserSession session = yapSessions.get(guid);
+        if (session != null) {
+            BedrockSetLocalPlayerAsInitializedTranslator.translate(session, actions);
+            return;
+        }
+        BedrockBridgeContext.LOG.warning(
+                "BE SetLocalPlayerAsInitialized without YapGeyserSession guid="
+                        + Long.toHexString(guid));
+    }
+
     void sendSpawnSequence(long guid, BedrockSessionManager.BedrockSession session) {
         if (session == null) {
             return;
         }
-        if (ctx.loginPhase.get(guid) != BedrockBridgeContext.LoginPhase.SPAWNED) {
-            finishLogin(guid, null);
+        BedrockBridgeContext.LoginPhase phase = ctx.loginPhase.get(guid);
+        if (phase != BedrockBridgeContext.LoginPhase.SPAWNED
+                && phase != BedrockBridgeContext.LoginPhase.BOOTSTRAPPING
+                && phase != BedrockBridgeContext.LoginPhase.AWAITING_CLIENT_INIT) {
+            join(guid, null);
         }
     }
 
-    private BedrockBridgeContext.PendingPack resolvePendingPack(String clientAddress) {
-        Optional<ResourcePackOffer> offer = ctx.resourcePackOffer.apply(
-                clientAddress == null ? "" : clientAddress);
-        if (offer.isEmpty() || !isBedrockCompatiblePack(offer.get())) {
-            return null;
-        }
-        ResourcePackOffer o = offer.get();
-        UUID packUuid = BedrockUiCodec.parsePackUuid(o.packId());
-        return new BedrockBridgeContext.PendingPack(
-                packUuid, "1.0.0", o.forced(), o.url(), Math.max(0L, o.sizeBytes()));
-    }
-
-    /** Bedrock needs .mcpack (or CDN that serves BE content), not Java Edition zips. */
-    private static boolean isBedrockCompatiblePack(ResourcePackOffer o) {
-        if (o == null || o.url() == null || o.url().isBlank()) {
-            return false;
-        }
-        String u = o.url().toLowerCase();
-        return u.contains(".mcpack") || o.bedrockCompatible();
+    private int protocolOf(long guid) {
+        BedrockSessionManager.BedrockSession sess = ctx.sessions.get(guid);
+        return sess != null ? sess.protocol() : 0;
     }
 }

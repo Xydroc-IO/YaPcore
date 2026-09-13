@@ -99,9 +99,19 @@ public final class BedrockPacketCodec {
     public static void writeString(ByteBuf out, String s) { BedrockCodecBinary.writeString(out, s); }
     public static String readString(ByteBuf in) { return BedrockCodecBinary.readString(in); }
     public static ByteBuf playStatus(PlayStatus status) { return BedrockLoginCodec.playStatus(status); }
+    public static ByteBuf serverToClientHandshake(String jwt) {
+        return BedrockLoginCodec.serverToClientHandshake(jwt);
+    }
     public static ByteBuf textChat(String source, String message) { return BedrockTextCodec.textChat(source, message); }
     public static ByteBuf movePlayer(long runtimeId, float x, float y, float z, float pitch, float yaw, float headYaw, byte mode, boolean onGround) { return BedrockWorldCodec.movePlayer(runtimeId, x, y, z, pitch, yaw, headYaw, mode, onGround); }
-    public static ByteBuf startGame(long entityUniqueId, long runtimeId, String levelName, int blockX, int blockY, int blockZ, java.util.UUID worldId) { return BedrockLoginCodec.startGame(entityUniqueId, runtimeId, levelName, blockX, blockY, blockZ, worldId); }
+    public static ByteBuf startGame(long entityUniqueId, long runtimeId, String levelName, int blockX, int blockY, int blockZ, java.util.UUID worldId) {
+        return BedrockLoginCodec.startGame(entityUniqueId, runtimeId, levelName, blockX, blockY, blockZ, worldId);
+    }
+    public static ByteBuf startGame(long entityUniqueId, long runtimeId, String levelName, int blockX, int blockY, int blockZ, java.util.UUID worldId, int protocol) {
+        return BedrockLoginCodec.startGame(entityUniqueId, runtimeId, levelName, blockX, blockY, blockZ, worldId, protocol);
+    }
+    public static ByteBuf itemRegistry() { return BedrockLoginCodec.itemRegistry(); }
+    public static ByteBuf itemRegistry(int protocol) { return BedrockLoginCodec.itemRegistry(protocol); }
     public static void writeEmptyNetworkNbt(ByteBuf out) { BedrockCodecBinary.writeEmptyNetworkNbt(out); }
     public static void writeZigZag64(ByteBuf out, long value) { BedrockCodecBinary.writeZigZag64(out, value); }
     public static void writeUnsignedVarLong(ByteBuf out, long value) { BedrockCodecBinary.writeUnsignedVarLong(out, value); }
@@ -111,9 +121,19 @@ public final class BedrockPacketCodec {
                                                  String cdnUrl, boolean mustAccept) {
         return BedrockLoginCodec.resourcePacksInfoOffer(packId, version, sizeBytes, cdnUrl, mustAccept);
     }
+    public static ByteBuf resourcePacksInfoOffer(java.util.UUID packId, String version, long sizeBytes,
+                                                 String cdnUrl, boolean mustAccept, int protocol) {
+        return BedrockLoginCodec.resourcePacksInfoOffer(packId, version, sizeBytes, cdnUrl, mustAccept, protocol);
+    }
     public static ByteBuf resourcePackStackEmpty() { return BedrockLoginCodec.resourcePackStackEmpty(); }
+    public static ByteBuf resourcePackStackEmpty(int protocol) {
+        return BedrockLoginCodec.resourcePackStackEmpty(protocol);
+    }
     public static ByteBuf resourcePackStackOffer(java.util.UUID packId, String version, boolean mustAccept) {
         return BedrockLoginCodec.resourcePackStackOffer(packId, version, mustAccept);
+    }
+    public static ByteBuf resourcePackStackOffer(java.util.UUID packId, String version, boolean mustAccept, int protocol) {
+        return BedrockLoginCodec.resourcePackStackOffer(packId, version, mustAccept, protocol);
     }
     public static ByteBuf setTitle(int type, String text, int fadeIn, int stay, int fadeOut) {
         return BedrockUiCodec.setTitle(type, text, fadeIn, stay, fadeOut);
@@ -142,7 +162,18 @@ public final class BedrockPacketCodec {
         return BedrockUiCodec.blockActorSkull(x, y, z, ownerName);
     }
     public static ByteBuf modalFormRequest(int formId, String json) { return BedrockLoginCodec.modalFormRequest(formId, json); }
-    public static ByteBuf playerSkin(java.util.UUID uuid, String skinId, String skinDataBase64, String capeData, String geometry) { return BedrockLoginCodec.playerSkin(uuid, skinId, skinDataBase64, capeData, geometry); }
+    public static ByteBuf playerSkin(java.util.UUID uuid, String skinId, String skinDataBase64, String capeData, String geometry) {
+        return BedrockLoginCodec.playerSkin(uuid, skinId, skinDataBase64, capeData, geometry);
+    }
+
+    public static ByteBuf playerSkin(java.util.UUID uuid, String skinId, byte[] skinRgbaOrPng, byte[] cape,
+                                     String geometry, boolean slim, int protocol) {
+        return BedrockLoginCodec.playerSkin(uuid, skinId, skinRgbaOrPng, cape, geometry, slim, protocol);
+    }
+
+    public static ByteBuf playerSkin(com.yapcore.crossplay.skin.BedrockCanonicalSkin skin, int protocol) {
+        return BedrockLoginCodec.playerSkin(skin, protocol);
+    }
     public static ByteBuf containerOpen(int windowId, int windowType, int x, int y, int z, long entityRuntimeId) { return BedrockInventoryCodec.containerOpen(windowId, windowType, x, y, z, entityRuntimeId); }
     public static ByteBuf playerEnchantOptions(java.util.List<BedrockPaperRecipes.EnchantOption> options) { return BedrockInventoryCodec.playerEnchantOptions(options); }
     public static ByteBuf containerClose(int windowId, boolean serverInitiated) { return BedrockInventoryCodec.containerClose(windowId, serverInitiated); }
@@ -152,18 +183,23 @@ public final class BedrockPacketCodec {
     public static FilterTextDecode tryDecodeFilterText(ByteBuf body) { return BedrockInventoryCodec.tryDecodeFilterText(body); }
     public static ByteBuf filterText(String text, boolean fromServer) { return BedrockInventoryCodec.filterText(text, fromServer); }
     public static ByteBuf networkSettings(int compressionThreshold, int compressionAlgorithm, boolean clientThrottle, int clientThrottleThreshold, float clientThrottleScalar) { return BedrockLoginCodec.networkSettings(compressionThreshold, compressionAlgorithm, clientThrottle, clientThrottleThreshold, clientThrottleScalar); }
+    public static ByteBuf networkSettingsGeyser() { return BedrockLoginCodec.networkSettingsGeyser(); }
     public static ByteBuf networkSettingsUncompressed() { return BedrockLoginCodec.networkSettingsUncompressed(); }
     public static ByteBuf chunkRadiusUpdated(int radius) { return BedrockLoginCodec.chunkRadiusUpdated(radius); }
     public static ByteBuf networkChunkPublisherUpdate(int blockX, int blockY, int blockZ, int radiusBlocks) { return BedrockLoginCodec.networkChunkPublisherUpdate(blockX, blockY, blockZ, radiusBlocks); }
     public static ByteBuf levelChunkEmpty(int chunkX, int chunkZ) { return BedrockWorldCodec.levelChunkEmpty(chunkX, chunkZ); }
+    public static ByteBuf levelChunkEmpty(int chunkX, int chunkZ, int protocol) { return BedrockWorldCodec.levelChunkEmpty(chunkX, chunkZ, protocol); }
     public static ByteBuf levelChunkMarker(int chunkX, int chunkZ) { return BedrockWorldCodec.levelChunkMarker(chunkX, chunkZ); }
+    public static ByteBuf levelChunkMarker(int chunkX, int chunkZ, int protocol) { return BedrockWorldCodec.levelChunkMarker(chunkX, chunkZ, protocol); }
     public static int hashedAir() { return BedrockWorldCodec.hashedAir(); }
     public static int hashedDirt() { return BedrockWorldCodec.hashedDirt(); }
     public static int hashedStone() { return BedrockWorldCodec.hashedStone(); }
     public static int hashedGrass() { return BedrockWorldCodec.hashedGrass(); }
     public static int hashedBedrock() { return BedrockWorldCodec.hashedBedrock(); }
     public static ByteBuf levelChunkFlat(int chunkX, int chunkZ) { return BedrockWorldCodec.levelChunkFlat(chunkX, chunkZ); }
+    public static ByteBuf levelChunkFlat(int chunkX, int chunkZ, int protocol) { return BedrockWorldCodec.levelChunkFlat(chunkX, chunkZ, protocol); }
     public static ByteBuf levelChunkFromColumn(int chunkX, int chunkZ, int[][] states) { return BedrockWorldCodec.levelChunkFromColumn(chunkX, chunkZ, states); }
+    public static ByteBuf levelChunkFromColumn(int chunkX, int chunkZ, int[][] states, int protocol) { return BedrockWorldCodec.levelChunkFromColumn(chunkX, chunkZ, states, protocol); }
     public static ByteBuf addPlayer(java.util.UUID uuid, String username, long runtimeId, float x, float y, float z, float yaw, float pitch) { return BedrockEntityCodec.addPlayer(uuid, username, runtimeId, x, y, z, yaw, pitch); }
     public static ByteBuf setActorData(long runtimeId, String nametag, float health, float width, float height) { return BedrockEntityCodec.setActorData(runtimeId, nametag, health, width, height); }
     public static ByteBuf updateBlock(int x, int y, int z, int runtimeId, int flags, int layer) { return BedrockWorldCodec.updateBlock(x, y, z, runtimeId, flags, layer); }
@@ -171,6 +207,9 @@ public final class BedrockPacketCodec {
     public static ByteBuf biomeDefinitionListEmpty() { return BedrockWorldCodec.biomeDefinitionListEmpty(); }
     public static ByteBuf addActor(long uniqueId, long runtimeId, String actorType, float x, float y, float z, float yaw, float pitch) { return BedrockEntityCodec.addActor(uniqueId, runtimeId, actorType, x, y, z, yaw, pitch); }
     public static ByteBuf removeActor(long uniqueEntityId) { return BedrockEntityCodec.removeActor(uniqueEntityId); }
+    public static ByteBuf moveActorAbsolute(long runtimeId, float x, float y, float z, float pitch, float yaw, float headYaw, boolean onGround, boolean teleported) {
+        return BedrockEntityCodec.moveActorAbsolute(runtimeId, x, y, z, pitch, yaw, headYaw, onGround, teleported);
+    }
     public static ByteBuf setTime(int time) { return BedrockWorldCodec.setTime(time); }
     public static ByteBuf setDifficulty(int difficulty) { return BedrockWorldCodec.setDifficulty(difficulty); }
     public static ByteBuf setCommandsEnabled(boolean enabled) { return BedrockWorldCodec.setCommandsEnabled(enabled); }
@@ -179,9 +218,17 @@ public final class BedrockPacketCodec {
     public static ByteBuf creativeContentFull() { return BedrockInventoryCodec.creativeContentFull(); }
     public static ByteBuf availableCommandsEmpty() { return BedrockLoginCodec.availableCommandsEmpty(); }
     public static ByteBuf availableCommandsRich() { return BedrockLoginCodec.availableCommandsRich(); }
-    public static ByteBuf playerListAddSelf(java.util.UUID uuid, long entityUniqueId, String username) { return BedrockLoginCodec.playerListAddSelf(uuid, entityUniqueId, username); }
+    public static ByteBuf playerListAddSelf(java.util.UUID uuid, long entityUniqueId, String username) {
+        return BedrockLoginCodec.playerListAddSelf(uuid, entityUniqueId, username);
+    }
+    public static ByteBuf playerListAddSelf(java.util.UUID uuid, long entityUniqueId, String username, int protocol) {
+        return BedrockLoginCodec.playerListAddSelf(uuid, entityUniqueId, username, protocol);
+    }
     public static void writeMinimalSkin(ByteBuf out) { BedrockLoginCodec.writeMinimalSkin(out); }
     public static ByteBuf inventoryContentEmpty(int windowId, int size) { return BedrockInventoryCodec.inventoryContentEmpty(windowId, size); }
+    public static ByteBuf inventoryContentEmpty(int windowId, int size, int protocol) {
+        return BedrockInventoryCodec.inventoryContentEmpty(windowId, size, protocol);
+    }
     public static ByteBuf inventoryContent(int windowId, int[] networkIds) { return BedrockInventoryCodec.inventoryContent(windowId, networkIds); }
     public static ByteBuf itemStackResponseOk(int requestId) { return BedrockInventoryCodec.itemStackResponseOk(requestId); }
     public static ItemStackRequestDecode tryDecodeItemStackRequest(ByteBuf body) { return BedrockInventoryCodec.tryDecodeItemStackRequest(body); }
@@ -210,6 +257,10 @@ public final class BedrockPacketCodec {
 
     public static ByteBuf inventoryContent(int windowId, int[] networkIds, int[] counts, String[] skullOwners) {
         return BedrockInventoryCodec.inventoryContent(windowId, networkIds, counts, skullOwners);
+    }
+
+    public static ByteBuf inventoryContent(int windowId, int[] networkIds, int[] counts, String[] skullOwners, int protocol) {
+        return BedrockInventoryCodec.inventoryContent(windowId, networkIds, counts, skullOwners, protocol);
     }
     public static Decoded decode(ByteBuf packet) {
         int id = BedrockCodecBinary.readUnsignedVarInt(packet);

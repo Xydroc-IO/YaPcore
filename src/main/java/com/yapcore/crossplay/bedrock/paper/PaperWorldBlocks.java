@@ -31,6 +31,10 @@ final class PaperWorldBlocks {
 
     void breakBlock(int x, int y, int z) {
         try {
+            if (backend.portBlocks.tryBreak(x, y, z)) {
+                PaperWorldSyncBackend.LOG.fine(() -> "Paper PORT BREAK @" + x + "," + y + "," + z);
+                return;
+            }
             Object block = blockAt(x, y, z);
             if (block == null) {
                 return;
@@ -45,7 +49,16 @@ final class PaperWorldBlocks {
     }
 
     void placeBlock(int x, int y, int z, String blockName) {
+        placeBlock(x, y, z, blockName, 2);
+    }
+
+    void placeBlock(int x, int y, int z, String blockName, int faceOrdinal) {
         try {
+            if (PaperPortBlocksBridge.looksLikePortId(blockName)
+                    && backend.portBlocks.tryPlace(x, y, z, blockName, faceOrdinal)) {
+                PaperWorldSyncBackend.LOG.fine(() -> "Paper PORT PLACE " + blockName + " @" + x + "," + y + "," + z);
+                return;
+            }
             Object block = blockAt(x, y, z);
             if (block == null) {
                 return;
@@ -208,6 +221,10 @@ final class PaperWorldBlocks {
     private int materialToHashedState(Object block) throws ReflectiveOperationException {
         if (block == null) {
             return BedrockPacketCodec.hashedAir();
+        }
+        Integer portRt = backend.portBlocks.runtimeIndexAt(block);
+        if (portRt != null) {
+            return portRt;
         }
         Object type = block.getClass().getMethod("getType").invoke(block);
         String material = type == null ? null : String.valueOf(type);

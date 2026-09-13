@@ -32,6 +32,7 @@ public final class PaperWorldSyncBackend {
 
     final PaperWorldMainThread mainThread = new PaperWorldMainThread(this);
     final PaperWorldBlocks blocks = new PaperWorldBlocks(this);
+    final PaperPortBlocksBridge portBlocks = new PaperPortBlocksBridge(this);
     final PaperWorldCombat combat = new PaperWorldCombat(this);
     final PaperWorldInventory inventory = new PaperWorldInventory(this);
     final PaperWorldContainers containers = new PaperWorldContainers(this);
@@ -89,6 +90,13 @@ public final class PaperWorldSyncBackend {
         return playerInject.isInjected(username);
     }
 
+    public Object getInjectedCraftPlayer(String username) {
+        if (username == null) {
+            return null;
+        }
+        return playerInject.snapshot().get(username.toLowerCase());
+    }
+
     public void apply(String action, Map<String, String> payload) {
         if (!isEnabled() || payload == null) {
             return;
@@ -106,7 +114,8 @@ public final class PaperWorldSyncBackend {
                 int x = PaperWorldMainThread.parse(payload.get("x"), 0);
                 int y = PaperWorldMainThread.parse(payload.get("y"), 0);
                 int z = PaperWorldMainThread.parse(payload.get("z"), 0);
-                blocks.placeBlock(x, y, z, payload.getOrDefault("block", "stone"));
+                int face = PaperWorldMainThread.parse(payload.get("face"), 2);
+                blocks.placeBlock(x, y, z, payload.getOrDefault("block", "stone"), face);
                 invalidateColumn(x >> 4, z >> 4);
             });
             case "ATTACK" -> mainThread.runOnMain(() -> combat.attackEntity(

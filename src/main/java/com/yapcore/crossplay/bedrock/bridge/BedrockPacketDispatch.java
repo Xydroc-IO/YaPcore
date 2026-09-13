@@ -1,21 +1,45 @@
 package com.yapcore.crossplay.bedrock.bridge;
 
 import com.yapcore.crossplay.bedrock.*;
+import com.yapcore.crossplay.bedrock.cloudburst.CloudburstCodecIndex;
+import com.yapcore.crossplay.bedrock.cloudburst.CloudburstSession;
 import io.netty.buffer.ByteBuf;
-
+import io.netty.buffer.Unpooled;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.cloudburstmc.math.vector.Vector3f;
+import org.cloudburstmc.protocol.bedrock.packet.AnimatePacket;
+import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
+import org.cloudburstmc.protocol.bedrock.packet.CommandRequestPacket;
+import org.cloudburstmc.protocol.bedrock.packet.ContainerClosePacket;
+import org.cloudburstmc.protocol.bedrock.packet.EmotePacket;
+import org.cloudburstmc.protocol.bedrock.packet.InteractPacket;
+import org.cloudburstmc.protocol.bedrock.packet.InventoryTransactionPacket;
+import org.cloudburstmc.protocol.bedrock.packet.ItemStackRequestPacket;
+import org.cloudburstmc.protocol.bedrock.packet.LoginPacket;
+import org.cloudburstmc.protocol.bedrock.packet.MobEquipmentPacket;
+import org.cloudburstmc.protocol.bedrock.packet.ModalFormResponsePacket;
+import org.cloudburstmc.protocol.bedrock.packet.MovePlayerPacket;
+import org.cloudburstmc.protocol.bedrock.packet.PlayerActionPacket;
+import org.cloudburstmc.protocol.bedrock.packet.PlayerAuthInputPacket;
+import org.cloudburstmc.protocol.bedrock.packet.PlayerSkinPacket;
+import org.cloudburstmc.protocol.bedrock.packet.RequestChunkRadiusPacket;
+import org.cloudburstmc.protocol.bedrock.packet.RequestNetworkSettingsPacket;
+import org.cloudburstmc.protocol.bedrock.packet.ResourcePackClientResponsePacket;
+import org.cloudburstmc.protocol.bedrock.packet.SetLocalPlayerAsInitializedPacket;
+import org.cloudburstmc.protocol.bedrock.packet.TextPacket;
+import org.cloudburstmc.protocol.common.util.VarInts;
 
 /** Inbound Bedrock packet dispatch → game actions and side effects. */
 public final class BedrockPacketDispatch {
 
-    private final BedrockBridgeContext ctx;
-    private final BedrockLoginFlow login;
-    private final BedrockWorldPush world;
-    private final BedrockInventoryPush inventory;
-    private final BedrockCommandHints commands;
-    private final BedrockUiBridge ui;
+    final BedrockBridgeContext ctx;
+    final BedrockLoginFlow login;
+    final BedrockWorldPush world;
+    final BedrockInventoryPush inventory;
+    final BedrockCommandHints commands;
+    final BedrockUiBridge ui;
 
     public BedrockPacketDispatch(BedrockBridgeContext ctx,
                                  BedrockLoginFlow login,
@@ -31,6 +55,241 @@ public final class BedrockPacketDispatch {
         this.ui = ui;
     }
 
+    /** Modern Cloudburst-decoded C2S path (proto &gt;= 2168). */
+    public void handleCloudburstPacket(long guid, String address, BedrockPacket packet,
+                                       List<BedrockGameplayBridge.GameAction> actions) {
+        if (packet == null) {
+            return;
+        }
+        BedrockSessionManager.BedrockSession s = ctx.sessions.get(guid);
+        String user = s != null ? s.username() : "BedrockPlayer";
+
+        if (packet instanceof RequestNetworkSettingsPacket rns) {
+            int proto = rns.getProtocolVersion();
+            if (proto != 0) {
+                ctx.pendingProtocol.put(guid, proto);
+            }
+            if (proto >= CloudburstCodecIndex.MIN_MODERN) {
+                ctx.openCloudburst(guid, proto);
+            }
+            login.sendNetworkSettings(guid);
+            return;
+        }
+        if (packet instanceof LoginPacket loginPkt) {
+            int proto = loginPkt.getProtocolVersion();
+            if (proto != 0) {
+                ctx.pendingProtocol.put(guid, proto);
+            }
+            if (proto >= CloudburstCodecIndex.MIN_MODERN) {
+                ctx.openCloudburst(guid, proto);
+            }
+            CloudburstSession cb = ctx.getCloudburst(guid);
+            ByteBuf body = Unpooled.EMPTY_BUFFER;
+            if (cb != null) {
+                ByteBuf encoded = cb.encode(loginPkt);
+                try {
+                    VarInts.readUnsignedInt(encoded);
+                    body = encoded.copy();
+                } finally {
+                    encoded.release();
+                }
+            }
+            try {
+                login.beginLogin(guid, address, body, actions);
+            } finally {
+                if (body != Unpooled.EMPTY_BUFFER) {
+                    body.release();
+                }
+            }
+            return;
+        }
+        if (packet instanceof org.cloudburstmc.protocol.bedrock.packet.ClientToServerHandshakePacket) {
+            // Informational — LOGIN_SUCCESS already sent right after enableEncryption (Geyser order).
+            BedrockBridgeContext.LOG.info(
+                    "BE ClientToServerHandshake guid=" + Long.toHexString(guid) + " (enc ack)");
+            login.onEncryptionAcknowledged(guid);
+            return;
+        }
+        if (packet instanceof ResourcePackClientResponsePacket resp) {
+            login.handlePackClientResponseStatus(guid, BedrockPacketDispatchCloudburst.mapPackStatus(resp.getStatus()), actions);
+            return;
+        }
+        if (packet instanceof SetLocalPlayerAsInitializedPacket) {
+            BedrockBridgeContext.LOG.info("BE SetLocalPlayerAsInitialized " + user);
+            login.onClientInitialized(guid, actions);
+            return;
+        }
+        if (packet instanceof org.cloudburstmc.protocol.bedrock.packet.ServerboundLoadingScreenPacket ls) {
+            BedrockBridgeContext.LOG.info(
+                    "BE ServerboundLoadingScreen " + user
+                            + " type=" + ls.getType()
+                            + " screenId=" + ls.getLoadingScreenId()
+                            + " phase=" + ctx.loginPhase.get(guid));
+            BedrockJoinProbe.noteEvent(guid,
+                    "loading_screen type=" + ls.getType() + " id=" + ls.getLoadingScreenId());
+            return;
+        }
+        if (packet instanceof MovePlayerPacket move) {
+            // Geyser waits for SetLocalPlayerAsInitialized (0x71) — never soft-init from movement.
+            Vector3f pos = move.getPosition();
+            Vector3f rot = move.getRotation();
+            if (pos != null) {
+                float yaw = rot != null ? rot.getY() : 0f;
+                float pitch = rot != null ? rot.getX() : 0f;
+                actions.add(BedrockPacketDispatchLegacy.moveAction(user, pos.getX(), pos.getY(), pos.getZ(), yaw, pitch));
+                if (ctx.isSpawnFullyReady(guid)) {
+                    world.streamColumnsAround(guid, (int) pos.getX(), (int) pos.getY(), (int) pos.getZ(), false);
+                }
+            }
+            return;
+        }
+        if (packet instanceof PlayerAuthInputPacket auth) {
+            // Geyser waits for SetLocalPlayerAsInitialized (0x71) — never soft-init from auth-input.
+            // v818+ wire omits AuthoritativeMovementMode; client defaults SERVER_WITH_REWIND → auth-input.
+            Vector3f pos = auth.getPosition();
+            Vector3f rot = auth.getRotation();
+            if (pos != null) {
+                Map<String, String> p = new HashMap<>();
+                p.put("x", Integer.toString((int) pos.getX()));
+                p.put("y", Integer.toString((int) pos.getY()));
+                p.put("z", Integer.toString((int) pos.getZ()));
+                p.put("yaw", Float.toString(rot != null ? rot.getY() : 0f));
+                p.put("pitch", Float.toString(rot != null ? rot.getX() : 0f));
+                p.put("tick", Long.toString(auth.getTick()));
+                actions.add(new BedrockGameplayBridge.GameAction("MOVE", user, p));
+                Long runtime = ctx.runtimeByGuid.get(guid);
+                if (runtime != null) {
+                    ctx.entities.move(runtime, pos.getX(), pos.getY(), pos.getZ(),
+                            rot != null ? rot.getY() : 0f, rot != null ? rot.getX() : 0f);
+                }
+                if (ctx.isSpawnFullyReady(guid)) {
+                    world.streamColumnsAround(guid, (int) pos.getX(), (int) pos.getY(), (int) pos.getZ(), false);
+                    inventory.maybePushPaperInventory(guid, user);
+                    inventory.pushOpenContainerProgress(guid, user);
+                    if ((auth.getTick() & 7L) == 0L) {
+                        world.mirrorPaperPlayers();
+                    }
+                }
+            }
+            return;
+        }
+        if (packet instanceof TextPacket text) {
+            if (text.getType() == TextPacket.Type.CHAT || text.getType() == TextPacket.Type.WHISPER) {
+                String msg = text.getMessage();
+                if (msg != null) {
+                    actions.add(new BedrockGameplayBridge.GameAction("CHAT", user, Map.of("msg", msg)));
+                }
+            }
+            return;
+        }
+        if (packet instanceof PlayerActionPacket act) {
+            BedrockPacketDispatchCloudburst.handleCloudburstPlayerAction(this, guid, user, act, actions);
+            return;
+        }
+        if (packet instanceof InventoryTransactionPacket tx) {
+            BedrockPacketDispatchCloudburst.handleCloudburstInventoryTransaction(this, guid, user, tx, actions);
+            return;
+        }
+        if (packet instanceof InteractPacket interact) {
+            BedrockPacketDispatchCloudburst.handleCloudburstInteract(this, guid, user, interact, actions);
+            return;
+        }
+        if (packet instanceof ContainerClosePacket) {
+            ctx.containers.close(user, false);
+            actions.add(new BedrockGameplayBridge.GameAction("CLOSE_CONTAINER", user, Map.of("pkt", "CONTAINER_CLOSE")));
+            return;
+        }
+        if (packet instanceof AnimatePacket) {
+            actions.add(new BedrockGameplayBridge.GameAction("ATTACK", user, Map.of("pkt", "ANIMATE")));
+            return;
+        }
+        if (packet instanceof EmotePacket emote) {
+            BedrockPacketDispatchCloudburst.handleCloudburstEmote(this, guid, user, emote, actions);
+            return;
+        }
+        if (packet instanceof MobEquipmentPacket eq) {
+            ctx.inventory.setHeldHotbar(user, eq.getHotbarSlot());
+            inventory.pushInventory(guid, user);
+            actions.add(new BedrockGameplayBridge.GameAction("INV", user, Map.of(
+                    "pkt", "MOB_EQUIPMENT",
+                    "hotbar", Integer.toString(eq.getHotbarSlot())
+            )));
+            return;
+        }
+        if (packet instanceof ItemStackRequestPacket stackReq) {
+            BedrockPacketDispatchCloudburst.handleCloudburstItemStackRequest(this, guid, user, stackReq, actions);
+            return;
+        }
+        if (packet instanceof ModalFormResponsePacket form) {
+            ByteBuf body = Unpooled.buffer(64);
+            BedrockPacketCodec.writeUnsignedVarInt(body, form.getFormId());
+            String data = form.getFormData();
+            boolean hasData = data != null && !"null".equals(data);
+            body.writeBoolean(hasData);
+            if (hasData) {
+                BedrockPacketCodec.writeString(body, data);
+            }
+            try {
+                ctx.forms.handleResponse(user, body);
+            } finally {
+                body.release();
+            }
+            return;
+        }
+        if (packet instanceof PlayerSkinPacket skinPkt) {
+            if (skinPkt.getSkin() != null && skinPkt.getUuid() != null) {
+                ctx.skins.ingestClientSkin(user, skinPkt.getUuid(), skinPkt.getSkin());
+            } else {
+                CloudburstSession cb = ctx.getCloudburst(guid);
+                if (cb != null) {
+                    ByteBuf encoded = cb.encode(packet);
+                    try {
+                        VarInts.readUnsignedInt(encoded);
+                        ctx.skins.ingestClientSkin(user, encoded, cb.protocol());
+                    } finally {
+                        encoded.release();
+                    }
+                }
+            }
+            return;
+        }
+        if (packet instanceof CommandRequestPacket cmd) {
+            String line = cmd.getCommand();
+            if (line == null || line.isBlank()) {
+                line = "/";
+            } else {
+                line = line.trim();
+                if (!line.startsWith("/")) {
+                    line = "/" + line;
+                }
+            }
+            String result = com.yapcore.game.command.GameCommandBridge.dispatch(line, null);
+            boolean ok = result != null
+                    && !result.startsWith("Paper not")
+                    && !result.startsWith("Game not ready")
+                    && !result.startsWith("Folia is not")
+                    && !result.startsWith("Could not")
+                    && !result.startsWith("Paper command error")
+                    && !result.startsWith("Folia stdin error");
+            commands.applyCommandInventoryHints(user, line);
+            ui.applyCommandUiHints(guid, user, line);
+            ctx.send(guid, List.of(
+                    BedrockPacketCodec.commandOutputSimple(result == null ? "" : result, ok),
+                    BedrockPacketCodec.textChat("YaPcore", result == null ? line : result)
+            ));
+            inventory.pushInventory(guid, user);
+            actions.add(new BedrockGameplayBridge.GameAction("COMMAND", user, Map.of("msg", line, "result",
+                    result == null ? "" : result)));
+            return;
+        }
+        if (packet instanceof RequestChunkRadiusPacket radius) {
+            login.handleChunkRadius(guid, radius.getRadius(), actions, user);
+            return;
+        }
+        BedrockBridgeContext.LOG.fine("BE Cloudburst pkt " + packet.getPacketType()
+                + " guid=" + Long.toHexString(guid));
+    }
+
     public void handlePacket(long guid, String address, BedrockPacketCodec.Decoded decoded,
                              List<BedrockGameplayBridge.GameAction> actions) {
         BedrockPacketIds kind = BedrockPacketIds.byId(decoded.id());
@@ -42,6 +301,8 @@ public final class BedrockPacketDispatch {
         String user = s != null ? s.username() : "BedrockPlayer";
         switch (kind) {
             case REQUEST_NETWORK_SETTINGS -> {
+                // Cloudburst RequestNetworkSettingsSerializer_v554: buffer.readInt() = BIG-ENDIAN.
+                // FloodgateAuth LOGIN also uses readInt() BE. Do NOT use readIntLE here.
                 int proto = 0;
                 try {
                     ByteBuf b = decoded.body().duplicate();
@@ -54,21 +315,36 @@ public final class BedrockPacketDispatch {
                 if (proto != 0) {
                     ctx.pendingProtocol.put(guid, proto);
                 }
+                if (proto >= CloudburstCodecIndex.MIN_MODERN) {
+                    ctx.openCloudburst(guid, proto);
+                }
                 login.sendNetworkSettings(guid);
             }
-            case LOGIN -> login.beginLogin(guid, address, decoded.body(), actions);
+            case LOGIN -> {
+                Integer pending = ctx.pendingProtocol.get(guid);
+                if (pending != null && pending >= CloudburstCodecIndex.MIN_MODERN) {
+                    ctx.openCloudburst(guid, pending);
+                }
+                login.beginLogin(guid, address, decoded.body(), actions);
+            }
             case CLIENT_TO_SERVER_HANDSHAKE -> {
-                // Encryption handshake ack — pack/spawn path is separate.
+                // Informational — LOGIN_SUCCESS already sent right after enableEncryption (Geyser order).
+                BedrockBridgeContext.LOG.info(
+                        "BE ClientToServerHandshake guid=" + Long.toHexString(guid) + " (enc ack)");
+                login.onEncryptionAcknowledged(guid);
             }
             case RESOURCE_PACK_CLIENT_RESPONSE -> login.handlePackClientResponse(guid, decoded.body(), actions);
             case SET_LOCAL_PLAYER_AS_INITIALIZED -> {
-                // Client finished loading; do not send a second StartGame.
+                BedrockBridgeContext.LOG.info("BE SetLocalPlayerAsInitialized " + user);
+                login.onClientInitialized(guid, actions);
             }
             case MOVE_PLAYER -> {
                 var move = BedrockPacketCodec.tryDecodeMove(decoded.body());
                 if (move != null) {
-                    actions.add(moveAction(user, move.x(), move.y(), move.z(), move.yaw(), move.pitch()));
-                    world.streamColumnsAround(guid, (int) move.x(), (int) move.y(), (int) move.z(), false);
+                    actions.add(BedrockPacketDispatchLegacy.moveAction(user, move.x(), move.y(), move.z(), move.yaw(), move.pitch()));
+                    if (ctx.isSpawnFullyReady(guid)) {
+                        world.streamColumnsAround(guid, (int) move.x(), (int) move.y(), (int) move.z(), false);
+                    }
                 }
             }
             case PLAYER_AUTH_INPUT -> {
@@ -86,11 +362,13 @@ public final class BedrockPacketDispatch {
                     if (runtime != null) {
                         ctx.entities.move(runtime, auth.x(), auth.y(), auth.z(), auth.yaw(), auth.pitch());
                     }
-                    world.streamColumnsAround(guid, (int) auth.x(), (int) auth.y(), (int) auth.z(), false);
-                    inventory.maybePushPaperInventory(guid, user);
-                    inventory.pushOpenContainerProgress(guid, user);
-                    if ((auth.tick() & 7L) == 0L) {
-                        world.mirrorPaperPlayers();
+                    if (ctx.isSpawnFullyReady(guid)) {
+                        world.streamColumnsAround(guid, (int) auth.x(), (int) auth.y(), (int) auth.z(), false);
+                        inventory.maybePushPaperInventory(guid, user);
+                        inventory.pushOpenContainerProgress(guid, user);
+                        if ((auth.tick() & 7L) == 0L) {
+                            world.mirrorPaperPlayers();
+                        }
                     }
                 }
             }
@@ -100,9 +378,9 @@ public final class BedrockPacketDispatch {
                     actions.add(new BedrockGameplayBridge.GameAction("CHAT", user, Map.of("msg", text.message())));
                 }
             }
-            case PLAYER_ACTION -> handlePlayerAction(guid, user, decoded, actions);
-            case INVENTORY_TRANSACTION -> handleInventoryTransaction(guid, user, decoded, actions);
-            case INTERACT -> handleInteract(guid, user, decoded, actions);
+            case PLAYER_ACTION -> BedrockPacketDispatchLegacy.handlePlayerAction(this, guid, user, decoded, actions);
+            case INVENTORY_TRANSACTION -> BedrockPacketDispatchLegacy.handleInventoryTransaction(this, guid, user, decoded, actions);
+            case INTERACT -> BedrockPacketDispatchLegacy.handleInteract(this, guid, user, decoded, actions);
             case CONTAINER_CLOSE -> {
                 ctx.containers.handleClientClose(user, decoded.body());
                 actions.add(new BedrockGameplayBridge.GameAction("CLOSE_CONTAINER", user, Map.of("pkt", kind.name())));
@@ -113,6 +391,7 @@ public final class BedrockPacketDispatch {
             }
             case ANIMATE ->
                     actions.add(new BedrockGameplayBridge.GameAction("ATTACK", user, Map.of("pkt", kind.name())));
+            case EMOTE -> BedrockPacketDispatchLegacy.handleLegacyEmote(this, guid, user, decoded, actions);
             case MOB_EQUIPMENT -> {
                 var eq = BedrockPacketCodec.tryDecodeMobEquipment(decoded.body());
                 if (eq != null) {
@@ -128,204 +407,29 @@ public final class BedrockPacketDispatch {
             }
             case INVENTORY_CONTENT, INVENTORY_SLOT, PLAYER_HOTBAR ->
                     actions.add(new BedrockGameplayBridge.GameAction("INV", user, Map.of("pkt", kind.name())));
-            case ITEM_STACK_REQUEST -> handleItemStackRequest(guid, user, decoded, actions, kind);
+            case ITEM_STACK_REQUEST -> BedrockPacketDispatchLegacy.handleItemStackRequest(this, guid, user, decoded, actions, kind);
             case MODAL_FORM_RESPONSE -> ctx.forms.handleResponse(user, decoded.body());
-            case PLAYER_SKIN -> ctx.skins.ingestClientSkin(user, decoded.body());
-            case COMMAND_REQUEST -> handleCommandRequest(guid, user, decoded, actions);
+            case PLAYER_SKIN -> {
+                int proto = 2207;
+                var sess = ctx.sessions.get(guid);
+                if (sess != null && sess.protocol() > 0) {
+                    proto = sess.protocol();
+                } else {
+                    Integer pending = ctx.pendingProtocol.get(guid);
+                    if (pending != null && pending > 0) {
+                        proto = pending;
+                    } else {
+                        CloudburstSession cb = ctx.getCloudburst(guid);
+                        if (cb != null) {
+                            proto = cb.protocol();
+                        }
+                    }
+                }
+                ctx.skins.ingestClientSkin(user, decoded.body(), proto);
+            }
+            case COMMAND_REQUEST -> BedrockPacketDispatchLegacy.handleCommandRequest(this, guid, user, decoded, actions);
             case REQUEST_CHUNK_RADIUS -> login.handleChunkRadius(guid, decoded.body(), actions, user);
             default -> BedrockBridgeContext.LOG.fine("BE pkt " + kind + " id=" + decoded.id());
         }
-    }
-
-    private void handlePlayerAction(long guid, String user, BedrockPacketCodec.Decoded decoded,
-                                    List<BedrockGameplayBridge.GameAction> actions) {
-        var act = BedrockPacketCodec.tryDecodePlayerAction(decoded.body());
-        if (act != null && act.isBreakRelated()) {
-            actions.add(new BedrockGameplayBridge.GameAction("BREAK", user, Map.of(
-                    "x", Integer.toString(act.x()),
-                    "y", Integer.toString(act.y()),
-                    "z", Integer.toString(act.z()),
-                    "face", Integer.toString(act.face()),
-                    "action", Integer.toString(act.action())
-            )));
-            world.sendBlockUpdate(guid, act.x(), act.y(), act.z(), 0);
-            world.resendColumn(guid, act.x() >> 4, act.z() >> 4);
-            world.maybeSyncSkull(guid, act.x(), act.y(), act.z());
-        } else if (act != null) {
-            actions.add(new BedrockGameplayBridge.GameAction("PLACE", user, Map.of(
-                    "x", Integer.toString(act.x()),
-                    "y", Integer.toString(act.y()),
-                    "z", Integer.toString(act.z()),
-                    "face", Integer.toString(act.face()),
-                    "action", Integer.toString(act.action())
-            )));
-            world.resendColumn(guid, act.x() >> 4, act.z() >> 4);
-            world.maybeSyncSkull(guid, act.x(), act.y(), act.z());
-        } else {
-            actions.add(new BedrockGameplayBridge.GameAction("BREAK", user, Map.of("pkt", "PLAYER_ACTION")));
-        }
-    }
-
-    private void handleInventoryTransaction(long guid, String user, BedrockPacketCodec.Decoded decoded,
-                                            List<BedrockGameplayBridge.GameAction> actions) {
-        var tx = BedrockPacketCodec.tryDecodeInventoryTransaction(decoded.body());
-        if (tx != null && tx.hasPos() && tx.likelyUseItemOn()) {
-            String block = world.paperBlockHint(tx.x(), tx.y(), tx.z());
-            int ctype = BedrockContainerBridge.typeForBlock(block);
-            if (block != null && (block.contains("CHEST") || block.contains("BARREL")
-                    || block.contains("SHULKER") || block.contains("FURNACE")
-                    || block.contains("SMOKER") || block.contains("BLAST")
-                    || block.contains("ENCHANT") || block.contains("HOPPER")
-                    || block.contains("CRAFTING") || block.contains("WORKBENCH")
-                    || block.contains("ANVIL") || block.contains("SMITHING")
-                    || block.contains("LOOM") || block.contains("STONECUTTER")
-                    || block.contains("CARTOGRAPH"))) {
-                if (block.contains("CRAFTING") || block.contains("WORKBENCH")) {
-                    ctype = BedrockContainerBridge.TYPE_WORKBENCH;
-                }
-                ctx.containers.open(user, ctype, tx.x(), tx.y(), tx.z());
-                if (ctype == BedrockContainerBridge.TYPE_ENCHANT) {
-                    inventory.pushEnchantOptions(guid, user);
-                }
-                actions.add(new BedrockGameplayBridge.GameAction("OPEN_CONTAINER", user, Map.of(
-                        "type", Integer.toString(ctype),
-                        "x", Integer.toString(tx.x()),
-                        "y", Integer.toString(tx.y()),
-                        "z", Integer.toString(tx.z()),
-                        "block", block
-                )));
-            } else {
-                actions.add(new BedrockGameplayBridge.GameAction("PLACE", user, Map.of(
-                        "x", Integer.toString(tx.x()),
-                        "y", Integer.toString(tx.y()),
-                        "z", Integer.toString(tx.z()),
-                        "tx", Integer.toString(tx.transactionType())
-                )));
-                world.resendColumn(guid, tx.x() >> 4, tx.z() >> 4);
-                world.maybeSyncSkull(guid, tx.x(), tx.y(), tx.z());
-            }
-        } else if (tx != null && tx.hasPos()) {
-            actions.add(new BedrockGameplayBridge.GameAction("BREAK", user, Map.of(
-                    "x", Integer.toString(tx.x()),
-                    "y", Integer.toString(tx.y()),
-                    "z", Integer.toString(tx.z())
-            )));
-            world.sendBlockUpdate(guid, tx.x(), tx.y(), tx.z(), 0);
-            world.resendColumn(guid, tx.x() >> 4, tx.z() >> 4);
-            world.maybeSyncSkull(guid, tx.x(), tx.y(), tx.z());
-        } else {
-            actions.add(new BedrockGameplayBridge.GameAction("BREAK", user, Map.of("pkt", "INVENTORY_TRANSACTION")));
-        }
-    }
-
-    private void handleInteract(long guid, String user, BedrockPacketCodec.Decoded decoded,
-                                List<BedrockGameplayBridge.GameAction> actions) {
-        var interact = BedrockPacketCodec.tryDecodeInteract(decoded.body());
-        if (interact != null) {
-            byte act = interact.action();
-            if (act == 1 || act == 4) {
-                actions.add(new BedrockGameplayBridge.GameAction("ATTACK", user, Map.of(
-                        "target", Long.toString(interact.targetRuntimeId()),
-                        "targetName", world.nameForRuntime(interact.targetRuntimeId()),
-                        "targetUuid", world.uuidForRuntime(interact.targetRuntimeId()),
-                        "action", Byte.toString(act)
-                )));
-            } else {
-                BedrockEntityTracker.Tracked target = ctx.entities.get(interact.targetRuntimeId());
-                String targetName = target != null ? target.name() : world.nameForRuntime(interact.targetRuntimeId());
-                String actorType = target != null ? target.actorType() : "";
-                if (BedrockWorldPush.isVillagerActor(actorType, targetName)) {
-                    long trader = interact.targetRuntimeId();
-                    BedrockContainerBridge.OpenWindow w = ctx.containers.openVillager(
-                            user, trader, targetName);
-                    inventory.pushVillagerTrade(guid, user, w, trader);
-                    actions.add(new BedrockGameplayBridge.GameAction("OPEN_CONTAINER", user, Map.of(
-                            "type", Integer.toString(BedrockContainerBridge.TYPE_VILLAGER),
-                            "target", targetName == null ? "" : targetName,
-                            "runtime", Long.toString(trader)
-                    )));
-                } else {
-                    actions.add(new BedrockGameplayBridge.GameAction("INTERACT", user, Map.of(
-                            "target", Long.toString(interact.targetRuntimeId()),
-                            "targetName", targetName == null ? "" : targetName,
-                            "action", Byte.toString(act)
-                    )));
-                }
-            }
-        } else {
-            actions.add(new BedrockGameplayBridge.GameAction("ATTACK", user, Map.of("pkt", "INTERACT")));
-        }
-    }
-
-    private void handleItemStackRequest(long guid, String user, BedrockPacketCodec.Decoded decoded,
-                                        List<BedrockGameplayBridge.GameAction> actions,
-                                        BedrockPacketIds kind) {
-        var req = BedrockPacketCodec.tryDecodeItemStackRequest(decoded.body());
-        if (req != null) {
-            ctx.inventory.ensure(user);
-            boolean mutated = ctx.inventory.applyActions(user, req.actions());
-            ctx.send(guid, BedrockPacketCodec.itemStackResponseOk(req.requestId()));
-            if (mutated) {
-                inventory.pushInventory(guid, user);
-                inventory.pushOpenContainer(guid, user);
-                BedrockContainerBridge.OpenWindow ow = ctx.containers.current(user);
-                if (ow != null && ow.type() == BedrockContainerBridge.TYPE_ENCHANT) {
-                    inventory.pushEnchantOptions(guid, user);
-                }
-                if (ow != null && ow.type() == BedrockContainerBridge.TYPE_VILLAGER) {
-                    inventory.pushVillagerTrade(guid, user, ow, ow.entityRuntimeId());
-                }
-                if (ow != null && ow.type() == BedrockContainerBridge.TYPE_FURNACE) {
-                    inventory.pushFurnaceProgress(guid, ow);
-                }
-            }
-            actions.add(new BedrockGameplayBridge.GameAction("INV", user, Map.of(
-                    "requestId", Integer.toString(req.requestId()),
-                    "actions", Integer.toString(req.actionCount()),
-                    "mutated", Boolean.toString(mutated)
-            )));
-        } else {
-            actions.add(new BedrockGameplayBridge.GameAction("INV", user, Map.of("pkt", kind.name())));
-        }
-    }
-
-    private void handleCommandRequest(long guid, String user, BedrockPacketCodec.Decoded decoded,
-                                      List<BedrockGameplayBridge.GameAction> actions) {
-        var cmd = BedrockPacketCodec.tryDecodeCommandRequest(decoded.body());
-        String line = "/";
-        if (cmd != null && cmd.command() != null && !cmd.command().isBlank()) {
-            line = cmd.command().trim();
-            if (!line.startsWith("/")) {
-                line = "/" + line;
-            }
-        }
-        String result = com.yapcore.game.command.GameCommandBridge.dispatch(line, null);
-        boolean ok = result != null
-                && !result.startsWith("Paper not")
-                && !result.startsWith("Game not ready")
-                && !result.startsWith("Folia is not")
-                && !result.startsWith("Could not")
-                && !result.startsWith("Paper command error")
-                && !result.startsWith("Folia stdin error");
-        commands.applyCommandInventoryHints(user, line);
-        ui.applyCommandUiHints(guid, user, line);
-        ctx.send(guid, List.of(
-                BedrockPacketCodec.commandOutputSimple(result == null ? "" : result, ok),
-                BedrockPacketCodec.textChat("YaPcore", result == null ? line : result)
-        ));
-        inventory.pushInventory(guid, user);
-        actions.add(new BedrockGameplayBridge.GameAction("COMMAND", user, Map.of("msg", line, "result",
-                result == null ? "" : result)));
-    }
-
-    private static BedrockGameplayBridge.GameAction moveAction(String user, float x, float y, float z,
-                                                               float yaw, float pitch) {
-        return new BedrockGameplayBridge.GameAction("MOVE", user, Map.of(
-                "x", Integer.toString((int) x),
-                "y", Integer.toString((int) y),
-                "z", Integer.toString((int) z),
-                "yaw", Float.toString(yaw),
-                "pitch", Float.toString(pitch)
-        ));
     }
 }

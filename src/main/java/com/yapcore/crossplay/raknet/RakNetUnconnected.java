@@ -54,6 +54,19 @@ public final class RakNetUnconnected {
         return time;
     }
 
+    /** Strip ; and Java/Bedrock color codes so Unconnected Pong MOTD stays parseable. */
+    public static String sanitizeMotdPart(String raw, String fallback) {
+        if (raw == null || raw.isBlank()) {
+            return fallback;
+        }
+        String s = raw.replace(';', ' ');
+        s = s.replaceAll("(?i)&[0-9a-fk-or]", "");
+        s = s.replaceAll("(?i)§[0-9a-fk-or]", "");
+        s = s.replace("§", "");
+        s = s.trim();
+        return s.isEmpty() ? fallback : s;
+    }
+
     public static boolean magicMatches(ByteBuf buf, int magicOffset) {
         if (buf.readableBytes() < magicOffset + MAGIC.length) {
             return false;

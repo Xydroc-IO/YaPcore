@@ -45,8 +45,9 @@ public final class BedrockEntityCodec {
         out.writeShortLE(1); // type = base
         out.writeIntLE(0x000D3FFF); // allowed — build/mine/doors/containers/attack/fly bits
         out.writeIntLE(0x000D3FFF); // enabled
-        out.writeFloatLE(0.05f); // fly_speed
-        out.writeFloatLE(0.1f); // walk_speed
+        var move = com.yapcore.crossplay.bedrock.parity.MovementParityTable.loadDefault();
+        out.writeFloatLE(move.flySpeedF()); // fly_speed
+        out.writeFloatLE(move.speedF()); // walk_speed
         writeUnsignedVarInt(out, 0); // links
         writeString(out, ""); // device_id
         out.writeIntLE(1); // device_os Android (harmless for PC viewers)
@@ -132,11 +133,12 @@ public final class BedrockEntityCodec {
         return out;
     }
 
-    /** BIOME_DEFINITION_LIST — empty network NBT compound. */
+    /** BIOME_DEFINITION_LIST — empty BiomeDefinitions[] + StringList[] (proto ≥776). */
     public static ByteBuf biomeDefinitionListEmpty() {
-        ByteBuf out = Unpooled.buffer(16);
+        ByteBuf out = Unpooled.buffer(8);
         writeUnsignedVarInt(out, BedrockPacketIds.BIOME_DEFINITION_LIST.id);
-        writeEmptyNetworkNbt(out);
+        writeUnsignedVarInt(out, 0);
+        writeUnsignedVarInt(out, 0);
         return out;
     }
 
@@ -167,5 +169,36 @@ public final class BedrockEntityCodec {
         writeUnsignedVarInt(out, BedrockPacketCodec.ID_REMOVE_ENTITY);
         out.writeLongLE(uniqueEntityId);
         return out;
+    }
+
+    /**
+     * MOVE_ACTOR_ABSOLUTE (0x12) — use for non-player mobs/animals/fish.
+     * Flags: bit0 onGround, bit1 teleported, bit2 forceMove.
+     */
+    public static ByteBuf moveActorAbsolute(long runtimeId, float x, float y, float z,
+                                            float pitch, float yaw, float headYaw,
+                                            boolean onGround, boolean teleported) {
+        ByteBuf out = Unpooled.buffer(32);
+        writeUnsignedVarInt(out, BedrockPacketIds.MOVE_ACTOR_ABSOLUTE.id);
+        writeUnsignedVarLong(out, runtimeId);
+        int flags = 0;
+        if (onGround) {
+            flags |= 1;
+        }
+        if (teleported) {
+            flags |= 2;
+        }
+        out.writeByte(flags);
+        out.writeFloatLE(x);
+        out.writeFloatLE(y);
+        out.writeFloatLE(z);
+        out.writeByte(rotationByte(pitch));
+        out.writeByte(rotationByte(yaw));
+        out.writeByte(rotationByte(headYaw));
+        return out;
+    }
+
+    private static byte rotationByte(float degrees) {
+        return (byte) Math.floor(degrees * 256f / 360f);
     }
 }
