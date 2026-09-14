@@ -28,6 +28,7 @@ fi
 # Base: Faithful if available, else empty pack
 if [ -f "$FAITHFUL" ]; then
   unzip -q -o "$FAITHFUL" -d "$STAGE"
+  # Keep Faithful 64x blocks AND held-item textures/models (hotbar + first-person).
 else
   mkdir -p "$STAGE"
   printf '%s\n' '{"pack":{"description":"YaPcore default client pack","pack_format":88,"min_format":[88,0],"max_format":[88,0]}}' \
@@ -47,12 +48,12 @@ if [ -d "$SKIES_DIR/assets" ]; then
   cp -a "$SKIES_DIR/assets/." "$STAGE/assets/"
 fi
 
-DESC="YaPcore default — Faithful 64x + YaP Skies + Water (CORE)"
+DESC="YaPcore default — Faithful 64x + YaP Skies + Water"
 ITEMS_DIR="$PACKS/yap-items"
 if [ -d "$ITEMS_DIR/assets" ]; then
   mkdir -p "$STAGE/assets"
   cp -a "$ITEMS_DIR/assets/." "$STAGE/assets/"
-  DESC="YaPcore default — Faithful 64x + YaP Skies + Water + YaPItems (CORE)"
+  DESC="YaPcore default — Faithful 64x + YaP Skies + Water + YaPItems"
 fi
 
 # Phase 4: Bedrock catalog port block textures/models (CMD item models for Folia displays).
@@ -62,7 +63,7 @@ if [ -d "$BLOCKS_DIR/assets" ]; then
   cp -a "$BLOCKS_DIR/assets/." "$STAGE/assets/"
   case "$DESC" in
     *YaPItems*) DESC="$DESC + BedrockBlocks" ;;
-    *) DESC="YaPcore default — Faithful 64x + YaP Skies + Water + BedrockBlocks (CORE)" ;;
+    *) DESC="YaPcore default — Faithful 64x + YaP Skies + Water + BedrockBlocks" ;;
   esac
 fi
 if [ "$want_vehicles" -eq 1 ]; then

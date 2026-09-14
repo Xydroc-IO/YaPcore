@@ -15,8 +15,8 @@ resource-pack-forced=true
 ```
 
 - **Forced** (`resource-pack-forced=true`): decline → kick
-- **Default Java pack:** `yapcore-default.zip` = Faithful 64x + **YaP Skies** + **YaP Water**
-  (built by `gradle prepareClientPack`)
+- **Default Java pack:** `yapcore-default.zip` = Faithful **64× blocks + held items** + **YaP Skies** + **YaP Water**
+  (built by `gradle prepareClientPack` / `./scripts/build-default-resourcepack.sh`)
 - **Default Bedrock pack:** `yapcore-default.mcpack` (built by `gradle prepareClientPackBedrock`)
 - Skies overlay: [`yap-skies/`](yap-skies/) (`python3 scripts/generate-yap-skies.py`)
 - Water/weather: `python3 scripts/generate-yap-water.py` (into `yap-skies/`)

@@ -131,7 +131,9 @@ Paper’s SHA-1 matches what clients fetch. If the advertised SHA is from a newe
 GitHub/nginx, Minecraft shows **“1 of 1 pack failed to download.”**
 
 **Default packs:** `yapcore-default.zip` (Java) and `yapcore-default.mcpack` (Bedrock) —
-Faithful 64x + YaP Skies + YaP Water. Built on `gradle prepareClientPack` /
+Faithful **64×** (blocks **and** held-item textures) + YaP Skies + YaP Water.
+JE clients must download from **GitHub** `releases/latest` (not a dead public-host
+`/pack/` URL). Built on `gradle prepareClientPack` /
 `gradle prepareClientPackBedrock`. Credit / license:
 `resourcepacks/CREDITS.md`, `FAITHFUL_LICENSE.txt`.
 
