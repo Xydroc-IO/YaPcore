@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Launch YaPcore control GUI (foreground).
-# Usage: ./scripts/gui.sh [--no-build|--build]
-# Default: use existing yapcore.jar (fast). Pass --build to rebuild first.
-# In a release package (no Gradle), uses the shipped yapcore.jar.
+# Usage: ./scripts/gui.sh [--build|--no-build]
+# Fast path (default): use existing yapcore.jar and open the panel immediately.
+# Pass --build after Control GUI / chassis source changes (full shadowJar — can take minutes).
 
 set -eu
 
@@ -12,7 +12,6 @@ ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)"
 if [ ! -f "$ROOT/build.gradle.kts" ] \
   && [ ! -f "$ROOT/config/server.properties" ] \
   && [ ! -f "$ROOT/yapcore.jar" ]; then
-  # Symlinked / relocated scripts/ — walk up from cwd as last resort.
   CAND="$(pwd)"
   FOUND=""
   for _ in 1 2 3 4 5 6 7 8; do
@@ -33,46 +32,52 @@ fi
 # shellcheck disable=SC1091
 . "$SCRIPT_DIR/lib.sh"
 
+# Default: no rebuild — waiting on Gradle every click is unacceptable for ops.
 SKIP_BUILD=1
+FORCE_BUILD=0
 for arg in "$@"; do
   case "$arg" in
-    --no-build) SKIP_BUILD=1 ;;
-    --build) SKIP_BUILD=0 ;;
+    --no-build) SKIP_BUILD=1; FORCE_BUILD=0 ;;
+    --build) SKIP_BUILD=0; FORCE_BUILD=1 ;;
   esac
 done
 
 cd "$ROOT"
 export YAPCORE_HOME="$ROOT"
 
-# Release trees ship yapcore.jar and usually have no Gradle — skip rebuild.
-if [ ! -f "$ROOT/build.gradle.kts" ]; then
-  SKIP_BUILD=1
-fi
+yap_refresh_root_jar() {
+  JAR="$(yap_find_built_jar 2>/dev/null || true)"
+  if [ -z "${JAR:-}" ]; then
+    JAR="$(ls -1 "$ROOT/build/libs"/yapcore-*.jar 2>/dev/null | grep -v -- '-plain' | tail -n 1 || true)"
+  fi
+  if [ -z "${JAR:-}" ] || [ ! -f "$JAR" ]; then
+    return 1
+  fi
+  cp -f "$JAR" "$ROOT/yapcore.jar"
+  echo "Updated $ROOT/yapcore.jar ← $JAR"
+}
 
-if [ "$SKIP_BUILD" -eq 0 ]; then
-  echo "Rebuilding yapcore.jar so GUI tabs (Connect / Access / Settings) are current…"
-  yap_build
-  JAR="$(yap_find_jar)"
-  if [ -z "$JAR" ]; then
-    echo "Build produced no jar" >&2
+if [ "$FORCE_BUILD" -eq 1 ] || [ ! -f "$ROOT/yapcore.jar" ]; then
+  if [ ! -f "$ROOT/build.gradle.kts" ] && [ ! -f "$ROOT/yapcore.jar" ]; then
+    echo "No yapcore.jar in $ROOT and no Gradle checkout to build from." >&2
     exit 1
   fi
-  if [ -f "$ROOT/build/libs/yapcore-0.1.0.jar" ]; then
-    cp -f "$ROOT/build/libs/yapcore-0.1.0.jar" "$ROOT/yapcore.jar"
-  elif [ -f "$JAR" ] && [ "$JAR" != "$ROOT/yapcore.jar" ]; then
-    cp -f "$JAR" "$ROOT/yapcore.jar"
+  if [ ! -f "$ROOT/yapcore.jar" ]; then
+    echo "No yapcore.jar — building once…"
+  else
+    echo "Rebuilding yapcore.jar (--build)…"
   fi
-  echo "Jar ready: $ROOT/yapcore.jar"
-elif [ ! -f "$ROOT/yapcore.jar" ]; then
-  echo "No yapcore.jar in $ROOT — cannot launch GUI. Run: $0 --build" >&2
-  exit 1
+  yap_build
+  if ! yap_refresh_root_jar; then
+    echo "Build produced no jar under build/libs/" >&2
+    exit 1
+  fi
+else
+  echo "Using existing yapcore.jar (fast launch). Rebuild with: $0 --build"
 fi
 
-echo "YaPcore home: $ROOT (GUI, no rebuild)"
-# Mirror JVM stdout/stderr to logs/start-gui.out so ops aren't stuck on a stale file
-# when launched under systemd (stdout otherwise goes only to the journal).
+echo "YaPcore home: $ROOT (GUI)"
 mkdir -p "$ROOT/logs"
 # shellcheck disable=SC2094
 exec > >(tee -a "$ROOT/logs/start-gui.out") 2>&1
-# Use bash so release zips that lost +x still launch (Ant zip historically stored 0644).
 exec bash "$SCRIPT_DIR/start.sh" --gui --fg
