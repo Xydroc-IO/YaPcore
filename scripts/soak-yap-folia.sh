@@ -152,6 +152,50 @@ maybe_stop() {
   "$SCRIPT_DIR/stop.sh" || true
 }
 
+# Prove the live Folia JVM is on the ship tick path (aligned microticks / physics / budgets).
+# Does not retune engage thresholds — only asserts current product defaults are armed.
+assert_ship_tick_flags() {
+  local fpid cmd
+  fpid="$(folia_pid || true)"
+  if [ -z "$fpid" ] || [ ! -r "/proc/$fpid/cmdline" ]; then
+    echo "FAIL: cannot read YaP-Folia cmdline for ship tick assert" | tee -a "$REPORT"
+    return 1
+  fi
+  cmd="$(tr '\0' ' ' <"/proc/$fpid/cmdline")"
+  echo "Ship tick cmdline assert pid=$fpid" | tee -a "$REPORT"
+  local missing=0
+  for needle in \
+      '-Dyap.folia.aligned-microticks=true' \
+      '-Dyap.folia.physics-substeps=true' \
+      '-Dyap.folia.budget-mspt-threshold=12' \
+      '-Dyap.folia.subregion-partition=true' \
+      '-Dyap.folia.async-chunk-save=true' \
+      '-Dyap.folia.entity-tick-budget=' \
+      '-Dyap.folia.hopper-tick-budget=' \
+      '-Dyap.folia.microtick-budget-ms='
+  do
+    if ! printf '%s' "$cmd" | grep -Fq -- "$needle"; then
+      echo "FAIL: Folia JVM missing ship flag: $needle" | tee -a "$REPORT"
+      missing=1
+    fi
+  done
+  # Partition engage thresholds (ship 20 / 16) — present after FoliaKernel always-forwards.
+  if ! printf '%s' "$cmd" | grep -Eq -- '-Dyap\.folia\.subregion-mspt-threshold=20(\s|$)'; then
+    echo "FAIL: Folia JVM missing subregion-mspt-threshold=20" | tee -a "$REPORT"
+    missing=1
+  fi
+  if ! printf '%s' "$cmd" | grep -Eq -- '-Dyap\.folia\.subregion-mspt-clear=16(\s|$)'; then
+    echo "FAIL: Folia JVM missing subregion-mspt-clear=16" | tee -a "$REPORT"
+    missing=1
+  fi
+  if [ "$missing" -ne 0 ]; then
+    echo "cmdline=$cmd" | tee -a "$REPORT"
+    return 1
+  fi
+  echo "PASS: ship tick flags armed (aligned + physics + budget12 + partition20/16)" | tee -a "$REPORT"
+  return 0
+}
+
 sample_row() {
   local elapsed="$1"
   local cpid fpid c_heap f_heap c_thr f_thr
@@ -257,6 +301,16 @@ run_compat() {
   mark_soak_log_origin
   echo "elapsed,chassis_pid,folia_pid,chassis_heap_mb,folia_heap_mb,chassis_threads,folia_threads" >"$CSV"
   sample_row 0
+  # Folia child may lag chassis boot — wait before ship-tick cmdline assert.
+  local waited=0
+  while [ "$waited" -lt 120 ]; do
+    if [ -n "$(folia_pid || true)" ]; then
+      break
+    fi
+    sleep 2
+    waited=$((waited + 2))
+  done
+  assert_ship_tick_flags || return 1
   local tok
   tok="$(dashboard_token || true)"
   if [ -n "$tok" ]; then

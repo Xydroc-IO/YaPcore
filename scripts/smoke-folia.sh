@@ -85,6 +85,9 @@ folia-entity-tick-max-deferred=${YAP_FOLIA_ENTITY_TICK_MAX_DEFERRED:-40}
 folia-hopper-tick-budget=${YAP_FOLIA_HOPPER_TICK_BUDGET:-64}
 folia-scoreboard-swmr=${YAP_FOLIA_SCOREBOARD_SWMR:-true}
 folia-microtick-budget-ms=${YAP_FOLIA_MICROTICK_BUDGET_MS:-8}
+folia-aligned-microticks=${YAP_FOLIA_ALIGNED_MICROTICKS:-true}
+folia-micro-phases=${YAP_FOLIA_MICRO_PHASES:-4}
+folia-tick-wave-max-wait-ms=${YAP_FOLIA_TICK_WAVE_MAX_WAIT_MS:-2}
 folia-steal-threshold-ms=${YAP_FOLIA_STEAL_THRESHOLD_MS:-3}
 folia-task-slice-ms=${YAP_FOLIA_TASK_SLICE_MS:-2}
 folia-grid-exponent=${YAP_FOLIA_GRID_EXPONENT:-}
@@ -115,7 +118,7 @@ echo "  java=$JAVA_BIN"
 echo "  jar=$YAP_JAR"
 echo "  port=$PORT"
 echo "  folia-jar-source=$FOLIA_SRC sched-compat=$SCHED_COMPAT teleport=$TP_TX"
-echo "  perf: async-save=${YAP_FOLIA_ASYNC_CHUNK_SAVE:-true} budget=${YAP_FOLIA_ENTITY_TICK_BUDGET:-400} microtick=${YAP_FOLIA_MICROTICK_BUDGET_MS:-8} subregion=${YAP_FOLIA_SUBREGION_PARTITION:-true}"
+echo "  perf: async-save=${YAP_FOLIA_ASYNC_CHUNK_SAVE:-true} budget=${YAP_FOLIA_ENTITY_TICK_BUDGET:-400} microtick=${YAP_FOLIA_MICROTICK_BUDGET_MS:-8} aligned=${YAP_FOLIA_ALIGNED_MICROTICKS:-true} subregion=${YAP_FOLIA_SUBREGION_PARTITION:-true}"
 
 # Optional A3 perf knobs forwarded into chassis → FoliaKernel → Folia JVM
 EXTRA_D=()

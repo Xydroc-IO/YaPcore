@@ -11,10 +11,14 @@ public final class FoliaAuthorityConfig {
 
     private final ServerConfig config;
     private final Properties props;
+    private final FoliaAlignedMicrotickConfig alignedMicroticks;
+    private final FoliaPhysicsSubstepConfig physicsSubsteps;
 
     public FoliaAuthorityConfig(ServerConfig config, Properties props) {
         this.config = config;
         this.props = props;
+        this.alignedMicroticks = new FoliaAlignedMicrotickConfig(props);
+        this.physicsSubsteps = new FoliaPhysicsSubstepConfig(props);
     }
 
     public static void applyDefaults(Properties props) {
@@ -36,7 +40,7 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-entity-tick-max-deferred", "40");
         props.setProperty("folia-hopper-tick-budget", "64");
         props.setProperty("folia-scoreboard-swmr", "true");
-        // Phase 4 — mild microtick (MSPT-gated; bosses/near-player never deferred)
+        // Phase 4 — Mob AI time-slice budget (MSPT-gated; not a finer world clock)
         props.setProperty("folia-microtick-budget-ms", "8");
         props.setProperty("folia-steal-threshold-ms", "3");
         props.setProperty("folia-task-slice-ms", "2");
@@ -54,6 +58,8 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-subregion-coalesce-quiet-ticks", "200");
         props.setProperty("folia-subregion-coalesce-min-wall-ms", "30000");
         props.setProperty("folia-subregion-partition-delay-ticks", "600");
+        FoliaAlignedMicrotickConfig.applyDefaults(props);
+        FoliaPhysicsSubstepConfig.applyDefaults(props);
     }
 
     public boolean isFoliaAuthority() {
@@ -74,6 +80,10 @@ public final class FoliaAuthorityConfig {
             return override.trim();
         }
         return props.getProperty("folia-dir", "folia-kernel");
+    }
+
+    public void setFoliaDir(String dir) {
+        props.setProperty("folia-dir", dir == null || dir.isBlank() ? "folia-kernel" : dir.trim());
     }
 
     public int getFoliaPort() {
@@ -162,10 +172,41 @@ public final class FoliaAuthorityConfig {
 
     /**
      * Soft deadline (ms) for Mob AI phase per region tick ({@code -Dyap.folia.microtick-budget-ms}).
-     * {@code 0} = off. MSPT-gated; same-thread deferral — not true parallel sub-regions.
+     * {@code 0} = off. MSPT-gated; same-thread deferral — not a finer world clock.
+     * For real aligned micro/sub-ticks see {@link #isFoliaAlignedMicroticks()}.
      */
     public int getFoliaMicrotickBudgetMs() {
         return ConfigSupport.parseInt(props, "folia-microtick-budget-ms", 8);
+    }
+
+    /** @see FoliaAlignedMicrotickConfig#isAlignedMicroticks() */
+    public boolean isFoliaAlignedMicroticks() {
+        return alignedMicroticks.isAlignedMicroticks();
+    }
+
+    /** @see FoliaAlignedMicrotickConfig#getMicroPhases() */
+    public int getFoliaMicroPhases() {
+        return alignedMicroticks.getMicroPhases();
+    }
+
+    /** @see FoliaAlignedMicrotickConfig#getTickWaveMaxWaitMs() */
+    public int getFoliaTickWaveMaxWaitMs() {
+        return alignedMicroticks.getTickWaveMaxWaitMs();
+    }
+
+    /** @see FoliaPhysicsSubstepConfig#isPhysicsSubsteps() */
+    public boolean isFoliaPhysicsSubsteps() {
+        return physicsSubsteps.isPhysicsSubsteps();
+    }
+
+    /** @see FoliaPhysicsSubstepConfig#getPhysicsSubstepCount() */
+    public int getFoliaPhysicsSubstepCount() {
+        return physicsSubsteps.getPhysicsSubstepCount();
+    }
+
+    /** @see FoliaPhysicsSubstepConfig#getPhysicsSubstepMinMove() */
+    public double getFoliaPhysicsSubstepMinMove() {
+        return physicsSubsteps.getPhysicsSubstepMinMove();
     }
 
     /** WORK_STEALING steal threshold ms ({@code -Dyap.folia.steal-threshold-ms}). Default 3. */

@@ -23,13 +23,17 @@ Prove YaP-Folia **ship knobs** beat stock Folia and rank ahead of Canvas — kno
 | entity-tick-budget | 400 (MSPT-gated @ 12) |
 | microtick-budget-ms | 8 |
 | subregion-partition | true |
+| aligned-microticks | true (phases=4, wave-max-wait=2) |
+| physics-substeps | true (count=4, min-move=0.02) |
 
 See also: [CANVAS_PARITY.md](CANVAS_PARITY.md) · [PAPER_PURPUR_SCALE.md](PAPER_PURPUR_SCALE.md) · [TUNE.md](../ops/TUNE.md) (encyclopedia).
 
 ## Why micro / subregion / parallel
 
-1. **Smart entity budget + microtick** — soft-cap Mob AI when a region is hot (≥12 ms MSPT)
+1. **Smart entity budget + AI time-slice (`microtick-budget-ms`)** — soft-cap Mob AI when a region is hot (≥12 ms MSPT)
 2. **Subregion partition** — parallel Folia shards when hot + geometry allows
+3. **Aligned micro/sub-ticks** (`folia-aligned-microticks`, patches 0026–0030) — real phase machine inside each logical 20 TPS tick with soft cross-region waves + universal RTQ tagging; **ship-on**
+4. **Physics sub-steps** (`folia-physics-substeps`, patch 0031) — N-step travel + collision subdivision for players/combat/projectiles; same plugin tick; **feel**, not capacity
 
 Product features, disclosed on every cite. Baseline A/B (`YAP_BENCH_CITE_BASELINE=1`)
 shows async+hopper alone (~−7% heavypop); ship profile adds headroom under hot fullcite.

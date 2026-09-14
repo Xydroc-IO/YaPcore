@@ -14,6 +14,12 @@ public final class GameAuthorityProperties {
 
     public static void sync(Path rootDir, ServerConfig config) throws IOException {
         if (config.isFoliaAuthority()) {
+            // Fleet instances each own server.properties via InstanceLayout / Setup.
+            // Never overwrite the primary tree with the chassis listen port — that forced
+            // every Folia backend toward the same port (often 25566).
+            if (config.isFleetEnabled()) {
+                return;
+            }
             Path dir = rootDir.resolve(config.getFoliaDir()).toAbsolutePath().normalize();
             FoliaFiles.writeServerProperties(
                     rootDir,

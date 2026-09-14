@@ -1,0 +1,345 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP physics sub-steps (movement/combat)
+
+Internal N-step travel + collision subdivision inside one logical Folia tick.
+Plugin-visible tick stays 20 TPS; no extra Bukkit entity ticks. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPhysicsSubsteps.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPhysicsSubsteps.java
+@@ -0,0 +1,119 @@
++package io.papermc.paper.threadedregions;
++
++import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.entity.LivingEntity;
++import net.minecraft.world.entity.MoverType;
++import net.minecraft.world.entity.boss.enderdragon.EnderDragon;
++import net.minecraft.world.entity.boss.wither.WitherBoss;
++import net.minecraft.world.entity.monster.warden.Warden;
++import net.minecraft.world.entity.player.Player;
++import net.minecraft.world.entity.projectile.Projectile;
++import net.minecraft.world.phys.Vec3;
++
++/**
++ * YaP physics sub-steps — higher-rate <strong>internal</strong> movement/combat integration
++ * inside one logical Folia region tick (plugin-visible tick stays 20 TPS).
++ *
++ * <p>Does not fire extra Bukkit events or advance game time. Knobs:
++ * <ul>
++ *   <li>{@code -Dyap.folia.physics-substeps=true}</li>
++ *   <li>{@code -Dyap.folia.physics-substep-count=4} (2–8)</li>
++ *   <li>{@code -Dyap.folia.physics-substep-min-move=0.02}</li>
++ * </ul>
++ */
++public final class YapPhysicsSubsteps {
++
++    private static final ThreadLocal<Integer> TRAVEL_FACTOR = new ThreadLocal<>();
++
++    private YapPhysicsSubsteps() {
++    }
++
++    public static boolean enabled() {
++        return Boolean.parseBoolean(System.getProperty("yap.folia.physics-substeps", "true"));
++    }
++
++    public static int count() {
++        final int raw = Integer.getInteger("yap.folia.physics-substep-count", 4);
++        return Math.max(2, Math.min(8, raw));
++    }
++
++    public static double minMove() {
++        try {
++            return Double.parseDouble(System.getProperty("yap.folia.physics-substep-min-move", "0.02"));
++        } catch (NumberFormatException e) {
++            return 0.02;
++        }
++    }
++
++    public static void enterTravelFactor(final int n) {
++        TRAVEL_FACTOR.set(n);
++    }
++
++    public static void leaveTravelFactor() {
++        TRAVEL_FACTOR.remove();
++    }
++
++    public static Integer travelFactor() {
++        return TRAVEL_FACTOR.get();
++    }
++
++    /** Scale full-tick gravity to per-substep gravity. */
++    public static double scaleGravity(final double gravity) {
++        final Integer n = TRAVEL_FACTOR.get();
++        return n == null || n <= 1 ? gravity : gravity / n;
++    }
++
++    /** Keep net friction ≈ one full tick when travel runs N times. */
++    public static float adjustFriction(final float friction) {
++        final Integer n = TRAVEL_FACTOR.get();
++        if (n == null || n <= 1) {
++            return friction;
++        }
++        if (friction <= 0.0F || friction >= 1.0F) {
++            return friction;
++        }
++        return (float) Math.pow(friction, 1.0 / n);
++    }
++
++    public static boolean eligibleTravel(final LivingEntity living) {
++        if (!enabled() || living.level().isClientSide()) {
++            return false;
++        }
++        if (living instanceof ServerPlayer || living instanceof Player) {
++            return true;
++        }
++        if (living instanceof EnderDragon || living instanceof WitherBoss || living instanceof Warden) {
++            return true;
++        }
++        // Combat / knockback window
++        if (living.hurtTime > 0 || living.invulnerableTime > 0) {
++            return true;
++        }
++        if (living.getLastHurtByMobTimestamp() > 0
++                && living.tickCount - living.getLastHurtByMobTimestamp() < 40) {
++            return true;
++        }
++        return living.isSprinting() || living.isFallFlying();
++    }
++
++    public static boolean eligibleMove(final Entity entity, final MoverType type, final Vec3 delta) {
++        if (!enabled() || entity.level().isClientSide() || type == MoverType.PISTON) {
++            return false;
++        }
++        final double min = minMove();
++        if (delta.lengthSqr() < min * min) {
++            return false;
++        }
++        if (entity instanceof ServerPlayer || entity instanceof Player) {
++            return true;
++        }
++        if (entity instanceof Projectile) {
++            return true;
++        }
++        if (entity instanceof LivingEntity living) {
++            return eligibleTravel(living);
++        }
++        return delta.lengthSqr() >= 1.0; // fast non-living (falling blocks, etc.)
++    }
++}
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapMoveSubstep.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapMoveSubstep.java
+@@ -0,0 +1,54 @@
++package io.papermc.paper.threadedregions;
++
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.entity.MoverType;
++import net.minecraft.world.phys.Vec3;
++
++/**
++ * Subdivides {@link Entity#move} so high-speed / player / combat motion collides in N steps
++ * inside one logical tick (anti-tunnel + stabler knockback paths).
++ */
++public final class YapMoveSubstep {
++
++    private static final ThreadLocal<Boolean> REENTERING = ThreadLocal.withInitial(() -> Boolean.FALSE);
++
++    private YapMoveSubstep() {
++    }
++
++    /**
++     * @return true if this call fully handled the move (caller must return)
++     */
++    public static boolean trySubdivide(final Entity entity, final MoverType moverType, final Vec3 delta) {
++        if (Boolean.TRUE.equals(REENTERING.get())) {
++            return false;
++        }
++        // Travel multipass already issues N moves — do not nest move subdivision (N²).
++        if (YapPhysicsSubsteps.travelFactor() != null) {
++            return false;
++        }
++        if (!YapPhysicsSubsteps.eligibleMove(entity, moverType, delta)) {
++            return false;
++        }
++        final int n = YapPhysicsSubsteps.count();
++        if (n <= 1) {
++            return false;
++        }
++        final Vec3 step = delta.scale(1.0 / n);
++        if (step.equals(Vec3.ZERO)) {
++            return false;
++        }
++        ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("YaP move substep");
++        REENTERING.set(Boolean.TRUE);
++        try {
++            for (int i = 0; i < n; i++) {
++                entity.move(moverType, step);
++                if (!entity.isAlive() || entity.isRemoved()) {
++                    break;
++                }
++            }
++        } finally {
++            REENTERING.set(Boolean.FALSE);
++        }
++        return true;
++    }
++}
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTravelSubstep.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTravelSubstep.java
+@@ -0,0 +1,48 @@
++package io.papermc.paper.threadedregions;
++
++import net.minecraft.world.entity.LivingEntity;
++import net.minecraft.world.phys.Vec3;
++
++/**
++ * Runs {@link LivingEntity#travel} in N internal substeps with gravity/friction scaled so
++ * net motion ≈ one vanilla tick. Bukkit still sees one entity tick / one logical travel.
++ */
++public final class YapTravelSubstep {
++
++    private static final ThreadLocal<Boolean> REENTERING = ThreadLocal.withInitial(() -> Boolean.FALSE);
++
++    private YapTravelSubstep() {
++    }
++
++    /**
++     * @return true if this call fully handled travel (caller must return)
++     */
++    public static boolean tryMultiPass(final LivingEntity living, final Vec3 input) {
++        if (Boolean.TRUE.equals(REENTERING.get())) {
++            return false;
++        }
++        if (!YapPhysicsSubsteps.eligibleTravel(living)) {
++            return false;
++        }
++        final int n = YapPhysicsSubsteps.count();
++        if (n <= 1) {
++            return false;
++        }
++        ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("YaP travel substep");
++        final Vec3 scaled = input.scale(1.0 / n);
++        REENTERING.set(Boolean.TRUE);
++        YapPhysicsSubsteps.enterTravelFactor(n);
++        try {
++            for (int i = 0; i < n; i++) {
++                living.travel(scaled);
++                if (!living.isAlive() || living.isRemoved()) {
++                    break;
++                }
++            }
++        } finally {
++            YapPhysicsSubsteps.leaveTravelFactor();
++            REENTERING.set(Boolean.FALSE);
++        }
++        return true;
++    }
++}
+
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
+@@ -1157,6 +1157,10 @@
+         final Vec3 originalMovement = delta; // Paper - Expose pre-collision velocity
+         // Paper start - detailed watchdog information
+         ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("Cannot move an entity off-main");
++        // YaP — physics substeps (collision subdivision; skip when travel multipass owns N)
++        if (io.papermc.paper.threadedregions.YapMoveSubstep.trySubdivide(this, moverType, delta)) {
++            return;
++        }
+         synchronized (this.posLock) {
+             this.moveStartX = this.getX();
+             this.moveStartY = this.getY();
+
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/LivingEntity.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/LivingEntity.java
+@@ -3074,10 +3074,15 @@
+     @Override
+     protected double getEffectiveGravity() {
+         boolean isFalling = this.getDeltaMovement().y <= 0.0;
+-        return isFalling && this.hasEffect(MobEffects.SLOW_FALLING) ? Math.min(this.getGravity(), 0.01) : this.getGravity();
++        double g = isFalling && this.hasEffect(MobEffects.SLOW_FALLING) ? Math.min(this.getGravity(), 0.01) : this.getGravity();
++        return io.papermc.paper.threadedregions.YapPhysicsSubsteps.scaleGravity(g); // YaP physics substeps
+     }
+ 
+     public void travel(final Vec3 input) {
++        // YaP — internal travel multipass (plugin tick unchanged)
++        if (io.papermc.paper.threadedregions.YapTravelSubstep.tryMultiPass(this, input)) {
++            return;
++        }
+         if (this.shouldTravelInFluid(this.level().getFluidState(this.blockPosition()))) {
+             this.travelInFluid(input);
+         } else if (this.isFallFlying()) {
+@@ -3103,15 +3108,15 @@
+         if (this.isInWater()) {
+             this.moveRelative(waterSpeed, input);
+             this.move(MoverType.SELF, this.getDeltaMovement());
+-            this.setDeltaMovement(this.getDeltaMovement().scale(0.8F));
++            this.setDeltaMovement(this.getDeltaMovement().scale(io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(0.8F))); // YaP
+         } else if (this.isInLava()) {
+             this.moveRelative(lavaSpeed, input);
+             this.move(MoverType.SELF, this.getDeltaMovement());
+-            this.setDeltaMovement(this.getDeltaMovement().scale(0.5));
++            this.setDeltaMovement(this.getDeltaMovement().scale(io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(0.5F))); // YaP
+         } else {
+             this.moveRelative(airSpeed, input);
+             this.move(MoverType.SELF, this.getDeltaMovement());
+-            this.setDeltaMovement(this.getDeltaMovement().scale(0.91F));
++            this.setDeltaMovement(this.getDeltaMovement().scale(io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(0.91F))); // YaP
+         }
+     }
+ 
+@@ -3140,8 +3145,9 @@
+         } else {
+             float entityAirDragModifier = (float)this.getAttributeValue(Attributes.AIR_DRAG_MODIFIER);
+             float airDrag = computeModifiedFriction(0.91F, entityAirDragModifier);
+-            float friction = blockFriction * airDrag;
+-            float verticalFriction = this.omnidirectionalAirMover() ? airDrag : computeModifiedFriction(0.98F, entityAirDragModifier);
++            float friction = io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(blockFriction * airDrag); // YaP
++            float verticalFriction = io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction( // YaP
++                this.omnidirectionalAirMover() ? airDrag : computeModifiedFriction(0.98F, entityAirDragModifier));
+             this.setDeltaMovement(movement.x * friction, movementY * verticalFriction, movement.z * friction);
+         }
+     }
+@@ -3187,7 +3193,10 @@
+             movement = new Vec3(movement.x, 0.2, movement.z);
+         }
+ 
+-        movement = movement.multiply(slowDown, 0.8F, slowDown);
++        // YaP — friction^(1/n) when travel multipass is active
++        float yapSlow = io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(slowDown);
++        float yapVert = io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(0.8F);
++        movement = movement.multiply(yapSlow, yapVert, yapSlow);
+         this.setDeltaMovement(this.getFluidFallingAdjustedMovement(baseGravity, isFalling, movement));
+         this.jumpOutOfFluid(oldY);
+     }
+@@ -3200,11 +3209,13 @@
+         this.moveRelative(0.02F, input);
+         this.move(MoverType.SELF, this.getDeltaMovement());
+         if (this.isInShallowFluid(FluidTags.LAVA)) {
+-            this.setDeltaMovement(this.getDeltaMovement().multiply(0.5, 0.8F, 0.5));
++            float yapH = io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(0.5F); // YaP
++            float yapV = io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(0.8F); // YaP
++            this.setDeltaMovement(this.getDeltaMovement().multiply(yapH, yapV, yapH));
+             Vec3 movement = this.getFluidFallingAdjustedMovement(baseGravity, isFalling, this.getDeltaMovement());
+             this.setDeltaMovement(movement);
+         } else {
+-            this.setDeltaMovement(this.getDeltaMovement().scale(0.5));
++            this.setDeltaMovement(this.getDeltaMovement().scale(io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(0.5F))); // YaP
+         }
+ 
+         if (baseGravity != 0.0) {
+@@ -3275,7 +3286,11 @@
+             );
+         }
+ 
+-        return movement.multiply(0.99F, 0.98F, 0.99F);
++        return movement.multiply(
++            io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(0.99F), // YaP
++            io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(0.98F), // YaP
++            io.papermc.paper.threadedregions.YapPhysicsSubsteps.adjustFriction(0.99F)  // YaP
++        );
+     }
+ 
+     private void handleFallFlyingCollisions(final double moveHorLength, final double newMoveHorLength) {

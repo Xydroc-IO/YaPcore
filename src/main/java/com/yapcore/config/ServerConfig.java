@@ -4,6 +4,7 @@ import com.yapcore.config.authority.FoliaAuthorityConfig;
 import com.yapcore.config.authority.GameAuthorityConfig;
 import com.yapcore.config.authority.PaperAuthorityConfig;
 import com.yapcore.config.core.CoreServerConfig;
+import com.yapcore.config.fleet.FleetFeatureConfig;
 import com.yapcore.config.kernel.GameKernelConfig;
 import com.yapcore.config.network.PublicEndpointConfig;
 import com.yapcore.config.plugin.PluginCompatConfig;
@@ -46,6 +47,7 @@ public final class ServerConfig {
     private final PluginCompatConfig pluginCompat;
     private final ResourcePackConfig resourcePack;
     private final WebDashboardConfig webDashboard;
+    private final FleetFeatureConfig fleet;
 
     public ServerConfig(Path file) {
         this.file = Objects.requireNonNull(file, "file");
@@ -60,6 +62,7 @@ public final class ServerConfig {
         this.pluginCompat = new PluginCompatConfig(props);
         this.resourcePack = new ResourcePackConfig(props);
         this.webDashboard = new WebDashboardConfig(props);
+        this.fleet = new FleetFeatureConfig(props);
     }
 
     public static ServerConfig loadOrCreate(Path file) throws IOException {
@@ -116,6 +119,7 @@ public final class ServerConfig {
         PluginCompatConfig.applyDefaults(props);
         ResourcePackConfig.applyDefaults(props);
         WebDashboardConfig.applyDefaults(props);
+        FleetFeatureConfig.applyDefaults(props);
     }
 
     private void applyMissingDefaults() {
@@ -273,6 +277,11 @@ public final class ServerConfig {
     public boolean isFoliaEmbed() { return folia.isFoliaEmbed(); }
     public void setFoliaEmbed(boolean embed) { folia.setFoliaEmbed(embed); }
     public String getFoliaDir() { return folia.getFoliaDir(); }
+    public void setFoliaDir(String dir) { folia.setFoliaDir(dir); }
+    public boolean isFleetEnabled() { return fleet.isFleetEnabled(); }
+    public void setFleetEnabled(boolean enabled) { fleet.setFleetEnabled(enabled); }
+    public String getFleetPrimaryId() { return fleet.getFleetPrimaryId(); }
+    public void setFleetPrimaryId(String id) { fleet.setFleetPrimaryId(id); }
     public int getFoliaPort() { return folia.getFoliaPort(); }
     public String getFoliaVersion() { return folia.getFoliaVersion(); }
     public String getFoliaJarUrl() { return folia.getFoliaJarUrl(); }
@@ -290,6 +299,12 @@ public final class ServerConfig {
     public int getFoliaHopperTickBudget() { return folia.getFoliaHopperTickBudget(); }
     public boolean isFoliaScoreboardSwmr() { return folia.isFoliaScoreboardSwmr(); }
     public int getFoliaMicrotickBudgetMs() { return folia.getFoliaMicrotickBudgetMs(); }
+    public boolean isFoliaAlignedMicroticks() { return folia.isFoliaAlignedMicroticks(); }
+    public int getFoliaMicroPhases() { return folia.getFoliaMicroPhases(); }
+    public int getFoliaTickWaveMaxWaitMs() { return folia.getFoliaTickWaveMaxWaitMs(); }
+    public boolean isFoliaPhysicsSubsteps() { return folia.isFoliaPhysicsSubsteps(); }
+    public int getFoliaPhysicsSubstepCount() { return folia.getFoliaPhysicsSubstepCount(); }
+    public double getFoliaPhysicsSubstepMinMove() { return folia.getFoliaPhysicsSubstepMinMove(); }
     public long getFoliaStealThresholdMs() { return folia.getFoliaStealThresholdMs(); }
     public long getFoliaTaskSliceMs() { return folia.getFoliaTaskSliceMs(); }
     public String getFoliaGridExponent() { return folia.getFoliaGridExponent(); }

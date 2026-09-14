@@ -1,12 +1,13 @@
 # Canvas peer parity notes (26.2)
 
 Goal: beat stock Folia ≥5% on fullcite **and** beat Canvas ≥5% on heavypop when fair,
-using the **ship knob profile** (smart budget + microtick + subregion partition).
+using the **ship knob profile** (smart budget + AI time-slice + subregion partition + aligned microticks + physics sub-steps).
 
 ## Ship cite profile
 
 See [`YAP_FOLIA_SOAK.md`](YAP_FOLIA_SOAK.md). Result JSON must include `knob_*`.
-`YAP_MSPT_REQUIRE_SHIP_KNOBS=1` enforces entity≥400, microtick≥8, partition=true, async=true.
+`YAP_MSPT_REQUIRE_SHIP_KNOBS=1` enforces entity≥400, microtick≥8, partition=true, async=true,
+aligned-microticks=true, physics-substeps=true.
 
 ## Peer heavypop ranking (ship knobs)
 

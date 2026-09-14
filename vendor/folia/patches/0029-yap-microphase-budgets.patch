@@ -1,0 +1,55 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP microphase budgets naming (aligned vs AI time-slice)
+
+Clarify YapMicroTick is Mob-AI time-slice; entity/hopper budgets apply per micro-phase when aligned.
+Post-applyAllPatches.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapMicroTick.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapMicroTick.java
+@@ -3,17 +3,21 @@
+ import java.util.concurrent.atomic.AtomicLong;
+ 
+ /**
+- * YaP sub-tick / micro-tick time-slice for hot regions.
++ * YaP Mob-AI time-slice budget for hot regions (legacy name: "microtick").
++ *
++ * <p><strong>Not</strong> a finer world clock. For real cross-region micro/sub-tick phases see
++ * {@link YapAlignedMicroTicks} ({@code -Dyap.folia.aligned-microticks}).
+  *
+  * <p>Folia cannot run multiple tick threads inside one region (ownership invariant).
+- * This approximates sub-ticking by <strong>time-slicing</strong> the entity AI phase
++ * This approximates load shedding by <strong>time-slicing</strong> the entity AI phase
+  * within a single region tick — remaining mobs are deferred to later ticks.
++ * When aligned microticks are on, this budget still applies inside the ENTITIES phase.
+  *
+  * <p>Knobs:
+  * <ul>
+  *   <li>{@code -Dyap.folia.microtick-budget-ms=N} — soft deadline for Mob AI phase (0=off)</li>
+  *   <li>{@code -Dyap.folia.budget-mspt-threshold=M} — only engage when region MSPT ≥ M (shared with entity budget)</li>
+- *   <li>Works together with {@link YapEntityTickBudget} count budget</li>
++ *   <li>Works together with {@link YapEntityTickBudget} count budget (per phase when aligned)</li>
+  * </ul>
+  */
+ public final class YapMicroTick {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapEntityTickBudget.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapEntityTickBudget.java
+@@ -24,7 +24,8 @@
+  * <p>{@code -Dyap.folia.entity-tick-max-deferred=A} — force-tick a mob after A consecutive skips (default 40).
+  *
+  * <p>Never skips players / TNT / vehicles / items / bosses / named / near-player mobs.
+- * Also respects {@link YapMicroTick} when enabled.
++ * Also respects {@link YapMicroTick} when enabled. With {@link YapAlignedMicroTicks}, the count
++ * budget applies to the ENTITIES micro-phase (still one logical region tick).
+  */
+ public final class YapEntityTickBudget {
+ 
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapHopperTickBudget.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapHopperTickBudget.java
+@@ -10,6 +10,7 @@
+  *
+  * <p>Over-budget hoppers still decrement cooldown but skip {@code tryMoveItems}
+  * for this tick (soft deferral). TNT / players are unaffected.
++ * With {@link YapAlignedMicroTicks}, the budget applies inside the BLOCK_ENTITIES micro-phase.
+  */
+ public final class YapHopperTickBudget {
+ 

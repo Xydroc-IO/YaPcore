@@ -1,0 +1,253 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP tick epoch coordinator + micro-phase enum
+
+Soft epoch-wave barriers and YapMicroPhase for aligned micro/sub-ticks.
+Post-applyAllPatches.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapMicroPhase.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapMicroPhase.java
+@@ -0,0 +1,74 @@
++package io.papermc.paper.threadedregions;
++
++/**
++ * Real YaP micro/sub-tick phases within one logical Folia region tick (20 TPS game time).
++ *
++ * <p>Order matches Folia's {@code ServerLevel#tick} body. Cross-region deferred work is tagged
++ * with a target phase and drained when the owning region enters that phase.
++ *
++ * <p>Knob: {@code -Dyap.folia.micro-phases=N} (2–4; default 4). Fewer phases collapse later
++ * slices into the last active index.
++ */
++public enum YapMicroPhase {
++    /** World border, weather, tickTime (Folia tick head). */
++    CHUNKS(0),
++    /** Block/fluid ticks, raids, chunk source, block events (Folia mid-tick order). */
++    BLOCKS(1),
++    /** Entity activation + entity tick. */
++    ENTITIES(2),
++    /** Block entities, cleanup, phase-tagged queue catch-all. */
++    BLOCK_ENTITIES(3);
++
++    private final int index;
++
++    YapMicroPhase(final int index) {
++        this.index = index;
++    }
++
++    public int index() {
++        return this.index;
++    }
++
++    public YapMicroPhase next() {
++        final YapMicroPhase[] all = values();
++        final int i = this.index + 1;
++        return i < all.length ? all[i] : null;
++    }
++
++    public static YapMicroPhase byIndex(final int index) {
++        final YapMicroPhase[] all = values();
++        if (index < 0) {
++            return all[0];
++        }
++        if (index >= all.length) {
++            return all[all.length - 1];
++        }
++        return all[index];
++    }
++
++    /**
++     * Map a logical phase index into the configured phase count (2–4).
++     * Extra work collapses into the last active phase.
++     */
++    public YapMicroPhase collapseToConfigured() {
++        final int n = configuredCount();
++        if (this.index < n) {
++            return this;
++        }
++        return byIndex(n - 1);
++    }
++
++    public static int configuredCount() {
++        final int raw = Integer.getInteger("yap.folia.micro-phases", 4);
++        return Math.max(2, Math.min(values().length, raw));
++    }
++
++    public static YapMicroPhase lastConfigured() {
++        return byIndex(configuredCount() - 1);
++    }
++
++    /** Preferred phase for cross-region neighbor / redstone deferral. */
++    public static YapMicroPhase neighborDeferPhase() {
++        return BLOCKS.collapseToConfigured();
++    }
++}
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTickEpochCoordinator.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTickEpochCoordinator.java
+@@ -0,0 +1,167 @@
++package io.papermc.paper.threadedregions;
++
++import com.mojang.logging.LogUtils;
++import org.slf4j.Logger;
++
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.TimeUnit;
++import java.util.concurrent.atomic.AtomicBoolean;
++import java.util.concurrent.atomic.AtomicInteger;
++import java.util.concurrent.atomic.AtomicLong;
++
++/**
++ * Soft epoch-wave barriers so regions advancing the same wall-clock epoch can align
++ * micro-phases without hard global lockstep.
++ *
++ * <p>Epoch id = {@code nanoTime / 50ms}. Regions on different epochs do not wait for each other.
++ * At each phase boundary, a region arrives and waits up to
++ * {@code -Dyap.folia.tick-wave-max-wait-ms} (must be &gt; 0) for peers, then proceeds.
++ */
++public final class YapTickEpochCoordinator {
++
++    private static final Logger LOGGER = LogUtils.getLogger();
++    private static final long EPOCH_NS = TimeUnit.MILLISECONDS.toNanos(50L);
++    private static final ConcurrentHashMap.KeySetView<Long, Boolean> ACTIVE = ConcurrentHashMap.newKeySet();
++    private static final ConcurrentHashMap<Long, Wave> WAVES = new ConcurrentHashMap<>();
++    private static final AtomicLong WAVE_TIMEOUTS = new AtomicLong();
++    private static final AtomicLong LAST_TIMEOUT_LOG_NS = new AtomicLong();
++
++    private YapTickEpochCoordinator() {
++    }
++
++    public static void registerRegion(final long regionDataId) {
++        ACTIVE.add(regionDataId);
++    }
++
++    public static void unregisterRegion(final long regionDataId) {
++        ACTIVE.remove(regionDataId);
++    }
++
++    public static int activeRegionCount() {
++        return ACTIVE.size();
++    }
++
++    public static long wallEpoch() {
++        return System.nanoTime() / EPOCH_NS;
++    }
++
++    public static long waveTimeouts() {
++        return WAVE_TIMEOUTS.get();
++    }
++
++    public static int maxWaitMs() {
++        final int ms = Integer.getInteger("yap.folia.tick-wave-max-wait-ms", 2);
++        return Math.max(1, ms);
++    }
++
++    /**
++     * Mark arrival at {@code completedPhase} for {@code epoch}, then wait until the next phase
++     * is open (peer majority / single-region / timeout).
++     *
++     * @return true if the wait completed because the wave opened; false on soft timeout
++     */
++    public static boolean arriveAndAwaitNext(final long epoch, final YapMicroPhase completedPhase) {
++        final YapMicroPhase next = completedPhase.next();
++        if (next == null) {
++            arrive(epoch, completedPhase);
++            return true;
++        }
++        arrive(epoch, completedPhase);
++        return awaitPhaseOpen(epoch, next);
++    }
++
++    public static void arrive(final long epoch, final YapMicroPhase phase) {
++        final Wave wave = wave(epoch, phase.index());
++        final int arrived = wave.arrivals.incrementAndGet();
++        maybeOpenNext(epoch, phase, arrived);
++    }
++
++    public static boolean awaitPhaseOpen(final long epoch, final YapMicroPhase phase) {
++        if (phase.index() == 0) {
++            return true;
++        }
++        final Wave wave = wave(epoch, phase.index());
++        final long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(maxWaitMs());
++        while (!wave.open.get()) {
++            maybeOpenFromStalePeers(epoch, YapMicroPhase.byIndex(phase.index() - 1));
++            if (wave.open.get()) {
++                return true;
++            }
++            if (System.nanoTime() >= deadline) {
++                wave.open.compareAndSet(false, true);
++                WAVE_TIMEOUTS.incrementAndGet();
++                rateLimitedTimeoutLog(epoch, phase);
++                return false;
++            }
++            Thread.onSpinWait();
++        }
++        return true;
++    }
++
++    private static void maybeOpenFromStalePeers(final long epoch, final YapMicroPhase prior) {
++        final Wave priorWave = WAVES.get(pack(epoch, prior.index()));
++        if (priorWave == null) {
++            wave(epoch, prior.index() + 1).open.compareAndSet(false, true);
++            return;
++        }
++        maybeOpenNext(epoch, prior, priorWave.arrivals.get());
++    }
++
++    private static void maybeOpenNext(final long epoch, final YapMicroPhase completed, final int arrived) {
++        final YapMicroPhase next = completed.next();
++        if (next == null) {
++            return;
++        }
++        final int peers = Math.max(1, ACTIVE.size());
++        // Soft majority: all registered peers, or at least one when alone.
++        if (arrived >= peers) {
++            wave(epoch, next.index()).open.compareAndSet(false, true);
++        }
++    }
++
++    private static Wave wave(final long epoch, final int phaseIndex) {
++        return WAVES.computeIfAbsent(pack(epoch, phaseIndex), k -> {
++            final Wave w = new Wave();
++            if (phaseIndex == 0) {
++                w.open.set(true);
++            }
++            return w;
++        });
++    }
++
++    private static long pack(final long epoch, final int phaseIndex) {
++        return (epoch << 3) | (phaseIndex & 7);
++    }
++
++    private static void rateLimitedTimeoutLog(final long epoch, final YapMicroPhase phase) {
++        final long now = System.nanoTime();
++        final long prev = LAST_TIMEOUT_LOG_NS.get();
++        if (now - prev < TimeUnit.SECONDS.toNanos(5L)) {
++            return;
++        }
++        if (!LAST_TIMEOUT_LOG_NS.compareAndSet(prev, now)) {
++            return;
++        }
++        LOGGER.info(
++                "YaP aligned microtick soft-wave timeout epoch={} phase={} activeRegions={} timeouts={}",
++                epoch,
++                phase,
++                ACTIVE.size(),
++                WAVE_TIMEOUTS.get()
++        );
++    }
++
++    /** Drop old wave keys to avoid unbounded growth (best-effort). */
++    public static void scrubStaleWaves(final long currentEpoch) {
++        if ((currentEpoch & 31L) != 0L) {
++            return;
++        }
++        final long minEpoch = currentEpoch - 4L;
++        WAVES.keySet().removeIf(key -> (key >>> 3) < minEpoch);
++    }
++
++    private static final class Wave {
++        final AtomicInteger arrivals = new AtomicInteger();
++        final AtomicBoolean open = new AtomicBoolean(false);
++    }
++}

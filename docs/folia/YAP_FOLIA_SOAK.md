@@ -14,7 +14,12 @@ Patch inventory: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md) · cites: [REAL_GA
 | `folia-entity-tick-budget` | **400** | MSPT-gated Mob AI cap (never players/TNT/vehicles/items/bosses) |
 | `folia-budget-mspt-threshold` | **12** | Shared gate for entity budget + microtick |
 | `folia-entity-tick-max-deferred` | **40** | Anti-starve: force-tick after N consecutive skips |
-| `folia-microtick-budget-ms` | **8** | Soft Mob AI deadline on hot regions |
+| `folia-microtick-budget-ms` | **8** | Soft Mob AI deadline on hot regions (AI time-slice; not a finer clock) |
+| `folia-aligned-microticks` | **true** | Real micro/sub-tick phases + soft cross-region waves (0026–0030); universal RTQ tagging |
+| `folia-micro-phases` | **4** | Phase count when aligned microticks on (2–4) |
+| `folia-tick-wave-max-wait-ms` | **2** | Soft barrier max wait ms |
+| `folia-physics-substeps` | **true** | Internal travel/move N-step physics (0031); plugin tick stays 20 TPS |
+| `folia-physics-substep-count` | **4** | Substep count 2–8 |
 | `folia-subregion-partition` | **true** | Parallel shards when hot + geometry allows |
 | `folia-subregion-mspt-clear` | **16** | Hysteresis vs engage threshold (20) |
 | `folia-subregion-coalesce-min-wall-ms` | **30000** | Anti-thrash before coalesce |
@@ -23,15 +28,30 @@ Patch inventory: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md) · cites: [REAL_GA
 
 Scheduler: `folia-kernel/config/paper-global.yml` → `threaded-regions.scheduler: WORK_STEALING`.
 
-## Soak ladder
+## Aligned micro/sub-ticks gate
+
+Ship default **on** (`folia-aligned-microticks=true`) after smoke PASS with universal RTQ tagging (`0030`). Soft-wave timeout logs are expected under load (not a TickThread failure).
 
 ```bash
-./scripts/yapctl soak-compat          # boot + API (~5–15 min) — partition/budget ON
-./scripts/yapctl soak-perf 30         # heap/thread samples
-./scripts/yapctl soak-long 12         # 12h default, 8h floor
-./scripts/yapctl cite-fullcite        # stock Folia vs YaPcore ≥5% with **ship knobs**
-./scripts/bench/cite-canvas-heavypop.sh 40  # Canvas ≥5% heavypop campaign
+./scripts/build-yap-folia.sh
+YAP_FOLIA_ALIGNED_MICROTICKS=true ./scripts/smoke-folia.sh
+./scripts/yapctl soak-compat
+./scripts/yapctl cite-fullcite   # disclose knob_aligned_microticks in JSON
 ```
+
+Rollback: `folia-aligned-microticks=false`.
+
+## Physics sub-steps gate
+
+Ship default **on** (`folia-physics-substeps=true`, patch `0031`). Feel/combat stability, not MSPT capacity.
+
+```bash
+./scripts/build-yap-folia.sh
+# product defaults already forward -Dyap.folia.physics-substeps=*
+./scripts/yapctl soak-compat
+```
+
+Rollback: `folia-physics-substeps=false`.
 
 ## Profile: ship cite (default)
 

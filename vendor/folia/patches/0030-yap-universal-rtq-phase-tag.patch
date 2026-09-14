@@ -1,0 +1,165 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP universal RegionizedTaskQueue phase tagging
+
+Phase-tag every tick-queue runnable at createTickTaskQueue / queueOrExecuteTickTask.
+Neighbor defer relies on RTQ (no per-call wrap). Post-applyAllPatches.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPhaseTaggedTasks.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPhaseTaggedTasks.java
+@@ -1,6 +1,7 @@
+ package io.papermc.paper.threadedregions;
+ 
+ import ca.spottedleaf.moonrise.common.util.TickThread;
++import net.minecraft.server.level.ServerLevel;
+ 
+ import java.util.ArrayList;
+ import java.util.List;
+@@ -82,16 +83,46 @@
+         if (!YapAlignedMicroTicks.enabled()) {
+             return run;
+         }
++        if (run instanceof PhaseTaggedRunnable) {
++            return run; // already wrapped — avoid double-tag
++        }
+         final YapMicroPhase phase = targetPhase.collapseToConfigured();
+         final long epoch = YapTickEpochCoordinator.wallEpoch();
+-        return () -> {
+-            final RegionTickCtx ctx = YapAlignedMicroTicks.currentCtx();
+-            if (ctx != null && ctx.phase == phase) {
+-                run.run();
+-                return;
+-            }
+-            defer(regionDataId, phase, epoch, run);
+-        };
++        return new PhaseTaggedRunnable(regionDataId, phase, epoch, run);
++    }
++
++    /**
++     * Universal RTQ entry: tag every tick-queue runnable for the target chunk's owning region.
++     * Target phase = producer's current micro-phase, or {@link YapMicroPhase#neighborDeferPhase()}
++     * when queued outside a region tick (between-tick / async producers).
++     */
++    public static Runnable wrapForTickQueue(
++            final ServerLevel world,
++            final int chunkX,
++            final int chunkZ,
++            final Runnable run
++    ) {
++        if (!YapAlignedMicroTicks.enabled() || run == null) {
++            return run;
++        }
++        if (run instanceof PhaseTaggedRunnable) {
++            return run;
++        }
++        return wrap(resolveRegionDataId(world, chunkX, chunkZ), defaultTargetPhase(), run);
++    }
++
++    public static YapMicroPhase defaultTargetPhase() {
++        final RegionTickCtx ctx = YapAlignedMicroTicks.currentCtx();
++        return ctx != null ? ctx.phase : YapMicroPhase.neighborDeferPhase();
++    }
++
++    public static long resolveRegionDataId(final ServerLevel world, final int chunkX, final int chunkZ) {
++        if (world == null) {
++            return 0L;
++        }
++        final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region =
++                world.regioniser.getRegionAtUnsynchronised(chunkX, chunkZ);
++        return region == null ? 0L : region.getData().id;
+     }
+ 
+     /** Drain tasks for the current region phase; slip older-phase leftovers on last phase. */
+@@ -152,4 +183,34 @@
+ 
+     private record TaggedTask(YapMicroPhase phase, long epoch, Runnable run) {
+     }
++
++    /** Marker runnable so universal RTQ tagging does not double-wrap. */
++    private static final class PhaseTaggedRunnable implements Runnable {
++        private final long regionDataId;
++        private final YapMicroPhase phase;
++        private final long epoch;
++        private final Runnable run;
++
++        private PhaseTaggedRunnable(
++                final long regionDataId,
++                final YapMicroPhase phase,
++                final long epoch,
++                final Runnable run
++        ) {
++            this.regionDataId = regionDataId;
++            this.phase = phase;
++            this.epoch = epoch;
++            this.run = run;
++        }
++
++        @Override
++        public void run() {
++            final RegionTickCtx ctx = YapAlignedMicroTicks.currentCtx();
++            if (ctx != null && ctx.phase == this.phase) {
++                this.run.run();
++                return;
++            }
++            defer(this.regionDataId, this.phase, this.epoch, this.run);
++        }
++    }
+ }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedTaskQueue.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedTaskQueue.java
+@@ -41,7 +41,9 @@
+ 
+     public PrioritisedExecutor.PrioritisedTask createTickTaskQueue(final ServerLevel world, final int chunkX, final int chunkZ,
+                                                                    final Runnable run, final Priority priority) {
+-        return new PrioritisedQueue.ChunkBasedPriorityTask(world.taskQueueRegionData, chunkX, chunkZ, false, run, priority);
++        // YaP — universal phase-tag for aligned microticks (all RTQ tick-queue producers)
++        final Runnable tagged = YapPhaseTaggedTasks.wrapForTickQueue(world, chunkX, chunkZ, run);
++        return new PrioritisedQueue.ChunkBasedPriorityTask(world.taskQueueRegionData, chunkX, chunkZ, false, tagged, priority);
+     }
+ 
+     public PrioritisedExecutor.PrioritisedTask queueChunkTask(final ServerLevel world, final int chunkX, final int chunkZ,
+@@ -80,7 +82,8 @@
+     public PrioritisedExecutor.PrioritisedTask queueOrExecuteTickTask(final ServerLevel world, final int chunkX, final int chunkZ,
+                                                                       final Runnable run, final Priority priority) {
+         if (TickThread.isTickThreadFor(world, chunkX, chunkZ)) {
+-            run.run();
++            // YaP — phase-tag same-thread execute so mid-tick work stays aligned
++            YapPhaseTaggedTasks.wrapForTickQueue(world, chunkX, chunkZ, run).run();
+             return null;
+         }
+ 
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/redstone/CollectingNeighborUpdater.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/redstone/CollectingNeighborUpdater.java
+@@ -77,27 +77,16 @@
+             final BlockPos immutable = pos.immutable();
+             final int chunkX = immutable.getX() >> 4;
+             final int chunkZ = immutable.getZ() >> 4;
+-            final Runnable owned = () -> {
+-                final CollectingNeighborUpdater owning =
+-                        serverLevel.getCurrentWorldData().neighborUpdater;
+-                owning.addAndRunOwned(immutable, update);
+-            };
+-            // YaP — phase-tag cross-region neighbor work when aligned microticks are on
+-            final io.papermc.paper.threadedregions.ThreadedRegionizer.ThreadedRegion<
+-                    io.papermc.paper.threadedregions.TickRegions.TickRegionData,
+-                    io.papermc.paper.threadedregions.TickRegions.TickRegionSectionData> targetRegion =
+-                    serverLevel.regioniser.getRegionAtUnsynchronised(chunkX, chunkZ);
+-            final long targetId = targetRegion == null ? 0L : targetRegion.getData().id;
+-            final Runnable phased = io.papermc.paper.threadedregions.YapPhaseTaggedTasks.wrap(
+-                    targetId,
+-                    io.papermc.paper.threadedregions.YapMicroPhase.neighborDeferPhase(),
+-                    owned
+-            );
++            // YaP — RTQ createTickTaskQueue phase-tags universally (0028/0030)
+             io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(
+                     serverLevel,
+                     chunkX,
+                     chunkZ,
+-                    phased
++                    () -> {
++                        final CollectingNeighborUpdater owning =
++                                serverLevel.getCurrentWorldData().neighborUpdater;
++                        owning.addAndRunOwned(immutable, update);
++                    }
+             );
+             return;
+         }

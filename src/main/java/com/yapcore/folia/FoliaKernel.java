@@ -178,6 +178,18 @@ public final class FoliaKernel {
         if (microtickMs > 0) {
             cmd.add("-Dyap.folia.microtick-budget-ms=" + microtickMs);
         }
+        if (config.isFoliaAlignedMicroticks()) {
+            cmd.add("-Dyap.folia.aligned-microticks=true");
+            cmd.add("-Dyap.folia.micro-phases=" + config.getFoliaMicroPhases());
+            cmd.add("-Dyap.folia.tick-wave-max-wait-ms=" + config.getFoliaTickWaveMaxWaitMs());
+        }
+        if (config.isFoliaPhysicsSubsteps()) {
+            cmd.add("-Dyap.folia.physics-substeps=true");
+            cmd.add("-Dyap.folia.physics-substep-count=" + config.getFoliaPhysicsSubstepCount());
+            cmd.add("-Dyap.folia.physics-substep-min-move=" + config.getFoliaPhysicsSubstepMinMove());
+        } else {
+            cmd.add("-Dyap.folia.physics-substeps=false");
+        }
         long stealMs = config.getFoliaStealThresholdMs();
         if (stealMs != 3L) {
             cmd.add("-Dyap.folia.steal-threshold-ms=" + stealMs);
@@ -199,14 +211,9 @@ public final class FoliaKernel {
             if (shards != 2) {
                 cmd.add("-Dyap.folia.subregion-shards=" + shards);
             }
-            int mspt = config.getFoliaSubregionMsptThreshold();
-            if (mspt != 20) {
-                cmd.add("-Dyap.folia.subregion-mspt-threshold=" + mspt);
-            }
-            int msptClear = config.getFoliaSubregionMsptClear();
-            if (msptClear != 16) {
-                cmd.add("-Dyap.folia.subregion-mspt-clear=" + msptClear);
-            }
+            // Always forward ship engage thresholds so soak/cite can assert the live path.
+            cmd.add("-Dyap.folia.subregion-mspt-threshold=" + config.getFoliaSubregionMsptThreshold());
+            cmd.add("-Dyap.folia.subregion-mspt-clear=" + config.getFoliaSubregionMsptClear());
             int minSec = config.getFoliaSubregionMinSections();
             if (minSec != 4) {
                 cmd.add("-Dyap.folia.subregion-min-sections=" + minSec);

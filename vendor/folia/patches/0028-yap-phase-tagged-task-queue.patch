@@ -1,0 +1,203 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP phase-tagged cross-region task queue
+
+Tag deferred neighbor/region tasks with YapMicroPhase; drain on matching phase.
+Post-applyAllPatches.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPhaseTaggedTasks.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPhaseTaggedTasks.java
+@@ -0,0 +1,155 @@
++package io.papermc.paper.threadedregions;
++
++import ca.spottedleaf.moonrise.common.util.TickThread;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.ConcurrentLinkedQueue;
++import java.util.concurrent.atomic.AtomicLong;
++
++/**
++ * Phase-tagged deferred runnables for cross-region work.
++ *
++ * <p>When aligned microticks are on, foreign-region tasks are held until the owning region
++ * enters the target {@link YapMicroPhase} (same wall epoch when possible). Late arrivals drain
++ * in {@link YapMicroPhase#BLOCK_ENTITIES} catch-all or the next epoch's matching phase.
++ */
++public final class YapPhaseTaggedTasks {
++
++    private static final ConcurrentHashMap<Long, ConcurrentLinkedQueue<TaggedTask>> BY_REGION =
++            new ConcurrentHashMap<>();
++    private static final AtomicLong HELD = new AtomicLong();
++    private static final AtomicLong DRAINED = new AtomicLong();
++    private static final AtomicLong SLIPPED = new AtomicLong();
++
++    private YapPhaseTaggedTasks() {
++    }
++
++    public static long heldCount() {
++        return HELD.get();
++    }
++
++    public static long drainedCount() {
++        return DRAINED.get();
++    }
++
++    public static long slippedCount() {
++        return SLIPPED.get();
++    }
++
++    /**
++     * Queue {@code run} for {@code regionDataId} at {@code targetPhase}.
++     * If the calling thread already owns that region and is in the target phase, run immediately.
++     */
++    public static void defer(
++            final long regionDataId,
++            final YapMicroPhase targetPhase,
++            final long targetEpoch,
++            final Runnable run
++    ) {
++        if (!YapAlignedMicroTicks.enabled()) {
++            run.run();
++            return;
++        }
++        final YapMicroPhase phase = targetPhase.collapseToConfigured();
++        final RegionTickCtx ctx = YapAlignedMicroTicks.currentCtx();
++        if (ctx != null
++                && ctx.regionDataId == regionDataId
++                && ctx.phase == phase
++                && TickThread.isTickThread()) {
++            run.run();
++            return;
++        }
++        BY_REGION
++                .computeIfAbsent(regionDataId, id -> new ConcurrentLinkedQueue<>())
++                .add(new TaggedTask(phase, targetEpoch, run));
++        HELD.incrementAndGet();
++        final TickRegions.TickRegionData data = findRegionData(regionDataId);
++        if (data != null) {
++            data.setHasTasks();
++        }
++    }
++
++    /**
++     * Wrap a RegionizedTaskQueue runnable so it only runs in {@code targetPhase}.
++     */
++    public static Runnable wrap(
++            final long regionDataId,
++            final YapMicroPhase targetPhase,
++            final Runnable run
++    ) {
++        if (!YapAlignedMicroTicks.enabled()) {
++            return run;
++        }
++        final YapMicroPhase phase = targetPhase.collapseToConfigured();
++        final long epoch = YapTickEpochCoordinator.wallEpoch();
++        return () -> {
++            final RegionTickCtx ctx = YapAlignedMicroTicks.currentCtx();
++            if (ctx != null && ctx.phase == phase) {
++                run.run();
++                return;
++            }
++            defer(regionDataId, phase, epoch, run);
++        };
++    }
++
++    /** Drain tasks for the current region phase; slip older-phase leftovers on last phase. */
++    public static void drainForCurrentPhase() {
++        final RegionTickCtx ctx = YapAlignedMicroTicks.currentCtx();
++        if (ctx == null) {
++            return;
++        }
++        ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("YaP phase drain");
++        final ConcurrentLinkedQueue<TaggedTask> q = BY_REGION.get(ctx.regionDataId);
++        if (q == null || q.isEmpty()) {
++            return;
++        }
++        final List<TaggedTask> keep = new ArrayList<>(Math.min(64, q.size()));
++        TaggedTask task;
++        while ((task = q.poll()) != null) {
++            if (task.phase == ctx.phase
++                    || (ctx.phase == YapMicroPhase.lastConfigured() && task.phase.index() <= ctx.phase.index())) {
++                try {
++                    task.run.run();
++                } finally {
++                    DRAINED.incrementAndGet();
++                    if (task.phase != ctx.phase) {
++                        SLIPPED.incrementAndGet();
++                    }
++                }
++            } else if (task.epoch < ctx.epoch && ctx.phase == YapMicroPhase.lastConfigured()) {
++                try {
++                    task.run.run();
++                } finally {
++                    DRAINED.incrementAndGet();
++                    SLIPPED.incrementAndGet();
++                }
++            } else {
++                keep.add(task);
++            }
++        }
++        if (!keep.isEmpty()) {
++            q.addAll(keep);
++        }
++    }
++
++    public static void clearRegion(final long regionDataId) {
++        final ConcurrentLinkedQueue<TaggedTask> q = BY_REGION.remove(regionDataId);
++        if (q != null) {
++            q.clear();
++        }
++    }
++
++    private static TickRegions.TickRegionData findRegionData(final long regionDataId) {
++        final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region =
++                TickRegionScheduler.getCurrentRegion();
++        if (region != null && region.getData().id == regionDataId) {
++            return region.getData();
++        }
++        return null;
++    }
++
++    private record TaggedTask(YapMicroPhase phase, long epoch, Runnable run) {
++    }
++}
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/redstone/CollectingNeighborUpdater.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/redstone/CollectingNeighborUpdater.java
+@@ -75,15 +75,29 @@
+                 return; // unloaded — same semantics as patch 0004 skip
+             }
+             final BlockPos immutable = pos.immutable();
++            final int chunkX = immutable.getX() >> 4;
++            final int chunkZ = immutable.getZ() >> 4;
++            final Runnable owned = () -> {
++                final CollectingNeighborUpdater owning =
++                        serverLevel.getCurrentWorldData().neighborUpdater;
++                owning.addAndRunOwned(immutable, update);
++            };
++            // YaP — phase-tag cross-region neighbor work when aligned microticks are on
++            final io.papermc.paper.threadedregions.ThreadedRegionizer.ThreadedRegion<
++                    io.papermc.paper.threadedregions.TickRegions.TickRegionData,
++                    io.papermc.paper.threadedregions.TickRegions.TickRegionSectionData> targetRegion =
++                    serverLevel.regioniser.getRegionAtUnsynchronised(chunkX, chunkZ);
++            final long targetId = targetRegion == null ? 0L : targetRegion.getData().id;
++            final Runnable phased = io.papermc.paper.threadedregions.YapPhaseTaggedTasks.wrap(
++                    targetId,
++                    io.papermc.paper.threadedregions.YapMicroPhase.neighborDeferPhase(),
++                    owned
++            );
+             io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(
+                     serverLevel,
+-                    immutable.getX() >> 4,
+-                    immutable.getZ() >> 4,
+-                    () -> {
+-                        final CollectingNeighborUpdater owning =
+-                                serverLevel.getCurrentWorldData().neighborUpdater;
+-                        owning.addAndRunOwned(immutable, update);
+-                    }
++                    chunkX,
++                    chunkZ,
++                    phased
+             );
+             return;
+         }

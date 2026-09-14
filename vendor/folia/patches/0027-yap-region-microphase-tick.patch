@@ -1,0 +1,196 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP region micro-phase tick split (full ServerLevel phases)
+
+Subdivide ServerLevel#region tick into YapMicroPhase slices with soft wave barriers.
+Post-applyAllPatches.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapAlignedMicroTicks.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapAlignedMicroTicks.java
+@@ -0,0 +1,106 @@
++package io.papermc.paper.threadedregions;
++
++/**
++ * Product facade for aligned cross-region micro/sub-ticks (B + full).
++ *
++ * <p>When {@code -Dyap.folia.aligned-microticks=true}, each logical region tick is subdivided into
++ * {@link YapMicroPhase} slices with soft epoch-wave barriers and phase-tagged cross-region drains.
++ * Game time still advances once per region tick (not a faster clock).
++ *
++ * <p>When disabled, all entry points no-op and Folia keeps its single-pass tick path.
++ */
++public final class YapAlignedMicroTicks {
++
++    private static final ThreadLocal<RegionTickCtx> CTX = new ThreadLocal<>();
++
++    private YapAlignedMicroTicks() {
++    }
++
++    public static boolean enabled() {
++        return Boolean.parseBoolean(System.getProperty("yap.folia.aligned-microticks", "false"));
++    }
++
++    public static RegionTickCtx currentCtx() {
++        return CTX.get();
++    }
++
++    public static YapMicroPhase currentPhase() {
++        final RegionTickCtx ctx = CTX.get();
++        return ctx == null ? YapMicroPhase.CHUNKS : ctx.phase;
++    }
++
++    public static void beginRegionTick(final TickRegions.TickRegionData regionData) {
++        if (!enabled() || regionData == null) {
++            return;
++        }
++        ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("YaP aligned microtick begin");
++        final long epoch = YapTickEpochCoordinator.wallEpoch();
++        YapTickEpochCoordinator.scrubStaleWaves(epoch);
++        YapTickEpochCoordinator.awaitPhaseOpen(epoch, YapMicroPhase.CHUNKS);
++        final RegionTickCtx ctx = new RegionTickCtx();
++        ctx.regionDataId = regionData.id;
++        ctx.epoch = epoch;
++        ctx.phase = YapMicroPhase.CHUNKS.collapseToConfigured();
++        CTX.set(ctx);
++        YapPhaseTaggedTasks.drainForCurrentPhase();
++    }
++
++    /**
++     * Finish {@code completed} work, soft-barrier to the next phase, then drain tagged tasks.
++     * No-op when disabled or when {@code completed} is not the active phase (collapsed configs).
++     */
++    public static void finishPhase(final YapMicroPhase completed) {
++        if (!enabled()) {
++            return;
++        }
++        final RegionTickCtx ctx = CTX.get();
++        if (ctx == null) {
++            return;
++        }
++        final YapMicroPhase logical = completed.collapseToConfigured();
++        if (ctx.phase != logical) {
++            // Collapsed phase count: skip duplicate barrier for phases merged away.
++            return;
++        }
++        ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread("YaP aligned microtick phase");
++        final YapMicroPhase next = logical.next();
++        if (next == null || logical == YapMicroPhase.lastConfigured()) {
++            YapTickEpochCoordinator.arrive(ctx.epoch, logical);
++            return;
++        }
++        final YapMicroPhase nextConfigured = next.collapseToConfigured();
++        if (nextConfigured == logical) {
++            YapTickEpochCoordinator.arrive(ctx.epoch, logical);
++            return;
++        }
++        YapTickEpochCoordinator.arriveAndAwaitNext(ctx.epoch, logical);
++        ctx.phase = nextConfigured;
++        YapPhaseTaggedTasks.drainForCurrentPhase();
++    }
++
++    public static void endRegionTick() {
++        if (!enabled()) {
++            CTX.remove();
++            return;
++        }
++        final RegionTickCtx ctx = CTX.get();
++        if (ctx != null) {
++            ctx.phase = YapMicroPhase.lastConfigured();
++            YapPhaseTaggedTasks.drainForCurrentPhase();
++            YapTickEpochCoordinator.arrive(ctx.epoch, ctx.phase);
++        }
++        CTX.remove();
++    }
++
++    public static long regionDataIdOrZero() {
++        final RegionTickCtx ctx = CTX.get();
++        return ctx == null ? 0L : ctx.regionDataId;
++    }
++}
++
++/** Per-tick-thread state for aligned microticks. */
++final class RegionTickCtx {
++    long regionDataId;
++    long epoch;
++    YapMicroPhase phase;
++}
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/TickRegions.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/TickRegions.java
+@@ -123,6 +123,7 @@
+         data.tickHandle.checkInitialSchedule();
+         scheduler.scheduleRegion(data.tickHandle);
+         YapRegionPoolMetrics.onRegionActive(); // YaP
++        YapTickEpochCoordinator.registerRegion(data.id); // YaP aligned microticks
+     }
+ 
+     @Override
+@@ -133,6 +134,8 @@
+         // old handle cannot be scheduled anymore, copy to a new handle
+         data.tickHandle = data.tickHandle.copy();
+         YapRegionPoolMetrics.onRegionInactive(); // YaP
++        YapPhaseTaggedTasks.clearRegion(data.id); // YaP aligned microticks
++        YapTickEpochCoordinator.unregisterRegion(data.id); // YaP aligned microticks
+     }
+ 
+     @Override
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/ServerLevel.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/ServerLevel.java
+@@ -816,6 +816,10 @@
+         final io.papermc.paper.threadedregions.RegionizedWorldData regionizedWorldData = this.getCurrentWorldData(); // Folia - regionised ticking
+         final ca.spottedleaf.leafprofiler.RegionizedProfiler.Handle foliaProfiler = io.papermc.paper.threadedregions.TickRegionScheduler.getProfiler(); // Folia - profiler
+         ProfilerFiller profiler = Profiler.get();
++        // YaP start - aligned micro/sub-ticks
++        io.papermc.paper.threadedregions.YapAlignedMicroTicks.beginRegionTick(region);
++        try {
++        // YaP end - aligned micro/sub-ticks
+         regionizedWorldData.setHandlingTick(true); // Folia - regionised ticking
+         this.environmentAttributes().invalidateTickCache();
+         TickRateManager tickRateManager = this.tickRateManager();
+@@ -847,6 +851,8 @@
+         if (runs) {
+             this.tickTime();
+         }
++        // YaP — micro-phase CHUNKS → BLOCKS (Folia order preserved below)
++        io.papermc.paper.threadedregions.YapAlignedMicroTicks.finishPhase(io.papermc.paper.threadedregions.YapMicroPhase.CHUNKS);
+ 
+         profiler.push("tickPending");
+         if (!this.isDebug() && runs) {
+@@ -882,6 +888,8 @@
+ 
+         regionizedWorldData.setHandlingTick(false); // Folia - regionised ticking
+         profiler.pop();
++        // YaP — micro-phase BLOCKS → ENTITIES
++        io.papermc.paper.threadedregions.YapAlignedMicroTicks.finishPhase(io.papermc.paper.threadedregions.YapMicroPhase.BLOCKS);
+         boolean isActive = true || !paperConfig().unsupportedSettings.disableWorldTickingWhenEmpty || this.chunkSource.hasActiveTickets(); // CraftBukkit - this prevents entity cleanup, other issues on servers with no players // Paper - restore this // Folia - unrestore this, we always need to tick empty worlds
+         if (isActive) {
+             this.resetEmptyTime();
+@@ -956,6 +964,8 @@
+                 io.papermc.paper.threadedregions.YapEntityTickBudget.endTick();
+             } // YaP - entity tick budget / microtick
+             } finally { foliaProfiler.stopTimer(ca.spottedleaf.leafprofiler.LProfilerRegistry.ENTITY_TICK); } // Folia - profiler
++            // YaP — micro-phase ENTITIES → BLOCK_ENTITIES
++            io.papermc.paper.threadedregions.YapAlignedMicroTicks.finishPhase(io.papermc.paper.threadedregions.YapMicroPhase.ENTITIES);
+             if (this.paperConfig().unsupportedSettings.ticking.blockEntities) { // Paper - option to disable ticking
+             profiler.popPush("blockEntities");
+             foliaProfiler.startTimer(ca.spottedleaf.leafprofiler.LProfilerRegistry.TILE_ENTITY); try { // Folia - profiler
+@@ -971,6 +981,9 @@
+             profiler.pop();
+             } // Paper - option to disable ticking
+             regionizedWorldData.currentPrimedTnt = 0; // Spigot // Folia - regionised ticking
++        } else {
++            // YaP — still advance wave when entity body skipped (empty-time gate)
++            io.papermc.paper.threadedregions.YapAlignedMicroTicks.finishPhase(io.papermc.paper.threadedregions.YapMicroPhase.ENTITIES);
+         }
+ 
+         profiler.push("entityManagement");
+@@ -986,6 +999,11 @@
+ 
+         this.debugSynchronizers.tick(this.server.debugSubscribers());
+         profiler.pop();
++        // YaP — micro-phase BLOCK_ENTITIES complete
++        io.papermc.paper.threadedregions.YapAlignedMicroTicks.finishPhase(io.papermc.paper.threadedregions.YapMicroPhase.BLOCK_ENTITIES);
++        } finally { // YaP - aligned micro/sub-ticks
++            io.papermc.paper.threadedregions.YapAlignedMicroTicks.endRegionTick();
++        } // YaP - aligned micro/sub-ticks
+     }
+ 
+     // Folia start - region threading

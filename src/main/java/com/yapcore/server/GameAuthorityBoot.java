@@ -53,12 +53,31 @@ final class GameAuthorityBoot {
                                FoliaKernel foliaKernel,
                                PaperKernel paperKernel,
                                GameKernel gameKernel,
-                               DualStackGateway gateway) throws IOException, InterruptedException {
+                               DualStackGateway gateway,
+                               YaPcoreServer server) throws IOException, InterruptedException {
         switch (config.getGameAuthority()) {
             case FOLIA -> {
-                foliaKernel.start();
-                gateway.setProxyToGameKernel(config.isWrappedGameProxy());
-                com.yapcore.game.command.GameCommandBridge.setProcessDispatch(foliaKernel::dispatchConsoleCommand);
+                if (config.isFleetEnabled()) {
+                    try {
+                        server.fleet().startAutoInstances();
+                    } catch (Exception e) {
+                        if (e instanceof IOException io) {
+                            throw io;
+                        }
+                        if (e instanceof InterruptedException ie) {
+                            throw ie;
+                        }
+                        throw new IOException("Fleet start failed: " + e.getMessage(), e);
+                    }
+                    gateway.setProxyToGameKernel(config.isWrappedGameProxy());
+                    com.yapcore.game.command.GameCommandBridge.setProcessDispatch(
+                            server.fleet()::dispatchPrimary);
+                } else {
+                    foliaKernel.start();
+                    gateway.setProxyToGameKernel(config.isWrappedGameProxy());
+                    com.yapcore.game.command.GameCommandBridge.setProcessDispatch(
+                            foliaKernel::dispatchConsoleCommand);
+                }
             }
             case PAPER -> {
                 paperKernel.start();
@@ -79,9 +98,17 @@ final class GameAuthorityBoot {
             return;
         }
         if (!config.isPaperAuthority() || !server.paperKernel().isRunning()) {
-            if (config.isFoliaAuthority() && server.foliaKernel().isRunning()) {
-                scheduleRanks(server, server.foliaKernel()::dispatchConsoleCommand);
-                return;
+            if (config.isFoliaAuthority()) {
+                boolean foliaUp = config.isFleetEnabled()
+                        ? server.fleet().isPrimaryRunning()
+                        : server.foliaKernel().isRunning();
+                if (foliaUp) {
+                    Function<String, String> dispatch = config.isFleetEnabled()
+                            ? server.fleet()::dispatchPrimary
+                            : server.foliaKernel()::dispatchConsoleCommand;
+                    scheduleRanks(server, dispatch);
+                    return;
+                }
             }
             LOG.warning("yap-ranks-auto-apply ignored — Folia/Paper not running");
             return;
