@@ -7,6 +7,8 @@ import com.yapcore.web.api.DashboardAccessApi;
 import com.yapcore.web.api.DashboardAdminApi;
 import com.yapcore.web.api.DashboardCommandsApi;
 import com.yapcore.web.api.DashboardConsoleApi;
+import com.yapcore.web.api.DashboardFleetApi;
+import com.yapcore.web.api.DashboardFleetInstanceApi;
 import com.yapcore.web.api.DashboardGameplayApi;
 import com.yapcore.web.api.DashboardKitsApi;
 import com.yapcore.web.api.DashboardLinkConsoleApi;
@@ -37,6 +39,8 @@ final class DashboardRouteRegistrar {
             DashboardGameplayApi gameplayApi,
             DashboardKitsApi kitsApi,
             DashboardCommandsApi commandsApi,
+            DashboardFleetApi fleetApi,
+            DashboardFleetInstanceApi fleetInstanceApi,
             ChassisMetricsHandler metricsHandler,
             HttpHandler serveStatic) {
         Path rootDir = server.getRootDir();
@@ -86,6 +90,11 @@ final class DashboardRouteRegistrar {
         http.createContext("/api/npcs", gameplayApi::apiNpcs);
         http.createContext("/api/skills", gameplayApi::apiSkills);
         http.createContext("/api/factions", gameplayApi::apiFactions);
+        http.createContext("/api/fleet", fleetApi::apiFleet);
+        http.createContext("/api/fleet/console", fleetApi.consoleApi()::apiConsole);
+        http.createContext("/api/fleet/console/stream", fleetApi.consoleApi()::apiConsoleStream);
+        http.createContext("/api/fleet/instances", fleetInstanceApi::apiInstances);
+        http.createContext("/api/plugins/install", fleetInstanceApi::apiPluginsInstall);
         http.createContext("/metrics", metricsHandler::handle);
         http.createContext("/health", ex -> DashboardHttp.text(ex, 200, "ok"));
     }

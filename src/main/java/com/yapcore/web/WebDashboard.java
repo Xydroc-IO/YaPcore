@@ -9,6 +9,8 @@ import com.yapcore.server.YaPcoreServer;
 import com.yapcore.web.api.DashboardAccessApi;
 import com.yapcore.web.api.DashboardAdminApi;
 import com.yapcore.web.api.DashboardConsoleApi;
+import com.yapcore.web.api.DashboardFleetApi;
+import com.yapcore.web.api.DashboardFleetInstanceApi;
 import com.yapcore.web.api.DashboardGameplayApi;
 import com.yapcore.web.api.DashboardKitsApi;
 import com.yapcore.web.api.DashboardCommandsApi;
@@ -48,6 +50,8 @@ public final class WebDashboard {
     private final DashboardGameplayApi gameplayApi;
     private final DashboardKitsApi kitsApi;
     private final DashboardCommandsApi commandsApi;
+    private final DashboardFleetApi fleetApi;
+    private final DashboardFleetInstanceApi fleetInstanceApi;
     private final ChassisMetricsHandler metricsHandler;
     private final Consumer<String> consoleListener;
     private final Consumer<String> linkConsoleListener;
@@ -65,6 +69,8 @@ public final class WebDashboard {
         this.gameplayApi = new DashboardGameplayApi(server, auth);
         this.kitsApi = new DashboardKitsApi(server, auth);
         this.commandsApi = new DashboardCommandsApi(server, auth);
+        this.fleetApi = new DashboardFleetApi(server, auth);
+        this.fleetInstanceApi = new DashboardFleetInstanceApi(server, auth);
         this.metricsHandler = new ChassisMetricsHandler(server);
         this.consoleListener = line -> consoleApi.broadcastSse(line);
         this.linkConsoleListener = line -> linkConsoleApi.broadcastSse(line.trim());
@@ -114,6 +120,8 @@ public final class WebDashboard {
                 gameplayApi,
                 kitsApi,
                 commandsApi,
+                fleetApi,
+                fleetInstanceApi,
                 metricsHandler,
                 this::serveStatic);
 
@@ -135,6 +143,7 @@ public final class WebDashboard {
         server.getLinkProcess().removeLogListener(linkConsoleListener);
         consoleApi.closeAllClients();
         linkConsoleApi.closeAllClients();
+        fleetApi.consoleApi().closeAllClients();
         if (http != null) {
             http.stop(0);
             http = null;

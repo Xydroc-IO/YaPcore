@@ -39,6 +39,11 @@
       </div>
     </aside>
     <div class="shell-body">
+      <div id="fleetContextBar" class="fleet-context-bar hidden">
+        <div class="fleet-context-label">Context</div>
+        <div id="fleetContextChips" class="fleet-context-chips"></div>
+        <button type="button" id="fleetContextAdd" class="ghost fleet-context-add">+ Add server</button>
+      </div>
       <header class="topbar">
         <div style="display:flex;align-items:center;gap:12px">
           <button id="menuToggle" class="ghost" style="display:none">☰</button>
@@ -67,7 +72,7 @@
           <div class="stat"><span>Link</span><strong id="stLinkProc">—</strong></div>
           <div class="stat"><span>PID</span><strong id="stPid">—</strong></div>
         </div>
-        <div class="card health-card">
+        <div class="card health-card" id="bedrockFeelCard">
           <h3>Bedrock-feel parity</h3>
           <p id="stParitySummary" class="health-summary">—</p>
           <div class="grid stats health-grid">
@@ -77,6 +82,23 @@
             <div class="stat"><span>Block pack</span><strong id="bfPack">—</strong></div>
             <div class="stat"><span>Provenance</span><strong id="bfProv">—</strong></div>
           </div>
+          <div class="form-grid" style="margin-top:12px">
+            <label>Bedrock-feel for Java
+              <select id="bfToggle">
+                <option value="false">Off</option>
+                <option value="true">On (require yap-presence)</option>
+              </select>
+            </label>
+            <label>Parity band
+              <select id="bfBandSelect">
+                <option value="band_26_50">band_26_50 (Folia 26.2)</option>
+              </select>
+            </label>
+          </div>
+          <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">
+            <button type="button" class="primary" id="bfSave">Save Bedrock-feel</button>
+            <span id="bfSaveMsg" class="easy-save-msg" hidden></span>
+          </div>
         </div>
         <div class="card health-card">
           <h3>Network health</h3>
@@ -85,9 +107,13 @@
             <div class="stat"><span>Folia</span><strong id="nhFolia">—</strong></div>
             <div class="stat"><span>Bedrock</span><strong id="nhBedrock">—</strong></div>
             <div class="stat"><span>Link suite</span><strong id="nhLink">—</strong></div>
+            <div class="stat"><span>Backends</span><strong id="nhBackends">—</strong></div>
             <div class="stat"><span>Plugins</span><strong id="nhPlugins">—</strong></div>
             <div class="stat"><span>Compat warn</span><strong id="nhCompat">—</strong></div>
             <div class="stat"><span>Last smoke</span><strong id="nhSmoke">—</strong></div>
+          </div>
+          <div class="toolbar" style="margin-top:10px">
+            <button type="button" class="primary" id="stOpenLink">Open YaP Link setup</button>
           </div>
         </div>
         <div class="card health-card">
@@ -484,15 +510,44 @@
       <section id="tab-plugins" class="panel">
         <div class="page-header">
           <h2>Plugins</h2>
-          <p><strong>Soft</strong> writes <code>enabled</code> in the plugin config (reload when the plugin supports it). <strong>Hard</strong> renames <code>*.jar</code> ↔ <code>*.jar.disabled</code> — Folia must restart to load/unload the jar. CORE jars need an explicit force confirm to disable or uninstall.</p>
+          <p>Central <strong>catalog</strong> of available jars. Install to one or many fleet servers. When a server is selected in the context bar, manage jars installed on that instance.</p>
         </div>
-        <div class="toolbar">
-          <button id="refreshPlugins">Refresh</button>
-        </div>
-        <ul id="pluginList" class="list"></ul>
-        <div class="inline">
-          <input id="pluginPath" placeholder="Path under YAPCORE_HOME to a .jar"/>
-          <button id="addPlugin" class="primary">Install</button>
+        <div class="plugins-dual">
+          <div class="plugins-pane">
+            <div class="toolbar">
+              <h3 style="margin:0;flex:1">Catalog</h3>
+              <button id="refreshPlugins">Refresh</button>
+            </div>
+            <ul id="pluginList" class="list"></ul>
+            <div class="inline">
+              <input id="pluginPath" placeholder="Path under YAPCORE_HOME to a .jar"/>
+              <button id="addPlugin" class="primary">Add to catalog</button>
+            </div>
+            <div class="form-grid" style="margin-top:12px">
+              <label>Install jar <input id="pluginInstallJar" placeholder="yap-perms.jar"/></label>
+              <label>Targets <input id="pluginInstallTargets" placeholder="lobby,survival or leave blank for context"/></label>
+              <label>Restart
+                <select id="pluginInstallRestart">
+                  <option value="none">none</option>
+                  <option value="restart">restart</option>
+                </select>
+              </label>
+            </div>
+            <div class="toolbar">
+              <button id="pluginInstallMulti" class="primary">Install to servers</button>
+            </div>
+          </div>
+          <div class="plugins-pane">
+            <div class="toolbar">
+              <h3 style="margin:0;flex:1">On this server <span id="pluginInstanceLabel" class="muted">—</span></h3>
+              <button id="refreshInstancePlugins">Refresh</button>
+            </div>
+            <p id="pluginInstanceHint" class="muted">Select a server chip in the context bar to manage installed plugins.</p>
+            <div class="toolbar" style="margin-bottom:8px">
+              <button id="pluginInstallCore" class="primary">Install CORE+NETWORK</button>
+            </div>
+            <ul id="instancePluginList" class="list"></ul>
+          </div>
         </div>
       </section>
 
@@ -588,7 +643,11 @@
       </section>
 
       <section id="tab-link" class="panel">
-        <p class="muted">YaP Link — network edge for the <strong>same</strong> Folia world (Java + Bedrock). Configure backends, Bedrock path, and proxy-only options here. Shared settings (MOTD, max players, online mode, public host) are owned by <strong>Server setup</strong> and stay in sync automatically.</p>
+        <div class="page-header">
+          <h2>YaP Link</h2>
+          <p>Network proxy for Java + Bedrock — this is where players connect. Start Link here, set Bedrock path, and map backends (lobby / survival).</p>
+        </div>
+        <p class="muted">Shared MOTD / max players / online mode / public host come from <strong>Server setup</strong> and stay in sync automatically.</p>
         <div class="grid stats" id="linkStats">
           <div class="stat"><span>Process</span><strong id="linkRunning">—</strong></div>
           <div class="stat"><span>Link home</span><strong id="linkHome">—</strong></div>
@@ -670,7 +729,7 @@
         <p class="muted hint">Each row is a Folia/Paper backend Link forwards to. Use names like <code>hub</code>, <code>lobby</code>, <code>survival</code>.</p>
         <div class="table-wrap">
           <table class="data-table" id="linkServersTable">
-            <thead><tr><th>Name</th><th>Address (host:port)</th><th>Bedrock (optional)</th><th></th></tr></thead>
+            <thead><tr><th>Name</th><th>Address (host:port)</th><th>Bedrock (optional)</th><th>Up</th><th>Online</th><th>Latency</th><th></th></tr></thead>
             <tbody id="linkServersBody"></tbody>
           </table>
         </div>
@@ -718,6 +777,170 @@
           <button type="submit" class="primary">Send</button>
         </form>
         <pre id="linkOut" class="report muted-small"></pre>
+      </section>
+
+      <section id="tab-fleet" class="panel">
+        <div class="page-header">
+          <h2>Fleet</h2>
+          <p>Game servers on this network. Players join through <strong>YaP Link</strong> (proxy) — set that up first if you have not already.</p>
+        </div>
+        <div class="card" id="fleetLinkBanner" style="margin-bottom:14px">
+          <h3>YaP Link (player join edge)</h3>
+          <p class="muted" style="margin:6px 0 10px">Java :25565 · Bedrock :19132 · backends, Bedrock path, forwarding, Start/Stop Link</p>
+          <div class="toolbar" style="margin:0">
+            <button type="button" class="primary" id="fleetOpenLink">Open YaP Link setup</button>
+            <button type="button" id="fleetSyncLink">Sync backends from fleet</button>
+          </div>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Enabled</span><strong id="fleetEnabled">—</strong></div>
+          <div class="stat"><span>Primary</span><strong id="fleetPrimary">—</strong></div>
+          <div class="stat"><span>Instances</span><strong id="fleetCount">—</strong></div>
+          <div class="stat"><span>Nodes</span><strong id="fleetNodeCount">—</strong></div>
+        </div>
+        <div class="toolbar fleet-toolbar">
+          <button id="fleetEnable" class="primary">Enable fleet</button>
+          <button id="fleetRefresh">Refresh</button>
+          <button id="fleetBootstrap">Bootstrap wizard</button>
+          <input id="fleetSearch" type="search" placeholder="Filter servers…" class="fleet-search"/>
+          <label class="fleet-filter-label">Node
+            <select id="fleetNodeFilter"><option value="local">local</option></select>
+          </label>
+        </div>
+        <div id="fleetCards" class="fleet-cards"></div>
+        <div id="fleetEmpty" class="fleet-empty hidden">
+          <h3>No servers yet</h3>
+          <p class="muted">Enable fleet, then add a lobby/survival instance or run the bootstrap wizard.</p>
+          <button type="button" id="fleetEmptyAdd" class="primary">Add server</button>
+        </div>
+        <details class="fleet-advanced" id="fleetAdvanced">
+          <summary>Add server &amp; advanced</summary>
+          <div class="form-grid">
+            <label>New id <input id="fleetNewId" placeholder="survival"/></label>
+            <label>Display <input id="fleetNewName" placeholder="Survival"/></label>
+            <label>Port <input id="fleetNewPort" type="number" placeholder="auto"/></label>
+            <label>Max players
+              <select id="fleetNewMax">
+                <option value="10">10</option>
+                <option value="20" selected>20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+              </select>
+            </label>
+            <label>RAM (this server)
+              <select id="fleetNewRam">
+                <option value="1024">1 GB</option>
+                <option value="2048" selected>2 GB</option>
+                <option value="4096">4 GB</option>
+                <option value="8192">8 GB</option>
+                <option value="16384">16 GB</option>
+              </select>
+            </label>
+            <label>Auto-start
+              <select id="fleetNewAuto"><option value="false">No</option><option value="true">Yes</option></select>
+            </label>
+          </div>
+          <div class="toolbar">
+            <button id="fleetCreate" class="primary">Create instance</button>
+          </div>
+          <h3>Remote node</h3>
+          <div class="form-grid">
+            <label>Node id <input id="fleetNodeId" placeholder="node-2"/></label>
+            <label>Base URL <input id="fleetNodeUrl" placeholder="http://192.168.1.20:9095"/></label>
+            <label>Token <input id="fleetNodeToken" placeholder="agent bearer token"/></label>
+            <label>Display <input id="fleetNodeName" placeholder="Remote"/></label>
+          </div>
+          <div class="toolbar">
+            <button id="fleetAddNode">Add node</button>
+            <button id="fleetProbeNode">Probe node</button>
+          </div>
+          <h3>Deploy file</h3>
+          <div class="form-grid">
+            <label>Source path <input id="fleetDeploySrc" placeholder="plugins/yap-perms.jar"/></label>
+            <label>Target <input id="fleetDeployTarget" placeholder="plugins/yap-perms.jar"/></label>
+            <label>Instance ids <input id="fleetDeployIds" placeholder="lobby,survival"/></label>
+            <label>Restart policy
+              <select id="fleetDeployRestart">
+                <option value="none">none</option>
+                <option value="restart">restart</option>
+                <option value="if-running">if-running</option>
+              </select>
+            </label>
+          </div>
+          <div class="toolbar">
+            <button id="fleetDeploy" class="primary">Deploy file</button>
+          </div>
+          <h3>Instance console</h3>
+          <div class="form-grid">
+            <label>Instance <input id="fleetConsoleId" placeholder="lobby"/></label>
+            <label>Command <input id="fleetConsoleCmd" placeholder="list"/></label>
+          </div>
+          <div class="toolbar">
+            <button id="fleetConsoleSend">Send</button>
+            <button id="fleetConsoleStream">Open SSE</button>
+          </div>
+          <pre id="fleetConsole" class="report" style="min-height:10rem"></pre>
+          <pre id="fleetOut" class="report muted-small"></pre>
+        </details>
+
+        <section id="fleetInstanceSetup" class="fleet-instance-setup hidden">
+          <div class="page-header">
+            <h3>Server setup — <span id="fleetSetupTitle">—</span></h3>
+            <p class="muted">Folia properties for this instance. Port changes sync Link <code>servers.*</code>.</p>
+          </div>
+          <div class="form-grid" id="fleetSetupForm">
+            <label>Display name <input id="fleetSetupDisplay" /></label>
+            <label>Server id <input id="fleetSetupServerId" /></label>
+            <label>Port <input id="fleetSetupPort" type="number" /></label>
+            <label>Bind <input id="fleetSetupBind" /></label>
+            <label>Max players
+              <select id="fleetSetupMax">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="200">200</option>
+                <option value="500">500</option>
+              </select>
+            </label>
+            <label>RAM max (this server)
+              <select id="fleetSetupRam">
+                <option value="1024">1 GB</option>
+                <option value="2048">2 GB</option>
+                <option value="4096">4 GB</option>
+                <option value="8192">8 GB</option>
+                <option value="16384">16 GB</option>
+                <option value="32768">32 GB</option>
+              </select>
+            </label>
+            <label>MOTD <input id="fleetSetupMotd" /></label>
+            <label>Gamemode
+              <select id="fleetSetupGamemode">
+                <option value="survival">survival</option>
+                <option value="creative">creative</option>
+                <option value="adventure">adventure</option>
+                <option value="spectator">spectator</option>
+              </select>
+            </label>
+            <label>Difficulty
+              <select id="fleetSetupDifficulty">
+                <option value="peaceful">peaceful</option>
+                <option value="easy">easy</option>
+                <option value="normal">normal</option>
+                <option value="hard">hard</option>
+              </select>
+            </label>
+            <label>View distance <input id="fleetSetupView" type="number" min="2" max="32" /></label>
+            <label>Auto-start
+              <select id="fleetSetupAuto"><option value="true">Yes</option><option value="false">No</option></select>
+            </label>
+          </div>
+          <div class="toolbar">
+            <button id="fleetSetupSave" class="primary">Save settings</button>
+            <span id="fleetSetupMsg" class="easy-save-msg" hidden></span>
+          </div>
+        </section>
       </section>
 
       <section id="tab-disasters" class="panel">
@@ -1803,7 +2026,9 @@
       </main>
     </div>
   </div>
+  <div id="yapToast" class="yap-toast hidden" role="status"></div>
   <script src="/app-shell.js"></script>
+  <script src="/app-fleet-context.js"></script>
   <script src="/app-friendly-forms.js"></script>
   <script src="/app-color.js"></script>
   <script src="/app-access-actions.js"></script>
@@ -1811,6 +2036,7 @@
   <script src="/app-players-panels.js"></script>
   <script src="/app-admin-panels.js"></script>
   <script src="/app-ops-panels.js"></script>
+  <script src="/app-fleet.js"></script>
   <script src="/app-network-panels.js"></script>
   <script src="/app-full-panels.js"></script>
   <script src="/app-npcs-panels.js"></script>

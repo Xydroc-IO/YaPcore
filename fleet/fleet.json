@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "primaryId": "lobby",
+  "instances": [
+    {
+      "id": "lobby",
+      "serverId": "lobby",
+      "nodeId": "local",
+      "relativeDir": "fleet/instances/lobby",
+      "port": 25567,
+      "bind": "127.0.0.1",
+      "autoStart": true,
+      "displayName": "Lobby",
+      "address": "127.0.0.1:25567"
+    },
+    {
+      "id": "survival",
+      "serverId": "survival",
+      "nodeId": "local",
+      "relativeDir": "fleet/instances/survival",
+      "port": 25568,
+      "bind": "127.0.0.1",
+      "autoStart": true,
+      "displayName": "Survival",
+      "address": "127.0.0.1:25568"
+    }
+  ],
+  "nodes": []
+}

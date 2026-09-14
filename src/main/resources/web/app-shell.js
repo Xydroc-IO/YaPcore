@@ -2,13 +2,14 @@
   const NAV = [
     { group: "Overview", items: [
       { tab: "status", icon: "◉", label: "Dashboard" },
-      { tab: "admin", icon: "⚙", label: "Network setup" },
+      { tab: "link", icon: "⇄", label: "YaP Link" },
       { tab: "connect", icon: "🔗", label: "Connect" },
+      { tab: "admin", icon: "⚙", label: "Network setup" },
     ]},
     { group: "Server", items: [
+      { tab: "fleet", icon: "▦", label: "Fleet" },
       { tab: "console", icon: "▸", label: "Console" },
       { tab: "settings", icon: "☰", label: "Server setup" },
-      { tab: "link", icon: "⇄", label: "YaP Link" },
     ]},
     { group: "People", items: [
       { tab: "players", icon: "👤", label: "Players" },
@@ -69,18 +70,35 @@
   }
 
   function switchTab(tab) {
+    const name = String(tab || "").trim();
+    if (!name) return false;
     document.querySelectorAll(".nav-item").forEach((b) => {
-      b.classList.toggle("active", b.dataset.tab === tab);
+      b.classList.toggle("active", b.dataset.tab === name);
     });
     document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
-    const panel = document.getElementById("tab-" + tab);
-    if (panel) panel.classList.add("active");
+    const panel = document.getElementById("tab-" + name);
+    if (!panel) {
+      console.warn("YaP shell: missing panel tab-" + name);
+      return false;
+    }
+    panel.classList.add("active");
+    panel.scrollTop = 0;
     const title = document.getElementById("topbarTitle");
-    if (title) title.textContent = TITLES[tab] || tab;
+    if (title) title.textContent = TITLES[name] || name;
     const loads = window.YapDashTabLoads || window.YapDash?.tabLoads;
-    const load = loads && loads[tab];
-    if (load) Promise.resolve(load()).catch((e) => console.error("tab load " + tab, e));
+    const load = loads && loads[name];
+    if (load) Promise.resolve(load()).catch((e) => console.error("tab load " + name, e));
     document.getElementById("sidebar")?.classList.remove("open");
+    return true;
+  }
+
+  function openLink() {
+    const ok = switchTab("link");
+    if (!ok) {
+      const nav = document.querySelector('.nav-item[data-tab="link"]');
+      if (nav) nav.click();
+    }
+    return ok;
   }
 
   function filterNav(query) {
@@ -97,11 +115,11 @@
     });
   }
 
-  window.YapShell = { switchTab, buildSidebar, filterNav };
-  document.addEventListener("DOMContentLoaded", () => {
+  function bootShell() {
     buildSidebar();
     const search = document.getElementById("navSearch");
-    if (search) {
+    if (search && !search.dataset.bound) {
+      search.dataset.bound = "1";
       search.addEventListener("input", () => filterNav(search.value));
       search.addEventListener("keydown", (e) => {
         if (e.key !== "Enter") return;
@@ -109,5 +127,12 @@
         if (first) first.click();
       });
     }
-  });
+  }
+
+  window.YapShell = { switchTab, openLink, buildSidebar, filterNav };
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootShell);
+  } else {
+    bootShell();
+  }
 })();
