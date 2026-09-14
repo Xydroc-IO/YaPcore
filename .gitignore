@@ -340,3 +340,6 @@ vendor/geyser-ref/
 fleet/agents/*.token
 **/fleet-agent-home/agent.token
 
+# Fleet live Folia instance trees (worlds, logs, jars, libraries) — keep fleet.json only
+fleet/instances/**
+
