@@ -6,7 +6,7 @@
 # Env: YAP_BENCH_WARMUP, YAP_BENCH_ENTITIES, YAP_BENCH_HOPPERS, YAP_BENCH_HEAVY_HOPPERS,
 #      YAP_BENCH_MOBS (spawncollapse mob count),
 #      YAP_BENCH_PLAYERS (default 100 for highpop/fullcite),
-#      YAP_BENCH_COMPETITORS=folia,canvas,yapcore (comma list; default all)
+#      YAP_BENCH_COMPETITORS=folia,canvas,yapcore,paper,purpur,leaf (comma list; default Folia peers)
 #      YAP_BENCH_GAME_XMS=2G YAP_BENCH_GAME_XMX=4G  (8G/12G default for bot scenarios)
 #      YAP_BENCH_CHASSIS_XMS=256m YAP_BENCH_CHASSIS_XMX=512m  (YaP parent only)
 #      YAP_BENCH_SHUFFLE=1  (randomize competitor order — default on)
@@ -117,12 +117,12 @@ echo "Ensuring Folia-ecosystem jars (${VER})…"
 
 echo "Building bench plugin + parity jars (no phase3 spatial)…"
 if [ "$NEEDS_BOTS" = "1" ]; then
-  (cd "$ROOT" && gradle \
-    :bench-plugin:jar :bench-plugin:popSimJar \
-    :placeholderapi-plugin:jar \
-    :gameplay-knobs-plugin:jar \
-    :vehicles-plugin:jar \
-    --no-daemon -q)
+  # vehicles-plugin is optional (not always in settings.gradle.kts)
+  GRADLE_TASKS=(:bench-plugin:jar :bench-plugin:popSimJar :placeholderapi-plugin:jar :gameplay-knobs-plugin:jar)
+  if grep -q 'include("vehicles-plugin")' "$ROOT/settings.gradle.kts" 2>/dev/null; then
+    GRADLE_TASKS+=(:vehicles-plugin:jar)
+  fi
+  (cd "$ROOT" && gradle "${GRADLE_TASKS[@]}" --no-daemon -q)
   if [ ! -d "$BOTS_DIR/node_modules/mineflayer" ]; then
     echo "Installing Mineflayer bots…"
     (cd "$BOTS_DIR" && npm install --no-fund --no-audit)
@@ -163,12 +163,36 @@ case "$YAP_JAR" in /*) ;; *) YAP_JAR="$ROOT/$YAP_JAR" ;; esac
 STOCK_FOLIA="$ROOT/lib/folia-${VER}.jar"
 STOCK_CANVAS="$ROOT/lib/canvas-${VER}.jar"
 YAP_FOLIA="$ROOT/lib/yap-folia-${VER}.jar"
+STOCK_PAPER="$ROOT/lib/paper-${VER}.jar"
+STOCK_PURPUR="$ROOT/lib/purpur-${VER}.jar"
+STOCK_LEAF="$ROOT/lib/leaf-${VER}.jar"
+
+# Fetch Paper-class jars when requested (Folia peers already fetched above).
+NEED_PAPER_CLASS=0
+IFS=',' read -r -a _comp_probe <<<"$COMPETITORS_CSV"
+for _cid in "${_comp_probe[@]}"; do
+  _cid="$(echo "$_cid" | tr -d '[:space:]')"
+  case "$_cid" in
+    paper|purpur|leaf) NEED_PAPER_CLASS=1 ;;
+  esac
+done
+if [ "$NEED_PAPER_CLASS" = "1" ]; then
+  echo "Ensuring Paper/Purpur/Leaf jars (${VER})…"
+  "$SCRIPT_DIR/fetch-competitors.sh" "$VER"
+fi
+unset _cid _comp_probe
 # Phase 3–5 knobs (YaP-Folia only) — stock Folia ignores unknown -D props
 ENTITY_TICK_BUDGET="${YAP_FOLIA_ENTITY_TICK_BUDGET:-}"
 MICROTICK_BUDGET="${YAP_FOLIA_MICROTICK_BUDGET_MS:-}"
 ASYNC_CHUNK_SAVE="${YAP_FOLIA_ASYNC_CHUNK_SAVE:-}"
 HOPPER_TICK_BUDGET="${YAP_FOLIA_HOPPER_TICK_BUDGET:-}"
 SUBREGION_PARTITION="${YAP_FOLIA_SUBREGION_PARTITION:-}"
+ALIGNED_MICROTICKS="${YAP_FOLIA_ALIGNED_MICROTICKS:-}"
+MICRO_PHASES="${YAP_FOLIA_MICRO_PHASES:-}"
+TICK_WAVE_MAX_WAIT_MS="${YAP_FOLIA_TICK_WAVE_MAX_WAIT_MS:-}"
+PHYSICS_SUBSTEPS="${YAP_FOLIA_PHYSICS_SUBSTEPS:-}"
+PHYSICS_SUBSTEP_COUNT="${YAP_FOLIA_PHYSICS_SUBSTEP_COUNT:-}"
+PHYSICS_SUBSTEP_MIN_MOVE="${YAP_FOLIA_PHYSICS_SUBSTEP_MIN_MOVE:-}"
 SUBREGION_SHARDS="${YAP_FOLIA_SUBREGION_SHARDS:-}"
 SUBREGION_MSPT="${YAP_FOLIA_SUBREGION_MSPT_THRESHOLD:-}"
 SUBREGION_MIN_SECTIONS="${YAP_FOLIA_SUBREGION_MIN_SECTIONS:-}"
@@ -189,11 +213,24 @@ case "$SCENARIO" in
       ENTITY_TICK_BUDGET=0
       MICROTICK_BUDGET=0
       SUBREGION_PARTITION=false
+      ALIGNED_MICROTICKS=false
+      PHYSICS_SUBSTEPS=false
     else
       if [ -z "$ENTITY_TICK_BUDGET" ]; then ENTITY_TICK_BUDGET=400; fi
       if [ -z "$MICROTICK_BUDGET" ]; then MICROTICK_BUDGET=8; fi
       if [ -z "$SUBREGION_PARTITION" ]; then SUBREGION_PARTITION=true; fi
       if [ -z "$BUDGET_MSPT_THRESHOLD" ]; then BUDGET_MSPT_THRESHOLD=12; fi
+      if [ -z "$ALIGNED_MICROTICKS" ]; then ALIGNED_MICROTICKS=true; fi
+      if [ -z "$MICRO_PHASES" ]; then MICRO_PHASES=4; fi
+      if [ -z "$TICK_WAVE_MAX_WAIT_MS" ]; then TICK_WAVE_MAX_WAIT_MS=2; fi
+      if [ -z "$PHYSICS_SUBSTEPS" ]; then PHYSICS_SUBSTEPS=true; fi
+      if [ -z "$PHYSICS_SUBSTEP_COUNT" ]; then PHYSICS_SUBSTEP_COUNT=4; fi
+      if [ -z "$PHYSICS_SUBSTEP_MIN_MOVE" ]; then PHYSICS_SUBSTEP_MIN_MOVE=0.02; fi
+      # Ship partition engage thresholds (do not retune in cite — assert-only).
+      if [ -z "$SUBREGION_MSPT" ]; then SUBREGION_MSPT=20; fi
+      if [ -z "${YAP_FOLIA_SUBREGION_MSPT_CLEAR:-}" ]; then
+        YAP_FOLIA_SUBREGION_MSPT_CLEAR=16
+      fi
     fi
     ;;
 esac
@@ -333,9 +370,19 @@ install_parity_plugins() {
   fi
 }
 
+# Stock Paper/Purpur/Leaf: bench (+ popsim for bots) only — no Folia knobs/vehicles.
+install_paper_plugins() {
+  local work="$1"
+  /bin/cp -f "$BENCH_JAR" "$work/plugins/yap-mspt-bench.jar"
+  if [ "$NEEDS_BOTS" = "1" ] && [ -f "$POP_JAR" ]; then
+    /bin/cp -f "$POP_JAR" "$work/plugins/$(basename "$POP_JAR")"
+  fi
+}
+
 bench_jvm_extra() {
   local port="$1"
   local yap_knobs="${2:-0}"
+  local tick_model="${3:-regionized}"
   local extra=()
   [[ -n "$ENTITIES" ]] && extra+=(-Dyap.bench.entities="$ENTITIES")
   [[ -n "$HOPPERS" ]] && extra+=(-Dyap.bench.hoppers="$HOPPERS")
@@ -347,6 +394,7 @@ bench_jvm_extra() {
     [[ -n "$STRIP_Z" ]] && extra+=(-Dyap.bench.strip_z_radius="$STRIP_Z")
     [[ -n "$STRIP_GAP" ]] && extra+=(-Dyap.bench.strip_gap_half="$STRIP_GAP")
     extra+=(-Dyap.bench.root="$ROOT")
+    extra+=(-Dyap.bench.tick_model="$tick_model")
   if [ "$NEEDS_BOTS" = "1" ]; then
     extra+=(
       -Dyap.bench.players="$PLAYERS"
@@ -363,6 +411,16 @@ bench_jvm_extra() {
     extra+=(-Dyap.folia.hopper-tick-budget="${HOPPER_TICK_BUDGET:-64}")
     extra+=(-Dyap.folia.subregion-partition="${SUBREGION_PARTITION:-false}")
     extra+=(-Dyap.folia.budget-mspt-threshold="${BUDGET_MSPT_THRESHOLD:-12}")
+    extra+=(-Dyap.folia.aligned-microticks="${ALIGNED_MICROTICKS:-false}")
+    if [ "${ALIGNED_MICROTICKS:-false}" = "true" ]; then
+      extra+=(-Dyap.folia.micro-phases="${MICRO_PHASES:-4}")
+      extra+=(-Dyap.folia.tick-wave-max-wait-ms="${TICK_WAVE_MAX_WAIT_MS:-2}")
+    fi
+    extra+=(-Dyap.folia.physics-substeps="${PHYSICS_SUBSTEPS:-true}")
+    if [ "${PHYSICS_SUBSTEPS:-true}" = "true" ]; then
+      extra+=(-Dyap.folia.physics-substep-count="${PHYSICS_SUBSTEP_COUNT:-4}")
+      extra+=(-Dyap.folia.physics-substep-min-move="${PHYSICS_SUBSTEP_MIN_MOVE:-0.02}")
+    fi
     # Mirror for result JSON (prove cite profile).
     extra+=(-Dyap.bench.knob_entity_tick_budget="${ENTITY_TICK_BUDGET:-0}")
     extra+=(-Dyap.bench.knob_microtick_budget_ms="${MICROTICK_BUDGET:-0}")
@@ -370,9 +428,18 @@ bench_jvm_extra() {
     extra+=(-Dyap.bench.knob_async_chunk_save="${ASYNC_CHUNK_SAVE:-true}")
     extra+=(-Dyap.bench.knob_subregion_partition="${SUBREGION_PARTITION:-false}")
     extra+=(-Dyap.bench.knob_budget_mspt_threshold="${BUDGET_MSPT_THRESHOLD:-12}")
+    extra+=(-Dyap.bench.knob_aligned_microticks="${ALIGNED_MICROTICKS:-false}")
+    extra+=(-Dyap.bench.knob_micro_phases="${MICRO_PHASES:-4}")
+    extra+=(-Dyap.bench.knob_tick_wave_max_wait_ms="${TICK_WAVE_MAX_WAIT_MS:-2}")
+    extra+=(-Dyap.bench.knob_physics_substeps="${PHYSICS_SUBSTEPS:-true}")
+    extra+=(-Dyap.bench.knob_physics_substep_count="${PHYSICS_SUBSTEP_COUNT:-4}")
+    extra+=(-Dyap.bench.knob_subregion_mspt_threshold="${SUBREGION_MSPT:-20}")
+    extra+=(-Dyap.bench.knob_subregion_mspt_clear="${YAP_FOLIA_SUBREGION_MSPT_CLEAR:-16}")
     if [ "${SUBREGION_PARTITION}" = "true" ]; then
       [[ -n "$SUBREGION_SHARDS" ]] && extra+=(-Dyap.folia.subregion-shards="$SUBREGION_SHARDS")
-      [[ -n "$SUBREGION_MSPT" ]] && extra+=(-Dyap.folia.subregion-mspt-threshold="$SUBREGION_MSPT")
+      # Always disclose ship engage threshold on JVM (default 20 / clear 16).
+      extra+=(-Dyap.folia.subregion-mspt-threshold="${SUBREGION_MSPT:-20}")
+      extra+=(-Dyap.folia.subregion-mspt-clear="${YAP_FOLIA_SUBREGION_MSPT_CLEAR:-16}")
       [[ -n "$SUBREGION_MIN_SECTIONS" ]] && extra+=(-Dyap.folia.subregion-min-sections="$SUBREGION_MIN_SECTIONS")
       [[ -n "$SUBREGION_MIN_ENTITIES" ]] && extra+=(-Dyap.folia.subregion-min-entities="$SUBREGION_MIN_ENTITIES")
       [[ -n "$SUBREGION_COALESCE_QUIET" ]] && extra+=(-Dyap.folia.subregion-coalesce-quiet-ticks="$SUBREGION_COALESCE_QUIET")
@@ -468,9 +535,12 @@ start_bots() {
 
 stop_bots() {
   local pid="${1:-}"
+  # Workers exec as `node swarm.js` (cwd=bots/) — path-based patterns miss them.
   pkill -INT -f 'scripts/bench/bots/swarm.js' 2>/dev/null || true
+  pkill -INT -f '[n]ode swarm.js' 2>/dev/null || true
   sleep 1
   pkill -9 -f 'scripts/bench/bots/swarm.js' 2>/dev/null || true
+  pkill -9 -f '[n]ode swarm.js' 2>/dev/null || true
   if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
     kill -INT "$pid" 2>/dev/null || true
     kill -9 "$pid" 2>/dev/null || true
@@ -480,7 +550,7 @@ stop_bots() {
 }
 
 wait_ports_free() {
-  local ports=(25680 25681 25682)
+  local ports=(25680 25681 25682 25683 25684 25685 25686)
   local i p
   for i in $(seq 1 30); do
     local busy=0
@@ -509,10 +579,15 @@ prepare_plain() {
   local server_jar="$2"
   local port="$3"
   local motd="$4"
+  local plugin_set="${5:-parity}"
   rm -rf "$work"
   mkdir -p "$work/plugins"
   /bin/cp -f "$server_jar" "$work/server.jar"
-  install_parity_plugins "$work"
+  if [ "$plugin_set" = "paper" ]; then
+    install_paper_plugins "$work"
+  else
+    install_parity_plugins "$work"
+  fi
   printf 'eula=true\n' >"$work/eula.txt"
   write_server_props "$work/server.properties" "$port" "$motd"
   write_spigot_yml "$work/spigot.yml"
@@ -523,6 +598,8 @@ run_plain() {
   local jar="$2"
   local port="$3"
   local label="$4"
+  local tick_model="${5:-regionized}"
+  local plugin_set="${6:-parity}"
   local out="$RESULTS/${STAMP}-${SCENARIO}-${id}.json"
   local work="$ROOT/bench/workdir-folia-${id}"
   local botlog="$ROOT/logs/bench/bots-${STAMP}-${id}.log"
@@ -530,14 +607,14 @@ run_plain() {
     echo "WARN: missing $jar — skip $id" >&2
     return
   fi
-  prepare_plain "$work" "$jar" "$port" "YaP MSPT bench $id"
-  echo "=== $id scenario=$SCENARIO → $out ==="
+  prepare_plain "$work" "$jar" "$port" "YaP MSPT bench $id" "$plugin_set"
+  echo "=== $id scenario=$SCENARIO tick_model=$tick_model → $out ==="
   local botpid=""
   if [ "$NEEDS_BOTS" = "1" ]; then
     start_bots "$port" "$botlog"
     botpid="$START_BOTS_PID"
   fi
-  mapfile -d '' -t extra < <(bench_jvm_extra "$port" 0)
+  mapfile -d '' -t extra < <(bench_jvm_extra "$port" 0 "$tick_model")
   (
     cd "$work"
     "$JAVA_BIN" -Xms"$GAME_XMS" -Xmx"$GAME_XMX" \
@@ -549,6 +626,7 @@ run_plain() {
       -Dyap.bench.game_xms="$GAME_XMS" \
       -Dyap.bench.game_xmx="$GAME_XMX" \
       -Dyap.bench.measurement_scope=game_tick_mspt \
+      -Dyap.bench.tick_model="$tick_model" \
       -Dyap.bench.root="$ROOT" \
       -Dyapcore.home="$ROOT" \
       "${extra[@]}" \
@@ -607,6 +685,12 @@ folia-microtick-budget-ms=${MICROTICK_BUDGET:-0}
 folia-budget-mspt-threshold=${BUDGET_MSPT_THRESHOLD:-12}
 folia-hopper-tick-budget=${HOPPER_TICK_BUDGET:-64}
 folia-subregion-partition=${SUBREGION_PARTITION:-false}
+folia-aligned-microticks=${ALIGNED_MICROTICKS:-false}
+folia-micro-phases=${MICRO_PHASES:-4}
+folia-tick-wave-max-wait-ms=${TICK_WAVE_MAX_WAIT_MS:-2}
+folia-physics-substeps=${PHYSICS_SUBSTEPS:-true}
+folia-physics-substep-count=${PHYSICS_SUBSTEP_COUNT:-4}
+folia-physics-substep-min-move=${PHYSICS_SUBSTEP_MIN_MOVE:-0.02}
 folia-scoreboard-swmr=true
 velocity-enabled=false
 web-dashboard-enabled=false
@@ -627,7 +711,7 @@ EOF
     start_bots "$port" "$botlog"
     botpid="$START_BOTS_PID"
   fi
-  mapfile -d '' -t extra < <(bench_jvm_extra "$port" 1)
+  mapfile -d '' -t extra < <(bench_jvm_extra "$port" 1 regionized)
   (
     cd "$work"
     "$JAVA_BIN" -Xms"$CHASSIS_XMS" -Xmx"$CHASSIS_XMX" \
@@ -642,6 +726,7 @@ EOF
       -Dyap.bench.game_xmx="$GAME_XMX" \
       -Dyap.bench.chassis_present=true \
       -Dyap.bench.measurement_scope=game_tick_mspt \
+      -Dyap.bench.tick_model=regionized \
       "${extra[@]}" \
       -jar "$YAP_JAR" --nogui </dev/null
   ) || true
@@ -663,7 +748,7 @@ run_yapfolia_plain() {
   prepare_plain "$work" "$YAP_FOLIA" "$port" "YaP MSPT bench yap-folia-plain"
   echo "=== yapfolia (plain) scenario=$SCENARIO → $out ==="
   echo "    knobs: entity-tick-budget=${ENTITY_TICK_BUDGET:-off} hopper-tick-budget=${HOPPER_TICK_BUDGET:-off} async-chunk-save=${ASYNC_CHUNK_SAVE:-off} subregion=${SUBREGION_PARTITION:-off} grid=${GRID_EXPONENT:-default}"
-  mapfile -d '' -t extra < <(bench_jvm_extra "$port" 1)
+  mapfile -d '' -t extra < <(bench_jvm_extra "$port" 1 regionized)
   (
     cd "$work"
     "$JAVA_BIN" -Xms"$GAME_XMS" -Xmx"$GAME_XMX" \
@@ -675,6 +760,7 @@ run_yapfolia_plain() {
       -Dyap.bench.game_xms="$GAME_XMS" \
       -Dyap.bench.game_xmx="$GAME_XMX" \
       -Dyap.bench.measurement_scope=game_tick_mspt \
+      -Dyap.bench.tick_model=regionized \
       -Dyap.bench.root="$ROOT" \
       -Dyapcore.home="$ROOT" \
       "${extra[@]}" \
@@ -709,17 +795,28 @@ for id in "${COMPETITORS[@]}"; do
   fi
   id="$(echo "$id" | tr -d '[:space:]')"
   case "$id" in
-    folia)     run_plain folia "$STOCK_FOLIA" 25680 stock-folia ;;
-    canvas)    run_plain canvas "$STOCK_CANVAS" 25682 stock-canvas ;;
+    folia)     run_plain folia "$STOCK_FOLIA" 25680 stock-folia regionized parity ;;
+    canvas)    run_plain canvas "$STOCK_CANVAS" 25682 stock-canvas regionized parity ;;
     yapfolia)  run_yapfolia_plain ;;
     yapcore)   run_yap ;;
-    *) echo "WARN: unknown competitor '$id' (want folia|canvas|yapfolia|yapcore)" >&2 ;;
+    paper)     run_plain paper "$STOCK_PAPER" 25684 stock-paper single_thread paper ;;
+    purpur)    run_plain purpur "$STOCK_PURPUR" 25685 stock-purpur single_thread paper ;;
+    leaf)      run_plain leaf "$STOCK_LEAF" 25686 stock-leaf single_thread paper ;;
+    *) echo "WARN: unknown competitor '$id' (want folia|canvas|yapfolia|yapcore|paper|purpur|leaf)" >&2 ;;
   esac
 done
 
 echo
 echo "Results under $RESULTS"
 ls -1 "$RESULTS"/${STAMP}-${SCENARIO}-*.json 2>/dev/null || true
+
+# Paper-scale rows: disclose tick-model mismatch; do not use Folia peer ≥5% gate.
+mapfile -t PAPER_SCALE_JSONS < <(ls -1 "$RESULTS"/${STAMP}-${SCENARIO}-{paper,purpur,leaf,yapcore}.json 2>/dev/null || true)
+if (( ${#PAPER_SCALE_JSONS[@]} >= 2 )); then
+  echo
+  echo "=== Paper/Purpur scale context (${STAMP}) — tick_model disclosed ==="
+  python3 "$SCRIPT_DIR/compare-paper-scale.py" "${PAPER_SCALE_JSONS[@]}" || true
+fi
 
 if [ -f "$RESULTS/${STAMP}-${SCENARIO}-folia.json" ] && [ -f "$RESULTS/${STAMP}-${SCENARIO}-yapfolia.json" ]; then
   python3 "$SCRIPT_DIR/compare-folia.py" \
@@ -731,8 +828,10 @@ elif [ -f "$RESULTS/${STAMP}-${SCENARIO}-folia.json" ] && [ -f "$RESULTS/${STAMP
     "$RESULTS/${STAMP}-${SCENARIO}-yapcore.json" || true
 fi
 mapfile -t JSONS < <(ls -1 "$RESULTS"/${STAMP}-${SCENARIO}-*.json 2>/dev/null || true)
-if (( ${#JSONS[@]} >= 2 )); then
+# Folia-ecosystem ranking only (skip Paper-class single_thread rows).
+mapfile -t FOLIA_JSONS < <(ls -1 "$RESULTS"/${STAMP}-${SCENARIO}-{folia,canvas,yapfolia,yapcore}.json 2>/dev/null || true)
+if (( ${#FOLIA_JSONS[@]} >= 2 )); then
   echo
   echo "=== Folia-ecosystem ranking (${STAMP}) ==="
-  python3 "$SCRIPT_DIR/compare-folia.py" --rank "${JSONS[@]}" || true
+  python3 "$SCRIPT_DIR/compare-folia.py" --rank "${FOLIA_JSONS[@]}" || true
 fi

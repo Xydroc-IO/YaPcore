@@ -64,11 +64,38 @@ final class BenchRegionLoadLoops {
         return new long[]{cx, cz};
     }
 
+    /** Keep chunk loaded without GlobalRegionScheduler (aligned soft-wave can stall global). */
+    static void pinChunk(JavaPlugin plugin, World world, int cx, int cz) {
+        try {
+            world.addPluginChunkTicket(cx, cz, plugin);
+        } catch (Throwable ignored) {
+            // Older API — best-effort load only.
+        }
+    }
+
+    static void tryForceLoad(World world, int cx, int cz) {
+        try {
+            world.setChunkForceLoaded(cx, cz, true);
+        } catch (IllegalStateException ignored) {
+            // Not on global tick thread — plugin ticket is enough for bench fixtures.
+        }
+    }
+
     static void forEachChunk(JavaPlugin plugin, World world, Set<long[]> chunks,
                              Consumer<long[]> perChunk, Runnable onDone) {
         if (chunks.isEmpty()) {
-            YapSched.global(plugin, onDone);
+            onDone.run();
             return;
+        }
+        // Sync path: ServerLoad / global tick can touch all chunks before soft-wave stall.
+        try {
+            for (long[] c : chunks) {
+                perChunk.accept(c);
+            }
+            onDone.run();
+            return;
+        } catch (IllegalStateException | UnsupportedOperationException syncFail) {
+            plugin.getLogger().info("forEachChunk sync unavailable — region fan-out (" + syncFail.getMessage() + ")");
         }
         AtomicInteger left = new AtomicInteger(chunks.size());
         for (long[] c : chunks) {
@@ -79,7 +106,7 @@ final class BenchRegionLoadLoops {
                     perChunk.accept(c);
                 } finally {
                     if (left.decrementAndGet() == 0) {
-                        YapSched.global(plugin, onDone);
+                        YapSched.region(plugin, world, 0, 0, onDone);
                     }
                 }
             });
@@ -91,22 +118,19 @@ final class BenchRegionLoadLoops {
     }
 
     static void clearInterest(JavaPlugin plugin, World world, Set<long[]> chunks, Runnable onDone) {
-        // Folia: force-load flags are global-region only; chunk load/spawn is region-owned.
-        YapSched.global(plugin, () -> {
-            for (long[] c : chunks) {
-                world.setChunkForceLoaded((int) c[0], (int) c[1], true);
-            }
-            forEachChunk(plugin, world, chunks, c -> {
-                int cx = (int) c[0];
-                int cz = (int) c[1];
-                world.getChunkAt(cx, cz).load(true);
-                for (Entity e : world.getChunkAt(cx, cz).getEntities()) {
-                    if (!(e instanceof Player)) {
-                        e.remove();
-                    }
+        // Prefer region path: global can soft-wave stall under aligned-microticks.
+        forEachChunk(plugin, world, chunks, c -> {
+            int cx = (int) c[0];
+            int cz = (int) c[1];
+            pinChunk(plugin, world, cx, cz);
+            tryForceLoad(world, cx, cz);
+            world.getChunkAt(cx, cz).load(true);
+            for (Entity e : world.getChunkAt(cx, cz).getEntities()) {
+                if (!(e instanceof Player)) {
+                    e.remove();
                 }
-            }, onDone);
-        });
+            }
+        }, onDone);
     }
 
     static void injectFarm(JavaPlugin plugin, World world, Runnable onDone) {
@@ -164,52 +188,64 @@ final class BenchRegionLoadLoops {
             onReady.accept(0);
             return;
         }
-        YapSched.global(plugin, () -> {
-            for (Job job : jobs.items) {
-                world.setChunkForceLoaded(job.cx, job.cz, true);
+        Runnable finish = () -> {
+            int expected = entities * 4;
+            plugin.getLogger().info(scenario + " region-ready — TNT/quad=" + entities
+                    + (heavy ? " hoppers/quad=" + hoppers : "")
+                    + " totalTNT=" + expected);
+            onReady.accept(expected);
+        };
+        java.util.function.Consumer<Job> runJob = job -> {
+            pinChunk(plugin, world, job.cx, job.cz);
+            tryForceLoad(world, job.cx, job.cz);
+            world.getChunkAt(job.cx, job.cz).load(true);
+            int bx = (job.cx << 4) + 8;
+            int bz = (job.cz << 4) + 8;
+            int y = Math.max(world.getHighestBlockYAt(bx, bz) + 2, 80);
+            for (int i = 0; i < job.tnt; i++) {
+                TNTPrimed tnt = world.spawn(
+                        new Location(world,
+                                bx + (i % 8) * 0.1,
+                                y + (i / 64) * 0.2,
+                                bz + (i / 8) * 0.1),
+                        TNTPrimed.class);
+                tnt.setFuseTicks(20 * 60 * 10);
+                tnt.setYield(0f);
+                tnt.setIsIncendiary(false);
             }
+            if (job.hoppers > 0) {
+                int ox = job.cx << 4;
+                int oz = job.cz << 4;
+                int hy = Math.max(world.getHighestBlockYAt(ox + 2, oz + 2), 64);
+                for (int i = 0; i < job.hoppers; i++) {
+                    int x = ox + (i % 16);
+                    int z = oz + ((i / 16) % 16);
+                    int yy = hy + (i / 256);
+                    world.getBlockAt(x, yy, z).setType(Material.STONE);
+                    world.getBlockAt(x, yy + 1, z).setType(Material.HOPPER);
+                }
+            }
+        };
+        try {
             for (Job job : jobs.items) {
-                YapSched.regionChunk(plugin, world, job.cx, job.cz, () -> {
-                    try {
-                        world.getChunkAt(job.cx, job.cz).load(true);
-                        int bx = (job.cx << 4) + 8;
-                        int bz = (job.cz << 4) + 8;
-                        int y = Math.max(world.getHighestBlockYAt(bx, bz) + 2, 80);
-                        for (int i = 0; i < job.tnt; i++) {
-                            TNTPrimed tnt = world.spawn(
-                                    new Location(world,
-                                            bx + (i % 8) * 0.1,
-                                            y + (i / 64) * 0.2,
-                                            bz + (i / 8) * 0.1),
-                                    TNTPrimed.class);
-                            tnt.setFuseTicks(20 * 60 * 10);
-                            tnt.setYield(0f);
-                            tnt.setIsIncendiary(false);
-                        }
-                        if (job.hoppers > 0) {
-                            int ox = job.cx << 4;
-                            int oz = job.cz << 4;
-                            int hy = Math.max(world.getHighestBlockYAt(ox + 2, oz + 2), 64);
-                            for (int i = 0; i < job.hoppers; i++) {
-                                int x = ox + (i % 16);
-                                int z = oz + ((i / 16) % 16);
-                                int yy = hy + (i / 256);
-                                world.getBlockAt(x, yy, z).setType(Material.STONE);
-                                world.getBlockAt(x, yy + 1, z).setType(Material.HOPPER);
-                            }
-                        }
-                    } finally {
-                        if (left.decrementAndGet() == 0) {
-                            int expected = entities * 4;
-                            plugin.getLogger().info(scenario + " region-ready — TNT/quad=" + entities
-                                    + (heavy ? " hoppers/quad=" + hoppers : "")
-                                    + " totalTNT=" + expected);
-                            YapSched.global(plugin, () -> onReady.accept(expected));
-                        }
+                runJob.accept(job);
+            }
+            finish.run();
+            return;
+        } catch (IllegalStateException | UnsupportedOperationException syncFail) {
+            plugin.getLogger().info("injectTnt sync unavailable — region fan-out (" + syncFail.getMessage() + ")");
+        }
+        for (Job job : jobs.items) {
+            YapSched.regionChunk(plugin, world, job.cx, job.cz, () -> {
+                try {
+                    runJob.accept(job);
+                } finally {
+                    if (left.decrementAndGet() == 0) {
+                        YapSched.region(plugin, world, 0, 0, finish);
                     }
-                });
-            }
-        });
+                }
+            });
+        }
     }
 
     static void snapshotAsync(JavaPlugin plugin, World world, Consumer<BenchRegionLoad.LoadSnapshot> cb) {

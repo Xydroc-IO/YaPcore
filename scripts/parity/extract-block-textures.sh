@@ -174,7 +174,8 @@ def pane_model(tex: str) -> dict:
 
 
 def item_from_block(name: str) -> dict:
-    return {"parent": f"yapbedrock:block/{name}"}
+    # Flat item sprite — block parents render as giant first-person cubes.
+    return item_generated(name)
 
 
 def item_generated(tex: str) -> dict:

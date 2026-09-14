@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
@@ -28,53 +29,134 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
     private String scenario = "idle";
     private BenchWorldPrep worldPrep;
     private BenchSampler sampler;
+    private volatile boolean benchStarted;
+    private volatile boolean harnessEntered;
+    private int sampleSeconds;
+    private int warmupSeconds;
+    private String label;
+    private String outPath;
 
     @Override
     public void onEnable() {
         worldPrep = new BenchWorldPrep(this);
         sampler = new BenchSampler(this, worldPrep);
         scenario = System.getProperty("yap.bench.scenario", "idle").toLowerCase(Locale.ROOT);
-        int seconds = Integer.getInteger("yap.bench.seconds", 30);
-        int warmup = Integer.getInteger("yap.bench.warmup", 10);
-        String label = System.getProperty("yap.bench.label", "run");
-        String out = System.getProperty("yap.bench.out", "bench/results/last.json");
+        sampleSeconds = Integer.getInteger("yap.bench.seconds", 30);
+        warmupSeconds = Integer.getInteger("yap.bench.warmup", 10);
+        label = System.getProperty("yap.bench.label", "run");
+        outPath = System.getProperty("yap.bench.out", "bench/results/last.json");
 
-        getLogger().info("MSPT bench scenario=" + scenario + " warmup=" + warmup
-                + "s sample=" + seconds + "s label=" + label);
+        getLogger().info("MSPT bench scenario=" + scenario + " warmup=" + warmupSeconds
+                + "s sample=" + sampleSeconds + "s label=" + label);
 
-        if ("highpop".equals(scenario) || "fullcite".equals(scenario)) {
-            Bukkit.getPluginManager().registerEvents(this, this);
-        }
-
-        YapSched.globalLater(this, () -> {
-            World world = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().getFirst();
-            if (world == null) {
-                getLogger().severe("No world — aborting bench");
-                Bukkit.shutdown();
+        // Always register: ServerLoadEvent starts the harness after Folia regions are live.
+        Bukkit.getPluginManager().registerEvents(this, this);
+        // Fallback kick if ServerLoadEvent is delayed/missing under Folia embed.
+        Thread fallback = new Thread(() -> {
+            try {
+                Thread.sleep(8000L);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
                 return;
             }
-            if ("highpop".equals(scenario) || "fullcite".equals(scenario)) {
-                if (YapSched.isRegionized()) {
-                    BenchRegionLoad.preparePopBench(this, world, scenario, expectedTnt ->
-                            startPopBench(world, scenario, label, out, warmup, seconds, expectedTnt));
-                } else {
-                    int expectedTnt = "fullcite".equals(scenario)
-                            ? worldPrep.prepareFullcite(world)
-                            : worldPrep.prepareHighpop(world);
-                    startPopBench(world, scenario, label, out, warmup, seconds, expectedTnt);
-                }
-            } else if (YapSched.isRegionized()) {
-                BenchRegionLoad.prepare(this, world, scenario, expectedTnt ->
-                        YapSched.globalLater(this, () ->
-                                        sampler.sampleAndWrite(world, scenario, label, out, warmup, seconds, expectedTnt),
-                                warmup * 20L));
-            } else {
-                int expectedTnt = worldPrep.prepare(world, scenario);
-                YapSched.globalLater(this, () ->
-                                sampler.sampleAndWrite(world, scenario, label, out, warmup, seconds, expectedTnt),
-                        warmup * 20L);
+            if (benchStarted) {
+                return;
             }
-        }, 40L);
+            benchStarted = true;
+            getLogger().warning("ServerLoad fallback — kickstarting MSPT harness");
+            YapSched.global(this, this::startHarness);
+        }, "yap-mspt-bench-fallback");
+        fallback.setDaemon(true);
+        fallback.start();
+        YapSched.asyncLater(this, () -> {
+            if (!harnessEntered) {
+                getLogger().severe("bench prepare never entered startHarness — aborting");
+                Bukkit.shutdown();
+            }
+        }, 20L * 200);
+    }
+
+    @EventHandler
+    public void onServerLoad(ServerLoadEvent event) {
+        if (benchStarted) {
+            return;
+        }
+        benchStarted = true;
+        getLogger().info("ServerLoad — kickstarting MSPT harness (aligned-microtick safe)");
+        // Start immediately on the ServerLoad thread before Done/soft-wave can stall schedulers.
+        try {
+            startHarness();
+        } catch (Throwable thr) {
+            getLogger().warning("immediate startHarness failed: " + thr);
+        }
+        // If that raced before worlds/regions were ready, retry on region + async.
+        Thread t = new Thread(() -> {
+            for (int i = 0; i < 60 && !harnessEntered; i++) {
+                final int attempt = i;
+                World w = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().getFirst();
+                if (w == null) {
+                    YapSched.global(this, this::startHarness);
+                } else {
+                    YapSched.region(this, w, 0, 0, () -> {
+                        if (!harnessEntered) {
+                            if (attempt > 0 && attempt % 5 == 0) {
+                                getLogger().info("region kick retry #" + attempt);
+                            }
+                            startHarness();
+                        }
+                    });
+                    // Also try running prepare work from async by calling startHarness
+                    // only when region ticks; if region is dead, abort is the only signal.
+                }
+                try {
+                    Thread.sleep(i == 0 ? 500L : 2000L);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+            if (!harnessEntered) {
+                getLogger().severe("region kick never entered startHarness — aborting");
+                Bukkit.shutdown();
+            }
+        }, "yap-mspt-bench-kick");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private void startHarness() {
+        harnessEntered = true;
+        World world = Bukkit.getWorlds().isEmpty() ? null : Bukkit.getWorlds().getFirst();
+        if (world == null) {
+            getLogger().severe("No world — aborting bench");
+            Bukkit.shutdown();
+            return;
+        }
+        String out = outPath;
+        int warmup = warmupSeconds;
+        int seconds = sampleSeconds;
+        String runLabel = label;
+        if ("highpop".equals(scenario) || "fullcite".equals(scenario)) {
+            if (YapSched.isRegionized()) {
+                BenchRegionLoad.preparePopBench(this, world, scenario, expectedTnt ->
+                        startPopBench(world, scenario, runLabel, out, warmup, seconds, expectedTnt));
+            } else {
+                int expectedTnt = "fullcite".equals(scenario)
+                        ? worldPrep.prepareFullcite(world)
+                        : worldPrep.prepareHighpop(world);
+                startPopBench(world, scenario, runLabel, out, warmup, seconds, expectedTnt);
+            }
+        } else if (YapSched.isRegionized()) {
+            BenchRegionLoad.prepare(this, world, scenario, expectedTnt ->
+                    YapSched.regionChunkLater(this, world, 0, 0, () ->
+                                    sampler.sampleAndWrite(world, scenario, runLabel, out, warmup, seconds, expectedTnt),
+                            warmup * 20L));
+        } else {
+            int expectedTnt = worldPrep.prepare(world, scenario);
+            YapSched.regionChunkLater(this, world, 0, 0, () ->
+                            sampler.sampleAndWrite(world, scenario, runLabel, out, warmup, seconds, expectedTnt),
+                    warmup * 20L);
+        }
     }
 
     @EventHandler
@@ -114,7 +196,7 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
             return;
         }
         final double maxDist = Double.parseDouble(System.getProperty("yap.bench.home_leash_blocks", "24"));
-        YapSched.globalTimer(this, () -> {
+        YapSched.regionChunkTimer(this, world, 0, 0, () -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
                 String name = p.getName();
                 if (!name.startsWith("yapbot_")) {
@@ -190,7 +272,7 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
         final int[] waited = {0};
         final int[] stable = {0};
         final YapTask[] joinGate = new YapTask[1];
-        joinGate[0] = YapSched.globalTimer(this, () -> {
+        joinGate[0] = YapSched.regionChunkTimer(this, world, 0, 0, () -> {
             int online = Bukkit.getOnlinePlayers().size();
             waited[0]++;
             if (online >= need) {
@@ -209,7 +291,7 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
                         + " — starting warmup " + warmupSec + "s");
                 // After warmup, require population still held (physics enable often
                 // drops bots; sampling at the trough gamed MSPT / failed fairness).
-                YapSched.globalLater(this, () ->
+                YapSched.regionChunkLater(this, world, 0, 0, () ->
                                 waitPostWarmupThenSample(world, scenario, label, out,
                                         warmupSec, sampleSec, expectedTnt, need, target),
                         warmupSec * 20L);
@@ -228,7 +310,7 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
         final int[] stable = {0};
         int stableNeed = Integer.getInteger("yap.bench.post_warmup_stable_sec", 10);
         final YapTask[] settleGate = new YapTask[1];
-        settleGate[0] = YapSched.globalTimer(this, () -> {
+        settleGate[0] = YapSched.regionChunkTimer(this, world, 0, 0, () -> {
             int online = Bukkit.getOnlinePlayers().size();
             waited[0]++;
             if (online >= need) {
@@ -243,7 +325,12 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
                         + "s waited=" + waited[0] + "s — starting sample " + sampleSec + "s");
                 // Same entity budget across forks: no wild mobs / item-XP drift from bot combat.
                 if (YapSched.isRegionized()) {
-                    YapSched.global(this, () -> world.setGameRule(GameRule.SPAWN_MONSTERS, false));
+                    YapSched.region(this, world, 0, 0, () -> {
+                        try {
+                            world.setGameRule(GameRule.SPAWN_MONSTERS, false);
+                        } catch (IllegalStateException ignored) {
+                        }
+                    });
                 } else {
                     worldPrep.enforceEntityParity(world, false);
                 }

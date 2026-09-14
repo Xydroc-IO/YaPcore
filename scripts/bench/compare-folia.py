@@ -127,6 +127,43 @@ def fairness_check(stock: dict, yap: dict) -> list[str]:
                 reasons.append("ship cite requires subregion-partition=true")
             if not async_save:
                 reasons.append("ship cite requires async-chunk-save=true")
+            hopper = int(yap.get("knob_hopper_tick_budget", 0))
+            if hopper < 64:
+                reasons.append(
+                    f"ship cite requires hopper-tick-budget≥64 (got {hopper})"
+                )
+            budget = float(yap.get("knob_budget_mspt_threshold", -1))
+            # Product engage floor — assert current ship value; do not retune here.
+            if abs(budget - 12.0) > 0.01:
+                reasons.append(
+                    f"ship cite requires budget-mspt-threshold=12 (got {budget})"
+                )
+            aligned = bool(yap.get("knob_aligned_microticks", False))
+            if not aligned:
+                reasons.append("ship cite requires aligned-microticks=true")
+            phases = int(yap.get("knob_micro_phases", 0))
+            if phases < 2:
+                reasons.append(f"ship cite requires micro-phases≥2 (got {phases})")
+            wave = int(yap.get("knob_tick_wave_max_wait_ms", 0))
+            if wave < 1:
+                reasons.append(f"ship cite requires tick-wave-max-wait-ms≥1 (got {wave})")
+            phys = bool(yap.get("knob_physics_substeps", False))
+            if not phys:
+                reasons.append("ship cite requires physics-substeps=true")
+            pcount = int(yap.get("knob_physics_substep_count", 0))
+            if pcount < 2:
+                reasons.append(f"ship cite requires physics-substep-count≥2 (got {pcount})")
+            # Partition engage thresholds (ship defaults 20 / 16) — disclose + assert.
+            part_mspt = int(yap.get("knob_subregion_mspt_threshold", 0))
+            if part_mspt != 20:
+                reasons.append(
+                    f"ship cite requires subregion-mspt-threshold=20 (got {part_mspt})"
+                )
+            part_clear = int(yap.get("knob_subregion_mspt_clear", 0))
+            if part_clear != 16:
+                reasons.append(
+                    f"ship cite requires subregion-mspt-clear=16 (got {part_clear})"
+                )
 
     return reasons
 
@@ -159,7 +196,7 @@ def pairwise(stock_path: Path, yap_path: Path) -> int:
         print("NOTE: yap row is game-tick MSPT only — YaP chassis JVM overhead is NOT in mspt_mean.")
     if "knob_entity_tick_budget" in yap:
         print(
-            "yap knobs: entity=%s microtick_ms=%s hopper=%s async=%s partition=%s budget_mspt=%s"
+            "yap knobs: entity=%s microtick_ms=%s hopper=%s async=%s partition=%s budget_mspt=%s aligned=%s phases=%s wave_ms=%s physics=%s pcount=%s part_mspt=%s part_clear=%s"
             % (
                 yap.get("knob_entity_tick_budget"),
                 yap.get("knob_microtick_budget_ms"),
@@ -167,6 +204,13 @@ def pairwise(stock_path: Path, yap_path: Path) -> int:
                 yap.get("knob_async_chunk_save"),
                 yap.get("knob_subregion_partition"),
                 yap.get("knob_budget_mspt_threshold"),
+                yap.get("knob_aligned_microticks"),
+                yap.get("knob_micro_phases"),
+                yap.get("knob_tick_wave_max_wait_ms"),
+                yap.get("knob_physics_substeps"),
+                yap.get("knob_physics_substep_count"),
+                yap.get("knob_subregion_mspt_threshold"),
+                yap.get("knob_subregion_mspt_clear"),
             )
         )
 

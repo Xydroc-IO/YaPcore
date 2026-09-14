@@ -214,7 +214,7 @@ final class BenchSampler {
                         writeJson(scenario, label, out, warmupSec, sampleSec, mspt, tps1m,
                                 expectedTnt, start, end, saveAllAt, saveFiredAt[0]);
                         plugin.getLogger().info("Bench complete — shutting down");
-                        YapSched.globalLater(plugin, Bukkit::shutdown, 20L);
+                        YapSched.regionChunkLater(plugin, world, 0, 0, Bukkit::shutdown, 20L);
                     });
                 } else {
                     LoadSnapshot end = snapshotLoad(world);
@@ -224,7 +224,7 @@ final class BenchSampler {
                     writeJson(scenario, label, out, warmupSec, sampleSec, mspt, tps1m,
                             expectedTnt, start, end, saveAllAt, saveFiredAt[0]);
                     plugin.getLogger().info("Bench complete — shutting down");
-                    YapSched.globalLater(plugin, Bukkit::shutdown, 20L);
+                    YapSched.regionChunkLater(plugin, world, 0, 0, Bukkit::shutdown, 20L);
                 }
             }
         };
@@ -245,8 +245,8 @@ final class BenchSampler {
                     // not owning thread
                 }
             }, 20L, 20L);
-            // Global 1 Hz combiner — reads last lobe samples (plain doubles, no world access).
-            sampler[0] = YapSched.globalTimer(plugin, tick, 20L, 20L);
+            // Region 1 Hz combiner — global scheduler can stall under aligned soft-wave.
+            sampler[0] = YapSched.regionChunkTimer(plugin, world, sampleCx, sampleCz, tick, 20L, 20L);
         } else if (YapSched.isRegionized()) {
             plugin.getLogger().info("MSPT sampler on region chunk (" + sampleCx + "," + sampleCz
                     + ") — Folia region-local getAverageTickTime()");
@@ -308,22 +308,15 @@ final class BenchSampler {
             botLoad = "active";
         }
         String measurementScope = System.getProperty("yap.bench.measurement_scope", "game_tick_mspt");
+        String tickModel = System.getProperty("yap.bench.tick_model", "regionized");
+        if (tickModel == null || tickModel.isBlank()) {
+            tickModel = "regionized";
+        }
         String gameXms = System.getProperty("yap.bench.game_xms", "");
         String gameXmx = System.getProperty("yap.bench.game_xmx", "");
         long gameJvmMaxMb = Runtime.getRuntime().maxMemory() / (1024L * 1024L);
         boolean chassisPresent = Boolean.parseBoolean(System.getProperty("yap.bench.chassis_present", "false"));
-        int knobEntity = Integer.getInteger("yap.bench.knob_entity_tick_budget",
-                Integer.getInteger("yap.folia.entity-tick-budget", 0));
-        int knobMicro = Integer.getInteger("yap.bench.knob_microtick_budget_ms",
-                Integer.getInteger("yap.folia.microtick-budget-ms", 0));
-        int knobHopper = Integer.getInteger("yap.bench.knob_hopper_tick_budget",
-                Integer.getInteger("yap.folia.hopper-tick-budget", 0));
-        boolean knobAsync = Boolean.parseBoolean(System.getProperty("yap.bench.knob_async_chunk_save",
-                System.getProperty("yap.folia.async-chunk-save", "false")));
-        boolean knobPartition = Boolean.parseBoolean(System.getProperty("yap.bench.knob_subregion_partition",
-                System.getProperty("yap.folia.subregion-partition", "false")));
-        double knobBudgetMspt = Double.parseDouble(System.getProperty("yap.bench.knob_budget_mspt_threshold",
-                System.getProperty("yap.folia.budget-mspt-threshold", "12")));
+        BenchKnobSnapshot knobs = BenchKnobSnapshot.capture();
         String json = """
                 {
                   "label": %s,
@@ -336,6 +329,7 @@ final class BenchSampler {
                   "mspt_p95": %.4f,
                   "tps_1m_mean": %.4f,
                   "measurement_scope": %s,
+                  "tick_model": %s,
                   "game_jvm_xms": %s,
                   "game_jvm_xmx": %s,
                   "game_jvm_max_mb": %d,
@@ -346,6 +340,13 @@ final class BenchSampler {
                   "knob_async_chunk_save": %s,
                   "knob_subregion_partition": %s,
                   "knob_budget_mspt_threshold": %.1f,
+                  "knob_aligned_microticks": %s,
+                  "knob_micro_phases": %d,
+                  "knob_tick_wave_max_wait_ms": %d,
+                  "knob_physics_substeps": %s,
+                  "knob_physics_substep_count": %d,
+                  "knob_subregion_mspt_threshold": %d,
+                  "knob_subregion_mspt_clear": %d,
                   "expected_tnt": %d,
                   "tnt_start": %d,
                   "tnt_end": %d,
@@ -386,16 +387,24 @@ final class BenchSampler {
                 p95,
                 tpsMean,
                 quote(measurementScope),
+                quote(tickModel),
                 quote(gameXms),
                 quote(gameXmx),
                 gameJvmMaxMb,
                 chassisPresent,
-                knobEntity,
-                knobMicro,
-                knobHopper,
-                knobAsync,
-                knobPartition,
-                knobBudgetMspt,
+                knobs.entityTickBudget,
+                knobs.microtickBudgetMs,
+                knobs.hopperTickBudget,
+                knobs.asyncChunkSave,
+                knobs.subregionPartition,
+                knobs.budgetMsptThreshold,
+                knobs.alignedMicroticks,
+                knobs.microPhases,
+                knobs.tickWaveMaxWaitMs,
+                knobs.physicsSubsteps,
+                knobs.physicsSubstepCount,
+                knobs.subregionMsptThreshold,
+                knobs.subregionMsptClear,
                 expectedTnt,
                 start.tntAlive(),
                 end.tntAlive(),

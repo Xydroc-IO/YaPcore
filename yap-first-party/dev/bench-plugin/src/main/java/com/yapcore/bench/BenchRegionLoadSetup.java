@@ -51,16 +51,29 @@ final class BenchRegionLoadSetup {
 
     static void preparePopBench(JavaPlugin plugin, World world, String scenario,
                                 Consumer<Integer> onReady) {
-        YapSched.global(plugin, () -> {
+        Set<long[]> chunks = popInterestChunks("fullcite".equals(scenario));
+        // Prefer sync prepare when called from ServerLoad (Server thread, before Done).
+        // Post-Done aligned soft-wave can stall both global and region task queues.
+        Runnable clearThenInject = () -> BenchRegionLoadLoops.forEachChunk(plugin, world, chunks, c -> {
+            int cx = (int) c[0];
+            int cz = (int) c[1];
+            BenchRegionLoadLoops.pinChunk(plugin, world, cx, cz);
+            BenchRegionLoadLoops.tryForceLoad(world, cx, cz);
+            world.getChunkAt(cx, cz).load(true);
+            for (Entity e : world.getChunkAt(cx, cz).getEntities()) {
+                if (!(e instanceof Player)) {
+                    e.remove();
+                }
+            }
+        }, () -> injectHighpopFixtures(plugin, world, scenario, onReady));
+        try {
             world.setSpawnLocation(0, 80, 0);
             world.setGameRule(GameRule.SPAWN_MONSTERS, false);
-        });
-        Set<long[]> chunks = popInterestChunks("fullcite".equals(scenario));
-        YapSched.global(plugin, () -> {
             for (long[] c : chunks) {
                 world.setChunkForceLoaded((int) c[0], (int) c[1], true);
             }
-            BenchRegionLoadLoops.forEachChunk(plugin, world, chunks, c -> {
+            // Sync clear when still on startup/global thread.
+            for (long[] c : chunks) {
                 int cx = (int) c[0];
                 int cz = (int) c[1];
                 world.getChunkAt(cx, cz).load(true);
@@ -69,8 +82,12 @@ final class BenchRegionLoadSetup {
                         e.remove();
                     }
                 }
-            }, () -> injectHighpopFixtures(plugin, world, scenario, onReady));
-        });
+            }
+            injectHighpopFixtures(plugin, world, scenario, onReady);
+        } catch (IllegalStateException ise) {
+            plugin.getLogger().warning("sync preparePopBench fell back to region: " + ise.getMessage());
+            YapSched.region(plugin, world, 0, 0, clearThenInject);
+        }
     }
 
     private static Set<long[]> popInterestChunks(boolean fullcite) {
@@ -188,7 +205,7 @@ final class BenchRegionLoadSetup {
             if ("fullcite".equals(scenario)) {
                 BenchRegionLoadLoops.injectTntAndHoppers(plugin, world, scenario, onReady);
             } else {
-                YapSched.global(plugin, () -> onReady.accept(0));
+                YapSched.region(plugin, world, 0, 0, () -> onReady.accept(0));
             }
         })));
     }
@@ -224,15 +241,20 @@ final class BenchRegionLoadSetup {
         // contiguous_carve: full strip for dynamic carve cite (stock vs YaP both contiguous).
         final Set<long[]> spawnChunks = twoPhase ? BenchRegionSpawnChunks.spawnCollapseLobePinChunks() : BenchRegionSpawnChunks.spawnCollapseChunks();
         final Set<long[]> pinChunks = twoPhase ? spawnChunks : spawnChunks;
-        YapSched.global(plugin, () -> {
-            world.setSpawnLocation(0, 80, 0);
-            world.setGameRule(GameRule.SPAWN_MONSTERS, false);
-            for (long[] c : spawnChunks) {
-                world.setChunkForceLoaded((int) c[0], (int) c[1], true);
+        YapSched.region(plugin, world, 0, 0, () -> {
+            try {
+                world.setSpawnLocation(0, 80, 0);
+            } catch (IllegalStateException ignored) {
+            }
+            try {
+                world.setGameRule(GameRule.SPAWN_MONSTERS, false);
+            } catch (IllegalStateException ignored) {
             }
             BenchRegionLoadLoops.forEachChunk(plugin, world, spawnChunks, c -> {
                 int cx = (int) c[0];
                 int cz = (int) c[1];
+                BenchRegionLoadLoops.pinChunk(plugin, world, cx, cz);
+                BenchRegionLoadLoops.tryForceLoad(world, cx, cz);
                 world.getChunkAt(cx, cz).load(true);
                 for (Entity e : world.getChunkAt(cx, cz).getEntities()) {
                     if (!(e instanceof Player)) {
@@ -267,7 +289,7 @@ final class BenchRegionLoadSetup {
             }
         }
         if (corridor.isEmpty() || lobes.isEmpty()) {
-            YapSched.global(plugin, () -> onReady.accept(expectedTnt));
+            YapSched.region(plugin, world, 0, 0, () -> onReady.accept(expectedTnt));
             return;
         }
         // Move corridor load onto lobes before unpin — otherwise entities despawn / evade snapshot.
@@ -290,7 +312,7 @@ final class BenchRegionLoadSetup {
                 } catch (Throwable ignored) {
                 }
             }
-        }, () -> YapSched.global(plugin, () -> {
+        }, () -> YapSched.region(plugin, world, 0, 0, () -> {
             int unpinned = 0;
             for (long[] c : spawnChunks) {
                 int cx = (int) c[0];
@@ -387,7 +409,7 @@ final class BenchRegionLoadSetup {
                         plugin.getLogger().info("spawncollapse region-ready — TNT=" + expected
                                 + " hoppers≈" + totalHoppers + " mobs≈" + totalMobs
                                 + " chunks=" + n + layout);
-                        YapSched.global(plugin, () -> onReady.accept(expected));
+                        YapSched.region(plugin, world, 0, 0, () -> onReady.accept(expected));
                     }
                 }
             });
