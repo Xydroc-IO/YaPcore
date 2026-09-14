@@ -1,12 +1,12 @@
 package com.yapcore.gui.panels;
 
+import com.yapcore.config.LinkIdentityMirror;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.gui.theme.GuiTheme;
 import com.yapcore.server.YaPcoreServer;
 import com.yapcore.web.DashboardLinkSnapshot;
 
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -33,7 +33,6 @@ final class LinkSettingsDialog extends JDialog {
     private final JTextField bindField = new JTextField();
     private final JTextField motdField = new JTextField();
     private final JTextField maxPlayersField = new JTextField();
-    private final JCheckBox onlineModeBox = new JCheckBox("Online mode (Mojang auth)");
     private final JTextField tryField = new JTextField();
     private final DefaultTableModel serversModel = new DefaultTableModel(
             new String[]{"Name", "Address (host:port)", "Bedrock (optional)"}, 0);
@@ -65,11 +64,12 @@ final class LinkSettingsDialog extends JDialog {
 
         panel.add(fieldRow("Bind", bindField), c);
         c.gridy++;
-        panel.add(fieldRow("MOTD", motdField), c);
+        motdField.setEditable(false);
+        motdField.setToolTipText("Set in Server Settings — mirrored to Link for Java + Bedrock lists");
+        panel.add(fieldRow("MOTD (from Server Settings)", motdField), c);
         c.gridy++;
-        panel.add(fieldRow("Max players", maxPlayersField), c);
-        c.gridy++;
-        panel.add(onlineModeBox, c);
+        maxPlayersField.setToolTipText("Hard ceiling only. MOTD max is the live sum of UP backend slot caps (down servers drop out).");
+        panel.add(fieldRow("Max players (network ceiling)", maxPlayersField), c);
         c.gridy++;
         panel.add(GuiTheme.sectionTitle("Backends"), c);
         c.gridy++;
@@ -143,9 +143,11 @@ final class LinkSettingsDialog extends JDialog {
         Map<String, Object> snap = DashboardLinkSnapshot.snapshot(
                 root, cfg.getLinkEmbedHome(), cfg.isLinkEmbed(), cfg.isVelocityEnabled());
         bindField.setText(String.valueOf(snap.getOrDefault("bind", "0.0.0.0:25565")));
-        motdField.setText(String.valueOf(snap.getOrDefault("motd", "YaP Link")));
+        // Chassis MOTD is source of truth for JE + BE server lists.
+        motdField.setText(cfg.getMotd() == null || cfg.getMotd().isBlank()
+                ? String.valueOf(snap.getOrDefault("motd", "YaP Link"))
+                : cfg.getMotd());
         maxPlayersField.setText(String.valueOf(snap.getOrDefault("maxPlayers", "500")));
-        onlineModeBox.setSelected(Boolean.TRUE.equals(snap.get("onlineMode")));
 
         serversModel.setRowCount(0);
         List<Map<String, Object>> servers = (List<Map<String, Object>>) snap.get("servers");
@@ -177,10 +179,10 @@ final class LinkSettingsDialog extends JDialog {
 
             Map<String, String> proxy = new LinkedHashMap<>();
             proxy.put("bind", bindField.getText().trim());
-            proxy.put("motd", motdField.getText().trim());
             proxy.put("max-players", maxPlayersField.getText().trim());
-            proxy.put("online-mode", onlineModeBox.isSelected() ? "true" : "false");
             DashboardLinkSnapshot.saveProxySettings(root, linkHome, proxy);
+            // Keep Link MOTD aligned with chassis after any Link save.
+            LinkIdentityMirror.syncFromServerConfig(root, cfg);
 
             List<Map<String, String>> servers = new ArrayList<>();
             for (int i = 0; i < serversModel.getRowCount(); i++) {

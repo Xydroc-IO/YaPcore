@@ -17,4 +17,12 @@ final class BackendMonitorPickerTest {
         assertNotNull(picked);
         assertEquals("lobby", picked.name());
     }
+
+    @Test
+    void applyMaxCeilingUsesLiveSumNotConfiguredFloor() {
+        assertEquals(250, BackendMonitor.applyMaxCeiling(250, 500));
+        assertEquals(500, BackendMonitor.applyMaxCeiling(500, 500));
+        assertEquals(400, BackendMonitor.applyMaxCeiling(600, 400));
+        assertEquals(0, BackendMonitor.applyMaxCeiling(0, 500));
+    }
 }

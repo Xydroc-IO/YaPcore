@@ -300,6 +300,10 @@ public final class LinkServer {
 
             @Override
             public int maxPlayers() {
+                // Bedrock MOTD must match JE: sum of UP backends, not static link.properties.
+                if (cfg.aggregatePlayerCount() && backendMonitor != null) {
+                    return backendMonitor.aggregateStatus().max();
+                }
                 return cfg.maxPlayers();
             }
 
@@ -320,19 +324,13 @@ public final class LinkServer {
 
             @Override
             public java.net.InetSocketAddress javaBackend() {
-                // Same target JE clients use (try=lobby) — never split-brain Bedrock onto a
-                // different world. bedrock-backend is only a fallback if try= is empty.
-                LinkConfig.Backend lobby = cfg.resolveTry();
-                if (lobby != null && lobby.host() != null && !lobby.host().isBlank()) {
-                    String beHost = cfg.bedrockBackendHost();
-                    int bePort = cfg.bedrockBackendPort();
-                    if (!lobby.host().equals(beHost) || lobby.port() != bePort) {
-                        LOG.warning("Bedrock backend mismatch: bedrock-backend="
-                                + beHost + ":" + bePort
-                                + " but JE lobby(try)=" + lobby.host() + ":" + lobby.port()
-                                + " — using JE lobby for JavaDownstream (same world)");
-                    }
-                    return new java.net.InetSocketAddress(lobby.host(), lobby.port());
+                // Same picker JE uses — skip a down lobby so Bedrock can still reach survival.
+                LinkConfig.Backend target = backendMonitor.pickLoginTarget(null);
+                if (target == null) {
+                    target = cfg.resolveTry();
+                }
+                if (target != null && target.host() != null && !target.host().isBlank()) {
+                    return new java.net.InetSocketAddress(target.host(), target.port());
                 }
                 return new java.net.InetSocketAddress(cfg.bedrockBackendHost(), cfg.bedrockBackendPort());
             }

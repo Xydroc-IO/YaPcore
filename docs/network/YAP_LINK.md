@@ -4,6 +4,8 @@
 [`yap-first-party/link/native/`](../../yap-first-party/link/native/) (`com.yapcore.link.*`), built to **Velocity-class**
 feature parity in phases.
 
+For **multi-server fleet control** (instances, migrate lobby, remote agents, deploy), see **[FLEET.md](FLEET.md)**.
+
 It is **not** a Velocity fork. See the full roadmap:
 **[YAP_LINK_NATIVE.md](YAP_LINK_NATIVE.md)**.
 
@@ -101,6 +103,16 @@ Open `./scripts/gui.sh` → **Link** tab (same controls as web dashboard):
 - **Configure…** — backends (hub, survival, …), try order, forced hosts, bind/MOTD
 - **Link console** — `help`, `reload`, `list`, `servers`, `say …`, `stop`
 - **Backend forwarding** — ON/OFF toggle (`setup-velocity-forwarding.sh --enable|--disable`). Restart Folia after changing.
+
+`gui.sh` **does not rebuild** by default (fast open). Pass `--build` after chassis/GUI source changes.
+
+### MOTD player max (aggregate)
+
+With `aggregate-player-count=true` (fleet sync default), the JE/Bedrock ping **max** is the
+**sum of slot caps from backends that are UP right now** (lobby 250 alone → `0/250`;
+lobby+survival → `0/500`). Stopping survival must shrink the advertised max.
+`link.properties` `max-players` is only a **ceiling**, never a floor that keeps `500` alive
+after a backend is down.
 
 Requires `link-embed=false` (default).
 

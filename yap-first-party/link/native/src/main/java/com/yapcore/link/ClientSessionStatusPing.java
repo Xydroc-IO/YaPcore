@@ -45,7 +45,8 @@ final class ClientSessionStatusPing {
             if (session.forcedServerName != null) {
                 BackendMonitor.Snapshot snap = mon.snapshot(session.forcedServerName);
                 if (snap.up() && snap.status() != null) {
-                    json = snap.status().rawJson();
+                    // Passthrough version/favicon counts, but stamp Link MOTD (same as Bedrock UDP).
+                    json = snap.status().withMotd(cfg.motd());
                 } else {
                     json = fallbackStatus(cfg, mon);
                 }
@@ -70,11 +71,12 @@ final class ClientSessionStatusPing {
         ServerStatus agg = mon.aggregateStatus();
         if (cfg.aggregatePlayerCount() && agg.online() >= 0) {
             int online = sumOnline(mon);
-            int max = Math.max(cfg.maxPlayers(), agg.max());
-            return agg.toStatusJson(online, max);
+            // Sum of UP backends only; link max-players is a ceiling, not a floor.
+            int max = BackendMonitor.applyMaxCeiling(sumMax(mon), cfg.maxPlayers());
+            return agg.toStatusJson(online, max, cfg.motd());
         }
         if (agg.rawJson() != null && !agg.rawJson().isBlank()) {
-            return agg.rawJson();
+            return ServerStatus.parseJson(agg.rawJson()).withMotd(cfg.motd());
         }
         return ServerStatus.synthetic(
                 cfg.motd(),
@@ -90,6 +92,16 @@ final class ClientSessionStatusPing {
         for (var e : mon.allSnapshots().entrySet()) {
             if (e.getValue().up() && e.getValue().status() != null) {
                 n += e.getValue().status().online();
+            }
+        }
+        return n;
+    }
+
+    private static int sumMax(BackendMonitor mon) {
+        int n = 0;
+        for (var e : mon.allSnapshots().entrySet()) {
+            if (e.getValue().up() && e.getValue().status() != null) {
+                n += Math.max(0, e.getValue().status().max());
             }
         }
         return n;

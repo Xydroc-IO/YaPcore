@@ -5,7 +5,6 @@ import com.yapcore.link.status.ServerStatus;
 import com.yapcore.link.status.StatusPing;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,14 +15,22 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/** Probes backends and caches status for ping passthrough + try failover. */
+/** Probes backends and caches status for ping passthrough + try failover + fleet UI. */
 public final class BackendMonitor {
 
     private static final Logger LOG = Logger.getLogger("YaP.Link.BackendMonitor");
 
-    public record Snapshot(boolean up, ServerStatus status, long checkedAtMs, String error) {
+    /**
+     * @param latencyMs probe round-trip; {@code -1} when down / never measured
+     */
+    public record Snapshot(
+            boolean up,
+            ServerStatus status,
+            long checkedAtMs,
+            String error,
+            long latencyMs) {
         static Snapshot down(String error) {
-            return new Snapshot(false, null, System.currentTimeMillis(), error);
+            return new Snapshot(false, null, System.currentTimeMillis(), error, -1L);
         }
     }
 
@@ -83,10 +90,14 @@ public final class BackendMonitor {
     }
 
     private void probeOne(LinkConfig.Backend backend, int timeoutMs) {
+        long t0 = System.nanoTime();
         try {
             ServerStatus status = StatusPing.pingBlocking(backend, timeoutMs);
-            snapshots.put(backend.name(), new Snapshot(true, status, System.currentTimeMillis(), null));
-            LOG.fine("probe OK " + backend.name() + " online=" + status.online());
+            long latencyMs = Math.max(0L, (System.nanoTime() - t0) / 1_000_000L);
+            snapshots.put(backend.name(),
+                    new Snapshot(true, status, System.currentTimeMillis(), null, latencyMs));
+            LOG.fine("probe OK " + backend.name() + " online=" + status.online()
+                    + " latencyMs=" + latencyMs);
         } catch (Exception e) {
             snapshots.put(backend.name(), Snapshot.down(e.getMessage()));
             LOG.log(Level.FINE, "probe DOWN " + backend.name() + ": " + e.getMessage());
@@ -121,11 +132,11 @@ public final class BackendMonitor {
         return cfg.resolveTry();
     }
 
-    /** Aggregate status for proxy ping (sum online, max max, merge samples). */
+    /** Aggregate status for proxy ping (sum online, sum max, merge samples). */
     public ServerStatus aggregateStatus() {
         LinkConfig cfg = configRef.get();
         int online = 0;
-        int max = cfg.maxPlayers();
+        int summedMax = 0;
         String motd = cfg.motd();
         int protocol = 776;
         String versionName = "YaP Link";
@@ -136,18 +147,18 @@ public final class BackendMonitor {
                 up.add(snap.status());
                 if (cfg.aggregatePlayerCount()) {
                     online += snap.status().online();
-                    max = Math.max(max, snap.status().max());
+                    // Only UP backends count — shut down survival must drop MOTD max (250 not 500).
+                    summedMax += Math.max(0, snap.status().max());
                 }
             }
         }
+        // Live capacity = sum of up backends. link max-players is a ceiling, never a floor.
+        int max = applyMaxCeiling(summedMax, cfg.maxPlayers());
         if (up.isEmpty()) {
             return ServerStatus.synthetic(motd, 0, max, protocol, versionName);
         }
         ServerStatus primary = up.getFirst();
         if (!cfg.aggregatePlayerCount()) {
-            return primary;
-        }
-        if (cfg.pingPassthrough() && up.size() == 1) {
             return primary;
         }
         return ServerStatus.synthetic(
@@ -157,6 +168,15 @@ public final class BackendMonitor {
                 primary.protocol() > 0 ? primary.protocol() : protocol,
                 primary.versionName()
         );
+    }
+
+    /** Advertised max: live sum, optionally capped by configured network headroom. */
+    public static int applyMaxCeiling(int liveSum, int configuredCap) {
+        int max = Math.max(0, liveSum);
+        if (configuredCap > 0 && max > configuredCap) {
+            return configuredCap;
+        }
+        return max;
     }
 
     public Map<String, Snapshot> allSnapshots() {
