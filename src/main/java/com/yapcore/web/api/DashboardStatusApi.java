@@ -43,7 +43,42 @@ public final class DashboardStatusApi {
             long max = rt.maxMemory() / (1024 * 1024);
             ServerConfig cfg = server.getConfig();
             Map<String, Object> m = new LinkedHashMap<>();
-            m.put("running", server.isRunning());
+            boolean chassisRunning = server.isRunning();
+            boolean fleetOn = cfg.isFleetEnabled();
+            boolean primaryRunning = fleetOn && server.fleet().isPrimaryRunning();
+            int fleetUp = 0;
+            int fleetTotal = 0;
+            if (fleetOn) {
+                try {
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> instances = (List<Map<String, Object>>)
+                            server.fleet().statusSnapshot().get("instances");
+                    if (instances != null) {
+                        fleetTotal = instances.size();
+                        for (Map<String, Object> i : instances) {
+                            if (Boolean.TRUE.equals(i.get("running"))
+                                    || "RUNNING".equalsIgnoreCase(String.valueOf(i.get("state")))) {
+                                fleetUp++;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
+                    // keep zeros
+                }
+            }
+            // Game network is "up" when chassis DualStack is on, or fleet Folia JVMs are up.
+            boolean gameUp = chassisRunning || primaryRunning || fleetUp > 0;
+            m.put("running", gameUp);
+            m.put("chassisRunning", chassisRunning);
+            m.put("fleetEnabled", fleetOn);
+            m.put("fleetPrimaryRunning", primaryRunning);
+            m.put("fleetRunningCount", fleetUp);
+            m.put("fleetInstanceCount", fleetTotal);
+            m.put("runLabel", fleetOn
+                    ? (fleetUp > 0
+                    ? ("FLEET · " + fleetUp + "/" + fleetTotal + " up")
+                    : "FLEET · stopped")
+                    : (chassisRunning ? "RUNNING" : "STOPPED"));
             m.put("players", server.getOnlinePlayers());
             m.put("maxPlayers", server.getMaxPlayers());
             m.put("heapUsedMb", used);
@@ -227,15 +262,31 @@ public final class DashboardStatusApi {
         if (!"POST".equalsIgnoreCase(ex.getRequestMethod()) || !auth.requireAuth(ex)) {
             return;
         }
-        if (server.isRunning()) {
-            DashboardHttp.json(ex, 200, Map.of("ok", true, "message", "already running"));
-            return;
-        }
         try {
+            ServerConfig cfg = server.getConfig();
+            if (cfg.isFleetEnabled()) {
+                if (!server.isRunning()) {
+                    server.start();
+                } else if (!server.fleet().isPrimaryRunning()) {
+                    String primary = server.fleet().store().primaryId();
+                    if (primary == null || primary.isBlank()) {
+                        primary = "lobby";
+                    }
+                    server.fleet().startInstance(primary);
+                }
+                DashboardHttp.json(ex, 200, Map.of("ok", true, "message", "fleet start",
+                        "fleetEnabled", true));
+                return;
+            }
+            if (server.isRunning()) {
+                DashboardHttp.json(ex, 200, Map.of("ok", true, "message", "already running"));
+                return;
+            }
             server.start();
             DashboardHttp.json(ex, 200, Map.of("ok", true, "message", "started"));
         } catch (Exception e) {
-            DashboardHttp.json(ex, 500, Map.of("ok", false, "error", e.getMessage() == null ? "start failed" : e.getMessage()));
+            DashboardHttp.json(ex, 500, Map.of("ok", false,
+                    "error", e.getMessage() == null ? "start failed" : e.getMessage()));
         }
     }
 
@@ -243,12 +294,27 @@ public final class DashboardStatusApi {
         if (!"POST".equalsIgnoreCase(ex.getRequestMethod()) || !auth.requireAuth(ex)) {
             return;
         }
-        if (!server.isRunning()) {
-            DashboardHttp.json(ex, 200, Map.of("ok", true, "message", "already stopped"));
-            return;
+        try {
+            ServerConfig cfg = server.getConfig();
+            if (cfg.isFleetEnabled()) {
+                server.fleet().stopAllLocal();
+                if (server.isRunning()) {
+                    server.stop();
+                }
+                DashboardHttp.json(ex, 200, Map.of("ok", true, "message", "fleet stopped",
+                        "fleetEnabled", true));
+                return;
+            }
+            if (!server.isRunning()) {
+                DashboardHttp.json(ex, 200, Map.of("ok", true, "message", "already stopped"));
+                return;
+            }
+            server.stop();
+            DashboardHttp.json(ex, 200, Map.of("ok", true, "message", "stopped"));
+        } catch (Exception e) {
+            DashboardHttp.json(ex, 500, Map.of("ok", false,
+                    "error", e.getMessage() == null ? "stop failed" : e.getMessage()));
         }
-        server.stop();
-        DashboardHttp.json(ex, 200, Map.of("ok", true, "message", "stopped"));
     }
 
     public void apiCommand(HttpExchange ex) throws IOException {
@@ -308,7 +374,9 @@ public final class DashboardStatusApi {
         Path root = server.getRootDir();
         var link = DashboardLinkSnapshot.snapshot(
                 root, cfg.getLinkEmbedHome(), cfg.isLinkEmbed(), cfg.isVelocityEnabled());
-        h.put("foliaRunning", server.isRunning());
+        h.put("foliaRunning", cfg.isFleetEnabled()
+                ? server.fleet().isPrimaryRunning()
+                : server.isRunning());
         boolean linkBedrock = Boolean.TRUE.equals(link.get("bedrockEnabled"));
         String mode = String.valueOf(link.getOrDefault("bedrockMode", cfg.getBedrockMode()));
         boolean geyserBackup = "geyser-backup".equals(mode) || Boolean.TRUE.equals(link.get("geyserEnabled"));

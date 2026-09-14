@@ -82,8 +82,29 @@
   async function refreshStatus() {
     const s = await api("/api/status");
     const badge = $("runBadge");
-    badge.textContent = s.running ? "RUNNING" : "STOPPED";
+    const label = s.runLabel || (s.running ? "RUNNING" : "STOPPED");
+    badge.textContent = label;
     badge.className = "badge " + (s.running ? "on" : "off");
+    badge.title = s.fleetEnabled
+      ? ("Chassis DualStack: " + (s.chassisRunning ? "on" : "off")
+        + " · fleet " + (s.fleetRunningCount || 0) + "/" + (s.fleetInstanceCount || 0))
+      : (s.chassisRunning ? "Chassis running" : "Chassis stopped");
+    const startBtn = $("btnStart");
+    const stopBtn = $("btnStop");
+    if (startBtn) {
+      const sl = startBtn.querySelector(".label") || startBtn;
+      sl.textContent = s.fleetEnabled ? "Start network" : "Start";
+      startBtn.title = s.fleetEnabled
+        ? "Start chassis + primary fleet server (lobby)"
+        : "Start YaPcore / Folia";
+    }
+    if (stopBtn) {
+      const sl = stopBtn.querySelector(".label") || stopBtn;
+      sl.textContent = s.fleetEnabled ? "Stop network" : "Stop";
+      stopBtn.title = s.fleetEnabled
+        ? "Stop all local fleet servers and chassis"
+        : "Stop YaPcore / Folia";
+    }
     $("stPlayers").textContent = s.players + " / " + s.maxPlayers;
     $("stHeap").textContent = s.heapUsedMb + " / " + s.heapMaxMb + " MB";
     $("stJava").textContent = s.javaClients;
@@ -203,7 +224,7 @@
     catch (e) { alert(e.message); }
   });
   bindClick("btnStop", async () => {
-    if (!confirm("Stop the server?")) return;
+    if (!confirm("Stop the game network (fleet servers + chassis)?")) return;
     try { await api("/api/server/stop", { method: "POST", body: "{}" }); await refreshStatus(); }
     catch (e) { alert(e.message); }
   });
