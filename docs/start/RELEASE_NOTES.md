@@ -9,6 +9,24 @@ For build commands and zip layout see [RELEASES.md](RELEASES.md). For live statu
 
 ---
 
+## After 1.0.0.0 — Fleet GUI / dashboard / branding (2026-09-14)
+
+Same ship version (no product bump). Rebuild **linux** + **windows** packages with
+`gradle publishReleasesFolder -PyapGameplay=true` so operators get current chassis + web assets.
+
+| Area | Change |
+|------|--------|
+| **Fleet defaults** | New instances seed **CORE+NETWORK** plugins; empty lobby/plugins heal on enable/list |
+| **Fleet GUI** | Fleet-first rail: **YaP Link** + game servers; Plugins-first per server; Connect under Link |
+| **Settings persist** | Instance MOTD / max-players / view-distance no longer clobbered on ensure/start |
+| **Web branding** | Favicon / login / sidebar use `branding/yapcore-icon.png` + `yapcore-mark.png` |
+| **Dashboard Start/Stop** | Badge and controls follow **fleet game servers**, not chassis DualStack alone |
+| **Docs / DB copy** | YaPDB wording: MariaDB/MySQL · PostgreSQL · SQLite (not MariaDB-only) |
+
+Build: `gradle publishReleasesFolder -PyapGameplay=true` → `releases/1.0.0.0/yapcore-release-{linux,windows}.zip`.
+
+---
+
 ## After 1.0.0.0 — Packs / Link MOTD / GUI launch (2026-09-14)
 
 Same ship version (no product bump). Ops-facing correctness:
