@@ -110,6 +110,12 @@ public final class JavaDownstreamClient {
 
         default void onSectionBlocksUpdate(int sectionX, int sectionY, int sectionZ) {}
 
+        /** Section multi-block change with packed cell list (x,y,z,jeState). */
+        default void onSectionBlocksUpdate(int sectionX, int sectionY, int sectionZ,
+                                           int[] cells) {
+            onSectionBlocksUpdate(sectionX, sectionY, sectionZ);
+        }
+
         default void onPlayerPosition(double x, double y, double z, float yaw, float pitch, int teleportId) {}
 
         default void onEntityMove(int entityId, double x, double y, double z,
@@ -153,6 +159,13 @@ public final class JavaDownstreamClient {
 
         default void onCommands(java.util.List<String> literalNames) {}
 
+        /** Full JE Brigadier {@code commands} tree (preferred over literal scrape). */
+        default void onCommandsTree(JavaCommandsTree.Parsed tree) {
+            if (tree != null) {
+                onCommands(tree.rootLiteralNames());
+            }
+        }
+
         default void onHurtAnimation(int entityId, float yaw) {}
 
         default void onSetHealth(float health, int food, float saturation) {}
@@ -170,8 +183,18 @@ public final class JavaDownstreamClient {
         /** Optional JE custom name from set_entity_data (index 2). */
         default void onEntityCustomName(int entityId, String plainName, boolean visible) {}
 
-        /** JE entity_event — used for op permission level (status 24–28). */
+        /** Living health from set_entity_data / update_attributes when known. */
+        default void onEntityHealth(int entityId, float health) {}
+
+        /** JE entity_event — used for op permission level (status 24–28) and death (3). */
         default void onEntityEvent(int entityId, int status) {}
+
+        default void onEntityMotion(int entityId, double mx, double my, double mz) {}
+
+        default void onUpdateAttributes(int entityId, float health) {}
+
+        /** Floodgate / plugin channel payload (e.g. {@code floodgate:form}). */
+        default void onCustomPayload(String channel, byte[] data) {}
 
         default void onLevelEvent(int eventId, double x, double y, double z, int data) {}
 
@@ -194,6 +217,7 @@ public final class JavaDownstreamClient {
     McCompressionCodec.Decoder compDec;
     volatile int javaEntityId = -1;
     volatile int lastAcceptedTeleportId = Integer.MIN_VALUE;
+    public volatile int lastContainerStateId;
     final JeBlockRegistry blockRegistry = new JeBlockRegistry();
     final JavaDownstreamLogin login = new JavaDownstreamLogin(this);
     final JavaDownstreamPlay play = new JavaDownstreamPlay(this);
@@ -324,6 +348,19 @@ public final class JavaDownstreamClient {
 
     public void sendSetCarriedItem(int hotbarSlot) {
         writePlay(JavaPlayWire.setCarriedItem(hotbarSlot));
+    }
+
+    public void sendContainerClick(int windowId, int stateId, int slot, int button, int mode,
+                                   Object ignoredCarried) {
+        writePlay(JavaPlayInventoryWire.containerClick(windowId, stateId, slot, button, mode));
+    }
+
+    public void sendContainerClose(int windowId) {
+        writePlay(JavaPlayInventoryWire.containerClose(windowId));
+    }
+
+    public void sendCustomPayload(String channel, byte[] data) {
+        writePlay(JavaPlayInventoryWire.customPayload(channel, data));
     }
 
     public void sendPlayerAction(int status, int x, int y, int z, int face, int sequence) {

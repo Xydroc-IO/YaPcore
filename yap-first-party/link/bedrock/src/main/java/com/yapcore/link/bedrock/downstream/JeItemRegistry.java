@@ -35,6 +35,20 @@ public final class JeItemRegistry {
         return null;
     }
 
+    /** Reverse lookup: {@code minecraft:name} → JE protocol id, or -1. */
+    public static int id(String name) {
+        if (name == null || name.isBlank() || BY_ID.length == 0) {
+            return -1;
+        }
+        String key = name.startsWith("minecraft:") ? name : "minecraft:" + name;
+        for (int i = 0; i < BY_ID.length; i++) {
+            if (key.equals(BY_ID[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public static int size() {
         return BY_ID.length;
     }

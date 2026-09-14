@@ -54,8 +54,11 @@ public final class JavaInventoryTranslator {
         int size = Math.min(stacks.length, 128);
         List<ItemData> contents = new ArrayList<>(size);
         Map<String, ItemDefinition> byName = itemLookup(session);
+        session.clearOpenContainerSlots();
         for (int i = 0; i < size; i++) {
-            contents.add(toBedrock(session, byName, stacks[i]));
+            ItemData item = toBedrock(session, byName, stacks[i]);
+            contents.add(item);
+            session.setContainerSlot(i, item);
         }
         InventoryContentPacket packet = new InventoryContentPacket();
         packet.setContainerId(Math.max(0, windowId));
@@ -93,7 +96,9 @@ public final class JavaInventoryTranslator {
             return;
         }
         Map<String, ItemDefinition> byName = itemLookup(session);
-        sendSlot(session, Math.max(0, windowId), Math.max(0, slot), toBedrock(session, byName, s));
+        ItemData item = toBedrock(session, byName, s);
+        session.setContainerSlot(Math.max(0, slot), item);
+        sendSlot(session, Math.max(0, windowId), Math.max(0, slot), item);
         BedrockJoinProbe.noteEvent(session.guid(),
                 "java_container_slot→be win=" + windowId + " slot=" + slot);
     }

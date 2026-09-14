@@ -23,15 +23,8 @@ public final class JavaBlockUpdateTranslator {
         if (session == null || !session.isSentSpawnPacket()) {
             return;
         }
-        int runtime;
-        JeToBedrockBlockMapper mapper = session.blockMapper();
-        if (mapper != null) {
-            runtime = mapper.mapJeGlobalId(jeBlockState);
-        } else if (jeBlockState == 0) {
-            runtime = session.airRuntimeId();
-        } else {
-            runtime = session.airRuntimeId();
-        }
+        int runtime = mapRuntime(session, jeBlockState);
+        session.rememberBlockRuntime(x, y, z, runtime);
         sendUpdateBlock(session, x, y, z, runtime);
         String state = null;
         if (session.downstream() != null && session.downstream().blockRegistry() != null) {
@@ -43,18 +36,48 @@ public final class JavaBlockUpdateTranslator {
     }
 
     /**
-     * Section dirty: do not wipe the column with EMPTY_CHUNK (that blanked terrain).
-     * Full section remap is deferred; individual CB_BLOCK_UPDATE carries cell changes.
+     * Section multi-block change → per-cell {@link UpdateBlockPacket} with hashed network ids.
      */
     public static void onSectionBlocksUpdate(LinkBedrockSession session,
-                                             int sectionX, int sectionY, int sectionZ) {
+                                             int sectionX, int sectionY, int sectionZ,
+                                             int[] cells) {
         if (session == null || !session.isSentSpawnPacket()) {
             return;
         }
+        if (cells == null || cells.length < 4) {
+            BedrockJoinProbe.noteEvent(session.guid(),
+                    "java_section_blocks→be empty cx=" + sectionX + " cz=" + sectionZ + " sy=" + sectionY);
+            return;
+        }
+        int applied = 0;
+        for (int i = 0; i + 3 < cells.length; i += 4) {
+            int x = cells[i];
+            int y = cells[i + 1];
+            int z = cells[i + 2];
+            int je = cells[i + 3];
+            int runtime = mapRuntime(session, je);
+            session.rememberBlockRuntime(x, y, z, runtime);
+            sendUpdateBlock(session, x, y, z, runtime);
+            applied++;
+        }
         BedrockJoinProbe.noteEvent(session.guid(),
-                "java_section_blocks→be note cx=" + sectionX + " cz=" + sectionZ + " sy=" + sectionY);
-        LOG.fine("BE section_blocks_update noted user=" + session.username()
-                + " sx=" + sectionX + " sy=" + sectionY + " sz=" + sectionZ);
+                "java_section_blocks→be UpdateBlock n=" + applied
+                        + " cx=" + sectionX + " cz=" + sectionZ + " sy=" + sectionY);
+        LOG.fine("BE section_blocks_update cells=" + applied + " user=" + session.username());
+    }
+
+    /** Legacy no-cell path — keep callable for older listeners. */
+    public static void onSectionBlocksUpdate(LinkBedrockSession session,
+                                             int sectionX, int sectionY, int sectionZ) {
+        onSectionBlocksUpdate(session, sectionX, sectionY, sectionZ, null);
+    }
+
+    private static int mapRuntime(LinkBedrockSession session, int jeBlockState) {
+        JeToBedrockBlockMapper mapper = session.blockMapper();
+        if (mapper != null) {
+            return mapper.mapJeGlobalId(jeBlockState);
+        }
+        return session.airRuntimeId();
     }
 
     public static void sendUpdateBlock(LinkBedrockSession session, int x, int y, int z, int runtimeId) {

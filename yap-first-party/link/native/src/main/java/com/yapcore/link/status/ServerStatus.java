@@ -78,6 +78,11 @@ public record ServerStatus(
     }
 
     public String toStatusJson(int overrideOnline, int overrideMax) {
+        return toStatusJson(overrideOnline, overrideMax, null);
+    }
+
+    /** Rewrite player counts and optionally replace list MOTD / description. */
+    public String toStatusJson(int overrideOnline, int overrideMax, String overrideMotd) {
         JsonObject root = GSON.fromJson(rawJson, JsonObject.class);
         JsonObject players = root.has("players") && root.get("players").isJsonObject()
                 ? root.getAsJsonObject("players")
@@ -88,7 +93,17 @@ public record ServerStatus(
             players.add("sample", new JsonArray());
         }
         root.add("players", players);
+        if (overrideMotd != null) {
+            JsonObject desc = new JsonObject();
+            desc.addProperty("text", overrideMotd);
+            root.add("description", desc);
+        }
         return GSON.toJson(root);
+    }
+
+    /** Keep counts/version; replace description with network MOTD. */
+    public String withMotd(String motd) {
+        return toStatusJson(online, max, motd == null ? "" : motd);
     }
 
     private static String textFromDescription(com.google.gson.JsonElement el) {

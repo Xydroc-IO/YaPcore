@@ -38,9 +38,15 @@ final class ClientSessionPlayRelay extends ChannelInboundHandlerAdapter {
             }
             session.server.chatRelay().tryRelayClientPacket(
                     session.protocolVersion, session.playerId, session.username, session.currentBackendName, buf);
-            ClientSessionRouting.tryFirePluginMessage(session, buf, true);
+            if (ClientSessionRouting.tryFirePluginMessage(session, buf, true)) {
+                buf.release();
+                return;
+            }
         } else {
-            ClientSessionRouting.tryFirePluginMessage(session, buf, false);
+            if (ClientSessionRouting.tryFirePluginMessage(session, buf, false)) {
+                buf.release();
+                return;
+            }
             PlayChat.advertiseSecureChat(session.protocolVersion, buf);
         }
         if (peer.isActive()) {

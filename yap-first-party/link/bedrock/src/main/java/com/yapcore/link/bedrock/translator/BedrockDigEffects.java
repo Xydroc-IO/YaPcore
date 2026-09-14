@@ -29,7 +29,7 @@ public final class BedrockDigEffects {
         start.setData(65535 / DEFAULT_BREAK_TICKS);
         session.sendUpstreamPacket(start);
 
-        int blockRt = digBlockRuntime(session);
+        int blockRt = digBlockRuntime(session, x, y, z);
         LevelEventPacket crack = new LevelEventPacket();
         crack.setType(LevelEvent.PARTICLE_CRACK_BLOCK);
         crack.setPosition(pos.add(0.5f, 0.5f, 0.5f));
@@ -50,7 +50,7 @@ public final class BedrockDigEffects {
         update.setData(65535 / DEFAULT_BREAK_TICKS);
         session.sendUpstreamPacket(update);
 
-        int blockRt = digBlockRuntime(session);
+        int blockRt = digBlockRuntime(session, x, y, z);
         LevelEventPacket crack = new LevelEventPacket();
         crack.setType(LevelEvent.PARTICLE_CRACK_BLOCK);
         crack.setPosition(pos.add(0.5f, 0.5f, 0.5f));
@@ -72,7 +72,7 @@ public final class BedrockDigEffects {
         session.sendUpstreamPacket(stop);
 
         if (destroyed) {
-            int blockRt = digBlockRuntime(session);
+            int blockRt = digBlockRuntime(session, x, y, z);
             LevelEventPacket destroy = new LevelEventPacket();
             destroy.setType(LevelEvent.PARTICLE_DESTROY_BLOCK);
             destroy.setPosition(pos.add(0.5f, 0.5f, 0.5f));
@@ -84,11 +84,19 @@ public final class BedrockDigEffects {
     }
 
     public static void placeSound(LinkBedrockSession session, int x, int y, int z) {
-        sound(session, SoundEvent.PLACE, x, y, z, digBlockRuntime(session));
+        sound(session, SoundEvent.PLACE, x, y, z, digBlockRuntime(session, x, y, z));
     }
 
     private static void hitSound(LinkBedrockSession session, int x, int y, int z, int blockRuntime) {
         sound(session, SoundEvent.HIT, x, y, z, blockRuntime);
+    }
+
+    private static int digBlockRuntime(LinkBedrockSession session, int x, int y, int z) {
+        int known = session.blockRuntimeAt(x, y, z);
+        if (known != 0 && known != session.airRuntimeId()) {
+            return known;
+        }
+        return resolveDigExtraData(session.stoneRuntimeId(), session.airRuntimeId());
     }
 
     private static int digBlockRuntime(LinkBedrockSession session) {

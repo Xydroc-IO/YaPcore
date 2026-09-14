@@ -1,6 +1,7 @@
 package com.yapcore.link.bedrock.translator;
 
 import com.yapcore.link.bedrock.cloudburst.LinkJoinPackets;
+import com.yapcore.link.bedrock.downstream.JavaCommandsTree;
 import com.yapcore.link.bedrock.probe.BedrockJoinProbe;
 import com.yapcore.link.bedrock.session.LinkBedrockSession;
 import java.util.ArrayList;
@@ -10,10 +11,10 @@ import java.util.logging.Logger;
 import org.cloudburstmc.protocol.bedrock.packet.AvailableCommandsPacket;
 
 /**
- * JE {@code commands} packet → refresh Bedrock {@link AvailableCommandsPacket} with plugin literals.
+ * JE {@code commands} Brigadier tree → Bedrock {@link AvailableCommandsPacket}.
  *
- * <p>Typed {@code /plugincommand} already reaches Folia via {@link BedrockCommandTranslator};
- * this only expands the Bedrock command enum / autocomplete list.
+ * <p>Prefers full tree parse ({@link JavaCommandsTree}) with real overloads. Falls back to
+ * vanilla+literal extras when the tree cannot be decoded.
  */
 public final class JavaCommandsTranslator {
 
@@ -22,6 +23,30 @@ public final class JavaCommandsTranslator {
     private JavaCommandsTranslator() {
     }
 
+    /** Preferred path: full JE commands tree → AvailableCommands with mapped overloads. */
+    public static void onCommandsTree(LinkBedrockSession session, JavaCommandsTree.Parsed tree) {
+        if (session == null || !session.isSentSpawnPacket() || tree == null) {
+            return;
+        }
+        List<String> names = tree.rootLiteralNames();
+        session.rememberPluginCommands(names);
+        AvailableCommandsPacket packet = tree.toAvailableCommands();
+        if (packet.getCommands().isEmpty()) {
+            onCommands(session, names);
+            return;
+        }
+        session.sendUpstreamPacket(packet);
+        BedrockJoinProbe.noteEvent(session.guid(),
+                "java_commands_tree→be AvailableCommands cmds=" + packet.getCommands().size()
+                        + " roots=" + names.size());
+        LOG.info("BE AvailableCommands from JE tree user=" + session.username()
+                + " cmds=" + packet.getCommands().size() + " roots=" + names.size());
+    }
+
+    /**
+     * Fallback: literal names merged onto vanilla essentials catalog.
+     * Used when tree parse fails or only names are available.
+     */
     public static void onCommands(LinkBedrockSession session, List<String> literalNames) {
         if (session == null || !session.isSentSpawnPacket()) {
             return;
@@ -43,7 +68,7 @@ public final class JavaCommandsTranslator {
         session.sendUpstreamPacket(packet);
         BedrockJoinProbe.noteEvent(session.guid(),
                 "java_commands→be AvailableCommands extras=" + extras.size()
-                        + " total=" + packet.getCommands().size());
+                        + " total=" + packet.getCommands().size() + " mode=literals");
         LOG.info("BE AvailableCommands refresh user=" + session.username()
                 + " extras=" + extras.size() + " total=" + packet.getCommands().size());
     }

@@ -51,14 +51,28 @@ public final class LinkMetricsHttp {
                 out.write(body);
             }
         });
+        http.createContext("/backends", ex -> {
+            if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
+                ex.sendResponseHeaders(405, -1);
+                return;
+            }
+            byte[] body = LinkBackendsJson.render(server.backendMonitor())
+                    .getBytes(StandardCharsets.UTF_8);
+            ex.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+            ex.sendResponseHeaders(200, body.length);
+            try (OutputStream out = ex.getResponseBody()) {
+                out.write(body);
+            }
+        });
         http.setExecutor(Executors.newCachedThreadPool(r -> {
             Thread t = new Thread(r, "yap-link-metrics");
             t.setDaemon(true);
             return t;
         }));
         http.start();
-        LOG.info("Link /metrics on http://" + ("0.0.0.0".equals(bindHost) ? "127.0.0.1" : bindHost)
-                + ":" + port + "/metrics");
+        String host = "0.0.0.0".equals(bindHost) ? "127.0.0.1" : bindHost;
+        LOG.info("Link /metrics on http://" + host + ":" + port + "/metrics");
+        LOG.info("Link /backends on http://" + host + ":" + port + "/backends");
     }
 
     public synchronized void stop() {

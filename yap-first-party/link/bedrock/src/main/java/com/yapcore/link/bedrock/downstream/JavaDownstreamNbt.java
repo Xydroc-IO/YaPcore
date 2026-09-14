@@ -280,7 +280,7 @@ final class JavaDownstreamNbt {
 
     /**
      * Best-effort harvest of Brigadier literal-looking UTF strings from {@code commands}.
-     * Full ArgumentTypeInfo skip is not ported — scan VarInt+UTF candidates instead.
+     * Prefer {@link JavaCommandsTree#parse} — this is the fallback when tree decode fails.
      */
     static java.util.List<String> extractCommandLiterals(ByteBuf buf) {
         java.util.LinkedHashSet<String> out = new java.util.LinkedHashSet<>();

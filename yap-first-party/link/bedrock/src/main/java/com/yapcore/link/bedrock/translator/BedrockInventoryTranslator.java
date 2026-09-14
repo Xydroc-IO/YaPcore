@@ -8,7 +8,7 @@ import org.cloudburstmc.protocol.bedrock.packet.ItemStackRequestPacket;
 import org.cloudburstmc.protocol.bedrock.packet.MobEquipmentPacket;
 
 /**
- * Bedrock MobEquipment / ItemStackRequest / InventoryTransaction basics → JE held-item + notes.
+ * Bedrock MobEquipment / ItemStackRequest / InventoryTransaction → JE held-item + inventory moves.
  */
 public final class BedrockInventoryTranslator {
 
@@ -34,13 +34,7 @@ public final class BedrockInventoryTranslator {
     }
 
     public static void translateItemStackRequest(LinkBedrockSession session, ItemStackRequestPacket req) {
-        if (session == null || req == null) {
-            return;
-        }
-        // Full stack-request remap is large; acknowledge by logging request count.
-        int n = req.getRequests() != null ? req.getRequests().size() : 0;
-        LOG.fine("BE ItemStackRequest count=" + n + " user=" + session.username()
-                + " (full remap pending playtest)");
+        BedrockItemStackRequests.translate(session, req);
     }
 
     public static void translateInventoryTransaction(LinkBedrockSession session,
@@ -48,7 +42,8 @@ public final class BedrockInventoryTranslator {
         if (session == null || tx == null) {
             return;
         }
-        // Attack / place often arrive as InventoryTransaction — BedrockActionTranslator owns those.
+        // Attack / place owned by BedrockActionTranslator; inventory NORMAL is client-auth UI noise
+        // when ItemStackRequest carries the real moves — still log at fine for forensics.
         LOG.fine("BE InventoryTransaction type=" + tx.getTransactionType()
                 + " user=" + session.username());
     }

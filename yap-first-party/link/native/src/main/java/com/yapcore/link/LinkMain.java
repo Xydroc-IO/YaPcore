@@ -1,7 +1,6 @@
 package com.yapcore.link;
 
 import java.nio.file.Path;
-import java.util.logging.ConsoleHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
@@ -63,10 +62,16 @@ public final class LinkMain {
         for (var h : root.getHandlers()) {
             root.removeHandler(h);
         }
-        ConsoleHandler ch = new ConsoleHandler();
-        ch.setLevel(Level.INFO);
-        ch.setFormatter(new SimpleFormatter());
-        root.addHandler(ch);
+        // System.out so chassis LinkProcessManager pumpLogs (stdout) always sees startup.
+        java.util.logging.StreamHandler out = new java.util.logging.StreamHandler(System.out, new SimpleFormatter()) {
+            @Override
+            public synchronized void publish(java.util.logging.LogRecord record) {
+                super.publish(record);
+                flush();
+            }
+        };
+        out.setLevel(Level.INFO);
+        root.addHandler(out);
         root.setLevel(Level.INFO);
     }
 }

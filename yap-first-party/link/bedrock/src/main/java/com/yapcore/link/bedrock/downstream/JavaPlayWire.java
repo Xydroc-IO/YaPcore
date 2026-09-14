@@ -19,6 +19,8 @@ public final class JavaPlayWire {
     public static final int CB_COMMANDS = 16;
     public static final int CB_CONTAINER_SET_CONTENT = 18;
     public static final int CB_CONTAINER_SET_SLOT = 20;
+    /** JE {@code custom_payload} — Floodgate forms use {@code floodgate:form}. */
+    public static final int CB_CUSTOM_PAYLOAD = 24;
     public static final int CB_DISCONNECT = 32;
     public static final int CB_ENTITY_POSITION_SYNC = 35;
     public static final int CB_HURT_ANIMATION = 42;
@@ -40,13 +42,16 @@ public final class JavaPlayWire {
     public static final int CB_REMOVE_ENTITIES = 77;
     public static final int CB_SECTION_BLOCKS_UPDATE = 84;
     public static final int CB_SET_ENTITY_DATA = 99;
+    public static final int CB_SET_ENTITY_MOTION = 101;
     /** JE {@code set_health} — health f32 + food varint + saturation f32. */
     public static final int CB_SET_HEALTH = 104;
     public static final int CB_SOUND = 117;
     public static final int CB_SOUND_ENTITY = 116;
     public static final int CB_SYSTEM_CHAT = 121;
     public static final int CB_TELEPORT_ENTITY = 125;
-    /** Clientbound entity_event — status 24–28 = op permission level 0–4. */
+    /** JE {@code update_attributes}. */
+    public static final int CB_UPDATE_ATTRIBUTES = 131;
+    /** Clientbound entity_event — status 24–28 = op permission level 0–4; 2/3 = hurt/death. */
     public static final int CB_ENTITY_EVENT = 34;
     /** JE {@code player_combat_kill} — death screen message. */
     public static final int CB_PLAYER_COMBAT_KILL = 68;
@@ -62,6 +67,9 @@ public final class JavaPlayWire {
     /** {@code minecraft:client_tick_end} — required each tick on proto 776+ (Geyser sends after auth). */
     public static final int SB_CLIENT_TICK_END = 13;
     public static final int SB_CLIENT_INFORMATION = 14;
+    public static final int SB_CONTAINER_CLICK = 18;
+    public static final int SB_CONTAINER_CLOSE = 19;
+    public static final int SB_CUSTOM_PAYLOAD = 22;
     public static final int SB_INTERACT = 26;
     public static final int SB_KEEP_ALIVE = 28;
     public static final int SB_MOVE_POS = 30;

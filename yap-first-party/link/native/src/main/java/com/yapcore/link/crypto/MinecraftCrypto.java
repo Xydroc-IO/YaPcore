@@ -31,7 +31,8 @@ public final class MinecraftCrypto {
     }
 
     public static byte[] decryptRsa(KeyPair pair, byte[] data) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA");
+        // Minecraft always uses PKCS#1 v1.5 — do not rely on provider default "RSA".
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         cipher.init(Cipher.DECRYPT_MODE, pair.getPrivate());
         return cipher.doFinal(data);
     }

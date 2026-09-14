@@ -24,33 +24,36 @@ final class ClientSessionRouting {
     private ClientSessionRouting() {
     }
 
-    static void tryFirePluginMessage(ClientSession session, ByteBuf buf, boolean fromClient) {
+    /** @return {@code true} if a plugin set {@link PluginMessageEvent.Result#HANDLED} (do not relay). */
+    static boolean tryFirePluginMessage(ClientSession session, ByteBuf buf, boolean fromClient) {
         if (!session.server.config().pluginsEnabled()) {
-            return;
+            return false;
         }
         if (session.server.plugins().registeredChannelIds().isEmpty()) {
-            return;
+            return false;
         }
         Optional<PluginMessagePackets.Parsed> parsed = fromClient
                 ? PluginMessagePackets.tryParseServerbound(session.protocolVersion, buf)
                 : PluginMessagePackets.tryParseClientbound(session.protocolVersion, buf);
         if (parsed.isEmpty()) {
-            return;
+            return false;
         }
         String channelId = parsed.get().channel();
         if (!session.server.plugins().isRegisteredChannel(channelId)) {
-            return;
+            return false;
         }
         ChannelIdentifier channel = ChannelIdentifier.fromMcChannel(channelId);
         PluginMessageEvent event = new PluginMessageEvent(
                 fromClient ? PluginMessageEvent.SourceKind.PLAYER : PluginMessageEvent.SourceKind.BACKEND,
-                fromClient ? Optional.ofNullable(session.playerHandle) : Optional.empty(),
+                // Backend→client payloads still ride a specific player connection (portal Connect).
+                Optional.ofNullable(session.playerHandle),
                 fromClient ? Optional.empty() : session.currentServer(),
                 channel,
                 parsed.get().data()
         );
         session.server.plugins().eventBus().fire(event);
         session.server.metrics().counter("plugin.messages", 1);
+        return event.result() == PluginMessageEvent.Result.HANDLED;
     }
 
     static String extractServerCommand(ByteBuf buf) {

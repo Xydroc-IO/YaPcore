@@ -312,7 +312,18 @@ public final class LinkPluginManager {
         }
 
         boolean isRegisteredChannel(String mcChannelId) {
-            return channels.containsKey(mcChannelId);
+            if (mcChannelId == null || mcChannelId.isBlank()) {
+                return false;
+            }
+            if (channels.containsKey(mcChannelId)) {
+                return true;
+            }
+            // Legacy "BungeeCord" wire id → minecraft:BungeeCord after fromMcChannel.
+            try {
+                return channels.containsKey(ChannelIdentifier.fromMcChannel(mcChannelId).id());
+            } catch (IllegalArgumentException e) {
+                return false;
+            }
         }
 
         java.util.Set<String> registeredChannelIds() {

@@ -162,6 +162,8 @@ final class LinkBedrockSessionPlay {
 
    Long untrackEntity(int javaEntityId) {
       s.entityPosByJava.remove(javaEntityId);
+      s.entityHealthByJava.remove(javaEntityId);
+      s.entityMoveTicks.remove(javaEntityId);
       return s.entityRuntimeByJava.remove(javaEntityId);
    }
 
@@ -221,6 +223,69 @@ final class LinkBedrockSessionPlay {
       s.lastHealth = health;
       s.lastFood = food;
       s.lastSaturation = saturation;
+   }
+
+   ItemData cursorItem() {
+      return s.cursorItem != null ? s.cursorItem : ItemData.AIR;
+   }
+
+   void setCursorItem(ItemData item) {
+      s.cursorItem = item != null ? item : ItemData.AIR;
+   }
+
+   int jeContainerStateId() {
+      return s.jeContainerStateId;
+   }
+
+   void rememberJeContainerState(int stateId) {
+      s.jeContainerStateId = Math.max(0, stateId);
+   }
+
+   int nextStackNetworkId() {
+      int id = s.stackNetworkIdSeq++;
+      if (s.stackNetworkIdSeq <= 0) {
+         s.stackNetworkIdSeq = 1;
+      }
+      return id;
+   }
+
+   ItemData containerSlot(int slot) {
+      return s.openContainerSlots.getOrDefault(slot, ItemData.AIR);
+   }
+
+   void setContainerSlot(int slot, ItemData item) {
+      if (item == null || item == ItemData.AIR) {
+         s.openContainerSlots.remove(slot);
+      } else {
+         s.openContainerSlots.put(slot, item);
+      }
+   }
+
+   void clearOpenContainerSlots() {
+      s.openContainerSlots.clear();
+   }
+
+   void rememberBlockRuntime(int x, int y, int z, int runtimeId) {
+      s.blockRuntimeAtPos.put(packBlock(x, y, z), runtimeId);
+   }
+
+   int blockRuntimeAt(int x, int y, int z) {
+      Integer rt = s.blockRuntimeAtPos.get(packBlock(x, y, z));
+      return rt != null ? rt : 0;
+   }
+
+   void rememberEntityHealth(int javaEntityId, float health) {
+      if (javaEntityId > 0) {
+         s.entityHealthByJava.put(javaEntityId, health);
+      }
+   }
+
+   Float entityHealth(int javaEntityId) {
+      return s.entityHealthByJava.get(javaEntityId);
+   }
+
+   private static long packBlock(int x, int y, int z) {
+      return (((long) x & 0x3FFFFFFL) << 38) | (((long) z & 0x3FFFFFFL) << 12) | ((long) y & 0xFFFL);
    }
 
    boolean bumpEntityMoveForceAbsolute(int javaEntityId) {

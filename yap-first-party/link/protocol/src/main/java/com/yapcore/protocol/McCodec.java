@@ -40,6 +40,24 @@ public final class McCodec {
         }
     }
 
+    public static long readVarLong(ByteBuf buf) {
+        long value = 0;
+        int position = 0;
+        byte current;
+        while (true) {
+            current = buf.readByte();
+            value |= (long) (current & 0x7F) << position;
+            if ((current & 0x80) == 0) {
+                break;
+            }
+            position += 7;
+            if (position >= 64) {
+                throw new IllegalArgumentException("VarLong too big");
+            }
+        }
+        return value;
+    }
+
     public static String readString(ByteBuf buf, int max) {
         int len = readVarInt(buf);
         if (len < 0 || len > max * 3) {

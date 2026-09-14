@@ -106,14 +106,22 @@ final class ClientSessionLoginFlow {
         buf.readBytes(secretEnc);
         byte[] sharedSecret = MinecraftCrypto.decryptRsa(session.server.rsaKeyPair(), secretEnc);
 
-        if (session.protocolVersion >= 766 && buf.isReadable()) {
+        // Match Velocity EncryptionResponsePacket:
+        // boolean + optional salt ONLY for 1.19–1.19.2 (proto 759–760).
+        // 1.19.3+ (761+) is always: sharedSecret + encrypted verifyToken (no boolean).
+        // Our old ">= 766 → readBoolean" mis-parsed modern clients → BadPaddingException.
+        int proto = session.protocolVersion;
+        if (proto >= 759 && proto < 761) {
             boolean hasVerifyToken = buf.readBoolean();
-            if (hasVerifyToken) {
-                verifyTokenFromBuf(buf);
-            } else {
-                buf.readLong();
+            if (!hasVerifyToken) {
+                buf.readLong(); // salt
                 int sigLen = McCodec.readVarInt(buf);
-                buf.skipBytes(Math.min(sigLen, buf.readableBytes()));
+                if (sigLen < 0 || sigLen > buf.readableBytes()) {
+                    throw new IllegalStateException("Invalid encryption signature length");
+                }
+                buf.skipBytes(sigLen);
+            } else {
+                verifyTokenFromBuf(buf);
             }
         } else {
             verifyTokenFromBuf(buf);

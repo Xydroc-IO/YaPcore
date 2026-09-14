@@ -17,9 +17,16 @@ repositories {
 
 dependencies {
     compileOnly(project(":yap-link-api"))
+    testImplementation(project(":yap-link-api"))
     implementation(project(":yap-playerdata-api"))
     implementation("com.zaxxer:HikariCP:6.2.1")
     implementation("com.mysql:mysql-connector-j:9.1.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    useJUnitPlatform()
 }
 
 tasks.jar {

@@ -1,5 +1,6 @@
 package com.yapcore.link.bedrock.translator;
 
+import com.yapcore.link.bedrock.downstream.JavaDownstreamClient;
 import com.yapcore.link.bedrock.probe.BedrockJoinProbe;
 import com.yapcore.link.bedrock.session.LinkBedrockSession;
 import java.util.logging.Logger;
@@ -115,6 +116,13 @@ public final class BedrockInventoryOpen {
         // Client wants close confirmation echoed upstream.
         session.sendUpstreamPacket(close);
         session.setInventoryOpen(false);
+        session.clearOpenContainerSlots();
+        JavaDownstreamClient down = session.downstream();
+        if (down != null && down.phase() == JavaDownstreamClient.Phase.PLAY
+                && session.lastJeWindowId() > 0) {
+            down.sendContainerClose(session.lastJeWindowId());
+            session.rememberJeWindow(-1, -1);
+        }
         BedrockJoinProbe.noteEvent(session.guid(),
                 "be_ContainerClose id=" + close.getId() + " echoed");
         LOG.fine("BE ContainerClose echoed id=" + close.getId() + " user=" + session.username());

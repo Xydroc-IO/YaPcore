@@ -93,10 +93,11 @@ final class BedrockSessionHostJoin {
             }
 
             @Override
-            public void onSectionBlocksUpdate(int sectionX, int sectionY, int sectionZ) {
+            public void onSectionBlocksUpdate(int sectionX, int sectionY, int sectionZ,
+                                              int[] cells) {
                 LinkBedrockSession join = state.joinSession;
                 if (join != null) {
-                    JavaBlockUpdateTranslator.onSectionBlocksUpdate(join, sectionX, sectionY, sectionZ);
+                    JavaBlockUpdateTranslator.onSectionBlocksUpdate(join, sectionX, sectionY, sectionZ, cells);
                 }
             }
 
@@ -158,6 +159,9 @@ final class BedrockSessionHostJoin {
             public void onContainerSetContent(int windowId, com.yapcore.link.bedrock.downstream.JeItemStackCodec.Stack[] stacks) {
                 LinkBedrockSession join = state.joinSession;
                 if (join != null) {
+                    if (state.downstream != null) {
+                        join.rememberJeContainerState(state.downstream.lastContainerStateId);
+                    }
                     JavaInventoryTranslator.onContainerSetContent(join, windowId, stacks);
                 }
             }
@@ -167,6 +171,9 @@ final class BedrockSessionHostJoin {
                                            com.yapcore.link.bedrock.downstream.JeItemStackCodec.Stack stack) {
                 LinkBedrockSession join = state.joinSession;
                 if (join != null) {
+                    if (state.downstream != null) {
+                        join.rememberJeContainerState(state.downstream.lastContainerStateId);
+                    }
                     JavaInventoryTranslator.onContainerSetSlot(join, windowId, slot, stack);
                 }
             }
@@ -184,6 +191,14 @@ final class BedrockSessionHostJoin {
                 LinkBedrockSession join = state.joinSession;
                 if (join != null) {
                     JavaCommandsTranslator.onCommands(join, literalNames);
+                }
+            }
+
+            @Override
+            public void onCommandsTree(com.yapcore.link.bedrock.downstream.JavaCommandsTree.Parsed tree) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaCommandsTranslator.onCommandsTree(join, tree);
                 }
             }
 
@@ -265,10 +280,46 @@ final class BedrockSessionHostJoin {
             }
 
             @Override
+            public void onEntityHealth(int entityId, float health) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaEntityCombatTranslator.onEntityHealth(join, entityId, health);
+                }
+            }
+
+            @Override
+            public void onUpdateAttributes(int entityId, float health) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaEntityCombatTranslator.onEntityHealth(join, entityId, health);
+                }
+            }
+
+            @Override
+            public void onEntityMotion(int entityId, double mx, double my, double mz) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaEntityTranslator.onEntityMotion(join, entityId, mx, my, mz);
+                }
+            }
+
+            @Override
+            public void onCustomPayload(String channel, byte[] data) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    BedrockFormBridge.onJavaCustomPayload(join, channel, data);
+                }
+            }
+
+            @Override
             public void onEntityEvent(int entityId, int status) {
                 LinkBedrockSession join = state.joinSession;
                 if (join == null) {
                     return;
+                }
+                // Living death / hurt status for remote entities.
+                if (status == 3 || status == 2) {
+                    JavaEntityCombatTranslator.onEntityEvent(join, entityId, status);
                 }
                 // Geyser: entity_event 24–28 → PermissionLevel 0–4 on the local player.
                 if (entityId == join.javaEntityId() && status >= 24 && status <= 28) {

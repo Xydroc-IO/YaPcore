@@ -13,6 +13,7 @@ import org.cloudburstmc.protocol.bedrock.data.PlayerBlockActionData;
 import org.cloudburstmc.protocol.bedrock.data.inventory.transaction.InventoryTransactionType;
 import org.cloudburstmc.protocol.bedrock.data.inventory.transaction.ItemUseTransaction;
 import org.cloudburstmc.protocol.bedrock.packet.InventoryTransactionPacket;
+import org.cloudburstmc.protocol.bedrock.packet.ItemStackRequestPacket;
 import org.cloudburstmc.protocol.bedrock.packet.PlayerActionPacket;
 import org.cloudburstmc.protocol.bedrock.packet.PlayerAuthInputPacket;
 
@@ -72,6 +73,13 @@ public final class BedrockActionTranslator {
         if (itemUse != null && auth.getInputData() != null
                 && auth.getInputData().contains(PlayerAuthInputData.PERFORM_ITEM_INTERACTION)) {
             translateItemUseTransaction(session, itemUse);
+        }
+        if (auth.getInputData() != null
+                && auth.getInputData().contains(PlayerAuthInputData.PERFORM_ITEM_STACK_REQUEST)
+                && auth.getItemStackRequest() != null) {
+            ItemStackRequestPacket wrap = new ItemStackRequestPacket();
+            wrap.getRequests().add(auth.getItemStackRequest());
+            BedrockItemStackRequests.translate(session, wrap);
         }
         if (auth.getInputData() != null
                 && auth.getInputData().contains(PlayerAuthInputData.MISSED_SWING)) {
@@ -222,7 +230,9 @@ public final class BedrockActionTranslator {
                 return;
             }
             down.sendUseItemOn(pos.getX(), pos.getY(), pos.getZ(), face,
-                    0.5f, 0.5f, 0.5f, false, 0, seq);
+                    clickX(tx.getClickPosition()), clickY(tx.getClickPosition()), clickZ(tx.getClickPosition()),
+                    false, 0, seq);
+            BedrockDigEffects.placeSound(session, pos.getX(), pos.getY(), pos.getZ());
             LOG.fine("BE→JE place/use @" + pos.getX() + "," + pos.getY() + "," + pos.getZ()
                     + " user=" + session.username());
         }
@@ -239,9 +249,33 @@ public final class BedrockActionTranslator {
         }
         int seq = session.nextBlockSequence();
         int face = itemUse.getBlockFace();
+        org.cloudburstmc.math.vector.Vector3f click = itemUse.getClickPosition();
         down.sendUseItemOn(pos.getX(), pos.getY(), pos.getZ(), face,
-                0.5f, 0.5f, 0.5f, false, 0, seq);
+                clickX(click), clickY(click), clickZ(click), false, 0, seq);
+        BedrockDigEffects.placeSound(session, pos.getX(), pos.getY(), pos.getZ());
         BedrockJoinProbe.noteEvent(session.guid(),
-                "BE→JE use_item_on via=AuthInputItemUse @" + pos.getX() + "," + pos.getY() + "," + pos.getZ());
+                "BE→JE use_item_on via=AuthInputItemUse @" + pos.getX() + "," + pos.getY() + "," + pos.getZ()
+                        + " face=" + face
+                        + " hit=" + String.format(java.util.Locale.ROOT, "%.2f,%.2f,%.2f",
+                        clickX(click), clickY(click), clickZ(click)));
+    }
+
+    private static float clickX(org.cloudburstmc.math.vector.Vector3f click) {
+        return click != null ? clampHit(click.getX()) : 0.5f;
+    }
+
+    private static float clickY(org.cloudburstmc.math.vector.Vector3f click) {
+        return click != null ? clampHit(click.getY()) : 0.5f;
+    }
+
+    private static float clickZ(org.cloudburstmc.math.vector.Vector3f click) {
+        return click != null ? clampHit(click.getZ()) : 0.5f;
+    }
+
+    private static float clampHit(float v) {
+        if (Float.isNaN(v)) {
+            return 0.5f;
+        }
+        return Math.max(0f, Math.min(1f, v));
     }
 }

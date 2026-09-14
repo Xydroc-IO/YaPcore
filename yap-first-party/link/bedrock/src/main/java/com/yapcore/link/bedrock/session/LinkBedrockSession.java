@@ -107,6 +107,12 @@ public final class LinkBedrockSession {
     volatile float lastHealth = 20.0F;
     volatile int lastFood = 20;
     volatile float lastSaturation = 5.0F;
+    volatile ItemData cursorItem = ItemData.AIR;
+    volatile int jeContainerStateId;
+    volatile int stackNetworkIdSeq = 1;
+    final ConcurrentHashMap<Integer, ItemData> openContainerSlots = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Long, Integer> blockRuntimeAtPos = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Integer, Float> entityHealthByJava = new ConcurrentHashMap<>();
     final ConcurrentHashMap<Integer, Integer> entityMoveTicks = new ConcurrentHashMap<>();
     volatile int pendingSolidNear = -1;
     volatile int pendingSolidColumn = -1;
@@ -430,6 +436,22 @@ public final class LinkBedrockSession {
     public void rememberHealth(float health, int food, float saturation) {
         playLogic.rememberHealth(health, food, saturation);
     }
+    public ItemData cursorItem() { return playLogic.cursorItem(); }
+    public void setCursorItem(ItemData item) { playLogic.setCursorItem(item); }
+    public int jeContainerStateId() { return playLogic.jeContainerStateId(); }
+    public void rememberJeContainerState(int stateId) { playLogic.rememberJeContainerState(stateId); }
+    public int nextStackNetworkId() { return playLogic.nextStackNetworkId(); }
+    public ItemData containerSlot(int slot) { return playLogic.containerSlot(slot); }
+    public void setContainerSlot(int slot, ItemData item) { playLogic.setContainerSlot(slot, item); }
+    public void clearOpenContainerSlots() { playLogic.clearOpenContainerSlots(); }
+    public void rememberBlockRuntime(int x, int y, int z, int runtimeId) {
+        playLogic.rememberBlockRuntime(x, y, z, runtimeId);
+    }
+    public int blockRuntimeAt(int x, int y, int z) { return playLogic.blockRuntimeAt(x, y, z); }
+    public void rememberEntityHealth(int javaEntityId, float health) {
+        playLogic.rememberEntityHealth(javaEntityId, health);
+    }
+    public Float entityHealth(int javaEntityId) { return playLogic.entityHealth(javaEntityId); }
     public boolean bumpEntityMoveForceAbsolute(int javaEntityId) { return playLogic.bumpEntityMoveForceAbsolute(javaEntityId); }
     public BlockDefinition blockDefinitionOrAir(int runtimeIdHint) { return playLogic.blockDefinitionOrAir(runtimeIdHint); }
     public int airRuntimeId() { return playLogic.airRuntimeId(); }

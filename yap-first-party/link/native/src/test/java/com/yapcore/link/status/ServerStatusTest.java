@@ -20,5 +20,11 @@ final class ServerStatusTest {
         String out = s.toStatusJson(12, 100);
         assertTrue(out.contains("\"online\":12"));
         assertTrue(out.contains("\"max\":100"));
+        assertTrue(out.contains("Hello"));
+
+        String stamped = s.toStatusJson(12, 100, "Network MOTD");
+        assertTrue(stamped.contains("\"online\":12"));
+        assertTrue(stamped.contains("Network MOTD"));
+        assertEquals("Network MOTD", ServerStatus.parseJson(s.withMotd("Network MOTD")).descriptionText());
     }
 }

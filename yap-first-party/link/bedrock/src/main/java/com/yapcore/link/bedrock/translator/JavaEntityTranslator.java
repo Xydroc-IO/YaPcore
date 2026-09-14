@@ -96,9 +96,25 @@ public final class JavaEntityTranslator {
         if (session == null) {
             return;
         }
-        // Metadata remap deferred — presence of packet is enough to keep session alive path honest.
-        // Never invent nametags from type ids / translation keys here.
-        LOG.fine("BE skip set_entity_data id=" + entityId + " user=" + session.username());
+        LOG.fine("BE set_entity_data noted id=" + entityId + " user=" + session.username());
+    }
+
+    /** JE set_entity_motion → Bedrock SetEntityMotion. */
+    public static void onEntityMotion(LinkBedrockSession session, int entityId,
+                                      double mx, double my, double mz) {
+        if (session == null || !session.isSentSpawnPacket()) {
+            return;
+        }
+        Long runtime = session.runtimeForJava(entityId);
+        if (runtime == null) {
+            return;
+        }
+        org.cloudburstmc.protocol.bedrock.packet.SetEntityMotionPacket motion =
+                new org.cloudburstmc.protocol.bedrock.packet.SetEntityMotionPacket();
+        motion.setRuntimeEntityId(runtime);
+        motion.setMotion(Vector3f.from((float) mx, (float) my, (float) mz));
+        motion.setTick(0L);
+        session.sendUpstreamPacket(motion);
     }
 
     /**
