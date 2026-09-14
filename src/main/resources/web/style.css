@@ -70,13 +70,21 @@ body {
   width: 42px;
   height: 42px;
   border-radius: 11px;
-  background: linear-gradient(135deg, var(--accent), #2563eb);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 18px;
-  color: #fff;
+  object-fit: cover;
+  display: block;
+  background: var(--bg-elevated);
   box-shadow: 0 4px 20px var(--accent-glow);
+  border: 1px solid var(--border-strong);
+}
+.sidebar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
 }
 .login-card h1 { margin: 0; font-size: 1.45rem; letter-spacing: -0.03em; font-weight: 700; }
 .login-card label { display: block; margin: 20px 0 8px; color: var(--muted); font-size: 13px; font-weight: 500; }

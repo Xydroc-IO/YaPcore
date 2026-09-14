@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
@@ -164,20 +166,36 @@ public final class WebDashboard {
             ex.sendResponseHeaders(400, -1);
             return;
         }
+        if ("/favicon.ico".equals(path)) {
+            path = "/branding/yapcore-icon.png";
+        }
+        byte[] body = readStaticBytes(path);
+        if (body == null) {
+            DashboardHttp.text(ex, 404, "not found");
+            return;
+        }
+        Headers h = ex.getResponseHeaders();
+        h.set("Content-Type", DashboardHttp.contentType(path));
+        h.set("Cache-Control", path.startsWith("/branding/") ? "public, max-age=3600" : "no-cache");
+        ex.sendResponseHeaders(200, body.length);
+        try (OutputStream out = ex.getResponseBody()) {
+            out.write(body);
+        }
+    }
+
+    /** Prefer live {@code branding/} on disk; fall back to classpath {@code web/…}. */
+    private byte[] readStaticBytes(String path) throws IOException {
+        if (path.startsWith("/branding/")) {
+            Path root = server.getRootDir().toAbsolutePath().normalize();
+            Path brandRoot = root.resolve("branding").normalize();
+            Path file = root.resolve(path.substring(1)).normalize();
+            if (file.startsWith(brandRoot) && Files.isRegularFile(file)) {
+                return Files.readAllBytes(file);
+            }
+        }
         String resource = "web" + path;
         try (InputStream in = WebDashboard.class.getClassLoader().getResourceAsStream(resource)) {
-            if (in == null) {
-                DashboardHttp.text(ex, 404, "not found");
-                return;
-            }
-            byte[] body = in.readAllBytes();
-            Headers h = ex.getResponseHeaders();
-            h.set("Content-Type", DashboardHttp.contentType(path));
-            h.set("Cache-Control", "no-cache");
-            ex.sendResponseHeaders(200, body.length);
-            try (OutputStream out = ex.getResponseBody()) {
-                out.write(body);
-            }
+            return in == null ? null : in.readAllBytes();
         }
     }
 }

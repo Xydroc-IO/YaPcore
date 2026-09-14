@@ -4,9 +4,11 @@ Official YaPcore visual identity — **Minecraft-inspired** (voxels / blocks / e
 
 | File | Use |
 |------|-----|
-| `yapcore-icon.png` | App / window / taskbar icon |
-| `yapcore-mark.png` | Logo mark (README, splash) |
+| `yapcore-icon.png` | App / window / taskbar icon · web favicon · sidebar |
+| `yapcore-mark.png` | Logo mark (README, splash, web login) |
 | `yapcore-banner.png` | GitHub / docs social banner (16:9) |
+
+Web dashboard serves these at `/branding/…` (live from this folder; jar also embeds icon+mark under `web/branding/`).
 
 ## Guidelines
 
