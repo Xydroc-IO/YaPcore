@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Production Folia network stack</strong> — regionized <em>and</em> parallel ticks (subregion shards + microtick),<br/>
+  <strong>Production Folia network stack</strong> — regionized <em>and</em> parallel ticks (subregion shards + aligned micro/sub-ticks),<br/>
   dual-stack Java + Bedrock, first-party plugins, native proxy, Bedrock-feel parity, and operator tooling.
 </p>
 
@@ -40,8 +40,8 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 
 | Capability | What you get |
 |------------|----------------|
-| **Regionized + parallel ticks** | YaP-Folia regions + **subregion partition** (parallel shards when hot) — ship knobs on by default |
-| **Microtick / µs chassis** | MSPT-gated **microtick** Mob AI budgets on Folia; YapEngine orders bridge/plugin work in **µs** (`SequenceToken`) |
+| **Regionized + parallel ticks** | YaP-Folia regions + **subregion partition** + **aligned micro/sub-ticks** (soft cross-region waves) — ship knobs on by default |
+| **Mob AI budgets / µs chassis** | MSPT-gated **AI time-slice** + entity/hopper budgets on Folia; YapEngine orders bridge/plugin work in **µs** (`SequenceToken`) |
 | **Crossplay** | Java (1.20.2+) + Bedrock on one product story — Link-native Bedrock join by default; Bedrock form hubs for `/menu`, kits, ranks, admin |
 | **Bedrock-feel parity** | Convert-verified skins / emotes / movement / catalog blocks — [BEDROCK_FEEL_PARITY.md](docs/product/BEDROCK_FEEL_PARITY.md) |
 | **Network** | YaP Link native proxy (`0.6.0-phase6`), Floodgate-class identity, dual-stack gateway |
@@ -69,22 +69,28 @@ Honest product bars — not “unlimited players.” Scale is **regionized + mul
 | **Network scale** | Multi-backend via **YaP Link** | Split worlds/lobbies across YaP-Folia jars; proxy fronts the fleet |
 | **250 keepalive** | **Hold only** | Not a citeable ship claim — capacity testing, not marketing |
 
-Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, LagGuard, and sane farms. Past that, add backends or tighten density knobs — [YAP_FOLIA_SOAK.md](docs/folia/YAP_FOLIA_SOAK.md) · [TUNE.md](docs/ops/TUNE.md).
+Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, LagGuard, and sane farms. Past that, add backends or tighten density knobs — [YAP_FOLIA_SOAK.md](docs/folia/YAP_FOLIA_SOAK.md) · [TUNE.md](docs/ops/TUNE.md). Scale vs single-thread Paper/Purpur (spread fullcite, tick_model disclosed): [PAPER_PURPUR_SCALE.md](docs/folia/PAPER_PURPUR_SCALE.md) · `./scripts/bench/cite-paper-scale.sh`.
 
-### Parallel ticks & microtick (why it’s not “stock Folia”)
+### Parallel ticks & aligned micro/sub-ticks (why it’s not “stock Folia”)
 
-Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes. **YaP-Folia goes further**: parallel **subregion** shards when hot, MSPT-gated **microtick** / entity / hopper budgets, plus YapEngine µs sequencing on the edge — not “regions alone.”
+Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes. **YaP-Folia goes further**: parallel **subregion** shards when hot, **aligned micro/sub-tick phases** across regions (same 20 TPS game time), MSPT-gated Mob AI / hopper budgets, plus YapEngine µs sequencing on the edge — not “regions alone.”
 
 | Knob (defaults) | Role |
 |-----------------|------|
+| `folia-aligned-microticks=true` | Real micro/sub-tick phases + soft cross-region waves; universal RTQ phase tagging |
+| `folia-micro-phases=4` | Phase count (CHUNKS → BLOCKS → ENTITIES → BLOCK_ENTITIES) |
+| `folia-tick-wave-max-wait-ms=2` | Soft barrier max wait (must be &gt; 0) |
+| `folia-physics-substeps=true` | N-step travel/move inside one tick (combat/feel; plugin tick stays 20 TPS) |
 | `folia-subregion-partition=true` | Split hot regions into **parallel subregion shards** when geometry allows |
-| `folia-microtick-budget-ms=8` | Soft deadline for Mob AI on hot regions (MSPT-gated with entity budget) |
+| `folia-microtick-budget-ms=8` | Soft **Mob AI time-slice** on hot regions (MSPT-gated; not a finer clock) |
 | `folia-entity-tick-budget=400` | Cap Mob AI ticks per region when hot (≥12 ms MSPT) — never players / TNT / vehicles / bosses |
 | `folia-hopper-tick-budget=64` | Soft-defer excess hopper transfers |
 
+**Capacity in one hot area** comes from **subregion partition** (parallel Folia shards) + budgets — not from spinning a faster world clock. Aligned phases keep cross-region work coherent; physics sub-steps improve movement/combat stability.
+
 **YapEngine** (edge/chassis) sequences bridge and plugin work with **µs-resolution** `SequenceToken`s so I/O and menus stay ordered without owning the world heartbeat.
 
-Citeable MSPT vs stock Folia / Canvas (ship knobs disclosed): [REAL_GAINS.md](docs/folia/REAL_GAINS.md) · soak profile: [YAP_FOLIA_SOAK.md](docs/folia/YAP_FOLIA_SOAK.md). We do **not** claim single-thread Paper MSPT victory — [PAPER_PURPUR_SCALE.md](docs/folia/PAPER_PURPUR_SCALE.md).
+Citeable MSPT vs stock Folia / Canvas (ship knobs disclosed): [REAL_GAINS.md](docs/folia/REAL_GAINS.md) · soak profile: [YAP_FOLIA_SOAK.md](docs/folia/YAP_FOLIA_SOAK.md) · patch inventory: [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md). We do **not** claim single-thread Paper MSPT victory — [PAPER_PURPUR_SCALE.md](docs/folia/PAPER_PURPUR_SCALE.md). Re-verify after tick changes: `./scripts/yapctl cite-fullcite`.
 
 ---
 

@@ -43,7 +43,7 @@ Prefer **tebex-folia** ≥ 2.3.3 (Folia duplicate-command fix). `fetch-tebex.sh`
 
 ## Rank packages (VIP)
 
-YaPPerms uses shared MariaDB — one console command updates the whole network:
+YaPPerms uses shared SQL via YaPDB — one console command updates the whole network:
 
 ```text
 yapperm user {username} parent set vip
@@ -68,7 +68,7 @@ Kits live in **`yap-playerdata`** (`plugins/YaPPlayerData/kits.yml`). Copy the *
 | Queue kit items (offline OK) | `kit grant {username} vip` |
 | Give now (player online on Hub) | `kit give {username} vip` |
 
-`kit grant` writes to shared MariaDB; the next backend the player joins that has that kit in `kits.yml` delivers the items.
+`kit grant` writes to shared SQL (YaPDB); the next backend the player joins that has that kit in `kits.yml` delivers the items.
 
 ## Example Tebex package: “VIP Rank”
 
@@ -89,7 +89,7 @@ kit grant {username} adventurer
 ## Checklist
 
 1. Hub has CORE+NETWORK jars + `tebex.jar` (`./scripts/fetch-tebex.sh`).
-2. Shared MariaDB (`use-shared-yapdb: true`).
+2. Shared SQL via YaPDB (`use-shared-yapdb: true`) — MariaDB/MySQL · PostgreSQL · SQLite.
 3. Identical `plugins/YaPPlayerData/kits.yml` on Hub + survival.
 4. Secret set via dashboard **Tebex store** or `tebex secret <key>` on Hub.
 5. Packages use `{username}` — [examples/tebex/](../../examples/tebex/).

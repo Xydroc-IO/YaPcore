@@ -59,6 +59,13 @@ folia-entity-tick-max-deferred=40
 folia-hopper-tick-budget=64
 folia-scoreboard-swmr=true
 folia-microtick-budget-ms=8
+# Aligned micro/sub-ticks + physics sub-steps (YaP-Folia patches 0026–0031)
+folia-aligned-microticks=true
+folia-micro-phases=4
+folia-tick-wave-max-wait-ms=2
+folia-physics-substeps=true
+folia-physics-substep-count=4
+folia-physics-substep-min-move=0.02
 # WORK_STEALING only (set threaded-regions.scheduler: WORK_STEALING in paper-global.yml)
 folia-steal-threshold-ms=3
 folia-task-slice-ms=2

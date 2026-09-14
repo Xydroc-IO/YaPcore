@@ -1,6 +1,6 @@
 # Bedrock-feel parity — product contract
 
-**Status:** Phases 0–6 Green (persona piece JE render remains Out under Phase 1)  
+**Status:** Phases 0–6 Green (persona JE draws assembled `geometryData`; marketplace piece CDN remains non-goal)  
 **Pinned band:** `band_26_50` (Cloudburst resources under `protocol/bedrock/cloudburst/`)  
 **Config:** `parity.bedrock-feel` · `parity.bedrock-band`
 
@@ -38,7 +38,7 @@ Statuses live only in [`BEDROCK_FEEL_MATRIX.md`](BEDROCK_FEEL_MATRIX.md) as **Gr
 
 | Pillar | Source | Phase |
 |--------|--------|-------|
-| Cosmetics (persona/skin geo+textures) | Bedrock skin packet + geometry extracts | 1 — classic skin+cube geo Green; persona JE render Out |
+| Cosmetics (persona/skin geo+textures) | Bedrock skin packet + geometry extracts | 1 — classic + assembled persona geo Green; marketplace piece CDN Out |
 | Emotes / animations | Bedrock emote UUIDs + anim extracts | 2 — 4 free persona emotes Green |
 | Movement | Bedrock constant extract | 3 — Green (incl. face_assist) |
 | Blocks | Bedrock palette + resource extracts | 4 — Green |
@@ -97,7 +97,7 @@ Every fixture and converted artifact is recorded in `provenance/manifest.v1.json
 - [x] PlayerSkin codec writes non-empty geometry_data / pieces
 - [x] CDN `POST /skin/apply` + Tailor `ChassisSkinPush` + persist canonical JSON
 - [x] JE `yap-presence` renders ported **classic cube** geometry (`yap:presence` channel)
-- [ ] JE persona piece render (Out)
+- [x] JE persona / multi-geo render from assembled packet `geometryData` (SkinJeRelay + merge); marketplace piece CDN non-goal
 - [x] Bedrock forms (wardrobe / URL / cape / model)
 
 ## DoD — Phase 2

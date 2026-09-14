@@ -38,7 +38,12 @@ Generated: `deploy/nginx/generated/`.
 
 Linux: `./scripts/nginx-setup.sh`.
 
-## MariaDB
+## Database (YaPDB)
+
+YaPDB supports **MariaDB/MySQL**, **PostgreSQL**, and **SQLite**. See
+[YAPDB.md](../data/YAPDB.md).
+
+### MariaDB (default on Windows scripts)
 
 ```powershell
 .\scripts\Start-MariaDB.ps1
@@ -46,7 +51,14 @@ Linux: `./scripts/nginx-setup.sh`.
 .\scripts\Configure-PlayerData.ps1
 ```
 
-See [MARIADB.md](../data/MARIADB.md) · [PLAYERDATA.md](../data/PLAYERDATA.md).
+See [MARIADB.md](../data/MARIADB.md).
+
+### PostgreSQL / SQLite
+
+Use `./scripts/db/configure-db.sh --engine postgres|sqlite` from WSL or Git Bash,
+or point `plugins/YaPDB/config.yml` at the matching JDBC URL. Docs:
+[POSTGRES.md](../data/POSTGRES.md) · [SQLITE.md](../data/SQLITE.md) ·
+[PLAYERDATA.md](../data/PLAYERDATA.md).
 
 ## Release packaging
 

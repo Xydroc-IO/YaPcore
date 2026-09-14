@@ -1,7 +1,11 @@
 # YaPcore MariaDB (shared YapDb + player data)
 
 One shared database for **YaPDB** (`yap-db.jar`) and **YaPPlayerData** —
-works for a single YaPcore instance or many backends behind Velocity.
+works for a single YaPcore instance or many backends behind YaP Link.
+
+**Other engines:** PostgreSQL → [`docs/data/POSTGRES.md`](../../docs/data/POSTGRES.md) ·
+SQLite → [`docs/data/SQLITE.md`](../../docs/data/SQLITE.md) · overview →
+[`docs/data/YAPDB.md`](../../docs/data/YAPDB.md).
 
 ## Quick start (recommended)
 

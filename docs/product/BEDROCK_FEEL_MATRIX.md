@@ -12,7 +12,7 @@ Pinned band: **`band_26_50`**. Status is only **Green** or **Out**.
 | Phase 0 extract→convert for player anims | **Green** | 12/12 from bedrock-samples (incl. controllers) |
 | Phase 0 extract→convert for emote bones | **Green** | 4/4 free persona emotes from local Bedrock `persona/pieces` |
 | Cosmetics: classic skin PNG + cube geo JE | **Green** | Canonical ingest, Tailor, `yap-presence` cube render |
-| Cosmetics: persona piece JE render | **Out** | Pieces stored on canonical; not drawn on JE |
+| Cosmetics: persona piece JE render | **Green** | Assembled `geometryData` (+ multi-geo merge, parent bones) via SkinJeRelay → presence; marketplace pack piece CDN still non-goal |
 | Emotes: UUID catalog + BE↔JE relay | **Green** | Authority, EmotePacket, EmoteList, Tailor `/emote`, presence |
 | Emotes: JE bone playback from convert | **Green** | 4 free `yap.emote/1` clips |
 | Movement: catalog → BE + JE + presence + Guard | **Green** | jump/gravity/drag/sprint-sneak; Guard sprint×1.3 / reach 3.0 |

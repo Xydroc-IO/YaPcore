@@ -9,6 +9,51 @@ For build commands and zip layout see [RELEASES.md](RELEASES.md). For live statu
 
 ---
 
+## After 1.0.0.0 — Packs / Link MOTD / GUI launch (2026-09-14)
+
+Same ship version (no product bump). Ops-facing correctness:
+
+| Area | Change |
+|------|--------|
+| **Default JE pack** | Faithful **64× held items restored** (no longer stripped to vanilla sprites) — rebuild `yapcore-default.zip` and upload GitHub release assets |
+| **Pack CDN** | Product path is GitHub `releases/latest/download/{file}` — do not advertise a dead public-host `/pack/` URL |
+| **Link MOTD max** | Aggregate max = **sum of UP backends only**; `max-players` in `link.properties` is a ceiling, not a floor |
+| **`gui.sh`** | Fast launch by default (existing `yapcore.jar`); pass `--build` after chassis/GUI source changes |
+
+Rebuild Link: `gradle :yap-link-native:shadowJar` → copy to root `yap-link.jar`. Publish packs from `releases/1.0.0.0/` or `resourcepacks/`.
+
+---
+
+## After 1.0.0.0 — Physics sub-steps (2026-09-13)
+
+Same ship version (no product bump). Internal movement/combat integration rate:
+
+| Area | Change |
+|------|--------|
+| **Physics sub-steps** | Patch `0031` — `YapTravelSubstep` + `YapMoveSubstep` (gravity/friction scaled; plugin tick unchanged) |
+| **Ship defaults** | `folia-physics-substeps=true`, `folia-physics-substep-count=4`, `folia-physics-substep-min-move=0.02` |
+| **Domain** | Helpers ≤500 lines (`YapPhysicsSubsteps` / move / travel) |
+| **Docs** | YAP_FOLIA_PATCHES / SOAK / REAL_GAINS — feel vs capacity |
+
+Build: `./scripts/build-yap-folia.sh`. Rollback: `folia-physics-substeps=false`.
+
+---
+
+## After 1.0.0.0 — Aligned micro/sub-ticks (2026-09-13)
+
+Same ship version (no product bump). Real YaP-Folia micro/sub-tick phases across regions:
+
+| Area | Change |
+|------|--------|
+| **Aligned microticks** | Patches `0026`–`0030` — `YapMicroPhase` waves + soft epoch barriers + universal RTQ phase tagging |
+| **Ship defaults** | `folia-aligned-microticks=true`, `folia-micro-phases=4`, `folia-tick-wave-max-wait-ms=2` |
+| **Docs** | README / REAL_GAINS / YAP_FOLIA_PATCHES / YAP_FOLIA_SOAK distinguish AI time-slice vs aligned phases |
+| **Cite** | Re-run `./scripts/yapctl cite-fullcite` with `knob_aligned_microticks` disclosed |
+
+Build: `./scripts/build-yap-folia.sh` · smoke: `YAP_FOLIA_ALIGNED_MICROTICKS=true ./scripts/smoke-folia.sh`.
+
+---
+
 ## After 1.0.0.0 — Docs / AI transparency (2026-09-13)
 
 Same ship version (no product bump). Documentation refresh for GitHub and operators:

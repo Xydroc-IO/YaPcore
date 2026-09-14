@@ -64,39 +64,43 @@ Do **not** flip kill-switches without a matching probe event + comment.
 - [x] `setServerRenderDistance` after connect (on Java Login Play via `JavaLoginTranslator.afterConnect`).
 - [x] Java LevelChunk → Bedrock LevelChunk (Cloudburst EMPTY_CHUNK payload; full JE→BE remap = Phase 4).
 - [x] Wait **real** `SetLocalPlayerAsInitialized` (0x71) → `JOIN_OK` + JOIN_PROBE finish; publisher only after 0x71 (no soft-init).
-- [ ] **Hard Done (ops):** phone → real `0x71` → `JOIN_OK` → session **>60s** without IC-90. JOIN_PROBE `got0x71=true`.
+- [x] **Hard Done (ops):** phone → real `0x71` → `JOIN_OK` → session **>60s** without IC-90. JOIN_PROBE `got0x71=true`.
 
 **Landed in tree:** `LinkBedrockSession`, `ChunkUtils`, `JavaLoginTranslator`, `JavaLevelChunkTranslator`, `BedrockSetLocalPlayerAsInitializedTranslator`, Cloudburst palettes under `yap-link-bedrock` resources; `BedrockSessionHost` feeds Java packets into translators and Bedrock C2S into 0x71 / RequestChunkRadius (store-only).  
-**Do not claim join works until the phone gate above passes.**
+**M1 certify (2026-09-13):** newest probes pass PLAYABLE BASELINE — phone `20260912-171913-Xydroc` (`JOIN_OK`, `got0x71=true`, `java_backend=127.0.0.1:25566`, PlayerList `geometry=ok`, AvailableCommands 8952B, UpdateAbilities, `uniqueRt=32`, `platform=false`, durationMs≈65s, dig/auth events) and bot `20260913-010948-BeCombatBot` (same join gate, durationMs≈60s).
 
-## Phase 4 — World + movement — **code landed; playtest gate pending**
+## Phase 4 — World + movement — **code landed; M1 join gate passed 2026-09-13**
 
-- [x] `JavaBlockUpdateTranslator` — JE `block_update` / `section_blocks_update` → Bedrock `UpdateBlock` or LevelChunk refresh (best-effort; non-air → stone runtime).
+- [x] `JavaBlockUpdateTranslator` — JE `block_update` / `section_blocks_update` → Bedrock `UpdateBlock` (per-cell section remap with hashed network ids).
 - [x] `BedrockMoveTranslator` — `PlayerAuthInput` / `MovePlayer` → JE `move_player_pos_rot`.
-- [x] `JavaMoveTranslator` — JE `player_position` / self entity teleport → Bedrock `MovePlayer` + accept teleport.
-- [x] `JavaLevelChunkTranslator` — passes dimension + chunk X/Z; EMPTY_CHUNK until full remap; after 0x71 spawn column empty + stone `forceUpdate` (Geyser dim-switch style).
+- [x] `JavaMoveTranslator` — JE `player_position` / self entity teleport → Bedrock `MovePlayer` + accept teleport; mid-game REJECT_BURIED stand-on TELEPORT disabled after SPAWNED.
+- [x] `JavaLevelChunkTranslator` — passes dimension + chunk X/Z; REAL pre-0x71; forceUpdate stone poke only when no REAL yet.
 - [x] Wired in `BedrockSessionHost` / `LinkBedrockSession` + expanded `JavaDownstreamClient` play dispatch.
 
-**Playtest gate (not Done):** walk, see terrain update, no kick for 5+ minutes on empty/overworld spawn.
+**M3 dig/place (2026-09-13):** section cells → UpdateBlock; dig without optimistic air; place uses AuthInput/InventoryTransaction click hit + face; dig FX from cached block runtime; size=1 timeout platform retained only as emergency fallback.
 
-## Phase 5 — Inventory + break/place + combat — **code landed; playtest gate pending**
+## Phase 5 — Inventory + break/place + combat — **M2/M4 code landed 2026-09-13**
 
-- [x] `BedrockInventoryTranslator` — `MobEquipment` / `ItemStackRequest` / `InventoryTransaction` → JE held-item basics.
-- [x] `JavaInventoryTranslator` — JE `container_set_content` / `container_set_slot` → Bedrock inventory packets (air-filled; item remap deferred).
-- [x] `BedrockActionTranslator` — `PlayerAction` dig + `InventoryTransaction` place/attack → JE `player_action` / `use_item_on` / `interact`.
+- [x] `BedrockInventoryTranslator` / `BedrockItemStackRequests` — full ItemStackRequest take/place/swap/drop + ItemStackResponse; MobEquipment held sync.
+- [x] `JavaInventoryTranslator` — JE `container_set_content` / `container_set_slot` → real items via `JeItemRegistry` identifiers (+ chest window cache).
+- [x] `BedrockInventoryOpen` — E open anytime + ContainerClose echo + JE container_close + snapshot push.
+- [x] `JavaOpenScreenTranslator` — chest/`open_screen` + slot sync.
+- [x] `BedrockActionTranslator` — dig/place with correct face/hit; AuthInput ItemStackRequest.
+- [x] `BedrockCombat` + `JavaEntityCombatTranslator` — BE→JE `SB_ATTACK`; JE hurt/set_health; mob HP via set_entity_data/attributes; death remove.
+- [x] Unit tests: `JeItemRegistryTest` (dirt/oak_log), `JavaPlayWireAttackTest` / `JavaPlayInventoryWireTest` (attack id + container_click).
+
+**Playtest gate:** phone open/close E, move stacks, chest; break/place dirt/stone/log; melee zombie + JE player.
+
+## Phase 6 — Entities, chat, commands, forms — **N1–N4 code landed 2026-09-13**
+
+- [x] `JavaEntityTranslator` — add/remove + relative moves + SetEntityMotion + metadata nametags.
+- [x] `ChatTranslator` — Bedrock Text ↔ JE chat / system_chat (sanitized).
+- [x] `BedrockCommandTranslator` + `JavaCommandsTranslator` — CommandRequest → JE + AvailableCommands from JE `commands` tree.
+- [x] `BedrockFormBridge` — Floodgate `floodgate:form` → ModalFormRequest; ModalFormResponse → plugin channel (not stub).
+- [x] `JavaSoundTranslator` — explicit break/place/hurt/ambient registry + heuristics.
 - [x] Wired into session packet dispatch.
 
-**Playtest gate (not Done):** hotbar, break/place dirt/stone, hit a mob or player.
-
-## Phase 6 — Entities, chat, commands, forms — **code landed; playtest gate pending**
-
-- [x] `JavaEntityTranslator` — JE `add_entity` / `remove_entities` → Bedrock `AddEntity` / `RemoveEntity` (simplified identity).
-- [x] `ChatTranslator` — Bedrock `Text` ↔ JE chat / system_chat (best-effort unsigned).
-- [x] `BedrockCommandTranslator` — `CommandRequest` → JE `chat_command` + system ack.
-- [x] `BedrockFormBridge` — `ModalFormResponse` → log + optional FormService hook stub + ack text.
-- [x] Wired into session packet dispatch.
-
-**Playtest gate (not Done):** see other players/mobs, chat both ways, run `/help` or YaP command, open one form.
+**Playtest gate:** forms from Folia plugins; mobs path; `/` lists plugin cmds; break/hurt sounds.
 
 ## Phase 7 — Product cutover — **defaults switched to native**
 

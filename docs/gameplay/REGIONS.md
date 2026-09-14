@@ -28,7 +28,7 @@ operators should treat **admin-wins** as the documented product rule going forwa
 
 ## Player claims — flags
 
-Per-claim overrides persist in `yap_claim_flags` (MariaDB via YaPDB).
+Per-claim overrides persist in `yap_claim_flags` (shared SQL via YaPDB).
 
 | Flag | Default | Behavior |
 |------|---------|----------|

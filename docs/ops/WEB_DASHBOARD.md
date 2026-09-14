@@ -133,7 +133,7 @@ Timed / world-scoped example (does **not** go through the rank editor batch):
 {"action":"promote","player":"Steve","track":"yap"}
 ```
 
-MariaDB already stores `world`, `server_ctx`, and `expires_at` on user/group nodes; the dashboard now exposes those fields for ops.
+YaPDB already stores `world`, `server_ctx`, and `expires_at` on user/group nodes; the dashboard now exposes those fields for ops.
 
 ### Kits (`yap-playerdata`)
 

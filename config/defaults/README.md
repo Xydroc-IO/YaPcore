@@ -11,7 +11,7 @@ opt-in gameplay stays **off**. Secrets/binds stay LAN-safe.
 | Path | Purpose |
 |------|---------|
 | `server.properties` | Full product profile (packs, ranks, Folia, dashboard) |
-| `plugins/YaPDB/config.yml` | JDBC aligned with `deploy/mariadb/.env.example` |
+| `plugins/YaPDB/config.yml` | Shared SQL (default MySQL URL; Postgres/SQLite via `jdbc.engine`) — [`YAPDB.md`](../docs/data/YAPDB.md) |
 | `plugins/YaPPlayerData/config.yml` | LAN-friendly auth off; shared YaPDB |
 | `plugins/YaPDiscord/config.yml` | Discord inbound off until webhooks set |
 | `plugins/YaPFactions/config.yml` | Factions/guilds **off** (`enabled: false`) until opted in |
@@ -28,8 +28,10 @@ opt-in gameplay stays **off**. Secrets/binds stay LAN-safe.
 
 **No config file (N/A):** `YaPBedrockUI`, `YaPFoliaBridge`, `WorldEdit` shim — jar-only / no YAML seed.
 
-After MariaDB is up, run `./configure-db.sh --server-id lobby` (or
-`./scripts/db/ensure-db.sh`) so JDBC host/port/password match the live `.env`.
+After the database is up (MariaDB, PostgreSQL, or SQLite), run
+`./scripts/db/configure-db.sh --engine mysql|postgres|sqlite --server-id lobby`
+(or `./scripts/db/ensure-db.sh`) so JDBC host/port/password match. See
+[docs/data/YAPDB.md](../docs/data/YAPDB.md).
 
 **Secrets:** change passwords in `.env` before first start — see [docs/start/SECRETS.md](../docs/start/SECRETS.md).
 

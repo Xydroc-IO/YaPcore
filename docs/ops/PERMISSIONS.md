@@ -2,7 +2,7 @@
 
 YaP first-party plugins gate commands with **Bukkit permission nodes**.
 **Native ranks** ship in **`yap-perms.jar`** (`YaPPerms`) — LuckPerms-class groups,
-inheritance, tracks, temp/world nodes, Vault Permission, prefix/suffix, per-rank chat colors, MariaDB,
+inheritance, tracks, temp/world nodes, Vault Permission, prefix/suffix, per-rank chat colors, shared SQL (YaPDB),
 PlaceholderAPI `%yapperms_*%`. `/lp` is an alias.
 
 ## Quick start (native — default on product installs)
@@ -287,7 +287,7 @@ Dashboard **Access & ranks** is the YaP **ops surface** for permissions (not a L
 **Ranks & colors** edits what each rank may do permanently and globally (YaP commands, vanilla `/gamemode` / `/give`, Paper `/plugins`, deny vs inherit). Create a rank with a **permission pack** (player / staff / admin) or **copy perms from another rank**. Add any node — including wildcards and nodes discovered from installed `plugin.yml` files — via the custom / bulk fields.
 
 - Saves `starter-grants` (allows) and `editor-nodes` (allow + deny) in `plugins/YaPPerms/config.yml`
-- Applies to MariaDB with `/yapperm editor-apply` (dashboard does this after Save) — **global, non-expiring** rows only
+- Applies via YaPDB with `/yapperm editor-apply` (dashboard does this after Save) — **global, non-expiring** rows only
 - Live extras (custom nodes) refresh via `/yapperm dump` → `editor-snapshot.yml`
 - Re-`applypack` reapplies starter grants **and** editor-nodes, so dashboard denies survive
 
@@ -300,7 +300,7 @@ Dashboard **Access & ranks** is the YaP **ops surface** for permissions (not a L
 | `group-perm` / `group-perm-unset` | `/yapperm group permission set\|unset …` |
 | `promote` / `demote` (+ `track`) | `/promote <p> [track]` · `/demote <p> [track]` |
 
-Duration tokens match YaPPerms / LuckPerms muscle memory (`1h`, `1d`, `7d`, `1d12h`, …). Blank world/server = global (server falls back to `server-context` in `config.yml` when set). MariaDB columns: `world`, `server_ctx`, `expires_at`.
+Duration tokens match YaPPerms / LuckPerms muscle memory (`1h`, `1d`, `7d`, `1d12h`, …). Blank world/server = global (server falls back to `server-context` in `config.yml` when set). SQL columns (YaPDB): `world`, `server_ctx`, `expires_at`.
 ## See also
 
 - [COMMANDS.md](COMMANDS.md) · [WEB_DASHBOARD.md](WEB_DASHBOARD.md) · [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md)

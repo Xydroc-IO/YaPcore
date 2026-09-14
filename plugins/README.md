@@ -31,7 +31,7 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-placeholderapi.jar` | Clip-compatible PlaceholderAPI (plugin name `PlaceholderAPI`) |
 | `yap-plugin-compat.jar` | 1.20–1.21 → 26.2 back-compat (`/yapcompat`) |
 | `yap-pregen.jar` | Chunk pre-generator (`/yappregen`) |
-| `yap-db.jar` | Shared MariaDB Hikari pool (`YaPDB`) — `docs/data/YAPDB.md` / `docs/data/MARIADB.md` |
+| `yap-db.jar` | Shared SQL Hikari pool (`YaPDB`) — MariaDB/MySQL · PostgreSQL · SQLite — [`YAPDB.md`](../docs/data/YAPDB.md) |
 | `yap-perms.jar` | Native permissions — groups, tracks, prefixes (`/yapperm`, `/promote`) |
 | `yap-playerdata.jar` | Cross-server sync, auth, session lock, schema — data plane ([PLAYERDATA.md](../docs/data/PLAYERDATA.md)) |
 | `yap-moderation.jar` | Ban/mute/warn/kick + history (`/ban`, `/modhistory`) |

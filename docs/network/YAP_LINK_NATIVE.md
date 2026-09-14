@@ -38,6 +38,7 @@ See also: [`yap-first-party/link/api/`](../../yap-first-party/link/api/) · [`ya
 | Release bundle | — | ✓ `yap-link.jar` in `assembleRelease` | **5** ✓ |
 | Velocity fork retired | — | ✓ archived | **5** ✓ |
 | Play plugin-message relay (`yap:chat`) | plugins | ✓ `PluginMessagePackets` | **6** ✓ |
+| BungeeCord `Connect` / `ConnectOther` (portal plugins) | plugins | ✓ `server-selector` + HANDLED swallow | **6** ✓ |
 | Two-backend probe + chat relay | — | ✓ | **6** ✓ |
 | Bedrock UDP forward to backend | — | ✓ | **6** ✓ |
 
