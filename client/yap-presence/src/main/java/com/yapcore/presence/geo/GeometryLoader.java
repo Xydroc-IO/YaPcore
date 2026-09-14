@@ -10,11 +10,18 @@ import com.yapcore.presence.geo.GeometryModel.PerFaceUv;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Accepts Bedrock {@code minecraft:geometry} JSON or {@code yap.geometry/1} and builds
  * bone/cube lists (ported from chassis {@code GeometryConverter} + cube fields).
+ *
+ * <p>Persona skins often ship <em>multiple</em> geometries in one document (body +
+ * attachments). We merge all of them so JE draws the full assembled look, not only
+ * {@code geometry[0]}.
  */
 public final class GeometryLoader {
 
@@ -54,8 +61,13 @@ public final class GeometryLoader {
         if (geos == null || geos.isEmpty()) {
             return empty();
         }
-        // Prefer first geometry (humanoid custom)
-        return fromSingleGeo(geos.get(0).getAsJsonObject());
+        List<GeometryModel> parts = new ArrayList<>(geos.size());
+        for (JsonElement el : geos) {
+            if (el != null && el.isJsonObject()) {
+                parts.add(fromSingleGeo(el.getAsJsonObject()));
+            }
+        }
+        return merge(parts);
     }
 
     private static GeometryModel fromYap(JsonObject root) {
@@ -66,7 +78,75 @@ public final class GeometryLoader {
         if (arr.isEmpty()) {
             return empty();
         }
-        return fromYapGeometry(arr.get(0).getAsJsonObject());
+        List<GeometryModel> parts = new ArrayList<>(arr.size());
+        for (JsonElement el : arr) {
+            if (el != null && el.isJsonObject()) {
+                parts.add(fromYapGeometry(el.getAsJsonObject()));
+            }
+        }
+        return merge(parts);
+    }
+
+    /** Merge body + attachment geometries; same-named bones combine cubes. */
+    static GeometryModel merge(List<GeometryModel> parts) {
+        if (parts == null || parts.isEmpty()) {
+            return empty();
+        }
+        if (parts.size() == 1) {
+            return parts.get(0);
+        }
+        String id = parts.get(0).identifier();
+        int tw = 64;
+        int th = 64;
+        Map<String, BoneAcc> byName = new LinkedHashMap<>();
+        for (GeometryModel part : parts) {
+            if (part == null) {
+                continue;
+            }
+            tw = Math.max(tw, part.textureWidth());
+            th = Math.max(th, part.textureHeight());
+            if (id == null || id.isBlank()) {
+                id = part.identifier();
+            }
+            for (Bone bone : part.bones()) {
+                String key = bone.name().toLowerCase(Locale.ROOT);
+                BoneAcc acc = byName.get(key);
+                if (acc == null) {
+                    acc = new BoneAcc(bone.name(), bone.parent(), bone.pivot(), bone.rotation());
+                    byName.put(key, acc);
+                } else {
+                    if (acc.parent.isBlank() && !bone.parent().isBlank()) {
+                        acc.parent = bone.parent();
+                    }
+                }
+                acc.cubes.addAll(bone.cubes());
+            }
+        }
+        List<Bone> bones = new ArrayList<>(byName.size());
+        for (BoneAcc acc : byName.values()) {
+            List<Cube> cubes = new ArrayList<>(acc.cubes);
+            cubes.sort(Comparator
+                    .comparing((Cube o) -> arrKey(o.origin()))
+                    .thenComparing(o -> arrKey(o.size())));
+            bones.add(new Bone(acc.name, acc.parent, acc.pivot, acc.rotation, cubes));
+        }
+        bones.sort(Comparator.comparing(Bone::name));
+        return new GeometryModel(id == null ? "" : id, tw, th, bones);
+    }
+
+    private static final class BoneAcc {
+        final String name;
+        String parent;
+        final float[] pivot;
+        final float[] rotation;
+        final List<Cube> cubes = new ArrayList<>();
+
+        BoneAcc(String name, String parent, float[] pivot, float[] rotation) {
+            this.name = name;
+            this.parent = parent == null ? "" : parent;
+            this.pivot = pivot;
+            this.rotation = rotation;
+        }
     }
 
     private static GeometryModel fromYapGeometry(JsonObject geo) {

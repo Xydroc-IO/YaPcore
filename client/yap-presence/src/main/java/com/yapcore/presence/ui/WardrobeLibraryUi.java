@@ -1,22 +1,17 @@
 package com.yapcore.presence.ui;
 
 import com.yapcore.presence.PresenceSkinApplier;
-import com.yapcore.presence.PresenceTextureCache;
 import com.yapcore.presence.YapPresenceClient;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.PlayerSkinWidget;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
-import net.minecraft.client.gui.layouts.GridLayout;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.network.chat.Component;
 
-import java.util.List;
-
 /**
- * Scrollable library column for {@link WardrobeScreen}: wardrobe slots, local PNGs, URL import.
+ * Scrollable library column: wardrobe + local skin <em>names</em> (no per-card 3D widgets).
+ * The left rotator is the only live {@code PlayerSkinWidget}.
  */
 final class WardrobeLibraryUi {
 
@@ -36,37 +31,23 @@ final class WardrobeLibraryUi {
                 "Saved looks (" + w.slots().size() + ")"), host.uiFont()));
         if (w.slots().isEmpty()) {
             body.addChild(new StringWidget(Component.literal(
-                    "None yet — Use a downloaded skin below, then Save."), host.uiFont()));
+                    "None yet — Use a downloaded skin, then Save."), host.uiFont()));
         } else {
-            int cols = host.width >= 900 ? 2 : 1;
-            List<PresenceUiMessages.SlotView> slots = w.slots();
-            for (int i = 0; i < slots.size(); i += cols) {
-                LinearLayout row = LinearLayout.horizontal().spacing(8);
-                for (int c = 0; c < cols && i + c < slots.size(); c++) {
-                    row.addChild(buildSlotCard(slots.get(i + c), Math.max(150, (lw - 8) / cols)));
-                }
-                body.addChild(row);
+            for (PresenceUiMessages.SlotView slot : w.slots()) {
+                body.addChild(buildSlotRow(slot, lw));
             }
         }
 
         body.addChild(new StringWidget(Component.literal(" "), host.uiFont()));
         body.addChild(new StringWidget(Component.literal(
-                "Downloaded skins (" + host.localSkins.size() + ")"), host.uiFont()));
-        body.addChild(new StringWidget(Component.literal(
-                "3D previews · Use updates you · Save as… keeps it"), host.uiFont()));
+                "Downloaded (" + host.localSkins.size() + ") · use ◀ ▶ rotator"), host.uiFont()));
 
         if (host.localSkins.isEmpty()) {
             body.addChild(new StringWidget(Component.literal(
-                    "No skin-sized PNGs found — use Browse PNG…"), host.uiFont()));
+                    "No skin-sized PNGs found — Browse PNG…"), host.uiFont()));
         } else {
-            int cols = host.width >= 780 ? 3 : (host.width >= 520 ? 2 : 1);
-            int cardW = Math.max(100, (lw - (cols - 1) * 8) / cols);
-            for (int i = 0; i < host.localSkins.size(); i += cols) {
-                LinearLayout row = LinearLayout.horizontal().spacing(8);
-                for (int c = 0; c < cols && i + c < host.localSkins.size(); c++) {
-                    row.addChild(buildLocalCard(host.localSkins.get(i + c), cardW));
-                }
-                body.addChild(row);
+            for (LocalSkinLibrary.Entry entry : host.localSkins) {
+                body.addChild(buildLocalRow(entry, lw));
             }
         }
 
@@ -119,32 +100,28 @@ final class WardrobeLibraryUi {
                 .build());
 
         body.addChild(Button.builder(Component.literal("Refresh local files"), b -> {
-            host.localSkins = LocalSkinLibrary.scan(24);
+            host.localSkins = LocalSkinLibrary.scan(32);
             host.rebuild();
         }).width(lw).build());
     }
 
-    private LinearLayout buildLocalCard(LocalSkinLibrary.Entry entry, int width) {
-        LinearLayout card = LinearLayout.vertical().spacing(2);
-        PresenceTextureCache.ensureLocalFile(entry.path());
-        Minecraft mc = host.client() != null ? host.client() : Minecraft.getInstance();
-        if (mc != null && mc.getEntityModels() != null) {
-            int thumb = Math.min(84, Math.max(56, width - 8));
-            PlayerSkinWidget mini = new PlayerSkinWidget(
-                    thumb, (int) (thumb * 1.65f), mc.getEntityModels(), () -> skins.resolveLocalSkin(entry));
-            card.addChild(mini);
-        }
-        card.addChild(new StringWidget(Component.literal(WardrobeScreen.truncate(entry.name(), 16)), host.uiFont()));
-        int btnW = Math.max(48, (width - 6) / 2);
-        GridLayout actions = new GridLayout().columnSpacing(4);
-        GridLayout.RowHelper rows = actions.createRowHelper(2);
-        Button use = Button.builder(Component.literal("Use"), b -> {
+    private LinearLayout buildLocalRow(LocalSkinLibrary.Entry entry, int width) {
+        LinearLayout row = LinearLayout.horizontal().spacing(4);
+        int nameW = Math.max(80, width - 100);
+        int btnW = 48;
+        Button name = Button.builder(Component.literal(WardrobeScreen.truncate(entry.name(), 22)), b -> {
+            skins.focusLocal(entry);
+            skins.previewLocalOnly(entry);
+            host.refreshLiveLabels();
+        }).width(nameW).build();
+        name.setTooltip(Tooltip.create(Component.literal(entry.path().toString())));
+        row.addChild(name);
+        row.addChild(Button.builder(Component.literal("Use"), b -> {
             skins.focusLocal(entry);
             skins.applyLocalFile(entry, false);
-        }).width(btnW).build();
-        use.setTooltip(Tooltip.create(Component.literal(entry.path().toString())));
-        rows.addChild(use);
-        rows.addChild(Button.builder(Component.literal("Save"), b -> {
+            host.refreshLiveLabels();
+        }).width(btnW).build());
+        row.addChild(Button.builder(Component.literal("Save"), b -> {
             skins.focusLocal(entry);
             skins.applyLocalFile(entry, false);
             if (host.saveNameBox != null) {
@@ -152,80 +129,61 @@ final class WardrobeLibraryUi {
             }
             YapPresenceClient.sendRaw("WARDROBE|SAVE|" + PresenceUiMessages.b64(entry.name()));
             TailorPreviewStore.setStatus("Saving " + entry.name() + "…");
+            host.refreshLiveLabels();
         }).width(btnW).build());
-        card.addChild(actions);
-        return card;
+        return row;
     }
 
-    private LinearLayout buildSlotCard(PresenceUiMessages.SlotView slot, int width) {
-        LinearLayout card = LinearLayout.vertical().spacing(2);
+    private LinearLayout buildSlotRow(PresenceUiMessages.SlotView slot, int width) {
         long selected = TailorPreviewStore.selectedSlotId();
         long active = TailorPreviewStore.activeSlotId();
         boolean isSelected = selected == slot.id();
         boolean isActive = active == slot.id();
 
-        String title = WardrobeScreen.truncate(slot.name(), 18)
-                + (slot.slim() ? " · slim" : " · wide")
-                + (isActive ? " · wearing" : "")
-                + (isSelected ? " · preview" : "");
-        card.addChild(new StringWidget(Component.literal(title), host.uiFont()));
+        String title = WardrobeScreen.truncate(slot.name(), 16)
+                + (slot.slim() ? " · slim" : "")
+                + (isActive ? " · on" : "")
+                + (isSelected ? " · ·" : "");
 
-        PresenceTextureCache.ensureWardrobeSlot(slot.id(), slot.skinUrl(), slot.capeUrl());
-        Minecraft mc = host.client() != null ? host.client() : Minecraft.getInstance();
-        if (mc != null && mc.getEntityModels() != null) {
-            int thumb = Math.min(72, Math.max(48, width / 2));
-            PlayerSkinWidget mini = new PlayerSkinWidget(
-                    thumb, (int) (thumb * 1.6f), mc.getEntityModels(), () -> skins.resolveSlotSkin(slot));
-            card.addChild(mini);
-        }
-
-        int btnW = Math.max(60, (width - 6) / 2);
-        GridLayout actions = new GridLayout().columnSpacing(6).rowSpacing(2);
-        GridLayout.RowHelper rows = actions.createRowHelper(2);
-        rows.addChild(Button.builder(Component.literal(isSelected ? "Selected" : "Preview"), b -> {
+        LinearLayout row = LinearLayout.horizontal().spacing(4);
+        int nameW = Math.max(70, width - 148);
+        int btnW = 46;
+        row.addChild(Button.builder(Component.literal(title), b -> {
             host.pendingDeleteId = null;
             skins.selectSlot(slot);
-        }).width(btnW).build());
-        rows.addChild(Button.builder(Component.literal("Wear"), b -> {
+            for (int i = 0; i < PresenceUiStore.wardrobe().slots().size(); i++) {
+                if (PresenceUiStore.wardrobe().slots().get(i).id() == slot.id()) {
+                    host.carouselIndex = i;
+                    break;
+                }
+            }
+            host.refreshLiveLabels();
+        }).width(nameW).build());
+        row.addChild(Button.builder(Component.literal("Wear"), b -> {
             host.pendingDeleteId = null;
             skins.selectSlot(slot);
             skins.wearSlotNow(slot);
+            host.refreshLiveLabels();
         }).width(btnW).build());
 
         if (host.pendingDeleteId != null && host.pendingDeleteId == slot.id()) {
-            rows.addChild(Button.builder(Component.literal("Confirm del"), b -> {
+            row.addChild(Button.builder(Component.literal("OK del"), b -> {
                 YapPresenceClient.sendRaw("WARDROBE|DELETE|" + slot.id());
                 host.pendingDeleteId = null;
                 if (TailorPreviewStore.selectedSlotId() == slot.id()) {
                     TailorPreviewStore.setSelectedSlotId(-1L);
                 }
             }).width(btnW).build());
-            rows.addChild(Button.builder(Component.literal("Cancel"), b -> {
+            row.addChild(Button.builder(Component.literal("No"), b -> {
                 host.pendingDeleteId = null;
                 host.rebuild();
             }).width(btnW).build());
         } else {
-            rows.addChild(Button.builder(Component.literal("Delete"), b -> {
+            row.addChild(Button.builder(Component.literal("Del"), b -> {
                 host.pendingDeleteId = slot.id();
                 host.rebuild();
             }).width(btnW).build());
-            rows.addChild(Button.builder(Component.literal("Rename"), b -> {
-                skins.selectSlot(slot);
-                String name = host.renameBox != null && !host.renameBox.getValue().isBlank()
-                        ? host.renameBox.getValue().trim()
-                        : slot.name();
-                YapPresenceClient.sendRaw(
-                        "WARDROBE|RENAME|" + slot.id() + "|" + PresenceUiMessages.b64(name));
-            }).width(btnW).build());
         }
-        card.addChild(actions);
-
-        if (isSelected) {
-            host.renameBox = new EditBox(host.uiFont(), width, 18, Component.literal("Rename"));
-            host.renameBox.setMaxLength(48);
-            host.renameBox.setValue(slot.name());
-            card.addChild(host.renameBox);
-        }
-        return card;
+        return row;
     }
 }

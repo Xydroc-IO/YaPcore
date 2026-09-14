@@ -290,6 +290,41 @@ public final class PresenceChannel implements PluginMessageListener {
         });
     }
 
+    /**
+     * Chassis → JE: broadcast a Bedrock-ingested skin (URL + geometry) without requiring a
+     * Tailor ActiveSkin row. Used so persona / custom geo from {@code SkinService} reaches
+     * {@code yap-presence} clients.
+     */
+    public void broadcastExternalSkin(UUID subjectUuid, boolean slim, String skinUrl, String geometryJson) {
+        if (subjectUuid == null || skinUrl == null || skinUrl.isBlank()) {
+            return;
+        }
+        String geo = geometryJson == null ? "" : geometryJson;
+        String payload = "SKIN|"
+                + subjectUuid
+                + "|"
+                + (slim ? "1" : "0")
+                + "|"
+                + skinUrl
+                + "|"
+                + (geo.isEmpty()
+                        ? ""
+                        : Base64.getEncoder().encodeToString(geo.getBytes(StandardCharsets.UTF_8)));
+        byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
+        YapSched.global(plugin, () -> {
+            for (UUID client : presenceClients) {
+                Player viewer = Bukkit.getPlayer(client);
+                if (viewer != null && viewer.isOnline()) {
+                    viewer.sendPluginMessage(plugin, CHANNEL, bytes);
+                }
+            }
+            Player subject = Bukkit.getPlayer(subjectUuid);
+            if (subject != null && subject.isOnline() && !presenceClients.contains(subjectUuid)) {
+                subject.sendPluginMessage(plugin, CHANNEL, bytes);
+            }
+        });
+    }
+
     private void sendSkinAsync(UUID viewerUuid, UUID subjectUuid) {
         try {
             Optional<ActiveSkin> activeOpt = service.getActiveSkin(subjectUuid);

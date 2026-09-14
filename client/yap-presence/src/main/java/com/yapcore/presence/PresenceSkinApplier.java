@@ -82,7 +82,16 @@ public final class PresenceSkinApplier {
             return PlayerSkin.insecure(base.body(), base.cape(), base.elytra(), model);
         }
         PlayerModelType model = presence.slim() ? PlayerModelType.SLIM : PlayerModelType.WIDE;
-        ClientAsset.Texture body = new ClientAsset.ResourceTexture(bodyId);
+        if (!PresenceTextureCache.isRegistered(bodyId)) {
+            if (presence.skinPngUrl() != null && !presence.skinPngUrl().isBlank()) {
+                PresenceTextureCache.ensureDownloaded(uuid, presence.skinPngUrl());
+            }
+            if (base.model() == model) {
+                return base;
+            }
+            return PlayerSkin.insecure(base.body(), base.cape(), base.elytra(), model);
+        }
+        ClientAsset.Texture body = PresencePlayerSkins.body(bodyId);
         return PlayerSkin.insecure(body, base.cape(), base.elytra(), model);
     }
 }

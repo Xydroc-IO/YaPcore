@@ -1,5 +1,6 @@
 package com.yapcore.presence.ui;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerModelType;
 
@@ -22,6 +23,7 @@ public final class TailorPreviewStore {
     private static final AtomicLong SELECTED_SLOT = new AtomicLong(-1L);
     private static final AtomicLong ACTIVE_SLOT = new AtomicLong(-1L);
     private static final CopyOnWriteArrayList<Runnable> LISTENERS = new CopyOnWriteArrayList<>();
+    private static final AtomicBoolean NOTIFY_SCHEDULED = new AtomicBoolean(false);
 
     private TailorPreviewStore() {
     }
@@ -133,6 +135,23 @@ public final class TailorPreviewStore {
     }
 
     public static void notifyTexturesChanged() {
+        // Coalesce storms from async local/wardrobe PNG loads — full wardrobe rebuild
+        // on every texture is what caused Missing resource spam + exit 9 thrash.
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null) {
+            flushListeners();
+            return;
+        }
+        if (!NOTIFY_SCHEDULED.compareAndSet(false, true)) {
+            return;
+        }
+        mc.execute(() -> {
+            NOTIFY_SCHEDULED.set(false);
+            flushListeners();
+        });
+    }
+
+    private static void flushListeners() {
         for (Runnable r : LISTENERS) {
             try {
                 r.run();

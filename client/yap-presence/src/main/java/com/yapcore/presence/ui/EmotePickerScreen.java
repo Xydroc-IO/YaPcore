@@ -1,5 +1,6 @@
 package com.yapcore.presence.ui;
 
+import com.yapcore.presence.PresencePlayerSkins;
 import com.yapcore.presence.PresenceTextureCache;
 import com.yapcore.presence.YapPresenceClient;
 import net.minecraft.client.CameraType;
@@ -8,7 +9,6 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlayerSkinWidget;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.core.ClientAsset;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerSkin;
@@ -124,11 +124,14 @@ public final class EmotePickerScreen extends PresencePanelScreen {
                 bodyId = ready;
             }
         }
-        if (bodyId != null) {
-            ClientAsset.Texture body = new ClientAsset.ResourceTexture(bodyId);
+        if (bodyId != null && PresenceTextureCache.isRegistered(bodyId)) {
             Identifier capeId = TailorPreviewStore.capeTexture();
-            ClientAsset.Texture cape = capeId == null ? null : new ClientAsset.ResourceTexture(capeId);
-            return PlayerSkin.insecure(body, cape, null, TailorPreviewStore.modelType());
+            return PlayerSkin.insecure(
+                    PresencePlayerSkins.body(bodyId),
+                    PresencePlayerSkins.optional(
+                            capeId != null && PresenceTextureCache.isRegistered(capeId) ? capeId : null),
+                    null,
+                    TailorPreviewStore.modelType());
         }
         if (mc.player != null) {
             return mc.player.getSkin();

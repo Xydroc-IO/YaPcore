@@ -1,11 +1,11 @@
 package com.yapcore.presence.ui;
 
 import com.yapcore.presence.PresenceSkinApplier;
+import com.yapcore.presence.PresencePlayerSkins;
 import com.yapcore.presence.PresenceTextureCache;
 import com.yapcore.presence.YapPresenceClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.PlayerSkinWidget;
-import net.minecraft.core.ClientAsset;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.PlayerModelType;
 import net.minecraft.world.entity.player.PlayerSkin;
@@ -30,13 +30,17 @@ final class WardrobeSkinSupport {
         TailorPreviewStore.setSlim(slot.slim());
         PresenceTextureCache.ensureWardrobeSlot(slot.id(), slot.skinUrl(), slot.capeUrl());
         Identifier skin = PresenceTextureCache.getIfReady("wardrobe/" + slot.id());
-        if (skin != null) {
+        if (skin != null && PresenceTextureCache.isRegistered(skin)) {
             TailorPreviewStore.setSkinTexture(skin);
         }
         Identifier cape = PresenceTextureCache.getIfReady("wardrobe/" + slot.id() + "_cape");
-        TailorPreviewStore.setCapeTexture(cape);
+        if (cape != null && PresenceTextureCache.isRegistered(cape)) {
+            TailorPreviewStore.setCapeTexture(cape);
+        } else {
+            TailorPreviewStore.setCapeTexture(null);
+        }
         TailorPreviewStore.setStatus("Previewing " + slot.name());
-        host.rebuild();
+        host.refreshLiveLabels();
     }
 
     void applyLocalFile(LocalSkinLibrary.Entry entry, boolean cape) {
@@ -69,7 +73,8 @@ final class WardrobeSkinSupport {
         Identifier id = cape
                 ? TailorPreviewStore.previewCapeId(uuid)
                 : TailorPreviewStore.previewSkinId(uuid);
-        PresenceTextureCache.registerBytes(id, bytes);
+        // Sync register so preview / in-world apply can use the texture this frame.
+        PresenceTextureCache.registerBytesNow(id, bytes);
         TailorPreviewStore.setSelectedSlotId(-1L);
         if (cape) {
             TailorPreviewStore.setCapeTexture(id);
@@ -120,6 +125,14 @@ final class WardrobeSkinSupport {
     }
 
     PlayerSkin resolvePreviewSkin() {
+        // Rotator index is source of truth while browsing — don't wait for a rebuild.
+        int slots = host.wardrobeSlotCount();
+        if (host.carouselIndex >= 0 && host.carouselIndex < host.carouselSize()) {
+            if (host.carouselIndex < slots) {
+                return resolveSlotSkin(PresenceUiStore.wardrobe().slots().get(host.carouselIndex));
+            }
+            return resolveLocalSkin(host.localSkins.get(host.carouselIndex - slots));
+        }
         long selected = TailorPreviewStore.selectedSlotId();
         if (selected > 0) {
             for (PresenceUiMessages.SlotView slot : PresenceUiStore.wardrobe().slots()) {
@@ -136,10 +149,13 @@ final class WardrobeSkinSupport {
         Identifier bodyId = PresenceTextureCache.getIfReady("wardrobe/" + slot.id());
         Identifier capeId = PresenceTextureCache.getIfReady("wardrobe/" + slot.id() + "_cape");
         PlayerModelType model = slot.slim() ? PlayerModelType.SLIM : PlayerModelType.WIDE;
-        if (bodyId != null) {
-            ClientAsset.Texture body = new ClientAsset.ResourceTexture(bodyId);
-            ClientAsset.Texture cape = capeId == null ? null : new ClientAsset.ResourceTexture(capeId);
-            return PlayerSkin.insecure(body, cape, null, model);
+        if (bodyId != null && PresenceTextureCache.isRegistered(bodyId)) {
+            return PlayerSkin.insecure(
+                    PresencePlayerSkins.body(bodyId),
+                    PresencePlayerSkins.optional(
+                            capeId != null && PresenceTextureCache.isRegistered(capeId) ? capeId : null),
+                    null,
+                    model);
         }
         return resolveActiveOrImportSkin();
     }
@@ -148,16 +164,16 @@ final class WardrobeSkinSupport {
         Minecraft mc = Minecraft.getInstance();
         Identifier bodyId = TailorPreviewStore.skinTexture();
         if (bodyId == null && mc.player != null) {
-            Identifier ready = PresenceTextureCache.getIfReady(mc.player.getUUID());
-            if (ready != null) {
-                bodyId = ready;
-            }
+            bodyId = PresenceTextureCache.getIfReady(mc.player.getUUID());
         }
-        if (bodyId != null) {
-            ClientAsset.Texture body = new ClientAsset.ResourceTexture(bodyId);
+        if (bodyId != null && PresenceTextureCache.isRegistered(bodyId)) {
             Identifier capeId = TailorPreviewStore.capeTexture();
-            ClientAsset.Texture cape = capeId == null ? null : new ClientAsset.ResourceTexture(capeId);
-            return PlayerSkin.insecure(body, cape, null, TailorPreviewStore.modelType());
+            return PlayerSkin.insecure(
+                    PresencePlayerSkins.body(bodyId),
+                    PresencePlayerSkins.optional(
+                            capeId != null && PresenceTextureCache.isRegistered(capeId) ? capeId : null),
+                    null,
+                    TailorPreviewStore.modelType());
         }
         if (mc.player != null) {
             return mc.player.getSkin();
@@ -200,16 +216,11 @@ final class WardrobeSkinSupport {
     }
 
     PlayerSkin resolveLocalSkin(LocalSkinLibrary.Entry entry) {
-        Identifier id = PresenceTextureCache.ensureLocalFile(entry.path());
+        PresenceTextureCache.ensureLocalFile(entry.path());
         Identifier ready = PresenceTextureCache.getIfReady(PresenceTextureCache.localFileCacheKey(entry.path()));
-        if (ready == null) {
-            ready = id != null && PresenceTextureCache.getIfReady(id.toString()) != null ? id : null;
-        }
-        // ensureLocalFile puts KEY_READY under localFileCacheKey
-        ready = PresenceTextureCache.getIfReady(PresenceTextureCache.localFileCacheKey(entry.path()));
-        if (ready != null) {
-            ClientAsset.Texture body = new ClientAsset.ResourceTexture(ready);
-            return PlayerSkin.insecure(body, null, null, TailorPreviewStore.modelType());
+        if (ready != null && PresenceTextureCache.isRegistered(ready)) {
+            return PlayerSkin.insecure(
+                    PresencePlayerSkins.body(ready), null, null, TailorPreviewStore.modelType());
         }
         return resolveActiveOrImportSkin();
     }
@@ -229,24 +240,29 @@ final class WardrobeSkinSupport {
         TailorPreviewStore.setSlim(slot.slim());
         PresenceTextureCache.ensureWardrobeSlot(slot.id(), slot.skinUrl(), slot.capeUrl());
         Identifier skin = PresenceTextureCache.getIfReady("wardrobe/" + slot.id());
-        if (skin != null) {
+        if (skin != null && PresenceTextureCache.isRegistered(skin)) {
             TailorPreviewStore.setSkinTexture(skin);
         }
         Identifier cape = PresenceTextureCache.getIfReady("wardrobe/" + slot.id() + "_cape");
-        TailorPreviewStore.setCapeTexture(cape);
+        if (cape != null && PresenceTextureCache.isRegistered(cape)) {
+            TailorPreviewStore.setCapeTexture(cape);
+        } else {
+            TailorPreviewStore.setCapeTexture(null);
+        }
         TailorPreviewStore.setStatus("Preview · " + slot.name());
     }
 
     void previewLocalOnly(LocalSkinLibrary.Entry entry) {
-        Identifier id = PresenceTextureCache.ensureLocalFile(entry.path());
+        PresenceTextureCache.ensureLocalFile(entry.path());
         Identifier ready = PresenceTextureCache.getIfReady(PresenceTextureCache.localFileCacheKey(entry.path()));
-        if (ready == null) {
-            ready = id;
-        }
         TailorPreviewStore.setSelectedSlotId(-1L);
-        if (ready != null) {
+        // Never point PlayerSkin at an unregistered DynamicTexture id — MC logs
+        // "Missing resource yap-presence:local/…" and can thrash the texture manager.
+        if (ready != null && PresenceTextureCache.isRegistered(ready)) {
             TailorPreviewStore.setSkinTexture(ready);
+            TailorPreviewStore.setStatus("Preview · " + entry.name());
+        } else {
+            TailorPreviewStore.setStatus("Loading · " + entry.name());
         }
-        TailorPreviewStore.setStatus("Preview · " + entry.name());
     }
 }

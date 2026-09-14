@@ -2,7 +2,6 @@ package com.yapcore.presence;
 
 import com.yapcore.presence.ui.TailorPreviewStore;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 import com.mojang.blaze3d.platform.NativeImage;
@@ -39,6 +38,9 @@ public final class PresenceTextureCache {
     private static final Map<UUID, String> IN_FLIGHT_URL = new ConcurrentHashMap<>();
     private static final Map<String, Identifier> KEY_READY = new ConcurrentHashMap<>();
     private static final Map<String, String> KEY_IN_FLIGHT = new ConcurrentHashMap<>();
+    /** Ids we successfully bound as {@link DynamicTexture} — never probe TextureManager.getTexture. */
+    private static final ConcurrentHashMap.KeySetView<Identifier, Boolean> DYNAMIC_BOUND =
+            ConcurrentHashMap.newKeySet();
 
     private PresenceTextureCache() {
     }
@@ -62,6 +64,15 @@ public final class PresenceTextureCache {
 
     public static Identifier getIfReady(String cacheKey) {
         return cacheKey == null ? null : KEY_READY.get(cacheKey);
+    }
+
+    /**
+     * True when we registered {@code id} as a {@link DynamicTexture}.
+     * Never call {@code TextureManager#getTexture} here — on MC 26.2 that auto-loads a
+     * SimpleTexture from the resource pack and logs {@code Missing resource yap-presence:…}.
+     */
+    public static boolean isRegistered(Identifier id) {
+        return id != null && DYNAMIC_BOUND.contains(id);
     }
 
     public static void ensureDownloaded(UUID uuid, String url) {
@@ -155,7 +166,7 @@ public final class PresenceTextureCache {
                     try {
                         registerIdentifier(id, image);
                         KEY_READY.put(key, id);
-                        TailorPreviewStore.notifyTexturesChanged();
+                        // PlayerSkinWidget suppliers poll getIfReady — no UI rebuild.
                     } catch (Exception e) {
                         LOGGER.warn("Failed to register local skin {}: {}", path, e.toString());
                         try {
@@ -193,6 +204,20 @@ public final class PresenceTextureCache {
         });
     }
 
+    /** Decode + register on the calling thread (must be render thread). */
+    public static void registerBytesNow(Identifier id, byte[] pngBytes) {
+        if (id == null || pngBytes == null || pngBytes.length == 0) {
+            return;
+        }
+        try {
+            NativeImage image = NativeImage.read(new java.io.ByteArrayInputStream(pngBytes));
+            registerIdentifier(id, image);
+            KEY_READY.put(id.toString(), id);
+        } catch (Exception e) {
+            LOGGER.warn("Failed to decode PNG for {}: {}", id, e.toString());
+        }
+    }
+
     private static void registerIdentifier(Identifier id, NativeImage image) {
         try {
             Minecraft mc = Minecraft.getInstance();
@@ -200,21 +225,13 @@ public final class PresenceTextureCache {
                 image.close();
                 return;
             }
-            AbstractTexture previous = null;
-            try {
-                previous = mc.getTextureManager().getTexture(id);
-            } catch (Exception ignored) {
-            }
+            // Do NOT call getTexture(id) first — that fabricates a SimpleTexture + Missing resource warn.
             DynamicTexture dynamic = new DynamicTexture(() -> id.toString(), image);
             mc.getTextureManager().register(id, dynamic);
-            if (previous instanceof DynamicTexture old && previous != dynamic) {
-                try {
-                    old.close();
-                } catch (Exception ignored) {
-                }
-            }
+            DYNAMIC_BOUND.add(id);
         } catch (Exception e) {
             LOGGER.warn("Failed to register texture {}: {}", id, e.toString());
+            DYNAMIC_BOUND.remove(id);
             try {
                 image.close();
             } catch (Exception ignored) {
@@ -293,19 +310,10 @@ public final class PresenceTextureCache {
                 return;
             }
             Identifier id = textureId(uuid);
-            AbstractTexture previous = null;
-            try {
-                previous = mc.getTextureManager().getTexture(id);
-            } catch (Exception ignored) {
-            }
+            // Do NOT probe getTexture(id) — that loads a missing SimpleTexture first.
             DynamicTexture dynamic = new DynamicTexture(() -> "yap-presence/" + uuid, image);
             mc.getTextureManager().register(id, dynamic);
-            if (previous instanceof DynamicTexture old && previous != dynamic) {
-                try {
-                    old.close();
-                } catch (Exception ignored) {
-                }
-            }
+            DYNAMIC_BOUND.add(id);
             READY.put(uuid, id);
             TailorPreviewStore.setSkinTexture(id);
             TailorPreviewStore.notifyTexturesChanged();
@@ -323,7 +331,7 @@ public final class PresenceTextureCache {
      * so the in-world avatar updates immediately.
      */
     public static void bindReady(UUID uuid, Identifier texture) {
-        if (uuid == null || texture == null) {
+        if (uuid == null || texture == null || !isRegistered(texture)) {
             return;
         }
         READY.put(uuid, texture);
@@ -336,8 +344,11 @@ public final class PresenceTextureCache {
         if (uuid == null) {
             return;
         }
-        READY.remove(uuid);
+        Identifier old = READY.remove(uuid);
         IN_FLIGHT_URL.remove(uuid);
+        if (old != null) {
+            // Keep DYNAMIC_BOUND — texture may still be used by preview widgets.
+        }
     }
 
     public static void clear() {
@@ -345,5 +356,6 @@ public final class PresenceTextureCache {
         IN_FLIGHT_URL.clear();
         KEY_READY.clear();
         KEY_IN_FLIGHT.clear();
+        DYNAMIC_BOUND.clear();
     }
 }

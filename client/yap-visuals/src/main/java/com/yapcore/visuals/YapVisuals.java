@@ -57,41 +57,43 @@ public final class YapVisuals implements ClientModInitializer {
     }
 
     /**
-     * Best-effort: set Iris to use yap-shaders when no pack is selected yet.
-     * Does not override an existing user choice.
+     * First launch only: select {@code yap-shaders.zip} when Iris has no pack yet.
+     * Never re-force shaders on later launches — overwriting every boot made held-item
+     * bugs (and user "shaders off" choices) impossible to keep.
      */
     private static void preferShaderPack(Path gameDir) throws IOException {
         Path config = gameDir.resolve("config");
         Files.createDirectories(config);
 
-        Path irisProps = config.resolve("iris.properties");
-        Properties props = new Properties();
-        if (Files.isRegularFile(irisProps)) {
-            try (InputStream in = Files.newInputStream(irisProps)) {
-                props.load(in);
-            }
-        }
-
-        String current = props.getProperty("shaderPack", "");
-        props.setProperty("shaderPack", SHADER_PACK_NAME);
-        props.setProperty("enableShaders", "true");
-        try (OutputStream out = Files.newOutputStream(irisProps,
-                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
-            props.store(out, "YaP Visuals — force-enable " + SHADER_PACK_NAME);
-        }
-        if (current != null && !current.isBlank() && !SHADER_PACK_NAME.equals(current)
-                && !"OFF".equalsIgnoreCase(current)) {
-            LOG.info("Iris shaderPack was '{}'; switched to {}", current, SHADER_PACK_NAME);
-        } else {
-            LOG.info("Iris config: shaderPack={} enableShaders=true", SHADER_PACK_NAME);
-        }
-
-        // Marker so operators know the all-in-one mod ran
         Path marker = config.resolve("yap-visuals-installed.txt");
-        if (!Files.isRegularFile(marker)) {
+        Path irisProps = config.resolve("iris.properties");
+        boolean firstInstall = !Files.isRegularFile(marker);
+
+        if (firstInstall) {
+            Properties props = new Properties();
+            if (Files.isRegularFile(irisProps)) {
+                try (InputStream in = Files.newInputStream(irisProps)) {
+                    props.load(in);
+                }
+            }
+            String current = props.getProperty("shaderPack", "");
+            if (current == null || current.isBlank() || "OFF".equalsIgnoreCase(current.trim())) {
+                props.setProperty("shaderPack", SHADER_PACK_NAME);
+                props.setProperty("enableShaders", "true");
+                try (OutputStream out = Files.newOutputStream(irisProps,
+                        StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
+                    props.store(out, "YaP Visuals — first-run default " + SHADER_PACK_NAME);
+                }
+                LOG.info("Iris first-run default: shaderPack={} enableShaders=true", SHADER_PACK_NAME);
+            } else {
+                LOG.info("Iris already has shaderPack='{}'; leaving alone", current);
+            }
             String body = "YaP Visuals installed nested Sodium + YaP Iris and " + SHADER_PACK_NAME + ".\n"
-                    + "Do not also install separate sodium / iris / yap-shaders copies (duplicate mods).\n";
+                    + "Do not also install separate sodium / iris / yap-shaders copies (duplicate mods).\n"
+                    + "Shaders are only auto-selected on first install; Options → Video → Shader Packs to change.\n";
             Files.writeString(marker, body, StandardCharsets.UTF_8);
+        } else {
+            LOG.info("YaP Visuals already initialized — not rewriting iris.properties");
         }
     }
 }

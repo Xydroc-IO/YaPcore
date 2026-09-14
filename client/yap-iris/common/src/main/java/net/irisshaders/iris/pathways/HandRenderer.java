@@ -58,9 +58,24 @@ public class HandRenderer {
 	private PoseStack setupGlState(GameRenderer gameRenderer, CameraRenderState camera, Matrix4fc modelMatrix, float tickDelta) {
 		final PoseStack poseStack = new PoseStack();
 
-		// We need to scale the matrix by 0.125 so the hand doesn't clip through blocks.
+		// Match vanilla GameRenderer hand path: near 0.05, far 100 (not world depthFar).
+		// Using render-distance depthFar + reverse-Z made held items giant flat billboards on 26.2.
+		float hudFov = camera.hudFov;
+		if (!(hudFov > 1.0F) || !(hudFov < 180.0F)) {
+			hudFov = 70.0F;
+		}
+		float width = Minecraft.getInstance().getWindow().getWidth();
+		float height = Minecraft.getInstance().getWindow().getHeight();
+		if (width < 1.0F) {
+			width = 1.0F;
+		}
+		if (height < 1.0F) {
+			height = 1.0F;
+		}
+
+		// Scale Z by DEPTH so the hand doesn't clip through blocks (OptiFine/Iris convention).
 		Matrix4f scaleMatrix = new Matrix4f().scale(1F, 1F, DEPTH);
-		this.projection.setupPerspective(0.05F, camera.depthFar, camera.hudFov, Minecraft.getInstance().getWindow().getWidth(), Minecraft.getInstance().getWindow().getHeight());
+		this.projection.setupPerspective(0.05F, 100.0F, hudFov, width, height);
 		scaleMatrix.mul(this.projection.getMatrix(new Matrix4f()));
 
 		poseStack.pushPose();
