@@ -178,8 +178,136 @@
       await pluginAction({ action: "install", path: $("pluginPath").value.trim() });
       $("pluginPath").value = "";
       loadPlugins();
+      window.YapFleetContext?.toast?.("Added to catalog", "ok");
     } catch (e) { alert(e.message); }
   };
+
+  async function loadInstancePlugins() {
+    const ctx = window.YapFleetContext?.get?.();
+    const label = $("pluginInstanceLabel");
+    const hint = $("pluginInstanceHint");
+    const ul = $("instancePluginList");
+    if (!ul) return;
+    if (!ctx || ctx.type !== "instance" || !ctx.instanceId) {
+      if (label) label.textContent = "—";
+      if (hint) {
+        hint.classList.remove("hidden");
+        hint.textContent = "Pick a server chip above to see plugins on that server.";
+      }
+      ul.innerHTML = "";
+      return;
+    }
+    if (label) label.textContent = "(" + ctx.instanceId + ")";
+    if (hint) hint.classList.add("hidden");
+    const d = await api("/api/fleet/instances/" + encodeURIComponent(ctx.instanceId) + "/plugins");
+    ul.innerHTML = "";
+    const plugins = d.plugins || [];
+    if (plugins.length === 0) {
+      const li = document.createElement("li");
+      li.innerHTML = `<div class="muted">No jars on this server — click <strong>Install CORE+NETWORK</strong></div>`;
+      ul.appendChild(li);
+      return;
+    }
+    plugins.forEach((p) => {
+      const li = document.createElement("li");
+      const hardOn = p.hardEnabled === true || p.hardEnabled === "true";
+      li.innerHTML = `<div><strong>${p.activeName || p.fileName}</strong>
+        <div class="meta">${p.sizeLabel || ""} · hard ${hardOn ? "on" : "off"}</div></div>`;
+      const actions = document.createElement("div");
+      actions.className = "plugin-actions";
+      const hardBtn = document.createElement("button");
+      hardBtn.textContent = hardOn ? "Disable" : "Enable";
+      hardBtn.onclick = async () => {
+        try {
+          await api("/api/fleet/instances/" + encodeURIComponent(ctx.instanceId) + "/plugins", {
+            method: "POST",
+            body: JSON.stringify({
+              action: hardOn ? "disable" : "enable",
+              jar: p.fileName || p.activeName,
+            }),
+          });
+          loadInstancePlugins();
+        } catch (e) { alert(e.message); }
+      };
+      const rm = document.createElement("button");
+      rm.className = "danger";
+      rm.textContent = "Remove";
+      rm.onclick = async () => {
+        if (!confirm("Remove " + (p.fileName || p.activeName) + " from " + ctx.instanceId + "?")) return;
+        try {
+          await api("/api/fleet/instances/" + encodeURIComponent(ctx.instanceId) + "/plugins", {
+            method: "POST",
+            body: JSON.stringify({ action: "uninstall", jar: p.fileName || p.activeName }),
+          });
+          loadInstancePlugins();
+        } catch (e) { alert(e.message); }
+      };
+      actions.appendChild(hardBtn);
+      actions.appendChild(rm);
+      li.appendChild(actions);
+      ul.appendChild(li);
+    });
+  }
+
+  $("refreshInstancePlugins")?.addEventListener("click", () => {
+    loadInstancePlugins().catch((e) => alert(e.message));
+  });
+  $("pluginInstallCore")?.addEventListener("click", async () => {
+    try {
+      const ctx = window.YapFleetContext?.get?.();
+      if (!ctx || ctx.type !== "instance" || !ctx.instanceId) {
+        alert("Select a server chip first");
+        return;
+      }
+      const r = await api("/api/fleet", {
+        method: "POST",
+        body: JSON.stringify({ action: "install-core-network", id: ctx.instanceId }),
+      });
+      window.YapFleetContext?.toast?.(
+        "CORE+NETWORK · " + ctx.instanceId + " · " + (r.pluginCount ?? "?") + " jars",
+        "ok"
+      );
+      loadInstancePlugins();
+    } catch (e) {
+      alert(e.message);
+    }
+  });
+  $("pluginInstallMulti")?.addEventListener("click", async () => {
+    try {
+      const jar = ($("pluginInstallJar")?.value || "").trim();
+      let targets = ($("pluginInstallTargets")?.value || "").trim();
+      if (!targets) {
+        const ctx = window.YapFleetContext?.get?.();
+        if (ctx?.type === "instance" && ctx.instanceId) targets = ctx.instanceId;
+      }
+      if (!jar || !targets) {
+        alert("Jar and target instance ids required");
+        return;
+      }
+      const r = await api("/api/plugins/install", {
+        method: "POST",
+        body: JSON.stringify({
+          jar,
+          instances: targets,
+          restartPolicy: $("pluginInstallRestart")?.value || "none",
+        }),
+      });
+      window.YapFleetContext?.toast?.(
+        r.ok ? ("Installed " + jar + " → " + targets) : ("Install failed: " + (r.error || "")),
+        r.ok ? "ok" : "err"
+      );
+      loadInstancePlugins();
+    } catch (e) { alert(e.message); }
+  });
+  window.addEventListener("yap-fleet-context", () => {
+    loadInstancePlugins().catch(() => {});
+  });
+
+  const _origLoadPluginsTab = loadPlugins;
+  async function loadPluginsTab() {
+    await _origLoadPluginsTab();
+    await loadInstancePlugins();
+  }
 
   async function loadModules() {
     const d = await api("/api/modules");
@@ -372,12 +500,19 @@
   $("essSaveMotd").onclick = () => essAction({ action: "save-motd", text: $("essMotd").value });
   $("essSaveRules").onclick = () => essAction({ action: "save-rules", text: $("essRules").value });
 
-  function linkServerRow(name, address, bedrock) {
+  function linkServerRow(name, address, bedrock, health) {
     const tr = document.createElement("tr");
+    const h = health || {};
+    const up = h.up === true ? "yes" : (h.up === false ? "no" : "—");
+    const online = h.online != null ? `${h.online}/${h.max || 0}` : "—";
+    const lat = h.latencyMs != null && h.latencyMs >= 0 ? `${h.latencyMs} ms` : "—";
     tr.innerHTML = `
       <td><input class="link-srv-name" value="${escHtml(name || "")}" placeholder="hub"/></td>
       <td><input class="link-srv-addr" value="${escHtml(address || "")}" placeholder="127.0.0.1:25566"/></td>
       <td><input class="link-srv-bedrock" value="${escHtml(bedrock || "")}" placeholder="optional"/></td>
+      <td class="link-srv-up">${escHtml(up)}</td>
+      <td class="link-srv-online">${escHtml(online)}</td>
+      <td class="link-srv-lat">${escHtml(lat)}</td>
       <td class="row-actions"><button type="button" class="link-srv-remove danger">Remove</button></td>`;
     tr.querySelector(".link-srv-remove").onclick = () => tr.remove();
     return tr;
@@ -397,11 +532,18 @@
     return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   }
 
-  function renderLinkServers(servers) {
+  function renderLinkServers(servers, backendHealth) {
     const body = $("linkServersBody");
     body.innerHTML = "";
+    const healthByName = {};
+    (backendHealth || []).forEach((h) => {
+      if (h && h.name) healthByName[String(h.name).toLowerCase()] = h;
+    });
     const list = servers && servers.length ? servers : [{ name: "hub", address: "127.0.0.1:25566", bedrock: "" }];
-    list.forEach((s) => body.appendChild(linkServerRow(s.name, s.address, s.bedrock || "")));
+    list.forEach((s) => {
+      const h = healthByName[String(s.name || "").toLowerCase()] || null;
+      body.appendChild(linkServerRow(s.name, s.address, s.bedrock || "", h));
+    });
   }
 
   function renderLinkForced(forced) {
@@ -484,7 +626,7 @@
       $("linkHub").value = sel.hubServer || "lobby";
       $("linkSessionLock").value = sel.sessionLockEnabled ? "true" : "false";
 
-      renderLinkServers(r.servers);
+      renderLinkServers(r.servers, r.backendHealth);
       $("linkTryOrder").value = (r.tryServers || []).join(", ");
       renderLinkForced(r.forcedHosts);
 
@@ -565,7 +707,7 @@
       /* linkPost already alerted */
     }
   };
-  $("linkAddServer").onclick = () => $("linkServersBody").appendChild(linkServerRow("", "", ""));
+  $("linkAddServer").onclick = () => $("linkServersBody").appendChild(linkServerRow("", "", "", null));
   $("linkAddForced").onclick = () => $("linkForcedBody").appendChild(linkForcedRow("", ""));
   $("linkSaveBedrockMode").onclick = async () => {
     try {
@@ -618,7 +760,7 @@
   };
 
   Object.assign(YapDash.tabLoads, {
-    plugins: loadPlugins,
+    plugins: loadPluginsTab,
     modules: loadModules,
     packs: loadPacks,
     settings: loadSettings,

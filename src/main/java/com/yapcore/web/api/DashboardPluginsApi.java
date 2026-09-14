@@ -119,7 +119,7 @@ public final class DashboardPluginsApi {
         if (!auth.requireAuth(ex)) {
             return;
         }
-        Path root = server.getRootDir();
+        Path root = resolvePluginConfigRoot(ex.getRequestURI().getQuery(), null);
         if ("GET".equalsIgnoreCase(ex.getRequestMethod())) {
             String query = ex.getRequestURI().getQuery();
             String pluginId = queryValue(query, "plugin");
@@ -147,17 +147,18 @@ public final class DashboardPluginsApi {
                 DashboardHttp.json(ex, 400, Map.of("error", "plugin required"));
                 return;
             }
+            root = resolvePluginConfigRoot(null, body.get("instanceId"));
             try {
                 if ("reload".equals(action)) {
                     String result = entry.reload().isBlank() ? "no reload command"
-                            : server.executeCommand(entry.reload());
+                            : dispatchReload(body.get("instanceId"), entry.reload());
                     DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result));
                     return;
                 }
                 PluginConfigIo.save(root, entry, body);
                 String result = "";
                 if (!entry.reload().isBlank()) {
-                    result = server.executeCommand(entry.reload());
+                    result = dispatchReload(body.get("instanceId"), entry.reload());
                 }
                 DashboardHttp.json(ex, 200, Map.of(
                         "ok", true,
@@ -172,6 +173,27 @@ public final class DashboardPluginsApi {
             return;
         }
         ex.sendResponseHeaders(405, -1);
+    }
+
+    private Path resolvePluginConfigRoot(String query, String instanceIdRaw) {
+        String instanceId = instanceIdRaw;
+        if ((instanceId == null || instanceId.isBlank()) && query != null) {
+            instanceId = queryValue(query, "instanceId");
+        }
+        Path root = server.getRootDir();
+        if (instanceId == null || instanceId.isBlank() || !server.getConfig().isFleetEnabled()) {
+            return root;
+        }
+        return server.fleet().store().findInstance(instanceId)
+                .map(inst -> PluginConfigIo.pluginsParent(root, inst.relativeDir()))
+                .orElse(root);
+    }
+
+    private String dispatchReload(String instanceId, String reloadCmd) throws Exception {
+        if (instanceId != null && !instanceId.isBlank() && server.getConfig().isFleetEnabled()) {
+            return server.fleet().dispatch(instanceId, reloadCmd);
+        }
+        return server.executeCommand(reloadCmd);
     }
 
     private static Map<String, Object> pluginSummary(Path root, PluginConfigCatalog.Entry entry) {

@@ -106,6 +106,9 @@ public final class ResourcePackManager {
     }
 
     public synchronized void startHttp() throws IOException {
+        if (httpServer != null) {
+            return;
+        }
         ensureDirectory();
         // Normalize on-disk Bedrock pack before serving (GitHub sync may reintroduce 1.26/PBR).
         String bedrockFile = config.getResourcePackBedrockFile();

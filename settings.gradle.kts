@@ -229,4 +229,5 @@ project(":yap-conquest-api").projectDir = file("yap-first-party/api/yap-conquest
 include("conquest-plugin")
 project(":conquest-plugin").projectDir = file("yap-first-party/core-network/conquest-plugin")
 
-
+include("yap-fleet-agent")
+project(":yap-fleet-agent").projectDir = file("yap-first-party/fleet/yap-fleet-agent")

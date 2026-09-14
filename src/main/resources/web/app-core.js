@@ -102,6 +102,17 @@
       $("bfMods").textContent = bf.clientModsPresent ? "yes" : "missing";
       $("bfPack").textContent = bf.blockPackExtractOk ? "ok" : "—";
       $("bfProv").textContent = bf.provenancePresent ? "ok" : "—";
+      if ($("bfToggle")) $("bfToggle").value = bf.enabled ? "true" : "false";
+      if ($("bfBandSelect") && bf.band) {
+        const sel = $("bfBandSelect");
+        if (![...sel.options].some((o) => o.value === bf.band)) {
+          const opt = document.createElement("option");
+          opt.value = bf.band;
+          opt.textContent = bf.band;
+          sel.appendChild(opt);
+        }
+        sel.value = bf.band;
+      }
     }
     const nh = s.networkHealth || {};
     $("stNetworkSummary").textContent = nh.summary || "—";
@@ -112,6 +123,15 @@
     $("nhCompat").textContent = nh.compatWarnings != null ? String(nh.compatWarnings) : "0";
     const smoke = nh.lastNetworkSmoke && nh.lastNetworkSmoke !== "never" ? nh.lastNetworkSmoke : nh.lastBedrockPlaySmoke;
     $("nhSmoke").textContent = smoke && smoke !== "never" ? smoke.replace("T", " ").slice(0, 19) : "never";
+    const bh = nh.backendHealth || [];
+    if ($("nhBackends")) {
+      if (!bh.length) {
+        $("nhBackends").textContent = "—";
+      } else {
+        const up = bh.filter((b) => b.up).length;
+        $("nhBackends").textContent = up + "/" + bh.length + " up";
+      }
+    }
     const ops = nh.opsPlugins || {};
     $("stOpsSummary").textContent = ops.summary || "—";
     const opIds = {
@@ -162,9 +182,15 @@
     if (!cmd) return;
     $("cmdInput").value = "";
     try {
-      const r = await api("/api/command", { method: "POST", body: JSON.stringify({ command: cmd }) });
+      const ctx = window.YapFleetContext?.get?.();
+      const body = { command: cmd };
+      if (ctx?.type === "instance" && ctx.instanceId) {
+        body.instanceId = ctx.instanceId;
+      }
+      const r = await api("/api/command", { method: "POST", body: JSON.stringify(body) });
       if (r.result) {
-        $("consoleOut").textContent += "\n> " + cmd + "\n" + r.result;
+        const scope = r.instanceId && r.instanceId !== "primary" ? " [" + r.instanceId + "]" : "";
+        $("consoleOut").textContent += "\n> " + cmd + scope + "\n" + r.result;
         $("consoleOut").scrollTop = $("consoleOut").scrollHeight;
       }
     } catch (err) {
@@ -187,6 +213,37 @@
     tabLoads: { connect: loadConnect },
     refreshStatus, connectConsole, activateTab,
   };
+
+  $("bfSave")?.addEventListener("click", async () => {
+    const msg = $("bfSaveMsg");
+    try {
+      await api("/api/config", {
+        method: "POST",
+        body: JSON.stringify({
+          "parity.bedrock-feel": $("bfToggle")?.value || "false",
+          "parity.bedrock-band": $("bfBandSelect")?.value || "band_26_50",
+        }),
+      });
+      if (msg) {
+        msg.hidden = false;
+        msg.className = "easy-save-msg ok";
+        msg.textContent = "Saved";
+      }
+      await refreshStatus();
+    } catch (e) {
+      if (msg) {
+        msg.hidden = false;
+        msg.className = "easy-save-msg err";
+        msg.textContent = e.message;
+      }
+    }
+  });
+
+  $("stOpenLink")?.addEventListener("click", () => {
+    if (window.YapShell?.openLink) window.YapShell.openLink();
+    else if (window.YapShell?.switchTab) window.YapShell.switchTab("link");
+    else document.querySelector('[data-tab="link"]')?.click();
+  });
 
   if (window.YapDashRegisterAccessPanels) window.YapDashRegisterAccessPanels(window.YapDash);
   if (window.YapDashRegisterPlayersPanels) window.YapDashRegisterPlayersPanels(window.YapDash);

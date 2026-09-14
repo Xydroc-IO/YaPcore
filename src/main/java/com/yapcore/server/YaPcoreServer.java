@@ -10,6 +10,7 @@ import com.yapcore.config.ServerConfig;
 import com.yapcore.console.ConsoleBus;
 import com.yapcore.crash.CrashLogger;
 import com.yapcore.crossplay.CrossplayHub;
+import com.yapcore.fleet.service.FleetService;
 import com.yapcore.folia.FoliaKernel;
 import com.yapcore.kernel.GameKernel;
 import com.yapcore.network.publicity.PublicEndpoint;
@@ -60,6 +61,7 @@ public final class YaPcoreServer {
     private final PaperKernel paperKernel;
     private final LinkProcessManager linkProcess;
     private final GeyserProcessManager geyserProcess;
+    private final FleetService fleetService;
     private final AtomicBoolean running = new AtomicBoolean(false);
     private final AtomicInteger onlinePlayers = new AtomicInteger(0);
     private final Path pidFile;
@@ -112,6 +114,8 @@ public final class YaPcoreServer {
         this.paperKernel = new PaperKernel(rootDir, config, engine.yapEngine());
         this.linkProcess = new LinkProcessManager(rootDir, config);
         this.geyserProcess = new GeyserProcessManager(rootDir, config);
+        this.fleetService = new FleetService(rootDir, config);
+        this.fleetService.setLinkRunningSupplier(linkProcess::isRunning);
 
         CrashLogger.get().configure(
                 rootDir.resolve(config.getLogsDir()).resolve("crashes"),
@@ -126,7 +130,10 @@ public final class YaPcoreServer {
                 LOG.warning("Could not sync game server.properties: " + e.getMessage());
             }
             try {
-                LinkIdentityMirror.syncFromServerConfig(rootDir, cfg);
+                boolean identityChanged = LinkIdentityMirror.syncFromServerConfig(rootDir, cfg);
+                if (identityChanged && linkProcess != null && linkProcess.isRunning()) {
+                    linkProcess.dispatchCommand("reload");
+                }
             } catch (IOException e) {
                 LOG.warning("Could not mirror shared identity to Link: " + e.getMessage());
             }
@@ -171,6 +178,10 @@ public final class YaPcoreServer {
         return geyserProcess;
     }
 
+    public FleetService fleet() {
+        return fleetService;
+    }
+
     GameKernel gameKernel() {
         return gameKernel;
     }
@@ -207,6 +218,26 @@ public final class YaPcoreServer {
         return running.get();
     }
 
+    /**
+     * Start pack/skin HTTP (:8081) if not already up.
+     * Fleet-only starts skip {@link #start()} DualStack, but clients still need packs
+     * for YaPItems CMD models — call this whenever a Folia instance is started.
+     */
+    public synchronized void ensurePackHttp() throws IOException {
+        resourcePacks.startHttp();
+        gateway.skinService().setSkinsDir(resourcePacks.skinsDir());
+        int packPort = config.getResourcePackHttpPort();
+        String host = new PublicEndpoint(config).publicHost();
+        if (host == null || host.isBlank()) {
+            host = PublicEndpoint.guessLocalIpv4().orElse("127.0.0.1");
+        }
+        String scheme = packPort == 443 ? "https" : "http";
+        String base = (packPort == 80 || packPort == 443)
+                ? scheme + "://" + host
+                : "http://" + host + ":" + packPort;
+        gateway.skinService().setPublicSkinBaseUrl(base);
+    }
+
     public int getOnlinePlayers() {
         return onlinePlayers.get();
     }
@@ -227,25 +258,13 @@ public final class YaPcoreServer {
         engine.start();
         ProtocolCompat.start();
         try {
-            resourcePacks.startHttp();
-            // Host BE/JE skins next to packs; advertise base for textures property
-            gateway.skinService().setSkinsDir(resourcePacks.skinsDir());
-            int packPort = config.getResourcePackHttpPort();
-            String host = new PublicEndpoint(config).publicHost();
-            if (host == null || host.isBlank()) {
-                host = PublicEndpoint.guessLocalIpv4().orElse("127.0.0.1");
-            }
-            String scheme = packPort == 443 ? "https" : "http";
-            String base = (packPort == 80 || packPort == 443)
-                    ? scheme + "://" + host
-                    : "http://" + host + ":" + packPort;
-            gateway.skinService().setPublicSkinBaseUrl(base);
+            ensurePackHttp();
         } catch (IOException e) {
             LOG.warning("Resource pack HTTP failed to start: " + e.getMessage());
         }
         try {
             GameAuthorityBoot.startAuthority(
-                    config, foliaKernel, paperKernel, gameKernel, gateway);
+                    config, foliaKernel, paperKernel, gameKernel, gateway, this);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             running.set(false);
@@ -299,6 +318,7 @@ public final class YaPcoreServer {
         gateway.stop();
         geyserProcess.stop();
         linkProcess.stop();
+        fleetService.stopAllLocal();
         paperKernel.stop();
         foliaKernel.stop();
         gameKernel.stop();
@@ -323,6 +343,9 @@ public final class YaPcoreServer {
     }
 
     public Optional<String> tryDispatchGameCommand(String line) {
+        if (config.isFleetEnabled() && config.isFoliaAuthority() && fleetService.isPrimaryRunning()) {
+            return Optional.of(fleetService.dispatchPrimary(line));
+        }
         if (config.isFoliaAuthority() && foliaKernel.isRunning()) {
             return Optional.of(com.yapcore.game.command.GameCommandBridge.dispatch(line));
         }

@@ -26,6 +26,7 @@ public final class SettingsPanel {
 
     private final YaPcoreServer server;
     private final JPanel root = new JPanel(new BorderLayout());
+    private String fleetInstanceId;
     private final JTextField nameField = new JTextField();
     private final JTextField motdField = new JTextField();
     private final JTextField bindField = new JTextField();
@@ -36,10 +37,10 @@ public final class SettingsPanel {
     private final JSpinner ramMaxSpinner;
     private final JSpinner ramMinSpinner;
     private final JSpinner viewDistanceSpinner;
-    private final JCheckBox javaBox = new JCheckBox("Java Edition (TCP)");
-    private final JCheckBox bedrockBox = new JCheckBox("Bedrock Edition (UDP)");
-    private final JCheckBox sharedPortBox = new JCheckBox("Shared listen port (Java TCP + Bedrock UDP on same port)");
-    private final JCheckBox crossplayBox = new JCheckBox("Geyser-class crossplay (same shared world)");
+    private final JCheckBox javaBox = new JCheckBox("Allow Java Edition");
+    private final JCheckBox bedrockBox = new JCheckBox("Allow Bedrock Edition (via YaP Link)");
+    private final JCheckBox sharedPortBox = new JCheckBox("Chassis shared listen port (forwarder only)");
+    private final JCheckBox crossplayBox = new JCheckBox("Shared world (Java + Bedrock same Folia world)");
     private final JCheckBox allowLocalBox = new JCheckBox("Allow same-PC clients (127.0.0.1 / localhost)");
     private final JCheckBox backwardsBox = new JCheckBox(
             "Built-in multi-version (accept all registered JE/BE protocols)");
@@ -69,6 +70,11 @@ public final class SettingsPanel {
         return root;
     }
 
+    /** When set, Save also writes MOTD / max-players / view-distance onto that fleet instance. */
+    public void setFleetInstance(String instanceId) {
+        this.fleetInstanceId = instanceId == null || instanceId.isBlank() ? null : instanceId.trim();
+    }
+
     public void setOnSaved(Consumer<Void> onSaved) {
         this.onSaved = onSaved != null ? onSaved : v -> {
         };
@@ -91,9 +97,9 @@ public final class SettingsPanel {
 
         panel.add(GuiTheme.sectionTitle("Settings"), c);
         c.gridy++;
-        panel.add(GuiTheme.tip("Server identity, listen ports, and editions. "
-                + "Domain / internet pointing is on the <b>Access</b> tab. "
-                + "Join addresses are on <b>Connect</b>."), c);
+        panel.add(GuiTheme.tip("Check <b>both</b> Java and Bedrock so both editions can join. "
+                + "Bedrock UDP is owned by <b>YaP Link</b> (not this chassis checkbox from older builds). "
+                + "Domain / ports for players: <b>Access</b> · join addresses: <b>YaP Link → Connect</b>."), c);
 
         c.gridy++;
         panel.add(GuiTheme.sectionTitle("Identity"), c);
@@ -175,8 +181,16 @@ public final class SettingsPanel {
         ramMinSpinner.setValue(cfg.getRamMinMb());
         viewDistanceSpinner.setValue(cfg.getViewDistance());
         javaBox.setSelected(cfg.isJavaEnabled());
-        bedrockBox.setSelected(cfg.isBedrockEnabled());
+        // Native mode: chassis bedrock-enabled is always "off" by design — Link owns UDP.
+        // Reflect whether Bedrock players can actually join (Link edge).
+        bedrockBox.setSelected(com.yapcore.web.DashboardLinkSnapshot.allowBedrockPlayers(
+                server.getRootDir(), cfg.getLinkEmbedHome()));
+        boolean forwarder = "forwarder".equals(cfg.getBedrockMode());
         sharedPortBox.setSelected(cfg.isSharedListenPort());
+        sharedPortBox.setEnabled(forwarder);
+        sharedPortBox.setToolTipText(forwarder
+                ? "Bind chassis Java TCP + Bedrock UDP on the same port number."
+                : "Not used in Link-native mode — Link already accepts JE TCP + BE UDP on the public edge.");
         crossplayBox.setSelected(cfg.isCrossplayEnabled());
         allowLocalBox.setSelected(cfg.isAllowLocalhost());
         backwardsBox.setSelected(cfg.isBackwardsCompatible());
@@ -205,13 +219,33 @@ public final class SettingsPanel {
             cfg.setRamMinMb(ramMin);
             cfg.setViewDistance((Integer) viewDistanceSpinner.getValue());
             cfg.setJavaEnabled(javaBox.isSelected());
-            cfg.setBedrockEnabled(bedrockBox.isSelected());
-            cfg.setSharedListenPort(sharedPortBox.isSelected());
-            cfg.setCrossplayEnabled(crossplayBox.isSelected());
-            cfg.setAllowLocalhost(allowLocalBox.isSelected());
-            if (sharedPortBox.isSelected()) {
-                cfg.setBedrockPort(cfg.getPort());
+            boolean wantBedrock = bedrockBox.isSelected();
+            boolean wantJava = javaBox.isSelected();
+            if (!wantJava && !wantBedrock) {
+                JOptionPane.showMessageDialog(root,
+                        "Leave at least one of Java or Bedrock enabled so someone can join.",
+                        "Invalid", JOptionPane.WARNING_MESSAGE);
+                return;
             }
+            // Chassis Folia must not bind Bedrock UDP in native/geyser-backup — Link (or Geyser) owns it.
+            String mode = cfg.getBedrockMode();
+            boolean forwarder = "forwarder".equals(mode);
+            if (forwarder) {
+                cfg.setBedrockEnabled(wantBedrock);
+                cfg.setSharedListenPort(sharedPortBox.isSelected());
+                if (sharedPortBox.isSelected()) {
+                    cfg.setBedrockPort(cfg.getPort());
+                }
+            } else {
+                cfg.setBedrockEnabled(false);
+                cfg.setSharedListenPort(false);
+            }
+            if (wantBedrock) {
+                cfg.setCrossplayEnabled(true);
+            } else {
+                cfg.setCrossplayEnabled(crossplayBox.isSelected());
+            }
+            cfg.setAllowLocalhost(allowLocalBox.isSelected());
             if (allowLocalBox.isSelected()) {
                 cfg.setBindHost("0.0.0.0");
             }
@@ -219,20 +253,50 @@ public final class SettingsPanel {
             cfg.setOnlineMode(onlineModeBox.isSelected());
             cfg.setResourcePackEnabled(packsBox.isSelected());
             cfg.save();
+            com.yapcore.web.DashboardLinkSnapshot.setAllowBedrockPlayers(
+                    server.getRootDir(), cfg.getLinkEmbedHome(), wantBedrock);
             server.getEngine().setMaxPlayers(cfg.getMaxPlayers());
+            String synced = syncFleetInstanceProps(cfg);
             onSaved.accept(null);
-            String join = new com.yapcore.network.publicity.PublicEndpoint(cfg).crossplayJoinAddress();
+            var ep = new com.yapcore.network.publicity.PublicEndpoint(cfg);
+            String join = ep.crossplayJoinAddress();
+            String beNote = wantBedrock
+                    ? "\nBedrock: " + ep.bedrockJoinAddress() + " (UDP via YaP Link — Start Link if stopped)"
+                    : "\nBedrock players: off";
             JOptionPane.showMessageDialog(root,
-                    "Settings saved.\nSame-PC: 127.0.0.1:" + cfg.getPort()
-                            + "\nPlayers join: " + join
-                            + (sharedPortBox.isSelected()
-                            ? "\n(Java TCP + Bedrock UDP on the same port)"
-                            : "")
-                            + "\nMOTD / port / bind changes show in multiplayer after Stop → Start.",
+                    "Settings saved.\nJava: " + (wantJava ? "on" : "off")
+                            + " · Bedrock: " + (wantBedrock ? "on" : "off")
+                            + "\nPlayers join (Java): " + join
+                            + beNote
+                            + (synced.isEmpty() ? "" : "\n" + synced)
+                            + "\nRestart Link after Bedrock on/off so the UDP edge reloads.",
                     "Saved", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(root, e.getMessage(), "Save Error",
                     JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String syncFleetInstanceProps(ServerConfig cfg) {
+        if (!cfg.isFleetEnabled()) {
+            return "";
+        }
+        try {
+            String id = fleetInstanceId;
+            if (id == null || id.isBlank()) {
+                id = server.fleet().store().primaryId();
+            }
+            if (id == null || id.isBlank()) {
+                return "";
+            }
+            java.util.HashMap<String, String> body = new java.util.HashMap<>();
+            body.put("motd", cfg.getMotd() == null ? "" : cfg.getMotd());
+            body.put("max-players", Integer.toString(cfg.getMaxPlayers()));
+            body.put("view-distance", Integer.toString(cfg.getViewDistance()));
+            server.fleet().writeInstanceSettings(id, body);
+            return "Also wrote MOTD / max-players / view-distance → fleet instance " + id;
+        } catch (Exception e) {
+            return "Fleet instance sync skipped: " + e.getMessage();
         }
     }
 

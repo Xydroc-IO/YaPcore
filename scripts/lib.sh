@@ -394,6 +394,16 @@ yap_find_jar() {
   echo ""
 }
 
+# Newest built shadow jar (ignores root yapcore.jar) — used when refreshing after build.
+yap_find_built_jar() {
+  CANDIDATE="$(ls -1t "$ROOT/build/libs"/yapcore-*.jar 2>/dev/null | grep -v -- '-plain' | head -n 1 || true)"
+  if [ -n "$CANDIDATE" ] && [ -f "$CANDIDATE" ]; then
+    echo "$CANDIDATE"
+    return
+  fi
+  echo ""
+}
+
 yap_build() {
   if command -v gradle >/dev/null 2>&1; then
     (cd "$ROOT" && gradle shadowJar --quiet)

@@ -1,6 +1,8 @@
 package com.yapcore.gui.panels;
 
 import com.yapcore.config.ServerConfig;
+import com.yapcore.fleet.link.BackendHealthBridge;
+import com.yapcore.fleet.model.BackendHealth;
 import com.yapcore.gui.theme.GuiTheme;
 import com.yapcore.server.LinkProcessManager;
 import com.yapcore.server.YaPcoreServer;
@@ -11,12 +13,14 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -41,6 +45,14 @@ public final class LinkPanel {
     private final JLabel backendsLabel = new JLabel("—");
     private final JLabel suiteLabel = new JLabel("—");
     private final JLabel embedHint = new JLabel(" ");
+    private final DefaultTableModel healthModel = new DefaultTableModel(
+            new Object[]{"Name", "Up", "Online", "Max", "Latency", "Source"}, 0) {
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false;
+        }
+    };
+    private final JTable healthTable = new JTable(healthModel);
     private final JTextArea console = new JTextArea(12, 40);
     private final JTextField commandInput = new JTextField();
     private final JButton startBtn = new JButton("Start Link");
@@ -54,7 +66,13 @@ public final class LinkPanel {
         root.setOpaque(false);
         root.setBorder(new EmptyBorder(2, 2, 2, 2));
         root.add(buildTop(), BorderLayout.NORTH);
-        root.add(buildConsolePanel(), BorderLayout.CENTER);
+        JPanel center = new JPanel(new BorderLayout(6, 6));
+        center.setOpaque(false);
+        JScrollPane healthScroll = new JScrollPane(healthTable);
+        healthScroll.setPreferredSize(new Dimension(100, 120));
+        center.add(healthScroll, BorderLayout.NORTH);
+        center.add(buildConsolePanel(), BorderLayout.CENTER);
+        root.add(center, BorderLayout.CENTER);
 
         logListener = text -> SwingUtilities.invokeLater(() -> {
             console.append(text);
@@ -75,6 +93,10 @@ public final class LinkPanel {
 
     public JPanel component() {
         return root;
+    }
+
+    public void refreshNow() {
+        refreshStatus();
     }
 
     public void shutdown() {
@@ -205,6 +227,19 @@ public final class LinkPanel {
             backendsLabel.setText(sb.toString());
         }
         suiteLabel.setText(Boolean.TRUE.equals(snap.get("suiteComplete")) ? "Complete" : "Incomplete");
+
+        healthModel.setRowCount(0);
+        boolean runningForProbe = embed || linkProcess.isRunning();
+        for (BackendHealth h : BackendHealthBridge.collect(root, cfg.getLinkEmbedHome(), runningForProbe)) {
+            healthModel.addRow(new Object[]{
+                    h.name(),
+                    h.up() ? "yes" : "no",
+                    h.online(),
+                    h.max(),
+                    h.latencyMs() < 0 ? "—" : h.latencyMs() + " ms",
+                    h.source()
+            });
+        }
     }
 
     private void startLink() {
@@ -221,7 +256,16 @@ public final class LinkPanel {
                 try {
                     get();
                 } catch (Exception e) {
-                    JOptionPane.showMessageDialog(root, e.getMessage(), "Start Link", JOptionPane.ERROR_MESSAGE);
+                    Throwable c = e;
+                    while (c.getCause() != null && c.getCause() != c) {
+                        c = c.getCause();
+                    }
+                    String msg = c.getMessage();
+                    if (msg == null || msg.isBlank()) {
+                        msg = c.getClass().getSimpleName();
+                    }
+                    JOptionPane.showMessageDialog(root, msg, "Start Link", JOptionPane.ERROR_MESSAGE);
+                    console.append("[Link] Start failed: " + msg + "\n");
                 }
                 refreshStatus();
             }

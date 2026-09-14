@@ -20,6 +20,8 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.util.ReferenceCountUtil;
 
 import java.util.ArrayDeque;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,6 +32,8 @@ import java.util.logging.Logger;
 public final class ViaProxyHandler extends ChannelInboundHandlerAdapter implements ViaProxyHost {
 
     private static final Logger LOG = Logger.getLogger("YaPcore.ViaProxy");
+    private static final AtomicLong LAST_BACKEND_FAIL_LOG_MS = new AtomicLong(0);
+    private static final AtomicInteger BACKEND_FAIL_SUPPRESSED = new AtomicInteger();
 
     private final String backendHost;
     private final int backendPort;
@@ -118,10 +122,29 @@ public final class ViaProxyHandler extends ChannelInboundHandlerAdapter implemen
                 inbound.read();
                 backend.read();
             } else {
-                LOG.warning("Via backend connect failed: " + future.cause().getMessage());
+                logBackendConnectFailure(future.cause());
                 inbound.close();
             }
         });
+    }
+
+    private void logBackendConnectFailure(Throwable cause) {
+        String detail = cause == null ? "unknown" : cause.getMessage();
+        long now = System.currentTimeMillis();
+        long prev = LAST_BACKEND_FAIL_LOG_MS.get();
+        if (now - prev < 15_000L) {
+            BACKEND_FAIL_SUPPRESSED.incrementAndGet();
+            return;
+        }
+        if (!LAST_BACKEND_FAIL_LOG_MS.compareAndSet(prev, now)) {
+            BACKEND_FAIL_SUPPRESSED.incrementAndGet();
+            return;
+        }
+        int suppressed = BACKEND_FAIL_SUPPRESSED.getAndSet(0);
+        String extra = suppressed > 0 ? " (+" + suppressed + " similar)" : "";
+        LOG.warning("Via backend connect failed → " + backendHost + ":" + backendPort
+                + " — " + detail + extra
+                + ". Start Folia/lobby (Fleet home → Start) or join via YaP Link public edge.");
     }
 
     @Override

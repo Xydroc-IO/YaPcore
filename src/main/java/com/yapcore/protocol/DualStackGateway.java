@@ -11,6 +11,7 @@ import com.yapcore.crossplay.bedrock.BedrockUiGatewayHolder;
 import com.yapcore.crossplay.floodgate.FloodgateAuth;
 import com.yapcore.crossplay.form.FormService;
 import com.yapcore.crossplay.raknet.RakNetSessionManager;
+import com.yapcore.crossplay.skin.SkinJeRelay;
 import com.yapcore.crossplay.skin.SkinService;
 import com.yapcore.model.GameEvent;
 import com.yapcore.network.TrafficCop;
@@ -78,15 +79,15 @@ public final class DualStackGateway {
             crossplay.attachFloodgate(floodgateAuth, skinService, formService);
             java.util.function.Consumer<String> refresh = username -> {
                 var session = bedrockSessions.byUsername(username);
-                if (session == null) {
-                    return;
+                if (session != null) {
+                    io.netty.buffer.ByteBuf pkt = skinService.clientboundSkinPacket(
+                            username, session.protocol() > 0 ? session.protocol() : 2207);
+                    if (pkt != null) {
+                        bedrockBridge.sendToGuid(session.guid(), pkt);
+                    }
                 }
-                io.netty.buffer.ByteBuf pkt = skinService.clientboundSkinPacket(
-                        username, session.protocol() > 0 ? session.protocol() : 2207);
-                if (pkt == null) {
-                    return;
-                }
-                bedrockBridge.sendToGuid(session.guid(), pkt);
+                // JE yap-presence: draw Bedrock/Tailor skins (incl. persona geometryData)
+                SkinJeRelay.broadcastViaPaper(null, skinService, username);
             };
             crossplay.translator().setSkinRefreshHook(refresh);
             skinService.setOnSkinChanged(refresh);

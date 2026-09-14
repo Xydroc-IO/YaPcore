@@ -335,3 +335,8 @@ vendor/geyser-ref/
 # Floodgate key material backups (live keys already gitignored under link-data/)
 *.pem.ec-backup
 *.pem.bak
+
+# Fleet agent tokens (never commit)
+fleet/agents/*.token
+**/fleet-agent-home/agent.token
+

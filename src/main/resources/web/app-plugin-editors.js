@@ -68,7 +68,9 @@ window.YapDashRegisterPluginEditors = function (YapDash) {
     selected = id;
     renderList();
     try {
-      const r = await api("/api/plugin-config?plugin=" + encodeURIComponent(id));
+      const r = await api("/api/plugin-config?plugin=" + encodeURIComponent(id)
+        + (window.YapFleetContext?.get?.()?.type === "instance" && window.YapFleetContext.get().instanceId
+          ? "&instanceId=" + encodeURIComponent(window.YapFleetContext.get().instanceId) : ""));
       $("edTitle").textContent = r.title || id;
       $("edHint").textContent = (r.blurb ? r.blurb + " " : "")
         + (r.configPresent ? "Press Save and apply when you are done." : "No file yet — save creates it.");
@@ -82,7 +84,9 @@ window.YapDashRegisterPluginEditors = function (YapDash) {
 
   async function refreshEditors() {
     try {
-      const r = await api("/api/plugin-config");
+      const r = await api("/api/plugin-config"
+        + (window.YapFleetContext?.get?.()?.type === "instance" && window.YapFleetContext.get().instanceId
+          ? "?instanceId=" + encodeURIComponent(window.YapFleetContext.get().instanceId) : ""));
       plugins = r.plugins || [];
       renderList();
       if (selected) loadPlugin(selected);
@@ -104,6 +108,9 @@ window.YapDashRegisterPluginEditors = function (YapDash) {
       : {};
     body.action = "save";
     body.plugin = selected;
+    if (window.YapFleetContext?.get?.()?.type === "instance" && window.YapFleetContext.get().instanceId) {
+      body.instanceId = window.YapFleetContext.get().instanceId;
+    }
     try {
       const r = await netPost("/api/plugin-config", body);
       setOut("Saved. " + (r.reload || "The plugin will use the new values."));
@@ -115,7 +122,11 @@ window.YapDashRegisterPluginEditors = function (YapDash) {
   $("edReload")?.addEventListener("click", async () => {
     if (!selected) return;
     try {
-      const r = await netPost("/api/plugin-config", { action: "reload", plugin: selected });
+      const reloadBody = { action: "reload", plugin: selected };
+      if (window.YapFleetContext?.get?.()?.type === "instance" && window.YapFleetContext.get().instanceId) {
+        reloadBody.instanceId = window.YapFleetContext.get().instanceId;
+      }
+      const r = await netPost("/api/plugin-config", reloadBody);
       setOut(r.result || "Reloaded from the file on disk.");
     } catch (e) { setOut(e.message, true); }
   });

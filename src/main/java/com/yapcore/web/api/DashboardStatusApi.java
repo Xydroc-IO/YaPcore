@@ -121,7 +121,11 @@ public final class DashboardStatusApi {
             m.put("view-distance", cfg.getViewDistance());
             m.put("java-enabled", cfg.isJavaEnabled());
             m.put("bedrock-mode", cfg.getBedrockMode());
+            // Chassis Folia UDP bind (always false in native — Link owns Bedrock).
             m.put("bedrock-enabled", cfg.isBedrockEnabled());
+            // What operators mean by "Bedrock on": Link edge (or Geyser) accepts BE clients.
+            m.put("allow-bedrock-players", DashboardLinkSnapshot.allowBedrockPlayers(
+                    server.getRootDir(), cfg.getLinkEmbedHome()));
             m.put("shared-listen-port", cfg.isSharedListenPort());
             m.put("crossplay-enabled", cfg.isCrossplayEnabled());
             m.put("allow-localhost", cfg.isAllowLocalhost());
@@ -134,6 +138,8 @@ public final class DashboardStatusApi {
             m.put("public-port", cfg.getPublicPort());
             m.put("web-dashboard-port", cfg.getWebDashboardPort());
             m.put("yap-ranks-auto-apply", cfg.isYapRanksAutoApply());
+            m.put("parity.bedrock-feel", cfg.isParityBedrockFeel());
+            m.put("parity.bedrock-band", cfg.getParityBedrockBand());
             m.put("ops", cfg.getOps());
             m.put("auto-op", cfg.isAutoOp());
             DashboardHttp.json(ex, 200, m);
@@ -184,10 +190,27 @@ public final class DashboardStatusApi {
             // saves (MOTD, RAM, etc.) work while Folia/Link are running.
             body.remove("bedrock-mode");
             body.remove("bedrockMode");
+            String allowBe = body.remove("allow-bedrock-players");
+            if (allowBe == null) {
+                allowBe = body.remove("allowBedrockPlayers");
+            }
             applyConfig(cfg, body);
             // Keep Folia Velocity online-mode aligned with the shared product auth setting.
             if (cfg.isVelocityEnabled()) {
                 cfg.setVelocityOnlineMode(cfg.isOnlineMode());
+            }
+            if (allowBe != null) {
+                boolean want = DashboardHttp.bool(allowBe);
+                DashboardLinkSnapshot.setAllowBedrockPlayers(
+                        server.getRootDir(), cfg.getLinkEmbedHome(), want);
+                if (want) {
+                    cfg.setCrossplayEnabled(true);
+                }
+                // Never leave chassis Folia binding Bedrock UDP in native/geyser-backup.
+                if (!"forwarder".equals(cfg.getBedrockMode())) {
+                    cfg.setBedrockEnabled(false);
+                    cfg.setSharedListenPort(false);
+                }
             }
             cfg.save();
             try {
@@ -238,8 +261,21 @@ public final class DashboardStatusApi {
             DashboardHttp.json(ex, 400, Map.of("error", "missing command"));
             return;
         }
-        String result = server.executeCommand(cmd);
-        DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result));
+        String instanceId = body.getOrDefault("instanceId", "").trim();
+        try {
+            String result;
+            if (!instanceId.isEmpty() && server.getConfig().isFleetEnabled()) {
+                result = server.fleet().dispatch(instanceId, cmd);
+            } else {
+                result = server.executeCommand(cmd);
+            }
+            DashboardHttp.json(ex, 200, Map.of(
+                    "ok", true,
+                    "result", result == null ? "" : result,
+                    "instanceId", instanceId.isEmpty() ? "primary" : instanceId));
+        } catch (Exception e) {
+            DashboardHttp.json(ex, 400, Map.of("ok", false, "error", String.valueOf(e.getMessage())));
+        }
     }
 
     private Map<String, Object> buildBedrockFeel(ServerConfig cfg) {
@@ -288,6 +324,8 @@ public final class DashboardStatusApi {
         h.put("linkConfigPresent", link.get("configPresent"));
         h.put("linkSuiteComplete", link.get("suiteComplete"));
         h.put("linkServers", link.get("servers"));
+        h.put("backendHealth", com.yapcore.fleet.link.BackendHealthBridge.collectMaps(
+                root, cfg.getLinkEmbedHome(), server.getLinkProcess().isRunning()));
         List<String> pluginNames = server.getPluginManager().listPlugins().stream()
                 .map(p -> p.fileName()).toList();
         h.put("pluginCount", pluginNames.size());
@@ -358,6 +396,9 @@ public final class DashboardStatusApi {
                 case "server-domain" -> cfg.setServerDomain(v);
                 case "public-port" -> cfg.setPublicPort(DashboardHttp.parseInt(v, 0));
                 case "web-dashboard-port" -> cfg.setWebDashboardPort(DashboardHttp.parseInt(v, cfg.getWebDashboardPort()));
+                case "yap-ranks-auto-apply" -> cfg.setYapRanksAutoApply(DashboardHttp.bool(v));
+                case "parity.bedrock-feel", "parityBedrockFeel" -> cfg.setParityBedrockFeel(DashboardHttp.bool(v));
+                case "parity.bedrock-band", "parityBedrockBand" -> cfg.setParityBedrockBand(v);
                 case "auto-op" -> cfg.setAutoOp(DashboardHttp.bool(v));
                 case "ops" -> cfg.setOps(parseOpsList(v));
                 default -> {

@@ -8,9 +8,11 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 /**
- * Keeps YaP Link's player-facing identity in lockstep with chassis
- * {@code config/server.properties} so Java and Bedrock joiners see the same
- * MOTD, player cap, auth mode, and public host for one shared world.
+ * Keeps YaP Link's shared world identity in lockstep with chassis
+ * {@code config/server.properties} so Java and Bedrock list pings show the same MOTD.
+ *
+ * <p>{@code max-players} is intentionally not mirrored: Link owns the network-wide
+ * cap (sum of backends / headroom), while each Folia backend keeps its own slot limit.
  */
 public final class LinkIdentityMirror {
 
@@ -19,20 +21,35 @@ public final class LinkIdentityMirror {
     /**
      * Push shared identity from product config into {@code link.properties}.
      * Creates the file if missing. Does not start/stop Link.
+     *
+     * @return {@code true} if MOTD or auth/public identity fields changed (caller may reload Link)
      */
-    public static void syncFromServerConfig(Path rootDir, ServerConfig config) throws IOException {
+    public static boolean syncFromServerConfig(Path rootDir, ServerConfig config) throws IOException {
         Path linkHome = resolveLinkHome(rootDir, config.getLinkEmbedHome());
         Files.createDirectories(linkHome);
         Path linkPropsFile = linkHome.resolve("link.properties");
         Properties link = loadProps(linkPropsFile);
 
-        link.setProperty("motd", config.getMotd());
-        link.setProperty("max-players", Integer.toString(config.getMaxPlayers()));
-        link.setProperty("online-mode", Boolean.toString(config.isOnlineMode()));
-        if (config.getPublicHost() != null && !config.getPublicHost().isBlank()) {
-            link.setProperty("public-host", config.getPublicHost().trim());
+        String motd = config.getMotd() == null ? "" : config.getMotd();
+        String online = Boolean.toString(config.isOnlineMode());
+        String publicPort = Integer.toString(Math.max(0, config.getPublicPort()));
+        String publicHost = config.getPublicHost() == null ? "" : config.getPublicHost().trim();
+
+        boolean identityChanged =
+                !motd.equals(link.getProperty("motd", ""))
+                        || !online.equals(link.getProperty("online-mode", "false"))
+                        || !publicPort.equals(link.getProperty("public-port", "0"))
+                        || (!publicHost.isBlank()
+                        && !publicHost.equals(link.getProperty("public-host", "")));
+
+        // Chassis MOTD is the single source for JE + BE server-list text.
+        link.setProperty("motd", motd);
+        // Do not touch max-players — network-wide cap lives only on Link.
+        link.setProperty("online-mode", online);
+        if (!publicHost.isBlank()) {
+            link.setProperty("public-host", publicHost);
         }
-        link.setProperty("public-port", Integer.toString(Math.max(0, config.getPublicPort())));
+        link.setProperty("public-port", publicPort);
 
         // Product default: Link owns Bedrock UDP — keep edge enabled so list ping works.
         String mode = BedrockModeApplier.normalize(config.getBedrockMode());
@@ -51,23 +68,22 @@ public final class LinkIdentityMirror {
             link.setProperty("geyser-enabled", "true");
         }
 
-        // Folia/Paper backend listen port — keep Link lobby + Bedrock backend aligned.
-        int backendPort = config.getPort();
-        String lobby = link.getProperty("servers.lobby", "");
-        if (lobby.isBlank() || looksLikeLocalBackend(lobby)) {
-            link.setProperty("servers.lobby", "127.0.0.1:" + backendPort);
-        }
-        String bedrockBackend = link.getProperty("bedrock-backend", "");
-        if (bedrockBackend.isBlank() || looksLikeLocalBackend(bedrockBackend)) {
-            link.setProperty("bedrock-backend", "127.0.0.1:" + backendPort);
+        // Fleet owns per-instance backends (LinkFleetSync). Never stomp servers.* / bedrock-backend
+        // back to the chassis Via/listen port — that made every game server look like :25566.
+        if (!config.isFleetEnabled()) {
+            int backendPort = config.foliaListenPort();
+            String lobby = link.getProperty("servers.lobby", "");
+            if (lobby.isBlank()) {
+                link.setProperty("servers.lobby", "127.0.0.1:" + backendPort);
+            }
+            String bedrockBackend = link.getProperty("bedrock-backend", "");
+            if (bedrockBackend.isBlank()) {
+                link.setProperty("bedrock-backend", "127.0.0.1:" + backendPort);
+            }
         }
 
         storeProps(linkPropsFile, link);
-    }
-
-    private static boolean looksLikeLocalBackend(String address) {
-        String a = address.trim().toLowerCase();
-        return a.startsWith("127.0.0.1:") || a.startsWith("localhost:");
+        return identityChanged;
     }
 
     private static Path resolveLinkHome(Path rootDir, String linkEmbedHome) {

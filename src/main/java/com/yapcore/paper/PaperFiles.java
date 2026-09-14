@@ -126,10 +126,20 @@ public final class PaperFiles {
             p.setProperty("prevent-proxy-connections", "false");
         }
         if (!bench) {
-            p.setProperty("max-players", Integer.toString(config.getMaxPlayers()));
-            p.setProperty("view-distance", Integer.toString(config.getViewDistance()));
-            p.setProperty("simulation-distance", Integer.toString(config.getViewDistance()));
-            p.setProperty("motd", config.getMotd());
+            // Seed only when missing — do not clobber per-instance MOTD / caps after Setup save.
+            if (!p.containsKey("max-players") || blank(p.getProperty("max-players"))) {
+                p.setProperty("max-players", Integer.toString(config.getMaxPlayers()));
+            }
+            if (!p.containsKey("view-distance") || blank(p.getProperty("view-distance"))) {
+                p.setProperty("view-distance", Integer.toString(config.getViewDistance()));
+            }
+            if (!p.containsKey("simulation-distance") || blank(p.getProperty("simulation-distance"))) {
+                p.setProperty("simulation-distance",
+                        p.getProperty("view-distance", Integer.toString(config.getViewDistance())));
+            }
+            if (!p.containsKey("motd") || blank(p.getProperty("motd"))) {
+                p.setProperty("motd", config.getMotd() == null ? "" : config.getMotd());
+            }
         } else {
             if (!p.containsKey("max-players")) {
                 p.setProperty("max-players", "20");
@@ -192,10 +202,26 @@ public final class PaperFiles {
             String url = new PublicEndpoint(config).packUrl(fileName);
             String sha1;
             String configuredSha = config.getResourcePackSha1();
-            if (looksAbsoluteHttp(url)
+            boolean githubCdn = url != null && (url.contains("github.com/") || url.contains("githubusercontent.com/"));
+            boolean selfHosted = url != null && (url.contains("/pack/") || url.contains("127.0.0.1")
+                    || url.contains("localhost"));
+            if (selfHosted || !looksAbsoluteHttp(url)) {
+                // Fleet/local HTTP: hash must match the zip on disk (never a stale CDN sha1).
+                sha1 = sha1Hex(pack);
+                LOG.info("Resource pack SHA-1 from local zip");
+            } else if (githubCdn) {
+                // GitHub /latest drifts — always hash the bytes clients will download.
+                try {
+                    sha1 = sha1HexFromUrl(url);
+                    LOG.info("Resource pack SHA-1 from remote URL (matches what clients download)");
+                } catch (IOException remoteErr) {
+                    sha1 = sha1Hex(pack);
+                    LOG.warning("Remote pack SHA-1 failed (" + remoteErr.getMessage()
+                            + ") — using local zip hash until CDN is reachable: " + sha1);
+                }
+            } else if (looksAbsoluteHttp(url)
                     && configuredSha != null
                     && configuredSha.matches("(?i)[a-f0-9]{40}")) {
-                // Prefer explicit CDN hash from config (avoids blocking / clearing on slow GitHub).
                 sha1 = configuredSha.toLowerCase(Locale.ROOT);
                 LOG.info("Resource pack SHA-1 from config (CDN URL)");
             } else if (looksAbsoluteHttp(url)) {
@@ -322,6 +348,10 @@ public final class PaperFiles {
         } catch (Exception e) {
             throw new IOException("SHA-1 failed for " + path, e);
         }
+    }
+
+    private static boolean blank(String s) {
+        return s == null || s.isBlank();
     }
 
     /**

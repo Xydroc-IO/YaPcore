@@ -39,10 +39,14 @@
       return switchHtml(name, val === "true" || val === "yes" || f.value === true);
     }
     if (f.type === "enum" && f.options && f.options.length) {
-      const opts = f.options.map((o) => {
-        const s = String(o);
+      const optsList = f.options.map((o) => String(o));
+      if (val && !optsList.includes(val)) {
+        optsList.push(val);
+      }
+      const opts = optsList.map((s) => {
         const sel = s === val ? " selected" : "";
-        return `<option value="${escapeAttr(s)}"${sel}>${escapeAttr(s)}</option>`;
+        const custom = f.options.map(String).includes(s) ? s : s + " (custom)";
+        return `<option value="${escapeAttr(s)}"${sel}>${escapeAttr(custom)}</option>`;
       }).join("");
       return `<select name="${escapeAttr(name)}" data-key="${escapeAttr(name)}">${opts}</select>`;
     }
@@ -112,28 +116,33 @@
     { group: "What players see", blurb: "Same name and welcome line for Java and Bedrock — one shared world.", fields: [
       { key: "server-name", title: "Server name", hint: "Shows in both Java and Bedrock server lists." },
       { key: "motd", title: "Welcome line", hint: "Short message under the name for both editions. Color codes like &a are ok." },
-      { key: "resource-pack-enabled", title: "Send our textures", hint: "Yes = players are offered the server pack on join (Java zip + Bedrock mcpack).", type: "bool" },
       { key: "resource-pack-file", title: "Which pack file", hint: "Usually yapcore-default.zip. Leave this unless you added another pack." },
     ]},
     { group: "Who can join", blurb: "Java and Bedrock play together on this same world. These limits apply to everyone.", fields: [
-      { key: "max-players", title: "Player limit", hint: "Total slots for Java + Bedrock combined.", type: "number" },
+      { key: "max-players", title: "Player limit", hint: "Total slots for Java + Bedrock combined.", type: "enum", options: ["10", "20", "50", "100", "200", "500"] },
       { key: "online-mode", title: "Official accounts only", hint: "Yes = Microsoft/Mojang login for both editions. No = LAN / cracked / YaP Link offline.", type: "bool" },
       { key: "java-enabled", title: "Allow Java Edition", hint: "PC / Mac / Linux Minecraft. Keep on for crossplay.", type: "bool" },
+      { key: "allow-bedrock-players", title: "Allow Bedrock Edition", hint: "Phones / consoles / Win10 Bedrock. UDP is on YaP Link (not chassis). Keep on with Java for both editions.", type: "bool" },
       { key: "crossplay-enabled", title: "Shared world (crossplay)", hint: "Keep on so Java and Bedrock share the same Folia world.", type: "bool" },
-      { key: "bedrock-mode", title: "Bedrock join path", hint: "How Bedrock reaches this world. native = Link (recommended). Set before starting servers.", type: "enum", options: ["native", "forwarder", "geyser-backup"] },
+      { key: "bedrock-mode", title: "Bedrock join path", hint: "native = Link owns Bedrock UDP (recommended). Change only while stopped.", type: "enum", options: ["native", "forwarder", "geyser-backup"] },
       { key: "allow-localhost", title: "Allow this computer", hint: "Yes lets you join from the same machine that runs the server.", type: "bool" },
     ]},
-    { group: "How the world feels", blurb: "Higher numbers look nicer but need more RAM. Same for every player.", fields: [
-      { key: "view-distance", title: "How far they can see", hint: "Chunks. 8–10 is smooth. Higher needs more RAM.", type: "number" },
-      { key: "ram-mb", title: "Max memory (MB)", hint: "4096 is a good start for a small public box.", type: "number" },
-      { key: "ram-min-mb", title: "Memory to reserve (MB)", hint: "Usually half of max, or 1024.", type: "number" },
+    { group: "Bedrock look & feel (Java)", blurb: "Optional: Bedrock skins, emotes, and ported blocks on Java. Needs yap-presence / yap-blocks client mods.", fields: [
+      { key: "parity.bedrock-feel", title: "Bedrock-feel for Java", hint: "On = JE clients must have yap-presence. Bedrock phones are unchanged.", type: "bool" },
+      { key: "parity.bedrock-band", title: "Parity band", hint: "Which Bedrock extract set to use. Leave on the Folia-matched band.", type: "enum", options: ["band_26_50"] },
+      { key: "resource-pack-enabled", title: "Send our textures", hint: "Yes = players are offered the server pack on join (Java zip + Bedrock mcpack).", type: "bool" },
+    ]},
+    { group: "How the world feels", blurb: "Higher numbers look nicer but need more RAM. Chassis defaults — per-fleet servers set RAM under Fleet → Setup.", fields: [
+      { key: "view-distance", title: "How far they can see", hint: "Chunks. 8–10 is smooth. Higher needs more RAM.", type: "enum", options: ["6", "8", "10", "12", "16"] },
+      { key: "ram-mb", title: "Chassis max memory (MB)", hint: "Used when a fleet server is set to inherit. Prefer per-server RAM in Fleet Setup.", type: "enum", options: ["2048", "4096", "8192", "16384", "32768"] },
+      { key: "ram-min-mb", title: "Chassis memory reserve (MB)", hint: "Usually 512–2048.", type: "enum", options: ["512", "1024", "2048", "4096"] },
     ]},
     { group: "Advanced network", advanced: true, blurb: "Leave these unless a guide told you to change a port or hostname.", fields: [
       { key: "bind-host", title: "Listen address", hint: "0.0.0.0 = all network cards. Leave this if you are not sure." },
       { key: "port", title: "Game world port (Folia)", hint: "Backend world listen port (default 25566). Players join via Link, not this port.", type: "number" },
       { key: "bedrock-port", title: "Bedrock advertise port", hint: "Usually 19132 for phones. Link binds this in native mode.", type: "number" },
-      { key: "bedrock-enabled", title: "Chassis Bedrock UDP", hint: "Derived from Bedrock path — native leaves this off (Link owns UDP).", type: "bool" },
-      { key: "shared-listen-port", title: "Same port for Java and Bedrock", hint: "Yes = one public port (forwarder). No = separate Java + Bedrock ports.", type: "bool" },
+      { key: "bedrock-enabled", title: "Chassis Bedrock UDP (forwarder only)", hint: "Always off in native mode — Link owns UDP. Do not force this on for native.", type: "bool" },
+      { key: "shared-listen-port", title: "Chassis same-port TCP+UDP", hint: "Forwarder only. Native Link already shares the public edge.", type: "bool" },
       { key: "public-host", title: "Public hostname", hint: "What you give players, e.g. play.example.com" },
       { key: "server-domain", title: "Domain", hint: "Used for links and the pack URL." },
       { key: "public-port", title: "Public Java port", hint: "Port people use from the internet if it differs from the listen port.", type: "number" },

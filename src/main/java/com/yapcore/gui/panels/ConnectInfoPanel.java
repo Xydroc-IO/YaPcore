@@ -23,11 +23,12 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 
-/** Live join addresses — same-PC + LAN + public/crossplay. */
+/** Live join addresses — Link edge + each fleet backend when fleet is on. */
 public final class ConnectInfoPanel {
 
     private final YaPcoreServer server;
     private final JPanel root = new JPanel(new BorderLayout(6, 6));
+    private final JPanel bodyHost = new JPanel(new BorderLayout());
     private final JTextField thisPcField = addressField();
     private final JTextField localhostField = addressField();
     private final JTextField lanField = addressField();
@@ -36,11 +37,14 @@ public final class ConnectInfoPanel {
     private final JTextField dashboardField = addressField();
     private final JLabel modeLabel = new JLabel("—");
     private final JLabel tipLabel = new JLabel();
+    private final JPanel fleetBackends = new JPanel(new GridBagLayout());
 
     public ConnectInfoPanel(YaPcoreServer server) {
         this.server = server;
         root.setOpaque(false);
-        root.add(buildBody(), BorderLayout.CENTER);
+        bodyHost.setOpaque(false);
+        bodyHost.add(buildBody(), BorderLayout.CENTER);
+        root.add(bodyHost, BorderLayout.CENTER);
         refresh();
     }
 
@@ -54,7 +58,7 @@ public final class ConnectInfoPanel {
         thisPcField.setText(local.loopback());
         localhostField.setText(local.localhostName());
         lanField.setText(PublicEndpoint.guessLocalIpv4().orElse("127.0.0.1")
-                + ":" + server.getConfig().getPort());
+                + ":" + ep.advertisedJavaPort());
         crossplayField.setText(ep.crossplayJoinAddress());
         packField.setText(ep.packBaseUrl() + "/pack/…");
         var dash = DashboardAccessInfo.resolve(server.getConfig());
@@ -63,14 +67,67 @@ public final class ConnectInfoPanel {
         } else {
             dashboardField.setText(dash.hint());
         }
-        tipLabel.setText("<html><body style='width:260px'>" + local.tip() + "</body></html>");
+        tipLabel.setText("<html><body style='width:280px'>" + local.tip()
+                + (server.getConfig().isFleetEnabled()
+                ? "<br><br><b>Players join YaP Link :"
+                + new com.yapcore.network.publicity.PublicEndpoint(server.getConfig()).advertisedJavaPort()
+                + "</b> (not Folia ports directly)."
+                + "<br>Backends below must be <b>RUNNING</b> — Start lobby from Fleet home if Via/Link says connection refused."
+                : "")
+                + "</body></html>");
         if (server.getConfig().isAllowLocalhost()) {
-            modeLabel.setText("Same-PC OK · 127.0.0.1");
+            modeLabel.setText(server.getConfig().isFleetEnabled()
+                    ? "Fleet · join Link edge"
+                    : "Same-PC OK · 127.0.0.1");
             modeLabel.setForeground(GuiTheme.ACCENT);
         } else {
             modeLabel.setText("Localhost assist off");
             modeLabel.setForeground(GuiTheme.MUTED);
         }
+        paintFleetBackends();
+    }
+
+    private void paintFleetBackends() {
+        fleetBackends.removeAll();
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.gridy = 0;
+        c.anchor = GridBagConstraints.WEST;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1;
+        c.insets = new Insets(3, 2, 3, 2);
+        if (!server.getConfig().isFleetEnabled()) {
+            fleetBackends.revalidate();
+            fleetBackends.repaint();
+            return;
+        }
+        fleetBackends.setOpaque(false);
+        JLabel title = new JLabel("Fleet backends (Folia JVMs)");
+        title.setForeground(GuiTheme.MUTED);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        fleetBackends.add(title, c);
+        try {
+            @SuppressWarnings("unchecked")
+            java.util.List<java.util.Map<String, Object>> instances =
+                    (java.util.List<java.util.Map<String, Object>>)
+                            server.fleet().statusSnapshot().get("instances");
+            if (instances != null) {
+                for (java.util.Map<String, Object> i : instances) {
+                    c.gridy++;
+                    JTextField f = addressField();
+                    f.setText(i.get("id") + " → " + i.get("bind") + ":" + i.get("port")
+                            + "  [" + i.getOrDefault("state", "?") + "]");
+                    fleetBackends.add(row(String.valueOf(i.getOrDefault("displayName", i.get("id"))), f), c);
+                }
+            }
+        } catch (Exception e) {
+            c.gridy++;
+            JLabel err = new JLabel(e.getMessage());
+            err.setForeground(GuiTheme.MUTED);
+            fleetBackends.add(err, c);
+        }
+        fleetBackends.revalidate();
+        fleetBackends.repaint();
     }
 
     private JPanel buildBody() {
@@ -100,7 +157,10 @@ public final class ConnectInfoPanel {
         c.gridy++;
         panel.add(row("LAN / other devices", lanField), c);
         c.gridy++;
-        panel.add(row("Public / domain", crossplayField), c);
+        panel.add(row("Public / domain (Link edge)", crossplayField), c);
+        c.gridy++;
+        fleetBackends.setOpaque(false);
+        panel.add(fleetBackends, c);
         c.gridy++;
         panel.add(row("Resource packs", packField), c);
         c.gridy++;

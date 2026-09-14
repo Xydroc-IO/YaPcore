@@ -20,6 +20,10 @@ public final class LocalJoinAddresses {
     }
 
     public int gamePort() {
+        // Fleet / Velocity: players join YaP Link (public-port, default 25565), not Folia :25567.
+        if (config.isFleetEnabled() || config.isVelocityEnabled()) {
+            return new PublicEndpoint(config).advertisedJavaPort();
+        }
         return config.getPort();
     }
 

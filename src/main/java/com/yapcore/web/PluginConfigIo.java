@@ -133,6 +133,14 @@ public final class PluginConfigIo {
         return root.resolve("plugins").resolve(entry.dataDir()).resolve(entry.file());
     }
 
+    /** Resolve chassis or fleet instance plugins parent (directory that contains {@code plugins/}). */
+    public static Path pluginsParent(Path rootDir, String instanceRelativeDir) {
+        if (instanceRelativeDir == null || instanceRelativeDir.isBlank()) {
+            return rootDir;
+        }
+        return rootDir.resolve(instanceRelativeDir).normalize();
+    }
+
     public static Map<String, Object> load(Path root, PluginConfigCatalog.Entry entry) throws IOException {
         Path file = configPath(root, entry);
         if (!Files.isRegularFile(file)) {
@@ -148,7 +156,8 @@ public final class PluginConfigIo {
                 ? DashboardNetworkSnapshots.loadYaml(file) : new LinkedHashMap<>();
         for (var e : fields.entrySet()) {
             String key = e.getKey();
-            if (key == null || key.isBlank() || "action".equals(key) || "plugin".equals(key)) {
+            if (key == null || key.isBlank() || "action".equals(key) || "plugin".equals(key)
+                    || "instanceId".equals(key)) {
                 continue;
             }
             apply(yaml, key, e.getValue());

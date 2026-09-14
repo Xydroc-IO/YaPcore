@@ -46,6 +46,8 @@ public final class DashboardGameplayLinkApi {
                             + ":yap-link-plugin-server-selector:installIntoLinkPlugins");
             snap.put("hint", "POST start | stop | command | set-velocity-forwarding | set-bedrock-mode | save-proxy | …");
             snap.put("velocityEnabled", velocity);
+            snap.put("backendHealth", com.yapcore.fleet.link.BackendHealthBridge.collectMaps(
+                    root, linkHome, linkProc.isRunning()));
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -228,8 +230,9 @@ public final class DashboardGameplayLinkApi {
     private static Map<String, String> linkProxyUpdatesFromBody(Map<String, String> body) {
         Map<String, String> updates = new LinkedHashMap<>();
         putIfPresent(body, updates, "bind");
-        // motd / max-players / online-mode / public-host / public-port are owned by
-        // Server setup and mirrored via LinkIdentityMirror — do not accept Link overrides.
+        // motd / online-mode / public-host / public-port: chassis-owned, mirrored via
+        // LinkIdentityMirror. max-players is Link-owned (network cap) — accepted below.
+        putIfPresent(body, updates, "max-players", "maxPlayers");
         putBoolIfPresent(body, updates, "ping-passthrough", "pingPassthrough");
         putBoolIfPresent(body, updates, "aggregate-player-count", "aggregatePlayerCount");
         putBoolIfPresent(body, updates, "global-tab-list", "globalTabList");

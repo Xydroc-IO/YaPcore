@@ -32,9 +32,14 @@ public final class DashboardLinkSnapshot {
     private static final Pattern SERVER_NAME = Pattern.compile("[a-zA-Z][a-zA-Z0-9_-]*");
     private static final Pattern HOST_PORT = Pattern.compile(".+:\\d{1,5}");
 
-    /** Keys the dashboard may update via {@link #saveProxySettings}. */
+    /**
+     * Keys the dashboard may update via {@link #saveProxySettings}.
+     * MOTD / online-mode / public-host / public-port are chassis-owned
+     * ({@code LinkIdentityMirror}) — not writable here. {@code max-players} is
+     * Link-owned (network-wide cap).
+     */
     private static final Set<String> PROXY_KEYS = Set.of(
-            "bind", "motd", "max-players", "online-mode", "public-host", "public-port",
+            "bind", "max-players",
             "ping-passthrough", "aggregate-player-count", "global-tab-list",
             "chat-relay-enabled", "chat-relay-channel", "chat-relay-format", "chat-join-announce",
             "plugins-enabled", "enable-server-command",
@@ -139,6 +144,56 @@ public final class DashboardLinkSnapshot {
         for (var e : updates.entrySet()) {
             if (PROXY_KEYS.contains(e.getKey()) && e.getValue() != null) {
                 props.setProperty(e.getKey(), e.getValue().trim());
+            }
+        }
+        storeProperties(linkProps, props);
+    }
+
+    /**
+     * Whether Bedrock clients can join via the Link edge (native UDP or Geyser backup).
+     * Chassis {@code bedrock-enabled} is unrelated in {@code native} mode — Link owns UDP.
+     */
+    public static boolean allowBedrockPlayers(Path rootDir, String linkEmbedHome) {
+        Properties props = loadProperties(resolveHome(rootDir, linkEmbedHome).resolve("link.properties"));
+        String mode = props.getProperty("bedrock-mode", "native").trim().toLowerCase(Locale.ROOT);
+        if ("geyser-backup".equals(mode) || "geyser".equals(mode) || "backup".equals(mode)) {
+            return Boolean.parseBoolean(props.getProperty("geyser-enabled", "false"));
+        }
+        // native + forwarder: Link Bedrock edge
+        if (!Files.isRegularFile(resolveHome(rootDir, linkEmbedHome).resolve("link.properties"))) {
+            return true; // product default before first write
+        }
+        return Boolean.parseBoolean(props.getProperty("bedrock-enabled", "true"));
+    }
+
+    /**
+     * Turn Link-edge Bedrock on/off without changing chassis Folia bind.
+     * Ensures UDP binds exist when enabling native/forwarder.
+     */
+    public static void setAllowBedrockPlayers(Path rootDir, String linkEmbedHome, boolean allow) throws IOException {
+        Path linkProps = resolveHome(rootDir, linkEmbedHome).resolve("link.properties");
+        Files.createDirectories(linkProps.getParent());
+        Properties props = loadProperties(linkProps);
+        String mode = props.getProperty("bedrock-mode", "native").trim().toLowerCase(Locale.ROOT);
+        boolean geyser = "geyser-backup".equals(mode) || "geyser".equals(mode) || "backup".equals(mode);
+        if (geyser) {
+            props.setProperty("geyser-enabled", Boolean.toString(allow));
+            props.setProperty("bedrock-enabled", "false");
+            if (allow) {
+                if (props.getProperty("geyser-bedrock-bind", "").isBlank()) {
+                    props.setProperty("geyser-bedrock-bind", "0.0.0.0:19132");
+                }
+            }
+        } else {
+            props.setProperty("bedrock-enabled", Boolean.toString(allow));
+            props.setProperty("geyser-enabled", "false");
+            if (allow) {
+                String bind = props.getProperty("bedrock-bind", "");
+                if (bind.isBlank()) {
+                    props.setProperty("bedrock-bind", "0.0.0.0:25565,0.0.0.0:19132");
+                }
+                props.setProperty("bedrock-shared-port", "true");
+                props.setProperty("bedrock-also-19132", "true");
             }
         }
         storeProperties(linkProps, props);
