@@ -58,6 +58,25 @@ Version line: **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2** —
 
 YaPcore is developed with the assistance of **AI coding tools**. Human maintainers remain accountable for review, security, and release quality. Full statement: **[AI_TRANSPARENCY.md](docs/start/AI_TRANSPARENCY.md)**.
 
+### Screenshots
+
+Live captures from a local fleet (lobby + survival + YaP Link). In-game / Bedrock shots welcome as PRs under [`docs/images/readme/`](docs/images/readme/).
+
+<p align="center">
+  <img src="docs/images/readme/swing-fleet-home.png" alt="YaPcore Swing GUI — fleet home with Link, lobby, and survival" width="90%"/>
+  <br/><em>Desktop Control Panel — fleet rail, per-server plugins, Start / Stop / Restart</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/readme/web-dashboard.png" alt="YaPcore web dashboard — live health and Bedrock-feel controls" width="90%"/>
+  <br/><em>Web dashboard (:8080) — health cards, Bedrock-feel parity, network status</em>
+</p>
+
+<p align="center">
+  <img src="docs/images/readme/web-fleet.png" alt="YaPcore web Fleet page — Link edge and multi-server controls" width="90%"/>
+  <br/><em>Fleet page — YaP Link join edge + multi-backend controls</em>
+</p>
+
 ### Capacity (YaP-Folia)
 
 Honest product bars — not “unlimited players.” Scale is **regionized + multi-backend**, not one mega thread.
