@@ -20,9 +20,9 @@ import java.util.regex.Pattern;
 /**
  * Seeds Folia/Paper {@code ops.json} from YaP {@code ops=} names.
  * <p>
- * Preserves Mojang / proxy UUIDs already in {@code ops.json} or {@code usercache.json}.
- * Older builds wrote offline-only UUIDs and wiped real join UUIDs every restart,
- * so staff had to {@code /op} themselves again after each boot.
+ * Merges into existing ops — never drops operators who were {@code /op}'d in-game
+ * but are not listed in chassis {@code ops=}. Also keeps Mojang / proxy UUIDs already
+ * present in {@code ops.json} or {@code usercache.json}.
  */
 public final class PaperOps {
 
@@ -30,9 +30,9 @@ public final class PaperOps {
     private static final Pattern ENTRY = Pattern.compile(
             "\"uuid\"\\s*:\\s*\"([0-9a-fA-F\\-]{36})\"\\s*,\\s*\"name\"\\s*:\\s*\"([^\"]+)\"",
             Pattern.DOTALL);
-    private static final Pattern USERCACHE_ENTRY = Pattern.compile(
-            "\"uuid\"\\s*:\\s*\"([0-9a-fA-F\\-]{36})\"\\s*,\\s*\"name\"\\s*:\\s*\"([^\"]+)\"",
-            Pattern.DOTALL);
+
+    private record OpRow(UUID uuid, String name, int level, boolean bypass) {
+    }
 
     private PaperOps() {
     }
@@ -40,60 +40,103 @@ public final class PaperOps {
     public static void ensure(Path paperDir, ServerConfig config) throws IOException {
         List<String> names = config.getOps();
         System.setProperty("yapcore.auto-op", Boolean.toString(config.isAutoOp()));
-        if (names.isEmpty()) {
-            LOG.info("auto-op=" + config.isAutoOp()
-                    + " (joiners " + (config.isAutoOp() ? "will be OP'd" : "need /op") + ")");
-            return;
-        }
         Path opsFile = paperDir.resolve("ops.json");
         Path usercache = paperDir.resolve("usercache.json");
 
-        Map<String, Set<UUID>> byName = new LinkedHashMap<>();
-        for (String name : names) {
-            byName.put(name.toLowerCase(Locale.ROOT), new LinkedHashSet<>());
+        // uuid → row (preserve every existing op first)
+        Map<UUID, OpRow> byUuid = new LinkedHashMap<>();
+        loadExisting(opsFile, byUuid);
+
+        if (names.isEmpty()) {
+            // Do not touch an existing ops.json — GUI / Start must not rewrite OP state.
+            LOG.info("auto-op=" + config.isAutoOp()
+                    + " (joiners " + (config.isAutoOp() ? "will be OP'd" : "need /op")
+                    + "; left " + byUuid.size() + " existing op uuid(s) untouched)");
+            return;
         }
 
-        collectUuids(opsFile, byName, true);
-        collectUuids(usercache, byName, false);
+        Map<UUID, OpRow> before = new LinkedHashMap<>(byUuid);
+        Map<String, Set<UUID>> managed = new LinkedHashMap<>();
+        for (String name : names) {
+            managed.put(name.toLowerCase(Locale.ROOT), new LinkedHashSet<>());
+        }
+        // Collect UUIDs already associated with managed names (ops + usercache)
+        for (OpRow row : byUuid.values()) {
+            Set<UUID> set = managed.get(row.name().toLowerCase(Locale.ROOT));
+            if (set != null) {
+                set.add(row.uuid());
+            }
+        }
+        collectFromFile(usercache, managed);
 
-        StringBuilder json = new StringBuilder("[\n");
-        boolean first = true;
-        int entries = 0;
         for (String name : names) {
             String key = name.toLowerCase(Locale.ROOT);
-            Set<UUID> uuids = byName.get(key);
+            Set<UUID> uuids = managed.get(key);
             if (uuids == null) {
                 uuids = new LinkedHashSet<>();
             }
-            // Always keep offline UUID so pure offline joins still match.
             uuids.add(offlineUuid(name));
             for (UUID uuid : uuids) {
-                if (!first) {
-                    json.append(",\n");
-                }
-                first = false;
-                entries++;
-                json.append("  {\n")
-                        .append("    \"uuid\": \"").append(uuid).append("\",\n")
-                        .append("    \"name\": ").append(jsonString(name)).append(",\n")
-                        .append("    \"level\": 4,\n")
-                        .append("    \"bypassesPlayerLimit\": false\n")
-                        .append("  }");
+                OpRow prev = byUuid.get(uuid);
+                int level = prev != null ? prev.level() : 4;
+                boolean bypass = prev != null && prev.bypass();
+                // Prefer chassis display name for managed ops=
+                byUuid.put(uuid, new OpRow(uuid, name, level, bypass));
             }
         }
-        json.append("\n]\n");
-        Files.writeString(opsFile, json.toString(), StandardCharsets.UTF_8);
-        LOG.info("Wrote ops.json for " + names.size() + " name(s), " + entries + " uuid(s) → " + opsFile);
+
+        if (byUuid.equals(before) && Files.isRegularFile(opsFile)) {
+            LOG.fine("ops.json unchanged (" + byUuid.size() + " uuid(s)) → " + opsFile);
+            return;
+        }
+        writeOps(opsFile, byUuid);
+        LOG.info("Merged ops.json for " + names.size() + " managed name(s), "
+                + byUuid.size() + " uuid(s) total → " + opsFile);
     }
 
-    private static void collectUuids(Path file, Map<String, Set<UUID>> byName, boolean opsFormat) {
+    private static void loadExisting(Path opsFile, Map<UUID, OpRow> byUuid) {
+        if (!Files.isRegularFile(opsFile)) {
+            return;
+        }
+        try {
+            String raw = Files.readString(opsFile);
+            Matcher m = ENTRY.matcher(raw);
+            while (m.find()) {
+                try {
+                    UUID uuid = UUID.fromString(m.group(1));
+                    String name = m.group(2);
+                    int level = 4;
+                    boolean bypass = false;
+                    // Best-effort level/bypass near this entry
+                    int from = Math.max(0, m.start() - 80);
+                    int to = Math.min(raw.length(), m.end() + 120);
+                    String window = raw.substring(from, to);
+                    Matcher lv = Pattern.compile("\"level\"\\s*:\\s*(\\d+)").matcher(window);
+                    if (lv.find()) {
+                        level = Integer.parseInt(lv.group(1));
+                    }
+                    Matcher bp = Pattern.compile("\"bypassesPlayerLimit\"\\s*:\\s*(true|false)")
+                            .matcher(window);
+                    if (bp.find()) {
+                        bypass = Boolean.parseBoolean(bp.group(1));
+                    }
+                    byUuid.putIfAbsent(uuid, new OpRow(uuid, name, level, bypass));
+                } catch (IllegalArgumentException ignored) {
+                    // skip bad uuid
+                }
+            }
+        } catch (IOException e) {
+            LOG.warning("Could not read " + opsFile + ": " + e.getMessage());
+        }
+    }
+
+    private static void collectFromFile(Path file, Map<String, Set<UUID>> byName) {
         if (!Files.isRegularFile(file)) {
             return;
         }
         try {
             String raw = Files.readString(file);
-            Pattern pattern = opsFormat ? ENTRY : USERCACHE_ENTRY;
-            Matcher m = pattern.matcher(raw);
+            Matcher m = ENTRY.matcher(raw);
             while (m.find()) {
                 String uuidStr = m.group(1);
                 String name = m.group(2);
@@ -104,12 +147,31 @@ public final class PaperOps {
                 try {
                     set.add(UUID.fromString(uuidStr));
                 } catch (IllegalArgumentException ignored) {
-                    // skip bad uuid
+                    // skip
                 }
             }
         } catch (IOException e) {
             LOG.warning("Could not read " + file + ": " + e.getMessage());
         }
+    }
+
+    private static void writeOps(Path opsFile, Map<UUID, OpRow> byUuid) throws IOException {
+        StringBuilder json = new StringBuilder("[\n");
+        boolean first = true;
+        for (OpRow row : byUuid.values()) {
+            if (!first) {
+                json.append(",\n");
+            }
+            first = false;
+            json.append("  {\n")
+                    .append("    \"uuid\": \"").append(row.uuid()).append("\",\n")
+                    .append("    \"name\": ").append(jsonString(row.name())).append(",\n")
+                    .append("    \"level\": ").append(row.level()).append(",\n")
+                    .append("    \"bypassesPlayerLimit\": ").append(row.bypass()).append("\n")
+                    .append("  }");
+        }
+        json.append("\n]\n");
+        Files.writeString(opsFile, json.toString(), StandardCharsets.UTF_8);
     }
 
     /** Mojang offline-mode player UUID. */
