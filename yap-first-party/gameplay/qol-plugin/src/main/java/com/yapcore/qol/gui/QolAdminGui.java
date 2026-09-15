@@ -60,11 +60,12 @@ public final class QolAdminGui implements Listener {
                 c.excavatorEnabled() ? "Excavator: ON" : "Excavator: OFF",
                 "Flat area mining with the special pickaxe"));
 
-        inv.setItem(28, icon(Material.NETHERITE_AXE, "Give Timber Axe", "To: " + target));
+        // Button icons use gold tools so a cancelled click cannot be confused with the real netherite VIP tools.
+        inv.setItem(28, icon(Material.GOLDEN_AXE, "Give Timber Axe", "To: " + target));
         int[] excavatorSlots = {29, 30, 31};
         for (int i = 0; i < sizes.size() && i < excavatorSlots.length; i++) {
             int size = sizes.get(i);
-            inv.setItem(excavatorSlots[i], icon(Material.NETHERITE_PICKAXE,
+            inv.setItem(excavatorSlots[i], icon(Material.GOLDEN_PICKAXE,
                     "Give Excavator " + size + "×" + size,
                     "To: " + target,
                     "Size baked into the item"));
@@ -248,11 +249,21 @@ public final class QolAdminGui implements Listener {
         }
         try {
             Player target = resolveTarget(admin);
-            plugin.items().give(target, tool);
-            admin.sendMessage("§aGave §f" + tool + " §ato §f" + target.getName() + "§a.");
-            open(admin);
+            admin.closeInventory();
+            boolean fitted = plugin.items().give(target, tool);
+            if (fitted) {
+                admin.sendMessage("§aGave §f" + tool + " §ato §f" + target.getName() + "§a.");
+            } else {
+                admin.sendMessage("§aGave §f" + tool + " §ato §f" + target.getName()
+                        + "§a (inventory full — dropped at their feet).");
+            }
         } catch (IllegalArgumentException e) {
             admin.sendMessage("§c" + e.getMessage());
+            open(admin);
+        } catch (RuntimeException e) {
+            admin.sendMessage("§cCould not create §f" + tool + "§c: " + e.getMessage());
+            plugin.getLogger().warning("QoL GUI give failed for " + tool + ": " + e.getMessage());
+            open(admin);
         }
     }
 

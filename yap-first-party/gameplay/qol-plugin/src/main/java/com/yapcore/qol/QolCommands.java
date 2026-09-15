@@ -100,10 +100,18 @@ public final class QolCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         try {
-            items.give(target, tool);
-            sender.sendMessage("Gave " + tool + " to " + target.getName());
+            boolean fitted = items.give(target, tool);
+            if (fitted) {
+                sender.sendMessage("Gave " + tool + " to " + target.getName());
+            } else {
+                sender.sendMessage("Gave " + tool + " to " + target.getName()
+                        + " (inventory full — dropped at their feet)");
+            }
         } catch (IllegalArgumentException e) {
             sender.sendMessage("Unknown tool. Use timber_axe, excavator, or excavator:3|6|9");
+        } catch (RuntimeException e) {
+            sender.sendMessage("Could not create " + tool + ": " + e.getMessage());
+            plugin.getLogger().warning("yapqol give failed for " + tool + ": " + e.getMessage());
         }
         return true;
     }

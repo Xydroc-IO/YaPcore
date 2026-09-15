@@ -335,11 +335,20 @@ final class AdminMenuClickOps {
         Player target = plugin.actions().resolveGiveTarget(admin);
         try {
             Object items = qol.getClass().getMethod("items").invoke(qol);
-            items.getClass().getMethod("give", Player.class, String.class).invoke(items, target, tool);
-            admin.sendMessage("§aGave §f" + tool + " §ato §f" + target.getName() + "§a.");
-            plugin.menus().openQolTools(admin);
+            admin.closeInventory();
+            Object result = items.getClass().getMethod("give", Player.class, String.class)
+                    .invoke(items, target, tool);
+            boolean fitted = !(result instanceof Boolean b) || b;
+            if (fitted) {
+                admin.sendMessage("§aGave §f" + tool + " §ato §f" + target.getName() + "§a.");
+            } else {
+                admin.sendMessage("§aGave §f" + tool + " §ato §f" + target.getName()
+                        + "§a (inventory full — dropped at their feet).");
+            }
         } catch (ReflectiveOperationException e) {
-            admin.sendMessage("§cCould not give " + tool + ": " + e.getMessage());
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            admin.sendMessage("§cCould not give " + tool + ": " + cause.getMessage());
+            plugin.menus().openQolTools(admin);
         }
     }
 }

@@ -428,14 +428,14 @@ final class AdminMenusOps {
                 excavator ? "Excavator: ON" : "Excavator: OFF",
                 "Flat area mining with the special pickaxe"));
 
-        inv.setItem(28, AdminMenuHolder.icon(Material.NETHERITE_AXE, NamedTextColor.GREEN, "Give Timber Axe",
+        inv.setItem(28, AdminMenuHolder.icon(Material.GOLDEN_AXE, NamedTextColor.GREEN, "Give Timber Axe",
                 "To: " + target,
                 "Select a player under Players first (optional)"));
-        inv.setItem(29, AdminMenuHolder.icon(Material.NETHERITE_PICKAXE, NamedTextColor.AQUA, "Give Excavator 3×3",
+        inv.setItem(29, AdminMenuHolder.icon(Material.GOLDEN_PICKAXE, NamedTextColor.AQUA, "Give Excavator 3×3",
                 "To: " + target));
-        inv.setItem(30, AdminMenuHolder.icon(Material.NETHERITE_PICKAXE, NamedTextColor.AQUA, "Give Excavator 6×6",
+        inv.setItem(30, AdminMenuHolder.icon(Material.GOLDEN_PICKAXE, NamedTextColor.AQUA, "Give Excavator 6×6",
                 "To: " + target));
-        inv.setItem(31, AdminMenuHolder.icon(Material.NETHERITE_PICKAXE, NamedTextColor.AQUA, "Give Excavator 9×9",
+        inv.setItem(31, AdminMenuHolder.icon(Material.GOLDEN_PICKAXE, NamedTextColor.AQUA, "Give Excavator 9×9",
                 "To: " + target));
         inv.setItem(33, AdminMenuHolder.icon(Material.PLAYER_HEAD, "Pick give target",
                 "Opens online players",
