@@ -1,0 +1,73 @@
+god_apple:
+  base: GOLDEN_APPLE
+  name: '&c&lgod_apple'
+  lore:
+  - '&7Custom YaP item (edited)'
+  custom-model-data: 12000
+  glow: true
+  rainbow: true
+  unbreakable: true
+  abilities:
+  - trigger: together
+    type: absorb
+    cooldown: 0s
+    params:
+      amplifier: 99
+      duration: -1
+      amount: 100
+      effects:
+      - SPEED
+      - STRENGTH
+      - REGENERATION
+      - RESISTANCE
+      - JUMP_BOOST
+      - WATER_BREATHING
+      effect: SPEED
+  - trigger: together
+    type: feed
+    cooldown: 0s
+    params:
+      amount: 100
+      effects:
+      - SPEED
+      - STRENGTH
+      - REGENERATION
+      - RESISTANCE
+      - JUMP_BOOST
+      - WATER_BREATHING
+      effect: SPEED
+      duration: -1
+      amplifier: 99
+  - trigger: right_click
+    type: heal
+    cooldown: 0s
+    params:
+      amount: 100
+      effects:
+      - SPEED
+      - STRENGTH
+      - REGENERATION
+      - RESISTANCE
+      - JUMP_BOOST
+      - WATER_BREATHING
+      effect: SPEED
+      duration: -1
+      amplifier: 99
+  - trigger: together
+    type: effect
+    cooldown: 0s
+    params:
+      amplifier: 99
+      duration: -1
+      effect: SPEED
+      amount: 100
+      effects:
+      - SPEED
+      - STRENGTH
+      - REGENERATION
+      - RESISTANCE
+      - JUMP_BOOST
+      - WATER_BREATHING
+  gear:
+    attack: 100
+    strength: 0

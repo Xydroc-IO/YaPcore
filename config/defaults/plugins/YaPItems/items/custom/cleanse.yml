@@ -1,0 +1,17 @@
+cleanse:
+  base: GOLDEN_APPLE
+  name: '&c&lcleanse'
+  lore:
+  - '&7Custom YaP item'
+  custom-model-data: 12008
+  abilities:
+  - trigger: together
+    type: cleanse
+    cooldown: 5s
+    params:
+      amount: 6
+  - trigger: right_click
+    type: heal
+    cooldown: 5s
+    params:
+      amount: 6

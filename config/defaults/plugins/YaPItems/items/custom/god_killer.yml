@@ -1,0 +1,51 @@
+god_killer:
+  base: NETHERITE_SWORD
+  name: '&c&lgod_killer'
+  lore:
+  - '&7Custom YaP item (edited)'
+  custom-model-data: 12010
+  glow: true
+  rainbow: true
+  unbreakable: true
+  abilities:
+  - trigger: left_click
+    type: pull
+    cooldown: 0s
+    params:
+      strength: 1.2
+      radius: 12
+      damage: -1
+      range: 100
+  - trigger: right_click
+    type: explode
+    cooldown: 0s
+    params:
+      power: 2.0
+      fire: false
+      damage: -1
+      range: 100
+      radius: 12
+  - trigger: left_click
+    type: smite_target
+    cooldown: 0s
+    params:
+      damage: -1
+      range: 100
+      radius: 12
+  - trigger: right_click
+    type: lightning_dash
+    cooldown: 0s
+    params:
+      damage: -1
+      range: 100
+      radius: 12
+  - trigger: left_click
+    type: lightning
+    cooldown: 0s
+    params:
+      damage: -1
+      range: 100
+      radius: 12
+  gear:
+    attack: 100
+    strength: 0
