@@ -27,7 +27,7 @@ final class YapDbCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            YapHelp.simple(sender, "YaPDB", "/yapdb <status|reload>");
+            YapHelp.simple(sender, "YaPDB", "/yapdb <status|probe|reload>");
             return true;
         }
         switch (args[0].toLowerCase(Locale.ROOT)) {
@@ -35,8 +35,27 @@ final class YapDbCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage("YaPDB status:");
                 sender.sendMessage("  open: " + plugin.isOpen());
                 sender.sendMessage("  engine: " + plugin.engine());
+                String product = plugin.productLabel();
+                if (product == null || product.isBlank()) {
+                    product = plugin.readLiveProduct().orElse("(unknown)");
+                }
+                sender.sendMessage("  product: " + product);
                 sender.sendMessage("  pool: " + plugin.poolName());
                 sender.sendMessage("  jdbc: " + plugin.jdbcUrl());
+            }
+            case "probe" -> {
+                String host = args.length >= 2 ? args[1] : "127.0.0.1";
+                sender.sendMessage("YaPDB probe host=" + host);
+                for (String line : YapDbProbe.formatPortReport(plugin.probePorts(host))) {
+                    sender.sendMessage(line);
+                }
+                if (plugin.isOpen()) {
+                    String live = plugin.readLiveProduct().orElse(plugin.productLabel());
+                    sender.sendMessage("Open pool product: " + (live == null || live.isBlank() ? "(n/a)" : live));
+                    sender.sendMessage("Resolved dialect: " + plugin.engine());
+                } else {
+                    sender.sendMessage("Pool is closed — configure JDBC then /yapdb reload");
+                }
             }
             case "reload" -> {
                 var result = YapConfigReload.run(() -> {
@@ -48,7 +67,7 @@ final class YapDbCommand implements CommandExecutor, TabCompleter {
                 });
                 YapConfigReload.report(sender, plugin.getLogger(), "YaPDB", result);
             }
-            default -> YapHelp.simple(sender, "YaPDB", "/yapdb <status|reload>");
+            default -> YapHelp.simple(sender, "YaPDB", "/yapdb <status|probe|reload>");
         }
         return true;
     }
@@ -57,7 +76,10 @@ final class YapDbCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             String p = args[0].toLowerCase(Locale.ROOT);
-            return Stream.of("status", "reload").filter(s -> s.startsWith(p)).toList();
+            return Stream.of("status", "probe", "reload").filter(s -> s.startsWith(p)).toList();
+        }
+        if (args.length == 2 && "probe".equalsIgnoreCase(args[0])) {
+            return List.of("127.0.0.1", "localhost");
         }
         return List.of();
     }

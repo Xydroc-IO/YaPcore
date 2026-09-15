@@ -17,10 +17,23 @@ each shading Hikari + a JDBC driver.
 Engine is detected from the JDBC URL (`jdbc:mysql:`, `jdbc:postgresql:`, `jdbc:sqlite:`),
 or set explicitly with `jdbc.engine: auto|mysql|postgres|sqlite` in `plugins/YaPDB/config.yml`.
 
+**Probe (what’s actually listening / connected):**
+
+```bash
+./scripts/db/probe-db.sh              # TCP 3306 / 3316 / 5432
+./scripts/db/probe-db.sh --host 10.0.0.5
+```
+
+In-game (Folia up): `/yapdb probe [host]` and `/yapdb status` — status shows the JDBC
+`DatabaseMetaData` product string (e.g. `MariaDB 11.x`) after the pool opens. Port probe
+does **not** invent credentials; it only reports open listeners.
+
 First-party plugins build DDL/DML through `YapDb.dialect()` (`YapSqlDialect`) so upserts and
 types stay portable (`ON DUPLICATE KEY` / `ON CONFLICT` / `INSERT OR IGNORE`).
 
 **SQLite caveat:** one Folia JVM / one file only. Multi-backend + YaP Link need MariaDB or Postgres.
+
+If the configured MariaDB/Postgres pool fails at enable, YaPDB **stays loaded** (so dependents can still resolve `YapSqlDialects` / `YapDbBootstrap`) and opens a local `plugins/YaPDB/yap-fallback.db` SQLite file when possible. Fix the primary JDBC URL for fleets — fallback is single-node only.
 
 See [MARIADB.md](MARIADB.md) · [POSTGRES.md](POSTGRES.md) · [SQLITE.md](SQLITE.md).
 

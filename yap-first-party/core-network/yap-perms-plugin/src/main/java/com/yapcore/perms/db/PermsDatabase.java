@@ -21,7 +21,7 @@ public final class PermsDatabase implements AutoCloseable {
     private HikariDataSource embedded;
     private YapDb shared;
     private boolean usingShared;
-    private YapSqlDialect dialect = YapSqlDialects.mysql();
+    private YapSqlDialect dialect;
 
     public PermsDatabase(JavaPlugin plugin, PermsConfig config) {
         this.plugin = plugin;

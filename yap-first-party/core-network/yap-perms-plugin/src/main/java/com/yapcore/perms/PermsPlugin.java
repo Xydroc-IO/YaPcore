@@ -128,7 +128,9 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
             vault = null;
         }
         getServer().getServicesManager().unregisterAll(this);
-        applicator.detachAll();
+        if (applicator != null) {
+            applicator.detachAll();
+        }
         if (database != null) {
             database.close();
         }

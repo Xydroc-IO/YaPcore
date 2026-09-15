@@ -9,8 +9,8 @@ website: https://github.com/yaplabs
 load: STARTUP
 commands:
   yapdb:
-    description: Shared DB status / reload
-    usage: /yapdb <status|reload>
+    description: Shared DB status / probe / reload
+    usage: /yapdb <status|probe [host]|reload>
     permission: yapdb.admin
 permissions:
   yapdb.admin:
