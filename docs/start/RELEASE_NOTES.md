@@ -9,7 +9,25 @@ For build commands and zip layout see [RELEASES.md](RELEASES.md). For live statu
 
 ---
 
+## After 1.0.0.0 — YaP-QoL / fleet ensure preserve (2026-09-14)
+
+Same ship version (no product bump). Rebuild **linux** + **windows** + suites with
+`gradle publishReleasesFolder -PyapGameplay=true`.
+
+| Area | Change |
+|------|--------|
+| **YaP-QoL** | Timber axe + area excavator (3×3/6×6/9×9); VIP kit; staff `/yapqol` + admin menu — [YAP_QOL.md](../plugins/YAP_QOL.md) |
+| **Defaults** | `yap-items.jar` + `yap-qol.jar` seed on every fleet instance and ship in the release box (not slim-stripped) |
+| **Fleet ensure** | Start/ensure **merges** `ops.json` (keeps in-game OPs); never deletes/overwrites installed plugin jars or `.jar.disabled` |
+| **GUI** | Opening Control GUI does not rewrite instance trees — layout prep runs on create / Start / enable-fleet only |
+| **Packaging** | `assembleRelease` / `assembleGameplaySuite` / `assemblePluginDist` include `yap-qol.jar` |
+
+Build: `gradle publishReleasesFolder -PyapGameplay=true` → `releases/1.0.0.0/`. Upload GitHub assets with `--clobber` per [RELEASES.md](RELEASES.md).
+
+---
+
 ## After 1.0.0.0 — Fleet GUI / dashboard / branding (2026-09-14)
+
 
 Same ship version (no product bump). Rebuild **linux** + **windows** packages with
 `gradle publishReleasesFolder -PyapGameplay=true` so operators get current chassis + web assets.

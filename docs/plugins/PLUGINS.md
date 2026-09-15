@@ -84,13 +84,13 @@ like mods. See [MODULES_AND_API.md](MODULES_AND_API.md).
 `yap-playerdata`, `yap-moderation`, `yap-essentials`, `yap-admin`, `yap-packs`, `yap-commands`, `yap-chat`, `yap-tab`,
 `yap-discord`, `yap-protect`, `yap-world`, `yap-regions`, `yap-guard`, `yap-lagguard`,
 `yap-map`, `yap-npcs`, `yap-factions`, `yap-floodgate`, `yap-bedrock-ui`, `yap-tailor`,
-`yap-bedrock-blocks`, `yap-folia-bridge`.
+`yap-bedrock-blocks`, `yap-folia-bridge`, `yap-items` ([YAPITEMS.md](YAPITEMS.md)),
+`yap-qol` (timber axe + area excavator — [YAP_QOL.md](YAP_QOL.md)).
 
 **GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `-PyapGameplay=true`):
 `yap-skills` (thin mining/woodcutting/strength — [SKILLS.md](SKILLS.md)),
 `yap-dungeons` (procedural instances L1–50 + prestige 51–100 — [DUNGEONS.md](DUNGEONS.md)),
-`yap-stacker`, `yap-items` (custom items — [YAPITEMS.md](YAPITEMS.md)),
-`yap-disasters`, `yap-leveled-mobs` (distance-based mob levels),
+`yap-stacker`, `yap-disasters`, `yap-leveled-mobs` (distance-based mob levels),
 `yap-gameplay-knobs` (YaP Encyclopedia — [TUNE.md](../ops/TUNE.md)).
 Factions ships in CORE+NETWORK.
 

@@ -13,7 +13,7 @@ Built as `yap-admin.jar` (CORE + NETWORK product default).
 gradle :admin-plugin:installIntoPlugins
 ```
 
-Soft-depends on YaPEssentials, YaPModeration, YaPPerms, YaPWorld, YaPStacker, YaPPlayerData, YaPSkills — tiles hide when a plugin is missing.
+Soft-depends on YaPEssentials, YaPModeration, YaPPerms, YaPWorld, YaPStacker, YaP-QoL, YaPPlayerData, YaPSkills — tiles hide when a plugin is missing.
 
 ## Commands
 
@@ -50,7 +50,7 @@ Also opens from:
 - **Server** — broadcast presets, status, weather/disasters, reloads
 - **Economy** — money grants via YaPPlayerData deposit (`/yapadmin money`; Folia entity-thread safe)
 - **Ranks & perms** (client) — searchable YaPPerms editor (primary/parents, node allow/deny/unset, tracks); chest still deep-links `/yapperm gui`
-- **Deep links / More…** — ranks, **World tools** (same panel as hub), pregen, stacker, menu, skills, …
+- **Deep links / More…** — ranks, **World tools** (same panel as hub), pregen, stacker, **QoL tools** (timber/excavator toggle + give), menu, skills, …
 
 ## Permissions
 
