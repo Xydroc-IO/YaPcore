@@ -121,7 +121,7 @@ claims:
     creeper-explosion: deny
 
 # Kit definitions live in kits.yml (shared across Hub + survival backends).
-# Optional overrides here still merge on reload. See docs/ops/TEBEX.md for store wiring.
+# Optional overrides here still merge on reload. See docs/ops/INTEGRATIONS.md for store wiring.
 # kits: {}
 
 jobs:

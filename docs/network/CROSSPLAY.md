@@ -2,7 +2,7 @@
 
 YaPcore aims for **one shared world** with first-party protocol coverage:
 
-- **Bedrock (product path):** YaP Link **native** (`bedrock-mode=native`) — `BedrockSessionHost` in `yap-link-bedrock`; chassis Bedrock UDP off. See [LINK_NATIVE_PORT.md](../geyser-join-reference/LINK_NATIVE_PORT.md).
+- **Bedrock (product path):** YaP Link **native** (`bedrock-mode=native`) — `BedrockSessionHost` in `yap-link-bedrock`; chassis Bedrock UDP off. See [YAP_LINK.md](YAP_LINK.md).
 - **Bedrock (legacy forwarder):** Link UDP → chassis `YapGeyserSession` (`bedrock-mode=forwarder`)
 - **Older / other JE:** `ProtocolCompat` / `ViaStyleRemapper` — not Via\* jars
 - **Floodgate-class auth:** core `FloodgateAuth` + backend `yap-floodgate.jar` behind Velocity/Link
@@ -21,7 +21,7 @@ YaPcore aims for **one shared world** with first-party protocol coverage:
 
 **Phone join (product):** LAN `…:19132` (or shared `:25565` UDP) → **YaP Link-native** → Folia via Java downstream. Chassis Bedrock UDP stays off. **Not** the GeyserMC jar. JE stays on Link `:25565` TCP.
 
-**Bedrock path (pre-start):** dashboard Link tab → **Link-native** (default) | **Forwarder** | **Geyser backup**. See [YAP_LINK_NATIVE.md](YAP_LINK_NATIVE.md#pre-start-bedrock-path-toggle-gui--dashboard).
+**Bedrock path (pre-start):** dashboard Link tab → **Link-native** (default) | **Forwarder** | **Geyser backup**. See [YAP_LINK.md](YAP_LINK.md#pre-start-bedrock-path-toggle-gui--dashboard).
 
 **Do not install** `Geyser-Spigot.jar` / stock Floodgate on yap-folia for the product path — Bedrock is Link-native unless you explicitly select forwarder or Geyser backup.
 
@@ -123,7 +123,7 @@ Retail Xbox / full inv depth: validate on real hardware before marketing “full
 
 ## Related
 
-- [VELOCITY.md](VELOCITY.md) — Floodgate behind proxy
+- [YAP_LINK.md](YAP_LINK.md) — Floodgate behind proxy
 - Bedrock forms: native UDP uses chassis `FormService`; Floodgate-only uses `floodgate:form` (Geyser+Floodgate on proxy)
 - Ops checklist: native UDP or Velocity+Geyser+Floodgate → `/yapadmin`, `/menu`, `/yapperm gui`, or `BedrockUiServices.find().sendSimpleForm(...)` should open a form
 - Player hubs: with `yap-bedrock-ui.jar` loaded, Bedrock players get forms for `/menu`, `/kits`/`/kit`, `/homes`, `/warps`, and YaPPerms ranks GUI; JE keeps chest inventories. `/bag` opens the Paper chest (works on BE) or via the menu Bag button.

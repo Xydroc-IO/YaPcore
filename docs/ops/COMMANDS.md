@@ -199,25 +199,25 @@ YaP does **not** clone EssentialsX’s entire command set into one jar. Use thes
 
 Soft vs hard and dashboard twins: [WEB_DASHBOARD.md](WEB_DASHBOARD.md) § Plugin manager. Folia does **not** hot-unload jars — hard changes need a Folia restart.
 
-In-game kitchen-sink hub: players, give (presets + kits + materials), moderation, self tools, economy, deep-links. See [ADMIN_MENU.md](ADMIN_MENU.md).
+In-game kitchen-sink hub: players, give (presets + kits + materials), moderation, self tools, economy, deep-links. See [WEB_DASHBOARD.md](WEB_DASHBOARD.md).
 
 ### Other shipped plugins
 
 | Plugin | Command | Doc |
 |--------|---------|-----|
-| Pregen | `/yappregen …` | [PREGEN.md](../plugins/PREGEN.md) |
-| Stacker | `/yapstacker …` | [STACKER.md](../plugins/STACKER.md) |
+| Pregen | `/yappregen …` | [PLUGINS.md](../plugins/PLUGINS.md) |
+| Stacker | `/yapstacker …` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | Custom items | `/yapitems …` · `/yitems` · create/edit/CD via admin **Custom items** or yap-staff | [YAPITEMS.md](../plugins/YAPITEMS.md) |
-| Skills | `/skills` · `/skill top` · `/yskills reload` | [SKILLS.md](../plugins/SKILLS.md) |
-| Dungeons | `/dungeon` · `/dungeon invite\|accept\|deny\|leave\|status` · `/yapdungeons …` | [DUNGEONS.md](../plugins/DUNGEONS.md) |
+| Skills | `/skills` · `/skill top` · `/yskills reload` | [PLUGINS.md](../plugins/PLUGINS.md) |
+| Dungeons | `/dungeon` · `/dungeon invite\|accept\|deny\|leave\|status` · `/yapdungeons …` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | NPCs | `/npc …` · `/quests …` · `/npc shop …` · `/npc setspawn` | dashboard **NPCs** · [PLAYERDATA.md](../data/PLAYERDATA.md) (shop catalogs) |
 | Disasters | `/yapdisaster …` | dashboard **Disasters** tab |
 | Gameplay knobs | `/yapknobs …` | [TUNE.md](TUNE.md) |
-| Plugin compat | `/yapcompat …` | [PLUGIN_BACKCOMPAT.md](../plugins/PLUGIN_BACKCOMPAT.md) |
-| PlaceholderAPI | `/papi …` | [PLACEHOLDERAPI.md](../plugins/PLACEHOLDERAPI.md) |
+| Plugin compat | `/yapcompat …` | [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md) |
+| PlaceholderAPI | `/papi …` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | Player data | `/yapdata …` · auth `/login` `/register` | [PLAYERDATA.md](../data/PLAYERDATA.md) |
 | Essentials QoL + data-backed cmds | `/spawn` `/tpa` … · `/bal` `/bag` `/kit` `/home` `/shop` `/ah` `/claim` `/menu` | this section + [PLAYERDATA.md](../data/PLAYERDATA.md) |
-| Store / Tebex | Hub console: `yapperm …` · `kit grant …` | [TEBEX.md](TEBEX.md) |
+| Store / Tebex | Hub console: `yapperm …` · `kit grant …` | [INTEGRATIONS.md](INTEGRATIONS.md) |
 | Resource packs | `/yappacks …` | [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) |
 
 ### YaPEssentials + PlayerData (bag / economy / kits)
@@ -241,7 +241,7 @@ Commands are registered by **YaPEssentials**; storage and `kits.yml` live in **Y
 | `kit grant <player> <kit>` | Queue delivery (shared DB → any backend) |
 | `kit list` | Kits loaded from `kits.yml` on this server |
 
-Copy the same `plugins/YaPPlayerData/kits.yml` to Hub + survival. See [TEBEX.md](TEBEX.md).
+Copy the same `plugins/YaPPlayerData/kits.yml` to Hub + survival. See [INTEGRATIONS.md](INTEGRATIONS.md).
 
 Full permission node map: [PERMISSIONS.md](PERMISSIONS.md).
 
@@ -276,7 +276,7 @@ promote Steve
 yappregen status
 ```
 
-Store packages (Tebex on Hub): [TEBEX.md](TEBEX.md) · [examples/tebex/](../../examples/tebex/).
+Store packages (Tebex on Hub): [INTEGRATIONS.md](INTEGRATIONS.md) · [examples/tebex/](../../examples/tebex/).
 ---
 
 ## Implementation

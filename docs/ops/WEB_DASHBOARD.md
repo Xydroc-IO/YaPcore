@@ -92,6 +92,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Pregen** | `/api/pregen` | job status | start, pause, resume, cancel |
 | **Player data** | `/api/playerdata` | economy, auth, feature toggles | reload, save, set-feature |
 | **Kits** | `/api/kits` | kits.yml definitions, items, armor slots | **save-kit**, **delete-kit**, **clone-kit**, give, grant, reload |
+| **Database** | `/api/database` | YaPDB engine + Docker + JDBC | **ensure**, **start-docker**, **stop-docker**, **sync-fleet** |
 | **Custom commands** | `/api/commands` | YaPCommands commands.yml | **save-command**, **delete-command**, **clone-command**, set-require-use, reload |
 | **Tebex store** | `/api/tebex` | jar present, secret masked, buy command, proxy, package recipes | **set-secret**, **save-settings**, reload, info, forcecheck |
 | **Chat** | `/api/chat` | channels, slow mode, filter, relay | reload, clearchat, **save-settings** |
@@ -143,8 +144,11 @@ YaPDB already stores `world`, `server_ctx`, and `expires_at` on user/group nodes
 - Item rows: Bukkit material, amount, slot (inventory / armor / offhand), name, lore, enchantments (`sharpness:5`)
 - Clone / delete; **Give now** (`kit give`) or **Grant** (`kit grant`) to a player
 - Saves YAML then runs `yapdata reload` (YAML is kept if Folia is down)
+- With fleet enabled, kit saves also **push `kits.yml` to every local backend** and reload running instances (`yapdata reload` / `yapitems reload`) so definitions stay network-wide like YaPDB player state
 
 `GET/POST /api/kits` — `save-kit`, `delete-kit`, `clone-kit`, `give`, `grant`, `reload`. Item lines in POST: `MATERIAL|amount|slot|name|lore|enchants`. Players still need `yapdata.kit.<id>` (or `yapdata.kit.*`) on Access & ranks.
+
+Fleet: `POST /api/fleet` action `sync-shared-catalog` realigns catalog items/kits/QoL/YaPDB JDBC onto all local instances.
 
 `/createkit` Bukkit stacks stay readable; saving from the dashboard writes the material form (NBT beyond name/lore/enchants is dropped).
 
@@ -170,7 +174,7 @@ YaPDB already stores `world`, `server_ctx`, and `expires_at` on user/group nodes
 - Copy-ready package recipes (`{username}`) for VIP rank and kit unlocks
 - Links to [creator.tebex.io](https://creator.tebex.io/) and Tebex Minecraft docs
 
-`GET/POST /api/tebex` — `set-secret`, `save-settings`, `reload`, `info`, `forcecheck`. Full guide: [TEBEX.md](TEBEX.md).
+`GET/POST /api/tebex` — `set-secret`, `save-settings`, `reload`, `info`, `forcecheck`. Full guide: [INTEGRATIONS.md](INTEGRATIONS.md).
 
 ### Players
 
@@ -182,11 +186,11 @@ Requires YaP-Folia running + `yap-moderation` / `yap-perms` / `yap-playerdata`. 
 
 ### Skills (`yap-skills`)
 
-**Gameplay → Skills** — thin progression (mining / woodcutting / strength). See [SKILLS.md](../plugins/SKILLS.md).
+**Gameplay → Skills** — thin progression (mining / woodcutting / strength). See [PLUGINS.md](../plugins/PLUGINS.md).
 
 ### Dungeons (`yap-dungeons`)
 
-Instanced procedural dungeons (opt-in GAMEPLAY). See [DUNGEONS.md](../plugins/DUNGEONS.md). Commands: `/dungeon`, `/yapdungeons`.
+Instanced procedural dungeons (opt-in GAMEPLAY). See [PLUGINS.md](../plugins/PLUGINS.md). Commands: `/dungeon`, `/yapdungeons`.
 
 `GET/POST /api/skills` — jar presence, `enabled`, skill packs, online sample; reload via `yskills reload`.
 
@@ -265,11 +269,11 @@ These tabs **write plugin YAML** via `save-settings` (or equivalent) and reload 
 
 Serves tiles via YaPcore pack HTTP when `use-yapcore-server: true` (default). First render runs ~2s after plugin enable; full re-render on `render-interval-minutes`. Tune `sample-chunk-radius` and `max-height` on low-CPU hosts — see plugin `config.yml` comments.
 
-**Wave 4 markers** — live player markers via `/map/markers.json` (poll interval configurable). Optional NPC points and region outlines when YaPNpcs / YaPRegions are installed and toggled on in the Map tab. Flat Leaflet and optional **3D** voxel mesh (`?view=3d`) share the same markers feed; see [MAP.md](MAP.md).
+**Wave 4 markers** — live player markers via `/map/markers.json` (poll interval configurable). Optional NPC points and region outlines when YaPNpcs / YaPRegions are installed and toggled on in the Map tab. Flat Leaflet and optional **3D** voxel mesh (`?view=3d`) share the same markers feed; see [PLUGINS.md](PLUGINS.md).
 
 ### Discord tab
 
-Webhooks (moderation, chat, events), relay toggles, and join/leave/death/advancement event toggles. Safe setup order documented in [DISCORD_RELAY.md](DISCORD_RELAY.md). MC→Discord and Discord→MC stay **off** until webhooks and inbound secrets are set.
+Webhooks (moderation, chat, events), relay toggles, and join/leave/death/advancement event toggles. Safe setup order documented in [INTEGRATIONS.md](INTEGRATIONS.md). MC→Discord and Discord→MC stay **off** until webhooks and inbound secrets are set.
 
 ### YaP Link tab (proxy process)
 
@@ -299,7 +303,7 @@ Live log: **GET** `/api/link/console` · **SSE** `/api/link/console/stream?token
 
 ### Plugin manager (Plugins tab)
 
-Each jar shows status from [PLUGIN_COMPAT_MATRIX.md](../plugins/PLUGIN_COMPAT_MATRIX.md):
+Each jar shows status from [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md):
 `native`, `works`, `broken`, `folia-build`, or `unknown`, plus native alternative hint.
 
 **Soft vs hard**
@@ -346,3 +350,86 @@ Optional: `yap-ranks-auto-apply=true` in `config/server.properties`.
   nginx + TLS in front for public access.
 - Do not expose `:8080` to the internet without auth + TLS.
 - Use **Network setup → Rotate token** if the secret may have leaked.
+
+
+---
+
+## Admin menu
+
+Chest GUI hub for on-server staff, plus optional Fabric **yap-staff** client GUI (branded **YaP Staff** hub with sectioned tools).
+Complements the [web dashboard](WEB_DASHBOARD.md) and desktop Control Panel.
+
+Menus and chat shortcuts follow the **Staff / menu contracts** in [COMMANDS.md](COMMANDS.md) so argument order stays consistent.
+
+## Install
+
+Built as `yap-admin.jar` (CORE + NETWORK product default).
+
+```bash
+gradle :admin-plugin:installIntoPlugins
+```
+
+Soft-depends on YaPEssentials, YaPModeration, YaPPerms, YaPWorld, YaPStacker, YaP-QoL, YaPPlayerData, YaPSkills — tiles hide when a plugin is missing.
+
+## Commands
+
+| Command | Permission | Description |
+|---------|------------|-------------|
+| `/yapadmin` `/staff` `/adminmenu` `/am` | `yapadmin.menu` | Open the hub chest GUI |
+| `/yapadmin reload` | `yapadmin.server` | Reload `plugins/YaPAdmin/config.yml` |
+| `/yapadmin give <mat> [amt] [player]` | `yapadmin.give` | Give items (client give browser) |
+| `/yapadmin spawnmob <type> [amt] [player]` | `yapadmin.spawnmob` | Spawn mobs at you or on a player (`mob` / `summon` aliases) |
+| `/yapadmin troll <type> <player>` | `yapadmin.troll` | Smite, launch, burn, rocket, squash, blind, confuse, slap, drop |
+| `/yapadmin tp` / `tphere` / `tpspawn` | `yapessentials.teleport` | Teleports |
+| `/yapadmin heal` / `feed` / `nv` / `clear` | menu | Self/target tools |
+| `/yapadmin kick` / `warn` / `mute` / `tempban` | `yapmod.*` | Moderation shortcuts |
+| `/yapadmin money <amt> [player]` | `yapadmin.economy` | Economy grant |
+| `/yapadmin broadcast <msg>` | `yapadmin.server` | Broadcast |
+| `/yapadmin chest` | `yapadmin.menu` | Open chest hub explicitly |
+
+Also opens from:
+
+- **`/menu` → Staff** (JE chest / Bedrock form) when the player has `yapadmin.menu` and YaPAdmin is loaded
+- **Esc pause / keybind R → full Staff GUI** with the optional Fabric **yap-staff** client mod
+
+## Hub sections (chest + client)
+
+- **Players** — online picker → TP to/here/spawn, freeze, invsee/echest, heal/feed/**god**/clear, **walk/fly speed 1–10**, promote/demote, kick/warn/mute 1h/tempban 1d, trolls, check/history, jump to Give / money / ranks
+- **Self tools** — fly, god, vanish, heal, feed, night vision, gamemodes, repair, **walk/fly speed 1–10**
+- **Give** — curated presets, kits (`/kit give`), paginated / searchable material browser (amount 1/16/64)
+- **Custom items** — YaPItems create / browse / give / edit / delete / ability cooldowns ([YAPITEMS.md](../plugins/YAPITEMS.md))
+- **Spawn mobs** (client) — searchable entity browser + presets; spawn at you or a selected player (`/yapadmin spawnmob`)
+- **World tools** (chest) — World edit, schematics browse, browser studio, paste preview (confirm / move / cancel / undo). One hub tile; also under More….
+- **World edit** (client) — YaPWorld wand/pos, clipboard, fill/set, schematics (preview confirm/cancel/here/undo), brush, worlds (`/yapworld …`)
+- **Trolls** — smite, launch, burn, rocket, squash, blind, confuse, slap, drop hand (`yapadmin.troll`)
+- **Moderation** — same player picker (actions gated by `yapmod.*`)
+- **Server** — broadcast presets, status, weather/disasters, reloads
+- **Economy** — money grants via YaPPlayerData deposit (`/yapadmin money`; Folia entity-thread safe)
+- **Ranks & perms** (client) — searchable YaPPerms editor (primary/parents, node allow/deny/unset, tracks); chest still deep-links `/yapperm gui`
+- **Deep links / More…** — ranks, **World tools** (same panel as hub), pregen, stacker, **QoL tools** (timber/excavator toggle + give), menu, skills, …
+
+## Permissions
+
+| Node | Default | Notes |
+|------|---------|-------|
+| `yapadmin.menu` | op | Open hub |
+| `yapadmin.give` | op | Presets / materials / kits |
+| `yapadmin.spawnmob` | op | Spawn entities at self or another player |
+| `yapadmin.server` | op | Broadcast + reload |
+| `yapadmin.economy` | op | Money grants |
+| `yapadmin.troll` | op | Staff trolls |
+| `yapadmin.plugins` | op | `/yapplugins` |
+
+Per-action nodes from other plugins still apply (`yapessentials.teleport`, `yapmod.kick`, `yapdata.kit.give`, `yapperm.admin`, …). Grant `yapadmin.menu` (and give/server/troll as needed) on `mod` / `admin` ranks. Owner has `yapadmin.*`. **OP** also unlocks all `default: op` nodes even if YaPPerms primary is `default`.
+
+## Config
+
+`plugins/YaPAdmin/config.yml` — kit ids, money amounts, broadcast presets, curated item presets.
+
+## Folia
+
+Teleports and inventory mutations use `YapSched.entity`. Moderation DB calls go through `ModerationService` then hop back to the entity thread for feedback. **Economy** deposits via `PlayerDataService` on the target’s region thread (do not dispatch `/eco` on the global scheduler).
+
+## Client mod
+
+See [`client/yap-staff/README.md`](../../client/yap-staff/README.md) — native Screens for every hub section (sectioned layout, searchable player select, ranks, spawn mobs, world edit, **custom items**). Jar **1.0.25+**.

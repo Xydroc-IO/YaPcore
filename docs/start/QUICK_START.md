@@ -183,7 +183,7 @@ web-dashboard-localhost-only=true
 folia-jar-source=build
 ```
 
-See [NETWORKING.md](../network/NETWORKING.md) · [CLOUDFLARE_AND_NGINX.md](../network/CLOUDFLARE_AND_NGINX.md) · [EDGE_HARDEN.md](../network/EDGE_HARDEN.md).
+See [NETWORKING.md](../network/NETWORKING.md) · [NETWORKING.md](../network/NETWORKING.md) · [NETWORKING.md](../network/NETWORKING.md).
 
 ---
 
@@ -219,7 +219,7 @@ Compose: [`deploy/mariadb/`](../../deploy/mariadb/) · [`deploy/postgres/`](../.
 | Dashboard 401 | Paste token from console log into login screen |
 | No commands in-game | You need OP: `op YourName` or `ops=YourName` in config |
 
-More: [WIKI.md](../WIKI.md) · [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md) · [QUICK_START.md](../start/QUICK_START.md).
+More: [docs/README.md](README.md) · [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md) · [QUICK_START.md](../start/QUICK_START.md).
 
 ---
 
@@ -232,4 +232,4 @@ More: [WIKI.md](../WIKI.md) · [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md) �
 | Permissions & ranks | [PERMISSIONS.md](../ops/PERMISSIONS.md) |
 | Web dashboard | [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
 | Multi-server proxy | [YAP_LINK.md](../network/YAP_LINK.md) |
-| Full doc index | [WIKI.md](../WIKI.md) |
+| Full doc index | [docs/README.md](README.md) |

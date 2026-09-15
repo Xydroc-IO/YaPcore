@@ -95,7 +95,7 @@ Chat format: `{prefix}{namecolor}{player}{suffix}&7: {chatcolor}{message}`.
 
 Dashboard **Access & ranks** has the same fields. Codes are `&a` green, `&b` aqua, `&c` red, `&6` gold, `&f` white. YAML keys are `name-color` / `chat-color` under `groups.<rank>`. Empty database colors are filled from YAML on plugin start; `/yapperm applypack` also writes them.
 
-**Web store (Tebex):** run those commands on the **Hub** backend console — [TEBEX.md](TEBEX.md).
+**Web store (Tebex):** run those commands on the **Hub** backend console — [INTEGRATIONS.md](INTEGRATIONS.md).
 
 ## YaPChat nodes
 
@@ -153,7 +153,7 @@ Toggle domains in `plugins/YaPEssentials/config.yml` under `features.*` (includi
 | `yapadmin.server` | op | Broadcast presets, `/yapadmin reload` |
 | `yapadmin.economy` | op | Money grants (`/eco`) |
 
-Grant `yapadmin.menu` (+ give/server) on `staff` / `admin` / `owner` ranks. Individual actions still need the underlying plugin nodes (`yapessentials.*`, `yapmod.*`, …). See [ADMIN_MENU.md](ADMIN_MENU.md).
+Grant `yapadmin.menu` (+ give/server) on `staff` / `admin` / `owner` ranks. Individual actions still need the underlying plugin nodes (`yapessentials.*`, `yapmod.*`, …). See [WEB_DASHBOARD.md](WEB_DASHBOARD.md).
 
 ### YaPItems (custom items)
 
@@ -192,7 +192,7 @@ Possession is enough to **use** an item. See [YAPITEMS.md](../plugins/YAPITEMS.m
 | `yapnpcs.admin` | op | `/npc create\|remove\|setaction` |
 | `yapnpcs.quests` | true | `/quests list\|progress` (`yapnpcs.quest` alias) |
 
-See [REGIONS.md](../gameplay/REGIONS.md) for claim flag commands (`/claim flag set`).
+See [GAMEPLAY.md](../gameplay/GAMEPLAY.md) for claim flag commands (`/claim flag set`).
 
 Dashboard: `POST /api/protect`, `POST /api/world`.
 
@@ -243,7 +243,7 @@ Auth (`/register` `/login` …) stays ungated so offline login always works.
 
 Placeholders (PlaceholderAPI): `%yapskill_<skill>_level%`, `%yapskill_<skill>_xp%`, `%yapskill_total_level%`.
 
-Public leaderboard: `/skill top <skill> [page]` (no extra permission). See [SKILLS.md](../plugins/SKILLS.md).
+Public leaderboard: `/skill top <skill> [page]` (no extra permission). See [PLUGINS.md](../plugins/PLUGINS.md).
 
 ## YaPDungeons (`yap-dungeons.jar`, gameplay opt-in)
 
@@ -254,7 +254,7 @@ Public leaderboard: `/skill top <skill> [page]` (no extra permission). See [SKIL
 | `yapdungeons.portal.place` | true | Place craftable portal / activate buildable frame |
 | `yapdungeons.admin` | op | `/yapdungeons reload\|forcestop\|giveportal` |
 
-Placeholders: `%yapdungeon_highest%`, `%yapdungeon_prestige%`, `%yapdungeon_in_run%`, … — [DUNGEONS.md](../plugins/DUNGEONS.md).
+Placeholders: `%yapdungeon_highest%`, `%yapdungeon_prestige%`, `%yapdungeon_in_run%`, … — [PLUGINS.md](../plugins/PLUGINS.md).
 
 ## YaPFactions (`yap-factions.jar`)
 
@@ -270,14 +270,14 @@ Dashboard: `GET /api/factions` (read-only snapshot).
 
 ## YaPConquest (`yap-conquest.jar`)
 
-Hardcore chunk land — [CONQUEST.md](../gameplay/CONQUEST.md). Off by default.
+Hardcore chunk land — [GAMEPLAY.md](../gameplay/GAMEPLAY.md). Off by default.
 
 | Node | Default | Grants |
 |------|---------|--------|
 | `yapconquest.use` | true | `/c` commands |
 | `yapconquest.admin` | op | `/yapconquest` admin + build/PvP/teleport bypass |
 
-Phase C toggles (all default off): overclaim, explosions, fly, combat-tag — [CONQUEST.md](../gameplay/CONQUEST.md).
+Phase C toggles (all default off): overclaim, explosions, fly, combat-tag — [GAMEPLAY.md](../gameplay/GAMEPLAY.md).
 
 
 ## Web rank editor

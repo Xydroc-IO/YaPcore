@@ -51,13 +51,13 @@ YaPDB supports **MariaDB/MySQL**, **PostgreSQL**, and **SQLite**. See
 .\scripts\Configure-PlayerData.ps1
 ```
 
-See [MARIADB.md](../data/MARIADB.md).
+See [YAPDB.md](../data/YAPDB.md).
 
 ### PostgreSQL / SQLite
 
 Use `./scripts/db/configure-db.sh --engine postgres|sqlite` from WSL or Git Bash,
 or point `plugins/YaPDB/config.yml` at the matching JDBC URL. Docs:
-[POSTGRES.md](../data/POSTGRES.md) · [SQLITE.md](../data/SQLITE.md) ·
+[YAPDB.md](../data/YAPDB.md) · [YAPDB.md](../data/YAPDB.md) ·
 [PLAYERDATA.md](../data/PLAYERDATA.md).
 
 ## Release packaging

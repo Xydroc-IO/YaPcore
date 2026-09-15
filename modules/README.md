@@ -1,4 +1,4 @@
-# Drop fine-tune modules here (`.jar` / `.yapmod`). See [docs/plugins/MODULES_AND_API.md](../docs/plugins/MODULES_AND_API.md).
+# Drop fine-tune modules here (`.jar` / `.yapmod`). See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md).
 
 **Sources:** [`yap-first-party/modules/`](../yap-first-party/README.md) (`finetune-modules/`).
 
@@ -39,4 +39,4 @@ gradle assemblePluginDist          # build/dist/yap-plugins/{…,modules/core,mo
 Remove a jar from `modules/` (and restart) to drop that packaging node from
 `provides` / Modules GUI — configs and Paper plugins remain until you remove those too.
 
-See [docs/ops/TUNE.md](../docs/ops/TUNE.md) · [docs/plugins/SKILLS.md](../docs/plugins/SKILLS.md) · [docs/plugins/STACKER.md](../docs/plugins/STACKER.md).
+See [docs/ops/TUNE.md](../docs/ops/TUNE.md) · [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) · [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md).

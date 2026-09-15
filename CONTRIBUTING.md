@@ -10,7 +10,6 @@ Thank you for contributing to a production Folia network stack.
    `yap-first-party/` (enforced by `./scripts/check-domain-line-limits.sh` / `gradle checkDomainLineLimits`).
    Split by package when a class grows ([whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md)).
    Link JE outbound framing belongs in `McOutboundPacketEncoder`, not a stacked compress+frame Netty pair.
-   Follow-up elegance (DB bootstrap, packages, tests): [CODE_ELEGANCE_FOLLOWUP.md](docs/ops/CODE_ELEGANCE_FOLLOWUP.md).
 4. **Docs** — behavior or API changes update `docs/` Markdown (and the [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) when substantial).
 5. **AI assistance** — AI coding tools are allowed and already used on this project. You remain
    responsible for every line you submit. Do not paste secrets into prompts. Prefer noting
@@ -49,7 +48,7 @@ Gameplay encyclopedia: [TUNE.md](docs/ops/TUNE.md). Compat: [PLUGIN_COMPAT.md](d
 | `com.yaplabs.yapengine.*` | Concurrency / spatial **chassis** (`YapEngine`, sequencing, sync/lease/boundary, sandbox pools, chassis-adjacent Netty helpers). Brand decision: **keep forever** — not a rename candidate. New chassis code goes here. |
 | `com.yapcore.*` | Product surface (gateway, crossplay, dashboard, Paper glue, first-party plugins, `yap-db-api`). |
 
-Do not duplicate chassis concepts under `com.yapcore`. Prefer product → chassis imports; see [CODE_ELEGANCE_FOLLOWUP.md](docs/ops/CODE_ELEGANCE_FOLLOWUP.md) Track 2.
+Do not duplicate chassis concepts under `com.yapcore`. Prefer product → chassis imports.
 
 **Allowed product → chassis imports** (core product only — not plugins):
 

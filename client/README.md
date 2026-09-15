@@ -30,7 +30,7 @@ When `parity.bedrock-feel=true` on the server, JE clients need **yap-presence** 
 Vanilla Java and Bedrock still join when parity mode is off.
 
 Docs: [CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md) ·
-[BEDROCK_FEEL_MATRIX.md](../docs/product/BEDROCK_FEEL_MATRIX.md) ·
+[BEDROCK_FEEL_PARITY.md](../docs/product/BEDROCK_FEEL_PARITY.md) ·
 [LICENSING.md](../docs/start/LICENSING.md)
 
 Server plugins live under [yap-first-party/](../yap-first-party/).

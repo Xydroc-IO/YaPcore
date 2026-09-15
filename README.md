@@ -23,10 +23,10 @@
 | | |
 |--|--|
 | **Install** | [Quick Start](docs/start/QUICK_START.md) · [Release packages](https://github.com/Xydroc-IO/YaPcore/releases/latest) |
-| **Operators** | [Wiki](docs/WIKI.md) · [Defaults](docs/start/DEFAULTS.md) · [Secrets](docs/start/SECRETS.md) |
-| **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) · [Plain English](docs/whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) |
+| **Operators** | [Wiki](docs/README.md) · [Defaults](docs/start/DEFAULTS.md) · [Secrets](docs/start/SECRETS.md) |
+| **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
 | **Crossplay** | [Crossplay](docs/network/CROSSPLAY.md) · [Bedrock-feel](docs/product/BEDROCK_FEEL_PARITY.md) · [YaP Link](docs/network/YAP_LINK.md) |
-| **Performance** | [REAL_GAINS](docs/folia/REAL_GAINS.md) · [YAP_FOLIA_SOAK](docs/folia/YAP_FOLIA_SOAK.md) · [Canvas parity](docs/folia/CANVAS_PARITY.md) |
+| **Performance** | [YaP-Folia](docs/folia/YAP_FOLIA_PATCHES.md) |
 | **Help / contribute** | [Community & support](#community--support) · [Discord](https://discord.gg/BXbyQk88Da) · [CONTRIBUTING](CONTRIBUTING.md) |
 | **Legal** | [GPLv3](LICENSE) · [Licensing](docs/start/LICENSING.md) · [AI transparency](docs/start/AI_TRANSPARENCY.md) · [Privacy](docs/start/PRIVACY_POLICY.md) · [Terms](docs/start/TERMS_OF_USE.md) |
 
@@ -50,7 +50,7 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 | **Packs** | `yapcore-default.zip` / `.mcpack` via GitHub Releases CDN (`/releases/latest/download/…`) |
 | **Clients (optional)** | Fabric: visuals, bag, staff, ultrawide, **yap-presence**, **yap-blocks** — vanilla/Bedrock still join when parity mode is off |
 
-**Standing:** soft-launch / ops-signed / soak-proven **3/3** · enterprise hygiene **~90%** · domain ≤500 enforced — [PRODUCTION_READY.md](docs/ops/PRODUCTION_READY.md) · [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
+**Docs:** [QUICK_START.md](docs/start/QUICK_START.md) · [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
 
 Version line: **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2** — see [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
 
@@ -83,12 +83,12 @@ Honest product bars — not “unlimited players.” Scale is **regionized + mul
 
 | Bar | Players | Meaning |
 |-----|---------|---------|
-| **Citeable MSPT (stable)** | **~100 active** | Fullcite ship profile vs stock Folia / Canvas — [REAL_GAINS.md](docs/folia/REAL_GAINS.md) |
+| **Citeable MSPT (stable)** | **~100 active** | Fullcite ship profile vs stock Folia / Canvas — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
 | **Join verified** | **100 / 200** bots | Connection / routing checked; not a free MSPT blank check |
 | **Network scale** | Multi-backend via **YaP Link** | Split worlds/lobbies across YaP-Folia jars; proxy fronts the fleet |
 | **250 keepalive** | **Hold only** | Not a citeable ship claim — capacity testing, not marketing |
 
-Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, LagGuard, and sane farms. Past that, add backends or tighten density knobs — [YAP_FOLIA_SOAK.md](docs/folia/YAP_FOLIA_SOAK.md) · [TUNE.md](docs/ops/TUNE.md). Scale vs single-thread Paper/Purpur (spread fullcite, tick_model disclosed): [PAPER_PURPUR_SCALE.md](docs/folia/PAPER_PURPUR_SCALE.md) · `./scripts/bench/cite-paper-scale.sh`.
+Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, LagGuard, and sane farms. Past that, add backends or tighten density knobs — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) · [TUNE.md](docs/ops/TUNE.md).
 
 ### Parallel ticks & aligned micro/sub-ticks (why it’s not “stock Folia”)
 
@@ -109,7 +109,7 @@ Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes
 
 **YapEngine** (edge/chassis) sequences bridge and plugin work with **µs-resolution** `SequenceToken`s so I/O and menus stay ordered without owning the world heartbeat.
 
-Citeable MSPT vs stock Folia / Canvas (ship knobs disclosed): [REAL_GAINS.md](docs/folia/REAL_GAINS.md) · soak profile: [YAP_FOLIA_SOAK.md](docs/folia/YAP_FOLIA_SOAK.md) · patch inventory: [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md). We do **not** claim single-thread Paper MSPT victory — [PAPER_PURPUR_SCALE.md](docs/folia/PAPER_PURPUR_SCALE.md). Re-verify after tick changes: `./scripts/yapctl cite-fullcite`.
+Citeable MSPT vs stock Folia / Canvas (ship knobs disclosed): [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) · soak profile: [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) · patch inventory: [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md). We do **not** claim single-thread Paper MSPT victory. Re-verify after tick changes: `./scripts/yapctl cite-fullcite`.
 
 ---
 
@@ -183,12 +183,12 @@ Domain line gate: `gradle checkDomainLineLimits` (≤500 lines per first-party d
 |-------|------|
 | **YaP-Folia** | Game tick — build with `./scripts/build-yap-folia.sh` |
 | **YapEngine** | Edge networking, dual-stack, I/O, dashboard, Swing GUI |
-| **YaP Link** | Multi-backend proxy + **Link-native Bedrock** — [YAP_LINK.md](docs/network/YAP_LINK.md) · [YAP_LINK_NATIVE.md](docs/network/YAP_LINK_NATIVE.md) |
+| **YaP Link** | Multi-backend proxy + **Link-native Bedrock** — [YAP_LINK.md](docs/network/YAP_LINK.md) · [YAP_LINK.md](docs/network/YAP_LINK.md) |
 | **Plugins** | First-party stack under [`yap-first-party/`](yap-first-party/README.md) |
 
 Default product path: `game-authority=folia`, `folia-jar-source=build`, Link **`bedrock-mode=native`**.
 
-Deep dive: [YAPCORE_WHITEPAPER.md](docs/whitepaper/YAPCORE_WHITEPAPER.md) · join port notes: [NATIVE_PORT.md](docs/geyser-join-reference/NATIVE_PORT.md).
+Deep dive: [YAPCORE_WHITEPAPER.md](docs/whitepaper/YAPCORE_WHITEPAPER.md) · join port notes: [CROSSPLAY.md](docs/network/CROSSPLAY.md).
 
 ---
 
@@ -216,16 +216,16 @@ Optional Fabric clients: [`client/`](client/) — presence + blocks required onl
 
 ## Documentation
 
-Operator and engineering docs live under [`docs/`](docs/) (**Markdown is the source of truth**). Start from the [Wiki](docs/WIKI.md). Optional local PDF prints: `./scripts/export-docs-pdf.sh` (gitignored under `docs/pdf/`).
+Operator and engineering docs live under [`docs/`](docs/) (**Markdown is the source of truth**). Start from the [Wiki](docs/README.md). Optional local PDF prints: `./scripts/export-docs-pdf.sh` (gitignored under `docs/pdf/`).
 
 | Audience | Start here |
 |----------|------------|
-| **Operators** | [QUICK_START](docs/start/QUICK_START.md) → [WIKI](docs/WIKI.md) · [DEFAULTS](docs/start/DEFAULTS.md) |
+| **Operators** | [QUICK_START](docs/start/QUICK_START.md) → [WIKI](docs/README.md) · [DEFAULTS](docs/start/DEFAULTS.md) |
 | **Commands / perms** | [COMMANDS](docs/ops/COMMANDS.md) · [PERMISSIONS](docs/ops/PERMISSIONS.md) · [Dashboard](docs/ops/WEB_DASHBOARD.md) |
 | **Network / packs** | [CROSSPLAY](docs/network/CROSSPLAY.md) · [CLIENTS_AND_PACKS](docs/network/CLIENTS_AND_PACKS.md) · [Bedrock-feel](docs/product/BEDROCK_FEEL_PARITY.md) |
-| **Folia / capacity** | [REAL_GAINS](docs/folia/REAL_GAINS.md) · [YAP_FOLIA_SOAK](docs/folia/YAP_FOLIA_SOAK.md) · [CANVAS_PARITY](docs/folia/CANVAS_PARITY.md) |
-| **Public edge** | [EDGE_HARDEN](docs/network/EDGE_HARDEN.md) · [SECRETS](docs/start/SECRETS.md) |
-| **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) · [Plain English](docs/whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md) |
+| **Folia / capacity** | [YaP-Folia](docs/folia/YAP_FOLIA_PATCHES.md) |
+| **Public edge** | [EDGE_HARDEN](docs/network/NETWORKING.md) · [SECRETS](docs/start/SECRETS.md) |
+| **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
 | **Legal / AI** | [LICENSING](docs/start/LICENSING.md) · [AI transparency](docs/start/AI_TRANSPARENCY.md) |
 | **Contributors** | [CONTRIBUTING](CONTRIBUTING.md) · [scripts/README](scripts/README.md) |
 
@@ -251,7 +251,7 @@ non-security bugs so others can find the trail; use Discord for live help.
 
 Report vulnerabilities privately — do **not** open a public issue for RCE, auth bypass, or pack-HTTP exposure. See [SECURITY.md](SECURITY.md).
 
-Operators: keep secrets out of git ([SECRETS.md](docs/start/SECRETS.md)); put game and pack ports behind intentional firewall / nginx edges ([EDGE_HARDEN.md](docs/network/EDGE_HARDEN.md)).
+Operators: keep secrets out of git ([SECRETS.md](docs/start/SECRETS.md)); put game and pack ports behind intentional firewall / nginx edges ([NETWORKING.md](docs/network/NETWORKING.md)).
 
 ---
 

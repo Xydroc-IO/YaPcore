@@ -5,7 +5,7 @@ Product version **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2**
 For build commands and zip layout see [RELEASES.md](RELEASES.md). For live status see
 [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
 
-**Engineering standing (2026-09-05):** production claims soft-launch / ops-signed / soak-proven **3/3**; enterprise hygiene **~90% accepted** (band **90–95%**). Domain ≤500 line gate green. YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [PRODUCTION_READY.md](../ops/PRODUCTION_READY.md) · [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
+YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
 
 ---
 
@@ -16,7 +16,7 @@ Same ship version (no product bump). Rebuild **linux** + **windows** + suites wi
 
 | Area | Change |
 |------|--------|
-| **YaP-QoL** | Timber axe + area excavator (3×3/6×6/9×9); VIP kit; staff `/yapqol` + admin menu — [YAP_QOL.md](../plugins/YAP_QOL.md) |
+| **YaP-QoL** | Timber axe + area excavator (3×3/6×6/9×9); VIP kit; staff `/yapqol` + admin menu — [PLUGINS.md](../plugins/PLUGINS.md) |
 | **Defaults** | `yap-items.jar` + `yap-qol.jar` seed on every fleet instance and ship in the release box (not slim-stripped) |
 | **Fleet ensure** | Start/ensure **merges** `ops.json` (keeps in-game OPs); never deletes/overwrites installed plugin jars or `.jar.disabled` |
 | **GUI** | Opening Control GUI does not rewrite instance trees — layout prep runs on create / Start / enable-fleet only |
@@ -83,7 +83,7 @@ Same ship version (no product bump). Real YaP-Folia micro/sub-tick phases across
 |------|--------|
 | **Aligned microticks** | Patches `0026`–`0030` — `YapMicroPhase` waves + soft epoch barriers + universal RTQ phase tagging |
 | **Ship defaults** | `folia-aligned-microticks=true`, `folia-micro-phases=4`, `folia-tick-wave-max-wait-ms=2` |
-| **Docs** | README / REAL_GAINS / YAP_FOLIA_PATCHES / YAP_FOLIA_SOAK distinguish AI time-slice vs aligned phases |
+| **Docs** | README / YAP_FOLIA_PATCHES — AI time-slice vs aligned phases |
 | **Cite** | Re-run `./scripts/yapctl cite-fullcite` with `knob_aligned_microticks` disclosed |
 
 Build: `./scripts/build-yap-folia.sh` · smoke: `YAP_FOLIA_ALIGNED_MICROTICKS=true ./scripts/smoke-folia.sh`.
@@ -110,7 +110,7 @@ Same ship version (no product bump). Crossplay join path, Bedrock-feel pillars, 
 
 | Area | Change |
 |------|--------|
-| **Native join** | Geyser-style `YapGeyserSession` join port + Cloudburst codec path; Link Bedrock session/downstream module — [NATIVE_PORT.md](../geyser-join-reference/NATIVE_PORT.md) · [YAP_LINK_NATIVE.md](../network/YAP_LINK_NATIVE.md) |
+| **Native join** | Link-native Bedrock join path — [YAP_LINK.md](../network/YAP_LINK.md) · [CROSSPLAY.md](../network/CROSSPLAY.md) |
 | **Bedrock-feel** | Parity catalogs/matrix (phases 0–6), movement/emotes/skin glue; Tailor + **yap-presence** / **yap-blocks** clients — [BEDROCK_FEEL_PARITY.md](../product/BEDROCK_FEEL_PARITY.md) |
 | **Domain ≤500** | Chassis + first-party oversize classes split to same-package helpers; `gradle checkDomainLineLimits` green |
 | **client_mods** | Zip now includes **yap-presence** + **yap-blocks** alongside visuals/bag/staff/ultrawide |
@@ -132,7 +132,7 @@ Same ship version (no product bump). Operator build tools + crossplay pack path:
 | **Bedrock packs** | Offer GitHub `releases/latest/download/{file}` (same CDN as JE); pack handshake defers JOIN/forms until after StartGame; mcpack `min_engine_version` pinned to 1.21.60 |
 | **yap-staff 1.0.30** | More… → World & build links for schematics + admin World tools |
 
-Docs: [ADMIN_MENU.md](../ops/ADMIN_MENU.md) · [YAPWORLD.md](../plugins/YAPWORLD.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md).
+Docs: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) · [YAPWORLD.md](../plugins/YAPWORLD.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md).
 
 Build: `./scripts/build-yap-client-render.sh` · `gradle publishReleasesFolder -PyapGameplay=true` · restart Folia after jar/plugin swap.
 
@@ -151,7 +151,7 @@ Same ship version (no product bump). Custom items + client polish:
 | **YaP Shaders** | Glass ≠ water; waterfall cascade path; wind on leaves/grass/vines only (log builds stay still) |
 | **Pack / kits** | `yap-items` overlay in `yapcore-default`; kit YAML `yap-item:` rows |
 
-Docs: [YAPITEMS.md](../plugins/YAPITEMS.md) · [ADMIN_MENU.md](../ops/ADMIN_MENU.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) · [yap-staff/README.md](../../client/yap-staff/README.md) · [yap-shaders/README.md](../../client/yap-shaders/README.md).
+Docs: [YAPITEMS.md](../plugins/YAPITEMS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) · [yap-staff/README.md](../../client/yap-staff/README.md) · [yap-shaders/README.md](../../client/yap-shaders/README.md).
 
 Build: `gradle installGameplayDefaults` · `./scripts/build-yap-client-render.sh` · full Folia restart after jar swap.
 
@@ -170,7 +170,7 @@ Same ship version (no product bump). Operator / client staff UX:
 | **YaPTab** | Sidebar/footer resolve `{balance}` and `${balance}` |
 | **Packs / scripts** | GitHub Releases pack offer sync; Control Panel / `gui.sh` home resolution |
 
-Docs: [ADMIN_MENU.md](../ops/ADMIN_MENU.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) · [yap-staff/README.md](../../client/yap-staff/README.md) · [yap-bag/README.md](../../client/yap-bag/README.md).
+Docs: [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) · [yap-staff/README.md](../../client/yap-staff/README.md) · [yap-bag/README.md](../../client/yap-bag/README.md).
 
 Build clients: `./scripts/build-yap-client-render.sh`. Rebuild admin/tab: `gradle :admin-plugin:jar :tab-plugin:shadowJar`. Republish trees: `gradle publishReleasesFolder -PyapGameplay=true`.
 
@@ -182,11 +182,11 @@ Same ship version (no bump). Operator-facing consistency and ops reload parity:
 
 | Area | Change |
 |------|--------|
-| **Shared messages** | `yap-messages-api` — Adventure text, permission errors with nodes, `YapConfigReload` / `YapHelp` — [MESSAGES.md](../plugins/MESSAGES.md) |
+| **Shared messages** | `yap-messages-api` — Adventure text, permission errors with nodes, `YapConfigReload` / `YapHelp` — [PLUGINS.md](../plugins/PLUGINS.md) |
 | **Defaults pack** | Full `config/defaults/plugins/` coverage for CORE+NETWORK + gameplay seeds (BedrockUI / FoliaBridge / WorldEdit shim N/A) — [DEFAULTS.md](DEFAULTS.md) |
 | **Bedrock hubs** | `/menu`, kits/homes/warps, ranks, admin forms via YaPBedrockUI (JE keeps chests) — [CROSSPLAY.md](../network/CROSSPLAY.md) |
 | **Ops / dashboard** | Catalog reload parity (admin, pregen, floodgate, dungeons, conquest, …); DB-not-ready / profile-loading UX; invalid YAML numbers → HTTP 400 |
-| **Factions / Conquest** | Survival guild polish + opt-in YaPConquest chunk land (still `enabled: false` by default) — [FACTIONS.md](../gameplay/FACTIONS.md) · [CONQUEST.md](../gameplay/CONQUEST.md) |
+| **Factions / Conquest** | Survival guild polish + opt-in YaPConquest chunk land (still `enabled: false` by default) — [GAMEPLAY.md](../gameplay/GAMEPLAY.md) · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
 
 Rebuild release trees: `./scripts/build-yap-folia.sh && gradle publishReleasesFolder -PyapGameplay=true`.
 
@@ -293,7 +293,7 @@ Not blockers for release; documented for operators:
 - **ViaRewind 1.8 play depth** — out of product scope.
 - **Bedrock specialty UI** — recipe pick wired (stonecutter/loom/smithing/cartography); anvil rename FILTER_TEXT pending chassis deploy after soak. Retest on Bedrock before marketing full play depth.
 - **Sounds / particles** on older JE clients — same class of issues as ViaBackwards; see limitations doc.
-- **YaPGuard** — lightweight movement heuristics only; **competitive / PvP requires Grim** (`./scripts/grim-ac.sh enable` + Folia restart) — [ANTICHEAT.md](../ops/ANTICHEAT.md) · [GRIM.md](../ops/GRIM.md)
+- **YaPGuard** — lightweight movement heuristics only; **competitive / PvP requires Grim** (`./scripts/grim-ac.sh enable` + Folia restart) — [GRIM.md](../ops/GRIM.md)
 - **Full Geyser feature matrix** — intentional Out; YaP ships depth, not a 1:1 Geyser clone.
 
 ### Contributors & license
@@ -333,10 +333,8 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 | **Packs / clients** | Skies/water texture refresh; optional **yap-visuals** / Iris / Sodium client stack docs |
 | **Essentials** | Optional water-wave visuals (`features.water-waves`) |
 | **Ops docs** | Public hostname `yapcoremc.yaplabs.us`, packs via nginx `:80`, grey-cloud game DNS |
-| **Ops Waves 1–5** | Folia-safe pregen/protect/regions; Bedrock inventory fidelity; Discord event webhooks; map markers; dashboard Access context/temp + social/stacker panels; cite fixtures −5.53% fullcite (peak −12.4%) — [REAL_GAINS.md](../folia/REAL_GAINS.md) |
+| **Ops Waves 1–5** | Folia-safe pregen/protect/regions; Bedrock inventory fidelity; Discord event webhooks; map markers; dashboard Access context/temp + social/stacker panels; cite fixtures −5.53% fullcite (peak −12.4%) — [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) |
 | **YaP Encyclopedia** | Purpur-**inspired** event-wired `knobs.yml` (original YaP code): attributes, ride perms, per-mob specials, gameplay/blocks; crop/fluid **NMS opt-in** only after YaP-Folia `0025` + soak — not full Purpur without that — [TUNE.md](../ops/TUNE.md) |
-| **Cite vs Canvas** | Heavypop campaign `20260904T065505Z`: YaP **−8.09% vs Canvas** (citeable ≥5%), **−16.56% vs stock** under disclosed ship knobs — [CANVAS_PARITY.md](../folia/CANVAS_PARITY.md) · [REAL_GAINS.md](../folia/REAL_GAINS.md) |
-| **vs Paper/Purpur** | Honest scale/product framing (regionized + encyclopedia + suite); no single-thread MSPT claim — [PAPER_PURPUR_SCALE.md](../folia/PAPER_PURPUR_SCALE.md) |
 | **Bedrock specialty containers** | Anvil, smithing, loom, stonecutter, cartography — open + slot sync + **recipe pick**; anvil rename FILTER_TEXT pending deploy — [CROSSPLAY.md](../network/CROSSPLAY.md) |
 | **Repo layout** | Optional Fabric client mods nested under [`client/`](../../client/) (`yap-visuals`, `yap-bag`, `yap-staff`, `yap-ultrawide`, Iris/Sodium/shaders) |
 | **YaPCommands** | YAML custom `/commands` (`yap-commands.jar`) with dashboard **Custom commands** CRUD — messages, player/console runs, aliases, cooldowns — [COMMANDS.md](../ops/COMMANDS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
@@ -347,13 +345,12 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 
 ### Still open (not a version bump)
 
-- **Phase 1 engineering gates** — Done ([PRODUCTION_READY.md](../ops/PRODUCTION_READY.md)): Java 25 CI, DB bootstrap hygiene, protect/factions/essentials/chat/world unit suites
 - **Manual §E live checklist** — checklist lives in [CROSSPLAY.md](../network/CROSSPLAY.md); operator must tick join + specialty stations on a live box (cannot automate Xbox)
 - Bedrock specialty recipe picks (stonecutter / loom / smithing / cartography) implemented via Paper CRAFT_RECIPE_OPTIONAL — deploy chassis after soak; JE already signed off
 - Anvil rename FILTER_TEXT path started (codec + Paper hook — deploy after soak)
-- Next-protocol dump when Mojang ships a new JE build ([VANILLA_CLIENTS.md](../network/VANILLA_CLIENTS.md))
+- Next-protocol dump when Mojang ships a new JE build ([CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md))
 - YaPWorld NMS section placement / FAWE CFI (intentionally out of scope)
-- **12h soak-long PASS** (`logs/soak/soak-long-20260905T031507Z.log`) — zip may be marketed as **soak-proven**; heap/thread slope flat (folia heap median early≈1012MB late≈1082MB; threads 137→137) per [REAL_GAINS.md](../folia/REAL_GAINS.md)
+- **12h soak-long PASS** (`logs/soak/soak-long-20260905T031507Z.log`) — zip may be marketed as **soak-proven**; heap/thread slope flat (folia heap median early≈1012MB late≈1082MB; threads 137→137) per [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md)
 - Rebuild YaP-Folia with `0025` encyclopedia NMS patch when enabling `crop-growth-nms` / `tick-fluids=false` in production (defaults stay **off**)
 `releases/1.0.0.0/` republished 2026-09-13 with Bedrock-feel + native join, Link Bedrock module, presence/blocks clients, and domain ≤500 splits (`./scripts/build-yap-client-render.sh` then `gradle publishReleasesFolder -PyapGameplay=true`). Prior: World tools + schem rotate/flip + Bedrock pack CDN (2026-09-08 evening); YaPItems/staff **1.0.27** same day; staff/bag polish (2026-09-07); typical SMP defaults (2026-09-06); pack CDN/SHA + client visuals (2026-09-04).
 

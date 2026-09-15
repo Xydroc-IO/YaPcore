@@ -1,7 +1,7 @@
 # YaP LagGuard — per-chunk lag-machine budgets (Folia-safe)
 #
 # Defaults target public survival (dense farms OK; lag-machines get cancelled).
-# Creative / redstone labs: raise redstone + hopper windows. See docs/plugins/LAGGUARD.md.
+# Creative / redstone labs: raise redstone + hopper windows. See docs/plugins/PLUGINS.md.
 enabled: true
 
 # Soft entity density per loaded chunk (living + items + projectiles counted)
@@ -45,7 +45,7 @@ max-minecarts-per-chunk: 16
 
 # OPTIONAL escalation: when trips in a chunk window exceed threshold, remove excess ground
 # Item entities once per window. DANGER — destroys player drops. Keep enabled: false unless
-# operators accept that risk. See docs/plugins/LAGGUARD.md.
+# operators accept that risk. See docs/plugins/PLUGINS.md.
 escalation:
   enabled: false
   trips-threshold: 50

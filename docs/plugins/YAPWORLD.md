@@ -157,4 +157,4 @@ Full FAWE CFI (NMS section injection) remains Stretch.
 
 ## Related
 
-[PERMISSIONS.md](../ops/PERMISSIONS.md) · [REGIONS.md](../gameplay/REGIONS.md) · [PREGEN.md](PREGEN.md) · [PLUGIN_COMPAT_MATRIX.md](PLUGIN_COMPAT_MATRIX.md)
+[PERMISSIONS.md](../ops/PERMISSIONS.md) · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) · [PLUGINS.md](PLUGINS.md) · [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md)

@@ -25,7 +25,7 @@ public final class PlayerDataTuneModule extends FineTuneModule {
                 "sync.inventory|xp|vitals|economy",
                 "claims.* / claims.tax.*  — land claim + tax (tax needs economy)",
                 "",
-                "Docs: docs/data/PLAYERDATA.md · docs/data/MARIADB.md",
+                "Docs: docs/data/PLAYERDATA.md · docs/data/YAPDB.md",
                 "No-econ network: economy.enabled=false"
         );
     }

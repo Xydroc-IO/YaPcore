@@ -144,7 +144,7 @@ public final class DashboardNetworkPluginSnapshots {
         out.put("checkForUpdates", DashboardNetworkSnapshots.bool(yaml.get("check-for-updates"), true));
         out.put("creatorUrl", "https://creator.tebex.io/");
         out.put("docsUrl", "https://docs.tebex.io/creators/tebex-control-panel/game-servers/minecraft-java-edition");
-        out.put("yapDocs", "docs/ops/TEBEX.md");
+        out.put("yapDocs", "docs/ops/INTEGRATIONS.md");
         out.put("fetchHint", "./scripts/fetch-tebex.sh");
         out.put("packageRecipes", List.of(
                 Map.of(

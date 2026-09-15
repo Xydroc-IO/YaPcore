@@ -28,7 +28,7 @@ enable-server-command=true
 public-host=127.0.0.1
 public-port=0
 
-# Edge rate limits — docs/EDGE_RATE_LIMIT.md
+# Edge rate limits — docs/network/EDGE_HARDEN.md
 connect-rate-limit-enabled=true
 connect-rate-per-ip=20
 connect-rate-window-ms=10000

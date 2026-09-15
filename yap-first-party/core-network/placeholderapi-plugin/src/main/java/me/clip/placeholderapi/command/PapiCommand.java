@@ -80,7 +80,7 @@ public final class PapiCommand implements CommandExecutor, TabCompleter {
                         "&7Built-in: &fplayer&7, &fserver&7 · YaP plugins register &fyap*&7 placeholders automatically.",
                         "&7Third-party jars → &fplugins/PlaceholderAPI/expansions/",
                         "&7Then: &e/papi reload &7or &e/papi register <jar>",
-                        "&7Docs: &fdocs/plugins/PLACEHOLDERAPI.md");
+                        "&7Docs: &fdocs/plugins/PLUGINS.md");
                 yield true;
             }
             default -> {

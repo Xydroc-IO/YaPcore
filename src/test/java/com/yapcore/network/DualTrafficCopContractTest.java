@@ -16,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * SequenceToken path both start under {@link YaPcoreEngine}; neither replaces the other.
  *
  * <p>Do not "merge to one" without an explicit architecture redesign — see
- * docs/ops/CODE_ELEGANCE_FOLLOWUP.md Track 2 Phase D.
  */
 class DualTrafficCopContractTest {
 

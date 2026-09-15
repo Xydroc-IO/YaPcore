@@ -18,8 +18,8 @@ YAP_BENCH_COMPETITORS=folia,canvas,yapcore YAP_MSPT_REQUIRE_SHIP_KNOBS=1 \
   ./scripts/bench/run-vs-folia.sh heavypop 40
 ```
 
-See [`docs/folia/CANVAS_PARITY.md`](../../../docs/folia/CANVAS_PARITY.md) ·
-[`docs/folia/REAL_GAINS.md`](../../../docs/folia/REAL_GAINS.md).
+See [`docs/folia/YAP_FOLIA_PATCHES.md`](../../../docs/folia/YAP_FOLIA_PATCHES.md).
+[`docs/folia/YAP_FOLIA_PATCHES.md`](../../../docs/folia/YAP_FOLIA_PATCHES.md).
 
 ## Ship knobs (fixture regen)
 

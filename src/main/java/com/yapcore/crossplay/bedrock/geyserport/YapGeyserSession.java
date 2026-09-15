@@ -35,7 +35,7 @@ import org.cloudburstmc.protocol.bedrock.packet.SetTimePacket;
  * port. Inventory / entity / gameplay translators are not ported yet.
  *
  * <p>Outbound goes through DualStack / Bedrock bridge {@code sendPacket} hooks.
- * See {@code docs/geyser-join-reference/NATIVE_PORT.md}.
+ * See {@code docs/network/CROSSPLAY.md}.
  */
 public final class YapGeyserSession {
 

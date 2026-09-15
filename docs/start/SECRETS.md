@@ -40,7 +40,7 @@ cp deploy/mariadb/.env.example deploy/mariadb/.env   # edit passwords first
 1. Copy and edit `deploy/mariadb/.env` — **change both passwords** from `change-me` / `yaproot`.
 2. Run `./scripts/db/ensure-db.sh --server-id lobby`.
 3. Prefer join via **YaP Link :25565** (modern forwarding ON by default for skins). Set `online-mode=true` on Link + `velocity-online-mode=true` for full premium auth when going public cracked-off.
-4. Bind dashboard to localhost: `web-dashboard-bind=127.0.0.1` / `web-dashboard-localhost-only=true` — [EDGE_HARDEN.md](../network/EDGE_HARDEN.md).
+4. Bind dashboard to localhost: `web-dashboard-bind=127.0.0.1` / `web-dashboard-localhost-only=true` — [NETWORKING.md](../network/NETWORKING.md).
 5. Enable PlayerData auth if using offline-mode public: `auth.enabled: true`.
 6. Start server once; copy the generated **dashboard token** from the log (or rotate in Admin tab).
 7. Set Discord webhooks before enabling relay; set a strong `inbound.secret` if enabling inbound HTTP.
@@ -80,10 +80,10 @@ Tracked templates use placeholders only: `config/defaults/`, `*.example`, `deplo
 | Doc | Topic |
 |-----|--------|
 | [DEFAULTS.md](DEFAULTS.md) | First-boot seed layout |
-| [MARIADB.md](../data/MARIADB.md) | Docker MariaDB setup |
-| [POSTGRES.md](../data/POSTGRES.md) | Docker Postgres setup |
-| [SQLITE.md](../data/SQLITE.md) | Single-node SQLite |
+| [YAPDB.md](../data/YAPDB.md) | Docker MariaDB setup |
+| [YAPDB.md](../data/YAPDB.md) | Docker Postgres setup |
+| [YAPDB.md](../data/YAPDB.md) | Single-node SQLite |
 | [YAPDB.md](../data/YAPDB.md) | Shared pool + engines |
 | [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) | Token login, Admin tab |
-| [DISCORD_RELAY.md](../ops/DISCORD_RELAY.md) | Webhook + inbound setup |
-| [EDGE_HARDEN.md](../network/EDGE_HARDEN.md) | Public exposure checklist |
+| [INTEGRATIONS.md](../ops/INTEGRATIONS.md) | Webhook + inbound setup |
+| [NETWORKING.md](../network/NETWORKING.md) | Public exposure checklist |

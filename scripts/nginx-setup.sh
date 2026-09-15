@@ -145,7 +145,7 @@ echo "Same-PC join (no nginx needed): 127.0.0.1:${YAP_JAVA}"
 echo "Public game (YaP Link default):  ${NGINX_DOMAIN}:${NGINX_PUBLIC}  — Link owns TCP+UDP; nginx stream OFF unless --with-stream"
 echo "Packs via nginx HTTP:            http://${NGINX_DOMAIN}:${NGINX_PACK_HTTP}/pack/  (Cloudflare HTTPS → origin :${NGINX_PACK_HTTP})"
 echo "Cloudflare DNS checklist:        deploy/cloudflare/dns-records.example"
-echo "Docs:                            docs/network/CLOUDFLARE_AND_NGINX.md"
+echo "Docs:                            docs/network/NETWORKING.md"
 
 if [ "$DRY" -eq 1 ]; then
   echo "---- stream ----"

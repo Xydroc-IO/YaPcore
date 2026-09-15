@@ -86,7 +86,7 @@ done
 case "$crc" in
   0)
     if printf '%s\n' "$out" | grep -q 'SCALE WIN'; then
-      echo "PASS: paper scale win (stamp=$STAMP) — record under docs/folia/PAPER_PURPUR_SCALE.md"
+      echo "PASS: paper scale win (stamp=$STAMP) — record under docs/folia/YAP_FOLIA_PATCHES.md"
       exit 0
     fi
     echo "STAMPED: results recorded but no scale win yet (raise YAP_BENCH_PLAYERS). stamp=$STAMP"

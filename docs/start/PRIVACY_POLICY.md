@@ -60,7 +60,7 @@ Retention is **controlled by you** (log rotation, DB backups, plugin config).
 
 Protect `web-dashboard-token` and database credentials. Do not expose the web dashboard
 (`:8080`) to the internet without TLS and strong access controls — see
-[WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) and [EDGE_HARDEN.md](../network/EDGE_HARDEN.md).
+[WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) and [NETWORKING.md](../network/NETWORKING.md).
 
 ### 2.3 Diagnostics
 
@@ -79,7 +79,7 @@ YaPcore can connect to services **you** configure. Each has its own privacy term
 | Integration | Examples of data sent | Operator action |
 |-------------|----------------------|-----------------|
 | **MariaDB / YaPDB** | Player sync rows, economy | You choose host & DPA |
-| **Tebex** (optional) | Purchase events, UUID | [TEBEX.md](../ops/TEBEX.md) |
+| **Tebex** (optional) | Purchase events, UUID | [INTEGRATIONS.md](../ops/INTEGRATIONS.md) |
 | **Discord** (`YaPDiscord`) | Chat relay, webhooks | Your bot token & Discord ToS |
 | **Grim AC** (optional) | Movement / combat telemetry | [GRIM.md](../ops/GRIM.md) |
 | **Public HTTP** | Resource pack downloads | Access logs on your edge |
@@ -118,7 +118,7 @@ YaPcore software does not include age verification. If you run a server open to 
 2. Rotate `web-dashboard-token` after staff changes.
 3. Use strong MariaDB passwords and firewall database ports.
 4. Restrict who has OP, `yapadmin.menu`, and dashboard access.
-5. Review [EDGE_HARDEN.md](../network/EDGE_HARDEN.md) before exposing ports publicly.
+5. Review [NETWORKING.md](../network/NETWORKING.md) before exposing ports publicly.
 
 ---
 

@@ -2,7 +2,7 @@
 # (Hub/lobby + survival). Cooldowns + store grants live in MariaDB network-wide.
 #
 # Access nodes: yapdata.kit.<id>  ·  VIP starter pack grants yapdata.kit.*
-# Store (Tebex on Hub): see docs/ops/TEBEX.md and examples/tebex/
+# Store (Tebex on Hub): see docs/ops/INTEGRATIONS.md and examples/tebex/
 #
 # Essentials-class fields:
 #   delay-seconds / delay, max-uses (0 = unlimited), cost, first-join, commands

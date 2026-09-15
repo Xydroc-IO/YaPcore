@@ -51,4 +51,4 @@ Source: https://github.com/tebexio/Tebex-Minecraft
 EOF
 
 echo "OK $(wc -c < "$OUT") bytes — dashboard: Tebex store → paste secret, or Hub: tebex secret <key>"
-echo "Docs: docs/ops/TEBEX.md · License: third-party/tebex/"
+echo "Docs: docs/ops/INTEGRATIONS.md · License: third-party/tebex/"

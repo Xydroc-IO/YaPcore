@@ -37,7 +37,7 @@ AI output is treated as **untrusted draft material** until a human maintainer ac
 ## Human accountability
 
 1. **Review** — Maintainers are expected to review AI-assisted changes for correctness, security, threading (Folia SYNC/HEAVY/UI), licensing, and honesty of product claims.
-2. **Verification** — Ship gates remain human-owned: compile, domain line limits, tests, soak/MSPT cites, and release packaging ([PRODUCTION_READY.md](../ops/PRODUCTION_READY.md)).
+2. **Verification** — Ship gates remain human-owned: compile, tests, soak/MSPT cites, and release packaging ([RELEASES.md](../start/RELEASES.md)).
 3. **Attribution** — Git history records human committers. AI tools are **assistants**, not co-authors on the copyright notice, unless a contributor explicitly chooses otherwise in a commit message.
 4. **No warranty inflation** — Use of AI does **not** create additional warranties. Software is provided under GPLv3 terms as-is.
 
@@ -77,7 +77,7 @@ Running YaPcore does **not** require AI tools. Binaries and release zips are ord
 | [TERMS_OF_USE.md](TERMS_OF_USE.md) | Terms |
 | [SECURITY.md](../../SECURITY.md) | Vulnerability reporting |
 | [CONTRIBUTING.md](../../CONTRIBUTING.md) | Contribution rules incl. domain ≤500 |
-| [PRODUCTION_READY.md](../ops/PRODUCTION_READY.md) | Ops / engineering standing |
+| [RELEASES.md](../start/RELEASES.md) | Release packages |
 
 ---
 

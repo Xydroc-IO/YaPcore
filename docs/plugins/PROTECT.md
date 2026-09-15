@@ -109,5 +109,5 @@ Lookup rows include `changeType`, `rolledBack`, `restorable`, and `serverId`.
 
 ## Related
 
-- [REGIONS.md](../gameplay/REGIONS.md) — admin land flags (separate from audit log)
+- [GAMEPLAY.md](../gameplay/GAMEPLAY.md) — admin land flags (separate from audit log)
 - [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) — `/api/protect`

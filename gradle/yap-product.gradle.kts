@@ -389,7 +389,7 @@ tasks.register("assemblePluginDist") {
             Full box (all plugins): gradle assembleRelease
             Slim CORE+NETWORK only: gradle assembleRelease -PyapGameplay=false
 
-            Docs: docs/plugins/MODULES_AND_API.md · docs/ops/TUNE.md · plugins/README.md
+            Docs: docs/plugins/PLUGINS.md · docs/ops/TUNE.md · plugins/README.md
             """.trimIndent() + "\n"
         )
 

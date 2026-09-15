@@ -152,7 +152,7 @@ Kits are **stored** by YaPPlayerData (`kits.yml` + MariaDB). Commands (`/kit`, `
 
 | What | Where |
 |------|--------|
-| Definitions | `plugins/YaPPlayerData/kits.yml` — **same file on Hub + every survival backend** |
+| Definitions | `plugins/YaPPlayerData/kits.yml` — **same file on Hub + every survival backend** (Control syncs catalog → `fleet/instances/*/plugins/` on ensure / dashboard kit save) |
 | Cooldowns / uses | MariaDB `kit_cooldowns` (network-wide) |
 | Store grants | MariaDB `kit_grants` via `kit grant <player> <kit>` |
 | Access | `yapdata.kit.<id>` / VIP `yapdata.kit.*` (YaPPerms) |
@@ -162,6 +162,6 @@ Kits are **stored** by YaPPlayerData (`kits.yml` + MariaDB). Commands (`/kit`, `
 
 Player: `/kit` `/kits` `/showkit` · Admin: `/createkit` `/delkit` `/kitreset` · Console/store: `kit give` · `kit grant`.  
 Dashboard: **Gameplay → Kits** builds the same `kits.yml` (items, armor slot, cooldown, cost, first-join, commands).  
-Tebex on Hub: [TEBEX.md](../ops/TEBEX.md) · [examples/tebex/](../../examples/tebex/).
+Tebex on Hub: [INTEGRATIONS.md](../ops/INTEGRATIONS.md) · [examples/tebex/](../../examples/tebex/).
 
 Plugin jar: `gradle :playerdata-plugin:installIntoPlugins` (also in `assembleRelease`).

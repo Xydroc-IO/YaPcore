@@ -35,7 +35,7 @@ types stay portable (`ON DUPLICATE KEY` / `ON CONFLICT` / `INSERT OR IGNORE`).
 
 If the configured MariaDB/Postgres pool fails at enable, YaPDB **stays loaded** (so dependents can still resolve `YapSqlDialects` / `YapDbBootstrap`) and opens a local `plugins/YaPDB/yap-fallback.db` SQLite file when possible. Fix the primary JDBC URL for fleets — fallback is single-node only.
 
-See [MARIADB.md](MARIADB.md) · [POSTGRES.md](POSTGRES.md) · [SQLITE.md](SQLITE.md).
+See [YAPDB.md](YAPDB.md) · [YAPDB.md](YAPDB.md) · [YAPDB.md](YAPDB.md).
 
 ## Why
 
@@ -46,6 +46,15 @@ See [MARIADB.md](MARIADB.md) · [POSTGRES.md](POSTGRES.md) · [SQLITE.md](SQLITE
 | Easy to point backends at different DBs by mistake | Same shared instance by design |
 
 ## Setup
+
+**Dashboard / Control GUI (recommended):** Fleet tab → **Database (YaPDB)** card, or Swing **Database…**
+
+- Pick **MariaDB / MySQL**, **PostgreSQL**, or **SQLite**
+- **Start Docker** for MariaDB/Postgres (packaged compose under `deploy/`)
+- **Set up database** writes `plugins/YaPDB/config.yml` and syncs JDBC to fleet instances
+- API: `GET/POST /api/database` (`ensure`, `start-docker`, `stop-docker`, `sync-fleet`)
+
+**CLI:**
 
 ```bash
 # MariaDB (default)
@@ -142,3 +151,175 @@ Falls back to an embedded pool only if YaPDB is missing (not recommended for mul
 
 All backends + all SQL plugins → **same** JDBC URL from `configure-db.sh` / `ensure-*.sh`.
 SQLite cannot be shared across machines — use MariaDB or Postgres for networks.
+
+
+---
+
+## MariaDB setup
+
+YaPcore does **not** embed a database engine. Owners run one MariaDB instance
+(packaged via Docker). **`yap-db.jar` (YaPDB)** owns the shared Hikari pool on each
+**YaP-Folia** backend; **YaPPlayerData** and other SQL plugins borrow it.
+
+**Engine support:** MariaDB / MySQL (default), plus [PostgreSQL](YAPDB.md) and
+[SQLite](YAPDB.md) via the same `YapSqlDialect` layer. Details: [YAPDB.md](YAPDB.md#supported-engines).
+
+Works the same on **Linux** and **Windows**.
+
+## Recommended: Docker package
+
+| OS | Start | Configure | Stop |
+|----|-------|-----------|------|
+| Linux / macOS | `./scripts/db/start-mariadb.sh` | `./scripts/db/ensure-db.sh` (or `configure-db.sh`) | `./scripts/db/stop-mariadb.sh` |
+| Windows | `.\scripts\windows\Start-MariaDB.ps1` | `Configure-Db.ps1` / `Configure-PlayerData.ps1` | `Stop-MariaDB.ps1` |
+| Release zip | `./start-mariadb.sh` / `.cmd` | `./configure-db.sh` / `configure-playerdata` | `./stop-mariadb.sh` |
+
+Requires [Docker](https://docs.docker.com/get-docker/) (Desktop on Windows).
+
+Compose lives in [`deploy/mariadb/`](../deploy/mariadb/). First start copies `.env.example` → `.env`.
+If host **:3306** is already taken, `start-mariadb.sh` remaps to **3316** automatically.
+
+### One-shot (preferred)
+
+```bash
+./scripts/db/ensure-db.sh --server-id lobby
+./scripts/start.sh --fg
+```
+
+`ensure-db.sh` starts MariaDB (if needed), writes JDBC into `plugins/YaPDB` + `plugins/YaPPlayerData`, and probes login before you boot.
+
+For a custom home / smoke workdir:
+
+```bash
+./scripts/db/ensure-db.sh --root /path/to/yap-home --server-id lobby
+```
+
+### Single server (same machine)
+
+```bash
+./scripts/db/start-mariadb.sh --configure --server-id lobby
+# or: ./scripts/db/ensure-db.sh --server-id lobby
+./scripts/start.sh --fg
+```
+
+JDBC points at `127.0.0.1` (port from `.env`). Shared config: `plugins/YaPDB/config.yml`.
+
+### Multi-backend / Velocity / YaP Link
+
+1. Run MariaDB **once**.
+2. On **each** game backend:
+
+```bash
+./scripts/db/configure-db.sh --host 192.168.1.10 --server-id lobby
+./scripts/db/configure-db.sh --host 192.168.1.10 --server-id survival
+```
+
+Rules:
+
+- **Same** JDBC URL / user / password on every backend (YaPDB + playerdata fallback)
+- **Unique** `server-id` per backend (playerdata)
+- Open firewall for `YAP_DB_PORT` only to backend IPs
+
+## Shared pool vs embedded
+
+| Jar | Role |
+|-----|------|
+| `yap-db.jar` | Shared Hikari pool — install this for any SQL plugin |
+| `yap-playerdata.jar` | Prefers YaPDB; embedded fallback if YaPDB missing |
+
+See [YAPDB.md](YAPDB.md) for the plugin API.
+
+## Without Docker
+
+Install MariaDB/MySQL, create database/user matching `deploy/mariadb/.env.example`, then
+`configure-db.sh --host …`.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| YaPDB disables on boot | `./scripts/db/ensure-db.sh --server-id <id>` then restart; `./scripts/db/status-mariadb.sh` |
+| Access denied for `yap@localhost` | Jar default is **:3306**; YaP Docker may be on **3316**. Re-run ensure/configure into the **same** home that boots (`--root`) |
+| PlayerData uses embedded pool | Install `yap-db.jar`; check `/yapdb status` |
+| Multi-backend can't connect | Use LAN IP not `127.0.0.1` |
+| Port 3306 busy | Auto-bumped to 3316 on start; or set `YAP_DB_PORT` in `.env` and reconfigure |
+
+See also [YAPDB.md](YAPDB.md) · [PLAYERDATA.md](PLAYERDATA.md) · [deploy/mariadb/README.md](../../deploy/mariadb/README.md).
+
+
+---
+
+## PostgreSQL setup
+
+Packaged Docker Postgres for YaPDB + first-party SQL plugins.
+
+## Quick start
+
+```bash
+./scripts/db/start-postgres.sh
+./scripts/db/configure-db.sh --engine postgres --server-id lobby
+# or one-shot:
+./scripts/db/ensure-postgres.sh --server-id lobby
+./scripts/start.sh --fg
+```
+
+Compose: [`deploy/postgres/`](../../deploy/postgres/). Credentials: `.env` from `.env.example`.
+
+Default host port **5432** (`YAP_PG_PORT`). If busy, `start-postgres.sh` remaps to **5433**.
+
+JDBC example:
+
+```text
+jdbc:postgresql://127.0.0.1:5432/yap_playerdata
+```
+
+## Status / stop
+
+```bash
+./scripts/db/status-postgres.sh
+docker compose -f deploy/postgres/docker-compose.yml down   # keeps volume
+```
+
+## Notes
+
+- Same schema as MariaDB via `YapSqlDialect` (upserts use `ON CONFLICT`).
+- Fine for multi-backend / YaP Link (unlike SQLite).
+- Migrating an existing MariaDB dataset is out of band (`pgloader` / dump+load).
+
+See also [YAPDB.md](YAPDB.md) · [YAPDB.md](YAPDB.md) · [YAPDB.md](YAPDB.md).
+
+
+---
+
+## SQLite setup
+
+Zero-Docker SQL for a **single** Folia JVM. Not for multi-backend or shared Link networks.
+
+## Quick start
+
+```bash
+./scripts/db/configure-db.sh --engine sqlite --server-id lobby
+./scripts/start.sh --fg
+```
+
+Creates/uses:
+
+```text
+jdbc:sqlite:{yap-home}/data/yap.db
+```
+
+YaPDB forces pool size **1**, enables **WAL** + busy timeout on open.
+
+## Limits
+
+| OK | Not OK |
+|----|--------|
+| One game backend on one machine | Multiple Folia backends sharing one file over NFS |
+| Local / LAN / small SMP | Production proxy farms (use MariaDB or Postgres) |
+
+## Switch away later
+
+Point `plugins/YaPDB/config.yml` at MariaDB or Postgres (`configure-db.sh --engine mysql|postgres`).
+Schema is recreated on migrate for empty DBs — bring your own data export if you need to keep rows.
+
+See [YAPDB.md](YAPDB.md) · [YAPDB.md](YAPDB.md) · [YAPDB.md](YAPDB.md).

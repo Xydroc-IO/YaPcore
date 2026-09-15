@@ -97,7 +97,7 @@ tasks.register("assembleGameplaySuite") {
             =================================
             Drop plugins/ and modules/ into your YaPcore server tree.
             Requires CORE+NETWORK release (yapcore.jar + yap-db + playerdata).
-            Docs: docs/plugins/STACKER.md · docs/plugins/YAPITEMS.md · docs/plugins/YAP_QOL.md · docs/plugins/SKILLS.md · docs/plugins/DUNGEONS.md · docs/ops/TUNE.md
+            Docs: docs/plugins/PLUGINS.md · docs/plugins/YAPITEMS.md · docs/plugins/PLUGINS.md · docs/plugins/PLUGINS.md · docs/plugins/PLUGINS.md · docs/ops/TUNE.md
             Rebuild: gradle assembleGameplaySuite
             """.trimIndent() + "\n"
         )
@@ -265,7 +265,7 @@ tasks.register("publishReleasesFolder") {
             Parity smoke:    ./scripts/parity/smoke-bedrock-feel.sh
             Slim CORE+NETWORK only:  gradle assembleRelease -PyapGameplay=false
 
-            Docs: docs/start/RELEASES.md · docs/product/BEDROCK_FEEL_MATRIX.md
+            Docs: docs/start/RELEASES.md · docs/product/BEDROCK_FEEL_PARITY.md
             """.trimIndent() + "\n"
         )
 

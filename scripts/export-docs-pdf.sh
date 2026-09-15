@@ -1,38 +1,29 @@
 #!/usr/bin/env bash
 # Optional local export: Markdown → docs/pdf/*.pdf (chromium headless).
-# Outputs are gitignored — Markdown under docs/ is the published source of truth.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/docs/pdf"
 mkdir -p "$OUT"
 
 DOC_LIST=(
-  "YAPCORE_WHITEPAPER|docs/whitepaper/YAPCORE_WHITEPAPER.md"
-  "YAPCORE_WHITEPAPER_PLAIN_ENGLISH|docs/whitepaper/YAPCORE_WHITEPAPER_PLAIN_ENGLISH.md"
-  "AI_TRANSPARENCY|docs/start/AI_TRANSPARENCY.md"
-  "LICENSING|docs/start/LICENSING.md"
-  "BEDROCK_FEEL_PARITY|docs/product/BEDROCK_FEEL_PARITY.md"
-  "BEDROCK_FEEL_MATRIX|docs/product/BEDROCK_FEEL_MATRIX.md"
-  "CROSSPLAY|docs/network/CROSSPLAY.md"
-  "YAP_LINK_NATIVE|docs/network/YAP_LINK_NATIVE.md"
-  "CLIENTS_AND_PACKS|docs/network/CLIENTS_AND_PACKS.md"
+  "QUICK_START|docs/start/QUICK_START.md"
   "RELEASES|docs/start/RELEASES.md"
   "RELEASE_NOTES|docs/start/RELEASE_NOTES.md"
-  "PRODUCTION_READY|docs/ops/PRODUCTION_READY.md"
-  "YAP_FOLIA_SOAK|docs/folia/YAP_FOLIA_SOAK.md"
-  "CANVAS_PARITY|docs/folia/CANVAS_PARITY.md"
-  "REAL_GAINS|docs/folia/REAL_GAINS.md"
-  "QUICK_START|docs/start/QUICK_START.md"
-  "WIKI|docs/WIKI.md"
+  "YAPCORE_WHITEPAPER|docs/whitepaper/YAPCORE_WHITEPAPER.md"
+  "NETWORKING|docs/network/NETWORKING.md"
+  "YAP_LINK|docs/network/YAP_LINK.md"
+  "CROSSPLAY|docs/network/CROSSPLAY.md"
+  "PLUGINS|docs/plugins/PLUGINS.md"
+  "YAPDB|docs/data/YAPDB.md"
+  "YAP_FOLIA_PATCHES|docs/folia/YAP_FOLIA_PATCHES.md"
   "DOCS_README|docs/README.md"
 )
 
-# Also export any other tracked markdown under docs/ (skip if already listed).
 while IFS= read -r -d '' f; do
   rel="${f#"$ROOT/"}"
   stem="$(basename "$f" .md)"
   case "$stem" in
-    YAPCORE_WHITEPAPER|YAPCORE_WHITEPAPER_PLAIN_ENGLISH|AI_TRANSPARENCY|LICENSING|BEDROCK_FEEL_PARITY|BEDROCK_FEEL_MATRIX|CROSSPLAY|YAP_LINK_NATIVE|CLIENTS_AND_PACKS|RELEASES|RELEASE_NOTES|PRODUCTION_READY|YAP_FOLIA_SOAK|CANVAS_PARITY|REAL_GAINS|QUICK_START|WIKI|README) continue ;;
+    QUICK_START|RELEASES|RELEASE_NOTES|YAPCORE_WHITEPAPER|NETWORKING|YAP_LINK|CROSSPLAY|PLUGINS|YAPDB|YAP_FOLIA_PATCHES|README) continue ;;
   esac
   DOC_LIST+=("${stem}|${rel}")
 done < <(find "$ROOT/docs" -type f -name '*.md' -print0 | sort -z)

@@ -13,7 +13,7 @@ Install, setup, and lifecycle helpers for operators.
 | `soak-yap-folia.sh` | Live YaP-Folia mem/crash soak (compat / perf / long) |
 | `verify-yap-folia.sh` | Patch check + build `lib/yap-folia-*.jar` (`SKIP_SMOKE=1` for CI) |
 | `bench/cite-fullcite.sh` | Stock Folia vs YaPcore fullcite — **ship knobs** cite gate (`knob_*` required) |
-| Docs | [YAP_FOLIA_SOAK](../docs/folia/YAP_FOLIA_SOAK.md), [CANVAS_PARITY](../docs/folia/CANVAS_PARITY.md), [REAL_GAINS](../docs/folia/REAL_GAINS.md) |
+| Docs | [YaP-Folia](../docs/folia/YAP_FOLIA_PATCHES.md) |
 | `bench/compare-folia.py` | MSPT A/B vs stock Folia (fairness + tie band) |
 | `bench/check-mspt-regression.sh` | Wrapper gate over compare-folia.py |
 | `bench/run-vs-folia.sh` | Multi-competitor MSPT runner |

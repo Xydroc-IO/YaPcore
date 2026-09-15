@@ -3,8 +3,8 @@ package com.yapcore.link.bedrock;
 /**
  * Marker and mode constants for Link-native Bedrock.
  *
- * <p>See {@code docs/geyser-join-reference/ADR-001-link-native-geyser.md} and
- * {@code docs/geyser-join-reference/LINK_NATIVE_PORT.md}.
+ * <p>See {@code docs/network/YAP_LINK.md} and
+ * {@code docs/network/YAP_LINK.md}.
  */
 public final class BedrockNative {
 

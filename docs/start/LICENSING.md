@@ -47,7 +47,7 @@ licenses and your legal counsel.
 
 The official [Tebex Minecraft plugin](https://github.com/tebexio/Tebex-Minecraft) is
 **GPLv3**. Fetch with `./scripts/fetch-tebex.sh` or `gradle fetchTebex`; ship notices
-from `third-party/tebex/`. Setup: [TEBEX.md](../ops/TEBEX.md).
+from `third-party/tebex/`. Setup: [INTEGRATIONS.md](../ops/INTEGRATIONS.md).
 
 ### Grim Anticheat (GPLv3, optional)
 

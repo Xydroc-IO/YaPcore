@@ -43,7 +43,7 @@ random:
     meteor: 5
     tsunami: 3
 
-# Soft volcano sites (tag real peaks; no worldgen). Add sites when enabled — see docs/plugins/DUNGEONS.md siblings / disasters docs.
+# Soft volcano sites (tag real peaks; no worldgen). Add sites when enabled — see docs/plugins/PLUGINS.md siblings / disasters docs.
 volcano-sites-ambient: true
 volcano-site-snap-blocks: 48
 volcano-sites: {}

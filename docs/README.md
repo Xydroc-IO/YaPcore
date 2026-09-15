@@ -2,58 +2,36 @@
 
 ![YaPcore](../branding/yapcore-banner.png)
 
-Enterprise operator and engineering documentation for YaPcore.
-**Markdown under `docs/` is the source of truth** — do not commit PDFs or office exports
-(`docs/pdf/` is gitignored; regenerate locally with `./scripts/export-docs-pdf.sh`).
+Operator docs. Markdown under `docs/` is the source of truth.
 
-| Next step | Doc |
-|-----------|-----|
-| First boot | [Quick Start](start/QUICK_START.md) |
-| Full index | [Wiki](WIKI.md) |
+| Need | Doc |
+|------|-----|
+| First boot | [QUICK_START.md](start/QUICK_START.md) |
+| Releases | [RELEASES.md](start/RELEASES.md) · [RELEASE_NOTES.md](start/RELEASE_NOTES.md) |
+| Secrets | [SECRETS.md](start/SECRETS.md) |
+| Networking / edge / fleet | [NETWORKING.md](network/NETWORKING.md) |
+| YaP Link | [YAP_LINK.md](network/YAP_LINK.md) |
+| Crossplay | [CROSSPLAY.md](network/CROSSPLAY.md) |
+| Clients & packs | [CLIENTS_AND_PACKS.md](network/CLIENTS_AND_PACKS.md) |
+| Plugins | [PLUGINS.md](plugins/PLUGINS.md) |
+| Database | [YAPDB.md](data/YAPDB.md) · [PLAYERDATA.md](data/PLAYERDATA.md) |
+| Gameplay | [GAMEPLAY.md](gameplay/GAMEPLAY.md) |
+| Folia | [YAP_FOLIA_PATCHES.md](folia/YAP_FOLIA_PATCHES.md) |
 | Architecture | [Whitepaper](whitepaper/YAPCORE_WHITEPAPER.md) |
-| Releases & assets | [RELEASES.md](start/RELEASES.md) |
-| AI disclosure | [AI_TRANSPARENCY.md](start/AI_TRANSPARENCY.md) |
-| Help / Discord | [discord.gg/BXbyQk88Da](https://discord.gg/BXbyQk88Da) · [xydroc@yaplabs.us](mailto:xydroc@yaplabs.us) · [Ko-fi](https://ko-fi.com/xydroc) |
+| Legal / AI | [LICENSING.md](start/LICENSING.md) · [AI_TRANSPARENCY.md](start/AI_TRANSPARENCY.md) |
 
----
+## Folders
 
-## By topic
+| Folder | What’s in it |
+|--------|----------------|
+| [start/](start/) | Install, releases, secrets, Windows, legal |
+| [ops/](ops/) | Commands, permissions, dashboard, tune, Grim, integrations |
+| [network/](network/) | Ports, Link, crossplay, packs |
+| [plugins/](plugins/) | Plugin guide + Items / World / Protect / compat |
+| [data/](data/) | YaPDB + playerdata |
+| [gameplay/](gameplay/) | Factions / conquest / regions |
+| [product/](product/) | Bedrock-feel parity |
+| [folia/](folia/) | Patches, soak, cites |
+| [whitepaper/](whitepaper/) | Architecture |
 
-| Folder | Contents |
-|--------|----------|
-| [**start/**](start/) | Quick start, releases, secrets, licensing, [AI transparency](start/AI_TRANSPARENCY.md), Windows |
-| [**ops/**](ops/) | Commands, permissions, dashboard, tune, [production ready](ops/PRODUCTION_READY.md), [code elegance](ops/CODE_ELEGANCE_FOLLOWUP.md) |
-| [**network/**](network/) | Ports, crossplay, nginx, YaP Link (native Bedrock), edge hardening, clients & packs |
-| [**product/**](product/) | [Bedrock-feel parity](product/BEDROCK_FEEL_PARITY.md) contract + [matrix](product/BEDROCK_FEEL_MATRIX.md) |
-| [**geyser-join-reference/**](geyser-join-reference/) | Native join port notes (`YapGeyserSession` / Link Bedrock) |
-| [**plugins/**](plugins/) | Plugin list, modules, skills, stacker, [items](plugins/YAPITEMS.md), compat |
-| [**data/**](data/) | YaPDB, MariaDB, Postgres, SQLite, playerdata |
-| [**gameplay/**](gameplay/) | Factions, conquest, regions |
-| [**folia/**](folia/) | YaP-Folia soak, cite, Canvas parity |
-| [**whitepaper/**](whitepaper/) | Technical architecture |
-
----
-
-## Essential docs
-
-| Document | When to read |
-|----------|--------------|
-| [QUICK_START.md](start/QUICK_START.md) | Install and first boot |
-| [DEFAULTS.md](start/DEFAULTS.md) | First-boot configs |
-| [SECRETS.md](start/SECRETS.md) | Passwords and tokens |
-| [AI_TRANSPARENCY.md](start/AI_TRANSPARENCY.md) | Disclosure of AI-assisted development |
-| [LICENSING.md](start/LICENSING.md) | GPLv3 + third-party notices |
-| [PLUGINS.md](plugins/PLUGINS.md) | Shipped plugins |
-| [MODULES_AND_API.md](plugins/MODULES_AND_API.md) | Modules and API |
-| [CROSSPLAY.md](network/CROSSPLAY.md) | Java + Bedrock paths |
-| [BEDROCK_FEEL_PARITY.md](product/BEDROCK_FEEL_PARITY.md) | Port-don’t-recreate parity contract |
-| [YAPCORE_WHITEPAPER.md](whitepaper/YAPCORE_WHITEPAPER.md) | Architecture deep dive |
-| [CLIENTS_AND_PACKS.md](network/CLIENTS_AND_PACKS.md) | Resource packs + optional Fabric clients |
-
----
-
-## Contributing
-
-[CONTRIBUTING.md](../CONTRIBUTING.md) · [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) · [SECURITY.md](../SECURITY.md) · [AI_TRANSPARENCY.md](start/AI_TRANSPARENCY.md)
-
-Optional local PDF print (gitignored): `./scripts/export-docs-pdf.sh`
+[CONTRIBUTING.md](../CONTRIBUTING.md) · [SECURITY.md](../SECURITY.md)

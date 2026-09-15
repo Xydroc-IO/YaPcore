@@ -29,7 +29,7 @@ For non-security bugs and operator help, see the README [Community & support](RE
 
 ## Operator hardening (baseline)
 
-- Prefer intentional public edges ([EDGE_HARDEN.md](docs/network/EDGE_HARDEN.md)); do not expose pack HTTP or game ports casually.
+- Prefer intentional public edges ([NETWORKING.md](docs/network/NETWORKING.md)); do not expose pack HTTP or game ports casually.
 - Keep dashboard tokens, DB passwords, Discord webhooks, and forwarding secrets out of git — [SECRETS.md](docs/start/SECRETS.md).
 - Understand `online-mode` / offline UUID implications on public networks.
 - Resource-pack URLs should serve trusted bytes; default CDN is GitHub Releases (`yapcore-default.zip`).

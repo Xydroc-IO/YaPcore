@@ -178,7 +178,7 @@ YaPcore also serves files on `:8081` for local/edge proxy use. Operators can
 enable/list packs from the [web dashboard](../ops/WEB_DASHBOARD.md) Packs tab
 (or Control Panel).
 
-See [NETWORKING.md](NETWORKING.md) and [CLOUDFLARE_AND_NGINX.md](CLOUDFLARE_AND_NGINX.md).
+See [NETWORKING.md](NETWORKING.md) and [NETWORKING.md](NETWORKING.md).
 
 ## Ultrawide 21:9 / 32:9 — optional client mod
 
@@ -248,7 +248,7 @@ cd client/yap-staff && ./gradlew build
 # → client/yap-staff/build/libs/yap-staff-1.0.27.jar
 ```
 
-Config: `.minecraft/config/yap-staff.json`. See [yap-staff/README.md](../../client/yap-staff/README.md), [ADMIN_MENU.md](../ops/ADMIN_MENU.md), and [YAPITEMS.md](../plugins/YAPITEMS.md).
+Config: `.minecraft/config/yap-staff.json`. See [yap-staff/README.md](../../client/yap-staff/README.md), [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md), and [YAPITEMS.md](../plugins/YAPITEMS.md).
 
 The Fabric **yap-staff** mod scrolls/scales to the window (scroll position preserved on rebuild), uses a searchable player picker that returns to the calling tool, includes spawn-mobs + give + **YaPItems create** (glow / unbreakable / enchant picker / categorized abilities), and a full YaPPerms ranks editor UI. Update **yap-admin.jar** + **yap-items.jar** on the server.
 

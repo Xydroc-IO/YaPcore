@@ -35,7 +35,7 @@ gradle checkDomainLineLimits           # ≤500-line domain gate
 **AI disclosure:** [docs/start/AI_TRANSPARENCY.md](../docs/start/AI_TRANSPARENCY.md).
 
 See [`plugins/README.md`](../plugins/README.md) for jar names and tiers.
-See [`docs/plugins/MODULES_AND_API.md`](../docs/plugins/MODULES_AND_API.md) for module packaging.
+See [`docs/plugins/PLUGINS.md`](../docs/plugins/PLUGINS.md) for module packaging.
 
 ## YaP Link
 
@@ -48,4 +48,4 @@ See [`docs/plugins/MODULES_AND_API.md`](../docs/plugins/MODULES_AND_API.md) for 
 | `link/plugins/*` | `:yap-link-plugin-*` |
 
 Jar: `yap-first-party/link/native/build/libs/yap-link.jar`  
-Docs: [`docs/network/YAP_LINK_NATIVE.md`](../docs/network/YAP_LINK_NATIVE.md) · [`docs/geyser-join-reference/NATIVE_PORT.md`](../docs/geyser-join-reference/NATIVE_PORT.md)
+Docs: [`docs/network/YAP_LINK.md`](../docs/network/YAP_LINK.md) · [`docs/network/CROSSPLAY.md`](../docs/network/CROSSPLAY.md)

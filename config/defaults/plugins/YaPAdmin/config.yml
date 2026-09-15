@@ -4,7 +4,7 @@
 # Prefer dashboard: Plugin settings (or Gameplay tab) → Save → reload
 
 # YaPAdmin — in-game staff super menu
-# Docs: docs/ops/ADMIN_MENU.md
+# Docs: docs/ops/WEB_DASHBOARD.md
 
 kits:
   - starter

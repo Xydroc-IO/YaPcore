@@ -2,7 +2,7 @@
 
 First-party **Velocity-class** network proxy — `com.yapcore.link.*`, own JVM, no Velocity fork.
 
-**Roadmap:** [docs/network/YAP_LINK_NATIVE.md](../../../docs/network/YAP_LINK_NATIVE.md)
+**Roadmap:** [docs/network/YAP_LINK.md](../../../docs/network/YAP_LINK.md)
 
 ## Build
 

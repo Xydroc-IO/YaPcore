@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>Join state machine lives in {@link YapGeyserSession} (native Geyser join-path port).
  * This class: Floodgate auth → encrypt → empty pack handshake → {@link YapGeyserSession#join}.
  *
- * <p>See {@code docs/geyser-join-reference/NATIVE_PORT.md}.
+ * <p>See {@code docs/network/CROSSPLAY.md}.
  */
 public final class BedrockLoginFlow {
 

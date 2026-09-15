@@ -117,7 +117,7 @@ yap-ranks-auto-apply=true
 # GUI
 gui-enabled=true
 
-# nginx (optional public edge — see docs/NGINX_AND_LOCALHOST.md)
+# nginx (optional public edge — see docs/network/NETWORKING.md)
 nginx-domain=
 nginx-public-port=25565
 nginx-pack-port=80

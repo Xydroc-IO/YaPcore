@@ -1,6 +1,6 @@
 # Shared SQL pool for all YaP plugins (MariaDB/MySQL, PostgreSQL, or SQLite).
 # Point every backend at the SAME database for networked engines.
-# SQLite is single-node only — see docs/data/SQLITE.md.
+# SQLite is single-node only — see docs/data/YAPDB.md.
 
 jdbc:
   # auto | mysql | postgres | sqlite — auto detects from url prefix

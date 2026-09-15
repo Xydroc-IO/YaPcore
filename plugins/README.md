@@ -36,7 +36,7 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-playerdata.jar` | Cross-server sync, auth, session lock, schema — data plane ([PLAYERDATA.md](../docs/data/PLAYERDATA.md)) |
 | `yap-moderation.jar` | Ban/mute/warn/kick + history (`/ban`, `/modhistory`) |
 | `yap-essentials.jar` | Essentials QoL + data-backed cmds (`/bag`, `/home`, `/kit`, `/bal`, `/shop`, …) |
-| `yap-admin.jar` | In-game staff super menu (`/yapadmin`, `/staff`) — [ADMIN_MENU.md](../docs/ops/ADMIN_MENU.md) |
+| `yap-admin.jar` | In-game staff super menu (`/yapadmin`, `/staff`) — [WEB_DASHBOARD.md](../docs/ops/WEB_DASHBOARD.md) |
 | `yap-protect.jar` | Block logging / rollback |
 | `yap-world.jar` | Multi-world + WorldEdit-class tools (`/yapworld`) |
 | `WorldEdit.jar` | WorldEdit API shim (`yap-worldedit-shim`) |
@@ -57,14 +57,14 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-tailor.jar` | Skins / wardrobe / emotes / `yap:presence` channel — [BEDROCK_FEEL_PARITY.md](../docs/product/BEDROCK_FEEL_PARITY.md) |
 | `yap-bedrock-blocks.jar` | Catalog Bedrock port-blocks for JE (`yap:blocks`) |
 | `yap-items.jar` | Custom items — abilities, furniture, recipes (`/yapitems`) — [YAPITEMS.md](../docs/plugins/YAPITEMS.md) |
-| `yap-qol.jar` | Timber axe + area excavator (`/yapqol`) — [YAP_QOL.md](../docs/plugins/YAP_QOL.md) |
+| `yap-qol.jar` | Timber axe + area excavator (`/yapqol`) — [PLUGINS.md](../docs/plugins/PLUGINS.md) |
 
 ### GAMEPLAY (opt-in)
 
 | Jar | Role |
 |-----|------|
-| `yap-skills.jar` | Thin skills — mining / woodcutting / strength (`/skills`) — [SKILLS.md](../docs/plugins/SKILLS.md) |
-| `yap-dungeons.jar` | Instanced procedural dungeons L1–50 + prestige 51–100 — [DUNGEONS.md](../docs/plugins/DUNGEONS.md) |
+| `yap-skills.jar` | Thin skills — mining / woodcutting / strength (`/skills`) — [PLUGINS.md](../docs/plugins/PLUGINS.md) |
+| `yap-dungeons.jar` | Instanced procedural dungeons L1–50 + prestige 51–100 — [PLUGINS.md](../docs/plugins/PLUGINS.md) |
 | `yap-stacker.jar` | PDC mob/item/spawner stacker (`/yapstacker`) |
 | `yap-disasters.jar` | Extreme weather + disasters (`/yapdisaster`) |
 | `yap-leveled-mobs.jar` | Distance-based mob levels (`/yaplevel`) |
@@ -78,13 +78,13 @@ when `-PyapGameplay=true`. CORE fine-tune modules install with `installProductDe
 
 | Jar | How | Notes |
 |-----|-----|-------|
-| `tebex.jar` | `./scripts/fetch-tebex.sh` or `gradle fetchTebex` | Official **GPLv3** Folia store plugin — Hub only · [TEBEX.md](../docs/ops/TEBEX.md) |
+| `tebex.jar` | `./scripts/fetch-tebex.sh` or `gradle fetchTebex` | Official **GPLv3** Folia store plugin — Hub only · [INTEGRATIONS.md](../docs/ops/INTEGRATIONS.md) |
 | `grim.jar` | `./scripts/fetch-grim.sh` or `gradle fetchGrim` | Official **GPLv3** Grim AC — auto-downloaded **disabled** on `seed-defaults.sh`; enable with `./scripts/grim-ac.sh enable` · [GRIM.md](../docs/ops/GRIM.md) |
 
-See [docs/plugins/SKILLS.md](../docs/plugins/SKILLS.md) · [docs/plugins/MODULES_AND_API.md](../docs/plugins/MODULES_AND_API.md) ·
-[docs/plugins/PLACEHOLDERAPI.md](../docs/plugins/PLACEHOLDERAPI.md) ·
-[docs/plugins/PLUGIN_BACKCOMPAT.md](../docs/plugins/PLUGIN_BACKCOMPAT.md) · [docs/plugins/PREGEN.md](../docs/plugins/PREGEN.md) ·
-[docs/plugins/STACKER.md](../docs/plugins/STACKER.md) · [docs/data/YAPDB.md](../docs/data/YAPDB.md) ·
-[docs/data/PLAYERDATA.md](../docs/data/PLAYERDATA.md) · [docs/data/MARIADB.md](../docs/data/MARIADB.md) ·
+See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) · [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) ·
+[docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) ·
+[docs/plugins/PLUGIN_COMPAT.md](../docs/plugins/PLUGIN_COMPAT.md) · [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) ·
+[docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) · [docs/data/YAPDB.md](../docs/data/YAPDB.md) ·
+[docs/data/PLAYERDATA.md](../docs/data/PLAYERDATA.md) · [docs/data/YAPDB.md](../docs/data/YAPDB.md) ·
 [docs/ops/PERMISSIONS.md](../docs/ops/PERMISSIONS.md) ·
-[docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md) · [docs/network/VELOCITY.md](../docs/network/VELOCITY.md).
+[docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md) · [docs/network/YAP_LINK.md](../docs/network/YAP_LINK.md).

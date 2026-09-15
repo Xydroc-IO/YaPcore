@@ -12,8 +12,6 @@ Drop **all** plugin jars into **[`plugins/`](../plugins/)** — one folder.
 
 `folia-kernel/plugins` (and legacy `paper-kernel/plugins`) is a **symlink** to `plugins/` so the game and YaP share the same directory. On first start, jars left under an old real kernel `plugins/` are migrated automatically.
 
-**Curated matrix (Phase 16):** [PLUGIN_COMPAT_MATRIX.md](PLUGIN_COMPAT_MATRIX.md) — 50+ plugins with native replacements and dashboard badges.
-
 ## Quick answer
 
 | Question | Answer |
@@ -21,8 +19,8 @@ Drop **all** plugin jars into **[`plugins/`](../plugins/)** — one folder.
 | Will Folia-aware plugins work? | **Yes** — product path is Folia (same expectations as stock Folia) |
 | Will LuckPerms / WorldEdit / Vault / most **Paper** plugins work? | **Often no** on Folia (same as stock Folia). Use Folia builds, or legacy `game-authority=paper` for Paper benches |
 | Is Folia API coverage on product path? | **Yes** — real Folia owns the API |
-| Is Paper API complete on Paper path? | **Yes** — legacy Paper authority ([PAPER_API_COVERAGE.md](PAPER_API_COVERAGE.md)) |
-| Can 1.20–1.21 plugins run on 26.2? | **Often** on Paper path — Tier A+B rewrite ([PLUGIN_BACKCOMPAT.md](PLUGIN_BACKCOMPAT.md)); Folia still needs Folia-aware jars |
+| Is Paper API complete on Paper path? | **Yes** — legacy Paper authority ([PLUGIN_COMPAT.md](PLUGIN_COMPAT.md)) |
+| Can 1.20–1.21 plugins run on 26.2? | **Often** on Paper path — Tier A+B rewrite ([PLUGIN_COMPAT.md](PLUGIN_COMPAT.md)); Folia still needs Folia-aware jars |
 | Can I use Folia-only plugins? | **Yes** on the Folia product path |
 | Do I need two plugin folders? | **No** — only `plugins/` |
 | Is every NMS/reflection plugin guaranteed? | **No** — same caveats as stock Folia/Paper |
@@ -100,7 +98,7 @@ When `game-authority` is neither Folia nor Paper, YaP’s Compatibility Bridge m
 | Real world / entity / NMS depth | Use Folia (product) or Paper (legacy) + `plugins/` |
 | Folia region schedulers | **Supported on Folia product path** |
 
-Details: [PLUGINS.md](PLUGINS.md) · Brigadier/NMS notes: [BRIGADIER_NMS_EVENTS.md](BRIGADIER_NMS_EVENTS.md).
+Details: [PLUGINS.md](PLUGINS.md) · 
 
 ## Phase 3 note (legacy Paper only)
 

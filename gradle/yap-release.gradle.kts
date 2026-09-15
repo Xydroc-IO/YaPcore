@@ -321,13 +321,13 @@ tasks.register("assembleRelease") {
             --------------------------------
             LICENSE                 GNU GPLv3 (YaPcore first-party) — docs/start/LICENSING.md
             yapcore.jar
-            yap-link.jar          native network proxy (see docs/network/YAP_LINK_NATIVE.md)
+            yap-link.jar          native network proxy (see docs/network/YAP_LINK.md)
             link-data/            Link config + plugins (link.properties, plugins/*.jar)
             plugins/  all first-party jars (CORE+NETWORK+GAMEPLAY: skills, stacker, disasters, …)
                       Optional: tebex.jar (GPLv3) via ./scripts/fetch-tebex.sh — Hub store
                       Optional: grim.jar.disabled (GPLv3) — fetched on seed-defaults; enable via grim-ac.sh
             modules/  CORE + GAMEPLAY fine-tune modules
-                      (gradle installFineTuneModules · docs/plugins/MODULES_AND_API.md)
+                      (gradle installFineTuneModules · docs/plugins/PLUGINS.md)
             resourcepacks/yapcore-default.zip
             resourcepacks/yapcore-default.mcpack
             config/
@@ -416,7 +416,7 @@ tasks.register("assembleRelease") {
               ./ensure-postgres.sh --server-id lobby
               ./configure-db.sh --engine sqlite --server-id lobby
               # multi-backend: ./configure-db.sh --host <db-ip> --server-id survival
-              See docs/data/YAPDB.md · MARIADB.md · POSTGRES.md · SQLITE.md
+              See docs/data/YAPDB.md · YAPDB.md · YAPDB.md · YAPDB.md
 
             Folia (product game authority)
             ------------------------------
@@ -461,7 +461,7 @@ tasks.register("assembleRelease") {
               configure-db.cmd
               rem multi-backend: Configure-PlayerData.ps1 -HostAddress <db-ip> -ServerId survival
               stop-mariadb.cmd
-              See docs\MARIADB.md
+              See docs\YAPDB.md
 
             Folia (product game authority)
             ------------------------------

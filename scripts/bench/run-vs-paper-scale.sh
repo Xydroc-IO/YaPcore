@@ -52,4 +52,4 @@ else
   fi
   echo "Results: $ROOT/bench/results/${STAMP}-${SCENARIO}-*.json"
 fi
-echo "Document under docs/folia/PAPER_PURPUR_SCALE.md — do not claim single-thread MSPT win."
+echo "Document under docs/folia/YAP_FOLIA_PATCHES.md — do not claim single-thread MSPT win."

@@ -8,7 +8,7 @@ Install the Tebex (or any store) **game-server** plugin on your **Hub/lobby** Fo
 # Or Hub console: tebex secret <your-key>
 ```
 
-Full guide: [docs/ops/TEBEX.md](../../docs/ops/TEBEX.md) · License notices: [third-party/tebex/](../../third-party/tebex/)
+Full guide: [docs/ops/INTEGRATIONS.md](../../docs/ops/INTEGRATIONS.md) · License notices: [third-party/tebex/](../../third-party/tebex/)
 
 ## Placeholder
 

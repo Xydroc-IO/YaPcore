@@ -94,7 +94,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
             getLogger().severe("Failed to open MariaDB/MySQL — disabling YaPPlayerData: " + e.getMessage());
             getLogger().severe("Prefer shared YaPDB (yap-db.jar). JDBC must match deploy/mariadb/.env (port often 3316).");
             getLogger().severe("Setup: ./scripts/db/ensure-db.sh --server-id <id>   (or Windows Start-MariaDB + Configure-Db)");
-            getLogger().severe("Docs: docs/data/YAPDB.md · docs/data/MARIADB.md");
+            getLogger().severe("Docs: docs/data/YAPDB.md · docs/data/YAPDB.md");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }

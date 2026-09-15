@@ -13,4 +13,4 @@ Default host port **5432** (`YAP_PG_PORT`). JDBC:
 
 `jdbc:postgresql://127.0.0.1:5432/yap_playerdata`
 
-See [docs/data/POSTGRES.md](../../docs/data/POSTGRES.md).
+See [docs/data/YAPDB.md](../../docs/data/YAPDB.md).

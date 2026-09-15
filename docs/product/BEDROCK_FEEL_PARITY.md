@@ -15,7 +15,7 @@ Catalog content is **ported from Bedrock**, not recreated.
 | Runtime glue (Fabric/Folia/bridge) | Empty persona stubs, CMD/NoteBlock fakes for catalog blocks |
 | Frozen catalog + explicit band bump | Auto-chasing every Mojang Bedrock update |
 
-Green in [`BEDROCK_FEEL_MATRIX.md`](BEDROCK_FEEL_MATRIX.md) means: JE output is **convert-verified** against the Bedrock extract (golden hash), not “looks similar.”
+**Green** means JE output is **convert-verified** against the Bedrock extract (golden hash), not “looks similar.”
 
 ## Match pipeline
 
@@ -34,7 +34,7 @@ Resources live under:
 
 ## Pillars (frozen v1)
 
-Statuses live only in [`BEDROCK_FEEL_MATRIX.md`](BEDROCK_FEEL_MATRIX.md) as **Green** or **Out**. Never Partial.
+Status is **Green** or **Out** only — never Partial.
 
 | Pillar | Source | Phase |
 |--------|--------|-------|
@@ -43,7 +43,7 @@ Statuses live only in [`BEDROCK_FEEL_MATRIX.md`](BEDROCK_FEEL_MATRIX.md) as **Gr
 | Movement | Bedrock constant extract | 3 — Green (incl. face_assist) |
 | Blocks | Bedrock palette + resource extracts | 4 — Green |
 | JE UX | Presence UI over same records | 5 — Green (Fabric wardrobe/emotes; BE forms) |
-| Release | client_mods + matrix smoke | 6 — Green |
+| Release | client_mods + parity smoke | 6 — Green |
 
 ## Config
 
@@ -143,4 +143,4 @@ Every fixture and converted artifact is recorded in `provenance/manifest.v1.json
 - [x] `publishReleasesFolder` copies client_mods + pack + provenance pin when present
 - [x] Dashboard status card (`bedrockFeel`) for band / mods / pack / provenance
 - [x] `./scripts/parity/smoke-bedrock-feel.sh` matrix smoke
-- [x] Docs: matrix Green; RELEASES / client README aligned
+- [x] Docs: parity Green; RELEASES / client README aligned

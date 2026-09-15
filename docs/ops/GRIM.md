@@ -1,9 +1,7 @@
 # Grim Anticheat (optional third-party)
 
 **Competitive / PvP: enable Grim.** YaPGuard is a lightweight heuristics default only —
-it is **not** sufficient for competitive anti-cheat claims. See [ANTICHEAT.md](ANTICHEAT.md).
-
-**Grim AC** is the recommended **heavy** anti-cheat for PvP / competitive networks.
+it is **not** sufficient for competitive anti-cheat claims. **Grim AC** is the recommended **heavy** anti-cheat for PvP / competitive networks.
 YaPcore ships **YaPGuard** as a lightweight native default (always on). **Grim is
 downloaded automatically on first setup** but **not loaded** until you enable it.
 
@@ -77,7 +75,7 @@ Restart Folia after enable/disable. Config appears under `plugins/GrimAC/`.
 - **YaPGuard only** — leave Grim disabled (default after setup)
 - **Grim + YaPGuard alerts** — Grim punishes; YaPGuard checks off, alerts optional
 
-See [ANTICHEAT.md](ANTICHEAT.md) for the locked product split (regions ≠ AC).
+Regions/claims (YaPRegions / PlayerData) and Protect are **not** anti-cheat — they are WorldGuard/CoreProtect-class.
 
 ## YaP stack notes
 
@@ -97,6 +95,5 @@ Release trees ship `grim.jar.disabled` when a Grim jar was present at build time
 
 ## Related
 
-- [ANTICHEAT.md](ANTICHEAT.md) — YaPGuard vs regions vs third-party AC
-- [TEBEX.md](TEBEX.md) — same optional-jar fetch pattern
+- [INTEGRATIONS.md](INTEGRATIONS.md) — same optional-jar fetch pattern
 - [LICENSING.md](../start/LICENSING.md) — GPLv3 third-party redistribution

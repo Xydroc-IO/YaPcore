@@ -2,7 +2,7 @@
 
 One place for day-to-day knobs: **`config/`**. Optional **fine-tune modules** in
 `modules/` make each surface discoverable (`provides` / Modules GUI / `FINE_TUNE.txt`)
-without forking engines — see [MODULES_AND_API.md](../plugins/MODULES_AND_API.md).
+without forking engines — see [PLUGINS.md](../plugins/PLUGINS.md).
 
 ## Desktop Tune vs in-game admin
 
@@ -10,7 +10,7 @@ without forking engines — see [MODULES_AND_API.md](../plugins/MODULES_AND_API.
 |---------|-------------|
 | **Swing Tune GUI** (desktop) | Edit `config/` files, Paper templates, module jars — best for cold restarts and packaging |
 | **Web dashboard** (`:8080`) | Remote ops: plugins, ranks, regions, map, Discord, console — no SSH |
-| **In-game admin menu** (`/yapadmin`, `/staff`) | Live staff on the server: give items/kits, teleport, moderation shortcuts — see [ADMIN_MENU.md](ADMIN_MENU.md) |
+| **In-game admin menu** (`/yapadmin`, `/staff`) | Live staff on the server: give items/kits, teleport, moderation shortcuts — see [WEB_DASHBOARD.md](WEB_DASHBOARD.md) |
 
 Tune does **not** replace the admin menu; they target different operators and lifecycles.
 
@@ -48,7 +48,7 @@ Change live via dashboard **Server setup** (`ram-mb`) or edit `config/server.pro
 
 ### Soak / bench note (not a host requirement)
 
-12h soak-proven runs recorded YaP-Folia heap medians roughly **~1.0–1.1 GB** under that load profile ([REAL_GAINS.md](../folia/REAL_GAINS.md) / soak logs). That shows the game JVM can sit well under a 4 GB Folia cap on light–moderate load — size up for player count, farms, and map plugins, not for idle soak alone.
+12h soak-proven runs recorded YaP-Folia heap medians roughly **~1.0–1.1 GB** under that load profile ([YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) / soak logs). That shows the game JVM can sit well under a 4 GB Folia cap on light–moderate load — size up for player count, farms, and map plugins, not for idle soak alone.
 
 ## Layout
 

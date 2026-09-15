@@ -360,7 +360,7 @@ public final class DashboardStatusApi {
         m.put("clientModsPath", "dist/client-mods/client_mods.zip");
         Path pack = root.resolve("resourcepacks/yap-bedrock-blocks/EXTRACT_REPORT.json");
         m.put("blockPackExtractOk", Files.isRegularFile(pack));
-        m.put("matrixDoc", "docs/product/BEDROCK_FEEL_MATRIX.md");
+        m.put("matrixDoc", "docs/product/BEDROCK_FEEL_PARITY.md");
         m.put("smokeScript", "scripts/parity/smoke-bedrock-feel.sh");
         m.put("requiredJeMods", List.of("yap-presence", "yap-blocks"));
         m.put("summary", cfg.isParityBedrockFeel()

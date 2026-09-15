@@ -79,14 +79,14 @@ print("OK client_mods.zip entries=", len(names))
 PY
 fi
 
-echo "==> Matrix doc claims Phase 5–6 Green"
-MATRIX="docs/product/BEDROCK_FEEL_MATRIX.md"
-if ! rg -q 'JE presence UX \(wardrobe screens\) \| \*\*Green\*\*' "$MATRIX"; then
-  echo "FAIL: Phase 5 wardrobe row not Green in matrix" >&2
+echo "==> Parity doc claims Phase 5–6 Green"
+PARITY="docs/product/BEDROCK_FEEL_PARITY.md"
+if ! rg -q 'JE UX \| Presence UI.*5 — Green' "$PARITY"; then
+  echo "FAIL: Phase 5 JE UX not Green in parity doc" >&2
   FAIL=1
 fi
-if ! rg -q 'Release packaging \| \*\*Green\*\*' "$MATRIX"; then
-  echo "FAIL: Phase 6 release row not Green in matrix" >&2
+if ! rg -q 'Release \| client_mods.*6 — Green' "$PARITY"; then
+  echo "FAIL: Phase 6 release not Green in parity doc" >&2
   FAIL=1
 fi
 

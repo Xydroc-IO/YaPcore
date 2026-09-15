@@ -3,8 +3,8 @@
 One shared database for **YaPDB** (`yap-db.jar`) and **YaPPlayerData** —
 works for a single YaPcore instance or many backends behind YaP Link.
 
-**Other engines:** PostgreSQL → [`docs/data/POSTGRES.md`](../../docs/data/POSTGRES.md) ·
-SQLite → [`docs/data/SQLITE.md`](../../docs/data/SQLITE.md) · overview →
+**Other engines:** PostgreSQL → [`docs/data/YAPDB.md`](../../docs/data/YAPDB.md) ·
+SQLite → [`docs/data/YAPDB.md`](../../docs/data/YAPDB.md) · overview →
 [`docs/data/YAPDB.md`](../../docs/data/YAPDB.md).
 
 ## Quick start (recommended)
@@ -54,4 +54,4 @@ Firewall: only expose `3306` to your game hosts (or keep bind on localhost + SSH
 Install MariaDB/MySQL from your OS (apt, winget, Homebrew), create DB/user matching
 `.env.example`, then run `configure-playerdata.sh --host …`.
 
-See [docs/data/MARIADB.md](../../docs/data/MARIADB.md).
+See [docs/data/YAPDB.md](../../docs/data/YAPDB.md).

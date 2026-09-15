@@ -16,8 +16,8 @@ that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when m
 | Resource pack prompt | Yes when `server.properties` comes from defaults/example |
 | Premium Java skins | Yes via Link offline texture lookup + `velocity:player_info` (requires Link in front) |
 | YaPPerms starter ranks | Yes (`apply-starter-pack-on-first-boot` + `yap-ranks-auto-apply`) |
-| YaPFactions / guilds | **Off** (`enabled: false`) — opt in for faction servers · [FACTIONS.md](../gameplay/FACTIONS.md) |
-| YaPConquest / chunk land | **Off** (`enabled: false`) — hardcore grid; needs YaPFactions · [CONQUEST.md](../gameplay/CONQUEST.md) |
+| YaPFactions / guilds | **Off** (`enabled: false`) — opt in for faction servers · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
+| YaPConquest / chunk land | **Off** (`enabled: false`) — hardcore grid; needs YaPFactions · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
 | YaPSkills / Stacker / Dungeons / Disasters / GameplayKnobs | **Off** until opted in |
 | Economy / claims / moderation / SQL plugins | **Needs SQL** (MariaDB default; Postgres or SQLite OK — [YAPDB.md](../data/YAPDB.md)) |
 | Discord webhooks | Needs your webhook URLs |

@@ -180,4 +180,4 @@ Inventory/world mutates use `YapSched.entity` / `YapSched.region`. No global sch
 
 ## See also
 
-[COMMANDS.md](../ops/COMMANDS.md) · [ADMIN_MENU.md](../ops/ADMIN_MENU.md) · [PLUGIN_COMPAT_MATRIX.md](PLUGIN_COMPAT_MATRIX.md) · [plugins/README.md](../../plugins/README.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md)
+[COMMANDS.md](../ops/COMMANDS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) · [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md) · [plugins/README.md](../../plugins/README.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md)
