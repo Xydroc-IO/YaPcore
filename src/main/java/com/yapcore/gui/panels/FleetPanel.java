@@ -1,5 +1,6 @@
 package com.yapcore.gui.panels;
 
+import com.yapcore.gui.panels.fleet.DatabaseSetupDialog;
 import com.yapcore.gui.panels.fleet.FleetBootstrapDialog;
 import com.yapcore.gui.panels.fleet.FleetInstanceDialog;
 import com.yapcore.gui.panels.fleet.FleetNodeDialog;
@@ -94,6 +95,7 @@ public final class FleetPanel {
         actions.add(btn("Enable fleet", this::enableFleet));
         actions.add(btn("Add server…", this::createInstance));
         actions.add(btn("Bootstrap…", this::bootstrap));
+        actions.add(btn("Database…", this::databaseSetup));
         actions.add(btn("Sync Link", this::syncLink));
         actions.add(btn("Node…", this::addNode));
         actions.add(new JLabel("Node"));
@@ -336,6 +338,12 @@ public final class FleetPanel {
         }
         run(() -> server.fleet().bootstrap(
                 d.jdbcUrl(), d.createSurvival(), d.enableVelocity(), d.startInstances()));
+    }
+
+    private void databaseSetup() {
+        java.awt.Frame frame = (java.awt.Frame) javax.swing.SwingUtilities.getWindowAncestor(root);
+        DatabaseSetupDialog d = new DatabaseSetupDialog(frame, server.getRootDir());
+        d.setVisible(true);
     }
 
     private void syncLink() {

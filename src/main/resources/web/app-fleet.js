@@ -272,7 +272,7 @@
   });
   $("fleetBootstrap").onclick = async () => {
     const engine = prompt(
-      "Database engine: mysql | postgres | sqlite | skip\n(See docs/data/YAPDB.md)",
+      "Database engine: mysql | postgres | sqlite | skip\n(Or use the Database card above for Docker + setup)",
       "mysql"
     );
     if (engine === null) return;
@@ -281,7 +281,7 @@
     if (e === "postgres" || e === "postgresql") {
       jdbcUrl = "jdbc:postgresql://127.0.0.1:5432/yap_playerdata";
     } else if (e === "sqlite") {
-      jdbcUrl = "jdbc:sqlite:plugins/YaPDB/yap.db";
+      jdbcUrl = "jdbc:sqlite:data/yap.db";
     } else if (e === "skip" || e === "") {
       jdbcUrl = "";
     } else {
@@ -300,6 +300,7 @@
       startInstances: confirm("Start auto-start instances now?"),
     });
     toast("Bootstrap complete");
+    if (window.YapDatabase?.refresh) window.YapDatabase.refresh();
   };
   $("fleetConsoleSend").onclick = async () => {
     const id = $("fleetConsoleId").value.trim() || "lobby";

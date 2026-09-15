@@ -47,8 +47,12 @@ public final class DashboardKitsApi {
                 case "give" -> handleGive(ex, body, false);
                 case "grant" -> handleGive(ex, body, true);
                 case "reload" -> {
-                    String result = live("yapdata reload");
-                    DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result));
+                    Map<String, Object> resp = new LinkedHashMap<>();
+                    resp.put("ok", true);
+                    resp.put("fleetSync", fleetSharedSync());
+                    resp.put("result", live("yapdata reload"));
+                    resp.put("fleetReload", fleetSharedReload());
+                    DashboardHttp.json(ex, 200, resp);
                 }
                 default -> DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
             }
@@ -76,7 +80,9 @@ public final class DashboardKitsApi {
             Map<String, Object> resp = new LinkedHashMap<>();
             resp.put("ok", true);
             resp.put("kit", id);
+            resp.put("fleetSync", fleetSharedSync());
             resp.put("reload", live("yapdata reload"));
+            resp.put("fleetReload", fleetSharedReload());
             resp.put("kits", DashboardKits.listKits(root));
             DashboardHttp.json(ex, 200, resp);
         } catch (Exception e) {
@@ -92,11 +98,14 @@ public final class DashboardKitsApi {
         }
         try {
             DashboardKits.deleteKit(root, id);
-            DashboardHttp.json(ex, 200, Map.of(
-                    "ok", true,
-                    "kit", id,
-                    "reload", live("yapdata reload"),
-                    "kits", DashboardKits.listKits(root)));
+            Map<String, Object> resp = new LinkedHashMap<>();
+            resp.put("ok", true);
+            resp.put("kit", id);
+            resp.put("fleetSync", fleetSharedSync());
+            resp.put("reload", live("yapdata reload"));
+            resp.put("fleetReload", fleetSharedReload());
+            resp.put("kits", DashboardKits.listKits(root));
+            DashboardHttp.json(ex, 200, resp);
         } catch (Exception e) {
             DashboardHttp.json(ex, 500, Map.of("error", e.getMessage() == null ? "delete failed" : e.getMessage()));
         }
@@ -111,12 +120,15 @@ public final class DashboardKitsApi {
         }
         try {
             DashboardKits.cloneKit(root, from, to);
-            DashboardHttp.json(ex, 200, Map.of(
-                    "ok", true,
-                    "from", from,
-                    "kit", to,
-                    "reload", live("yapdata reload"),
-                    "kits", DashboardKits.listKits(root)));
+            Map<String, Object> resp = new LinkedHashMap<>();
+            resp.put("ok", true);
+            resp.put("from", from);
+            resp.put("kit", to);
+            resp.put("fleetSync", fleetSharedSync());
+            resp.put("reload", live("yapdata reload"));
+            resp.put("fleetReload", fleetSharedReload());
+            resp.put("kits", DashboardKits.listKits(root));
+            DashboardHttp.json(ex, 200, resp);
         } catch (Exception e) {
             DashboardHttp.json(ex, 500, Map.of("error", e.getMessage() == null ? "clone failed" : e.getMessage()));
         }
@@ -139,6 +151,33 @@ public final class DashboardKitsApi {
             return result == null ? "" : result;
         } catch (Exception e) {
             return e.getMessage() == null ? "game server not running" : e.getMessage();
+        }
+    }
+
+    private Object fleetSharedSync() {
+        try {
+            if (!server.fleet().isEnabled()) {
+                // Still push kits.yml into fleet/instances trees when present.
+                return Map.of(
+                        "ok", true,
+                        "filesWritten",
+                        com.yapcore.fleet.local.InstanceLayout.syncSharedCatalogDataToLocalFleet(
+                                server.getRootDir()));
+            }
+            return server.fleet().syncSharedCatalog();
+        } catch (Exception e) {
+            return Map.of("ok", false, "error", e.getMessage() == null ? "sync failed" : e.getMessage());
+        }
+    }
+
+    private Object fleetSharedReload() {
+        try {
+            if (!server.fleet().isEnabled()) {
+                return Map.of("ok", true, "results", List.of());
+            }
+            return server.fleet().reloadSharedCatalogOnRunning();
+        } catch (Exception e) {
+            return Map.of("ok", false, "error", e.getMessage() == null ? "reload failed" : e.getMessage());
         }
     }
 

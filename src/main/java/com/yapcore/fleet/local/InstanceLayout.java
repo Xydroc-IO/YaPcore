@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Locale;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -37,6 +38,9 @@ public final class InstanceLayout {
         Files.createDirectories(dir);
         ensureInstancePluginsDir(dir);
         seedPluginsFromRoot(rootDir, dir);
+        seedPluginDataFromRoot(rootDir, dir);
+        // Catalog is the network source of truth for shared defs (items/kits/QoL/JDBC).
+        syncSharedCatalogData(rootDir, dir);
         Path jar = FoliaFiles.ensureFoliaJar(rootDir, dir, config);
         FoliaFiles.writeEula(dir);
         String bind = instance.bind();
@@ -115,6 +119,239 @@ public final class InstanceLayout {
         }
     }
 
+    /**
+     * Copy missing plugin data files from the root catalog (e.g. {@code plugins/YaPItems/items/custom})
+     * into the instance tree. Never overwrites — first-boot only. Prefer
+     * {@link #syncSharedCatalogData} for network-wide definition sync.
+     */
+    public static void seedPluginDataFromRoot(Path rootDir, Path instanceDir) throws IOException {
+        Path rootPlugins = rootDir.resolve("plugins");
+        Path localPlugins = instanceDir.resolve("plugins");
+        if (!Files.isDirectory(rootPlugins) || Files.isSymbolicLink(localPlugins)) {
+            return;
+        }
+        Files.createDirectories(localPlugins);
+        int copied = 0;
+        // Product data folders operators edit in the catalog and expect on every backend.
+        for (String folder : List.of("YaPItems", "YaP-QoL", "YaPPlayerData", "YaPDB")) {
+            Path srcRoot = resolvePluginFolder(rootPlugins, folder);
+            if (srcRoot == null) {
+                continue;
+            }
+            Path destRoot = localPlugins.resolve(srcRoot.getFileName().toString());
+            copied += copyTreeIfMissing(srcRoot, destRoot);
+        }
+        if (copied > 0) {
+            LOG.info("Seeded " + copied + " missing plugin data file(s) → " + localPlugins);
+        }
+    }
+
+    /**
+     * Push catalog-owned shared definitions into one instance so the fleet behaves like one DB:
+     * custom items, kits.yml, QoL knobs, and YaPDB JDBC config stay identical across backends.
+     * Never touches {@code YaPPlayerData/config.yml} ({@code server-id} is per-instance).
+     *
+     * @return number of files written or updated
+     */
+    public static int syncSharedCatalogData(Path rootDir, Path instanceDir) throws IOException {
+        Path rootPlugins = rootDir.resolve("plugins");
+        Path localPlugins = instanceDir.resolve("plugins");
+        if (!Files.isDirectory(rootPlugins) || Files.isSymbolicLink(localPlugins)) {
+            return 0;
+        }
+        Files.createDirectories(localPlugins);
+        int written = 0;
+        written += syncRelativeTree(rootPlugins, localPlugins, Path.of("YaPItems", "items"));
+        written += syncRelativeFile(rootPlugins, localPlugins, Path.of("YaPItems", "furniture.yml"));
+        written += syncRelativeFile(rootPlugins, localPlugins, Path.of("YaPPlayerData", "kits.yml"));
+        written += syncRelativeFile(rootPlugins, localPlugins, Path.of("YaP-QoL", "config.yml"));
+        written += syncRelativeFile(rootPlugins, localPlugins, Path.of("YaPDB", "config.yml"));
+        if (written > 0) {
+            LOG.info("Synced " + written + " shared catalog file(s) → " + localPlugins);
+        }
+        return written;
+    }
+
+    /**
+     * Sync shared catalog definitions into every local {@code fleet/instances/*} tree.
+     * Safe to call when fleet is enabled or when the dashboard edits kits/items in the catalog.
+     */
+    public static int syncSharedCatalogDataToLocalFleet(Path rootDir) throws IOException {
+        Path instances = rootDir.resolve("fleet/instances");
+        if (!Files.isDirectory(instances)) {
+            return 0;
+        }
+        int total = 0;
+        try (Stream<Path> dirs = Files.list(instances)) {
+            for (Path inst : dirs.filter(Files::isDirectory).toList()) {
+                total += syncSharedCatalogData(rootDir, inst);
+            }
+        }
+        return total;
+    }
+
+    /** Copy one catalog-relative file under {@code plugins/} to all local fleet instances. */
+    public static int syncCatalogRelativeToLocalFleet(Path rootDir, Path relativeUnderPlugins)
+            throws IOException {
+        Path rootPlugins = rootDir.resolve("plugins");
+        Path src = rootPlugins.resolve(relativeUnderPlugins);
+        if (!Files.isRegularFile(src)) {
+            return 0;
+        }
+        Path instances = rootDir.resolve("fleet/instances");
+        if (!Files.isDirectory(instances)) {
+            return 0;
+        }
+        int written = 0;
+        try (Stream<Path> dirs = Files.list(instances)) {
+            for (Path inst : dirs.filter(Files::isDirectory).toList()) {
+                Path localPlugins = inst.resolve("plugins");
+                if (Files.isSymbolicLink(localPlugins)) {
+                    continue;
+                }
+                written += syncRelativeFile(rootPlugins, localPlugins, relativeUnderPlugins);
+            }
+        }
+        return written;
+    }
+
+    private static int syncRelativeTree(Path rootPlugins, Path localPlugins, Path relative)
+            throws IOException {
+        Path srcRoot = resolveNested(rootPlugins, relative);
+        if (srcRoot == null || !Files.isDirectory(srcRoot)) {
+            return 0;
+        }
+        Path destRoot = localPlugins.resolve(relative);
+        return copyTreeReplaceChanged(srcRoot, destRoot);
+    }
+
+    private static int syncRelativeFile(Path rootPlugins, Path localPlugins, Path relative)
+            throws IOException {
+        Path src = resolveNestedFile(rootPlugins, relative);
+        if (src == null || !Files.isRegularFile(src)) {
+            return 0;
+        }
+        // Keep destination folder casing if it already exists (Folia may rename).
+        Path destFolder = resolvePluginFolder(localPlugins, relative.getName(0).toString());
+        Path dest = destFolder != null
+                ? destFolder.resolve(relative.subpath(1, relative.getNameCount()))
+                : localPlugins.resolve(relative);
+        return copyFileReplaceChanged(src, dest);
+    }
+
+    private static Path resolveNested(Path rootPlugins, Path relative) throws IOException {
+        Path direct = rootPlugins.resolve(relative);
+        if (Files.isDirectory(direct)) {
+            return direct;
+        }
+        Path folder = resolvePluginFolder(rootPlugins, relative.getName(0).toString());
+        if (folder == null) {
+            return null;
+        }
+        if (relative.getNameCount() == 1) {
+            return folder;
+        }
+        Path nested = folder.resolve(relative.subpath(1, relative.getNameCount()));
+        return Files.isDirectory(nested) ? nested : null;
+    }
+
+    private static Path resolveNestedFile(Path rootPlugins, Path relative) throws IOException {
+        Path direct = rootPlugins.resolve(relative);
+        if (Files.isRegularFile(direct)) {
+            return direct;
+        }
+        Path folder = resolvePluginFolder(rootPlugins, relative.getName(0).toString());
+        if (folder == null || relative.getNameCount() < 2) {
+            return null;
+        }
+        Path nested = folder.resolve(relative.subpath(1, relative.getNameCount()));
+        return Files.isRegularFile(nested) ? nested : null;
+    }
+
+    private static Path resolvePluginFolder(Path pluginsRoot, String folder) throws IOException {
+        if (!Files.isDirectory(pluginsRoot)) {
+            return null;
+        }
+        Path direct = pluginsRoot.resolve(folder);
+        if (Files.isDirectory(direct)) {
+            return direct;
+        }
+        try (Stream<Path> s = Files.list(pluginsRoot)) {
+            return s.filter(Files::isDirectory)
+                    .filter(p -> p.getFileName().toString().equalsIgnoreCase(folder))
+                    .findFirst()
+                    .orElse(null);
+        }
+    }
+
+    private static int copyTreeIfMissing(Path srcRoot, Path destRoot) throws IOException {
+        int copied = 0;
+        if (!Files.isDirectory(srcRoot)) {
+            return 0;
+        }
+        try (Stream<Path> walk = Files.walk(srcRoot)) {
+            for (Path src : walk.toList()) {
+                if (!Files.isRegularFile(src)) {
+                    continue;
+                }
+                String name = src.getFileName().toString();
+                if (name.equals(".gitkeep") || name.endsWith(".disabled")) {
+                    continue;
+                }
+                Path rel = srcRoot.relativize(src);
+                Path dest = destRoot.resolve(rel);
+                if (Files.isRegularFile(dest)) {
+                    continue;
+                }
+                Files.createDirectories(dest.getParent());
+                Files.copy(src, dest, StandardCopyOption.COPY_ATTRIBUTES);
+                copied++;
+            }
+        }
+        return copied;
+    }
+
+    private static int copyTreeReplaceChanged(Path srcRoot, Path destRoot) throws IOException {
+        int written = 0;
+        if (!Files.isDirectory(srcRoot)) {
+            return 0;
+        }
+        try (Stream<Path> walk = Files.walk(srcRoot)) {
+            for (Path src : walk.toList()) {
+                if (!Files.isRegularFile(src)) {
+                    continue;
+                }
+                String name = src.getFileName().toString();
+                if (name.equals(".gitkeep") || name.endsWith(".disabled")) {
+                    continue;
+                }
+                Path rel = srcRoot.relativize(src);
+                written += copyFileReplaceChanged(src, destRoot.resolve(rel));
+            }
+        }
+        return written;
+    }
+
+    private static int copyFileReplaceChanged(Path src, Path dest) throws IOException {
+        if (Files.isRegularFile(dest) && sameFileBytes(src, dest)) {
+            return 0;
+        }
+        Files.createDirectories(dest.getParent());
+        Files.copy(src, dest, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.COPY_ATTRIBUTES);
+        return 1;
+    }
+
+    private static boolean sameFileBytes(Path a, Path b) {
+        try {
+            if (Files.size(a) != Files.size(b)) {
+                return false;
+            }
+            return Files.mismatch(a, b) < 0;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
     /** Count enabled or hard-disabled plugin jars (0 if missing). */
     public static int countPluginJars(Path rootDir, FleetInstance instance) {
         Path dir = dir(rootDir, instance).resolve("plugins");
@@ -150,6 +387,8 @@ public final class InstanceLayout {
         }
         ensureInstancePluginsDir(instDir);
         seedPluginsFromRoot(rootDir, instDir);
+        seedPluginDataFromRoot(rootDir, instDir);
+        syncSharedCatalogData(rootDir, instDir);
         return countPluginJars(rootDir, instance);
     }
 

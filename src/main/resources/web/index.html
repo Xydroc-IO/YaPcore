@@ -826,6 +826,32 @@
             <button type="button" id="fleetSyncLink">Sync backends from fleet</button>
           </div>
         </div>
+        <div class="card" id="fleetDbCard" style="margin-bottom:14px">
+          <h3>Database (YaPDB)</h3>
+          <p class="muted" style="margin:6px 0 10px">
+            Pick MariaDB, PostgreSQL, or SQLite. MariaDB/Postgres can start packaged Docker;
+            SQLite is single-node only (no Docker). Setup writes JDBC and syncs fleet backends.
+          </p>
+          <div class="form-grid" style="margin-bottom:10px">
+            <label>Engine
+              <select id="dbEngine">
+                <option value="mysql">MariaDB / MySQL (Docker)</option>
+                <option value="postgres">PostgreSQL (Docker)</option>
+                <option value="sqlite">SQLite (single-node)</option>
+              </select>
+            </label>
+            <label>server-id <input id="dbServerId" value="lobby" placeholder="lobby"/></label>
+          </div>
+          <div class="toolbar" style="margin:0 0 8px">
+            <button type="button" class="primary" id="dbEnsure">Set up database</button>
+            <button type="button" id="dbStartDocker">Start Docker</button>
+            <button type="button" id="dbStopDocker">Stop Docker</button>
+            <button type="button" id="dbRefresh">Refresh status</button>
+            <button type="button" id="dbSyncFleet">Sync to fleet</button>
+          </div>
+          <p class="muted-small" id="dbStatusLine">Docker / JDBC status loads here.</p>
+          <pre id="dbLog" class="report muted-small" style="max-height:160px;overflow:auto"></pre>
+        </div>
         <div class="grid stats">
           <div class="stat"><span>Enabled</span><strong id="fleetEnabled">—</strong></div>
           <div class="stat"><span>Primary</span><strong id="fleetPrimary">—</strong></div>
@@ -2071,6 +2097,7 @@
   <script src="/app-admin-panels.js"></script>
   <script src="/app-ops-panels.js"></script>
   <script src="/app-fleet.js"></script>
+  <script src="/app-database.js"></script>
   <script src="/app-network-panels.js"></script>
   <script src="/app-full-panels.js"></script>
   <script src="/app-npcs-panels.js"></script>

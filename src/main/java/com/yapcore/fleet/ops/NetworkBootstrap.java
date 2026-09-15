@@ -7,13 +7,11 @@ import com.yapcore.fleet.model.FleetInstance;
 import com.yapcore.fleet.store.FleetMigrator;
 import com.yapcore.fleet.store.FleetStore;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 /**
@@ -67,6 +65,9 @@ public final class NetworkBootstrap {
         LinkFleetSync.syncAll(rootDir, config, store);
         steps.add(step("sync-link", true, "servers.* rewritten"));
 
+        int shared = InstanceLayout.syncSharedCatalogDataToLocalFleet(rootDir);
+        steps.add(step("sync-shared-catalog", true, "filesWritten=" + shared));
+
         List<String> started = new ArrayList<>();
         if (startInstances && starter != null) {
             for (FleetInstance inst : store.instances()) {
@@ -107,67 +108,22 @@ public final class NetworkBootstrap {
 
     private static Map<String, Object> runEnsureDb(Path rootDir, String jdbcUrl, String serverId)
             throws IOException, InterruptedException {
+        Map<String, Object> result = DatabaseSetup.ensureFromJdbcUrl(rootDir, jdbcUrl, serverId);
         Map<String, Object> row = new LinkedHashMap<>();
         row.put("step", "ensure-db:" + serverId);
-        String url = jdbcUrl == null ? "" : jdbcUrl.trim();
-        List<String> cmd = new ArrayList<>();
-        cmd.add("bash");
-        if (url.toLowerCase().contains("postgres")) {
-            Path script = rootDir.resolve("scripts/db/ensure-postgres.sh");
-            if (!Files.isRegularFile(script)) {
-                row.put("ok", false);
-                row.put("error", "missing " + script);
-                return row;
-            }
-            cmd.add(script.toString());
-            cmd.add("--server-id");
-            cmd.add(serverId);
-        } else if (url.toLowerCase().contains("sqlite")) {
-            Path script = rootDir.resolve("scripts/db/configure-db.sh");
-            if (!Files.isRegularFile(script)) {
-                row.put("ok", false);
-                row.put("error", "missing " + script);
-                return row;
-            }
-            cmd.add(script.toString());
-            cmd.add("--engine");
-            cmd.add("sqlite");
-            cmd.add("--server-id");
-            cmd.add(serverId);
-        } else {
-            Path script = rootDir.resolve("scripts/db/ensure-db.sh");
-            if (!Files.isRegularFile(script)) {
-                row.put("ok", false);
-                row.put("error", "missing " + script);
-                return row;
-            }
-            cmd.add(script.toString());
-            cmd.add("--server-id");
-            cmd.add(serverId);
-            String host = extractJdbcHost(url);
-            if (host != null) {
-                cmd.add("--host");
-                cmd.add(host);
+        row.put("ok", Boolean.TRUE.equals(result.get("ok")));
+        Object ensure = result.get("ensure");
+        if (ensure instanceof Map<?, ?> m) {
+            row.put("exit", m.get("exit"));
+            row.put("output", m.get("output"));
+            if (m.get("error") != null) {
+                row.put("error", m.get("error"));
             }
         }
-        ProcessBuilder pb = new ProcessBuilder(cmd);
-        pb.directory(rootDir.toFile());
-        pb.redirectErrorStream(true);
-        if (!url.isBlank()) {
-            pb.environment().put("YAP_JDBC_URL", url);
+        if (result.get("error") != null) {
+            row.put("error", result.get("error"));
         }
-        Process p = pb.start();
-        String out = new String(p.getInputStream().readAllBytes());
-        boolean finished = p.waitFor(180, TimeUnit.SECONDS);
-        if (!finished) {
-            p.destroyForcibly();
-            row.put("ok", false);
-            row.put("error", "ensure-db timed out");
-            return row;
-        }
-        row.put("ok", p.exitValue() == 0);
-        row.put("exit", p.exitValue());
-        row.put("output", out.length() > 2_000 ? out.substring(0, 2_000) : out);
+        row.put("engine", result.get("engine"));
         return row;
     }
 

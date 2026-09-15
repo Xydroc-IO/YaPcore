@@ -1,12 +1,12 @@
 package com.yapcore.web;
 
+import com.yapcore.fleet.local.InstanceLayout;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 /** Read/write {@code plugins/YaPPlayerData/kits.yml} for the dashboard kit builder. */
@@ -73,6 +73,8 @@ public final class DashboardKits {
         Map<String, Object> kits = DashboardNetworkSnapshots.mapOrCreate(yaml, "kits");
         kits.put(id, DashboardKitItems.fromKit(kit));
         DashboardNetworkSnapshots.dumpYaml(file, yaml);
+        InstanceLayout.syncCatalogRelativeToLocalFleet(
+                root, Path.of("YaPPlayerData", "kits.yml"));
     }
 
     @SuppressWarnings("unchecked")
@@ -90,6 +92,8 @@ public final class DashboardKits {
         if (kitsObj instanceof Map<?, ?> kits) {
             ((Map<String, Object>) kits).remove(key);
             DashboardNetworkSnapshots.dumpYaml(file, yaml);
+            InstanceLayout.syncCatalogRelativeToLocalFleet(
+                    root, Path.of("YaPPlayerData", "kits.yml"));
         }
     }
 

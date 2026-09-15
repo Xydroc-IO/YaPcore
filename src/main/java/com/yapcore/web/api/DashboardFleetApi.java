@@ -97,6 +97,13 @@ public final class DashboardFleetApi {
                     required(body, "id"),
                     !"false".equalsIgnoreCase(body.getOrDefault("autoStart", "true")));
             case "sync-link" -> fleet.syncLink();
+            case "sync-shared-catalog", "sync-catalog" -> {
+                Map<String, Object> sync = fleet.syncSharedCatalog();
+                Map<String, Object> reload = fleet.reloadSharedCatalogOnRunning();
+                Map<String, Object> out = new LinkedHashMap<>(sync);
+                out.put("fleetReload", reload);
+                yield out;
+            }
             case "command" -> {
                 String result = fleet.dispatch(required(body, "id"), body.getOrDefault("command", ""));
                 yield Map.of("ok", true, "action", "command", "result", result);

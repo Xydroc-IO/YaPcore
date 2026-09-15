@@ -18,7 +18,7 @@ public final class FleetBootstrapDialog extends JDialog {
             "jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true";
     private static final String MARIA_URL = "jdbc:mariadb://127.0.0.1:3306/yap_playerdata";
     private static final String PG_URL = "jdbc:postgresql://127.0.0.1:5432/yap_playerdata";
-    private static final String SQLITE_URL = "jdbc:sqlite:plugins/YaPDB/yap.db";
+    private static final String SQLITE_URL = "jdbc:sqlite:data/yap.db";
 
     private final JComboBox<String> engine = new JComboBox<>(new String[]{
             "MariaDB / MySQL", "PostgreSQL", "SQLite", "Skip DB setup"

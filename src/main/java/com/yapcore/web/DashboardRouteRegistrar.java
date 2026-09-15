@@ -7,6 +7,7 @@ import com.yapcore.web.api.DashboardAccessApi;
 import com.yapcore.web.api.DashboardAdminApi;
 import com.yapcore.web.api.DashboardCommandsApi;
 import com.yapcore.web.api.DashboardConsoleApi;
+import com.yapcore.web.api.DashboardDatabaseApi;
 import com.yapcore.web.api.DashboardFleetApi;
 import com.yapcore.web.api.DashboardFleetInstanceApi;
 import com.yapcore.web.api.DashboardGameplayApi;
@@ -41,6 +42,7 @@ final class DashboardRouteRegistrar {
             DashboardCommandsApi commandsApi,
             DashboardFleetApi fleetApi,
             DashboardFleetInstanceApi fleetInstanceApi,
+            DashboardDatabaseApi databaseApi,
             ChassisMetricsHandler metricsHandler,
             HttpHandler serveStatic) {
         Path rootDir = server.getRootDir();
@@ -90,6 +92,7 @@ final class DashboardRouteRegistrar {
         http.createContext("/api/npcs", gameplayApi::apiNpcs);
         http.createContext("/api/skills", gameplayApi::apiSkills);
         http.createContext("/api/factions", gameplayApi::apiFactions);
+        http.createContext("/api/database", databaseApi::apiDatabase);
         http.createContext("/api/fleet", fleetApi::apiFleet);
         http.createContext("/api/fleet/console", fleetApi.consoleApi()::apiConsole);
         http.createContext("/api/fleet/console/stream", fleetApi.consoleApi()::apiConsoleStream);

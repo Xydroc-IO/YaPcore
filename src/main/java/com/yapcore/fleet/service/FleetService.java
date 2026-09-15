@@ -8,6 +8,7 @@ import com.yapcore.fleet.local.LocalInstanceSupervisor;
 import com.yapcore.fleet.model.FleetInstance;
 import com.yapcore.fleet.model.FleetNode;
 import com.yapcore.fleet.model.InstanceState;
+import com.yapcore.fleet.ops.DatabaseSetup;
 import com.yapcore.fleet.ops.FleetDeploy;
 import com.yapcore.fleet.ops.FleetPlayerIndex;
 import com.yapcore.fleet.ops.NetworkBootstrap;
@@ -50,6 +51,7 @@ public final class FleetService {
             try {
                 store.load();
                 healEmptyPluginsQuiet();
+                syncSharedCatalogQuiet();
             } catch (IOException e) {
                 LOG.log(Level.WARNING, "Failed to load fleet.json", e);
             }
@@ -244,6 +246,70 @@ public final class FleetService {
         }
     }
 
+    /** Push catalog kits/items/QoL/JDBC into every local fleet backend (one-network content). */
+    private void syncSharedCatalogQuiet() {
+        try {
+            int n = InstanceLayout.syncSharedCatalogDataToLocalFleet(rootDir);
+            if (n > 0) {
+                LOG.info("Synced " + n + " shared catalog file(s) across local fleet instances");
+            }
+        } catch (IOException e) {
+            LOG.log(Level.WARNING, "Shared catalog sync", e);
+        }
+    }
+
+    /**
+     * Catalog → all local instances for shared definitions (items, kits, QoL, YaPDB JDBC).
+     * Call after editing catalog YAML or when aligning a fleet that drifted.
+     */
+    public Map<String, Object> syncSharedCatalog() throws IOException {
+        requireEnabled();
+        int files = InstanceLayout.syncSharedCatalogDataToLocalFleet(rootDir);
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("ok", true);
+        out.put("action", "sync-shared-catalog");
+        out.put("filesWritten", files);
+        out.put("instances", store.instances().stream().filter(FleetInstance::isLocal).map(FleetInstance::id).toList());
+        return out;
+    }
+
+    /** Reload shared data plugins on every running local instance (kits / items / playerdata). */
+    public Map<String, Object> reloadSharedCatalogOnRunning() {
+        List<Map<String, Object>> results = new ArrayList<>();
+        for (FleetInstance inst : store.instances()) {
+            if (!inst.isLocal()) {
+                continue;
+            }
+            LocalInstanceSupervisor sup = local.get(inst.id());
+            if (sup == null || !sup.isRunning()) {
+                continue;
+            }
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("instanceId", inst.id());
+            try {
+                row.put("yapdata", sup.dispatch("yapdata reload"));
+                row.put("yapitems", safeDispatch(sup, "yapitems reload"));
+                row.put("ok", true);
+            } catch (Exception e) {
+                row.put("ok", false);
+                row.put("error", e.getMessage());
+            }
+            results.add(row);
+        }
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("ok", results.stream().allMatch(r -> Boolean.TRUE.equals(r.get("ok"))) || results.isEmpty());
+        out.put("results", results);
+        return out;
+    }
+
+    private static String safeDispatch(LocalInstanceSupervisor sup, String line) {
+        try {
+            return sup.dispatch(line);
+        } catch (Exception e) {
+            return e.getMessage() == null ? "failed" : e.getMessage();
+        }
+    }
+
     public Map<String, Object> setInstancePluginEnabled(String id, String jar, boolean enable)
             throws IOException {
         requireEnabled();
@@ -373,6 +439,29 @@ public final class FleetService {
         return NetworkBootstrap.run(
                 rootDir, config, store, migrator, jdbcUrl, createSurvival, enableVelocity,
                 startInstances, this::startInstance);
+    }
+
+    /** Standalone DB wizard: MariaDB / Postgres / SQLite (+ Docker when needed) → catalog sync. */
+    public Map<String, Object> ensureDatabase(
+            String engine, String serverId, String host, boolean syncFleet) throws Exception {
+        return DatabaseSetup.ensure(
+                rootDir,
+                DatabaseSetup.Engine.parse(engine),
+                serverId,
+                host,
+                syncFleet);
+    }
+
+    public Map<String, Object> databaseStatus() {
+        return DatabaseSetup.status(rootDir);
+    }
+
+    public Map<String, Object> startDatabaseDocker(String engine) throws Exception {
+        return DatabaseSetup.startDocker(rootDir, DatabaseSetup.Engine.parse(engine));
+    }
+
+    public Map<String, Object> stopDatabaseDocker(String engine) throws Exception {
+        return DatabaseSetup.stopDocker(rootDir, DatabaseSetup.Engine.parse(engine));
     }
 
     public boolean isPrimaryRunning() {
