@@ -130,13 +130,19 @@ public final class BedrockUdpForwarder {
     }
 
     private void shutdownGroups() {
-        if (listenGroup != null) {
-            listenGroup.shutdownGracefully();
-            listenGroup = null;
+        shutdownOne(listenGroup, "bedrock-listen");
+        listenGroup = null;
+        shutdownOne(sessionGroup, "bedrock-session");
+        sessionGroup = null;
+    }
+
+    private static void shutdownOne(EventLoopGroup group, String name) {
+        if (group == null) {
+            return;
         }
-        if (sessionGroup != null) {
-            sessionGroup.shutdownGracefully();
-            sessionGroup = null;
+        if (!group.shutdownGracefully(0, 1, java.util.concurrent.TimeUnit.SECONDS)
+                .awaitUninterruptibly(2, java.util.concurrent.TimeUnit.SECONDS)) {
+            LOG.warning("EventLoopGroup " + name + " shutdown timed out");
         }
     }
 

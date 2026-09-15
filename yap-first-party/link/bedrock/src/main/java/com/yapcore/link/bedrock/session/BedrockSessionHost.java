@@ -187,7 +187,10 @@ public final class BedrockSessionHost {
         byGuid.clear();
         addrToGuid.clear();
         if (group != null) {
-            group.shutdownGracefully();
+            if (!group.shutdownGracefully(0, 1, java.util.concurrent.TimeUnit.SECONDS)
+                    .awaitUninterruptibly(2, java.util.concurrent.TimeUnit.SECONDS)) {
+                LOG.warning("Bedrock session host EventLoopGroup shutdown timed out");
+            }
             group = null;
         }
         LOG.info("Bedrock native session host stopped");

@@ -74,8 +74,14 @@ public final class LinkConsole implements Runnable {
         }
         if ("stop".equalsIgnoreCase(line)) {
             LOG.info("Stopping YaP Link…");
-            server.stop();
-            running = false;
+            try {
+                server.stop();
+            } finally {
+                running = false;
+                // Main thread joins forever — exit so chassis stop/restart is not stuck
+                // waiting for waitFor(30s) + destroyForcibly.
+                System.exit(0);
+            }
             return;
         }
         if (line.regionMatches(true, 0, "say ", 0, 4)) {

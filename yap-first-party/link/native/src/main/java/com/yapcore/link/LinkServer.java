@@ -30,6 +30,7 @@ import java.security.KeyPair;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -275,15 +276,26 @@ public final class LinkServer {
         } catch (Exception e) {
             LOG.log(Level.WARNING, "bind close", e);
         }
-        if (worker != null) {
-            worker.shutdownGracefully();
-            worker = null;
-        }
-        if (boss != null) {
-            boss.shutdownGracefully();
-            boss = null;
-        }
+        // Quiet period 0 / timeout 1s — default Netty grace waits piled up across
+        // boss+worker+Bedrock groups and made GUI Stop feel like ~30s.
+        shutdownGroup(worker, "worker");
+        worker = null;
+        shutdownGroup(boss, "boss");
+        boss = null;
         LOG.info("YaP Link stopped");
+    }
+
+    private static void shutdownGroup(EventLoopGroup group, String name) {
+        if (group == null) {
+            return;
+        }
+        try {
+            if (!group.shutdownGracefully(0, 1, TimeUnit.SECONDS).awaitUninterruptibly(2, TimeUnit.SECONDS)) {
+                LOG.warning("EventLoopGroup " + name + " shutdown timed out — continuing");
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "EventLoopGroup " + name + " shutdown", e);
+        }
     }
 
     private BedrockNativeConfig toNativeConfig(LinkConfig cfg) {

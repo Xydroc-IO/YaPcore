@@ -212,7 +212,7 @@ public final class LinkProcessManager {
             LOG.warning("Reclaiming orphan YaP Link pid=" + ph.pid() + " home=" + homeStr);
             ph.destroy();
         }
-        long deadline = System.currentTimeMillis() + 5_000L;
+        long deadline = System.currentTimeMillis() + 2_000L;
         for (ProcessHandle ph : victims) {
             while (ph.isAlive() && System.currentTimeMillis() < deadline) {
                 try {
@@ -348,9 +348,13 @@ public final class LinkProcessManager {
                 } catch (IOException ignored) {
                     // destroy
                 }
-                if (!process.waitFor(30, TimeUnit.SECONDS)) {
-                    process.destroyForcibly();
-                    process.waitFor(10, TimeUnit.SECONDS);
+                // Graceful stop should exit quickly; do not block the GUI for 30s.
+                if (!process.waitFor(4, TimeUnit.SECONDS)) {
+                    process.destroy();
+                    if (!process.waitFor(2, TimeUnit.SECONDS)) {
+                        process.destroyForcibly();
+                        process.waitFor(2, TimeUnit.SECONDS);
+                    }
                 }
             }
         } catch (InterruptedException e) {
