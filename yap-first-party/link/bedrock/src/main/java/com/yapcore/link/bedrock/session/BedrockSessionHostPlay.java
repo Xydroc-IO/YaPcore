@@ -172,6 +172,10 @@ final class BedrockSessionHostPlay {
             BedrockInventoryOpen.onContainerClose(join, close);
             return true;
         }
+        if (packet instanceof FilterTextPacket filter) {
+            BedrockFilterTextTranslator.translate(join, filter);
+            return true;
+        }
         if (packet instanceof AnimatePacket animate) {
             if (animate.getAction() == AnimatePacket.Action.SWING_ARM) {
                 // Geyser defers Animate swings — immediate miss+tick_end here raced ahead of

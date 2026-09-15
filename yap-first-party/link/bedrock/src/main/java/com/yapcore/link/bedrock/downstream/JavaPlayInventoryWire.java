@@ -37,6 +37,18 @@ public final class JavaPlayInventoryWire {
         return buf;
     }
 
+    /** Proto 776 {@code rename_item}: UTF-8 string (anvil name field). */
+    public static ByteBuf renameItem(String name) {
+        String text = name == null ? "" : name;
+        if (text.length() > 50) {
+            text = text.substring(0, 50);
+        }
+        ByteBuf buf = Unpooled.buffer(8 + text.length());
+        McCodec.writeVarInt(buf, JavaPlayWire.SB_RENAME_ITEM);
+        McCodec.writeString(buf, text);
+        return buf;
+    }
+
     /** Proto 776 {@code custom_payload}: Identifier + remainder bytes. */
     public static ByteBuf customPayload(String channel, byte[] data) {
         String id = channel == null ? "" : channel;

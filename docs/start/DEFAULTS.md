@@ -18,7 +18,11 @@ that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when m
 | YaPPerms starter ranks | Yes (`apply-starter-pack-on-first-boot` + `yap-ranks-auto-apply`) |
 | YaPFactions / guilds | **Off** (`enabled: false`) — opt in for faction servers · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
 | YaPConquest / chunk land | **Off** (`enabled: false`) — hardcore grid; needs YaPFactions · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
-| YaPSkills / Stacker / Dungeons / Disasters / GameplayKnobs | **Off** until opted in |
+| YaP-QoL (timber / excavator) | **On** — product default · VIP kit grants tools |
+| YaPItems | **On** — product default |
+| YaPSkills / YaPLeveledMobs | **On** in shipped defaults (thin skills + distance mob levels) — turn off in plugin config if undesired |
+| YaPStacker / Dungeons / Disasters / GameplayKnobs | **Off** until opted in (`enabled: false` / knobs settings) |
+| YaPMap 3D mesh | **Off** (`mesh.enabled: false`) — enable + `/yapmap render` for BlueMap-class 3D |
 | Economy / claims / moderation / SQL plugins | **Needs SQL** (MariaDB default; Postgres or SQLite OK — [YAPDB.md](../data/YAPDB.md)) |
 | Discord webhooks | Needs your webhook URLs |
 
@@ -51,16 +55,23 @@ config/defaults/
   plugins/YaPDB/config.yml
   plugins/YaPPlayerData/…    # auth.enabled=false for LAN
   plugins/YaPDiscord/…       # inbound off
+  plugins/YaP-QoL/…           # product default timber/excavator
+  plugins/YaPItems/…
+  plugins/YaPTailor/…         # skins/wardrobe; skin-host URL empty until set
+  plugins/YaPTebex/…          # webhook inbound off until secret set
+  plugins/YaPSkills/…         # enabled: true (thin skills)
+  plugins/YaPLeveledMobs/…    # enabled: true
+  plugins/YaPStacker|Dungeons|Disasters/…  # enabled: false (opt-in)
+  plugins/YaPGameplayKnobs/knobs.yml    # settings.enabled: false
+  plugins/YaPMap/…            # mesh.enabled: false (3D opt-in)
   plugins/YaPFactions/…      # enabled: false (opt-in)
   plugins/YaPConquest/…      # enabled: false (opt-in chunk land)
-  plugins/YaPSkills|Stacker|Dungeons|Disasters/…  # enabled: false (opt-in)
-  plugins/YaPGameplayKnobs/knobs.yml    # settings.enabled: false
-  plugins/YaPModeration|Admin|Protect|World|Regions|Npcs|Map|Floodgate|Pregen/…
+  plugins/YaPModeration|Admin|Protect|World|Regions|Npcs|Floodgate|Pregen/…
   plugins/PlaceholderAPI|YaPPluginCompat/…
   plugins/YaPPerms|Chat|Tab|Essentials|Guard|LagGuard|Packs|Commands/…
 ```
 
-**N/A (no YAML seed):** YaPBedrockUI, YaPFoliaBridge, WorldEdit shim.
+**N/A (no YAML seed):** YaPBedrockUI, YaPFoliaBridge, YaPBedrockBlocks, WorldEdit shim.
 
 Operator files are never overwritten. To reset a plugin to ship defaults, delete its
 `plugins/<Name>/config.yml` and re-run `seed-defaults.sh` (or delete the whole folder

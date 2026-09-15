@@ -227,6 +227,86 @@ final class BedrockSessionHostJoin {
             }
 
             @Override
+            public void onActionBar(String plain) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaHudTranslator.onActionBar(join, plain);
+                }
+            }
+
+            @Override
+            public void onTitle(String plain) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaHudTranslator.onTitle(join, plain);
+                }
+            }
+
+            @Override
+            public void onSubtitle(String plain) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaHudTranslator.onSubtitle(join, plain);
+                }
+            }
+
+            @Override
+            public void onTitleTimes(int fadeInTicks, int stayTicks, int fadeOutTicks) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaHudTranslator.onTitleTimes(join, fadeInTicks, stayTicks, fadeOutTicks);
+                }
+            }
+
+            @Override
+            public void onClearTitles(boolean reset) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaHudTranslator.onClearTitles(join, reset);
+                }
+            }
+
+            @Override
+            public void onBossEvent(java.util.UUID bossId, int action, String title, float pct, int color) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaHudTranslator.onBossEvent(join, bossId, action, title, pct, color);
+                }
+            }
+
+            @Override
+            public void onSetObjective(String objectiveId, int mode, String displayName, String criteria) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaHudTranslator.onSetObjective(join, objectiveId, mode, displayName, criteria);
+                }
+            }
+
+            @Override
+            public void onSetDisplayObjective(int position, String objectiveId) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaHudTranslator.onSetDisplayObjective(join, position, objectiveId);
+                }
+            }
+
+            @Override
+            public void onSetScore(String owner, String objective, int score) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaHudTranslator.onSetScore(join, owner, objective, score);
+                }
+            }
+
+            @Override
+            public void onResetScore(String owner, String objective) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaHudTranslator.onResetScore(join, owner, objective);
+                }
+            }
+
+            @Override
             public void onPlayerChat(String source, String plain) {
                 LinkBedrockSession join = state.joinSession;
                 if (join != null) {
@@ -300,6 +380,15 @@ final class BedrockSessionHostJoin {
                 LinkBedrockSession join = state.joinSession;
                 if (join != null) {
                     JavaEntityTranslator.onEntityMotion(join, entityId, mx, my, mz);
+                }
+            }
+
+            @Override
+            public void onSetEquipment(int entityId, int slot,
+                                      com.yapcore.link.bedrock.downstream.JeItemStackCodec.Stack stack) {
+                LinkBedrockSession join = state.joinSession;
+                if (join != null) {
+                    JavaEntityEquipmentTranslator.onSetEquipment(join, entityId, slot, stack);
                 }
             }
 

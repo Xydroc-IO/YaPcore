@@ -16,6 +16,8 @@ opt-in gameplay stays **off**. Secrets/binds stay LAN-safe.
 | `plugins/YaPDiscord/config.yml` | Discord inbound off until webhooks set |
 | `plugins/YaPFactions/config.yml` | Factions/guilds **off** (`enabled: false`) until opted in |
 | `plugins/YaPConquest/config.yml` | Chunk conquest **off** (`enabled: false`) until opted in |
+| `plugins/YaPTailor/config.yml` | Skins/wardrobe; `skin-host-public-base-url` empty until set |
+| `plugins/YaPTebex/config.yml` | Webhook inbound **off** until secret set |
 | `plugins/YaPSkills/config.yml` | Skills RPG **off** until opted in |
 | `plugins/YaPStacker/config.yml` | Mob/item stacker **off** until opted in |
 | `plugins/YaPDungeons/config.yml` | Instanced dungeons **off** until opted in |

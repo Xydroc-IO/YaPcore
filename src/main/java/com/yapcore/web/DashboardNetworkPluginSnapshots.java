@@ -133,6 +133,9 @@ public final class DashboardNetworkPluginSnapshots {
         Map<String, Object> yaml = DashboardNetworkSnapshots.yaml(root, "Tebex", "config.yml");
         Map<String, Object> buy = DashboardNetworkSnapshots.map(yaml.get("buy-command"));
         Map<String, Object> serverCfg = DashboardNetworkSnapshots.map(yaml.get("server"));
+        Map<String, Object> gui = DashboardNetworkSnapshots.map(yaml.get("gui"));
+        Map<String, Object> menu = DashboardNetworkSnapshots.map(gui.get("menu"));
+        Map<String, Object> home = DashboardNetworkSnapshots.map(menu.get("home"));
         String secret = DashboardNetworkSnapshots.str(serverCfg.get("secret-key"), "");
         boolean secretSet = !secret.isBlank();
         out.put("secretConfigured", secretSet);
@@ -142,26 +145,82 @@ public final class DashboardNetworkPluginSnapshots {
         out.put("proxyMode", DashboardNetworkSnapshots.bool(serverCfg.get("proxy"), false));
         out.put("verbose", DashboardNetworkSnapshots.bool(yaml.get("verbose"), false));
         out.put("checkForUpdates", DashboardNetworkSnapshots.bool(yaml.get("check-for-updates"), true));
+        out.put("autoReportEnabled", DashboardNetworkSnapshots.bool(yaml.get("auto-report-enabled"), true));
+        out.put("guiHomeTitle", DashboardNetworkSnapshots.str(home.get("title"), "Server Shop"));
+        out.put("guiHomeRows", DashboardNetworkSnapshots.intVal(home.get("rows"), 3));
         out.put("creatorUrl", "https://creator.tebex.io/");
         out.put("docsUrl", "https://docs.tebex.io/creators/tebex-control-panel/game-servers/minecraft-java-edition");
-        out.put("yapDocs", "docs/ops/INTEGRATIONS.md");
+        out.put("yapDocs", "docs/ops/TEBEX.md");
         out.put("fetchHint", "./scripts/fetch-tebex.sh");
-        out.put("packageRecipes", List.of(
-                Map.of(
-                        "name", "VIP rank",
-                        "commands", "yapperm user {username} parent set vip\nkit grant {username} vip"),
-                Map.of(
-                        "name", "Adventurer kit unlock",
-                        "commands", "yapperm user {username} permission set yapdata.kit.adventurer true\nkit grant {username} adventurer"),
-                Map.of(
-                        "name", "VIP kit unlock only",
-                        "commands", "yapperm user {username} permission set yapdata.kit.vip true")));
-        if (!DashboardNetworkSnapshots.bool(out.get("installed"), false)) {
-            out.put("setupHint", "Run ./scripts/fetch-tebex.sh (or gradle fetchTebex), restart YaP-Folia, then paste your game-server secret key.");
+        out.put("packageRecipes", DashboardTebexRecipes.load(root));
+        try {
+            out.put("recipesYaml", DashboardTebexRecipes.loadYamlText(root));
+        } catch (Exception e) {
+            out.put("recipesYaml", "");
+        }
+        out.putAll(DashboardTebexStatus.hubPlacement(root));
+        out.putAll(DashboardTebexStatus.cached());
+        out.putAll(DashboardTebexKitGrants.snapshot(root));
+        @SuppressWarnings("unchecked")
+        List<String> withTebex = (List<String>) out.getOrDefault("instancesWithTebex", List.of());
+        String primaryId = DashboardNetworkSnapshots.str(out.get("primaryId"), "lobby");
+        boolean hubHasJar = withTebex.stream().anyMatch(id -> primaryId.equalsIgnoreCase(id));
+        if (hubHasJar || DashboardNetworkSnapshots.bool(out.get("rootInstalled"), false)) {
+            out.put("installed", true);
+        }
+        if (!DashboardNetworkSnapshots.bool(out.get("installed"), false)
+                && !DashboardNetworkSnapshots.bool(out.get("rootInstalled"), false)
+                && withTebex.isEmpty()) {
+            out.put("setupHint", "Run ./scripts/fetch-tebex.sh (or gradle fetchTebex), install on Hub/lobby only, then paste your game-server secret key.");
         } else if (!secretSet) {
             out.put("setupHint", "Paste the game-server secret from creator.tebex.io → Game Servers, then Save secret.");
+        } else if (!DashboardNetworkSnapshots.bool(out.get("hubOnlyOk"), true)) {
+            out.put("setupHint", DashboardNetworkSnapshots.str(out.get("hubPlacementDetail"),
+                    "Install Tebex on Hub/lobby only."));
         } else {
             out.put("setupHint", "Secret set. Create packages on Tebex with the console commands below ({username} placeholder).");
+        }
+        // First-party yap-tebex.jar webhook inbound (YaPTebex/)
+        Map<String, Object> webhookYaml = DashboardNetworkSnapshots.yaml(root, "YaPTebex", "config.yml");
+        Map<String, Object> inbound = DashboardNetworkSnapshots.map(webhookYaml.get("inbound"));
+        boolean webhookJar = DashboardNetworkSnapshots.jarPresent(root.resolve("plugins"), "yap-tebex");
+        boolean webhookConfig = Files.isRegularFile(
+                root.resolve("plugins").resolve("YaPTebex").resolve("config.yml"));
+        out.put("webhookInstalled", webhookJar || webhookConfig);
+        out.put("webhookEnabled", DashboardNetworkSnapshots.bool(inbound.get("enabled"), false));
+        out.put("webhookBind", DashboardNetworkSnapshots.str(inbound.get("bind"), "127.0.0.1"));
+        out.put("webhookPort", DashboardNetworkSnapshots.intVal(inbound.get("port"), 8766));
+        out.put("webhookPath", DashboardNetworkSnapshots.str(inbound.get("path"), "/tebex/webhook"));
+        String webhookSecret = DashboardNetworkSnapshots.str(inbound.get("secret"), "");
+        boolean webhookSecretOk = !webhookSecret.isBlank() && !"change-me".equals(webhookSecret);
+        out.put("webhookSecretConfigured", webhookSecretOk);
+        out.put("webhookEnforceIps", DashboardNetworkSnapshots.bool(inbound.get("enforce-tebex-ips"), true));
+        String path = DashboardNetworkSnapshots.str(inbound.get("path"), "/tebex/webhook");
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        out.put("webhookUrlHint", "https://<public>" + path);
+        out.put("webhookListenHint",
+                DashboardNetworkSnapshots.str(inbound.get("bind"), "127.0.0.1")
+                        + ":" + DashboardNetworkSnapshots.intVal(inbound.get("port"), 8766)
+                        + path);
+        Map<String, Object> packages = DashboardNetworkSnapshots.map(webhookYaml.get("packages"));
+        out.put("webhookPackageCount", packages.size());
+        Path lastStatus = root.resolve("plugins").resolve("YaPTebex").resolve("last-status.json");
+        if (Files.isRegularFile(lastStatus)) {
+            try {
+                String raw = Files.readString(lastStatus).trim();
+                out.put("webhookLastStatusRaw", raw);
+                try {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> parsed = new com.google.gson.Gson().fromJson(raw, Map.class);
+                    if (parsed != null) {
+                        out.put("webhookLastStatus", parsed);
+                    }
+                } catch (Exception ignored) {
+                }
+            } catch (IOException ignored) {
+            }
         }
         return out;
     }

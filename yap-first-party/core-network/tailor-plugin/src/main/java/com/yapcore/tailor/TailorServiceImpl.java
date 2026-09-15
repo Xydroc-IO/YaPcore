@@ -2,44 +2,39 @@ package com.yapcore.tailor;
 
 import com.destroystokyo.paper.profile.PlayerProfile;
 import com.destroystokyo.paper.profile.ProfileProperty;
-import com.yapcore.sched.YapSched;
 import com.yapcore.tailor.db.TailorDatabase;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.profile.PlayerTextures;
 
-import java.net.URI;
-import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 
 public final class TailorServiceImpl implements TailorService {
 
-    private final TailorPlugin plugin;
     private final TailorConfig config;
     private final TailorDatabase database;
     private final SkinImageService images;
     private final ConcurrentHashMap<UUID, Long> cooldowns = new ConcurrentHashMap<>();
     private final TailorWardrobeOps wardrobe;
-    private PresenceChannel presenceChannel;
+    private final TailorOnlineApply online;
 
     public TailorServiceImpl(
             TailorPlugin plugin,
             TailorConfig config,
             TailorDatabase database,
             SkinImageService images) {
-        this.plugin = plugin;
         this.config = config;
         this.database = database;
         this.images = images;
+        this.online = new TailorOnlineApply(plugin, config, database, images);
         this.wardrobe = new TailorWardrobeOps(plugin, config, database, images, this);
     }
 
     public void setPresenceChannel(PresenceChannel presenceChannel) {
-        this.presenceChannel = presenceChannel;
+        online.setPresenceChannel(presenceChannel);
     }
 
     public TailorConfig config() {
@@ -64,7 +59,7 @@ public final class TailorServiceImpl implements TailorService {
     public ActiveSkin applySkin(Player player, String skinUrl) throws TailorException {
         checkCooldown(player.getUniqueId());
         ActiveSkin skin = applySkinInternal(player.getUniqueId(), skinUrl, null, null, true);
-        applyToOnline(player, skin);
+        online.applyToOnline(player, skin);
         return skin;
     }
 
@@ -72,9 +67,9 @@ public final class TailorServiceImpl implements TailorService {
     public ActiveSkin applySkin(UUID playerUuid, String skinUrl) throws TailorException {
         checkCooldown(playerUuid);
         ActiveSkin skin = applySkinInternal(playerUuid, skinUrl, null, null, true);
-        Player online = Bukkit.getPlayer(playerUuid);
-        if (online != null && online.isOnline()) {
-            applyToOnline(online, skin);
+        Player onlinePlayer = Bukkit.getPlayer(playerUuid);
+        if (onlinePlayer != null && onlinePlayer.isOnline()) {
+            online.applyToOnline(onlinePlayer, skin);
         }
         return skin;
     }
@@ -100,7 +95,7 @@ public final class TailorServiceImpl implements TailorService {
         } catch (Exception e) {
             throw new TailorException("Failed to persist active skin", e);
         }
-        applyToOnline(player, skin);
+        online.applyToOnline(player, skin);
         return skin;
     }
 
@@ -127,16 +122,16 @@ public final class TailorServiceImpl implements TailorService {
         } catch (Exception e) {
             throw new TailorException("Failed to save cape", e);
         }
-        applyToOnline(player, skin);
+        online.applyToOnline(player, skin);
         return skin;
     }
 
     /** Apply another online player's current textures, or look up Mojang by name. */
     public ActiveSkin applyFromPlayerName(Player viewer, String targetName) throws TailorException {
         checkCooldown(viewer.getUniqueId());
-        Player online = Bukkit.getPlayerExact(targetName);
-        if (online != null) {
-            PlayerProfile profile = online.getPlayerProfile();
+        Player target = Bukkit.getPlayerExact(targetName);
+        if (target != null) {
+            PlayerProfile profile = target.getPlayerProfile();
             Optional<ProfileProperty> textures = profile.getProperties().stream()
                     .filter(p -> "textures".equals(p.getName()))
                     .findFirst();
@@ -152,7 +147,7 @@ public final class TailorServiceImpl implements TailorService {
                 } catch (Exception e) {
                     throw new TailorException("Failed to save skin", e);
                 }
-                applyToOnline(viewer, skin);
+                online.applyToOnline(viewer, skin);
                 return skin;
             }
         }
@@ -177,7 +172,7 @@ public final class TailorServiceImpl implements TailorService {
         } catch (Exception e) {
             throw new TailorException("Failed to save skin", e);
         }
-        applyToOnline(viewer, skin);
+        online.applyToOnline(viewer, skin);
         return skin;
     }
 
@@ -200,8 +195,8 @@ public final class TailorServiceImpl implements TailorService {
                 ? (capeUrlOverride.isBlank() ? null : capeUrlOverride)
                 : (previous != null ? previous.capeUrl() : null);
 
-        String publicSkinUrl = null;
-        String textureValue = null;
+        String publicSkinUrl;
+        String textureValue;
         if (replaceSkin) {
             if (skinUrl == null || skinUrl.isBlank()) {
                 throw new TailorException("Skin URL is required");
@@ -242,7 +237,7 @@ public final class TailorServiceImpl implements TailorService {
     @Override
     public void clearSkin(Player player) throws TailorException {
         clearSkin(player.getUniqueId());
-        restoreDefault(player);
+        online.restoreDefault(player);
     }
 
     @Override
@@ -253,16 +248,16 @@ public final class TailorServiceImpl implements TailorService {
             throw new TailorException("Failed to clear skin", e);
         }
         images.deleteStored(playerUuid);
-        Player online = Bukkit.getPlayer(playerUuid);
-        if (online != null && online.isOnline()) {
-            restoreDefault(online);
+        Player onlinePlayer = Bukkit.getPlayer(playerUuid);
+        if (onlinePlayer != null && onlinePlayer.isOnline()) {
+            online.restoreDefault(onlinePlayer);
         }
     }
 
     @Override
     public ActiveSkin setModel(Player player, SkinModel model) throws TailorException {
         ActiveSkin skin = setModel(player.getUniqueId(), model);
-        applyToOnline(player, skin);
+        online.applyToOnline(player, skin);
         return skin;
     }
 
@@ -277,18 +272,18 @@ public final class TailorServiceImpl implements TailorService {
         // Wide/Slim from the wardrobe must work on Mojang/default skins too — not only after
         // a custom Tailor upload (otherwise SKIN|MODEL fails with "set a skin first").
         if (previous == null) {
-            Player online = Bukkit.getPlayer(playerUuid);
-            if (online == null || !online.isOnline()) {
+            Player onlinePlayer = Bukkit.getPlayer(playerUuid);
+            if (onlinePlayer == null || !onlinePlayer.isOnline()) {
                 throw new TailorException("No active skin — set a skin first");
             }
-            previous = seedActiveFromLiveProfile(online, model);
-            applyToOnline(online, previous);
+            previous = seedActiveFromLiveProfile(onlinePlayer, model);
+            online.applyToOnline(onlinePlayer, previous);
             return previous;
         }
         ActiveSkin skin = applySkinInternal(playerUuid, previous.sourceUrl(), previous.capeUrl(), model, false);
-        Player online = Bukkit.getPlayer(playerUuid);
-        if (online != null && online.isOnline()) {
-            applyToOnline(online, skin);
+        Player onlinePlayer = Bukkit.getPlayer(playerUuid);
+        if (onlinePlayer != null && onlinePlayer.isOnline()) {
+            online.applyToOnline(onlinePlayer, skin);
         }
         return skin;
     }
@@ -350,7 +345,7 @@ public final class TailorServiceImpl implements TailorService {
     @Override
     public ActiveSkin setCape(Player player, String capeUrl) throws TailorException {
         ActiveSkin skin = setCape(player.getUniqueId(), capeUrl);
-        applyToOnline(player, skin);
+        online.applyToOnline(player, skin);
         return skin;
     }
 
@@ -378,9 +373,9 @@ public final class TailorServiceImpl implements TailorService {
         } catch (Exception e) {
             throw new TailorException("Failed to save cape", e);
         }
-        Player online = Bukkit.getPlayer(playerUuid);
-        if (online != null && online.isOnline()) {
-            applyToOnline(online, skin);
+        Player onlinePlayer = Bukkit.getPlayer(playerUuid);
+        if (onlinePlayer != null && onlinePlayer.isOnline()) {
+            online.applyToOnline(onlinePlayer, skin);
         }
         return skin;
     }
@@ -425,95 +420,10 @@ public final class TailorServiceImpl implements TailorService {
         if (active.isEmpty()) {
             return;
         }
-        applyToOnline(player, active.get());
+        online.applyToOnline(player, active.get());
     }
 
     public void applyToOnline(Player player, ActiveSkin skin) {
-        YapSched.entity(plugin, player, () -> {
-            try {
-                PlayerProfile profile = player.getPlayerProfile();
-                if (skin.textureValueBase64() != null && !skin.textureValueBase64().isBlank()) {
-                    profile.setProperty(new ProfileProperty("textures", skin.textureValueBase64()));
-                } else if (skin.sourceUrl() != null && !skin.sourceUrl().isBlank()) {
-                    PlayerTextures textures = profile.getTextures();
-                    URL skinUrl = URI.create(skin.sourceUrl()).toURL();
-                    PlayerTextures.SkinModel bukkitModel = skin.model() == SkinModel.SLIM
-                            ? PlayerTextures.SkinModel.SLIM
-                            : PlayerTextures.SkinModel.CLASSIC;
-                    textures.setSkin(skinUrl, bukkitModel);
-                    if (skin.capeUrl() != null && !skin.capeUrl().isBlank()) {
-                        textures.setCape(URI.create(skin.capeUrl()).toURL());
-                    } else {
-                        textures.setCape(null);
-                    }
-                    profile.setTextures(textures);
-                }
-                player.setPlayerProfile(profile);
-                hideShowRefresh(player);
-            } catch (Exception e) {
-                plugin.getLogger().log(Level.WARNING, "Failed to apply skin to " + player.getName(), e);
-            }
-        });
-        pushChassisAsync(player, skin);
-    }
-
-    private void pushChassisAsync(Player player, ActiveSkin skin) {
-        UUID uuid = player.getUniqueId();
-        String username = player.getName();
-        YapSched.async(plugin, () -> {
-            byte[] png = images.readStoredSkin(uuid);
-            byte[] cape = images.readStoredCape(uuid);
-            if ((png == null || png.length == 0) && skin.sourceUrl() != null && !skin.sourceUrl().isBlank()) {
-                try {
-                    png = images.downloadAndValidate(skin.sourceUrl());
-                } catch (TailorException ignored) {
-                    // push with whatever we have
-                }
-            }
-            if ((cape == null || cape.length == 0) && skin.capeUrl() != null && !skin.capeUrl().isBlank()) {
-                try {
-                    cape = images.downloadAndValidate(skin.capeUrl());
-                } catch (TailorException ignored) {
-                }
-            }
-            Optional<String> canonical = ChassisSkinPush.push(plugin, config, username, uuid, skin, png, cape);
-            if (canonical.isPresent()) {
-                ActiveSkin withCanonical = skin.withBedrockCanonicalJson(canonical.get());
-                try {
-                    database.saveActive(withCanonical);
-                } catch (Exception e) {
-                    plugin.getLogger().log(Level.FINE,
-                            "Failed to persist bedrockCanonicalJson for " + username + ": " + e.getMessage());
-                }
-            }
-            PresenceChannel channel = presenceChannel;
-            Player online = Bukkit.getPlayer(uuid);
-            if (channel != null && online != null && online.isOnline()) {
-                channel.sendSkin(online);
-            }
-        });
-    }
-
-    private void restoreDefault(Player player) {
-        YapSched.entity(plugin, player, () -> {
-            try {
-                PlayerProfile profile = Bukkit.createProfile(player.getUniqueId(), player.getName());
-                profile.complete(true);
-                player.setPlayerProfile(profile);
-                hideShowRefresh(player);
-            } catch (Exception e) {
-                plugin.getLogger().log(Level.WARNING, "Failed to restore default skin for " + player.getName(), e);
-            }
-        });
-    }
-
-    private void hideShowRefresh(Player player) {
-        for (Player other : Bukkit.getOnlinePlayers()) {
-            if (other.equals(player)) {
-                continue;
-            }
-            other.hidePlayer(plugin, player);
-            other.showPlayer(plugin, player);
-        }
+        online.applyToOnline(player, skin);
     }
 }

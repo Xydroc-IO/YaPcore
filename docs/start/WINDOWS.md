@@ -16,6 +16,7 @@ Release trees: `build/dist/yapcore-release/linux/` and `…/windows/`.
 |-------|---------|
 | `./start.sh --fg` | `start.cmd -Fg` |
 | `./gui.sh` | `gui.cmd` |
+| Dashboard **Configure → Setup** | Same checklist (EULA, seed, Tebex/Grim, production, nginx dry-run) |
 | `./stop.sh` / `./status.sh` | `stop.cmd` / `status.cmd` |
 | `./start-prod.sh` | `start-prod.cmd` |
 

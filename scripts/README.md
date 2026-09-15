@@ -11,7 +11,7 @@ Install, setup, and lifecycle helpers for operators.
 | `start-yap-link.sh` | Start YaP Link proxy |
 | `yapctl` | CLI helper (`soak-compat` / `soak-perf` / `soak-long`) |
 | `soak-yap-folia.sh` | Live YaP-Folia mem/crash soak (compat / perf / long) |
-| `verify-yap-folia.sh` | Patch check + build `lib/yap-folia-*.jar` (`SKIP_SMOKE=1` for CI) |
+| `verify-yap-folia.sh` | Patch check + build `lib/yap-folia-*.jar` + `smoke-folia.sh` (CI nightly/main). `SKIP_SMOKE=1` for build-only local runs |
 | `bench/cite-fullcite.sh` | Stock Folia vs YaPcore fullcite — **ship knobs** cite gate (`knob_*` required) |
 | Docs | [YaP-Folia](../docs/folia/YAP_FOLIA_PATCHES.md) |
 | `bench/compare-folia.py` | MSPT A/B vs stock Folia (fairness + tie band) |

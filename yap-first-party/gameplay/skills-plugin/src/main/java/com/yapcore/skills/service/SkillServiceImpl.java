@@ -1,6 +1,5 @@
 package com.yapcore.skills.service;
 
-import com.yapcore.mmo.CombatLevelCalculator;
 import com.yapcore.mmo.PlayerOverall;
 import com.yapcore.mmo.SkillDefinition;
 import com.yapcore.mmo.SkillFeedbackServices;
@@ -241,30 +240,6 @@ public final class SkillServiceImpl implements SkillService {
                 throw new RuntimeException(e);
             }
         });
-    }
-
-    public int combatLevel(UUID playerId) {
-        try {
-            int attack = levelOrDefault(playerId, SkillId.of(config.combatAttackSkill()));
-            int strength = levelOrDefault(playerId, SkillId.of(config.combatStrengthSkill()));
-            int defence = levelOrDefault(playerId, SkillId.of(config.combatDefenceSkill()));
-            int hitpoints = levelOrDefault(playerId, SkillId.of(config.combatHitpointsSkill()));
-            int prayer = levelOrDefault(playerId, SkillId.of("prayer"));
-            int ranged = levelOrDefault(playerId, SkillId.of("ranged"));
-            int magic = levelOrDefault(playerId, SkillId.of("magic"));
-            return CombatLevelCalculator.calculate(
-                    attack, strength, defence, hitpoints, prayer, ranged, magic);
-        } catch (Exception e) {
-            return 3;
-        }
-    }
-
-    private int levelOrDefault(UUID playerId, SkillId skillId) {
-        try {
-            return get(playerId, skillId).orTimeout(2, java.util.concurrent.TimeUnit.SECONDS).join().level();
-        } catch (Exception e) {
-            return 1;
-        }
     }
 
     private SkillProgress applyXp(UUID playerId, SkillId skillId, double amount, XpSource source) {

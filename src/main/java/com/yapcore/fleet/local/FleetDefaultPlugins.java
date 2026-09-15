@@ -41,6 +41,7 @@ public final class FleetDefaultPlugins {
             "yap-chat.jar",
             "yap-tab.jar",
             "yap-discord.jar",
+            "yap-tebex.jar",
             "yap-floodgate.jar",
             "yap-bedrock-ui.jar",
             "yap-tailor.jar",

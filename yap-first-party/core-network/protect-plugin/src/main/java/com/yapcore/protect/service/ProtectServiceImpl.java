@@ -2,6 +2,7 @@ package com.yapcore.protect.service;
 
 import com.yapcore.protect.BlockChangeRecord;
 import com.yapcore.protect.ProtectConfig;
+import com.yapcore.protect.ProtectEditBlock;
 import com.yapcore.protect.ProtectLookupCursor;
 import com.yapcore.protect.ProtectLookupPage;
 import com.yapcore.protect.ProtectService;
@@ -9,21 +10,11 @@ import com.yapcore.protect.db.ChangeRepository;
 import com.yapcore.protect.db.ProtectDatabase;
 import com.yapcore.protect.model.ChangeType;
 import com.yapcore.protect.model.ProtectChange;
-import com.yapcore.protect.util.BlockCodec;
-import com.yapcore.protect.util.InventoryCodec;
 import com.yapcore.sched.YapSched;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Container;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -31,12 +22,14 @@ import java.util.concurrent.CompletableFuture;
 public final class ProtectServiceImpl implements ProtectService {
 
     private final JavaPlugin plugin;
+    private final ProtectApplyOps applyOps;
     private ProtectConfig config;
     private ProtectDatabase database;
     private ChangeRepository repository;
 
     public ProtectServiceImpl(JavaPlugin plugin) {
         this.plugin = plugin;
+        this.applyOps = new ProtectApplyOps(plugin);
     }
 
     public ProtectConfig config() {
@@ -83,6 +76,56 @@ public final class ProtectServiceImpl implements ProtectService {
                         world, x, y, z, before, after);
             } catch (SQLException e) {
                 plugin.getLogger().warning("Protect log failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public void logEditBatch(UUID editOpId, UUID actorUuid, String actorName,
+                             List<ProtectEditBlock> edits) {
+        if (!isLogging() || repository == null || editOpId == null || edits == null || edits.isEmpty()) {
+            return;
+        }
+        String name = actorName == null || actorName.isBlank() ? "worldedit" : actorName;
+        YapSched.async(plugin, () -> {
+            try {
+                for (ProtectEditBlock edit : edits) {
+                    if (edit == null) {
+                        continue;
+                    }
+                    String before = edit.blockBefore() == null ? "" : edit.blockBefore();
+                    String after = edit.blockAfter() == null ? "" : edit.blockAfter();
+                    if (before.equals(after)) {
+                        continue;
+                    }
+                    ChangeType type = after.isBlank() || "air".equalsIgnoreCase(after)
+                            || after.startsWith("minecraft:air")
+                            ? ChangeType.BLOCK_BREAK
+                            : ChangeType.BLOCK_PLACE;
+                    repository.insert(config.serverId(), type, actorUuid, name,
+                            edit.world(), edit.x(), edit.y(), edit.z(), before, after, editOpId);
+                }
+            } catch (SQLException e) {
+                plugin.getLogger().warning("Protect edit-session log failed: " + e.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public CompletableFuture<List<BlockChangeRecord>> lookupEditSession(UUID editOpId, int limit) {
+        return CompletableFuture.supplyAsync(() -> query(() ->
+                repository.lookupByEditOp(editOpId, pageSize(limit))));
+    }
+
+    @Override
+    public CompletableFuture<Integer> rollbackEditSession(UUID editOpId) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                List<Long> ids = repository.listIdsByEditOp(editOpId, 50_000);
+                return rollbackChanges(ids).join();
+            } catch (SQLException e) {
+                plugin.getLogger().warning("Protect edit-session rollback failed: " + e.getMessage());
+                return 0;
             }
         });
     }
@@ -163,14 +206,14 @@ public final class ProtectServiceImpl implements ProtectService {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 List<ProtectChange> changes = new ArrayList<>(repository.fetchByIds(changeIds));
-                changes.sort(rollbackOrder());
+                changes.sort(applyOps.rollbackOrder());
                 int applied = 0;
                 List<Long> rolled = new ArrayList<>();
                 for (ProtectChange change : changes) {
                     if (change.rolledBack()) {
                         continue;
                     }
-                    if (applyChangeRollback(change)) {
+                    if (applyOps.applyChangeRollback(change)) {
                         applied++;
                         rolled.add(change.id());
                     }
@@ -229,14 +272,14 @@ public final class ProtectServiceImpl implements ProtectService {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 List<ProtectChange> changes = new ArrayList<>(repository.fetchByIds(changeIds));
-                changes.sort(restoreOrder());
+                changes.sort(applyOps.restoreOrder());
                 int applied = 0;
                 List<Long> restored = new ArrayList<>();
                 for (ProtectChange change : changes) {
                     if (!change.rolledBack()) {
                         continue;
                     }
-                    if (applyChangeRestore(change)) {
+                    if (applyOps.applyChangeRestore(change)) {
                         applied++;
                         restored.add(change.id());
                     }
@@ -298,100 +341,6 @@ public final class ProtectServiceImpl implements ProtectService {
                 return List.of();
             }
         });
-    }
-
-    private Comparator<ProtectChange> rollbackOrder() {
-        return (a, b) -> {
-            boolean invA = a.changeType() == ChangeType.CONTAINER_INVENTORY;
-            boolean invB = b.changeType() == ChangeType.CONTAINER_INVENTORY;
-            if (invA && invB) {
-                return Long.compare(b.epochMs(), a.epochMs());
-            }
-            if (invA != invB) {
-                return invA ? -1 : 1;
-            }
-            return Long.compare(a.epochMs(), b.epochMs());
-        };
-    }
-
-    private Comparator<ProtectChange> restoreOrder() {
-        return rollbackOrder().reversed();
-    }
-
-    private boolean applyChangeRollback(ProtectChange change) {
-        if (!ProtectApplyRules.canRollback(change.changeType())) {
-            return false;
-        }
-        return switch (change.changeType()) {
-            case BLOCK_BREAK, BLOCK_PLACE, EXPLOSION, LIQUID_FLOW, FIRE ->
-                    applyBlockState(change, change.blockBefore());
-            case CONTAINER_INVENTORY -> applyInventoryState(change, change.blockBefore());
-            default -> false;
-        };
-    }
-
-    private boolean applyChangeRestore(ProtectChange change) {
-        if (!ProtectApplyRules.canRestore(change.changeType())) {
-            return false;
-        }
-        return switch (change.changeType()) {
-            case BLOCK_BREAK, BLOCK_PLACE, EXPLOSION, LIQUID_FLOW, FIRE ->
-                    applyBlockState(change, change.blockAfter());
-            case CONTAINER_INVENTORY -> applyInventoryState(change, change.blockAfter());
-            default -> false;
-        };
-    }
-
-    private boolean applyBlockState(ProtectChange change, String encoded) {
-        World world = Bukkit.getWorld(change.world());
-        if (world == null) {
-            return false;
-        }
-        Location loc = new Location(world, change.x(), change.y(), change.z());
-        CompletableFuture<Boolean> done = new CompletableFuture<>();
-        YapSched.region(plugin, loc, () -> {
-            try {
-                Block block = loc.getBlock();
-                BlockCodec.apply(block, encoded);
-                done.complete(true);
-            } catch (Exception e) {
-                done.complete(false);
-            }
-        });
-        try {
-            return done.get(5, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private boolean applyInventoryState(ProtectChange change, String encoded) {
-        World world = Bukkit.getWorld(change.world());
-        if (world == null) {
-            return false;
-        }
-        Location loc = new Location(world, change.x(), change.y(), change.z());
-        CompletableFuture<Boolean> done = new CompletableFuture<>();
-        YapSched.region(plugin, loc, () -> {
-            try {
-                BlockState state = loc.getBlock().getState();
-                if (!(state instanceof Container container)) {
-                    done.complete(false);
-                    return;
-                }
-                Inventory inventory = container.getInventory();
-                InventoryCodec.apply(inventory, encoded);
-                state.update(true, false);
-                done.complete(true);
-            } catch (Exception e) {
-                done.complete(false);
-            }
-        });
-        try {
-            return done.get(5, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (Exception e) {
-            return false;
-        }
     }
 
     @Override

@@ -91,8 +91,14 @@ public final class BedrockItemStackRequests {
                     } else if (action instanceof DropAction drop) {
                         applyDrop(session, drop, touched);
                     }
+                } else if (type == ItemStackRequestActionType.CRAFT_RECIPE
+                        || type == ItemStackRequestActionType.CRAFT_RECIPE_AUTO
+                        || type == ItemStackRequestActionType.CRAFT_CREATIVE
+                        || type == ItemStackRequestActionType.CRAFT_RESULTS_DEPRECATED
+                        || type == ItemStackRequestActionType.CRAFT_RECIPE_OPTIONAL) {
+                    // Client-auth craft: ingredients arrive as TAKE/PLACE; take result via JE click.
+                    BedrockItemStackJeForward.applyCraftResultClick(session, action);
                 } else {
-                    // Craft / recipe / mine — leave JE to drive via other packets; ack OK so UI unsticks.
                     LOG.fine("BE ItemStackRequest skip type=" + type + " user=" + session.username());
                 }
             } catch (Exception e) {
@@ -134,7 +140,7 @@ public final class BedrockItemStackRequests {
         ItemData placed = putInto(session, dest, taken);
         noteSlot(touched, source, getSlot(session, source), session);
         noteSlot(touched, dest, placed != null ? placed : getSlot(session, dest), session);
-        forwardJeClick(session, source, dest, count, false);
+        BedrockItemStackJeForward.forwardJeClick(session, source, dest, count, false);
     }
 
     private static void applySwap(LinkBedrockSession session, SwapAction action,
@@ -147,7 +153,7 @@ public final class BedrockItemStackRequests {
         setSlot(session, b, left != null ? left : ItemData.AIR);
         noteSlot(touched, a, getSlot(session, a), session);
         noteSlot(touched, b, getSlot(session, b), session);
-        forwardJeClick(session, a, b, 1, true);
+        BedrockItemStackJeForward.forwardJeClick(session, a, b, 1, true);
     }
 
     private static void applyDrop(LinkBedrockSession session, DropAction action,
@@ -285,8 +291,10 @@ public final class BedrockItemStackRequests {
             ItemData off = session.bedrockOffhand();
             return off != null ? off : ItemData.AIR;
         }
-        // Open container (chest etc.) — mirror via JE window content cache on session.
-        ItemData cached = session.containerSlot(index);
+        // Craft / specialty / open container — JE window content cache keyed by JE slot.
+        Integer je = BedrockItemStackSlots.toJeSlot(session, slot);
+        int cacheIdx = je != null && je >= 0 ? je : index;
+        ItemData cached = session.containerSlot(cacheIdx);
         return cached != null ? cached : ItemData.AIR;
     }
 
@@ -343,7 +351,9 @@ public final class BedrockItemStackRequests {
             pushBeSlot(session, ContainerId.OFFHAND, 0, value);
             return;
         }
-        session.setContainerSlot(index, value);
+        Integer je = BedrockItemStackSlots.toJeSlot(session, slot);
+        int cacheIdx = je != null && je >= 0 ? je : index;
+        session.setContainerSlot(cacheIdx, value);
         int win = Math.max(1, session.lastJeWindowId());
         pushBeSlot(session, win, index, value);
     }
@@ -371,80 +381,6 @@ public final class BedrockItemStackRequests {
         ItemStackResponseSlot resp = new ItemStackResponseSlot(
                 slot.getSlot(), slot.getSlot(), count, netId, "", 0, "");
         touched.computeIfAbsent(slot.getContainer(), k -> new ArrayList<>()).add(resp);
-    }
-
-    /**
-     * Forward a simplified JE click so Folia applies the same move.
-     * PICKUP on source then dest approximates take→place; SWAP uses mode=2.
-     */
-    private static void forwardJeClick(LinkBedrockSession session,
-                                       ItemStackRequestSlotData source,
-                                       ItemStackRequestSlotData dest,
-                                       int count,
-                                       boolean swap) {
-        JavaDownstreamClient down = session.downstream();
-        if (down == null || down.phase() != JavaDownstreamClient.Phase.PLAY) {
-            return;
-        }
-        int windowId = session.lastJeWindowId() > 0 ? session.lastJeWindowId() : 0;
-        int stateId = session.jeContainerStateId();
-        Integer srcJe = toJeSlot(session, source);
-        Integer dstJe = toJeSlot(session, dest);
-        if (swap && srcJe != null && dstJe != null) {
-            // mode=2 SWAP, button = hotbar index if dest is hotbar else 0
-            int button = 0;
-            if (dstJe >= 36 && dstJe <= 44) {
-                button = dstJe - 36;
-            }
-            down.sendContainerClick(windowId, stateId, srcJe, button, 2, null);
-            return;
-        }
-        if (srcJe != null) {
-            int button = count == 1 ? 0 : 0; // left pickup
-            down.sendContainerClick(windowId, stateId, srcJe, button, 0, null);
-        }
-        if (dstJe != null && (source == null || source.getContainer() != ContainerSlotType.CURSOR
-                || dest.getContainer() != ContainerSlotType.CURSOR)) {
-            down.sendContainerClick(windowId, stateId, dstJe, 0, 0, null);
-        }
-    }
-
-    /** Map Bedrock slot → JE window slot for player inv / open container. */
-    static Integer toJeSlot(LinkBedrockSession session, ItemStackRequestSlotData slot) {
-        if (slot == null) {
-            return null;
-        }
-        ContainerSlotType type = slot.getContainer();
-        int index = Math.max(0, slot.getSlot());
-        if (type == ContainerSlotType.CURSOR) {
-            return -1; // carried — clicks use slot=-999 for outside; ignore for now
-        }
-        if (type == ContainerSlotType.HOTBAR) {
-            return 36 + Math.min(8, index);
-        }
-        if (type == ContainerSlotType.HOTBAR_AND_INVENTORY) {
-            if (index < 9) {
-                return 36 + index;
-            }
-            if (index < 36) {
-                return index; // 9-35 already JE main numbering when combined starts at 0 hotbar
-            }
-            return index;
-        }
-        if (type == ContainerSlotType.INVENTORY) {
-            return 9 + Math.min(26, index);
-        }
-        if (type == ContainerSlotType.ARMOR) {
-            return 5 + Math.min(3, index);
-        }
-        if (type == ContainerSlotType.OFFHAND) {
-            return 45;
-        }
-        // Open container slots are JE-local 0..N-1
-        if (session.lastJeWindowId() > 0) {
-            return index;
-        }
-        return index;
     }
 
     private static ItemData[] ensureInv(LinkBedrockSession session) {

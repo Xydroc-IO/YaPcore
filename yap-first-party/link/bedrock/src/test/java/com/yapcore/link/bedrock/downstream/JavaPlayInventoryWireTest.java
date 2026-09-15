@@ -30,4 +30,16 @@ final class JavaPlayInventoryWireTest {
     void attackPacketIdRemainsOne() {
         assertEquals(1, JavaPlayWire.SB_ATTACK);
     }
+
+    @Test
+    void renameItemUsesProtocolId48() {
+        ByteBuf buf = JavaPlayInventoryWire.renameItem("Sharpness VII");
+        try {
+            assertEquals(JavaPlayWire.SB_RENAME_ITEM, McCodec.readVarInt(buf));
+            assertEquals(48, JavaPlayWire.SB_RENAME_ITEM);
+            assertEquals("Sharpness VII", McCodec.readString(buf, 32767));
+        } finally {
+            buf.release();
+        }
+    }
 }

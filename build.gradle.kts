@@ -52,6 +52,7 @@ dependencies {
     implementation("io.netty:netty-transport-native-kqueue:4.1.115.Final:osx-x86_64")
     implementation("io.netty:netty-transport-native-kqueue:4.1.115.Final:osx-aarch_64")
     implementation("com.github.luben:zstd-jni:1.5.6-6")
+    implementation("org.xerial.snappy:snappy-java:1.1.10.7")
     implementation("com.formdev:flatlaf:3.5.4")
     implementation("org.yaml:snakeyaml:2.3")
     // Paper-compatible text / audience API for plugins & modules
@@ -83,6 +84,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testImplementation("org.pastalab.fray:fray-junit:$frayVersion")
+    testImplementation("org.xerial:sqlite-jdbc:3.47.1.0")
 
     add("jcstressImplementation", "org.openjdk.jcstress:jcstress-core:$jcstressVersion")
     add("jcstressAnnotationProcessor", "org.openjdk.jcstress:jcstress-core:$jcstressVersion")

@@ -125,4 +125,20 @@ final class RakNetSessionCompression {
             inflater.end();
         }
     }
+
+    /** Bedrock game-batch compression method 1 (SNAPPY). */
+    static ByteBuf inflateSnappy(ByteBuf compressed) {
+        try {
+            byte[] in = new byte[compressed.readableBytes()];
+            compressed.getBytes(compressed.readerIndex(), in);
+            byte[] out = org.xerial.snappy.Snappy.uncompress(in);
+            if (out == null || out.length == 0 || out.length > 16 * 1024 * 1024) {
+                return null;
+            }
+            return Unpooled.wrappedBuffer(out);
+        } catch (Exception e) {
+            LOG.warning("inflateSnappy: " + e.getMessage());
+            return null;
+        }
+    }
 }

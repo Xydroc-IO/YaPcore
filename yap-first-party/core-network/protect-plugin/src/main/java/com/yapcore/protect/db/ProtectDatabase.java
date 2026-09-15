@@ -81,6 +81,23 @@ public final class ProtectDatabase implements AutoCloseable {
             createIndex(st, "idx_yap_protect_epoch", "yap_protect_changes", "server_id, epoch_ms");
             createIndex(st, "idx_yap_protect_server", "yap_protect_changes", "server_id");
             widenPayloadColumns(st);
+            ensureEditOpColumn(st);
+        }
+    }
+
+    private void ensureEditOpColumn(Statement st) {
+        try {
+            switch (dialect.engine()) {
+                case MYSQL -> st.execute(
+                        "ALTER TABLE yap_protect_changes ADD COLUMN edit_op_id CHAR(36) NULL");
+                case POSTGRES -> st.execute(
+                        "ALTER TABLE yap_protect_changes ADD COLUMN IF NOT EXISTS edit_op_id VARCHAR(36)");
+                case SQLITE -> st.execute(
+                        "ALTER TABLE yap_protect_changes ADD COLUMN edit_op_id TEXT");
+            }
+            createIndex(st, "idx_yap_protect_edit_op", "yap_protect_changes", "server_id, edit_op_id");
+        } catch (SQLException ignored) {
+            // column already present
         }
     }
 

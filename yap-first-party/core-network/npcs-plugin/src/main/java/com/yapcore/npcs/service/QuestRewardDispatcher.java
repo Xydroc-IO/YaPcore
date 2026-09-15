@@ -203,7 +203,7 @@ final class QuestRewardDispatcher {
         return true;
     }
 
-    /** {@code unlock_recipe:iron_dagger} */
+    /** {@code unlock_recipe:iron_dagger} — requires a {@link RecipeUnlockService} provider. */
     private boolean dispatchUnlockRecipeReward(Player player, String reward) {
         if (reward == null || !reward.startsWith("unlock_recipe:")) {
             return false;
@@ -214,7 +214,11 @@ final class QuestRewardDispatcher {
         }
         var reg = Bukkit.getServicesManager().getRegistration(RecipeUnlockService.class);
         if (reg == null) {
-            plugin.getLogger().fine("unlock_recipe skipped — RecipeUnlockService not loaded");
+            plugin.getLogger().warning(
+                    "unlock_recipe:" + recipeId + " skipped — no RecipeUnlockService "
+                            + "(quest reward for " + player.getName() + ")");
+            YapSched.entity(plugin, player, () ->
+                    player.sendMessage("§cRecipe unlock unavailable (no RecipeUnlockService)."));
             return true;
         }
         reg.getProvider().unlock(player.getUniqueId(), recipeId).thenRun(() ->
@@ -223,15 +227,23 @@ final class QuestRewardDispatcher {
         return true;
     }
 
-    /** {@code teleport_unlock:mining_guild} — stored as command for mmo-content hook. */
+    /**
+     * {@code teleport_unlock:mining_guild} — reserved for a future MMO content plugin.
+     * Does not dispatch a fake console command.
+     */
     private boolean dispatchTeleportUnlockReward(Player player, String reward) {
         if (reward == null || !reward.startsWith("teleport_unlock:")) {
             return false;
         }
         String unlockId = reward.substring("teleport_unlock:".length()).trim();
-        YapSched.global(plugin, () ->
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
-                        "yapmmo unlockteleport " + player.getName() + " " + unlockId));
+        if (unlockId.isEmpty()) {
+            return true;
+        }
+        plugin.getLogger().warning(
+                "teleport_unlock:" + unlockId + " skipped — no MMO teleport-unlock provider "
+                        + "(quest reward for " + player.getName() + ")");
+        YapSched.entity(plugin, player, () ->
+                player.sendMessage("§cTeleport unlock unavailable (not implemented)."));
         return true;
     }
 }

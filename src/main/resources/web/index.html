@@ -391,6 +391,59 @@
         <div id="accOut" class="status-line hidden" hidden></div>
       </section>
 
+      <section id="tab-setup" class="panel">
+        <div class="page-header">
+          <h2>Setup</h2>
+          <p>First-boot checklist for Linux and Windows. Database and fleet bootstrap stay on <strong>Fleet</strong>; full nginx install stays on Network setup / Swing.</p>
+        </div>
+        <p id="setupOsHint" class="muted hint"></p>
+        <div class="grid stats">
+          <div class="stat"><span>Ready</span><strong id="setupReady">—</strong></div>
+          <div class="stat"><span>OS</span><strong id="setupOs">—</strong></div>
+          <div class="stat"><span>Bash</span><strong id="setupBash">—</strong></div>
+          <div class="stat"><span>PowerShell</span><strong id="setupPs">—</strong></div>
+        </div>
+        <div class="card">
+          <h3>Checklist</h3>
+          <div id="setupSteps"></div>
+        </div>
+        <div class="card">
+          <h3>Actions</h3>
+          <div class="btn-row">
+            <button id="setupRefresh">Refresh</button>
+            <button id="setupEula" class="primary">Accept EULA</button>
+            <button id="setupSeed">Seed defaults</button>
+            <button id="setupForward">Link forwarding ON</button>
+            <button id="setupTebex">Fetch Tebex</button>
+            <button id="setupFetchGrim">Fetch Grim</button>
+            <button id="setupEnableGrim">Enable Grim</button>
+            <button id="setupProd">Production profile</button>
+            <button id="setupNginx">nginx dry-run</button>
+            <button id="setupFolia">Build YaP-Folia</button>
+          </div>
+          <label style="display:block;margin-top:10px">
+            <input type="checkbox" id="setupWithLink"/> Production profile also enables Link forwarding
+          </label>
+          <p class="muted hint" style="margin-top:8px">
+            Deeplinks: <a href="#" id="setupOpenFleet">Fleet → Database / Bootstrap</a>
+            · <a href="#" id="setupOpenTebex">Tebex store</a>
+            · <a href="#" id="setupOpenAdmin">Network setup</a>
+          </p>
+        </div>
+        <div class="card">
+          <h3>Platform commands</h3>
+          <div class="form-grid">
+            <label>Linux
+              <pre id="setupLinuxCmds" class="report"></pre>
+            </label>
+            <label>Windows
+              <pre id="setupWinCmds" class="report"></pre>
+            </label>
+          </div>
+        </div>
+        <pre id="setupOut" class="report"></pre>
+      </section>
+
       <section id="tab-admin" class="panel">
         <div class="page-header">
           <h2>Network setup</h2>
@@ -1438,18 +1491,22 @@
       <section id="tab-tebex" class="panel">
         <div class="page-header">
           <h2>Tebex store</h2>
-          <p>Connect the shipped Folia Tebex plugin to your web store. Hub only — put packages on creator.tebex.io with <code>{username}</code> console commands.</p>
+          <p>Connect the shipped Folia Tebex plugin to your web store. <strong>Hub / lobby only</strong> — put packages on creator.tebex.io with <code>{username}</code> console commands, or use the webhook endpoint (<code>yap-tebex.jar</code>) for push delivery.</p>
         </div>
         <p id="tbxHint" class="muted hint"></p>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="tbxInstalled">—</strong></div>
           <div class="stat"><span>Secret</span><strong id="tbxSecret">—</strong></div>
+          <div class="stat"><span>Store</span><strong id="tbxStore">—</strong></div>
+          <div class="stat"><span>Hub placement</span><strong id="tbxHub">—</strong></div>
           <div class="stat"><span>/buy</span><strong id="tbxBuy">—</strong></div>
-          <div class="stat"><span>Proxy mode</span><strong id="tbxProxy">—</strong></div>
+          <div class="stat"><span>Pending kits</span><strong id="tbxPending">—</strong></div>
+          <div class="stat"><span>Stuck kits</span><strong id="tbxStuck">—</strong></div>
+          <div class="stat"><span>Last check</span><strong id="tbxLastCheck">—</strong></div>
         </div>
         <div class="card">
           <h3>1. Connect store</h3>
-          <p class="muted hint">Create a game server at <a href="https://creator.tebex.io/" target="_blank" rel="noopener">creator.tebex.io</a>, copy the secret key, paste below. Install jar with <code>./scripts/fetch-tebex.sh</code> if missing.</p>
+          <p class="muted hint">Create a game server at <a href="https://creator.tebex.io/" target="_blank" rel="noopener">creator.tebex.io</a>, copy the secret key, paste below. Install jar with <code>./scripts/fetch-tebex.sh</code> if missing (Hub only).</p>
           <div class="form-grid">
             <label>Secret key
               <input id="tbxSecretInput" type="password" autocomplete="off" placeholder="paste game-server secret"/>
@@ -1460,6 +1517,7 @@
             <button id="tbxInfo">Store info</button>
             <button id="tbxForceCheck">Force check</button>
           </div>
+          <div id="tbxStatusBox" class="muted hint" style="margin-top:8px"></div>
         </div>
         <div class="card">
           <h3>2. Plugin settings</h3>
@@ -1474,13 +1532,68 @@
             <label>Verbose debug
               <select id="tbxVerbose"><option value="false">off</option><option value="true">on</option></select>
             </label>
+            <label>Check for updates
+              <select id="tbxCheckUpdates"><option value="true">on</option><option value="false">off</option></select>
+            </label>
+            <label>Auto-report errors
+              <select id="tbxAutoReport"><option value="true">on</option><option value="false">off</option></select>
+            </label>
+            <label>GUI home title <input id="tbxGuiTitle" placeholder="Server Shop"/></label>
+            <label>GUI home rows <input id="tbxGuiRows" type="number" min="1" max="6" placeholder="3"/></label>
           </div>
           <button id="tbxSaveSettings" class="primary">Save settings</button>
         </div>
         <div class="card">
+          <h3>2b. Webhook endpoint (yap-tebex)</h3>
+          <p class="muted hint">Push delivery via first-party <code>yap-tebex.jar</code> on Hub. Reverse-proxy
+            <code id="tbxWebhookUrlHint">https://&lt;public&gt;/tebex/webhook</code> → localhost listen.
+            Map package IDs in <code>plugins/YaPTebex/config.yml</code>. Clear creator.tebex.io package commands
+            for those IDs or delivery doubles. Webhook secret ≠ game-server secret.</p>
+          <div class="grid stats">
+            <div class="stat"><span>Webhook plugin</span><strong id="tbxWebhookInstalled">—</strong></div>
+            <div class="stat"><span>Webhook</span><strong id="tbxWebhookEnabledStat">—</strong></div>
+            <div class="stat"><span>Webhook secret</span><strong id="tbxWebhookSecretStat">—</strong></div>
+            <div class="stat"><span>Listen</span><strong id="tbxWebhookListen">—</strong></div>
+            <div class="stat"><span>Packages mapped</span><strong id="tbxWebhookPkgs">—</strong></div>
+            <div class="stat"><span>Last webhook</span><strong id="tbxWebhookLast">—</strong></div>
+          </div>
+          <div class="form-grid">
+            <label>Enable inbound
+              <select id="tbxWebhookEnabled"><option value="false">off</option><option value="true">on</option></select>
+            </label>
+            <label>Port <input id="tbxWebhookPort" type="number" min="1024" max="65535" placeholder="8766"/></label>
+            <label>Webhook secret
+              <input id="tbxWebhookSecret" type="password" autocomplete="off" placeholder="from Developers → Webhooks"/>
+            </label>
+            <label>Enforce Tebex source IPs
+              <select id="tbxWebhookEnforceIps"><option value="true">on</option><option value="false">off (behind proxy)</option></select>
+            </label>
+          </div>
+          <button id="tbxSaveWebhook" class="primary">Save webhook</button>
+        </div>
+        <div class="card">
           <h3>3. Package commands (copy into Tebex)</h3>
-          <p class="muted hint">Execute as console on the Hub. Placeholder must be <code>{username}</code>. Full examples: <code>examples/tebex/</code> · <a href="docs/ops/TEBEX.md">TEBEX.md</a></p>
+          <p class="muted hint">Execute as console on the Hub. Placeholder must be <code>{username}</code>. Edit recipes below or in <code>config/tebex-recipes.yml</code>. Examples: <code>examples/tebex/</code> · <a href="docs/ops/TEBEX.md">TEBEX.md</a></p>
           <div id="tbxRecipes"></div>
+          <div class="form-grid" style="margin-top:12px">
+            <label>Recipe name <input id="tbxRecipeName" placeholder="VIP rank"/></label>
+            <label>Commands (one per line)
+              <textarea id="tbxRecipeCommands" rows="4" placeholder="yapperm user {username} parent set vip&#10;kit grant {username} vip"></textarea>
+            </label>
+          </div>
+          <div class="btn-row">
+            <button id="tbxUpsertRecipe" class="primary">Save recipe</button>
+            <button id="tbxDeleteRecipe">Delete recipe</button>
+          </div>
+          <label style="display:block;margin-top:12px">Full recipes YAML
+            <textarea id="tbxRecipesYaml" rows="10" spellcheck="false"></textarea>
+          </label>
+          <button id="tbxSaveRecipesYaml" style="margin-top:8px">Save recipes YAML</button>
+        </div>
+        <div class="card">
+          <h3>4. Kit grant queue</h3>
+          <p class="muted hint" id="tbxGrantHint">Pending <code>kit grant</code> rows from YaPDB. Stuck = kit id missing from this catalog’s <code>kits.yml</code>.</p>
+          <div id="tbxGrants"></div>
         </div>
         <div class="toolbar">
           <button id="tbxRefresh">Refresh</button>
@@ -1491,7 +1604,7 @@
           ·
           <a id="tbxOpenDocs" href="https://docs.tebex.io/creators/tebex-control-panel/game-servers/minecraft-java-edition" target="_blank" rel="noopener">Tebex Minecraft docs</a>
           ·
-          <a href="docs/ops/TEBEX.md">YaP TEBEX.md</a>
+          <a id="tbxOpenYapDocs" href="docs/ops/TEBEX.md">YaP TEBEX.md</a>
         </p>
         <pre id="tbxOut" class="report"></pre>
       </section>
@@ -1752,7 +1865,7 @@
       <section id="tab-map" class="panel">
         <div class="page-header">
           <h2>Map</h2>
-          <p>Flat web map (Leaflet + PNG tiles) via <code>yap-map</code>. Live player markers; optional NPC/region overlays. BlueMap-style 3D is Stretch / out of scope for now.</p>
+          <p>Flat web map (Leaflet + PNG tiles) via <code>yap-map</code>. Live player markers; optional NPC/region/claim overlays. Optional BlueMap-style 3D when <code>mesh.enabled: true</code> — open with <code>?view=3d</code>.</p>
         </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="mapInstalled">—</strong></div>
@@ -2095,6 +2208,7 @@
   <script src="/app-access-panels.js"></script>
   <script src="/app-players-panels.js"></script>
   <script src="/app-admin-panels.js"></script>
+  <script src="/app-setup.js"></script>
   <script src="/app-ops-panels.js"></script>
   <script src="/app-fleet.js"></script>
   <script src="/app-database.js"></script>

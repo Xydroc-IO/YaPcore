@@ -15,8 +15,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Minimal CombatService: sums gear bonuses from equipped/held YaPItems.
- * HP APIs are no-ops until YaPSkills owns the full combat pool.
+ * Gear-only CombatService: sums bonuses from equipped/held YaPItems.
+ * Does not own combat XP or a real HP pool — YaPSkills keeps awarding combat XP.
  */
 public final class ItemsCombatService implements CombatService {
 
@@ -26,6 +26,11 @@ public final class ItemsCombatService implements CombatService {
     public ItemsCombatService(ItemRegistry registry, ItemFactory factory) {
         this.registry = registry;
         this.factory = factory;
+    }
+
+    @Override
+    public boolean ownsCombatXp() {
+        return false;
     }
 
     @Override

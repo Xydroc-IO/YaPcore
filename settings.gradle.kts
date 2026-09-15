@@ -143,6 +143,9 @@ project(":tab-plugin").projectDir = file("yap-first-party/core-network/tab-plugi
 include("discord-plugin")
 project(":discord-plugin").projectDir = file("yap-first-party/core-network/discord-plugin")
 
+include("tebex-webhook-plugin")
+project(":tebex-webhook-plugin").projectDir = file("yap-first-party/core-network/tebex-webhook-plugin")
+
 include("yap-discord-api")
 project(":yap-discord-api").projectDir = file("yap-first-party/api/yap-discord-api")
 

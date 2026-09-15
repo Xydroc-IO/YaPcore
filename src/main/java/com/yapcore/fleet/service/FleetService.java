@@ -1,16 +1,13 @@
 package com.yapcore.fleet.service;
 
 import com.yapcore.config.ServerConfig;
-import com.yapcore.fleet.link.BackendHealthBridge;
 import com.yapcore.fleet.link.LinkFleetSync;
 import com.yapcore.fleet.local.InstanceLayout;
 import com.yapcore.fleet.local.LocalInstanceSupervisor;
 import com.yapcore.fleet.model.FleetInstance;
 import com.yapcore.fleet.model.FleetNode;
-import com.yapcore.fleet.model.InstanceState;
 import com.yapcore.fleet.ops.DatabaseSetup;
 import com.yapcore.fleet.ops.FleetDeploy;
-import com.yapcore.fleet.ops.FleetPlayerIndex;
 import com.yapcore.fleet.ops.NetworkBootstrap;
 import com.yapcore.fleet.remote.FleetAgentClient;
 import com.yapcore.fleet.store.FleetMigrator;
@@ -18,7 +15,6 @@ import com.yapcore.fleet.store.FleetStore;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,8 +46,8 @@ public final class FleetService {
         if (store.exists()) {
             try {
                 store.load();
-                healEmptyPluginsQuiet();
-                syncSharedCatalogQuiet();
+                FleetCatalogOps.healEmptyPluginsQuiet(rootDir, config, store, isEnabled());
+                FleetCatalogOps.syncSharedCatalogQuiet(rootDir);
             } catch (IOException e) {
                 LOG.log(Level.WARNING, "Failed to load fleet.json", e);
             }
@@ -77,7 +73,7 @@ public final class FleetService {
         out.put("action", "enable-fleet");
         out.put("fleetFile", store.fleetFile().toString());
         out.put("primaryId", store.primaryId());
-        out.put("instances", snapshotInstances());
+        out.put("instances", FleetStatusSnapshot.snapshotInstances(rootDir, store, local));
         return out;
     }
 
@@ -225,89 +221,18 @@ public final class FleetService {
         return out;
     }
 
-    private void healEmptyPluginsQuiet() {
-        if (!isEnabled() && !store.exists()) {
-            return;
-        }
-        for (FleetInstance inst : store.instances()) {
-            if (!inst.isLocal()) {
-                continue;
-            }
-            try {
-                if (InstanceLayout.countPluginJars(rootDir, inst) == 0) {
-                    int n = InstanceLayout.healEmptyPlugins(rootDir, config, inst);
-                    if (n > 0) {
-                        LOG.info("Healed empty plugins on " + inst.id() + " → " + n + " jar(s)");
-                    }
-                }
-            } catch (IOException e) {
-                LOG.log(Level.WARNING, "Heal plugins " + inst.id(), e);
-            }
-        }
-    }
-
-    /** Push catalog kits/items/QoL/JDBC into every local fleet backend (one-network content). */
-    private void syncSharedCatalogQuiet() {
-        try {
-            int n = InstanceLayout.syncSharedCatalogDataToLocalFleet(rootDir);
-            if (n > 0) {
-                LOG.info("Synced " + n + " shared catalog file(s) across local fleet instances");
-            }
-        } catch (IOException e) {
-            LOG.log(Level.WARNING, "Shared catalog sync", e);
-        }
-    }
-
     /**
      * Catalog → all local instances for shared definitions (items, kits, QoL, YaPDB JDBC).
      * Call after editing catalog YAML or when aligning a fleet that drifted.
      */
     public Map<String, Object> syncSharedCatalog() throws IOException {
         requireEnabled();
-        int files = InstanceLayout.syncSharedCatalogDataToLocalFleet(rootDir);
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("ok", true);
-        out.put("action", "sync-shared-catalog");
-        out.put("filesWritten", files);
-        out.put("instances", store.instances().stream().filter(FleetInstance::isLocal).map(FleetInstance::id).toList());
-        return out;
+        return FleetCatalogOps.syncSharedCatalog(rootDir, store);
     }
 
     /** Reload shared data plugins on every running local instance (kits / items / playerdata). */
     public Map<String, Object> reloadSharedCatalogOnRunning() {
-        List<Map<String, Object>> results = new ArrayList<>();
-        for (FleetInstance inst : store.instances()) {
-            if (!inst.isLocal()) {
-                continue;
-            }
-            LocalInstanceSupervisor sup = local.get(inst.id());
-            if (sup == null || !sup.isRunning()) {
-                continue;
-            }
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("instanceId", inst.id());
-            try {
-                row.put("yapdata", sup.dispatch("yapdata reload"));
-                row.put("yapitems", safeDispatch(sup, "yapitems reload"));
-                row.put("ok", true);
-            } catch (Exception e) {
-                row.put("ok", false);
-                row.put("error", e.getMessage());
-            }
-            results.add(row);
-        }
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("ok", results.stream().allMatch(r -> Boolean.TRUE.equals(r.get("ok"))) || results.isEmpty());
-        out.put("results", results);
-        return out;
-    }
-
-    private static String safeDispatch(LocalInstanceSupervisor sup, String line) {
-        try {
-            return sup.dispatch(line);
-        } catch (Exception e) {
-            return e.getMessage() == null ? "failed" : e.getMessage();
-        }
+        return FleetCatalogOps.reloadSharedCatalogOnRunning(store, local);
     }
 
     public Map<String, Object> setInstancePluginEnabled(String id, String jar, boolean enable)
@@ -370,19 +295,8 @@ public final class FleetService {
     }
 
     public Map<String, Object> statusSnapshot() {
-        Map<String, Object> out = new LinkedHashMap<>();
-        out.put("ok", true);
-        out.put("fleetEnabled", isEnabled());
-        out.put("fleetFilePresent", store.exists());
-        out.put("primaryId", store.primaryId());
-        out.put("instances", snapshotInstances());
-        out.put("nodes", store.nodes().stream().map(FleetNode::toMap).toList());
-        out.put("backendHealth", BackendHealthBridge.collectMaps(
-                rootDir, config.getLinkEmbedHome(), linkRunning.getAsBoolean()));
-        out.put("players", FleetPlayerIndex.collect(
-                new FleetPlayerIndex.PathRoot(rootDir),
-                config, store, agents, linkRunning.getAsBoolean()));
-        return out;
+        return FleetStatusSnapshot.status(
+                rootDir, config, store, agents, local, isEnabled(), linkRunning);
     }
 
     public Map<String, Object> setAutoStart(String id, boolean autoStart) throws IOException {
@@ -505,26 +419,5 @@ public final class FleetService {
                 // keep memory
             }
         }
-    }
-
-    private List<Map<String, Object>> snapshotInstances() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        for (FleetInstance inst : store.instances()) {
-            Map<String, Object> m = new LinkedHashMap<>(inst.toMap());
-            if (inst.isLocal()) {
-                LocalInstanceSupervisor sup = local.get(inst.id());
-                InstanceState st = sup == null ? InstanceState.STOPPED : sup.state();
-                m.put("state", st.name());
-                m.put("running", st == InstanceState.RUNNING);
-                m.put("lastError", sup == null ? null : sup.lastError());
-                m.put("pluginCount", InstanceLayout.countPluginJars(rootDir, inst));
-            } else {
-                m.put("state", "REMOTE");
-                m.put("running", false);
-                m.put("pluginCount", null);
-            }
-            list.add(m);
-        }
-        return list;
     }
 }

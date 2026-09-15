@@ -61,6 +61,7 @@ public final class JavaOpenScreenTranslator {
             case 18 -> ContainerType.SMOKER;
             case 19 -> ContainerType.CARTOGRAPHY;
             case 20 -> ContainerType.STONECUTTER;
+            case 21 -> ContainerType.SMITHING_TABLE;
             default -> ContainerType.CONTAINER;
         };
     }

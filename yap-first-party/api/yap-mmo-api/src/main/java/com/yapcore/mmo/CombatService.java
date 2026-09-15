@@ -17,4 +17,12 @@ public interface CombatService {
     CompletableFuture<Void> setHp(UUID playerId, int hp);
 
     Optional<GearBonus> gearBonusFor(org.bukkit.inventory.ItemStack stack);
+
+    /**
+     * When true, YaPSkills defers combat XP to this provider (full combat pool).
+     * Gear-only providers (e.g. YaPItems) return false so Skills keeps awarding XP.
+     */
+    default boolean ownsCombatXp() {
+        return true;
+    }
 }

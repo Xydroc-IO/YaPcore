@@ -143,6 +143,7 @@ public final class BlockBatch {
                 .thenApply(v -> {
                     if (session != null && playerId != null) {
                         undo.push(playerId, session);
+                        ProtectEditBridge.logSession(player, session);
                     }
                     notifyDone(playerId, changed.get());
                     clearCancel(playerId);
@@ -191,6 +192,7 @@ public final class BlockBatch {
                 .thenApply(v -> {
                     if (session != null && playerId != null) {
                         undo.push(playerId, session);
+                        ProtectEditBridge.logSession(player, session);
                     }
                     notifyDone(playerId, changed.get());
                     clearCancel(playerId);

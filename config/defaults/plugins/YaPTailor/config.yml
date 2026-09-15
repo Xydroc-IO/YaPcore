@@ -1,0 +1,28 @@
+# YaP Tailor — custom skins & wardrobe (product seed)
+max-slots: 12
+cooldown-ms: 3000
+max-png-bytes: 1048576
+# Empty list or include "*" to allow any HTTPS host
+allowed-hosts:
+  - "*"
+# Chassis ResourcePack HTTP base for Fabric upload + wardrobe thumbs.
+# Example: "http://127.0.0.1:8081" or your public pack host. Empty until set.
+skin-host-public-base-url: ""
+default-model: WIDE
+
+# When true (or chassis parity.bedrock-feel mirrored here), kick JE clients that
+# never send yap:presence HELLO. Bedrock clients are unaffected (Floodgate path).
+parity.bedrock-feel: false
+require-presence-mod: false
+# ~10s at 20 TPS
+presence-hello-timeout-ticks: 200
+
+use-shared-yapdb: true
+# Fallback SQLite when YaPDB is absent (file under plugin data folder)
+database:
+  jdbc-url: ""
+  user: yap
+  password: change-me
+  pool-max: 4
+  pool-min-idle: 1
+  connection-timeout-ms: 10000

@@ -48,5 +48,16 @@ public interface ProtectService {
     /** Inverse of rollback for previously rolled-back restorable changes. */
     CompletableFuture<Integer> restoreChanges(List<Long> changeIds);
 
+    /**
+     * Log a YaPWorld / WorldEdit apply as one correlated edit session.
+     * {@code editOpId} is stored on every row for {@link #rollbackEditSession} /
+     * {@link #lookupEditSession}.
+     */
+    void logEditBatch(UUID editOpId, UUID actorUuid, String actorName, List<ProtectEditBlock> edits);
+
+    CompletableFuture<List<BlockChangeRecord>> lookupEditSession(UUID editOpId, int limit);
+
+    CompletableFuture<Integer> rollbackEditSession(UUID editOpId);
+
     CompletableFuture<Long> pruneBefore(long epochMs);
 }

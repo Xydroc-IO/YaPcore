@@ -54,7 +54,14 @@ public final class DashboardMapServe {
                 return;
             }
             if ("markers.json".equals(rel)) {
-                byte[] body = DashboardMapMarkers.build(server, rootDir).getBytes(StandardCharsets.UTF_8);
+                // Prefer plugin-written markers (claims, POIs, origin). Fall back to live builder.
+                Path diskMarkers = mapWebDir.resolve("markers.json");
+                byte[] body;
+                if (Files.isRegularFile(diskMarkers)) {
+                    body = Files.readAllBytes(diskMarkers);
+                } else {
+                    body = DashboardMapMarkers.build(server, rootDir).getBytes(StandardCharsets.UTF_8);
+                }
                 Headers headers = exchange.getResponseHeaders();
                 headers.add("Content-Type", "application/json; charset=utf-8");
                 headers.add("Cache-Control", "no-cache");

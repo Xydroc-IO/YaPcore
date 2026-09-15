@@ -69,7 +69,8 @@ echo "eula=true" > eula.txt
 ```
 
 7. Open the web dashboard: **http://127.0.0.1:8080/** — paste the token printed
-   in the console on first boot.
+   in the console on first boot. Prefer **Configure → Setup** for EULA, seed,
+   Tebex/Grim fetch, and production profile (or Swing **Setup**).
 
 8. In console or dashboard, grant yourself OP and apply ranks:
 

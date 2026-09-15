@@ -15,6 +15,10 @@ public final class JavaPlayWire {
     // Clientbound
     public static final int CB_ADD_ENTITY = 1;
     public static final int CB_BLOCK_UPDATE = 8;
+    /** JE {@code boss_event}. */
+    public static final int CB_BOSS_EVENT = 9;
+    /** JE {@code clear_titles}. */
+    public static final int CB_CLEAR_TITLES = 14;
     /** JE {@code commands} / declare_commands — Brigadier tree. */
     public static final int CB_COMMANDS = 16;
     public static final int CB_CONTAINER_SET_CONTENT = 18;
@@ -40,11 +44,29 @@ public final class JavaPlayWire {
     public static final int CB_PLAYER_INFO = 70;
     public static final int CB_PLAYER_POSITION = 72;
     public static final int CB_REMOVE_ENTITIES = 77;
+    /** JE {@code reset_score}. */
+    public static final int CB_RESET_SCORE = 79;
     public static final int CB_SECTION_BLOCKS_UPDATE = 84;
+    /** JE {@code set_action_bar_text}. */
+    public static final int CB_SET_ACTION_BAR_TEXT = 87;
+    /** JE {@code set_display_objective}. */
+    public static final int CB_SET_DISPLAY_OBJECTIVE = 98;
     public static final int CB_SET_ENTITY_DATA = 99;
     public static final int CB_SET_ENTITY_MOTION = 101;
+    /** JE {@code set_equipment}. */
+    public static final int CB_SET_EQUIPMENT = 102;
     /** JE {@code set_health} — health f32 + food varint + saturation f32. */
     public static final int CB_SET_HEALTH = 104;
+    /** JE {@code set_objective}. */
+    public static final int CB_SET_OBJECTIVE = 106;
+    /** JE {@code set_score}. */
+    public static final int CB_SET_SCORE = 110;
+    /** JE {@code set_subtitle_text}. */
+    public static final int CB_SET_SUBTITLE_TEXT = 112;
+    /** JE {@code set_title_text}. */
+    public static final int CB_SET_TITLE_TEXT = 114;
+    /** JE {@code set_titles_animation}. */
+    public static final int CB_SET_TITLES_ANIMATION = 115;
     public static final int CB_SOUND = 117;
     public static final int CB_SOUND_ENTITY = 116;
     public static final int CB_SYSTEM_CHAT = 121;
@@ -76,11 +98,15 @@ public final class JavaPlayWire {
     public static final int SB_MOVE_POS_ROT = 31;
     public static final int SB_MOVE_ROT = 32;
     public static final int SB_MOVE_STATUS = 33;
+    /** {@code minecraft:place_recipe} — recipe book / autocraft into open craft UI. */
+    public static final int SB_PLACE_RECIPE = 39;
     public static final int SB_PLAYER_ACTION = 41;
     /** {@code minecraft:player_input} — bitflags; required before moves on proto 776+ (Geyser InputCache). */
     public static final int SB_PLAYER_INPUT = 43;
     /** {@code minecraft:player_loaded} — Folia waits for this before chunk stream (proto 776). */
     public static final int SB_PLAYER_LOADED = 44;
+    /** {@code minecraft:rename_item} — anvil rename string. */
+    public static final int SB_RENAME_ITEM = 48;
     public static final int SB_SET_CARRIED_ITEM = 53;
     public static final int SB_SWING = 63;
     public static final int SB_USE_ITEM_ON = 66;

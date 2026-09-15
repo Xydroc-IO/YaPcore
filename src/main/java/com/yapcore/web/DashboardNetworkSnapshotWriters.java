@@ -289,7 +289,9 @@ public final class DashboardNetworkSnapshotWriters {
     public static void saveDiscordInbound(Path root, Boolean enabled, Integer port, String secret)
             throws IOException {
         Path file = root.resolve("plugins").resolve("YaPDiscord").resolve("config.yml");
-        Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
+        Map<String, Object> yaml = Files.isRegularFile(file)
+                ? DashboardNetworkSnapshots.loadYaml(file)
+                : new LinkedHashMap<>();
         Map<String, Object> inbound = DashboardNetworkSnapshots.mapOrCreate(yaml, "inbound");
         if (enabled != null) {
             inbound.put("enabled", enabled);
@@ -303,52 +305,67 @@ public final class DashboardNetworkSnapshotWriters {
         DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }
 
-    public static void saveTebexSecret(Path root, String secret) throws IOException {
-        Path file = root.resolve("plugins").resolve("Tebex").resolve("config.yml");
+    /** Save YaPTebex webhook inbound settings ({@code plugins/YaPTebex/config.yml}). */
+    public static void saveTebexWebhook(Path root, Boolean enabled, Integer port, String secret,
+                                       Boolean enforceIps) throws IOException {
+        Path file = root.resolve("plugins").resolve("YaPTebex").resolve("config.yml");
         Map<String, Object> yaml = Files.isRegularFile(file)
                 ? DashboardNetworkSnapshots.loadYaml(file)
                 : new LinkedHashMap<>();
-        Map<String, Object> server = DashboardNetworkSnapshots.mapOrCreate(yaml, "server");
-        server.put("secret-key", secret == null ? "" : secret.trim());
-        if (!yaml.containsKey("buy-command")) {
-            Map<String, Object> buy = new LinkedHashMap<>();
-            buy.put("enabled", true);
-            buy.put("name", "buy");
-            yaml.put("buy-command", buy);
+        Map<String, Object> inbound = DashboardNetworkSnapshots.mapOrCreate(yaml, "inbound");
+        if (!inbound.containsKey("bind")) {
+            inbound.put("bind", "127.0.0.1");
         }
-        if (!server.containsKey("proxy")) {
-            server.put("proxy", false);
+        if (!inbound.containsKey("path")) {
+            inbound.put("path", "/tebex/webhook");
         }
-        if (!yaml.containsKey("config-version")) {
-            yaml.put("config-version", 2);
+        if (enabled != null) {
+            inbound.put("enabled", enabled);
+        }
+        if (port != null) {
+            inbound.put("port", Math.max(1, Math.min(65535, port)));
+        }
+        if (secret != null && !secret.isBlank()) {
+            inbound.put("secret", secret.trim());
+        } else if (!inbound.containsKey("secret")) {
+            inbound.put("secret", "change-me");
+        }
+        if (enforceIps != null) {
+            inbound.put("enforce-tebex-ips", enforceIps);
+        } else if (!inbound.containsKey("enforce-tebex-ips")) {
+            inbound.put("enforce-tebex-ips", true);
+        }
+        if (!yaml.containsKey("packages")) {
+            yaml.put("packages", new LinkedHashMap<>());
+        }
+        if (!yaml.containsKey("dedupe")) {
+            Map<String, Object> dedupe = new LinkedHashMap<>();
+            dedupe.put("retention-days", 30);
+            yaml.put("dedupe", dedupe);
         }
         DashboardNetworkSnapshots.dumpYaml(file, yaml);
     }
 
+    public static void saveTebexSecret(Path root, String secret) throws IOException {
+        DashboardTebexWriters.saveSecret(root, secret);
+    }
+
     public static void saveTebexSettings(Path root, Boolean buyEnabled, String buyName,
                                         Boolean proxy, Boolean verbose) throws IOException {
-        Path file = root.resolve("plugins").resolve("Tebex").resolve("config.yml");
-        Map<String, Object> yaml = Files.isRegularFile(file)
-                ? DashboardNetworkSnapshots.loadYaml(file)
-                : new LinkedHashMap<>();
-        Map<String, Object> buy = DashboardNetworkSnapshots.mapOrCreate(yaml, "buy-command");
+        Map<String, String> body = new LinkedHashMap<>();
         if (buyEnabled != null) {
-            buy.put("enabled", buyEnabled);
+            body.put("buyCommandEnabled", String.valueOf(buyEnabled));
         }
-        if (buyName != null && !buyName.isBlank()) {
-            buy.put("name", buyName.trim().replaceAll("\\s+", ""));
+        if (buyName != null) {
+            body.put("buyCommandName", buyName);
         }
-        Map<String, Object> server = DashboardNetworkSnapshots.mapOrCreate(yaml, "server");
         if (proxy != null) {
-            server.put("proxy", proxy);
+            body.put("proxyMode", String.valueOf(proxy));
         }
         if (verbose != null) {
-            yaml.put("verbose", verbose);
+            body.put("verbose", String.valueOf(verbose));
         }
-        if (!yaml.containsKey("config-version")) {
-            yaml.put("config-version", 2);
-        }
-        DashboardNetworkSnapshots.dumpYaml(file, yaml);
+        DashboardTebexWriters.saveSettings(root, body);
     }
 
 }

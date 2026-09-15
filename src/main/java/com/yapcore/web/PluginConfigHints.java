@@ -164,7 +164,10 @@ public final class PluginConfigHints {
             Map.entry("yap-plugin-compat", "Plugin compat"),
             Map.entry("yap-placeholderapi", "Placeholders"),
             Map.entry("yap-floodgate", "Floodgate"),
-            Map.entry("yap-pregen", "Pregen")
+            Map.entry("yap-pregen", "Pregen"),
+            Map.entry("yap-tailor", "Skins & wardrobe"),
+            Map.entry("yap-bedrock-blocks", "Bedrock port-blocks"),
+            Map.entry("yap-tebex", "Tebex webhook")
     );
 
     private static final Map<String, String> BLURBS = Map.ofEntries(
@@ -189,7 +192,7 @@ public final class PluginConfigHints {
             Map.entry("yap-regions", "Named areas with their own rules."),
             Map.entry("yap-lagguard", "Slows the world down when the server is busy."),
             Map.entry("yap-stacker", "Opt-in: stacks nearby mobs to save performance."),
-            Map.entry("yap-qol", "Opt-in: timber axe + area excavator (3×3 / 6×6 / 9×9). VIP kit grants the tools."),
+            Map.entry("yap-qol", "Product default: timber axe + area excavator (3×3 / 6×6 / 9×9). VIP kit grants the tools."),
             Map.entry("yap-skills", "Opt-in: XP and gathering skills."),
             Map.entry("yap-admin", "Staff tools. Leave defaults if you are new."),
             Map.entry("yap-disasters", "Opt-in: weather extremes and random events. Off by default."),
@@ -198,7 +201,10 @@ public final class PluginConfigHints {
             Map.entry("yap-plugin-compat", "Rewrites legacy Paper 1.20–1.21 jars for Paper 26.2 benches."),
             Map.entry("yap-placeholderapi", "Local placeholder expansions only (no eCloud)."),
             Map.entry("yap-floodgate", "Lets Bedrock players join Java."),
-            Map.entry("yap-pregen", "Pre-generate chunks so new areas load smoothly.")
+            Map.entry("yap-pregen", "Pre-generate chunks so new areas load smoothly."),
+            Map.entry("yap-tailor", "Skins, wardrobe, capes, emotes, and yap:presence."),
+            Map.entry("yap-bedrock-blocks", "Catalog Bedrock port-blocks for Java (yap:blocks)."),
+            Map.entry("yap-tebex", "First-party Tebex webhook → console commands. Off until secret set.")
     );
 
     private PluginConfigHints() {

@@ -162,8 +162,9 @@ public final class LinkJoinPackets {
             packet.getBlockProperties().addAll(session.palettes().blockProperties());
         }
         packet.setVanillaVersion("*");
-        // false: client may open own inventory without waiting for ContainerOpen (E key).
-        // Geyser keeps true with full inventory translators; Link's path is incomplete.
+        // Client-auth inventory: Link shadows ItemStackRequest locally and forwards
+        // container_click so Folia stays authoritative. Flip to true only with a full
+        // Geyser-class server inventory (craft/recipe/creative authority + ContainerOpen on E).
         packet.setInventoriesServerAuthoritative(false);
         packet.setServerEngine("");
         packet.setPlayerPropertyData(NbtMap.EMPTY);

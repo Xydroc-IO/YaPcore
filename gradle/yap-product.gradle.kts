@@ -62,6 +62,9 @@ tasks.register("installProductDefaults") {
     if (findProject(":discord-plugin") != null) {
         dependsOn(":discord-plugin:installIntoPlugins")
     }
+    if (findProject(":tebex-webhook-plugin") != null) {
+        dependsOn(":tebex-webhook-plugin:installIntoPlugins")
+    }
     if (findProject(":floodgate-plugin") != null) {
         dependsOn(":floodgate-plugin:installIntoPlugins")
     }
@@ -167,10 +170,13 @@ tasks.register("assemblePluginDist") {
         ":chat-plugin:jar",
         ":tab-plugin:shadowJar",
         ":discord-plugin:jar",
+        ":tebex-webhook-plugin:shadowJar",
         ":floodgate-plugin:jar",
         ":folia-bridge-plugin:jar",
         ":regions-plugin:shadowJar",
         ":npcs-plugin:shadowJar",
+        ":tailor-plugin:shadowJar",
+        ":bedrock-blocks-plugin:shadowJar",
         ":guard-plugin:shadowJar",
         ":lagguard-plugin:shadowJar",
         ":map-plugin:shadowJar",
@@ -189,6 +195,8 @@ tasks.register("assemblePluginDist") {
         ":disasters-plugin:jar",
         ":leveled-mobs-plugin:jar",
         ":yap-bedrock-ui-api:jar",
+        ":yap-tailor-api:jar",
+        ":yap-bedrock-blocks-api:jar",
         ":yap-db-api:jar",
         ":yap-perms-api:jar",
         ":yap-moderation-api:jar",
@@ -258,6 +266,9 @@ tasks.register("assemblePluginDist") {
         if (findProject(":discord-plugin") != null) {
             copyNamed(jarOf(":discord-plugin"), coreDir)
         }
+        if (findProject(":tebex-webhook-plugin") != null) {
+            copyNamed(jarOf(":tebex-webhook-plugin", "shadowJar"), coreDir)
+        }
         copyNamed(jarOf(":floodgate-plugin"), coreDir)
         if (findProject(":folia-bridge-plugin") != null) {
             copyNamed(jarOf(":folia-bridge-plugin"), coreDir)
@@ -267,6 +278,12 @@ tasks.register("assemblePluginDist") {
         }
         if (findProject(":npcs-plugin") != null) {
             copyNamed(jarOf(":npcs-plugin", "shadowJar"), coreDir)
+        }
+        if (findProject(":tailor-plugin") != null) {
+            copyNamed(jarOf(":tailor-plugin", "shadowJar"), coreDir)
+        }
+        if (findProject(":bedrock-blocks-plugin") != null) {
+            copyNamed(jarOf(":bedrock-blocks-plugin", "shadowJar"), coreDir)
         }
         if (findProject(":guard-plugin") != null) {
             copyNamed(jarOf(":guard-plugin", "shadowJar"), coreDir)
@@ -349,6 +366,12 @@ tasks.register("assemblePluginDist") {
         }
         if (findProject(":yap-bedrock-ui-api") != null) {
             copyNamed(jarOf(":yap-bedrock-ui-api"), apiDir)
+        }
+        if (findProject(":yap-tailor-api") != null) {
+            copyNamed(jarOf(":yap-tailor-api"), apiDir)
+        }
+        if (findProject(":yap-bedrock-blocks-api") != null) {
+            copyNamed(jarOf(":yap-bedrock-blocks-api"), apiDir)
         }
 
         // Fine-tune modules (drop into server modules/)

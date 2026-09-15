@@ -10,25 +10,19 @@ import com.yapcore.gui.panels.NetworkPanel;
 import com.yapcore.gui.panels.NginxPanel;
 import com.yapcore.gui.panels.PacksPanel;
 import com.yapcore.gui.panels.PluginsPanel;
+import com.yapcore.gui.panels.SetupPanel;
 import com.yapcore.gui.panels.SettingsPanel;
 import com.yapcore.gui.panels.TunePanel;
 import com.yapcore.gui.theme.GuiTheme;
 import com.yapcore.server.YaPcoreServer;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.util.function.Consumer;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
@@ -67,6 +61,7 @@ public final class ControlPanel extends JFrame {
     private final NginxPanel nginxPanel;
     private final LinkPanel linkPanel;
     private final FleetPanel fleetPanel;
+    private final SetupPanel setupPanel;
     private final ConnectInfoPanel connectPanel;
     private ControlFleetShell fleetShell;
     private final JSplitPane split;
@@ -87,6 +82,7 @@ public final class ControlPanel extends JFrame {
         this.nginxPanel = new NginxPanel(server);
         this.linkPanel = new LinkPanel(server);
         this.fleetPanel = new FleetPanel(server);
+        this.setupPanel = new SetupPanel(server);
         this.connectPanel = new ConnectInfoPanel(server);
         this.networkPanel.setOnSaved(v -> SwingUtilities.invokeLater(this::refreshConnectionUi));
         this.settingsPanel.setOnSaved(v -> SwingUtilities.invokeLater(() -> {
@@ -118,9 +114,17 @@ public final class ControlPanel extends JFrame {
         JPanel root = new JPanel(new BorderLayout(10, 10));
         root.setBorder(new EmptyBorder(12, 12, 12, 12));
         root.setBackground(GuiTheme.BG);
-        root.add(buildHeader(), BorderLayout.NORTH);
+        root.add(ControlPanelChrome.buildHeader(
+                fleetCtx, subtitle, javaJoinLabel, startBtn, stopBtn, restartBtn,
+                () -> TestLab.open(server.getRootDir()),
+                connectPanel::openDashboard,
+                this::startSelected,
+                this::stopSelected,
+                this::restartSelected), BorderLayout.NORTH);
         JPanel main = fleetCtx.fleetEnabled() ? buildFleetMain() : buildLegacyMain();
-        split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, buildConsolePanel(), main);
+        split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                ControlPanelChrome.buildConsolePanel(consoleTitle, console, commandInput, this::submitCommand),
+                main);
         split.setResizeWeight(0.42);
         split.setContinuousLayout(true);
         split.setOneTouchExpandable(true);
@@ -146,6 +150,8 @@ public final class ControlPanel extends JFrame {
         commandInput.addActionListener(e -> submitCommand());
         updateButtonState();
         refreshConnectionUi();
+        // console title set after header/console chrome exist
+        updateConsoleTitle();
         statsTimer = new Timer(500, e -> refreshStats());
         statsTimer.start();
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -170,7 +176,7 @@ public final class ControlPanel extends JFrame {
     private JPanel buildFleetMain() {
         fleetShell = new ControlFleetShell(
                 server, fleetCtx, fleetPanel, pluginsPanel, connectPanel, linkPanel,
-                networkPanel, nginxPanel, settingsPanel, tunePanel, modulesPanel, packsPanel);
+                networkPanel, nginxPanel, settingsPanel, setupPanel, tunePanel, modulesPanel, packsPanel);
         fleetShell.setOnSelectInstance(id -> {
             pluginsPanel.setFleetInstance(id);
             consoleScopeId = id;
@@ -183,6 +189,7 @@ public final class ControlPanel extends JFrame {
 
     private JPanel buildLegacyMain() {
         JTabbedPane sideTabs = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        sideTabs.addTab("Setup", GuiTheme.verticalScroll(setupPanel.component()));
         sideTabs.addTab("Connect", GuiTheme.verticalScroll(connectPanel.component()));
         sideTabs.addTab("Access", networkPanel.component());
         sideTabs.addTab("nginx", nginxPanel.component());
@@ -190,7 +197,8 @@ public final class ControlPanel extends JFrame {
         sideTabs.addTab("Fleet", fleetPanel.component());
         sideTabs.addTab("Settings", settingsPanel.component());
         sideTabs.addTab("Tune", GuiTheme.verticalScroll(tunePanel.component()));
-        sideTabs.addTab("Status", GuiTheme.verticalScroll(buildStatusTab()));
+        sideTabs.addTab("Status", GuiTheme.verticalScroll(ControlPanelChrome.buildStatusTab(
+                statusLabel, playersLabel, heapLabel, ticksLabel, dualStackLabel, activePackLabel)));
         sideTabs.addTab("Plugins", pluginsPanel.component());
         sideTabs.addTab("Modules", modulesPanel.component());
         sideTabs.addTab("Packs", packsPanel.component());
@@ -198,120 +206,6 @@ public final class ControlPanel extends JFrame {
         side.setOpaque(false);
         side.add(sideTabs, BorderLayout.CENTER);
         return side;
-    }
-
-    private JPanel buildHeader() {
-        JPanel header = new JPanel(new BorderLayout(12, 0));
-        header.setOpaque(false);
-        JLabel brand = new JLabel("YaPcore");
-        brand.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        brand.setForeground(GuiTheme.ACCENT);
-        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        subtitle.setForeground(GuiTheme.MUTED);
-        JPanel titles = new JPanel(new GridBagLayout());
-        titles.setOpaque(false);
-        GridBagConstraints c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = 0;
-        c.anchor = GridBagConstraints.WEST;
-        titles.add(brand, c);
-        c.gridy = 1;
-        titles.add(subtitle, c);
-        c.gridy = 2;
-        c.insets = new Insets(6, 0, 0, 0);
-        JPanel ctxRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        ctxRow.setOpaque(false);
-        JLabel ctxLabel = new JLabel(fleetCtx.fleetEnabled() ? "Selected server" : "Mode");
-        ctxLabel.setForeground(GuiTheme.MUTED);
-        ctxRow.add(ctxLabel);
-        if (fleetCtx.fleetEnabled()) {
-            fleetCtx.combo().setToolTipText(
-                    "Fleet home = all servers. Or pick one server (same as left rail).");
-        }
-        ctxRow.add(fleetCtx.combo());
-        titles.add(ctxRow, c);
-        c.gridy = 3;
-        c.insets = new Insets(4, 0, 0, 0);
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 1;
-        javaJoinLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
-        javaJoinLabel.setForeground(GuiTheme.TEXT);
-        titles.add(javaJoinLabel, c);
-        header.add(titles, BorderLayout.CENTER);
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        actions.setOpaque(false);
-        JButton testLabBtn = new JButton("Test Lab");
-        GuiTheme.stylePrimary(testLabBtn);
-        testLabBtn.addActionListener(e -> TestLab.open(server.getRootDir()));
-        JButton dashboardBtn = new JButton("Web Dashboard");
-        GuiTheme.stylePrimary(dashboardBtn);
-        dashboardBtn.addActionListener(e -> connectPanel.openDashboard());
-        GuiTheme.stylePrimary(startBtn);
-        GuiTheme.styleDanger(stopBtn);
-        restartBtn.addActionListener(e -> restartSelected());
-        startBtn.addActionListener(e -> startSelected());
-        stopBtn.addActionListener(e -> stopSelected());
-        actions.add(testLabBtn);
-        actions.add(dashboardBtn);
-        actions.add(startBtn);
-        actions.add(stopBtn);
-        actions.add(restartBtn);
-        header.add(actions, BorderLayout.EAST);
-        return header;
-    }
-
-    private JPanel buildConsolePanel() {
-        JPanel panel = GuiTheme.card();
-        panel.setLayout(new BorderLayout(8, 8));
-        panel.setMinimumSize(new Dimension(320, 240));
-        panel.add(consoleTitle, BorderLayout.NORTH);
-        consoleTitle.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        consoleTitle.setForeground(GuiTheme.TEXT);
-        updateConsoleTitle();
-        console.setEditable(false);
-        console.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        console.setBackground(new Color(0x0D, 0x11, 0x17));
-        console.setForeground(GuiTheme.TEXT);
-        console.setCaretColor(GuiTheme.ACCENT);
-        console.setLineWrap(true);
-        console.setWrapStyleWord(true);
-        panel.add(new JScrollPane(console), BorderLayout.CENTER);
-        JPanel inputRow = new JPanel(new BorderLayout(8, 0));
-        inputRow.setOpaque(false);
-        commandInput.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        JButton send = new JButton("Send");
-        GuiTheme.stylePrimary(send);
-        send.addActionListener(e -> submitCommand());
-        inputRow.add(commandInput, BorderLayout.CENTER);
-        inputRow.add(send, BorderLayout.EAST);
-        panel.add(inputRow, BorderLayout.SOUTH);
-        return panel;
-    }
-
-    private JPanel buildStatusTab() {
-        JPanel runtime = GuiTheme.card();
-        runtime.setLayout(new GridBagLayout());
-        GridBagConstraints c = new GridBagConstraints();
-        c.gridx = 0;
-        c.gridy = 0;
-        c.anchor = GridBagConstraints.WEST;
-        c.insets = new Insets(6, 4, 6, 4);
-        c.fill = GridBagConstraints.HORIZONTAL;
-        c.weightx = 1;
-        runtime.add(GuiTheme.sectionTitle("Runtime"), c);
-        c.gridy++;
-        runtime.add(kv("State", statusLabel), c);
-        c.gridy++;
-        runtime.add(kv("Players", playersLabel), c);
-        c.gridy++;
-        runtime.add(kv("Heap", heapLabel), c);
-        c.gridy++;
-        runtime.add(kv("Ticks", ticksLabel), c);
-        c.gridy++;
-        runtime.add(kv("Clients", dualStackLabel), c);
-        c.gridy++;
-        runtime.add(kv("Active packs", activePackLabel), c);
-        return runtime;
     }
 
     private void onContextChanged() {
@@ -445,16 +339,9 @@ public final class ControlPanel extends JFrame {
         subtitle.setText(fleetCtx.fleetEnabled()
                 ? "Fleet — left rail picks the server · Plugins opens first"
                 : "Control · Connect · Access · Settings");
-        javaJoinLabel.setText("<html>" + escapeHtml(fleetCtx.headerSummary()) + "</html>");
+        javaJoinLabel.setText("<html>" + ControlPanelChrome.escapeHtml(fleetCtx.headerSummary()) + "</html>");
         updateConsoleTitle();
         updateButtonState();
-    }
-
-    private static String escapeHtml(String s) {
-        if (s == null) {
-            return "";
-        }
-        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     private void refreshStats() {
@@ -476,7 +363,7 @@ public final class ControlPanel extends JFrame {
         updateButtonState();
         if (fleetCtx.fleetEnabled() && (System.currentTimeMillis() / 500) % 4 == 0) {
             fleetCtx.refresh();
-            javaJoinLabel.setText("<html>" + escapeHtml(fleetCtx.headerSummary()) + "</html>");
+            javaJoinLabel.setText("<html>" + ControlPanelChrome.escapeHtml(fleetCtx.headerSummary()) + "</html>");
         }
     }
 
@@ -488,18 +375,6 @@ public final class ControlPanel extends JFrame {
         restartBtn.setEnabled(fleet || server.isRunning());
         startBtn.setEnabled(true);
         stopBtn.setEnabled(true);
-    }
-
-    private static JPanel kv(String key, JLabel value) {
-        JPanel row = new JPanel(new BorderLayout());
-        row.setOpaque(false);
-        JLabel k = new JLabel(key);
-        k.setForeground(GuiTheme.MUTED);
-        value.setForeground(GuiTheme.TEXT);
-        value.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        row.add(k, BorderLayout.WEST);
-        row.add(value, BorderLayout.EAST);
-        return row;
     }
 
     @FunctionalInterface

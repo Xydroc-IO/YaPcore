@@ -200,12 +200,30 @@ public final class DashboardOpsSnapshots {
             return "webhooks empty";
         }));
         rows.add(opsRow("Tebex", DashboardNetworkSnapshots.tebex(root), snap -> {
-            if (!DashboardNetworkSnapshots.bool(snap.get("installed"), false)) {
+            if (!DashboardNetworkSnapshots.bool(snap.get("installed"), false)
+                    && !DashboardNetworkSnapshots.bool(snap.get("rootInstalled"), false)
+                    && ((List<?>) snap.getOrDefault("instancesWithTebex", List.of())).isEmpty()) {
                 return "missing";
             }
-            return DashboardNetworkSnapshots.bool(snap.get("secretConfigured"), false)
-                    ? "secret set"
-                    : "secret empty";
+            if (!DashboardNetworkSnapshots.bool(snap.get("hubOnlyOk"), true)) {
+                return DashboardNetworkSnapshots.str(snap.get("hubPlacementDetail"), "hub placement");
+            }
+            if (!DashboardNetworkSnapshots.bool(snap.get("secretConfigured"), false)) {
+                return "secret empty";
+            }
+            int stuck = DashboardNetworkSnapshots.intVal(snap.get("stuckCount"), 0);
+            int pending = DashboardNetworkSnapshots.intVal(snap.get("pendingCount"), 0);
+            if (stuck > 0) {
+                return stuck + " stuck kit grant(s)";
+            }
+            if (pending > 0) {
+                return pending + " pending kit grant(s)";
+            }
+            String store = DashboardNetworkSnapshots.str(snap.get("storeName"), "");
+            if (!store.isBlank()) {
+                return "hub · " + store;
+            }
+            return "hub · secret set";
         }));
         long installed = rows.stream().filter(r -> Boolean.TRUE.equals(r.get("installed"))).count();
         out.put("plugins", rows);

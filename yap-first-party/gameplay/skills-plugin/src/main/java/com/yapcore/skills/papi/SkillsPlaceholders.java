@@ -60,9 +60,6 @@ public final class SkillsPlaceholders extends PlaceholderExpansion {
         if ("combined_xp".equals(lower) || "combinedxp".equals(lower)) {
             return String.format("%.0f", combinedSkillXp(player.getUniqueId()));
         }
-        if ("combat_level".equals(lower) || "combatlevel".equals(lower)) {
-            return Integer.toString(skills.combatLevel(player.getUniqueId()));
-        }
         int underscore = lower.lastIndexOf('_');
         if (underscore <= 0) {
             return null;

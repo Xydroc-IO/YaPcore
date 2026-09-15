@@ -87,7 +87,7 @@ public final class MapConfig {
         markersNpcs = c.getBoolean("markers.npcs", false);
         markersRegions = c.getBoolean("markers.regions", false);
         markersPois = c.getBoolean("markers.pois", true);
-        markersClaims = c.getBoolean("markers.claims", false);
+        markersClaims = c.getBoolean("markers.claims", true);
         markersFactionColors = c.getBoolean("markers.faction-colors", false);
         markersPollSeconds = Math.max(2, c.getInt("markers.poll-seconds", 5));
         layerSurface = c.getBoolean("layers.surface", true);
@@ -96,7 +96,7 @@ public final class MapConfig {
         biomeTint = c.getBoolean("layers.biome-tint", true);
         retentionMaxAgeDays = Math.max(0, c.getInt("retention.max-age-days", 0));
         retentionMaxDiskMb = Math.max(0, c.getInt("retention.max-disk-mb", 0));
-        meshEnabled = c.getBoolean("mesh.enabled", true);
+        meshEnabled = c.getBoolean("mesh.enabled", false);
         meshMaxY = c.getInt("mesh.max-y", 0);
         meshLayers = parseMeshLayers(c);
         meshDefaultLayer = MapLayerSampler.normalizeMeshLayer(

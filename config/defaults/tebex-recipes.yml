@@ -1,0 +1,16 @@
+# Package console recipes for creator.tebex.io (Execute as console).
+# Placeholder must be {username}. Edit via dashboard Tebex store tab or this file.
+# Runtime copy: config/tebex-recipes.yml (created on first save / first dashboard load).
+
+recipes:
+  - name: VIP rank
+    commands: |
+      yapperm user {username} parent set vip
+      kit grant {username} vip
+  - name: Adventurer kit unlock
+    commands: |
+      yapperm user {username} permission set yapdata.kit.adventurer true
+      kit grant {username} adventurer
+  - name: VIP kit unlock only
+    commands: |
+      yapperm user {username} permission set yapdata.kit.vip true

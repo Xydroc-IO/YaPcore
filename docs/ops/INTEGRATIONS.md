@@ -342,18 +342,73 @@ separate jar; we do **not** vendor it in git. Fetch the Folia build:
 
 Notices: `third-party/tebex/`.
 
+YaP also ships a **first-party webhook receiver** (`yap-tebex.jar` / module
+`:tebex-webhook-plugin`) for push delivery. Keep **`tebex.jar`** for store GUI /
+`forcecheck`; use **webhooks** for package → console command delivery without polling.
+
+### Plugin poll vs webhook push
+
+| Path | Jar | Role |
+|------|-----|------|
+| Poll / GUI | `tebex.jar` (GPLv3) | `/buy`, store GUI, `tebex forcecheck` pulls pending commands from Tebex |
+| Webhook push | `yap-tebex.jar` (YaP) | `POST /tebex/webhook` on `127.0.0.1:8766` → map package ID → console cmds |
+
+**Do not** put the same package commands in creator.tebex.io **and** `plugins/YaPTebex/config.yml`
+or delivery doubles. For webhook-mapped packages, clear console commands in the Tebex control panel.
+
+Both jars are **Hub / lobby only** (not survival, not YaP Link).
+
 ## Dashboard setup (recommended)
 
 Web admin → **Tebex store** (`GET/POST /api/tebex`):
 
-1. Confirm `tebex.jar` is installed (fetch script above if missing).
+1. Confirm `tebex.jar` is installed on **Hub / lobby only** (`./scripts/fetch-tebex.sh`).
 2. Open [creator.tebex.io](https://creator.tebex.io/) → add a **Minecraft (Java / Folia) game server**.
 3. Paste the **secret key** into the dashboard → **Save secret** (runs `tebex secret <key>` + writes `plugins/Tebex/config.yml`).
-4. Optional: toggle `/buy` command name, proxy mode, verbose → **Save settings**.
-5. Copy package console commands from the tab into Tebex packages (`{username}` placeholder).
-6. Use **Store info** / **Force check** to verify delivery.
+4. Optional: toggle `/buy`, proxy, verbose, update checks, auto-report, GUI home title/rows → **Save settings**.
+5. Copy or edit package recipes (`config/tebex-recipes.yml`) from the tab into Tebex packages (`{username}` placeholder) **or** map package IDs under webhook config (below).
+6. Use **Store info** / **Force check** for structured store status; watch **kit grant queue** for pending/stuck deliveries.
 
 Also available under **Plugin editors** → Tebex (raw YAML).
+
+Package recipes default: `config/defaults/tebex-recipes.yml` → runtime `config/tebex-recipes.yml`.
+
+### Webhook endpoint (yap-tebex)
+
+1. Build/install: `gradle :tebex-webhook-plugin:installIntoPlugins` → `plugins/yap-tebex.jar` on Hub.
+2. Dashboard **Tebex store** → **Webhook endpoint**: enable, paste webhook secret (from
+   [creator.tebex.io](https://creator.tebex.io/) → **Developers → Webhooks → Endpoints** —
+   this is **not** the game-server secret), set port (default `8766`).
+3. Behind nginx/Caddy, reverse-proxy `https://<public>/tebex/webhook` → `127.0.0.1:8766`
+   and set **Enforce Tebex source IPs** to **off** (remote becomes localhost).
+4. Add the public URL as an endpoint; subscribe to `payment.completed` (+ validation handshake).
+5. Map package IDs in `plugins/YaPTebex/config.yml`:
+
+```yaml
+inbound:
+  enabled: true
+  bind: 127.0.0.1
+  port: 8766
+  path: /tebex/webhook
+  secret: <webhook-secret>
+  enforce-tebex-ips: false   # behind trusted reverse proxy
+packages:
+  "12345":
+    - "yapperm user {username} parent set vip"
+    - "kit grant {username} vip"
+```
+
+Placeholders: `{username}`, `{transaction}`, `{packageId}`.
+
+**Validation handshake:** Tebex sends `validation.webhook`; YaPTebex responds
+`200 {"id":"<payload.id>"}`. Then click Validate on the Endpoints page if needed.
+
+**Auth:** `X-Signature` = HMAC-SHA256(webhook secret, hex(SHA-256(raw body))).
+Optional allowlist of Tebex source IPs `18.209.80.3` / `54.87.231.232` when not behind a proxy.
+
+**Bedrock checkout names:** use the Floodgate-style **dot prefix** (`.Name`), not `*`.
+
+Chassis `/hooks/tebex` is **not** used (keeps public webhooks off the admin dashboard port).
 
 ## Console setup (same result)
 
@@ -361,14 +416,16 @@ Also available under **Plugin editors** → Tebex (raw YAML).
 tebex secret <key>
 tebex info
 tebex forcecheck
+yaptebex reload
+yaptebex status
 ```
 
 ## Where to install
 
 | Place | Do this? |
 |-------|----------|
-| **Hub / lobby Folia backend** | **Yes** — `plugins/tebex.jar` |
-| Survival / other backends | Optional |
+| **Hub / lobby Folia backend** | **Yes** — `plugins/tebex.jar` + `plugins/yap-tebex.jar` |
+| Survival / other backends | **No** by default — leave disabled; Hub runs purchase console commands |
 | YaP Link / Velocity proxy | **No** for Bukkit console cmds (use Folia Hub) |
 
 Prefer **tebex-folia** ≥ 2.3.3 (Folia duplicate-command fix). `fetch-tebex.sh` pulls latest.
@@ -420,11 +477,12 @@ kit grant {username} adventurer
 
 ## Checklist
 
-1. Hub has CORE+NETWORK jars + `tebex.jar` (`./scripts/fetch-tebex.sh`).
+1. Hub has CORE+NETWORK jars + `tebex.jar` (`./scripts/fetch-tebex.sh`) and optionally `yap-tebex.jar`.
 2. Shared SQL via YaPDB (`use-shared-yapdb: true`) — MariaDB/MySQL · PostgreSQL · SQLite.
 3. Identical `plugins/YaPPlayerData/kits.yml` on Hub + survival.
 4. Secret set via dashboard **Tebex store** or `tebex secret <key>` on Hub.
 5. Packages use `{username}` — [examples/tebex/](../../examples/tebex/).
+6. If using webhooks: endpoint validated, package IDs mapped in `YaPTebex/config.yml`, creator package commands cleared for those IDs.
 
 ## Related
 

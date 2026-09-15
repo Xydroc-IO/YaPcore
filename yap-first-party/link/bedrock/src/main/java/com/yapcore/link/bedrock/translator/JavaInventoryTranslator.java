@@ -173,6 +173,17 @@ public final class JavaInventoryTranslator {
     private static ItemData toBedrock(LinkBedrockSession session,
                                      Map<String, ItemDefinition> byName,
                                      JeItemStackCodec.Stack stack) {
+        return jeToBedrock(session, byName, stack);
+    }
+
+    /** Public JE→BE item remap for equipment / inventory bridges. */
+    public static ItemData jeToBedrock(LinkBedrockSession session, JeItemStackCodec.Stack stack) {
+        return jeToBedrock(session, itemLookup(session), stack);
+    }
+
+    static ItemData jeToBedrock(LinkBedrockSession session,
+                                Map<String, ItemDefinition> byName,
+                                JeItemStackCodec.Stack stack) {
         if (stack == null || stack.isEmpty()) {
             return ItemData.AIR;
         }

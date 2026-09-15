@@ -21,6 +21,7 @@
       hint: "Network & setup",
       groups: [
         { group: "Network", items: [
+          { tab: "setup", icon: "✓", label: "Setup" },
           { tab: "link", icon: "⇄", label: "YaP Link" },
           { tab: "admin", icon: "⚙", label: "Network setup" },
           { tab: "settings", icon: "☰", label: "Server setup" },

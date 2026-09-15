@@ -50,5 +50,8 @@ public final class MapRenderTask implements Runnable {
         }
         Path meshes = meshRenderer != null ? meshRenderer.meshesRoot() : null;
         MapTelemetry.markRenderComplete(renderer.tilesRoot(), meshes, remaining);
+        if (plugin instanceof MapPlugin map) {
+            map.refreshWebConfigAfterRender();
+        }
     }
 }

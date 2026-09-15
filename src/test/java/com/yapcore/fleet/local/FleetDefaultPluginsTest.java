@@ -13,6 +13,9 @@ final class FleetDefaultPluginsTest {
         assertTrue(FleetDefaultPlugins.isCoreNetwork("yap-db.jar"));
         assertTrue(FleetDefaultPlugins.isCoreDefault("yap-perms.jar"));
         assertTrue(FleetDefaultPlugins.isCoreNetwork("WorldEdit.jar"));
+        assertTrue(FleetDefaultPlugins.isCoreNetwork("yap-tailor.jar"));
+        assertTrue(FleetDefaultPlugins.isCoreNetwork("yap-bedrock-blocks.jar"));
+        assertTrue(FleetDefaultPlugins.isCoreNetwork("yap-tebex.jar"));
         assertTrue(FleetDefaultPlugins.isSeedDefault("yap-items.jar"));
         assertTrue(FleetDefaultPlugins.isSeedDefault("yap-qol.jar"));
         assertFalse(FleetDefaultPlugins.isCoreNetwork("yap-skills.jar"));
@@ -25,6 +28,8 @@ final class FleetDefaultPluginsTest {
         assertTrue(missing.contains("yap-perms.jar"));
         assertTrue(missing.contains("yap-items.jar"));
         assertTrue(missing.contains("yap-qol.jar"));
+        assertTrue(missing.contains("yap-tailor.jar"));
+        assertTrue(missing.contains("yap-bedrock-blocks.jar"));
         assertFalse(missing.contains("yap-db.jar"));
     }
 }

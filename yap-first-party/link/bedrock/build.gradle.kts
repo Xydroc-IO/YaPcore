@@ -24,6 +24,7 @@ dependencies {
     implementation("org.cloudburstmc.protocol:bedrock-codec:3.0.0.Beta13-SNAPSHOT")
     implementation("org.cloudburstmc.math:immutable:2.0")
     implementation("org.cloudburstmc:nbt:3.0.5.Final")
+    implementation("org.xerial.snappy:snappy-java:1.1.10.7")
 
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")

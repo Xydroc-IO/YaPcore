@@ -50,11 +50,43 @@ final class ProtectLookupOps {
             case "block" -> lookupBlock(sender, args, now, limit);
             case "radius" -> lookupRadius(sender, args, now, limit);
             case "time" -> lookupTime(sender, args, now, limit);
+            case "session", "edit" -> lookupSession(sender, args, limit);
             default -> {
                 lookupHelp(sender);
                 yield true;
             }
         };
+    }
+
+    private boolean lookupSession(CommandSender sender, String[] args, int limit) {
+        if (args.length < 3) {
+            sender.sendMessage("§e/yapprotect lookup session <edit-op-uuid> [limit]");
+            return true;
+        }
+        UUID editOpId;
+        try {
+            editOpId = UUID.fromString(args[2]);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage("§cInvalid edit-op UUID.");
+            return true;
+        }
+        int lim = limit;
+        if (args.length >= 4) {
+            try {
+                lim = Integer.parseInt(args[3]);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        service.lookupEditSession(editOpId, lim).thenAccept(rows ->
+                YapSched.global(Bukkit.getPluginManager().getPlugin("YaPProtect"), () -> {
+                    sender.sendMessage("§7Edit session §f" + editOpId + " §7— §f" + rows.size() + " §7row(s)");
+                    for (BlockChangeRecord r : rows) {
+                        sender.sendMessage("§8#" + r.id() + " §7" + r.changeType()
+                                + " §f" + r.world() + " " + r.x() + "," + r.y() + "," + r.z()
+                                + " §8" + r.blockBefore() + "→" + r.blockAfter());
+                    }
+                }));
+        return true;
     }
 
     private boolean lookupUser(CommandSender sender, String[] args, long now, int limit) {
@@ -287,5 +319,6 @@ final class ProtectLookupOps {
         sender.sendMessage("§e/yapprotect lookup block [x y z] [world] [duration] [--cursor token]");
         sender.sendMessage("§e/yapprotect lookup radius <blocks> [duration] [--cursor token]");
         sender.sendMessage("§e/yapprotect lookup time [world] <duration> [--cursor token]");
+        sender.sendMessage("§e/yapprotect lookup session <edit-op-uuid> [limit]");
     }
 }

@@ -162,14 +162,70 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
       $("tbxBuy").textContent = r.buyCommandEnabled
         ? ("/" + (r.buyCommandName || "buy"))
         : "off";
-      $("tbxProxy").textContent = r.proxyMode ? "on" : "off";
+      if ($("tbxStore")) {
+        const store = r.storeName || "";
+        const cur = r.currency ? (" · " + r.currency) : "";
+        $("tbxStore").textContent = store ? (store + cur) : (r.connected ? "connected" : "—");
+      }
+      if ($("tbxHub")) $("tbxHub").textContent = r.hubPlacementDetail || (r.hubOnlyOk ? "ok" : "check");
+      if ($("tbxPending")) $("tbxPending").textContent = String(r.pendingCount != null ? r.pendingCount : "—");
+      if ($("tbxStuck")) $("tbxStuck").textContent = String(r.stuckCount != null ? r.stuckCount : "—");
+      if ($("tbxLastCheck")) {
+        const at = r.lastCheckAt || r.lastInfoAt || "";
+        $("tbxLastCheck").textContent = at ? String(at).replace("T", " ").slice(0, 19) : "never";
+      }
       if ($("tbxHint")) $("tbxHint").textContent = r.setupHint || "";
       if ($("tbxBuyEnabled")) $("tbxBuyEnabled").value = r.buyCommandEnabled ? "true" : "false";
       if ($("tbxBuyName")) $("tbxBuyName").value = r.buyCommandName || "buy";
       if ($("tbxProxyMode")) $("tbxProxyMode").value = r.proxyMode ? "true" : "false";
       if ($("tbxVerbose")) $("tbxVerbose").value = r.verbose ? "true" : "false";
+      if ($("tbxCheckUpdates")) $("tbxCheckUpdates").value = r.checkForUpdates ? "true" : "false";
+      if ($("tbxAutoReport")) $("tbxAutoReport").value = r.autoReportEnabled ? "true" : "false";
+      if ($("tbxGuiTitle")) $("tbxGuiTitle").value = r.guiHomeTitle || "Server Shop";
+      if ($("tbxGuiRows")) $("tbxGuiRows").value = String(r.guiHomeRows != null ? r.guiHomeRows : 3);
+      if ($("tbxWebhookInstalled")) {
+        $("tbxWebhookInstalled").textContent = r.webhookInstalled ? "yes" : "no";
+      }
+      if ($("tbxWebhookEnabledStat")) {
+        $("tbxWebhookEnabledStat").textContent = r.webhookEnabled ? "on" : "off";
+      }
+      if ($("tbxWebhookSecretStat")) {
+        $("tbxWebhookSecretStat").textContent = r.webhookSecretConfigured ? "set" : "not set";
+      }
+      if ($("tbxWebhookListen")) {
+        $("tbxWebhookListen").textContent = r.webhookListenHint || "—";
+      }
+      if ($("tbxWebhookPkgs")) {
+        $("tbxWebhookPkgs").textContent = String(r.webhookPackageCount != null ? r.webhookPackageCount : "—");
+      }
+      if ($("tbxWebhookLast")) {
+        const ls = r.webhookLastStatus || {};
+        const at = ls.at ? String(ls.at).replace("T", " ").slice(0, 19) : "";
+        const detail = ls.detail || ls.type || "";
+        $("tbxWebhookLast").textContent = at ? (at + (detail ? " · " + detail : "")) : "never";
+      }
+      if ($("tbxWebhookUrlHint") && r.webhookUrlHint) {
+        $("tbxWebhookUrlHint").textContent = r.webhookUrlHint;
+      }
+      if ($("tbxWebhookEnabled")) $("tbxWebhookEnabled").value = r.webhookEnabled ? "true" : "false";
+      if ($("tbxWebhookPort")) $("tbxWebhookPort").value = String(r.webhookPort != null ? r.webhookPort : 8766);
+      if ($("tbxWebhookEnforceIps")) {
+        $("tbxWebhookEnforceIps").value = r.webhookEnforceIps === false ? "false" : "true";
+      }
+      if ($("tbxWebhookSecret") && !r.webhookSecretConfigured) $("tbxWebhookSecret").value = "";
       if ($("tbxOpenCreator") && r.creatorUrl) $("tbxOpenCreator").href = r.creatorUrl;
       if ($("tbxOpenDocs") && r.docsUrl) $("tbxOpenDocs").href = r.docsUrl;
+      if ($("tbxOpenYapDocs") && r.yapDocs) $("tbxOpenYapDocs").href = r.yapDocs;
+      if ($("tbxRecipesYaml") && r.recipesYaml != null) $("tbxRecipesYaml").value = r.recipesYaml;
+      if ($("tbxGrantHint")) $("tbxGrantHint").textContent = r.dbHint || $("tbxGrantHint").textContent;
+      if ($("tbxStatusBox")) {
+        const bits = [];
+        if (r.storeName) bits.push("Store: " + r.storeName);
+        if (r.serverName) bits.push("Server: " + r.serverName);
+        if (r.webstoreUrl) bits.push("URL: " + r.webstoreUrl);
+        if (r.hubPlacementDetail) bits.push("Placement: " + r.hubPlacementDetail);
+        $("tbxStatusBox").textContent = bits.join(" · ");
+      }
       const box = $("tbxRecipes");
       if (box) {
         box.innerHTML = "";
@@ -193,12 +249,21 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
               alert(recipe.commands || "");
             }
           };
+          const use = document.createElement("button");
+          use.type = "button";
+          use.textContent = "Edit";
+          use.onclick = () => {
+            if ($("tbxRecipeName")) $("tbxRecipeName").value = recipe.name || "";
+            if ($("tbxRecipeCommands")) $("tbxRecipeCommands").value = recipe.commands || "";
+          };
           wrap.appendChild(title);
           wrap.appendChild(pre);
           wrap.appendChild(copy);
+          wrap.appendChild(use);
           box.appendChild(wrap);
         });
       }
+      renderTebexGrants(r);
       if (!r.installed && r.fetchHint) {
         $("tbxOut").textContent = "Plugin missing — run: " + r.fetchHint;
       }
@@ -206,6 +271,40 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
       if ($("tbxOut")) $("tbxOut").textContent = e.message;
     }
   }
+
+  function renderTebexGrants(r) {
+    const box = $("tbxGrants");
+    if (!box) return;
+    box.innerHTML = "";
+    const rows = []
+      .concat(r.stuckGrants || [])
+      .concat(r.pendingGrants || []);
+    if (!rows.length) {
+      box.innerHTML = "<p class=\"muted\">No pending or stuck kit grants.</p>";
+      return;
+    }
+    rows.forEach((g) => {
+      const wrap = document.createElement("div");
+      wrap.className = "card";
+      const who = g.username || g.uuid || "?";
+      wrap.innerHTML = "<strong>" + who + "</strong> · kit <code>" + (g.kit || "") + "</code>"
+        + " · <span class=\"muted\">" + (g.status || "") + "</span>"
+        + (g.createdAt ? " · " + String(g.createdAt).replace("T", " ").slice(0, 19) : "");
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.textContent = "Cancel grant";
+      cancel.onclick = async () => {
+        try {
+          const res = await netPost("/api/tebex", { action: "cancel-grant", id: String(g.id) });
+          $("tbxOut").textContent = res.ok ? ("Cancelled grant #" + g.id) : (res.error || "not found");
+          refreshTebex();
+        } catch (e) { $("tbxOut").textContent = e.message; }
+      };
+      wrap.appendChild(cancel);
+      box.appendChild(wrap);
+    });
+  }
+
   if ($("tbxRefresh")) {
     $("tbxRefresh").onclick = () => refreshTebex();
     $("tbxReload").onclick = async () => {
@@ -230,17 +329,80 @@ window.YapDashRegisterNetworkPanels = function (YapDash) {
           buyCommandName: $("tbxBuyName").value.trim() || "buy",
           proxyMode: $("tbxProxyMode").value,
           verbose: $("tbxVerbose").value,
+          checkForUpdates: $("tbxCheckUpdates") ? $("tbxCheckUpdates").value : "true",
+          autoReportEnabled: $("tbxAutoReport") ? $("tbxAutoReport").value : "true",
+          guiHomeTitle: $("tbxGuiTitle") ? $("tbxGuiTitle").value.trim() : "",
+          guiHomeRows: $("tbxGuiRows") ? $("tbxGuiRows").value : "3",
         });
         $("tbxOut").textContent = r.result || "Settings saved.";
         refreshTebex();
       } catch (e) { $("tbxOut").textContent = e.message; }
     };
+    if ($("tbxSaveWebhook")) {
+      $("tbxSaveWebhook").onclick = async () => {
+        try {
+          const body = {
+            action: "save-webhook",
+            webhookEnabled: $("tbxWebhookEnabled")?.value || "false",
+            webhookPort: String($("tbxWebhookPort")?.value || "8766"),
+            webhookEnforceIps: $("tbxWebhookEnforceIps")?.value || "true",
+          };
+          const secret = ($("tbxWebhookSecret")?.value || "").trim();
+          if (secret) body.webhookSecret = secret;
+          const r = await netPost("/api/tebex", body);
+          if ($("tbxWebhookSecret")) $("tbxWebhookSecret").value = "";
+          $("tbxOut").textContent = r.result || "Webhook settings saved.";
+          refreshTebex();
+        } catch (e) { $("tbxOut").textContent = e.message; }
+      };
+    }
     $("tbxInfo").onclick = async () => {
-      $("tbxOut").textContent = (await netPost("/api/tebex", { action: "info" })).result || "";
+      const r = await netPost("/api/tebex", { action: "info" });
+      $("tbxOut").textContent = r.result || "";
+      refreshTebex();
     };
     $("tbxForceCheck").onclick = async () => {
-      $("tbxOut").textContent = (await netPost("/api/tebex", { action: "forcecheck" })).result || "ok";
+      const r = await netPost("/api/tebex", { action: "forcecheck" });
+      $("tbxOut").textContent = r.result || "ok";
+      refreshTebex();
     };
+    if ($("tbxUpsertRecipe")) {
+      $("tbxUpsertRecipe").onclick = async () => {
+        try {
+          await netPost("/api/tebex", {
+            action: "upsert-recipe",
+            name: ($("tbxRecipeName").value || "").trim(),
+            commands: $("tbxRecipeCommands").value || "",
+          });
+          $("tbxOut").textContent = "Recipe saved.";
+          refreshTebex();
+        } catch (e) { $("tbxOut").textContent = e.message; }
+      };
+    }
+    if ($("tbxDeleteRecipe")) {
+      $("tbxDeleteRecipe").onclick = async () => {
+        try {
+          await netPost("/api/tebex", {
+            action: "delete-recipe",
+            name: ($("tbxRecipeName").value || "").trim(),
+          });
+          $("tbxOut").textContent = "Recipe deleted.";
+          refreshTebex();
+        } catch (e) { $("tbxOut").textContent = e.message; }
+      };
+    }
+    if ($("tbxSaveRecipesYaml")) {
+      $("tbxSaveRecipesYaml").onclick = async () => {
+        try {
+          await netPost("/api/tebex", {
+            action: "save-recipes",
+            yaml: $("tbxRecipesYaml").value || "",
+          });
+          $("tbxOut").textContent = "Recipes YAML saved.";
+          refreshTebex();
+        } catch (e) { $("tbxOut").textContent = e.message; }
+      };
+    }
   }
 
   async function refreshTabPanel() {

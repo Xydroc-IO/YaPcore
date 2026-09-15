@@ -84,7 +84,14 @@ Every row includes **`server_id`** / `serverId` (from `config.yml` `server-id`).
 
 ### YaPWorld edit sessions
 
-Soft-depend correlation with YaPWorld / WorldEdit edit sessions is **not** wired (non-trivial on Folia without attributing every WE block write). WorldEdit changes still appear as normal block events with the placing player as actor when Bukkit fires them.
+YaPWorld `//set` / paste / fill batches are logged with a shared `edit_op_id` when YaPProtect is present.
+
+```text
+/yapprotect lookup session <uuid>
+/yapprotect rollback session <uuid>
+```
+
+Each BlockBatch apply generates one UUID for the whole op (Folia-safe, async insert).
 
 ## Explicitly out of scope — later backlog
 

@@ -1,0 +1,38 @@
+# YaP-QoL — timber axe + area excavator (staff-granted VIP tools)
+# Dashboard: Plugins → YaP-QoL
+# Staff give: /yapqol gui  or  /yapqol give timber_axe|excavator:3|excavator:6|excavator:9 [player]
+# Also: /yapadmin → More… → QoL tools
+
+enabled: true
+
+timber:
+  enabled: true
+  max-logs: 256
+  break-leaves: true
+  max-leaves: 512
+  material: NETHERITE_AXE
+  name: "&aTimber Axe"
+  lore:
+    - "&7Chop one trunk block to fell the whole tree."
+    - "&8VIP QoL tool"
+  glow: true
+  unbreakable: false
+
+excavator:
+  enabled: true
+  # Staff pick size when giving (baked into the item PDC)
+  sizes: [3, 6, 9]
+  default-size: 3
+  max-blocks-per-swing: 81
+  require-correct-tool: true
+  material: NETHERITE_PICKAXE
+  name: "&bArea Excavator"
+  lore:
+    - "&7Mines a flat square around the block you break."
+    - "&8VIP QoL tool"
+  glow: true
+  unbreakable: false
+
+messages:
+  timber-fell: "&aFelled &f{count} &alog blocks."
+  disabled: "&cYaP-QoL is disabled."

@@ -25,10 +25,6 @@ public final class SkillsConfig {
     private boolean levelUpChat = true;
     private boolean preferOverJobs = true;
     private String skillsDirectory = "skills";
-    private String combatAttackSkill = "attack";
-    private String combatStrengthSkill = "strength";
-    private String combatDefenceSkill = "defence";
-    private String combatHitpointsSkill = "hitpoints";
 
     public SkillsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -57,10 +53,6 @@ public final class SkillsConfig {
         levelUpChat = c.getBoolean("feedback.level-up-chat", true);
         preferOverJobs = c.getBoolean("prefer-over-jobs", true);
         skillsDirectory = c.getString("skills-directory", "skills");
-        combatAttackSkill = c.getString("combat-level.attack-skill", "attack");
-        combatStrengthSkill = c.getString("combat-level.strength-skill", "strength");
-        combatDefenceSkill = c.getString("combat-level.defence-skill", "defence");
-        combatHitpointsSkill = c.getString("combat-level.hitpoints-skill", "hitpoints");
     }
 
     public boolean enabled() {
@@ -138,21 +130,5 @@ public final class SkillsConfig {
 
     public String skillsDirectory() {
         return skillsDirectory;
-    }
-
-    public String combatAttackSkill() {
-        return combatAttackSkill;
-    }
-
-    public String combatStrengthSkill() {
-        return combatStrengthSkill;
-    }
-
-    public String combatDefenceSkill() {
-        return combatDefenceSkill;
-    }
-
-    public String combatHitpointsSkill() {
-        return combatHitpointsSkill;
     }
 }

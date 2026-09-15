@@ -51,7 +51,8 @@ class ChangeRepositoryRoundTripTest {
                       block_before TEXT,
                       block_after TEXT,
                       epoch_ms BIGINT NOT NULL,
-                      rolled_back %s NOT NULL DEFAULT 0
+                      rolled_back %s NOT NULL DEFAULT 0,
+                      edit_op_id TEXT
                     )
                     """.formatted(dialect.autoIncrementPk(), dialect.booleanType()));
         }

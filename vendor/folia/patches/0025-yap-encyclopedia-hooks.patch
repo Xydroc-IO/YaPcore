@@ -85,6 +85,24 @@ Defaults vanilla-safe. Post-applyAllPatches.
          if (level.getRawBrightness(pos, 0) >= 9) {
              int age = this.getAge(state);
              if (age < this.getMaxAge()) {
+@@ -104,6 +109,18 @@
+                 if (random.nextFloat() < (modifier / (100.0F * (Math.floor((25.0F / growthSpeed) + 1))))) { // Spigot - SPIGOT-7159: Better modifier resolution
+                     // Spigot end
+                     org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(level, pos, this.getStateForAge(age + 1), Block.UPDATE_CLIENTS); // CraftBukkit
++                    // YaP start - encyclopedia crop accelerate (modifier > 1.0)
++                    int extra = io.papermc.paper.threadedregions.YapEncyclopediaHooks.extraCropGrowthAttempts();
++                    for (int i = 0; i < extra; i++) {
++                        BlockState cur = level.getBlockState(pos);
++                        if (!(cur.getBlock() instanceof CropBlock crop) || crop.isMaxAge(cur)) {
++                            break;
++                        }
++                        org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockGrowEvent(
++                                level, pos, crop.getStateForAge(crop.getAge(cur) + 1), Block.UPDATE_CLIENTS);
++                    }
++                    // YaP end - encyclopedia crop accelerate
+                 }
+             }
+         }
 --- a/folia-server/src/minecraft/java/net/minecraft/world/level/material/FlowingFluid.java
 +++ b/folia-server/src/minecraft/java/net/minecraft/world/level/material/FlowingFluid.java
 @@ -494,6 +494,11 @@

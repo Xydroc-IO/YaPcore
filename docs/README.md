@@ -25,7 +25,7 @@ Operator docs. Markdown under `docs/` is the source of truth.
 | Folder | What’s in it |
 |--------|----------------|
 | [start/](start/) | Install, releases, secrets, Windows, legal |
-| [ops/](ops/) | Commands, permissions, dashboard, tune, Grim, integrations |
+| [ops/](ops/) | Commands, permissions, dashboard, tune, Grim, [integrations / Tebex](ops/INTEGRATIONS.md) |
 | [network/](network/) | Ports, Link, crossplay, packs |
 | [plugins/](plugins/) | Plugin guide + Items / World / Protect / compat |
 | [data/](data/) | YaPDB + playerdata |

@@ -83,24 +83,6 @@ public final class SkillsMenuHolder implements InventoryHolder {
         return stack;
     }
 
-    public static ItemStack combatLevelIcon(int combatLevel, int maxLevel) {
-        ItemStack stack = new ItemStack(Material.CLAY_BALL);
-        stack.editMeta(meta -> {
-            applyCmd(meta, 79000);
-            meta.displayName(Component.text("Combat Level")
-                    .color(NamedTextColor.RED).decoration(TextDecoration.ITALIC, false));
-            List<Component> lore = new ArrayList<>();
-            lore.add(Component.text("Level " + combatLevel)
-                    .color(NamedTextColor.YELLOW).decoration(TextDecoration.ITALIC, false));
-            lore.add(Component.text("Avg of Attack, Strength,")
-                    .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
-            lore.add(Component.text("Defence & Hitpoints (max " + maxLevel + ")")
-                    .color(NamedTextColor.GRAY).decoration(TextDecoration.ITALIC, false));
-            meta.lore(lore);
-        });
-        return stack;
-    }
-
     public static ItemStack skillIcon(
             Material icon,
             int iconCmd,

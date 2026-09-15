@@ -28,7 +28,7 @@ Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) â
 | `0022-yap-hopper-tick-budget.patch` | Hopper BE transfer budget | landed |
 | `0023-yap-smart-entity-budget-microtick.patch` | MSPT-gated budget + anti-starve | landed |
 | `0024-yap-subregion-partition-harden.patch` | Engage hysteresis + coalesce wall + cuts | landed |
-| `0025-yap-encyclopedia-hooks.patch` | Encyclopedia NMS hooks (**defaults off**) | landed |
+| `0025-yap-encyclopedia-hooks.patch` | Encyclopedia NMS: crop slow/accelerate + fluid tick gate (**defaults off**) | landed |
 | `0026-yap-tick-epoch-coordinator.patch` | Soft epoch-wave barriers + `YapMicroPhase` | landed |
 | `0027-yap-region-microphase-tick.patch` | Full `ServerLevel` micro-phase tick split | landed |
 | `0028-yap-phase-tagged-task-queue.patch` | Phase-tagged cross-region neighbor/task drain | landed |

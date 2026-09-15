@@ -36,8 +36,28 @@ final class ProtectRollbackOps {
             case "radius" -> rollbackRadius(sender, args, now);
             case "time" -> rollbackTime(sender, args, now);
             case "user" -> rollbackUser(sender, args, now);
+            case "session", "edit" -> rollbackSession(sender, args);
             default -> rollbackIds(sender, args);
         };
+    }
+
+    private boolean rollbackSession(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§e/yapprotect rollback session <edit-op-uuid>");
+            return true;
+        }
+        UUID editOpId;
+        try {
+            editOpId = UUID.fromString(args[2]);
+        } catch (IllegalArgumentException e) {
+            sender.sendMessage("§cInvalid edit-op UUID.");
+            return true;
+        }
+        service.rollbackEditSession(editOpId).thenAccept(count ->
+                YapSched.global(Bukkit.getPluginManager().getPlugin("YaPProtect"),
+                        () -> sender.sendMessage("§aEdit-session rollback applied to §f" + count
+                                + " §achange(s).")));
+        return true;
     }
 
     private boolean rollbackIds(CommandSender sender, String[] args) {
@@ -205,6 +225,7 @@ final class ProtectRollbackOps {
         sender.sendMessage("§e/yapprotect rollback radius <blocks> [duration]");
         sender.sendMessage("§e/yapprotect rollback time [world] <duration>");
         sender.sendMessage("§e/yapprotect rollback user <player> [duration]");
+        sender.sendMessage("§e/yapprotect rollback session <edit-op-uuid>");
     }
 
     private void restoreHelp(CommandSender sender) {

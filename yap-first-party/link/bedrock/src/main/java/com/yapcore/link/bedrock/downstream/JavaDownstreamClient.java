@@ -172,6 +172,26 @@ public final class JavaDownstreamClient {
 
         default void onSystemChat(String plain) {}
 
+        default void onActionBar(String plain) {}
+
+        default void onTitle(String plain) {}
+
+        default void onSubtitle(String plain) {}
+
+        default void onTitleTimes(int fadeInTicks, int stayTicks, int fadeOutTicks) {}
+
+        default void onClearTitles(boolean reset) {}
+
+        default void onBossEvent(UUID bossId, int action, String title, float pct, int color) {}
+
+        default void onSetObjective(String objectiveId, int mode, String displayName, String criteria) {}
+
+        default void onSetDisplayObjective(int position, String objectiveId) {}
+
+        default void onSetScore(String owner, String objective, int score) {}
+
+        default void onResetScore(String owner, String objective) {}
+
         default void onPlayerChat(String source, String plain) {}
 
         default void onPlayerInfoAdd(UUID uuid, String name) {}
@@ -192,6 +212,9 @@ public final class JavaDownstreamClient {
         default void onEntityMotion(int entityId, double mx, double my, double mz) {}
 
         default void onUpdateAttributes(int entityId, float health) {}
+
+        /** JE set_equipment slot: 0 main, 1 off, 2–5 armor, 6 body. */
+        default void onSetEquipment(int entityId, int slot, JeItemStackCodec.Stack stack) {}
 
         /** Floodgate / plugin channel payload (e.g. {@code floodgate:form}). */
         default void onCustomPayload(String channel, byte[] data) {}
@@ -357,6 +380,10 @@ public final class JavaDownstreamClient {
 
     public void sendContainerClose(int windowId) {
         writePlay(JavaPlayInventoryWire.containerClose(windowId));
+    }
+
+    public void sendRenameItem(String name) {
+        writePlay(JavaPlayInventoryWire.renameItem(name));
     }
 
     public void sendCustomPayload(String channel, byte[] data) {

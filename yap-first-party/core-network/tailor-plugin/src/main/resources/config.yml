@@ -7,8 +7,8 @@ allowed-hosts:
   - "*"
 # When set, applied textures use {base}/skin/{uuid}.png and wardrobe thumbs at
 # {base}/skin/wardrobe/{uuid}/{slotId}.png (chassis ResourcePack HTTP).
-# Required for Fabric file-upload + saved-look thumbnails.
-skin-host-public-base-url: "http://yapcoremc.yaplabs.us:8081"
+# Required for Fabric file-upload + saved-look thumbnails. Leave empty until set.
+skin-host-public-base-url: ""
 default-model: WIDE
 
 # When true (or chassis parity.bedrock-feel mirrored here), kick JE clients that

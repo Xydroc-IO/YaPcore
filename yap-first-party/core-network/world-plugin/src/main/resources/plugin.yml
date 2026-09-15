@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: World management, region selection, and schematic tools (Folia-safe)
 website: https://github.com/yaplabs
-softdepend: [YaPPerms, YaPPregen]
+softdepend: [YaPPerms, YaPPregen, YaPProtect]
 commands:
   yapworld:
     description: World edit + world admin (Folia-safe WorldEdit-class)

@@ -259,7 +259,8 @@ final class JavaDownstreamPlay {
                 }
                 case JavaPlayWire.CB_CONTAINER_SET_CONTENT -> {
                     int windowId = McCodec.readVarInt(buf);
-                    McCodec.readVarInt(buf); // state id
+                    int stateId = McCodec.readVarInt(buf);
+                    client.lastContainerStateId = Math.max(0, stateId);
                     int count = McCodec.readVarInt(buf);
                     count = Math.max(0, Math.min(count, 128));
                     JeItemStackCodec.Stack[] stacks = new JeItemStackCodec.Stack[count];
@@ -292,7 +293,8 @@ final class JavaDownstreamPlay {
                 }
                 case JavaPlayWire.CB_CONTAINER_SET_SLOT -> {
                     int windowId = buf.readByte();
-                    McCodec.readVarInt(buf); // state
+                    int stateId = McCodec.readVarInt(buf);
+                    client.lastContainerStateId = Math.max(0, stateId);
                     short slot = buf.readShort();
                     JeItemStackCodec.Stack stack = JeItemStackCodec.Stack.AIR;
                     try {
@@ -318,7 +320,10 @@ final class JavaDownstreamPlay {
                     String plain = JavaDownstreamParse.tryPlainFromComponent(buf);
                     boolean overlay = buf.isReadable() && buf.readBoolean();
                     if (overlay) {
-                        return; // action-bar — not chat overlay
+                        if (client.listener != null && plain != null) {
+                            client.listener.onActionBar(plain);
+                        }
+                        return;
                     }
                     if (client.listener != null && plain != null && !plain.isBlank()) {
                         client.listener.onSystemChat(plain);
@@ -447,6 +452,12 @@ final class JavaDownstreamPlay {
                     return;
                 }
                 default -> {
+                    if (JavaDownstreamHud.handle(client, packetId, buf)) {
+                        return;
+                    }
+                    if (JavaDownstreamEntityExtras.handle(client, packetId, buf)) {
+                        return;
+                    }
                     // accept / ignore
                 }
             }

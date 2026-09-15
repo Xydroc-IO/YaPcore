@@ -18,6 +18,7 @@ import com.yapcore.web.api.DashboardDatabaseApi;
 import com.yapcore.web.api.DashboardLinkConsoleApi;
 import com.yapcore.web.api.DashboardPlayersApi;
 import com.yapcore.web.api.DashboardPluginsApi;
+import com.yapcore.web.api.DashboardSetupApi;
 import com.yapcore.web.api.DashboardStatusApi;
 import com.yapcore.web.auth.DashboardAuth;
 import com.yapcore.web.http.DashboardHttp;
@@ -54,6 +55,7 @@ public final class WebDashboard {
     private final DashboardKitsApi kitsApi;
     private final DashboardCommandsApi commandsApi;
     private final DashboardDatabaseApi databaseApi;
+    private final DashboardSetupApi setupApi;
     private final DashboardFleetApi fleetApi;
     private final DashboardFleetInstanceApi fleetInstanceApi;
     private final ChassisMetricsHandler metricsHandler;
@@ -74,6 +76,7 @@ public final class WebDashboard {
         this.kitsApi = new DashboardKitsApi(server, auth);
         this.commandsApi = new DashboardCommandsApi(server, auth);
         this.databaseApi = new DashboardDatabaseApi(server, auth);
+        this.setupApi = new DashboardSetupApi(server, auth);
         this.fleetApi = new DashboardFleetApi(server, auth);
         this.fleetInstanceApi = new DashboardFleetInstanceApi(server, auth);
         this.metricsHandler = new ChassisMetricsHandler(server);
@@ -128,6 +131,7 @@ public final class WebDashboard {
                 fleetApi,
                 fleetInstanceApi,
                 databaseApi,
+                setupApi,
                 metricsHandler,
                 this::serveStatic);
 

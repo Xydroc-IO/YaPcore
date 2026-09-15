@@ -51,4 +51,27 @@ Source: https://github.com/tebexio/Tebex-Minecraft
 EOF
 
 echo "OK $(wc -c < "$OUT") bytes — dashboard: Tebex store → paste secret, or Hub: tebex secret <key>"
-echo "Docs: docs/ops/INTEGRATIONS.md · License: third-party/tebex/"
+echo "Docs: docs/ops/TEBEX.md · License: third-party/tebex/"
+
+# Fleet Hub-only: also install on primary lobby when present; never auto-install on survival.
+LOBBY_PLUGINS="$ROOT/fleet/instances/lobby/plugins"
+if [[ -d "$ROOT/fleet/instances/lobby" ]]; then
+  mkdir -p "$LOBBY_PLUGINS"
+  cp -f "$OUT" "$LOBBY_PLUGINS/tebex.jar"
+  cp -f "$NOTICE/NOTICE.txt" "$LOBBY_PLUGINS/tebex-NOTICE.txt" 2>/dev/null || true
+  if [[ -f "$NOTICE/LICENSE-GPLv3.txt" ]]; then
+    cp -f "$NOTICE/LICENSE-GPLv3.txt" "$LOBBY_PLUGINS/tebex-LICENSE-GPLv3.txt"
+  fi
+  echo "Also installed on Hub: $LOBBY_PLUGINS/tebex.jar"
+fi
+if [[ -d "$ROOT/fleet/instances/survival/plugins" ]]; then
+  # Keep survival clear of a live jar (Hub delivers console commands).
+  if [[ -f "$ROOT/fleet/instances/survival/plugins/tebex.jar" ]]; then
+    echo "Note: removing tebex.jar from survival (Hub-only policy)."
+    rm -f "$ROOT/fleet/instances/survival/plugins/tebex.jar"
+  fi
+  if [[ ! -f "$ROOT/fleet/instances/survival/plugins/tebex.jar.disabled" ]]; then
+    printf 'Hub-only: Tebex belongs on lobby. See docs/ops/TEBEX.md\n' \
+      > "$ROOT/fleet/instances/survival/plugins/tebex.jar.disabled"
+  fi
+fi

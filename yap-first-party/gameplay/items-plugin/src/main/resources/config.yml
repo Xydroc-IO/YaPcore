@@ -1,6 +1,7 @@
 # YaPItems — Folia-safe custom items
 cmd-min: 12000
 cmd-max: 12999
+# Gear-only CombatService (stats/gearBonus). Does not own combat XP — YaPSkills still awards.
 register-combat-service: true
 furniture:
   max-per-chunk: 64

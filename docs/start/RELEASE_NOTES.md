@@ -9,6 +9,40 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 1.0.0.0 — CI Folia smoke / ≤500 domain splits (2026-09-14)
+
+| Area | Change |
+|------|--------|
+| **Folia CI** | Nightly/main `folia-fork.yml` runs boot smoke after jar build (`SKIP_SMOKE` removed) |
+| **Domain ≤500** | Split FleetService, ControlPanel, DashboardLinkSnapshot, AdminMenusOps, ProtectServiceImpl, TailorServiceImpl |
+
+---
+
+## After 1.0.0.0 — plugin ship gaps / combat XP / defaults (2026-09-14)
+
+| Area | Change |
+|------|--------|
+| **Release / dist** | `yap-tailor.jar` + `yap-bedrock-blocks.jar` in `assembleRelease` + `assemblePluginDist` |
+| **YaPItems ↔ YaPSkills** | Gear-only `CombatService` no longer suppresses Skills combat XP (`ownsCombatXp()`) |
+| **Defaults** | Seed `YaPTailor/` + `YaPTebex/`; Tailor jar default clears public skin-host URL |
+| **YaPNpcs** | `unlock_recipe` / `teleport_unlock` warn honestly (no fake `yapmmo` dispatch) |
+
+---
+
+## After 1.0.0.0 — QoL defaults / Protect sessions / SNAPPY / map (2026-09-14)
+
+| Area | Change |
+|------|--------|
+| **YaP-QoL** | `config/defaults/plugins/YaP-QoL/` seeded; dashboard blurb is product-default (not opt-in) |
+| **YaPSkills** | Removed display-only combat level (PAPI/menu/calculator) |
+| **YaPProtect ↔ YaPWorld** | WorldEdit apply batches log with `edit_op_id`; `/yapprotect lookup\|rollback session <uuid>` |
+| **Bedrock SNAPPY** | Link + chassis inflate method=1 (snappy-java) instead of dropping batches |
+| **YaPMap** | Config fallbacks aligned; [MAP.md](../ops/MAP.md) restored |
+| **GameplayKnobs / Folia 0025** | Crop accelerate (`extraCropGrowthAttempts`) wired in patch + work tree |
+| **Defaults docs** | Skills/LeveledMobs/QoL/Map tiers match shipped YAML |
+
+---
+
 ## After 1.0.0.0 — YaP-QoL / fleet ensure preserve (2026-09-14)
 
 Same ship version (no product bump). Rebuild **linux** + **windows** + suites with

@@ -38,6 +38,7 @@ jobs:
           :map-plugin:test
           :regions-plugin:test
           :discord-plugin:test
+          :tebex-webhook-plugin:test
           :lagguard-plugin:test
       - name: Former zero-test plugin smokes
         run: >

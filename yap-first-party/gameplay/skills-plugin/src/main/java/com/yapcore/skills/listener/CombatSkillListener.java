@@ -16,8 +16,9 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 
 /**
- * Fallback combat skill XP when YaPCombat is not loaded/enabled.
- * With YaPCombat online, {@code CombatXpAwarder} owns attack/strength/defence/hitpoints XP.
+ * Combat skill XP when no full combat owner is registered.
+ * Gear-only {@link com.yapcore.mmo.CombatService} providers (YaPItems) leave XP here;
+ * a provider with {@code ownsCombatXp() == true} owns attack/strength/defence/hitpoints XP.
  */
 public final class CombatSkillListener implements Listener {
 
@@ -92,9 +93,9 @@ public final class CombatSkillListener implements Listener {
         grantAsync(player, def, DEFENCE, xp);
     }
 
-    /** True when YaPCombat registered {@code CombatService} (config-enabled path). */
+    /** True when a full combat owner registered {@code CombatService.ownsCombatXp()}. */
     private static boolean combatOwnsXp() {
-        return CombatServices.find().isPresent();
+        return CombatServices.find().map(svc -> svc.ownsCombatXp()).orElse(false);
     }
 
     private static Player resolveAttacker(EntityDamageByEntityEvent event) {

@@ -37,10 +37,3 @@ feedback:
 prefer-over-jobs: true
 
 skills-directory: skills
-
-# Display-only combat level: floor((attack+strength+defence+hitpoints)/4)
-combat-level:
-  attack-skill: attack
-  strength-skill: strength
-  defence-skill: defence
-  hitpoints-skill: hitpoints

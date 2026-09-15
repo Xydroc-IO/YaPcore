@@ -25,6 +25,7 @@ dependencies {
     implementation(project(":yap-world-api"))
     implementation(project(":yap-worldedit-compat"))
     compileOnly(project(":yap-perms-api"))
+    compileOnly(project(":yap-protect-api"))
     compileOnly(project(":pregen-plugin"))
 
     testImplementation(platform("org.junit:junit-bom:5.11.3"))

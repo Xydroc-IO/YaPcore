@@ -43,8 +43,8 @@ public final class YapPluginControl {
 
     /** Installed in the box but off by default — owners enable when ready. */
     private static final Set<String> OPT_IN_TOKENS = Set.of(
-            "yap-factions", "yap-conquest", "yap-skills", "yap-stacker",
-            "yap-dungeons", "yap-disasters", "yap-gameplay-knobs", "yap-leveled-mobs");
+            "yap-factions", "yap-conquest", "yap-stacker",
+            "yap-dungeons", "yap-disasters", "yap-gameplay-knobs");
 
     private final Path root;
     private final Path pluginsDir;

@@ -15,7 +15,10 @@ Used by `gradle assembleRelease` → `build/dist/yapcore-release/windows/`.
 | `Stop-MariaDB.ps1` | Stop MariaDB container (keeps data) |
 | `Configure-PlayerData.ps1` | Patch `plugins/YaPPlayerData/config.yml` JDBC |
 | `Configure-Db.ps1` | Patch YapDb JDBC |
+| `Run-BashSetup.ps1` | Bridge to bash-first setup scripts (seed / Tebex / Grim / production / forwarding) when Git Bash is installed |
 
 Root wrappers: `start.cmd`, `nginx-setup.cmd`, `start-mariadb.cmd`, `configure-playerdata.cmd`, …
 
-See [docs/start/WINDOWS.md](../../docs/start/WINDOWS.md) · [docs/data/YAPDB.md](../../docs/data/YAPDB.md).
+Dashboard / Swing **Setup** panel calls these (and Linux scripts) for first-boot actions.
+
+See [docs/start/WINDOWS.md](../../docs/start/WINDOWS.md) · [docs/data/YAPDB.md](../../docs/data/YAPDB.md) · [docs/ops/WEB_DASHBOARD.md](../../docs/ops/WEB_DASHBOARD.md).

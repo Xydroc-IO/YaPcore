@@ -21,23 +21,30 @@ public final class MapHttpServer {
 
     private final String bindHost;
     private final int port;
+    private final Path webDir;
     private final Path tilesDir;
     private final Path meshesDir;
     private final Supplier<String> markersJson;
     private HttpServer http;
 
     public MapHttpServer(String bindHost, int port, Path tilesDir) {
-        this(bindHost, port, tilesDir, null, null);
+        this(bindHost, port, null, tilesDir, null, null);
     }
 
     public MapHttpServer(String bindHost, int port, Path tilesDir, Supplier<String> markersJson) {
-        this(bindHost, port, tilesDir, null, markersJson);
+        this(bindHost, port, null, tilesDir, null, markersJson);
     }
 
     public MapHttpServer(String bindHost, int port, Path tilesDir, Path meshesDir,
                          Supplier<String> markersJson) {
+        this(bindHost, port, null, tilesDir, meshesDir, markersJson);
+    }
+
+    public MapHttpServer(String bindHost, int port, Path webDir, Path tilesDir, Path meshesDir,
+                         Supplier<String> markersJson) {
         this.bindHost = bindHost == null || bindHost.isBlank() ? "127.0.0.1" : bindHost;
         this.port = port;
+        this.webDir = webDir;
         this.tilesDir = tilesDir;
         this.meshesDir = meshesDir;
         this.markersJson = markersJson;
@@ -104,6 +111,23 @@ public final class MapHttpServer {
                     out.write(body);
                 }
                 return;
+            }
+            // Prefer extracted disk web assets (map-config.js is generated on disk only).
+            if (webDir != null) {
+                Path file = webDir.resolve(rel).normalize();
+                Path root = webDir.toAbsolutePath().normalize();
+                if (file.startsWith(root) && Files.isRegularFile(file)) {
+                    Headers headers = exchange.getResponseHeaders();
+                    headers.add("Content-Type", contentType(rel));
+                    headers.add("Cache-Control", "no-cache");
+                    long size = Files.size(file);
+                    exchange.sendResponseHeaders(200, size);
+                    try (InputStream in = Files.newInputStream(file);
+                         OutputStream out = exchange.getResponseBody()) {
+                        in.transferTo(out);
+                    }
+                    return;
+                }
             }
             String resource = "/map/" + rel;
             try (InputStream in = MapHttpServer.class.getResourceAsStream(resource)) {

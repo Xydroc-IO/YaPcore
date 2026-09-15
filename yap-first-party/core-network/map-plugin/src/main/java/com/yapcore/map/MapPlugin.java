@@ -92,14 +92,14 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor, TabC
     private void startEmbeddedHttp() {
         int port = config.port();
         try {
-            httpServer = new MapHttpServer(config.bindHost(), port, tilesRoot(), meshesRoot(),
+            httpServer = new MapHttpServer(config.bindHost(), port, webRoot(), tilesRoot(), meshesRoot(),
                     () -> MapMarkers.toJson(config, getDataFolder().toPath()));
             httpServer.start();
             getLogger().info("Map HTTP on http://" + config.bindHost() + ":" + port + "/map/");
         } catch (IOException e) {
             if (port == 8081) {
                 try {
-                    httpServer = new MapHttpServer(config.bindHost(), 8082, tilesRoot(), meshesRoot(),
+                    httpServer = new MapHttpServer(config.bindHost(), 8082, webRoot(), tilesRoot(), meshesRoot(),
                             () -> MapMarkers.toJson(config, getDataFolder().toPath()));
                     httpServer.start();
                     getLogger().warning("Port 8081 in use (YaPcore pack HTTP?) — map HTTP on :8082 instead. "
@@ -170,6 +170,17 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor, TabC
             remaining = Math.max(remaining, meshRenderer.dirtyCount());
         }
         MapTelemetry.markRenderComplete(tilesRoot(), meshesRoot(), remaining);
+        refreshWebConfigAfterRender();
+    }
+
+    /** Rewrite map-config.js + markers after spawn origin is applied during render. */
+    void refreshWebConfigAfterRender() {
+        try {
+            writeMapConfigJs();
+            writeMarkersFile();
+        } catch (IOException e) {
+            getLogger().warning("Could not refresh map web config after render: " + e.getMessage());
+        }
     }
 
     private void extractWebAssets() throws IOException {
@@ -178,6 +189,13 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor, TabC
         copyResource("index.html", web.resolve("index.html"));
         copyResource("map.js", web.resolve("map.js"));
         copyResource("map-3d.js", web.resolve("map-3d.js"));
+        writeMapConfigJs();
+        writeMarkersFile();
+    }
+
+    private void writeMapConfigJs() throws IOException {
+        Path web = webRoot();
+        Files.createDirectories(web);
         String layersJson = config.enabledLayers().stream()
                 .map(MapPlugin::jsonString)
                 .collect(Collectors.joining(","));
@@ -205,7 +223,6 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor, TabC
                 + "meshExtraRadius:" + config.meshExtraRadius()
                 + "};\n";
         Files.writeString(web.resolve("map-config.js"), cfg, StandardCharsets.UTF_8);
-        writeMarkersFile();
     }
 
     private static String jsonString(String s) {

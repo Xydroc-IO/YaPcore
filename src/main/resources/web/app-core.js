@@ -269,6 +269,7 @@
   if (window.YapDashRegisterAccessPanels) window.YapDashRegisterAccessPanels(window.YapDash);
   if (window.YapDashRegisterPlayersPanels) window.YapDashRegisterPlayersPanels(window.YapDash);
   if (window.YapDashRegisterAdminPanels) window.YapDashRegisterAdminPanels(window.YapDash);
+  if (window.YapDashRegisterSetupPanels) window.YapDashRegisterSetupPanels(window.YapDash);
   if (window.YapDashRegisterOpsPanels) window.YapDashRegisterOpsPanels(window.YapDash);
   if (window.YapDashRegisterNetworkPanels) window.YapDashRegisterNetworkPanels(window.YapDash);
   if (window.YapDashRegisterFullPanels) window.YapDashRegisterFullPanels(window.YapDash);

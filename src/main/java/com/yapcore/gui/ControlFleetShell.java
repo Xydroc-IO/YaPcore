@@ -8,6 +8,7 @@ import com.yapcore.gui.panels.NetworkPanel;
 import com.yapcore.gui.panels.NginxPanel;
 import com.yapcore.gui.panels.PacksPanel;
 import com.yapcore.gui.panels.PluginsPanel;
+import com.yapcore.gui.panels.SetupPanel;
 import com.yapcore.gui.panels.SettingsPanel;
 import com.yapcore.gui.panels.TunePanel;
 import com.yapcore.gui.theme.GuiTheme;
@@ -48,6 +49,7 @@ public final class ControlFleetShell {
     private final NetworkPanel networkPanel;
     private final NginxPanel nginxPanel;
     private final SettingsPanel settingsPanel;
+    private final SetupPanel setupPanel;
     private final TunePanel tunePanel;
     private final ModulesPanel modulesPanel;
     private final PacksPanel packsPanel;
@@ -72,6 +74,7 @@ public final class ControlFleetShell {
             NetworkPanel networkPanel,
             NginxPanel nginxPanel,
             SettingsPanel settingsPanel,
+            SetupPanel setupPanel,
             TunePanel tunePanel,
             ModulesPanel modulesPanel,
             PacksPanel packsPanel) {
@@ -84,6 +87,7 @@ public final class ControlFleetShell {
         this.networkPanel = networkPanel;
         this.nginxPanel = nginxPanel;
         this.settingsPanel = settingsPanel;
+        this.setupPanel = setupPanel;
         this.tunePanel = tunePanel;
         this.modulesPanel = modulesPanel;
         this.packsPanel = packsPanel;
@@ -158,6 +162,12 @@ public final class ControlFleetShell {
         }
     }
 
+    public void showSetup() {
+        showCard("setup");
+        workspaceTitle.setText("Setup — first boot checklist (Linux + Windows)");
+        setupPanel.refresh();
+    }
+
     private void showCard(String name) {
         cards.show(cardHost, name);
     }
@@ -185,7 +195,11 @@ public final class ControlFleetShell {
         });
         JButton access = new JButton("Access / nginx");
         access.addActionListener(e -> showNetwork());
+        JButton setup = new JButton("Setup");
+        GuiTheme.stylePrimary(setup);
+        setup.addActionListener(e -> showSetup());
         bottom.add(home);
+        bottom.add(setup);
         bottom.add(access);
         rail.add(bottom, BorderLayout.SOUTH);
         return rail;
@@ -203,6 +217,7 @@ public final class ControlFleetShell {
         cardHost.add(fleetPanel.component(), "fleet");
         cardHost.add(buildInstanceWorkspace(), "instance");
         cardHost.add(buildNetworkWorkspace(), "network");
+        cardHost.add(setupPanel.component(), "setup");
         wrap.add(cardHost, BorderLayout.CENTER);
         return wrap;
     }

@@ -300,12 +300,14 @@ public final class RakNetSessionManager {
                                 } else if (method == 0xff || method == 255) {
                                     // NONE — payload is plaintext batch
                                 } else if (method == 1) {
-                                    // SNAPPY — not implemented; drop with clear reason
-                                    LOG.warning("BE compressed batch method=1 (SNAPPY) not supported — drop");
-                                    if (afterFe != payload) {
-                                        afterFe.release();
+                                    batch = RakNetSessionCompression.inflateSnappy(afterFe);
+                                    if (batch == null) {
+                                        LOG.warning("BE SNAPPY batch inflate failed from " + sender);
+                                        if (afterFe != payload) {
+                                            afterFe.release();
+                                        }
+                                        continue;
                                     }
-                                    continue;
                                 } else {
                                     // Unknown method (commonly 6 pre-enc, or post-decrypt first
                                     // length-varint): restore byte and treat as uncompressed batch.

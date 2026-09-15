@@ -45,7 +45,7 @@ Modes live in the sidebar (`app-shell.js`). Switching modes only changes the nav
 | Mode | Groups | Tabs |
 |------|--------|------|
 | **Operate** | Now | Dashboard, Fleet, Players, Console, Connect |
-| **Configure** | Network · People · Content | YaP Link, Network setup, Server setup, Access & ranks, Rank pack, Plugins, Plugin settings, Modules, Packs, World, Regions, NPCs |
+| **Configure** | Network · People · Content | **Setup**, YaP Link, Network setup, Server setup, Access & ranks, Rank pack, Plugins, Plugin settings, Modules, Packs, World, Regions, NPCs |
 | **Gameplay** | Core · World & safety · Opt-in | Essentials, Chat, Tab list, Player data, Kits, Custom commands, Protect, Guard, Map, Pregen, Discord, Tebex, Skills, Factions, Disasters, Stacker |
 
 Static assets: `src/main/resources/web/` — `app-shell.js`, `app-core.js`, `app-*-panels.js`, `style.css`.
@@ -93,8 +93,9 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **Player data** | `/api/playerdata` | economy, auth, feature toggles | reload, save, set-feature |
 | **Kits** | `/api/kits` | kits.yml definitions, items, armor slots | **save-kit**, **delete-kit**, **clone-kit**, give, grant, reload |
 | **Database** | `/api/database` | YaPDB engine + Docker + JDBC | **ensure**, **start-docker**, **stop-docker**, **sync-fleet** |
+| **Setup** | `/api/setup` | first-boot checklist (EULA, seed, Tebex/Grim fetch, production, nginx dry-run, Folia build) | **accept-eula**, **seed-defaults**, **link-forwarding**, **fetch-tebex**, **fetch-grim**, **enable-grim**, **production-profile**, **nginx-dry-run**, **build-folia** |
 | **Custom commands** | `/api/commands` | YaPCommands commands.yml | **save-command**, **delete-command**, **clone-command**, set-require-use, reload |
-| **Tebex store** | `/api/tebex` | jar present, secret masked, buy command, proxy, package recipes | **set-secret**, **save-settings**, reload, info, forcecheck |
+| **Tebex store** | `/api/tebex` | jar present, Hub-only placement, secret masked, buy/GUI settings, store status, package recipes YAML, pending/stuck kit grants | **set-secret**, **save-settings**, **save-recipes** / upsert/delete, **cancel-grant**, reload, info, forcecheck |
 | **Chat** | `/api/chat` | channels, slow mode, filter, relay | reload, clearchat, **save-settings** |
 | **Tab list** | `/api/tab` | header/footer/sidebar/bossbar | save-header/footer/sidebar/settings/bossbar, reload |
 | **Map** | `/api/map` | map URL, tiles, worlds, render interval | reload, render, **save-settings** |
@@ -109,9 +110,16 @@ Legacy routes (superseded by UI tabs): `/api/moderation` → **Players**; `/api/
 
 Pack HTTP stays on **:8081**. Dashboard is a separate port (**:8080**).
 
-### Access & ranks
+### Setup checklist
 
-YaP **ops surface** for permissions — not a LuckPerms-web clone. Full operator control without `/op` and `/yapperm` by hand:
+**Configure → Setup** (`GET/POST /api/setup`) is the first-boot control surface for Linux and Windows:
+
+- Accept EULA, seed defaults, Link forwarding, fetch Tebex / Grim, enable Grim, production profile, nginx dry-run, build YaP-Folia
+- Shows OS + bash/PowerShell availability and copy-paste Linux / Windows commands
+- Database + fleet bootstrap stay on **Fleet**; full nginx install stays on Network setup / Swing **nginx**
+
+Swing Control Panel: **Setup** button on the fleet rail (and legacy **Setup** tab).
+
 
 - **Minecraft OPs** — chip list, add/remove, persisted to `server.properties`
 - **Auto-op** — toggle for first join
@@ -166,15 +174,17 @@ Fleet: `POST /api/fleet` action `sync-shared-catalog` realigns catalog items/kit
 
 ### Tebex store
 
-**Gameplay → Tebex store** wires the GPLv3 Folia plugin (`plugins/tebex.jar`):
+**Gameplay → Tebex store** wires the GPLv3 Folia plugin (`plugins/tebex.jar`, **Hub / lobby only**):
 
-- Status: jar present, secret configured (masked), `/buy` command, proxy mode
+- Status: jar present, Hub-only placement, secret configured (masked), `/buy`, store name/currency, pending/stuck kit grants
 - **Save secret** → writes `plugins/Tebex/config.yml` and runs `tebex secret <key>`
-- Buy command / proxy / verbose toggles → `tebex reload`
-- Copy-ready package recipes (`{username}`) for VIP rank and kit unlocks
+- Buy / proxy / verbose / update checks / auto-report / GUI home title+rows → `tebex reload`
+- Editable package recipes (`config/tebex-recipes.yml`) with copy cards for creator.tebex.io
+- Structured **Store info** / **Force check**; kit grant cancel for undelivered rows
 - Links to [creator.tebex.io](https://creator.tebex.io/) and Tebex Minecraft docs
 
-`GET/POST /api/tebex` — `set-secret`, `save-settings`, `reload`, `info`, `forcecheck`. Full guide: [INTEGRATIONS.md](INTEGRATIONS.md).
+`GET/POST /api/tebex` — `set-secret`, `save-settings`, `save-recipes`, `upsert-recipe`, `delete-recipe`,
+`cancel-grant`, `reload`, `info`, `forcecheck`. Full guide: [TEBEX.md](TEBEX.md) → [INTEGRATIONS.md](INTEGRATIONS.md#tebex).
 
 ### Players
 

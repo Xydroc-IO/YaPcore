@@ -1,0 +1,28 @@
+# YaP Tebex webhook inbound (Hub / lobby Folia only).
+# Reverse-proxy POST https://<public>/tebex/webhook → this listener.
+# Keep official tebex.jar for /buy GUI + forcecheck; use this for push delivery.
+#
+# IMPORTANT: If a package still has console commands in creator.tebex.io AND a
+# webhook recipe here, delivery doubles. Clear package commands for mapped IDs.
+
+inbound:
+  enabled: false
+  bind: 127.0.0.1
+  port: 8766
+  path: /tebex/webhook
+  # Webhook secret from creator.tebex.io → Developers → Webhooks → Endpoints
+  secret: change-me
+  # Tebex source IPs. Disable when nginx/proxy terminates TLS (remote becomes 127.0.0.1).
+  enforce-tebex-ips: true
+  max-body-bytes: 1048576
+
+# Retention for processed webhook / transaction IDs (idempotency).
+dedupe:
+  retention-days: 30
+
+# Map Tebex package id (string) → console commands.
+# Placeholders: {username} {transaction} {packageId}
+packages:
+  # "12345":
+  #   - "yapperm user {username} parent set vip"
+  #   - "kit grant {username} vip"

@@ -505,7 +505,7 @@ window.YapDashRegisterFullPanels = function (YapDash) {
           hintEl.textContent = "Click Render now — tiles generate after Folia loads the world (may take a minute).";
           hintEl.style.display = "block";
         } else if (r.usePackServer) {
-          hintEl.textContent = "Flat map + live markers on this dashboard. 3D BlueMap-style viewer is Stretch / later.";
+          hintEl.textContent = "Flat map + live markers on this dashboard. Enable mesh.enabled for the 3D viewer (?view=3d).";
           hintEl.style.display = "block";
         } else {
           hintEl.style.display = "none";

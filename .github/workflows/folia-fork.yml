@@ -52,9 +52,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "25"
-      - name: Build YaP-Folia paperclip
-        env:
-          SKIP_SMOKE: "1"
+      - name: Build YaP-Folia paperclip + boot smoke
         run: ./scripts/verify-yap-folia.sh
       - uses: actions/upload-artifact@v4
         with:

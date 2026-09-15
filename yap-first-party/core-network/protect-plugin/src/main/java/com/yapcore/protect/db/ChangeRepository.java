@@ -51,12 +51,18 @@ public final class ChangeRepository {
 
     public long insert(String serverId, ChangeType type, UUID actorUuid, String actorName,
                        String world, int x, int y, int z, String before, String after) throws SQLException {
+        return insert(serverId, type, actorUuid, actorName, world, x, y, z, before, after, null);
+    }
+
+    public long insert(String serverId, ChangeType type, UUID actorUuid, String actorName,
+                       String world, int x, int y, int z, String before, String after, UUID editOpId)
+            throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
                      INSERT INTO yap_protect_changes
                        (server_id, change_type, actor_uuid, actor_name, world, x, y, z,
-                        block_before, block_after, epoch_ms)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        block_before, block_after, epoch_ms, edit_op_id)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                      """, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, serverId);
             ps.setString(2, type.name());
@@ -69,6 +75,7 @@ public final class ChangeRepository {
             ps.setString(9, truncate(before));
             ps.setString(10, truncate(after));
             ps.setLong(11, System.currentTimeMillis());
+            ps.setString(12, editOpId == null ? null : editOpId.toString());
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -77,6 +84,51 @@ public final class ChangeRepository {
             }
         }
         return -1L;
+    }
+
+    public List<Long> listIdsByEditOp(UUID editOpId, int limit) throws SQLException {
+        if (editOpId == null) {
+            return List.of();
+        }
+        int lim = Math.max(1, Math.min(limit, 50_000));
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     SELECT id FROM yap_protect_changes
+                     WHERE server_id = ? AND edit_op_id = ?
+                     ORDER BY id ASC
+                     LIMIT ?
+                     """)) {
+            ps.setString(1, serverId);
+            ps.setString(2, editOpId.toString());
+            ps.setInt(3, lim);
+            List<Long> out = new ArrayList<>();
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(rs.getLong(1));
+                }
+            }
+            return out;
+        }
+    }
+
+    public List<ProtectChange> lookupByEditOp(UUID editOpId, int limit) throws SQLException {
+        if (editOpId == null) {
+            return List.of();
+        }
+        int lim = Math.max(1, Math.min(limit, 5_000));
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     SELECT %s
+                     FROM yap_protect_changes
+                     WHERE server_id = ? AND edit_op_id = ?
+                     ORDER BY id ASC
+                     LIMIT ?
+                     """.formatted(SELECT_COLS))) {
+            ps.setString(1, serverId);
+            ps.setString(2, editOpId.toString());
+            ps.setInt(3, lim);
+            return readAll(ps);
+        }
     }
 
     public List<ProtectChange> lookupActor(UUID actorUuid, long fromMs, long toMs, int limit) throws SQLException {

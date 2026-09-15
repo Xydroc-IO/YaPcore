@@ -42,6 +42,8 @@ public final class AdminMenus {
     private final AdminMenusCore core;
     private final AdminMenusGive give;
     private final AdminMenusOps ops;
+    private final AdminMenusWorldTools worldTools;
+    private final AdminMenusPluginPanels pluginPanels;
     private final AdminMenusCustomItemsBrowse customItemsBrowse;
     private final AdminMenusCustomItemsWizard customItemsWizard;
 
@@ -49,6 +51,8 @@ public final class AdminMenus {
         this.core = new AdminMenusCore(plugin);
         this.give = new AdminMenusGive(plugin);
         this.ops = new AdminMenusOps(plugin);
+        this.worldTools = new AdminMenusWorldTools(plugin);
+        this.pluginPanels = new AdminMenusPluginPanels(plugin);
         this.customItemsBrowse = new AdminMenusCustomItemsBrowse(plugin);
         this.customItemsWizard = new AdminMenusCustomItemsWizard(plugin);
     }
@@ -112,7 +116,7 @@ public final class AdminMenus {
 
     /** Unified World edit + schematics + paste-preview panel. */
     public void openWorldTools(Player player) {
-        ops.openSchematics(player);
+        worldTools.openSchematics(player);
     }
 
     /** @deprecated use {@link #openWorldTools(Player)} */
@@ -126,11 +130,11 @@ public final class AdminMenus {
     }
 
     public void openLeveledMobs(Player player) {
-        ops.openLeveledMobs(player);
+        pluginPanels.openLeveledMobs(player);
     }
 
     public void openQolTools(Player player) {
-        ops.openQolTools(player);
+        pluginPanels.openQolTools(player);
     }
 
     public void openCustomItemsHub(Player player) {
