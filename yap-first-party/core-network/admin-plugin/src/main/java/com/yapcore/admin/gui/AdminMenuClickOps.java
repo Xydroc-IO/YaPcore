@@ -47,6 +47,10 @@ final class AdminMenuClickOps {
             plugin.menus().openLeveledMobs(player);
             return;
         }
+        if (slot == 31) {
+            plugin.menus().openQolTools(player);
+            return;
+        }
         if (clicked == null || clicked.getType() != Material.NOTE_BLOCK) {
             return;
         }
@@ -105,6 +109,7 @@ final class AdminMenuClickOps {
             case 22 -> actions.closeAndRun(player, "menu");
             case 23 -> actions.closeAndRun(player, "yappregen status");
             case 24 -> plugin.menus().openLeveledMobs(player);
+            case 25 -> plugin.menus().openQolTools(player);
             default -> {
             }
         }
@@ -260,6 +265,81 @@ final class AdminMenuClickOps {
             plugin.menus().openLeveledMobs(player);
         } catch (ReflectiveOperationException e) {
             player.sendMessage("§cLeveled mobs control failed: " + e.getMessage());
+        }
+    }
+
+    void handleQolTools(Player player, int slot) {
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.menus().openHub(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        if (slot == 33) {
+            plugin.menus().openPlayers(player);
+            return;
+        }
+        var pl = Bukkit.getPluginManager().getPlugin("YaP-QoL");
+        if (pl == null || !pl.isEnabled()) {
+            player.sendMessage("§cYaP-QoL is not loaded.");
+            return;
+        }
+        try {
+            Object cfg = pl.getClass().getMethod("qolConfig").invoke(pl);
+            switch (slot) {
+                case 19 -> {
+                    boolean on = (Boolean) cfg.getClass().getMethod("enabled").invoke(cfg);
+                    cfg.getClass().getMethod("setEnabled", boolean.class).invoke(cfg, !on);
+                    pl.getClass().getMethod("reloadQol").invoke(pl);
+                }
+                case 20 -> {
+                    boolean on = (Boolean) cfg.getClass().getMethod("timberEnabled").invoke(cfg);
+                    cfg.getClass().getMethod("setTimberEnabled", boolean.class).invoke(cfg, !on);
+                    pl.getClass().getMethod("reloadQol").invoke(pl);
+                }
+                case 21 -> {
+                    boolean on = (Boolean) cfg.getClass().getMethod("excavatorEnabled").invoke(cfg);
+                    cfg.getClass().getMethod("setExcavatorEnabled", boolean.class).invoke(cfg, !on);
+                    pl.getClass().getMethod("reloadQol").invoke(pl);
+                }
+                case 28 -> {
+                    giveQolTool(player, pl, "timber_axe");
+                    return;
+                }
+                case 29 -> {
+                    giveQolTool(player, pl, "excavator:3");
+                    return;
+                }
+                case 30 -> {
+                    giveQolTool(player, pl, "excavator:6");
+                    return;
+                }
+                case 31 -> {
+                    giveQolTool(player, pl, "excavator:9");
+                    return;
+                }
+                case 34 -> pl.getClass().getMethod("reloadQol").invoke(pl);
+                default -> {
+                    return;
+                }
+            }
+            plugin.menus().openQolTools(player);
+        } catch (ReflectiveOperationException e) {
+            player.sendMessage("§cQoL control failed: " + e.getMessage());
+        }
+    }
+
+    private void giveQolTool(Player admin, org.bukkit.plugin.Plugin qol, String tool) {
+        Player target = plugin.actions().resolveGiveTarget(admin);
+        try {
+            Object items = qol.getClass().getMethod("items").invoke(qol);
+            items.getClass().getMethod("give", Player.class, String.class).invoke(items, target, tool);
+            admin.sendMessage("§aGave §f" + tool + " §ato §f" + target.getName() + "§a.");
+            plugin.menus().openQolTools(admin);
+        } catch (ReflectiveOperationException e) {
+            admin.sendMessage("§cCould not give " + tool + ": " + e.getMessage());
         }
     }
 }

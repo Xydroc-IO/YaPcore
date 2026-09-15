@@ -17,6 +17,7 @@ public enum AdminMenuKind {
     SCHEMATICS,
     COMBAT_SKILLS,
     LEVELED_MOBS,
+    QOL,
     TROLLS,
     CUSTOM_ITEMS,
     CUSTOM_ITEMS_BROWSE,

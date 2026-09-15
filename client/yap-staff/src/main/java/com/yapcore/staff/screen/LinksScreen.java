@@ -35,6 +35,7 @@ public final class LinksScreen extends StaffPanelScreen {
         addSection("Gameplay");
         addButtonGrid(
                 link("Stacker", "Mob stacker GUI", "yapstacker gui"),
+                link("QoL tools", "Timber · excavator staff GUI", "yapqol gui"),
                 link("Player menu", "Open /menu", "menu"),
                 link("Skills", "Skills menu", "skills"),
                 link("Dungeons", "Dungeon tools", "dungeon"),

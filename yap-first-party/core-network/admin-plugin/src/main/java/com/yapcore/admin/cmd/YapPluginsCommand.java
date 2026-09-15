@@ -424,6 +424,7 @@ public final class YapPluginsCommand implements CommandExecutor, TabCompleter {
         put(m, "yap-db", "YaPDB", "config.yml", "enabled", "yapdb reload");
         put(m, "yap-pregen", "YaPPregen", "config.yml", "enabled", "yappregen reload");
         put(m, "yap-stacker", "YaPStacker", "config.yml", "enabled", "yapstacker reload");
+        put(m, "yap-qol", "YaP-QoL", "config.yml", "enabled", "yapqol reload");
         put(m, "yap-gameplay-knobs", "YaPGameplayKnobs", "knobs.yml", "settings.enabled", "yapknobs reload");
         put(m, "yap-skills", "YaPSkills", "config.yml", "enabled", "yskills reload");
         put(m, "yap-disasters", "YaPDisasters", "config.yml", "enabled", "yapdisaster reload");

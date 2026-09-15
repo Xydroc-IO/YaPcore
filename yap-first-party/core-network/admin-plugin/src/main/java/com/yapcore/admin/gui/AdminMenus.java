@@ -129,6 +129,10 @@ public final class AdminMenus {
         ops.openLeveledMobs(player);
     }
 
+    public void openQolTools(Player player) {
+        ops.openQolTools(player);
+    }
+
     public void openCustomItemsHub(Player player) {
         customItemsBrowse.openCustomItemsHub(player);
     }

@@ -68,6 +68,7 @@ public final class AdminMenuListener implements Listener {
             case SCHEMATICS -> ops.handleSchematics(player, slot, shift);
             case COMBAT_SKILLS -> ops.handleCombatSkills(player, slot);
             case LEVELED_MOBS -> ops.handleLeveledMobs(player, slot, shift);
+            case QOL -> ops.handleQolTools(player, slot);
             case TROLLS -> core.handleTrolls(player, holder, slot);
             case CUSTOM_ITEMS -> customItemsBrowse.handleCustomItems(player, slot);
             case CUSTOM_ITEMS_BROWSE -> customItemsBrowse.handleCustomItemsBrowse(player, slot, clicked, shift);

@@ -44,6 +44,7 @@ public final class PluginConfigCatalog {
                 // ASM rewrite is pre-load; no hot reload
                 e("yap-plugin-compat", "YaPPluginCompat", "YaPPluginCompat", "config.yml", "yap-plugin-compat", ""),
                 e("yap-stacker", "YaPStacker", "YaPStacker", "config.yml", "yap-stacker", "yapstacker reload"),
+                e("yap-qol", "YaP-QoL", "YaP-QoL", "config.yml", "yap-qol", "yapqol reload"),
                 e("yap-gameplay-knobs", "YaPGameplayKnobs", "YaPGameplayKnobs", "knobs.yml", "yap-gameplay-knobs", "yapknobs reload"),
                 e("yap-skills", "YaPSkills", "YaPSkills", "config.yml", "yap-skills", "yskills reload"),
                 e("yap-disasters", "YaPDisasters", "YaPDisasters", "config.yml", "yap-disasters", "yapdisaster reload"),

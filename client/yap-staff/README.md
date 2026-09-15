@@ -22,7 +22,7 @@ Menus **scroll** and **scale** to the game window (1–3 button columns; works w
 | **Server** | Broadcasts, weather, disasters, staff chat, reloads |
 | **Economy** | Grant money to a selected player |
 | **Ranks & perms** | Ranks editor, permission nodes, tracks |
-| **More…** | Stacker, regions, map, chest GUIs |
+| **More…** | Stacker, **QoL tools** (`/yapqol gui`), regions, map, chest GUIs |
 | **Chest menu** | Folia `/yapadmin` chest hub |
 
 ### Custom items create (1.0.25+)

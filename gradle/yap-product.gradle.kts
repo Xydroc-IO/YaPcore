@@ -122,6 +122,9 @@ tasks.register("installGameplayDefaults") {
     if (findProject(":stacker-plugin") != null) {
         dependsOn(":stacker-plugin:installIntoPlugins")
     }
+    if (findProject(":qol-plugin") != null) {
+        dependsOn(":qol-plugin:installIntoPlugins")
+    }
     if (findProject(":items-plugin") != null) {
         dependsOn(":items-plugin:installIntoPlugins")
     }
@@ -177,6 +180,7 @@ tasks.register("assemblePluginDist") {
         ":stacker-plugin:jar",
         ":yap-items-api:jar",
         ":items-plugin:jar",
+        ":qol-plugin:jar",
         ":yap-mmo-api:jar",
         ":skills-plugin:shadowJar",
         ":yap-dungeons-api:jar",
@@ -287,6 +291,9 @@ tasks.register("assemblePluginDist") {
         copyNamed(jarOf(":stacker-plugin"), gameplayDir)
         if (findProject(":items-plugin") != null) {
             copyNamed(jarOf(":items-plugin"), gameplayDir)
+        }
+        if (findProject(":qol-plugin") != null) {
+            copyNamed(jarOf(":qol-plugin"), gameplayDir)
         }
         if (findProject(":skills-plugin") != null) {
             copyNamed(jarOf(":skills-plugin", "shadowJar"), gameplayDir)

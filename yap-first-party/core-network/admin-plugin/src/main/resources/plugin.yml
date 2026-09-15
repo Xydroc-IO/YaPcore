@@ -17,6 +17,7 @@ softdepend:
   - YaPItems
   - YaPDisasters
   - YaPLeveledMobs
+  - YaP-QoL
   - YaPBedrockUI
 commands:
   yapadmin:

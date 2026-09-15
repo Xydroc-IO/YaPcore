@@ -81,7 +81,7 @@ final class AdminMenusCore {
                     "Grant money to a player"));
         }
         inv.setItem(AdminMenuSlots.HUB_LINKS, AdminMenuHolder.icon(Material.COMPASS, "More…",
-                "Ranks, stacker, menu, pregen…"));
+                "Ranks, stacker, QoL, menu, pregen…"));
         if (plugin.actions().pluginEnabled("YaPWorld")) {
             inv.setItem(AdminMenuSlots.HUB_SCHEMATICS, AdminMenuHolder.icon(Material.WOODEN_AXE, NamedTextColor.AQUA,
                     "World tools",

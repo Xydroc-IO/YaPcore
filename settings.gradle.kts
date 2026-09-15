@@ -17,6 +17,9 @@ project(":gameplay-knobs-plugin").projectDir = file("yap-first-party/gameplay/ga
 include("stacker-plugin")
 project(":stacker-plugin").projectDir = file("yap-first-party/gameplay/stacker-plugin")
 
+include("qol-plugin")
+project(":qol-plugin").projectDir = file("yap-first-party/gameplay/qol-plugin")
+
 include("yap-items-api")
 project(":yap-items-api").projectDir = file("yap-first-party/api/yap-items-api")
 

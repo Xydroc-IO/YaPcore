@@ -37,8 +37,12 @@ kits:
         amount: 1
 
   # Donor / VIP loadout (also covered by yapdata.kit.* on vip rank)
+  # YaP-QoL tools via console commands (needs yap-qol.jar on the backend)
   vip:
     delay-seconds: 43200
+    commands:
+      - "yapqol give timber_axe {player}"
+      - "yapqol give excavator:3 {player}"
     items:
       - material: COOKED_BEEF
         amount: 32

@@ -43,6 +43,13 @@ tasks.register("assembleRelease") {
         ":yap-link-plugin-tab-bridge:installIntoLinkPlugins",
         ":yap-link-plugin-discord:installIntoLinkPlugins",
     )
+    // Items + QoL are fleet/product defaults — always install into plugins/ for the release box
+    if (findProject(":items-plugin") != null) {
+        dependsOn(":items-plugin:installIntoPlugins")
+    }
+    if (findProject(":qol-plugin") != null) {
+        dependsOn(":qol-plugin:installIntoPlugins")
+    }
     if (yapGameplayEnabled) {
         dependsOn("installGameplayDefaults")
     }
@@ -84,11 +91,15 @@ tasks.register("assembleRelease") {
             "yap-floodgate.jar",
             "yap-bedrock-ui.jar",
             "yap-folia-bridge.jar",
+            // Always-on gameplay suite (VIP tools + custom items) — also fleet seed defaults
+            "yap-items.jar",
+            "yap-qol.jar",
         )
         val gameplayPluginJars = listOf(
             "yap-gameplay-knobs.jar",
             "yap-stacker.jar",
             "yap-items.jar",
+            "yap-qol.jar",
             "yap-leveled-mobs.jar",
             "yap-skills.jar",
             "yap-dungeons.jar",
