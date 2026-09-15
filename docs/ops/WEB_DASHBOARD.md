@@ -5,7 +5,7 @@ Set up the network, configure YaP Link, manage plugins, and monitor health — n
 
 Controls the **YaPcore chassis** in front of **YaP-Folia** (game child JVM). Build with `./scripts/build-yap-folia.sh`.
 
-Modern **sidebar shell** (Overview · Server · People · Content · Gameplay) with dark theme, page search, stat cards, and full plugin config editors where the backend supports it.
+Modern **sidebar shell** with three operator modes (**Operate · Configure · Gameplay**), teal brand theme aligned with the Swing control panel, cross-mode page search, stat cards, and full plugin config editors where the backend supports it.
 
 Colored text (ranks, MOTD, tab list, NPC names, chat format) uses **clickable Minecraft color swatches**, a custom hex picker, and bold/italic controls — plus a live preview. Hex is stored as `&#rrggbb`.
 
@@ -40,13 +40,13 @@ Login links include `?token=…` so the browser signs in automatically (token is
 
 ## Navigation
 
-| Group | Tabs |
-|-------|------|
-| **Overview** | Dashboard (status), Network setup, Connect |
-| **Server** | Console, Server setup, YaP Link |
-| **People** | Players, Access & ranks, Rank pack |
-| **Content** | Plugins, Plugin settings, Modules, Packs, World, Regions, NPCs |
-| **Gameplay** | Essentials, Pregen, Player data, Kits, **Custom commands**, Tebex, Chat, Tab list, **Skills**, **Factions**, **Disasters**, **Stacker**, Map, Guard, Protect, Discord |
+Modes live in the sidebar (`app-shell.js`). Switching modes only changes the nav list — every tab and API stays available. Search finds pages across all modes.
+
+| Mode | Groups | Tabs |
+|------|--------|------|
+| **Operate** | Now | Dashboard, Fleet, Players, Console, Connect |
+| **Configure** | Network · People · Content | YaP Link, Network setup, Server setup, Access & ranks, Rank pack, Plugins, Plugin settings, Modules, Packs, World, Regions, NPCs |
+| **Gameplay** | Core · World & safety · Opt-in | Essentials, Chat, Tab list, Player data, Kits, Custom commands, Protect, Guard, Map, Pregen, Discord, Tebex, Skills, Factions, Disasters, Stacker |
 
 Static assets: `src/main/resources/web/` — `app-shell.js`, `app-core.js`, `app-*-panels.js`, `style.css`.
 

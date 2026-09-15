@@ -15,13 +15,13 @@
         <img class="login-logo" src="/branding/yapcore-mark.png" alt="YaPcore" width="42" height="42"/>
         <div>
           <h1>YaPcore Admin</h1>
-          <p class="muted" style="margin:0;font-size:13px">Network control panel</p>
+          <p class="muted" style="margin:0;font-size:13px">Fleet control · Java + Bedrock</p>
         </div>
       </div>
       <label>Access token</label>
       <input id="tokenInput" type="password" placeholder="Paste web-dashboard-token" autocomplete="off"/>
       <button id="loginBtn" class="primary block" style="margin-top:16px">Sign in</button>
-      <p class="hint">Find your token in <code>config/server.properties</code> → <code>web-dashboard-token</code></p>
+      <p class="hint">Token lives in <code>config/server.properties</code> → <code>web-dashboard-token</code>. Prefer localhost or SSH tunnel.</p>
     </div>
   </div>
 
@@ -29,10 +29,15 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
         <img class="sidebar-logo" src="/branding/yapcore-icon.png" alt="" width="32" height="32"/>
-        <strong>YaPcore</strong>
+        <div class="sidebar-brand-text">
+          <strong>YaPcore</strong>
+          <span class="sidebar-brand-sub">Control plane</span>
+        </div>
       </div>
+      <div class="mode-switch" id="modeSwitcher" role="tablist" aria-label="Dashboard mode"></div>
+      <p class="mode-hint" id="modeHint">Day-to-day control</p>
       <div class="nav-search-wrap">
-        <input id="navSearch" type="search" placeholder="Find a page…" autocomplete="off"/>
+        <input id="navSearch" type="search" placeholder="Search all pages…" autocomplete="off"/>
       </div>
       <nav class="sidebar-nav" id="sidebarNav"></nav>
       <div class="sidebar-footer">
@@ -49,7 +54,10 @@
       <header class="topbar">
         <div style="display:flex;align-items:center;gap:12px">
           <button id="menuToggle" class="ghost" style="display:none">☰</button>
-          <span class="topbar-title" id="topbarTitle">Dashboard</span>
+          <div class="topbar-titles">
+            <span class="topbar-mode" id="topbarMode">Operate</span>
+            <span class="topbar-title" id="topbarTitle">Dashboard</span>
+          </div>
           <span id="runBadge" class="badge">—</span>
         </div>
         <div class="topbar-actions">
@@ -61,9 +69,24 @@
       <section id="tab-status" class="panel active">
         <div class="page-header">
           <h2>Dashboard</h2>
-          <p>Live server health, players, and network status at a glance.</p>
+          <p>Network health at a glance. Use <strong>Operate</strong> for day-to-day control; switch modes in the sidebar for setup and gameplay.</p>
         </div>
-        <div class="grid stats">
+
+        <div class="card home-hero">
+          <div class="home-hero-main">
+            <p class="home-kicker">Quick actions</p>
+            <div class="home-actions">
+              <button type="button" class="primary" data-goto-tab="fleet">Fleet</button>
+              <button type="button" data-goto-tab="players">Players</button>
+              <button type="button" data-goto-tab="connect">Connect info</button>
+              <button type="button" data-goto-tab="link">YaP Link</button>
+              <button type="button" data-goto-tab="console">Console</button>
+            </div>
+          </div>
+          <p class="muted home-hero-hint">Start / Stop in the top bar control the fleet network when enabled.</p>
+        </div>
+
+        <div class="grid stats" id="homeStats">
           <div class="stat"><span>Players</span><strong id="stPlayers">0/0</strong></div>
           <div class="stat"><span>Heap</span><strong id="stHeap">—</strong></div>
           <div class="stat"><span>Java</span><strong id="stJava">0</strong></div>
@@ -74,34 +97,7 @@
           <div class="stat"><span>Link</span><strong id="stLinkProc">—</strong></div>
           <div class="stat"><span>PID</span><strong id="stPid">—</strong></div>
         </div>
-        <div class="card health-card" id="bedrockFeelCard">
-          <h3>Bedrock-feel parity</h3>
-          <p id="stParitySummary" class="health-summary">—</p>
-          <div class="grid stats health-grid">
-            <div class="stat"><span>Mode</span><strong id="bfEnabled">—</strong></div>
-            <div class="stat"><span>Band</span><strong id="bfBand">—</strong></div>
-            <div class="stat"><span>Client mods</span><strong id="bfMods">—</strong></div>
-            <div class="stat"><span>Block pack</span><strong id="bfPack">—</strong></div>
-            <div class="stat"><span>Provenance</span><strong id="bfProv">—</strong></div>
-          </div>
-          <div class="form-grid" style="margin-top:12px">
-            <label>Bedrock-feel for Java
-              <select id="bfToggle">
-                <option value="false">Off</option>
-                <option value="true">On (require yap-presence)</option>
-              </select>
-            </label>
-            <label>Parity band
-              <select id="bfBandSelect">
-                <option value="band_26_50">band_26_50 (Folia 26.2)</option>
-              </select>
-            </label>
-          </div>
-          <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">
-            <button type="button" class="primary" id="bfSave">Save Bedrock-feel</button>
-            <span id="bfSaveMsg" class="easy-save-msg" hidden></span>
-          </div>
-        </div>
+
         <div class="card health-card">
           <h3>Network health</h3>
           <p id="stNetworkSummary" class="health-summary">—</p>
@@ -118,8 +114,9 @@
             <button type="button" class="primary" id="stOpenLink">Open YaP Link setup</button>
           </div>
         </div>
-        <div class="card health-card">
-          <h3>Ops plugins</h3>
+
+        <details class="soft-details home-advanced" open>
+          <summary>Ops plugins</summary>
           <p id="stOpsSummary" class="health-summary">—</p>
           <div class="grid stats health-grid">
             <div class="stat"><span>Protect</span><strong id="opProtect">—</strong></div>
@@ -130,8 +127,43 @@
             <div class="stat"><span>Discord</span><strong id="opDiscord">—</strong></div>
             <div class="stat"><span>Tebex</span><strong id="opTebex">—</strong></div>
           </div>
-        </div>
-        <pre id="stReport" class="report"></pre>
+        </details>
+
+        <details class="soft-details home-advanced">
+          <summary>Bedrock-feel parity (advanced)</summary>
+          <div class="card health-card" id="bedrockFeelCard" style="border:0;padding:0;box-shadow:none;background:transparent">
+            <p id="stParitySummary" class="health-summary">—</p>
+            <div class="grid stats health-grid">
+              <div class="stat"><span>Mode</span><strong id="bfEnabled">—</strong></div>
+              <div class="stat"><span>Band</span><strong id="bfBand">—</strong></div>
+              <div class="stat"><span>Client mods</span><strong id="bfMods">—</strong></div>
+              <div class="stat"><span>Block pack</span><strong id="bfPack">—</strong></div>
+              <div class="stat"><span>Provenance</span><strong id="bfProv">—</strong></div>
+            </div>
+            <div class="form-grid" style="margin-top:12px">
+              <label>Bedrock-feel for Java
+                <select id="bfToggle">
+                  <option value="false">Off</option>
+                  <option value="true">On (require yap-presence)</option>
+                </select>
+              </label>
+              <label>Parity band
+                <select id="bfBandSelect">
+                  <option value="band_26_50">band_26_50 (Folia 26.2)</option>
+                </select>
+              </label>
+            </div>
+            <div class="row" style="margin-top:8px;gap:8px;flex-wrap:wrap">
+              <button type="button" class="primary" id="bfSave">Save Bedrock-feel</button>
+              <span id="bfSaveMsg" class="easy-save-msg" hidden></span>
+            </div>
+          </div>
+        </details>
+
+        <details class="soft-details home-advanced">
+          <summary>Raw status report</summary>
+          <pre id="stReport" class="report"></pre>
+        </details>
       </section>
 
       <section id="tab-access" class="panel">

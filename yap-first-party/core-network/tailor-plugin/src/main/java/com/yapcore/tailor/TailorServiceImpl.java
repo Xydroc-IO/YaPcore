@@ -270,17 +270,79 @@ public final class TailorServiceImpl implements TailorService {
     public ActiveSkin setModel(UUID playerUuid, SkinModel model) throws TailorException {
         ActiveSkin previous;
         try {
-            previous = database.loadActive(playerUuid)
-                    .orElseThrow(() -> new TailorException("No active skin — set a skin first"));
-        } catch (TailorException e) {
-            throw e;
+            previous = database.loadActive(playerUuid).orElse(null);
         } catch (Exception e) {
             throw new TailorException("Database error", e);
+        }
+        // Wide/Slim from the wardrobe must work on Mojang/default skins too — not only after
+        // a custom Tailor upload (otherwise SKIN|MODEL fails with "set a skin first").
+        if (previous == null) {
+            Player online = Bukkit.getPlayer(playerUuid);
+            if (online == null || !online.isOnline()) {
+                throw new TailorException("No active skin — set a skin first");
+            }
+            previous = seedActiveFromLiveProfile(online, model);
+            applyToOnline(online, previous);
+            return previous;
         }
         ActiveSkin skin = applySkinInternal(playerUuid, previous.sourceUrl(), previous.capeUrl(), model, false);
         Player online = Bukkit.getPlayer(playerUuid);
         if (online != null && online.isOnline()) {
             applyToOnline(online, skin);
+        }
+        return skin;
+    }
+
+    /**
+     * First-time model toggle: copy the player's current profile skin/cape into Tailor
+     * storage with the requested slim/wide model.
+     */
+    private ActiveSkin seedActiveFromLiveProfile(Player player, SkinModel model) throws TailorException {
+        UUID uuid = player.getUniqueId();
+        String skinUrl = null;
+        String capeUrl = null;
+        PlayerProfile profile = player.getPlayerProfile();
+        Optional<ProfileProperty> textures = profile.getProperties().stream()
+                .filter(p -> "textures".equals(p.getName()))
+                .findFirst();
+        if (textures.isPresent()) {
+            String value = textures.get().getValue();
+            skinUrl = TailorMojangLookup.extractSkinUrl(value).orElse(null);
+            capeUrl = TailorMojangLookup.extractCapeUrl(value).orElse(null);
+        }
+        try {
+            PlayerTextures pt = profile.getTextures();
+            if (skinUrl == null && pt.getSkin() != null) {
+                skinUrl = pt.getSkin().toString();
+            }
+            if (capeUrl == null && pt.getCape() != null) {
+                capeUrl = pt.getCape().toString();
+            }
+        } catch (RuntimeException ignored) {
+            // fall through
+        }
+        if (skinUrl == null || skinUrl.isBlank()) {
+            throw new TailorException("No skin texture available — upload a skin first");
+        }
+        String publicUrl;
+        try {
+            publicUrl = images.storeSkin(uuid, skinUrl.trim());
+        } catch (TailorException e) {
+            publicUrl = skinUrl.trim();
+        }
+        if (capeUrl != null && !capeUrl.isBlank()) {
+            try {
+                capeUrl = images.storeCape(uuid, capeUrl.trim());
+            } catch (TailorException ignored) {
+                // keep CDN cape URL
+            }
+        }
+        String textureValue = images.buildTextureValue(publicUrl, capeUrl, model);
+        ActiveSkin skin = ActiveSkin.of(uuid, publicUrl, capeUrl, model, textureValue, System.currentTimeMillis());
+        try {
+            database.saveActive(skin);
+        } catch (Exception e) {
+            throw new TailorException("Failed to persist model", e);
         }
         return skin;
     }
