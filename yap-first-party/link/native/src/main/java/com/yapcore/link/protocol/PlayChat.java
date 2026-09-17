@@ -1,8 +1,12 @@
 package com.yapcore.link.protocol;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 
 /** Play-phase clientbound packets (system chat, disconnect). */
 public final class PlayChat {
@@ -14,7 +18,7 @@ public final class PlayChat {
         ByteBuf body = Unpooled.buffer();
         int packetId = systemChatId(protocol);
         McCodec.writeVarInt(body, packetId);
-        McCodec.writeString(body, jsonComponent);
+        writeTextComponent(body, protocol, jsonComponent);
         if (protocol >= 759) {
             body.writeBoolean(overlay);
         }
@@ -24,14 +28,64 @@ public final class PlayChat {
     public static ByteBuf disconnectPacket(int protocol, String jsonReason) {
         ByteBuf body = Unpooled.buffer();
         McCodec.writeVarInt(body, disconnectId(protocol));
-        McCodec.writeString(body, jsonReason);
+        writeTextComponent(body, protocol, jsonReason);
         return body;
     }
 
     public static String jsonText(String plain) {
         JsonObject o = new JsonObject();
-        o.addProperty("text", plain);
+        o.addProperty("text", plain == null ? "" : plain);
         return o.toString();
+    }
+
+    /**
+     * 1.20.3+ (protocol ≥ 765): Text Component is network NBT (root TAG_String for plain text).
+     * Older: JSON string.
+     */
+    static void writeTextComponent(ByteBuf buf, int protocol, String jsonOrPlain) {
+        if (protocol >= 765) {
+            writeNbtStringComponent(buf, plainText(jsonOrPlain));
+        } else {
+            McCodec.writeString(buf, jsonOrPlain == null ? "{\"text\":\"\"}" : jsonOrPlain);
+        }
+    }
+
+    /** Root TAG_String — valid for unstyled text components. */
+    static void writeNbtStringComponent(ByteBuf buf, String plain) {
+        buf.writeByte(8); // TAG_String
+        writeModifiedUtf(buf, plain == null ? "" : plain);
+    }
+
+    /** Java {@link DataOutputStream#writeUTF} (unsigned short length + modified UTF-8). */
+    static void writeModifiedUtf(ByteBuf buf, String s) {
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream(s.length() + 16);
+            DataOutputStream dos = new DataOutputStream(bos);
+            dos.writeUTF(s);
+            byte[] encoded = bos.toByteArray();
+            buf.writeBytes(encoded);
+        } catch (Exception e) {
+            // Extremely long / bad input — fall back to empty string tag payload.
+            buf.writeShort(0);
+        }
+    }
+
+    static String plainText(String jsonOrPlain) {
+        if (jsonOrPlain == null || jsonOrPlain.isBlank()) {
+            return "";
+        }
+        String t = jsonOrPlain.trim();
+        if (t.startsWith("{") && t.contains("\"text\"")) {
+            try {
+                var el = JsonParser.parseString(t);
+                if (el.isJsonObject() && el.getAsJsonObject().has("text")) {
+                    return el.getAsJsonObject().get("text").getAsString();
+                }
+            } catch (Exception ignored) {
+                // use raw
+            }
+        }
+        return jsonOrPlain;
     }
 
     /** Play clientbound {@code minecraft:login} (from protocol dumps). */
@@ -99,7 +153,11 @@ public final class PlayChat {
         }
     }
 
+    /** Play disconnect is {@code 0x20} on 26.2; older builds used {@code 0x1D}. */
     private static int disconnectId(int protocol) {
+        if (protocol >= 775) {
+            return 0x20;
+        }
         if (protocol >= 768) {
             return 0x1D;
         }

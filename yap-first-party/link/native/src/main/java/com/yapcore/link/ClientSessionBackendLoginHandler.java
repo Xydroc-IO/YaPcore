@@ -55,6 +55,17 @@ final class ClientSessionBackendLoginHandler extends ChannelInboundHandlerAdapte
                 handlePluginRequest(ctx, buf);
                 return;
             }
+            if (packetId == 0x05) {
+                // Login cookie_request (1.20.5+) — reply empty payload.
+                String key = McCodec.readString(buf, 32767);
+                buf.release();
+                ByteBuf resp = Unpooled.buffer();
+                McCodec.writeVarInt(resp, 0x04);
+                McCodec.writeString(resp, key);
+                resp.writeBoolean(false);
+                ctx.writeAndFlush(resp);
+                return;
+            }
             if (packetId == 0x02) {
                 // Modern forwarding is optional: backends with velocity disabled (common for
                 // Link → Via → Folia) never send velocity:player_info; still bridge.

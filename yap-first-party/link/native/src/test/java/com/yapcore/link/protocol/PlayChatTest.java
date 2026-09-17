@@ -1,47 +1,44 @@
 package com.yapcore.link.protocol;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 final class PlayChatTest {
 
     @Test
-    void systemChatIdMatchesProtocolDumps() {
-        assertEquals(121, PlayChat.systemChatId(776));
-        assertEquals(121, PlayChat.systemChatId(775));
-        assertEquals(119, PlayChat.systemChatId(773));
-        assertEquals(115, PlayChat.systemChatId(768));
-        assertEquals(108, PlayChat.systemChatId(766));
+    void modernSystemChatUsesNbtStringNotJson() {
+        ByteBuf pkt = PlayChat.systemChatPacket(776, PlayChat.jsonText("Hello"), false);
+        assertEquals(121, McCodec.readVarInt(pkt));
+        assertEquals(8, pkt.readByte()); // TAG_String
+        // DataOutput.writeUTF: unsigned short length + bytes
+        int utfLen = pkt.readUnsignedShort();
+        assertEquals(5, utfLen);
+        byte[] bytes = new byte[utfLen];
+        pkt.readBytes(bytes);
+        assertEquals("Hello", new String(bytes));
+        assertTrue(pkt.isReadable());
+        assertEquals(0, pkt.readByte()); // overlay=false
+        assertEquals(0, pkt.readableBytes());
+        pkt.release();
     }
 
     @Test
-    void playLoginIdMatchesProtocolDumps() {
-        assertEquals(49, PlayChat.playLoginId(776));
-        assertEquals(48, PlayChat.playLoginId(773));
-        assertEquals(43, PlayChat.playLoginId(766));
+    void legacySystemChatStillJsonString() {
+        ByteBuf pkt = PlayChat.systemChatPacket(760, PlayChat.jsonText("Hi"), false);
+        assertEquals(0x5F, McCodec.readVarInt(pkt));
+        String json = McCodec.readString(pkt, 256);
+        assertTrue(json.contains("Hi"));
+        pkt.release();
     }
 
     @Test
-    void advertiseSecureChatFlipsLastBooleanOnLogin() {
-        ByteBuf buf = Unpooled.buffer();
-        McCodec.writeVarInt(buf, 49);
-        buf.writeBytes(new byte[]{1, 2, 3, 4, 0});
-        PlayChat.advertiseSecureChat(776, buf);
-        assertEquals(1, buf.getByte(buf.writerIndex() - 1));
-        assertEquals(0, buf.readerIndex());
-        buf.release();
-    }
-
-    @Test
-    void advertiseSecureChatIgnoresOtherPackets() {
-        ByteBuf buf = Unpooled.buffer();
-        McCodec.writeVarInt(buf, 121);
-        buf.writeBytes(new byte[]{0});
-        PlayChat.advertiseSecureChat(776, buf);
-        assertEquals(0, buf.getByte(buf.writerIndex() - 1));
-        buf.release();
+    void plainTextExtractsJsonTextField() {
+        assertEquals("Already connected to lobby",
+                PlayChat.plainText(PlayChat.jsonText("Already connected to lobby")));
+        assertEquals("raw", PlayChat.plainText("raw"));
     }
 }

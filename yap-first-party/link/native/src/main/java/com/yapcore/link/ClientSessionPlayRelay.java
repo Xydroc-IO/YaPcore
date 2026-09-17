@@ -28,6 +28,12 @@ final class ClientSessionPlayRelay extends ChannelInboundHandlerAdapter {
             return;
         }
         if (fromClient) {
+            // Registered Link plugin commands (/hub, /server, …) — must run here or they
+            // fall through to Folia as unknown commands (registerCommand alone is not enough).
+            if (ClientSessionCommands.tryDispatchRegistered(session, buf)) {
+                buf.release();
+                return;
+            }
             if (session.server.config().enableServerCommand()) {
                 String cmd = ClientSessionRouting.extractServerCommand(buf);
                 if (cmd != null) {
@@ -43,6 +49,10 @@ final class ClientSessionPlayRelay extends ChannelInboundHandlerAdapter {
                 return;
             }
         } else {
+            // Play starts after configuration; register BungeeCord channels only then.
+            if (ClientSessionRouting.isPlayLoginPacket(session.protocolVersion, buf)) {
+                session.ensureProxyChannelsRegistered();
+            }
             if (ClientSessionRouting.tryFirePluginMessage(session, buf, false)) {
                 buf.release();
                 return;

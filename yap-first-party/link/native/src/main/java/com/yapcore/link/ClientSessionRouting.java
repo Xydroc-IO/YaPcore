@@ -8,7 +8,6 @@ import com.yapcore.link.protocol.McCodec;
 import com.yapcore.link.protocol.PlayChat;
 import com.yapcore.link.protocol.PluginMessagePackets;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 
 import java.nio.charset.StandardCharsets;
@@ -35,25 +34,80 @@ final class ClientSessionRouting {
         Optional<PluginMessagePackets.Parsed> parsed = fromClient
                 ? PluginMessagePackets.tryParseServerbound(session.protocolVersion, buf)
                 : PluginMessagePackets.tryParseClientbound(session.protocolVersion, buf);
+        // Folia/Paper packet-id drift: still catch BungeeCord Connect by payload shape.
+        if (parsed.isEmpty() && !fromClient) {
+            parsed = PluginMessagePackets.tryParseClientboundLoose(session.protocolVersion, buf);
+        }
+        if (parsed.isEmpty() && !fromClient) {
+            if (PluginMessagePackets.looksLikeClientboundCustomPayload(session.protocolVersion, buf)) {
+                Optional<String> connectTarget = PluginMessagePackets.sniffBungeeConnectTarget(buf);
+                if (connectTarget.isPresent()) {
+                    LOG.info("BungeeCord Connect sniff user=" + session.username
+                            + " → " + connectTarget.get()
+                            + " (packet-id parse missed; payload matched)");
+                    handleServerCommand(session, connectTarget.get());
+                    return true;
+                }
+            }
+            return false;
+        }
         if (parsed.isEmpty()) {
             return false;
         }
         String channelId = parsed.get().channel();
-        if (!session.server.plugins().isRegisteredChannel(channelId)) {
+        if (!session.server.plugins().isRegisteredChannel(channelId) && !isBungeeChannelName(channelId)) {
             return false;
         }
         ChannelIdentifier channel = ChannelIdentifier.fromMcChannel(channelId);
         PluginMessageEvent event = new PluginMessageEvent(
                 fromClient ? PluginMessageEvent.SourceKind.PLAYER : PluginMessageEvent.SourceKind.BACKEND,
-                // Backend→client payloads still ride a specific player connection (portal Connect).
                 Optional.ofNullable(session.playerHandle),
                 fromClient ? Optional.empty() : session.currentServer(),
                 channel,
-                parsed.get().data()
-        );
+                parsed.get().data());
         session.server.plugins().eventBus().fire(event);
         session.server.metrics().counter("plugin.messages", 1);
-        return event.result() == PluginMessageEvent.Result.HANDLED;
+        if (event.result() == PluginMessageEvent.Result.HANDLED) {
+            return true;
+        }
+        if (!fromClient) {
+            Optional<String> connectTarget = PluginMessagePackets.sniffBungeeConnectTarget(buf);
+            if (connectTarget.isPresent() && session.playerHandle != null) {
+                LOG.info("BungeeCord Connect fallback user=" + session.username
+                        + " → " + connectTarget.get());
+                handleServerCommand(session, connectTarget.get());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isBungeeChannelName(String channelId) {
+        if (channelId == null || channelId.isBlank()) {
+            return false;
+        }
+        String id = channelId.toLowerCase(Locale.ROOT);
+        return id.equals("bungeecord:main")
+                || id.equals("minecraft:bungeecord")
+                || id.equals("bungeecord")
+                || id.endsWith(":bungeecord");
+    }
+
+    /** Play clientbound {@code login} (aka Join Game) — 26.2 id 49. */
+    static boolean isPlayLoginPacket(int protocol, ByteBuf buf) {
+        if (buf == null || !buf.isReadable()) {
+            return false;
+        }
+        buf.markReaderIndex();
+        try {
+            int packetId = McCodec.readVarInt(buf);
+            int loginId = protocol >= 773 ? 49 : 43;
+            return packetId == loginId;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            buf.resetReaderIndex();
+        }
     }
 
     static String extractServerCommand(ByteBuf buf) {
@@ -125,27 +179,10 @@ final class ClientSessionRouting {
                 }
             }
         }
-        LOG.info("SERVER user=" + session.username + " → " + target.name());
-        session.server.redirects().put(session.playerId, target.name());
-        if (session.protocolVersion >= 766 && client != null && client.isActive()) {
-            ByteBuf transfer = Unpooled.buffer();
-            McCodec.writeVarInt(transfer, transferPacketId(session.protocolVersion));
-            McCodec.writeString(transfer, session.server.config().publicHost());
-            McCodec.writeVarInt(transfer, session.server.config().publicPort());
-            client.writeAndFlush(transfer).addListener(f -> {
-                if (session.backend != null) {
-                    session.backend.close();
-                }
-            });
-            return;
-        }
-        if (session.backend != null) {
-            session.backend.close();
-        }
-        session.kickChannel(client, "Sending you to " + target.name() + " — reconnect to YaP Link.");
-    }
-
-    private static int transferPacketId(int protocol) {
-        return protocol >= 768 ? 0x7A : 0x73;
+        LOG.info("SERVER user=" + session.username + " → " + target.name()
+                + " proto=" + session.protocolVersion);
+        // In-proxy soft swap (Velocity-style): keep client TCP, rebind backend via
+        // play start_configuration → config → play. No disconnect screen.
+        ClientSessionSoftSwitch.begin(session, target);
     }
 }

@@ -59,6 +59,11 @@ public final class LinkPluginManager {
         return eventBus;
     }
 
+    /** Lookup a command registered by a Link plugin ({@code /hub}, {@code /server}, …). */
+    public SimpleCommand command(String name) {
+        return proxy.command(name);
+    }
+
     public void loadAll() {
         Path dir = server.config().home().resolve("plugins");
         try {

@@ -51,10 +51,17 @@ public final class ClientSession extends ChannelInboundHandlerAdapter {
     List<ModernForwarding.Property> properties = List.of();
     String clientAddress = "127.0.0.1";
     String virtualHost = "";
+    /** TCP port from the client's handshake (same port they used to reach Link). */
+    int virtualPort;
     String forcedServerName;
     Channel backend;
     String currentBackendName;
     final AtomicBoolean closed = new AtomicBoolean(false);
+    /** True while an in-proxy soft backend swap is in progress. */
+    final AtomicBoolean switching = new AtomicBoolean(false);
+    /** Client has acknowledged {@code start_configuration} during a soft switch. */
+    volatile boolean clientInConfig;
+    String pendingSwitchTarget;
     boolean counted;
     final byte[] verifyToken = new byte[4];
     ChannelHandlerContext clientCtx;
@@ -138,7 +145,7 @@ public final class ClientSession extends ChannelInboundHandlerAdapter {
         }
         protocolVersion = McCodec.readVarInt(buf);
         virtualHost = McCodec.readString(buf, 255);
-        buf.readUnsignedShort();
+        virtualPort = buf.readUnsignedShort();
         int intent = McCodec.readVarInt(buf);
         buf.release();
         forcedServerName = server.config().forcedHostServer(virtualHost);
@@ -181,6 +188,106 @@ public final class ClientSession extends ChannelInboundHandlerAdapter {
                 new ClientSessionPlayRelay(this, backendCh, true));
         backendCh.pipeline().replace("backend", "to-client",
                 new ClientSessionPlayRelay(this, client, false));
+        // Do NOT send minecraft:register here — beginBridge runs at Login Success, before
+        // configuration/play. Play packet id 22 during config kicks with "unknown packet id 22".
+        // PlayRelay calls ensureProxyChannelsRegistered() on the first play packet instead.
+    }
+
+    /**
+     * After a soft switch finishes configuration, re-attach play relays on the existing client.
+     */
+    void rebridgeAfterSwitch(Channel client, Channel backendCh) {
+        if (client == null || backendCh == null || !client.isActive() || !backendCh.isActive()) {
+            kickChannel(client, "Switch failed — backend lost");
+            return;
+        }
+        phase = Phase.BRIDGING;
+        if (playerHandle != null) {
+            server.playerHub().leave(playerId);
+            registerPlayerHub(client);
+        }
+        RegisteredServer reg = server.plugins().proxy().server(currentBackendName).orElse(null);
+        if (reg != null && playerHandle != null) {
+            server.plugins().eventBus().fire(new PostConnectEvent(playerHandle, reg));
+        }
+        server.chatRelay().announceJoin(username, currentBackendName);
+        LOG.info("BRIDGE (switch) user=" + username + " backend=" + currentBackendName + " uuid=" + playerId);
+
+        String clientHandler = client.pipeline().get("switch-client") != null
+                ? "switch-client"
+                : (client.pipeline().get("to-backend") != null ? "to-backend" : "client");
+        client.pipeline().replace(clientHandler, "to-backend",
+                new ClientSessionPlayRelay(this, backendCh, true));
+
+        String backendHandler = backendCh.pipeline().get("backend") != null
+                ? "backend"
+                : (backendCh.pipeline().get("to-client") != null ? "to-client" : "backend");
+        backendCh.pipeline().replace(backendHandler, "to-client",
+                new ClientSessionPlayRelay(this, client, false));
+    }
+
+    private final AtomicBoolean proxyChannelsRegistered = new AtomicBoolean(false);
+
+    void resetProxyChannelsRegistered() {
+        proxyChannelsRegistered.set(false);
+    }
+
+    /**
+     * Once the backend is in play, send serverbound {@code minecraft:register} so Folia/Paper
+     * populates CraftPlayer.channels() and BungeeCord {@code Connect} actually hits the wire.
+     * Channel names must be valid lowercase Identifiers or Folia kicks with
+     * {@code Invalid custom payload payload!}.
+     */
+    void ensureProxyChannelsRegistered() {
+        if (!proxyChannelsRegistered.compareAndSet(false, true)) {
+            return;
+        }
+        java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>();
+        names.add("bungeecord:main");
+        for (String id : server.plugins().registeredChannelIds()) {
+            String normalized = normalizeRegisterChannel(id);
+            if (normalized != null) {
+                names.add(normalized);
+            }
+        }
+        StringBuilder joined = new StringBuilder();
+        for (String name : names) {
+            if (joined.length() > 0) {
+                joined.append('\0');
+            }
+            joined.append(name);
+        }
+        byte[] payload = joined.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        sendBackendPluginMessage(ChannelIdentifier.fromMcChannel("minecraft:register"), payload);
+        LOG.info("REGISTER channels → backend user=" + username + " count=" + names.size()
+                + " " + names);
+    }
+
+    /** Paper requires entirely lowercase {@code namespace:key} channel ids. */
+    private static String normalizeRegisterChannel(String id) {
+        if (id == null || id.isBlank()) {
+            return null;
+        }
+        String s = id.trim();
+        if ("BungeeCord".equalsIgnoreCase(s) || "minecraft:bungeecord".equalsIgnoreCase(s)) {
+            return "bungeecord:main";
+        }
+        s = s.toLowerCase(java.util.Locale.ROOT);
+        int colon = s.indexOf(':');
+        if (colon <= 0 || colon >= s.length() - 1) {
+            return null;
+        }
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == ':') {
+                continue;
+            }
+            if (!(c >= 'a' && c <= 'z') && !(c >= '0' && c <= '9')
+                    && c != '_' && c != '-' && c != '.' && c != '/') {
+                return null;
+            }
+        }
+        return s;
     }
 
     private void registerPlayerHub(Channel client) {
@@ -265,7 +372,14 @@ public final class ClientSession extends ChannelInboundHandlerAdapter {
             return;
         }
         try {
-            if (phase == Phase.BRIDGING) {
+            // Once the client has reached play (or is mid soft-switch), always use play disconnect.
+            // Login-format id 0 + JSON is decoded as play bundle_delimiter → client crash.
+            boolean playClient = phase == Phase.BRIDGING
+                    || switching.get()
+                    || clientInConfig
+                    || (ch.pipeline().get("to-backend") != null)
+                    || (ch.pipeline().get("switch-client") != null);
+            if (playClient) {
                 ch.writeAndFlush(PlayChat.disconnectPacket(protocolVersion, PlayChat.jsonText(reason)))
                         .addListener(ChannelFutureListener.CLOSE);
             } else {

@@ -21,4 +21,12 @@ public interface LinkPlayer {
 
     /** Request a backend switch (uses redirect token + Transfer when supported). */
     void connect(RegisteredServer server);
+
+    /** Grant a Link-side permission node (e.g. {@code yaplink.*} for network ops). */
+    default void grantPermission(String permission) {
+    }
+
+    default boolean hasPermission(String permission) {
+        return false;
+    }
 }

@@ -78,10 +78,12 @@ public final class LinkPlayerImpl implements LinkPlayer, SimpleCommand.CommandSo
         return this;
     }
 
+    @Override
     public void grantPermission(String perm) {
         permissions.add(perm);
     }
 
+    @Override
     public boolean hasPermission(String perm) {
         return permissions.contains(perm) || permissions.contains("yaplink.*");
     }

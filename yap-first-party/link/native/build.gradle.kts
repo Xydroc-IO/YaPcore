@@ -67,5 +67,6 @@ tasks.register<Copy>("installLinkPlugins") {
         ":yap-link-plugin-chat-bridge:installIntoLinkPlugins",
         ":yap-link-plugin-mod-sync:installIntoLinkPlugins",
         ":yap-link-plugin-server-selector:installIntoLinkPlugins",
+        ":yap-link-plugin-op-sync:installIntoLinkPlugins",
     )
 }

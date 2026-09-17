@@ -74,11 +74,19 @@ public final class ServerSelectorPlugin implements LinkPlugin {
         }
         try (Connection c = pool.getConnection()) {
             ProxySessionLock.lockHolder(c, event.player().uuid()).ifPresent(holder -> {
-                if (!holder.equalsIgnoreCase(event.target().name())) {
-                    event.player().sendMessage("§cYou are locked to §f" + holder
-                            + "§c — finish there before switching.");
-                    event.setCancelled(true);
+                // lock_server = which backend currently owns inventory (dual-login guard).
+                // Leaving that backend (or rejoining it) is allowed; only block hopping to a
+                // third server while still locked elsewhere.
+                String current = event.player().currentServer()
+                        .map(RegisteredServer::name)
+                        .orElse("");
+                String target = event.target().name();
+                if (holder.equalsIgnoreCase(target) || holder.equalsIgnoreCase(current)) {
+                    return;
                 }
+                event.player().sendMessage("§cYou are locked to §f" + holder
+                        + "§c — finish there before switching.");
+                event.setCancelled(true);
             });
         } catch (Exception e) {
             logger.warning("Session lock check failed: " + e.getMessage());
@@ -98,9 +106,11 @@ public final class ServerSelectorPlugin implements LinkPlugin {
                 case "Connect" -> {
                     String target = in.readUTF();
                     if (player == null) {
-                        logger.fine("BungeeCord Connect without player handle — ignored");
+                        logger.warning("BungeeCord Connect without player handle — ignored (target="
+                                + target + ")");
                         return;
                     }
+                    logger.info("BungeeCord Connect " + player.username() + " → " + target);
                     connect(player, target);
                 }
                 case "ConnectOther" -> {

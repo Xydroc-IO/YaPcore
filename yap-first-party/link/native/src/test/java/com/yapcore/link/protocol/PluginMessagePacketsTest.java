@@ -35,4 +35,37 @@ final class PluginMessagePacketsTest {
         assertEquals("yap:chat", parsed.get().channel());
         assertArrayEquals(payload, parsed.get().data());
     }
+
+    @Test
+    void roundTripClientbound776() {
+        int protocol = 776;
+        assertEquals(0x18, PluginMessagePackets.clientboundPlayId(protocol));
+        assertEquals(0x16, PluginMessagePackets.serverboundPlayId(protocol));
+        byte[] payload = new byte[]{9, 8, 7};
+        ByteBuf buf = Unpooled.buffer();
+        PluginMessagePackets.writeClientbound(buf, protocol, "BungeeCord", payload);
+        var parsed = PluginMessagePackets.tryParseClientbound(protocol, buf);
+        assertTrue(parsed.isPresent());
+        assertEquals("BungeeCord", parsed.get().channel());
+        assertArrayEquals(payload, parsed.get().data());
+    }
+
+    @Test
+    void sniffConnectIgnoresWrongPacketId() throws Exception {
+        byte[] payload;
+        try (var bytes = new java.io.ByteArrayOutputStream();
+             var out = new java.io.DataOutputStream(bytes)) {
+            out.writeUTF("Connect");
+            out.writeUTF("survival");
+            payload = bytes.toByteArray();
+        }
+        ByteBuf buf = Unpooled.buffer();
+        // Deliberately wrong play id — sniff must still find the target.
+        McCodec.writeVarInt(buf, 0x99);
+        McCodec.writeString(buf, "bungeecord:main");
+        buf.writeBytes(payload);
+        var target = PluginMessagePackets.sniffBungeeConnectTarget(buf);
+        assertTrue(target.isPresent());
+        assertEquals("survival", target.get());
+    }
 }
