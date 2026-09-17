@@ -239,33 +239,56 @@ tasks.register("publishReleasesFolder") {
 
         dest.resolve("README.txt").writeText(
             """
-            YaPcore $ver — release folder
-            =============================
+            YaPcore $ver — release folder (wiped + rebuilt each publish)
+            ===========================================================
 
-            Full server trees (self-contained):
-              yapcore-release/linux/     → ./start.sh --fg
-              yapcore-release/windows/   → start.cmd -Fg
-
-            Zip archives (same trees; unzip then cd yapcore-release/linux):
+            UPLOAD TO GITHUB (tag $ver) — these 7 files only:
               yapcore-release-linux.zip
               yapcore-release-windows.zip
-
-            Standalone suites:
               yap-network-suite.zip
               yap-gameplay-suite.zip
+              yapcore-default.zip
+              yapcore-default.mcpack
+              client_mods.zip
 
-            Bedrock-feel parity (Phase 6):
-              client_mods.zip            → Fabric mods (presence/blocks/visuals/…)
-              yapcore-default.zip        → JE resource pack (incl. Bedrock block ports)
-              yapcore-default.mcpack     → Bedrock pack
+              gh release upload $ver releases/$ver/{yapcore-release-linux,yapcore-release-windows,yap-network-suite,yap-gameplay-suite,yapcore-default}.zip \
+                releases/$ver/yapcore-default.mcpack releases/$ver/client_mods.zip \
+                --clobber -R Xydroc-IO/YaPcore
+
+            LOCAL / UNZIPPED TREES (not GitHub assets — same content as the OS zips):
+              yapcore-release/linux/     → ./start.sh --fg
+              yapcore-release/windows/   → start.cmd -Fg
+              (each has yapcore.jar, yap-link.jar, plugins/, lib/, config/, …)
+
+            OPTIONAL / META:
+              README-box.txt
               parity-band_26_50-provenance.manifest.v1.json
 
-            Rebuild server:  gradle publishReleasesFolder
-            Rebuild clients: ./scripts/build-yap-client-render.sh
-            Parity smoke:    ./scripts/parity/smoke-bedrock-feel.sh
-            Slim CORE+NETWORK only:  gradle assembleRelease -PyapGameplay=false
+            Rebuild (deletes this folder first, then writes fresh):
+              gradle publishReleasesFolder -PyapGameplay=true
+            Clients: ./scripts/build-yap-client-render.sh
+            Docs: docs/start/RELEASES.md
+            """.trimIndent() + "\n"
+        )
 
-            Docs: docs/start/RELEASES.md · docs/product/BEDROCK_FEEL_PARITY.md
+        dest.resolve("GITHUB-UPLOAD.txt").writeText(
+            """
+            GitHub release assets for YaPcore $ver
+            =====================================
+            Upload ONLY these (overwrite with --clobber):
+
+            1. yapcore-release-linux.zip      Full Linux server box
+            2. yapcore-release-windows.zip    Full Windows server box
+            3. yap-network-suite.zip          Link + network plugins only
+            4. yap-gameplay-suite.zip         Skills/dungeons/stacker/… only
+            5. yapcore-default.zip            Java Edition resource pack (CDN)
+            6. yapcore-default.mcpack         Bedrock resource pack (CDN)
+            7. client_mods.zip                Optional Fabric client mods
+
+            Do NOT upload the yapcore-release/ folder — it is the unzipped form
+            of #1/#2 for local testing (~900MB).
+
+            Do NOT upload loose jars from plugins/ — they are already inside #1–4.
             """.trimIndent() + "\n"
         )
 
