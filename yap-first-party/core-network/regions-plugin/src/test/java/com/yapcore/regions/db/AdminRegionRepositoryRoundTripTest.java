@@ -48,13 +48,14 @@ class AdminRegionRepositoryRoundTripTest {
                       max_z INT NOT NULL,
                       priority INT NOT NULL DEFAULT 0,
                       shape VARCHAR(16) NOT NULL DEFAULT 'CUBOID',
+                      game_mode VARCHAR(16) NULL,
                       UNIQUE (server_id, name)
                     )
                     """.formatted(dialect.autoIncrementPk()));
             st.execute("""
                     CREATE TABLE yap_admin_region_flags (
                       region_id BIGINT NOT NULL,
-                      flag_name VARCHAR(32) NOT NULL,
+                      flag_name VARCHAR(48) NOT NULL,
                       flag_value VARCHAR(8) NOT NULL,
                       PRIMARY KEY (region_id, flag_name)
                     )
@@ -119,6 +120,16 @@ class AdminRegionRepositoryRoundTripTest {
         Optional<AdminRegion> raised = repository.findByName("default", "spawn");
         assertTrue(raised.isPresent());
         assertEquals(25, raised.get().priority());
+
+        repository.setGameMode(id, "adventure");
+        Optional<AdminRegion> adventure = repository.findByName("default", "spawn");
+        assertTrue(adventure.isPresent());
+        assertEquals("adventure", adventure.get().gameMode());
+
+        repository.setGameMode(id, null);
+        Optional<AdminRegion> cleared = repository.findByName("default", "spawn");
+        assertTrue(cleared.isPresent());
+        assertTrue(cleared.get().gameMode() == null || cleared.get().gameMode().isBlank());
 
         List<AdminRegion> all = repository.loadForServer("default");
         assertEquals(1, all.size());

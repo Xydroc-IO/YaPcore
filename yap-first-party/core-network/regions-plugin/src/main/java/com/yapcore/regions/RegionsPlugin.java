@@ -5,7 +5,9 @@ import com.yapcore.regions.db.AdminRegionRepository;
 import com.yapcore.regions.db.RegionMessageRepository;
 import com.yapcore.regions.db.RegionTemplateRepository;
 import com.yapcore.regions.db.RegionsDatabase;
+import com.yapcore.regions.listener.RegionGamemodeListener;
 import com.yapcore.regions.listener.RegionListener;
+import com.yapcore.regions.listener.RegionWorldFlagsListener;
 import com.yapcore.regions.service.RegionServiceImpl;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.ServicePriority;
@@ -19,15 +21,17 @@ public final class RegionsPlugin extends JavaPlugin {
     private RegionMessageRepository messages;
     private RegionTemplateRepository templates;
     private RegionServiceImpl regionService;
-    private RegionListener listener;
+    private RegionGamemodeListener gamemodeListener;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         reloadRegions();
 
-        listener = new RegionListener(this, regionService);
-        getServer().getPluginManager().registerEvents(listener, this);
+        getServer().getPluginManager().registerEvents(new RegionListener(config, regionService), this);
+        getServer().getPluginManager().registerEvents(new RegionWorldFlagsListener(regionService), this);
+        gamemodeListener = new RegionGamemodeListener(this, regionService);
+        getServer().getPluginManager().registerEvents(gamemodeListener, this);
 
         PluginCommand cmd = getCommand("region");
         if (cmd != null) {
@@ -82,9 +86,16 @@ public final class RegionsPlugin extends JavaPlugin {
             regionService = new RegionServiceImpl(config, repository, messages, templates);
         }
         regionService.reload();
+        if (gamemodeListener != null) {
+            gamemodeListener.refreshOnlinePlayers();
+        }
     }
 
     public RegionsConfig config() {
         return config;
+    }
+
+    public RegionGamemodeListener gamemodeListener() {
+        return gamemodeListener;
     }
 }

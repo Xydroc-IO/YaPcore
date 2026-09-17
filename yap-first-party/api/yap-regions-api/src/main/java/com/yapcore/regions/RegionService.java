@@ -56,6 +56,12 @@ public interface RegionService {
 
     void setPriority(String name, int priority) throws SQLException;
 
+    /**
+     * Force a Bukkit gamemode while players are inside this region
+     * ({@code survival}/{@code creative}/{@code adventure}/{@code spectator}), or {@code null} to clear.
+     */
+    void setGameMode(String name, String gameMode) throws SQLException;
+
     void setMessage(String name, RegionMessageKind kind, String text) throws SQLException;
 
     void clearMessage(String name, RegionMessageKind kind) throws SQLException;

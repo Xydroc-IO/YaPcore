@@ -14,8 +14,20 @@ class RegionOverlapTest {
 
     @Test
     void flagParseAcceptsHyphenAndUnderscore() {
+        assertEquals(Optional.of(RegionFlag.DAMAGE), RegionFlag.parse("damage"));
+        assertEquals(Optional.of(RegionFlag.DAMAGE), RegionFlag.parse("invincible"));
+        assertEquals(Optional.of(RegionFlag.DAMAGE), RegionFlag.parse("god"));
+        assertEquals(Optional.of(RegionFlag.USE), RegionFlag.parse("use"));
+        assertEquals(Optional.of(RegionFlag.HUNGER), RegionFlag.parse("hunger"));
+        assertEquals(Optional.of(RegionFlag.FARMLAND_TRAMPLE), RegionFlag.parse("trampling"));
+        assertEquals(Optional.of(RegionFlag.ITEM_FRAME), RegionFlag.parse("frames"));
+        assertEquals(Optional.of(RegionFlag.ARMOR_STAND), RegionFlag.parse("armor-stand"));
+        assertEquals(Optional.of(RegionFlag.LEAF_DECAY), RegionFlag.parse("leaf-decay"));
+        assertEquals(Optional.of(RegionFlag.PISTONS), RegionFlag.parse("piston"));
         assertEquals(Optional.of(RegionFlag.CHEST_ACCESS), RegionFlag.parse("chest-access"));
         assertEquals(Optional.of(RegionFlag.CREEPER_EXPLOSION), RegionFlag.parse("creeper_explosion"));
+        assertEquals(Optional.of(RegionFlag.MOB_ENTRY), RegionFlag.parse("mob-entry"));
+        assertEquals(Optional.of(RegionFlag.WEATHER), RegionFlag.parse("weather"));
         assertTrue(RegionFlag.parse("not-a-flag").isEmpty());
     }
 

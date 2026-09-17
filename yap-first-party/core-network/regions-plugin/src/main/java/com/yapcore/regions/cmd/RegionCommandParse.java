@@ -34,6 +34,7 @@ final class RegionCommandParse {
                     .append("\"maxY\":").append(r.maxY()).append(',')
                     .append("\"maxZ\":").append(r.maxZ()).append(',')
                     .append("\"priority\":").append(r.priority()).append(',')
+                    .append("\"gameMode\":").append(q(r.gameMode())).append(',')
                     .append("\"flagCount\":").append(r.flags().size()).append(',')
                     .append("\"vertexCount\":").append(r.vertices().size()).append(',')
                     .append("\"flags\":{");

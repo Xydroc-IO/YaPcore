@@ -4,6 +4,7 @@ import com.yapcore.regions.FlagValue;
 import com.yapcore.regions.RegionFlag;
 import com.yapcore.regions.RegionMessageKind;
 import com.yapcore.regions.RegionsPlugin;
+import com.yapcore.regions.listener.RegionGamemodeListener;
 import com.yapcore.regions.service.RegionServiceImpl;
 import com.yapcore.messages.YapMessages;
 import org.bukkit.command.CommandSender;
@@ -106,6 +107,11 @@ final class RegionMetaOps {
         sender.sendMessage("§7Bounds §f" + r.minX() + "," + r.minY() + "," + r.minZ()
                 + " §7→ §f" + r.maxX() + "," + r.maxY() + "," + r.maxZ()
                 + " §8(vol=" + RegionCommandParse.volumeOf(r) + ")");
+        if (r.hasGameMode()) {
+            sender.sendMessage("§7Gamemode: §f" + r.gameMode());
+        } else {
+            sender.sendMessage("§7Gamemode: §8(none — player keeps current)");
+        }
         if (r.isPolygon()) {
             StringBuilder verts = new StringBuilder("§7Vertices (" + r.vertices().size() + "):");
             for (var v : r.vertices()) {
@@ -126,6 +132,44 @@ final class RegionMetaOps {
             sender.sendMessage(flags.toString());
         }
         return true;
+    }
+
+    boolean handleGameMode(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /region gamemode <name> <survival|creative|adventure|spectator|clear>");
+            return true;
+        }
+        String name = args[1];
+        String raw = args[2].trim().toLowerCase(Locale.ROOT);
+        if ("clear".equals(raw) || "none".equals(raw) || "off".equals(raw)) {
+            try {
+                regions.setGameMode(name, null);
+                refreshGamemodes();
+                sender.sendMessage("§aCleared gamemode for region §f" + name);
+            } catch (Exception e) {
+                sender.sendMessage("§cFailed: " + e.getMessage());
+            }
+            return true;
+        }
+        if (RegionGamemodeListener.parse(raw) == null) {
+            sender.sendMessage("§cUnknown mode. Use survival, creative, adventure, spectator, or clear.");
+            return true;
+        }
+        try {
+            regions.setGameMode(name, raw);
+            refreshGamemodes();
+            sender.sendMessage("§aRegion §f" + name + " §agamemode → §f" + raw
+                    + " §7(applied to players already inside)");
+        } catch (Exception e) {
+            sender.sendMessage("§cFailed: " + e.getMessage());
+        }
+        return true;
+    }
+
+    private void refreshGamemodes() {
+        if (plugin instanceof RegionsPlugin regionsPlugin && regionsPlugin.gamemodeListener() != null) {
+            regionsPlugin.gamemodeListener().refreshOnlinePlayers();
+        }
     }
 
     boolean handlePriority(CommandSender sender, String[] args) {
@@ -214,10 +258,27 @@ final class RegionMetaOps {
             regions.setFlag(name, flag, value);
             sender.sendMessage("§aSet §f" + flag.name().toLowerCase(Locale.ROOT).replace('_', '-')
                     + " §ato §f" + value.name().toLowerCase(Locale.ROOT) + " §afor region §f" + name);
+            if (value == FlagValue.DENY && isLandBypassFlag(flag)) {
+                sender.sendMessage("§7Note: OP / §fyap.bypass§7 / §fyapregions.admin§7 still bypass this — test as a normal player.");
+            }
         } catch (Exception e) {
             sender.sendMessage("§cFailed: " + e.getMessage());
         }
         return true;
+    }
+
+    private static boolean isLandBypassFlag(RegionFlag flag) {
+        return flag == RegionFlag.BUILD
+                || flag == RegionFlag.USE
+                || flag == RegionFlag.INTERACT
+                || flag == RegionFlag.CHEST_ACCESS
+                || flag == RegionFlag.ENTRY
+                || flag == RegionFlag.ITEM_DROP
+                || flag == RegionFlag.ITEM_PICKUP
+                || flag == RegionFlag.ITEM_FRAME
+                || flag == RegionFlag.ARMOR_STAND
+                || flag == RegionFlag.VEHICLE_PLACE
+                || flag == RegionFlag.VEHICLE_DESTROY;
     }
 
     boolean handleList(CommandSender sender, String[] args) {

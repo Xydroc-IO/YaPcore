@@ -21,6 +21,7 @@ public final class RegionsDatabase implements AutoCloseable, RegionSql {
     private HikariDataSource embedded;
     private YapDb shared;
     private boolean usingShared;
+    private boolean open;
     private YapSqlDialect dialect = YapSqlDialects.mysql();
 
     public RegionsDatabase(JavaPlugin plugin, RegionsConfig config) {
@@ -29,6 +30,11 @@ public final class RegionsDatabase implements AutoCloseable, RegionSql {
     }
 
     public void open() throws SQLException {
+        // Idempotent — /region reload must not recreate the pool (wipes embedded SQLite).
+        if (open) {
+            migrate();
+            return;
+        }
         String jdbcUrl = "jdbc:mysql://127.0.0.1:3306/yap?useSSL=false&allowPublicKeyRetrieval=true";
         YapDbBootstrap.Settings settings = YapDbBootstrap.Settings.of(
                 "YaPRegions",
@@ -45,6 +51,7 @@ public final class RegionsDatabase implements AutoCloseable, RegionSql {
             usingShared = true;
             dialect = shared.dialect();
             migrate();
+            open = true;
             plugin.getLogger().info("YaPRegions using shared YaPDB pool");
             return;
         }
@@ -53,6 +60,7 @@ public final class RegionsDatabase implements AutoCloseable, RegionSql {
         dialect = YapDbBootstrap.configureEmbedded(hc, settings);
         embedded = new HikariDataSource(hc);
         migrate();
+        open = true;
         plugin.getLogger().warning("YaPRegions using embedded pool — configure YaPDB for production");
     }
 
@@ -76,11 +84,12 @@ public final class RegionsDatabase implements AutoCloseable, RegionSql {
                     """.formatted(dialect.autoIncrementPk()));
             tryAlter(st, "ALTER TABLE yap_admin_regions ADD COLUMN priority INT NOT NULL DEFAULT 0");
             tryAlter(st, "ALTER TABLE yap_admin_regions ADD COLUMN shape VARCHAR(16) NOT NULL DEFAULT 'CUBOID'");
+            tryAlter(st, "ALTER TABLE yap_admin_regions ADD COLUMN game_mode VARCHAR(16) NULL");
             createIndex(st, "idx_yap_admin_region_server", "yap_admin_regions", "server_id");
             st.execute("""
                     CREATE TABLE IF NOT EXISTS yap_admin_region_flags (
                       region_id BIGINT NOT NULL,
-                      flag_name VARCHAR(32) NOT NULL,
+                      flag_name VARCHAR(48) NOT NULL,
                       flag_value VARCHAR(8) NOT NULL,
                       PRIMARY KEY (region_id, flag_name)
                     )
@@ -152,6 +161,7 @@ public final class RegionsDatabase implements AutoCloseable, RegionSql {
 
     @Override
     public void close() {
+        open = false;
         if (embedded != null) {
             embedded.close();
             embedded = null;

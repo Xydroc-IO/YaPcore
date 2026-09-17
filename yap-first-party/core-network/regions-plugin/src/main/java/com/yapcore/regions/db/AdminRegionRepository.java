@@ -36,7 +36,7 @@ public final class AdminRegionRepository {
         List<AdminRegion> out = new ArrayList<>();
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, server_id, world, min_x, max_x, min_y, max_y, min_z, max_z, name, priority, shape
+                     SELECT id, server_id, world, min_x, max_x, min_y, max_y, min_z, max_z, name, priority, shape, game_mode
                      FROM yap_admin_regions WHERE server_id = ?
                      ORDER BY name
                      """)) {
@@ -54,7 +54,7 @@ public final class AdminRegionRepository {
     public Optional<AdminRegion> findByName(String serverId, String name) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, server_id, world, min_x, max_x, min_y, max_y, min_z, max_z, name, priority, shape
+                     SELECT id, server_id, world, min_x, max_x, min_y, max_y, min_z, max_z, name, priority, shape, game_mode
                      FROM yap_admin_regions WHERE server_id = ? AND name = ?
                      """)) {
             ps.setString(1, serverId);
@@ -185,6 +185,23 @@ public final class AdminRegionRepository {
         }
     }
 
+    public void setGameMode(long regionId, String gameMode) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     UPDATE yap_admin_regions SET game_mode = ? WHERE id = ?
+                     """)) {
+            if (gameMode == null || gameMode.isBlank()) {
+                ps.setString(1, null);
+            } else {
+                ps.setString(1, gameMode.trim().toLowerCase(java.util.Locale.ROOT));
+            }
+            ps.setLong(2, regionId);
+            if (ps.executeUpdate() == 0) {
+                throw new SQLException("Region id not found: " + regionId);
+            }
+        }
+    }
+
     public void delete(long regionId) throws SQLException {
         try (Connection c = database.connection()) {
             try (PreparedStatement messages = c.prepareStatement(
@@ -262,7 +279,16 @@ public final class AdminRegionRepository {
                 rs.getInt("priority"),
                 flags,
                 shape,
-                vertices);
+                vertices,
+                readGameMode(rs));
+    }
+
+    private static String readGameMode(ResultSet rs) {
+        try {
+            return rs.getString("game_mode");
+        } catch (SQLException e) {
+            return null;
+        }
     }
 
     private Map<RegionFlag, FlagValue> loadFlags(Connection c, long regionId) throws SQLException {

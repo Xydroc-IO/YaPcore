@@ -112,6 +112,18 @@ final class ClaimAccessOps {
         return true;
     }
 
+    /** When false, players in the claim take no damage and deal no damage. */
+    boolean isDamageAllowed(Location loc) {
+        if (!host.config().claimsEnabled()) {
+            return true;
+        }
+        var claim = host.getAt(loc);
+        if (claim.isEmpty()) {
+            return true;
+        }
+        return host.flags().resolveOrDefault(claim.get().id(), RegionFlag.DAMAGE) == FlagValue.ALLOW;
+    }
+
     private Optional<Boolean> factionBuildOverride(Player player, Claim claim) {
         Optional<FactionService> factions = FactionServices.find();
         if (factions.isEmpty()) {
@@ -159,6 +171,28 @@ final class ClaimAccessOps {
             return true;
         }
         return host.flags().resolveOrDefault(claim.get().id(), RegionFlag.MOB_SPAWNING) == FlagValue.ALLOW;
+    }
+
+    boolean isMobEntryAllowed(Location loc) {
+        if (!host.config().claimsEnabled()) {
+            return true;
+        }
+        var claim = host.getAt(loc);
+        if (claim.isEmpty()) {
+            return true;
+        }
+        return host.flags().resolveOrDefault(claim.get().id(), RegionFlag.MOB_ENTRY) == FlagValue.ALLOW;
+    }
+
+    boolean forcesClearWeather(Location loc) {
+        if (!host.config().claimsEnabled()) {
+            return false;
+        }
+        var claim = host.getAt(loc);
+        if (claim.isEmpty()) {
+            return false;
+        }
+        return host.flags().resolveOrDefault(claim.get().id(), RegionFlag.WEATHER) == FlagValue.DENY;
     }
 
     boolean canDropItems(Player player, Location loc) {
@@ -249,6 +283,21 @@ final class ClaimAccessOps {
             return false;
         }
         return hasTrust(claim.get(), player.getUniqueId(), ClaimRepository.TrustLevel.ACCESS);
+    }
+
+    /** Doors / buttons / plates — USE flag (default allow for parkour). */
+    boolean canUse(Player player, Location loc) {
+        if (StaffBypass.land(player)) {
+            return true;
+        }
+        if (!host.config().claimsEnabled()) {
+            return true;
+        }
+        Optional<Claim> claim = host.getAt(loc);
+        if (claim.isEmpty()) {
+            return true;
+        }
+        return host.flags().resolveOrDefault(claim.get().id(), RegionFlag.USE) == FlagValue.ALLOW;
     }
 
     private Optional<Boolean> factionContainerOverride(Player player, Claim claim) {

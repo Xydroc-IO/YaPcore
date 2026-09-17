@@ -294,10 +294,12 @@ Per-claim overrides persist in `yap_claim_flags` (shared SQL via YaPDB).
 | `chest-access` | trust | Container open |
 | `fire-spread` | deny | Cancels fire spread into/from claim |
 | `mob-spawning` | allow | Blocks natural mob spawns (spawners/eggs exempt) |
+| `mob-entry` | allow | Hostile mobs cannot enter or remain |
 | `item-drop` | allow | Player item drop (trust/bypass can override deny) |
 | `item-pickup` | allow | Player item pickup (trust/bypass can override deny) |
 | `tnt` | deny | TNT explosion block damage |
 | `creeper-explosion` | deny | Creeper explosion block damage |
+| `weather` | allow | Deny = clear skies for players in the area (client overlay) |
 
 ```bash
 /claim flag set pvp deny
@@ -336,7 +338,18 @@ full world height.
 /region info spawn
 /region priority spawn 10
 /region flag set spawn pvp deny
+/region flag set spawn damage deny
+/region flag set spawn build deny
+/region flag set spawn hunger deny
+/region flag set spawn item-frame deny
+/region flag set spawn armor-stand deny
+/region flag set spawn farmland-trample deny
+/region flag set spawn leaf-decay deny
+/region flag set spawn pistons deny
+/region flag set spawn vehicle-place deny
+/region flag set spawn vehicle-destroy deny
 /region flag set spawn tnt deny
+/region gamemode spawn adventure
 /region message set spawn greeting Welcome to spawn!
 /region message clear spawn farewell
 /region template save safe-hub spawn
@@ -350,31 +363,63 @@ full world height.
 `/region info` shows bounds, **shape**, **priority**, vertices (polygons), and flags.
 New regions start at priority `0`.
 
+**Enter / leave popups** (title + action bar) are on by default via `plugins/YaPRegions/config.yml` → `notify.*`.
+Custom text still works and becomes the subtitle:
+
+```
+/region message set spawn greeting Welcome to spawn!
+/region message set spawn farewell Goodbye!
+```
+
 ### Admin vs player claim flags
 
 | Flag | Admin regions (`YaPRegions`) | Player claims (`YaPPlayerData`) |
 |------|------------------------------|----------------------------------|
-| `pvp`, `mob-damage`, `build`, `interact`, `entry`, `chest-access`, `fire-spread`, `mob-spawning` | yes | yes |
+| `pvp`, `mob-damage`, `damage`, `build`, `use`, `interact`, `entry`, `chest-access`, `fire-spread`, `mob-spawning`, `mob-entry`, `weather` | yes | yes |
 | `item-drop`, `item-pickup`, `tnt`, `creeper-explosion` | yes | yes |
+| `hunger`, `farmland-trample`, `item-frame`, `armor-stand`, `leaf-decay`, `pistons`, `vehicle-place`, `vehicle-destroy` | yes | yes (stored; admin regions enforce) |
 
 ### Admin region flags
 
 | Flag | Behavior when **deny** |
 |------|------------------------|
-| `pvp` | Cancel player damage |
+| `pvp` | Cancel player vs player damage (incl. projectiles) |
 | `mob-damage` | Cancel mob damage to players |
+| `damage` | Full safe-zone: players take **no** damage and deal **no** damage (aliases: `invincible`, `god`) |
 | `build` | Cancel break/place/buckets |
-| `interact` | Cancel doors/gates/buttons/levers |
+| `use` | Cancel doors/gates/buttons/levers/pressure plates (default **allow** — parkour works) |
+| `interact` | Cancel flower pots / lecterns / jukebox / note block / bell (not doors) |
 | `entry` | Cancel move into region |
 | `chest-access` | Cancel container open |
 | `fire-spread` | Cancel fire spread |
 | `mob-spawning` | Cancel natural spawns |
+| `mob-entry` | Block hostile mobs from entering; remove if already inside |
 | `item-drop` | Cancel player item drop |
 | `item-pickup` | Cancel player item pickup |
 | `tnt` | Cancel TNT explosion damage to blocks |
 | `creeper-explosion` | Cancel creeper block damage |
+| `hunger` | Cancel food drain |
+| `farmland-trample` | Cancel farmland trampling |
+| `item-frame` | Protect item frames / paintings |
+| `armor-stand` | Protect armor stands |
+| `leaf-decay` | Cancel natural leaf decay |
+| `pistons` | Cancel piston extend/retract affecting the region |
+| `vehicle-place` / `vehicle-destroy` | Cancel boat/minecart place or break |
+| `weather` | Force clear client weather for players inside (world rain continues outside) |
+
+### Region gamemode
+
+Force a mode while players are inside (restored on leave). Staff with land bypass keep their mode.
+
+```text
+/region gamemode spawn adventure
+/region gamemode spawn clear
+```
 
 Unset flags default to **allow**. Overlap: highest priority, then smallest volume.
+Flag changes apply **immediately** (no restart). Gamemode applies to players already inside.
+**OP / `yap.bypass` / `yapregions.admin` bypass land flags** (`build`, `use`, `interact`, chests, frames, vehicles) — test with a non-op account.
+After deploying a new `yap-regions.jar`, do a full server restart (or disable+enable the plugin); `/region reload` only reloads YAML + DB, it does not load new listener code.
 Dashboard Regions tab shows the flag map from `region list json` (includes `priority`, `shape`).
 
 Greeting / farewell: `RegionMessageKind` API + `yap_admin_region_messages` table

@@ -231,6 +231,10 @@ public final class ClaimService {
         return access.isPvpAllowed(attacker, victim);
     }
 
+    public boolean isDamageAllowed(Location loc) {
+        return access.isDamageAllowed(loc);
+    }
+
     public boolean isMobDamageAllowed(org.bukkit.entity.Player victim) {
         return access.isMobDamageAllowed(victim);
     }
@@ -241,6 +245,14 @@ public final class ClaimService {
 
     public boolean isMobSpawningAllowed(Location loc) {
         return access.isMobSpawningAllowed(loc);
+    }
+
+    public boolean isMobEntryAllowed(Location loc) {
+        return access.isMobEntryAllowed(loc);
+    }
+
+    public boolean forcesClearWeather(Location loc) {
+        return access.forcesClearWeather(loc);
     }
 
     public boolean canDropItems(Player player, Location loc) {
@@ -261,6 +273,10 @@ public final class ClaimService {
 
     public boolean canOpenContainer(Player player, Location loc) {
         return access.canOpenContainer(player, loc);
+    }
+
+    public boolean canUse(Player player, Location loc) {
+        return access.canUse(player, loc);
     }
 
     /** Used by YaPFactions upkeep when a linked claim cannot pay. */

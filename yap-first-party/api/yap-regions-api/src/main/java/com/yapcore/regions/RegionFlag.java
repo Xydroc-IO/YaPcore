@@ -7,26 +7,75 @@ import java.util.Optional;
 public enum RegionFlag {
     PVP,
     MOB_DAMAGE,
+    /**
+     * All player combat + hazard damage. When {@link FlagValue#DENY}, players inside
+     * take no damage and deal no damage (spawn / safe-zone god mode).
+     * Aliases in {@link #parse}: {@code invincible}, {@code god}.
+     */
+    DAMAGE,
     BUILD,
+    /**
+     * Armor stands, item frames, paintings, flower pots — not doors/plates.
+     * Doors / buttons / pressure plates use {@link #USE} (default allow for parkour).
+     */
     INTERACT,
+    /**
+     * Doors, gates, buttons, levers, pressure plates. Default allow so parkour works
+     * even when {@link #INTERACT} is deny.
+     */
+    USE,
     ENTRY,
     CHEST_ACCESS,
     FIRE_SPREAD,
     MOB_SPAWNING,
+    /** Hostile mobs (Enemy) may not enter or remain in the region when denied. */
+    MOB_ENTRY,
     ITEM_DROP,
     ITEM_PICKUP,
     TNT,
-    CREEPER_EXPLOSION;
+    CREEPER_EXPLOSION,
+    /** Food bar drain / exhaustion. */
+    HUNGER,
+    /** Farmland trampling (player + mob). Aliases: {@code trampling}, {@code farmland}. */
+    FARMLAND_TRAMPLE,
+    /** Item frames, glow item frames, paintings. Alias: {@code frames}. */
+    ITEM_FRAME,
+    /** Armor stand place / break / manipulate. */
+    ARMOR_STAND,
+    /** Natural leaf decay. */
+    LEAF_DECAY,
+    /** Piston extend / retract affecting the region. */
+    PISTONS,
+    /** Boat / minecart placement. */
+    VEHICLE_PLACE,
+    /** Boat / minecart destroy. */
+    VEHICLE_DESTROY,
+    /**
+     * Client weather overlay. When {@link FlagValue#DENY}, players inside see clear skies
+     * even if the world is raining; {@link FlagValue#ALLOW} (default) follows world weather.
+     */
+    WEATHER;
 
     public static Optional<RegionFlag> parse(String raw) {
         if (raw == null || raw.isBlank()) {
             return Optional.empty();
         }
         String norm = raw.trim().toUpperCase(Locale.ROOT).replace('-', '_');
-        try {
-            return Optional.of(valueOf(norm));
-        } catch (IllegalArgumentException e) {
-            return Optional.empty();
-        }
+        return switch (norm) {
+            case "INVINCIBLE", "GOD", "INVULN" -> Optional.of(DAMAGE);
+            case "TRAMPLING", "FARMLAND", "CROP_TRAMPLE" -> Optional.of(FARMLAND_TRAMPLE);
+            case "FRAMES", "ITEM_FRAMES", "PAINTING", "PAINTINGS" -> Optional.of(ITEM_FRAME);
+            case "ARMORSTANDS", "ARMOR_STANDS" -> Optional.of(ARMOR_STAND);
+            case "LEAF", "LEAVES" -> Optional.of(LEAF_DECAY);
+            case "PISTON", "PISTON_PROTECTION" -> Optional.of(PISTONS);
+            case "VEHICLE", "VEHICLES" -> Optional.of(VEHICLE_PLACE);
+            default -> {
+                try {
+                    yield Optional.of(valueOf(norm));
+                } catch (IllegalArgumentException e) {
+                    yield Optional.empty();
+                }
+            }
+        };
     }
 }

@@ -149,6 +149,13 @@ public final class RegionServiceImpl implements RegionService {
     }
 
     @Override
+    public void setGameMode(String name, String gameMode) throws SQLException {
+        AdminRegion region = requireNamed(name);
+        repository.setGameMode(region.id(), gameMode);
+        reload();
+    }
+
+    @Override
     public void remove(String name) throws SQLException {
         AdminRegion region = requireNamed(name);
         repository.delete(region.id());
@@ -301,6 +308,15 @@ public final class RegionServiceImpl implements RegionService {
         return resolve(region.get(), RegionFlag.PVP) == FlagValue.ALLOW;
     }
 
+    /** When false, players in the region take no damage and deal no damage. */
+    public boolean isDamageAllowed(Location location) {
+        Optional<AdminRegion> region = at(location);
+        if (region.isEmpty()) {
+            return true;
+        }
+        return resolve(region.get(), RegionFlag.DAMAGE) == FlagValue.ALLOW;
+    }
+
     public boolean isMobDamageAllowed(Player victim) {
         Optional<AdminRegion> region = at(victim.getLocation());
         if (region.isEmpty()) {
@@ -325,6 +341,26 @@ public final class RegionServiceImpl implements RegionService {
         return resolve(region.get(), RegionFlag.MOB_SPAWNING) == FlagValue.ALLOW;
     }
 
+    /** Hostile mobs may path/spawn into this location when allowed (default). */
+    public boolean isMobEntryAllowed(Location location) {
+        Optional<AdminRegion> region = at(location);
+        if (region.isEmpty()) {
+            return true;
+        }
+        return resolve(region.get(), RegionFlag.MOB_ENTRY) == FlagValue.ALLOW;
+    }
+
+    /**
+     * When the covering region has {@code weather deny}, force clear client weather for players.
+     */
+    public boolean forcesClearWeather(Location location) {
+        Optional<AdminRegion> region = at(location);
+        if (region.isEmpty()) {
+            return false;
+        }
+        return resolve(region.get(), RegionFlag.WEATHER) == FlagValue.DENY;
+    }
+
     public boolean canOpenContainer(Player player, Location location) {
         if (StaffBypass.land(player)) {
             return true;
@@ -337,6 +373,14 @@ public final class RegionServiceImpl implements RegionService {
             return true;
         }
         return flagAt(location, RegionFlag.INTERACT) == FlagValue.ALLOW;
+    }
+
+    /** Doors / buttons / pressure plates / levers / gates. */
+    public boolean canUse(Player player, Location location) {
+        if (StaffBypass.land(player)) {
+            return true;
+        }
+        return flagAt(location, RegionFlag.USE) == FlagValue.ALLOW;
     }
 
     public boolean canDropItems(Player player, Location location) {
@@ -367,6 +411,38 @@ public final class RegionServiceImpl implements RegionService {
             return true;
         }
         return resolve(region.get(), RegionFlag.CREEPER_EXPLOSION) == FlagValue.ALLOW;
+    }
+
+    public boolean isHungerAllowed(Location location) {
+        return flagAt(location, RegionFlag.HUNGER) == FlagValue.ALLOW;
+    }
+
+    public boolean isFarmlandTrampleAllowed(Location location) {
+        return flagAt(location, RegionFlag.FARMLAND_TRAMPLE) == FlagValue.ALLOW;
+    }
+
+    public boolean isItemFrameAllowed(Location location) {
+        return flagAt(location, RegionFlag.ITEM_FRAME) == FlagValue.ALLOW;
+    }
+
+    public boolean isArmorStandAllowed(Location location) {
+        return flagAt(location, RegionFlag.ARMOR_STAND) == FlagValue.ALLOW;
+    }
+
+    public boolean isLeafDecayAllowed(Location location) {
+        return flagAt(location, RegionFlag.LEAF_DECAY) == FlagValue.ALLOW;
+    }
+
+    public boolean isPistonsAllowed(Location location) {
+        return flagAt(location, RegionFlag.PISTONS) == FlagValue.ALLOW;
+    }
+
+    public boolean isVehiclePlaceAllowed(Location location) {
+        return flagAt(location, RegionFlag.VEHICLE_PLACE) == FlagValue.ALLOW;
+    }
+
+    public boolean isVehicleDestroyAllowed(Location location) {
+        return flagAt(location, RegionFlag.VEHICLE_DESTROY) == FlagValue.ALLOW;
     }
 
     private AdminRegion requireNamed(String name) throws SQLException {

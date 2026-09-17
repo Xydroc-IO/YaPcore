@@ -51,13 +51,14 @@ class WritableRegionApiSmokeTest {
                       max_z INT NOT NULL,
                       priority INT NOT NULL DEFAULT 0,
                       shape VARCHAR(16) NOT NULL DEFAULT 'CUBOID',
+                      game_mode VARCHAR(16) NULL,
                       UNIQUE (server_id, name)
                     )
                     """.formatted(dialect.autoIncrementPk()));
             st.execute("""
                     CREATE TABLE yap_admin_region_flags (
                       region_id BIGINT NOT NULL,
-                      flag_name VARCHAR(32) NOT NULL,
+                      flag_name VARCHAR(48) NOT NULL,
                       flag_value VARCHAR(8) NOT NULL,
                       PRIMARY KEY (region_id, flag_name)
                     )
@@ -124,6 +125,7 @@ class WritableRegionApiSmokeTest {
 
         api.setFlag("spawn", RegionFlag.PVP, FlagValue.DENY);
         api.setPriority("spawn", 15);
+        api.setGameMode("spawn", "adventure");
         api.setMessage("spawn", RegionMessageKind.GREETING, "Welcome!");
         api.saveTemplate("safe-hub", "spawn");
 
@@ -139,6 +141,7 @@ class WritableRegionApiSmokeTest {
         AdminRegion applied = api.named("arena").orElseThrow();
         assertEquals(FlagValue.DENY, applied.flags().get(RegionFlag.PVP));
         assertEquals(Optional.of("Welcome!"), api.message(applied.id(), RegionMessageKind.GREETING));
+        assertEquals("adventure", api.named("spawn").orElseThrow().gameMode());
 
         assertTrue(api.listTemplates().contains("safe-hub"));
         api.remove("spawn");

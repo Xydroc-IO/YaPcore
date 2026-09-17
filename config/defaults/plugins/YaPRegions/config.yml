@@ -4,3 +4,19 @@
 # Prefer dashboard: Plugin settings (or Gameplay tab) → Save → reload
 
 server-id: default
+
+# Enter / leave popups (title + action bar). {region} = pretty region name.
+notify:
+  enabled: true
+  title: true
+  action-bar: true
+  chat: false
+  fade-in-ms: 200
+  stay-ms: 1800
+  fade-out-ms: 400
+  enter-title: "&aEntering"
+  enter-subtitle: "&f{region}"
+  leave-title: "&7Leaving"
+  leave-subtitle: "&f{region}"
+  action-bar-enter: "&a» &f{region}"
+  action-bar-leave: "&7« &f{region}"

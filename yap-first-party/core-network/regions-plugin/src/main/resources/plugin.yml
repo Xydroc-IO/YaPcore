@@ -10,7 +10,7 @@ softdepend: [YaPWorld, YaPDB]
 commands:
   region:
     description: Admin region management
-    usage: /region define <name>|flag set <name> <flag> <allow|deny>|priority <name> <int>|list
+    usage: /region define|flag|gamemode|priority|list|info|reload
     permission: yapregions.admin
     aliases: [rg]
 permissions:
