@@ -217,6 +217,19 @@ local.properties
 *.keystore
 *.jks
 
+# Operator-generated auth material (never commit live copies)
+*.token
+# Live JDBC / server overrides dropped beside templates
+config/defaults/**/*.local.yml
+config/defaults/**/*.local.properties
+**/config.yml.local
+**/server.properties.local
+
+# Link live key material under link-data (*.pem already covers most)
+link-data/*.pem
+link-data/*.key
+link-data/forwarding.secret
+
 # =============================================================================
 # Operator-installed content (keep folders via README / .gitkeep)
 # =============================================================================

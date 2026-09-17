@@ -8,13 +8,10 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -24,14 +21,14 @@ import java.util.logging.Logger;
  */
 final class ClientSessionSoftSwitch {
 
-    private static final Logger LOG = Logger.getLogger("YaP.Link.Client");
+    static final Logger LOG = Logger.getLogger("YaP.Link.Client");
 
     /** Play clientbound {@code start_configuration} — 26.2 id 118. */
     private static final int PLAY_CB_START_CONFIGURATION = 118;
     /** Play serverbound {@code configuration_acknowledged} — 26.2 id 16. */
-    private static final int PLAY_SB_CONFIGURATION_ACK = 16;
+    static final int PLAY_SB_CONFIGURATION_ACK = 16;
     /** Configuration {@code finish_configuration} both directions — id 3. */
-    private static final int CONFIG_FINISH = 3;
+    static final int CONFIG_FINISH = 3;
     /** Login serverbound {@code login_acknowledged}. */
     private static final int LOGIN_SB_ACKNOWLEDGED = 0x03;
     /** Minimum protocol with configuration phase (1.20.2). */
@@ -72,9 +69,9 @@ final class ClientSessionSoftSwitch {
         // backend cannot cascade-close the client (PlayRelay.channelInactive).
         try {
             if (client.pipeline().get("to-backend") != null) {
-                client.pipeline().replace("to-backend", "switch-client", new SwitchClientHandler(session));
+                client.pipeline().replace("to-backend", "switch-client", new SoftSwitchClientHandler(session));
             } else if (client.pipeline().get("switch-client") == null) {
-                client.pipeline().addLast("switch-client", new SwitchClientHandler(session));
+                client.pipeline().addLast("switch-client", new SoftSwitchClientHandler(session));
             }
         } catch (Exception e) {
             session.switching.set(false);
@@ -180,7 +177,7 @@ final class ClientSessionSoftSwitch {
                         ch.pipeline()
                                 .addLast("frame-dec", new McFrameCodec.Decoder())
                                 .addLast("frame-enc", new McOutboundPacketEncoder())
-                                .addLast("backend", new SwitchBackendLoginHandler(session, client));
+                                .addLast("backend", new SoftSwitchBackendLoginHandler(session, client));
                     }
                 });
 
@@ -230,350 +227,15 @@ final class ClientSessionSoftSwitch {
         session.backend.writeAndFlush(login);
     }
 
-    private static void sendStartConfiguration(Channel client) {
+    static void sendStartConfiguration(Channel client) {
         ByteBuf buf = Unpooled.buffer();
         McCodec.writeVarInt(buf, PLAY_CB_START_CONFIGURATION);
         client.writeAndFlush(buf);
     }
 
-    private static void sendLoginAcknowledged(Channel backend) {
+    static void sendLoginAcknowledged(Channel backend) {
         ByteBuf buf = Unpooled.buffer();
         McCodec.writeVarInt(buf, LOGIN_SB_ACKNOWLEDGED);
         backend.writeAndFlush(buf);
-    }
-
-    /** Client-side handler during soft switch (play → config → play). */
-    private static final class SwitchClientHandler extends ChannelInboundHandlerAdapter {
-        private final ClientSession session;
-        private final AtomicBoolean configAcked = new AtomicBoolean(false);
-        private final AtomicBoolean finishSent = new AtomicBoolean(false);
-
-        SwitchClientHandler(ClientSession session) {
-            this.session = session;
-        }
-
-        @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            if (!(msg instanceof ByteBuf buf)) {
-                return;
-            }
-            if (!buf.isReadable()) {
-                buf.release();
-                return;
-            }
-            buf.markReaderIndex();
-            int packetId;
-            try {
-                packetId = McCodec.readVarInt(buf);
-            } catch (Exception e) {
-                buf.release();
-                return;
-            }
-
-            // Waiting for play configuration_acknowledged after start_configuration.
-            if (!configAcked.get()) {
-                if (packetId == PLAY_SB_CONFIGURATION_ACK) {
-                    buf.release();
-                    if (configAcked.compareAndSet(false, true)) {
-                        LOG.info("SOFT-SWITCH config-ack user=" + session.username);
-                        session.clientInConfig = true;
-                        Channel backend = session.backend;
-                        if (backend != null && backend.isActive()) {
-                            // Resume config forwarding from backend.
-                            Object h = backend.pipeline().get("backend");
-                            if (h instanceof SwitchBackendLoginHandler switchBackend) {
-                                switchBackend.onClientConfigReady();
-                            }
-                        }
-                    }
-                    return;
-                }
-                // Drop play packets while waiting for config ack.
-                buf.release();
-                return;
-            }
-
-            // In configuration: forward to backend; watch finish_configuration.
-            if (packetId == CONFIG_FINISH) {
-                if (!finishSent.compareAndSet(false, true)) {
-                    buf.release();
-                    return;
-                }
-                LOG.info("SOFT-SWITCH finish-ack user=" + session.username
-                        + " → play bridge on " + session.currentBackendName);
-                session.clientInConfig = false;
-                session.switching.set(false);
-                session.pendingSwitchTarget = null;
-                Channel backend = session.backend;
-                // Install play relays BEFORE acking the backend so Join Game hits them.
-                session.rebridgeAfterSwitch(ctx.channel(), backend);
-                buf.resetReaderIndex();
-                if (backend != null && backend.isActive()) {
-                    backend.writeAndFlush(buf);
-                } else {
-                    buf.release();
-                }
-                return;
-            }
-
-            buf.resetReaderIndex();
-            Channel backend = session.backend;
-            if (backend != null && backend.isActive()) {
-                backend.writeAndFlush(buf);
-            } else {
-                buf.release();
-            }
-        }
-
-        @Override
-        public void channelInactive(ChannelHandlerContext ctx) {
-            session.switching.set(false);
-            Channel backend = session.backend;
-            if (backend != null) {
-                backend.close();
-            }
-        }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            LOG.log(Level.WARNING, "soft-switch client error user=" + session.username, cause);
-            session.switching.set(false);
-            ctx.close();
-            if (session.backend != null) {
-                session.backend.close();
-            }
-        }
-    }
-
-    /**
-     * Backend login during soft switch: suppress Login Success to client, ACK login,
-     * then enter config passthrough after client acknowledges start_configuration.
-     */
-    private static final class SwitchBackendLoginHandler extends ChannelInboundHandlerAdapter {
-        private final ClientSession session;
-        private final Channel client;
-        private boolean forwarded;
-        private boolean loginSuccessSeen;
-        private boolean clientConfigReady;
-        private final java.util.ArrayList<ByteBuf> pendingConfig = new java.util.ArrayList<>();
-        private com.yapcore.link.protocol.McCompressionCodec.Decoder backendCompDec;
-
-        SwitchBackendLoginHandler(ClientSession session, Channel client) {
-            this.session = session;
-            this.client = client;
-        }
-
-        void onClientConfigReady() {
-            clientConfigReady = true;
-            Channel backend = ctxRef != null ? ctxRef.channel() : session.backend;
-            if (backend != null && backend.isActive() && loginSuccessSeen) {
-                sendLoginAcknowledged(backend);
-                backend.config().setAutoRead(true);
-            }
-            for (ByteBuf pending : pendingConfig) {
-                if (client.isActive()) {
-                    client.writeAndFlush(pending);
-                } else {
-                    pending.release();
-                }
-            }
-            pendingConfig.clear();
-            if (loginSuccessSeen && ctxRef != null) {
-                enterConfigRelay(ctxRef);
-            }
-        }
-
-        private ChannelHandlerContext ctxRef;
-
-        @Override
-        public void handlerAdded(ChannelHandlerContext ctx) {
-            ctxRef = ctx;
-        }
-
-        @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            if (!(msg instanceof ByteBuf buf)) {
-                return;
-            }
-            buf.markReaderIndex();
-            int packetId = McCodec.readVarInt(buf);
-            try {
-                if (!loginSuccessSeen) {
-                    handleLoginPhase(ctx, buf, packetId);
-                    return;
-                }
-                // Configuration packets from backend.
-                buf.resetReaderIndex();
-                if (!clientConfigReady) {
-                    pendingConfig.add(buf.retain());
-                    buf.release();
-                    return;
-                }
-                if (packetId == CONFIG_FINISH) {
-                    // Forward finish_configuration; client ack triggers rebridge.
-                    buf.resetReaderIndex();
-                    client.writeAndFlush(buf);
-                    return;
-                }
-                buf.resetReaderIndex();
-                client.writeAndFlush(buf);
-            } catch (Exception e) {
-                buf.release();
-                LOG.log(Level.WARNING, "soft-switch backend login failed", e);
-                session.switching.set(false);
-                session.kickChannel(client, "Backend switch error");
-                ctx.close();
-            }
-        }
-
-        private void handleLoginPhase(ChannelHandlerContext ctx, ByteBuf buf, int packetId) throws Exception {
-            if (packetId == 0x00) {
-                // Login disconnect — never forward raw login packets to a play client
-                // (id 0 looks like play bundle_delimiter → DecoderException).
-                String reason = "Backend rejected switch";
-                try {
-                    reason = McCodec.readString(buf, 32767);
-                } catch (Exception ignored) {
-                    // keep default
-                }
-                buf.release();
-                session.switching.set(false);
-                session.kickChannel(client, reason);
-                ctx.close();
-                return;
-            }
-            if (packetId == 0x03) {
-                int threshold = McCodec.readVarInt(buf);
-                buf.release();
-                // Client already has compression from first join — only update backend codec.
-                enableBackendCompression(ctx.channel(), threshold);
-                // Keep client threshold in sync if backend differs.
-                Object clientEnc = client.pipeline().get("frame-enc");
-                if (clientEnc instanceof McOutboundPacketEncoder enc) {
-                    enc.setCompressionThreshold(threshold);
-                }
-                Object clientDec = client.pipeline().get("comp-dec");
-                if (clientDec instanceof com.yapcore.link.protocol.McCompressionCodec.Decoder dec) {
-                    dec.setThreshold(threshold);
-                } else if (threshold >= 0) {
-                    var dec = new com.yapcore.link.protocol.McCompressionCodec.Decoder();
-                    client.pipeline().addAfter("frame-dec", "comp-dec", dec);
-                    dec.setThreshold(threshold);
-                }
-                return;
-            }
-            if (packetId == 0x04) {
-                handlePluginRequest(ctx, buf);
-                return;
-            }
-            if (packetId == 0x05) {
-                // Login cookie_request (1.20.5+) — reply empty; never forward to play client.
-                handleLoginCookieRequest(ctx, buf);
-                return;
-            }
-            if (packetId == 0x02) {
-                buf.release(); // do NOT send Login Success to an already-playing client
-                loginSuccessSeen = true;
-                if (!forwarded) {
-                    LOG.info("SOFT-SWITCH login-success (no modern fwd) user=" + session.username);
-                } else {
-                    LOG.info("SOFT-SWITCH login-success user=" + session.username);
-                }
-                // Pause backend until the client enters configuration (Velocity order).
-                ctx.channel().config().setAutoRead(false);
-                sendStartConfiguration(client);
-                // Login ACK after client config-ack (onClientConfigReady).
-                return;
-            }
-            buf.release();
-            session.switching.set(false);
-            LOG.warning("SOFT-SWITCH unexpected login packet 0x" + Integer.toHexString(packetId)
-                    + " user=" + session.username);
-            session.kickChannel(client, "Unexpected backend packet during switch");
-            ctx.close();
-        }
-
-        private void handleLoginCookieRequest(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
-            String key = McCodec.readString(buf, 32767);
-            buf.release();
-            ByteBuf resp = Unpooled.buffer();
-            McCodec.writeVarInt(resp, 0x04); // login cookie_response
-            McCodec.writeString(resp, key);
-            resp.writeBoolean(false);
-            ctx.writeAndFlush(resp);
-            LOG.fine("SOFT-SWITCH cookie_request key=" + key + " user=" + session.username);
-        }
-
-        private void enterConfigRelay(ChannelHandlerContext ctx) {
-            // Stay as this handler — channelRead already relays config once loginSuccessSeen.
-            session.phase = ClientSession.Phase.BRIDGING;
-        }
-
-        private void handlePluginRequest(ChannelHandlerContext ctx, ByteBuf buf) throws Exception {
-            int messageId = McCodec.readVarInt(buf);
-            String channel = McCodec.readString(buf, 32767);
-            byte[] data = new byte[buf.readableBytes()];
-            buf.readBytes(data);
-            buf.release();
-            if (com.yapcore.link.forwarding.ModernForwarding.CHANNEL.equals(channel)) {
-                ByteBuf payload = com.yapcore.link.forwarding.ModernForwarding.createForwardingData(
-                        session.server.config().forwardingSecret(),
-                        session.clientAddress,
-                        session.playerId,
-                        session.username,
-                        session.properties
-                );
-                ByteBuf resp = Unpooled.buffer();
-                McCodec.writeVarInt(resp, 0x02);
-                McCodec.writeVarInt(resp, messageId);
-                resp.writeBoolean(true);
-                resp.writeBytes(payload);
-                payload.release();
-                ctx.writeAndFlush(resp);
-                forwarded = true;
-            } else {
-                ByteBuf resp = Unpooled.buffer();
-                McCodec.writeVarInt(resp, 0x02);
-                McCodec.writeVarInt(resp, messageId);
-                resp.writeBoolean(false);
-                ctx.writeAndFlush(resp);
-            }
-        }
-
-        private void enableBackendCompression(Channel backendCh, int threshold) {
-            if (threshold < 0) {
-                return;
-            }
-            if (backendCompDec == null) {
-                backendCompDec = new com.yapcore.link.protocol.McCompressionCodec.Decoder();
-                backendCh.pipeline().addAfter("frame-dec", "comp-dec", backendCompDec);
-            }
-            backendCompDec.setThreshold(threshold);
-            Object backendEnc = backendCh.pipeline().get("frame-enc");
-            if (backendEnc instanceof McOutboundPacketEncoder enc) {
-                enc.setCompressionThreshold(threshold);
-            }
-        }
-
-        @Override
-        public void channelInactive(ChannelHandlerContext ctx) {
-            if (session.switching.get()) {
-                LOG.warning("SOFT-SWITCH backend dropped during switch user=" + session.username);
-                session.switching.set(false);
-                if (client.isActive()) {
-                    session.kickChannel(client, "Lost connection while switching servers");
-                }
-            }
-        }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            LOG.log(Level.WARNING, "soft-switch backend error", cause);
-            session.switching.set(false);
-            ctx.close();
-            if (client.isActive()) {
-                session.kickChannel(client, "Backend switch error");
-            }
-        }
     }
 }
