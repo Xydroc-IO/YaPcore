@@ -350,6 +350,7 @@ full world height.
 /region flag set spawn vehicle-destroy deny
 /region flag set spawn tnt deny
 /region gamemode spawn adventure
+/region worldborder spawn
 /region message set spawn greeting Welcome to spawn!
 /region message clear spawn farewell
 /region template save safe-hub spawn
@@ -362,6 +363,11 @@ full world height.
 
 `/region info` shows bounds, **shape**, **priority**, vertices (polygons), and flags.
 New regions start at priority `0`.
+
+**World border:** `/region worldborder <name>` (aliases `wb`, `border`) sets the
+vanilla square border on that region's world to the region XZ AABB (center + diameter
+from the longer side). Non-square regions leave a strip outside the region but inside
+the border — Minecraft cannot do rectangular borders. Polygons use the envelope.
 
 **Enter / leave popups** (title + action bar) are on by default via `plugins/YaPRegions/config.yml` → `notify.*`.
 Custom text still works and becomes the subtitle:

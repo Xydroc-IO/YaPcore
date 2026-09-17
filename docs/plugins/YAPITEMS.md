@@ -22,6 +22,22 @@ Overlay source: [`resourcepacks/yap-items/`](../../resourcepacks/yap-items/) (me
 
 Defaults seed: [`config/defaults/plugins/YaPItems/`](../../config/defaults/plugins/YaPItems/).
 
+## Network sync (fleet default)
+
+Custom weapons / items are **network-wide by default**:
+
+1. **Definitions** — `/yapitems create` (admin wizard / yap-staff) writes
+   `items/custom/<id>.yml` and **copies it** into the root catalog
+   `plugins/YaPItems/items/custom/` plus every `fleet/instances/*/plugins/YaPItems/`.
+   Other running backends **auto-reload** when those files change
+   (`fleet.propagate-custom` + `fleet.watch-catalog`, both default `true`).
+2. **Player stacks** — YaPPlayerData `inventory-profile: global` + `sync.inventory: true`
+   carry the ItemStack (PDC `yap_item_id`, CMD, enchants) across hub ↔ survival portals.
+   Abilities work on the destination only when that server has the matching YAML (step 1).
+
+Dashboard **sync-shared-catalog** still pushes kits/items/QoL/JDBC and runs
+`yapitems reload` on running instances if you edit YAML by hand in the catalog.
+
 ## Commands
 
 | Command | Permission | Notes |
@@ -67,6 +83,8 @@ Alias: `/yitems`.
 ## Authoring
 
 Place YAML under `plugins/YaPItems/items/*.yml` (shipped examples) or `items/custom/` (wizard).
+On a YaP fleet install, prefer creating via `/yapitems create` so the file is propagated
+network-wide; or edit the **root** catalog `plugins/YaPItems/` then sync-shared-catalog.
 
 ```yaml
 my_blade:

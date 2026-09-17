@@ -9,6 +9,27 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 1.0.0.0 — NPC shops UX + dashboard Shops + fleet polish (2026-09-17)
+
+Same ship version (no product bump). Rebuild with `gradle publishReleasesFolder -PyapGameplay=true`.
+
+| Area | Change |
+|------|--------|
+| **YaPPlayerData / YaPNpcs** | Built-in shop presets (`weapons`/`armor`/`tools`/`food`/`blocks`/`redstone`/`crafting`/`enchants`); unlimited stock; buyback ≈38%; enchanted buy-only |
+| **In-game shop GUI** | One icon per item — left-click buy / right-click sell; quantity picker with running totals |
+| **`/npc shop`** | `apply` / `presets` / `setitem` (buy+sell upsert) / `setoffer` / `clearoffers`; `/npc setname` / `move` |
+| **Dashboard** | **Shops** tab — one row per item (Buy $ + Sell $); `/api/shops` (`setitem`, presets, list) |
+| **YaPPortals** | Arrival lands at destination spawn; catalog mirror + wand polish |
+| **YaPRegions** | `/region worldborder` fits vanilla border to region XZ AABB |
+| **YaPItems** | Fleet catalog propagate + watch on create (network-wide custom items) |
+| **Link / PlayerData** | Faster session unlock on soft-switch / hub transfers; lock release on quit |
+| **Fleet** | Console command dispatch captures Folia JSON; heal broken lobby `plugins` symlink |
+| **Docs** | [PLAYERDATA.md](../data/PLAYERDATA.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) · [COMMANDS.md](../ops/COMMANDS.md) · [PORTALS.md](../network/PORTALS.md) · [YAPITEMS.md](../plugins/YAPITEMS.md) · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
+
+Build: `gradle publishReleasesFolder -PyapGameplay=true` → `releases/1.0.0.0/`. Upload with `--clobber` per [RELEASES.md](RELEASES.md).
+
+---
+
 ## After 1.0.0.0 — Portals colors + hub region flags (2026-09-17)
 
 Same ship version (no product bump). Rebuild with `gradle publishReleasesFolder -PyapGameplay=true`.

@@ -216,9 +216,12 @@ motd=YaP Link
 servers.lobby=127.0.0.1:25566
 servers.survival=127.0.0.1:25567
 servers.lobby.bedrock=127.0.0.1:19132
-try=lobby,survival
+# Hub-first: join/reconnect always uses try (lobby). Never list survival here.
+try=lobby
+force-default-server=true
 ping-passthrough=true
 plugins-enabled=false
+# Server-selector always-join-hub=true also forces hub on PreConnect
 # First run: ./scripts/start-yap-link.sh seeds plugins-enabled=true + plugin jars
 floodgate-key-file=floodgate-key.pem
 bedrock-enabled=false

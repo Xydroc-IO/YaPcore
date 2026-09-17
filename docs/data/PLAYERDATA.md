@@ -24,17 +24,26 @@ See **[YAPDB.md](YAPDB.md)** — shared `yap-db.jar` pool. Default is MariaDB; P
 
 YaPPlayerData prefers the shared YaPDB pool (`use-shared-yapdb: true`). Multi-backend: same JDBC, unique `server-id` (MariaDB or Postgres — not SQLite).
 
+**Fleet / portals:** product defaults use `inventory-profile: global` and `sync.inventory: true`
+so hub → survival (YaPPortals, `/hub`, server selector) keeps the same inventory, enderchest,
+XP, and vitals — including **YaPItems** custom weapons (full ItemStack + PDC). Each backend
+must keep a **different** `server-id` (fleet stamps this). Item *definitions* sync separately
+via the YaPItems catalog (see [YAPITEMS.md](../plugins/YAPITEMS.md)).
+
 ## Session lock (double-login)
 
 Always on. Prevents the same UUID being online on two backends at once:
 
-- Acquire `lock_server` / `lock_until` on join; refresh on autosave; release on quit
+- Acquire `lock_server` / `lock_until` on join; refresh on autosave; **release immediately on quit**
+  (profile save continues async so Link soft-switch / `/hub` is not blocked)
 - Contested lock → kick with holder server name
-- Async pre-login rejects early when another server holds a live lock
-- Stuck lock: `/yapdata unlock <player>`
-- **Save path:** snapshot profile on main (or quit), `repository.saveProfile` on Bukkit async — I/O off main, apply stays sync
+- Async pre-login rejects early when another server holds a live lock (short retry for transfers)
+- Stuck lock: `/yapdata unlock <player>` — or restart the holder backend (clears its locks on enable)
+- Crash / kill of a backend: Link clears the lock when that backend is **down**; startup also wipes
+  locks for that `server-id`
+- **Save path:** snapshot profile on quit, `repository.saveProfile` on Bukkit async — I/O off main
 
-`lock-ttl-seconds` (default 120) auto-expires crashed holds.
+`lock-ttl-seconds` (default 120) auto-expires crashed holds if the holder stays marked online.
 
 ## Offline password auth (`/login`)
 
@@ -114,7 +123,15 @@ backpack:
   max-pages: 9
 ```
 
-**NPC shops:** administered only via **YaPNpcs** — `/npc shop enable|addbuy|list|clear`.
+**NPC shops:** administered via **YaPNpcs** — `/npc shop enable|apply|presets|addbuy|addsell|setitem|setoffer|list|clearoffers|clear`
+(and dashboard **Shops** tab). Built-in presets (`weapons`, `armor`, `tools`, `food`, `blocks`,
+`redstone`, `crafting`, `enchants`): unlimited stock, buy + sell spreads (~38% buyback),
+enchanted lines buy-only. `setitem` upserts buy+sell for one material in a single command
+(blank/`-` disables a side).
+
+**Trade GUI:** one icon per item — **left-click** to buy, **right-click** to sell; quantity
+picker shows running totals (you pay / you receive) before confirm.
+
 PlayerData stores offer catalogs + opens the trade GUI; there is no `/trader` command.
 
 **Ownership:** YaPPlayerData is the **data plane** (sync, lock, auth, schema, `PlayerDataService`, storage for bag/homes/kits/…).  

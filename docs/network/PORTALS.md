@@ -28,6 +28,12 @@ Existing pads are repainted on `/portal reload` or plugin enable.
 2. `yap-portals.jar` on each Folia backend that should host portals (lobby is typical)
 3. `server-id` in `plugins/YaPPortals/config.yml` matches this backend’s Link name (`lobby`, `survival`, …)
 4. Portal `target-server` values match Link `servers.*` keys exactly
+5. **Inventory across backends:** `yap-playerdata.jar` on every backend, shared YaPDB,
+   unique `server-id` per instance, and defaults `inventory-profile: global` +
+   `sync.inventory: true` (enderchest / XP / vitals similarly). Portal Connect → quit/join
+   save/load carries the same profile — including YaPItems custom weapons. Item *definitions*
+   also sync fleet-wide on create (see [YAPITEMS.md](../plugins/YAPITEMS.md)).
+   Set `inventory-profile: server` only for minigame wipes.
 
 `/hub` remains a **Link** command (selector plugin). YaPPortals does not replace it.
 
@@ -48,7 +54,8 @@ Or with explicit coordinates:
 /portal create to-survival survival cyan at world 0 64 0 2 66 2
 ```
 
-Walk into the volume. Players joining through Link are sent to `survival`.
+Walk into the volume. Players joining through Link are sent to `survival` and
+land at that backend’s spawn (`/setspawn` via YaPEssentials, else world spawn).
 
 ## Commands (`yapportals.admin`)
 

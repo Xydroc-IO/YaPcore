@@ -45,7 +45,7 @@ Modes live in the sidebar (`app-shell.js`). Switching modes only changes the nav
 | Mode | Groups | Tabs |
 |------|--------|------|
 | **Operate** | Now | Dashboard, Fleet, Players, Console, Connect |
-| **Configure** | Network · People · Content | **Setup**, YaP Link, Network setup, Server setup, Access & ranks, Rank pack, Plugins, Plugin settings, Modules, Packs, World, Regions, NPCs |
+| **Configure** | Network · People · Content | **Setup**, YaP Link, Network setup, Server setup, Access & ranks, Rank pack, Plugins, Plugin settings, Modules, Packs, World, Regions, NPCs, **Shops** |
 | **Gameplay** | Core · World & safety · Opt-in | Essentials, Chat, Tab list, Player data, Kits, Custom commands, Protect, Guard, Map, Pregen, Discord, Tebex, Skills, Factions, Disasters, Stacker |
 
 Static assets: `src/main/resources/web/` — `app-shell.js`, `app-core.js`, `app-*-panels.js`, `style.css`.
@@ -88,6 +88,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **World** | `/api/world` | schematics, brush max, load/unload flags | create (type/env/seed/generator), load, unload, reload, schem-list, **save-brush** |
 | **Regions** | `/api/regions` | region table (JSON), flag names | **define** (cuboid coords), **flag-set**, list |
 | **NPCs** | `/api/npcs` | npc table, quest ids | create, remove, setquest, setdialogue, setwarp, setspawn, setcommand, setplayer, shopenable, shopclear, setaction (advanced), respawn, reload, info |
+| **Shops** | `/api/shops` | NPC shop catalogs (PlayerData) | list, setitem (buy+sell), apply preset, addbuy/addsell, setoffer, deloffer, clearoffers, enable, clear |
 | **Essentials** | `/api/essentials` | features, MOTD, rules, spawn | reload, broadcast, save-motd, save-rules, set-feature |
 | **Pregen** | `/api/pregen` | job status | start, pause, resume, cancel |
 | **Player data** | `/api/playerdata` | economy, auth, feature toggles | reload, save, set-feature |
@@ -250,16 +251,27 @@ Dashboard drives the plugin directly:
 
 - Create NPC at world coordinates (console: `npc create <id> at <world> <x> <y> <z> [yaw] [name]`)
 - Edit display name, quest, dialogue; structured hub actions (spawn / warp / console / player command); shop enable/clear; remove; respawn all; reload
-- Hub actions owned by `/npc`: `/npc shop enable|addbuy|list`, `/npc setwarp`, `/npc setspawn`, `/npc setcommand`
+- Hub actions owned by `/npc`: `/npc shop enable|apply|setitem|list`, `/npc setwarp`, `/npc setspawn`, `/npc setcommand`, `/npc setname`, `/npc move`
 - Server spawn = Essentials `/spawn` via NPC `spawn` action — **not** `warp:spawn`
 - Shop catalogs live in YaPPlayerData; there is no separate `/trader` command
 - Raw `setaction` is advanced-only in the UI
 - GET `/api/npcs` returns structured `npcs[]` from `npc list json`
 
+### Shops (`/api/shops`)
+
+Edit NPC shop catalogs without splitting buy/sell into separate rows:
+
+- Lists NPCs that already have a `shop:<id>` action (enable a shop on the **NPCs** tab first)
+- **One row per item** — Buy $ (player pays) and Sell $ (player receives); blank disables that side
+- Apply built-in presets (replace), clear offers, or unlink the catalog
+- POST `setitem` → `npc shop setitem <npc> <material> <amount> <buy|-> <sell|-> [stock]`
+- In-game: left-click buy / right-click sell + quantity totals — see [PLAYERDATA.md](../data/PLAYERDATA.md)
+
 ### Regions (`yap-regions`)
 
 - Define / redefine / remove admin cuboids from the UI
 - Set WorldGuard-class flags (including item-drop/pickup, tnt, creeper-explosion, mob-entry, weather)
+- `/region worldborder <name>` (also via console from dashboard) fits the vanilla world border to the region XZ AABB
 - GET `/api/regions` returns `regions[]` with flag map from `region list json`
 
 ### Portals (`yap-portals`)
