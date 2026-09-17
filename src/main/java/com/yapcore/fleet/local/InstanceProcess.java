@@ -98,20 +98,59 @@ public final class InstanceProcess {
         if (process == null || !process.isAlive() || processStdin == null) {
             return "Instance " + instanceId + " not accepting commands";
         }
-        try {
-            String cmd = line == null ? "" : line.trim();
-            if (cmd.startsWith("/")) {
-                cmd = cmd.substring(1);
+        String cmd = line == null ? "" : line.trim();
+        if (cmd.startsWith("/")) {
+            cmd = cmd.substring(1);
+        }
+        boolean expectJson = cmd.contains(" json")
+                || cmd.endsWith(" json")
+                || cmd.contains("list json")
+                || cmd.contains("presets json");
+        StringBuilder captured = new StringBuilder();
+        java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
+        Consumer<String> listener = tagged -> {
+            if (tagged == null) {
+                return;
             }
+            captured.append(tagged);
+            if (tagged.contains("YAPNPC_JSON:")
+                    || tagged.contains("YAPSHOP_JSON:")
+                    || tagged.contains("YAPSHOP_PRESETS:")
+                    || tagged.contains("YAPREGION_JSON:")
+                    || tagged.contains("Unknown or incomplete command")
+                    || tagged.contains("Unknown command")) {
+                done.countDown();
+            }
+        };
+        addLogListener(listener);
+        try {
             synchronized (processStdin) {
                 processStdin.write(cmd);
                 processStdin.write('\n');
                 processStdin.flush();
             }
+            try {
+                done.await(expectJson ? 6 : 2, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            // Small settle for multi-line / follow-up chat
+            if (expectJson && captured.indexOf("YAP") < 0) {
+                try {
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            if (captured.length() > 0) {
+                return captured.toString();
+            }
             return "Instance " + instanceId + ": /" + cmd;
         } catch (IOException e) {
             LOG.log(Level.WARNING, "stdin failed for " + instanceId, e);
             return "stdin error: " + e.getMessage();
+        } finally {
+            removeLogListener(listener);
         }
     }
 

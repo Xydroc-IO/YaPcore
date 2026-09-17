@@ -79,7 +79,21 @@ public final class InstanceLayout {
     static void ensureInstancePluginsDir(Path instanceDir) throws IOException {
         Path local = instanceDir.resolve("plugins");
         if (Files.isSymbolicLink(local)) {
-            // Shared link — leave alone; do not convert or empty.
+            // Heal broken shared links (Paper then fails createDirectories → 0 plugins).
+            try {
+                Path target = Files.readSymbolicLink(local);
+                Path resolved = instanceDir.resolve(target).normalize();
+                if (!Files.isDirectory(resolved)) {
+                    Files.deleteIfExists(local);
+                    Files.createDirectories(local);
+                    LOG.warning("Replaced broken plugins symlink in " + instanceDir
+                            + " (was → " + target + ")");
+                }
+            } catch (IOException e) {
+                Files.deleteIfExists(local);
+                Files.createDirectories(local);
+                LOG.warning("Replaced unreadable plugins symlink in " + instanceDir + ": " + e.getMessage());
+            }
             return;
         }
         Files.createDirectories(local);
@@ -395,18 +409,29 @@ public final class InstanceLayout {
     static void writeServerIdHint(Path dir, String serverId) throws IOException {
         Path hint = dir.resolve("yap-server-id.txt");
         Files.writeString(hint, serverId + "\n");
-        Path pd = dir.resolve("plugins/YapPlayerData/config.yml");
-        if (!Files.isRegularFile(pd)) {
-            pd = dir.resolve("plugins/yap-playerdata/config.yml");
+        // Shared-DB plugins must not keep the lobby seed server-id on survival/etc.
+        String[] pluginFolders = {
+                "YaPPlayerData", "yap-playerdata",
+                "YaPEssentials", "yap-essentials",
+                "YaPPortals", "yap-portals",
+                "YaPNpcs", "yap-npcs"
+        };
+        for (String folder : pluginFolders) {
+            Path cfg = dir.resolve("plugins").resolve(folder).resolve("config.yml");
+            patchServerIdInYaml(cfg, serverId);
         }
-        if (Files.isRegularFile(pd)) {
-            String text = Files.readString(pd);
-            if (text.contains("server-id:")) {
-                text = text.replaceAll("(?m)^(\\s*server-id:\\s*).*$", "$1" + serverId);
-            } else {
-                text = text + "\nserver-id: " + serverId + "\n";
-            }
-            Files.writeString(pd, text);
+    }
+
+    static void patchServerIdInYaml(Path cfg, String serverId) throws IOException {
+        if (!Files.isRegularFile(cfg)) {
+            return;
         }
+        String text = Files.readString(cfg);
+        if (text.contains("server-id:")) {
+            text = text.replaceAll("(?m)^(\\s*server-id:\\s*).*$", "$1" + serverId);
+        } else {
+            text = text + "\nserver-id: " + serverId + "\n";
+        }
+        Files.writeString(cfg, text);
     }
 }
