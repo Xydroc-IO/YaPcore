@@ -9,7 +9,7 @@ import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodecHelper;
 import org.cloudburstmc.protocol.bedrock.codec.v2168.Bedrock_v2168;
 import org.cloudburstmc.protocol.bedrock.codec.v2169.Bedrock_v2169;
-import org.cloudburstmc.protocol.bedrock.codec.v2192.Bedrock_v2192;
+import org.cloudburstmc.protocol.bedrock.codec.v2193.Bedrock_v2193;
 import org.cloudburstmc.protocol.bedrock.data.PacketCompressionAlgorithm;
 import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition;
 import org.cloudburstmc.protocol.bedrock.data.definitions.SimpleNamedDefinition;
@@ -41,7 +41,7 @@ public final class LinkCloudburstCodecs {
     };
 
     private static final List<BedrockCodec> CODECS = List.of(
-            Bedrock_v2192.CODEC,
+            // Newest Cloudburst snapshot in-tree is 2169; add 219x when codec publishes it.
             Bedrock_v2169.CODEC,
             Bedrock_v2168.CODEC
     );
@@ -61,7 +61,7 @@ public final class LinkCloudburstCodecs {
     }
 
     public static String bandFor(int codecProtocol) {
-        return codecProtocol >= 2192 ? "band_26_50" : "band_26_40";
+        return codecProtocol >= 2193 ? "band_26_50" : "band_26_40";
     }
 
     public static Session open(int clientProtocol) {

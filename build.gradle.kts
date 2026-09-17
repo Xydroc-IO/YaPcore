@@ -70,7 +70,7 @@ dependencies {
     implementation("org.ow2.asm:asm:9.9.1")
     implementation("org.ow2.asm:asm-commons:9.9.1")
 
-    // Cloudburst bedrock-codec — same lineage Geyser pins (Bedrock_v2168 / v2192).
+    // Cloudburst bedrock-codec — same lineage Geyser pins (Bedrock_v2168 / v2193).
     // Snapshot resolves to latest Beta13 build that includes modern StartGame/LevelChunk.
     implementation("org.cloudburstmc.protocol:bedrock-codec:3.0.0.Beta13-SNAPSHOT")
     implementation("org.cloudburstmc.math:immutable:2.0")

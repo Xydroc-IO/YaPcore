@@ -80,7 +80,7 @@ public final class ProtocolVersionRegistry {
         // keep exact entries so DualStackGateway does not map 2207→776 for TrafficCop labels.
         list.add(new ProtocolVersion(ClientEdition.BEDROCK, 2168, "26.40", "Bedrock 26.40", true));
         list.add(new ProtocolVersion(ClientEdition.BEDROCK, 2169, "26.45", "Bedrock 26.45 (Geyser latest)", true));
-        list.add(new ProtocolVersion(ClientEdition.BEDROCK, 2192, "26.x", "Bedrock Cloudburst 2192", true));
+        list.add(new ProtocolVersion(ClientEdition.BEDROCK, 2193, "26.50", "Bedrock Cloudburst 2193", true));
         list.add(new ProtocolVersion(ClientEdition.BEDROCK, 2207, "26.45", "Bedrock phone 2207", true));
 
         list.sort(Comparator.comparingInt(ProtocolVersion::protocolId));

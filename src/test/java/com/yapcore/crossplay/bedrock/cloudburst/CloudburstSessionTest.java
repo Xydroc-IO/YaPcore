@@ -29,12 +29,12 @@ final class CloudburstSessionTest {
         assertEquals(0, band40.air().getRuntimeId());
 
         CloudburstPaletteRegistry.BandPalettes band50 =
-                CloudburstPaletteRegistry.get().forProtocol(2192);
+                CloudburstPaletteRegistry.get().forProtocol(2193);
         assertNotNull(band50);
         assertEquals("band_26_50", band50.band());
 
         CloudburstSession session = CloudburstSession.create(2207);
-        assertEquals(2192, session.codec().getProtocolVersion());
+        assertEquals(2193, session.codec().getProtocolVersion());
         assertNotNull(session.helper().getCameraPresetDefinitions());
 
         StartGamePacket start = CloudburstPackets.startGame(
@@ -167,7 +167,7 @@ final class CloudburstSessionTest {
     void codecIndexBands() {
         assertEquals("band_26_40", CloudburstCodecIndex.bandFor(2168));
         assertEquals("band_26_40", CloudburstCodecIndex.bandFor(2169));
-        assertEquals("band_26_50", CloudburstCodecIndex.bandFor(2192));
+        assertEquals("band_26_50", CloudburstCodecIndex.bandFor(2193));
         assertEquals(2168, CloudburstCodecIndex.MIN_MODERN);
     }
 }

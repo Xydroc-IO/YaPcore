@@ -9,7 +9,7 @@ import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec;
 @Deprecated
 public final class CloudburstCodecs {
 
-    public static final int LATEST_CODEC_PROTOCOL = 2192;
+    public static final int LATEST_CODEC_PROTOCOL = 2193;
 
     private CloudburstCodecs() {}
 
