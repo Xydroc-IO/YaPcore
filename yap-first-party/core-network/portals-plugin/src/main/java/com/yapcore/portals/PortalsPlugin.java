@@ -1,12 +1,15 @@
 package com.yapcore.portals;
 
 import com.yapcore.portals.cmd.PortalCommands;
+import com.yapcore.portals.listener.PortalArrivalListener;
 import com.yapcore.portals.listener.PortalMoveListener;
 import com.yapcore.portals.listener.PortalPhysicsListener;
 import com.yapcore.portals.listener.PortalQuitListener;
 import com.yapcore.portals.listener.PortalWandListener;
 import com.yapcore.portals.service.LinkConnect;
 import com.yapcore.portals.service.PortalServiceImpl;
+import com.yapcore.portals.store.PortalArrivalPending;
+import com.yapcore.portals.store.PortalCatalogMirror;
 import com.yapcore.portals.store.PortalYamlStore;
 import com.yapcore.sched.YapSched;
 import org.bukkit.plugin.ServicePriority;
@@ -28,9 +31,12 @@ public final class PortalsPlugin extends JavaPlugin {
     public void onEnable() {
         saveDefaultConfig();
         config = new PortalsConfig(this);
-        PortalYamlStore store = new PortalYamlStore(this);
+        PortalCatalogMirror mirror = new PortalCatalogMirror(
+                getDataFolder().toPath(), config.serverId(), getLogger());
+        PortalYamlStore store = new PortalYamlStore(this, mirror);
         store.load();
-        service = new PortalServiceImpl(this, config, store);
+        PortalArrivalPending arrivals = new PortalArrivalPending(mirror, getLogger());
+        service = new PortalServiceImpl(this, config, store, arrivals);
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, LinkConnect.CHANNEL_LEGACY);
         getServer().getMessenger().registerOutgoingPluginChannel(this, LinkConnect.CHANNEL_MODERN);
@@ -43,6 +49,7 @@ public final class PortalsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PortalPhysicsListener(service), this);
         getServer().getPluginManager().registerEvents(wandListener, this);
         getServer().getPluginManager().registerEvents(new PortalQuitListener(service), this);
+        getServer().getPluginManager().registerEvents(new PortalArrivalListener(this, config, arrivals), this);
 
         PortalCommands commands = new PortalCommands(this, service, wandListener);
         var cmd = getCommand("portal");

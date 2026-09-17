@@ -29,7 +29,7 @@ final class PortalDefineOps {
             return true;
         }
         String name = args[1].trim().toLowerCase(Locale.ROOT);
-        String target = args[2].trim();
+        String target = PortalCommandParse.resolveTarget(args[2]);
         String color = null;
         int scanFrom = 3;
         if (args.length > 3 && !"at".equalsIgnoreCase(args[3])) {

@@ -33,4 +33,13 @@ final class PortalCommandParse {
         System.arraycopy(args, from, out, 0, out.length);
         return out;
     }
+
+    /** Link server id; {@code hub} is an alias for {@code lobby}. */
+    static String resolveTarget(String raw) {
+        String t = raw == null ? "" : raw.trim().toLowerCase(java.util.Locale.ROOT);
+        if ("hub".equals(t)) {
+            return "lobby";
+        }
+        return t;
+    }
 }

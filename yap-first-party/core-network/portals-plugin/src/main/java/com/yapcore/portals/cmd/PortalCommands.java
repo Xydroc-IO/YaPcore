@@ -106,7 +106,7 @@ public final class PortalCommands implements CommandExecutor, TabCompleter {
         }
         if (args.length == 3) {
             if ("settarget".equals(sub) || "create".equals(sub) || "define".equals(sub)) {
-                return filter(List.of("lobby", "survival"), args[2]);
+                return filter(List.of("lobby", "hub", "survival"), args[2]);
             }
             if ("setcolor".equals(sub)) {
                 return filter(PortalColors.names(), args[2]);

@@ -68,8 +68,9 @@ final class PortalMetaOps {
             sender.sendMessage("§cUsage: /portal settarget <name> <server>");
             return true;
         }
-        return mutate(sender, args[1], p -> p.withTarget(args[2].trim()),
-                "target → §f" + args[2].trim());
+        String target = PortalCommandParse.resolveTarget(args[2]);
+        return mutate(sender, args[1], p -> p.withTarget(target),
+                "target → §f" + target);
     }
 
     boolean handleSetPerm(CommandSender sender, String[] args) {

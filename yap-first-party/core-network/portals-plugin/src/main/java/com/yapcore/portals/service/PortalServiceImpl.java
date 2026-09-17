@@ -5,6 +5,7 @@ import com.yapcore.portals.PortalCuboid;
 import com.yapcore.portals.PortalService;
 import com.yapcore.portals.PortalTransfer;
 import com.yapcore.portals.PortalsConfig;
+import com.yapcore.portals.store.PortalArrivalPending;
 import com.yapcore.portals.store.PortalYamlStore;
 import com.yapcore.portals.store.SelectionDrafts;
 import com.yapcore.sched.YapSched;
@@ -28,16 +29,19 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
     private final JavaPlugin plugin;
     private final PortalsConfig config;
     private final PortalYamlStore store;
+    private final PortalArrivalPending arrivals;
     private final PortalVisuals visuals;
     private final SelectionDrafts drafts = new SelectionDrafts();
     private final PortalCooldown cooldown = new PortalCooldown();
     /** Last portal name the player stood in (boundary fire). */
     private final Map<UUID, String> inside = new ConcurrentHashMap<>();
 
-    public PortalServiceImpl(JavaPlugin plugin, PortalsConfig config, PortalYamlStore store) {
+    public PortalServiceImpl(JavaPlugin plugin, PortalsConfig config, PortalYamlStore store,
+                             PortalArrivalPending arrivals) {
         this.plugin = plugin;
         this.config = config;
         this.store = store;
+        this.arrivals = arrivals;
         this.visuals = new PortalVisuals(plugin);
     }
 
@@ -195,6 +199,10 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
                 : config.msgTransferring().replace("{server}", targetServer);
         YapSched.entity(plugin, player, () -> {
             try {
+                releaseSessionLockForTransfer(player);
+                if (arrivals != null) {
+                    arrivals.mark(player.getUniqueId(), targetServer);
+                }
                 byte[] payload = LinkConnect.connectPayload(targetServer);
                 // Paper remaps BungeeCord → bungeecord:main; send both for proxy compat.
                 try {
@@ -230,6 +238,26 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
             }
         });
         return true;
+    }
+
+    /** Drop dual-login lock before Connect so hub/survival soft-switch is not rejected. */
+    private void releaseSessionLockForTransfer(Player player) {
+        try {
+            Class<?> provider = Class.forName("com.yapcore.playerdata.PlayerDataServiceProvider");
+            Object opt = provider.getMethod("find").invoke(null);
+            if (!(opt instanceof Optional<?> optional) || optional.isEmpty()) {
+                return;
+            }
+            Object service = optional.get();
+            String serverId = (String) service.getClass().getMethod("serverId").invoke(service);
+            service.getClass()
+                    .getMethod("releaseSessionLock", UUID.class, String.class)
+                    .invoke(service, player.getUniqueId(), serverId);
+        } catch (ClassNotFoundException ignored) {
+            // YaPPlayerData optional
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.FINE, "releaseSessionLock before Connect", e);
+        }
     }
 
     private void persistAsync() {

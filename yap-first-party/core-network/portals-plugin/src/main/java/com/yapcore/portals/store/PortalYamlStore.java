@@ -29,14 +29,23 @@ public final class PortalYamlStore {
 
     private final JavaPlugin plugin;
     private final File file;
+    private final PortalCatalogMirror mirror;
     private final Map<String, Portal> byName = new ConcurrentHashMap<>();
 
     public PortalYamlStore(JavaPlugin plugin) {
+        this(plugin, null);
+    }
+
+    public PortalYamlStore(JavaPlugin plugin, PortalCatalogMirror mirror) {
         this.plugin = plugin;
         this.file = new File(plugin.getDataFolder(), "portals.yml");
+        this.mirror = mirror;
     }
 
     public void load() {
+        if (mirror != null) {
+            mirror.restoreIfEmpty(file.toPath());
+        }
         if (!file.exists()) {
             plugin.saveResource("portals.yml", false);
         }
@@ -92,6 +101,9 @@ public final class PortalYamlStore {
             throw new IOException("Could not create " + parent);
         }
         yaml.save(file);
+        if (mirror != null) {
+            mirror.publish(file.toPath());
+        }
     }
 
     public Collection<Portal> all() {
