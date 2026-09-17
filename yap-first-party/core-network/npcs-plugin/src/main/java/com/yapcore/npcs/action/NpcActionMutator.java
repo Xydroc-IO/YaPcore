@@ -57,6 +57,7 @@ public final class NpcActionMutator {
             case WARP -> "warp";
             case COMMAND -> "command";
             case PLAYER -> "player";
+            case SERVER -> "server";
             case SPAWN -> "spawn";
         };
         return prefix + ":" + a.value();

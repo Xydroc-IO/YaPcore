@@ -39,10 +39,10 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
         }
         if (args.length == 0) {
             sender.sendMessage("§e/npc create|remove|list|info|respawn|reload");
-            sender.sendMessage("§e/npc setdialogue|setquest|setwarp|setspawn|setcommand|setplayer <id> …");
+            sender.sendMessage("§e/npc setdialogue|setquest|setwarp|setspawn|setserver|setcommand|setplayer <id> …");
             sender.sendMessage("§e/npc setskin <id> <url> · setskinslim <id> <true|false>");
             sender.sendMessage("§e/npc shop <enable|addbuy|addsell|list|deloffer|clear> <id> …");
-            sender.sendMessage("§7Hub: §f/npc shop§7 · §fsetwarp§7 · §fsetspawn§7 · §fsetcommand§7 (not warp:spawn)");
+            sender.sendMessage("§7Hub: §f/npc shop§7 · §fsetwarp§7 · §fsetspawn§7 · §fsetserver§7 · §fsetcommand§7");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -57,6 +57,7 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             case "setaction" -> actionOps.handleSetAction(sender, args);
             case "setwarp" -> actionOps.handleSetWarp(sender, args);
             case "setspawn" -> actionOps.handleSetSpawn(sender, args);
+            case "setserver" -> actionOps.handleSetServer(sender, args);
             case "setcommand" -> actionOps.handleSetCommand(sender, args, NpcActions.Kind.COMMAND, "command");
             case "setplayer", "setplayercmd" -> actionOps.handleSetCommand(sender, args, NpcActions.Kind.PLAYER, "player");
             case "shop" -> shopOps.handleShop(sender, args);
@@ -272,13 +273,13 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
         }
         if (args.length == 1) {
             return NpcCommandParse.prefix(List.of("create", "remove", "list", "setquest", "setdialogue", "setaction",
-                    "setskin", "setskinslim", "setwarp", "setspawn", "setcommand", "setplayer", "shop",
+                    "setskin", "setskinslim", "setwarp", "setspawn", "setserver", "setcommand", "setplayer", "shop",
                     "respawn", "reload", "info"), args[0]);
         }
         if (args.length == 2) {
             return switch (args[0].toLowerCase(Locale.ROOT)) {
                 case "remove", "setquest", "setdialogue", "setaction", "setskin", "setskinslim",
-                     "setwarp", "setspawn", "setcommand", "setplayer", "setplayercmd", "info"
+                     "setwarp", "setspawn", "setserver", "setcommand", "setplayer", "setplayercmd", "info"
                         -> NpcCommandParse.prefix(npcs.listIds(), args[1]);
                 case "list" -> NpcCommandParse.prefix(List.of("json"), args[1]);
                 case "shop" -> NpcCommandParse.prefix(List.of("enable", "addbuy", "addsell", "list", "deloffer", "clear"), args[1]);
@@ -294,8 +295,11 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
         if (args.length == 3 && "setspawn".equalsIgnoreCase(args[0])) {
             return NpcCommandParse.prefix(List.of("on", "off"), args[2]);
         }
+        if (args.length == 3 && "setserver".equalsIgnoreCase(args[0])) {
+            return NpcCommandParse.prefix(List.of("lobby", "survival"), args[2]);
+        }
         if (args.length == 3 && "setaction".equalsIgnoreCase(args[0])) {
-            return NpcCommandParse.prefix(List.of("shop:", "warp:", "spawn", "command:", "player:"), args[2]);
+            return NpcCommandParse.prefix(List.of("shop:", "warp:", "spawn", "server:", "command:", "player:"), args[2]);
         }
         return List.of();
     }

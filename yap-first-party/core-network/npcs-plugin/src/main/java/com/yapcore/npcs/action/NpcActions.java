@@ -13,6 +13,7 @@ import java.util.Locale;
  *   <li>{@code spawn} — run {@code /spawn} (Essentials server spawn; not {@code warp:spawn})</li>
  *   <li>{@code command:say hi {player}} — console command</li>
  *   <li>{@code player:kit starter} — player runs the command</li>
+ *   <li>{@code server:survival} — YaPPortals fleet transfer (Link Connect)</li>
  * </ul>
  */
 public final class NpcActions {
@@ -22,7 +23,8 @@ public final class NpcActions {
         WARP,
         SPAWN,
         COMMAND,
-        PLAYER
+        PLAYER,
+        SERVER
     }
 
     public record Action(Kind kind, String value) {
@@ -64,6 +66,7 @@ public final class NpcActions {
                 case "warp" -> Kind.WARP;
                 case "command", "console", "cmd" -> Kind.COMMAND;
                 case "player", "playercmd", "sudo" -> Kind.PLAYER;
+                case "server", "transfer", "connect" -> Kind.SERVER;
                 default -> null;
             };
             if (kind != null) {

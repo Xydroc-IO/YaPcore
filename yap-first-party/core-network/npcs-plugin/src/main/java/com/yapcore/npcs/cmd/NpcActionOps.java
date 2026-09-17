@@ -21,8 +21,8 @@ final class NpcActionOps {
 
     boolean handleSetAction(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("§cUsage: /npc setaction <id> [shop:12|warp:mines|spawn|command:...|player:...]");
-            sender.sendMessage("§7Prefer §e/npc shop§7, §e/npc setwarp§7, §e/npc setspawn§7, §e/npc setcommand§7.");
+            sender.sendMessage("§cUsage: /npc setaction <id> [shop:12|warp:mines|spawn|server:survival|command:...|player:...]");
+            sender.sendMessage("§7Prefer §e/npc shop§7, §e/npc setwarp§7, §e/npc setspawn§7, §e/npc setserver§7, §e/npc setcommand§7.");
             return true;
         }
         String action = args.length >= 3 ? String.join(" ", NpcCommandParse.copyFrom(args, 2)) : "";
@@ -108,6 +108,25 @@ final class NpcActionOps {
         String next = NpcActionMutator.replaceKind(opt.get().action(), kind, token);
         npcs.setAction(args[1], next);
         sender.sendMessage("§a" + prefix + " for §f" + args[1] + " §7→ §f" + (cmd.isEmpty() ? "(none)" : cmd));
+        return true;
+    }
+
+    boolean handleSetServer(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /npc setserver <id> [linkServer]  §7(blank clears; needs YaPPortals)");
+            return true;
+        }
+        var opt = npcs.get(args[1]);
+        if (opt.isEmpty()) {
+            sender.sendMessage("§cNPC not found.");
+            return true;
+        }
+        String server = args.length >= 3 ? args[2].trim() : "";
+        String next = server.isEmpty()
+                ? NpcActionMutator.replaceKind(opt.get().action(), NpcActions.Kind.SERVER, null)
+                : NpcActionMutator.replaceKind(opt.get().action(), NpcActions.Kind.SERVER, "server:" + server);
+        npcs.setAction(args[1], next);
+        sender.sendMessage("§aServer transfer for §f" + args[1] + " §7→ §f" + (server.isEmpty() ? "(none)" : server));
         return true;
     }
 

@@ -1,6 +1,7 @@
 package com.yapcore.npcs.action;
 
 import com.yapcore.playerdata.NpcTraderAccess;
+import com.yapcore.portals.PortalTransfer;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -11,7 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
 
-/** Dispatches hub NPC click actions (shop / warp / spawn / command). */
+/** Dispatches hub NPC click actions (shop / warp / spawn / command / server). */
 public final class NpcActionDispatcher {
 
     private final JavaPlugin plugin;
@@ -47,7 +48,24 @@ public final class NpcActionDispatcher {
                     String cmd = action.value().replace("{player}", player.getName());
                     YapSched.entity(plugin, player, () -> player.performCommand(cmd));
                 }
+                case SERVER -> transferServer(player, action.value());
             }
+        }
+    }
+
+    private void transferServer(Player player, String targetServer) {
+        RegisteredServiceProvider<PortalTransfer> reg =
+                Bukkit.getServicesManager().getRegistration(PortalTransfer.class);
+        if (reg == null) {
+            player.sendMessage("§cServer transfer unavailable — install YaPPortals.");
+            plugin.getLogger().fine("server action skipped — PortalTransfer not registered");
+            return;
+        }
+        try {
+            reg.getProvider().transfer(player, targetServer);
+        } catch (Exception e) {
+            player.sendMessage("§cCould not transfer to §f" + targetServer);
+            plugin.getLogger().log(Level.WARNING, "NPC server transfer " + targetServer, e);
         }
     }
 

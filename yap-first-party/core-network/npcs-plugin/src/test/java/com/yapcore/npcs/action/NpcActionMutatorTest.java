@@ -28,4 +28,10 @@ final class NpcActionMutatorTest {
         assertTrue(NpcActionMutator.hasSpawn(next));
         assertEquals("shop:1", NpcActionMutator.replaceKind(next, NpcActions.Kind.SPAWN, null));
     }
+
+    @Test
+    void replacesServerKeepsShop() {
+        String next = NpcActionMutator.replaceKind("shop:1;server:lobby", NpcActions.Kind.SERVER, "server:survival");
+        assertEquals("shop:1;server:survival", next);
+    }
 }

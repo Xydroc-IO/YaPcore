@@ -38,6 +38,16 @@ final class NpcActionsTest {
     }
 
     @Test
+    void parsesServerTransferToken() {
+        List<NpcActions.Action> actions = NpcActions.parse("server:survival; transfer:lobby");
+        assertEquals(2, actions.size());
+        assertEquals(NpcActions.Kind.SERVER, actions.get(0).kind());
+        assertEquals("survival", actions.get(0).value());
+        assertEquals(NpcActions.Kind.SERVER, actions.get(1).kind());
+        assertEquals("lobby", actions.get(1).value());
+    }
+
+    @Test
     void blankAndUnknownAreIgnored() {
         assertTrue(NpcActions.parse(null).isEmpty());
         assertTrue(NpcActions.parse("  ").isEmpty());
