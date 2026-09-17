@@ -275,10 +275,12 @@ public final class Database implements AutoCloseable {
                       material VARCHAR(64) NOT NULL,
                       amount INT NOT NULL DEFAULT 1,
                       price DECIMAL(20,2) NOT NULL,
-                      stock INT NOT NULL DEFAULT -1
+                      stock INT NOT NULL DEFAULT -1,
+                      meta_json TEXT NULL
                     )
                     """.formatted(pk));
             createIndex(st, "idx_npc_offers_trader", "npc_offers", "trader_id");
+            tryAlter(st, "ALTER TABLE npc_offers ADD COLUMN meta_json TEXT NULL");
             st.execute("""
                     CREATE TABLE IF NOT EXISTS auth_accounts (
                       uuid CHAR(36) PRIMARY KEY,

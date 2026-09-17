@@ -31,4 +31,13 @@ public final class ProxySessionLock {
         }
         return Optional.empty();
     }
+
+    /** Clears any active lock for {@code uuid} (transfer handoff / crashed-backend recovery). */
+    public static void forceClear(Connection c, UUID uuid) throws Exception {
+        try (PreparedStatement ps = c.prepareStatement(
+                "UPDATE players SET lock_server = NULL, lock_until = NULL WHERE uuid = ?")) {
+            ps.setString(1, uuid.toString());
+            ps.executeUpdate();
+        }
+    }
 }

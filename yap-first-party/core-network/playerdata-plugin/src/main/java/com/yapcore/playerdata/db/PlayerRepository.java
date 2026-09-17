@@ -224,6 +224,21 @@ public final class PlayerRepository {
         }
     }
 
+    /**
+     * Drop all locks held by this backend. Safe on startup before any players join —
+     * recovers from crashes that skipped quit handlers.
+     *
+     * @return rows cleared
+     */
+    public int clearLocksForServer(String serverId) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "UPDATE players SET lock_server = NULL, lock_until = NULL WHERE lock_server = ?")) {
+            ps.setString(1, serverId);
+            return ps.executeUpdate();
+        }
+    }
+
     /** Read lock holder without profile join (pre-login). */
     public Optional<String> lockHolder(UUID uuid) throws SQLException {
         try (Connection c = database.connection();

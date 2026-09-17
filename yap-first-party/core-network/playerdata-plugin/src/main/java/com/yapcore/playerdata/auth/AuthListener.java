@@ -33,13 +33,23 @@ public final class AuthListener implements Listener {
             return;
         }
         try {
-            var holder = players.lockHolder(event.getUniqueId());
-            if (holder.isPresent() && !holder.get().equalsIgnoreCase(config.serverId())) {
-                event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER,
-                        net.kyori.adventure.text.Component.text(
-                                "Already logged in on server '" + holder.get()
-                                        + "'. Wait a few seconds then try again."));
+            // Soft-switch / portal handoff: previous backend may still be releasing.
+            for (int i = 0; i < 8; i++) {
+                var holder = players.lockHolder(event.getUniqueId());
+                if (holder.isEmpty() || holder.get().equalsIgnoreCase(config.serverId())) {
+                    return;
+                }
+                if (i < 7) {
+                    Thread.sleep(150L);
+                } else {
+                    event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER,
+                            net.kyori.adventure.text.Component.text(
+                                    "Already logged in on server '" + holder.get()
+                                            + "'. Wait a few seconds then try again."));
+                }
             }
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             // DB down: let JoinQuitListener kick with clearer message after join attempt
         }

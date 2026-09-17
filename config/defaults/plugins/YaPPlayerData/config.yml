@@ -22,8 +22,8 @@ pool:
 # Unique id for this backend (must differ on every Velocity backend)
 server-id: lobby
 
-# Inventory / XP / vitals profile key:
-#   global  — shared across all backends (default)
+# Inventory / XP / vitals profile key (hub↔survival portals need global + sync.inventory):
+#   global  — shared across all backends (default; YaPPortals / Link transfers)
 #   server  — use server-id (per-server / minigame wipe)
 #   <name>  — custom shared group (e.g. survival-network)
 inventory-profile: global

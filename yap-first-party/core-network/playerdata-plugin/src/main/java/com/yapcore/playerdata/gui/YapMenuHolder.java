@@ -15,7 +15,8 @@ import java.util.List;
 public final class YapMenuHolder implements InventoryHolder {
 
     public enum Kind {
-        HUB, HOMES, WARPS, KITS, KIT_PREVIEW, JOBS, AUCTIONS, CLAIMS, MAIL, CLAIM_DETAIL, NPC_TRADER
+        HUB, HOMES, WARPS, KITS, KIT_PREVIEW, JOBS, AUCTIONS, CLAIMS, MAIL, CLAIM_DETAIL,
+        NPC_TRADER, NPC_TRADER_QTY
     }
 
     private final Kind kind;

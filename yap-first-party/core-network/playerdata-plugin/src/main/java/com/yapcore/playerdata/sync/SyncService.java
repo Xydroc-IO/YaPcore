@@ -232,19 +232,18 @@ public final class SyncService {
         ready.remove(uuid);
         loading.remove(uuid);
 
+        // Release the dual-login lock immediately so Link soft-switch / hub rejoin
+        // can proceed while we still save the profile asynchronously.
+        releaseQuiet(uuid);
+
         YapSched.async(plugin, () -> {
             try {
                 if (snapshot != null) {
                     mergeUnsyncedFields(snapshot);
                     repository.saveProfile(snapshot);
                 }
-                sessionLock.release(uuid);
             } catch (Exception e) {
                 plugin.getLogger().log(Level.SEVERE, "Failed to save data for " + player.getName(), e);
-                try {
-                    sessionLock.forceRelease(uuid);
-                } catch (SQLException ignored) {
-                }
             } finally {
                 balances.remove(uuid);
             }

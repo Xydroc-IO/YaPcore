@@ -100,6 +100,15 @@ public final class PlayerDataPlugin extends JavaPlugin {
         }
 
         PlayerRepository repository = new PlayerRepository(database, config);
+        try {
+            int cleared = repository.clearLocksForServer(config.serverId());
+            if (cleared > 0) {
+                getLogger().info("Cleared " + cleared + " stale session lock(s) for server-id="
+                        + config.serverId());
+            }
+        } catch (Exception e) {
+            getLogger().warning("Could not clear startup session locks: " + e.getMessage());
+        }
         SessionLock locks = new SessionLock(repository, config);
         sync = new SyncService(this, config, repository, locks);
 

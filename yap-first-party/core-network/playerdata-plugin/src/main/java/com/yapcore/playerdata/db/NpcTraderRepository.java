@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -19,7 +20,11 @@ public final class NpcTraderRepository {
     }
 
     public record Offer(long id, long traderId, String mode, Material material, int amount,
-                        double price, int stock) {
+                        double price, int stock, String metaJson) {
+        public Offer(long id, long traderId, String mode, Material material, int amount,
+                     double price, int stock) {
+            this(id, traderId, mode, material, amount, price, stock, null);
+        }
     }
 
     private final Database database;
@@ -108,28 +113,41 @@ public final class NpcTraderRepository {
         }
     }
 
+    public int clearOffers(long traderId) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement o = c.prepareStatement("DELETE FROM npc_offers WHERE trader_id = ?")) {
+            o.setLong(1, traderId);
+            return o.executeUpdate();
+        }
+    }
+
+    public Optional<Offer> getOffer(long offerId) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     SELECT id, trader_id, mode, material, amount, price, stock, meta_json
+                     FROM npc_offers WHERE id = ?
+                     """)) {
+            ps.setLong(1, offerId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
+                return Optional.of(mapOffer(rs));
+            }
+        }
+    }
+
     public List<Offer> offers(long traderId) throws SQLException {
         List<Offer> out = new ArrayList<>();
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     SELECT id, trader_id, mode, material, amount, price, stock
+                     SELECT id, trader_id, mode, material, amount, price, stock, meta_json
                      FROM npc_offers WHERE trader_id = ? ORDER BY id
                      """)) {
             ps.setLong(1, traderId);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Material mat = Material.matchMaterial(rs.getString("material"));
-                    if (mat == null) {
-                        mat = Material.STONE;
-                    }
-                    out.add(new Offer(
-                            rs.getLong("id"),
-                            rs.getLong("trader_id"),
-                            rs.getString("mode"),
-                            mat,
-                            rs.getInt("amount"),
-                            rs.getDouble("price"),
-                            rs.getInt("stock")));
+                    out.add(mapOffer(rs));
                 }
             }
         }
@@ -138,10 +156,15 @@ public final class NpcTraderRepository {
 
     public long addOffer(long traderId, String mode, Material material, int amount, double price, int stock)
             throws SQLException {
+        return addOffer(traderId, mode, material, amount, price, stock, null);
+    }
+
+    public long addOffer(long traderId, String mode, Material material, int amount, double price, int stock,
+                         String metaJson) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     INSERT INTO npc_offers (trader_id, mode, material, amount, price, stock)
-                     VALUES (?, ?, ?, ?, ?, ?)
+                     INSERT INTO npc_offers (trader_id, mode, material, amount, price, stock, meta_json)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)
                      """, Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, traderId);
             ps.setString(2, mode.toUpperCase());
@@ -149,6 +172,11 @@ public final class NpcTraderRepository {
             ps.setInt(4, amount);
             ps.setDouble(5, price);
             ps.setInt(6, stock);
+            if (metaJson == null || metaJson.isBlank()) {
+                ps.setNull(7, Types.VARCHAR);
+            } else {
+                ps.setString(7, metaJson);
+            }
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -168,12 +196,58 @@ public final class NpcTraderRepository {
         }
     }
 
+    public boolean updateOffer(long offerId, double price, int amount, int stock) throws SQLException {
+        var existing = getOffer(offerId);
+        if (existing.isEmpty()) {
+            return false;
+        }
+        var o = existing.get();
+        double newPrice = price >= 0 ? price : o.price();
+        int newAmount = amount > 0 ? amount : o.amount();
+        int newStock = stock; // allow -1 unlimited; use Integer.MIN_VALUE sentinel? 
+        // stock < -1 means leave unchanged
+        if (stock < -1) {
+            newStock = o.stock();
+        }
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "UPDATE npc_offers SET price = ?, amount = ?, stock = ? WHERE id = ?")) {
+            ps.setDouble(1, newPrice);
+            ps.setInt(2, newAmount);
+            ps.setInt(3, newStock);
+            ps.setLong(4, offerId);
+            return ps.executeUpdate() > 0;
+        }
+    }
+
     public boolean deleteOffer(long offerId) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("DELETE FROM npc_offers WHERE id = ?")) {
             ps.setLong(1, offerId);
             return ps.executeUpdate() > 0;
         }
+    }
+
+    private static Offer mapOffer(ResultSet rs) throws SQLException {
+        Material mat = Material.matchMaterial(rs.getString("material"));
+        if (mat == null) {
+            mat = Material.STONE;
+        }
+        String meta;
+        try {
+            meta = rs.getString("meta_json");
+        } catch (SQLException e) {
+            meta = null;
+        }
+        return new Offer(
+                rs.getLong("id"),
+                rs.getLong("trader_id"),
+                rs.getString("mode"),
+                mat,
+                rs.getInt("amount"),
+                rs.getDouble("price"),
+                rs.getInt("stock"),
+                meta);
     }
 
     private static Trader mapTrader(ResultSet rs) throws SQLException {

@@ -41,13 +41,9 @@ final class MenuClickHandler {
                 case AUCTIONS -> auctionsClick(player, slot, name);
                 case MAIL -> mailClick(player, name);
                 case CLAIMS -> claimsClick(player, slot, shift, name);
-                case NPC_TRADER -> {
-                    Long traderId = holder.context();
-                    if (traderId != null) {
-                        // routed via NpcTraderService from MenuListener
-                        yield false;
-                    }
-                    yield true;
+                case NPC_TRADER, NPC_TRADER_QTY -> {
+                    // routed via NpcTraderService from MenuListener
+                    yield false;
                 }
                 default -> true;
             };

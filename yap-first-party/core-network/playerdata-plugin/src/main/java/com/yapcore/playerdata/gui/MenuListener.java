@@ -32,19 +32,33 @@ public final class MenuListener implements Listener {
         if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) {
             return;
         }
-        if (holder.kind() == YapMenuHolder.Kind.NPC_TRADER) {
+        if (holder.kind() == YapMenuHolder.Kind.NPC_TRADER
+                || holder.kind() == YapMenuHolder.Kind.NPC_TRADER_QTY) {
             if (traders == null) {
                 return;
             }
-            Long traderId = holder.context();
             ItemStack clicked = event.getCurrentItem();
             String name = "";
             if (clicked != null && clicked.getItemMeta() != null && clicked.getItemMeta().displayName() != null) {
                 name = PlainTextComponentSerializer.plainText().serialize(clicked.getItemMeta().displayName());
             }
-            if (traderId != null) {
-                traders.handleTradeClick(player, traderId, event.getSlot(), name);
+            Object ctx = holder.context();
+            if (holder.kind() == YapMenuHolder.Kind.NPC_TRADER_QTY
+                    && ctx instanceof NpcTraderService.QtyGuiCtx qty) {
+                traders.handleQtyClick(player, qty, event.getSlot(), name);
+                return;
             }
+            long traderId;
+            int page = 0;
+            if (ctx instanceof NpcTraderService.TraderGuiCtx gui) {
+                traderId = gui.traderId();
+                page = gui.page();
+            } else if (ctx instanceof Long id) {
+                traderId = id;
+            } else {
+                return;
+            }
+            traders.handleTradeClick(player, traderId, page, event.getSlot(), name, event.getClick());
             return;
         }
         menus.handleClick(player, holder, event.getSlot(), event.isShiftClick());
@@ -62,7 +76,8 @@ public final class MenuListener implements Listener {
         if (event.getPlayer() instanceof Player player
                 && event.getInventory().getHolder() instanceof YapMenuHolder holder) {
             menus.clearMeta(player);
-            if (holder.kind() == YapMenuHolder.Kind.NPC_TRADER) {
+            if (holder.kind() == YapMenuHolder.Kind.NPC_TRADER
+                    || holder.kind() == YapMenuHolder.Kind.NPC_TRADER_QTY) {
                 traders.clearClicks(player);
             }
         }
