@@ -56,9 +56,11 @@ Enforced by [`.gitignore`](../../.gitignore):
 - `deploy/mariadb/.env` (not `.env.example`)
 - `config/server.properties` (live operator copy)
 - `link-data/link.properties`
-- `forwarding.secret`, `*.pem`, `*.key`
+- `forwarding.secret`, `*.pem`, `*.key`, `*.token`
 - `plugins/**` live configs (seed from `config/defaults/` or jar defaults)
 - Generated dashboard tokens in local trees
+- `*.local.yml` / `*.local.properties` overrides beside defaults
+- Fleet instance trees (`fleet/instances/**`) and agent tokens
 
 Tracked templates use placeholders only: `config/defaults/`, `*.example`, `deploy/mariadb/.env.example`.
 

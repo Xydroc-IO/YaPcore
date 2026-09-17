@@ -24,6 +24,7 @@ Same ship version (no product bump). Rebuild with `gradle publishReleasesFolder 
 | **YaPItems** | Fleet catalog propagate + watch on create (network-wide custom items) |
 | **Link / PlayerData** | Faster session unlock on soft-switch / hub transfers; lock release on quit |
 | **Fleet** | Console command dispatch captures Folia JSON; heal broken lobby `plugins` symlink |
+| **Domain ≤500** | Split SoftSwitch handlers, `NpcTraderTradeGui`, `NpcShopCatalogOps` |
 | **Docs** | [PLAYERDATA.md](../data/PLAYERDATA.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) · [COMMANDS.md](../ops/COMMANDS.md) · [PORTALS.md](../network/PORTALS.md) · [YAPITEMS.md](../plugins/YAPITEMS.md) · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
 
 Build: `gradle publishReleasesFolder -PyapGameplay=true` → `releases/1.0.0.0/`. Upload with `--clobber` per [RELEASES.md](RELEASES.md).
