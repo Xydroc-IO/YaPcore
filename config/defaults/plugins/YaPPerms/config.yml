@@ -103,6 +103,7 @@ starter-grants:
     - yapessentials.rules
     - yapessentials.motd
     - yapessentials.suicide
+    - yapportals.use
   vip:
     - yapdata.claims.wilderness
     - yapdata.kit.*

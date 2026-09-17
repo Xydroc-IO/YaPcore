@@ -54,6 +54,10 @@ public final class PermsPlugin extends JavaPlugin implements YaPPerms {
 
         try {
             repository.backfillEmptyColorsFromConfig();
+            int grantBackfill = repository.backfillMissingStarterGrants();
+            if (grantBackfill > 0) {
+                getLogger().info("Backfilled " + grantBackfill + " starter-grant permission node(s).");
+            }
             reloadAllSync();
             if (config.applyStarterPackOnFirstBoot() && !repository.starterPackApplied()) {
                 repository.applyStarterPackFromConfig();

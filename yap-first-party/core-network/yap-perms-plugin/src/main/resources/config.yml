@@ -98,6 +98,7 @@ starter-grants:
     - yapessentials.rules
     - yapessentials.motd
     - yapessentials.suicide
+    - yapportals.use
   vip:
     - yapdata.claims.wilderness
     - yapdata.kit.*
@@ -105,6 +106,7 @@ starter-grants:
     - yapessentials.hat
     - yapessentials.ptime
     - yapessentials.pweather
+    - yapessentials.keepinventory
   # Junior moderation (legacy) — prefer staff for new hires
   mod:
     - yapchat.staff

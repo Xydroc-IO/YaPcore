@@ -58,6 +58,10 @@ public final class PermsRepository {
         starter.backfillEmptyColorsFromConfig();
     }
 
+    public int backfillMissingStarterGrants() throws SQLException {
+        return starter.backfillMissingStarterGrants();
+    }
+
     public void applyStarterPackFromConfig() throws SQLException {
         starter.applyStarterPackFromConfig();
     }

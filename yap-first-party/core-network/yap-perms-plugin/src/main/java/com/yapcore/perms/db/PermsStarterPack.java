@@ -59,6 +59,56 @@ final class PermsStarterPack {
         }
     }
 
+    /**
+     * Add missing {@code starter-grants} allow nodes for groups that already exist.
+     * Does not overwrite an existing allow/deny row (operator edits stay put).
+     */
+    public int backfillMissingStarterGrants() throws SQLException {
+        int added = 0;
+        try (Connection c = database.connection()) {
+            for (Map.Entry<String, List<String>> grant : config.starterGrants().entrySet()) {
+                String group = grant.getKey() == null ? "" : grant.getKey().trim().toLowerCase();
+                if (group.isEmpty() || !groupExists(c, group)) {
+                    continue;
+                }
+                for (String node : grant.getValue()) {
+                    if (node == null || node.isBlank()) {
+                        continue;
+                    }
+                    String n = node.trim();
+                    if (hasGlobalGroupNode(c, group, n)) {
+                        continue;
+                    }
+                    repo.setGroupNode(c, group, n, true);
+                    added++;
+                }
+            }
+        }
+        return added;
+    }
+
+    private static boolean groupExists(Connection c, String group) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(
+                "SELECT 1 FROM yap_perms_groups WHERE name=? LIMIT 1")) {
+            ps.setString(1, group);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private static boolean hasGlobalGroupNode(Connection c, String group, String node) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(
+                "SELECT 1 FROM yap_perms_group_nodes WHERE group_name=? AND node=? "
+                        + "AND world='' AND server_ctx='' LIMIT 1")) {
+            ps.setString(1, group);
+            ps.setString(2, node);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
     public void applyStarterPackFromConfig() throws SQLException {
         try (Connection c = database.connection()) {
             c.setAutoCommit(false);
