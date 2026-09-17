@@ -1,15 +1,18 @@
 package com.yapcore.link.console;
 
 import com.yapcore.link.LinkServer;
+import com.yapcore.link.api.SimpleCommand;
 import com.yapcore.link.backend.BackendMonitor;
 import com.yapcore.link.session.PlayerHub;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.logging.Logger;
 
-/** Stdin console: reload, list, say, servers, stop. */
+/** Stdin console: built-ins + Link plugin commands ({@code op}, {@code hub}, …). */
 public final class LinkConsole implements Runnable {
 
     private static final Logger LOG = Logger.getLogger("YaP.Link.Console");
@@ -27,7 +30,7 @@ public final class LinkConsole implements Runnable {
 
     @Override
     public void run() {
-        LOG.info("Console ready — commands: help | reload | list | servers | say <msg> | stop");
+        LOG.info("Console ready — commands: help | reload | list | servers | say <msg> | stop | <plugin cmds>");
         try (BufferedReader in = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8))) {
             String line;
             while (running && (line = in.readLine()) != null) {
@@ -46,6 +49,7 @@ public final class LinkConsole implements Runnable {
         }
         if ("help".equalsIgnoreCase(line)) {
             LOG.info("Commands: help | reload | list | servers | say <message> | stop");
+            LOG.info("Plugin commands (when plugins-enabled): op | deop | hub | server | …");
             return;
         }
         if ("reload".equalsIgnoreCase(line)) {
@@ -97,6 +101,62 @@ public final class LinkConsole implements Runnable {
             }
             return;
         }
+        if (tryPluginCommand(line)) {
+            return;
+        }
         LOG.info("Unknown command — type help");
+    }
+
+    /** Dispatch registered Link plugin commands (e.g. {@code op Player}). */
+    private boolean tryPluginCommand(String line) {
+        if (!server.config().pluginsEnabled()) {
+            return false;
+        }
+        String trimmed = line.startsWith("/") ? line.substring(1).trim() : line.trim();
+        if (trimmed.isEmpty()) {
+            return false;
+        }
+        String[] parts = trimmed.split("\\s+");
+        String name = parts[0].toLowerCase(Locale.ROOT);
+        SimpleCommand cmd = server.plugins().command(name);
+        if (cmd == null) {
+            return false;
+        }
+        ConsoleSource source = new ConsoleSource();
+        if (!cmd.hasPermission(source)) {
+            LOG.warning("No permission for /" + name);
+            return true;
+        }
+        String[] args = parts.length > 1
+                ? Arrays.copyOfRange(parts, 1, parts.length)
+                : new String[0];
+        try {
+            cmd.execute(source, args);
+        } catch (Exception e) {
+            LOG.warning("Command /" + name + " failed: " + e.getMessage());
+        }
+        return true;
+    }
+
+    private static final class ConsoleSource implements SimpleCommand.CommandSource {
+        @Override
+        public String name() {
+            return "CONSOLE";
+        }
+
+        @Override
+        public boolean isPlayer() {
+            return false;
+        }
+
+        @Override
+        public void sendMessage(String legacyText) {
+            if (legacyText == null || legacyText.isBlank()) {
+                return;
+            }
+            // Strip § codes for log readability
+            String plain = legacyText.replaceAll("§[0-9a-fk-or]", "");
+            LOG.info(plain);
+        }
     }
 }
