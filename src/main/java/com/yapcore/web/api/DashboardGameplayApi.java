@@ -43,6 +43,7 @@ public final class DashboardGameplayApi {
     public void apiLagGuard(HttpExchange ex) throws IOException { network.apiLagGuard(ex); }
     public void apiRegions(HttpExchange ex) throws IOException { network.apiRegions(ex); }
     public void apiNpcs(HttpExchange ex) throws IOException { network.apiNpcs(ex); }
+    public void apiShops(HttpExchange ex) throws IOException { network.apiShops(ex); }
     public void apiSkills(HttpExchange ex) throws IOException { modes.apiSkills(ex); }
     public void apiFactions(HttpExchange ex) throws IOException { modes.apiFactions(ex); }
 }

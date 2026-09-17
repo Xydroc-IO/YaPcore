@@ -92,6 +92,7 @@ final class DashboardRouteRegistrar {
         http.createContext("/api/lagguard", gameplayApi::apiLagGuard);
         http.createContext("/api/regions", gameplayApi::apiRegions);
         http.createContext("/api/npcs", gameplayApi::apiNpcs);
+        http.createContext("/api/shops", gameplayApi::apiShops);
         http.createContext("/api/skills", gameplayApi::apiSkills);
         http.createContext("/api/factions", gameplayApi::apiFactions);
         http.createContext("/api/database", databaseApi::apiDatabase);

@@ -108,7 +108,7 @@ window.YapDashRegisterNpcPanels = function (YapDash) {
     if ($("npcEditAction")) $("npcEditAction").value = n.action || "";
     if ($("npcShopHint")) {
       $("npcShopHint").textContent = parsed.shop
-        ? ("Shop catalog #" + parsed.shop + " — add offers in-game: /npc shop addbuy " + n.id + " <price>")
+        ? ("Shop catalog #" + parsed.shop + " — edit offers on the Shops tab")
         : "No shop linked.";
     }
     document.querySelectorAll("#npcBody tr").forEach((tr) => {

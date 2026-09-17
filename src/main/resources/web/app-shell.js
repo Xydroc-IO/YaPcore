@@ -38,6 +38,7 @@
           { tab: "world", icon: "🌍", label: "World" },
           { tab: "regions", icon: "▣", label: "Regions" },
           { tab: "npcs", icon: "💬", label: "NPCs" },
+          { tab: "shops", icon: "🏪", label: "Shops" },
         ]},
       ],
     },

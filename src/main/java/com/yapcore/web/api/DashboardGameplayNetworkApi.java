@@ -12,11 +12,13 @@ public final class DashboardGameplayNetworkApi {
     private final DashboardGameplayIntegrationsApi integrations;
     private final DashboardGameplayMapGuardApi mapGuard;
     private final DashboardGameplayRegionsApi regions;
+    private final DashboardShopsApi shops;
 
     public DashboardGameplayNetworkApi(YaPcoreServer server, DashboardAuth auth) {
         this.integrations = new DashboardGameplayIntegrationsApi(server, auth);
         this.mapGuard = new DashboardGameplayMapGuardApi(server, auth);
         this.regions = new DashboardGameplayRegionsApi(server, auth);
+        this.shops = new DashboardShopsApi(server, auth);
     }
 
     public void apiDiscord(HttpExchange ex) throws IOException { integrations.apiDiscord(ex); }
@@ -34,4 +36,6 @@ public final class DashboardGameplayNetworkApi {
     public void apiRegions(HttpExchange ex) throws IOException { regions.apiRegions(ex); }
 
     public void apiNpcs(HttpExchange ex) throws IOException { regions.apiNpcs(ex); }
+
+    public void apiShops(HttpExchange ex) throws IOException { shops.apiShops(ex); }
 }
