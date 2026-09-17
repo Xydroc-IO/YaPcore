@@ -104,7 +104,11 @@ public final class BackendMonitor {
         }
     }
 
-    /** Pick first UP server from try order, else first UP any, else resolveTry fallback. */
+    /**
+     * Pick login backend. Preferred name (soft-switch redirect / forced-host) wins when UP.
+     * Otherwise first UP from {@code try}. When {@link LinkConfig#forceDefaultServer()} is true,
+     * never fall through to an arbitrary UP backend outside {@code try} (keeps hub-first joins).
+     */
     public LinkConfig.Backend pickLoginTarget(String preferredName) {
         LinkConfig cfg = configRef.get();
         if (preferredName != null) {
@@ -124,9 +128,11 @@ public final class BackendMonitor {
                 }
             }
         }
-        for (LinkConfig.Backend b : cfg.servers().values()) {
-            if (isUp(b.name())) {
-                return b;
+        if (!cfg.forceDefaultServer()) {
+            for (LinkConfig.Backend b : cfg.servers().values()) {
+                if (isUp(b.name())) {
+                    return b;
+                }
             }
         }
         return cfg.resolveTry();

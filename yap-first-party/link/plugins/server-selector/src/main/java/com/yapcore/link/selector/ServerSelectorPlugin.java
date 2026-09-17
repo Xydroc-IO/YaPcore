@@ -5,9 +5,11 @@ import com.yapcore.link.api.LinkPlayer;
 import com.yapcore.link.api.LinkPlugin;
 import com.yapcore.link.api.LinkProxy;
 import com.yapcore.link.api.RegisteredServer;
+import com.yapcore.link.api.SessionUnlockGate;
 import com.yapcore.link.api.SimpleCommand;
 import com.yapcore.link.api.annotation.Subscribe;
 import com.yapcore.link.api.event.PluginMessageEvent;
+import com.yapcore.link.api.event.PreConnectEvent;
 import com.yapcore.link.api.event.ServerChooseEvent;
 import com.yapcore.playerdata.ProxySessionLock;
 import com.zaxxer.hikari.HikariConfig;
@@ -20,7 +22,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -39,6 +44,8 @@ public final class ServerSelectorPlugin implements LinkPlugin {
     private Logger logger;
     private Path dataDirectory;
     private String hubServer = "lobby";
+    /** Fresh join / reconnect always lands on hub (soft-switch redirects still win in Link core). */
+    private boolean alwaysJoinHub = true;
     private boolean sessionLockEnabled = true;
     private HikariDataSource pool;
 
@@ -56,12 +63,27 @@ public final class ServerSelectorPlugin implements LinkPlugin {
         proxy.registerChannel(BUNGEE_LEGACY);
         proxy.registerCommand("hub", new HubCommand());
         proxy.registerCommand("server", "yaplink.server", new ServerCommand());
+        if (sessionLockEnabled && pool != null) {
+            SessionUnlockGate.Holder.set(new JdbcSessionUnlockGate());
+        }
         logger.info("YaP Link Server Selector ready — hub=" + hubServer
-                + " (BungeeCord Connect compat on)");
+                + " always-join-hub=" + alwaysJoinHub
+                + " (BungeeCord Connect compat on)"
+                + (SessionUnlockGate.Holder.get() != null ? " session-unlock-gate=on" : ""));
+    }
+
+    /** Fresh join and reconnect always land on hub; in-session Connect /server unchanged. */
+    @Subscribe
+    public void onPreConnect(PreConnectEvent event) {
+        if (!alwaysJoinHub) {
+            return;
+        }
+        proxy.server(hubServer).ifPresent(event::setTarget);
     }
 
     @Override
     public void onDisable() {
+        SessionUnlockGate.Holder.set(null);
         if (pool != null && !pool.isClosed()) {
             pool.close();
         }
@@ -157,6 +179,7 @@ public final class ServerSelectorPlugin implements LinkPlugin {
                 }
             }
             hubServer = props.getProperty("hub-server", hubServer);
+            alwaysJoinHub = Boolean.parseBoolean(props.getProperty("always-join-hub", "true"));
             sessionLockEnabled = Boolean.parseBoolean(props.getProperty("session-lock-enabled", "true"));
             if (sessionLockEnabled) {
                 openPool(props);
@@ -210,6 +233,49 @@ public final class ServerSelectorPlugin implements LinkPlugin {
                 return;
             }
             connect(source.asPlayer(), args[0]);
+        }
+    }
+
+    /** JDBC-backed unlock gate for soft-switch + first login. */
+    private final class JdbcSessionUnlockGate implements SessionUnlockGate {
+        @Override
+        public boolean isReady(UUID uuid, String loginServer, Predicate<String> backendUp) {
+            if (pool == null || pool.isClosed() || uuid == null) {
+                return true;
+            }
+            try (Connection c = pool.getConnection()) {
+                Optional<String> holder = ProxySessionLock.lockHolder(c, uuid);
+                if (holder.isEmpty()) {
+                    return true;
+                }
+                String h = holder.get();
+                if (loginServer != null && h.equalsIgnoreCase(loginServer)) {
+                    return true;
+                }
+                // Crashed / stopped backend left a stale lock — clear so lobby join works.
+                if (backendUp != null && !backendUp.test(h)) {
+                    ProxySessionLock.forceClear(c, uuid);
+                    logger.info("Cleared stale session lock uuid=" + uuid + " holder=" + h
+                            + " (backend down) → login=" + loginServer);
+                    return true;
+                }
+                return false;
+            } catch (Exception e) {
+                logger.warning("Session unlock check failed: " + e.getMessage());
+                return true; // fail open on DB errors so players are not soft-locked out
+            }
+        }
+
+        @Override
+        public void forceClear(UUID uuid) {
+            if (pool == null || pool.isClosed() || uuid == null) {
+                return;
+            }
+            try (Connection c = pool.getConnection()) {
+                ProxySessionLock.forceClear(c, uuid);
+            } catch (Exception e) {
+                logger.warning("Session forceClear failed: " + e.getMessage());
+            }
         }
     }
 }

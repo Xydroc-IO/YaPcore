@@ -147,7 +147,12 @@ final class ClientSessionLoginFlow {
     void beginBackendConnect(ChannelHandlerContext ctx, String preferredServer) {
         session.phase = ClientSession.Phase.CONNECTING_BACKEND;
         BackendMonitor mon = session.server.backendMonitor();
-        String pick = preferredServer != null ? preferredServer : session.forcedServerName;
+        // Soft-switch redirect tokens always win. With force-default-server (default), skip
+        // forced-host so reconnects land on try (hub/lobby), not a virtual-host override.
+        String pick = preferredServer;
+        if (pick == null && !session.server.config().forceDefaultServer()) {
+            pick = session.forcedServerName;
+        }
         LinkConfig.Backend target = mon.pickLoginTarget(pick);
         RegisteredServer reg = session.server.plugins().proxy().server(target.name()).orElse(null);
         if (reg == null && target != null) {
@@ -167,7 +172,18 @@ final class ClientSessionLoginFlow {
                 target = chosen;
             }
         }
+        prepareSessionLock(session, target.name());
         connectBackend(ctx, target);
+    }
+
+    /** Drop stale PlayerData locks when the holder backend is down (fleet restart / crash). */
+    private static void prepareSessionLock(ClientSession session, String loginServer) {
+        var gate = com.yapcore.link.api.SessionUnlockGate.Holder.get();
+        if (gate == null || session.playerId == null) {
+            return;
+        }
+        gate.isReady(session.playerId, loginServer,
+                name -> session.server.backendMonitor().isUp(name));
     }
 
     void connectBackend(ChannelHandlerContext clientCtx, LinkConfig.Backend target) {

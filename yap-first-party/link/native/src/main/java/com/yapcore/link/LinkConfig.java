@@ -111,6 +111,12 @@ public final class LinkConfig {
 
     public boolean skipDownOnForcedHost() { return bool("skip-down-on-forced-host", false); }
 
+    /**
+     * When true (default), fresh joins and reconnects use {@code try} only — never last-server
+     * memory, forced-host, or “any UP backend” failover. Soft-switch redirect tokens still apply.
+     */
+    public boolean forceDefaultServer() { return bool("force-default-server", true); }
+
     public boolean aggregatePlayerCount() { return bool("aggregate-player-count", true); }
 
     public boolean globalTabList() { return bool("global-tab-list", false); }

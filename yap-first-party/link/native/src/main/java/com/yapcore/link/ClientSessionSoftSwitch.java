@@ -96,18 +96,52 @@ final class ClientSessionSoftSwitch {
             // Wait for old backend quit + YaPPlayerData session unlock before new login.
             Channel clientRef = client;
             LinkConfig.Backend targetRef = target;
-            oldBackend.close().addListener(f -> clientRef.eventLoop().schedule(
-                    () -> {
-                        if (!clientRef.isActive() || !session.switching.get()) {
-                            return;
-                        }
-                        connectBackendForSwitch(session, clientRef, targetRef);
-                    },
-                    1000L,
-                    java.util.concurrent.TimeUnit.MILLISECONDS));
+            oldBackend.close().addListener(f -> scheduleUnlockThenConnect(session, clientRef, targetRef, 0));
         } else {
-            connectBackendForSwitch(session, client, target);
+            scheduleUnlockThenConnect(session, client, target, 0);
         }
+    }
+
+    /**
+     * Poll session unlock (or clear stale locks) without blocking the Netty event loop.
+     * ~75ms × 40 ≈ 3s max — matches PlayerData quit releasing the lock first.
+     */
+    private static void scheduleUnlockThenConnect(
+            ClientSession session, Channel client, LinkConfig.Backend target, int attempt) {
+        if (!client.isActive() || !session.switching.get()) {
+            return;
+        }
+        var gate = com.yapcore.link.api.SessionUnlockGate.Holder.get();
+        if (gate == null) {
+            if (attempt == 0) {
+                client.eventLoop().schedule(
+                        () -> scheduleUnlockThenConnect(session, client, target, 1),
+                        400L,
+                        java.util.concurrent.TimeUnit.MILLISECONDS);
+                return;
+            }
+            connectBackendForSwitch(session, client, target);
+            return;
+        }
+        boolean ready = gate.isReady(
+                session.playerId,
+                target.name(),
+                name -> session.server.backendMonitor().isUp(name));
+        if (ready) {
+            connectBackendForSwitch(session, client, target);
+            return;
+        }
+        if (attempt >= 40) {
+            LOG.info("SOFT-SWITCH unlock timeout user=" + session.username
+                    + " — force-clearing lock → " + target.name());
+            gate.forceClear(session.playerId);
+            connectBackendForSwitch(session, client, target);
+            return;
+        }
+        client.eventLoop().schedule(
+                () -> scheduleUnlockThenConnect(session, client, target, attempt + 1),
+                75L,
+                java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 
     private static void fallbackReconnect(ClientSession session, LinkConfig.Backend target, Channel client) {
