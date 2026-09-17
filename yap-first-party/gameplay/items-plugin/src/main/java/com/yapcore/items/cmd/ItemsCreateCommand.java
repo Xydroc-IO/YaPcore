@@ -178,6 +178,7 @@ final class ItemsCreateCommand {
                 gearStrength,
                 enchants);
         try {
+            plugin.suppressCatalogWatch();
             plugin.writer().writeCustom(req);
             plugin.reloadAll();
             if (replace && exists) {
@@ -186,6 +187,10 @@ final class ItemsCreateCommand {
             } else {
                 sender.sendMessage(LEGACY.deserialize(cfg.msgCreated().replace("{id}", id)));
                 sender.sendMessage("yapitems:created=" + id);
+            }
+            if (plugin.catalogPropagator() != null && plugin.catalogPropagator().findYapRoot().isPresent()) {
+                sender.sendMessage(LEGACY.deserialize(
+                        "&7Synced to network catalog — other fleet servers pick it up automatically."));
             }
             if (sender instanceof Player player) {
                 plugin.factory().create(id, 1).ifPresent(stack ->

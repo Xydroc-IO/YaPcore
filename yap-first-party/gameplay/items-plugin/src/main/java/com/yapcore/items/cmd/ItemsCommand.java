@@ -262,6 +262,7 @@ public final class ItemsCommand implements CommandExecutor, TabCompleter {
         }
         String duration = ItemWriter.normalizeCooldown(args[2]);
         try {
+            plugin.suppressCatalogWatch();
             var written = plugin.writer().setAbilityCooldown(id, duration);
             if (written.isEmpty()) {
                 sender.sendMessage(LEGACY.deserialize(
@@ -291,6 +292,7 @@ public final class ItemsCommand implements CommandExecutor, TabCompleter {
             sender.sendMessage(LEGACY.deserialize("&cOnly items under items/custom/ can be deleted (or file missing)."));
             return true;
         }
+        plugin.suppressCatalogWatch();
         if (!plugin.writer().deleteCustom(id)) {
             sender.sendMessage(LEGACY.deserialize("&cDelete failed for &f" + id));
             return true;

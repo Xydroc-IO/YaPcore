@@ -20,6 +20,8 @@ public final class ItemsConfig {
     private final String msgCreated;
     private final String msgDeleted;
     private final String msgReloaded;
+    private final boolean fleetPropagateCustom;
+    private final boolean fleetWatchCatalog;
 
     public ItemsConfig(FileConfiguration cfg) {
         this.cmdMin = cfg.getInt("cmd-min", 12000);
@@ -27,6 +29,8 @@ public final class ItemsConfig {
         this.registerCombatService = cfg.getBoolean("register-combat-service", true);
         this.furnitureMaxPerChunk = cfg.getInt("furniture.max-per-chunk", 64);
         this.placeRequiresSneak = cfg.getBoolean("furniture.place-requires-sneak", true);
+        this.fleetPropagateCustom = cfg.getBoolean("fleet.propagate-custom", true);
+        this.fleetWatchCatalog = cfg.getBoolean("fleet.watch-catalog", true);
         this.msgUnknown = cfg.getString("messages.unknown-item", "&cUnknown item: &f{id}");
         this.msgGiven = cfg.getString("messages.given", "&aGave &f{amount}x {id}&a to &f{player}");
         this.msgTaken = cfg.getString("messages.taken", "&aRemoved &f{amount}x {id}&a from &f{player}");
@@ -97,6 +101,16 @@ public final class ItemsConfig {
 
     public String msgReloaded() {
         return msgReloaded;
+    }
+
+    /** Push custom YAML into root catalog + all local fleet instance trees (default on). */
+    public boolean fleetPropagateCustom() {
+        return fleetPropagateCustom;
+    }
+
+    /** Poll items/ for catalog sync from other backends and auto-reload (default on). */
+    public boolean fleetWatchCatalog() {
+        return fleetWatchCatalog;
     }
 
     public boolean inCmdRange(int cmd) {

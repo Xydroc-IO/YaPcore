@@ -9,13 +9,18 @@ import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
 
-/** Writes wizard-created items under items/custom/. */
+/** Writes wizard-created items under items/custom/ and syncs them to the fleet catalog. */
 public final class ItemWriter {
 
     private final JavaPlugin plugin;
+    private ItemCatalogPropagator propagator;
 
     public ItemWriter(JavaPlugin plugin) {
         this.plugin = plugin;
+    }
+
+    public void setPropagator(ItemCatalogPropagator propagator) {
+        this.propagator = propagator;
     }
 
     public File writeCustom(ItemCreateRequest req) throws IOException {
@@ -79,6 +84,9 @@ public final class ItemWriter {
             yaml.set(base + ".gear.strength", req.gearStrength());
         }
         yaml.save(file);
+        if (propagator != null) {
+            propagator.publishCustomFile(file.toPath());
+        }
         return file;
     }
 
@@ -91,8 +99,17 @@ public final class ItemWriter {
     }
 
     public boolean deleteCustom(String id) {
-        File file = new File(plugin.getDataFolder(), "items/custom/" + id.toLowerCase(Locale.ROOT) + ".yml");
-        return file.isFile() && file.delete();
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        String key = id.toLowerCase(Locale.ROOT);
+        File file = new File(plugin.getDataFolder(), "items/custom/" + key + ".yml");
+        boolean local = file.isFile() && file.delete();
+        if (propagator != null) {
+            int n = propagator.deleteCustomEverywhere(key);
+            return local || n > 0;
+        }
+        return local;
     }
 
     /**
@@ -140,6 +157,10 @@ public final class ItemWriter {
             return java.util.Optional.empty();
         }
         yaml.save(found);
+        if (propagator != null && found.getParentFile() != null
+                && "custom".equalsIgnoreCase(found.getParentFile().getName())) {
+            propagator.publishCustomFile(found.toPath());
+        }
         return java.util.Optional.of(found);
     }
 

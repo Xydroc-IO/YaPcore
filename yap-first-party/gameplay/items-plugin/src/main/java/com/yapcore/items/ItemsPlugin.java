@@ -11,6 +11,8 @@ import com.yapcore.items.gui.ItemsGuiListener;
 import com.yapcore.items.item.ItemFactory;
 import com.yapcore.items.item.ItemRegistry;
 import com.yapcore.items.item.ItemWriter;
+import com.yapcore.items.item.ItemCatalogPropagator;
+import com.yapcore.items.item.ItemCatalogWatcher;
 import com.yapcore.items.item.RainbowNameService;
 import com.yapcore.items.item.RecipeRegistrar;
 import com.yapcore.items.listener.ItemsListener;
@@ -38,6 +40,8 @@ public final class ItemsPlugin extends JavaPlugin {
     private ItemServiceImpl itemService;
     private ItemsPermissions permissions;
     private RainbowNameService rainbowNames;
+    private ItemCatalogPropagator catalogPropagator;
+    private ItemCatalogWatcher catalogWatcher;
 
     @Override
     public void onEnable() {
@@ -48,6 +52,9 @@ public final class ItemsPlugin extends JavaPlugin {
         this.registry = new ItemRegistry(this, config);
         this.factory = new ItemFactory(this, keys, registry);
         this.writer = new ItemWriter(this);
+        this.catalogPropagator = new ItemCatalogPropagator(
+                getDataFolder().toPath(), getLogger(), config.fleetPropagateCustom());
+        this.writer.setPropagator(catalogPropagator);
         this.cooldowns = new CooldownService();
         this.abilities = new AbilityEngine(this, config, factory, cooldowns);
         this.furniture = new FurnitureService(this, config, keys, factory);
@@ -79,11 +86,24 @@ public final class ItemsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ItemsListener(this, abilities, furniture), this);
         getServer().getPluginManager().registerEvents(new ItemsGuiListener(this), this);
 
-        getLogger().info("YaPItems enabled — " + registry.size() + " items");
+        if (config.fleetWatchCatalog()) {
+            this.catalogWatcher = new ItemCatalogWatcher(
+                    this, new File(getDataFolder(), "items").toPath(), this::reloadAll);
+            this.catalogWatcher.start();
+        }
+
+        getLogger().info("YaPItems enabled — " + registry.size() + " items"
+                + (catalogPropagator.findYapRoot().isPresent()
+                ? " (fleet catalog sync on)"
+                : ""));
     }
 
     @Override
     public void onDisable() {
+        if (catalogWatcher != null) {
+            catalogWatcher.stop();
+            catalogWatcher = null;
+        }
         if (rainbowNames != null) {
             rainbowNames.stop();
         }
@@ -102,10 +122,26 @@ public final class ItemsPlugin extends JavaPlugin {
     public void reloadAll() {
         reloadConfig();
         this.config = new ItemsConfig(getConfig());
+        if (catalogPropagator != null) {
+            this.catalogPropagator = new ItemCatalogPropagator(
+                    getDataFolder().toPath(), getLogger(), config.fleetPropagateCustom());
+            writer.setPropagator(catalogPropagator);
+        }
         registry.reload();
         permissions.sync(registry);
         recipes.registerAll();
         furniture.load();
+    }
+
+    /** Call before local YAML writes so the catalog watcher does not double-reload. */
+    public void suppressCatalogWatch() {
+        if (catalogWatcher != null) {
+            catalogWatcher.suppressLocalWrite();
+        }
+    }
+
+    public ItemCatalogPropagator catalogPropagator() {
+        return catalogPropagator;
     }
 
     private void ensureDefaultItems() {
