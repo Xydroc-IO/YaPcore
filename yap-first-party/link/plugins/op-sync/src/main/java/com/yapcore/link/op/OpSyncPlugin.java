@@ -73,8 +73,9 @@ public final class OpSyncPlugin implements LinkPlugin {
             return;
         }
         player.grantPermission("yaplink.*");
-        pushToServer(event.server(), player.uuid(), player.username(), true);
-        // Persist real (online) UUID
+        // Do NOT send yap:op here — PostConnect fires at Login Success, before
+        // configuration/play. A play custom_payload (id 22) in config kicks Folia with
+        // "unknown packet id 22". YaPAdmin applies OP on PlayerJoin from network-ops.json.
         try {
             addOp(player.uuid(), player.username());
         } catch (IOException e) {
