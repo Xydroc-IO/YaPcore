@@ -59,9 +59,15 @@ public final class DashboardAccessApi {
                     List<String> ops = DashboardAccessPermsCommands.parseList(body.get("ops"));
                     cfg.setOps(ops);
                     cfg.save();
-                    for (String name : ops) {
-                        server.executeCommand("op " + name);
+                    try {
+                        com.yapcore.paper.NetworkOps.syncFromChassisOps(root, ops);
+                        for (String name : ops) {
+                            com.yapcore.paper.NetworkOps.addName(root, name);
+                        }
+                    } catch (Exception e) {
+                        // best-effort
                     }
+                    applyNetworkOpAll(ops, true);
                     DashboardHttp.json(ex, 200, Map.of("ok", true, "ops", ops));
                 }
                 case "save-auto-op" -> {
@@ -97,13 +103,17 @@ public final class DashboardAccessApi {
                         return;
                     }
                     List<String> ops = new ArrayList<>(cfg.getOps());
-                    if (!ops.contains(p)) {
+                    if (ops.stream().noneMatch(n -> n.equalsIgnoreCase(p))) {
                         ops.add(p);
                         cfg.setOps(ops);
                         cfg.save();
                     }
-                    String result = server.executeCommand("op " + p);
-                    DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result, "ops", ops));
+                    try {
+                        com.yapcore.paper.NetworkOps.addName(root, p);
+                    } catch (Exception ignored) {
+                    }
+                    applyNetworkOpAll(List.of(p), true);
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "result", "network op " + p, "ops", ops));
                 }
                 case "deop" -> {
                     String p = body.getOrDefault("player", "").trim();
@@ -115,8 +125,12 @@ public final class DashboardAccessApi {
                     ops.removeIf(n -> n.equalsIgnoreCase(p));
                     cfg.setOps(ops);
                     cfg.save();
-                    String result = server.executeCommand("deop " + p);
-                    DashboardHttp.json(ex, 200, Map.of("ok", true, "result", result == null ? "" : result, "ops", ops));
+                    try {
+                        com.yapcore.paper.NetworkOps.removeName(root, p);
+                    } catch (Exception ignored) {
+                    }
+                    applyNetworkOpAll(List.of(p), false);
+                    DashboardHttp.json(ex, 200, Map.of("ok", true, "result", "network deop " + p, "ops", ops));
                 }
                 default -> {
                     String cmd = DashboardAccessPermsCommands.permsCommand(action, body);
@@ -339,5 +353,36 @@ public final class DashboardAccessApi {
             cats.add(extra);
         }
         return cats;
+    }
+
+    /** Op/deop on every running fleet instance + re-seed each instance ops.json. */
+    private void applyNetworkOpAll(List<String> names, boolean op) {
+        String verb = op ? "op" : "deop";
+        try {
+            var fleet = server.fleet();
+            if (fleet != null && fleet.isEnabled()) {
+                for (var inst : fleet.store().instances()) {
+                    try {
+                        com.yapcore.paper.PaperOps.ensure(
+                                com.yapcore.fleet.local.InstanceLayout.dir(server.getRootDir(), inst),
+                                server.getConfig());
+                    } catch (Exception ignored) {
+                    }
+                    try {
+                        for (String name : names) {
+                            fleet.dispatch(inst.id(), verb + " " + name);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        for (String name : names) {
+            try {
+                server.executeCommand(verb + " " + name);
+            } catch (Exception ignored) {
+            }
+        }
     }
 }

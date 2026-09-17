@@ -10,6 +10,8 @@ Built by `scripts/build-default-resourcepack.sh` (Java) and
 - **YaP Water / weather** (same overlay) — still/flow, underwater, drips (`scripts/generate-yap-water.py`)
 - **YaP Foliage** (same overlay) — denser Faithful-based leaf cutouts + `strict_cutout` mcmeta
   (`scripts/generate-yap-foliage.py`)
+- **YaP Portals** (`yap-portals/`) — multi-color animated portal sheets on stained glass
+  (`scripts/generate-yap-portals.py`) for YaPPortals
 
 `config/server.properties` → `resource-pack-file=yapcore-default.zip` (Java)
 and `resource-pack-bedrock-file=yapcore-default.mcpack` (Bedrock).
@@ -31,11 +33,13 @@ the Faithful License (credit + license link required; no paywall).
 YaP-authored overlays in this tree (skies, water, foliage, etc.) follow YaPcore’s
 **[GPLv3](../LICENSE)** — [docs/start/LICENSING.md](../docs/start/LICENSING.md).
 
-## YaP Skies + Water + Foliage
+## YaP Skies + Water + Foliage + Portals
 
 First-party. Skies: `scripts/generate-yap-skies.py`. Water/weather:
 `scripts/generate-yap-water.py`. Foliage: `scripts/generate-yap-foliage.py`
-(densifies Faithful leaves, binary alpha, `strict_cutout`).
+(densifies Faithful leaves, binary alpha, `strict_cutout`). Portals:
+`scripts/generate-yap-portals.py` — animated dye-colored portal sheets on
+stained glass / panes for YaPPortals (vanilla only has one nether-portal look).
 No third-party photos or Complementary/BSL assets.
 
 Vanilla clients get the sun / moon / clouds textures plus improved

@@ -47,11 +47,33 @@ public final class PaperOps {
         Map<UUID, OpRow> byUuid = new LinkedHashMap<>();
         loadExisting(opsFile, byUuid);
 
-        if (names.isEmpty()) {
-            // Do not touch an existing ops.json — GUI / Start must not rewrite OP state.
+        // Merge network-wide ops (chassis config/network-ops.json) when resolvable.
+        NetworkOps.findRoot(paperDir).ifPresent(root -> {
+            try {
+                NetworkOps.syncFromChassisOps(root, names);
+                for (NetworkOps.Entry e : NetworkOps.load(root).values()) {
+                    OpRow prev = byUuid.get(e.uuid());
+                    int level = prev != null ? prev.level() : 4;
+                    boolean bypass = prev != null && prev.bypass();
+                    byUuid.put(e.uuid(), new OpRow(e.uuid(), e.name(), level, bypass));
+                }
+            } catch (IOException ex) {
+                LOG.warning("network-ops merge skipped: " + ex.getMessage());
+            }
+        });
+
+        if (names.isEmpty() && byUuid.isEmpty()) {
             LOG.info("auto-op=" + config.isAutoOp()
                     + " (joiners " + (config.isAutoOp() ? "will be OP'd" : "need /op")
-                    + "; left " + byUuid.size() + " existing op uuid(s) untouched)");
+                    + "; left ops.json untouched)");
+            return;
+        }
+        if (names.isEmpty()) {
+            // Still rewrite if network-ops added UUIDs above.
+            if (!byUuid.isEmpty()) {
+                writeOps(opsFile, byUuid);
+                LOG.info("Merged network-ops into ops.json (" + byUuid.size() + " uuid(s)) → " + opsFile);
+            }
             return;
         }
 

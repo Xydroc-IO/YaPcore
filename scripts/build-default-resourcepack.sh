@@ -43,17 +43,24 @@ fi
 python3 "$ROOT/scripts/generate-yap-water.py"
 # Keep Faithful 64x foliage — strip any leftover YaP leaf/grass stomps.
 python3 "$ROOT/scripts/generate-yap-foliage.py"
+# Colored portal sheets for stained glass (YaPPortals multi-color look).
+python3 "$ROOT/scripts/generate-yap-portals.py"
 if [ -d "$SKIES_DIR/assets" ]; then
   mkdir -p "$STAGE/assets"
   cp -a "$SKIES_DIR/assets/." "$STAGE/assets/"
 fi
+PORTALS_DIR="$PACKS/yap-portals"
+if [ -d "$PORTALS_DIR/assets" ]; then
+  mkdir -p "$STAGE/assets"
+  cp -a "$PORTALS_DIR/assets/." "$STAGE/assets/"
+fi
 
-DESC="YaPcore default — Faithful 64x + YaP Skies + Water"
+DESC="YaPcore default — Faithful 64x + YaP Skies + Water + Portals"
 ITEMS_DIR="$PACKS/yap-items"
 if [ -d "$ITEMS_DIR/assets" ]; then
   mkdir -p "$STAGE/assets"
   cp -a "$ITEMS_DIR/assets/." "$STAGE/assets/"
-  DESC="YaPcore default — Faithful 64x + YaP Skies + Water + YaPItems"
+  DESC="$DESC + YaPItems"
 fi
 
 # Phase 4: Bedrock catalog port block textures/models (CMD item models for Folia displays).
