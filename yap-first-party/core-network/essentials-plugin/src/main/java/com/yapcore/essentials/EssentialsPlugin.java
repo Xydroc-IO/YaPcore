@@ -101,6 +101,10 @@ public final class EssentialsPlugin extends JavaPlugin {
         return config;
     }
 
+    public SpawnStore spawnStore() {
+        return spawnStore;
+    }
+
     public WaterWaves waterWaves() {
         return waterWaves;
     }

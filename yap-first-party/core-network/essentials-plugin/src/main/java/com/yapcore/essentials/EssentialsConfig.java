@@ -103,6 +103,19 @@ public final class EssentialsConfig {
         connectionTimeoutMs = c.getLong("database.connection-timeout-ms", connectionTimeoutMs);
 
         serverId = c.getString("server-id", serverId);
+        // Fleet writes yap-server-id.txt so a copied lobby seed cannot keep server-id: lobby on survival.
+        try {
+            java.nio.file.Path hint = plugin.getDataFolder().toPath().getParent().getParent()
+                    .resolve("yap-server-id.txt");
+            if (java.nio.file.Files.isRegularFile(hint)) {
+                String fromHint = java.nio.file.Files.readString(hint).trim();
+                if (!fromHint.isEmpty()) {
+                    serverId = fromHint;
+                }
+            }
+        } catch (Exception ignored) {
+            // keep yaml value
+        }
         spawnScope = c.getString("spawn.scope", spawnScope);
         spawnPersistDb = c.getBoolean("spawn.persist-db", spawnPersistDb);
 
