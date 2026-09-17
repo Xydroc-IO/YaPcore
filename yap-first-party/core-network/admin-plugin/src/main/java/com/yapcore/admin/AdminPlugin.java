@@ -5,6 +5,7 @@ import com.yapcore.admin.cmd.AdminCommands;
 import com.yapcore.admin.cmd.YapPluginsCommand;
 import com.yapcore.admin.gui.AdminMenuListener;
 import com.yapcore.admin.gui.AdminMenus;
+import com.yapcore.admin.op.NetworkOpSync;
 import com.yapcore.admin.session.AdminSession;
 import com.yapcore.admin.staff.StaffChannel;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -19,6 +20,7 @@ public final class AdminPlugin extends JavaPlugin {
     private AdminMenus menus;
     private AdminActions actions;
     private StaffChannel staffChannel;
+    private NetworkOpSync networkOpSync;
     private final Map<UUID, AdminSession> sessions = new ConcurrentHashMap<>();
 
     @Override
@@ -43,11 +45,18 @@ public final class AdminPlugin extends JavaPlugin {
         }
         staffChannel = new StaffChannel(this);
         staffChannel.register();
-        getLogger().info("YaPAdmin ready (/yapadmin, /yapplugins, channel " + StaffChannel.CHANNEL + ").");
+        networkOpSync = new NetworkOpSync(this);
+        networkOpSync.register();
+        getLogger().info("YaPAdmin ready (/yapadmin, /yapplugins, channel " + StaffChannel.CHANNEL
+                + ", network OP sync).");
     }
 
     @Override
     public void onDisable() {
+        if (networkOpSync != null) {
+            networkOpSync.unregister();
+            networkOpSync = null;
+        }
         if (staffChannel != null) {
             staffChannel.unregister();
             staffChannel = null;

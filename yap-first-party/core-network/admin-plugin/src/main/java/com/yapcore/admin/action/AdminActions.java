@@ -1,5 +1,6 @@
 package com.yapcore.admin.action;
 
+import com.yapcore.admin.AdminGearKits;
 import com.yapcore.admin.AdminPlugin;
 import com.yapcore.moderation.ModerationService;
 import com.yapcore.sched.YapSched;
@@ -119,6 +120,41 @@ public final class AdminActions {
         });
         if (!target.equals(admin)) {
             admin.sendMessage("§aGave §f" + qty + "× " + pretty(material) + " §ato §f" + target.getName() + "§a.");
+        }
+    }
+
+    /** Give a full armor / weapon / tool gear kit in one Folia entity pass. */
+    public void giveGearKit(Player admin, Player target, AdminGearKits.GearKit kit) {
+        if (!admin.hasPermission("yapadmin.give")) {
+            YapMessages.noPermission(admin, "yapadmin.give");
+            return;
+        }
+        if (kit == null || kit.items().isEmpty()) {
+            admin.sendMessage("§cEmpty gear kit.");
+            return;
+        }
+        YapSched.entity(plugin, target, () -> {
+            int pieces = 0;
+            for (AdminGearKits.GearItem item : kit.items()) {
+                if (item.material() == null || !item.material().isItem()) {
+                    continue;
+                }
+                int remaining = Math.max(1, item.amount());
+                while (remaining > 0) {
+                    int give = Math.min(remaining, item.material().getMaxStackSize());
+                    ItemStack piece = new ItemStack(item.material(), give);
+                    var leftover = target.getInventory().addItem(piece);
+                    leftover.values().forEach(left ->
+                            target.getWorld().dropItemNaturally(target.getLocation(), left));
+                    remaining -= give;
+                }
+                pieces++;
+            }
+            target.sendMessage("§aReceived gear kit §f" + kit.displayName()
+                    + " §7(" + pieces + " stacks)§a.");
+        });
+        if (!target.equals(admin)) {
+            admin.sendMessage("§aGave gear kit §f" + kit.displayName() + " §ato §f" + target.getName() + "§a.");
         }
     }
 

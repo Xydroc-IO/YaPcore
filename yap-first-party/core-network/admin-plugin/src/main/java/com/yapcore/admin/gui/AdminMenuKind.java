@@ -9,6 +9,7 @@ public enum AdminMenuKind {
     SPEED_PICKER,
     GIVE_HUB,
     GIVE_PRESETS,
+    GIVE_GEAR,
     GIVE_KITS,
     GIVE_MATERIALS,
     SERVER_OPS,

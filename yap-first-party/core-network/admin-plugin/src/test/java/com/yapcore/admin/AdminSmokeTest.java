@@ -25,11 +25,26 @@ class AdminSmokeTest {
         assertEquals(List.of(100, 1000, 10000, 100000), config.moneyAmounts());
         assertTrue(config.broadcastPresets().isEmpty());
         assertTrue(config.presets().isEmpty());
+        assertFalse(config.gearKits().isEmpty());
+        assertTrue(config.gearKits().stream().anyMatch(k -> "diamond_armor".equals(k.id())));
 
         AdminConfig.ItemPreset preset = new AdminConfig.ItemPreset("sword", Material.DIAMOND_SWORD, 1, "Sword");
         assertEquals("sword", preset.id());
         assertEquals(Material.DIAMOND_SWORD, preset.material());
         assertEquals(1, preset.amount());
+    }
+
+    @Test
+    void gearKitBuiltinsCoverArmorAndWeapons() {
+        var kits = AdminGearKits.builtins();
+        assertTrue(kits.stream().anyMatch(k -> k.id().endsWith("_armor")));
+        assertTrue(kits.stream().anyMatch(k -> k.id().endsWith("_weapons")));
+        AdminGearKits.GearKit diamond = kits.stream()
+                .filter(k -> "diamond_armor".equals(k.id()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(4, diamond.items().size());
+        assertEquals(Material.DIAMOND_CHESTPLATE, diamond.icon());
     }
 
     @Test

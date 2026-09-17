@@ -23,6 +23,7 @@ public final class AdminMenus {
     public static final int HUB_COMBAT = AdminMenuSlots.HUB_COMBAT;
 
     public static final int GIVE_PRESETS = AdminMenuSlots.GIVE_PRESETS;
+    public static final int GIVE_GEAR = AdminMenuSlots.GIVE_GEAR;
     public static final int GIVE_KITS = AdminMenuSlots.GIVE_KITS;
     public static final int GIVE_MATS = AdminMenuSlots.GIVE_MATS;
     public static final int GIVE_AMOUNT = AdminMenuSlots.GIVE_AMOUNT;
@@ -92,6 +93,10 @@ public final class AdminMenus {
 
     public void openGivePresets(Player player) {
         give.openGivePresets(player);
+    }
+
+    public void openGiveGear(Player player) {
+        give.openGiveGear(player);
     }
 
     public void openGiveKits(Player player) {

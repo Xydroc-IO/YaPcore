@@ -60,6 +60,7 @@ public final class AdminMenuListener implements Listener {
             case SPEED_PICKER -> core.handleSpeedPicker(player, holder, slot);
             case GIVE_HUB -> give.handleGiveHub(player, slot);
             case GIVE_PRESETS -> give.handleGivePresets(player, slot, clicked, shift);
+            case GIVE_GEAR -> give.handleGiveGear(player, slot, clicked);
             case GIVE_KITS -> give.handleGiveKits(player, slot, clicked);
             case GIVE_MATERIALS -> give.handleGiveMaterials(player, slot, clicked);
             case SERVER_OPS -> ops.handleServerOps(player, slot, clicked);

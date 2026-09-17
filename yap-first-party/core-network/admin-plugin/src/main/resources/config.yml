@@ -79,3 +79,58 @@ presets:
     material: FIREWORK_ROCKET
     amount: 64
     name: "Fireworks"
+
+# Armor / weapon / tool sets for Give → Armor & weapons
+gear-kits:
+  - id: leather_armor
+    name: "Leather Armor"
+    icon: LEATHER_CHESTPLATE
+    items: [LEATHER_HELMET, LEATHER_CHESTPLATE, LEATHER_LEGGINGS, LEATHER_BOOTS]
+  - id: chainmail_armor
+    name: "Chainmail Armor"
+    icon: CHAINMAIL_CHESTPLATE
+    items: [CHAINMAIL_HELMET, CHAINMAIL_CHESTPLATE, CHAINMAIL_LEGGINGS, CHAINMAIL_BOOTS]
+  - id: iron_armor
+    name: "Iron Armor"
+    icon: IRON_CHESTPLATE
+    items: [IRON_HELMET, IRON_CHESTPLATE, IRON_LEGGINGS, IRON_BOOTS]
+  - id: gold_armor
+    name: "Gold Armor"
+    icon: GOLDEN_CHESTPLATE
+    items: [GOLDEN_HELMET, GOLDEN_CHESTPLATE, GOLDEN_LEGGINGS, GOLDEN_BOOTS]
+  - id: diamond_armor
+    name: "Diamond Armor"
+    icon: DIAMOND_CHESTPLATE
+    items: [DIAMOND_HELMET, DIAMOND_CHESTPLATE, DIAMOND_LEGGINGS, DIAMOND_BOOTS]
+  - id: netherite_armor
+    name: "Netherite Armor"
+    icon: NETHERITE_CHESTPLATE
+    items: [NETHERITE_HELMET, NETHERITE_CHESTPLATE, NETHERITE_LEGGINGS, NETHERITE_BOOTS]
+  - id: iron_weapons
+    name: "Iron Weapons"
+    icon: IRON_SWORD
+    items: [IRON_SWORD, IRON_AXE, BOW, SHIELD, "ARROW:64"]
+  - id: diamond_weapons
+    name: "Diamond Weapons"
+    icon: DIAMOND_SWORD
+    items: [DIAMOND_SWORD, DIAMOND_AXE, BOW, SHIELD, "ARROW:64"]
+  - id: netherite_weapons
+    name: "Netherite Weapons"
+    icon: NETHERITE_SWORD
+    items: [NETHERITE_SWORD, NETHERITE_AXE, BOW, CROSSBOW, SHIELD, "ARROW:64"]
+  - id: archery
+    name: "Archery Kit"
+    icon: BOW
+    items: [BOW, CROSSBOW, "ARROW:64", "SPECTRAL_ARROW:16", SHIELD]
+  - id: iron_tools
+    name: "Iron Tools"
+    icon: IRON_PICKAXE
+    items: [IRON_PICKAXE, IRON_AXE, IRON_SHOVEL, IRON_HOE]
+  - id: diamond_tools
+    name: "Diamond Tools"
+    icon: DIAMOND_PICKAXE
+    items: [DIAMOND_PICKAXE, DIAMOND_AXE, DIAMOND_SHOVEL, DIAMOND_HOE]
+  - id: netherite_tools
+    name: "Netherite Tools"
+    icon: NETHERITE_PICKAXE
+    items: [NETHERITE_PICKAXE, NETHERITE_AXE, NETHERITE_SHOVEL, NETHERITE_HOE]

@@ -1,6 +1,7 @@
 package com.yapcore.admin.gui;
 
 import com.yapcore.admin.AdminConfig;
+import com.yapcore.admin.AdminGearKits;
 import com.yapcore.admin.AdminPlugin;
 import com.yapcore.admin.session.AdminSession;
 import org.bukkit.Material;
@@ -28,6 +29,7 @@ final class AdminMenuClickGive {
         AdminSession session = plugin.session(player.getUniqueId());
         switch (slot) {
             case AdminMenus.GIVE_PRESETS -> plugin.menus().openGivePresets(player);
+            case AdminMenus.GIVE_GEAR -> plugin.menus().openGiveGear(player);
             case AdminMenus.GIVE_KITS -> plugin.menus().openGiveKits(player);
             case AdminMenus.GIVE_MATS -> plugin.menus().openGiveMaterials(player);
             case AdminMenus.GIVE_AMOUNT -> {
@@ -38,6 +40,33 @@ final class AdminMenuClickGive {
             default -> {
             }
         }
+    }
+
+    void handleGiveGear(Player player, int slot, ItemStack clicked) {
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.menus().openGiveHub(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        if (clicked == null || clicked.getType().isAir() || clicked.getType() == Material.GRAY_STAINED_GLASS_PANE) {
+            return;
+        }
+        String name = AdminMenuItemSupport.plainName(clicked);
+        AdminGearKits.GearKit match = null;
+        for (AdminGearKits.GearKit kit : plugin.adminConfig().gearKits()) {
+            if (kit.displayName().equalsIgnoreCase(name) || kit.icon() == clicked.getType()) {
+                match = kit;
+                break;
+            }
+        }
+        if (match == null) {
+            return;
+        }
+        Player target = plugin.actions().resolveGiveTarget(player);
+        plugin.actions().giveGearKit(player, target, match);
     }
 
     void handleGivePresets(Player player, int slot, ItemStack clicked, boolean shift) {

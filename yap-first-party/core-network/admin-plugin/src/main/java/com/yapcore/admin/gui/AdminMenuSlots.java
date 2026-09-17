@@ -21,9 +21,10 @@ final class AdminMenuSlots {
     static final int HUB_COMBAT = 34;
 
     // Give hub
-    static final int GIVE_PRESETS = 20;
-    static final int GIVE_KITS = 22;
-    static final int GIVE_MATS = 24;
+    static final int GIVE_PRESETS = 19;
+    static final int GIVE_GEAR = 21;
+    static final int GIVE_KITS = 23;
+    static final int GIVE_MATS = 25;
     static final int GIVE_AMOUNT = 31;
     static final int GIVE_TARGET = 40;
 

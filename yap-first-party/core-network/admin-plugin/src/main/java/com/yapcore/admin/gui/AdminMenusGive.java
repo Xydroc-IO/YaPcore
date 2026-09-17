@@ -1,6 +1,7 @@
 package com.yapcore.admin.gui;
 
 import com.yapcore.admin.AdminConfig;
+import com.yapcore.admin.AdminGearKits;
 import com.yapcore.admin.AdminPlugin;
 import com.yapcore.admin.action.AdminActions;
 import com.yapcore.admin.session.AdminSession;
@@ -13,6 +14,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -44,8 +46,10 @@ final class AdminMenusGive {
                 "Amount chip: " + session.giveAmount()));
         inv.setItem(AdminMenuSlots.GIVE_PRESETS, AdminMenuHolder.icon(Material.DIAMOND, "Curated presets",
                 "Common admin items"));
+        inv.setItem(AdminMenuSlots.GIVE_GEAR, AdminMenuHolder.icon(Material.DIAMOND_CHESTPLATE, "Armor & weapons",
+                "Full armor sets · weapon kits · tools"));
         if (plugin.actions().pluginEnabled("YaPPlayerData")) {
-            inv.setItem(AdminMenuSlots.GIVE_KITS, AdminMenuHolder.icon(Material.BUNDLE, "Kits",
+            inv.setItem(AdminMenuSlots.GIVE_KITS, AdminMenuHolder.icon(Material.BUNDLE, "Player kits",
                     "starter · adventurer · vip"));
         }
         inv.setItem(AdminMenuSlots.GIVE_MATS, AdminMenuHolder.icon(Material.COMPASS, "Material browser",
@@ -82,6 +86,40 @@ final class AdminMenusGive {
                     "Id: " + preset.id());
             icon.setAmount(Math.min(64, Math.max(1, preset.amount())));
             inv.setItem(slot, icon);
+            slot++;
+        }
+        player.openInventory(inv);
+    }
+
+    void openGiveGear(Player player) {
+        AdminMenuHolder holder = new AdminMenuHolder(AdminMenuKind.GIVE_GEAR);
+        Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Armor & weapons", NamedTextColor.AQUA));
+        holder.bind(inv);
+        AdminMenuHolder.fillAll(inv);
+        inv.setItem(AdminMenuSlots.SLOT_INFO, AdminMenuHolder.icon(Material.DIAMOND_CHESTPLATE, "Gear kits",
+                "Click to give full set to target"));
+        inv.setItem(AdminMenuSlots.SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
+        inv.setItem(AdminMenuSlots.SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
+
+        int slot = 9;
+        for (AdminGearKits.GearKit kit : plugin.adminConfig().gearKits()) {
+            if (slot >= 44) {
+                break;
+            }
+            while (slot % 9 == 0 || slot % 9 == 8) {
+                slot++;
+            }
+            List<String> lore = new ArrayList<>();
+            lore.add(kit.items().size() + " item(s)");
+            lore.add("Id: " + kit.id());
+            for (AdminGearKits.GearItem item : kit.items()) {
+                if (lore.size() >= 8) {
+                    lore.add("…");
+                    break;
+                }
+                lore.add(item.amount() + "× " + AdminActions.pretty(item.material()));
+            }
+            inv.setItem(slot, AdminMenuHolder.icon(kit.icon(), kit.displayName(), lore.toArray(String[]::new)));
             slot++;
         }
         player.openInventory(inv);

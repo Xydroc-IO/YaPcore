@@ -16,6 +16,7 @@ public final class AdminConfig {
     private List<Integer> moneyAmounts = List.of(100, 1000, 10000, 100000);
     private List<String> broadcastPresets = List.of();
     private List<ItemPreset> presets = List.of();
+    private List<AdminGearKits.GearKit> gearKits = AdminGearKits.builtins();
 
     public void reload(FileConfiguration c) {
         kits = List.copyOf(c.getStringList("kits"));
@@ -59,6 +60,7 @@ public final class AdminConfig {
             }
         }
         presets = List.copyOf(loaded);
+        gearKits = AdminGearKits.load(c);
     }
 
     public List<String> kits() {
@@ -75,5 +77,9 @@ public final class AdminConfig {
 
     public List<ItemPreset> presets() {
         return presets;
+    }
+
+    public List<AdminGearKits.GearKit> gearKits() {
+        return gearKits;
     }
 }

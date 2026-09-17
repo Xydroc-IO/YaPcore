@@ -415,6 +415,7 @@ public final class YapPluginsCommand implements CommandExecutor, TabCompleter {
         put(m, "yap-floodgate", "YaPFloodgate", "config.yml", "enabled", "yapfloodgate reload");
         put(m, "yap-folia-bridge", "YaPFoliaBridge", "config.yml", "enabled", "");
         put(m, "yap-regions", "YaPRegions", "config.yml", "enabled", "region reload");
+        put(m, "yap-portals", "YaPPortals", "config.yml", "enabled", "portal reload");
         put(m, "yap-npcs", "YaPNpcs", "config.yml", "enabled", "npc reload");
         put(m, "yap-guard", "YaPGuard", "config.yml", "enabled", "yapguard reload");
         put(m, "yap-lagguard", "YaPLagGuard", "config.yml", "enabled", "yaplagguard reload");
