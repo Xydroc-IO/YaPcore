@@ -9,6 +9,45 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 1.0.0.0 — Portals colors + hub region flags (2026-09-17)
+
+Same ship version (no product bump). Rebuild with `gradle publishReleasesFolder -PyapGameplay=true`.
+
+| Area | Change |
+|------|--------|
+| **YaPPortals** | Walk-through colored pads (LIGHT + dye particles) — no solid glass; `/portal setcolor` / create `[color]` |
+| **YaPRegions** | Hub flags: `damage`, `use`, `hunger`, `farmland-trample`, `item-frame`, `armor-stand`, `leaf-decay`, `pistons`, `vehicle-place`/`destroy`; `/region gamemode`; immediate apply + OP-bypass tip |
+| **Claims** | Softened doors/plates via `use` (parkour-friendly); shared `damage` flag |
+| **YaPAdmin** | Give menu armor/weapon/tool gear kits |
+| **YaPPerms** | VIP keep-inventory starter grant + backfill |
+| **YaPNpcs** | `server:` / `/npc setserver` → YaPPortals Connect |
+| **Docs** | [PORTALS.md](../network/PORTALS.md) · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) regions |
+
+Build: `gradle publishReleasesFolder -PyapGameplay=true` → `releases/1.0.0.0/`. Upload with `--clobber` per [RELEASES.md](RELEASES.md).
+
+---
+
+## After 1.0.0.0 — YaPPortals fleet transfers (2026-09-14)
+
+| Area | Change |
+|------|--------|
+| **YaPPortals** | CORE+NETWORK default plugin, **on** — walk-through portals → Link `Connect` (`yap-portals.jar`) |
+| **YaPNpcs** | `server:` / `/npc setserver` soft-dep on YaPPortals |
+| **Link** | `/hub` still from `yaplink-server-selector`; portals are the Folia UX layer |
+| **Docs** | [PORTALS.md](../network/PORTALS.md) |
+
+---
+
+## After 1.0.0.0 — Link /hub command intercept (2026-09-16)
+
+| Area | Change |
+|------|--------|
+| **YaP Link** | Play relay now dispatches registered plugin commands (`/hub`, `/server`) from JE `chat_command` — previously registered but never intercepted (fell through to Folia) |
+| **Transfer packet** | Play `transfer` id for 26.2/776 is `0x81` (was stale `0x7A` → client “failed to decode packet”); localhost clients Transfer to `127.0.0.1` |
+| **system_chat** | 26.2 expects NBT text components (not JSON strings) — fixes `/server` DecoderException on `minecraft:system_chat` |
+
+---
+
 ## After 1.0.0.0 — CI Folia smoke / ≤500 domain splits (2026-09-14)
 
 | Area | Change |

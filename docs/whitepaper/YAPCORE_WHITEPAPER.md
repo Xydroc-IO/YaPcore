@@ -233,8 +233,9 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-folia-bridge.jar` | YaPFoliaBridge | Folia surface / scheduler smoke |
 | `yap-protect.jar` | YaPProtect | CoreProtect-class audit / rollback / restore |
 | `yap-world.jar` | YaPWorld | FAWE-class edit (masks, brushes, generate, lighting, schems) + world mgmt |
-| `yap-regions.jar` | YaPRegions | WorldGuard-class cuboid flags |
-| `yap-npcs.jar` | YaPNpcs | Hub NPCs — dialogue, quests, `/npc shop` / warp / command |
+| `yap-regions.jar` | YaPRegions | WorldGuard-class regions — hub flags (`damage`, `use`, hunger, frames, …) + `/region gamemode` |
+| `yap-portals.jar` | YaPPortals | Colored walk-through fleet portals → Link `Connect` |
+| `yap-npcs.jar` | YaPNpcs | Hub NPCs — dialogue, quests, shop / warp / `/npc setserver` |
 | `yap-tab.jar` | YaPTab | Tab list / header / footer / sidebar |
 | `yap-discord.jar` | YaPDiscord | Discord webhooks + relay |
 | `yap-guard.jar` | YaPGuard | Lightweight movement heuristics (not Grim); competitive → Grim |

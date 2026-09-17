@@ -11,6 +11,7 @@ Operator docs. Markdown under `docs/` is the source of truth.
 | Secrets | [SECRETS.md](start/SECRETS.md) |
 | Networking / edge / fleet | [NETWORKING.md](network/NETWORKING.md) |
 | YaP Link | [YAP_LINK.md](network/YAP_LINK.md) |
+| Fleet portals | [PORTALS.md](network/PORTALS.md) |
 | Crossplay | [CROSSPLAY.md](network/CROSSPLAY.md) |
 | Clients & packs | [CLIENTS_AND_PACKS.md](network/CLIENTS_AND_PACKS.md) |
 | Plugins | [PLUGINS.md](plugins/PLUGINS.md) |

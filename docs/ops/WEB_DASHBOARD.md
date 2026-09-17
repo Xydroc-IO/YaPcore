@@ -259,8 +259,12 @@ Dashboard drives the plugin directly:
 ### Regions (`yap-regions`)
 
 - Define / redefine / remove admin cuboids from the UI
-- Set WorldGuard-class flags (including item-drop/pickup, tnt, creeper-explosion)
+- Set WorldGuard-class flags (including item-drop/pickup, tnt, creeper-explosion, mob-entry, weather)
 - GET `/api/regions` returns `regions[]` with flag map from `region list json`
+
+### Portals (`yap-portals`)
+
+CORE+NETWORK default, **on**. Walk-through colored volumes (particles + light, not glass) send players to another fleet server via YaP Link `Connect`. Create pads in-game with `/portal wand` then `/portal create <name> <server> [color]`. See [PORTALS.md](../network/PORTALS.md).
 
 ### Chat, Guard, Protect, Map, World
 
@@ -406,7 +410,7 @@ Also opens from:
 
 - **Players** — online picker → TP to/here/spawn, freeze, invsee/echest, heal/feed/**god**/clear, **walk/fly speed 1–10**, promote/demote, kick/warn/mute 1h/tempban 1d, trolls, check/history, jump to Give / money / ranks
 - **Self tools** — fly, god, vanish, heal, feed, night vision, gamemodes, repair, **walk/fly speed 1–10**
-- **Give** — curated presets, kits (`/kit give`), paginated / searchable material browser (amount 1/16/64)
+- **Give** — curated presets, **armor/weapon/tool gear kits**, player kits (`/kit give`), paginated / searchable material browser (amount 1/16/64)
 - **Custom items** — YaPItems create / browse / give / edit / delete / ability cooldowns ([YAPITEMS.md](../plugins/YAPITEMS.md))
 - **Spawn mobs** (client) — searchable entity browser + presets; spawn at you or a selected player (`/yapadmin spawnmob`)
 - **World tools** (chest) — World edit, schematics browse, browser studio, paste preview (confirm / move / cancel / undo). One hub tile; also under More….

@@ -233,4 +233,5 @@ More: [docs/README.md](README.md) · [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT
 | Permissions & ranks | [PERMISSIONS.md](../ops/PERMISSIONS.md) |
 | Web dashboard | [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
 | Multi-server proxy | [YAP_LINK.md](../network/YAP_LINK.md) |
+| Fleet portals | [PORTALS.md](../network/PORTALS.md) |
 | Full doc index | [docs/README.md](README.md) |

@@ -138,6 +138,8 @@ Dashboard **Access & ranks** has the same fields. Codes are `&a` green, `&b` aqu
 | `yapessentials.nick.others` | op | `/nick` for others |
 | `yapessentials.afk` / `.list` / `.rules` / `.motd` / `.suicide` | true | Player info |
 | `yapessentials.ptime` / `.pweather` / `.broadcast` / `.hat` | op | Client / broadcast |
+| `yapessentials.keepinventory` | false | Keep items on death (VIP starter grant) |
+| `yapessentials.keepinventory.xp` | false | Also keep XP on death (with keepinventory) |
 | `yapessentials.staff.freeze` | op | `/freeze` |
 | `yapessentials.staff.check` | op | `/check` (inspect; Moderation uses `/modcheck`) |
 | `yapessentials.admin` | op | `/yapess reload` |
@@ -180,17 +182,23 @@ Possession is enough to **use** an item. See [YAPITEMS.md](../plugins/YAPITEMS.m
 | `yapworld.brush` | op | `/yapworld brush`, undo/redo |
 | `yapworld.pregen` | op | `/yapworld pregen …` |
 
-## YaPRegions / YaPGuard / YaPMap / YaPNpcs
+## YaPRegions / YaPPortals / YaPGuard / YaPMap / YaPNpcs
 
 | Node | Default | Feature |
 |------|---------|---------|
-| `yapregions.admin` | op | `/region define`, flag, list |
+| `yapregions.admin` | op | `/region define`, flag, gamemode, list — also bypasses land flags |
+| `yapportals.use` | true | Walk through fleet portals |
+| `yapportals.admin` | op | `/portal` create / edit / color / reload |
+| `yapportals.bypass.cooldown` | op | Skip portal cooldown |
+| `yapportals.bypass.permission` | op | Bypass per-portal permission |
 | `yapguard.admin` | op | `/yapguard reload`, status |
 | `yapguard.bypass` | op | Skip anti-cheat checks |
 | `yapguard.alerts` | op | Staff violation alerts |
 | `yapmap.admin` | op | Map render config / reload |
-| `yapnpcs.admin` | op | `/npc create\|remove\|setaction` |
+| `yapnpcs.admin` | op | `/npc create\|remove\|setaction\|setserver` |
 | `yapnpcs.quests` | true | `/quests list\|progress` (`yapnpcs.quest` alias) |
+
+Fleet portals: [PORTALS.md](../network/PORTALS.md).
 
 See [GAMEPLAY.md](../gameplay/GAMEPLAY.md) for claim flag commands (`/claim flag set`).
 

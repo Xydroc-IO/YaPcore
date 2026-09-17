@@ -10,7 +10,7 @@ that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when m
 | Layer | OOTB |
 |-------|------|
 | Chat, Tab (sidebar), Guard, LagGuard, Packs, PluginCompat, PlaceholderAPI | Yes |
-| Admin menu, World tools, Regions, Npcs, Protect, Moderation, Pregen, Floodgate, Map | Yes (SQL plugins need MariaDB / shared YaPDB) |
+| Admin menu, World tools, Regions, **Portals (on)**, Npcs, Protect, Moderation, Pregen, Floodgate, Map | Yes (SQL plugins need MariaDB / shared YaPDB) |
 | YaP-Folia + first-party plugin jars | Yes (after `installAllProductDefaults` / release zip + `lib/yap-folia-*.jar`) |
 | YaP Link + link plugins | Yes once `link.properties` seeded; **modern forwarding ON by default** (skins) — join **:25565** |
 | Resource pack prompt | Yes when `server.properties` comes from defaults/example |
@@ -59,6 +59,7 @@ config/defaults/
   plugins/YaPItems/…
   plugins/YaPTailor/…         # skins/wardrobe; skin-host URL empty until set
   plugins/YaPTebex/…          # webhook inbound off until secret set
+  plugins/YaPPortals/…        # product default on — fleet walk-through portals
   plugins/YaPSkills/…         # enabled: true (thin skills)
   plugins/YaPLeveledMobs/…    # enabled: true
   plugins/YaPStacker|Dungeons|Disasters/…  # enabled: false (opt-in)
@@ -66,7 +67,7 @@ config/defaults/
   plugins/YaPMap/…            # mesh.enabled: false (3D opt-in)
   plugins/YaPFactions/…      # enabled: false (opt-in)
   plugins/YaPConquest/…      # enabled: false (opt-in chunk land)
-  plugins/YaPModeration|Admin|Protect|World|Regions|Npcs|Floodgate|Pregen/…
+  plugins/YaPModeration|Admin|Protect|World|Regions|Portals|Npcs|Floodgate|Pregen/…
   plugins/PlaceholderAPI|YaPPluginCompat/…
   plugins/YaPPerms|Chat|Tab|Essentials|Guard|LagGuard|Packs|Commands/…
 ```

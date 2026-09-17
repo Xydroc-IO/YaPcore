@@ -210,7 +210,9 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 | Custom items | `/yapitems …` · `/yitems` · create/edit/CD via admin **Custom items** or yap-staff | [YAPITEMS.md](../plugins/YAPITEMS.md) |
 | Skills | `/skills` · `/skill top` · `/yskills reload` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | Dungeons | `/dungeon` · `/dungeon invite\|accept\|deny\|leave\|status` · `/yapdungeons …` | [PLUGINS.md](../plugins/PLUGINS.md) |
-| NPCs | `/npc …` · `/quests …` · `/npc shop …` · `/npc setspawn` | dashboard **NPCs** · [PLAYERDATA.md](../data/PLAYERDATA.md) (shop catalogs) |
+| NPCs | `/npc …` · `/quests …` · `/npc shop …` · `/npc setspawn` · `/npc setserver` | dashboard **NPCs** · [PLAYERDATA.md](../data/PLAYERDATA.md) (shop catalogs) |
+| Fleet portals | `/portal …` (wand / create `[color]` / setcolor / go) · Link `/hub` `/server` | [PORTALS.md](../network/PORTALS.md) |
+| Admin regions | `/region …` (flag / **gamemode** / template) | [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
 | Disasters | `/yapdisaster …` | dashboard **Disasters** tab |
 | Gameplay knobs | `/yapknobs …` | [TUNE.md](TUNE.md) |
 | Plugin compat | `/yapcompat …` | [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md) |
@@ -254,15 +256,16 @@ Under Folia game authority, players use **real vanilla / plugin commands** when 
 
 **Non-OP players** only see plugin commands they have permission for — normal Bukkit behavior.
 
-### Grant OP
+### Grant OP (network-wide)
 
 | Method | How |
 |--------|-----|
 | Config seed | `ops=YourName` in `config/server.properties` |
-| Console | `op YourName` |
+| Link console / in-game | `/op YourName` on **YaP Link** (needs `yap-link-op-sync`) |
+| Dashboard | Access → Op |
 | Auto (dev only) | `auto-op=true` (default **false**) |
 
-Reconnect after OP to refresh tab-complete.
+Network OP is stored in `config/network-ops.json` + `ops=` and applied on **every** fleet backend when the player joins (YaPAdmin). Reconnect (or switch servers) after granting OP.
 
 ### Console examples (forwarded to Folia)
 
