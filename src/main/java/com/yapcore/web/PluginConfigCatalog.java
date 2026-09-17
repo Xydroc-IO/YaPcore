@@ -32,6 +32,7 @@ public final class PluginConfigCatalog {
                 // Status-only bridge; no hot config reload
                 e("yap-folia-bridge", "YaPFoliaBridge", "YaPFoliaBridge", "config.yml", "yap-folia-bridge", ""),
                 e("yap-regions", "YaPRegions", "YaPRegions", "config.yml", "yap-regions", "region reload"),
+                e("yap-portals", "YaPPortals", "YaPPortals", "config.yml", "yap-portals", "portal reload"),
                 e("yap-npcs", "YaPNpcs", "YaPNpcs", "config.yml", "yap-npcs", "npc reload"),
                 e("yap-guard", "YaPGuard", "YaPGuard", "config.yml", "yap-guard", "yapguard reload"),
                 e("yap-lagguard", "YaPLagGuard", "YaPLagGuard", "config.yml", "yap-lagguard", "yaplagguard reload"),

@@ -23,6 +23,7 @@ PAIRS = [
     ("YaPCommands/commands.yml", "yap-first-party/core-network/commands-plugin/src/main/resources/commands.yml"),
     ("YaPDiscord/config.yml", "yap-first-party/core-network/discord-plugin/src/main/resources/config.yml"),
     ("YaPTab/config.yml", "yap-first-party/core-network/tab-plugin/src/main/resources/config.yml"),
+    ("YaPPortals/config.yml", "yap-first-party/core-network/portals-plugin/src/main/resources/config.yml"),
 ]
 
 

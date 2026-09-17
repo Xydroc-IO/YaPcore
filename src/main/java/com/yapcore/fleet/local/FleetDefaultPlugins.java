@@ -30,6 +30,7 @@ public final class FleetDefaultPlugins {
             "yap-world.jar",
             "WorldEdit.jar",
             "yap-regions.jar",
+            "yap-portals.jar",
             "yap-npcs.jar",
             "yap-guard.jar",
             "yap-lagguard.jar",

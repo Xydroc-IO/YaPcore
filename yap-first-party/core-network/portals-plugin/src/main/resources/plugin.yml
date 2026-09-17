@@ -1,0 +1,28 @@
+name: YaPPortals
+version: '1.0.0.0'
+main: com.yapcore.portals.PortalsPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Fleet walk-through portals — BungeeCord Connect via YaP Link
+website: https://github.com/yaplabs
+softdepend: [YaPNpcs]
+commands:
+  portal:
+    description: Fleet portal admin
+    usage: /portal wand|pos1|pos2|create|delete|list|info|settarget|setperm|setcooldown|setmessage|setcolor|enable|disable|go|reload
+    aliases: [yapportal, portals]
+    permission: yapportals.admin
+permissions:
+  yapportals.use:
+    description: Use fleet portals
+    default: true
+  yapportals.admin:
+    description: Create and manage fleet portals
+    default: op
+  yapportals.bypass.cooldown:
+    description: Skip portal cooldown
+    default: op
+  yapportals.bypass.permission:
+    description: Bypass per-portal permission nodes
+    default: op

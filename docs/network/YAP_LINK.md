@@ -145,7 +145,7 @@ networks, enable Link Bedrock bind or use stock Velocity as a stand-in.
 
 - [YAP_LINK.md](YAP_LINK.md) — phased Velocity-class parity plan
 - [YAP_LINK.md](YAP_LINK.md) — modern forwarding on Folia backends
-- [yap-first-party/link/plugins/](../../yap-first-party/link/plugins/) — chat-bridge, mod-sync, server-selector
+- [yap-first-party/link/plugins/](../../yap-first-party/link/plugins/) — chat-bridge, mod-sync, server-selector, **op-sync**
 
 
 ---
@@ -347,6 +347,5 @@ Full play-phase plugin-message wire sniffing (all channels) is **optional future
 ## Related
 
 - [NETWORKING.md](NETWORKING.md) · [NETWORKING.md](NETWORKING.md) — rate limits, Prometheus, public edge harden
-- [YAP_LINK.md](YAP_LINK.md) — operator entry
-- [YAP_LINK.md](YAP_LINK.md) — Folia backend forwarding
+- [PORTALS.md](PORTALS.md) — YaPPortals (Folia walk-through → Connect)
 - [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md) — chassis vs Link process boundaries

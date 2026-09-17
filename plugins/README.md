@@ -41,6 +41,7 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-world.jar` | Multi-world + WorldEdit-class tools (`/yapworld`) |
 | `WorldEdit.jar` | WorldEdit API shim (`yap-worldedit-shim`) |
 | `yap-regions.jar` | WorldGuard-class regions (`/region`) |
+| `yap-portals.jar` | Fleet walk-through portals (`/portal`) — **on** by default · [PORTALS.md](../docs/network/PORTALS.md) |
 | `yap-npcs.jar` | NPCs + quests + hub actions (`/npc`, `/quests`) |
 | `yap-guard.jar` | Lightweight movement heuristics (not Grim) — PvP: `./scripts/grim-ac.sh enable` |
 | `yap-lagguard.jar` | Lag / entity budgets |

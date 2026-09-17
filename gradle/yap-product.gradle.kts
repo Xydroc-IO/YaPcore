@@ -77,6 +77,9 @@ tasks.register("installProductDefaults") {
     if (findProject(":regions-plugin") != null) {
         dependsOn(":regions-plugin:installIntoPlugins")
     }
+    if (findProject(":portals-plugin") != null) {
+        dependsOn(":portals-plugin:installIntoPlugins")
+    }
     if (findProject(":npcs-plugin") != null) {
         dependsOn(":npcs-plugin:installIntoPlugins")
     }
@@ -174,6 +177,7 @@ tasks.register("assemblePluginDist") {
         ":floodgate-plugin:jar",
         ":folia-bridge-plugin:jar",
         ":regions-plugin:shadowJar",
+        ":portals-plugin:shadowJar",
         ":npcs-plugin:shadowJar",
         ":tailor-plugin:shadowJar",
         ":bedrock-blocks-plugin:shadowJar",
@@ -207,6 +211,7 @@ tasks.register("assemblePluginDist") {
         ":yap-protect-api:jar",
         ":yap-world-api:jar",
         ":yap-regions-api:jar",
+        ":yap-portals-api:jar",
         ":yap-npcs-api:jar",
         ":yap-tab-api:jar",
         ":yap-guard-api:jar",
@@ -276,6 +281,9 @@ tasks.register("assemblePluginDist") {
         if (findProject(":regions-plugin") != null) {
             copyNamed(jarOf(":regions-plugin", "shadowJar"), coreDir)
         }
+        if (findProject(":portals-plugin") != null) {
+            copyNamed(jarOf(":portals-plugin", "shadowJar"), coreDir)
+        }
         if (findProject(":npcs-plugin") != null) {
             copyNamed(jarOf(":npcs-plugin", "shadowJar"), coreDir)
         }
@@ -342,6 +350,7 @@ tasks.register("assemblePluginDist") {
         }
         copyNamed(jarOf(":yap-world-api"), apiDir)
         copyNamed(jarOf(":yap-regions-api"), apiDir)
+        copyNamed(jarOf(":yap-portals-api"), apiDir)
         copyNamed(jarOf(":yap-npcs-api"), apiDir)
         if (findProject(":yap-guard-api") != null) {
             copyNamed(jarOf(":yap-guard-api"), apiDir)

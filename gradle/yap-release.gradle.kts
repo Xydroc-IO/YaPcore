@@ -77,6 +77,7 @@ tasks.register("assembleRelease") {
             "yap-world.jar",
             "WorldEdit.jar",
             "yap-regions.jar",
+            "yap-portals.jar",
             "yap-npcs.jar",
             "yap-tailor.jar",
             "yap-bedrock-blocks.jar",

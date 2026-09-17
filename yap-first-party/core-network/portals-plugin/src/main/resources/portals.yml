@@ -1,0 +1,14 @@
+# Fleet portals on this backend. Target names must match Link servers.* ids.
+# Example:
+# portals:
+#   to-survival:
+#     enabled: true
+#     world: world
+#     min: [0, 64, 0]
+#     max: [2, 66, 2]
+#     target-server: survival
+#     permission: ""
+#     cooldown-seconds: 3
+#     message: ""
+#     color: purple
+portals: {}

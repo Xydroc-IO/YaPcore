@@ -60,7 +60,9 @@ public final class PermissionCatalog {
                 n("yapdata.claim", "/claim", "Create and manage claims"),
                 n("yapdata.claims.wilderness", "Build in wilderness", "When require-claim-to-build is on"),
                 n("yapdata.claims.admin", "Bypass claims", "Build anywhere / admin claims"),
-                n("yapregions.admin", "/region", "WorldGuard-class regions")));
+                n("yapregions.admin", "/region", "WorldGuard-class regions"),
+                n("yapportals.use", "Use portals", "Walk through fleet portals"),
+                n("yapportals.admin", "/portal", "Create fleet portals")));
         out.add(cat("staff-mod", "Staff moderation", "Warn, mute, kick, vanish — not full ban power.",
                 n("yapmod.warn", "/warn", "Warn a player"),
                 n("yapmod.mute", "/mute /unmute", "Mute players"),

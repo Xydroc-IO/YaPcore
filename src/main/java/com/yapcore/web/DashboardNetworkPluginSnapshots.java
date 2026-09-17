@@ -314,8 +314,10 @@ public final class DashboardNetworkPluginSnapshots {
         Map<String, Object> yaml = DashboardNetworkSnapshots.yaml(root, "YaPRegions", "config.yml");
         out.put("serverId", DashboardNetworkSnapshots.str(yaml.get("server-id"), "default"));
         out.put("flags", List.of(
-                "pvp", "mob-damage", "build", "interact", "entry", "chest-access", "fire-spread", "mob-spawning",
-                "item-drop", "item-pickup", "tnt", "creeper-explosion"));
+                "pvp", "mob-damage", "damage", "build", "use", "interact", "entry", "chest-access",
+                "fire-spread", "mob-spawning", "mob-entry", "item-drop", "item-pickup", "tnt",
+                "creeper-explosion", "hunger", "farmland-trample", "item-frame", "armor-stand",
+                "leaf-decay", "pistons", "vehicle-place", "vehicle-destroy", "weather"));
         return out;
     }
 }

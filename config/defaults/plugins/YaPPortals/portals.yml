@@ -1,0 +1,2 @@
+# Fleet portals on this backend. Target names must match Link servers.* ids.
+portals: {}

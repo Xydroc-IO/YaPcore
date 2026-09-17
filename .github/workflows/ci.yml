@@ -37,6 +37,8 @@ jobs:
           :conquest-plugin:test
           :map-plugin:test
           :regions-plugin:test
+          :yap-portals-api:test
+          :portals-plugin:test
           :discord-plugin:test
           :tebex-webhook-plugin:test
           :lagguard-plugin:test

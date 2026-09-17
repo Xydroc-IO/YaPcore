@@ -1,0 +1,22 @@
+# Product default — CORE+NETWORK. Leave enabled: true unless this backend has no pads.
+# This Folia backend's Link servers.* id (lobby / survival / …)
+server-id: lobby
+enabled: true
+
+defaults:
+  cooldown-seconds: 3
+  # Extra permission beyond yapportals.use (blank = none)
+  permission: ""
+  # Dye color for particle swirl (purple, lime, red, cyan, …)
+  color: purple
+
+messages:
+  transferring: "§7Sending you to §f{server}§7…"
+  denied: "§cYou cannot use this portal."
+  cooldown: "§cWait §f{seconds}s §cbefore using another portal."
+  already-here: "§7You are already on §f{server}§7."
+  no-proxy: "§cTransfer failed — join through YaP Link (proxy)."
+
+connect:
+  # Legacy channel id — YaP Link server-selector accepts BungeeCord + bungeecord:main
+  channel: BungeeCord

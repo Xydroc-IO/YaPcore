@@ -203,6 +203,7 @@ Both call the same `FleetService` facade.
 ## Related
 
 - [YAP_LINK.md](YAP_LINK.md) — proxy backends
+- [PORTALS.md](PORTALS.md) — YaPPortals fleet walk-through transfers
 - [PLAYERDATA.md](../data/PLAYERDATA.md) — unique `server-id` per instance
 
 

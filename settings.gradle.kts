@@ -95,6 +95,9 @@ project(":yap-playerdata-api").projectDir = file("yap-first-party/api/yap-player
 include("yap-regions-api")
 project(":yap-regions-api").projectDir = file("yap-first-party/api/yap-regions-api")
 
+include("yap-portals-api")
+project(":yap-portals-api").projectDir = file("yap-first-party/api/yap-portals-api")
+
 include("yap-protect-api")
 project(":yap-protect-api").projectDir = file("yap-first-party/api/yap-protect-api")
 
@@ -109,6 +112,9 @@ project(":yap-worldedit-compat").projectDir = file("yap-first-party/api/yap-worl
 
 include("regions-plugin")
 project(":regions-plugin").projectDir = file("yap-first-party/core-network/regions-plugin")
+
+include("portals-plugin")
+project(":portals-plugin").projectDir = file("yap-first-party/core-network/portals-plugin")
 
 include("yap-npcs-api")
 project(":yap-npcs-api").projectDir = file("yap-first-party/api/yap-npcs-api")
@@ -197,6 +203,9 @@ project(":yap-link-plugin-tab-bridge").projectDir = file("yap-first-party/link/p
 
 include("yap-link-plugin-discord")
 project(":yap-link-plugin-discord").projectDir = file("yap-first-party/link/plugins/discord")
+
+include("yap-link-plugin-op-sync")
+project(":yap-link-plugin-op-sync").projectDir = file("yap-first-party/link/plugins/op-sync")
 
 // Deprecated Velocity fork removed — native Link only (yap-first-party/link/)
 include("finetune-modules")
