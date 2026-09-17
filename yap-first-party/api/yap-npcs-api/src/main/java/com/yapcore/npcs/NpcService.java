@@ -18,6 +18,12 @@ public interface NpcService {
 
     boolean setDialogue(String id, String dialogue);
 
+    /** Visible nametag / hologram name (not the stable NPC id). */
+    boolean setDisplayName(String id, String displayName);
+
+    /** Move NPC to a new location (keeps id, shop, dialogue, skin). */
+    boolean moveTo(String id, String world, double x, double y, double z, float yaw);
+
     /**
      * Hub click actions, semicolon-separated.
      * Examples: {@code shop:12}, {@code warp:spawn}, {@code command:say hi {player}},

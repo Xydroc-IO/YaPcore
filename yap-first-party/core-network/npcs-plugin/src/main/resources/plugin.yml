@@ -10,7 +10,7 @@ softdepend: [YaPDB, YaPPlayerData, YaPSkills, YaPPortals]
 commands:
   npc:
     description: Quest NPC admin
-    usage: /npc create|remove|list|info|shop|setwarp|setspawn|setserver|setcommand|setdialogue|setquest|respawn|reload
+    usage: /npc create|remove|list|info|move|shop|setname|setwarp|setspawn|setserver|setcommand|setdialogue|setquest|respawn|reload
     permission: yapnpcs.admin
   quests:
     description: View quest progress

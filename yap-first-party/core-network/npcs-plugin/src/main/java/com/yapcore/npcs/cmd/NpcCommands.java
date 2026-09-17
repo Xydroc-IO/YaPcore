@@ -38,11 +38,11 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length == 0) {
-            sender.sendMessage("§e/npc create|remove|list|info|respawn|reload");
-            sender.sendMessage("§e/npc setdialogue|setquest|setwarp|setspawn|setserver|setcommand|setplayer <id> …");
+            sender.sendMessage("§e/npc create|remove|list|info|move|respawn|reload");
+            sender.sendMessage("§e/npc setname|setdialogue|setquest|setwarp|setspawn|setserver|setcommand|setplayer <id> …");
             sender.sendMessage("§e/npc setskin <id> <url> · setskinslim <id> <true|false>");
-            sender.sendMessage("§e/npc shop <enable|addbuy|addsell|list|deloffer|clear> <id> …");
-            sender.sendMessage("§7Hub: §f/npc shop§7 · §fsetwarp§7 · §fsetspawn§7 · §fsetserver§7 · §fsetcommand§7");
+            sender.sendMessage("§e/npc shop <enable|apply|presets|addbuy|addsell|list|deloffer|clear> …");
+            sender.sendMessage("§7Move: §f/npc move chef §7(to you) · §f/npc move chef at <world> <x> <y> <z> [yaw]");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -50,6 +50,8 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             case "create" -> handleCreate(sender, args);
             case "remove" -> handleRemove(sender, args);
             case "list" -> handleList(sender, args);
+            case "move", "tp", "setpos", "setlocation" -> handleMove(sender, args);
+            case "setname", "rename", "setdisplayname" -> handleSetName(sender, args);
             case "setquest" -> handleSetQuest(sender, args);
             case "setdialogue" -> handleSetDialogue(sender, args);
             case "setskin" -> handleSetSkin(sender, args);
@@ -173,6 +175,76 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean handleMove(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /npc move <id>  §7(stand where you want it)");
+            sender.sendMessage("§c       /npc move <id> at <world> <x> <y> <z> [yaw]");
+            return true;
+        }
+        String id = args[1];
+        if (npcs.get(id).isEmpty()) {
+            sender.sendMessage("§cNPC not found.");
+            return true;
+        }
+        int atIdx = NpcCommandParse.indexOf(args, "at", 2);
+        if (atIdx >= 0) {
+            if (args.length < atIdx + 5) {
+                sender.sendMessage("§cUsage: /npc move <id> at <world> <x> <y> <z> [yaw]");
+                return true;
+            }
+            String world = args[atIdx + 1];
+            double x = NpcCommandParse.parseDouble(args[atIdx + 2], sender);
+            double y = NpcCommandParse.parseDouble(args[atIdx + 3], sender);
+            double z = NpcCommandParse.parseDouble(args[atIdx + 4], sender);
+            if (Double.isNaN(x) || Double.isNaN(y) || Double.isNaN(z)) {
+                return true;
+            }
+            float yaw = 0f;
+            if (atIdx + 5 < args.length) {
+                try {
+                    yaw = Float.parseFloat(args[atIdx + 5]);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage("§cInvalid yaw.");
+                    return true;
+                }
+            }
+            if (npcs.moveTo(id, world, x, y, z, yaw)) {
+                sender.sendMessage("§aMoved §f" + id + " §7→ §f" + world + " "
+                        + NpcCommandParse.fmt(x) + " " + NpcCommandParse.fmt(y)
+                        + " " + NpcCommandParse.fmt(z));
+            } else {
+                sender.sendMessage("§cMove failed (unknown world?).");
+            }
+            return true;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cConsole must use: /npc move <id> at <world> <x> <y> <z> [yaw]");
+            return true;
+        }
+        var loc = player.getLocation();
+        if (npcs.moveTo(id, loc.getWorld().getName(), loc.getX(), loc.getY(), loc.getZ(), loc.getYaw())) {
+            sender.sendMessage("§aMoved §f" + id + " §ato your location.");
+        } else {
+            sender.sendMessage("§cMove failed.");
+        }
+        return true;
+    }
+
+    private boolean handleSetName(CommandSender sender, String[] args) {
+        if (args.length < 3) {
+            sender.sendMessage("§cUsage: /npc setname <id> <display name…>");
+            sender.sendMessage("§7Changes the nametag only — id stays the same (shops/actions keep working).");
+            return true;
+        }
+        String name = String.join(" ", NpcCommandParse.copyFrom(args, 2));
+        if (npcs.setDisplayName(args[1], name)) {
+            sender.sendMessage("§aRenamed §f" + args[1] + " §a→ §f" + name);
+        } else {
+            sender.sendMessage("§cNPC not found.");
+        }
+        return true;
+    }
+
     private boolean handleSetDialogue(CommandSender sender, String[] args) {
         if (args.length < 3) {
             sender.sendMessage("§cUsage: /npc setdialogue <id> <text>");
@@ -272,25 +344,48 @@ public final class NpcCommands implements CommandExecutor, TabCompleter {
             return List.of();
         }
         if (args.length == 1) {
-            return NpcCommandParse.prefix(List.of("create", "remove", "list", "setquest", "setdialogue", "setaction",
+            return NpcCommandParse.prefix(List.of("create", "remove", "list", "move", "tp", "setname", "rename", "setquest", "setdialogue", "setaction",
                     "setskin", "setskinslim", "setwarp", "setspawn", "setserver", "setcommand", "setplayer", "shop",
                     "respawn", "reload", "info"), args[0]);
         }
         if (args.length == 2) {
             return switch (args[0].toLowerCase(Locale.ROOT)) {
-                case "remove", "setquest", "setdialogue", "setaction", "setskin", "setskinslim",
+                case "remove", "move", "tp", "setpos", "setlocation", "setname", "rename", "setdisplayname", "setquest", "setdialogue", "setaction", "setskin", "setskinslim",
                      "setwarp", "setspawn", "setserver", "setcommand", "setplayer", "setplayercmd", "info"
                         -> NpcCommandParse.prefix(npcs.listIds(), args[1]);
                 case "list" -> NpcCommandParse.prefix(List.of("json"), args[1]);
-                case "shop" -> NpcCommandParse.prefix(List.of("enable", "addbuy", "addsell", "list", "deloffer", "clear"), args[1]);
+                case "shop" -> NpcCommandParse.prefix(
+                        List.of("enable", "apply", "presets", "addbuy", "addsell", "list", "deloffer", "clear"), args[1]);
                 default -> List.of();
             };
+        }
+        if (args.length == 3 && List.of("move", "tp", "setpos", "setlocation").contains(args[0].toLowerCase(Locale.ROOT))) {
+            return NpcCommandParse.prefix(List.of("at"), args[2]);
         }
         if (args.length == 3 && "setskinslim".equalsIgnoreCase(args[0])) {
             return NpcCommandParse.prefix(List.of("true", "false"), args[2]);
         }
         if (args.length == 3 && "shop".equalsIgnoreCase(args[0])) {
+            String shopOp = args[1].toLowerCase(Locale.ROOT);
+            if ("apply".equals(shopOp) || "preset".equals(shopOp) || "load".equals(shopOp)) {
+                NpcTraderAccess traders = NpcShopOps.traders();
+                List<String> presets = traders == null
+                        ? List.of("weapons", "armor", "tools", "food", "blocks", "redstone", "crafting", "enchants")
+                        : List.copyOf(traders.shopPresetIds());
+                return NpcCommandParse.prefix(presets, args[2]);
+            }
+            if ("presets".equals(shopOp) || "catalogs".equals(shopOp)) {
+                return List.of();
+            }
             return NpcCommandParse.prefix(npcs.listIds(), args[2]);
+        }
+        if (args.length == 4 && "shop".equalsIgnoreCase(args[0])
+                && List.of("apply", "preset", "load").contains(args[1].toLowerCase(Locale.ROOT))) {
+            return NpcCommandParse.prefix(npcs.listIds(), args[3]);
+        }
+        if (args.length == 5 && "shop".equalsIgnoreCase(args[0])
+                && List.of("apply", "preset", "load").contains(args[1].toLowerCase(Locale.ROOT))) {
+            return NpcCommandParse.prefix(List.of("--replace"), args[4]);
         }
         if (args.length == 3 && "setspawn".equalsIgnoreCase(args[0])) {
             return NpcCommandParse.prefix(List.of("on", "off"), args[2]);

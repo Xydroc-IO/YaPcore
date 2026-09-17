@@ -138,6 +138,32 @@ public final class NpcServiceImpl implements NpcService {
     }
 
     @Override
+    public boolean setDisplayName(String id, String displayName) {
+        String name = displayName == null || displayName.isBlank() ? id : displayName.trim();
+        if (name.length() > 64) {
+            name = name.substring(0, 64);
+        }
+        final String finalName = name;
+        return updateField(id, old -> new NpcRepository.NpcRecord(
+                old.id(), old.serverId(), finalName, old.world(),
+                old.x(), old.y(), old.z(), old.yaw(), old.entityUuid(),
+                old.dialogue(), old.questId(), old.action(),
+                old.skinUrl(), old.skinSlim()), "npc setname");
+    }
+
+    @Override
+    public boolean moveTo(String id, String world, double x, double y, double z, float yaw) {
+        if (world == null || world.isBlank() || Bukkit.getWorld(world) == null) {
+            return false;
+        }
+        return updateField(id, old -> new NpcRepository.NpcRecord(
+                old.id(), old.serverId(), old.displayName(), world,
+                x, y, z, yaw, old.entityUuid(),
+                old.dialogue(), old.questId(), old.action(),
+                old.skinUrl(), old.skinSlim()), "npc move");
+    }
+
+    @Override
     public boolean setAction(String id, String action) {
         return updateField(id, old -> new NpcRepository.NpcRecord(
                 old.id(), old.serverId(), old.displayName(), old.world(),
@@ -257,18 +283,25 @@ public final class NpcServiceImpl implements NpcService {
             return;
         }
         boolean useMannequin = npc.skinUrl() != null && !npc.skinUrl().isBlank();
+        Location loc = npc.toLocation(world);
 
         if (npc.entityUuid() != null) {
             Entity existing = Bukkit.getEntity(npc.entityUuid());
             if (existing != null && !existing.isDead()) {
                 if (useMannequin && existing instanceof Mannequin mannequin) {
-                    applyMannequin(mannequin, npc);
+                    YapSched.entity(plugin, mannequin, () -> {
+                        mannequin.teleport(loc);
+                        applyMannequin(mannequin, npc);
+                    });
                     return;
                 }
                 if (!useMannequin && existing instanceof Villager villager) {
-                    tag(villager, npc.id());
-                    villager.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
-                    villager.setCustomNameVisible(true);
+                    YapSched.entity(plugin, villager, () -> {
+                        villager.teleport(loc);
+                        tag(villager, npc.id());
+                        villager.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
+                        villager.setCustomNameVisible(true);
+                    });
                     return;
                 }
                 // Wrong entity type for current skin config — respawn
@@ -276,7 +309,6 @@ public final class NpcServiceImpl implements NpcService {
             }
         }
 
-        Location loc = npc.toLocation(world);
         if (useMannequin) {
             Mannequin mannequin = (Mannequin) world.spawnEntity(loc, EntityType.MANNEQUIN);
             applyMannequin(mannequin, npc);
