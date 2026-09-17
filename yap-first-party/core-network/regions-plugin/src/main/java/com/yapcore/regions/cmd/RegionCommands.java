@@ -37,7 +37,8 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
             sender.sendMessage("§e/region remove <name> §7· §e/region info <name> §7· §e/region priority <name> <int>");
             sender.sendMessage("§e/region flag set <name> <flag> <allow|deny>");
             sender.sendMessage("§e/region gamemode <name> <survival|creative|adventure|spectator|clear>");
-            sender.sendMessage("§e/region template save <name> <fromRegion> §7· §e/region apply-template <region> <template>");
+            sender.sendMessage("§e/region worldborder <name> §7· §e/region template save <name> <fromRegion>");
+            sender.sendMessage("§e/region apply-template <region> <template>");
             sender.sendMessage("§e/region list [json] §7· §e/region reload");
             sender.sendMessage("§e/region message set <name> greeting|farewell <text> §7· §e/region message clear <name> greeting|farewell");
             return true;
@@ -52,6 +53,7 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
             case "remove", "delete" -> defineOps.handleRemove(sender, args);
             case "flag" -> metaOps.handleFlag(sender, args);
             case "gamemode", "gm" -> metaOps.handleGameMode(sender, args);
+            case "worldborder", "wb", "border" -> metaOps.handleWorldBorder(sender, args);
             case "priority" -> metaOps.handlePriority(sender, args);
             case "message" -> metaOps.handleMessage(sender, args);
             case "template" -> metaOps.handleTemplate(sender, args);
@@ -60,7 +62,7 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
             case "info" -> metaOps.handleInfo(sender, args);
             case "reload" -> metaOps.handleReload(sender);
             default -> {
-                sender.sendMessage("§cUnknown subcommand. Use define, flag, gamemode, priority, message, template, list, info, or reload.");
+                sender.sendMessage("§cUnknown subcommand. Use define, flag, gamemode, worldborder, priority, message, template, list, info, or reload.");
                 yield true;
             }
         };
@@ -73,12 +75,14 @@ public final class RegionCommands implements CommandExecutor, TabCompleter {
         }
         if (args.length == 1) {
             return RegionCommandParse.prefix(List.of("define", "definepoly", "polyadd", "polyclear", "redefine", "remove",
-                    "flag", "gamemode", "priority", "message", "template", "apply-template", "list", "info", "reload"), args[0]);
+                    "flag", "gamemode", "worldborder", "priority", "message", "template", "apply-template", "list", "info", "reload"), args[0]);
         }
         if (args.length == 2 && ("remove".equalsIgnoreCase(args[0]) || "redefine".equalsIgnoreCase(args[0])
                 || "delete".equalsIgnoreCase(args[0]) || "info".equalsIgnoreCase(args[0])
                 || "priority".equalsIgnoreCase(args[0]) || "gamemode".equalsIgnoreCase(args[0])
                 || "gm".equalsIgnoreCase(args[0])
+                || "worldborder".equalsIgnoreCase(args[0]) || "wb".equalsIgnoreCase(args[0])
+                || "border".equalsIgnoreCase(args[0])
                 || "apply-template".equalsIgnoreCase(args[0])
                 || "applytemplate".equalsIgnoreCase(args[0]))) {
             return RegionCommandParse.prefix(regions.listRegions().stream().map(r -> r.name()).toList(), args[1]);

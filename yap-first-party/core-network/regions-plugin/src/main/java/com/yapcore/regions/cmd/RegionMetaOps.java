@@ -7,6 +7,10 @@ import com.yapcore.regions.RegionsPlugin;
 import com.yapcore.regions.listener.RegionGamemodeListener;
 import com.yapcore.regions.service.RegionServiceImpl;
 import com.yapcore.messages.YapMessages;
+import com.yapcore.sched.YapSched;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
+import org.bukkit.WorldBorder;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -299,6 +303,46 @@ final class RegionMetaOps {
                     + " · " + region.minX() + "," + region.minZ() + " → " + region.maxX() + "," + region.maxZ()
                     + " · prio=" + region.priority()
                     + " · flags=" + region.flags().size());
+        }
+        return true;
+    }
+
+    /**
+     * Sets the world's vanilla square border to the region's XZ AABB (polygons use the envelope).
+     */
+    boolean handleWorldBorder(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§cUsage: /region worldborder <name>");
+            return true;
+        }
+        var regionOpt = regions.named(args[1]);
+        if (regionOpt.isEmpty()) {
+            sender.sendMessage("§cUnknown region: " + args[1]);
+            return true;
+        }
+        var r = regionOpt.get();
+        World world = Bukkit.getWorld(r.world());
+        if (world == null) {
+            sender.sendMessage("§cWorld not loaded: " + r.world());
+            return true;
+        }
+        RegionWorldBorderFit fit = RegionWorldBorderFit.ofInclusive(r.minX(), r.maxX(), r.minZ(), r.maxZ());
+        int cx = (int) Math.floor(fit.centerX);
+        int cz = (int) Math.floor(fit.centerZ);
+        YapSched.region(plugin, world, cx, cz, () -> {
+            WorldBorder border = world.getWorldBorder();
+            border.setCenter(fit.centerX, fit.centerZ);
+            border.setSize(fit.size);
+        });
+        sender.sendMessage("§aWorld border on §f" + r.world()
+                + " §aset to region §f" + r.name()
+                + " §7(center " + fit.centerX + "," + fit.centerZ
+                + " · size " + (int) fit.size + ")");
+        if (r.maxX() - r.minX() != r.maxZ() - r.minZ()) {
+            sender.sendMessage("§7Note: vanilla borders are square — diameter uses the longer X/Z side.");
+        }
+        if (r.isPolygon()) {
+            sender.sendMessage("§7Polygon regions use the axis-aligned envelope, not the exact polygon outline.");
         }
         return true;
     }

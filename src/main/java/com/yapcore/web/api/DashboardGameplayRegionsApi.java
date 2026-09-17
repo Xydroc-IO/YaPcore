@@ -110,7 +110,7 @@ public final class DashboardGameplayRegionsApi {
             snap.put("ok", true);
             snap.put("npcs", npcs);
             snap.put("npcCount", npcs.size());
-            snap.put("hint", "POST create | remove | setquest | setdialogue | setwarp | setspawn | setcommand | setplayer | shopenable | setaction | respawn | reload | info");
+            snap.put("hint", "POST create | remove | move | setname | setquest | setdialogue | setwarp | setspawn | setcommand | setplayer | shopenable | setaction | respawn | reload | info");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
@@ -128,6 +128,8 @@ public final class DashboardGameplayRegionsApi {
             resp.put("command", cmd);
             resp.put("result", result == null ? "" : result);
             if ("list".equals(action) || "create".equals(action) || "remove".equals(action)
+                    || "move".equals(action) || "tp".equals(action)
+                    || "setname".equals(action) || "rename".equals(action)
                     || "setquest".equals(action) || "setdialogue".equals(action)
                     || "setaction".equals(action) || "setwarp".equals(action)
                     || "setspawn".equals(action) || "setcommand".equals(action)
@@ -166,6 +168,23 @@ public final class DashboardGameplayRegionsApi {
                 String id = body.getOrDefault("id", "").trim();
                 String dialogue = body.getOrDefault("dialogue", "").trim();
                 yield id.isEmpty() || dialogue.isEmpty() ? null : "npc setdialogue " + id + " " + dialogue;
+            }
+            case "setname", "rename" -> {
+                String id = body.getOrDefault("id", "").trim();
+                String name = body.getOrDefault("name", body.getOrDefault("displayName", "")).trim();
+                yield id.isEmpty() || name.isEmpty() ? null : "npc setname " + id + " " + name;
+            }
+            case "move", "tp" -> {
+                String id = body.getOrDefault("id", "").trim();
+                String world = body.getOrDefault("world", "").trim();
+                String x = body.getOrDefault("x", "").trim();
+                String y = body.getOrDefault("y", "").trim();
+                String z = body.getOrDefault("z", "").trim();
+                String yaw = body.getOrDefault("yaw", "0").trim();
+                if (id.isEmpty() || world.isEmpty() || x.isEmpty() || y.isEmpty() || z.isEmpty()) {
+                    yield null;
+                }
+                yield "npc move " + id + " at " + world + " " + x + " " + y + " " + z + " " + yaw;
             }
             case "setwarp" -> {
                 String id = body.getOrDefault("id", "").trim();
