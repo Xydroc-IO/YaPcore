@@ -1,0 +1,168 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP Folia split harden: scheduler, RTQ, hold process, entity target
+
+Null-safe FoliaRegionScheduler/RTQ split (requeue instead of NPE/IllegalState).
+Hold processTicketUpdates after add/remove. Entity portal hold drop + dragon sync + coupler link.
+RegionizedWorldData entity split uses YapRegionSplit.target.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedTaskQueue.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedTaskQueue.java
+@@ -22,7 +22,8 @@
+ 
+ public final class RegionizedTaskQueue {
+ 
+-    private static final TicketType<Long> TASK_QUEUE_TICKET = ChunkSystemTicketType.create("task_queue_ticket", Long::compareTo);
++    private static final TicketType<Long> TASK_QUEUE_TICKET = ChunkSystemTicketType.create(
++        "task_queue_ticket", Long::compareTo, 0L, TicketType.FLAG_LOADING); // YaP — RTQ hold must not simulate
+ 
+     public PrioritisedExecutor.PrioritisedTask createChunkTask(final ServerLevel world, final int chunkX, final int chunkZ,
+                                                                final Runnable run) {
+@@ -180,6 +181,7 @@
+ 
+             if (toRemoveTicket[0] != null) {
+                 this.removeTicket(coord, toRemoveTicket[0].id);
++                this.processTicketUpdates(coord);
+             }
+         }
+ 
+@@ -377,6 +379,25 @@
+             }
+         }
+ 
++        private static void requeueOrphan(final ChunkBasedPriorityTask task) {
++            final Runnable run = task.run;
++            task.run = null;
++            if (run == null) {
++                return;
++            }
++            YapRegionSplit.markSplit();
++            Priority prio = task.getPriority();
++            if (prio == null || prio == Priority.COMPLETING) {
++                prio = Priority.NORMAL;
++            }
++            final ServerLevel world = task.world.world;
++            if (task.isChunkTask) {
++                RegionizedServer.getInstance().taskQueue.queueChunkTask(world, task.chunkX, task.chunkZ, run, prio);
++            } else {
++                RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(world, task.chunkX, task.chunkZ, run, prio);
++            }
++        }
++
+         // into is a map of section coordinate to region
+         public void split(final boolean isChunkData,
+                           final ThreadedRegionizer<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> regioniser,
+@@ -400,7 +421,8 @@
+                         final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData>
+                             region = into.get(sectionKey);
+                         if (region == null) {
+-                            throw new IllegalStateException();
++                            requeueOrphan(task);
++                            continue;
+                         }
+ 
+                         split.computeIfAbsent(region, (keyInMap) -> {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/scheduler/FoliaRegionScheduler.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/scheduler/FoliaRegionScheduler.java
+@@ -184,6 +184,18 @@
+                     final Long2ObjectOpenHashMap<List<LocationScheduledTask>> section = entry.getValue();
+ 
+                     final Scheduler into = regionToData.get(sectionKey);
++                    if (into == null) {
++                        // YaP — force-partition can race a missing section; requeue instead of NPE / drop
++                        for (final Iterator<Long2ObjectMap.Entry<List<LocationScheduledTask>>> iterator = section.long2ObjectEntrySet().fastIterator();
++                             iterator.hasNext();) {
++                            final Long2ObjectMap.Entry<List<LocationScheduledTask>> e = iterator.next();
++                            final long delay = Math.max(1L, e.getLongKey() - from.tickCount);
++                            for (final LocationScheduledTask task : e.getValue()) {
++                                FoliaRegionScheduler.scheduleInternalOffRegion(task, delay);
++                            }
++                        }
++                        continue;
++                    }
+ 
+                     into.tasksByDeadlineBySection.put(sectionKey, section);
+                 }
+@@ -203,6 +215,7 @@
+             world.moonrise$getChunkTaskScheduler().chunkHolderManager.addTicketAtLevel(
+                 TicketType.REGION_SCHEDULER_API_HOLD, chunkX, chunkZ, ChunkHolderManager.MAX_TICKET_LEVEL, null
+             );
++            io.papermc.paper.threadedregions.YapTicketHygiene.processAfterHoldChange(world, chunkX, chunkZ);
+         }
+ 
+         private void removeTicket(final long sectionKey) {
+@@ -214,6 +227,7 @@
+             world.moonrise$getChunkTaskScheduler().chunkHolderManager.removeTicketAtLevel(
+                 TicketType.REGION_SCHEDULER_API_HOLD, chunkX, chunkZ, ChunkHolderManager.MAX_TICKET_LEVEL, null
+             );
++            io.papermc.paper.threadedregions.YapTicketHygiene.processAfterHoldChange(world, chunkX, chunkZ);
+         }
+ 
+         private void queueTask(final LocationScheduledTask task, final long delay) {
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
+@@ -4473,6 +4473,11 @@
+         Entity copy = this.getType().create(destination, EntitySpawnReason.DIMENSION_TRAVEL);
+         copy.restoreFrom(this);
+         copy.transform(pos, yaw, pitch, velocity);
++        // Folia start - keep multipart entities in the owning region after transform
++        if (copy instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon dragon) {
++            dragon.syncPartPositions();
++        }
++        // Folia end - keep multipart entities in the owning region after transform
+         // vanilla code used to call remove _after_ copying, and some stuff is required to be after copy - so add hook here
+         // for example, clearing of inventory after switching dimensions
+         this.postRemoveAfterChangingDimensions();
+@@ -4898,11 +4903,25 @@
+                 ca.spottedleaf.moonrise.patches.chunk_system.scheduling.ChunkHolderManager.MAX_TICKET_LEVEL,
+                 teleportHoldId
+             );
++            io.papermc.paper.threadedregions.YapTicketHygiene.processAfterHoldChange(
++                originWorld, initialPositionChunk.x(), initialPositionChunk.z()
++            );
++            if (info == null) {
++                return;
++            }
+             // adjust passenger tree to final pos/rot/speed
+             for (EntityTreeNode node : fullPassengerTree) {
+                 node.root.transform(info);
+             }
+ 
++            io.papermc.paper.threadedregions.YapPortalRegionCoupler.link(
++                originWorld, initialPositionChunk, destination,
++                new ChunkPos(
++                    ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkX(info.position()),
++                    ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkZ(info.position())
++                )
++            );
++
+             // place
+             passengerTree.root.placeInAsync(
+                 originWorld, destination, Entity.TELEPORT_FLAG_LOAD_CHUNK | (takePassengers ? Entity.TELEPORT_FLAG_TELEPORT_PASSENGERS : 0L),
+@@ -5122,6 +5141,9 @@
+         newEntity.restoreFrom(this);
+         this.removeAfterChangingDimensions();
+         newEntity.teleportSetPosition(PositionMoveRotation.of(this), PositionMoveRotation.of(transition), transition.relatives());
++        if (newEntity instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon dragon) {
++            dragon.syncPartPositions();
++        }
+         if (this.inWorld) newLevel.addDuringTeleport(newEntity); // CraftBukkit - Don't spawn the new entity if the current entity isn't spawned
+ 
+         for (Entity newPassenger : newPassengers) {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedWorldData.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedWorldData.java
+@@ -199,12 +199,8 @@
+                 final ChunkPos pos = entity.chunkPosition();
+                 // Note: It is impossible for an entity in the world to _not_ be in an entity chunk, which means
+                 // the chunk holder must _exist_, and so the region section exists.
+-                final RegionizedWorldData into = regionToData.get(CoordinateUtils.getChunkKey(pos.x() >> chunkToRegionShift, pos.z() >> chunkToRegionShift));
+-                // YaP — force-partition can race with mid-spawn; never NPE / drop silently without a home
++                final RegionizedWorldData into = YapRegionSplit.target(regionToData, pos.x(), pos.z(), chunkToRegionShift, "entity", entity.getType());
+                 if (into == null) {
+-                    org.slf4j.LoggerFactory.getLogger(RegionizedWorldData.class).error(
+-                            "YaP region split: no target RegionizedWorldData for entity {} at chunk {},{} — keeping on source until next merge",
+-                            entity.getType(), pos.x(), pos.z());
+                     continue;
+                 }
+                 into.allEntities.add(entity);

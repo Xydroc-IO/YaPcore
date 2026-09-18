@@ -1,0 +1,49 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP Folia debug-subscriber CME (Folia #472 / PR 499)
+
+YaP Folia debug-subscriber CME.
+Post-applyAllPatches.
+---
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/ServerPlayer.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/ServerPlayer.java
+@@ -3471,7 +3471,7 @@
+     }
+ 
+     public Set<DebugSubscription<?>> debugSubscriptions() {
+-        return !this.server.debugSubscribers().hasRequiredPermissions(this) ? Set.of() : this.requestedDebugSubscriptions;
++        return Set.of(); // Folia - region threading - disable debug subscriptions (#472 / PR 499)
+     }
+ 
+     public record RespawnConfig(LevelData.RespawnData respawnData, boolean forced) {
+
+--- a/folia-server/src/minecraft/java/net/minecraft/util/debug/ServerDebugSubscribers.java
++++ b/folia-server/src/minecraft/java/net/minecraft/util/debug/ServerDebugSubscribers.java
+@@ -24,15 +24,22 @@
+     }
+ 
+     public void tick() {
+-        this.enabledSubscriptions.values().forEach(List::clear);
++        // Folia start - region threading: this map is server-global and tick() runs from every region
++        if (!io.papermc.paper.threadedregions.RegionizedServer.isGlobalTickThread()) {
++            return;
++        }
++        synchronized (this.enabledSubscriptions) {
++            this.enabledSubscriptions.values().forEach(List::clear);
+ 
+-        for (ServerPlayer player : this.server.getPlayerList().getPlayers()) {
+-            for (DebugSubscription<?> subscription : player.debugSubscriptions()) {
+-                this.enabledSubscriptions.computeIfAbsent(subscription, s -> new ArrayList<>()).add(player);
++            for (ServerPlayer player : this.server.getPlayerList().getPlayers()) {
++                for (DebugSubscription<?> subscription : player.debugSubscriptions()) {
++                    this.enabledSubscriptions.computeIfAbsent(subscription, s -> new ArrayList<>()).add(player);
++                }
+             }
+-        }
+ 
+-        this.enabledSubscriptions.values().removeIf(List::isEmpty);
++            this.enabledSubscriptions.values().removeIf(List::isEmpty);
++        }
++        // Folia end - region threading
+     }
+ 
+     public void broadcastToAll(final DebugSubscription<?> subscription, final Packet<?> packet) {

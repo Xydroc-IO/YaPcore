@@ -58,6 +58,8 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-subregion-coalesce-quiet-ticks", "200");
         props.setProperty("folia-subregion-coalesce-min-wall-ms", "30000");
         props.setProperty("folia-subregion-carve", "true");
+        props.setProperty("folia-ticket-hygiene", "true");
+        props.setProperty("folia-portal-couple", "true");
         props.setProperty("folia-subregion-partition-delay-ticks", "600");
         FoliaAlignedMicrotickConfig.applyDefaults(props);
         FoliaPhysicsSubstepConfig.applyDefaults(props);
@@ -282,6 +284,16 @@ public final class FoliaAuthorityConfig {
     /** Corridor unload before force-partition ({@code -Dyap.folia.subregion-carve}). Default true. */
     public boolean isFoliaSubregionCarve() {
         return Boolean.parseBoolean(props.getProperty("folia-subregion-carve", "true"));
+    }
+
+    /** Last-ticket drop + LOADING-only holds ({@code -Dyap.folia.ticket-hygiene}). Default true. */
+    public boolean isFoliaTicketHygiene() {
+        return Boolean.parseBoolean(props.getProperty("folia-ticket-hygiene", "true"));
+    }
+
+    /** Portal-linked regions share an OS thread ({@code -Dyap.folia.portal-couple}). Default true. */
+    public boolean isFoliaPortalCouple() {
+        return Boolean.parseBoolean(props.getProperty("folia-portal-couple", "true"));
     }
 
     public int getFoliaSubregionPartitionDelayTicks() {

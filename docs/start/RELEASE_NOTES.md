@@ -1,6 +1,6 @@
 # YaPcore release notes
 
-Product version **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2**
+Product version **0.0.0.1** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2**
 
 For build commands and zip layout see [RELEASES.md](RELEASES.md). For live status see
 [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
@@ -9,17 +9,64 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
-## After 1.0.0.0 — Region cut proven + ship-on partition/carve/waves (2026-09-18)
+## After 0.0.0.1 — Folia-itself patches 0038–0040 (2026-09-18)
 
-Same ship version (no product bump). Rebuild Folia incrementally, then `gradle publishReleasesFolder -PyapGameplay=true`.
+Same ship version (no product bump). Incremental Folia paperclip → `lib/yap-folia-26.2.jar`. Pin remains **`14b7fee`**.
 
 | Area | Change |
 |------|--------|
-| **Region cut** | Lab PASS: force-partition + `RegionizedWorldData.split` (0032) + BLOCKS-tagged pulse drain; `wave_timeouts=0` |
+| **0038 teleport events** | Folia #490: `teleportAsync` fires `PlayerTeleportEvent` / `EntityTeleportEvent`; async nether/end portals fire `PlayerPortalEvent` / `EntityPortalEvent` before the entity is yanked. Move-event rewinds stay event-silent. |
+| **0039 map autosave** | Folia #505/#506: maps live on `MinecraftServer#getDataStorage()`; autosave follows that storage once per interval on the global tick. |
+| **0040 debug CME** | Folia #472 / PR 499: players cannot register debug subscriptions; `ServerDebugSubscribers.tick` does not mutate a shared HashMap from region threads. |
+| **Patches** | **33** files (`0000`–`0040`) |
+
+Build: incremental `vendor/folia/work` `:folia-server:createPaperclipJar` → `lib/yap-folia-26.2.jar`. Full rebuild still `./scripts/build-yap-folia.sh`.
+
+---
+
+## After 0.0.0.1 — Folia-itself patches 0034–0037 (2026-09-18)
+
+Same ship version (no product bump). Incremental Folia paperclip → `lib/yap-folia-26.2.jar`. Pin remains **`14b7fee`**.
+
+| Area | Change |
+|------|--------|
+| **0034 tickets** | Last real ticket on the owning region thread drops immediately (no UNKNOWN 1-tick). Scheduler/RTQ/teleport holds are `FLAG_LOADING` only. `processTicketUpdates` after hold add/remove. |
+| **0035 ownership** | Folia PRs 491/495/504: TickThread on AI sensors / delayed leash; `EnderDragon.syncPartPositions` before lookup registration and after dimension transform. |
+| **0036 portal couple** | Folia #469: nether/overworld portal pairs; after origin `markNotTicking`, steal a due partner tick onto this OS thread. |
+| **0037 split** | FoliaRegionScheduler / RTQ split requeue instead of NPE; entity split uses `YapRegionSplit.target`. |
+| **Knobs** | `-Dyap.folia.ticket-hygiene=true`, `-Dyap.folia.portal-couple=true` (ship on) |
+| **Patches** | Then **30** files (`0000`–`0037`); later **`0038`–`0040`** on the same pin (see above). |
+
+Build: incremental `vendor/folia/work` `:folia-server:createPaperclipJar` → `lib/yap-folia-26.2.jar`. Full rebuild still `./scripts/build-yap-folia.sh`.
+
+---
+
+## v0.0.0.1 — honest reset: real Folia splits, no second clock (2026-09-18)
+
+Product version **0.0.0.1** (reset from the **1.0.0.0** line). Gradle `version`, every first-party `plugin.yml` / `link-plugin.json`, and release trees share this number.
+
+| Area | Change |
+|------|--------|
+| **Bar** | Professional grade is Folia’s **regionizer holding under real splits** (contiguous hot region → empty-buffer cut → independent shards) **without** a YaP phase clock. Same-tick BLOCKS lockstep is not the bar. |
+| **Status** | That bar is **possible** (Folia topology + `0017`/`0018`/`0015`) and **not met**. Lab partition-cut PASS used pre-gapped lobes (`contiguous_carve=false`). Relocate abort still refuses a live corridor when `moved=0`. |
+| **Knobs** | Partition, carve, and aligned microticks stay **on** as intent. Microticks are optional coherence, not a second world clock. Lab gap/threshold/probe stay lab-only. |
+| **Docs** | README, whitepaper §3.4/§4/§13, [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md), [RELEASES.md](RELEASES.md), [SECURITY.md](../../SECURITY.md) |
+
+Build: `gradle publishReleasesFolder -PyapGameplay=true` → `releases/0.0.0.1/`. Tag **`0.0.0.1`**. Upload with `--clobber` per [RELEASES.md](RELEASES.md). Previous GitHub tag **`1.0.0.0`** remains history.
+
+---
+
+## After 1.0.0.0 — Region cut lab (pre-gap) + ship-on partition/carve/waves (2026-09-18)
+
+Same ship version on the old **1.0.0.0** line (no product bump then). Rebuild Folia incrementally, then `gradle publishReleasesFolder -PyapGameplay=true`.
+
+| Area | Change |
+|------|--------|
+| **Region cut (lab)** | Pre-gapped force-partition + `RegionizedWorldData.split` (0032) + BLOCKS-tagged pulse; `wave_timeouts=0`. **Not** a live contiguous carve. |
 | **0026 waves** | Per-world epoch keys; leave epoch at end of region tick; wait only when same-world peers arrived |
 | **Ship defaults** | `folia-subregion-partition=true`, `folia-subregion-carve=true`, `folia-aligned-microticks=true` |
-| **0018 carve** | Split to `YapCorridorCarver` / `YapCorridorEntities` / `YapCorridorPlanner` / `YapCorridorUnload` (≤500) |
-| **Patches** | `0032` split harden + `0033` lab probe in the product jar. **No 0034** |
+| **0018 carve** | Split to `YapCorridorCarver` / `YapCorridorEntities` / `YapCorridorPlanner` / `YapCorridorUnload` (≤500); Moonrise `processUnloads` |
+| **Patches** | Then **26** YaP files on pin `14b7fee` (6 Sep). `0032` repairs YaP force-partition split; `0033` is the lab probe. **Not** a Folia regionizer backport. Later **`0034`–`0040`** landed on the same pin (see above). |
 | **Domain ≤500** | Bedrock join/play/session extracts; Folia corridor helpers |
 | **Docs** | [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [README.md](../../README.md) · [DEFAULTS.md](DEFAULTS.md) · whitepaper §3.4 / §4 |
 
@@ -489,4 +536,4 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 
 ---
 
-*1.0.0.0 remains the ship version. Bump only when cutting a later tagged release.*
+*0.0.0.1 is the ship version. The **1.0.0.0** GitHub tag is history. Bump only when cutting a later tagged release.*

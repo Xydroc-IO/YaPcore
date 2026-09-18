@@ -85,6 +85,8 @@ folia-subregion-coalesce-min-wall-ms=30000
 folia-subregion-partition-delay-ticks=600
 # Corridor carve before force-partition (contiguous strips). Use false with pre-gapped/lobe layouts.
 folia-subregion-carve=true
+folia-ticket-hygiene=true
+folia-portal-couple=true
 folia-subregion-gap-maintain-interval=10
 # Default: build (YaP-Folia) after ./scripts/build-yap-folia.sh — see docs/YAP_FOLIA_SOAK.md
 # Stock Fill fallback: folia-jar-source=fetch + ./scripts/fetch-folia.sh

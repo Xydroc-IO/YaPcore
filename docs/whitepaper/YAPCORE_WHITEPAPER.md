@@ -1,9 +1,10 @@
 # YaPcore: YaP-Folia Game Authority, Slim Edge Chassis, Native Network Stack, and First-Party Plugin Suite
 
 **YapLabs Technical Whitepaper**  
-Version **0.5** · September 2026  
+Version **0.6** · September 2026  
 Document ID: `YAP-WP-16T-001`  
-Supersedes: v0.4 (September 2026)
+Product: YaPcore **0.0.0.1**  
+Supersedes: v0.5 (September 2026)
 
 > Operator docs: [QUICK_START.md](../start/QUICK_START.md) · [docs/README.md](README.md).
 
@@ -154,7 +155,7 @@ Each logical stream obtains a `SequenceToken` carrying a per-stream sequence and
 
 ### 3.4 Spatial model
 
-**YaP-Folia** indexes world interest by region and runs authoritative tick on a dynamic region thread pool. YaP patches add teleport transactions (default **on**), entity tick budgets, async chunk save, scoreboard SWMR, and **subregion partition + corridor carve** (default **on**) — §4. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin work; they do **not** replace YaP-Folia game tick. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (**benches only**).
+**YaP-Folia** indexes world interest by region and runs authoritative tick on a dynamic region thread pool. YaP patches add teleport transactions (default **on**), entity tick budgets, async chunk save, scoreboard SWMR, and **subregion partition + corridor carve** (default **on**) — §4. Partition is a Folia-legal **empty-buffer cut**, not a second clock; aligned microticks are optional. **Professional bar** (live contiguous split that the regionizer holds) is **not met** on product **0.0.0.1**. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin work; they do **not** replace YaP-Folia game tick. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (**benches only**).
 
 ### 3.5 Memory & GC posture
 
@@ -164,7 +165,7 @@ Production launch scripts prefer **Generational ZGC** with optional **NUMA** pin
 
 ## 4. YaP-Folia fork
 
-YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream pin lives in `vendor/folia/UPSTREAM.lock`; ordered patches in `vendor/folia/patches/`.
+YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream pin is **`14b7fee`** (`ver/26.2.x`, 2026-09-06) in `vendor/folia/UPSTREAM.lock`. **33** ordered files in `vendor/folia/patches/`: `0000`–`0033` are YaP behavior or repairs; `0034`–`0040` are Folia-itself improvements on that pin (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME). Later upstream regionizer commits still come from moving the pin.
 
 | Patch | Purpose | Default |
 |-------|---------|---------|
@@ -176,13 +177,22 @@ YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream 
 | `0013` | Region pool metrics / microtick knobs | microtick **8 ms** (ship) |
 | `0014`–`0019` / `0024` | Subregion partition + corridor carve + harden | **on** (ship; hysteresis) |
 | `0022` | Hopper BE transfer budget | **64** (ship) |
-| `0026`–`0030` | Per-world aligned micro/sub-ticks + RTQ phase tags | **on** (ship) |
+| `0026`–`0030` | Per-world aligned micro/sub-ticks + RTQ phase tags | **on** (ship; optional coherence, **not** the split bar) |
 | `0031` | Physics sub-steps | **on** (ship) |
-| `0032` | `RegionizedWorldData` split/merge harden | always |
+| `0032` | YaP force-partition split/merge guards | always |
 | `0033` | Scheduler probe | **off** (lab) |
+| `0034` | Ticket/unload hygiene (last-ticket drop, LOADING-only holds) | **on** (ship) |
+| `0035` | Region ownership: AI sensors, leash, dragon parts | always |
+| `0036` | Portal-linked region thread coupling | **on** (ship) |
+| `0037` | Split harden: scheduler/RTQ requeue + entity target | always |
+| `0038` | Fire PlayerTeleportEvent / portal events on teleportAsync (#490) | always |
+| `0039` | Map autosave uses server-global SavedDataStorage (#505/#506) | always |
+| `0040` | Debug-subscriber CME: disable subscriptions + global-only tick (#472) | always |
 
 Build: `./scripts/build-yap-folia.sh` → `lib/yap-folia-26.2.jar`.  
-Docs: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [QUICK_START.md](../start/QUICK_START.md).
+Docs: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [QUICK_START.md](../start/QUICK_START.md).
+
+**0.0.0.1 honesty:** force-partition of a **live contiguous** hot region that the Folia regionizer then holds, without a YaP phase clock, is the professional bar. It is possible (empty-buffer topology + `0015` neighbor defer). It is **not proven**. Lab smoke used pre-gapped lobes. Relocate abort still blocks carve when corridor entities do not move.
 
 Stock Folia fallback: `folia-jar-source=fetch` + `./scripts/fetch-folia.sh` (bench / comparison only).
 
@@ -384,7 +394,8 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 
 | Area | Status |
 |------|--------|
-| YaP-Folia product path | **Default** (`folia-jar-source=build`) |
+| YaP-Folia product path | **Default** (`folia-jar-source=build`) — product **0.0.0.1** |
+| Subregion real split (no second clock) | **Not met** — knobs on; live contiguous carve/hold unproven |
 | YapEngine slim chassis | **Always on** |
 | YaP Link phases 0–6 | **Shipped** (`0.6.0-phase6`) |
 | Phase 3 Paper spatial | **Complete as code** — **retired as product default** |
@@ -429,7 +440,7 @@ Stretch starts only with its own plan and done bars.
 
 YaPcore demonstrates a practical decomposition for Minecraft-class servers: **YaP-Folia** owns regionized game tick; **YapEngine** owns a slim edge/I/O chassis with an explicit plugin pool contract; **YaP Link** owns multi-backend routing; and a **first-party plugin + MariaDB data plane** replaces the usual DIY glue stack. Opt-in GAMEPLAY (skills, dungeons, stacker, encyclopedia, disasters) extends the same Folia-safe patterns without claiming a full MMO stack.
 
-Future work emphasizes full NMS CFI under a Folia kernel plan (only if still bottlenecked after CFI-lite), hot-region partition soak under load, and continued Folia upstream rebase hygiene.
+Future work emphasizes **real contiguous Folia splits that hold without a YaP phase clock**, full NMS CFI under a Folia kernel plan (only if still bottlenecked after CFI-lite), hot-region partition soak under load, and continued Folia upstream rebase hygiene.
 
 ---
 

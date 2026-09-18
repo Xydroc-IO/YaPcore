@@ -192,6 +192,8 @@ public final class FoliaKernel {
         } else {
             cmd.add("-Dyap.folia.physics-substeps=false");
         }
+        cmd.add("-Dyap.folia.ticket-hygiene=" + config.isFoliaTicketHygiene());
+        cmd.add("-Dyap.folia.portal-couple=" + config.isFoliaPortalCouple());
         long stealMs = config.getFoliaStealThresholdMs();
         if (stealMs != 3L) {
             cmd.add("-Dyap.folia.steal-threshold-ms=" + stealMs);

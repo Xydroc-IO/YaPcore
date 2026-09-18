@@ -1,0 +1,238 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP Folia portal-linked region thread coupling
+
+Folia issue #469: record nether/overworld portal pairs and run the partner region's
+due tick on the same OS thread after origin markNotTicking (no nested tick, cancel+run+reschedule).
+Post-applyAllPatches.
+---
+
+--- /dev/null
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPortalRegionCoupler.java
+@@ -0,0 +1,176 @@
++package io.papermc.paper.threadedregions;
++
++import ca.spottedleaf.common.util.TimeUtil;
++import ca.spottedleaf.moonrise.common.util.CoordinateUtils;
++import com.mojang.logging.LogUtils;
++import net.minecraft.server.level.ServerLevel;
++import net.minecraft.world.level.ChunkPos;
++import org.slf4j.Logger;
++
++import java.util.concurrent.ConcurrentHashMap;
++import java.util.concurrent.TimeUnit;
++
++/**
++ * Folia issue #469: nether/overworld portal-linked regions should tick on the
++ * same OS thread so entity handoff does not deadlock across two workers.
++ *
++ * <p>After a region finishes its tick on this thread, steal the partner's queued
++ * tick (if due) and run it here. Nested steal is rejected. Never run dest world
++ * work on the origin region while origin is still marked ticking.
++ *
++ * <p>Region thread: {@link #afterRegionTick} runs on the origin region's tick
++ * thread after {@code markNotTicking}. {@link #link} is called from portal
++ * completion (origin or dest region thread).
++ */
++public final class YapPortalRegionCoupler {
++
++    private static final Logger LOGGER = LogUtils.getLogger();
++    private static final boolean ENABLED = Boolean.parseBoolean(
++            System.getProperty("yap.folia.portal-couple", "true"));
++    private static final long LINK_TTL_NS = TimeUnit.SECONDS.toNanos(30L);
++    private static final ThreadLocal<Boolean> STEALING = ThreadLocal.withInitial(() -> Boolean.FALSE);
++    private static final ConcurrentHashMap<Long, Link> BY_FROM = new ConcurrentHashMap<>();
++
++    private YapPortalRegionCoupler() {
++    }
++
++    public static boolean enabled() {
++        return ENABLED;
++    }
++
++    public static void link(final ServerLevel from, final ChunkPos fromChunk,
++                            final ServerLevel to, final ChunkPos toChunk) {
++        if (!ENABLED || from == null || to == null || fromChunk == null || toChunk == null || from == to) {
++            return;
++        }
++        final long now = System.nanoTime();
++        final Link ab = new Link(from, fromChunk.x(), fromChunk.z(), to, toChunk.x(), toChunk.z(), now);
++        final Link ba = new Link(to, toChunk.x(), toChunk.z(), from, fromChunk.x(), fromChunk.z(), now);
++        BY_FROM.put(ab.fromKey, ab);
++        BY_FROM.put(ba.fromKey, ba);
++        pullPartnerDeadline(ab);
++        pullPartnerDeadline(ba);
++        expireStale(now);
++    }
++
++    static void afterRegionTick(final TickRegionScheduler.RegionScheduleHandle origin) {
++        if (!ENABLED || origin == null || origin.region == null) {
++            return;
++        }
++        if (Boolean.TRUE.equals(STEALING.get())) {
++            return;
++        }
++        final TickRegions.TickRegionData data = origin.region;
++        final ServerLevel world = data.world;
++        final ChunkPos center = data.region.getCenterChunk();
++        if (world == null || center == null) {
++            return;
++        }
++        final Link link = BY_FROM.get(pack(world, center.x(), center.z()));
++        if (link == null || link.expired(System.nanoTime())) {
++            return;
++        }
++        if (link.fromWorld != world) {
++            return;
++        }
++        stealPartnerTick(origin, link);
++    }
++
++    private static void stealPartnerTick(final TickRegionScheduler.RegionScheduleHandle origin, final Link link) {
++        final ServerLevel destWorld = link.toWorld;
++        if (destWorld == null || destWorld.regioniser == null) {
++            return;
++        }
++        final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> destRegion
++                = destWorld.regioniser.getRegionAtSynchronised(link.toChunkX, link.toChunkZ);
++        if (destRegion == null) {
++            return;
++        }
++        final TickRegionScheduler.RegionScheduleHandle partner = destRegion.getData().getRegionSchedulingHandle();
++        if (partner == null || partner == origin || partner.isMarkedAsNonSchedulable()) {
++            return;
++        }
++        final long now = System.nanoTime();
++        final long due = partner.scheduledStartNs();
++        if (due != TimeUtil.DEADLINE_NOT_SET && due > now + TickRegionScheduler.TIME_BETWEEN_TICKS) {
++            return;
++        }
++        final TickRegionScheduler scheduler = origin.regionScheduler();
++        if (scheduler == null || !scheduler.unscheduleIfQueued(partner)) {
++            return;
++        }
++        STEALING.set(Boolean.TRUE);
++        try {
++            final boolean keep = partner.runTick();
++            if (keep && !partner.isMarkedAsNonSchedulable()) {
++                scheduler.scheduleRegion(partner);
++            }
++        } catch (final Throwable t) {
++            LOGGER.error("YaP portal couple: partner region tick failed, rescheduling", t);
++            if (!partner.isMarkedAsNonSchedulable()) {
++                scheduler.scheduleRegion(partner);
++            }
++        } finally {
++            STEALING.set(Boolean.FALSE);
++        }
++    }
++
++    private static void pullPartnerDeadline(final Link link) {
++        try {
++            final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> from
++                    = link.fromWorld.regioniser.getRegionAtUnsynchronised(link.fromChunkX, link.fromChunkZ);
++            final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> to
++                    = link.toWorld.regioniser.getRegionAtUnsynchronised(link.toChunkX, link.toChunkZ);
++            if (from == null || to == null) {
++                return;
++            }
++            final long fromStart = from.getData().getRegionSchedulingHandle().scheduledStartNs();
++            to.getData().getRegionSchedulingHandle().pullScheduledStart(fromStart);
++        } catch (final Throwable ignored) {
++        }
++    }
++
++    private static void expireStale(final long now) {
++        if (BY_FROM.size() < 4096) {
++            BY_FROM.values().removeIf(link -> link.expired(now));
++            return;
++        }
++        BY_FROM.values().removeIf(link -> link.expired(now));
++        if (BY_FROM.size() >= 8192) {
++            BY_FROM.clear();
++        }
++    }
++
++    private static long pack(final ServerLevel world, final int chunkX, final int chunkZ) {
++        final int shift = TickRegions.getRegionChunkShift();
++        final long section = CoordinateUtils.getChunkKey(chunkX >> shift, chunkZ >> shift);
++        return (((long) System.identityHashCode(world)) << 32) ^ section;
++    }
++
++    private static final class Link {
++        private final ServerLevel fromWorld;
++        private final int fromChunkX;
++        private final int fromChunkZ;
++        private final ServerLevel toWorld;
++        private final int toChunkX;
++        private final int toChunkZ;
++        private final long fromKey;
++        private final long createdNs;
++
++        private Link(final ServerLevel fromWorld, final int fromChunkX, final int fromChunkZ,
++                     final ServerLevel toWorld, final int toChunkX, final int toChunkZ, final long createdNs) {
++            this.fromWorld = fromWorld;
++            this.fromChunkX = fromChunkX;
++            this.fromChunkZ = fromChunkZ;
++            this.toWorld = toWorld;
++            this.toChunkX = toChunkX;
++            this.toChunkZ = toChunkZ;
++            this.fromKey = pack(fromWorld, fromChunkX, fromChunkZ);
++            this.createdNs = createdNs;
++        }
++
++        private boolean expired(final long now) {
++            return now - this.createdNs > LINK_TTL_NS;
++        }
++    }
++}
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/TickRegionScheduler.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/TickRegionScheduler.java
+@@ -56,6 +56,10 @@
+         WORK_STEALING;
+     }
+ 
++    public boolean unscheduleIfQueued(final RegionScheduleHandle region) {
++        return this.scheduler.cancel(region);
++    }
++
+     public TickRegionScheduler(final SchedulerType schedulerType, final int initialThreads) {
+         final ThreadFactory threadFactory = new ThreadFactory() {
+             private final AtomicInteger idGenerator = new AtomicInteger();
+@@ -323,6 +327,24 @@
+ 
+         private TickRegionScheduler scheduler;
+ 
++        final TickRegionScheduler regionScheduler() {
++            return this.scheduler;
++        }
++
++        public final long scheduledStartNs() {
++            return this.getScheduledStart();
++        }
++
++        final void pullScheduledStart(final long otherStart) {
++            if (otherStart == TimeUtil.DEADLINE_NOT_SET) {
++                return;
++            }
++            final long mine = this.getScheduledStart();
++            if (mine == TimeUtil.DEADLINE_NOT_SET || otherStart < mine) {
++                this.updateScheduledStart(otherStart);
++            }
++        }
++
+         public RegionScheduleHandle(final TickRegions.TickRegionData region, final long firstStart) {
+             this.currentTick = 0L;
+             this.lastTickStart = TimeUtil.DEADLINE_NOT_SET;
+@@ -519,7 +541,11 @@
+             }
+ 
+             // Only AFTER updating the tickStart
+-            return this.markNotTicking() && !this.cancelled.get();
++            final boolean keepScheduled = this.markNotTicking() && !this.cancelled.get();
++            if (keepScheduled && this.region != null) {
++                YapPortalRegionCoupler.afterRegionTick(this);
++            }
++            return keepScheduled;
+         }
+ 
+         /**

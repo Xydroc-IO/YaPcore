@@ -1,0 +1,339 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP Folia teleport Bukkit events (Folia #490)
+
+Fire PlayerTeleportEvent / EntityTeleportEvent from teleportAsync, and
+PlayerPortalEvent / EntityPortalEvent before the async portal yank.
+Post-applyAllPatches.
+---
+
+--- /dev/null
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportEvents.java
+@@ -0,0 +1,222 @@
++package io.papermc.paper.threadedregions;
++
++import net.minecraft.core.BlockPos;
++import net.minecraft.core.Direction;
++import net.minecraft.server.level.ServerLevel;
++import net.minecraft.server.level.ServerPlayer;
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.level.dimension.DimensionType;
++import net.minecraft.world.level.dimension.LevelStem;
++import net.minecraft.world.phys.Vec3;
++import org.bukkit.Location;
++import org.bukkit.PortalType;
++import org.bukkit.craftbukkit.CraftWorld;
++import org.bukkit.craftbukkit.event.CraftEventFactory;
++import org.bukkit.craftbukkit.event.PortalEventResult;
++import org.bukkit.craftbukkit.util.CraftLocation;
++import org.bukkit.event.entity.EntityTeleportEvent;
++import org.bukkit.event.player.PlayerTeleportEvent;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.function.BooleanSupplier;
++
++/**
++ * Folia #490: {@code teleportAsync} and the async portal path skip Bukkit teleport
++ * events. YaP portals, Link transfers, and plugin listeners decide in those events.
++ *
++ * <p>Region thread: fire while the entity is still owned. Destination rewrite is
++ * applied before the same-region vs cross-region split. Move-event rewinds use
++ * {@link #withoutEvents} so PlayerMoveEvent does not also become a teleport event.
++ */
++public final class YapTeleportEvents {
++
++    private static final ThreadLocal<Integer> SUPPRESS = ThreadLocal.withInitial(() -> 0);
++
++    private YapTeleportEvents() {
++    }
++
++    public static void withoutEvents(final Runnable run) {
++        withoutEvents(() -> {
++            run.run();
++            return true;
++        });
++    }
++
++    public static boolean withoutEvents(final BooleanSupplier run) {
++        SUPPRESS.set(SUPPRESS.get() + 1);
++        try {
++            return run.getAsBoolean();
++        } finally {
++            SUPPRESS.set(SUPPRESS.get() - 1);
++        }
++    }
++
++    public static boolean suppressed() {
++        return SUPPRESS.get() > 0;
++    }
++
++    public static final class Dest {
++        public ServerLevel world;
++        public Vec3 pos;
++        public float yaw;
++        public float pitch;
++        public boolean rewritten;
++    }
++
++    public static boolean fireTeleport(final Entity root, final Dest dest,
++                                       final PlayerTeleportEvent.TeleportCause cause) {
++        if (suppressed() || root == null || dest == null || dest.world == null || dest.pos == null) {
++            return true;
++        }
++        if (root.isRemoved()) {
++            return false;
++        }
++        final Location original = location(dest);
++        final List<Entity> tree = treeOf(root);
++        Location applied = original;
++        for (int i = 0; i < tree.size(); i++) {
++            final Entity entity = tree.get(i);
++            final Location from = entity.getBukkitEntity().getLocation();
++            final Location to = applied.clone();
++            if (entity instanceof ServerPlayer) {
++                final PlayerTeleportEvent event = new PlayerTeleportEvent(
++                    (org.bukkit.entity.Player) entity.getBukkitEntity(), from, to, cause);
++                event.callEvent();
++                if (event.isCancelled() || event.getTo() == null || event.getTo().getWorld() == null) {
++                    return false;
++                }
++                if (i == 0) {
++                    applied = event.getTo();
++                } else if (event.getTo() != to && !sameSpot(to, event.getTo())) {
++                    applied = event.getTo();
++                }
++            } else {
++                final EntityTeleportEvent event = new EntityTeleportEvent(
++                    entity.getBukkitEntity(), from, to);
++                event.callEvent();
++                if (event.isCancelled() || event.getTo() == null || event.getTo().getWorld() == null) {
++                    return false;
++                }
++                if (i == 0) {
++                    applied = event.getTo();
++                }
++            }
++        }
++        if (!apply(dest, applied)) {
++            return false;
++        }
++        dest.rewritten = !sameSpot(original, applied);
++        return recheck(root, dest);
++    }
++
++    public static boolean firePortal(final Entity root, final ServerLevel destination,
++                                     final boolean nether, final Dest dest) {
++        if (root == null || destination == null || dest == null) {
++            return false;
++        }
++        predict(root, destination, nether, dest);
++        final Location predicted = location(dest);
++        final PortalType bukkitType = nether ? PortalType.NETHER : PortalType.ENDER;
++        final int search = destination.paperConfig().environment.portalSearchRadius;
++        final int create = destination.paperConfig().environment.portalCreateRadius;
++        PortalEventResult result = CraftEventFactory.handlePortalEvents(
++            root, predicted.clone(), bukkitType, search, create);
++        if (result == null) {
++            return false;
++        }
++        for (final Entity passenger : root.getIndirectPassengers()) {
++            if (!(passenger instanceof ServerPlayer) || passenger == root) {
++                continue;
++            }
++            final PortalEventResult passengerResult = CraftEventFactory.handlePortalEvents(
++                passenger, result.to().clone(), bukkitType, result.searchRadius(), result.createRadius());
++            if (passengerResult == null) {
++                return false;
++            }
++            result = passengerResult;
++        }
++        if (!apply(dest, result.to())) {
++            return false;
++        }
++        dest.rewritten = !sameSpot(predicted, result.to());
++        return !root.isRemoved();
++    }
++
++    public static PlayerTeleportEvent.TeleportCause portalCause(final boolean nether) {
++        return nether
++            ? PlayerTeleportEvent.TeleportCause.NETHER_PORTAL
++            : PlayerTeleportEvent.TeleportCause.END_PORTAL;
++    }
++
++    private static void predict(final Entity entity, final ServerLevel destination,
++                                final boolean nether, final Dest dest) {
++        dest.world = destination;
++        dest.yaw = entity.getYRot();
++        dest.pitch = entity.getXRot();
++        dest.rewritten = false;
++        if (!nether) {
++            if (destination.getTypeKey() == LevelStem.END) {
++                dest.pos = Vec3.atBottomCenterOf(ServerLevel.END_SPAWN_POINT.below());
++                dest.yaw = Direction.WEST.toYRot();
++                dest.pitch = 0.0f;
++            } else {
++                dest.pos = Vec3.atBottomCenterOf(destination.getRespawnData().pos());
++            }
++            return;
++        }
++        final double scale = DimensionType.getTeleportationScale(
++            entity.level().dimensionType(), destination.dimensionType());
++        dest.pos = Vec3.atCenterOf(destination.getWorldBorder().clampToBounds(
++            entity.getX() * scale, entity.getY(), entity.getZ() * scale));
++    }
++
++    private static boolean apply(final Dest dest, final Location to) {
++        if (to == null || to.getWorld() == null) {
++            return false;
++        }
++        dest.world = ((CraftWorld) to.getWorld()).getHandle();
++        dest.pos = CraftLocation.toVec3(to);
++        dest.yaw = to.getYaw();
++        dest.pitch = to.getPitch();
++        return dest.world != null;
++    }
++
++    private static boolean recheck(final Entity root, final Dest dest) {
++        if (root.isRemoved()) {
++            return false;
++        }
++        final BlockPos block = new BlockPos(
++            ca.spottedleaf.moonrise.common.util.CoordinateUtils.getBlockX(dest.pos),
++            ca.spottedleaf.moonrise.common.util.CoordinateUtils.getBlockY(dest.pos),
++            ca.spottedleaf.moonrise.common.util.CoordinateUtils.getBlockZ(dest.pos)
++        );
++        return ServerLevel.isInSpawnableBounds(block);
++    }
++
++    private static List<Entity> treeOf(final Entity root) {
++        final List<Entity> tree = new ArrayList<>();
++        tree.add(root);
++        for (final Entity passenger : root.getIndirectPassengers()) {
++            if (passenger != null && passenger != root) {
++                tree.add(passenger);
++            }
++        }
++        return tree;
++    }
++
++    private static Location location(final Dest dest) {
++        return CraftLocation.toBukkit(dest.pos, dest.world, dest.yaw, dest.pitch);
++    }
++
++    private static boolean sameSpot(final Location a, final Location b) {
++        if (a == null || b == null) {
++            return false;
++        }
++        if (a.getWorld() != b.getWorld()) {
++            return false;
++        }
++        return a.getX() == b.getX() && a.getY() == b.getY() && a.getZ() == b.getZ()
++            && a.getYaw() == b.getYaw() && a.getPitch() == b.getPitch();
++    }
++}
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
+@@ -4529,7 +4529,21 @@
+             }
+         }
+ 
+-        // TODO any events that can modify go HERE
++        // YaP start - Folia #490: fire PlayerTeleportEvent / EntityTeleportEvent
++        final io.papermc.paper.threadedregions.YapTeleportEvents.Dest yapDest =
++            new io.papermc.paper.threadedregions.YapTeleportEvents.Dest();
++        yapDest.world = destination;
++        yapDest.pos = pos;
++        yapDest.yaw = yaw != null ? yaw.floatValue() : this.getYRot();
++        yapDest.pitch = pitch != null ? pitch.floatValue() : this.getXRot();
++        if (!io.papermc.paper.threadedregions.YapTeleportEvents.fireTeleport(this, yapDest, cause)) {
++            return false;
++        }
++        destination = yapDest.world;
++        pos = yapDest.pos;
++        yaw = Float.valueOf(yapDest.yaw);
++        pitch = Float.valueOf(yapDest.pitch);
++        // YaP end - Folia #490: fire PlayerTeleportEvent / EntityTeleportEvent
+ 
+         // check for same region
+         if (destination == this.level()
+@@ -4854,6 +4868,24 @@
+             return false;
+         }
+ 
++        // YaP start - Folia #490: PlayerPortalEvent / EntityPortalEvent before yank
++        final boolean netherPortal = type == PortalType.NETHER;
++        final io.papermc.paper.threadedregions.YapTeleportEvents.Dest yapPortal =
++            new io.papermc.paper.threadedregions.YapTeleportEvents.Dest();
++        if (!io.papermc.paper.threadedregions.YapTeleportEvents.firePortal(this, destination, netherPortal, yapPortal)) {
++            return false;
++        }
++        if (yapPortal.rewritten) {
++            final long flags = Entity.TELEPORT_FLAG_LOAD_CHUNK
++                | (takePassengers ? Entity.TELEPORT_FLAG_TELEPORT_PASSENGERS : 0L);
++            return io.papermc.paper.threadedregions.YapTeleportEvents.withoutEvents(() -> this.teleportAsync(
++                yapPortal.world, yapPortal.pos, Float.valueOf(yapPortal.yaw), Float.valueOf(yapPortal.pitch), Vec3.ZERO,
++                io.papermc.paper.threadedregions.YapTeleportEvents.portalCause(netherPortal),
++                flags, teleportComplete
++            ));
++        }
++        // YaP end - Folia #490: PlayerPortalEvent / EntityPortalEvent before yank
++
+         Vec3 initialPosition = this.position();
+         ChunkPos initialPositionChunk = new ChunkPos(
+             ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkX(initialPosition),
+@@ -5011,11 +5043,11 @@
+             }
+         }
+ 
+-        this.teleportAsync(
++        io.papermc.paper.threadedregions.YapTeleportEvents.withoutEvents(() -> this.teleportAsync(
+             (ServerLevel)this.level(), this.position, null, null, null,
+             org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.UNKNOWN, Entity.TELEPORT_FLAG_LOAD_CHUNK | Entity.TELEPORT_FLAG_TELEPORT_PASSENGERS,
+             null
+-        );
++        ));
+     }
+     // Folia end - fix passenger desync
+ 
+--- a/folia-server/src/minecraft/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -734,7 +734,8 @@
+ 
+                     // If the event is cancelled we move the player back to their old location.
+                     if (event.isCancelled()) {
+-                        this.player.getBukkitEntity().teleportAsync(from, PlayerTeleportEvent.TeleportCause.PLUGIN); // Folia - region threading
++                        io.papermc.paper.threadedregions.YapTeleportEvents.withoutEvents(() ->
++                            this.player.getBukkitEntity().teleportAsync(from, PlayerTeleportEvent.TeleportCause.PLUGIN)); // Folia - region threading
+                         return;
+                     }
+ 
+@@ -742,7 +743,8 @@
+                     // there to avoid any 'Moved wrongly' or 'Moved too quickly' errors.
+                     // We only do this if the Event was not cancelled.
+                     if (!oldTo.equals(event.getTo()) && !event.isCancelled()) {
+-                        this.player.getBukkitEntity().teleportAsync(event.getTo(), PlayerTeleportEvent.TeleportCause.PLUGIN); // Folia - region threading
++                        io.papermc.paper.threadedregions.YapTeleportEvents.withoutEvents(() ->
++                            this.player.getBukkitEntity().teleportAsync(event.getTo(), PlayerTeleportEvent.TeleportCause.PLUGIN)); // Folia - region threading
+                         return;
+                     }
+ 
+@@ -1745,7 +1747,8 @@
+ 
+                                         // If the event is cancelled we move the player back to their old location.
+                                         if (event.isCancelled()) {
+-                                            this.player.getBukkitEntity().teleportAsync(from, PlayerTeleportEvent.TeleportCause.PLUGIN); // Folia - region threading
++                                            io.papermc.paper.threadedregions.YapTeleportEvents.withoutEvents(() ->
++                                                this.player.getBukkitEntity().teleportAsync(from, PlayerTeleportEvent.TeleportCause.PLUGIN)); // Folia - region threading
+                                             return;
+                                         }
+ 
+@@ -1753,7 +1756,8 @@
+                                         // there to avoid any 'Moved wrongly' or 'Moved too quickly' errors.
+                                         // We only do this if the Event was not cancelled.
+                                         if (!oldTo.equals(event.getTo()) && !event.isCancelled()) {
+-                                            this.player.getBukkitEntity().teleportAsync(event.getTo(), PlayerTeleportEvent.TeleportCause.PLUGIN); // Folia - region threading
++                                            io.papermc.paper.threadedregions.YapTeleportEvents.withoutEvents(() ->
++                                                this.player.getBukkitEntity().teleportAsync(event.getTo(), PlayerTeleportEvent.TeleportCause.PLUGIN)); // Folia - region threading
+                                             return;
+                                         }
+ 

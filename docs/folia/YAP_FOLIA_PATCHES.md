@@ -5,7 +5,9 @@ Ordered deltas under [`vendor/folia/patches/`](../../vendor/folia/patches/). Aut
 **Apply:** `folia-patch.sh pre` → Folia `applyAllPatches` → `folia-patch.sh post`  
 (see [`scripts/build-yap-folia.sh`](../../scripts/build-yap-folia.sh)).
 
-Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — refresh with `./scripts/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
+Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
+
+The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0040` (**7**) are Folia-itself improvements on that pin: ticket/unload hygiene, AI/leash/dragon ownership (Folia PRs 491/495/504), portal-linked region thread coupling (#469), split NPE harden, teleport Bukkit events (#490), map autosave storage (#505/#506), and debug-subscriber CME (#472). Moving the pin is still how you pick up later upstream regionizer commits.
 
 ## Patches
 
@@ -35,8 +37,15 @@ Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) �
 | `0029-yap-microphase-budgets.patch` | Naming: AI time-slice vs aligned micro-phases | landed |
 | `0030-yap-universal-rtq-phase-tag.patch` | Universal `RegionizedTaskQueue` tick-queue phase tagging | landed |
 | `0031-yap-physics-substeps.patch` | Internal travel/move physics sub-steps (combat/feel) | landed |
-| `0032-yap-regionized-world-data-split-harden.patch` | Split/merge null-safe connections, players, BEs, chunks | landed |
+| `0032-yap-regionized-world-data-split-harden.patch` | YaP force-partition split/merge guards (not an upstream Folia fix) | landed |
 | `0033-yap-scheduler-probe.patch` | Lab split + BLOCKS-drain probe (off unless `-Dyap.folia.scheduler-probe`) | landed |
+| `0034-yap-ticket-unload-hygiene.patch` | Last-ticket drop (no UNKNOWN) on owning thread; LOADING-only holds | landed |
+| `0035-yap-region-ownership-ai-leash-dragon.patch` | Folia PRs 491/495/504: AI sensors, delayed leash, dragon part sync | landed |
+| `0036-yap-portal-region-thread-couple.patch` | Folia #469: portal-linked regions tick on the same OS thread | landed |
+| `0037-yap-split-scheduler-rtq-harden.patch` | Null-safe scheduler/RTQ split requeue; entity split via `YapRegionSplit` | landed |
+| `0038-yap-teleport-bukkit-events.patch` | Folia #490: fire `PlayerTeleportEvent` / portal events on `teleportAsync` | landed |
+| `0039-yap-map-autosave-server-storage.patch` | Folia #505/#506: map autosave uses server-global `SavedDataStorage` | landed |
+| `0040-yap-debug-subscribers-cme.patch` | Folia #472 / PR 499: disable debug subscriptions; no region-thread HashMap tick | landed |
 
 Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent`). See [PLUGINS.md](../plugins/PLUGINS.md).
 
@@ -64,16 +73,22 @@ Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent
 | `-Dyap.folia.subregion-coalesce-min-wall-ms=N` | **30000** | Min wall-clock ms after partition before coalesce |
 | `-Dyap.folia.scheduler-probe=true` | **false** | Lab: dump split/BLOCKS-drain counters + pulse file. **Not a ship default.** |
 | `-Dyap.folia.subregion-carve-force-unload=true` | **false** | Lab: unload corridor even if relocate misses. **Not a ship default.** |
+| `-Dyap.folia.ticket-hygiene=true` | **true** (product) | Last ticket on owning thread drops immediately; hold tickets are LOADING-only |
+| `-Dyap.folia.portal-couple=true` | **true** (product) | Nether/overworld portal-linked regions steal a due partner tick onto this thread |
 
 Operator soak profiles: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md). Citeable MSPT: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md) · [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md).
 
 ## Region model (short)
 
-Folia’s invariant: **one tick thread owns one region**. YaP force-partitions hot contiguous areas into independent Folia regions with merge-inhibition so they stay schedulable in parallel. Neighbor updates across shard cuts may lag by up to one region tick (`0015`); with aligned microticks they are phase-tagged (`0028`). Wave barriers are **per-world** (`0026`): a region only waits when same-world peers have arrived at the prior phase, and it leaves the epoch when the region tick ends. Overworld does not timeout waiting for nether/end. Split/merge of `RegionizedWorldData` keeps entities (`0016`) plus connections, players, block-entities, and chunk lists (`0032`) on source when the target region is missing.
+Folia’s invariant: **one tick thread owns one region**. Two regions cannot tick in parallel if their loaded sections still touch — Folia will merge them or violate TickThread. YaP force-partition is therefore a **topological cut**: unload a Folia-legal empty buffer (`0017`/`0018`), `forcePartition`, then keep the gap empty (`0019`) so shards stay independent. Each shard is then ordinary Folia: one thread, one 20 TPS clock. Cross-cut neighbors queue onto the owning region (`0015`) and may land on the **next** region tick. That lag is Folia, not a second clock.
+
+YaP split guards (`0016`/`0032`) keep entities, connections, players, block-entities, and chunk lists on the source region when force-partition races a missing target — a repair of **YaP partition**, not a Folia regionizer backport.
+
+**Professional bar:** a **live contiguous** hot region actually splits and holds without a YaP epoch/microtick barrier. Aligned microticks (`0026`–`0030`) are optional phase tagging. Same-tick BLOCKS lockstep across shards **is** a second clock and is not required for the regionizer to be correct. **0.0.0.1 is not at that bar.** Relocate abort still fires when corridor entities do not move (`inCorridor>0 && moved<=0`). The lab partition-cut used pre-gapped lobes (`contiguous_carve=false`).
 
 ### Aligned micro/sub-ticks (patches 0026–0030)
 
-When `-Dyap.folia.aligned-microticks=true`, each **logical** 20 TPS region tick is subdivided into `YapMicroPhase` slices (CHUNKS → BLOCKS → ENTITIES → BLOCK_ENTITIES) with soft **per-world** epoch-wave barriers. Every `RegionizedTaskQueue` tick-queue runnable is phase-tagged at `createTickTaskQueue` / same-thread `queueOrExecuteTickTask` (`0030`). Game time still advances once per region tick — **not** a faster simulation clock and **not** hard global lockstep. Rollback: set `folia-aligned-microticks=false`.
+When `-Dyap.folia.aligned-microticks=true`, each **logical** 20 TPS region tick is subdivided into `YapMicroPhase` slices (CHUNKS → BLOCKS → ENTITIES → BLOCK_ENTITIES) with soft **per-world** epoch-wave barriers. Every `RegionizedTaskQueue` tick-queue runnable is phase-tagged at `createTickTaskQueue` / same-thread `queueOrExecuteTickTask` (`0030`). Game time still advances once per region tick — **not** a faster simulation clock, **not** hard global lockstep, and **not** the professional split bar. Rollback: set `folia-aligned-microticks=false`.
 
 ### Physics sub-steps (patch 0031)
 
@@ -89,11 +104,13 @@ Real fork work beyond toggles, when we pick the next stream:
 4. **Watchdog-aware phase budgets** — hard soft-deadline per `YapMicroPhase` so one overloaded phase cannot starve the rest of the region tick.
 5. **Chunk ticket / load pacing** — rate-limit ticket inflation and gen under join storms so tick threads stay on simulation, not IO.
 
-Capacity still mostly comes from **subregion partition + budgets + async save**; phases and physics are correctness/feel layers on top.
+Capacity still mostly comes from **real Folia shards after a legal empty-buffer cut + budgets + async save**. Phases and physics are optional correctness/feel layers on top — not a second world clock.
 
-### Scheduler proof (lab)
+### Scheduler proof
 
-Idle smoke does not force-partition. The professional check is a contiguous strip that force-partitions, `RegionizedWorldData.split` (0032) incrementing, then an off-owner RTQ pulse tagged `BLOCKS` that drains the same tick (not a slip). Lab PASS also requires `wave_timeouts=0`. Lab knobs only (`-Dyap.folia.scheduler-probe`, lowered MSPT threshold / delay / min-sections):
+Idle smoke does not force-partition. **Professional check (not met):** a **contiguous** loaded strip (not pre-gapped) carves, unloads, `forcePartition`s, `RegionizedWorldData.split` (0032) increments, the gap holds, and an off-owner neighbor/RTQ pulse runs on the **owning region thread** without TickThread violation. One region-tick of neighbor lag (`0015`) is acceptable. Same-tick BLOCKS drain under aligned microticks is **not** the bar.
+
+Lab-only (`-Dyap.folia.scheduler-probe`, lowered MSPT threshold / delay / min-sections, `contiguous_carve=false`):
 
 ```bash
 # Incremental Folia jar after patch work (do not full-rebuild if the work tree is dirty):
@@ -101,7 +118,7 @@ Idle smoke does not force-partition. The professional check is a contiguous stri
 ./scripts/smoke-partition-cut.sh 240
 ```
 
-Lab last PASS: `splits=1` `force_partitions=1` `split_misses=0` `pulses_queued=1` `pulses_ran=1` `slipped=0` `drained_blocks>0` `wave_timeouts=0`. `ran_blocks=0` with `drained_blocks>0` is the defer/drain path (accepted).
+Lab last run (pre-gapped, **not** the professional bar): `splits=1` `force_partitions=1` `split_misses=0` `pulses_queued=1` `pulses_ran=1` `slipped=0` `drained_blocks>0` `wave_timeouts=0`. `ran_blocks=0` is the defer/drain path. `contiguous_carve=false` / `gapHalf=32` skipped live relocate.
 
 
 ---
@@ -132,6 +149,8 @@ Patch inventory: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md) · cites: [YAP_FOL
 | `folia-subregion-carve` | **true** | Empty corridor unload before force-partition (`0018`) |
 | `folia-subregion-mspt-clear` | **16** | Hysteresis vs engage threshold (20) |
 | `folia-subregion-coalesce-min-wall-ms` | **30000** | Anti-thrash before coalesce |
+| `folia-ticket-hygiene` | **true** | Last-ticket drop + LOADING-only holds (`0034`) |
+| `folia-portal-couple` | **true** | Portal-linked regions share an OS thread (`0036`) |
 
 **Official cites use this ship profile.** Stock Folia / Canvas ignore YaP `-D` knobs — that is the product delta. Result JSON records `knob_*` fields; `YAP_MSPT_REQUIRE_SHIP_KNOBS=1` fails the gate if micro/subregion/entity are missing or below ship floor.
 
@@ -139,7 +158,7 @@ Scheduler: `folia-kernel/config/paper-global.yml` → `threaded-regions.schedule
 
 ## Aligned micro/sub-ticks gate
 
-Ship default **on** (`folia-aligned-microticks=true`) after smoke PASS with universal RTQ tagging (`0030`). Wave timeouts log at debug. Barriers are per-world: a region waits only when same-world peers have arrived at the prior phase.
+Ship default **on** (`folia-aligned-microticks=true`) after idle smoke with universal RTQ tagging (`0030`). Wave timeouts log at debug. Barriers are per-world: a region waits only when same-world peers have arrived at the prior phase. This is **optional coherence**, not the professional split bar.
 
 ```bash
 ./scripts/build-yap-folia.sh

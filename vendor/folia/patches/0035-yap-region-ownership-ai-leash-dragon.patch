@@ -1,0 +1,165 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP Folia region-ownership: AI sensors, leash, dragon parts
+
+Port Folia PRs 491/495/504 into generated sources: TickThread checks on AI sensor
+targets and delayed leashes; sync ender-dragon parts before registration / after transform.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/ai/behavior/BabyFollowAdult.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/ai/behavior/BabyFollowAdult.java
+@@ -27,6 +27,12 @@
+                             return false;
+                         } else {
+                         LivingEntity adult = i.get(nearestAdult);
++                        // Folia start - AI target memories can outlive region ownership
++                        if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(adult)) {
++                            nearestAdult.erase();
++                            return false;
++                        }
++                        // Folia end - AI target memories can outlive region ownership
+                         if (body.closerThan(adult, followRange.maxInclusive() + 1) && !body.closerThan(adult, followRange.minInclusive())) {
+                                 // CraftBukkit start
+                                 org.bukkit.event.entity.EntityTargetLivingEntityEvent event = org.bukkit.craftbukkit.event.CraftEventFactory.callEntityTargetLivingEvent(body, adult, org.bukkit.event.entity.EntityTargetEvent.TargetReason.FOLLOW_LEADER);
+@@ -37,6 +43,11 @@
+                                     walkTarget.erase();
+                                     return true;
+                                 }
++                                // Folia start - plugins can replace targets across region boundaries
++                                if (!org.bukkit.Bukkit.isOwnedByCurrentRegion(event.getTarget())) {
++                                    return false;
++                                }
++                                // Folia end - plugins can replace targets across region boundaries
+                                 adult = ((org.bukkit.craftbukkit.entity.CraftLivingEntity) event.getTarget()).getHandle();
+                                 // CraftBukkit end
+                                 WalkTarget target = new WalkTarget(
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/ai/memory/NearestVisibleLivingEntities.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/ai/memory/NearestVisibleLivingEntities.java
+@@ -32,6 +32,14 @@
+         return EMPTY;
+     }
+ 
++    // Folia start - sensor memories can outlive region ownership
++    private boolean isMatchingAndVisible(final LivingEntity entity, final Predicate<LivingEntity> filter) {
++        return ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(entity)
++            && filter.test(entity)
++            && this.lineOfSightTest.test(entity);
++    }
++    // Folia end - sensor memories can outlive region ownership
++
+     @VisibleForDebug
+     public List<LivingEntity> nearbyEntities() {
+         return this.nearbyEntities;
+@@ -39,7 +47,7 @@
+ 
+     public Optional<LivingEntity> findClosest(final Predicate<LivingEntity> filter) {
+         for (LivingEntity nearbyEntity : this.nearbyEntities) {
+-            if (filter.test(nearbyEntity) && this.lineOfSightTest.test(nearbyEntity)) {
++            if (this.isMatchingAndVisible(nearbyEntity, filter)) {
+                 return Optional.of(nearbyEntity);
+             }
+         }
+@@ -48,20 +56,22 @@
+     }
+ 
+     public Iterable<LivingEntity> findAll(final Predicate<LivingEntity> filter) {
+-        return Iterables.filter(this.nearbyEntities, entity -> filter.test(entity) && this.lineOfSightTest.test(entity));
++        return Iterables.filter(this.nearbyEntities, entity -> this.isMatchingAndVisible(entity, filter));
+     }
+ 
+     public Stream<LivingEntity> find(final Predicate<LivingEntity> filter) {
+-        return this.nearbyEntities.stream().filter(entity -> filter.test(entity) && this.lineOfSightTest.test(entity));
++        return this.nearbyEntities.stream().filter(entity -> this.isMatchingAndVisible(entity, filter));
+     }
+ 
+     public boolean contains(final LivingEntity targetEntity) {
+-        return this.nearbyEntities.contains(targetEntity) && this.lineOfSightTest.test(targetEntity);
++        return ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(targetEntity)
++            && this.nearbyEntities.contains(targetEntity)
++            && this.lineOfSightTest.test(targetEntity);
+     }
+ 
+     public boolean contains(final Predicate<LivingEntity> filter) {
+         for (LivingEntity nearbyEntity : this.nearbyEntities) {
+-            if (filter.test(nearbyEntity) && this.lineOfSightTest.test(nearbyEntity)) {
++            if (this.isMatchingAndVisible(nearbyEntity, filter)) {
+                 return true;
+             }
+         }
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/ai/sensing/NearestLivingEntitySensor.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/ai/sensing/NearestLivingEntitySensor.java
+@@ -17,7 +17,11 @@
+     protected void doTick(final ServerLevel level, final T body) {
+         double followRange = body.getAttributeValue(Attributes.FOLLOW_RANGE);
+         AABB boundingBox = body.getBoundingBox().inflate(followRange, followRange, followRange);
+-        List<LivingEntity> livingEntities = level.getEntitiesOfClass(LivingEntity.class, boundingBox, mob -> mob != body && mob.isAlive());
++        List<LivingEntity> livingEntities = level.getEntitiesOfClass(
++            LivingEntity.class,
++            boundingBox,
++            mob -> mob != body && ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(mob) && mob.isAlive()
++        );
+         livingEntities.sort(Comparator.comparingDouble(body::distanceToSqr));
+         Brain<?> brain = body.getBrain();
+         brain.setMemory(MemoryModuleType.NEAREST_LIVING_ENTITIES, livingEntities);
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/ai/sensing/NearestItemSensor.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/ai/sensing/NearestItemSensor.java
+@@ -24,7 +24,13 @@
+     @Override
+     protected void doTick(final ServerLevel level, final Mob body) {
+         Brain<?> brain = body.getBrain();
+-        List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class, body.getBoundingBox().inflate(32.0, 16.0, 32.0), item -> item.closerThan(body, MAX_DISTANCE_TO_WANTED_ITEM) && body.wantsToPickUp(level, item.getItem())); // Paper - Perf: Move predicate into getEntities
++        List<ItemEntity> items = level.getEntitiesOfClass(
++            ItemEntity.class,
++            body.getBoundingBox().inflate(32.0, 16.0, 32.0),
++            item -> ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(item)
++                && item.closerThan(body, MAX_DISTANCE_TO_WANTED_ITEM)
++                && body.wantsToPickUp(level, item.getItem())
++        );
+         items.sort(Comparator.comparingDouble(body::distanceToSqr));
+         // Paper start - Perf: remove streams from hot code
+         ItemEntity nearest = null;
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/Leashable.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/Leashable.java
+@@ -94,11 +94,11 @@
+             Optional<BlockPos> pos = leashData.delayedLeashInfo.right();
+             if (leashUuid.isPresent()) {
+                 Entity leasher = serverLevel.getEntity(leashUuid.get());
+-                if (leasher != null) {
++                if (leasher != null && ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(leasher)) { // Folia - region threading
+                     setLeashedTo(entity, leasher, true);
+                     return;
+                 }
+-            } else if (pos.isPresent()) {
++            } else if (pos.isPresent() && ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(serverLevel, pos.get())) { // Folia - region threading
+                 setLeashedTo(entity, LeashFenceKnotEntity.getOrCreateKnot(serverLevel, pos.get()), true);
+                 return;
+             }
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/boss/enderdragon/EnderDragon.java
+@@ -1011,4 +1011,12 @@
+         return 500;
+     }
+     // Paper end - init expToDrop for already dying spawned dragon
++
++    // Folia start - keep multipart entities in the owning region before registration
++    public void syncPartPositions() {
++        for (EnderDragonPart part : this.getSubEntities()) {
++            this.tickPart(part, 0.0, 0.0, 0.0);
++        }
++    }
++    // Folia end - keep multipart entities in the owning region before registration
+ }
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/level/entity/server/ServerEntityLookup.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/level/entity/server/ServerEntityLookup.java
+@@ -86,6 +86,11 @@
+ 
+     @Override
+     protected void addEntityCallback(final Entity entity) {
++        // Folia start - keep multipart entities in the owning region before registration
++        if (entity instanceof net.minecraft.world.entity.boss.enderdragon.EnderDragon dragon) {
++            dragon.syncPartPositions();
++        }
++        // Folia end - keep multipart entities in the owning region before registration
+         this.world.getCurrentWorldData().addEntity(entity); // Folia - region threading
+         if (entity instanceof ServerPlayer player) {
+             ((ChunkSystemServerLevel)this.serverWorld).moonrise$getNearbyPlayers().addPlayer(player);

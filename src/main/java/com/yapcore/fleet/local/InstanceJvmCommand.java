@@ -134,6 +134,8 @@ public final class InstanceJvmCommand {
         if (!config.isFoliaRegionMetrics()) {
             cmd.add("-Dyap.folia.region-metrics=false");
         }
+        cmd.add("-Dyap.folia.ticket-hygiene=" + config.isFoliaTicketHygiene());
+        cmd.add("-Dyap.folia.portal-couple=" + config.isFoliaPortalCouple());
         appendSubregion(config, cmd);
     }
 

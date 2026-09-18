@@ -112,5 +112,7 @@ Seeded in `config/defaults/server.properties` (and forwarded as `-Dyap.folia.*`)
 | `folia-subregion-carve` | **true** |
 | `folia-aligned-microticks` | **true** |
 | `folia-physics-substeps` | **true** |
+| `folia-ticket-hygiene` | **true** |
+| `folia-portal-couple` | **true** |
 
-Lab-only: `-Dyap.folia.scheduler-probe` (patch `0033`). There is no patch `0034`. Inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
+Lab-only: `-Dyap.folia.scheduler-probe` (patch `0033`). **33** patches on pin `14b7fee` (`0000`–`0040`): `0034`–`0040` are Folia-itself (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME). **Professional bar** (real contiguous split that the regionizer holds, no second clock) is **not met** on **0.0.0.1**. Inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
