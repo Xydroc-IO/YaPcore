@@ -38,4 +38,36 @@ final class JeToBedrockBlockMapperTest {
         assertNotEquals(mapper.airRuntimeId(), deepslate, "deepslate must not fall back to air");
         assertTrue(mapper.mapHits() >= 1);
     }
+
+    @Test
+    void stairsFacingMapsToDistinctRuntimes() {
+        JeToBedrockBlockMapper mapper = new JeToBedrockBlockMapper(2169, new JeBlockRegistry());
+        int east = mapper.mapBlockName(
+                "minecraft:oak_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]");
+        int west = mapper.mapBlockName(
+                "minecraft:oak_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]");
+        int north = mapper.mapBlockName(
+                "minecraft:oak_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]");
+        int top = mapper.mapBlockName(
+                "minecraft:oak_stairs[facing=east,half=top,shape=straight,waterlogged=false]");
+        assertNotEquals(mapper.airRuntimeId(), east);
+        assertNotEquals(east, west);
+        assertNotEquals(east, north);
+        assertNotEquals(east, top);
+    }
+
+    @Test
+    void signsMapToOrientedPaletteEntries() {
+        JeToBedrockBlockMapper mapper = new JeToBedrockBlockMapper(2169, new JeBlockRegistry());
+        int stand0 = mapper.mapBlockName("minecraft:oak_sign[rotation=0,waterlogged=false]");
+        int stand4 = mapper.mapBlockName("minecraft:oak_sign[rotation=4,waterlogged=false]");
+        int wallN = mapper.mapBlockName("minecraft:oak_wall_sign[facing=north,waterlogged=false]");
+        int wallS = mapper.mapBlockName("minecraft:oak_wall_sign[facing=south,waterlogged=false]");
+        int birch = mapper.mapBlockName("minecraft:birch_sign[rotation=2,waterlogged=false]");
+        assertNotEquals(mapper.airRuntimeId(), stand0);
+        assertNotEquals(stand0, stand4);
+        assertNotEquals(wallN, wallS);
+        assertNotEquals(mapper.airRuntimeId(), birch);
+        assertNotEquals(stand0, birch);
+    }
 }

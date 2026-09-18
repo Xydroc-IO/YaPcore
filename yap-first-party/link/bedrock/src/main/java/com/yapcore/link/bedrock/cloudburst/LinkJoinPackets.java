@@ -118,7 +118,8 @@ public final class LinkJoinPackets {
                 (float) feetX,
                 (float) (feetY + LinkBedrockSession.PLAYER_EYE_OFFSET),
                 (float) feetZ));
-        packet.setRotation(Vector2f.from(1.0f, 1.0f));
+        // Match JE default (south). Placeholder (1°,1°) made Bedrock spawn feel sideways.
+        packet.setRotation(Vector2f.from(0.0f, 0.0f));
         packet.setSeed(-1L);
         packet.setDimensionId(0);
         packet.setGeneratorId(1);

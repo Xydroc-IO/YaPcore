@@ -9,6 +9,7 @@ import com.yapcore.link.bedrock.session.LinkBedrockSession.PendingChunkConsumer;
 import com.yapcore.link.bedrock.session.LinkBedrockSession.PendingJeChunk;
 import com.yapcore.link.bedrock.translator.ChunkUtils;
 import com.yapcore.link.bedrock.translator.JavaBlockUpdateTranslator;
+import com.yapcore.link.bedrock.translator.JavaDimensionTranslator;
 import com.yapcore.link.bedrock.translator.JavaLevelChunkTranslator;
 import com.yapcore.link.bedrock.translator.JavaLoginTranslator;
 import io.netty.buffer.ByteBuf;
@@ -87,6 +88,7 @@ final class LinkBedrockSessionConnect {
                             + s.spawnZ);
             s.sendUpstreamPacket(startGame);
             s.sentSpawnPacket = true;
+            s.flushPendingAddEntities();
             s.sendUpstreamPacket(LinkJoinPackets.itemComponentFull(s.codec));
             s.sendUpstreamPacket(LinkJoinPackets.biomeDefinitionListVanilla());
             s.sendUpstreamPacket(LinkJoinPackets.availableEntityIdentifiers());
@@ -332,8 +334,14 @@ final class LinkBedrockSessionConnect {
 
     void onJavaLoginPlay(JavaDownstreamClient.LoginPlayInfo info) {
         if (info != null) {
-            s.pendingJavaView = info.viewDistance() > 0 ? info.viewDistance() : 8;
+            s.pendingJavaView = info.viewDistance() > 0 ? info.viewDistance() : LinkBedrockSession.DEFAULT_JAVA_VIEW;
             s.setBedrockDimensionId(mapBedrockDimension(info.dimensionName()));
+            // Align Folia Client Information with the server's advertised view (login_play)
+            // so chunk streaming matches ChunkRadiusUpdated, not the old hardcoded 8.
+            JavaDownstreamClient down = s.downstream;
+            if (down != null) {
+                down.sendClientInformationView(s.pendingJavaView);
+            }
             BedrockJoinProbe.noteEvent(
                     s.guid, "java_login_play_deferred spawn view=" + s.pendingJavaView + " dim=" + info.dimensionName());
             LinkBedrockSession.LOG.info(
@@ -347,6 +355,17 @@ final class LinkBedrockSessionConnect {
                 beginBedrockJoinIfNeeded();
             }
         }
+    }
+
+    /**
+     * JE {@code respawn} (portal / death / dim switch): reset column + publisher tracking and
+     * tell Bedrock the new dimension so LevelChunks and fog radius stay valid.
+     */
+    void onJavaRespawn(JavaDownstreamClient.RespawnInfo info) {
+        if (info == null) {
+            return;
+        }
+        JavaDimensionTranslator.onRespawn(s, info, mapBedrockDimension(info.dimensionName()));
     }
 
     void onJavaSpawnPosition(double x, double y, double z) {

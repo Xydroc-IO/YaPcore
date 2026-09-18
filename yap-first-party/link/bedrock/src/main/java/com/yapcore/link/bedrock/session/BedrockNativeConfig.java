@@ -24,6 +24,19 @@ public interface BedrockNativeConfig {
     /** Java backend for Phase 2 — stored now. */
     InetSocketAddress javaBackend();
 
+    /**
+     * Resolve a named Link backend ({@code servers.*}) for Bedrock portal / Connect transfers.
+     * @return null when unknown
+     */
+    default InetSocketAddress javaBackendFor(String serverName) {
+        return null;
+    }
+
+    /** Public hostname Bedrock clients use to reach this Link (TransferPacket). */
+    default String transferHost() {
+        return "127.0.0.1";
+    }
+
     default int motdProtocol() {
         return 2169;
     }

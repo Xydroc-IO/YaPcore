@@ -73,19 +73,31 @@ public final class JavaPlayerListTranslator {
      */
     public static void onRemotePlayerSpawn(LinkBedrockSession session, int entityId, UUID uuid,
                                            double x, double y, double z, float yaw, float pitch) {
-        if (session == null || !session.isSentSpawnPacket()) {
+        if (session == null) {
             return;
         }
         if (entityId == session.javaEntityId() || (uuid != null && uuid.equals(session.uuid()))) {
             return;
         }
+        // Same as mobs: JE tracks remotes before StartGame — must not drop permanently.
+        if (!session.isSentSpawnPacket()) {
+            session.bufferPendingAddEntity(entityId, uuid, "minecraft:player", x, y, z, yaw, pitch);
+            BedrockJoinProbe.noteEvent(session.guid(),
+                    "java_add_player BUFFER id=" + entityId + " (await StartGame)");
+            return;
+        }
         // World entity can arrive before 0x71; still spawn after StartGame (see players ASAP).
         long runtime = entityId & 0xffffffffL;
         Long existing = session.runtimeForJava(entityId);
-        if (existing != null) {
+        // Only dedup when we already sent AddPlayer (markPlayerJavaEntity). A runtime from a
+        // late move must not suppress the spawn — Bedrock never saw the actor.
+        if (existing != null && session.isPlayerJavaEntity(entityId)) {
             session.setEntityPos(entityId, (float) x, (float) y, (float) z, yaw, pitch);
             JavaEntityTranslator.sendMoveAbsolute(session, existing, x, y, z, yaw, pitch, true);
             return;
+        }
+        if (existing != null) {
+            runtime = existing;
         }
         String name = session.playerName(uuid);
         if (name == null || name.isBlank()) {
@@ -93,6 +105,7 @@ public final class JavaPlayerListTranslator {
         }
         UUID id = uuid != null ? uuid : UUID.randomUUID();
         session.trackEntity(entityId, runtime);
+        session.markPlayerJavaEntity(entityId);
         session.setEntityPos(entityId, (float) x, (float) y, (float) z, yaw, pitch);
         session.rememberPlayerName(id, name);
 

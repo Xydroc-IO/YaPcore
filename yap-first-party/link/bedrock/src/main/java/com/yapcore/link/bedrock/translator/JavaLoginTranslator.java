@@ -47,9 +47,10 @@ public final class JavaLoginTranslator {
                     ? session.getServerRenderDistance()
                     : LinkBedrockSession.DEFAULT_JAVA_VIEW;
         }
-        if (session.getClientRenderDistance() > 0) {
-            full = Math.min(full, Math.max(2, session.getClientRenderDistance()));
-        }
+        // Do NOT clamp to Bedrock RequestChunkRadius (clientRenderDistance).
+        // Geyser keeps serverRenderDistance from JE Login and only forwards the client
+        // radius to Java Client Information. Clamping here shrank ChunkRadiusUpdated
+        // from server view (32) down to the client's slider (often 8–10) → fog wall.
         if (session.getServerRenderDistance() != full) {
             session.setServerRenderDistance(full);
         }

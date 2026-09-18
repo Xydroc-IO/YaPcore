@@ -164,6 +164,7 @@ final class LinkBedrockSessionPlay {
       s.entityPosByJava.remove(javaEntityId);
       s.entityHealthByJava.remove(javaEntityId);
       s.entityMoveTicks.remove(javaEntityId);
+      s.playerJavaEntityIds.remove(javaEntityId);
       return s.entityRuntimeByJava.remove(javaEntityId);
    }
 

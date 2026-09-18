@@ -203,13 +203,36 @@ final class BedrockSessionHostPlay {
     }
 
     void handleRequestChunkRadius(BedrockSessionHost.ClientState state, int radius) {
-        // Geyser: store only — do not emit ChunkRadiusUpdated while awaiting 0x71.
+        // Geyser: store client preference; when logged in, forward to Java Client Information.
+        // Do NOT shrink Bedrock ChunkRadiusUpdated to the client slider — keep server view.
         LinkBedrockSession join = state.joinSession;
+        int requested = Math.max(2, Math.min(32, radius));
         if (join != null) {
-            join.setClientRenderDistance(Math.max(2, Math.min(32, radius)));
+            join.setClientRenderDistance(requested);
+            int serverView = join.getServerRenderDistance() > 0
+                    ? join.getServerRenderDistance()
+                    : (join.pendingFullRenderDistance() > 0
+                            ? join.pendingFullRenderDistance()
+                            : LinkBedrockSession.DEFAULT_JAVA_VIEW);
+            // Ask Folia for the larger of client request and server view so we never
+            // under-stream relative to ChunkRadiusUpdated / publisher radius.
+            int jeView = Math.max(requested, serverView);
+            JavaDownstreamClient down = join.downstream();
+            if (down != null && join.joinPhase() == LinkBedrockSession.JoinPhase.SPAWNED) {
+                down.sendClientInformationView(jeView);
+                // Re-assert server circle so a late RequestChunkRadius cannot leave the
+                // client stuck on a stale smaller ChunkRadiusUpdated from join seed.
+                join.setServerRenderDistance(serverView);
+            }
+            BedrockJoinProbe.noteEvent(join.guid(),
+                    "RequestChunkRadius client=" + requested
+                            + " jeView=" + jeView
+                            + " serverView=" + serverView
+                            + " phase=" + join.joinPhase());
         }
-        LOG.info("BE RequestChunkRadius store-only radius=" + radius
-                + " user=" + state.username);
+        LOG.info("BE RequestChunkRadius client=" + requested
+                + " user=" + state.username
+                + (join != null ? " serverView=" + join.getServerRenderDistance() : ""));
     }
 
 }

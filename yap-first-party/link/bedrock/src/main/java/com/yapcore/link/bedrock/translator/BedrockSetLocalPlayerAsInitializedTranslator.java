@@ -155,6 +155,8 @@ public final class BedrockSetLocalPlayerAsInitializedTranslator {
         boolean sentList = trySendPlayerListAddSelf(session);
         // Flush JE tab names remembered before SPAWNED.
         flushBufferedRemotePlayerList(session);
+        // Re-flush any late-buffered entities (players/mobs) that arrived mid-init.
+        session.flushPendingAddEntities();
         LOG.info("BE post-0x71 interact packets user=" + session.username()
                 + " Adventure+Abilities+AvailableCommands+SetEntityData"
                 + " playerList=" + sentList

@@ -109,21 +109,45 @@ public final class JeToBedrockBlockMapper {
     }
 
     private Integer resolveStateName(String state) {
-        Integer rt = bedrockKeyToRuntime.get(normalizeJeState(state));
+        String remapped = JeBlockStateRemapper.remap(state);
+        Integer rt = lookupRuntimeKey(remapped);
         if (rt != null) {
             return rt;
         }
-        if (!state.startsWith("minecraft:")) {
-            rt = bedrockKeyToRuntime.get(normalizeJeState("minecraft:" + state));
+        if (remapped != null && !remapped.equals(state)) {
+            // Try original JE form too (some palettes already use JE names).
+            rt = lookupRuntimeKey(state);
             if (rt != null) {
                 return rt;
             }
         }
-        rt = bedrockIdOnlyToRuntime.get(stripStates(normalizeJeState(state)));
+        if (!state.startsWith("minecraft:")) {
+            rt = lookupRuntimeKey("minecraft:" + remapped);
+            if (rt != null) {
+                return rt;
+            }
+        }
+        rt = bedrockIdOnlyToRuntime.get(stripStates(normalizeJeState(remapped)));
         if (rt != null) {
             return rt;
         }
-        return bedrockIdOnlyToRuntime.get(normalizeIdentifier(state));
+        return bedrockIdOnlyToRuntime.get(normalizeIdentifier(remapped));
+    }
+
+    /** Exact key, then {@code true}/{@code false} → {@code 1}/{@code 0} (palette bit bytes). */
+    private Integer lookupRuntimeKey(String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+        Integer rt = bedrockKeyToRuntime.get(normalizeJeState(key));
+        if (rt != null) {
+            return rt;
+        }
+        String digits = key.replace("=true", "=1").replace("=false", "=0");
+        if (!digits.equals(key)) {
+            return bedrockKeyToRuntime.get(normalizeJeState(digits));
+        }
+        return null;
     }
 
     private void noteMiss(int jeGlobalId, String state) {

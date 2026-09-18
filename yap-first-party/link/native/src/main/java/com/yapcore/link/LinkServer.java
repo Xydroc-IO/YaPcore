@@ -348,6 +348,27 @@ public final class LinkServer {
             }
 
             @Override
+            public java.net.InetSocketAddress javaBackendFor(String serverName) {
+                if (serverName == null || serverName.isBlank()) {
+                    return javaBackend();
+                }
+                LinkConfig.Backend target = backendMonitor.pickLoginTarget(serverName.trim());
+                if (target == null) {
+                    target = cfg.findServer(serverName.trim());
+                }
+                if (target != null && target.host() != null && !target.host().isBlank()) {
+                    return new java.net.InetSocketAddress(target.host(), target.port());
+                }
+                return null;
+            }
+
+            @Override
+            public String transferHost() {
+                String h = cfg.publicHost();
+                return h == null || h.isBlank() ? "127.0.0.1" : h.trim();
+            }
+
+            @Override
             public int motdProtocol() {
                 return cfg.bedrockMotdProtocol();
             }

@@ -46,6 +46,8 @@ public final class JavaPlayWire {
     public static final int CB_REMOVE_ENTITIES = 77;
     /** JE {@code reset_score}. */
     public static final int CB_RESET_SCORE = 79;
+    /** JE {@code respawn} — dimension change / portal / death respawn. */
+    public static final int CB_RESPAWN = 82;
     public static final int CB_SECTION_BLOCKS_UPDATE = 84;
     /** JE {@code set_action_bar_text}. */
     public static final int CB_SET_ACTION_BAR_TEXT = 87;
@@ -152,6 +154,30 @@ public final class JavaPlayWire {
         ByteBuf buf = Unpooled.buffer(2);
         McCodec.writeVarInt(buf, SB_CLIENT_TICK_END);
         return buf;
+    }
+
+    /**
+     * Proto 776 {@code minecraft:client_information} (play) / configuration twin.
+     * View distance is a signed byte — Folia uses this to size the chunk send radius.
+     */
+    public static ByteBuf clientInformation(int viewDistance) {
+        return clientInformation(SB_CLIENT_INFORMATION, viewDistance);
+    }
+
+    public static ByteBuf clientInformation(int packetId, int viewDistance) {
+        int view = Math.max(2, Math.min(32, viewDistance));
+        ByteBuf info = Unpooled.buffer(32);
+        McCodec.writeVarInt(info, packetId);
+        McCodec.writeString(info, "en_US");
+        info.writeByte(view);
+        McCodec.writeVarInt(info, 0); // chat mode FULL
+        info.writeBoolean(true); // chat colors
+        info.writeByte(0x7f); // displayed skin parts
+        McCodec.writeVarInt(info, 1); // main hand RIGHT
+        info.writeBoolean(false); // text filtering
+        info.writeBoolean(true); // allow server listings
+        McCodec.writeVarInt(info, 0); // particle status ALL
+        return info;
     }
 
     /**

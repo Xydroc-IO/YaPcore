@@ -39,6 +39,16 @@ public final class JavaDownstreamClient {
     /** Paper pin / Link default JE protocol (26.2). */
     public static final int DEFAULT_PROTOCOL = 776;
 
+    /**
+     * View distance reported to Folia via Client Information when Bedrock has not yet
+     * requested a radius. Must be high enough that Folia streams a full disk — the old
+     * hardcoded {@code 8} produced the Bedrock gray fog wall after a few chunks.
+     */
+    public static final int DEFAULT_VIEW_DISTANCE = 32;
+
+    /** Last view distance sent (or pending) on Client Information. */
+    volatile int requestedViewDistance = DEFAULT_VIEW_DISTANCE;
+
     // Login clientbound (proto 776)
     static final int L_DISCONNECT = 0x00;
     static final int L_SUCCESS = 0x02;
@@ -95,12 +105,18 @@ public final class JavaDownstreamClient {
             String dimensionName) {
     }
 
+    /** Parsed fields from clientbound Respawn — dimension change / portal. */
+    public record RespawnInfo(int dimensionType, String dimensionName, byte dataKept) {
+    }
+
     public interface Listener {
         void onLoginSuccess(UUID uuid, String username);
 
         void onConfigurationComplete();
 
         void onLoginPlay(LoginPlayInfo info);
+
+        default void onRespawn(RespawnInfo info) {}
 
         void onLevelChunk(int chunkX, int chunkZ, ByteBuf payload);
 
@@ -218,6 +234,9 @@ public final class JavaDownstreamClient {
 
         /** Floodgate / plugin channel payload (e.g. {@code floodgate:form}). */
         default void onCustomPayload(String channel, byte[] data) {}
+
+        /** Backend asked Link to soft-transfer this Bedrock player (YaPPortals / BungeeCord Connect). */
+        default void onBungeeConnect(String targetServer) {}
 
         default void onLevelEvent(int eventId, double x, double y, double z, int data) {}
 
@@ -405,6 +424,17 @@ public final class JavaDownstreamClient {
 
     public void sendClientCommandRespawn() {
         writePlay(JavaPlayWire.clientCommandRespawn());
+    }
+
+    /**
+     * Geyser {@code sendJavaClientSettings}: update Folia's per-player chunk send radius.
+     * Call after Bedrock {@code RequestChunkRadius} or when server view is known.
+     */
+    public void sendClientInformationView(int viewDistance) {
+        int view = Math.max(2, Math.min(32, viewDistance));
+        this.requestedViewDistance = view;
+        writePlay(JavaPlayWire.clientInformation(view));
+        LOG.info("JE Client Information (play) view=" + view + " user=" + username);
     }
 
     public void sendSwingArm(int hand) {

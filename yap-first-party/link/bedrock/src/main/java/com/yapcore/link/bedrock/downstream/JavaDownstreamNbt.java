@@ -361,4 +361,45 @@ final class JavaDownstreamNbt {
         }
         return new JavaDownstreamClient.LoginPlayInfo(entityId, viewDistance, dimensionType, dimensionName);
     }
+
+    /**
+     * Proto 776 {@code minecraft:respawn}: dimensionType, dimensionName, seed, gamemodes,
+     * debug/flat, optional death location, portal cooldown, sea level, dataKept.
+     */
+    static JavaDownstreamClient.RespawnInfo parseRespawn(ByteBuf buf) {
+        int dimensionType = buf.isReadable() ? McCodec.readVarInt(buf) : 0;
+        String dimensionName = buf.isReadable() ? McCodec.readString(buf, 32767) : "minecraft:overworld";
+        if (buf.readableBytes() >= 8) {
+            buf.readLong(); // hashed seed
+        }
+        if (buf.isReadable()) {
+            buf.readUnsignedByte(); // game mode
+        }
+        if (buf.isReadable()) {
+            buf.readByte(); // previous game mode
+        }
+        if (buf.isReadable()) {
+            buf.readBoolean(); // debug
+        }
+        if (buf.isReadable()) {
+            buf.readBoolean(); // flat
+        }
+        if (buf.isReadable() && buf.readBoolean()) {
+            // death location present
+            if (buf.isReadable()) {
+                McCodec.readString(buf, 32767);
+            }
+            if (buf.readableBytes() >= 8) {
+                buf.readLong(); // block position
+            }
+        }
+        if (buf.isReadable()) {
+            McCodec.readVarInt(buf); // portal cooldown
+        }
+        if (buf.isReadable()) {
+            McCodec.readVarInt(buf); // sea level
+        }
+        byte dataKept = buf.isReadable() ? buf.readByte() : 0;
+        return new JavaDownstreamClient.RespawnInfo(dimensionType, dimensionName, dataKept);
+    }
 }

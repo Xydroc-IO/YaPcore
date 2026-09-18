@@ -28,7 +28,7 @@ public final class JavaEntityTranslator {
     public static void onAddEntity(LinkBedrockSession session, int entityId, UUID uuid,
                                    String typeKey, double x, double y, double z,
                                    float yaw, float pitch) {
-        if (session == null || !session.isSentSpawnPacket()) {
+        if (session == null) {
             return;
         }
         if (entityId == session.javaEntityId()) {
@@ -37,6 +37,11 @@ public final class JavaEntityTranslator {
         // Remote players need AddPlayer + PlayerList, not AddEntity armor_stand.
         if ("minecraft:player".equals(typeKey)) {
             JavaPlayerListTranslator.onRemotePlayerSpawn(session, entityId, uuid, x, y, z, yaw, pitch);
+            return;
+        }
+        // JE often sends nearby entities before StartGame — buffer until Bedrock can render them.
+        if (!session.isSentSpawnPacket()) {
+            session.bufferPendingAddEntity(entityId, uuid, typeKey, x, y, z, yaw, pitch);
             return;
         }
         long runtime = entityId & 0xffffffffL;
@@ -186,9 +191,16 @@ public final class JavaEntityTranslator {
     static void sendMoveAbsolute(LinkBedrockSession session, long runtimeId,
                                  double x, double y, double z,
                                  float yaw, float pitch, boolean teleport, boolean onGround) {
+        // Geyser: AddPlayer uses JE feet; MoveEntityAbsolute for players uses eye (feet+1.62).
+        // Sending feet here buried remotes underground → Bedrock couldn't see Java players.
+        double wireY = y;
+        int javaId = session.javaEntityForRuntime(runtimeId);
+        if (javaId > 0 && session.isPlayerJavaEntity(javaId)) {
+            wireY = y + LinkBedrockSession.PLAYER_EYE_OFFSET;
+        }
         MoveEntityAbsolutePacket move = new MoveEntityAbsolutePacket();
         move.setRuntimeEntityId(runtimeId);
-        move.setPosition(Vector3f.from((float) x, (float) y, (float) z));
+        move.setPosition(Vector3f.from((float) x, (float) wireY, (float) z));
         // Cloudburst: rotation Vector3f is pitch / yaw / headYaw (byte-encoded on wire).
         move.setRotation(Vector3f.from(pitch, yaw, yaw));
         move.setOnGround(onGround);

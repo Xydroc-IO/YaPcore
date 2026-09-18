@@ -107,7 +107,8 @@ public final class JeEntityTypes {
                 m.put(80, "minecraft:magma_cube");
                 m.put(81, "minecraft:boat");
                 m.put(82, "minecraft:chest_boat");
-                m.put(83, "minecraft:armor_stand");
+                // 26.2: id 83 = mannequin (player model). Armor stands stay id 5.
+                m.put(83, "minecraft:player");
                 m.put(85, "minecraft:minecart");
                 m.put(86, "minecraft:mooshroom");
                 m.put(87, "minecraft:mule");

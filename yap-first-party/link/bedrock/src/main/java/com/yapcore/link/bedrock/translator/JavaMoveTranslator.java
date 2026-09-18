@@ -177,9 +177,10 @@ public final class JavaMoveTranslator {
         }
         Long runtime = session.runtimeForJava(entityId);
         if (runtime == null) {
-            // Late move before AddEntity — track so subsequent relatives apply.
-            runtime = entityId & 0xffffffffL;
-            session.trackEntity(entityId, runtime);
+            // Stash feet only — do NOT track. Premature track makes AddPlayer/AddEntity
+            // treat the actor as already spawned and skip the spawn packet (invisible remotes).
+            session.setEntityPos(entityId, (float) x, (float) y, (float) z, yaw, pitch);
+            return;
         }
         session.setEntityPos(entityId, (float) x, (float) y, (float) z, yaw, pitch);
         JavaEntityTranslator.sendMoveAbsolute(session, runtime, x, y, z, yaw, pitch, teleport);

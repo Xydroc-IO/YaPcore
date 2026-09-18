@@ -51,6 +51,17 @@ final class JavaDownstreamPlay {
                     }
                     return;
                 }
+                case JavaPlayWire.CB_RESPAWN -> {
+                    JavaDownstreamClient.RespawnInfo info = JavaDownstreamNbt.parseRespawn(buf);
+                    LOG.info("JE Respawn dim=" + info.dimensionName()
+                            + " type=" + info.dimensionType()
+                            + " dataKept=" + info.dataKept()
+                            + " user=" + client.username);
+                    if (client.listener != null) {
+                        client.listener.onRespawn(info);
+                    }
+                    return;
+                }
                 case JavaPlayWire.CB_LEVEL_CHUNK -> {
                     int chunkX = buf.readInt();
                     int chunkZ = buf.readInt();
@@ -448,6 +459,26 @@ final class JavaDownstreamPlay {
                     int status = buf.isReadable() ? (buf.readUnsignedByte()) : -1;
                     if (client.listener != null) {
                         client.listener.onEntityEvent(entityId, status);
+                    }
+                    return;
+                }
+                case JavaPlayWire.CB_CUSTOM_PAYLOAD -> {
+                    String channel = JavaDownstreamParse.safeString(buf);
+                    byte[] data = new byte[Math.max(0, buf.readableBytes())];
+                    if (data.length > 0) {
+                        buf.readBytes(data);
+                    }
+                    if (client.listener != null && channel != null) {
+                        client.listener.onCustomPayload(channel, data);
+                        var target = BedrockBungeeConnect.sniffTarget(data);
+                        if (target.isEmpty() && BedrockBungeeConnect.isBungeeChannel(channel)) {
+                            target = BedrockBungeeConnect.sniffTarget(data);
+                        }
+                        if (target.isPresent()) {
+                            LOG.info("JE BungeeCord Connect → " + target.get()
+                                    + " user=" + client.username);
+                            client.listener.onBungeeConnect(target.get());
+                        }
                     }
                     return;
                 }

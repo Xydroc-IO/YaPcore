@@ -244,18 +244,15 @@ final class JavaDownstreamLogin {
     }
 
     void sendClientInformation(ChannelHandlerContext ctx, int packetId) {
-        ByteBuf info = Unpooled.buffer();
-        McCodec.writeVarInt(info, packetId);
-        McCodec.writeString(info, "en_US");
-        info.writeByte(8);
-        McCodec.writeVarInt(info, 0);
-        info.writeBoolean(true);
-        info.writeByte(0x7f);
-        McCodec.writeVarInt(info, 1);
-        info.writeBoolean(false);
-        info.writeBoolean(true);
-        McCodec.writeVarInt(info, 0);
-        ctx.writeAndFlush(info);
+        // Was hardcoded viewDistance=8 — Folia then only streamed ~8 chunks (Bedrock fog wall).
+        // Request the session/server max so the backend sends a full disk; Bedrock fog is
+        // controlled separately via ChunkRadiusUpdated / NetworkChunkPublisherUpdate.
+        int view = client.requestedViewDistance > 0
+                ? client.requestedViewDistance
+                : JavaDownstreamClient.DEFAULT_VIEW_DISTANCE;
+        ctx.writeAndFlush(JavaPlayWire.clientInformation(packetId, view));
+        LOG.info("JE Client Information view=" + Math.max(2, Math.min(32, view))
+                + " phase=" + client.phase + " user=" + client.username);
     }
 
     void sendHandshake() {

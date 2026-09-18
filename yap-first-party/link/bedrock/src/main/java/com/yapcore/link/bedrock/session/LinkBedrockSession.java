@@ -23,7 +23,8 @@ import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
 import org.cloudburstmc.protocol.bedrock.packet.BedrockPacket;
 public final class LinkBedrockSession {
     static final Logger LOG = Logger.getLogger("YaP.Link.Bedrock");
-    public static final int DEFAULT_JAVA_VIEW = 8;
+    /** Default JE/Bedrock square view when Folia has not advertised one yet. */
+    public static final int DEFAULT_JAVA_VIEW = 32;
     public static final int OVERWORLD_MIN_Y = -64;
     public static final int OVERWORLD_MAX_Y = 320;
     final long guid;
@@ -64,7 +65,7 @@ public final class LinkBedrockSession {
     volatile JeToBedrockBlockMapper blockMapper;
     volatile int javaEntityId = -1;
     volatile int javaPermissionLevel;
-    volatile int pendingJavaView = 8;
+    volatile int pendingJavaView = LinkBedrockSession.DEFAULT_JAVA_VIEW;
     volatile boolean awaitingJavaSpawn = true;
     final AtomicBoolean playerLoadedSent = new AtomicBoolean(false);
     final AtomicInteger realJeChunksSent = new AtomicInteger(0);
@@ -94,7 +95,11 @@ public final class LinkBedrockSession {
     final AtomicLong moveTick = new AtomicLong();
     final ConcurrentHashMap<Integer, Long> entityRuntimeByJava = new ConcurrentHashMap<>();
     final ConcurrentHashMap<Integer, float[]> entityPosByJava = new ConcurrentHashMap<>();
+    /** Java entity ids that are remote players (need eye-Y on MoveEntityAbsolute). */
+    final java.util.Set<Integer> playerJavaEntityIds = ConcurrentHashMap.newKeySet();
     final ConcurrentHashMap<UUID, String> playerNamesByUuid = new ConcurrentHashMap<>();
+    /** JE add_entity arrived before StartGame — flush after Bedrock can render. */
+    final ConcurrentHashMap<Integer, PendingAddEntity> pendingAddEntities = new ConcurrentHashMap<>();
     final Set<String> pluginCommandNames = ConcurrentHashMap.newKeySet();
     volatile int lastJeInventorySlots = 46;
     volatile int lastJeWindowId = -1;
@@ -300,6 +305,17 @@ public final class LinkBedrockSession {
     public void markColumnSent(int chunkX, int chunkZ) {
         this.sentColumns.put(LinkBedrockSessionConnect.columnKey(chunkX, chunkZ), Boolean.TRUE);
     }
+
+    /**
+     * Forget Bedrock column / publisher state after JE respawn (portal / dim change).
+     * Without this, {@link com.yapcore.link.bedrock.translator.ChunkUtils#updateChunkPosition}
+     * may skip NetworkChunkPublisherUpdate when chunk XZ coincides, and empty-seed marks
+     * from the previous dimension linger.
+     */
+    public void clearWorldForDimensionChange() {
+        this.sentColumns.clear();
+        this.lastChunkPosition = null;
+    }
     public enum JoinPhase {
         NONE,
         AWAITING_JAVA_LOGIN,
@@ -326,6 +342,9 @@ public final class LinkBedrockSession {
     }
     public void onJavaLoginPlay(JavaDownstreamClient.LoginPlayInfo info) {
         connectLogic.onJavaLoginPlay(info);
+    }
+    public void onJavaRespawn(JavaDownstreamClient.RespawnInfo info) {
+        connectLogic.onJavaRespawn(info);
     }
     public void onJavaSpawnPosition(double x, double y, double z) {
         connectLogic.onJavaSpawnPosition(x, y, z);
@@ -405,6 +424,17 @@ public final class LinkBedrockSession {
     public void trackEntity(int javaEntityId, long runtimeId) {
         playLogic.trackEntity(javaEntityId, runtimeId);
     }
+
+    public void markPlayerJavaEntity(int javaEntityId) {
+        if (javaEntityId != javaEntityId()) {
+            playerJavaEntityIds.add(javaEntityId);
+        }
+    }
+
+    public boolean isPlayerJavaEntity(int javaEntityId) {
+        return playerJavaEntityIds.contains(javaEntityId);
+    }
+
     public Long runtimeForJava(int javaEntityId) { return playLogic.runtimeForJava(javaEntityId); }
     public int javaEntityForRuntime(long runtimeId) { return playLogic.javaEntityForRuntime(runtimeId); }
     public void setEntityPos(int javaEntityId, float x, float y, float z, float yaw, float pitch) {
@@ -420,6 +450,37 @@ public final class LinkBedrockSession {
     }
     public String playerName(UUID id) { return playLogic.playerName(id); }
     public Map<UUID, String> playerNameSnapshot() { return playLogic.playerNameSnapshot(); }
+
+    public void bufferPendingAddEntity(int entityId, UUID uuid, String typeKey,
+                                       double x, double y, double z, float yaw, float pitch) {
+        if (entityId == javaEntityId) {
+            return;
+        }
+        pendingAddEntities.put(entityId, new PendingAddEntity(
+                entityId, uuid, typeKey, x, y, z, yaw, pitch));
+        BedrockJoinProbe.noteEvent(guid, "pending_add_entity id=" + entityId
+                + " type=" + typeKey + " buffered=" + pendingAddEntities.size());
+    }
+
+    public void flushPendingAddEntities() {
+        if (!sentSpawnPacket || pendingAddEntities.isEmpty()) {
+            return;
+        }
+        java.util.ArrayList<PendingAddEntity> batch = new java.util.ArrayList<>(pendingAddEntities.values());
+        pendingAddEntities.clear();
+        LOG.info("BE flush pending add_entity count=" + batch.size() + " user=" + username);
+        BedrockJoinProbe.noteEvent(guid, "flush_pending_add_entity count=" + batch.size());
+        for (PendingAddEntity p : batch) {
+            com.yapcore.link.bedrock.translator.JavaEntityTranslator.onAddEntity(
+                    this, p.entityId(), p.uuid(), p.typeKey(),
+                    p.x(), p.y(), p.z(), p.yaw(), p.pitch());
+        }
+    }
+
+    public record PendingAddEntity(int entityId, UUID uuid, String typeKey,
+                                   double x, double y, double z, float yaw, float pitch) {
+    }
+
     public void rememberPluginCommands(Iterable<String> names) {
         playLogic.rememberPluginCommands(names);
     }
