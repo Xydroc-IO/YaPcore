@@ -1,6 +1,10 @@
-# YaPcore releases (v1.0.0.0)
+# YaPcore releases (v0.0.0.1)
 
-All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `plugin.yml`, Link `link-plugin.json`).
+All first-party artifacts share version **0.0.0.1** (Gradle `version`, plugin `plugin.yml`, Link `link-plugin.json`).
+
+**This line ships as a GitHub prerelease.** `/releases/latest` stays on stable **1.0.0.0**. Operators, packs, and the chassis use tag URLs:
+
+`https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}`
 
 **Release notes:** [RELEASE_NOTES.md](RELEASE_NOTES.md)  
 **License:** release trees include root **`LICENSE`** (GNU GPLv3). See [LICENSING.md](LICENSING.md).
@@ -17,7 +21,7 @@ All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `p
 | `gradle assembleRelease -PyapGameplay=true` | Full box including GAMEPLAY (skills / dungeons / stacker / knobs / disasters) |
 | `gradle assembleRelease -PyapGameplay=false` | Explicit slim CORE+NETWORK only |
 | `gradle publishReleasesFolder` | **`releases/<version>/`** — trees + linux/windows zips + suite zips |
-| Git tag `1.0.0.0` or `v*` push | GitHub Actions → `yapcore-release-linux.zip` + `-windows.zip` |
+| Git tag `0.0.0.1` or `v0.*` push | GitHub Actions → prerelease + `yapcore-release-linux.zip` + `-windows.zip` |
 | `gradle assembleNetworkSuite` | `build/dist/yap-network-suite.zip` — YaP Link + native link plugins |
 | `gradle assembleGameplaySuite` | `build/dist/yap-gameplay-suite.zip` — GAMEPLAY plugins (skills / dungeons / stacker / knobs / disasters) |
 | `gradle assemblePluginDist` | `build/dist/yap-plugins/` — flat jar mirror by tier |
@@ -28,7 +32,7 @@ All first-party artifacts share version **1.0.0.0** (Gradle `version`, plugin `p
 ```bash
 ./scripts/build-yap-folia.sh
 gradle publishReleasesFolder
-# → releases/1.0.0.0/
+# → releases/0.0.0.1/
 #      yapcore-release/linux/   yapcore-release/windows/
 #      yapcore-release-linux.zip  yapcore-release-windows.zip
 #      yap-network-suite.zip  yap-gameplay-suite.zip
@@ -36,9 +40,10 @@ gradle publishReleasesFolder
 
 The entire `releases/` directory is **gitignored** (local artifacts only). Rebuild anytime with the same task.
 
-## GitHub release assets (tag `1.0.0.0`)
+## GitHub prerelease assets (tag `0.0.0.1`)
 
-Attach (or refresh with `--clobber`) so `/releases/latest/download/{file}` works:
+Attach (or refresh with `--clobber`) so `/releases/download/0.0.0.1/{file}` works.
+Do **not** rely on `/releases/latest` — that URL ignores prereleases and still serves **1.0.0.0**.
 
 | Asset | Role |
 |-------|------|
@@ -53,19 +58,21 @@ Parity smoke: `./scripts/parity/smoke-bedrock-feel.sh`.
 Prefer the zip for releases (one upload). Loose jars stay under `dist/client-mods/` for local installs only.
 
 ```bash
-gh release upload 1.0.0.0 \
-  releases/1.0.0.0/yapcore-release-linux.zip \
-  releases/1.0.0.0/yapcore-release-windows.zip \
-  releases/1.0.0.0/yap-network-suite.zip \
-  releases/1.0.0.0/yap-gameplay-suite.zip \
-  releases/1.0.0.0/yapcore-default.zip \
-  releases/1.0.0.0/yapcore-default.mcpack \
-  releases/1.0.0.0/client_mods.zip \
+gh release create 0.0.0.1 --prerelease --title "0.0.0.1" \
+  --notes-file docs/start/RELEASE_NOTES.md -R Xydroc-IO/YaPcore || true
+gh release upload 0.0.0.1 \
+  releases/0.0.0.1/yapcore-release-linux.zip \
+  releases/0.0.0.1/yapcore-release-windows.zip \
+  releases/0.0.0.1/yap-network-suite.zip \
+  releases/0.0.0.1/yap-gameplay-suite.zip \
+  releases/0.0.0.1/yapcore-default.zip \
+  releases/0.0.0.1/yapcore-default.mcpack \
+  releases/0.0.0.1/client_mods.zip \
   --clobber -R Xydroc-IO/YaPcore
 ```
 
 Copy `dist/client-mods/client_mods.zip` (and `resourcepacks/yapcore-default.zip` /
-`resourcepacks/yapcore-default.mcpack`) into `releases/1.0.0.0/` after building so the durable
+`resourcepacks/yapcore-default.mcpack`) into `releases/0.0.0.1/` after building so the durable
 folder holds every GitHub asset.
 
 **After Link wire fixes:** `publishReleasesFolder` refreshes `yap-link.jar` inside the
@@ -113,20 +120,22 @@ See [WINDOWS.md](WINDOWS.md) and [YAPDB.md](../data/YAPDB.md).
 
 ## Refresh release zips (same version)
 
-When docs/plugins change but the product version stays **1.0.0.0**:
+When docs/plugins change but the product version stays **0.0.0.1**:
 
 ```bash
 ./scripts/build-yap-folia.sh   # if Folia fork patches changed
-gradle publishReleasesFolder   # refreshes releases/1.0.0.0/ trees + zips
+gradle publishReleasesFolder   # refreshes releases/0.0.0.1/ trees + zips
 ```
 
-Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 1.0.0.0” — do **not** change Gradle `version`.
+Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 0.0.0.1” — do **not** change Gradle `version`.
 
-**Latest refresh:** 2026-09-17 evening — creative always-day climate; Folia NPC spawn + `yap-server-id.txt` fallback; block-place reach; portal fill no longer eats builds; fleet creative instance; Bedrock block remapper; ultrawide Hor+ aim match. Same day earlier — NPC shop presets + L/R quantity trades + dashboard **Shops** tab; portals spawn arrival; `/region worldborder`; YaPItems fleet catalog propagate; Link session unlock. Earlier same day — YaPPortals colored pads + YaPRegions hub flags/gamemode; admin gear kits; VIP keep-inventory. Prior 2026-09-14 — YaP-QoL + Items as product defaults; fleet ensure preserves ops + installed plugins; GUI open does not rewrite instance trees. Prior 2026-09-06: typical SMP plugin defaults (chat slow-mode, claim tax off, map claim markers, Disasters opt-in off, Opt-in dashboard badge, seed↔jar drift CI). Prior 2026-09-05: YaP-Folia provenance polish + UPSTREAM.lock refresh; plugin smokes + CI high-value expand; dashboard HTTP thinned. Prior 2026-09-04: GitHub assets complete; Encyclopedia + Canvas heavypop cite; Ops Waves 1–5.
+**Latest:** 2026-09-18 — **0.0.0.1** GitHub **prerelease**; packs pin `/releases/download/0.0.0.1/{file}` because `/releases/latest` ignores prereleases. Native regionizer cut (`0041`) + spawn ownership (`0042`). Professional bar (live contiguous split, no second clock) is reachable and **not proven**.
 
 ## Version bump checklist (new tag only)
 
 1. Root `build.gradle.kts` `version = "…"`
 2. Each subproject `build.gradle.kts` + `plugin.yml` / `link-plugin.json`
 3. Rebuild YaP-Folia + `gradle assembleAllReleases` / `publishReleasesFolder`
-4. Tag: e.g. **`1.0.0.0`** or later `1.x.y.z` (also accepted: `v…`)
+4. Tag: e.g. **`0.0.0.1`** (also accepted: `v…`)
+5. GitHub release: **`--prerelease`** while the line is `0.*`
+6. Point `resource-pack-url` at `/releases/download/<tag>/{file}` — not `/releases/latest`

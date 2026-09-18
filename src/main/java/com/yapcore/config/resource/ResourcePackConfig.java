@@ -10,6 +10,13 @@ import java.util.Properties;
 /** Resource / texture pack settings. */
 public final class ResourcePackConfig {
 
+    /**
+     * Pack CDN for product {@code 0.0.0.1}. GitHub {@code /releases/latest} stays on
+     * the last stable tag ({@code 1.0.0.0}) while this line ships as a prerelease.
+     */
+    public static final String GITHUB_PRERELEASE_PACK_URL =
+            "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}";
+
     private final Properties props;
 
     public ResourcePackConfig(Properties props) {
@@ -24,9 +31,8 @@ public final class ResourcePackConfig {
         props.setProperty("resource-pack-bedrock-file", "yapcore-default.mcpack");
         props.setProperty("resource-pack-http-port", "8081");
         props.setProperty("resource-pack-public-host", "");
-        // Product default: GitHub Releases CDN (tracks newest asset).
-        props.setProperty("resource-pack-url",
-                "https://github.com/Xydroc-IO/YaPcore/releases/latest/download/{file}");
+        // Product default: GitHub prerelease tag ( /releases/latest ignores prereleases ).
+        props.setProperty("resource-pack-url", GITHUB_PRERELEASE_PACK_URL);
         props.setProperty("resource-pack-sha1", "");
         props.setProperty("resource-pack-forced", "false");
         props.setProperty("resource-pack-prompt",

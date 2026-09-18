@@ -268,7 +268,7 @@ public final class PaperFiles {
 
     /**
      * Hash the bytes clients will download (follows redirects — needed for GitHub
-     * {@code /releases/latest/download/…} → CDN).
+     * {@code /releases/download/0.0.0.1/…} → CDN).
      */
     private static String sha1HexFromUrl(String url) throws IOException {
         URI uri = URI.create(url.trim());

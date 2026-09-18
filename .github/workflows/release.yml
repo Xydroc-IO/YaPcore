@@ -5,6 +5,7 @@ on:
     tags:
       - "v*"
       - "1.*"
+      - "0.*"
 
 permissions:
   contents: write
@@ -43,3 +44,4 @@ jobs:
             build/dist/yapcore-release-linux.zip
             build/dist/yapcore-release-windows.zip
           generate_release_notes: true
+          prerelease: ${{ startsWith(github.ref_name, '0.') || startsWith(github.ref_name, 'v0.') }}

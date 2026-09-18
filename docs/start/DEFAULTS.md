@@ -13,7 +13,7 @@ that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when m
 | Admin menu, World tools, Regions, **Portals (on)**, Npcs, Protect, Moderation, Pregen, Floodgate, Map | Yes (SQL plugins need MariaDB / shared YaPDB) |
 | YaP-Folia + first-party plugin jars | Yes (after `installAllProductDefaults` / release zip + `lib/yap-folia-*.jar`) |
 | YaP Link + link plugins | Yes once `link.properties` seeded; **modern forwarding ON by default** (skins) — join **:25565** |
-| Resource pack prompt | Yes when `server.properties` comes from defaults/example |
+| Resource pack prompt | Yes — JE pulls `yapcore-default.zip` from the **0.0.0.1** GitHub prerelease |
 | Premium Java skins | Yes via Link offline texture lookup + `velocity:player_info` (requires Link in front) |
 | YaPPerms starter ranks | Yes (`apply-starter-pack-on-first-boot` + `yap-ranks-auto-apply`) |
 | YaPFactions / guilds | **Off** (`enabled: false`) — opt in for faction servers · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |

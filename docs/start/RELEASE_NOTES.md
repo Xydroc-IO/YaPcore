@@ -2,6 +2,10 @@
 
 Product version **0.0.0.1** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2**
 
+GitHub ships this tag as a **prerelease**. Packs and zips are
+`https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}`.
+`/releases/latest` still points at stable **1.0.0.0**.
+
 For build commands and zip layout see [RELEASES.md](RELEASES.md). For live status see
 [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).
 
@@ -9,7 +13,19 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
-## After 0.0.0.1 — ownership 0042 (2026-09-18)
+## After 0.0.0.1 — GitHub prerelease CDN (2026-09-18)
+
+Same ship version (no product bump). Tag **`0.0.0.1`** is a GitHub **prerelease**.
+
+| Area | Change |
+|------|--------|
+| **Packs** | Default `resource-pack-url` is `/releases/download/0.0.0.1/{file}` because `/releases/latest` ignores prereleases. |
+| **Install** | Linux/windows zips, suites, `yapcore-default.zip` / `.mcpack`, and `client_mods.zip` attach to that tag. |
+| **Existing installs** | Seed will not overwrite `resource-pack-url`. Point it at the tag URL or clients keep fetching **1.0.0.0**. |
+
+Rebuild: `gradle publishReleasesFolder -PyapGameplay=true` then `gh release upload 0.0.0.1 … --clobber`.
+
+---
 
 Same ship version (no product bump). Incremental Folia paperclip → `lib/yap-folia-26.2.jar`. Pin remains **`14b7fee`**.
 
@@ -82,7 +98,7 @@ Product version **0.0.0.1** (reset from the **1.0.0.0** line). Gradle `version`,
 | **Knobs** | Partition, carve, and aligned microticks stay **on** as intent. Microticks are optional coherence, not a second world clock. Lab gap/threshold/probe stay lab-only. |
 | **Docs** | README, whitepaper §3.4/§4/§13, [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md), [RELEASES.md](RELEASES.md), [SECURITY.md](../../SECURITY.md) |
 
-Build: `gradle publishReleasesFolder -PyapGameplay=true` → `releases/0.0.0.1/`. Tag **`0.0.0.1`**. Upload with `--clobber` per [RELEASES.md](RELEASES.md). Previous GitHub tag **`1.0.0.0`** remains history.
+Build: `gradle publishReleasesFolder -PyapGameplay=true` → `releases/0.0.0.1/`. Tag **`0.0.0.1`** as a **prerelease**. Packs use `/releases/download/0.0.0.1/{file}`. Previous GitHub tag **`1.0.0.0`** remains the GitHub **Latest** stable.
 
 ---
 

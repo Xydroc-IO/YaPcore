@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Xydroc-IO/YaPcore/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/Xydroc-IO/YaPcore?label=release&color=2ea44f"/></a>
+  <a href="https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.1"><img alt="Prerelease" src="https://img.shields.io/github/v/release/Xydroc-IO/YaPcore?include_prereleases&label=prerelease&color=e3b341"/></a>
   <a href="LICENSE"><img alt="License" src="https://img.shields.io/badge/license-GPLv3-blue.svg"/></a>
   <img alt="Minecraft" src="https://img.shields.io/badge/Minecraft-26.2-brightgreen"/>
   <img alt="Java" src="https://img.shields.io/badge/Java-25%2B-orange"/>
@@ -22,7 +22,7 @@
 
 | | |
 |--|--|
-| **Install** | [Quick Start](docs/start/QUICK_START.md) · [Release packages](https://github.com/Xydroc-IO/YaPcore/releases/latest) |
+| **Install** | [Quick Start](docs/start/QUICK_START.md) · [0.0.0.1 prerelease](https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.1) |
 | **Operators** | [Wiki](docs/README.md) · [Defaults](docs/start/DEFAULTS.md) · [Secrets](docs/start/SECRETS.md) |
 | **Architecture** | [Whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) |
 | **Crossplay** | [Crossplay](docs/network/CROSSPLAY.md) · [Bedrock-feel](docs/product/BEDROCK_FEEL_PARITY.md) · [YaP Link](docs/network/YAP_LINK.md) |
@@ -47,7 +47,7 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 | **Network** | YaP Link native proxy (`0.6.0-phase6`), Floodgate-class identity, dual-stack gateway |
 | **Plugin suite** | First-party CORE + NETWORK; **Items + QoL** on by default; opt-in GAMEPLAY (skills / stacker / knobs / disasters / dungeons); opt-in Factions + Conquest |
 | **Ops** | Web dashboard (`:8080`), Swing GUI, seed defaults, MariaDB / Postgres / SQLite paths, shared messages + reload UX |
-| **Packs** | `yapcore-default.zip` / `.mcpack` via GitHub Releases CDN (`/releases/latest/download/…`) |
+| **Packs** | `yapcore-default.zip` / `.mcpack` from the **0.0.0.1** GitHub prerelease (`/releases/download/0.0.0.1/…`) |
 | **Clients (optional)** | Fabric: visuals, bag, staff, ultrawide, **yap-presence**, **yap-blocks** — vanilla/Bedrock still join when parity mode is off |
 
 **Docs:** [QUICK_START.md](docs/start/QUICK_START.md) · [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
@@ -124,7 +124,7 @@ Citeable MSPT vs stock Folia / Canvas (ship knobs disclosed): [YAP_FOLIA_PATCHES
 
 ### Operators — download a release
 
-1. Take **linux** or **windows** from [GitHub Releases](https://github.com/Xydroc-IO/YaPcore/releases/latest).
+1. Take **linux** or **windows** from the [0.0.0.1 prerelease](https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.1). GitHub **Latest** still points at stable **1.0.0.0**.
 2. Unzip → `yapcore-release/linux` (or `windows`).
 3. Configure secrets ([SECRETS.md](docs/start/SECRETS.md)), then launch:
 
