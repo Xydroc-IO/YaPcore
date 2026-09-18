@@ -7,7 +7,7 @@ Ordered deltas under [`vendor/folia/patches/`](../../vendor/folia/patches/). Aut
 
 Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
 
-The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0043` (**10**) are Folia-itself improvements on that pin: ticket/unload hygiene, AI/leash/dragon ownership (Folia PRs 491/495/504), portal-linked region thread coupling (#469), split NPE harden, teleport Bukkit events (#490), map autosave storage (#505/#506), debug-subscriber CME (#472), a **native regionizer cut** so a packed spawn can hold a legal hole, async villager-brain / end-vehicle spawn ownership (Folia #446 / #453), and contiguous-bar relocate + gap/region probe. Moving the pin is still how you pick up later upstream regionizer commits.
+The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0044` (**11**) are Folia-itself improvements on that pin: ticket/unload hygiene, AI/leash/dragon ownership (Folia PRs 491/495/504), portal-linked region thread coupling (#469), split NPE harden, teleport Bukkit events (#490), map autosave storage (#505/#506), debug-subscriber CME (#472), a **native regionizer cut** so a packed spawn can hold a legal hole, async villager-brain / end-vehicle spawn ownership (Folia #446 / #453), contiguous-bar relocate + gap/region probe, and fork-correctness (cut AABB, on-thread gap, RTQ handoff, portal lookup, save wait). Moving the pin is still how you pick up later upstream regionizer commits.
 
 ## Patches
 
@@ -49,6 +49,7 @@ The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or rep
 | `0041-yap-regionizer-packed-spawn-cut.patch` | Native cut flag + ticket clamp + thin gap (`YapRegionizerGap`) | landed |
 | `0042-yap-async-brain-end-vehicle-spawn.patch` | Folia #446/#453: defer villager brain during async transform; vehicle END→overworld uses rider respawn | landed |
 | `0043-yap-contiguous-bar-relocate-probe.patch` | Same-world `teleportTo` evacuate; probe `gap_bands` / `ticking_regions` (split bar, not BLOCKS lockstep) | landed |
+| `0044-yap-fork-correctness.patch` | Cut AABB (not infinite slab); on-thread gap maintain; RTQ requeue on split; portal couple by portal chunk; `synchronize(flush)` waits; never strip PLAYER tickets | landed |
 
 Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent`). See [PLUGINS.md](../plugins/PLUGINS.md).
 

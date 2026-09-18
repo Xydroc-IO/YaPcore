@@ -3,9 +3,9 @@
 Ordered paperweight / post-apply deltas for the YaP-Folia product jar.
 
 - **Authors:** YapLabs `<folia@yaplabs.com>` (all `*.patch` From headers)
-- **Inventory + knobs:** [docs/folia/YAP_FOLIA_PATCHES.md](../../../docs/folia/YAP_FOLIA_PATCHES.md) — **36** patches (`0000`–`0043`)
+- **Inventory + knobs:** [docs/folia/YAP_FOLIA_PATCHES.md](../../../docs/folia/YAP_FOLIA_PATCHES.md) — **37** patches (`0000`–`0044`)
 - **Soak / ship profile:** [docs/folia/YAP_FOLIA_PATCHES.md](../../../docs/folia/YAP_FOLIA_PATCHES.md)
-- **Upstream pin:** [../UPSTREAM.lock](../UPSTREAM.lock) — `14b7fee` / 2026-09-06. `0000`–`0033` are YaP behavior/repairs. `0034`–`0043` are Folia-itself improvements on that pin (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe).
+- **Upstream pin:** [../UPSTREAM.lock](../UPSTREAM.lock) — `14b7fee` / 2026-09-06. `0000`–`0033` are YaP behavior/repairs. `0034`–`0044` are Folia-itself improvements on that pin (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe, fork-correctness).
 - **Domain:** YaP `*.java` helpers in this fork stay **≤500 lines** (split `YapCorridorCarver` and siblings in `0018`)
 
 Do not put lab notebooks or agent scratch files in this directory — documentation lives under `docs/folia/`.

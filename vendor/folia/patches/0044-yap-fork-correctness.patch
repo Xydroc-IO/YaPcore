@@ -1,0 +1,888 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP fork correctness: cut AABB, gap, RTQ handoff, portal lookup
+
+Bound regionizer cuts to the corridor section AABB. Maintain the gap on each
+shard tick thread. Requeue phase-tagged RTQ on split. Portal couple looks up
+by portal chunk region. synchronize(flush) waits for IO. Do not strip PLAYER
+tickets. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapAsyncChunkSave.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapAsyncChunkSave.java
+@@ -4,6 +4,7 @@
+ import net.minecraft.server.level.ServerLevel;
+ 
+ import java.io.IOException;
++import java.util.concurrent.CompletableFuture;
+ import java.util.concurrent.ExecutorService;
+ import java.util.concurrent.Executors;
+ import java.util.concurrent.ThreadFactory;
+@@ -37,6 +38,7 @@
+ 
+     /**
+      * When enabled, enqueue flush work and return immediately; otherwise run {@code sync} on caller.
++     * Tick-path offload — do not use for {@code synchronize(flush)} / shutdown durability.
+      */
+     public static void flushOrEnqueue(final ServerLevel world, final Runnable sync) {
+         if (!enabled()) {
+@@ -53,14 +55,39 @@
+         });
+     }
+ 
+-    public static void flushWorld(final ServerLevel world) {
+-        flushOrEnqueue(world, () -> {
+-            MoonriseRegionFileIO.flush(world);
++    public static CompletableFuture<Void> flushWorldAwait(final ServerLevel world) {
++        if (!enabled()) {
++            try {
++                runFlush(world);
++                return CompletableFuture.completedFuture(null);
++            } catch (final Throwable t) {
++                return CompletableFuture.failedFuture(t);
++            }
++        }
++        final CompletableFuture<Void> done = new CompletableFuture<>();
++        IO.execute(() -> {
+             try {
+-                MoonriseRegionFileIO.flushRegionStorages(world);
+-            } catch (final IOException ex) {
+-                throw new RuntimeException(ex);
++                runFlush(world);
++                done.complete(null);
++            } catch (final Throwable t) {
++                LOG.log(Level.SEVERE, "Async chunk flush failed for world '"
++                        + world.getWorld().getName() + "'", t);
++                done.completeExceptionally(t);
+             }
+         });
++        return done;
++    }
++
++    public static void flushWorld(final ServerLevel world) {
++        flushOrEnqueue(world, () -> runFlush(world));
++    }
++
++    private static void runFlush(final ServerLevel world) {
++        MoonriseRegionFileIO.flush(world);
++        try {
++            MoonriseRegionFileIO.flushRegionStorages(world);
++        } catch (final IOException ex) {
++            throw new RuntimeException(ex);
++        }
+     }
+ }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
+@@ -31,7 +31,7 @@
+ 
+     private static final ConcurrentHashMap<Long, Boolean> IN_FLIGHT = new ConcurrentHashMap<>();
+     /** Set when force-partition wins mid-carve — settler must stop unloading across new boundaries. */
+-    private static final ConcurrentHashMap<Long, Boolean> CANCELLED = new ConcurrentHashMap<>();
++    static final ConcurrentHashMap<Long, Boolean> CANCELLED = new ConcurrentHashMap<>();
+     private static final ConcurrentHashMap<Long, Long> LAST_CARVE_DONE_MS = new ConcurrentHashMap<>();
+     private static final ConcurrentHashMap<Long, Integer> CARVE_CYCLES = new ConcurrentHashMap<>();
+     /** region id → last corridor chunk keys (re-unpin before partition retries). */
+@@ -86,11 +86,13 @@
+         PENDING_ANCHORS.remove(regionId);
+         LAST_CORRIDOR.remove(regionId);
+         YapRegionizerGap.release(-regionId);
+-        if (shardGroup != 0L && world != null && plan != null && anchor != null && !plan.keys.isEmpty()) {
+-            GAP_HOLDS.put(shardGroup, new YapCorridorPlanner.GapHold(world, plan, anchor.clone(), landings));
++        if (shardGroup != 0L && world != null && plan != null && !plan.keys.isEmpty()) {
++            if (anchor != null) {
++                GAP_HOLDS.put(shardGroup, new YapCorridorPlanner.GapHold(world, plan, anchor.clone(), landings));
++            }
+             YapRegionizerGap.register(world, plan, shardGroup);
+-            LOGGER.info("YaP gap hold registered shard-group {} — {} corridor chunks lo={} hi={}",
+-                    shardGroup, plan.keys.size(), plan.lo, plan.hi);
++            LOGGER.info("YaP gap hold registered shard-group {} — {} corridor chunks lo={} hi={} maintain={}",
++                    shardGroup, plan.keys.size(), plan.lo, plan.hi, anchor != null);
+         }
+     }
+ 
+@@ -116,14 +118,14 @@
+             return;
+         }
+         GAP_MAINTAIN_PASSES.increment();
+-        // Fire-and-forget on a daemon — never block the global RegionizedServer task queue.
+-        final Thread maint = new Thread(() -> YapCorridorUnload.maintainGapBand(hold), "yap-gap-maintain-" + shardGroup);
+-        maint.setDaemon(true);
+-        maint.start();
+-    }
+-
+-    private static boolean isCancelled(final long regionId) {
+-        return CANCELLED.containsKey(regionId);
++        if (!hold.maintaining.compareAndSet(false, true)) {
++            return;
++        }
++        try {
++            YapCorridorUnload.maintainGapBand(hold);
++        } finally {
++            hold.maintaining.set(false);
++        }
+     }
+ 
+     public static long carvesStarted() {
+@@ -317,10 +319,11 @@
+                     return;
+                 }
+                 Thread.sleep(Math.max(200L, SETTLE_MS / 5));
+-                RegionizedServer.getInstance().addTask(() -> secondPassAndPartition(world, regionId, plan, shards, anchor));
++                RegionizedServer.getInstance().addTask(() ->
++                        YapCorridorUnload.secondPassAndPartition(world, regionId, plan, shards, anchor, SETTLE_MS));
+             } catch (final InterruptedException e) {
+                 Thread.currentThread().interrupt();
+-                IN_FLIGHT.remove(regionId);
++                abortSettler(regionId);
+             }
+         }, "yap-carve-settle-" + regionId);
+         settler.setDaemon(true);
+@@ -357,77 +360,20 @@
+         }
+     }
+ 
+-    private static void secondPassAndPartition(
+-            final ServerLevel world,
+-            final long regionId,
+-            final CorridorPlan plan,
+-            final int shards,
+-            final int[] anchor) {
+-        if (isCancelled(regionId)) {
+-            CANCELLED.remove(regionId);
+-            LOGGER.info("YaP corridor carve region #{} skip second pass — already partitioned", regionId);
+-            return;
+-        }
+-        try {
+-            final LongOpenHashSet remaining = YapCorridorPlanner.collectCorridorKeysFromWorld(world, plan);
+-            if (!remaining.isEmpty()) {
+-                LOGGER.info("YaP corridor carve region #{} second pass — {} keys still in regionizer",
+-                        regionId, remaining.size());
+-                for (final long key : remaining) {
+-                    try {
+-                        world.setChunkForced(CoordinateUtils.getChunkX(key), CoordinateUtils.getChunkZ(key), false);
+-                    } catch (final Throwable ignored) {
+-                    }
+-                }
+-                final Thread wait = new Thread(() -> {
+-                    try {
+-                        runOnAnchor(world, anchor, 90L, () -> {
+-                            for (final long key : remaining) {
+-                                final int cx = CoordinateUtils.getChunkX(key);
+-                                final int cz = CoordinateUtils.getChunkZ(key);
+-                                if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, cx, cz)) {
+-                                    continue;
+-                                }
+-                                YapCorridorUnload.releaseCorridorTickets(world, regionId, cx, cz);
+-                            }
+-                        });
+-                        Thread.sleep(SETTLE_MS);
+-                        runOnAnchor(world, anchor, 90L, () -> {
+-                            YapCorridorUnload.flushCorridorUnloads(world);
+-                            for (final long key : remaining) {
+-                                YapCorridorUnload.reapCorridorHolder(world, CoordinateUtils.getChunkX(key),
+-                                        CoordinateUtils.getChunkZ(key));
+-                            }
+-                        });
+-                        Thread.sleep(SETTLE_MS);
+-                        finishCarve(regionId, shards, world, plan);
+-                    } catch (final InterruptedException e) {
+-                        Thread.currentThread().interrupt();
+-                        IN_FLIGHT.remove(regionId);
+-                    }
+-                }, "yap-carve-settle2-" + regionId);
+-                wait.setDaemon(true);
+-                wait.start();
+-                return;
+-            }
+-            final Thread wait = new Thread(() -> {
+-                try {
+-                    Thread.sleep(SETTLE_MS);
+-                    finishCarve(regionId, shards, world, plan);
+-                } catch (final InterruptedException e) {
+-                    Thread.currentThread().interrupt();
+-                    IN_FLIGHT.remove(regionId);
+-                }
+-            }, "yap-carve-settle2-" + regionId);
+-            wait.setDaemon(true);
+-            wait.start();
+-        } catch (final Throwable t) {
+-            LOGGER.error("YaP corridor second pass failed region #{}", regionId, t);
+-            IN_FLIGHT.remove(regionId);
+-        }
++    static void abortSettler(final long regionId) {
++        IN_FLIGHT.remove(regionId);
++        LANDINGS.remove(regionId);
++        PENDING_PLANS.remove(regionId);
++        PENDING_ANCHORS.remove(regionId);
++        LAST_CORRIDOR.remove(regionId);
++        YapRegionizerGap.release(-regionId);
++    }
++
++    static boolean isCancelled(final long regionId) {
++        return CANCELLED.containsKey(regionId);
+     }
+ 
+-    private static void finishCarve(final long regionId, final int shards,
++    static void finishCarve(final long regionId, final int shards,
+                                     final ServerLevel world, final CorridorPlan plan) {
+         if (isCancelled(regionId)) {
+             CANCELLED.remove(regionId);
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
+@@ -9,6 +9,7 @@
+ 
+ import java.util.ArrayList;
+ import java.util.List;
++import java.util.concurrent.atomic.AtomicBoolean;
+ import java.util.concurrent.atomic.AtomicInteger;
+ 
+ /**
+@@ -23,23 +24,23 @@
+ 
+     static LongOpenHashSet collectCorridorKeysFromWorld(final ServerLevel world, final YapCorridorCarver.CorridorPlan plan) {
+         final LongOpenHashSet keys = new LongOpenHashSet();
++        if (plan == null || plan.keys().isEmpty()) {
++            return keys;
++        }
+         try {
++            // Do not filter by parent region id — after forcePartition that id is DEAD.
+             world.regioniser.computeForAllRegionsUnsynchronised(region -> {
+-                if (region.id != plan.regionId()) {
+-                    return;
+-                }
+                 final List<? extends ThreadedRegionizer.ThreadedRegionSection<?, ?>> sections = region.copySections();
+                 for (final ThreadedRegionizer.ThreadedRegionSection<?, ?> s : sections) {
+                     if (s.isEmpty()) {
+                         continue;
+                     }
+-                    final int coord = plan.cutOnX() ? s.sectionX : s.sectionZ;
+-                    if (coord < plan.lo() || coord > plan.hi()) {
+-                        continue;
+-                    }
+                     final LongArrayList chunks = s.getChunks();
+                     for (int i = 0; i < chunks.size(); ++i) {
+-                        keys.add(chunks.getLong(i));
++                        final long chunkKey = chunks.getLong(i);
++                        if (plan.keys().contains(chunkKey)) {
++                            keys.add(chunkKey);
++                        }
+                     }
+                 }
+             });
+@@ -55,6 +56,7 @@
+         final int[] anchor;
+         final CarveLandings landings;
+         final AtomicInteger tickCounter = new AtomicInteger();
++        final AtomicBoolean maintaining = new AtomicBoolean();
+ 
+         GapHold(final ServerLevel world, final YapCorridorCarver.CorridorPlan plan, final int[] anchor,
+                 final CarveLandings landings) {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorUnload.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorUnload.java
+@@ -2,9 +2,7 @@
+ 
+ import ca.spottedleaf.moonrise.common.util.CoordinateUtils;
+ import com.mojang.logging.LogUtils;
+-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+ import net.minecraft.server.level.ServerLevel;
+-import net.minecraft.server.level.TicketType;
+ import org.slf4j.Logger;
+ 
+ /**
+@@ -18,27 +16,28 @@
+     }
+ 
+     static void maintainGapBand(final YapCorridorPlanner.GapHold hold) {
+-        final LongOpenHashSet keys = YapCorridorPlanner.collectCorridorKeysFromWorld(hold.world, hold.plan);
+-        if (keys.isEmpty()) {
++        if (hold == null || hold.plan == null || hold.plan.keys().isEmpty()) {
+             return;
+         }
+-        // Anchor outside corridor — never queueTickTaskQueue on gap chunks (pins them).
+-        YapCorridorCarver.runOnAnchor(hold.world, hold.anchor, 30L, () -> {
+-            for (final long key : keys) {
+-                final int cx = CoordinateUtils.getChunkX(key);
+-                final int cz = CoordinateUtils.getChunkZ(key);
+-                if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(hold.world, cx, cz)) {
+-                    continue;
+-                }
+-                try {
+-                    hold.world.setChunkForced(cx, cz, false);
+-                } catch (final Throwable ignored) {
+-                }
++        if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThread()) {
++            return;
++        }
++        // Called from the shard's region tick — only touch keys this thread owns.
++        for (final long key : hold.plan.keys()) {
++            final int cx = CoordinateUtils.getChunkX(key);
++            final int cz = CoordinateUtils.getChunkZ(key);
++            if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(hold.world, cx, cz)) {
++                continue;
++            }
++            try {
++                hold.world.setChunkForced(cx, cz, false);
++            } catch (final Throwable ignored) {
++            }
+                 stripNonUnknownTickets(hold.world, cx, cz);
++                holderManager(hold.world).unloadIfCut(cx, cz);
+                 maintainGapChunk(hold, cx, cz);
+-            }
+-            flushCorridorUnloads(hold.world);
+-        });
++        }
++        flushCorridorUnloads(hold.world);
+     }
+ 
+     /** Strip sim tickets and unload corridor chunks re-pinned after partition — no regionizer.removeChunk. */
+@@ -92,6 +91,7 @@
+         }
+ 
+         stripNonUnknownTickets(world, cx, cz);
++        holderManager(world).unloadIfCut(cx, cz);
+         if (!unloadOnly) {
+             return;
+         }
+@@ -180,6 +180,7 @@
+             YapCorridorEntities.relocateCorridorEntities(world, regionId, cx, cz);
+         }
+         stripNonUnknownTickets(world, cx, cz);
++        holderManager(world).unloadIfCut(cx, cz);
+     }
+ 
+     /** Moonrise already dropped the holder — sync the regionizer bitset. */
+@@ -245,7 +246,7 @@
+                 }
+                 boolean progress = false;
+                 for (final net.minecraft.server.level.Ticket ticket : tickets) {
+-                    if (ticket.getType() == TicketType.UNKNOWN) {
++                    if (YapRegionizerGap.keepTicket(ticket.getType())) {
+                         continue;
+                     }
+                     try {
+@@ -263,4 +264,71 @@
+         } catch (final Throwable ignored) {
+         }
+     }
++
++    static void secondPassAndPartition(
++            final ServerLevel world,
++            final long regionId,
++            final YapCorridorCarver.CorridorPlan plan,
++            final int shards,
++            final int[] anchor,
++            final long settleMs) {
++        if (YapCorridorCarver.isCancelled(regionId)) {
++            YapCorridorCarver.CANCELLED.remove(regionId);
++            return;
++        }
++        try {
++            final it.unimi.dsi.fastutil.longs.LongOpenHashSet remaining =
++                    YapCorridorPlanner.collectCorridorKeysFromWorld(world, plan);
++            if (!remaining.isEmpty()) {
++                final Thread wait = new Thread(() -> {
++                    try {
++                        YapCorridorCarver.runOnAnchor(world, anchor, 90L, () -> {
++                            for (final long key : remaining) {
++                                final int cx = CoordinateUtils.getChunkX(key);
++                                final int cz = CoordinateUtils.getChunkZ(key);
++                                if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, cx, cz)) {
++                                    continue;
++                                }
++                                releaseCorridorTickets(world, regionId, cx, cz);
++                            }
++                        });
++                        Thread.sleep(settleMs);
++                        YapCorridorCarver.runOnAnchor(world, anchor, 90L, () -> {
++                            flushCorridorUnloads(world);
++                            for (final long key : remaining) {
++                                final int cx = CoordinateUtils.getChunkX(key);
++                                final int cz = CoordinateUtils.getChunkZ(key);
++                                if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, cx, cz)) {
++                                    continue;
++                                }
++                                reapCorridorHolder(world, cx, cz);
++                            }
++                        });
++                        Thread.sleep(settleMs);
++                        YapCorridorCarver.finishCarve(regionId, shards, world, plan);
++                    } catch (final InterruptedException e) {
++                        Thread.currentThread().interrupt();
++                        YapCorridorCarver.abortSettler(regionId);
++                    }
++                }, "yap-carve-settle2-" + regionId);
++                wait.setDaemon(true);
++                wait.start();
++                return;
++            }
++            final Thread wait = new Thread(() -> {
++                try {
++                    Thread.sleep(settleMs);
++                    YapCorridorCarver.finishCarve(regionId, shards, world, plan);
++                } catch (final InterruptedException e) {
++                    Thread.currentThread().interrupt();
++                    YapCorridorCarver.abortSettler(regionId);
++                }
++            }, "yap-carve-settle2-" + regionId);
++            wait.setDaemon(true);
++            wait.start();
++        } catch (final Throwable t) {
++            LOGGER.error("YaP corridor second pass failed region #{}", regionId, t);
++            YapCorridorCarver.abortSettler(regionId);
++        }
++    }
+ }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapEntityTickBudget.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapEntityTickBudget.java
+@@ -169,25 +169,31 @@
+ 
+     private static boolean nearPlayer(final Mob mob) {
+         try {
++            final double r2 = NEAR_PLAYER_BLOCKS * NEAR_PLAYER_BLOCKS;
+             final RegionizedWorldData wd = TickRegionScheduler.getCurrentRegionizedWorldData();
+-            if (wd == null) {
+-                return false;
+-            }
+-            final List<ServerPlayer> locals = wd.getLocalPlayers();
+-            if (locals == null || locals.isEmpty()) {
+-                return false;
++            if (wd != null && nearAny(wd.getLocalPlayers(), mob, r2)) {
++                return true;
+             }
+-            final double r2 = NEAR_PLAYER_BLOCKS * NEAR_PLAYER_BLOCKS;
+-            for (final ServerPlayer p : locals) {
+-                if (p != null && p.distanceToSqr(mob) <= r2) {
+-                    return true;
+-                }
++            if (mob.level() instanceof net.minecraft.server.level.ServerLevel sl) {
++                return nearAny(sl.players(), mob, r2);
+             }
+         } catch (final Throwable ignored) {
+             return false;
+         }
+         return false;
+     }
++
++    private static boolean nearAny(final List<ServerPlayer> players, final Mob mob, final double r2) {
++        if (players == null || players.isEmpty()) {
++            return false;
++        }
++        for (final ServerPlayer p : players) {
++            if (p != null && p.distanceToSqr(mob) <= r2) {
++                return true;
++            }
++        }
++        return false;
++    }
+ 
+     private static void clearDeferred(final Entity entity) {
+         try {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPhaseTaggedTasks.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPhaseTaggedTasks.java
+@@ -15,6 +15,9 @@
+  * <p>When aligned microticks are on, foreign-region tasks are held until the owning region
+  * enters the target {@link YapMicroPhase} (same wall epoch when possible). Late arrivals drain
+  * in {@link YapMicroPhase#BLOCK_ENTITIES} catch-all or the next epoch's matching phase.
++ *
++ * <p>On region inactive/split, pending work is requeued onto Folia's tick queue at the stored
++ * chunk so the new owner runs it — never silently dropped.
+  */
+ public final class YapPhaseTaggedTasks {
+ 
+@@ -49,6 +52,18 @@
+             final long targetEpoch,
+             final Runnable run
+     ) {
++        deferLocated(regionDataId, targetPhase, targetEpoch, run, null, 0, 0);
++    }
++
++    static void deferLocated(
++            final long regionDataId,
++            final YapMicroPhase targetPhase,
++            final long targetEpoch,
++            final Runnable run,
++            final ServerLevel world,
++            final int chunkX,
++            final int chunkZ
++    ) {
+         if (!YapAlignedMicroTicks.enabled()) {
+             run.run();
+             return;
+@@ -64,7 +79,7 @@
+         }
+         BY_REGION
+                 .computeIfAbsent(regionDataId, id -> new ConcurrentLinkedQueue<>())
+-                .add(new TaggedTask(phase, targetEpoch, run));
++                .add(new TaggedTask(phase, targetEpoch, run, world, chunkX, chunkZ));
+         HELD.incrementAndGet();
+         final TickRegions.TickRegionData data = findRegionData(regionDataId);
+         if (data != null) {
+@@ -80,15 +95,26 @@
+             final YapMicroPhase targetPhase,
+             final Runnable run
+     ) {
++        return wrap(regionDataId, targetPhase, run, null, 0, 0);
++    }
++
++    public static Runnable wrap(
++            final long regionDataId,
++            final YapMicroPhase targetPhase,
++            final Runnable run,
++            final ServerLevel world,
++            final int chunkX,
++            final int chunkZ
++    ) {
+         if (!YapAlignedMicroTicks.enabled()) {
+             return run;
+         }
+         if (run instanceof PhaseTaggedRunnable) {
+-            return run; // already wrapped — avoid double-tag
++            return run;
+         }
+         final YapMicroPhase phase = targetPhase.collapseToConfigured();
+         final long epoch = YapTickEpochCoordinator.wallEpoch();
+-        return new PhaseTaggedRunnable(regionDataId, phase, epoch, run);
++        return new PhaseTaggedRunnable(regionDataId, phase, epoch, run, world, chunkX, chunkZ);
+     }
+ 
+     /**
+@@ -108,7 +134,13 @@
+         if (run instanceof PhaseTaggedRunnable) {
+             return run;
+         }
+-        return wrap(resolveRegionDataId(world, chunkX, chunkZ), defaultTargetPhase(), run);
++        final long regionDataId = resolveRegionDataId(world, chunkX, chunkZ);
++        if (regionDataId == 0L) {
++            return run;
++        }
++        final YapMicroPhase phase = defaultTargetPhase().collapseToConfigured();
++        final long epoch = YapTickEpochCoordinator.wallEpoch();
++        return new PhaseTaggedRunnable(regionDataId, phase, epoch, run, world, chunkX, chunkZ);
+     }
+ 
+     public static YapMicroPhase defaultTargetPhase() {
+@@ -167,10 +199,21 @@
+         }
+     }
+ 
++    /** Split/inactive: requeue located work onto the chunk's new owner. */
+     public static void clearRegion(final long regionDataId) {
+         final ConcurrentLinkedQueue<TaggedTask> q = BY_REGION.remove(regionDataId);
+-        if (q != null) {
+-            q.clear();
++        if (q == null || q.isEmpty()) {
++            return;
++        }
++        TaggedTask task;
++        while ((task = q.poll()) != null) {
++            if (task.world != null) {
++                try {
++                    RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(
++                            task.world, task.chunkX, task.chunkZ, task.run);
++                } catch (final Throwable ignored) {
++                }
++            }
+         }
+     }
+ 
+@@ -183,7 +226,14 @@
+         return null;
+     }
+ 
+-    private record TaggedTask(YapMicroPhase phase, long epoch, Runnable run) {
++    private record TaggedTask(
++            YapMicroPhase phase,
++            long epoch,
++            Runnable run,
++            ServerLevel world,
++            int chunkX,
++            int chunkZ
++    ) {
+     }
+ 
+     /** Marker runnable so universal RTQ tagging does not double-wrap. */
+@@ -192,17 +242,26 @@
+         private final YapMicroPhase phase;
+         private final long epoch;
+         private final Runnable run;
++        private final ServerLevel world;
++        private final int chunkX;
++        private final int chunkZ;
+ 
+         private PhaseTaggedRunnable(
+                 final long regionDataId,
+                 final YapMicroPhase phase,
+                 final long epoch,
+-                final Runnable run
++                final Runnable run,
++                final ServerLevel world,
++                final int chunkX,
++                final int chunkZ
+         ) {
+             this.regionDataId = regionDataId;
+             this.phase = phase;
+             this.epoch = epoch;
+             this.run = run;
++            this.world = world;
++            this.chunkX = chunkX;
++            this.chunkZ = chunkZ;
+         }
+ 
+         @Override
+@@ -213,7 +272,7 @@
+                 YapSchedulerProbe.onRanInPhase(this.phase);
+                 return;
+             }
+-            defer(this.regionDataId, this.phase, this.epoch, this.run);
++            deferLocated(this.regionDataId, this.phase, this.epoch, this.run, this.world, this.chunkX, this.chunkZ);
+         }
+     }
+ }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPortalRegionCoupler.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPortalRegionCoupler.java
+@@ -62,20 +62,30 @@
+         }
+         final TickRegions.TickRegionData data = origin.region;
+         final ServerLevel world = data.world;
+-        final ChunkPos center = data.region.getCenterChunk();
+-        if (world == null || center == null) {
++        if (world == null) {
+             return;
+         }
+-        final Link link = BY_FROM.get(pack(world, center.x(), center.z()));
++        final Link link = findLinkForRegion(world, data);
+         if (link == null || link.expired(System.nanoTime())) {
+             return;
+         }
+-        if (link.fromWorld != world) {
+-            return;
+-        }
+         stealPartnerTick(origin, link);
+     }
+ 
++    private static Link findLinkForRegion(final ServerLevel world, final TickRegions.TickRegionData data) {
++        for (final Link candidate : BY_FROM.values()) {
++            if (candidate.fromWorld != world) {
++                continue;
++            }
++            final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> at =
++                    world.regioniser.getRegionAtUnsynchronised(candidate.fromChunkX, candidate.fromChunkZ);
++            if (at != null && at.getData() == data) {
++                return candidate;
++            }
++        }
++        return null;
++    }
++
+     private static void stealPartnerTick(final TickRegionScheduler.RegionScheduleHandle origin, final Link link) {
+         final ServerLevel destWorld = link.toWorld;
+         if (destWorld == null || destWorld.regioniser == null) {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
+@@ -1,5 +1,7 @@
+ package io.papermc.paper.threadedregions;
+ 
++import ca.spottedleaf.moonrise.common.util.CoordinateUtils;
++import it.unimi.dsi.fastutil.longs.LongIterator;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.server.level.TicketType;
+@@ -14,8 +16,8 @@
+  * merge BFS jumps them, while PLAYER/sim tickets refill the hole.
+  *
+  * <p>While a corridor is registered, skip empty-section create, do not BFS across the
+- * band, and refuse tickets that would reload it (players standing in the band keep
+- * their own chunk).
++ * <em>section AABB</em> of the planned corridor (never an infinite world slab), and
++ * refuse tickets that would reload it (players standing in the band keep their own chunk).
+  *
+  * <p>Keys: negative = in-flight carve ({@code -regionId}); positive = post-partition
+  * shard group. Regionizer write lock for topology; ticket lock for {@link #blocksTicket}.
+@@ -56,10 +58,26 @@
+         if (!ENABLED || world == null || plan == null || plan.keys().isEmpty() || key == 0L) {
+             return;
+         }
+-        final int worldId = System.identityHashCode(world);
+-        final Cut cut = new Cut(worldId, plan.cutOnX(), plan.lo(), plan.hi());
++        final Cut cut = aabbFromPlan(world, plan);
++        if (cut == null) {
++            return;
++        }
+         BY_KEY.put(key, cut);
+-        BY_WORLD.computeIfAbsent(worldId, w -> new ConcurrentHashMap<>()).put(key, cut);
++        BY_WORLD.computeIfAbsent(cut.worldId, w -> new ConcurrentHashMap<>()).put(key, cut);
++    }
++
++    /** Player / portal / teleport holds must not be stripped from a live corridor chunk. */
++    public static boolean keepTicket(final TicketType type) {
++        if (type == null) {
++            return true;
++        }
++        return type == TicketType.UNKNOWN
++                || type == TicketType.PLAYER_LOADING
++                || type == TicketType.PLAYER_SIMULATION
++                || type == TicketType.PLAYER_SPAWN
++                || type == TicketType.PORTAL
++                || type == TicketType.POST_TELEPORT
++                || type == TicketType.TELEPORT_HOLD_TICKET;
+     }
+ 
+     public static void release(final long key) {
+@@ -156,6 +174,35 @@
+                 + " bfsSkip=" + BFS_SKIPPED.sum();
+     }
+ 
++    private static Cut aabbFromPlan(final ServerLevel world, final YapCorridorCarver.CorridorPlan plan) {
++        final int shift = TickRegions.getRegionChunkShift();
++        int xLo = Integer.MAX_VALUE;
++        int xHi = Integer.MIN_VALUE;
++        int zLo = Integer.MAX_VALUE;
++        int zHi = Integer.MIN_VALUE;
++        if (plan.cutOnX()) {
++            xLo = plan.lo();
++            xHi = plan.hi();
++        } else {
++            zLo = plan.lo();
++            zHi = plan.hi();
++        }
++        final LongIterator it = plan.keys().iterator();
++        while (it.hasNext()) {
++            final long chunkKey = it.nextLong();
++            final int sx = CoordinateUtils.getChunkX(chunkKey) >> shift;
++            final int sz = CoordinateUtils.getChunkZ(chunkKey) >> shift;
++            xLo = Math.min(xLo, sx);
++            xHi = Math.max(xHi, sx);
++            zLo = Math.min(zLo, sz);
++            zHi = Math.max(zHi, sz);
++        }
++        if (xLo > xHi || zLo > zHi) {
++            return null;
++        }
++        return new Cut(System.identityHashCode(world), plan.cutOnX(), xLo, xHi, zLo, zHi);
++    }
++
+     private static Cut find(final ServerLevel world, final int sectionX, final int sectionZ) {
+         if (world == null) {
+             return null;
+@@ -192,28 +239,37 @@
+     private static final class Cut {
+         final int worldId;
+         final boolean cutOnX;
+-        final int lo;
+-        final int hi;
++        final int xLo;
++        final int xHi;
++        final int zLo;
++        final int zHi;
+ 
+-        Cut(final int worldId, final boolean cutOnX, final int lo, final int hi) {
++        Cut(final int worldId, final boolean cutOnX, final int xLo, final int xHi, final int zLo, final int zHi) {
+             this.worldId = worldId;
+             this.cutOnX = cutOnX;
+-            this.lo = lo;
+-            this.hi = hi;
++            this.xLo = xLo;
++            this.xHi = xHi;
++            this.zLo = zLo;
++            this.zHi = zHi;
+         }
+ 
+         boolean containsSection(final int sectionX, final int sectionZ) {
+-            final int coord = this.cutOnX ? sectionX : sectionZ;
+-            return coord >= this.lo && coord <= this.hi;
++            return sectionX >= this.xLo && sectionX <= this.xHi
++                    && sectionZ >= this.zLo && sectionZ <= this.zHi;
+         }
+ 
+         boolean separates(final int ax, final int az, final int bx, final int bz) {
+-            final int a = this.cutOnX ? ax : az;
+-            final int b = this.cutOnX ? bx : bz;
+-            if ((a >= this.lo && a <= this.hi) || (b >= this.lo && b <= this.hi)) {
++            if (this.containsSection(ax, az) || this.containsSection(bx, bz)) {
+                 return true;
+             }
+-            return (a < this.lo && b > this.hi) || (b < this.lo && a > this.hi);
++            if (this.cutOnX) {
++                final boolean cross = (ax < this.xLo && bx > this.xHi) || (bx < this.xLo && ax > this.xHi);
++                final boolean zOverlap = Math.max(az, bz) >= this.zLo && Math.min(az, bz) <= this.zHi;
++                return cross && zOverlap;
++            }
++            final boolean cross = (az < this.zLo && bz > this.zHi) || (bz < this.zLo && az > this.zHi);
++            final boolean xOverlap = Math.max(ax, bx) >= this.xLo && Math.min(ax, bx) <= this.xHi;
++            return cross && xOverlap;
+         }
+     }
+ }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSchedulerProbe.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSchedulerProbe.java
+@@ -103,7 +103,8 @@
+                 LOGGER.info("YaP scheduler-probe BLOCKS pulse ran chunk={},{} region={}", cx, cz, targetId);
+                 dump(true);
+             };
+-            final Runnable tagged = YapPhaseTaggedTasks.wrap(targetId, YapMicroPhase.neighborDeferPhase(), pulse);
++            final Runnable tagged = YapPhaseTaggedTasks.wrap(
++                    targetId, YapMicroPhase.neighborDeferPhase(), pulse, level, cx, cz);
+             RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(level, cx, cz, tagged);
+             PULSES_QUEUED.incrementAndGet();
+             LOGGER.info(
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportTransaction.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportTransaction.java
+@@ -33,6 +33,7 @@
+     private final boolean player;
+     private final String origin;
+     private final String destination;
++    private final ServerLevel destLevel;
+     private final Vec3 from;
+     private final Vec3 to;
+     private final long startedNs;
+@@ -42,12 +43,14 @@
+     private enum State { PREPARE, COMMIT, CONFIRM, ROLLBACK }
+ 
+     private YapTeleportTransaction(
+-            long id, UUID entityId, boolean player, String origin, String destination, Vec3 from, Vec3 to) {
++            long id, UUID entityId, boolean player, String origin, String destination,
++            ServerLevel destLevel, Vec3 from, Vec3 to) {
+         this.id = id;
+         this.entityId = entityId;
+         this.player = player;
+         this.origin = origin;
+         this.destination = destination;
++        this.destLevel = destLevel;
+         this.from = from;
+         this.to = to;
+         this.startedNs = System.nanoTime();
+@@ -68,6 +71,7 @@
+                 entity instanceof Player,
+                 origin.getWorld().getName(),
+                 dest.getWorld().getName(),
++                dest,
+                 entity.position(),
+                 to);
+         OPEN.put(id, tx);
+@@ -116,6 +120,14 @@
+         state = State.ROLLBACK;
+         ROLLBACK.incrementAndGet();
+         OPEN.remove(id);
++        final ServerLevel.PendingTeleport held = this.pending;
++        this.pending = null;
++        if (held != null && destLevel != null) {
++            try {
++                destLevel.removePendingTeleport(held);
++            } catch (final Throwable ignored) {
++            }
++        }
+         LOG.warning("YaP-TP-TX rollback id=" + id + " player=" + entityId
+                 + " reason=" + reason
+                 + " from=" + fmt(from) + " to=" + fmt(to)
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java
+@@ -600,8 +600,7 @@
+         try {
+             // YaP start - async chunk save
+             if (io.papermc.paper.threadedregions.YapAsyncChunkSave.enabled() && flush) {
+-                io.papermc.paper.threadedregions.YapAsyncChunkSave.flushWorld(this.level);
+-                return CompletableFuture.completedFuture(null);
++                return io.papermc.paper.threadedregions.YapAsyncChunkSave.flushWorldAwait(this.level);
+             }
+             // YaP end - async chunk save
+             ca.spottedleaf.moonrise.patches.chunk_system.io.MoonriseRegionFileIO.flush(this.level);
