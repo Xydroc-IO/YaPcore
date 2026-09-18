@@ -20,6 +20,7 @@ import com.yapcore.world.gui.WorldEditGuiListener;
 import com.yapcore.world.listener.BrushListener;
 import com.yapcore.world.listener.SelectionWandListener;
 import com.yapcore.world.listener.ToolModeListener;
+import com.yapcore.world.listener.WorldClimateListener;
 import com.yapcore.world.listener.WorldEditSlashBridge;
 import com.yapcore.world.listener.WorldEditToolListener;
 import com.yapcore.world.schem.SchematicPastePreview;
@@ -68,6 +69,7 @@ public final class WorldPlugin extends JavaPlugin {
     private EditApplyServiceImpl editApply;
     private WorldEditBridge worldEditBridge;
     private WorldEditCuiBridge cuiBridge;
+    private WorldClimateListener climate;
 
     @Override
     public void onEnable() {
@@ -90,6 +92,9 @@ public final class WorldPlugin extends JavaPlugin {
             previewControls = new SchematicPreviewControls(this);
         }
         getServer().getPluginManager().registerEvents(previewControls, this);
+        climate = new WorldClimateListener(this);
+        getServer().getPluginManager().registerEvents(climate, this);
+        climate.applyAll();
 
         ClipboardFormat.setLoader(new YapClipboardLoader());
 
@@ -253,6 +258,9 @@ public final class WorldPlugin extends JavaPlugin {
         restartEditorHttp();
         commands = new WorldCommands(this, config, worldManager, selection, paster, brushService,
                 undoService, selectionEditService, editOps, worldEditTool, worldEditGui);
+        if (climate != null) {
+            climate.applyAll();
+        }
     }
 
     private void restartEditorHttp() {

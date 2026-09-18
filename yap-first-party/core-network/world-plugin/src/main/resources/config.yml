@@ -41,3 +41,7 @@ editor:
   clipboard-web: true
 
 server-id: lobby
+
+# Always day, no weather, no natural mobs. Unset = on when this instance is "creative".
+# climate:
+#   enabled: true
