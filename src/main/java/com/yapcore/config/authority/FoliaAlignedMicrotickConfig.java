@@ -27,7 +27,7 @@ public final class FoliaAlignedMicrotickConfig {
 
     /** Real micro/sub-tick phases + soft cross-region waves ({@code -Dyap.folia.aligned-microticks}). */
     public boolean isAlignedMicroticks() {
-        return Boolean.parseBoolean(props.getProperty("folia-aligned-microticks", "false"));
+        return Boolean.parseBoolean(props.getProperty("folia-aligned-microticks", "true"));
     }
 
     /** Phase count 2–4 ({@code -Dyap.folia.micro-phases}). Default 4. */

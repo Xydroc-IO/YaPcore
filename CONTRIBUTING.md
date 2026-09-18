@@ -8,6 +8,7 @@ Thank you for contributing to a production Folia network stack.
 2. **Threading** — world / inventory / block changes on **SYNC**; DB/HTTP on **HEAVY**; menu polish on **UI**.
 3. **Size** — **hard rule:** ≤500 lines per domain `.java` file under `src/main/java` and
    `yap-first-party/` (enforced by `./scripts/check-domain-line-limits.sh` / `gradle checkDomainLineLimits`).
+   YaP classes under `vendor/folia/` patches (`YapCorridorCarver` and siblings) follow the same 500-line split.
    Split by package when a class grows ([whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md)).
    Link JE outbound framing belongs in `McOutboundPacketEncoder`, not a stacked compress+frame Netty pair.
 4. **Docs** — behavior or API changes update `docs/` Markdown (and the [whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md) when substantial).

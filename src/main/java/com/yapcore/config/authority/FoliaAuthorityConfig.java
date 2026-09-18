@@ -57,6 +57,7 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-subregion-coalesce-ticks", "100");
         props.setProperty("folia-subregion-coalesce-quiet-ticks", "200");
         props.setProperty("folia-subregion-coalesce-min-wall-ms", "30000");
+        props.setProperty("folia-subregion-carve", "true");
         props.setProperty("folia-subregion-partition-delay-ticks", "600");
         FoliaAlignedMicrotickConfig.applyDefaults(props);
         FoliaPhysicsSubstepConfig.applyDefaults(props);

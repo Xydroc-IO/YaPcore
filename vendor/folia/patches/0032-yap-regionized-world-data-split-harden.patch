@@ -1,0 +1,205 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP RegionizedWorldData split/merge harden
+
+Null-safe split of connections, players, block-entities, and chunk lists.
+0016 already guards entity redistribution; this covers the remaining
+Folia "impossible get() is null" paths that force-partition can still hit,
+plus null ticking-block-entity pos on split/merge.
+Post-applyAllPatches. Depends on 0016.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionSplit.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionSplit.java
+@@ -0,0 +1,61 @@
++package io.papermc.paper.threadedregions;
++
++import ca.spottedleaf.moonrise.common.util.CoordinateUtils;
++import com.mojang.logging.LogUtils;
++import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
++import net.minecraft.core.BlockPos;
++import net.minecraft.world.level.block.entity.TickingBlockEntity;
++import org.slf4j.Logger;
++
++import javax.annotation.Nullable;
++
++/**
++ * Split/merge guards for {@link RegionizedWorldData}. Folia assumes every live entity/chunk
++ * maps to a target region; YaP force-partition can race mid-spawn / sleeping tickers.
++ */
++public final class YapRegionSplit {
++
++    private static final Logger LOGGER = LogUtils.getLogger();
++
++    private YapRegionSplit() {
++    }
++
++    @Nullable
++    public static RegionizedWorldData target(
++            final Long2ReferenceOpenHashMap<RegionizedWorldData> regionToData,
++            final int chunkX,
++            final int chunkZ,
++            final int chunkToRegionShift,
++            final String what,
++            final Object detail) {
++        final RegionizedWorldData into = regionToData.get(
++                CoordinateUtils.getChunkKey(chunkX >> chunkToRegionShift, chunkZ >> chunkToRegionShift));
++        if (into != null) {
++            return into;
++        }
++        LOGGER.error(
++                "YaP region split: no target RegionizedWorldData for {} {} at chunk {},{} — keeping on source until next merge",
++                what,
++                detail,
++                chunkX,
++                chunkZ);
++        return null;
++    }
++
++    @Nullable
++    public static BlockPos posOrNull(final TickingBlockEntity ticker, final String list) {
++        if (ticker == null) {
++            LOGGER.error("YaP region split/merge: null {} ticker — keeping on source", list);
++            return null;
++        }
++        final BlockPos pos = ticker.getPos();
++        if (pos != null) {
++            return pos;
++        }
++        LOGGER.error(
++                "YaP region split: {} ticker {} has null pos — keeping on source until next merge",
++                list,
++                ticker.getClass().getName());
++        return null;
++    }
++}
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedWorldData.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedWorldData.java
+@@ -2986,17 +2986,23 @@
+             from.fluidLevelTicks.merge(into.fluidLevelTicks, fromRedstoneTimeOffset);
+ 
+             // tile entity ticking
+             for (final TickingBlockEntity tileEntityWrapped : from.pendingBlockEntityTickers) {
++                if (tileEntityWrapped == null) {
++                    continue;
++                }
+                 into.pendingBlockEntityTickers.add(tileEntityWrapped);
+                 final BlockEntity tileEntity = tileEntityWrapped.getTileEntity();
+                 if (tileEntity != null) {
+                     tileEntity.updateTicks(fromTickOffset, fromRedstoneTimeOffset);
+                 }
+             }
+             for (final TickingBlockEntity tileEntityWrapped : from.blockEntityTickers) {
++                if (tileEntityWrapped == null) {
++                    continue;
++                }
+                 into.blockEntityTickers.add(tileEntityWrapped);
+                 final BlockEntity tileEntity = tileEntityWrapped.getTileEntity();
+                 if (tileEntity != null) {
+                     tileEntity.updateTicks(fromTickOffset, fromRedstoneTimeOffset);
+                 }
+             }
+@@ -3036,18 +3036,27 @@
+             // connections
+             for (final Connection conn : from.connections) {
+                 final ServerPlayer player = conn.getPlayer();
++                if (player == null) {
++                    continue;
++                }
+                 final ChunkPos pos = player.chunkPosition();
+                 // Note: It is impossible for an entity in the world to _not_ be in an entity chunk, which means
+                 // the chunk holder must _exist_, and so the region section exists.
+-                regionToData.get(CoordinateUtils.getChunkKey(pos.x() >> chunkToRegionShift, pos.z() >> chunkToRegionShift))
+-                    .connections.add(conn);
++                final RegionizedWorldData intoConn = YapRegionSplit.target(regionToData, pos.x(), pos.z(), chunkToRegionShift, "connection", player);
++                if (intoConn == null) {
++                    continue;
++                }
++                intoConn.connections.add(conn);
+             }
+             // entities
+             for (final ServerPlayer player : from.localPlayers) {
+                 final ChunkPos pos = player.chunkPosition();
+                 // Note: It is impossible for an entity in the world to _not_ be in an entity chunk, which means
+                 // the chunk holder must _exist_, and so the region section exists.
+-                final RegionizedWorldData into = regionToData.get(CoordinateUtils.getChunkKey(pos.x() >> chunkToRegionShift, pos.z() >> chunkToRegionShift));
++                final RegionizedWorldData into = YapRegionSplit.target(regionToData, pos.x(), pos.z(), chunkToRegionShift, "local player", player);
++                if (into == null) {
++                    continue;
++                }
+                 into.localPlayers.add(player);
+                 player.getBukkitEntity().updateRegion(into);
+                 into.nearbyPlayers.addPlayer(player);
+@@ -3107,25 +3110,31 @@
+             from.fluidLevelTicks.split(chunkToRegionShift, levelTicksFluidRegionData);
+ 
+             // tile entity ticking
+             for (final TickingBlockEntity tileEntity : from.pendingBlockEntityTickers) {
+-                final BlockPos pos = tileEntity.getPos();
++                final BlockPos pos = YapRegionSplit.posOrNull(tileEntity, "pendingBlockEntityTickers");
++                if (pos == null) {
++                    continue;
++                }
+                 final int chunkX = pos.getX() >> 4;
+                 final int chunkZ = pos.getZ() >> 4;
+ 
+-                final RegionizedWorldData into = regionToData.get(CoordinateUtils.getChunkKey(chunkX >> chunkToRegionShift, chunkZ >> chunkToRegionShift));
++                final RegionizedWorldData into = YapRegionSplit.target(regionToData, chunkX, chunkZ, chunkToRegionShift, "pending block-entity", tileEntity.getType());
+                 if (into != null) {
+                     into.pendingBlockEntityTickers.add(tileEntity);
+                 } // else: when a chunk unloads, it does not actually _remove_ the tile entity from the list, it just gets
+                   //       marked as removed. So if there is no section, it's probably removed!
+             }
+             for (final TickingBlockEntity tileEntity : from.blockEntityTickers) {
+-                final BlockPos pos = tileEntity.getPos();
++                final BlockPos pos = YapRegionSplit.posOrNull(tileEntity, "blockEntityTickers");
++                if (pos == null) {
++                    continue;
++                }
+                 final int chunkX = pos.getX() >> 4;
+                 final int chunkZ = pos.getZ() >> 4;
+ 
+-                final RegionizedWorldData into = regionToData.get(CoordinateUtils.getChunkKey(chunkX >> chunkToRegionShift, chunkZ >> chunkToRegionShift));
++                final RegionizedWorldData into = YapRegionSplit.target(regionToData, chunkX, chunkZ, chunkToRegionShift, "block-entity", tileEntity.getType());
+                 if (into != null) {
+                     into.blockEntityTickers.add(tileEntity);
+                 } // else: when a chunk unloads, it does not actually _remove_ the tile entity from the list, it just gets
+                   //       marked as removed. So if there is no section, it's probably removed!
+             }
+@@ -3137,23 +3146,32 @@
+                 final LevelChunk chunk = iterator.next();
+                 final ChunkPos pos = chunk.getPos();
+ 
+                 // Impossible for get() to return null, as the chunk is entity ticking - thus the chunk holder is loaded
+-                regionToData.get(CoordinateUtils.getChunkKey(pos.x() >> chunkToRegionShift, pos.z() >> chunkToRegionShift))
+-                    .entityTickingChunks.add(chunk);
++                final RegionizedWorldData intoEntityChunks = YapRegionSplit.target(regionToData, pos.x(), pos.z(), chunkToRegionShift, "entityTickingChunk", pos);
++                if (intoEntityChunks == null) {
++                    continue;
++                }
++                intoEntityChunks.entityTickingChunks.add(chunk);
+             }
+             for (final Iterator<LevelChunk> iterator = from.tickingChunks.iterator(); iterator.hasNext();) {
+                 final LevelChunk chunk = iterator.next();
+                 final ChunkPos pos = chunk.getPos();
+ 
+                 // Impossible for get() to return null, as the chunk is entity ticking - thus the chunk holder is loaded
+-                regionToData.get(CoordinateUtils.getChunkKey(pos.x() >> chunkToRegionShift, pos.z() >> chunkToRegionShift))
+-                    .tickingChunks.add(chunk);
++                final RegionizedWorldData intoTickingChunks = YapRegionSplit.target(regionToData, pos.x(), pos.z(), chunkToRegionShift, "tickingChunk", pos);
++                if (intoTickingChunks == null) {
++                    continue;
++                }
++                intoTickingChunks.tickingChunks.add(chunk);
+             }
+             for (final Iterator<LevelChunk> iterator = from.chunks.iterator(); iterator.hasNext();) {
+                 final LevelChunk chunk = iterator.next();
+                 final ChunkPos pos = chunk.getPos();
+ 
+                 // Impossible for get() to return null, as the chunk is entity ticking - thus the chunk holder is loaded
+-                regionToData.get(CoordinateUtils.getChunkKey(pos.x() >> chunkToRegionShift, pos.z() >> chunkToRegionShift))
+-                    .chunks.add(chunk);
++                final RegionizedWorldData intoChunks = YapRegionSplit.target(regionToData, pos.x(), pos.z(), chunkToRegionShift, "chunk", pos);
++                if (intoChunks == null) {
++                    continue;
++                }
++                intoChunks.chunks.add(chunk);
+             }

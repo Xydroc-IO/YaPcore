@@ -96,11 +96,12 @@ Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes
 
 | Knob (defaults) | Role |
 |-----------------|------|
-| `folia-aligned-microticks=true` | Real micro/sub-tick phases + soft cross-region waves; universal RTQ phase tagging |
+| `folia-aligned-microticks=true` | Real micro/sub-tick phases + per-world waves; universal RTQ phase tagging |
 | `folia-micro-phases=4` | Phase count (CHUNKS → BLOCKS → ENTITIES → BLOCK_ENTITIES) |
-| `folia-tick-wave-max-wait-ms=2` | Soft barrier max wait (must be &gt; 0) |
+| `folia-tick-wave-max-wait-ms=2` | Soft per-world barrier max wait (must be &gt; 0) |
 | `folia-physics-substeps=true` | N-step travel/move inside one tick (combat/feel; plugin tick stays 20 TPS) |
 | `folia-subregion-partition=true` | Split hot regions into **parallel subregion shards** when geometry allows |
+| `folia-subregion-carve=true` | Unload an empty corridor before the cut (`0018`) |
 | `folia-microtick-budget-ms=8` | Soft **Mob AI time-slice** on hot regions (MSPT-gated; not a finer clock) |
 | `folia-entity-tick-budget=400` | Cap Mob AI ticks per region when hot (≥12 ms MSPT) — never players / TNT / vehicles / bosses |
 | `folia-hopper-tick-budget=64` | Soft-defer excess hopper transfers |

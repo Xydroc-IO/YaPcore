@@ -9,6 +9,24 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 1.0.0.0 — Region cut proven + ship-on partition/carve/waves (2026-09-18)
+
+Same ship version (no product bump). Rebuild Folia incrementally, then `gradle publishReleasesFolder -PyapGameplay=true`.
+
+| Area | Change |
+|------|--------|
+| **Region cut** | Lab PASS: force-partition + `RegionizedWorldData.split` (0032) + BLOCKS-tagged pulse drain; `wave_timeouts=0` |
+| **0026 waves** | Per-world epoch keys; leave epoch at end of region tick; wait only when same-world peers arrived |
+| **Ship defaults** | `folia-subregion-partition=true`, `folia-subregion-carve=true`, `folia-aligned-microticks=true` |
+| **0018 carve** | Split to `YapCorridorCarver` / `YapCorridorEntities` / `YapCorridorPlanner` / `YapCorridorUnload` (≤500) |
+| **Patches** | `0032` split harden + `0033` lab probe in the product jar. **No 0034** |
+| **Domain ≤500** | Bedrock join/play/session extracts; Folia corridor helpers |
+| **Docs** | [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [README.md](../../README.md) · [DEFAULTS.md](DEFAULTS.md) · whitepaper §3.4 / §4 |
+
+Build: incremental `vendor/folia/work` `:folia-server:createPaperclipJar` → `lib/yap-folia-26.2.jar`, then `gradle publishReleasesFolder -PyapGameplay=true` → `releases/1.0.0.0/`. Upload with `--clobber` per [RELEASES.md](RELEASES.md).
+
+---
+
 ## After 1.0.0.0 — Creative climate, NPC Folia spawn, reach, Bedrock, ultrawide (2026-09-17)
 
 Same ship version (no product bump). Rebuild with `gradle publishReleasesFolder -PyapGameplay=true`.

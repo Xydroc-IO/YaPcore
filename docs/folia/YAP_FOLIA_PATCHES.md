@@ -21,7 +21,7 @@ Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) �
 | `0015-yap-cross-region-neighbor-defer.patch` | Defer cross-shard neighbor/shape updates | landed |
 | `0016-yap-partition-stability-gates.patch` | Min-entities + coalesce quiet + null-safe split | landed |
 | `0017-yap-partition-empty-buffer-required.patch` | Refuse force-partition without empty-buffer cut | landed |
-| `0018-yap-corridor-carve-before-partition.patch` | Unload Folia-wide corridor then force-partition | landed |
+| `0018-yap-corridor-carve-before-partition.patch` | Unload Folia-wide corridor then force-partition (`YapCorridorCarver` + Entities/Planner/Unload) | landed |
 | `0019-yap-post-partition-gap-hold.patch` | Maintain corridor gap after partition | landed |
 | `0020-yap-version-fetcher.patch` | Version fetcher branding | landed |
 | `0021-yap-advertise-secure-chat.patch` | Secure-chat advertise UX | landed |
@@ -29,12 +29,14 @@ Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) �
 | `0023-yap-smart-entity-budget-microtick.patch` | MSPT-gated budget + anti-starve | landed |
 | `0024-yap-subregion-partition-harden.patch` | Engage hysteresis + coalesce wall + cuts | landed |
 | `0025-yap-encyclopedia-hooks.patch` | Encyclopedia NMS: crop slow/accelerate + fluid tick gate (**defaults off**) | landed |
-| `0026-yap-tick-epoch-coordinator.patch` | Soft epoch-wave barriers + `YapMicroPhase` | landed |
+| `0026-yap-tick-epoch-coordinator.patch` | Per-world epoch-wave barriers + `YapMicroPhase` | landed |
 | `0027-yap-region-microphase-tick.patch` | Full `ServerLevel` micro-phase tick split | landed |
 | `0028-yap-phase-tagged-task-queue.patch` | Phase-tagged cross-region neighbor/task drain | landed |
 | `0029-yap-microphase-budgets.patch` | Naming: AI time-slice vs aligned micro-phases | landed |
 | `0030-yap-universal-rtq-phase-tag.patch` | Universal `RegionizedTaskQueue` tick-queue phase tagging | landed |
 | `0031-yap-physics-substeps.patch` | Internal travel/move physics sub-steps (combat/feel) | landed |
+| `0032-yap-regionized-world-data-split-harden.patch` | Split/merge null-safe connections, players, BEs, chunks | landed |
+| `0033-yap-scheduler-probe.patch` | Lab split + BLOCKS-drain probe (off unless `-Dyap.folia.scheduler-probe`) | landed |
 
 Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent`). See [PLUGINS.md](../plugins/PLUGINS.md).
 
@@ -52,23 +54,26 @@ Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent
 | `-Dyap.folia.microtick-budget-ms=N` | **8** (product) | Soft ms deadline for Mob AI phase (not a finer clock) |
 | `-Dyap.folia.aligned-microticks=true` | **true** (product) | Real micro/sub-tick phases + soft cross-region waves |
 | `-Dyap.folia.micro-phases=N` | **4** | Phase count 2–4 when aligned microticks on |
-| `-Dyap.folia.tick-wave-max-wait-ms=N` | **2** | Soft barrier max wait (must be &gt; 0) |
+| `-Dyap.folia.tick-wave-max-wait-ms=N` | **2** | Soft per-world barrier max wait (must be &gt; 0) |
 | `-Dyap.folia.physics-substeps=true` | **true** (product) | N-step travel + collision subdivision inside one tick |
 | `-Dyap.folia.physics-substep-count=N` | **4** | Substep count 2–8 |
 | `-Dyap.folia.physics-substep-min-move=D` | **0.02** | Min move length to subdivide collision |
 | `-Dyap.folia.subregion-partition=true` | **true** (product) | Force-partition hot regions into parallel shards |
+| `-Dyap.folia.subregion-carve=true` | **true** (product) | Unload an empty corridor before force-partition (`0018`) |
 | `-Dyap.folia.subregion-mspt-clear=N` | **16** | Hysteresis vs engage threshold |
 | `-Dyap.folia.subregion-coalesce-min-wall-ms=N` | **30000** | Min wall-clock ms after partition before coalesce |
+| `-Dyap.folia.scheduler-probe=true` | **false** | Lab: dump split/BLOCKS-drain counters + pulse file. **Not a ship default.** |
+| `-Dyap.folia.subregion-carve-force-unload=true` | **false** | Lab: unload corridor even if relocate misses. **Not a ship default.** |
 
 Operator soak profiles: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md). Citeable MSPT: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md) · [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md).
 
 ## Region model (short)
 
-Folia’s invariant: **one tick thread owns one region**. YaP force-partitions hot contiguous areas into independent Folia regions with merge-inhibition so they stay schedulable in parallel. Neighbor updates across shard cuts may lag by up to one region tick (`0015`); with aligned microticks they are phase-tagged (`0028`) and may soft-slip one micro-phase on wave timeout.
+Folia’s invariant: **one tick thread owns one region**. YaP force-partitions hot contiguous areas into independent Folia regions with merge-inhibition so they stay schedulable in parallel. Neighbor updates across shard cuts may lag by up to one region tick (`0015`); with aligned microticks they are phase-tagged (`0028`). Wave barriers are **per-world** (`0026`): a region only waits when same-world peers have arrived at the prior phase, and it leaves the epoch when the region tick ends. Overworld does not timeout waiting for nether/end. Split/merge of `RegionizedWorldData` keeps entities (`0016`) plus connections, players, block-entities, and chunk lists (`0032`) on source when the target region is missing.
 
 ### Aligned micro/sub-ticks (patches 0026–0030)
 
-When `-Dyap.folia.aligned-microticks=true`, each **logical** 20 TPS region tick is subdivided into `YapMicroPhase` slices (CHUNKS → BLOCKS → ENTITIES → BLOCK_ENTITIES) with soft epoch-wave barriers across regions in the same ~50 ms wall epoch. Every `RegionizedTaskQueue` tick-queue runnable is phase-tagged at `createTickTaskQueue` / same-thread `queueOrExecuteTickTask` (`0030`). Game time still advances once per region tick — **not** a faster simulation clock and **not** hard global lockstep. Rollback: set `folia-aligned-microticks=false`.
+When `-Dyap.folia.aligned-microticks=true`, each **logical** 20 TPS region tick is subdivided into `YapMicroPhase` slices (CHUNKS → BLOCKS → ENTITIES → BLOCK_ENTITIES) with soft **per-world** epoch-wave barriers. Every `RegionizedTaskQueue` tick-queue runnable is phase-tagged at `createTickTaskQueue` / same-thread `queueOrExecuteTickTask` (`0030`). Game time still advances once per region tick — **not** a faster simulation clock and **not** hard global lockstep. Rollback: set `folia-aligned-microticks=false`.
 
 ### Physics sub-steps (patch 0031)
 
@@ -85,6 +90,18 @@ Real fork work beyond toggles, when we pick the next stream:
 5. **Chunk ticket / load pacing** — rate-limit ticket inflation and gen under join storms so tick threads stay on simulation, not IO.
 
 Capacity still mostly comes from **subregion partition + budgets + async save**; phases and physics are correctness/feel layers on top.
+
+### Scheduler proof (lab)
+
+Idle smoke does not force-partition. The professional check is a contiguous strip that force-partitions, `RegionizedWorldData.split` (0032) incrementing, then an off-owner RTQ pulse tagged `BLOCKS` that drains the same tick (not a slip). Lab PASS also requires `wave_timeouts=0`. Lab knobs only (`-Dyap.folia.scheduler-probe`, lowered MSPT threshold / delay / min-sections):
+
+```bash
+# Incremental Folia jar after patch work (do not full-rebuild if the work tree is dirty):
+#   cd vendor/folia/work && ./gradlew --no-daemon :folia-server:jar :folia-server:createPaperclipJar
+./scripts/smoke-partition-cut.sh 240
+```
+
+Lab last PASS: `splits=1` `force_partitions=1` `split_misses=0` `pulses_queued=1` `pulses_ran=1` `slipped=0` `drained_blocks>0` `wave_timeouts=0`. `ran_blocks=0` with `drained_blocks>0` is the defer/drain path (accepted).
 
 
 ---
@@ -106,12 +123,13 @@ Patch inventory: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md) · cites: [YAP_FOL
 | `folia-budget-mspt-threshold` | **12** | Shared gate for entity budget + microtick |
 | `folia-entity-tick-max-deferred` | **40** | Anti-starve: force-tick after N consecutive skips |
 | `folia-microtick-budget-ms` | **8** | Soft Mob AI deadline on hot regions (AI time-slice; not a finer clock) |
-| `folia-aligned-microticks` | **true** | Real micro/sub-tick phases + soft cross-region waves (0026–0030); universal RTQ tagging |
+| `folia-aligned-microticks` | **true** | Real micro/sub-tick phases + per-world waves (0026–0030); universal RTQ tagging |
 | `folia-micro-phases` | **4** | Phase count when aligned microticks on (2–4) |
 | `folia-tick-wave-max-wait-ms` | **2** | Soft barrier max wait ms |
 | `folia-physics-substeps` | **true** | Internal travel/move N-step physics (0031); plugin tick stays 20 TPS |
 | `folia-physics-substep-count` | **4** | Substep count 2–8 |
 | `folia-subregion-partition` | **true** | Parallel shards when hot + geometry allows |
+| `folia-subregion-carve` | **true** | Empty corridor unload before force-partition (`0018`) |
 | `folia-subregion-mspt-clear` | **16** | Hysteresis vs engage threshold (20) |
 | `folia-subregion-coalesce-min-wall-ms` | **30000** | Anti-thrash before coalesce |
 
@@ -121,7 +139,7 @@ Scheduler: `folia-kernel/config/paper-global.yml` → `threaded-regions.schedule
 
 ## Aligned micro/sub-ticks gate
 
-Ship default **on** (`folia-aligned-microticks=true`) after smoke PASS with universal RTQ tagging (`0030`). Soft-wave timeout logs are expected under load (not a TickThread failure).
+Ship default **on** (`folia-aligned-microticks=true`) after smoke PASS with universal RTQ tagging (`0030`). Wave timeouts log at debug. Barriers are per-world: a region waits only when same-world peers have arrived at the prior phase.
 
 ```bash
 ./scripts/build-yap-folia.sh
@@ -215,6 +233,7 @@ Prove YaP-Folia **ship knobs** beat stock Folia and rank ahead of Canvas — kno
 | entity-tick-budget | 400 (MSPT-gated @ 12) |
 | microtick-budget-ms | 8 |
 | subregion-partition | true |
+| subregion-carve | true |
 | aligned-microticks | true (phases=4, wave-max-wait=2) |
 | physics-substeps | true (count=4, min-move=0.02) |
 
@@ -224,7 +243,7 @@ See also: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md) · [TUNE.md](../ops/TUNE.
 
 1. **Smart entity budget + AI time-slice (`microtick-budget-ms`)** — soft-cap Mob AI when a region is hot (≥12 ms MSPT)
 2. **Subregion partition** — parallel Folia shards when hot + geometry allows
-3. **Aligned micro/sub-ticks** (`folia-aligned-microticks`, patches 0026–0030) — real phase machine inside each logical 20 TPS tick with soft cross-region waves + universal RTQ tagging; **ship-on**
+3. **Aligned micro/sub-ticks** (`folia-aligned-microticks`, patches 0026–0030) — real phase machine inside each logical 20 TPS tick with per-world waves + universal RTQ tagging; **ship-on**
 4. **Physics sub-steps** (`folia-physics-substeps`, patch 0031) — N-step travel + collision subdivision for players/combat/projectiles; same plugin tick; **feel**, not capacity
 
 Product features, disclosed on every cite. Baseline A/B (`YAP_BENCH_CITE_BASELINE=1`)

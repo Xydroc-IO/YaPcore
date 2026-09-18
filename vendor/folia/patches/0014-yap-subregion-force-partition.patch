@@ -28,7 +28,7 @@ Post-applyAllPatches. Depends on 0013 region pool / microtick.
 + *
 + * <p>Knobs (system properties, all product-safe defaults):
 + * <ul>
-+ *   <li>{@code -Dyap.folia.subregion-partition=true} — enable (default false)</li>
++ *   <li>{@code -Dyap.folia.subregion-partition=true} — enable (default true)</li>
 + *   <li>{@code -Dyap.folia.subregion-shards=2} — shards per partition (2–4)</li>
 + *   <li>{@code -Dyap.folia.subregion-mspt-threshold=20} — MSPT to request partition</li>
 + *   <li>{@code -Dyap.folia.subregion-min-sections=4} — min sections before partition</li>
@@ -40,7 +40,7 @@ Post-applyAllPatches. Depends on 0013 region pool / microtick.
 +
 +    private static final Logger LOGGER = LogUtils.getLogger();
 +
-+    private static final boolean ENABLED = Boolean.getBoolean("yap.folia.subregion-partition");
++    private static final boolean ENABLED = Boolean.parseBoolean(System.getProperty("yap.folia.subregion-partition", "true"));
 +    private static final int SHARDS = Math.min(4, Math.max(2, Integer.getInteger("yap.folia.subregion-shards", 2)));
 +    private static final int MSPT_THRESHOLD = Math.max(1, Integer.getInteger("yap.folia.subregion-mspt-threshold", 20));
 +    private static final int MIN_SECTIONS = Math.max(2, Integer.getInteger("yap.folia.subregion-min-sections", 4));

@@ -182,6 +182,8 @@ public final class FoliaKernel {
             cmd.add("-Dyap.folia.aligned-microticks=true");
             cmd.add("-Dyap.folia.micro-phases=" + config.getFoliaMicroPhases());
             cmd.add("-Dyap.folia.tick-wave-max-wait-ms=" + config.getFoliaTickWaveMaxWaitMs());
+        } else {
+            cmd.add("-Dyap.folia.aligned-microticks=false");
         }
         if (config.isFoliaPhysicsSubsteps()) {
             cmd.add("-Dyap.folia.physics-substeps=true");
@@ -238,9 +240,7 @@ public final class FoliaKernel {
             if (coalWall != 30_000L) {
                 cmd.add("-Dyap.folia.subregion-coalesce-min-wall-ms=" + coalWall);
             }
-            if (!config.isFoliaSubregionCarve()) {
-                cmd.add("-Dyap.folia.subregion-carve=false");
-            }
+            cmd.add("-Dyap.folia.subregion-carve=" + config.isFoliaSubregionCarve());
             int partDelay = config.getFoliaSubregionPartitionDelayTicks();
             if (partDelay != 600) {
                 cmd.add("-Dyap.folia.subregion-partition-delay-ticks=" + partDelay);
@@ -249,6 +249,8 @@ public final class FoliaKernel {
             if (gapInterval != 10) {
                 cmd.add("-Dyap.folia.subregion-gap-maintain-interval=" + gapInterval);
             }
+        } else {
+            cmd.add("-Dyap.folia.subregion-partition=false");
         }
         cmd.add("-jar");
         cmd.add(jar.toAbsolutePath().toString());

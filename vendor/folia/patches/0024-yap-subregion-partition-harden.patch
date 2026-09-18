@@ -213,7 +213,7 @@ extract YapSubRegionCuts (≤500-line domain). Post-applyAllPatches.
 - * <p>Knobs (system properties, all product-safe defaults):
 + * <p>Knobs (system properties):
   * <ul>
-  *   <li>{@code -Dyap.folia.subregion-partition=true} — enable (default false)</li>
+  *   <li>{@code -Dyap.folia.subregion-partition=true} — enable (default true)</li>
   *   <li>{@code -Dyap.folia.subregion-shards=2} — shards per partition (2–4)</li>
 - *   <li>{@code -Dyap.folia.subregion-mspt-threshold=20} — MSPT to request partition</li>
 - *   <li>{@code -Dyap.folia.subregion-min-sections=4} — min sections before partition</li>
@@ -233,7 +233,7 @@ extract YapSubRegionCuts (≤500-line domain). Post-applyAllPatches.
   */
  public final class YapSubRegionPartitioner {
 @@ -36,14 +35,16 @@
-     private static final boolean ENABLED = Boolean.getBoolean("yap.folia.subregion-partition");
+     private static final boolean ENABLED = Boolean.parseBoolean(System.getProperty("yap.folia.subregion-partition", "true"));
      private static final int SHARDS = Math.min(4, Math.max(2, Integer.getInteger("yap.folia.subregion-shards", 2)));
      private static final int MSPT_THRESHOLD = Math.max(1, Integer.getInteger("yap.folia.subregion-mspt-threshold", 20));
 +    /** Clear hot streak only below this — band between clear and threshold avoids thrash. */

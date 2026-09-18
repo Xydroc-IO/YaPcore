@@ -154,7 +154,7 @@ Each logical stream obtains a `SequenceToken` carrying a per-stream sequence and
 
 ### 3.4 Spatial model
 
-**YaP-Folia** indexes world interest by region and runs authoritative tick on a dynamic region thread pool. Optional YaP patches add teleport transactions (default **on**), entity tick budgets, async chunk save, scoreboard SWMR, and experimental subregion partition (default **off**) — §4. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin work; they do **not** replace YaP-Folia game tick. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (**benches only**).
+**YaP-Folia** indexes world interest by region and runs authoritative tick on a dynamic region thread pool. YaP patches add teleport transactions (default **on**), entity tick budgets, async chunk save, scoreboard SWMR, and **subregion partition + corridor carve** (default **on**) — §4. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin work; they do **not** replace YaP-Folia game tick. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (**benches only**).
 
 ### 3.5 Memory & GC posture
 
@@ -174,8 +174,12 @@ YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream 
 | `0011` | Scoreboard SWMR | **on** (ship) |
 | `0012` / `0023` | Smart Mob AI tick budget (MSPT-gated) | **400** (ship); 0=off |
 | `0013` | Region pool metrics / microtick knobs | microtick **8 ms** (ship) |
-| `0014`–`0019` / `0024` | Subregion partition + harden | **on** (ship; hysteresis) |
+| `0014`–`0019` / `0024` | Subregion partition + corridor carve + harden | **on** (ship; hysteresis) |
 | `0022` | Hopper BE transfer budget | **64** (ship) |
+| `0026`–`0030` | Per-world aligned micro/sub-ticks + RTQ phase tags | **on** (ship) |
+| `0031` | Physics sub-steps | **on** (ship) |
+| `0032` | `RegionizedWorldData` split/merge harden | always |
+| `0033` | Scheduler probe | **off** (lab) |
 
 Build: `./scripts/build-yap-folia.sh` → `lib/yap-folia-26.2.jar`.  
 Docs: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [QUICK_START.md](../start/QUICK_START.md).

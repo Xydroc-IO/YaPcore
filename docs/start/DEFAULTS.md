@@ -101,3 +101,16 @@ and let YaP-Folia re-extract from the jar after seed).
 Plugin **jars** only go under `plugins/` — configs are created on first boot via seed + jar.
 Ship or build `lib/yap-folia-*.jar` for the product game path.
 Typical SMP knobs (chat slow-mode, claim tax off, map claim markers) live in seeds + jar resources; opt-in plugins stay `enabled: false`.
+
+## YaP-Folia ship knobs
+
+Seeded in `config/defaults/server.properties` (and forwarded as `-Dyap.folia.*`):
+
+| Knob | Default |
+|------|---------|
+| `folia-subregion-partition` | **true** |
+| `folia-subregion-carve` | **true** |
+| `folia-aligned-microticks` | **true** |
+| `folia-physics-substeps` | **true** |
+
+Lab-only: `-Dyap.folia.scheduler-probe` (patch `0033`). There is no patch `0034`. Inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).

@@ -1,0 +1,245 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP scheduler probe (split + BLOCKS drain)
+
+Lab-only counters for RegionizedWorldData.split (0032) and BLOCKS-phase
+drain. Off unless -Dyap.folia.scheduler-probe=true. Not a ship default.
+Post-applyAllPatches. Depends on 0026-0032.
+---
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSchedulerProbe.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSchedulerProbe.java
+@@ -0,0 +1,170 @@
++package io.papermc.paper.threadedregions;
++
++import com.mojang.logging.LogUtils;
++import net.minecraft.server.MinecraftServer;
++import net.minecraft.server.level.ServerLevel;
++import org.slf4j.Logger;
++
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.concurrent.atomic.AtomicLong;
++
++/**
++ * Lab telemetry for force-partition + phase-tagged RTQ. Enable with
++ * {@code -Dyap.folia.scheduler-probe=true}. Never on by default.
++ */
++public final class YapSchedulerProbe {
++
++    private static final Logger LOGGER = LogUtils.getLogger();
++    private static final boolean ENABLED = Boolean.parseBoolean(
++            System.getProperty("yap.folia.scheduler-probe", "false"));
++    private static final AtomicLong SPLITS = new AtomicLong();
++    private static final AtomicLong SPLIT_MISSES = new AtomicLong();
++    private static final AtomicLong DRAINED_BLOCKS = new AtomicLong();
++    private static final AtomicLong RAN_BLOCKS = new AtomicLong();
++    private static final AtomicLong PULSES_QUEUED = new AtomicLong();
++    private static final AtomicLong PULSES_RAN = new AtomicLong();
++    private static final AtomicLong LAST_DUMP_NS = new AtomicLong();
++
++    private YapSchedulerProbe() {
++    }
++
++    public static boolean enabled() {
++        return ENABLED;
++    }
++
++    public static void markSplit() {
++        SPLITS.incrementAndGet();
++        if (ENABLED) {
++            LOGGER.info(
++                    "YaP scheduler-probe RegionizedWorldData.split callbacks={} forcePartitions={}",
++                    SPLITS.get(),
++                    YapSubRegionPartitioner.forcePartitions());
++            dump(true);
++        }
++    }
++
++    public static void markSplitMiss() {
++        SPLIT_MISSES.incrementAndGet();
++        if (ENABLED) {
++            dump(true);
++        }
++    }
++
++    public static void onRanInPhase(final YapMicroPhase phase) {
++        if (!ENABLED) {
++            return;
++        }
++        if (phase == YapMicroPhase.BLOCKS) {
++            RAN_BLOCKS.incrementAndGet();
++        }
++        dump(false);
++    }
++
++    public static void onDrained(final YapMicroPhase taskPhase, final YapMicroPhase ctxPhase, final boolean slipped) {
++        if (!ENABLED) {
++            return;
++        }
++        if (!slipped && ctxPhase == YapMicroPhase.BLOCKS && taskPhase == YapMicroPhase.BLOCKS) {
++            DRAINED_BLOCKS.incrementAndGet();
++        }
++        dump(false);
++    }
++
++    public static void maybePulse() {
++        if (!ENABLED) {
++            return;
++        }
++        dump(false);
++        final Path req = probeDir().resolve("yap-scheduler-pulse.request");
++        if (!Files.isRegularFile(req)) {
++            return;
++        }
++        final RegionTickCtx ctx = YapAlignedMicroTicks.currentCtx();
++        try {
++            final String[] parts = Files.readString(req, StandardCharsets.UTF_8).trim().split("\\s+");
++            if (parts.length < 2) {
++                return;
++            }
++            final int cx = Integer.parseInt(parts[0]);
++            final int cz = Integer.parseInt(parts[1]);
++            final ServerLevel level = overworld();
++            if (level == null) {
++                return;
++            }
++            final long targetId = YapPhaseTaggedTasks.resolveRegionDataId(level, cx, cz);
++            if (ctx != null && ctx.regionDataId == targetId) {
++                return;
++            }
++            Files.deleteIfExists(req);
++            final Runnable pulse = () -> {
++                PULSES_RAN.incrementAndGet();
++                LOGGER.info("YaP scheduler-probe BLOCKS pulse ran chunk={},{} region={}", cx, cz, targetId);
++                dump(true);
++            };
++            final Runnable tagged = YapPhaseTaggedTasks.wrap(targetId, YapMicroPhase.neighborDeferPhase(), pulse);
++            RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(level, cx, cz, tagged);
++            PULSES_QUEUED.incrementAndGet();
++            LOGGER.info(
++                    "YaP scheduler-probe BLOCKS pulse queued chunk={},{} fromRegion={} targetRegion={}",
++                    cx,
++                    cz,
++                    ctx == null ? -1L : ctx.regionDataId,
++                    targetId);
++            dump(true);
++        } catch (final Exception ex) {
++            LOGGER.warn("YaP scheduler-probe pulse failed: {}", ex.toString());
++        }
++    }
++
++    private static ServerLevel overworld() {
++        final MinecraftServer server = MinecraftServer.getServer();
++        if (server == null) {
++            return null;
++        }
++        return server.overworld();
++    }
++
++    private static Path probeDir() {
++        return Path.of(System.getProperty("user.dir", "."));
++    }
++
++    private static Path probeFile() {
++        return Path.of(System.getProperty("yap.folia.scheduler-probe-file", "yap-scheduler-probe.txt"));
++    }
++
++    public static void dump(final boolean force) {
++        if (!ENABLED) {
++            return;
++        }
++        final long now = System.nanoTime();
++        if (!force) {
++            final long prev = LAST_DUMP_NS.get();
++            if (now - prev < 200_000_000L) {
++                return;
++            }
++            if (!LAST_DUMP_NS.compareAndSet(prev, now)) {
++                return;
++            }
++        } else {
++            LAST_DUMP_NS.set(now);
++        }
++        final String body = "time_ms=" + (now / 1_000_000L) + "\n"
++                + "splits=" + SPLITS.get() + "\n"
++                + "split_misses=" + SPLIT_MISSES.get() + "\n"
++                + "force_partitions=" + YapSubRegionPartitioner.forcePartitions() + "\n"
++                + "held=" + YapPhaseTaggedTasks.heldCount() + "\n"
++                + "drained=" + YapPhaseTaggedTasks.drainedCount() + "\n"
++                + "slipped=" + YapPhaseTaggedTasks.slippedCount() + "\n"
++                + "drained_blocks=" + DRAINED_BLOCKS.get() + "\n"
++                + "ran_blocks=" + RAN_BLOCKS.get() + "\n"
++                + "pulses_queued=" + PULSES_QUEUED.get() + "\n"
++                + "pulses_ran=" + PULSES_RAN.get() + "\n"
++                + "wave_timeouts=" + YapTickEpochCoordinator.waveTimeouts() + "\n";
++        try {
++            Files.writeString(probeFile(), body, StandardCharsets.UTF_8);
++        } catch (final Exception ignored) {
++        }
++    }
++}
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionSplit.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionSplit.java
+@@ -31,6 +31,7 @@
+         if (into != null) {
+             return into;
+         }
++        YapSchedulerProbe.markSplitMiss();
+         LOGGER.error(
+                 "YaP region split: no target RegionizedWorldData for {} {} at chunk {},{} — keeping on source until next merge",
+                 what,
+@@ -58,5 +59,9 @@
+                 list,
+                 ticker.getClass().getName());
+         return null;
+     }
++
++    public static void markSplit() {
++        YapSchedulerProbe.markSplit();
++    }
+ }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedWorldData.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedWorldData.java
+@@ -3036,6 +3036,7 @@
+             // connections
++            YapRegionSplit.markSplit();
+             for (final Connection conn : from.connections) {
+                 final ServerPlayer player = conn.getPlayer();
+                 if (player == null) {
+                     continue;
+                 }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPhaseTaggedTasks.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPhaseTaggedTasks.java
+@@ -120,8 +120,9 @@
+                 try {
+                     task.run.run();
+                 } finally {
+                     DRAINED.incrementAndGet();
+                     if (task.phase != ctx.phase) {
+                         SLIPPED.incrementAndGet();
+                     }
++                    YapSchedulerProbe.onDrained(task.phase, ctx.phase, task.phase != ctx.phase);
+                 }
+@@ -130,7 +131,8 @@
+             } else if (task.epoch < ctx.epoch && ctx.phase == YapMicroPhase.lastConfigured()) {
+                 try {
+                     task.run.run();
+                 } finally {
+                     DRAINED.incrementAndGet();
+                     SLIPPED.incrementAndGet();
++                    YapSchedulerProbe.onDrained(task.phase, ctx.phase, true);
+                 }
+@@ -196,4 +198,5 @@
+             if (ctx != null && ctx.phase == this.phase) {
+                 this.run.run();
++                YapSchedulerProbe.onRanInPhase(this.phase);
+                 return;
+             }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapAlignedMicroTicks.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapAlignedMicroTicks.java
+@@ -53,4 +53,5 @@
+         ctx.phase = YapMicroPhase.CHUNKS.collapseToConfigured();
+         CTX.set(ctx);
+         YapPhaseTaggedTasks.drainForCurrentPhase();
++        YapSchedulerProbe.maybePulse();
+     }

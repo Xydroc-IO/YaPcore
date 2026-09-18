@@ -109,6 +109,8 @@ public final class InstanceJvmCommand {
             cmd.add("-Dyap.folia.aligned-microticks=true");
             cmd.add("-Dyap.folia.micro-phases=" + config.getFoliaMicroPhases());
             cmd.add("-Dyap.folia.tick-wave-max-wait-ms=" + config.getFoliaTickWaveMaxWaitMs());
+        } else {
+            cmd.add("-Dyap.folia.aligned-microticks=false");
         }
         if (config.isFoliaPhysicsSubsteps()) {
             cmd.add("-Dyap.folia.physics-substeps=true");
@@ -137,6 +139,7 @@ public final class InstanceJvmCommand {
 
     private static void appendSubregion(ServerConfig config, List<String> cmd) {
         if (!config.isFoliaSubregionPartition()) {
+            cmd.add("-Dyap.folia.subregion-partition=false");
             return;
         }
         cmd.add("-Dyap.folia.subregion-partition=true");
@@ -176,9 +179,7 @@ public final class InstanceJvmCommand {
         if (coalWall != 30_000L) {
             cmd.add("-Dyap.folia.subregion-coalesce-min-wall-ms=" + coalWall);
         }
-        if (!config.isFoliaSubregionCarve()) {
-            cmd.add("-Dyap.folia.subregion-carve=false");
-        }
+        cmd.add("-Dyap.folia.subregion-carve=" + config.isFoliaSubregionCarve());
         int partDelay = config.getFoliaSubregionPartitionDelayTicks();
         if (partDelay != 600) {
             cmd.add("-Dyap.folia.subregion-partition-delay-ticks=" + partDelay);

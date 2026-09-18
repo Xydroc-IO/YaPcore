@@ -22,7 +22,7 @@ import java.util.Locale;
 
 /**
  * MSPT scoreboard harness.
- * Scenarios: idle | entity | farm | heavypop | spawncollapse | highpop | fullcite
+ * Scenarios: idle | entity | farm | heavypop | spawncollapse | highpop | fullcite | partitioncut
  */
 public final class BenchMsptPlugin extends JavaPlugin implements Listener {
 
@@ -130,6 +130,10 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
         if (world == null) {
             getLogger().severe("No world — aborting bench");
             Bukkit.shutdown();
+            return;
+        }
+        if ("partitioncut".equals(scenario)) {
+            BenchPartitionCut.run(this, world);
             return;
         }
         String out = outPath;
