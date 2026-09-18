@@ -196,6 +196,8 @@ starter-grants:
     - yapprotect.admin
     - yapguard.admin
     - yapguard.bypass
+    - grim.exempt
+    - grim.nosetback
     - yap.bypass
     - yapskills.bypass
     - yapskills.admin
@@ -217,6 +219,8 @@ starter-grants:
     - yapperm.admin
     - yapadmin.*
     - yapguard.bypass
+    - grim.exempt
+    - grim.nosetback
     - minecraft.command.op
     - bukkit.command.op
     - bukkit.command.op.give

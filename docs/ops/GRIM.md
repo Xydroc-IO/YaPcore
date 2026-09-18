@@ -83,7 +83,8 @@ Regions/claims (YaPRegions / PlayerData) and Protect are **not** anti-cheat — 
 |-------|----------|
 | **Bedrock / Geyser-class** | Grim exempts Bedrock via `FloodgateApi.isFloodgatePlayer`. YaPFloodgate registers a minimal `org.geysermc.floodgate.api.FloodgateApi` (MSB=0 + remembered). Keep `yap-floodgate` on the **backend** |
 | **Via-class protocol** | First-party edge on YaPcore chassis — no Via jars on backend; Grim sees normalized Paper movement |
-| **Folia** | Use Modrinth builds with `folia` loader tag (`fetch-grim.sh` filters this) |
+| **Folia** | Use Modrinth builds with `folia` loader tag (`fetch-grim.sh` filters this). YaP-Folia physics substeps leave ~0.02 block leftovers — raise `Simulation.threshold` from `0.001` to **`0.03`** and `setback-violation-threshold` to **25** or legit players spam `failed Simulation`. |
+| **Staff / custom items** | Grant `grim.exempt` (and `grim.nosetback`) on admin. YaPItems dash/pull/explode is plugin velocity Grim does not fully predict. `/grim alerts` toggles chat spam. |
 | **Moderation** | Grim alerts → wire Discord webhook in Grim config or mirror to `yap-moderation` via console |
 | **Staff** | Grant Grim bypass + `yapguard.bypass` if YaPGuard stays loaded |
 
