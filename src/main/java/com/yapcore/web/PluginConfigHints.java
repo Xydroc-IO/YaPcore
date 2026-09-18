@@ -25,7 +25,7 @@ public final class PluginConfigHints {
             Map.entry("economy.enabled", "Enable money"),
             Map.entry("economy.starting-balance", "Starting money"),
             Map.entry("starting-balance", "Starting money"),
-            Map.entry("inventory-profile", "Shared inventory"),
+            Map.entry("inventory-profile", "Inventory sharing"),
             Map.entry("autosave-seconds", "Auto-save every (seconds)"),
             Map.entry("apply-starter-pack-on-first-boot", "Create starter ranks on first boot"),
             Map.entry("local-prefix", "Shortcut for nearby chat"),
@@ -57,14 +57,24 @@ public final class PluginConfigHints {
             Map.entry("jdbc.user", "Database username"),
             Map.entry("jdbc.password", "Database password"),
             Map.entry("server-id", "This server’s id (lobby, survival…)"),
+            Map.entry("climate.enabled", "Always day, no weather, no mob spawns"),
             Map.entry("network.enabled", "Share chat with other servers"),
             Map.entry("filter.enabled", "Filter bad words"),
             Map.entry("slow-mode-seconds", "Seconds between messages"),
             Map.entry("resource-pack-file", "Pack file players download"),
             Map.entry("online-mode", "Official Minecraft accounts only"),
+            Map.entry("block-reach.enabled", "Longer block place/break reach"),
+            Map.entry("block-reach.survival", "Survival place reach (vanilla 4.5)"),
+            Map.entry("block-reach.creative", "Creative place reach (vanilla 5)"),
+            Map.entry("block-reach.adventure", "Adventure place reach"),
             Map.entry("death.keep-inventory", "Keep items on death"),
             Map.entry("death.keep-xp", "Keep XP on death"),
-            Map.entry("death.sync-gamerule", "Sync keepInventory gamerule")
+            Map.entry("death.sync-gamerule", "Sync keepInventory gamerule"),
+            Map.entry("sync.inventory", "Carry inventory across servers"),
+            Map.entry("sync.enderchest", "Carry enderchest across servers"),
+            Map.entry("sync.xp", "Carry XP across servers"),
+            Map.entry("sync.vitals", "Carry health / hunger across servers"),
+            Map.entry("sync.economy", "Share money balance across servers")
     );
 
     private static final Map<String, String> HINTS = Map.ofEntries(
@@ -74,14 +84,24 @@ public final class PluginConfigHints {
             Map.entry("unsigned-system-chat", "Keep on for offline / YaP Link / older clients."),
             Map.entry("economy.starting-balance", "Money given the first time someone joins."),
             Map.entry("starting-balance", "Money given the first time someone joins."),
-            Map.entry("inventory-profile", "global = same items on every server. server = each world keeps its own."),
+            Map.entry("inventory-profile",
+                    "global = same gear on hub/survival. server = this world keeps its own (use for creative/minigames)."),
             Map.entry("apply-starter-pack-on-first-boot", "Creates default, VIP, staff, admin, and owner the first time you boot."),
             Map.entry("local-prefix", "Type ! before a message to talk only to people nearby."),
             Map.entry("filter.mode", "replace = stars out the word. block = refuse the message."),
             Map.entry("filter.words", "Comma-separated. Matching is not case-sensitive."),
+            Map.entry("block-reach.enabled", "On = players can place/break farther than vanilla 4.5/5."),
+            Map.entry("block-reach.survival", "Blocks of reach in survival. 6.5 is a modest bump; max 16."),
+            Map.entry("block-reach.creative", "Blocks of reach in creative. 8 is comfortable building."),
+            Map.entry("block-reach.adventure", "Blocks of reach in adventure mode."),
             Map.entry("death.keep-inventory", "On = players keep gear when they die. Off = vanilla drops."),
             Map.entry("death.keep-xp", "Only used when keep-inventory is on."),
             Map.entry("death.sync-gamerule", "Also set /gamerule keepInventory on every world when you reload."),
+            Map.entry("sync.inventory", "Off = players keep a separate hotbar on this profile even when sharing."),
+            Map.entry("sync.enderchest", "Off = enderchest stays local to this profile."),
+            Map.entry("sync.xp", "Off = XP levels stay local to this profile."),
+            Map.entry("sync.vitals", "Off = health and hunger reset when crossing servers."),
+            Map.entry("sync.economy", "Off = /bal is separate on this profile (rare)."),
 
             Map.entry("homes.max", "How many /sethome spots a normal player can have."),
             Map.entry("auth.enabled", "Turn on only for a public offline-mode server. LAN/demo stays off."),
@@ -100,7 +120,8 @@ public final class PluginConfigHints {
             Map.entry("filter.enabled", "Replaces or blocks words listed under Filter."),
             Map.entry("slow-mode-seconds", "Shipped at 3 for typical public SMP. Set 0 for LAN/dev with no wait."),
             Map.entry("network.enabled", "Needs YaP Link chat bridge on a multi-server network."),
-            Map.entry("server-id", "Must match the backend name in YaP Link (often lobby).")
+            Map.entry("server-id", "Must match the backend name in YaP Link (often lobby)."),
+            Map.entry("climate.enabled", "On = noon, clear skies, no natural mobs. Creative instances turn this on by default.")
     );
 
     private static final Map<String, String> GROUPS = Map.ofEntries(
@@ -173,7 +194,7 @@ public final class PluginConfigHints {
 
     private static final Map<String, String> BLURBS = Map.ofEntries(
             Map.entry("yap-perms", "Ranks, prefixes, and who can run which command."),
-            Map.entry("yap-playerdata", "Money, bag, homes, warps, kits, and /login."),
+            Map.entry("yap-playerdata", "Money, bag, homes, warps, kits, /login, and inventory sharing."),
             Map.entry("yap-chat", "Chat channels, filter, and the unverified-chat fix."),
             Map.entry("yap-essentials", "Spawn, TPA, /gm, /item, and other daily commands."),
             Map.entry("yap-moderation", "Ban, mute, warn, kick, and /seen."),

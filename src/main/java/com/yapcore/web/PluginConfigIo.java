@@ -55,6 +55,11 @@ public final class PluginConfigIo {
                     field.put("type", "list");
                     field.put("value", joinList(list));
                 }
+            } else if ("inventory-profile".equals(path)) {
+                field.put("type", "enum");
+                field.put("options", List.of("global", "server"));
+                String text = val == null ? "global" : String.valueOf(val);
+                field.put("value", text.isBlank() ? "global" : text);
             } else {
                 field.put("type", "text");
                 field.put("value", val == null ? "" : String.valueOf(val));

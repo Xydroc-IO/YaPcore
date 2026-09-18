@@ -32,6 +32,7 @@ public final class DashboardKits {
             names.add(String.valueOf(kit.get("id")));
         }
         out.put("kitNames", names);
+        out.put("yapItemIds", DashboardYapItemsCatalog.listIds(root));
         return out;
     }
 

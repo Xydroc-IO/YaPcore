@@ -1,6 +1,6 @@
 window.YapDashRegisterKitsPanels = function (YapDash) {
   const { $, api, netPost } = YapDash;
-  let state = { kits: [], selected: "" };
+  let state = { kits: [], selected: "", yapItemIds: [] };
 
   const MATERIALS = [
     "BREAD", "COOKED_BEEF", "COOKED_CHICKEN", "GOLDEN_APPLE", "ENCHANTED_GOLDEN_APPLE",
@@ -30,12 +30,36 @@ window.YapDashRegisterKitsPanels = function (YapDash) {
     });
   }
 
+  function fillYapItems(ids) {
+    const list = $("kitYapItems");
+    if (!list) return;
+    list.innerHTML = "";
+    (ids || []).forEach((id) => {
+      const o = document.createElement("option");
+      o.value = id;
+      list.appendChild(o);
+    });
+  }
+
   function kitById(id) {
     return (state.kits || []).find((k) => k.id === id);
   }
 
   function emptyItem() {
-    return { material: "STONE", amount: 1, slot: "inventory", name: "", lore: "", enchantments: "" };
+    return {
+      kind: "material",
+      material: "STONE",
+      yapItemId: "",
+      amount: 1,
+      slot: "inventory",
+      name: "",
+      lore: "",
+      enchantments: "",
+    };
+  }
+
+  function isYap(item) {
+    return item && (item.kind === "yap-item" || !!item.yapItemId);
   }
 
   function renderCards() {
@@ -90,20 +114,37 @@ window.YapDashRegisterKitsPanels = function (YapDash) {
   }
 
   function itemRow(item) {
+    const yap = isYap(item);
     const row = document.createElement("div");
     row.className = "kit-item-row";
-    row.innerHTML = `<input data-f="material" list="kitMaterials" placeholder="BREAD" value="${esc(item.material || "")}"/>`
-      + `<input data-f="amount" type="number" min="1" value="${item.amount || 1}"/>`
-      + `<select data-f="slot">`
-      + slotOpts(item.slot)
+    const itemVal = yap ? (item.yapItemId || "") : (item.material || "");
+    row.innerHTML = `<select data-f="kind">`
+      + `<option value="material"${yap ? "" : " selected"}>Material</option>`
+      + `<option value="yap-item"${yap ? " selected" : ""}>YaPItem</option>`
       + `</select>`
-      + `<input data-f="name" placeholder="&amp;6Name" value="${esc(item.name || "")}"/>`
-      + `<input data-f="enchantments" placeholder="sharpness:1,unbreaking:1" value="${esc(item.enchantments || "")}"/>`
-      + `<input data-f="lore" placeholder="lore line; second line" value="${esc(item.lore || "")}"/>`
+      + `<input data-f="item" list="${yap ? "kitYapItems" : "kitMaterials"}" `
+      + `placeholder="${yap ? "stormblade" : "BREAD"}" value="${esc(itemVal)}"/>`
+      + `<input data-f="amount" type="number" min="1" value="${item.amount || 1}"/>`
+      + `<select data-f="slot">${slotOpts(item.slot)}</select>`
+      + `<input data-f="name" class="kit-mat-only" placeholder="&amp;6Name" value="${esc(item.name || "")}" ${yap ? "disabled" : ""}/>`
+      + `<input data-f="enchantments" class="kit-mat-only" placeholder="sharpness:1,unbreaking:1" value="${esc(item.enchantments || "")}" ${yap ? "disabled" : ""}/>`
+      + `<input data-f="lore" class="kit-mat-only" placeholder="lore line; second line" value="${esc(item.lore || "")}" ${yap ? "disabled" : ""}/>`
       + `<button type="button" class="danger kit-item-del" title="Remove">×</button>`;
     row.querySelector(".kit-item-del").onclick = () => {
       row.remove();
       if (!$("kitItems").children.length) $("kitItems").appendChild(itemRow(emptyItem()));
+    };
+    const kindSel = row.querySelector("[data-f=kind]");
+    const itemInput = row.querySelector("[data-f=item]");
+    kindSel.onchange = () => {
+      const nowYap = kindSel.value === "yap-item";
+      itemInput.setAttribute("list", nowYap ? "kitYapItems" : "kitMaterials");
+      itemInput.placeholder = nowYap ? "stormblade" : "BREAD";
+      itemInput.value = "";
+      row.querySelectorAll(".kit-mat-only").forEach((el) => {
+        el.disabled = nowYap;
+        if (nowYap) el.value = "";
+      });
     };
     return row;
   }
@@ -121,11 +162,18 @@ window.YapDashRegisterKitsPanels = function (YapDash) {
     const lines = [];
     $("kitItems")?.querySelectorAll(".kit-item-row").forEach((row) => {
       const g = (f) => row.querySelector("[data-f=" + f + "]")?.value.trim() || "";
-      const material = g("material").toUpperCase().replace(/\s+/g, "_");
-      if (!material) return;
+      const kind = g("kind") || "material";
+      const raw = g("item");
+      if (!raw) return;
       const clean = (v) => v.replace(/\|/g, "/");
-      lines.push([material, g("amount") || "1", g("slot") || "inventory",
-        clean(g("name")), clean(g("lore")), clean(g("enchantments"))].join("|"));
+      if (kind === "yap-item") {
+        const id = raw.toLowerCase().replace(/\s+/g, "_");
+        lines.push(["YAP:" + id, g("amount") || "1", g("slot") || "inventory", "", "", ""].join("|"));
+      } else {
+        const material = raw.toUpperCase().replace(/\s+/g, "_");
+        lines.push([material, g("amount") || "1", g("slot") || "inventory",
+          clean(g("name")), clean(g("lore")), clean(g("enchantments"))].join("|"));
+      }
     });
     return lines.join("\n");
   }
@@ -135,6 +183,8 @@ window.YapDashRegisterKitsPanels = function (YapDash) {
     try {
       const r = await api("/api/kits");
       state.kits = r.kits || [];
+      state.yapItemIds = r.yapItemIds || [];
+      fillYapItems(state.yapItemIds);
       $("kitCount").textContent = String(state.kits.length);
       $("kitFileOk").textContent = r.configPresent ? "kits.yml" : "missing";
       if (state.selected && !state.kits.some((k) => k.id === state.selected)) {

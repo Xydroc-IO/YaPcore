@@ -40,6 +40,7 @@ window.YapDashRegisterPluginEditors = function (YapDash) {
 
   const GROUP_BLURBS = {
     "What this plugin does": "Yes means players can use that feature. No hides it.",
+    "What follows players": "What carries when someone moves between fleet servers (same inventory profile).",
     "Basics": "Everyday switches. Read the gray line if you are not sure.",
     "Money": "Starting cash and whether /bal and /pay work.",
     "Extra bag": "The extra backpack (/bag), not the vanilla E inventory.",
@@ -132,4 +133,10 @@ window.YapDashRegisterPluginEditors = function (YapDash) {
   });
 
   Object.assign(YapDash.tabLoads, { editors: refreshEditors });
+  window.addEventListener("yap-fleet-context", () => {
+    if (document.getElementById("tab-editors")?.classList.contains("active")
+        || document.querySelector('[data-tab="editors"].active')) {
+      refreshEditors();
+    }
+  });
 };

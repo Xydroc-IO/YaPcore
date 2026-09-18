@@ -256,7 +256,7 @@ public final class DashboardNetworkSnapshots {
         return new LinkedHashMap<>();
     }
 
-    static void dumpYaml(Path file, Map<String, Object> data) throws IOException {
+    public static void dumpYaml(Path file, Map<String, Object> data) throws IOException {
         Files.createDirectories(file.getParent());
         org.yaml.snakeyaml.DumperOptions opts = new org.yaml.snakeyaml.DumperOptions();
         opts.setDefaultFlowStyle(org.yaml.snakeyaml.DumperOptions.FlowStyle.BLOCK);

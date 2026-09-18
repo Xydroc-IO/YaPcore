@@ -19,10 +19,14 @@ public final class DashboardKitItems {
             return "";
         }
         for (Map<String, Object> item : items) {
+            String line = encodeItem(item);
+            if (line == null || line.isBlank()) {
+                continue;
+            }
             if (sb.length() > 0) {
                 sb.append('\n');
             }
-            sb.append(encodeItem(item));
+            sb.append(line);
         }
         return sb.toString();
     }
@@ -42,6 +46,19 @@ public final class DashboardKitItems {
     }
 
     public static String encodeItem(Map<String, Object> item) {
+        if (isYapItem(item)) {
+            String id = yapItemIdOf(item);
+            if (id.isBlank()) {
+                return "";
+            }
+            return String.join("|",
+                    "YAP:" + id,
+                    str(item.get("amount"), "1"),
+                    str(item.get("slot"), "inventory"),
+                    "",
+                    "",
+                    "");
+        }
         return String.join("|",
                 str(item.get("material"), "STONE").toUpperCase(Locale.ROOT).replace(' ', '_'),
                 str(item.get("amount"), "1"),
@@ -59,7 +76,25 @@ public final class DashboardKitItems {
         Map<String, Object> item = new LinkedHashMap<>();
         if (!trimmed.contains("|") && trimmed.contains(":")) {
             String[] parts = trimmed.split(":", 2);
-            item.put("material", parts[0].trim().toUpperCase(Locale.ROOT).replace(' ', '_'));
+            String left = parts[0].trim();
+            if ("yap".equalsIgnoreCase(left) || "yap-item".equalsIgnoreCase(left)
+                    || "yap_item".equalsIgnoreCase(left)) {
+                String id = parts.length > 1 ? parts[1].trim().toLowerCase(Locale.ROOT) : "";
+                if (id.isEmpty()) {
+                    return null;
+                }
+                item.put("kind", "yap-item");
+                item.put("yapItemId", id);
+                item.put("material", "");
+                item.put("amount", 1);
+                item.put("slot", "inventory");
+                item.put("name", "");
+                item.put("lore", "");
+                item.put("enchantments", "");
+                return item;
+            }
+            item.put("kind", "material");
+            item.put("material", left.toUpperCase(Locale.ROOT).replace(' ', '_'));
             item.put("amount", parseAmount(parts.length > 1 ? parts[1] : "1"));
             item.put("slot", "inventory");
             item.put("name", "");
@@ -68,6 +103,22 @@ public final class DashboardKitItems {
             return item;
         }
         if (!trimmed.contains("|")) {
+            if (trimmed.toUpperCase(Locale.ROOT).startsWith("YAP:")) {
+                String id = trimmed.substring(4).trim().toLowerCase(Locale.ROOT);
+                if (id.isEmpty()) {
+                    return null;
+                }
+                item.put("kind", "yap-item");
+                item.put("yapItemId", id);
+                item.put("material", "");
+                item.put("amount", 1);
+                item.put("slot", "inventory");
+                item.put("name", "");
+                item.put("lore", "");
+                item.put("enchantments", "");
+                return item;
+            }
+            item.put("kind", "material");
             item.put("material", trimmed.toUpperCase(Locale.ROOT).replace(' ', '_'));
             item.put("amount", 1);
             item.put("slot", "inventory");
@@ -81,6 +132,22 @@ public final class DashboardKitItems {
         if (material.isEmpty()) {
             return null;
         }
+        if (material.toUpperCase(Locale.ROOT).startsWith("YAP:")) {
+            String id = material.substring(4).trim().toLowerCase(Locale.ROOT);
+            if (id.isEmpty()) {
+                return null;
+            }
+            item.put("kind", "yap-item");
+            item.put("yapItemId", id);
+            item.put("material", "");
+            item.put("amount", parseAmount(parts.length > 1 ? parts[1] : "1"));
+            item.put("slot", normalizeSlot(parts.length > 2 ? parts[2] : "inventory"));
+            item.put("name", "");
+            item.put("lore", "");
+            item.put("enchantments", "");
+            return item;
+        }
+        item.put("kind", "material");
         item.put("material", material.toUpperCase(Locale.ROOT).replace(' ', '_'));
         item.put("amount", parseAmount(parts.length > 1 ? parts[1] : "1"));
         item.put("slot", normalizeSlot(parts.length > 2 ? parts[2] : "inventory"));
@@ -188,6 +255,19 @@ public final class DashboardKitItems {
             return null;
         }
         Map<String, Object> src = (Map<String, Object>) map;
+        String yapId = str(first(src, "yap-item", "yap_item"), "");
+        if (!yapId.isBlank()) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("kind", "yap-item");
+            item.put("yapItemId", yapId.toLowerCase(Locale.ROOT));
+            item.put("material", "");
+            item.put("amount", intVal(src.get("amount"), 1));
+            item.put("slot", normalizeSlot(str(src.get("slot"), "inventory")));
+            item.put("name", "");
+            item.put("lore", "");
+            item.put("enchantments", "");
+            return item;
+        }
         String material = str(first(src, "material", "type"), "");
         if (material.isBlank()) {
             return null;
@@ -196,6 +276,7 @@ public final class DashboardKitItems {
             material = str(src.get("type"), "");
         }
         Map<String, Object> item = new LinkedHashMap<>();
+        item.put("kind", "material");
         item.put("material", material.toUpperCase(Locale.ROOT).replace(' ', '_'));
         item.put("amount", intVal(src.get("amount"), 1));
         item.put("slot", normalizeSlot(str(src.get("slot"), "inventory")));
@@ -209,6 +290,20 @@ public final class DashboardKitItems {
     }
 
     private static Map<String, Object> itemToYaml(Map<String, Object> item) {
+        if (isYapItem(item)) {
+            String id = yapItemIdOf(item);
+            if (id.isBlank()) {
+                return null;
+            }
+            Map<String, Object> out = new LinkedHashMap<>();
+            out.put("yap-item", id);
+            out.put("amount", Math.max(1, intVal(item.get("amount"), 1)));
+            String slot = normalizeSlot(str(item.get("slot"), "inventory"));
+            if (!"inventory".equals(slot)) {
+                out.put("slot", slot);
+            }
+            return out;
+        }
         String material = str(item.get("material"), "").toUpperCase(Locale.ROOT).replace(' ', '_');
         if (material.isBlank()) {
             return null;
@@ -240,189 +335,89 @@ public final class DashboardKitItems {
         return out;
     }
 
-    private static String joinLore(Object raw) {
-        if (raw instanceof List<?> list) {
-            List<String> lines = new ArrayList<>();
-            for (Object line : list) {
-                if (line != null && !String.valueOf(line).isBlank()) {
-                    lines.add(String.valueOf(line));
-                }
-            }
-            return String.join(";", lines);
+    private static boolean isYapItem(Map<String, Object> item) {
+        if (item == null) {
+            return false;
         }
-        return raw == null ? "" : String.valueOf(raw);
+        if ("yap-item".equalsIgnoreCase(str(item.get("kind"), ""))) {
+            return true;
+        }
+        return !yapItemIdOf(item).isBlank();
+    }
+
+    private static String yapItemIdOf(Map<String, Object> item) {
+        String id = str(item.get("yapItemId"), "");
+        if (!id.isBlank()) {
+            return id.toLowerCase(Locale.ROOT);
+        }
+        String mat = str(item.get("material"), "");
+        if (mat.toUpperCase(Locale.ROOT).startsWith("YAP:")) {
+            return mat.substring(4).trim().toLowerCase(Locale.ROOT);
+        }
+        return "";
+    }
+
+    private static String joinLore(Object raw) {
+        return DashboardKitItemFields.joinLore(raw);
     }
 
     private static List<String> splitLore(String raw) {
-        List<String> out = new ArrayList<>();
-        if (raw == null || raw.isBlank()) {
-            return out;
-        }
-        for (String part : raw.split(";")) {
-            if (!part.isBlank()) {
-                out.add(part.trim());
-            }
-        }
-        return out;
+        return DashboardKitItemFields.splitLore(raw);
     }
 
-    @SuppressWarnings("unchecked")
     private static String joinEnchants(Object raw) {
-        if (raw instanceof Map<?, ?> map) {
-            List<String> parts = new ArrayList<>();
-            for (var e : map.entrySet()) {
-                parts.add(String.valueOf(e.getKey()).toLowerCase(Locale.ROOT) + ":" + intVal(e.getValue(), 1));
-            }
-            return String.join(",", parts);
-        }
-        return raw == null ? "" : String.valueOf(raw);
+        return DashboardKitItemFields.joinEnchants(raw);
     }
 
     private static Map<String, Integer> splitEnchants(String raw) {
-        Map<String, Integer> out = new LinkedHashMap<>();
-        if (raw == null || raw.isBlank()) {
-            return out;
-        }
-        for (String part : raw.split(",")) {
-            String t = part.trim();
-            if (t.isEmpty()) {
-                continue;
-            }
-            String[] kv = t.split(":", 2);
-            String key = kv[0].trim().toLowerCase(Locale.ROOT).replace(' ', '_');
-            if (key.startsWith("minecraft:")) {
-                key = key.substring("minecraft:".length());
-            }
-            if (!key.isEmpty()) {
-                out.put(key, kv.length > 1 ? parseAmount(kv[1]) : 1);
-            }
-        }
-        return out;
+        return DashboardKitItemFields.splitEnchants(raw);
     }
 
     private static String normalizeSlot(String raw) {
-        return switch (raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT)) {
-            case "helmet", "head" -> "helmet";
-            case "chest", "chestplate" -> "chestplate";
-            case "legs", "leggings" -> "leggings";
-            case "boots", "feet" -> "boots";
-            case "offhand", "off-hand", "shield" -> "offhand";
-            default -> "inventory";
-        };
+        return DashboardKitItemFields.normalizeSlot(raw);
     }
 
     private static String escapeField(String raw) {
-        return raw.replace("\\", "\\\\").replace("|", "\\|").replace("\n", " ");
+        return DashboardKitItemFields.escapeField(raw);
     }
 
     private static String unescapeField(String raw) {
-        if (raw == null) {
-            return "";
-        }
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < raw.length(); i++) {
-            char c = raw.charAt(i);
-            if (c == '\\' && i + 1 < raw.length()) {
-                sb.append(raw.charAt(++i));
-            } else {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
+        return DashboardKitItemFields.unescapeField(raw);
     }
 
     private static List<String> stringList(Object val) {
-        List<String> out = new ArrayList<>();
-        if (val instanceof List<?> list) {
-            for (Object item : list) {
-                if (item != null && !String.valueOf(item).isBlank()) {
-                    out.add(String.valueOf(item));
-                }
-            }
-        } else if (val instanceof String s && !s.isBlank()) {
-            for (String part : s.split("\n")) {
-                if (!part.isBlank()) {
-                    out.add(part.trim());
-                }
-            }
-        }
-        return out;
+        return DashboardKitItemFields.stringList(val);
     }
 
     private static Object first(Map<String, Object> map, String a, String b) {
-        if (map.containsKey(a)) {
-            return map.get(a);
-        }
-        return map.get(b);
+        return DashboardKitItemFields.first(map, a, b);
     }
 
     private static String str(Object val, String fallback) {
-        if (val == null) {
-            return fallback;
-        }
-        String s = String.valueOf(val).trim();
-        return s.isEmpty() ? fallback : s;
+        return DashboardKitItemFields.str(val, fallback);
     }
 
     private static int parseAmount(String raw) {
-        try {
-            return Math.max(1, Integer.parseInt(raw.trim()));
-        } catch (Exception e) {
-            return 1;
-        }
+        return DashboardKitItemFields.parseAmount(raw);
     }
 
     private static int intVal(Object val, int fallback) {
-        if (val instanceof Number n) {
-            return n.intValue();
-        }
-        if (val != null) {
-            try {
-                return Integer.parseInt(String.valueOf(val).trim());
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        return fallback;
+        return DashboardKitItemFields.intVal(val, fallback);
     }
 
     private static long longVal(Object val, long fallback) {
-        if (val instanceof Number n) {
-            return n.longValue();
-        }
-        if (val != null) {
-            try {
-                return Long.parseLong(String.valueOf(val).trim());
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        return fallback;
+        return DashboardKitItemFields.longVal(val, fallback);
     }
 
     private static double doubleVal(Object val, double fallback) {
-        if (val instanceof Number n) {
-            return n.doubleValue();
-        }
-        if (val != null) {
-            try {
-                return Double.parseDouble(String.valueOf(val).trim());
-            } catch (NumberFormatException ignored) {
-            }
-        }
-        return fallback;
+        return DashboardKitItemFields.doubleVal(val, fallback);
     }
 
     private static boolean boolVal(Object val, boolean fallback) {
-        if (val instanceof Boolean b) {
-            return b;
-        }
-        if (val != null) {
-            return Boolean.parseBoolean(String.valueOf(val));
-        }
-        return fallback;
+        return DashboardKitItemFields.boolVal(val, fallback);
     }
 
-    @SuppressWarnings("unchecked")
     private static Map<String, Object> castMap(Map<?, ?> map) {
-        return (Map<String, Object>) map;
+        return DashboardKitItemFields.castMap(map);
     }
 }

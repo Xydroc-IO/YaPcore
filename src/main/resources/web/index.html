@@ -1049,6 +1049,43 @@
               <select id="fleetSetupAuto"><option value="true">Yes</option><option value="false">No</option></select>
             </label>
           </div>
+
+          <div class="fleet-setup-playerdata" id="fleetSetupPlayerData">
+            <div class="page-header">
+              <h4>Player inventory sharing</h4>
+              <p class="muted">YaPPlayerData — whether gear follows players from this server to others. Hub and survival usually share; creative and minigames usually keep their own.</p>
+            </div>
+            <div class="form-grid">
+              <label class="fleet-setup-span2">Inventory profile
+                <select id="fleetSetupInvProfile">
+                  <option value="global">Shared across network (global)</option>
+                  <option value="server">This server only (per server-id)</option>
+                  <option value="custom">Custom shared group…</option>
+                </select>
+              </label>
+              <label id="fleetSetupInvCustomWrap" class="hidden">Custom group name
+                <input id="fleetSetupInvCustom" placeholder="e.g. survival-network" />
+              </label>
+            </div>
+            <div class="form-grid compact" id="fleetSetupSyncGrid">
+              <label>Sync inventory
+                <select id="fleetSetupSyncInv"><option value="true">Yes</option><option value="false">No</option></select>
+              </label>
+              <label>Sync enderchest
+                <select id="fleetSetupSyncEnder"><option value="true">Yes</option><option value="false">No</option></select>
+              </label>
+              <label>Sync XP
+                <select id="fleetSetupSyncXp"><option value="true">Yes</option><option value="false">No</option></select>
+              </label>
+              <label>Sync vitals
+                <select id="fleetSetupSyncVitals"><option value="true">Yes</option><option value="false">No</option></select>
+              </label>
+              <label>Sync economy
+                <select id="fleetSetupSyncEco"><option value="true">Yes</option><option value="false">No</option></select>
+              </label>
+            </div>
+          </div>
+
           <div class="toolbar">
             <button id="fleetSetupSave" class="primary">Save settings</button>
             <span id="fleetSetupMsg" class="easy-save-msg" hidden></span>
@@ -1646,11 +1683,12 @@
               <textarea id="kitCommands" rows="3" placeholder="say {player} claimed a kit"></textarea>
             </label>
             <h4 style="margin:18px 0 8px;font-size:14px">Items</h4>
-            <p class="muted hint">Bukkit material ids (BREAD, DIAMOND_SWORD). Armor / offhand slots auto-equip when empty. Grant <code>yapdata.kit.&lt;id&gt;</code> on Access &amp; ranks.</p>
-            <p id="kitLossy" class="muted hint" hidden>This kit was saved with <code>/createkit</code> (full NBT). Saving here keeps material, name, lore, and enchantments — extra components are dropped.</p>
+            <p class="muted hint">Vanilla materials (BREAD, DIAMOND_SWORD) or <strong>YaPItems</strong> custom ids (stormblade). Armor / offhand slots auto-equip when empty. Grant <code>yapdata.kit.&lt;id&gt;</code> on Access &amp; ranks.</p>
+            <p id="kitLossy" class="muted hint" hidden>This kit was saved with <code>/createkit</code> (full NBT). Saving here keeps material, name, lore, and enchantments — extra components are dropped. Prefer YaPItems rows for custom gear.</p>
             <datalist id="kitMaterials"></datalist>
+            <datalist id="kitYapItems"></datalist>
             <div class="kit-item-row kit-item-head">
-              <span>Material</span><span>Qty</span><span>Slot</span><span>Name</span><span>Enchants</span><span>Lore</span><span></span>
+              <span>Type</span><span>Item</span><span>Qty</span><span>Slot</span><span>Name</span><span>Enchants</span><span>Lore</span><span></span>
             </div>
             <div id="kitItems"></div>
             <div class="btn-row">

@@ -108,4 +108,61 @@ class DashboardKitsTest {
         assertEquals("vip2", left.get(0).get("id"));
         assertFalse(DashboardKits.listKits(tmp).stream().anyMatch(k -> "vip".equals(k.get("id"))));
     }
+
+    @Test
+    void yapItemRoundTripPreservesCustomId() throws Exception {
+        Map<String, Object> decoded = DashboardKits.decodeItem("YAP:stormblade|1|inventory|||");
+        assertEquals("yap-item", decoded.get("kind"));
+        assertEquals("stormblade", decoded.get("yapItemId"));
+        assertEquals("YAP:stormblade|1|inventory|||", DashboardKits.encodeItem(decoded));
+
+        Path file = DashboardKits.file(tmp);
+        Files.createDirectories(file.getParent());
+        Files.writeString(file, """
+                kits:
+                  vip:
+                    delay-seconds: 100
+                    items:
+                      - yap-item: stormblade
+                        amount: 1
+                      - material: GOLDEN_APPLE
+                        amount: 4
+                """);
+        List<Map<String, Object>> kits = DashboardKits.listKits(tmp);
+        assertEquals(1, kits.size());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> items = (List<Map<String, Object>>) kits.get(0).get("items");
+        assertEquals(2, items.size());
+        assertEquals("yap-item", items.get(0).get("kind"));
+        assertEquals("stormblade", items.get(0).get("yapItemId"));
+        assertEquals("GOLDEN_APPLE", items.get(1).get("material"));
+
+        DashboardKits.saveKit(tmp, Map.of(
+                "id", "vip",
+                "delaySeconds", 100L,
+                "maxUses", 0,
+                "cost", 0,
+                "firstJoin", false,
+                "commands", List.of(),
+                "items", items));
+        String yaml = Files.readString(DashboardKits.file(tmp));
+        assertTrue(yaml.contains("yap-item: stormblade"));
+        assertTrue(yaml.contains("material: GOLDEN_APPLE"));
+        assertFalse(yaml.contains("material: STORMBLADE"));
+    }
+
+    @Test
+    void snapshotListsYapItemIdsFromCatalog() throws Exception {
+        Path itemsDir = tmp.resolve("plugins").resolve("YaPItems").resolve("items");
+        Files.createDirectories(itemsDir);
+        Files.writeString(itemsDir.resolve("examples.yml"), """
+                stormblade:
+                  base: NETHERITE_SWORD
+                  name: "&bStormblade"
+                """);
+        Map<String, Object> snap = DashboardKits.snapshot(tmp);
+        @SuppressWarnings("unchecked")
+        List<String> ids = (List<String>) snap.get("yapItemIds");
+        assertTrue(ids.contains("stormblade"));
+    }
 }
