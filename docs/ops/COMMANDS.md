@@ -172,7 +172,9 @@ Duration examples: `30m`, `2h`, `7d`, `1w`.
 | `/claim` | `yapdata.claim` | Land claims UX |
 | `/bag` `/backpack` `/bp` | `yapdata.bag` | Extra bag pages |
 
-Feature toggles: `plugins/YaPEssentials/config.yml` — including `features.water-waves` (splash / wave amplitude).  
+Feature toggles: `plugins/YaPEssentials/config.yml` — including `features.water-waves` (splash / wave amplitude)
+and `block-reach` (vanilla place/break is 4.5 survival / 5 creative; shipped 6.5 / 8 / 6.5, max 16).
+`/yapess reload` reapplies reach to online players.  
 PlayerData feature storage toggles: `plugins/YaPPlayerData/config.yml` (`features.*`, `economy.enabled`).
 
 #### Cross-plugin ops map (intentional Essentials split)
@@ -210,7 +212,7 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 | Custom items | `/yapitems …` · `/yitems` · create/edit/CD via admin **Custom items** or yap-staff | [YAPITEMS.md](../plugins/YAPITEMS.md) |
 | Skills | `/skills` · `/skill top` · `/yskills reload` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | Dungeons | `/dungeon` · `/dungeon invite\|accept\|deny\|leave\|status` · `/yapdungeons …` | [PLUGINS.md](../plugins/PLUGINS.md) |
-| NPCs | `/npc …` · `/quests …` · `/npc shop …` · `/npc setname` · `/npc move` · `/npc setspawn` · `/npc setserver` | dashboard **NPCs** + **Shops** · [PLAYERDATA.md](../data/PLAYERDATA.md) |
+| NPCs | `/npc …` · `/quests …` · `/npc shop …` · `/npc setname` · `/npc move` · `/npc respawn` · `/npc setspawn` · `/npc setserver` | dashboard **NPCs** + **Shops** · [PLAYERDATA.md](../data/PLAYERDATA.md) |
 | Fleet portals | `/portal …` (wand / create `[color]` / setcolor / go) · Link `/hub` `/server` | [PORTALS.md](../network/PORTALS.md) |
 | Admin regions | `/region …` (flag / **gamemode** / **worldborder** / template) | [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
 | Disasters | `/yapdisaster …` | dashboard **Disasters** tab |

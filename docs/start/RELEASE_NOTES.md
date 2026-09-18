@@ -9,6 +9,26 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 1.0.0.0 — Creative climate, NPC Folia spawn, reach, Bedrock, ultrawide (2026-09-17)
+
+Same ship version (no product bump). Rebuild with `gradle publishReleasesFolder -PyapGameplay=true`.
+
+| Area | Change |
+|------|--------|
+| **YaPNpcs** | Folia region-thread spawn (no global `spawnEntity` NPE); `server-id: default` falls back to fleet `yap-server-id.txt`; shop professions; no sync teleport |
+| **YaPWorld** | Creative-hub climate: always noon, no weather cycle, no natural mobs (`climate.enabled`, auto-on for instance `creative`) |
+| **YaPEssentials** | `block-reach` (survival 6.5 / creative 8); optional hub spawn-on-join |
+| **YaPPortals** | Pad fill only replaces air / portal / glass — does not overwrite signs or builds |
+| **Fleet** | Default **creative** instance; flat swap sets peaceful + no-spawn; per-instance PlayerData inventory profile |
+| **Dashboard** | Kit item fields + YaPItems catalog; fleet world-swap-flat; plugin hints for reach/climate |
+| **YaP Link / Bedrock** | JE→BE block remapper, dimension/join, entity list, Bungee Connect pending |
+| **yap-ultrawide** | Hor+ HUD shares world frustum; viewmodel + view-bob scaled so placement matches the crosshair |
+| **Docs** | [YAPWORLD.md](../plugins/YAPWORLD.md) · [COMMANDS.md](../ops/COMMANDS.md) · [PORTALS.md](../network/PORTALS.md) · [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md) |
+
+Build: `gradle publishReleasesFolder -PyapGameplay=true` → `releases/1.0.0.0/`. Upload with `--clobber` per [RELEASES.md](RELEASES.md).
+
+---
+
 ## After 1.0.0.0 — NPC shops UX + dashboard Shops + fleet polish (2026-09-17)
 
 Same ship version (no product bump). Rebuild with `gradle publishReleasesFolder -PyapGameplay=true`.

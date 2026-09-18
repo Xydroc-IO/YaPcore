@@ -189,7 +189,9 @@ Agent endpoints: `/v1/health`, `/v1/instances`, `/v1/instances/{id}/start|stop`,
 
 ## Bootstrap wizard
 
-Creates lobby (+ optional survival), optionally runs `scripts/db/ensure-db.sh` / `ensure-postgres.sh` per `server-id`, enables velocity, syncs Link. Does not start JVMs unless requested.
+Creates lobby (+ optional survival and **creative**), optionally runs `scripts/db/ensure-db.sh` / `ensure-postgres.sh` per `server-id`, enables velocity, syncs Link. Does not start JVMs unless requested.
+
+Default `fleet/fleet.json` includes a **creative** instance (`inventory-profile: server`, YaPWorld climate auto-on). Flat world swap also writes peaceful + no-spawn in `server.properties`.
 
 **Database only:** Fleet → **Database (YaPDB)** (web) or **Database…** (Swing) — pick engine, start Docker, write JDBC, sync catalog without creating instances. See [YAPDB.md](../data/YAPDB.md).
 

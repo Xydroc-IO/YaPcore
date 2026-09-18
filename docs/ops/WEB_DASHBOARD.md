@@ -150,16 +150,19 @@ YaPDB already stores `world`, `server_ctx`, and `expires_at` on user/group nodes
 **Gameplay → Kits** builds claim kits in `plugins/YaPPlayerData/kits.yml` (same file `/createkit` uses):
 
 - Cooldown, max uses, economy cost, first-join, console commands (`{player}`)
-- Item rows: Bukkit material, amount, slot (inventory / armor / offhand), name, lore, enchantments (`sharpness:5`)
-- Clone / delete; **Give now** (`kit give`) or **Grant** (`kit grant`) to a player
+- Item rows: **Material** (Bukkit id, name/lore/enchants) or **YaPItem** (custom catalog id such as `stormblade`)
+- Armor / offhand slots; clone / delete; **Give now** (`kit give`) or **Grant** (`kit grant`)
 - Saves YAML then runs `yapdata reload` (YAML is kept if Folia is down)
 - With fleet enabled, kit saves also **push `kits.yml` to every local backend** and reload running instances (`yapdata reload` / `yapitems reload`) so definitions stay network-wide like YaPDB player state
 
-`GET/POST /api/kits` — `save-kit`, `delete-kit`, `clone-kit`, `give`, `grant`, `reload`. Item lines in POST: `MATERIAL|amount|slot|name|lore|enchants`. Players still need `yapdata.kit.<id>` (or `yapdata.kit.*`) on Access & ranks.
+`GET/POST /api/kits` — `save-kit`, `delete-kit`, `clone-kit`, `give`, `grant`, `reload`.  
+GET includes `yapItemIds` from `plugins/YaPItems/items/**`.  
+POST item lines: `MATERIAL|amount|slot|name|lore|enchants` or `YAP:<id>|amount|slot|||`.  
+YAML uses `material:` or `yap-item:` (resolved by YaPItems on claim). Players still need `yapdata.kit.<id>` on Access & ranks.
 
 Fleet: `POST /api/fleet` action `sync-shared-catalog` realigns catalog items/kits/QoL/YaPDB JDBC onto all local instances.
 
-`/createkit` Bukkit stacks stay readable; saving from the dashboard writes the material form (NBT beyond name/lore/enchants is dropped).
+`/createkit` Bukkit stacks stay readable; saving from the dashboard writes material / `yap-item` form (NBT beyond name/lore/enchants is dropped — prefer YaPItem rows for custom gear).
 
 ### Custom commands (`yap-commands`)
 
@@ -242,6 +245,8 @@ These ship as **Plugin settings** editors (or in-game hubs) on purpose — they 
 | LagGuard | Already on status metrics |
 | YaPAdmin | In-game staff hub (`/yapadmin`) |
 | gameplay-knobs | Tunables via Plugin settings |
+| YaPEssentials | `block-reach` (place/break distance) under Plugin settings |
+| YaPWorld | Creative climate (always day, no weather, no mobs) under Plugin settings |
 | floodgate / bedrock-ui / folia-bridge | Crossplay bridge config |
 | placeholderapi / plugin-compat | Expansion / soft-dep config |
 
@@ -276,7 +281,7 @@ Edit NPC shop catalogs without splitting buy/sell into separate rows:
 
 ### Portals (`yap-portals`)
 
-CORE+NETWORK default, **on**. Walk-through colored volumes (particles + light, not glass) send players to another fleet server via YaP Link `Connect`. Create pads in-game with `/portal wand` then `/portal create <name> <server> [color]`. See [PORTALS.md](../network/PORTALS.md).
+CORE+NETWORK default, **on**. Walk-through colored volumes (particles + light, not glass) send players to another fleet server via YaP Link `Connect`. Create pads in-game with `/portal wand` then `/portal create <name> <server> [color]`. Reload fill only replaces air / portal / glass. See [PORTALS.md](../network/PORTALS.md).
 
 ### Chat, Guard, Protect, Map, World
 

@@ -20,7 +20,9 @@ YaPPortals uses:
 
 Set color with `/portal setcolor <name> lime` (or create with a color arg).
 Accept the server resource pack so the portal sheets load.
-Existing pads are repainted on `/portal reload` or plugin enable.
+Existing pads are repainted on `/portal reload` or plugin enable. Fill only replaces
+**air, nether portal, and stained glass** — signs and solid builds in the volume are left
+alone.
 
 ## Requirements
 
@@ -33,7 +35,8 @@ Existing pads are repainted on `/portal reload` or plugin enable.
    `sync.inventory: true` (enderchest / XP / vitals similarly). Portal Connect → quit/join
    save/load carries the same profile — including YaPItems custom weapons. Item *definitions*
    also sync fleet-wide on create (see [YAPITEMS.md](../plugins/YAPITEMS.md)).
-   Set `inventory-profile: server` only for minigame wipes.
+   Set `inventory-profile: server` on creative / minigame backends so they keep a separate
+   inventory (profile key = that instance’s `server-id`).
 
 `/hub` remains a **Link** command (selector plugin). YaPPortals does not replace it.
 

@@ -193,7 +193,7 @@ Folia plugin) that applies Hor+ with **separate profiles** for each panel class.
 
 ```bash
 cd client/yap-ultrawide && ./gradlew build
-# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.1.jar
+# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.3.jar
 # or: ./scripts/build-yap-client-render.sh → dist/client-mods/client_mods.zip
 ```
 
@@ -201,14 +201,16 @@ Config: `.minecraft/config/yap-ultrawide.json`
 
 | Band | Typical panels | Default mode |
 |------|----------------|--------------|
-| `ultrawide_21_9` | 2560×1080, 3440×1440 (aspect ≈1.90–2.80) | `match_16_9` |
-| `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (≥2.80) | `match_21_9` + HFOV cap |
+| `ultrawide_21_9` | 2560×1080, 3440×1440 (aspect ≈1.90–2.80) | `match_16_9` + ~100° HFOV cap |
+| `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (≥2.80) | `match_16_9` + ~103° HFOV cap |
 
-`match_21_9` on 32:9 means “use the horizontal FOV a 21:9 panel would have” — it does
-**not** letterbox your 32:9 screen. For a locked cinematic feel use `fixed_hfov`.
+32:9 uses the same horizontal FOV a 16:9 panel would have at the vanilla slider —
+it does **not** letterbox your 32:9 screen. For a locked cinematic feel use
+`fixed_hfov`.
 
-Hands / held items stay on **vanilla** HUD FOV by default (`affectHudFov: false`). Turning
-that on applies Hor+ to the arm camera and can zoom weapons off the bottom of the screen.
+Hands share the world frustum (`affectHudFov: true`) so block placement matches
+the crosshair; the viewmodel is scaled so weapons stay on screen. View-bob is
+scaled with Hor+ zoom so walking does not slide the world under the crosshair.
 
 Vanilla, Bedrock, and players without the mod still join.
 See [yap-ultrawide/README.md](../../client/yap-ultrawide/README.md).

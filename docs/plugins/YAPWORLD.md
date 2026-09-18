@@ -146,6 +146,11 @@ Dashboard **World → Create world** exposes the same pickers. Type/seed apply o
 `schem-use-block-batch`),
 `cui.enabled`, browser editor port, `editor.clipboard-web`.
 
+**Creative climate** (`climate.enabled`): always noon, weather cycle off, no natural
+mobs/phantoms/patrols. Leave the key unset to auto-enable when this instance’s
+`server-id` (or fleet `yap-server-id.txt`) is `creative`. Set `climate.enabled: false`
+to keep vanilla cycles on a creative-named world.
+
 Large pastes (≥ `large-paste-blocks`, default 50k): higher chunk wave size, chunk preload,
 auto skip-undo (unless you need history — set `auto-fast-large: false` or use small edits),
 percent progress, deferred `//fixlighting` after paste when `defer-relight-large: true`.

@@ -26,9 +26,11 @@ YaPPlayerData prefers the shared YaPDB pool (`use-shared-yapdb: true`). Multi-ba
 
 **Fleet / portals:** product defaults use `inventory-profile: global` and `sync.inventory: true`
 so hub → survival (YaPPortals, `/hub`, server selector) keeps the same inventory, enderchest,
-XP, and vitals — including **YaPItems** custom weapons (full ItemStack + PDC). Each backend
-must keep a **different** `server-id` (fleet stamps this). Item *definitions* sync separately
-via the YaPItems catalog (see [YAPITEMS.md](../plugins/YAPITEMS.md)).
+XP, and vitals — including **YaPItems** custom weapons (full ItemStack + PDC). Minigame /
+creative backends should use `inventory-profile: server` (profile key = `server-id`) so they
+do **not** share that gear. Each backend must keep a **different** `server-id` (fleet stamps
+this). Item *definitions* sync separately via the YaPItems catalog (see
+[YAPITEMS.md](../plugins/YAPITEMS.md)).
 
 ## Session lock (double-login)
 
