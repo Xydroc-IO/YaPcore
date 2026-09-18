@@ -57,6 +57,10 @@ public final class PortalMoveListener implements Listener {
             return;
         }
         portals.insideTracker().put(player.getUniqueId(), toName);
+        // Join / soft-switch often restores next to a pad; require leave+re-enter.
+        if (portals.inJoinGrace(player.getUniqueId())) {
+            return;
+        }
         Portal portal = atTo.get();
         portals.transfer(player, portal);
     }

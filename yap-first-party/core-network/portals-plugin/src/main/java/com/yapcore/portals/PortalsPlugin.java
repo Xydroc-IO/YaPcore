@@ -49,7 +49,8 @@ public final class PortalsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new PortalPhysicsListener(service), this);
         getServer().getPluginManager().registerEvents(wandListener, this);
         getServer().getPluginManager().registerEvents(new PortalQuitListener(service), this);
-        getServer().getPluginManager().registerEvents(new PortalArrivalListener(this, config, arrivals), this);
+        getServer().getPluginManager().registerEvents(
+                new PortalArrivalListener(this, config, arrivals, service), this);
 
         PortalCommands commands = new PortalCommands(this, service, wandListener);
         var cmd = getCommand("portal");

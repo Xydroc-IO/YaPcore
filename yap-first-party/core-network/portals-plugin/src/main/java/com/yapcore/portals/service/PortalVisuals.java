@@ -140,7 +140,7 @@ public final class PortalVisuals {
                                 if (!inside) {
                                     continue;
                                 }
-                                if (isReplaceableFill(type) || type != glass) {
+                                if (isReplaceableFill(type)) {
                                     block.setType(glass, false);
                                 }
                             } else if (inside && (isPortalFill(type) || type == Material.NETHER_PORTAL)) {

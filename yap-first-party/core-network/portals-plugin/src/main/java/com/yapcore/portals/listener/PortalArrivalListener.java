@@ -1,6 +1,7 @@
 package com.yapcore.portals.listener;
 
 import com.yapcore.portals.PortalsConfig;
+import com.yapcore.portals.service.PortalServiceImpl;
 import com.yapcore.portals.store.PortalArrivalPending;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
@@ -17,22 +18,30 @@ import org.bukkit.plugin.java.JavaPlugin;
 /**
  * After a fleet portal Connect, land the player on this backend's spawn
  * (YaPEssentials /setspawn when present, else world spawn).
+ * <p>
+ * Also arms join-grace so soft-switch restore next to a pad cannot instantly
+ * bounce the player back through the same portal.
  */
 public final class PortalArrivalListener implements Listener {
 
     private final JavaPlugin plugin;
     private final PortalsConfig config;
     private final PortalArrivalPending pending;
+    private final PortalServiceImpl portals;
 
-    public PortalArrivalListener(JavaPlugin plugin, PortalsConfig config, PortalArrivalPending pending) {
+    public PortalArrivalListener(JavaPlugin plugin, PortalsConfig config,
+                                 PortalArrivalPending pending, PortalServiceImpl portals) {
         this.plugin = plugin;
         this.config = config;
         this.pending = pending;
+        this.portals = portals;
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        portals.armJoinGrace(player.getUniqueId());
+        portals.seedInsideFromLocation(player);
         if (!pending.consume(player.getUniqueId(), config.serverId())) {
             return;
         }
@@ -51,9 +60,12 @@ public final class PortalArrivalListener implements Listener {
                     + config.serverId() + " spawn "
                     + spawn.getBlockX() + "," + spawn.getBlockY() + "," + spawn.getBlockZ());
             player.teleportAsync(spawn).thenAccept(ok -> {
-                if (Boolean.TRUE.equals(ok)) {
-                    player.sendMessage("§7Arrived at §f" + config.serverId() + " §7spawn.");
+                if (!Boolean.TRUE.equals(ok) || !player.isOnline()) {
+                    return;
                 }
+                player.sendMessage("§7Arrived at §f" + config.serverId() + " §7spawn.");
+                portals.armJoinGrace(player.getUniqueId());
+                portals.seedInsideFromLocation(player);
             });
         }, 25L);
     }

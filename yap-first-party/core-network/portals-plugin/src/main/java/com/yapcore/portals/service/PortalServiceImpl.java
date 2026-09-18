@@ -35,6 +35,13 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
     private final PortalCooldown cooldown = new PortalCooldown();
     /** Last portal name the player stood in (boundary fire). */
     private final Map<UUID, String> inside = new ConcurrentHashMap<>();
+    /**
+     * Soft-switch / join often restores the player next to a pad (lobby logout at the
+     * creative portal). Suppress transfer until they leave the volume or grace ends.
+     */
+    private final Map<UUID, Long> joinGraceUntilMs = new ConcurrentHashMap<>();
+    /** ~3s — covers arrival teleport (25 ticks) plus a beat to stand still. */
+    private static final long JOIN_GRACE_MS = 3_000L;
 
     public PortalServiceImpl(JavaPlugin plugin, PortalsConfig config, PortalYamlStore store,
                              PortalArrivalPending arrivals) {
@@ -60,11 +67,51 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
     public void clearPlayerState(UUID uuid) {
         cooldown.clear(uuid);
         inside.remove(uuid);
+        joinGraceUntilMs.remove(uuid);
         drafts.clear(uuid);
     }
 
     public Map<UUID, String> insideTracker() {
         return inside;
+    }
+
+    /** Call on join / after arrival teleport so pads at the restore point do not bounce. */
+    public void armJoinGrace(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        joinGraceUntilMs.put(uuid, System.currentTimeMillis() + JOIN_GRACE_MS);
+    }
+
+    public boolean inJoinGrace(UUID uuid) {
+        if (uuid == null) {
+            return false;
+        }
+        Long until = joinGraceUntilMs.get(uuid);
+        if (until == null) {
+            return false;
+        }
+        if (System.currentTimeMillis() >= until) {
+            joinGraceUntilMs.remove(uuid);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * If the player already stands in / against a portal, mark them inside without
+     * transferring — they must walk out and back in to fire Connect.
+     */
+    public void seedInsideFromLocation(Player player) {
+        if (player == null) {
+            return;
+        }
+        Optional<Portal> at = at(player.getLocation());
+        if (at.isPresent()) {
+            inside.put(player.getUniqueId(), at.get().name());
+        } else {
+            inside.remove(player.getUniqueId());
+        }
     }
 
     @Override
