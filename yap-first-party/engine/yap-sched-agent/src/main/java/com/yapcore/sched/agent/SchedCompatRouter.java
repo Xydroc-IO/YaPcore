@@ -3,6 +3,7 @@ package com.yapcore.sched.agent;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -12,20 +13,21 @@ import java.util.logging.Logger;
  * Runtime bridge invoked from rewritten {@code CraftScheduler.handle}.
  * Uses reflection so the agent jar does not compile against Paper/Folia.
  *
- * <p>Routing:
- * <ul>
+ * <p>Routing (first match):
+ * <ol>
  *   <li>{@link SchedCompatContext#currentEntity()} → EntityScheduler</li>
  *   <li>{@link SchedCompatContext#currentLocation()} → RegionScheduler</li>
- *   <li>else → GlobalRegionScheduler (+ optional warning)</li>
- * </ul>
+ *   <li>Folia region currently ticking this thread → RegionScheduler</li>
+ *   <li>else → GlobalRegionScheduler (true global work, or off a tick thread)</li>
+ * </ol>
  */
 public final class SchedCompatRouter {
 
     private static final Logger LOG = Logger.getLogger("YaP.SchedCompat");
     private static final long NO_REPEATING = -1L;
-    /** One warning per plugin name — useful without spam under soak load. */
     private static final ConcurrentHashMap<String, Boolean> WARNED_PLUGINS = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, Object> FOLIA_TASKS = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Set<Integer>> TASKS_BY_PLUGIN = new ConcurrentHashMap<>();
 
     private static volatile Boolean warnGlobal = Boolean.TRUE;
 
@@ -38,7 +40,6 @@ public final class SchedCompatRouter {
         try {
             Object plugin = invoke(craftTask, "getOwner");
             if (plugin == null) {
-                // CraftScheduler.cancelTask queues internal sync tasks with a null owner.
                 return craftTask;
             }
             long period = readPeriod(craftTask);
@@ -46,6 +47,7 @@ public final class SchedCompatRouter {
 
             Object entity = SchedCompatContext.currentEntity();
             Object location = SchedCompatContext.currentLocation();
+            CurrentRegionProbe.RegionRef current = null;
 
             Object scheduled;
             String route;
@@ -55,6 +57,10 @@ public final class SchedCompatRouter {
             } else if (location != null && hasWorld(location)) {
                 scheduled = scheduleRegion(plugin, location, body, delayTicks, period);
                 route = "region";
+            } else if ((current = CurrentRegionProbe.probe()) != null) {
+                scheduled = scheduleRegionChunk(plugin, current.world(), current.chunkX(), current.chunkZ(),
+                        body, delayTicks, period);
+                route = "current-region";
             } else {
                 maybeWarnGlobal(plugin);
                 scheduled = scheduleGlobal(plugin, body, delayTicks, period);
@@ -63,10 +69,7 @@ public final class SchedCompatRouter {
 
             SchedCompatMetrics.recordShim(route);
             int id = (Integer) invoke(craftTask, "getTaskId");
-            if (scheduled != null) {
-                FOLIA_TASKS.put(id, scheduled);
-                hookCancel(craftTask, id);
-            }
+            remember(plugin, id, scheduled);
             return craftTask;
         } catch (Throwable t) {
             LOG.log(Level.SEVERE, "yap-sched-agent: failed to route legacy scheduler task", t);
@@ -79,6 +82,51 @@ public final class SchedCompatRouter {
         warnGlobal = warn;
     }
 
+    /** Cancel the Folia backing task for a Bukkit task id. */
+    public static void cancelFolia(int bukkitTaskId) {
+        Object st = FOLIA_TASKS.remove(bukkitTaskId);
+        if (st == null) {
+            return;
+        }
+        cancelScheduled(st);
+        TASKS_BY_PLUGIN.values().forEach(set -> set.remove(bukkitTaskId));
+    }
+
+    /** Cancel every Folia backing task owned by a plugin. */
+    public static void cancelFoliaForPlugin(Object plugin) {
+        if (plugin == null) {
+            return;
+        }
+        String name = String.valueOf(invokeQuiet(plugin, "getName"));
+        Set<Integer> ids = TASKS_BY_PLUGIN.remove(name);
+        if (ids == null) {
+            return;
+        }
+        for (Integer id : ids) {
+            Object st = FOLIA_TASKS.remove(id);
+            if (st != null) {
+                cancelScheduled(st);
+            }
+        }
+    }
+
+    private static void remember(Object plugin, int id, Object scheduled) {
+        if (scheduled == null) {
+            return;
+        }
+        FOLIA_TASKS.put(id, scheduled);
+        String name = String.valueOf(invokeQuiet(plugin, "getName"));
+        TASKS_BY_PLUGIN.computeIfAbsent(name, k -> ConcurrentHashMap.newKeySet()).add(id);
+    }
+
+    private static void cancelScheduled(Object st) {
+        try {
+            st.getClass().getMethod("cancel").invoke(st);
+        } catch (ReflectiveOperationException e) {
+            LOG.log(Level.FINE, "cancel Folia task", e);
+        }
+    }
+
     private static void maybeWarnGlobal(Object plugin) {
         if (!Boolean.TRUE.equals(warnGlobal)) {
             return;
@@ -88,7 +136,7 @@ public final class SchedCompatRouter {
             return;
         }
         LOG.warning("yap-sched-agent: legacy sync scheduler from plugin '" + name
-                + "' routed to GlobalRegionScheduler (no entity/location context). "
+                + "' routed to GlobalRegionScheduler (no entity/location/current-region). "
                 + "Prefer EntityScheduler / RegionScheduler / YapSched. "
                 + "Further warnings for this plugin suppressed.");
     }
@@ -153,13 +201,22 @@ public final class SchedCompatRouter {
             Object plugin, Object location, Runnable body, long delay, long period) throws Exception {
         Object world = location.getClass().getMethod("getWorld").invoke(location);
         if (world == null) {
+            CurrentRegionProbe.RegionRef current = CurrentRegionProbe.probe();
+            if (current != null) {
+                return scheduleRegionChunk(plugin, current.world(), current.chunkX(), current.chunkZ(),
+                        body, delay, period);
+            }
+            maybeWarnGlobal(plugin);
             return scheduleGlobal(plugin, body, delay, period);
         }
         int blockX = ((Number) location.getClass().getMethod("getBlockX").invoke(location)).intValue();
         int blockZ = ((Number) location.getClass().getMethod("getBlockZ").invoke(location)).intValue();
-        int chunkX = blockX >> 4;
-        int chunkZ = blockZ >> 4;
+        return scheduleRegionChunk(plugin, world, blockX >> 4, blockZ >> 4, body, delay, period);
+    }
 
+    private static Object scheduleRegionChunk(
+            Object plugin, Object world, int chunkX, int chunkZ,
+            Runnable body, long delay, long period) throws Exception {
         Class<?> bukkit = Class.forName("org.bukkit.Bukkit");
         Object region = bukkit.getMethod("getRegionScheduler").invoke(null);
         Consumer<?> consumer = st -> body.run();
@@ -173,45 +230,21 @@ public final class SchedCompatRouter {
                     .invoke(region, plugin, world, chunkX, chunkZ, consumer, d, period);
         }
         if (delay <= 0) {
-            region.getClass()
-                    .getMethod("execute", pluginCl, worldCl, int.class, int.class, Runnable.class)
-                    .invoke(region, plugin, world, chunkX, chunkZ, body);
-            return null;
+            try {
+                return region.getClass()
+                        .getMethod("run", pluginCl, worldCl, int.class, int.class, Consumer.class)
+                        .invoke(region, plugin, world, chunkX, chunkZ, consumer);
+            } catch (NoSuchMethodException e) {
+                region.getClass()
+                        .getMethod("execute", pluginCl, worldCl, int.class, int.class, Runnable.class)
+                        .invoke(region, plugin, world, chunkX, chunkZ, body);
+                return null;
+            }
         }
         return region.getClass()
                 .getMethod("runDelayed", pluginCl, worldCl, int.class, int.class,
                         Consumer.class, long.class)
                 .invoke(region, plugin, world, chunkX, chunkZ, consumer, delay);
-    }
-
-    private static void hookCancel(Object craftTask, int id) {
-        // When plugin cancels the BukkitTask, also cancel the Folia ScheduledTask.
-        // CraftTask.cancel() already exists; we wrap by watching Folia map on cancel via reflection
-        // of a companion — simplest: replace is not easy without more bytecode.
-        // Instead: poll-less approach — wrap rTask. Already scheduled; on CraftTask.cancel(),
-        // Folia task may still run once. Attach a cancel listener by replacing period field on cancel.
-        try {
-            Method cancel = craftTask.getClass().getMethod("cancel");
-            // Can't easily wrap. Register a shutdown-friendly cancel in a soft map;
-            // FoliaBridge / smoke can call SchedCompatRouter.cancelFolia(id).
-        } catch (Exception ignored) {
-        }
-        // Best-effort: if CraftTask.cancel0 is package-private, we instrument cancel via proxy —
-        // skip for MVP; Folia ScheduledTask tied to plugin lifetime is acceptable.
-        FOLIA_TASKS.compute(id, (k, st) -> st);
-    }
-
-    /** Cancel Folia backing task for a Bukkit task id (optional helper). */
-    public static void cancelFolia(int bukkitTaskId) {
-        Object st = FOLIA_TASKS.remove(bukkitTaskId);
-        if (st == null) {
-            return;
-        }
-        try {
-            st.getClass().getMethod("cancel").invoke(st);
-        } catch (ReflectiveOperationException e) {
-            LOG.log(Level.FINE, "cancel Folia task", e);
-        }
     }
 
     private static long readPeriod(Object craftTask) {

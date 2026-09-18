@@ -48,6 +48,35 @@ class CraftSchedulerTransformerTest {
                 "expected SchedCompatRouter.handle call, got: " + body);
     }
 
+    @Test
+    void prefixesCancelWithFoliaCancel() throws IllegalClassFormatException {
+        byte[] original = synthesizeCraftScheduler();
+        CraftSchedulerTransformer tx = new CraftSchedulerTransformer(SchedCompatOptions.defaults());
+        byte[] out = tx.transform(null, "org/bukkit/craftbukkit/scheduler/CraftScheduler", null, null, original);
+        assertNotNull(out);
+
+        ClassReader reader = new ClassReader(out);
+        StringBuilder body = new StringBuilder();
+        reader.accept(new ClassVisitor(Opcodes.ASM9) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+                if (!"cancelTask".equals(name) && !"cancelTasks".equals(name)) {
+                    return null;
+                }
+                return new MethodVisitor(Opcodes.ASM9) {
+                    @Override
+                    public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                        body.append(owner).append('.').append(name).append(';');
+                    }
+                };
+            }
+        }, 0);
+        assertTrue(body.toString().contains("com/yapcore/sched/agent/SchedCompatRouter.cancelFolia"),
+                "expected cancelFolia, got: " + body);
+        assertTrue(body.toString().contains("com/yapcore/sched/agent/SchedCompatRouter.cancelFoliaForPlugin"),
+                "expected cancelFoliaForPlugin, got: " + body);
+    }
+
     /** Minimal CraftScheduler-shaped class with throwing handle(). */
     private static byte[] synthesizeCraftScheduler() {
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
@@ -75,6 +104,19 @@ class CraftSchedulerTransformerTest {
         handle.visitInsn(Opcodes.ATHROW);
         handle.visitMaxs(2, 4);
         handle.visitEnd();
+
+        MethodVisitor cancelTask = cw.visitMethod(Opcodes.ACC_PUBLIC, "cancelTask", "(I)V", null, null);
+        cancelTask.visitCode();
+        cancelTask.visitInsn(Opcodes.RETURN);
+        cancelTask.visitMaxs(0, 2);
+        cancelTask.visitEnd();
+
+        MethodVisitor cancelTasks = cw.visitMethod(
+                Opcodes.ACC_PUBLIC, "cancelTasks", "(Lorg/bukkit/plugin/Plugin;)V", null, null);
+        cancelTasks.visitCode();
+        cancelTasks.visitInsn(Opcodes.RETURN);
+        cancelTasks.visitMaxs(0, 2);
+        cancelTasks.visitEnd();
         cw.visitEnd();
         return cw.toByteArray();
     }

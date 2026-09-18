@@ -2,8 +2,10 @@ package com.yapcore.sched.agent;
 
 /**
  * Optional ThreadLocal hints so the shim can pick EntityScheduler / RegionScheduler
- * instead of GlobalRegionScheduler. Plugins (or FoliaBridge) may set these around
- * known entity/location work.
+ * instead of GlobalRegionScheduler.
+ *
+ * <p>Event dispatch ({@code RegisteredListener.callEvent}) sets these from the
+ * event's entity/block/chunk. Plugins may also set them around known work.
  */
 public final class SchedCompatContext {
 
@@ -45,24 +47,45 @@ public final class SchedCompatContext {
     public static AutoCloseable scopedEntity(Object entity) {
         Object prev = ENTITY.get();
         setEntity(entity);
-        return () -> {
-            if (prev == null) {
-                ENTITY.remove();
-            } else {
-                ENTITY.set(prev);
-            }
-        };
+        return () -> restore(ENTITY, prev);
     }
 
     public static AutoCloseable scopedLocation(Object location) {
         Object prev = LOCATION.get();
         setLocation(location);
+        return () -> restore(LOCATION, prev);
+    }
+
+    /**
+     * Bind affinity from a Bukkit event (entity / player / block / chunk / vehicle).
+     * No-op for events without a world object (plugin lifecycle, etc.).
+     */
+    public static AutoCloseable scopedFromEvent(Object event) {
+        if (event == null) {
+            return () -> {
+            };
+        }
+        Object entity = EventAffinity.entityOf(event);
+        Object location = EventAffinity.locationOf(event);
+        Object prevE = ENTITY.get();
+        Object prevL = LOCATION.get();
+        if (entity != null) {
+            ENTITY.set(entity);
+        }
+        if (location != null) {
+            LOCATION.set(location);
+        }
         return () -> {
-            if (prev == null) {
-                LOCATION.remove();
-            } else {
-                LOCATION.set(prev);
-            }
+            restore(ENTITY, prevE);
+            restore(LOCATION, prevL);
         };
+    }
+
+    private static void restore(ThreadLocal<Object> slot, Object prev) {
+        if (prev == null) {
+            slot.remove();
+        } else {
+            slot.set(prev);
+        }
     }
 }

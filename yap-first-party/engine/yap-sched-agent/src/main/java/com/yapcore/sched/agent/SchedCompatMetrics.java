@@ -29,7 +29,7 @@ public final class SchedCompatMetrics {
         LAST_FIRE_MS.set(System.currentTimeMillis());
         switch (route) {
             case "entity" -> ENTITY_ROUTES.increment();
-            case "region" -> REGION_ROUTES.increment();
+            case "region", "current-region" -> REGION_ROUTES.increment();
             default -> GLOBAL_FALLBACKS.increment();
         }
     }

@@ -18,8 +18,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Routes Bukkit sync tasks through the Compatibility Bridge and async tasks
- * onto the Heavy I/O pool (DB-safe). UI-sensitive async can use {@link YaPScheduler}.
+ * Chassis-only BukkitScheduler for the Compatibility Bridge (non-Folia game authority).
+ * Delays are wall-clock {@code 50ms} slices on a timer thread, then SYNC work is
+ * submitted through the bridge — not Folia region ticks. Folia plugins must use
+ * {@code YapSched} / region schedulers (or {@code yap-sched-agent} on CraftScheduler).
  */
 public final class BridgedScheduler implements BukkitScheduler, YaPScheduler {
 

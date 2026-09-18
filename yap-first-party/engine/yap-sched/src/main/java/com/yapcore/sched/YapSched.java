@@ -11,6 +11,8 @@ import org.bukkit.scheduler.BukkitTask;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Folia-first scheduling for YaP first-party plugins.
@@ -18,10 +20,30 @@ import java.util.function.Consumer;
  * Prefers Folia/Paper {@code GlobalRegionScheduler} / {@code AsyncScheduler} /
  * {@code EntityScheduler} / {@code RegionScheduler}. Falls back to
  * {@code BukkitScheduler} only when region schedulers are unavailable.
+ *
+ * <p>On Folia, {@link #entity} / {@link #region} never fall back to
+ * {@link #global} — that would run world mutations on the global region.
  */
 public final class YapSched {
 
+    private static final Logger LOG = Logger.getLogger("YaP.Sched");
+    private static final boolean FOLIA = detectFolia();
+
     private YapSched() {
+    }
+
+    static boolean detectFolia() {
+        try {
+            Class.forName("io.papermc.paper.threadedregions.TickRegionScheduler");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
+
+    /** True when running under Folia region threads (not Paper's global-as-main). */
+    public static boolean isFolia() {
+        return FOLIA;
     }
 
     public static boolean hasGlobalRegion() {
@@ -105,9 +127,15 @@ public final class YapSched {
         Objects.requireNonNull(entity, "entity");
         Objects.requireNonNull(task, "task");
         try {
-            entity.getScheduler().run(plugin, st -> task.run(), null);
+            entity.getScheduler().run(plugin, st -> task.run(),
+                    () -> LOG.fine("YapSched.entity: entity retired"));
         } catch (Throwable t) {
-            global(plugin, task);
+            Location loc = safeLocation(entity);
+            if (loc != null && loc.getWorld() != null) {
+                region(plugin, loc, task);
+                return;
+            }
+            worldMutationFailed("entity", plugin, task, t);
         }
     }
 
@@ -119,7 +147,12 @@ public final class YapSched {
         try {
             return wrap(entity.getScheduler().runDelayed(plugin, st -> task.run(), null, delay));
         } catch (Throwable t) {
-            return globalLater(plugin, task, delay);
+            Location loc = safeLocation(entity);
+            if (loc != null && loc.getWorld() != null) {
+                return regionChunkLater(plugin, loc.getWorld(), loc.getBlockX() >> 4, loc.getBlockZ() >> 4,
+                        task, delay);
+            }
+            return worldMutationFailedTask("entityLater", plugin, task, delay, null, t);
         }
     }
 
@@ -135,27 +168,21 @@ public final class YapSched {
         Objects.requireNonNull(task, "task");
         long delay = Math.max(1L, delayTicks);
         long period = Math.max(1L, periodTicks);
-        java.util.concurrent.atomic.AtomicReference<YapTask> ref =
-                new java.util.concurrent.atomic.AtomicReference<>();
+        DeferredYapTask wrapped = new DeferredYapTask();
         try {
             ScheduledTask scheduled = entity.getScheduler().runAtFixedRate(plugin, st -> {
-                YapTask self = ref.get();
-                if (self != null) {
-                    task.accept(self);
-                }
+                task.accept(wrapped);
             }, null, delay, period);
-            YapTask wrapped = wrap(scheduled);
-            ref.set(wrapped);
+            wrapped.bind(scheduled);
             return wrapped;
         } catch (Throwable t) {
-            YapTask wrapped = globalTimer(plugin, () -> {
-                YapTask self = ref.get();
-                if (self != null) {
-                    task.accept(self);
-                }
-            }, delay, period);
-            ref.set(wrapped);
-            return wrapped;
+            if (!FOLIA) {
+                YapTask paper = globalTimer(plugin, () -> task.accept(wrapped), delay, period);
+                wrapped.bindBukkit(paper);
+                return wrapped;
+            }
+            LOG.log(Level.SEVERE, "YapSched.entityTimer failed; dropped (not global region)", t);
+            return dropped();
         }
     }
 
@@ -166,15 +193,10 @@ public final class YapSched {
         Objects.requireNonNull(task, "task");
         World world = loc.getWorld();
         if (world == null) {
-            global(plugin, task);
+            worldMutationFailed("region", plugin, task, new IllegalStateException("location has no world"));
             return;
         }
-        try {
-            Bukkit.getRegionScheduler().execute(plugin, world, loc.getBlockX() >> 4, loc.getBlockZ() >> 4,
-                    task);
-        } catch (Throwable t) {
-            global(plugin, task);
-        }
+        region(plugin, world, loc.getBlockX(), loc.getBlockZ(), task);
     }
 
     public static void region(Plugin plugin, World world, int blockX, int blockZ, Runnable task) {
@@ -184,7 +206,7 @@ public final class YapSched {
         try {
             Bukkit.getRegionScheduler().execute(plugin, world, blockX >> 4, blockZ >> 4, task);
         } catch (Throwable t) {
-            global(plugin, task);
+            worldMutationFailed("region", plugin, task, t);
         }
     }
 
@@ -196,7 +218,7 @@ public final class YapSched {
         try {
             Bukkit.getRegionScheduler().execute(plugin, world, chunkX, chunkZ, task);
         } catch (Throwable t) {
-            global(plugin, task);
+            worldMutationFailed("regionChunk", plugin, task, t);
         }
     }
 
@@ -210,7 +232,7 @@ public final class YapSched {
             return wrap(Bukkit.getRegionScheduler()
                     .runDelayed(plugin, world, chunkX, chunkZ, st -> task.run(), delay));
         } catch (Throwable t) {
-            return globalLater(plugin, task, delay);
+            return worldMutationFailedTask("regionChunkLater", plugin, task, delay, null, t);
         }
     }
 
@@ -230,7 +252,7 @@ public final class YapSched {
             return wrap(Bukkit.getRegionScheduler()
                     .runAtFixedRate(plugin, world, chunkX, chunkZ, st -> task.run(), delay, period));
         } catch (Throwable t) {
-            return globalTimer(plugin, task, delay, period);
+            return worldMutationFailedTask("regionChunkTimer", plugin, task, delay, period, t);
         }
     }
 
@@ -240,6 +262,47 @@ public final class YapSched {
      */
     public static boolean isRegionized() {
         return hasGlobalRegion();
+    }
+
+    private static Location safeLocation(Entity entity) {
+        try {
+            return entity.getLocation();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static void worldMutationFailed(String what, Plugin plugin, Runnable task, Throwable t) {
+        if (!FOLIA) {
+            global(plugin, task);
+            return;
+        }
+        LOG.log(Level.SEVERE, "YapSched." + what + " failed; dropped (not global region)", t);
+    }
+
+    private static YapTask worldMutationFailedTask(String what, Plugin plugin, Runnable task,
+                                                   long delayTicks, Long periodTicks, Throwable t) {
+        if (!FOLIA) {
+            if (periodTicks != null) {
+                return globalTimer(plugin, task, delayTicks, periodTicks);
+            }
+            return globalLater(plugin, task, delayTicks);
+        }
+        LOG.log(Level.SEVERE, "YapSched." + what + " failed; dropped (not global region)", t);
+        return dropped();
+    }
+
+    private static YapTask dropped() {
+        return new YapTask() {
+            @Override
+            public void cancel() {
+            }
+
+            @Override
+            public boolean isCancelled() {
+                return true;
+            }
+        };
     }
 
     private static YapTask wrap(ScheduledTask task) {
@@ -277,5 +340,56 @@ public final class YapSched {
     /** Adapt Consumer&lt;ScheduledTask&gt;-style APIs when callers already have a Consumer. */
     public static Consumer<ScheduledTask> asConsumer(Runnable task) {
         return st -> task.run();
+    }
+
+    /**
+     * YapTask that exists before the Folia handle is bound, so the first timer
+     * fire can cancel itself instead of seeing a null ref.
+     */
+    static final class DeferredYapTask implements YapTask {
+        private final AtomicBoolean cancelled = new AtomicBoolean();
+        private volatile ScheduledTask scheduled;
+        private volatile YapTask inner;
+
+        void bind(ScheduledTask task) {
+            scheduled = task;
+            if (cancelled.get() && task != null) {
+                task.cancel();
+            }
+        }
+
+        void bindBukkit(YapTask task) {
+            inner = task;
+            if (cancelled.get() && task != null) {
+                task.cancel();
+            }
+        }
+
+        @Override
+        public void cancel() {
+            if (cancelled.compareAndSet(false, true)) {
+                ScheduledTask st = scheduled;
+                if (st != null) {
+                    st.cancel();
+                }
+                YapTask wrapped = inner;
+                if (wrapped != null) {
+                    wrapped.cancel();
+                }
+            }
+        }
+
+        @Override
+        public boolean isCancelled() {
+            if (cancelled.get()) {
+                return true;
+            }
+            ScheduledTask st = scheduled;
+            if (st != null && st.isCancelled()) {
+                return true;
+            }
+            YapTask wrapped = inner;
+            return wrapped != null && wrapped.isCancelled();
+        }
     }
 }

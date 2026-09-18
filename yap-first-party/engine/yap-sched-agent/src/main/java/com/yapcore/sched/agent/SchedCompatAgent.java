@@ -62,8 +62,10 @@ public final class SchedCompatAgent {
         SchedCompatMetrics.configure(opts);
         SchedCompatRouter.setWarnGlobal(opts.warnGlobal());
         inst.addTransformer(new CraftSchedulerTransformer(opts), true);
+        inst.addTransformer(new CraftTaskTransformer(), true);
+        inst.addTransformer(new RegisteredListenerTransformer(), true);
         installed = true;
-        LOG.info("yap-sched-agent installed (legacy BukkitScheduler → Folia region schedulers)"
+        LOG.info("yap-sched-agent installed (legacy BukkitScheduler → Folia region schedulers; event affinity + cancel)"
                 + (opts.warnGlobal() ? "; global fallback warnings ON" : ""));
     }
 
@@ -81,6 +83,8 @@ public final class SchedCompatAgent {
         String[] names = {
                 "com.yapcore.sched.agent.SchedCompatOptions",
                 "com.yapcore.sched.agent.SchedCompatMetrics",
+                "com.yapcore.sched.agent.EventAffinity",
+                "com.yapcore.sched.agent.CurrentRegionProbe",
                 "com.yapcore.sched.agent.SchedCompatContext",
                 "com.yapcore.sched.agent.SchedCompatRouter"
         };
