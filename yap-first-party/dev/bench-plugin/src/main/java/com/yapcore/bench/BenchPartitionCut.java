@@ -30,30 +30,42 @@ final class BenchPartitionCut {
     }
 
     static void run(JavaPlugin plugin, World world) {
+        final boolean contiguous = BenchRegionSpawnChunks.contiguousCarve();
         if (BenchRegionSpawnChunks.stripHalfWidth() <= 0) {
-            System.setProperty("yap.bench.strip_half_width", "64");
+            System.setProperty("yap.bench.strip_half_width", contiguous ? "32" : "64");
         }
-        System.setProperty("yap.bench.strip_two_phase", "true");
-        System.setProperty("yap.bench.contiguous_carve", "false");
-        if (Integer.getInteger("yap.bench.strip_gap_half", 0) <= 0) {
-            System.setProperty("yap.bench.strip_gap_half", "32");
+        if (contiguous) {
+            System.setProperty("yap.bench.strip_two_phase", "false");
+            System.setProperty("yap.bench.strip_gap_half", "0");
+            plugin.getLogger().info("partition-cut — contiguous live strip stripHalf="
+                    + BenchRegionSpawnChunks.stripHalfWidth()
+                    + " (contiguous strip; no pre-gap)");
+        } else {
+            System.setProperty("yap.bench.strip_two_phase", "true");
+            if (Integer.getInteger("yap.bench.strip_gap_half", 0) <= 0) {
+                System.setProperty("yap.bench.strip_gap_half", "32");
+            }
+            plugin.getLogger().info("partition-cut — lobe gap stripHalf="
+                    + BenchRegionSpawnChunks.stripHalfWidth()
+                    + " gapHalf=" + BenchRegionSpawnChunks.stripGapHalf());
         }
-        plugin.getLogger().info("partition-cut — lobe gap stripHalf="
-                + BenchRegionSpawnChunks.stripHalfWidth()
-                + " gapHalf=" + BenchRegionSpawnChunks.stripGapHalf());
-        // Poll immediately. RegionScheduler.execute on 192 far chunks can hang across a
+        // Poll immediately. RegionScheduler.execute on far chunks can hang across a
         // force-partition (destroyed region #0), which used to gate the probe forever.
-        poll(plugin);
-        pinAndInject(plugin, world, spawned -> {
+        poll(plugin, contiguous);
+        pinAndInject(plugin, world, contiguous, spawned -> {
             plugin.getLogger().info("partition-cut fixtures ready TNT=" + spawned
                     + " stripHalf=" + BenchRegionSpawnChunks.stripHalfWidth()
-                    + " gapHalf=" + BenchRegionSpawnChunks.stripGapHalf());
+                    + " gapHalf=" + BenchRegionSpawnChunks.stripGapHalf()
+                    + " contiguous=" + contiguous);
         });
     }
 
     /** Per-chunk on the owning region thread. Server thread cannot load the strip. */
-    private static void pinAndInject(JavaPlugin plugin, World world, java.util.function.IntConsumer onReady) {
-        Set<long[]> chunks = BenchRegionSpawnChunks.spawnCollapseLobePinChunks();
+    private static void pinAndInject(JavaPlugin plugin, World world, boolean contiguous,
+                                     java.util.function.IntConsumer onReady) {
+        Set<long[]> chunks = contiguous
+                ? BenchRegionSpawnChunks.spawnCollapseFullStripChunks()
+                : BenchRegionSpawnChunks.spawnCollapseLobePinChunks();
         int west = -Math.max(24, BenchRegionSpawnChunks.stripHalfWidth() - 4);
         try {
             world.setSpawnLocation(west << 4, 80, 0);
@@ -113,18 +125,51 @@ final class BenchPartitionCut {
         }
     }
 
-    private static void poll(JavaPlugin plugin) {
+    private static void poll(JavaPlugin plugin, boolean contiguous) {
         Path probe = Path.of(System.getProperty("yap.folia.scheduler-probe-file", "yap-scheduler-probe.txt"));
         int waitSec = Integer.getInteger("yap.bench.partition_wait_sec", 180);
+        int holdSec = Math.max(5, Integer.getInteger("yap.bench.gap_hold_sec", 15));
         AtomicInteger ticks = new AtomicInteger();
         AtomicInteger afterPulse = new AtomicInteger();
+        AtomicInteger afterSplit = new AtomicInteger();
         AtomicBoolean pulsed = new AtomicBoolean();
+        AtomicBoolean sawSplit = new AtomicBoolean();
         AtomicLong slippedBefore = new AtomicLong();
         YapTask[] handle = new YapTask[1];
         handle[0] = YapSched.asyncTimer(plugin, () -> {
             int t = ticks.incrementAndGet();
             long splits = probeLong(probe, "splits");
             long force = probeLong(probe, "force_partitions");
+            if (contiguous) {
+                if (splits >= 1 && force >= 1) {
+                    sawSplit.set(true);
+                }
+                if (sawSplit.get()) {
+                    int held = afterSplit.incrementAndGet();
+                    long bands = probeLong(probe, "gap_bands");
+                    long regions = probeLong(probe, "ticking_regions");
+                    if (held >= holdSec) {
+                        cancel(handle);
+                        boolean ok = splits >= 1 && force >= 1 && bands >= 1 && regions >= 2;
+                        String reason = ok ? "ok-contiguous-hold"
+                                : (bands < 1 ? "gap-did-not-hold"
+                                : (regions < 2 ? "shards-merged" : "split-lost"));
+                        finish(plugin, probe, ok, reason, t, 0L);
+                    } else if (held % 5 == 0) {
+                        plugin.getLogger().info("partition-cut gap-hold " + held + "/" + holdSec
+                                + " bands=" + bands + " regions=" + regions);
+                    }
+                    return;
+                }
+                if (t >= waitSec) {
+                    cancel(handle);
+                    finish(plugin, probe, false, "no-force-partition", t, 0);
+                } else if (t % 15 == 0) {
+                    plugin.getLogger().info("partition-cut waiting contiguous splits=" + splits
+                            + " force=" + force + " sec=" + t + "/" + waitSec);
+                }
+                return;
+            }
             if (!pulsed.get() && (splits >= 1 || force >= 1)) {
                 // East lobe, just outside the empty gap — must be a different region than west.
                 int cx = Math.max(2, BenchRegionSpawnChunks.stripGapHalf() + 8);
@@ -215,6 +260,8 @@ final class BenchPartitionCut {
         long ranBlocks = probeLong(probe, "ran_blocks");
         long misses = probeLong(probe, "split_misses");
         long timeouts = probeLong(probe, "wave_timeouts");
+        long bands = probeLong(probe, "gap_bands");
+        long regions = probeLong(probe, "ticking_regions");
         String json = "{\n"
                 + "  \"pass\": " + pass + ",\n"
                 + "  \"reason\": \"" + reason + "\",\n"
@@ -228,7 +275,10 @@ final class BenchPartitionCut {
                 + "  \"ran_blocks\": " + ranBlocks + ",\n"
                 + "  \"slipped\": " + slipped + ",\n"
                 + "  \"slipped_delta\": " + (slipped - slippedBefore) + ",\n"
-                + "  \"wave_timeouts\": " + timeouts + "\n"
+                + "  \"wave_timeouts\": " + timeouts + ",\n"
+                + "  \"gap_bands\": " + bands + ",\n"
+                + "  \"ticking_regions\": " + regions + ",\n"
+                + "  \"contiguous\": " + BenchRegionSpawnChunks.contiguousCarve() + "\n"
                 + "}\n";
         try {
             Path out = Path.of("yap-partition-cut.json");

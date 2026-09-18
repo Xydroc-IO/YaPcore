@@ -1,0 +1,139 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP contiguous-bar relocate + gap/region probe
+
+Same-world Entity.teleportTo so a live corridor can empty. Landing pads
+are collected from every cut group (empty halo no longer starves a side).
+Probe reports gap_bands and ticking_regions; BLOCKS lockstep is not the bar.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
+@@ -51,7 +51,7 @@
+                 return dest;
+             }
+         }
+-        return pads[Math.floorMod(landings.rr.getAndIncrement(), pads.length)];
++        return null;
+     }
+ 
+     static boolean toLeftPad(final YapCorridorCarver.CorridorPlan plan, final int cx, final int cz) {
+@@ -82,17 +82,18 @@
+         }
+         final int fromCx = nms.chunkPosition().x();
+         final int fromCz = nms.chunkPosition().z();
+-        nms.teleportTo(x, y, z);
+         try {
+             world.getChunk(dest[0], dest[1]);
+         } catch (final Throwable ignored) {
+         }
+-        if (nms.chunkPosition().x() == dest[0] && nms.chunkPosition().z() == dest[1]) {
+-            return true;
+-        }
+-        if (nms.chunkPosition().x() != fromCx || nms.chunkPosition().z() != fromCz) {
+-            return true;
++        try {
++            if (nms.teleportTo(world, x, y, z, java.util.Set.of(), nms.getYRot(), nms.getXRot(), false)) {
++                return nms.chunkPosition().x() != fromCx || nms.chunkPosition().z() != fromCz
++                        || nms.chunkPosition().x() == dest[0];
++            }
++        } catch (final Throwable ignored) {
+         }
++        nms.teleportTo(x, y, z);
+         nms.setPos(x, y, z);
+         nms.snapTo(x, y, z);
+         return nms.chunkPosition().x() != fromCx || nms.chunkPosition().z() != fromCz
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
+@@ -221,7 +221,7 @@
+                 if (!runOnAnchor(world, anchor, 120L, () -> {
+                     int remaining = 0;
+                     long moved = 0L;
+-                    for (int pass = 0; pass < 3; ++pass) {
++                    for (int pass = 0; pass < 8; ++pass) {
+                         final int[] scan = YapCorridorEntities.countCorridorEntities(world, plan);
+                         remaining = scan[1];
+                         if (remaining <= 0) {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSchedulerProbe.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSchedulerProbe.java
+@@ -126,6 +126,27 @@
+         return server.overworld();
+     }
+ 
++    /** Non-empty overworld regions — professional bar: shards still independent after the cut. */
++    private static int tickingRegions() {
++        final ServerLevel level = overworld();
++        if (level == null) {
++            return 0;
++        }
++        final java.util.concurrent.atomic.AtomicInteger n = new java.util.concurrent.atomic.AtomicInteger();
++        try {
++            level.regioniser.computeForAllRegionsUnsynchronised(region -> {
++                for (final ThreadedRegionizer.ThreadedRegionSection<?, ?> section : region.copySections()) {
++                    if (!section.isEmpty()) {
++                        n.incrementAndGet();
++                        return;
++                    }
++                }
++            });
++        } catch (final Throwable ignored) {
++        }
++        return n.get();
++    }
++
+     private static Path probeDir() {
+         return Path.of(System.getProperty("user.dir", "."));
+     }
+@@ -161,7 +182,9 @@
+                 + "ran_blocks=" + RAN_BLOCKS.get() + "\n"
+                 + "pulses_queued=" + PULSES_QUEUED.get() + "\n"
+                 + "pulses_ran=" + PULSES_RAN.get() + "\n"
+-                + "wave_timeouts=" + YapTickEpochCoordinator.waveTimeouts() + "\n";
++                + "wave_timeouts=" + YapTickEpochCoordinator.waveTimeouts() + "\n"
++                + "gap_bands=" + YapRegionizerGap.activeCuts() + "\n"
++                + "ticking_regions=" + tickingRegions() + "\n";
+         try {
+             Files.writeString(probeFile(), body, StandardCharsets.UTF_8);
+         } catch (final Exception ignored) {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
+@@ -216,18 +216,33 @@
+         CarveLandings fromGroups(
+                 final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups,
+                 final YapCorridorCarver.CorridorPlan plan) {
+-            // Stay clear of the corridor so sim-distance tickets cannot re-pin the Folia gap.
+-            // Default margin=1 section (~16 chunks) — strip benches need half-width ≳40.
+-            final int margin = Math.max(1, Integer.getInteger("yap.folia.subregion-carve-landing-margin", 1));
+-            final int[][] left = collectOutsideChunks(groups.get(0), plan, margin, 24, true);
+-            final int[][] right = collectOutsideChunks(groups.get(groups.size() - 1), plan, margin, 24, false);
++            int margin = Math.max(0, Integer.getInteger("yap.folia.subregion-carve-landing-margin", 1));
++            int[][] left = collectSidePads(groups, plan, margin, true);
++            int[][] right = collectSidePads(groups, plan, margin, false);
++            if ((left.length == 0 || right.length == 0) && margin > 0) {
++                left = collectSidePads(groups, plan, 0, true);
++                right = collectSidePads(groups, plan, 0, false);
++            }
+             if (left.length == 0 || right.length == 0) {
+                 return null;
+             }
+             return new CarveLandings(left, right);
+         }
+ 
+-                private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++        private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++        int[][] collectSidePads(
++                final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups,
++                final YapCorridorCarver.CorridorPlan plan,
++                final int margin,
++                final boolean leftSide) {
++            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> all = new ArrayList<>();
++            for (final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> group : groups) {
++                all.addAll(group);
++            }
++            return collectOutsideChunks(all, plan, Math.max(0, margin), 24, leftSide);
++        }
++
++        private static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
+         int[][] collectOutsideChunks(
+                 final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> group,
+                 final YapCorridorCarver.CorridorPlan plan,

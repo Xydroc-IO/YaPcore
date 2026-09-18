@@ -7,7 +7,7 @@ Ordered deltas under [`vendor/folia/patches/`](../../vendor/folia/patches/). Aut
 
 Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
 
-The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0042` (**9**) are Folia-itself improvements on that pin: ticket/unload hygiene, AI/leash/dragon ownership (Folia PRs 491/495/504), portal-linked region thread coupling (#469), split NPE harden, teleport Bukkit events (#490), map autosave storage (#505/#506), debug-subscriber CME (#472), a **native regionizer cut** so a packed spawn can hold a legal hole, and async villager-brain / end-vehicle spawn ownership (Folia #446 / #453). Moving the pin is still how you pick up later upstream regionizer commits.
+The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0043` (**10**) are Folia-itself improvements on that pin: ticket/unload hygiene, AI/leash/dragon ownership (Folia PRs 491/495/504), portal-linked region thread coupling (#469), split NPE harden, teleport Bukkit events (#490), map autosave storage (#505/#506), debug-subscriber CME (#472), a **native regionizer cut** so a packed spawn can hold a legal hole, async villager-brain / end-vehicle spawn ownership (Folia #446 / #453), and contiguous-bar relocate + gap/region probe. Moving the pin is still how you pick up later upstream regionizer commits.
 
 ## Patches
 
@@ -48,6 +48,7 @@ The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or rep
 | `0040-yap-debug-subscribers-cme.patch` | Folia #472 / PR 499: disable debug subscriptions; no region-thread HashMap tick | landed |
 | `0041-yap-regionizer-packed-spawn-cut.patch` | Native cut flag + ticket clamp + thin gap (`YapRegionizerGap`) | landed |
 | `0042-yap-async-brain-end-vehicle-spawn.patch` | Folia #446/#453: defer villager brain during async transform; vehicle END→overworld uses rider respawn | landed |
+| `0043-yap-contiguous-bar-relocate-probe.patch` | Same-world `teleportTo` evacuate; probe `gap_bands` / `ticking_regions` (split bar, not BLOCKS lockstep) | landed |
 
 Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent`). See [PLUGINS.md](../plugins/PLUGINS.md).
 
@@ -91,7 +92,7 @@ YaP split guards (`0016`/`0032`) keep entities, connections, players, block-enti
 
 **Packed spawn:** stock Folia (and Canvas) will not split a contiguous loaded blob. `0041` registers the corridor as a first-class cut: `addChunk` will not create empty glue sections, merge BFS will not jump the band, and PLAYER/sim tickets will not refill it (a player standing in the strip still pins that chunk). Ship `folia-grid-exponent=3` so a default view-distance-10 spawn has four 8-chunk sections — enough for left / hole / right. A blob that fits in one section still cannot split; that is the regionizer atom.
 
-**Professional bar:** a **live contiguous** hot region actually splits and holds without a YaP epoch/microtick barrier. Aligned microticks (`0026`–`0030`) are optional phase tagging. Same-tick BLOCKS lockstep across shards **is** a second clock and is not required for the regionizer to be correct. `0041` is the fork patch that makes that bar reachable. The lab partition-cut used pre-gapped lobes (`contiguous_carve=false`) and is not that proof.
+**Split bar:** a **live contiguous** hot region splits and holds without a YaP epoch/microtick barrier. Aligned microticks (`0026`–`0030`) are optional phase tagging. Same-tick BLOCKS lockstep across shards **is** a second clock and is not required for the regionizer to be correct. `0041` is the native cut; `0043` relocates a live corridor. Lab check: `./scripts/smoke-contiguous-bar.sh`.
 
 ### Aligned micro/sub-ticks (patches 0026–0030)
 
@@ -115,17 +116,20 @@ Capacity still mostly comes from **real Folia shards after a legal empty-buffer 
 
 ### Scheduler proof
 
-Idle smoke does not force-partition. **Professional check (not met):** a **contiguous** loaded strip (not pre-gapped) carves, unloads, `forcePartition`s, `RegionizedWorldData.split` (0032) increments, the gap holds, and an off-owner neighbor/RTQ pulse runs on the **owning region thread** without TickThread violation. One region-tick of neighbor lag (`0015`) is acceptable. Same-tick BLOCKS drain under aligned microticks is **not** the bar.
+Idle smoke does not force-partition. **Contiguous-strip check:** a **contiguous** loaded strip (not pre-gapped) carves, unloads, `forcePartition`s, `RegionizedWorldData.split` (0032) increments, the gap holds, and an off-owner neighbor/RTQ pulse runs on the **owning region thread** without TickThread violation. One region-tick of neighbor lag (`0015`) is acceptable. Same-tick BLOCKS drain under aligned microticks is **not** the pass.
 
-Lab-only (`-Dyap.folia.scheduler-probe`, lowered MSPT threshold / delay / min-sections, `contiguous_carve=false`):
+Lab-only (`-Dyap.folia.scheduler-probe`, lowered MSPT threshold / delay / min-sections):
 
 ```bash
-# Incremental Folia jar after patch work (do not full-rebuild if the work tree is dirty):
-#   cd vendor/folia/work && ./gradlew --no-daemon :folia-server:jar :folia-server:createPaperclipJar
+# Pre-gapped lobes:
 ./scripts/smoke-partition-cut.sh 240
+
+# Contiguous-strip check — live strip, product VD=10, aligned microticks off.
+# Uses lib/yap-folia-26.2-lab.jar when present (does not overwrite the GUI product jar).
+./scripts/smoke-contiguous-bar.sh 420
 ```
 
-Lab last run (pre-gapped, **not** the professional bar): `splits=1` `force_partitions=1` `split_misses=0` `pulses_queued=1` `pulses_ran=1` `slipped=0` `drained_blocks>0` `wave_timeouts=0`. `ran_blocks=0` is the defer/drain path. `contiguous_carve=false` / `gapHalf=32` skipped live relocate.
+Pre-gapped lab last run: `contiguous_carve=false` / `gapHalf=32`. Contiguous-strip pass: `contiguous_carve=true`, `forcePartition` + `RegionizedWorldData.split`, `gap_bands>=1` and `ticking_regions>=2` after a hold under view-distance **10**. Same-tick BLOCKS pulse is **not** the pass.
 
 
 ---
