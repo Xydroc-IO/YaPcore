@@ -12,11 +12,19 @@ import com.yapcore.skills.gui.SkillsMenuListener;
 import com.yapcore.skills.listener.BreakSkillListener;
 import com.yapcore.skills.listener.CombatSkillListener;
 import com.yapcore.skills.listener.FishingSkillListener;
+import com.yapcore.skills.listener.SkillLevelListener;
+import com.yapcore.skills.listener.SkillPowerBreakListener;
+import com.yapcore.skills.listener.SkillPowerCombatListener;
 import com.yapcore.skills.listener.SmeltSkillListener;
 import com.yapcore.skills.papi.SkillsPlaceholders;
+import com.yapcore.skills.power.SkillBreakSpeed;
+import com.yapcore.skills.power.SkillLevelCache;
+import com.yapcore.skills.power.SkillPowerSettings;
 import com.yapcore.skills.service.SkillServiceImpl;
 import com.yapcore.skills.skill.SkillPackLoader;
+import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -33,9 +41,12 @@ public final class SkillsPlugin extends JavaPlugin {
     private SkillDatabase database;
     private SkillRepository repository;
     private SkillPackLoader loader;
+    private final SkillLevelCache levelCache = new SkillLevelCache();
+    private SkillPowerSettings powerSettings = SkillPowerSettings.defaults();
     private SkillServiceImpl skillService;
     private SkillsMenu menu;
     private SkillsPlaceholders placeholders;
+    private SkillLevelListener levelListener;
 
     @Override
     public void onEnable() {
@@ -51,6 +62,11 @@ public final class SkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new FishingSkillListener(this), this);
         getServer().getPluginManager().registerEvents(new SmeltSkillListener(this), this);
         getServer().getPluginManager().registerEvents(new CombatSkillListener(this), this);
+        getServer().getPluginManager().registerEvents(new SkillPowerBreakListener(this), this);
+        // After CombatSkillListener so the hit-context clear runs last at MONITOR.
+        getServer().getPluginManager().registerEvents(new SkillPowerCombatListener(this), this);
+        levelListener = new SkillLevelListener(this);
+        getServer().getPluginManager().registerEvents(levelListener, this);
         getServer().getPluginManager().registerEvents(new SkillsMenuListener(), this);
 
         bindCommand("skills", new SkillsCommand(menu));
@@ -64,6 +80,7 @@ public final class SkillsPlugin extends JavaPlugin {
         if (config.preferOverJobs()) {
             getLogger().info("Tip: set playerdata features.jobs=false when using YaPSkills.");
         }
+        warmLevels();
         getLogger().info("YaPSkills ready — skills=" + loader.skills().size());
     }
 
@@ -76,6 +93,13 @@ public final class SkillsPlugin extends JavaPlugin {
         if (placeholders != null) {
             placeholders.unregister();
         }
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            try {
+                SkillBreakSpeed.clear(this, player);
+            } catch (Throwable ignored) {
+                // Disable is not always the owning region. The modifier is transient either way.
+            }
+        }
         if (database != null) {
             database.close();
         }
@@ -86,6 +110,7 @@ public final class SkillsPlugin extends JavaPlugin {
             config = new SkillsConfig(this);
         }
         config.reload();
+        powerSettings = SkillPowerSettings.from(getConfig());
 
         if (database == null) {
             database = new SkillDatabase(this, config);
@@ -123,8 +148,11 @@ public final class SkillsPlugin extends JavaPlugin {
         if (skillService != null) {
             sm.unregister(SkillService.class, skillService);
         }
-        skillService = new SkillServiceImpl(this, config, repository, loader, table, overallTable);
+        levelCache.clear();
+        skillService = new SkillServiceImpl(
+                this, config, repository, loader, table, overallTable, levelCache, powerSettings);
         menu = new SkillsMenu(this, skillService);
+        warmLevels();
     }
 
     public void reregisterService() {
@@ -143,6 +171,20 @@ public final class SkillsPlugin extends JavaPlugin {
 
     public SkillServiceImpl skillService() {
         return skillService;
+    }
+
+    public SkillLevelCache levels() {
+        return levelCache;
+    }
+
+    public SkillPowerSettings power() {
+        return powerSettings;
+    }
+
+    public void warmLevels() {
+        if (levelListener != null && skillService != null) {
+            levelListener.warmOnline();
+        }
     }
 
     private void bindCommand(String name, Object executor) {

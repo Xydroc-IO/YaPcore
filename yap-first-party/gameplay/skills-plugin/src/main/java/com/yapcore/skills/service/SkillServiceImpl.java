@@ -12,6 +12,9 @@ import com.yapcore.mmo.event.SkillLevelUpEvent;
 import com.yapcore.sched.YapSched;
 import com.yapcore.skills.SkillsConfig;
 import com.yapcore.skills.db.SkillRepository;
+import com.yapcore.skills.power.SkillLevelCache;
+import com.yapcore.skills.power.SkillPowerSettings;
+import com.yapcore.skills.power.SkillPowerText;
 import com.yapcore.skills.skill.SkillPackLoader;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
@@ -37,6 +40,8 @@ public final class SkillServiceImpl implements SkillService {
     private final SkillPackLoader loader;
     private final XpTable xpTable;
     private final XpTable overallXpTable;
+    private final SkillLevelCache levelCache;
+    private final SkillPowerSettings power;
 
     public SkillServiceImpl(
             JavaPlugin plugin,
@@ -44,13 +49,21 @@ public final class SkillServiceImpl implements SkillService {
             SkillRepository repository,
             SkillPackLoader loader,
             XpTable xpTable,
-            XpTable overallXpTable) {
+            XpTable overallXpTable,
+            SkillLevelCache levelCache,
+            SkillPowerSettings power) {
         this.plugin = plugin;
         this.config = config;
         this.repository = repository;
         this.loader = loader;
         this.xpTable = xpTable;
         this.overallXpTable = overallXpTable;
+        this.levelCache = levelCache;
+        this.power = power == null ? SkillPowerSettings.defaults() : power;
+    }
+
+    public SkillPowerSettings powerSettings() {
+        return power;
     }
 
     @Override
@@ -318,6 +331,9 @@ public final class SkillServiceImpl implements SkillService {
             int oldLevel) throws SQLException {
         SkillProgress progress = new SkillProgress(playerId, skillId, xp, level);
         repository.upsert(progress);
+        if (levelCache != null) {
+            levelCache.remember(playerId, skillId, level);
+        }
         if (level > oldLevel) {
             notifyLevelUp(playerId, skillId, oldLevel, level, xp, source);
         }
@@ -341,7 +357,8 @@ public final class SkillServiceImpl implements SkillService {
             SkillLevelUpEvent event = new SkillLevelUpEvent(player, skillId, oldLevel, newLevel, totalXp, source);
             Bukkit.getPluginManager().callEvent(event);
             if (config.levelUpChat()) {
-                player.sendMessage("§aLevel up! §f" + name + " §7is now level §e" + newLevel);
+                String detail = SkillPowerText.levelUpDetail(skillId.id(), newLevel, xpTable.maxLevel(), power);
+                player.sendMessage("§aLevel up! §f" + name + " §7is now level §e" + newLevel + detail);
             }
             if (config.levelUpTitle()) {
                 player.showTitle(Title.title(

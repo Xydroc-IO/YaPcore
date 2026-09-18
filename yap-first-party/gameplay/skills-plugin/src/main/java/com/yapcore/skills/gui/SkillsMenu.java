@@ -5,6 +5,7 @@ import com.yapcore.mmo.SkillDefinition;
 import com.yapcore.mmo.SkillProgress;
 import com.yapcore.mmo.XpTable;
 import com.yapcore.sched.YapSched;
+import com.yapcore.skills.power.SkillPowerText;
 import com.yapcore.skills.service.SkillServiceImpl;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -90,7 +91,8 @@ public final class SkillsMenu {
 
         if (enabled.isEmpty()) {
             inv.setItem(SKILL_SLOTS[0], SkillsMenuHolder.skillIcon(
-                    org.bukkit.Material.BARRIER, 0, "No skills loaded", 1, 0, 0, 0, skillTable.maxLevel()));
+                    org.bukkit.Material.BARRIER, 0, "No skills loaded", 1, 0, 0, 0, skillTable.maxLevel(),
+                    List.of()));
         }
         int slotIndex = 0;
         for (SkillDefinition def : enabled) {
@@ -111,7 +113,9 @@ public final class SkillsMenu {
                     progress.xp(),
                     skillXpInto,
                     skillXpToNext,
-                    skillTable.maxLevel()));
+                    skillTable.maxLevel(),
+                    SkillPowerText.lines(
+                            def.id().id(), progress.level(), skillTable.maxLevel(), skills.powerSettings())));
             slotIndex++;
         }
 

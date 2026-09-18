@@ -91,7 +91,8 @@ public final class SkillsMenuHolder implements InventoryHolder {
             double xp,
             double xpIntoLevel,
             double xpToNext,
-            int maxLevel) {
+            int maxLevel,
+            java.util.List<String> powerLines) {
         ItemStack stack = new ItemStack(icon == null ? Material.CLAY_BALL : icon);
         stack.editMeta(meta -> {
             applyCmd(meta, iconCmd);
@@ -107,6 +108,15 @@ public final class SkillsMenuHolder implements InventoryHolder {
             } else {
                 lore.add(Component.text("Max level reached")
                         .color(NamedTextColor.AQUA).decoration(TextDecoration.ITALIC, false));
+            }
+            if (powerLines != null) {
+                for (String line : powerLines) {
+                    if (line == null || line.isBlank()) {
+                        continue;
+                    }
+                    lore.add(Component.text(line)
+                            .color(NamedTextColor.WHITE).decoration(TextDecoration.ITALIC, false));
+                }
             }
             meta.lore(lore);
         });

@@ -6,6 +6,7 @@ import com.yapcore.mmo.SkillId;
 import com.yapcore.mmo.XpSource;
 import com.yapcore.sched.YapSched;
 import com.yapcore.skills.SkillsPlugin;
+import com.yapcore.skills.power.SkillHitContext;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -35,6 +36,7 @@ public final class CombatSkillListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamageDealt(EntityDamageByEntityEvent event) {
+        double damage = SkillHitContext.take(event.getFinalDamage());
         if (combatOwnsXp()) {
             return;
         }
@@ -45,7 +47,6 @@ public final class CombatSkillListener implements Listener {
         if (!(event.getEntity() instanceof LivingEntity target) || target instanceof Player) {
             return;
         }
-        double damage = event.getFinalDamage();
         if (damage <= 0) {
             return;
         }

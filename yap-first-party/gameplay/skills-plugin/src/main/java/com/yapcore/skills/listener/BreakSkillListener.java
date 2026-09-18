@@ -27,6 +27,10 @@ public final class BreakSkillListener implements Listener {
         if (StaffBypass.mmo(player)) {
             return;
         }
+        // Levels load off-thread on join. Until that read lands, do not cancel a break.
+        if (plugin.skillService() == null || !plugin.levels().loaded(player.getUniqueId())) {
+            return;
+        }
         Material block = event.getBlock().getType();
         for (SkillDefinition def : plugin.skillService().definitions()) {
             if (!def.enabled()) {
@@ -36,18 +40,12 @@ public final class BreakSkillListener implements Listener {
             if (action == null || action.minLevel() <= 1) {
                 continue;
             }
-            try {
-                int level = plugin.skillService().get(player.getUniqueId(), def.id())
-                        .orTimeout(2, java.util.concurrent.TimeUnit.SECONDS)
-                        .join()
-                        .level();
-                if (level < action.minLevel()) {
-                    event.setCancelled(true);
-                    player.sendMessage("§cYou need " + def.display() + " level §e" + action.minLevel()
-                            + "§c for this.");
-                    return;
-                }
-            } catch (Exception ignored) {
+            int level = plugin.levels().level(player.getUniqueId(), def.id());
+            if (level < action.minLevel()) {
+                event.setCancelled(true);
+                player.sendMessage("§cYou need " + def.display() + " level §e" + action.minLevel()
+                        + "§c for this.");
+                return;
             }
         }
     }

@@ -21,19 +21,124 @@ break:
     min-level: 1
   DARK_OAK_LOG:
     xp: 35
-    min-level: 15
+    min-level: 1
   MANGROVE_LOG:
     xp: 35
-    min-level: 15
+    min-level: 1
   CHERRY_LOG:
     xp: 35
-    min-level: 15
+    min-level: 1
+  PALE_OAK_LOG:
+    xp: 40
+    min-level: 1
   OAK_WOOD:
-    xp: 25
+    xp: 20
     min-level: 1
   SPRUCE_WOOD:
-    xp: 25
+    xp: 20
     min-level: 1
   BIRCH_WOOD:
+    xp: 20
+    min-level: 1
+  JUNGLE_WOOD:
     xp: 25
+    min-level: 1
+  ACACIA_WOOD:
+    xp: 25
+    min-level: 1
+  DARK_OAK_WOOD:
+    xp: 30
+    min-level: 1
+  MANGROVE_WOOD:
+    xp: 30
+    min-level: 1
+  CHERRY_WOOD:
+    xp: 30
+    min-level: 1
+  PALE_OAK_WOOD:
+    xp: 35
+    min-level: 1
+  STRIPPED_OAK_LOG:
+    xp: 15
+    min-level: 1
+  STRIPPED_SPRUCE_LOG:
+    xp: 15
+    min-level: 1
+  STRIPPED_BIRCH_LOG:
+    xp: 15
+    min-level: 1
+  STRIPPED_JUNGLE_LOG:
+    xp: 18
+    min-level: 1
+  STRIPPED_ACACIA_LOG:
+    xp: 18
+    min-level: 1
+  STRIPPED_DARK_OAK_LOG:
+    xp: 20
+    min-level: 1
+  STRIPPED_MANGROVE_LOG:
+    xp: 20
+    min-level: 1
+  STRIPPED_CHERRY_LOG:
+    xp: 20
+    min-level: 1
+  STRIPPED_PALE_OAK_LOG:
+    xp: 22
+    min-level: 1
+  STRIPPED_OAK_WOOD:
+    xp: 12
+    min-level: 1
+  STRIPPED_SPRUCE_WOOD:
+    xp: 12
+    min-level: 1
+  STRIPPED_BIRCH_WOOD:
+    xp: 12
+    min-level: 1
+  STRIPPED_JUNGLE_WOOD:
+    xp: 15
+    min-level: 1
+  STRIPPED_ACACIA_WOOD:
+    xp: 15
+    min-level: 1
+  STRIPPED_DARK_OAK_WOOD:
+    xp: 16
+    min-level: 1
+  STRIPPED_MANGROVE_WOOD:
+    xp: 16
+    min-level: 1
+  STRIPPED_CHERRY_WOOD:
+    xp: 16
+    min-level: 1
+  STRIPPED_PALE_OAK_WOOD:
+    xp: 18
+    min-level: 1
+  CRIMSON_STEM:
+    xp: 40
+    min-level: 1
+  WARPED_STEM:
+    xp: 40
+    min-level: 1
+  CRIMSON_HYPHAE:
+    xp: 35
+    min-level: 1
+  WARPED_HYPHAE:
+    xp: 35
+    min-level: 1
+  STRIPPED_CRIMSON_STEM:
+    xp: 22
+    min-level: 1
+  STRIPPED_WARPED_STEM:
+    xp: 22
+    min-level: 1
+  STRIPPED_CRIMSON_HYPHAE:
+    xp: 18
+    min-level: 1
+  STRIPPED_WARPED_HYPHAE:
+    xp: 18
+    min-level: 1
+  BAMBOO_BLOCK:
+    xp: 15
+    min-level: 1
+  STRIPPED_BAMBOO_BLOCK:
+    xp: 10
     min-level: 1

@@ -35,3 +35,13 @@ feedback:
 prefer-over-jobs: true
 
 skills-directory: skills
+
+# Power sits on top of the level locks. Level 1 is vanilla.
+# At max level (120): break speed 2.5x, one extra copy of each drop, hits deal 2x damage.
+# Mining only speeds and multiplies mining blocks. Woodcutting only speeds and multiplies wood.
+# Strength only changes hit damage. Fortune and silk touch still apply before the extra copy.
+power:
+  enabled: true
+  break-speed-bonus-at-max: 1.5
+  extra-drops-at-max: 1.0
+  damage-bonus-at-max: 1.0
