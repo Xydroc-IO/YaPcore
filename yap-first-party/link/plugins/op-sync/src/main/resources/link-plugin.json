@@ -1,7 +1,7 @@
 {
   "id": "yaplink-op-sync",
   "name": "YaP Link OP Sync",
-  "version": "1.0.0.0",
+  "version": "0.0.0.1",
   "main": "com.yapcore.link.op.OpSyncPlugin",
   "authors": ["YapLabs"]
 }

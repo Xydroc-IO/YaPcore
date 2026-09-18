@@ -1,7 +1,7 @@
 {
   "id": "yaplink-chat-bridge",
   "name": "YaP Link Chat Bridge",
-  "version": "1.0.0.0",
+  "version": "0.0.0.1",
   "main": "com.yapcore.link.chat.ChatBridgePlugin",
   "authors": ["YapLabs"]
 }

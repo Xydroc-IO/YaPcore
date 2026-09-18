@@ -33,7 +33,7 @@ public final class SkillsPlaceholders extends PlaceholderExpansion {
 
     @Override
     public @NotNull String getVersion() {
-        return "1.0.0.0";
+        return "0.0.0.1";
     }
 
     @Override

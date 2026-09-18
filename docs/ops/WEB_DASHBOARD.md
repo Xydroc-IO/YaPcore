@@ -351,8 +351,8 @@ CORE jars (`yap-db`, `yap-folia-bridge`, perms, playerdata, essentials, chat, mo
 API shape (flat JSON body):
 
 ```json
-{"action":"enable","fileName":"yap-skills-1.0.0.0.jar","mode":"soft"}
-{"action":"disable","fileName":"yap-stacker-1.0.0.0.jar","mode":"hard","force":"false"}
+{"action":"enable","fileName":"yap-skills-0.0.0.1.jar","mode":"soft"}
+{"action":"disable","fileName":"yap-stacker-0.0.0.1.jar","mode":"hard","force":"false"}
 {"action":"install","path":"releases/yap-skills.jar"}
 ```
 

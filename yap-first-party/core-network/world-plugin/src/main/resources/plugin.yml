@@ -1,5 +1,5 @@
 name: YaPWorld
-version: '1.0.0.0'
+version: '0.0.0.1'
 main: com.yapcore.world.WorldPlugin
 api-version: '1.21'
 folia-supported: true

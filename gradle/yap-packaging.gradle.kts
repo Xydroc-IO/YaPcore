@@ -93,7 +93,7 @@ tasks.register("assembleGameplaySuite") {
         }
         outDir.resolve("README.txt").writeText(
             """
-            YaPcore GAMEPLAY suite (v1.0.0.0)
+            YaPcore GAMEPLAY suite (v0.0.0.1)
             =================================
             Drop plugins/ and modules/ into your YaPcore server tree.
             Requires CORE+NETWORK release (yapcore.jar + yap-db + playerdata).

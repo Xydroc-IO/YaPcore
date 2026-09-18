@@ -1,5 +1,5 @@
 name: YaPRegions
-version: '1.0.0.0'
+version: '0.0.0.1'
 main: com.yapcore.regions.RegionsPlugin
 api-version: '1.21'
 folia-supported: true

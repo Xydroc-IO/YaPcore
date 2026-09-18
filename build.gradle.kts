@@ -11,7 +11,7 @@ plugins {
 }
 
 group = "com.yapcore"
-version = "1.0.0.0"
+version = "0.0.0.1"
 
 val frayVersion = "0.9.0"
 val jcstressVersion = "0.16"

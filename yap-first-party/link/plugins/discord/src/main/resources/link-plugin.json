@@ -1,7 +1,7 @@
 {
   "id": "yaplink-discord",
   "name": "YaP Link Discord",
-  "version": "1.0.0.0",
+  "version": "0.0.0.1",
   "main": "com.yapcore.link.discord.DiscordProxyPlugin",
   "authors": ["YapLabs"]
 }
