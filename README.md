@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <strong>Production Folia network stack</strong> — regionized <em>and</em> parallel ticks (subregion shards + aligned micro/sub-ticks),<br/>
+  <strong>Production Folia network stack</strong> — Folia region ticks; YaP partition/carve aim at real splits without a second clock,<br/>
   dual-stack Java + Bedrock, first-party plugins, native proxy, Bedrock-feel parity, and operator tooling.
 </p>
 
@@ -40,7 +40,7 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 
 | Capability | What you get |
 |------------|----------------|
-| **Regionized + parallel ticks** | YaP-Folia regions + **subregion partition** + **aligned micro/sub-ticks** (soft cross-region waves) — ship knobs on by default |
+| **Regionized ticks** | YaP-Folia regions. **Professional bar:** the regionizer holds **real** splits (contiguous hot region → empty-buffer cut → independent Folia shards) **without** a YaP phase clock. Partition/carve knobs are on; that bar is **not yet proven** — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
 | **Mob AI budgets / µs chassis** | MSPT-gated **AI time-slice** + entity/hopper budgets on Folia; YapEngine orders bridge/plugin work in **µs** (`SequenceToken`) |
 | **Crossplay** | Java (1.20.2+) + Bedrock on one product story — Link-native Bedrock join by default; Bedrock form hubs for `/menu`, kits, ranks, admin |
 | **Bedrock-feel parity** | Convert-verified skins / emotes / movement / catalog blocks — [BEDROCK_FEEL_PARITY.md](docs/product/BEDROCK_FEEL_PARITY.md) |
@@ -52,7 +52,7 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 
 **Docs:** [QUICK_START.md](docs/start/QUICK_START.md) · [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
 
-Version line: **1.0.0.0** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2** — see [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
+Version line: **0.0.0.1** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2** — see [RELEASE_NOTES.md](docs/start/RELEASE_NOTES.md).
 
 ### AI assistance (disclosure)
 
@@ -90,23 +90,29 @@ Honest product bars — not “unlimited players.” Scale is **regionized + mul
 
 Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, LagGuard, and sane farms. Past that, add backends or tighten density knobs — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) · [TUNE.md](docs/ops/TUNE.md).
 
-### Parallel ticks & aligned micro/sub-ticks (why it’s not “stock Folia”)
+### Parallel ticks (why it’s not “stock Folia”)
 
-Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes. **YaP-Folia goes further**: parallel **subregion** shards when hot, **aligned micro/sub-tick phases** across regions (same 20 TPS game time), MSPT-gated Mob AI / hopper budgets, plus YapEngine µs sequencing on the edge — not “regions alone.”
+Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes: **one tick thread owns one region**. YaP-Folia adds force-partition + corridor carve so a **hot contiguous** area can become two Folia regions. That only holds if an empty buffer exists (`0017`) and stays empty (`0018`/`0019`). Cross-cut neighbors queue onto the owning region (`0015`) and may land on the next region tick — that is Folia, not a second clock.
+
+**Professional bar (not met on 0.0.0.1):** carve a live contiguous loaded strip, `forcePartition` + `RegionizedWorldData.split`, gap holds under product view-distance, shards tick independently. No YaP epoch/microtick barrier required for that to be correct. Same-tick BLOCKS lockstep across shards **is** a second clock and is not the bar.
+
+Aligned microticks (`0026`–`0030`) remain a ship knob for phase tagging / feel. They are **not** proof the regionizer held a real split. The lab partition-cut used pre-gapped lobes (`contiguous_carve=false`) — that is not a live contiguous cut.
 
 | Knob (defaults) | Role |
 |-----------------|------|
-| `folia-aligned-microticks=true` | Real micro/sub-tick phases + per-world waves; universal RTQ phase tagging |
-| `folia-micro-phases=4` | Phase count (CHUNKS → BLOCKS → ENTITIES → BLOCK_ENTITIES) |
+| `folia-subregion-partition=true` | Split hot regions into **parallel Folia shards** when an empty-buffer cut exists |
+| `folia-subregion-carve=true` | Unload an empty corridor before the cut (`0018`) |
+| `folia-regionizer-cut=true` | Native cut + ticket clamp so a packed spawn hole holds (`0041`) |
+| `folia-grid-exponent=3` | 8-chunk sections — a VD=10 spawn has enough atoms to cut |
+| `folia-aligned-microticks=true` | Optional micro/sub-tick phases + per-world waves — not the regionizer clock |
+| `folia-micro-phases=4` | Phase count when aligned microticks on |
 | `folia-tick-wave-max-wait-ms=2` | Soft per-world barrier max wait (must be &gt; 0) |
 | `folia-physics-substeps=true` | N-step travel/move inside one tick (combat/feel; plugin tick stays 20 TPS) |
-| `folia-subregion-partition=true` | Split hot regions into **parallel subregion shards** when geometry allows |
-| `folia-subregion-carve=true` | Unload an empty corridor before the cut (`0018`) |
 | `folia-microtick-budget-ms=8` | Soft **Mob AI time-slice** on hot regions (MSPT-gated; not a finer clock) |
 | `folia-entity-tick-budget=400` | Cap Mob AI ticks per region when hot (≥12 ms MSPT) — never players / TNT / vehicles / bosses |
 | `folia-hopper-tick-budget=64` | Soft-defer excess hopper transfers |
 
-**Capacity in one hot area** comes from **subregion partition** (parallel Folia shards) + budgets — not from spinning a faster world clock. Aligned phases keep cross-region work coherent; physics sub-steps improve movement/combat stability.
+**Capacity in one hot area** comes from **real Folia shards after a legal cut** + budgets — not from spinning a faster world clock. Aligned phases are optional coherence; physics sub-steps improve movement/combat stability.
 
 **YapEngine** (edge/chassis) sequences bridge and plugin work with **µs-resolution** `SequenceToken`s so I/O and menus stay ordered without owning the world heartbeat.
 
@@ -154,7 +160,7 @@ Local release trees (gitignored):
 ./scripts/build-yap-folia.sh
 ./scripts/build-yap-client-render.sh
 gradle publishReleasesFolder -PyapGameplay=true
-# → releases/1.0.0.0/yapcore-release-{linux,windows}.zip
+# → releases/0.0.0.1/yapcore-release-{linux,windows}.zip
 ```
 
 Slim CORE+NETWORK is the **default** (`yapGameplay=false`). Opt in to GAMEPLAY

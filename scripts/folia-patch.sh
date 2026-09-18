@@ -25,7 +25,7 @@ case "$PHASE" in
   pre|post) ;;
   --list|list)
     echo "pre:"; ls -1 "$PATCH_DIR"/0000-*.patch 2>/dev/null || true
-    echo "post:"; ls -1 "$PATCH_DIR"/000[1-9]-*.patch "$PATCH_DIR"/001*.patch "$PATCH_DIR"/002*.patch "$PATCH_DIR"/003*.patch 2>/dev/null || true
+    echo "post:"; ls -1 "$PATCH_DIR"/000[1-9]-*.patch "$PATCH_DIR"/001*.patch "$PATCH_DIR"/002*.patch "$PATCH_DIR"/003*.patch "$PATCH_DIR"/004*.patch 2>/dev/null || true
     exit 0
     ;;
   *)
@@ -42,7 +42,7 @@ fi
 if [ "$PHASE" = "pre" ]; then
   mapfile -t PATCHES < <(find "$PATCH_DIR" -maxdepth 1 -type f -name '0000-*.patch' | sort)
 else
-    mapfile -t PATCHES < <(find "$PATCH_DIR" -maxdepth 1 -type f \( -name '000[1-9]-*.patch' -o -name '001*.patch' -o -name '002*.patch' -o -name '003*.patch' \) | sort)
+    mapfile -t PATCHES < <(find "$PATCH_DIR" -maxdepth 1 -type f \( -name '000[1-9]-*.patch' -o -name '001*.patch' -o -name '002*.patch' -o -name '003*.patch' -o -name '004*.patch' \) | sort)
 fi
 
 if [ "${#PATCHES[@]}" -eq 0 ]; then

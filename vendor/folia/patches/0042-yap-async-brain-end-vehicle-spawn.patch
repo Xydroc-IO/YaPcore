@@ -1,0 +1,181 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP Folia async brain + end-vehicle spawn
+
+Villager updateActivityFromSchedule is deferred while EntityType.create runs
+on the origin region thread (Folia #446). Vehicle END→overworld uses the
+riding player's respawn, not world spawn (Folia #453).
+Post-applyAllPatches.
+---
+
+--- /dev/null
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapAsyncTeleport.java
+@@ -0,0 +1,35 @@
++package io.papermc.paper.threadedregions;
++
++import net.minecraft.server.level.ServerLevel;
++
++/**
++ * Thread-local destination while {@code Entity.transformForAsyncTeleport} copies
++ * an entity on the origin region thread. Brain / {@code getCurrentWorldData}
++ * must not observe the dest world until {@code placeInAsync} on the dest thread.
++ *
++ * <p>Folia #446 / #457: villager {@code updateActivityFromSchedule} during
++ * {@code EntityType.create(DIMENSION_TRAVEL)} throws World mismatch.
++ */
++public final class YapAsyncTeleport {
++
++    private static final ThreadLocal<ServerLevel> DEST = new ThreadLocal<>();
++
++    private YapAsyncTeleport() {
++    }
++
++    public static void enter(final ServerLevel destination) {
++        DEST.set(destination);
++    }
++
++    public static void leave() {
++        DEST.remove();
++    }
++
++    public static boolean inTransform() {
++        return DEST.get() != null;
++    }
++
++    public static ServerLevel destination() {
++        return DEST.get();
++    }
++}
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportEvents.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapTeleportEvents.java
+@@ -161,7 +161,7 @@
+                 dest.yaw = Direction.WEST.toYRot();
+                 dest.pitch = 0.0f;
+             } else {
+-                dest.pos = Vec3.atBottomCenterOf(destination.getRespawnData().pos());
++                applyEndOverworldExit(entity, destination, dest);
+             }
+             return;
+         }
+@@ -171,6 +171,40 @@
+             entity.getX() * scale, entity.getY(), entity.getZ() * scale));
+     }
+ 
++    /** Folia #453: vehicle/end return uses the riding player's respawn, not world spawn. */
++    public static void applyEndOverworldExit(final Entity entity, final ServerLevel destination, final Dest dest) {
++        dest.world = destination;
++        dest.yaw = entity.getYRot();
++        dest.pitch = entity.getXRot();
++        dest.pos = Vec3.atBottomCenterOf(destination.getRespawnData().pos());
++        final ServerPlayer player = playerInTree(entity);
++        if (player == null) {
++            return;
++        }
++        final ServerPlayer.RespawnConfig cfg = player.getRespawnConfig();
++        if (cfg == null) {
++            return;
++        }
++        if (cfg.respawnData().dimension() != destination.dimension()) {
++            return;
++        }
++        dest.pos = Vec3.atBottomCenterOf(cfg.respawnData().pos());
++        dest.yaw = cfg.respawnData().yaw();
++        dest.pitch = cfg.respawnData().pitch();
++    }
++
++    private static ServerPlayer playerInTree(final Entity root) {
++        if (root instanceof ServerPlayer player) {
++            return player;
++        }
++        for (final Entity passenger : root.getIndirectPassengers()) {
++            if (passenger instanceof ServerPlayer player) {
++                return player;
++            }
++        }
++        return null;
++    }
++
+     private static boolean apply(final Dest dest, final Location to) {
+         if (to == null || to.getWorld() == null) {
+             return false;
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
+@@ -4470,7 +4470,13 @@
+     protected Entity transformForAsyncTeleport(ServerLevel destination, Vec3 pos, Float yaw, Float pitch, Vec3 velocity) {
+         this.removeAfterChangingDimensions(); // remove before so that any CBEntity#getHandle call affects this entity before copying
+ 
+-        Entity copy = this.getType().create(destination, EntitySpawnReason.DIMENSION_TRAVEL);
++        io.papermc.paper.threadedregions.YapAsyncTeleport.enter(destination);
++        Entity copy;
++        try {
++            copy = this.getType().create(destination, EntitySpawnReason.DIMENSION_TRAVEL);
++        } finally {
++            io.papermc.paper.threadedregions.YapAsyncTeleport.leave();
++        }
+         copy.restoreFrom(this);
+         copy.transform(pos, yaw, pitch, velocity);
+         // Folia start - keep multipart entities in the owning region after transform
+@@ -4676,7 +4682,12 @@
+                         }
+                     );
+                 } else {
+-                    BlockPos spawnPos = destination.getRespawnData().pos();
++                    final io.papermc.paper.threadedregions.YapTeleportEvents.Dest endExit =
++                        new io.papermc.paper.threadedregions.YapTeleportEvents.Dest();
++                    io.papermc.paper.threadedregions.YapTeleportEvents.applyEndOverworldExit(this, destination, endExit);
++                    BlockPos spawnPos = BlockPos.containing(endExit.pos);
++                    float endYaw = endExit.yaw;
++                    float endPitch = endExit.pitch;
+                     // need to load chunk for heightmap
+                     destination.moonrise$loadChunksAsync(
+                         spawnPos, 0,
+@@ -4687,7 +4698,7 @@
+                             // done
+                             portalInfoCompletable.complete(
+                                 new net.minecraft.world.level.portal.TeleportTransition(
+-                                    destination, Vec3.atBottomCenterOf(adjustedSpawn), Vec3.ZERO, this.getYRot(), this.getXRot(),
++                                    destination, Vec3.atBottomCenterOf(adjustedSpawn), Vec3.ZERO, endYaw, endPitch,
+                                     false, false,
+                                     Relative.union(Relative.DELTA, Relative.ROTATION),
+                                     TeleportTransition.PLAY_PORTAL_SOUND.then(TeleportTransition.PLACE_PORTAL_TICKET),
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/npc/villager/Villager.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/npc/villager/Villager.java
+@@ -209,6 +209,8 @@
+         this.registerBrainGoals(this.getBrain());
+     }
+ 
++    private boolean yapDeferBrainInit;
++
+     private void registerBrainGoals(final Brain<Villager> brain) {
+         if (this.isBaby()) {
+             brain.setSchedule(EnvironmentAttributes.BABY_VILLAGER_ACTIVITY);
+@@ -216,6 +218,11 @@
+             brain.setSchedule(EnvironmentAttributes.VILLAGER_ACTIVITY);
+         }
+ 
++        // Folia #446: skip dest-world schedule update while still on the origin tick thread
++        if (io.papermc.paper.threadedregions.YapAsyncTeleport.inTransform()) {
++            this.yapDeferBrainInit = true;
++            return;
++        }
+         brain.updateActivityFromSchedule(this.level().environmentAttributes(), this.level().getLevelData().getGameTime(), this.position()); // Folia - region threading - not in the world yet
+     }
+ 
+@@ -261,6 +268,18 @@
+     }
+     protected void customServerAiStep(ServerLevel level, final boolean inactive) {
+         // Paper end - EAR 2
++        if (this.yapDeferBrainInit) {
++            if (ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(this)) {
++                try {
++                    this.registerBrainGoals(this.getBrain());
++                    this.yapDeferBrainInit = false;
++                } catch (final IllegalStateException ignored) {
++                    return;
++                }
++            } else {
++                return;
++            }
++        }
+         ProfilerFiller profiler = Profiler.get();
+         profiler.push("villagerBrain");
+         if (!inactive) this.getBrain().tick(level, this); // Paper - EAR 2

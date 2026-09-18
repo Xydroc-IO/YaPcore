@@ -44,7 +44,7 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-microtick-budget-ms", "8");
         props.setProperty("folia-steal-threshold-ms", "3");
         props.setProperty("folia-task-slice-ms", "2");
-        props.setProperty("folia-grid-exponent", "");
+        props.setProperty("folia-grid-exponent", "3");
         props.setProperty("folia-region-metrics", "true");
         // Phase 5 — parallel sub-regions (hysteresis + coalesce wall-clock; carve on)
         props.setProperty("folia-subregion-partition", "true");
@@ -58,6 +58,7 @@ public final class FoliaAuthorityConfig {
         props.setProperty("folia-subregion-coalesce-quiet-ticks", "200");
         props.setProperty("folia-subregion-coalesce-min-wall-ms", "30000");
         props.setProperty("folia-subregion-carve", "true");
+        props.setProperty("folia-regionizer-cut", "true");
         props.setProperty("folia-ticket-hygiene", "true");
         props.setProperty("folia-portal-couple", "true");
         props.setProperty("folia-subregion-partition-delay-ticks", "600");
@@ -227,7 +228,7 @@ public final class FoliaAuthorityConfig {
      * ({@code -Dyap.folia.grid-exponent}). Empty = use paper-global.yml.
      */
     public String getFoliaGridExponent() {
-        return props.getProperty("folia-grid-exponent", "").trim();
+        return props.getProperty("folia-grid-exponent", "3").trim();
     }
 
     /** Region merge/split/migration counters ({@code -Dyap.folia.region-metrics}). Default on. */
@@ -284,6 +285,14 @@ public final class FoliaAuthorityConfig {
     /** Corridor unload before force-partition ({@code -Dyap.folia.subregion-carve}). Default true. */
     public boolean isFoliaSubregionCarve() {
         return Boolean.parseBoolean(props.getProperty("folia-subregion-carve", "true"));
+    }
+
+    /**
+     * Native regionizer cut + PLAYER/sim ticket clamp so a packed-spawn hole holds
+     * ({@code -Dyap.folia.regionizer-cut}). Default true.
+     */
+    public boolean isFoliaRegionizerCut() {
+        return Boolean.parseBoolean(props.getProperty("folia-regionizer-cut", "true"));
     }
 
     /** Last-ticket drop + LOADING-only holds ({@code -Dyap.folia.ticket-hygiene}). Default true. */

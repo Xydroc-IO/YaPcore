@@ -155,7 +155,7 @@ Each logical stream obtains a `SequenceToken` carrying a per-stream sequence and
 
 ### 3.4 Spatial model
 
-**YaP-Folia** indexes world interest by region and runs authoritative tick on a dynamic region thread pool. YaP patches add teleport transactions (default **on**), entity tick budgets, async chunk save, scoreboard SWMR, and **subregion partition + corridor carve** (default **on**) — §4. Partition is a Folia-legal **empty-buffer cut**, not a second clock; aligned microticks are optional. **Professional bar** (live contiguous split that the regionizer holds) is **not met** on product **0.0.0.1**. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin work; they do **not** replace YaP-Folia game tick. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (**benches only**).
+**YaP-Folia** indexes world interest by region and runs authoritative tick on a dynamic region thread pool. YaP patches add teleport transactions (default **on**), entity tick budgets, async chunk save, scoreboard SWMR, and **subregion partition + corridor carve** (default **on**) — §4. Partition is a Folia-legal **empty-buffer cut**, not a second clock; aligned microticks are optional. **Professional bar** (live contiguous split that the regionizer holds) is **reachable** with patch `0041` (native cut + ticket clamp) and **not proven** on product **0.0.0.1**. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin work; they do **not** replace YaP-Folia game tick. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (**benches only**).
 
 ### 3.5 Memory & GC posture
 
@@ -165,7 +165,7 @@ Production launch scripts prefer **Generational ZGC** with optional **NUMA** pin
 
 ## 4. YaP-Folia fork
 
-YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream pin is **`14b7fee`** (`ver/26.2.x`, 2026-09-06) in `vendor/folia/UPSTREAM.lock`. **33** ordered files in `vendor/folia/patches/`: `0000`–`0033` are YaP behavior or repairs; `0034`–`0040` are Folia-itself improvements on that pin (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME). Later upstream regionizer commits still come from moving the pin.
+YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream pin is **`14b7fee`** (`ver/26.2.x`, 2026-09-06) in `vendor/folia/UPSTREAM.lock`. **35** ordered files in `vendor/folia/patches/`: `0000`–`0033` are YaP behavior or repairs; `0034`–`0042` are Folia-itself improvements on that pin (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn). Later upstream regionizer commits still come from moving the pin.
 
 | Patch | Purpose | Default |
 |-------|---------|---------|
@@ -188,11 +188,13 @@ YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream 
 | `0038` | Fire PlayerTeleportEvent / portal events on teleportAsync (#490) | always |
 | `0039` | Map autosave uses server-global SavedDataStorage (#505/#506) | always |
 | `0040` | Debug-subscriber CME: disable subscriptions + global-only tick (#472) | always |
+| `0041` | Native regionizer cut + ticket clamp (packed spawn) | **on** (ship) |
+| `0042` | Async villager brain (#446) + vehicle END→overworld respawn (#453) | always |
 
 Build: `./scripts/build-yap-folia.sh` → `lib/yap-folia-26.2.jar`.  
 Docs: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [QUICK_START.md](../start/QUICK_START.md).
 
-**0.0.0.1 honesty:** force-partition of a **live contiguous** hot region that the Folia regionizer then holds, without a YaP phase clock, is the professional bar. It is possible (empty-buffer topology + `0015` neighbor defer). It is **not proven**. Lab smoke used pre-gapped lobes. Relocate abort still blocks carve when corridor entities do not move.
+**0.0.0.1 honesty:** force-partition of a **live contiguous** hot region that the Folia regionizer then holds, without a YaP phase clock, is the professional bar. Patch `0041` is the fork change that can split a packed spawn (native cut, ticket clamp, grid-exponent 3). It is **not proven**. Lab smoke used pre-gapped lobes.
 
 Stock Folia fallback: `folia-jar-source=fetch` + `./scripts/fetch-folia.sh` (bench / comparison only).
 
@@ -395,7 +397,7 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 | Area | Status |
 |------|--------|
 | YaP-Folia product path | **Default** (`folia-jar-source=build`) — product **0.0.0.1** |
-| Subregion real split (no second clock) | **Not met** — knobs on; live contiguous carve/hold unproven |
+| Subregion real split (no second clock) | **Not proven** — `0041` native cut landed; live contiguous carve/hold unproven |
 | YapEngine slim chassis | **Always on** |
 | YaP Link phases 0–6 | **Shipped** (`0.6.0-phase6`) |
 | Phase 3 Paper spatial | **Complete as code** — **retired as product default** |

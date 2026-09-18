@@ -7,7 +7,7 @@ Ordered deltas under [`vendor/folia/patches/`](../../vendor/folia/patches/). Aut
 
 Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
 
-The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0040` (**7**) are Folia-itself improvements on that pin: ticket/unload hygiene, AI/leash/dragon ownership (Folia PRs 491/495/504), portal-linked region thread coupling (#469), split NPE harden, teleport Bukkit events (#490), map autosave storage (#505/#506), and debug-subscriber CME (#472). Moving the pin is still how you pick up later upstream regionizer commits.
+The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0042` (**9**) are Folia-itself improvements on that pin: ticket/unload hygiene, AI/leash/dragon ownership (Folia PRs 491/495/504), portal-linked region thread coupling (#469), split NPE harden, teleport Bukkit events (#490), map autosave storage (#505/#506), debug-subscriber CME (#472), a **native regionizer cut** so a packed spawn can hold a legal hole, and async villager-brain / end-vehicle spawn ownership (Folia #446 / #453). Moving the pin is still how you pick up later upstream regionizer commits.
 
 ## Patches
 
@@ -46,6 +46,8 @@ The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or rep
 | `0038-yap-teleport-bukkit-events.patch` | Folia #490: fire `PlayerTeleportEvent` / portal events on `teleportAsync` | landed |
 | `0039-yap-map-autosave-server-storage.patch` | Folia #505/#506: map autosave uses server-global `SavedDataStorage` | landed |
 | `0040-yap-debug-subscribers-cme.patch` | Folia #472 / PR 499: disable debug subscriptions; no region-thread HashMap tick | landed |
+| `0041-yap-regionizer-packed-spawn-cut.patch` | Native cut flag + ticket clamp + thin gap (`YapRegionizerGap`) | landed |
+| `0042-yap-async-brain-end-vehicle-spawn.patch` | Folia #446/#453: defer villager brain during async transform; vehicle END→overworld uses rider respawn | landed |
 
 Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent`). See [PLUGINS.md](../plugins/PLUGINS.md).
 
@@ -69,6 +71,9 @@ Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent
 | `-Dyap.folia.physics-substep-min-move=D` | **0.02** | Min move length to subdivide collision |
 | `-Dyap.folia.subregion-partition=true` | **true** (product) | Force-partition hot regions into parallel shards |
 | `-Dyap.folia.subregion-carve=true` | **true** (product) | Unload an empty corridor before force-partition (`0018`) |
+| `-Dyap.folia.regionizer-cut=true` | **true** (product) | Skip empty-section create / BFS jump / PLAYER ticket refill across a registered cut (`0041`) |
+| `-Dyap.folia.regionizer-thin-gap=true` | **true** (product) | 1-section hole is enough when the cut is registered (`0041`) |
+| `-Dyap.folia.grid-exponent=3` | **3** (product) | 8-chunk sections so a VD=10 spawn blob has ≥4 sections to cut (`0041`) |
 | `-Dyap.folia.subregion-mspt-clear=N` | **16** | Hysteresis vs engage threshold |
 | `-Dyap.folia.subregion-coalesce-min-wall-ms=N` | **30000** | Min wall-clock ms after partition before coalesce |
 | `-Dyap.folia.scheduler-probe=true` | **false** | Lab: dump split/BLOCKS-drain counters + pulse file. **Not a ship default.** |
@@ -80,11 +85,13 @@ Operator soak profiles: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md). Citeable M
 
 ## Region model (short)
 
-Folia’s invariant: **one tick thread owns one region**. Two regions cannot tick in parallel if their loaded sections still touch — Folia will merge them or violate TickThread. YaP force-partition is therefore a **topological cut**: unload a Folia-legal empty buffer (`0017`/`0018`), `forcePartition`, then keep the gap empty (`0019`) so shards stay independent. Each shard is then ordinary Folia: one thread, one 20 TPS clock. Cross-cut neighbors queue onto the owning region (`0015`) and may land on the **next** region tick. That lag is Folia, not a second clock.
+Folia’s invariant: **one tick thread owns one region**. Two regions cannot tick in parallel if their loaded sections still touch — Folia will merge them or violate TickThread. YaP force-partition is therefore a **topological cut**: unload a Folia-legal empty buffer (`0017`/`0018`), `forcePartition`, then keep the gap empty (`0019`/`0041`) so shards stay independent. Each shard is then ordinary Folia: one thread, one 20 TPS clock. Cross-cut neighbors queue onto the owning region (`0015`) and may land on the **next** region tick. That lag is Folia, not a second clock.
 
 YaP split guards (`0016`/`0032`) keep entities, connections, players, block-entities, and chunk lists on the source region when force-partition races a missing target — a repair of **YaP partition**, not a Folia regionizer backport.
 
-**Professional bar:** a **live contiguous** hot region actually splits and holds without a YaP epoch/microtick barrier. Aligned microticks (`0026`–`0030`) are optional phase tagging. Same-tick BLOCKS lockstep across shards **is** a second clock and is not required for the regionizer to be correct. **0.0.0.1 is not at that bar.** Relocate abort still fires when corridor entities do not move (`inCorridor>0 && moved<=0`). The lab partition-cut used pre-gapped lobes (`contiguous_carve=false`).
+**Packed spawn:** stock Folia (and Canvas) will not split a contiguous loaded blob. `0041` registers the corridor as a first-class cut: `addChunk` will not create empty glue sections, merge BFS will not jump the band, and PLAYER/sim tickets will not refill it (a player standing in the strip still pins that chunk). Ship `folia-grid-exponent=3` so a default view-distance-10 spawn has four 8-chunk sections — enough for left / hole / right. A blob that fits in one section still cannot split; that is the regionizer atom.
+
+**Professional bar:** a **live contiguous** hot region actually splits and holds without a YaP epoch/microtick barrier. Aligned microticks (`0026`–`0030`) are optional phase tagging. Same-tick BLOCKS lockstep across shards **is** a second clock and is not required for the regionizer to be correct. `0041` is the fork patch that makes that bar reachable. The lab partition-cut used pre-gapped lobes (`contiguous_carve=false`) and is not that proof.
 
 ### Aligned micro/sub-ticks (patches 0026–0030)
 
@@ -147,6 +154,8 @@ Patch inventory: [YAP_FOLIA_PATCHES.md](YAP_FOLIA_PATCHES.md) · cites: [YAP_FOL
 | `folia-physics-substep-count` | **4** | Substep count 2–8 |
 | `folia-subregion-partition` | **true** | Parallel shards when hot + geometry allows |
 | `folia-subregion-carve` | **true** | Empty corridor unload before force-partition (`0018`) |
+| `folia-regionizer-cut` | **true** | Native cut + ticket clamp so a packed-spawn hole holds (`0041`) |
+| `folia-grid-exponent` | **3** | 8-chunk sections (packed spawn has enough atoms to cut) |
 | `folia-subregion-mspt-clear` | **16** | Hysteresis vs engage threshold (20) |
 | `folia-subregion-coalesce-min-wall-ms` | **30000** | Anti-thrash before coalesce |
 | `folia-ticket-hygiene` | **true** | Last-ticket drop + LOADING-only holds (`0034`) |

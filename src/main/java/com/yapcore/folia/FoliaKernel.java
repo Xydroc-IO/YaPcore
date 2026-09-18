@@ -193,6 +193,7 @@ public final class FoliaKernel {
             cmd.add("-Dyap.folia.physics-substeps=false");
         }
         cmd.add("-Dyap.folia.ticket-hygiene=" + config.isFoliaTicketHygiene());
+        cmd.add("-Dyap.folia.regionizer-cut=" + config.isFoliaRegionizerCut());
         cmd.add("-Dyap.folia.portal-couple=" + config.isFoliaPortalCouple());
         long stealMs = config.getFoliaStealThresholdMs();
         if (stealMs != 3L) {

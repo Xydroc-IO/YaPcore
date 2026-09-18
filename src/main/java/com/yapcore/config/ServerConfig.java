@@ -320,6 +320,9 @@ public final class ServerConfig {
     public int getFoliaSubregionCoalesceQuietTicks() { return folia.getFoliaSubregionCoalesceQuietTicks(); }
     public long getFoliaSubregionCoalesceMinWallMs() { return folia.getFoliaSubregionCoalesceMinWallMs(); }
     public boolean isFoliaSubregionCarve() { return folia.isFoliaSubregionCarve(); }
+    public boolean isFoliaRegionizerCut() { return folia.isFoliaRegionizerCut(); }
+    public boolean isFoliaTicketHygiene() { return folia.isFoliaTicketHygiene(); }
+    public boolean isFoliaPortalCouple() { return folia.isFoliaPortalCouple(); }
     public int getFoliaSubregionPartitionDelayTicks() { return folia.getFoliaSubregionPartitionDelayTicks(); }
     public int getFoliaSubregionGapMaintainInterval() { return folia.getFoliaSubregionGapMaintainInterval(); }
     public int foliaListenPort() { return folia.foliaListenPort(); }

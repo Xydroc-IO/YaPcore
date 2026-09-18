@@ -9,6 +9,36 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 0.0.0.1 — ownership 0042 (2026-09-18)
+
+Same ship version (no product bump). Incremental Folia paperclip → `lib/yap-folia-26.2.jar`. Pin remains **`14b7fee`**.
+
+| Area | Change |
+|------|--------|
+| **0042 villager brain** | Folia #446: `updateActivityFromSchedule` is skipped while `EntityType.create(DIMENSION_TRAVEL)` runs on the origin region thread; retry on the owning tick. |
+| **0042 end vehicle** | Folia #453: END→overworld for a vehicle uses the riding player's respawn, not world spawn. |
+| **Patches** | **35** files (`0000`–`0042`) |
+
+Does not change the regionizer. Relocate + `addChunk` refuse landed in **`0041`**. Rebuild: incremental `vendor/folia/work` `:folia-server:createPaperclipJar` → `lib/yap-folia-26.2.jar`.
+
+---
+
+## After 0.0.0.1 — packed-spawn regionizer cut 0041 (2026-09-18)
+
+Same ship version (no product bump). Incremental Folia paperclip → `lib/yap-folia-26.2.jar`. Pin remains **`14b7fee`**.
+
+| Area | Change |
+|------|--------|
+| **0041 cut** | Native regionizer cut (`YapRegionizerGap`): skip empty-section create, BFS will not jump the band, PLAYER/sim tickets will not refill the corridor. |
+| **Thin gap** | 1-section hole is Folia-legal once the cut is registered (was 3 sections). |
+| **Grid** | Ship `folia-grid-exponent=3` (8-chunk sections) so a VD=10 spawn blob has left / hole / right. |
+| **Knobs** | `-Dyap.folia.regionizer-cut=true`, `-Dyap.folia.regionizer-thin-gap=true` (ship on) |
+| **Patches** | **34** files (`0000`–`0041`) |
+
+Stock Folia and Canvas still cannot split a packed spawn. YaP can, when the blob spans ≥3 sections and the corridor is emptied of non-player entities. Players standing in the strip still pin that chunk. Rebuild: incremental `vendor/folia/work` `:folia-server:createPaperclipJar` → `lib/yap-folia-26.2.jar`.
+
+---
+
 ## After 0.0.0.1 — Folia-itself patches 0038–0040 (2026-09-18)
 
 Same ship version (no product bump). Incremental Folia paperclip → `lib/yap-folia-26.2.jar`. Pin remains **`14b7fee`**.

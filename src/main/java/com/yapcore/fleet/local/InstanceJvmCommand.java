@@ -135,6 +135,7 @@ public final class InstanceJvmCommand {
             cmd.add("-Dyap.folia.region-metrics=false");
         }
         cmd.add("-Dyap.folia.ticket-hygiene=" + config.isFoliaTicketHygiene());
+        cmd.add("-Dyap.folia.regionizer-cut=" + config.isFoliaRegionizerCut());
         cmd.add("-Dyap.folia.portal-couple=" + config.isFoliaPortalCouple());
         appendSubregion(config, cmd);
     }

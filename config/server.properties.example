@@ -69,7 +69,7 @@ folia-physics-substep-min-move=0.02
 # WORK_STEALING only (set threaded-regions.scheduler: WORK_STEALING in paper-global.yml)
 folia-steal-threshold-ms=3
 folia-task-slice-ms=2
-folia-grid-exponent=
+folia-grid-exponent=3
 folia-region-metrics=true
 # Parallel sub-regions (force-partition). Hysteresis + coalesce wall-clock.
 folia-subregion-partition=true
@@ -85,6 +85,7 @@ folia-subregion-coalesce-min-wall-ms=30000
 folia-subregion-partition-delay-ticks=600
 # Corridor carve before force-partition (contiguous strips). Use false with pre-gapped/lobe layouts.
 folia-subregion-carve=true
+folia-regionizer-cut=true
 folia-ticket-hygiene=true
 folia-portal-couple=true
 folia-subregion-gap-maintain-interval=10
