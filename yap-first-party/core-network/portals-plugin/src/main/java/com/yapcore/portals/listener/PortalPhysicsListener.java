@@ -3,6 +3,7 @@ package com.yapcore.portals.listener;
 import com.yapcore.portals.Portal;
 import com.yapcore.portals.service.PortalServiceImpl;
 import org.bukkit.Location;
+import org.bukkit.PortalType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,9 +14,9 @@ import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
 /**
- * Hub backends must not run vanilla nether/end portal teleports — YaP Link Connect owns
- * cross-server moves. Cancel dimension hops in managed volumes and any NETHER_PORTAL cause
- * on this Folia instance (lobby should not dump players into {@code world_nether}).
+ * Vanilla nether/end portals hop like Paper. YaP Link pads still own their volume:
+ * cancel a vanilla dimension hop only when the player is standing in an enabled
+ * fleet portal so walk-in Connect is not raced by {@code world_nether}.
  */
 public final class PortalPhysicsListener implements Listener {
 
@@ -38,7 +39,7 @@ public final class PortalPhysicsListener implements Listener {
         if (!(entity instanceof Player player)) {
             return;
         }
-        if (shouldBlockDimensionHop(player, event.getFrom(), PlayerTeleportEvent.TeleportCause.NETHER_PORTAL)) {
+        if (shouldBlockDimensionHop(player, event.getFrom(), causeOf(event.getPortalType()))) {
             event.setCancelled(true);
         }
     }
@@ -56,10 +57,6 @@ public final class PortalPhysicsListener implements Listener {
                 && cause != PlayerTeleportEvent.TeleportCause.END_PORTAL
                 && cause != PlayerTeleportEvent.TeleportCause.END_GATEWAY) {
             return false;
-        }
-        // Always block vanilla nether hops on this backend — fleet hubs use Link for survival.
-        if (cause == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) {
-            return true;
         }
         return touchesManagedPortal(player, from);
     }
@@ -79,5 +76,15 @@ public final class PortalPhysicsListener implements Listener {
             return false;
         }
         return portals.at(loc).filter(Portal::enabled).isPresent();
+    }
+
+    private static PlayerTeleportEvent.TeleportCause causeOf(PortalType type) {
+        if (type == PortalType.NETHER) {
+            return PlayerTeleportEvent.TeleportCause.NETHER_PORTAL;
+        }
+        if (type == PortalType.END_GATEWAY) {
+            return PlayerTeleportEvent.TeleportCause.END_GATEWAY;
+        }
+        return PlayerTeleportEvent.TeleportCause.END_PORTAL;
     }
 }

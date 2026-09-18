@@ -7,8 +7,10 @@ First-party Folia plugin that sends players between fleet backends through **YaP
 
 ## Why not only vanilla nether portals?
 
-Minecraft only has **one** nether-portal block look (purple). Lighting a real
-`NETHER_PORTAL` on a lobby also triggers a dimension hop — bad on hubs.
+Minecraft only has **one** nether-portal block look (purple). Vanilla nether and
+end portals still hop like Paper. A real portal **inside an enabled YaP pad** is
+cancelled so Link Connect is not raced by a local `world_nether` hop. Hub
+transfers use stained-glass pads, not a vanilla frame.
 
 YaPPortals uses:
 
