@@ -3,7 +3,9 @@
   "package": "com.yapcore.ultrawide.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
-    "CameraMixin"
+    "CameraMixin",
+    "GameRendererMixin",
+    "ItemInHandRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

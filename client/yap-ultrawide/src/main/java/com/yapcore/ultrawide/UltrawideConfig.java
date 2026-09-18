@@ -20,16 +20,16 @@ import java.nio.file.Path;
 public final class UltrawideConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     /** Bumped when defaults change in a way that should rewrite existing configs. */
-    private static final int CURRENT_VERSION = 4;
+    private static final int CURRENT_VERSION = 5;
 
     public int configVersion = 0;
     public boolean enabled = true;
     /**
-     * Apply Hor+ to first-person hand / HUD FOV.
-     * Default {@code false}: matching world Hor+ zooms the hand camera and can
-     * push held items / weapons off the bottom of ultrawide screens.
+     * Apply world Hor+ VFOV to first-person hands so the held item shares the
+     * world frustum (block aim matches the crosshair). Viewmodel scale keeps
+     * weapons on screen.
      */
-    public boolean affectHudFov = false;
+    public boolean affectHudFov = true;
 
     /** 21:9 ultrawide (≈1.90–2.80: 2560×1080, 3440×1440, …). */
     public BandSettings ultrawide_21_9;
@@ -92,14 +92,14 @@ public final class UltrawideConfig {
         superwide_32_9.normalize();
 
         if (configVersion < CURRENT_VERSION) {
-            // v1 wrote affectHudFov=true; that Hor+-zooms hands and hides weapons on UW.
-            if (affectHudFov) {
+            // v1 wrote affectHudFov=true without viewmodel scale (hands zoomed off-screen).
+            if (configVersion < 2 && affectHudFov) {
                 affectHudFov = false;
                 YapUltrawide.LOGGER.info(
-                        "v2: affectHudFov set to false so held items stay visible (re-enable in yap-ultrawide.json if wanted)");
+                        "v2: affectHudFov set to false so held items stay visible");
             }
             // v3: temporary tight 32:9 caps (felt too zoomed — superseded by v4)
-            // v4: open FOV — match_21_9 + higher HFOV / scale 1.0
+            // v4: open FOV — match_21_9 + higher HFOV / scale 1.0 (remaining fisheye)
             if (configVersion < 4) {
                 if (ultrawide_21_9 != null) {
                     ultrawide_21_9.mode = "match_16_9";
@@ -114,6 +114,24 @@ public final class UltrawideConfig {
                     superwide_32_9.targetHorizontalFov = 110.0f;
                 }
                 YapUltrawide.LOGGER.info("v4: opened ultrawide FOV (32:9 match_21_9 / maxH 115)");
+            }
+            // v5: kill remaining fisheye + match HUD to world (with viewmodel scale).
+            if (configVersion < 5) {
+                if (ultrawide_21_9 != null) {
+                    ultrawide_21_9.mode = "match_16_9";
+                    ultrawide_21_9.maxHorizontalFov = 100.0f;
+                    ultrawide_21_9.fovScale = 0.98f;
+                    ultrawide_21_9.targetHorizontalFov = 100.0f;
+                }
+                if (superwide_32_9 != null) {
+                    superwide_32_9.mode = "match_16_9";
+                    superwide_32_9.maxHorizontalFov = 103.0f;
+                    superwide_32_9.fovScale = 0.97f;
+                    superwide_32_9.targetHorizontalFov = 103.0f;
+                }
+                affectHudFov = true;
+                YapUltrawide.LOGGER.info(
+                        "v5: tighter HFOV (16:9 match / ~100°) + HUD Hor+ with viewmodel scale");
             }
             configVersion = CURRENT_VERSION;
         }

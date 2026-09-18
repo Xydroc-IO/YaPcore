@@ -10,18 +10,16 @@ import org.spongepowered.asm.mixin.injection.At;
 public abstract class CameraMixin {
     @ModifyReturnValue(method = "calculateFov(F)F", at = @At("RETURN"))
     private float yap$horPlusWorld(float original) {
-        return YapUltrawide.apply(original);
+        return YapUltrawide.applyWorld(original);
     }
 
     /**
-     * Hands use {@code calculateHudFov}. Leave vanilla unless {@code affectHudFov}
-     * is opted in — Hor+ here zooms the arm and can hide held items on ultrawide.
+     * Hands use {@code calculateHudFov}. Matching world Hor+ VFOV keeps the
+     * held item in the same frustum as block picking; viewmodel scale (see
+     * {@code ItemInHandRendererMixin}) keeps weapons on screen.
      */
     @ModifyReturnValue(method = "calculateHudFov(F)F", at = @At("RETURN"))
     private float yap$horPlusHud(float original) {
-        if (!YapUltrawide.config().affectHudFov) {
-            return original;
-        }
-        return YapUltrawide.apply(original);
+        return YapUltrawide.applyHud(original);
     }
 }

@@ -17,6 +17,8 @@ public final class HorPlus {
     public static final float REFERENCE_21_9 = 21.0f / 9.0f;
     /** Spyglass / zoom mods return a very small VFOV — leave those alone. */
     public static final float ZOOM_PASSTHROUGH_MAX = 20.0f;
+    /** Vanilla first-person hand camera ({@code Camera.BASE_HUD_FOV}). */
+    public static final float VANILLA_HUD_FOV = 70.0f;
 
     private HorPlus() {
     }
@@ -67,5 +69,38 @@ public final class HorPlus {
             return verticalDegrees;
         }
         return verticalFromHorizontal(maxHfov, aspect);
+    }
+
+    /**
+     * Scale first-person hands so they keep vanilla on-screen size when the
+     * HUD camera uses world Hor+ VFOV instead of {@code hudVfov}.
+     *
+     * <p>NDC size is proportional to {@code 1 / tan(vfov / 2)}. Scaling the
+     * viewmodel by {@code tan(world/2) / tan(hud/2)} cancels the zoom so
+     * weapons stay on screen while sharing the world frustum (aim match).
+     */
+    public static float viewmodelScale(float worldVfov, float hudVfov) {
+        if (hudVfov <= 1.0f || worldVfov <= 1.0f) {
+            return 1.0f;
+        }
+        if (Math.abs(worldVfov - hudVfov) < 0.05f) {
+            return 1.0f;
+        }
+        double scale = Math.tan(Math.toRadians(worldVfov) * 0.5)
+                / Math.tan(Math.toRadians(hudVfov) * 0.5);
+        return (float) Math.max(0.35, Math.min(1.0, scale));
+    }
+
+    /**
+     * Scale view-bob amplitude so on-screen bounce stays similar to 16:9.
+     * Hor+ lowers VFOV (zoom); vanilla bob is a fixed translation, so without
+     * this the world slides under a stable crosshair and blocks place off-aim.
+     */
+    public static float bobScale(float appliedVfov, float vanillaVfov) {
+        if (vanillaVfov <= 1.0f) {
+            return 1.0f;
+        }
+        float scale = appliedVfov / vanillaVfov;
+        return Math.max(0.40f, Math.min(1.0f, scale));
     }
 }

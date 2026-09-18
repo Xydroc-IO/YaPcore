@@ -15,26 +15,26 @@ public final class BandSettings {
     /**
      * Hard cap on horizontal FOV after Hor+ (degrees). {@code 0} = no cap.
      */
-    public float maxHorizontalFov = 110.0f;
+    public float maxHorizontalFov = 100.0f;
     /** Extra scale on computed VFOV (&lt;1 = tighter / less edge stretch). */
     public float fovScale = 1.0f;
 
     public static BandSettings ultrawide21Defaults() {
         BandSettings s = new BandSettings();
         s.mode = "match_16_9";
-        s.targetHorizontalFov = 105.0f;
-        s.maxHorizontalFov = 110.0f;
-        s.fovScale = 1.0f;
+        s.targetHorizontalFov = 100.0f;
+        s.maxHorizontalFov = 100.0f;
+        s.fovScale = 0.98f;
         return s;
     }
 
     public static BandSettings superwide32Defaults() {
         BandSettings s = new BandSettings();
-        // Match 21:9 HFOV — match_16_9 + low caps felt heavily zoomed on 32:9
-        s.mode = "match_21_9";
-        s.targetHorizontalFov = 110.0f;
-        s.maxHorizontalFov = 115.0f;
-        s.fovScale = 1.0f;
+        // Same HFOV as 16:9 — match_21_9 + 115 left a wide-angle stretch on 32:9.
+        s.mode = "match_16_9";
+        s.targetHorizontalFov = 103.0f;
+        s.maxHorizontalFov = 103.0f;
+        s.fovScale = 0.97f;
         return s;
     }
 

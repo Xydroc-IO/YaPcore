@@ -12,6 +12,11 @@ public final class YapUltrawide implements ClientModInitializer {
     private static UltrawideConfig config = new UltrawideConfig();
     private static AspectBand lastBand = AspectBand.STANDARD;
 
+    private static float lastVanillaVfov = HorPlus.VANILLA_HUD_FOV;
+    private static float lastAppliedVfov = HorPlus.VANILLA_HUD_FOV;
+    private static float lastViewmodelScale = 1.0f;
+    private static boolean lastHorPlusActive;
+
     @Override
     public void onInitializeClient() {
         config = UltrawideConfig.load();
@@ -35,10 +40,55 @@ public final class YapUltrawide implements ClientModInitializer {
     }
 
     /**
-     * Adjust vanilla vertical FOV when the framebuffer is 21:9 or 32:9.
-     * 16:9 and spyglass/zoom FOVs are unchanged.
+     * World camera Hor+. 16:9 and spyglass/zoom FOVs are unchanged.
      */
+    public static float applyWorld(float vanillaVerticalFov) {
+        lastVanillaVfov = vanillaVerticalFov;
+        lastHorPlusActive = false;
+        float applied = computeHorPlus(vanillaVerticalFov);
+        lastAppliedVfov = applied;
+        return applied;
+    }
+
+    /**
+     * First-person hand camera. When Hor+ is active, use the <em>world</em>
+     * VFOV so the held item shares the world frustum (block aim matches the
+     * crosshair). {@link #viewmodelScale()} then undoes the zoom so weapons
+     * stay on screen.
+     */
+    public static float applyHud(float vanillaHudFov) {
+        if (!config.affectHudFov || !lastHorPlusActive) {
+            lastViewmodelScale = 1.0f;
+            return vanillaHudFov;
+        }
+        lastViewmodelScale = HorPlus.viewmodelScale(lastAppliedVfov, vanillaHudFov);
+        return lastAppliedVfov;
+    }
+
+    /** Pose scale for {@code ItemInHandRenderer} when HUD Hor+ is on. */
+    public static float viewmodelScale() {
+        return lastViewmodelScale;
+    }
+
+    /** Multiplier for {@code GameRenderer.bobView} amplitude. */
+    public static float aimStabilizeScale() {
+        if (!lastHorPlusActive) {
+            return 1.0f;
+        }
+        return HorPlus.bobScale(lastAppliedVfov, lastVanillaVfov);
+    }
+
+    /**
+     * Adjust vanilla vertical FOV when the framebuffer is 21:9 or 32:9.
+     *
+     * @deprecated use {@link #applyWorld(float)}
+     */
+    @Deprecated
     public static float apply(float vanillaVerticalFov) {
+        return applyWorld(vanillaVerticalFov);
+    }
+
+    private static float computeHorPlus(float vanillaVerticalFov) {
         UltrawideConfig cfg = config;
         if (!cfg.enabled || vanillaVerticalFov <= HorPlus.ZOOM_PASSTHROUGH_MAX) {
             return vanillaVerticalFov;
@@ -76,7 +126,7 @@ public final class YapUltrawide implements ClientModInitializer {
         if (bandCfg.fovScale != 1.0f) {
             vfov *= bandCfg.fovScale;
         }
-        vfov = HorPlus.clampHorizontal(vfov, aspect, bandCfg.maxHorizontalFov);
-        return vfov;
+        lastHorPlusActive = true;
+        return HorPlus.clampHorizontal(vfov, aspect, bandCfg.maxHorizontalFov);
     }
 }

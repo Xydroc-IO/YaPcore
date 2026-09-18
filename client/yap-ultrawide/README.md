@@ -6,6 +6,10 @@ On 21:9 and 32:9, vanilla’s vertical FOV slider becomes a fish-eye horizontal 
 This mod applies **Hor+** with **separate profiles** for each panel class. 16:9 is
 unchanged. Spyglass / zoom FOVs pass through.
 
+Hands share the **world** frustum (so blocks place on the crosshair) and the
+viewmodel is scaled so held items stay on screen. View-bob is scaled with Hor+
+zoom so the world does not slide under the crosshair while walking.
+
 ## Install
 
 1. Fabric Loader **0.19.3+** for Minecraft **26.2**
@@ -23,20 +27,20 @@ cd client/yap-ultrawide && ./gradlew build
 
 ```json
 {
-  "configVersion": 4,
+  "configVersion": 5,
   "enabled": true,
-  "affectHudFov": false,
+  "affectHudFov": true,
   "ultrawide_21_9": {
     "mode": "match_16_9",
-    "targetHorizontalFov": 110.0,
-    "maxHorizontalFov": 115.0,
-    "fovScale": 1.0
+    "targetHorizontalFov": 100.0,
+    "maxHorizontalFov": 100.0,
+    "fovScale": 0.98
   },
   "superwide_32_9": {
-    "mode": "match_21_9",
-    "targetHorizontalFov": 110.0,
-    "maxHorizontalFov": 115.0,
-    "fovScale": 1.0
+    "mode": "match_16_9",
+    "targetHorizontalFov": 103.0,
+    "maxHorizontalFov": 103.0,
+    "fovScale": 0.97
   }
 }
 ```
@@ -50,7 +54,7 @@ cd client/yap-ultrawide && ./gradlew build
 
 | Key | Meaning |
 |-----|---------|
-| `affectHudFov` | Hor+ on first-person hands / HUD. **Keep `false`** so held items stay on screen; `true` matches world FOV and can zoom weapons out of view |
+| `affectHudFov` | Hor+ on first-person hands so they share the world frustum. Keep **true**; the mod scales the viewmodel so weapons stay visible. `false` restores vanilla 70° hands (can look like you are aiming off the crosshair) |
 
 ### Per-band keys
 
@@ -63,8 +67,7 @@ cd client/yap-ultrawide && ./gradlew build
 
 ### 57" 32:9 tips
 
-Use `superwide_32_9` only (your panel is detected as that band). Defaults are
-`match_21_9` with `maxHorizontalFov` 115. If still too zoomed in: raise FOV in
-vanilla video settings, or set `"maxHorizontalFov": 0` (no cap) / `"fovScale": 1.05`.
-If edges fish-eye too much: drop `maxHorizontalFov` toward `100`. Keep
-`affectHudFov` **false** so hands stay on screen.
+Use `superwide_32_9` only (your panel is detected as that band). Defaults match
+16:9 horizontal FOV with a ~103° cap. If still too zoomed in: raise FOV in
+vanilla video settings, or set `"maxHorizontalFov": 0` (no cap) / `"fovScale": 1.0`.
+If edges fish-eye too much: drop `maxHorizontalFov` toward `95`.
