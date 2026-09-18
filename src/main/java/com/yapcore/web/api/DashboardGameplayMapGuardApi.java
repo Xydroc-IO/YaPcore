@@ -76,7 +76,18 @@ final class DashboardGameplayMapGuardApi {
                 DashboardHttp.json(ex, 400, Map.of("error", "unknown action"));
                 return;
             }
-            String result = server.executeCommand(cmd);
+            String instance = body.getOrDefault("instance", "");
+            String result;
+            if (!instance.isBlank() && instance.matches("[A-Za-z0-9_-]{1,32}") && server.fleet() != null) {
+                try {
+                    result = server.fleet().dispatch(instance, cmd);
+                } catch (Exception e) {
+                    DashboardHttp.json(ex, 500, Map.of("error", e.getMessage() == null ? "dispatch failed" : e.getMessage()));
+                    return;
+                }
+            } else {
+                result = server.executeCommand(cmd);
+            }
             DashboardHttp.json(ex, 200, Map.of("ok", true, "command", cmd, "result", result == null ? "" : result));
             return;
         }

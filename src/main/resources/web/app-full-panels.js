@@ -478,6 +478,18 @@ window.YapDashRegisterFullPanels = function (YapDash) {
       $("mapTiles").textContent = String(tiles);
       $("mapWorlds").textContent = (r.worlds || []).join(", ") || "world";
       $("mapUrl").textContent = r.mapUrl || "—";
+      const instances = r.mapInstances && r.mapInstances.length ? r.mapInstances : (r.mapInstance ? [r.mapInstance] : []);
+      const select = $("mapInstance");
+      const ctxId = window.YapFleetContext?.get?.()?.type === "instance"
+        ? window.YapFleetContext.get().instanceId : "";
+      const chosen = (select && select.value && instances.includes(select.value))
+        ? select.value
+        : (ctxId && instances.includes(ctxId) ? ctxId : (r.mapInstance || instances[0] || ""));
+      if (select) {
+        select.innerHTML = instances.map((id) => `<option value="${id}">${id}</option>`).join("");
+        if (chosen) select.value = chosen;
+      }
+      if ($("mapInstanceLabel")) $("mapInstanceLabel").textContent = chosen || "—";
       if ($("mapInterval")) $("mapInterval").value = r.renderIntervalMinutes ?? 15;
       if ($("mapWorldsInput")) $("mapWorldsInput").value = (r.worlds || []).join("\n");
       if ($("mapMarkerPoll")) $("mapMarkerPoll").value = r.markersPollSeconds ?? 5;
@@ -514,18 +526,24 @@ window.YapDashRegisterFullPanels = function (YapDash) {
       const iframe = $("mapFrame");
       if (iframe && r.mapUrl) {
         const worlds = r.worlds || ["world"];
-        iframe.src = r.mapUrl + (r.mapUrl.includes("?") ? "&" : "?") + "world=" + encodeURIComponent(worlds[0] || "world");
+        const q = new URLSearchParams();
+        q.set("world", worlds[0] || "world");
+        if (chosen) q.set("instance", chosen);
+        iframe.src = r.mapUrl + (r.mapUrl.includes("?") ? "&" : "?") + q.toString();
       }
       setOut("mapOut", "");
     } catch (e) { setOut("mapOut", e.message); }
   }
   $("mapRefresh")?.addEventListener("click", () => refreshMap());
+  $("mapInstance")?.addEventListener("change", () => refreshMap());
   $("mapReload")?.addEventListener("click", async () => {
-    setOut("mapOut", (await netPost("/api/map", { action: "reload" })).result || "ok");
+    const instance = $("mapInstance")?.value || "";
+    setOut("mapOut", (await netPost("/api/map", { action: "reload", instance })).result || "ok");
     refreshMap();
   });
   $("mapRender")?.addEventListener("click", async () => {
-    setOut("mapOut", (await netPost("/api/map", { action: "render" })).result || "Render started.");
+    const instance = $("mapInstance")?.value || "";
+    setOut("mapOut", (await netPost("/api/map", { action: "render", instance })).result || "Render started.");
   });
   $("mapSaveSettings")?.addEventListener("click", async () => {
     try {

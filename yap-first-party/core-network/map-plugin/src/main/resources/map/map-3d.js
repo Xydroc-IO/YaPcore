@@ -9,6 +9,11 @@ function init3d() {
   const cfg = window.YAP_MAP_CONFIG || {};
   const params = new URLSearchParams(window.location.search);
   let world = params.get('world') || cfg.defaultWorld || 'world';
+  const instance = params.get('instance') || '';
+  function withInstance(url) {
+    if (!instance) return url;
+    return url + (url.includes('?') ? '&' : '?') + 'instance=' + encodeURIComponent(instance);
+  }
   const worlds = Array.isArray(cfg.worlds) && cfg.worlds.length ? cfg.worlds : [world];
   const meshLayers = Array.isArray(cfg.meshLayers) && cfg.meshLayers.length
     ? cfg.meshLayers
@@ -21,12 +26,13 @@ function init3d() {
   let originChunkX = cfg.originChunkX != null ? cfg.originChunkX : (originBlockX >> 4);
   let originChunkZ = cfg.originChunkZ != null ? cfg.originChunkZ : (originBlockZ >> 4);
   const sampleRadius = cfg.sampleChunkRadius || 8;
+  const gridSpan = Math.max(cfg.gridChunksX || sampleRadius, cfg.gridChunksZ || sampleRadius, 1);
   const preferBinary = cfg.meshBinary !== false;
   let maxLod = cfg.meshMaxLod != null ? cfg.meshMaxLod : 2;
 
-  const MAX_CONCURRENT = 4;
-  const LOAD_RADIUS_CHUNKS = Math.max(sampleRadius, 8);
-  const UNLOAD_RADIUS_CHUNKS = LOAD_RADIUS_CHUNKS + 2;
+  const MAX_CONCURRENT = 6;
+  let loadRadiusChunks = Math.max(gridSpan, sampleRadius, 8);
+  let unloadRadiusChunks = loadRadiusChunks + 2;
   /** Camera distance (chunks) thresholds for LOD0 / LOD1 / LOD2. */
   const LOD1_DIST = 4;
   const LOD2_DIST = 8;
@@ -72,7 +78,7 @@ function init3d() {
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x101418);
 
-  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 4000);
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, Math.max(8000, gridSpan * 48));
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   container.appendChild(renderer.domElement);
@@ -93,9 +99,10 @@ function init3d() {
   const playerGroup = new THREE.Group();
   scene.add(playerGroup);
 
-  const centerX = originBlockX + (sampleRadius * 16) / 2;
-  const centerZ = originBlockZ + (sampleRadius * 16) / 2;
-  camera.position.set(centerX + 80, 120, centerZ + 80);
+  const centerX = originBlockX + (gridSpan * 16) / 2;
+  const centerZ = originBlockZ + (gridSpan * 16) / 2;
+  const viewDist = Math.max(80, gridSpan * 10);
+  camera.position.set(centerX + viewDist, viewDist, centerZ + viewDist);
   controls.target.set(centerX, 64, centerZ);
   controls.update();
 
@@ -301,18 +308,18 @@ function init3d() {
   function fetchChunkData(entry, lod) {
     const urls = chunkUrls(entry, lod);
     if (preferBinary && !legacyFlatMeshes) {
-      return fetch(urls.ymesh, { cache: 'no-store' })
+      return fetch(withInstance(urls.ymesh), { cache: 'no-store' })
         .then((res) => (res.ok ? res.arrayBuffer() : null))
         .then((buf) => {
           if (buf) {
             const decoded = decodeYmesh(buf);
             if (decoded) return decoded;
           }
-          return fetch(urls.json, { cache: 'no-store' })
+          return fetch(withInstance(urls.json), { cache: 'no-store' })
             .then((r) => (r.ok ? r.json() : null));
         });
     }
-    return fetch(urls.json, { cache: 'no-store' })
+    return fetch(withInstance(urls.json), { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null));
   }
 
@@ -391,7 +398,7 @@ function init3d() {
     for (const [key, entry] of loadedChunks) {
       const dx = entry.cx - cam.cx;
       const dz = entry.cz - cam.cz;
-      if (dx * dx + dz * dz > UNLOAD_RADIUS_CHUNKS * UNLOAD_RADIUS_CHUNKS) {
+      if (dx * dx + dz * dz > unloadRadiusChunks * unloadRadiusChunks) {
         unloadChunk(key);
       }
     }
@@ -401,7 +408,7 @@ function init3d() {
       const dx = entry.cx - cam.cx;
       const dz = entry.cz - cam.cz;
       const dist2 = dx * dx + dz * dz;
-      if (dist2 > LOAD_RADIUS_CHUNKS * LOAD_RADIUS_CHUNKS) continue;
+      if (dist2 > loadRadiusChunks * loadRadiusChunks) continue;
       const dist = Math.sqrt(dist2);
       const wanted = availableLod(entry, pickLod(dist));
       const key = chunkKey(entry.cx, entry.cz);
@@ -448,10 +455,10 @@ function init3d() {
     }
     totalBoxes = 0;
     try {
-      const manRes = await fetch(meshBaseUrl() + 'manifest.json', { cache: 'no-store' });
+      const manRes = await fetch(withInstance(meshBaseUrl() + 'manifest.json'), { cache: 'no-store' });
       if (!manRes.ok) {
         const legacy = await fetch(
-          '/meshes/' + encodeURIComponent(world) + '/manifest.json',
+          withInstance('/meshes/' + encodeURIComponent(world) + '/manifest.json'),
           { cache: 'no-store' }
         );
         if (!legacy.ok) {
@@ -486,10 +493,21 @@ function init3d() {
       if (entry == null || entry.cx == null || entry.cz == null) continue;
       manifestByKey.set(chunkKey(entry.cx, entry.cz), entry);
     }
-    const midX = originBlockX + (sampleRadius * 16) / 2;
-    const midZ = originBlockZ + (sampleRadius * 16) / 2;
+    const midX = originBlockX + (Math.max(gridSpan, sampleRadius) * 16) / 2;
+    const midZ = originBlockZ + (Math.max(gridSpan, sampleRadius) * 16) / 2;
+    let maxD = 0;
+    for (const entry of chunks) {
+      maxD = Math.max(maxD, Math.abs(entry.cx - originChunkX), Math.abs(entry.cz - originChunkZ));
+    }
+    if (maxD > 0) {
+      loadRadiusChunks = Math.max(loadRadiusChunks, maxD + 1);
+      unloadRadiusChunks = loadRadiusChunks + 2;
+      camera.far = Math.max(camera.far, loadRadiusChunks * 48);
+      camera.updateProjectionMatrix();
+    }
+    const dist = Math.max(80, loadRadiusChunks * 10);
     controls.target.set(midX, 64, midZ);
-    camera.position.set(midX + 80, 120, midZ + 80);
+    camera.position.set(midX + dist, dist, midZ + dist);
     controls.update();
     if (legacyFlat) {
       setStatus(world + ' / 3D — legacy v1 mesh path; re-render for layered LOD v2');
@@ -507,7 +525,7 @@ function init3d() {
 
   /** Marker poll only updates player spheres — never rebuilds terrain. */
   function refreshMarkers() {
-    fetch('/map/markers.json', { cache: 'no-store' })
+    fetch(withInstance('/map/markers.json'), { cache: 'no-store' })
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data) return;

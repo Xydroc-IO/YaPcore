@@ -8,6 +8,7 @@ import com.yapcore.server.YaPcoreServer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,18 +24,82 @@ public final class DashboardMapServe {
     }
 
     public static HttpHandler mapStatic(Path rootDir, YaPcoreServer server) {
-        Path mapWebDir = rootDir.resolve("plugins").resolve("YaPMap").resolve("web");
-        return exchange -> serveMapStatic(exchange, mapWebDir, rootDir, server);
+        return exchange -> {
+            Path mapWebDir = mapRoot(rootDir, exchange).resolve("web");
+            serveMapStatic(exchange, mapWebDir, rootDir, server);
+        };
     }
 
     public static HttpHandler mapTiles(Path rootDir) {
-        Path mapTilesDir = rootDir.resolve("plugins").resolve("YaPMap").resolve("map/tiles");
-        return exchange -> serveSafeFile(exchange, mapTilesDir, "/tiles/", "image/png");
+        return exchange -> {
+            Path mapTilesDir = mapRoot(rootDir, exchange).resolve("map/tiles");
+            serveSafeFile(exchange, mapTilesDir, "/tiles/", "image/png");
+        };
     }
 
     public static HttpHandler mapMeshes(Path rootDir) {
-        Path mapMeshesDir = rootDir.resolve("plugins").resolve("YaPMap").resolve("map/meshes");
-        return exchange -> serveSafeFile(exchange, mapMeshesDir, "/meshes/", null);
+        return exchange -> {
+            Path mapMeshesDir = mapRoot(rootDir, exchange).resolve("map/meshes");
+            serveSafeFile(exchange, mapMeshesDir, "/meshes/", null);
+        };
+    }
+
+    /**
+     * Live tiles live on the fleet instance that owns the world, not the chassis plugin folder.
+     * {@code ?instance=} selects one; otherwise the fleet primary is used.
+     */
+    static Path mapRoot(Path rootDir, HttpExchange exchange) {
+        String instance = queryParam(exchange, "instance");
+        if (instance == null || instance.isBlank()) {
+            instance = primaryInstance(rootDir);
+        }
+        if (instance != null && instance.matches("[A-Za-z0-9_-]{1,32}")) {
+            Path inst = rootDir.resolve("fleet").resolve("instances").resolve(instance).resolve("plugins").resolve("YaPMap");
+            if (Files.isDirectory(inst)) {
+                return inst;
+            }
+        }
+        return rootDir.resolve("plugins").resolve("YaPMap");
+    }
+
+    private static String primaryInstance(Path rootDir) {
+        Path fleet = rootDir.resolve("fleet").resolve("fleet.json");
+        if (!Files.isRegularFile(fleet)) {
+            return null;
+        }
+        try {
+            String raw = Files.readString(fleet);
+            String needle = "\"primaryId\"";
+            int i = raw.indexOf(needle);
+            if (i < 0) {
+                return null;
+            }
+            int q1 = raw.indexOf('"', raw.indexOf(':', i + needle.length()) + 1);
+            int q2 = q1 < 0 ? -1 : raw.indexOf('"', q1 + 1);
+            if (q1 < 0 || q2 < 0) {
+                return null;
+            }
+            return raw.substring(q1 + 1, q2);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private static String queryParam(HttpExchange exchange, String key) {
+        String query = exchange.getRequestURI().getRawQuery();
+        if (query == null || query.isBlank()) {
+            return null;
+        }
+        for (String part : query.split("&")) {
+            int eq = part.indexOf('=');
+            String name = eq < 0 ? part : part.substring(0, eq);
+            if (!key.equals(name)) {
+                continue;
+            }
+            String value = eq < 0 ? "" : part.substring(eq + 1);
+            return URLDecoder.decode(value, StandardCharsets.UTF_8);
+        }
+        return null;
     }
 
     private static void serveMapStatic(HttpExchange exchange, Path mapWebDir, Path rootDir,

@@ -7,7 +7,10 @@
   var params = new URLSearchParams(window.location.search);
   var world = params.get('world') || cfg.defaultWorld || 'world';
   var layer = params.get('layer') || cfg.defaultLayer || 'surface';
+  var instance = params.get('instance') || '';
   var sampleRadius = cfg.sampleChunkRadius || 8;
+  var gridX = cfg.gridChunksX || sampleRadius;
+  var gridZ = cfg.gridChunksZ || sampleRadius;
   var originBlockX = cfg.originBlockX || 0;
   var originBlockZ = cfg.originBlockZ || 0;
   var worlds = Array.isArray(cfg.worlds) && cfg.worlds.length ? cfg.worlds : [world];
@@ -41,41 +44,68 @@
   });
 
   var maxZoom = (cfg.maxZoom != null ? cfg.maxZoom : 3);
+  var cover = 1 << maxZoom;
   var map = L.map('map', {
     crs: L.CRS.Simple,
     minZoom: 0,
     maxZoom: maxZoom
   });
 
-  var tileSize = 256;
-  var pxPerBlock = tileSize / 16;
-  var bounds = [[0, 0], [sampleRadius * tileSize, sampleRadius * tileSize]];
-  map.setMaxBounds(bounds);
-  map.fitBounds(bounds);
+  // One latlng unit per overview tile. Zoom 0 fits the grid; zoom max is one tile per chunk.
+  var pxPerBlock = 1 / (cover * 16);
+  var bounds = [[0, 0], [gridZ / cover, gridX / cover]];
 
-  // Leaflet zoom 0 = coarsest pyramid (our MAX_ZOOM); Leaflet max = detail (our zoom 0).
-  // Path: /tiles/{world}/{layer}/{ourZoom}/{tx}_{ty}.png
+  function withInstance(url) {
+    if (!instance) return url;
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'instance=' + encodeURIComponent(instance);
+  }
+
+  // Leaflet zoom 0 = coarsest pyramid; Leaflet max = chunk tiles.
+  // CRS.Simple tile Y is negative — flip it before indexing files.
   L.TileLayer.YaP = L.TileLayer.extend({
     getTileUrl: function (coords) {
+      var x = coords.x;
+      var y = coords.y < 0 ? (-coords.y - 1) : coords.y;
       var ourZoom = maxZoom - coords.z;
+      if (ourZoom < 0) ourZoom = 0;
+      if (ourZoom > maxZoom) ourZoom = maxZoom;
       var scale = 1 << ourZoom;
-      var tx = Math.floor(coords.x / scale);
-      var ty = Math.floor(coords.y / scale);
-      return '/tiles/' + world + '/' + layer + '/' + ourZoom + '/' + tx + '_' + ty + '.png';
+      var tx = Math.floor(x / scale);
+      var ty = Math.floor(y / scale);
+      if (tx < 0 || ty < 0) {
+        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      }
+      return withInstance('/tiles/' + world + '/' + layer + '/' + ourZoom + '/' + tx + '_' + ty + '.png');
     }
   });
   new L.TileLayer.YaP('', {
-    tileSize: tileSize,
+    tileSize: 256,
     minZoom: 0,
     maxZoom: maxZoom,
     noWrap: true,
     bounds: bounds,
     errorTileUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
   }).addTo(map);
-
-  map.setView([sampleRadius * tileSize / 2, sampleRadius * tileSize / 2], 0);
-
   var coordsEl = document.getElementById('coords');
+  function zoomToFit(attempt) {
+    map.invalidateSize(true);
+    var size = map.getSize();
+    if ((size.x < 50 || size.y < 50) && attempt < 20) {
+      setTimeout(function () { zoomToFit(attempt + 1); }, 50);
+      return;
+    }
+    var z = 0;
+    var w = (gridX / cover) * 256;
+    var h = (gridZ / cover) * 256;
+    while (z < maxZoom && (w * 2) <= (size.x - 24) && (h * 2) <= (size.y - 24)) {
+      z++;
+      w *= 2;
+      h *= 2;
+    }
+    map.setView([bounds[1][0] / 2, bounds[1][1] / 2], z);
+  }
+  zoomToFit(0);
+  window.addEventListener('resize', function () { zoomToFit(0); });
   map.on('mousemove', function (e) {
     var blockX = Math.floor(e.latlng.lng / pxPerBlock) + originBlockX;
     var blockZ = Math.floor(e.latlng.lat / pxPerBlock) + originBlockZ;
@@ -108,7 +138,7 @@
   }
 
   function refreshMarkers() {
-    fetch('/map/markers.json', { cache: 'no-store' })
+    fetch(withInstance('/map/markers.json'), { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
         if (!data) return;

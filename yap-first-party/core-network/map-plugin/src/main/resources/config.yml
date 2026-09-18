@@ -17,7 +17,9 @@ worlds:
 render-interval-minutes: 15
 # Lower max-height on low-CPU hosts (e.g. 128 for overworld surface focus).
 max-height: 320
-# Chunk grid sampled per world (radius² tiles). Use 4–6 on small VPS; 8–12 on dedicated boxes.
+# generated = every chunk already in the world; window = the old square from spawn.
+render-extent: generated
+# Used only when render-extent is window (tiles indexed 0..radius-1).
 sample-chunk-radius: 8
 # Where the tile grid starts (tiles are always indexed 0..radius-1 for Leaflet).
 render-origin:
@@ -54,19 +56,12 @@ markers:
   faction-colors: false
   poll-seconds: 5
 
-# Voxel mesh (3D) — greedy merged boxes (format v2) per sample-window chunk.
-# Off in shipped defaults (CPU/disk heavy); set true for 3D map.
+# Voxel mesh (3D). Surface only — a full voxel of every generated chunk is too heavy.
 mesh:
-  enabled: false
-  # Optional Y cap for mesh columns; omit or 0 to use max-height (nether still roof-capped ≤126).
-  # max-y: 320
-  # Layers to generate under map/meshes/{world}/{layer}/lod{N}/…
-  # full = all solids; surface / cave match flat tile sampling.
+  enabled: true
   layers:
-    - full
     - surface
-    - cave
-  default-layer: full
+  default-layer: surface
   # Or set a single layer:  layer: full
   # Stairs / slabs / carpets / fences as multi-box models (not full blockstates).
   models: true

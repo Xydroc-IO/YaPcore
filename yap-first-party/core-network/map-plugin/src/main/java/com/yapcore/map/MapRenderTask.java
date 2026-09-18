@@ -39,10 +39,14 @@ public final class MapRenderTask implements Runnable {
                 plugin.getLogger().warning("Map world not loaded: " + worldName);
                 continue;
             }
-            renderer.renderWorld(plugin, world);
-            if (meshRenderer != null && config.meshEnabled()) {
-                meshRenderer.renderWorld(plugin, world);
-            }
+            renderer.renderWorld(plugin, world, () -> {
+                if (meshRenderer != null && config.meshEnabled()) {
+                    meshRenderer.renderWorld(plugin, world);
+                }
+                if (plugin instanceof MapPlugin map) {
+                    map.refreshWebConfigAfterRender();
+                }
+            });
         }
         int remaining = renderer.dirtyCount();
         if (meshRenderer != null) {
@@ -50,8 +54,5 @@ public final class MapRenderTask implements Runnable {
         }
         Path meshes = meshRenderer != null ? meshRenderer.meshesRoot() : null;
         MapTelemetry.markRenderComplete(renderer.tilesRoot(), meshes, remaining);
-        if (plugin instanceof MapPlugin map) {
-            map.refreshWebConfigAfterRender();
-        }
     }
 }

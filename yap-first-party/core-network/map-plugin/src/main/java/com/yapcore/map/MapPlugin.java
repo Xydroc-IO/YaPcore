@@ -51,8 +51,7 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor, TabC
 
         long periodTicks = Math.max(20L, config.renderIntervalMinutes() * 60L * 20L);
         renderTask = YapSched.globalTimer(this, () -> new MapRenderTask(this, config, renderer, meshRenderer).run(),
-                100L, periodTicks);
-        YapSched.globalLater(this, () -> new MapRenderTask(this, config, renderer, meshRenderer).run(), 40L);
+                200L, periodTicks);
         dirtyTask = YapSched.globalTimer(this, this::flushDirty, 200L, 200L);
         dirtyListener = new MapDirtyListener(renderer, meshRenderer);
         getServer().getPluginManager().registerEvents(dirtyListener, this);
@@ -204,7 +203,9 @@ public final class MapPlugin extends JavaPlugin implements CommandExecutor, TabC
                 .collect(Collectors.joining(","));
         String cfg = "window.YAP_MAP_CONFIG={"
                 + "sampleChunkRadius:" + config.sampleChunkRadius() + ","
-                + "maxZoom:" + TileRenderer.MAX_ZOOM + ","
+                + "gridChunksX:" + config.gridChunksX() + ","
+                + "gridChunksZ:" + config.gridChunksZ() + ","
+                + "maxZoom:" + config.overviewZoom() + ","
                 + "originBlockX:" + (config.originChunkX() * 16) + ","
                 + "originBlockZ:" + (config.originChunkZ() * 16) + ","
                 + "originChunkX:" + config.originChunkX() + ","

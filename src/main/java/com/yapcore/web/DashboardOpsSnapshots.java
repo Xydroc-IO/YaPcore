@@ -35,6 +35,8 @@ public final class DashboardOpsSnapshots {
         out.put("usePackServer", usePackServer);
         // Same-origin path — works locally and when dashboard is accessed remotely
         out.put("mapUrl", "/map/");
+        out.put("mapInstance", mapInstance(root));
+        out.put("mapInstances", mapInstances(root));
         out.put("packMapUrl", "http://127.0.0.1:" + packPort + "/map/");
         out.put("worlds", DashboardNetworkSnapshots.stringList(yaml.get("worlds"), List.of("world")));
         out.put("renderIntervalMinutes", DashboardNetworkSnapshots.intVal(yaml.get("render-interval-minutes"), 15));
@@ -47,11 +49,11 @@ public final class DashboardOpsSnapshots {
         out.put("markersPois", DashboardNetworkSnapshots.bool(markers.get("pois"), true));
         out.put("markersClaims", DashboardNetworkSnapshots.bool(markers.get("claims"), false));
         out.put("markersPollSeconds", DashboardNetworkSnapshots.intVal(markers.get("poll-seconds"), 5));
-        Path tiles = root.resolve("plugins").resolve("YaPMap").resolve("map/tiles");
+        Path tiles = mapData(root).resolve("map/tiles");
         int tileCount = countFilesRecursive(tiles, ".png");
         out.put("tileCount", tileCount);
         out.put("tilesDir", tiles.toString());
-        out.put("webReady", Files.isRegularFile(root.resolve("plugins").resolve("YaPMap").resolve("web/index.html")));
+        out.put("webReady", Files.isRegularFile(mapData(root).resolve("web/index.html")));
         out.put("mapReady", tileCount > 0 && DashboardNetworkSnapshots.bool(out.get("webReady"), false));
         Map<String, Object> renderStatus = loadRenderStatus(root);
         out.put("lastRenderTime", renderStatus.getOrDefault("lastRenderTime", ""));
@@ -65,8 +67,59 @@ public final class DashboardOpsSnapshots {
         return out;
     }
 
+    static Path mapData(Path root) {
+        String id = mapInstance(root);
+        if (id != null) {
+            Path inst = root.resolve("fleet").resolve("instances").resolve(id).resolve("plugins").resolve("YaPMap");
+            if (Files.isDirectory(inst)) {
+                return inst;
+            }
+        }
+        return root.resolve("plugins").resolve("YaPMap");
+    }
+
+    static String mapInstance(Path root) {
+        Path fleet = root.resolve("fleet").resolve("fleet.json");
+        if (!Files.isRegularFile(fleet)) {
+            return null;
+        }
+        try {
+            String raw = Files.readString(fleet);
+            String needle = "\"primaryId\"";
+            int i = raw.indexOf(needle);
+            if (i < 0) {
+                return null;
+            }
+            int q1 = raw.indexOf('"', raw.indexOf(':', i + needle.length()) + 1);
+            int q2 = q1 < 0 ? -1 : raw.indexOf('"', q1 + 1);
+            if (q1 < 0 || q2 < 0) {
+                return null;
+            }
+            String id = raw.substring(q1 + 1, q2);
+            return id.matches("[A-Za-z0-9_-]{1,32}") ? id : null;
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    static List<String> mapInstances(Path root) {
+        Path dir = root.resolve("fleet").resolve("instances");
+        if (!Files.isDirectory(dir)) {
+            return List.of();
+        }
+        try (var stream = Files.list(dir)) {
+            return stream.filter(Files::isDirectory)
+                    .filter(p -> Files.isDirectory(p.resolve("plugins").resolve("YaPMap")))
+                    .map(p -> p.getFileName().toString())
+                    .sorted()
+                    .toList();
+        } catch (IOException e) {
+            return List.of();
+        }
+    }
+
     static Map<String, Object> loadRenderStatus(Path root) {
-        Path file = root.resolve("plugins").resolve("YaPMap").resolve("render-status.json");
+        Path file = mapData(root).resolve("render-status.json");
         if (!Files.isRegularFile(file)) {
             return Map.of();
         }

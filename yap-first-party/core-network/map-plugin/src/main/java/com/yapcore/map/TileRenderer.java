@@ -1,10 +1,10 @@
 package com.yapcore.map;
 
 import com.yapcore.sched.YapSched;
+import org.bukkit.ChunkSnapshot;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
-import org.bukkit.block.Block;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.awt.Color;
@@ -12,10 +12,13 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 public final class TileRenderer {
@@ -58,27 +61,86 @@ public final class TileRenderer {
     }
 
     public void renderWorld(JavaPlugin plugin, World world) {
-        config.applySpawnOrigin(world);
+        renderWorld(plugin, world, null);
+    }
+
+    public void renderWorld(JavaPlugin plugin, World world, Runnable onComplete) {
+        if (config.generatedExtent()) {
+            config.bindSnapshot(MapExtent.scan(world));
+        } else {
+            config.applySpawnOrigin(world);
+            config.bindSnapshot(null);
+        }
+        List<int[]> chunks = stripeByRegion(config.sampleChunks());
         List<String> layers = config.enabledLayers();
-        for (int[] chunk : config.sampleChunks()) {
+        plugin.getLogger().info("YaPMap " + world.getName() + " — " + chunks.size()
+                + " chunks, grid " + config.gridChunksX() + "x" + config.gridChunksZ());
+        if (plugin instanceof MapPlugin map) {
+            map.refreshWebConfigAfterRender();
+        }
+        renderWave(plugin, world, layers, chunks, 0, onComplete);
+    }
+
+    private void renderWave(JavaPlugin plugin, World world, List<String> layers, List<int[]> chunks,
+                            int index, Runnable onComplete) {
+        if (index >= chunks.size()) {
+            finishPyramid(plugin, world, layers, onComplete);
+            return;
+        }
+        int end = Math.min(index + 16, chunks.size());
+        AtomicInteger pending = new AtomicInteger(end - index);
+        for (int i = index; i < end; i++) {
+            int[] chunk = chunks.get(i);
             int tileX = chunk[0];
             int tileZ = chunk[1];
             int chunkX = chunk[2];
             int chunkZ = chunk[3];
-            YapSched.regionChunk(plugin, world, chunkX, chunkZ, () -> {
+            world.getChunkAtAsync(chunkX, chunkZ, false).whenComplete((loaded, err) -> {
                 try {
+                    if (loaded == null) {
+                        return;
+                    }
+                    ChunkSnapshot snap = loaded.getChunkSnapshot(false, config.biomeTint(), false);
                     for (String layer : layers) {
-                        int[][] rgb = sampleChunk(world, chunkX, chunkZ, layer);
-                        writeTile(world.getName(), layer, 0, tileX, tileZ, rgb);
+                        writeTile(world.getName(), layer, 0, tileX, tileZ,
+                                sampleChunk(snap, world, layer));
                     }
                     dirtyChunks.remove(world.getName() + "|" + chunkX + "|" + chunkZ);
-                } catch (IOException e) {
+                } catch (Throwable e) {
                     plugin.getLogger().log(Level.WARNING,
-                            "Failed map tile " + world.getName() + " " + tileX + "_" + tileZ
-                                    + " (chunk " + chunkX + "," + chunkZ + ")", e);
+                            "Failed map tile " + world.getName() + " " + tileX + "_" + tileZ, e);
+                } finally {
+                    if (pending.decrementAndGet() == 0) {
+                        YapSched.asyncLater(plugin, () ->
+                                renderWave(plugin, world, layers, chunks, end, onComplete), 1L);
+                    }
                 }
             });
         }
+    }
+
+    /** Round-robin so one wave hits many region threads instead of one 32×32 region. */
+    private static List<int[]> stripeByRegion(List<int[]> chunks) {
+        LinkedHashMap<Long, List<int[]>> by = new LinkedHashMap<>();
+        for (int[] chunk : chunks) {
+            long key = (((long) chunk[2]) >> 5) << 32 | (((long) chunk[3]) >> 5 & 0xffffffffL);
+            by.computeIfAbsent(key, ignored -> new ArrayList<>()).add(chunk);
+        }
+        List<int[]> out = new ArrayList<>(chunks.size());
+        boolean more = true;
+        while (more) {
+            more = false;
+            for (List<int[]> group : by.values()) {
+                if (!group.isEmpty()) {
+                    out.add(group.remove(0));
+                    more = true;
+                }
+            }
+        }
+        return out;
+    }
+
+    private void finishPyramid(JavaPlugin plugin, World world, List<String> layers, Runnable onComplete) {
         YapSched.async(plugin, () -> {
             try {
                 for (String layer : layers) {
@@ -86,6 +148,9 @@ public final class TileRenderer {
                 }
             } catch (IOException e) {
                 plugin.getLogger().log(Level.WARNING, "Map zoom pyramid failed for " + world.getName(), e);
+            }
+            if (onComplete != null) {
+                onComplete.run();
             }
         });
     }
@@ -105,12 +170,20 @@ public final class TileRenderer {
             if (!dirtyChunks.contains(key)) {
                 continue;
             }
+            if (!world.isChunkLoaded(chunkX, chunkZ)) {
+                continue;
+            }
             any = true;
             YapSched.regionChunk(plugin, world, chunkX, chunkZ, () -> {
                 try {
+                    ChunkSnapshot snap = ChunkSnapshots.captureIfLoaded(
+                            world, chunkX, chunkZ, config.biomeTint());
+                    if (snap == null) {
+                        return;
+                    }
                     for (String layer : layers) {
                         writeTile(world.getName(), layer, 0, tileX, tileZ,
-                                sampleChunk(world, chunkX, chunkZ, layer));
+                                sampleChunk(snap, world, layer));
                     }
                     dirtyChunks.remove(key);
                 } catch (IOException e) {
@@ -131,12 +204,15 @@ public final class TileRenderer {
     }
 
     public void buildZoomPyramid(String worldName, String layer) throws IOException {
-        int radius = config.sampleChunkRadius();
-        for (int zoom = 1; zoom <= MAX_ZOOM; zoom++) {
+        int width = config.gridChunksX();
+        int height = config.gridChunksZ();
+        int maxZoom = config.overviewZoom();
+        for (int zoom = 1; zoom <= maxZoom; zoom++) {
             int scale = 1 << zoom;
-            int tiles = Math.max(1, (radius + scale - 1) / scale);
-            for (int tx = 0; tx < tiles; tx++) {
-                for (int tz = 0; tz < tiles; tz++) {
+            int tilesX = Math.max(1, (width + scale - 1) / scale);
+            int tilesZ = Math.max(1, (height + scale - 1) / scale);
+            for (int tx = 0; tx < tilesX; tx++) {
+                for (int tz = 0; tz < tilesZ; tz++) {
                     writeTile(worldName, layer, zoom, tx, tz, compositeFromLower(worldName, layer, zoom, tx, tz));
                 }
             }
@@ -169,7 +245,7 @@ public final class TileRenderer {
 
     private int[][] readTileOrEmpty(Path path) throws IOException {
         int[][] rgb = new int[TILE_SIZE][TILE_SIZE];
-        int empty = colors.colorFor(Material.STONE).getRGB();
+        int empty = 0xff12161c;
         for (int x = 0; x < TILE_SIZE; x++) {
             for (int z = 0; z < TILE_SIZE; z++) {
                 rgb[x][z] = empty;
@@ -241,81 +317,54 @@ public final class TileRenderer {
         return LAYER_SURFACE;
     }
 
-    private int[][] sampleChunk(World world, int chunkX, int chunkZ, String layer) {
+    private int[][] sampleChunk(ChunkSnapshot snap, World world, String layer) {
         int[][] rgb = new int[TILE_SIZE][TILE_SIZE];
-        int baseX = chunkX * TILE_SIZE;
-        int baseZ = chunkZ * TILE_SIZE;
         boolean cave = LAYER_CAVE.equals(normalizeLayer(layer));
+        int minY = world.getMinHeight();
+        int worldMax = world.getMaxHeight() - 1;
         for (int x = 0; x < TILE_SIZE; x++) {
             for (int z = 0; z < TILE_SIZE; z++) {
-                Block block = sampleBlock(world, baseX + x, baseZ + z, cave);
-                rgb[x][z] = tintedColor(world, block).getRGB();
+                int y = sampleY(snap, world, x, z, cave, minY, worldMax);
+                Material type = ChunkSnapshots.blockType(snap, x, y, z);
+                rgb[x][z] = tintedColor(type, ChunkSnapshots.biome(snap, x, y, z)).getRGB();
             }
         }
         return rgb;
     }
 
-    private Block sampleBlock(World world, int x, int z, boolean cave) {
-        int worldMax = world.getMaxHeight() - 1;
-        int minY = world.getMinHeight();
+    private int sampleY(ChunkSnapshot snap, World world, int lx, int lz, boolean cave,
+                        int minY, int worldMax) {
         if (world.getEnvironment() == World.Environment.NETHER) {
-            // Nether roof-aware: stay under bedrock ceiling when sampling surface-like tops.
             int netherCap = Math.min(126, Math.min(worldMax, config.maxHeight()));
-            if (cave) {
-                return highestSolid(world, x, z, Math.min(netherCap, config.caveMaxY()));
-            }
-            return highestSolid(world, x, z, netherCap);
+            int cap = cave ? Math.min(netherCap, config.caveMaxY()) : netherCap;
+            return ChunkSnapshots.highestSolidY(snap, lx, lz, minY, cap);
         }
         int maxY = Math.min(worldMax, config.maxHeight());
+        int surfaceY;
+        try {
+            surfaceY = snap.getHighestBlockYAt(lx, lz);
+        } catch (Throwable t) {
+            surfaceY = ChunkSnapshots.highestSolidY(snap, lx, lz, minY, maxY);
+        }
+        if (surfaceY > maxY) {
+            surfaceY = maxY;
+        }
         if (!cave) {
-            return highestSolid(world, x, z, maxY);
+            return Math.max(minY, surfaceY);
         }
-        Block surface = highestSolid(world, x, z, maxY);
-        int caveCap = Math.min(surface.getY() - 1, config.caveMaxY());
+        int caveCap = Math.min(surfaceY - 1, config.caveMaxY());
         if (caveCap < minY) {
-            return surface;
+            return surfaceY;
         }
-        Block under = highestSolid(world, x, z, caveCap);
-        // Prefer a solid with air above (open cave / underground void).
-        for (int y = under.getY(); y >= minY; y--) {
-            Block b = world.getBlockAt(x, y, z);
-            Material type = b.getType();
-            if (type.isAir() || !type.isSolid()) {
-                continue;
-            }
-            Block above = world.getBlockAt(x, y + 1, z);
-            if (above.getType().isAir() || !above.getType().isSolid()) {
-                return b;
-            }
-        }
-        return under;
+        return ChunkSnapshots.highestSolidY(snap, lx, lz, minY, caveCap);
     }
 
-    private static Block highestSolid(World world, int x, int z, int maxY) {
-        int minY = world.getMinHeight();
-        int top = Math.max(minY, maxY);
-        for (int y = top; y >= minY; y--) {
-            Block block = world.getBlockAt(x, y, z);
-            Material type = block.getType();
-            if (type.isAir() || !type.isSolid()) {
-                continue;
-            }
-            return block;
-        }
-        return world.getBlockAt(x, minY, z);
-    }
-
-    private Color tintedColor(World world, Block block) {
-        Color base = colors.colorFor(block.getType());
+    private Color tintedColor(Material type, Biome biome) {
+        Color base = colors.colorFor(type);
         if (!config.biomeTint()) {
             return base;
         }
-        try {
-            Biome biome = world.getBiome(block.getX(), block.getY(), block.getZ());
-            return colors.tinted(base, biome, true);
-        } catch (Throwable t) {
-            return base;
-        }
+        return colors.tinted(base, biome, true);
     }
 
     private static byte[] pngBytes(BufferedImage image) throws IOException {

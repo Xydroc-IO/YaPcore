@@ -16,6 +16,11 @@ public final class MapConfig {
     private int renderIntervalMinutes = 15;
     private int maxHeight = 320;
     private int sampleChunkRadius = 8;
+    /** {@code generated} renders every Anvil chunk; {@code window} keeps the old square. */
+    private String renderExtent = "generated";
+    private List<int[]> generatedChunks = List.of();
+    private int gridChunksX = 8;
+    private int gridChunksZ = 8;
     private boolean useSpawnOrigin;
     private int originChunkX;
     private int originChunkZ;
@@ -73,6 +78,13 @@ public final class MapConfig {
         renderIntervalMinutes = Math.max(1, c.getInt("render-interval-minutes", renderIntervalMinutes));
         maxHeight = Math.max(16, c.getInt("max-height", maxHeight));
         sampleChunkRadius = Math.max(1, c.getInt("sample-chunk-radius", sampleChunkRadius));
+        String extent = c.getString("render-extent", "generated");
+        renderExtent = extent == null || extent.isBlank() ? "generated" : extent.trim().toLowerCase(java.util.Locale.ROOT);
+        if (!generatedExtent()) {
+            generatedChunks = List.of();
+            gridChunksX = sampleChunkRadius;
+            gridChunksZ = sampleChunkRadius;
+        }
         String originMode = c.getString("render-origin.mode", "fixed");
         if ("spawn".equalsIgnoreCase(originMode)) {
             originChunkX = 0;
@@ -161,6 +173,46 @@ public final class MapConfig {
         return sampleChunkRadius;
     }
 
+    public boolean generatedExtent() {
+        return "generated".equals(renderExtent);
+    }
+
+    public int gridChunksX() {
+        return Math.max(1, gridChunksX);
+    }
+
+    public int gridChunksZ() {
+        return Math.max(1, gridChunksZ);
+    }
+
+    /** Leaflet's coarsest zoom: one overview tile covers the grid (capped at 10). */
+    public int overviewZoom() {
+        int span = Math.max(gridChunksX(), gridChunksZ());
+        int zoom = 0;
+        int cover = 1;
+        while (cover < span && zoom < 10) {
+            cover <<= 1;
+            zoom++;
+        }
+        return Math.max(1, zoom);
+    }
+
+    /** Remember the generated-chunk grid. Tile index 0 is {@code minChunk}. */
+    public void bindSnapshot(MapExtent.Snapshot snapshot) {
+        if (!generatedExtent() || snapshot == null || !snapshot.present()) {
+            generatedChunks = List.of();
+            gridChunksX = sampleChunkRadius;
+            gridChunksZ = sampleChunkRadius;
+            return;
+        }
+        generatedChunks = snapshot.chunks();
+        originChunkX = snapshot.minChunkX();
+        originChunkZ = snapshot.minChunkZ();
+        gridChunksX = snapshot.gridX();
+        gridChunksZ = snapshot.gridZ();
+        useSpawnOrigin = false;
+    }
+
     public boolean useSpawnOrigin() {
         return useSpawnOrigin;
     }
@@ -175,7 +227,7 @@ public final class MapConfig {
 
     /** Resolve spawn-based origin for a world (call on render thread / sync). */
     public void applySpawnOrigin(org.bukkit.World world) {
-        if (!useSpawnOrigin || world == null) {
+        if (!generatedChunks.isEmpty() || !useSpawnOrigin || world == null) {
             return;
         }
         var spawn = world.getSpawnLocation();
@@ -313,6 +365,9 @@ public final class MapConfig {
     }
 
     public List<int[]> sampleChunks() {
+        if (!generatedChunks.isEmpty()) {
+            return generatedChunks;
+        }
         List<int[]> out = new ArrayList<>();
         for (int dx = 0; dx < sampleChunkRadius; dx++) {
             for (int dz = 0; dz < sampleChunkRadius; dz++) {

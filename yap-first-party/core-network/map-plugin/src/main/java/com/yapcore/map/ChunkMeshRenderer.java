@@ -1,10 +1,11 @@
 package com.yapcore.map;
 
 import com.yapcore.sched.YapSched;
+import org.bukkit.ChunkSnapshot;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
-import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -35,6 +36,8 @@ public final class ChunkMeshRenderer {
     private final ConcurrentLinkedQueue<String> backgroundQueue = new ConcurrentLinkedQueue<>();
     private final Set<String> backgroundQueued = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean backgroundDrainScheduled = new AtomicBoolean(false);
+    private final AtomicInteger meshInflight = new AtomicInteger();
+    private final AtomicInteger meshWrites = new AtomicInteger();
     private final AtomicInteger followOriginX = new AtomicInteger(Integer.MIN_VALUE);
     private final AtomicInteger followOriginZ = new AtomicInteger(Integer.MIN_VALUE);
 
@@ -60,14 +63,10 @@ public final class ChunkMeshRenderer {
         if (!config.meshEnabled()) {
             return;
         }
-        config.applySpawnOrigin(world);
-        maybeFollowPlayers(plugin, world);
-        for (int[] chunk : meshChunks()) {
-            int chunkX = chunk[2];
-            int chunkZ = chunk[3];
-            scheduleExtract(plugin, world, chunkX, chunkZ, true);
+        for (int[] chunk : config.sampleChunks()) {
+            enqueueBackground(world.getName(), chunk[2], chunk[3]);
         }
-        YapSched.async(plugin, () -> writeManifestsSafe(plugin, world));
+        drainBackground(plugin, world);
     }
 
     public void renderDirty(JavaPlugin plugin, World world) {
@@ -83,6 +82,9 @@ public final class ChunkMeshRenderer {
             int chunkZ = chunk[3];
             String key = prefix + chunkX + "|" + chunkZ;
             if (!dirtyChunks.contains(key)) {
+                continue;
+            }
+            if (!world.isChunkLoaded(chunkX, chunkZ)) {
                 continue;
             }
             any = true;
@@ -202,17 +204,18 @@ public final class ChunkMeshRenderer {
                 try {
                     int cx = Integer.parseInt(parts[1]);
                     int cz = Integer.parseInt(parts[2]);
+                    if (!world.isChunkLoaded(cx, cz)) {
+                        dirtyChunks.add(key);
+                        continue;
+                    }
                     scheduleExtract(plugin, world, cx, cz, true);
                 } catch (NumberFormatException ignored) {
                 }
             }
             boolean more = !backgroundQueue.isEmpty();
-            if (!more) {
-                writeManifestsSafe(plugin, world);
-            }
             backgroundDrainScheduled.set(false);
             if (more) {
-                drainBackground(plugin, world);
+                YapSched.asyncLater(plugin, () -> drainBackground(plugin, world), 2L);
             }
         });
     }
@@ -243,42 +246,63 @@ public final class ChunkMeshRenderer {
         boolean models = config.meshModels();
         boolean binary = config.meshBinary();
         int maxLod = config.meshMaxLod();
+        if (layers.isEmpty()) {
+            return;
+        }
+        meshInflight.incrementAndGet();
         YapSched.regionChunk(plugin, world, chunkX, chunkZ, () -> {
-            try {
-                ScanResult scan = scanDense(world, chunkX, chunkZ, models);
-                int minY = world.getMinHeight();
-                for (String layer : layers) {
-                    int[][][] filtered = copyDense(scan.rgb);
-                    byte[][][] kindFiltered = scan.kinds == null ? null : copyBytes(scan.kinds);
-                    byte[][][] stateFiltered = scan.states == null ? null : copyBytes(scan.states);
-                    MapLayerSampler.applyLayerFilter(filtered, minY, layer, config.caveMaxY());
-                    // Clear model metadata where layer filter removed the solid
-                    if (kindFiltered != null) {
-                        syncModelsToRgb(filtered, kindFiltered, stateFiltered);
-                    }
-                    ChunkMeshData data = GreedyMesher.mesh(
-                            chunkX, chunkZ, filtered, kindFiltered, stateFiltered, minY);
-                    String layerFinal = layer;
-                    YapSched.async(plugin, () -> {
+            ChunkSnapshot snap = ChunkSnapshots.captureIfLoaded(world, chunkX, chunkZ, config.biomeTint());
+            if (snap == null) {
+                dirtyChunks.add(key);
+                meshInflight.decrementAndGet();
+                return;
+            }
+            int minY = world.getMinHeight();
+            int maxY = columnMaxY(world);
+            YapSched.async(plugin, () -> {
+                try {
+                    ScanResult scan = scanSnapshot(snap, minY, maxY, models);
+                    for (String layer : layers) {
+                        int[][][] filtered = copyDense(scan.rgb);
+                        byte[][][] kindFiltered = scan.kinds == null ? null : copyBytes(scan.kinds);
+                        byte[][][] stateFiltered = scan.states == null ? null : copyBytes(scan.states);
+                        MapLayerSampler.applyLayerFilter(filtered, minY, layer, config.caveMaxY());
+                        if (kindFiltered != null) {
+                            syncModelsToRgb(filtered, kindFiltered, stateFiltered);
+                        }
+                        ChunkMeshData data = GreedyMesher.mesh(
+                                chunkX, chunkZ, filtered, kindFiltered, stateFiltered, minY);
                         try {
                             MeshEncoder.writeChunkLods(
-                                    meshesRoot, world.getName(), layerFinal, data, maxLod, binary);
+                                    meshesRoot, world.getName(), layer, data, maxLod, binary);
                             dirtyChunks.remove(key);
                         } catch (IOException e) {
                             plugin.getLogger().log(Level.WARNING,
-                                    "Failed mesh write " + world.getName() + "/" + layerFinal
+                                    "Failed mesh write " + world.getName() + "/" + layer
                                             + " " + chunkX + "_" + chunkZ, e);
                         }
-                    });
+                    }
+                    if (clearDirtyAlways) {
+                        dirtyChunks.remove(key);
+                    }
+                } catch (RuntimeException e) {
+                    plugin.getLogger().log(Level.WARNING,
+                            "Failed mesh extract " + world.getName() + " " + chunkX + "," + chunkZ, e);
+                } finally {
+                    noteMeshFinished(plugin, world);
                 }
-                if (clearDirtyAlways) {
-                    dirtyChunks.remove(key);
-                }
-            } catch (RuntimeException e) {
-                plugin.getLogger().log(Level.WARNING,
-                        "Failed mesh extract " + world.getName() + " " + chunkX + "," + chunkZ, e);
-            }
+            });
         });
+    }
+
+    private void noteMeshFinished(JavaPlugin plugin, World world) {
+        int done = meshWrites.incrementAndGet();
+        int left = meshInflight.decrementAndGet();
+        if (left <= 0 && backgroundQueue.isEmpty()) {
+            writeManifestsSafe(plugin, world);
+        } else if (done % 64 == 0) {
+            writeManifestsSafe(plugin, world);
+        }
     }
 
     /**
@@ -289,8 +313,12 @@ public final class ChunkMeshRenderer {
     }
 
     ChunkMeshData extractChunk(World world, int chunkX, int chunkZ, String layer) {
-        ScanResult scan = scanDense(world, chunkX, chunkZ, config.meshModels());
+        ChunkSnapshot snap = ChunkSnapshots.captureIfLoaded(world, chunkX, chunkZ, config.biomeTint());
         int minY = world.getMinHeight();
+        int maxY = columnMaxY(world);
+        ScanResult scan = snap == null
+                ? emptyScan(minY, maxY, config.meshModels())
+                : scanSnapshot(snap, minY, maxY, config.meshModels());
         MapLayerSampler.applyLayerFilter(scan.rgb, minY, layer, config.caveMaxY());
         if (scan.kinds != null) {
             syncModelsToRgb(scan.rgb, scan.kinds, scan.states);
@@ -298,11 +326,22 @@ public final class ChunkMeshRenderer {
         return GreedyMesher.mesh(chunkX, chunkZ, scan.rgb, scan.kinds, scan.states, minY);
     }
 
-    private ScanResult scanDense(World world, int chunkX, int chunkZ, boolean models) {
-        int minY = world.getMinHeight();
-        int maxY = columnMaxY(world);
-        int baseX = chunkX * ChunkMeshExtractor.CHUNK_SIZE;
-        int baseZ = chunkZ * ChunkMeshExtractor.CHUNK_SIZE;
+    private ScanResult emptyScan(int minY, int maxY, boolean models) {
+        int ySpan = Math.max(1, maxY - minY + 1);
+        int[][][] rgb = new int[ChunkMeshExtractor.CHUNK_SIZE][ySpan][ChunkMeshExtractor.CHUNK_SIZE];
+        for (int lx = 0; lx < ChunkMeshExtractor.CHUNK_SIZE; lx++) {
+            for (int yIndex = 0; yIndex < ySpan; yIndex++) {
+                for (int lz = 0; lz < ChunkMeshExtractor.CHUNK_SIZE; lz++) {
+                    rgb[lx][yIndex][lz] = -1;
+                }
+            }
+        }
+        return new ScanResult(rgb,
+                models ? new byte[ChunkMeshExtractor.CHUNK_SIZE][ySpan][ChunkMeshExtractor.CHUNK_SIZE] : null,
+                models ? new byte[ChunkMeshExtractor.CHUNK_SIZE][ySpan][ChunkMeshExtractor.CHUNK_SIZE] : null);
+    }
+
+    private ScanResult scanSnapshot(ChunkSnapshot snap, int minY, int maxY, boolean models) {
         int ySpan = Math.max(1, maxY - minY + 1);
         int[][][] rgb = new int[ChunkMeshExtractor.CHUNK_SIZE][ySpan][ChunkMeshExtractor.CHUNK_SIZE];
         byte[][][] kinds = models
@@ -321,27 +360,22 @@ public final class ChunkMeshRenderer {
         boolean tint = config.biomeTint();
         for (int lx = 0; lx < ChunkMeshExtractor.CHUNK_SIZE; lx++) {
             for (int lz = 0; lz < ChunkMeshExtractor.CHUNK_SIZE; lz++) {
-                int x = baseX + lx;
-                int z = baseZ + lz;
                 for (int y = minY; y <= maxY; y++) {
-                    Block block = world.getBlockAt(x, y, z);
-                    Material type = block.getType();
+                    Material type = ChunkSnapshots.blockType(snap, lx, y, lz);
                     if (type.isAir() || !type.isSolid()) {
                         continue;
                     }
-                    Biome biome = null;
-                    if (tint) {
-                        try {
-                            biome = world.getBiome(x, y, z);
-                        } catch (Throwable ignored) {
-                        }
-                    }
+                    Biome biome = tint ? ChunkSnapshots.biome(snap, lx, y, lz) : null;
                     int color = colors.tintedRgb(type, biome, tint);
                     int yi = y - minY;
                     rgb[lx][yi][lz] = color & 0xffffff;
                     if (models) {
                         kinds[lx][yi][lz] = BlockModelStates.kindOrdinal(type);
-                        states[lx][yi][lz] = BlockModelStates.packedState(block);
+                        BlockData data = ChunkSnapshots.blockData(snap, lx, y, lz);
+                        states[lx][yi][lz] = data == null
+                                ? 0
+                                : (byte) BlockModelStates.packedState(
+                                        BlockModelRegistry.classify(type.name()), data);
                     }
                 }
             }
@@ -422,8 +456,10 @@ public final class ChunkMeshRenderer {
     private void writeManifestsSafe(JavaPlugin plugin, World world) {
         for (String layer : config.enabledMeshLayers()) {
             try {
+                int span = Math.max(config.meshSampleRadius(),
+                        Math.max(config.gridChunksX(), config.gridChunksZ()));
                 MeshEncoder.writeManifest(meshesRoot, world.getName(), layer,
-                        effectiveOriginX(), effectiveOriginZ(), config.meshSampleRadius(),
+                        effectiveOriginX(), effectiveOriginZ(), span,
                         config.meshMaxLod());
             } catch (IOException e) {
                 plugin.getLogger().log(Level.WARNING,
