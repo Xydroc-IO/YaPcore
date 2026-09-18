@@ -117,4 +117,4 @@ Seeded in `config/defaults/server.properties` (and forwarded as `-Dyap.folia.*`)
 | `folia-ticket-hygiene` | **true** |
 | `folia-portal-couple` | **true** |
 
-Lab-only: `-Dyap.folia.scheduler-probe` (patch `0033`). **36** patches on pin `14b7fee` (`0000`–`0043`): `0034`–`0043` are Folia-itself (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe). Inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
+Lab-only: `-Dyap.folia.scheduler-probe` (patch `0033`). **38** patches on pin `14b7fee` (`0000`–`0045`): `0034`–`0045` are Folia-itself (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe, fork-correctness, ticket-gap hold). Inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).

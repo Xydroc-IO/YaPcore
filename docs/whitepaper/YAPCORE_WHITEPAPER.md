@@ -155,7 +155,7 @@ Each logical stream obtains a `SequenceToken` carrying a per-stream sequence and
 
 ### 3.4 Spatial model
 
-**YaP-Folia** indexes world interest by region and runs authoritative tick on a dynamic region thread pool. YaP patches add teleport transactions (default **on**), entity tick budgets, async chunk save, scoreboard SWMR, and **subregion partition + corridor carve** (default **on**) — §4. Partition is a Folia-legal **empty-buffer cut**, not a second clock; aligned microticks are optional. Native regionizer-cut (`0041`) plus contiguous-bar relocate (`0043`) is the ship path for a live contiguous split the regionizer holds. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin work; they do **not** replace YaP-Folia game tick. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (**benches only**).
+**YaP-Folia** indexes world interest by region and runs authoritative tick on a dynamic region thread pool. YaP patches add teleport transactions (default **on**), entity tick budgets, async chunk save, scoreboard SWMR, and **subregion partition + corridor carve** (default **on**) — §4. Partition is a Folia-legal **empty-buffer cut**, not a second clock; aligned microticks are optional. Native regionizer-cut (`0041`) plus contiguous-bar relocate (`0043`) and ticket-gap hold (`0045`) is the ship path for a live contiguous split the regionizer holds. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin work; they do **not** replace YaP-Folia game tick. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (**benches only**).
 
 ### 3.5 Memory & GC posture
 
@@ -165,7 +165,7 @@ Production launch scripts prefer **Generational ZGC** with optional **NUMA** pin
 
 ## 4. YaP-Folia fork
 
-YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream pin is **`14b7fee`** (`ver/26.2.x`, 2026-09-06) in `vendor/folia/UPSTREAM.lock`. **36** ordered files in `vendor/folia/patches/`: `0000`–`0033` are YaP behavior or repairs; `0034`–`0043` are Folia-itself improvements on that pin (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe). Later upstream regionizer commits still come from moving the pin.
+YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream pin is **`14b7fee`** (`ver/26.2.x`, 2026-09-06) in `vendor/folia/UPSTREAM.lock`. **38** ordered files in `vendor/folia/patches/`: `0000`–`0033` are YaP behavior or repairs; `0034`–`0045` are Folia-itself improvements on that pin (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe, fork-correctness, ticket-gap hold). Later upstream regionizer commits still come from moving the pin.
 
 | Patch | Purpose | Default |
 |-------|---------|---------|
@@ -191,11 +191,13 @@ YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream 
 | `0041` | Native regionizer cut + ticket clamp (packed spawn) | **on** (ship) |
 | `0042` | Async villager brain (#446) + vehicle END→overworld respawn (#453) | always |
 | `0043` | Contiguous-bar relocate + gap/region probe | lab / always |
+| `0044` | Fork-correctness: cut AABB, on-thread gap, RTQ handoff, portal lookup, save wait | always |
+| `0045` | Ticket-level clamp + gap hold under product view-distance | **on** (ship) |
 
 Build: `./scripts/build-yap-folia.sh` → `lib/yap-folia-26.2.jar`.  
 Docs: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [QUICK_START.md](../start/QUICK_START.md).
 
-A **live contiguous** hot region that the Folia regionizer then holds, without a YaP phase clock, is the split the product is built for. Patch `0041` is the native cut + ticket clamp; `0043` relocates a live corridor so the hole can empty. Lab check: `./scripts/smoke-contiguous-bar.sh`.
+A **live contiguous** hot region that the Folia regionizer then holds, without a YaP phase clock, is the split the product is built for. Patch `0041` is the native cut; `0043` relocates a live corridor so the hole can empty; `0045` keeps neighbor sim-distance from refilling it. Lab check: `./scripts/smoke-contiguous-bar.sh`.
 
 Stock Folia fallback: `folia-jar-source=fetch` + `./scripts/fetch-folia.sh` (bench / comparison only).
 

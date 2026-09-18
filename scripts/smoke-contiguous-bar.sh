@@ -160,7 +160,7 @@ while kill -0 "$PID" 2>/dev/null; do
   sleep 1
 done
 
-echo "Stopping pid=$PID…"
+echo "Stopping pid=${PID}..."
 # Only this harness chassis. Never fuser/pkill fleet or the GUI.
 kill "$PID" 2>/dev/null || true
 wait "$PID" 2>/dev/null || true

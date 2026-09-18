@@ -35,6 +35,19 @@ Same ship version. Lab paperclip → `lib/yap-folia-26.2-lab.jar` (does **not** 
 
 ---
 
+## After 0.0.0.1 — contiguous-bar hold 0044/0045 (2026-09-18)
+
+Same ship version. Lab paperclip still → `lib/yap-folia-26.2-lab.jar`.
+
+| Area | Change |
+|------|--------|
+| **0044** | Cut AABB, on-thread gap maintain, RTQ requeue, portal couple by chunk, save wait. |
+| **0045** | Ticket-level clamp + no sync-load into the cut so a live contiguous split holds under product view-distance. |
+| **Check** | `./scripts/smoke-contiguous-bar.sh` PASS: `splits=1`, `force_partitions=1`, `gap_bands=1`, `ticking_regions=2` (`pulses_ran=0`). |
+| **Patches** | **38** files (`0000`–`0045`) |
+
+---
+
 ## After 0.0.0.1 — GitHub prerelease CDN (2026-09-18)
 
 Same ship version (no product bump). Tag **`0.0.0.1`** is a GitHub **prerelease**.
@@ -118,7 +131,7 @@ Product version **0.0.0.1** (reset from the **1.0.0.0** line). Gradle `version`,
 | Area | Change |
 |------|--------|
 | **Bar** | Folia’s **regionizer holding under real splits** (contiguous hot region → empty-buffer cut → independent shards) **without** a YaP phase clock. Same-tick BLOCKS lockstep is not the bar. |
-| **Status** | Ship path: partition + carve + native regionizer-cut (`0041`) + contiguous-bar relocate (`0043`). Lab check: `./scripts/smoke-contiguous-bar.sh`. |
+| **Status** | Ship path: partition + carve + native regionizer-cut (`0041`) + contiguous-bar relocate (`0043`) + ticket-gap hold (`0045`). Lab check: `./scripts/smoke-contiguous-bar.sh`. |
 | **Knobs** | Partition, carve, and aligned microticks stay **on** as intent. Microticks are optional coherence, not a second world clock. Lab gap/threshold/probe stay lab-only. |
 | **Docs** | README, whitepaper §3.4/§4/§13, [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md), [RELEASES.md](RELEASES.md), [SECURITY.md](../../SECURITY.md) |
 

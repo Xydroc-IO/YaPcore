@@ -1,0 +1,400 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP contiguous-bar ticket clamp + gap hold
+
+Neighbor sim-distance cannot refill a registered cut. Unload the corridor
+holder, return air instead of sync-load, and keep the carve plan so gap
+hold registers after forcePartition. Lab: smoke-contiguous-bar PASS.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
+@@ -471,12 +471,24 @@
+ 
+     private final ThreadedTicketLevelPropagator ticketLevelPropagator = new ThreadedTicketLevelPropagator() {
+         @Override
++        protected boolean skipPropagateTo(final int posX, final int posZ) {
++            return io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(
++                    ChunkHolderManager.this.world, posX, posZ);
++        }
++
++        @Override
+         protected void processLevelUpdates(final Long2ByteLinkedOpenHashMap updates) {
+             // first the necessary chunkholders must be created, so just update the ticket levels
+             for (final Iterator<Long2ByteMap.Entry> iterator = updates.long2ByteEntrySet().fastIterator(); iterator.hasNext();) {
+                 final Long2ByteMap.Entry entry = iterator.next();
+                 final long key = entry.getLongKey();
+-                final int newLevel = convertBetweenTicketLevels((int)entry.getByteValue());
++                int newLevel = convertBetweenTicketLevels((int)entry.getByteValue());
++                if (io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(
++                        ChunkHolderManager.this.world,
++                        CoordinateUtils.getChunkX(key),
++                        CoordinateUtils.getChunkZ(key))) {
++                    newLevel = MAX_TICKET_LEVEL + 1;
++                }
+ 
+                 NewChunkHolder current = ChunkHolderManager.this.chunkHolders.get(key);
+                 if (current == null && newLevel > MAX_TICKET_LEVEL) {
+@@ -650,10 +662,53 @@
+     // Paper end
+ 
+     protected final void updateTicketLevel(final long coordinate, final int ticketLevel) {
+-        if (ticketLevel > ChunkLevel.MAX_LEVEL) {
+-            this.ticketLevelPropagator.removeSource(CoordinateUtils.getChunkX(coordinate), CoordinateUtils.getChunkZ(coordinate));
++        final int cx = CoordinateUtils.getChunkX(coordinate);
++        final int cz = CoordinateUtils.getChunkZ(coordinate);
++        final int level = io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(this.world, cx, cz)
++                ? ChunkLevel.MAX_LEVEL + 1
++                : ticketLevel;
++        if (level > ChunkLevel.MAX_LEVEL) {
++            this.ticketLevelPropagator.removeSource(cx, cz);
+         } else {
+-            this.ticketLevelPropagator.setSource(CoordinateUtils.getChunkX(coordinate), CoordinateUtils.getChunkZ(coordinate), convertBetweenTicketLevels(ticketLevel));
++            this.ticketLevelPropagator.setSource(cx, cz, convertBetweenTicketLevels(level));
++        }
++    }
++
++    /**
++     * Neighbor sim-distance keeps a stored propagator level on a registered cut even when
++     * {@code getTicketsAt} is empty. Push the holder onto the unload path; {@code processLevelUpdates}
++     * then refuses to recreate it.
++     */
++    public void unloadIfCut(final int chunkX, final int chunkZ) {
++        final long key = CoordinateUtils.getChunkKey(chunkX, chunkZ);
++        final NewChunkHolder current = this.chunkHolders.get(key);
++        if (current == null) {
++            this.updateTicketLevel(key, MAX_TICKET_LEVEL + 1);
++            return;
++        }
++        final int rad = 2 * ChunkTaskScheduler.getMaxAccessRadius();
++        final List<ChunkProgressionTask> scheduledTasks = new ArrayList<>();
++        final List<NewChunkHolder> changedFullStatus = new ArrayList<>();
++        final ReentrantAreaLock.Node ticketLock = this.ticketLockArea.lock(chunkX, chunkZ);
++        try {
++            this.updateTicketLevel(key, MAX_TICKET_LEVEL + 1);
++            current.updateTicketLevel(MAX_TICKET_LEVEL + 1);
++            final List<ChunkProgressionTask> prev = CURRENT_TICKET_UPDATE_SCHEDULING.get();
++            CURRENT_TICKET_UPDATE_SCHEDULING.set(scheduledTasks);
++            final ReentrantAreaLock.Node schedulingNode = this.taskScheduler.schedulingLockArea.lock(
++                    chunkX - rad, chunkZ - rad, chunkX + rad, chunkZ + rad);
++            try {
++                current.processTicketLevelUpdate(scheduledTasks, changedFullStatus);
++            } finally {
++                this.taskScheduler.schedulingLockArea.unlock(schedulingNode);
++                CURRENT_TICKET_UPDATE_SCHEDULING.set(prev);
++            }
++        } finally {
++            this.ticketLockArea.unlock(ticketLock);
++        }
++        this.addChangedStatuses(changedFullStatus);
++        for (int i = 0, len = scheduledTasks.size(); i < len; ++i) {
++            scheduledTasks.get(i).schedule();
+         }
+     }
+ 
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ThreadedTicketLevelPropagator.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ThreadedTicketLevelPropagator.java
+@@ -114,6 +114,11 @@
+         return !this.updateQueue.isEmpty();
+     }
+ 
++    /** Neighbor sim-distance must not refill a registered cut. */
++    protected boolean skipPropagateTo(final int posX, final int posZ) {
++        return false;
++    }
++
+     // holds ticket lock for every chunk section represented by any position in the key set
+     // updates is modifiable and passed to processSchedulingUpdates after this call
+     protected abstract void processLevelUpdates(final Long2ByteLinkedOpenHashMap updates);
+@@ -778,6 +783,7 @@
+         // (this requires x >= 0 and z >= 0)
+         private final Section[] sections = new Section[SECTION_CACHE_WIDTH * SECTION_CACHE_WIDTH];
+ 
++        private ThreadedTicketLevelPropagator owner;
+         private int encodeOffsetX;
+         private int encodeOffsetZ;
+ 
+@@ -819,6 +825,7 @@
+         private final void setupCaches(final ThreadedTicketLevelPropagator propagator,
+                                        final int centerSectionX, final int centerSectionZ,
+                                        final int rad) {
++            this.owner = propagator;
+             for (int dz = -rad; dz <= rad; ++dz) {
+                 for (int dx = -rad; dx <= rad; ++dx) {
+                     final int sectionX = centerSectionX + dx;
+@@ -1041,6 +1048,10 @@
+                     // now try to propagate
+                     final Section section = this.sections[sectionIndex];
+ 
++                    if (this.owner != null && this.owner.skipPropagateTo(offX, offZ)) {
++                        continue;
++                    }
++
+                     // lower 8 bits are current level, next upper 7 bits are source level, next 1 bit is updated source flag
+                     final short currentStoredLevel = section.levels[localIndex];
+                     final int currentLevel = currentStoredLevel & 0xFF;
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
+@@ -86,13 +86,14 @@
+         PENDING_ANCHORS.remove(regionId);
+         LAST_CORRIDOR.remove(regionId);
+         YapRegionizerGap.release(-regionId);
+-        if (shardGroup != 0L && world != null && plan != null && !plan.keys.isEmpty()) {
++        final long holdKey = shardGroup != 0L ? shardGroup : 1L;
++        if (world != null && plan != null && !plan.keys.isEmpty()) {
+             if (anchor != null) {
+-                GAP_HOLDS.put(shardGroup, new YapCorridorPlanner.GapHold(world, plan, anchor.clone(), landings));
++                GAP_HOLDS.put(holdKey, new YapCorridorPlanner.GapHold(world, plan, anchor.clone(), landings));
+             }
+-            YapRegionizerGap.register(world, plan, shardGroup);
++            YapRegionizerGap.register(world, plan, holdKey);
+             LOGGER.info("YaP gap hold registered shard-group {} — {} corridor chunks lo={} hi={} maintain={}",
+-                    shardGroup, plan.keys.size(), plan.lo, plan.hi, anchor != null);
++                    holdKey, plan.keys.size(), plan.lo, plan.hi, anchor != null);
+         }
+     }
+ 
+@@ -424,6 +425,11 @@
+         return PENDING_PLANS.get(regionId);
+     }
+ 
++    static int[] pendingAnchor(final long regionId) {
++        final int[] anchor = PENDING_ANCHORS.get(regionId);
++        return anchor == null ? null : anchor.clone();
++    }
++
+     record CorridorPlan(long regionId, boolean cutOnX, int lo, int hi, LongOpenHashSet keys) {
+     }
+ 
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorUnload.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorUnload.java
+@@ -180,6 +180,15 @@
+             YapCorridorEntities.relocateCorridorEntities(world, regionId, cx, cz);
+         }
+         stripNonUnknownTickets(world, cx, cz);
++        try {
++            final net.minecraft.world.level.levelgen.structure.BoundingBox box =
++                    new net.minecraft.world.level.levelgen.structure.BoundingBox(
++                            cx << 4, world.getMinY(), cz << 4,
++                            (cx << 4) + 15, world.getMaxY(), (cz << 4) + 15);
++            world.getBlockTicks().clearArea(box);
++            world.getFluidTicks().clearArea(box);
++        } catch (final Throwable ignored) {
++        }
+         holderManager(world).unloadIfCut(cx, cz);
+     }
+ 
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
+@@ -1,10 +1,13 @@
+ package io.papermc.paper.threadedregions;
+ 
+ import ca.spottedleaf.moonrise.common.util.CoordinateUtils;
++import com.mojang.logging.LogUtils;
+ import it.unimi.dsi.fastutil.longs.LongIterator;
++import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+ import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.server.level.ServerPlayer;
+ import net.minecraft.server.level.TicketType;
++import org.slf4j.Logger;
+ 
+ import java.util.List;
+ import java.util.concurrent.ConcurrentHashMap;
+@@ -24,6 +27,8 @@
+  */
+ public final class YapRegionizerGap {
+ 
++    private static final Logger LOGGER = LogUtils.getLogger();
++
+     private static final boolean ENABLED = Boolean.parseBoolean(
+             System.getProperty("yap.folia.regionizer-cut", "true"));
+     private static final boolean THIN_GAP = Boolean.parseBoolean(
+@@ -60,10 +65,18 @@
+         }
+         final Cut cut = aabbFromPlan(world, plan);
+         if (cut == null) {
++            LOGGER.warn("YaP regionizer gap register skipped — empty AABB key={} chunks={}",
++                    key, plan.keys().size());
+             return;
+         }
++        final LongIterator it = plan.keys().iterator();
++        while (it.hasNext()) {
++            cut.chunks.add(it.nextLong());
++        }
+         BY_KEY.put(key, cut);
+         BY_WORLD.computeIfAbsent(cut.worldId, w -> new ConcurrentHashMap<>()).put(key, cut);
++        LOGGER.info("YaP regionizer gap registered key={} chunks={} aabb=[{},{}]x[{},{}] axis={}",
++                key, cut.chunks.size(), cut.xLo, cut.xHi, cut.zLo, cut.zHi, cut.cutOnX ? "X" : "Z");
+     }
+ 
+     /** Player / portal / teleport holds must not be stripped from a live corridor chunk. */
+@@ -101,13 +114,46 @@
+         if (!ENABLED || world == null) {
+             return false;
+         }
+-        final int shift = TickRegions.getRegionChunkShift();
+-        if (find(world, chunkX >> shift, chunkZ >> shift) == null) {
++        if (!isCutChunk(world, chunkX, chunkZ)) {
+             return false;
+         }
+         return !playerInChunk(world, chunkX, chunkZ);
+     }
+ 
++    public static boolean isCutChunk(final ServerLevel world, final int chunkX, final int chunkZ) {
++        if (!ENABLED || world == null) {
++            return false;
++        }
++        final long chunkKey = CoordinateUtils.getChunkKey(chunkX, chunkZ);
++        final int shift = TickRegions.getRegionChunkShift();
++        final int sectionX = chunkX >> shift;
++        final int sectionZ = chunkZ >> shift;
++        final ConcurrentHashMap<Long, Cut> worldCuts = BY_WORLD.get(System.identityHashCode(world));
++        if (worldCuts != null && chunkInCuts(worldCuts, chunkKey, sectionX, sectionZ)) {
++            return true;
++        }
++        // identityHashCode can miss if register used a different ServerLevel instance
++        for (final ConcurrentHashMap<Long, Cut> cuts : BY_WORLD.values()) {
++            if (cuts != worldCuts && chunkInCuts(cuts, chunkKey, sectionX, sectionZ)) {
++                return true;
++            }
++        }
++        return false;
++    }
++
++    private static boolean chunkInCuts(final ConcurrentHashMap<Long, Cut> worldCuts,
++                                       final long chunkKey, final int sectionX, final int sectionZ) {
++        if (worldCuts == null || worldCuts.isEmpty()) {
++            return false;
++        }
++        for (final Cut cut : worldCuts.values()) {
++            if (cut.chunks.contains(chunkKey) || cut.containsSection(sectionX, sectionZ)) {
++                return true;
++            }
++        }
++        return false;
++    }
++
+     public static boolean blocksSection(final ThreadedRegionizer<?, ?> regionizer, final int sectionX, final int sectionZ) {
+         if (!ENABLED || regionizer == null) {
+             return false;
+@@ -150,8 +196,7 @@
+         if (!ENABLED || world == null || type == null || type == TicketType.UNKNOWN) {
+             return false;
+         }
+-        final int shift = TickRegions.getRegionChunkShift();
+-        if (find(world, chunkX >> shift, chunkZ >> shift) == null) {
++        if (!isCutChunk(world, chunkX, chunkZ)) {
+             return false;
+         }
+         if (playerInChunk(world, chunkX, chunkZ)) {
+@@ -243,6 +288,7 @@
+         final int xHi;
+         final int zLo;
+         final int zHi;
++        final LongOpenHashSet chunks = new LongOpenHashSet();
+ 
+         Cut(final int worldId, final boolean cutOnX, final int xLo, final int xHi, final int zLo, final int zHi) {
+             this.worldId = worldId;
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSchedulerProbe.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSchedulerProbe.java
+@@ -135,14 +135,7 @@
+         }
+         final java.util.concurrent.atomic.AtomicInteger n = new java.util.concurrent.atomic.AtomicInteger();
+         try {
+-            level.regioniser.computeForAllRegionsUnsynchronised(region -> {
+-                for (final ThreadedRegionizer.ThreadedRegionSection<?, ?> section : region.copySections()) {
+-                    if (!section.isEmpty()) {
+-                        n.incrementAndGet();
+-                        return;
+-                    }
+-                }
+-            });
++            level.regioniser.computeForAllRegionsUnsynchronised(region -> n.incrementAndGet());
+         } catch (final Throwable ignored) {
+         }
+         return n.get();
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
+@@ -237,18 +237,24 @@
+             return false;
+         }
+         final int createRadius = Math.max(1, region.regioniser.emptySectionCreateRadius);
+-        final YapCorridorCarver.CorridorPlan gapPlan =
+-                YapCorridorCarver.planCorridor(region, groups, createRadius);
+-        final int[] anchor = YapCorridorCarver.firstNonEmptyChunkOutside(groups, gapPlan);
++        YapCorridorCarver.CorridorPlan gapPlan = YapCorridorCarver.planForLandings(region.id);
++        if (gapPlan == null || gapPlan.keys().isEmpty()) {
++            gapPlan = YapCorridorCarver.planCorridor(region, groups, createRadius);
++        }
++        int[] anchor = YapCorridorCarver.pendingAnchor(region.id);
++        if (anchor == null) {
++            anchor = YapCorridorCarver.firstNonEmptyChunkOutside(groups, gapPlan);
++        }
+         ServerLevel world = null;
+         if (region.getData() instanceof TickRegions.TickRegionData tickData) {
+             world = tickData.world;
+         }
++        FORCE_PARTITIONS.increment();
+         final boolean ok = region.regioniser.forcePartition(region, groups);
+         if (!ok) {
++            FORCE_PARTITIONS.add(-1L);
+             return false;
+         }
+-        FORCE_PARTITIONS.increment();
+         HOT_STREAK.remove(region.id);
+         long quietGroup = 0L;
+         for (final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> g : groups) {
+@@ -273,6 +279,7 @@
+         LOGGER.info("YaP force-partition region #{} into {} shards (sections={})",
+                 region.id, groups.size(), sections.size());
+         YapRegionPoolMetrics.onSplit(groups.size());
++        YapSchedulerProbe.dump(true);
+         return true;
+     }
+ 
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/ServerChunkCache.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/ServerChunkCache.java
+@@ -142,6 +142,9 @@
+         if (ifPresent != null && (toStatus != ChunkStatus.FULL || currentChunk.isFullChunkReady())) {
+             return ifPresent;
+         }
++        if (io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(this.level, chunkX, chunkZ)) {
++            return ifPresent;
++        }
+ 
+         final ca.spottedleaf.moonrise.common.PlatformHooks platformHooks = ca.spottedleaf.moonrise.common.PlatformHooks.get();
+ 
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/Level.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/Level.java
+@@ -1349,6 +1349,9 @@
+             return chunk.getBlockState(pos);
+         }
+         chunk = chunkProvider.getChunk(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.EMPTY, true);
++        if (chunk == null) {
++            return Blocks.AIR.defaultBlockState();
++        }
+         return chunk.getBlockState(pos);
+     }
+     // Folia end - region threading
+@@ -1368,6 +1371,9 @@
+         }
+ 
+         ChunkAccess chunk = this.getChunk(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FULL, true); // Paper - manually inline to reduce hops and avoid unnecessary null check to reduce total byte code size, this should never return null and if it does we will see it the next line but the real stack trace will matter in the chunk engine
++        if (chunk == null) {
++            return Blocks.AIR.defaultBlockState();
++        }
+         return chunk.getBlockState(pos);
+     }
+ 
+@@ -1377,7 +1383,10 @@
+             return Fluids.EMPTY.defaultFluidState();
+         }
+ 
+-        LevelChunk chunk = this.getChunkAt(pos);
++        ChunkAccess chunk = this.getChunk(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FULL, true);
++        if (chunk == null) {
++            return Fluids.EMPTY.defaultFluidState();
++        }
+         return chunk.getFluidState(pos);
+     }
+ 
