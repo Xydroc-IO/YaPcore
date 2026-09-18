@@ -4,6 +4,7 @@ import com.yapcore.config.ServerConfig;
 import com.yapcore.fleet.link.LinkFleetSync;
 import com.yapcore.fleet.local.FleetInstancePlugins;
 import com.yapcore.fleet.local.InstanceLayout;
+import com.yapcore.fleet.local.InstancePlayerDataSettings;
 import com.yapcore.fleet.local.InstanceServerProps;
 import com.yapcore.fleet.model.FleetInstance;
 import com.yapcore.fleet.ops.FleetDeploy;
@@ -35,6 +36,7 @@ public final class FleetInstanceOps {
         heap.put("ramMinMb", inst.ramMinMb());
         heap.put("inherit", inst.ramMb() <= 0);
         out.put("heap", heap);
+        out.put("playerData", InstancePlayerDataSettings.read(rootDir, inst));
         return out;
     }
 
@@ -44,6 +46,16 @@ public final class FleetInstanceOps {
             FleetStore store,
             String id,
             Map<String, String> body) throws IOException {
+        return writeSettings(rootDir, config, store, id, body, null);
+    }
+
+    public static Map<String, Object> writeSettings(
+            Path rootDir,
+            ServerConfig config,
+            FleetStore store,
+            String id,
+            Map<String, String> body,
+            RestartFn reloadFn) throws IOException {
         FleetInstance inst = require(store, id);
         if (!inst.isLocal()) {
             throw new IOException("Remote instance settings via agent not implemented yet: " + id);
@@ -126,6 +138,7 @@ public final class FleetInstanceOps {
         // Patch props for this instance only — never rewrite sibling instance trees.
         InstanceLayout.ensure(rootDir, config, updated);
         Map<String, String> props = InstanceServerProps.patch(rootDir, updated, propUpdates);
+        boolean playerDataChanged = InstancePlayerDataSettings.write(rootDir, updated, body);
         LinkFleetSync.syncAll(rootDir, config, store);
 
         Map<String, Object> out = new LinkedHashMap<>();
@@ -133,7 +146,22 @@ public final class FleetInstanceOps {
         out.put("action", "update-settings");
         out.put("instance", updated.toMap());
         out.put("properties", props);
+        out.put("playerData", InstancePlayerDataSettings.read(rootDir, updated));
+        out.put("playerDataChanged", playerDataChanged);
         out.put("linkSynced", true);
+        if (playerDataChanged && reloadFn != null) {
+            try {
+                reloadFn.restart(updated.id());
+                out.put("playerDataReloaded", true);
+            } catch (Exception e) {
+                out.put("playerDataReloaded", false);
+                out.put("playerDataReloadNote",
+                        "Saved on disk — restart this server or run yapdata reload to apply.");
+            }
+        } else if (playerDataChanged) {
+            out.put("playerDataReloadNote",
+                    "Saved on disk — restart this server or run yapdata reload to apply.");
+        }
         if (registryChanged && (ramMb != null || ramMinMb != null)) {
             out.put("note", "RAM changes apply on next Start/Restart of this server.");
         }

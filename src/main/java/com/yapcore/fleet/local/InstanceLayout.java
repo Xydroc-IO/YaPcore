@@ -414,7 +414,8 @@ public final class InstanceLayout {
                 "YaPPlayerData", "yap-playerdata",
                 "YaPEssentials", "yap-essentials",
                 "YaPPortals", "yap-portals",
-                "YaPNpcs", "yap-npcs"
+                "YaPNpcs", "yap-npcs",
+                "YaPRegions", "yap-regions"
         };
         for (String folder : pluginFolders) {
             Path cfg = dir.resolve("plugins").resolve(folder).resolve("config.yml");

@@ -11,6 +11,8 @@
       "bind": "127.0.0.1",
       "autoStart": true,
       "displayName": "Lobby",
+      "ramMb": 0,
+      "ramMinMb": 0,
       "address": "127.0.0.1:25567"
     },
     {
@@ -22,7 +24,22 @@
       "bind": "127.0.0.1",
       "autoStart": true,
       "displayName": "Survival",
+      "ramMb": 0,
+      "ramMinMb": 0,
       "address": "127.0.0.1:25568"
+    },
+    {
+      "id": "creative",
+      "serverId": "creative",
+      "nodeId": "local",
+      "relativeDir": "fleet/instances/creative",
+      "port": 25569,
+      "bind": "127.0.0.1",
+      "autoStart": false,
+      "displayName": "Creative",
+      "ramMb": 4000,
+      "ramMinMb": 512,
+      "address": "127.0.0.1:25569"
     }
   ],
   "nodes": []

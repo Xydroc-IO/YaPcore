@@ -155,6 +155,31 @@
       }
       return;
     }
+    if (act === "flat") {
+      if (!confirm("Wipe " + inst.id + " world and regenerate as FLAT?\nServer must be stopped. This deletes the current world.")) {
+        return;
+      }
+      busy.add(inst.id);
+      btn?.classList.add("busy");
+      try {
+        if (inst.running) {
+          await fleetAction({ action: "stop", id: inst.id });
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+        const r = await fleetAction({
+          action: "world-swap-flat",
+          id: inst.id,
+          includeDims: "true",
+          creativeMode: inst.id === "creative" ? "true" : "false",
+        });
+        toast("Flat world ready · " + inst.id + " — Start when ready", "ok");
+        if (r?.note) console.info(r.note);
+      } finally {
+        busy.delete(inst.id);
+        await refreshFleet();
+      }
+      return;
+    }
     if (act === "delete") {
       if (!confirm("Delete instance " + inst.id + "?")) return;
     }
@@ -173,6 +198,7 @@
     const r = await api("/api/fleet/instances/" + encodeURIComponent(id) + "/settings");
     const inst = r.instance || {};
     const props = r.properties || {};
+    const pd = r.playerData || {};
     $("fleetSetupTitle").textContent = inst.displayName || inst.id || id;
     $("fleetSetupDisplay").value = inst.displayName || "";
     $("fleetSetupServerId").value = inst.serverId || "";
@@ -187,7 +213,41 @@
     ensureSelectValue($("fleetSetupDifficulty"), props.difficulty || "easy");
     $("fleetSetupView").value = props["view-distance"] || "";
     $("fleetSetupAuto").value = String(inst.autoStart !== false);
+    paintPlayerData(pd);
     $("fleetInstanceSetup")?.classList.remove("hidden");
+  }
+
+  function paintPlayerData(pd) {
+    const profile = String(pd.inventoryProfile || "global").trim();
+    const sel = $("fleetSetupInvProfile");
+    const custom = $("fleetSetupInvCustom");
+    const wrap = $("fleetSetupInvCustomWrap");
+    if (!sel) return;
+    if (profile === "global" || profile === "server") {
+      sel.value = profile;
+      if (custom) custom.value = "";
+      wrap?.classList.add("hidden");
+    } else {
+      sel.value = "custom";
+      if (custom) custom.value = profile;
+      wrap?.classList.remove("hidden");
+    }
+    setBoolSelect($("fleetSetupSyncInv"), pd.syncInventory !== false);
+    setBoolSelect($("fleetSetupSyncEnder"), pd.syncEnderchest !== false);
+    setBoolSelect($("fleetSetupSyncXp"), pd.syncXp !== false);
+    setBoolSelect($("fleetSetupSyncVitals"), pd.syncVitals !== false);
+    setBoolSelect($("fleetSetupSyncEco"), pd.syncEconomy !== false);
+  }
+
+  function setBoolSelect(el, on) {
+    if (el) el.value = on ? "true" : "false";
+  }
+
+  function syncInvProfileUi() {
+    const mode = $("fleetSetupInvProfile")?.value;
+    const wrap = $("fleetSetupInvCustomWrap");
+    if (!wrap) return;
+    wrap.classList.toggle("hidden", mode !== "custom");
   }
 
   function ensureSelectValue(el, value) {
@@ -333,6 +393,7 @@
     }
     const msg = $("fleetSetupMsg");
     try {
+      const invMode = $("fleetSetupInvProfile")?.value || "global";
       const body = {
         displayName: $("fleetSetupDisplay").value.trim(),
         serverId: $("fleetSetupServerId").value.trim(),
@@ -345,15 +406,27 @@
         difficulty: $("fleetSetupDifficulty").value.trim(),
         "view-distance": $("fleetSetupView").value.trim(),
         autoStart: $("fleetSetupAuto").value,
+        inventoryProfile: invMode,
+        inventoryProfileCustom: $("fleetSetupInvCustom")?.value?.trim() || "",
+        syncInventory: $("fleetSetupSyncInv")?.value || "true",
+        syncEnderchest: $("fleetSetupSyncEnder")?.value || "true",
+        syncXp: $("fleetSetupSyncXp")?.value || "true",
+        syncVitals: $("fleetSetupSyncVitals")?.value || "true",
+        syncEconomy: $("fleetSetupSyncEco")?.value || "true",
       };
       const r = await api("/api/fleet/instances/" + encodeURIComponent(id) + "/settings", {
         method: "POST",
         body: JSON.stringify(body),
       });
+      if (r.playerData) paintPlayerData(r.playerData);
       if (msg) {
         msg.hidden = false;
         msg.className = "easy-save-msg ok";
-        msg.textContent = r.linkSynced ? "Saved · Link servers.* synced" : "Saved";
+        let text = r.linkSynced ? "Saved · Link servers.* synced" : "Saved";
+        if (r.playerDataChanged) {
+          text += r.playerDataReloaded ? " · Player data reloaded" : " · Inventory settings saved";
+        }
+        msg.textContent = text;
       }
       toast("Settings saved for " + id);
       await refreshFleet();
@@ -366,6 +439,8 @@
       toast(e.message, "err");
     }
   });
+
+  $("fleetSetupInvProfile")?.addEventListener("change", syncInvProfileUi);
 
   window.addEventListener("yap-fleet-context", (ev) => {
     const ctx = ev.detail;

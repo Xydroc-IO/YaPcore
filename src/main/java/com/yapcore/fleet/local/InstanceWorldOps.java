@@ -46,6 +46,57 @@ public final class InstanceWorldOps {
         return out;
     }
 
+    /**
+     * Wipe overworld (+ optional dims) and set {@code level-type} so the next Start generates
+     * a fresh world of that type (e.g. {@code minecraft:flat} for creative hubs).
+     */
+    public static Map<String, Object> swapLevelType(
+            Path rootDir,
+            FleetInstance instance,
+            String levelType,
+            boolean includeDims) throws IOException {
+        String type = normalizeLevelType(levelType);
+        Path dir = InstanceLayout.dir(rootDir, instance);
+        String name = readLevelName(dir);
+        deleteWorldSet(dir, name);
+        if (includeDims) {
+            deleteIfWorld(dir.resolve(name + "_nether"));
+            deleteIfWorld(dir.resolve(name + "_the_end"));
+        }
+        Map<String, String> patch = new LinkedHashMap<>();
+        patch.put("level-type", type);
+        if (type.contains("flat")) {
+            // Classic void-ish creative flat: one grass + dirt layers (Paper accepts empty {}).
+            if (readProp(dir, "generator-settings", "{}").isBlank()
+                    || "{}".equals(readProp(dir, "generator-settings", "{}"))) {
+                patch.put("generator-settings", "{}");
+            }
+        }
+        InstanceServerProps.patch(rootDir, instance, patch);
+        Map<String, Object> out = status(rootDir, instance);
+        out.put("action", "swap-level-type");
+        out.put("levelType", type);
+        out.put("deleted", name);
+        out.put("note", "World data wiped. Start the server to generate " + type + ".");
+        return out;
+    }
+
+    /** Accept {@code flat}, {@code FLAT}, {@code minecraft:flat}, etc. */
+    public static String normalizeLevelType(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "minecraft:normal";
+        }
+        String t = raw.trim().toLowerCase(Locale.ROOT).replace('\\', ':');
+        return switch (t) {
+            case "flat", "minecraft:flat", "superflat" -> "minecraft:flat";
+            case "normal", "minecraft:normal", "default" -> "minecraft:normal";
+            case "large_biomes", "largebiomes", "minecraft:large_biomes" -> "minecraft:large_biomes";
+            case "amplified", "minecraft:amplified" -> "minecraft:amplified";
+            case "single_biome", "minecraft:single_biome" -> "minecraft:single_biome";
+            default -> t.contains(":") ? t : "minecraft:" + t;
+        };
+    }
+
     public static Map<String, Object> createNew(
             Path rootDir,
             FleetInstance instance,

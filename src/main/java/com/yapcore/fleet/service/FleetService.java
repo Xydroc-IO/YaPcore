@@ -191,7 +191,47 @@ public final class FleetService {
     public Map<String, Object> writeInstanceSettings(String id, Map<String, String> body)
             throws IOException {
         requireEnabled();
-        return FleetInstanceOps.writeSettings(rootDir, config, store, id, body);
+        return FleetInstanceOps.writeSettings(rootDir, config, store, id, body, instanceId -> {
+            if (!isLocalRunning(instanceId)) {
+                throw new IOException("not running");
+            }
+            dispatch(instanceId, "yapdata reload");
+        });
+    }
+
+    public Map<String, Object> worldStatus(String id) throws IOException {
+        requireEnabled();
+        FleetInstance inst = store.findInstance(id)
+                .orElseThrow(() -> new IOException("Unknown instance: " + id));
+        if (!inst.isLocal()) {
+            throw new IOException("Remote world ops via agent not implemented yet: " + id);
+        }
+        Map<String, Object> out = com.yapcore.fleet.local.InstanceWorldOps.status(rootDir, inst);
+        out.put("running", isLocalRunning(id));
+        return out;
+    }
+
+    /**
+     * Wipe world folders and set level-type (e.g. {@code flat}). Instance must be stopped.
+     */
+    public Map<String, Object> swapWorldLevelType(
+            String id, String levelType, boolean includeDims) throws IOException {
+        requireEnabled();
+        FleetInstance inst = store.findInstance(id)
+                .orElseThrow(() -> new IOException("Unknown instance: " + id));
+        if (!inst.isLocal()) {
+            throw new IOException("Remote world ops via agent not implemented yet: " + id);
+        }
+        if (isLocalRunning(id)) {
+            throw new IOException("Stop " + id + " before swapping its world (level-type=" + levelType + ")");
+        }
+        return com.yapcore.fleet.local.InstanceWorldOps.swapLevelType(
+                rootDir, inst, levelType, includeDims);
+    }
+
+    private boolean isLocalRunning(String id) {
+        LocalInstanceSupervisor sup = local.get(id);
+        return sup != null && sup.isRunning();
     }
 
     public Map<String, Object> listInstancePlugins(String id) throws IOException {

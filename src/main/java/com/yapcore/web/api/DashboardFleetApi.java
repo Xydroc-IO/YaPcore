@@ -79,6 +79,30 @@ public final class DashboardFleetApi {
             }
             case "get-settings" -> fleet.readInstanceSettings(required(body, "id"));
             case "update-settings" -> fleet.writeInstanceSettings(required(body, "id"), body);
+            case "world-status" -> fleet.worldStatus(required(body, "id"));
+            case "world-swap-flat", "swap-flat" -> {
+                String id = required(body, "id");
+                boolean dims = !"false".equalsIgnoreCase(body.getOrDefault("includeDims", "true"));
+                Map<String, Object> swapped = fleet.swapWorldLevelType(id, "flat", dims);
+                // Creative servers should force creative mode after a flat wipe.
+                if ("creative".equalsIgnoreCase(id)
+                        || "true".equalsIgnoreCase(body.getOrDefault("creativeMode", "false"))) {
+                    Map<String, String> gm = new LinkedHashMap<>();
+                    gm.put("gamemode", "creative");
+                    gm.put("force-gamemode", "true");
+                    gm.put("difficulty", "peaceful");
+                    gm.put("spawn-monsters", "false");
+                    gm.put("spawn-animals", "false");
+                    fleet.writeInstanceSettings(id, gm);
+                    swapped.put("gamemode", "creative");
+                    swapped.put("force-gamemode", true);
+                }
+                yield swapped;
+            }
+            case "world-swap-type" -> fleet.swapWorldLevelType(
+                    required(body, "id"),
+                    required(body, "levelType"),
+                    !"false".equalsIgnoreCase(body.getOrDefault("includeDims", "true")));
             case "list-plugins" -> fleet.listInstancePlugins(required(body, "id"));
             case "install-plugin" -> fleet.installCatalogJar(
                     required(body, "jar"),
