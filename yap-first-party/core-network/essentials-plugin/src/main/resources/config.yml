@@ -8,6 +8,9 @@ spawn:
   # global = one spawn network-wide; server = per server-id
   scope: server
   persist-db: true
+  # Hub-style default: every join/reconnect lands at /setspawn (not last logout pos).
+  # Set false on survival/minigame backends that should restore logout location.
+  teleport-on-join: true
 
 server-id: lobby
 use-shared-yapdb: true
@@ -80,6 +83,13 @@ death:
   keep-xp: false
   # Mirror into vanilla /gamerule keepInventory for all loaded worlds on reload
   sync-gamerule: true
+
+# Place/break distance. Vanilla is 4.5 survival / 5 creative. 0 = leave vanilla.
+block-reach:
+  enabled: true
+  survival: 6.5
+  creative: 8.0
+  adventure: 6.5
 
 # Server-side surface bobbing / entry splash (works without client shaders).
 water-waves:

@@ -2,8 +2,10 @@ package com.yapcore.essentials;
 
 import com.yapcore.essentials.cmd.EssentialsCommands;
 import com.yapcore.essentials.db.EssentialsDatabase;
+import com.yapcore.essentials.listener.BlockReachListener;
 import com.yapcore.essentials.listener.DeathKeepListener;
 import com.yapcore.essentials.listener.FreezeListener;
+import com.yapcore.essentials.listener.SpawnJoinListener;
 import com.yapcore.essentials.listener.TeleportListener;
 import com.yapcore.essentials.listener.VanishListener;
 import com.yapcore.essentials.listener.WaterWavesListener;
@@ -35,6 +37,7 @@ public final class EssentialsPlugin extends JavaPlugin {
     private WaterWaves waterWaves;
     private YapTask waterWavesTask;
     private PlayerFeatures playerFeatures;
+    private BlockReachListener blockReach;
 
     @Override
     public void onEnable() {
@@ -67,6 +70,10 @@ public final class EssentialsPlugin extends JavaPlugin {
         pm.registerEvents(new TeleportListener(back), this);
         pm.registerEvents(new DeathKeepListener(this), this);
         pm.registerEvents(new VanishListener(vanish), this);
+        pm.registerEvents(new SpawnJoinListener(this, config, spawnStore), this);
+        blockReach = new BlockReachListener(this);
+        pm.registerEvents(blockReach, this);
+        blockReach.applyOnline();
         if (config.feature("staff")) {
             pm.registerEvents(new FreezeListener(staff), this);
         }
@@ -74,6 +81,7 @@ public final class EssentialsPlugin extends JavaPlugin {
 
         getLogger().info("YaPEssentials ready (server-id=" + config.serverId()
                 + ", spawn-scope=" + config.spawnScopeKey()
+                + ", teleport-on-join=" + config.spawnTeleportOnJoin()
                 + ", keep-inventory=" + config.keepInventory()
                 + ", water-waves=" + config.waterWavesEnabled()
                 + ", playerdata-qol=" + (playerFeatures != null) + ").");
@@ -147,6 +155,9 @@ public final class EssentialsPlugin extends JavaPlugin {
             waterWaves = new WaterWaves(this, this::essentialsConfig);
         }
         applyKeepInventoryPolicy();
+        if (blockReach != null) {
+            blockReach.applyOnline();
+        }
     }
 
     /** Persist + apply keep-inventory (config + optional gamerule). */

@@ -28,6 +28,7 @@ public final class EssentialsConfig {
     private String serverId = "lobby";
     private String spawnScope = "server";
     private boolean spawnPersistDb = true;
+    private boolean spawnTeleportOnJoin = true;
 
     private boolean featureSpawn = true;
     private boolean featureBack = true;
@@ -118,6 +119,7 @@ public final class EssentialsConfig {
         }
         spawnScope = c.getString("spawn.scope", spawnScope);
         spawnPersistDb = c.getBoolean("spawn.persist-db", spawnPersistDb);
+        spawnTeleportOnJoin = c.getBoolean("spawn.teleport-on-join", spawnTeleportOnJoin);
 
         featureSpawn = c.getBoolean("features.spawn", true);
         featureBack = c.getBoolean("features.back", true);
@@ -234,6 +236,10 @@ public final class EssentialsConfig {
 
     public boolean spawnPersistDb() {
         return spawnPersistDb;
+    }
+
+    public boolean spawnTeleportOnJoin() {
+        return spawnTeleportOnJoin;
     }
 
     public boolean feature(String name) {
