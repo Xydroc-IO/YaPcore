@@ -132,6 +132,13 @@ public final class ServerConfig {
                 props.setProperty(key, defaults.getProperty(key));
             }
         }
+        if (resourcePack.rewriteStaleGithubLatest()) {
+            try {
+                save();
+            } catch (IOException ignored) {
+                // In-memory pin still applies via getResourcePackUrl().
+            }
+        }
     }
 
     public String getServerName() { return core.getServerName(); }

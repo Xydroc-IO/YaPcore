@@ -210,7 +210,7 @@ public final class PaperFiles {
                 sha1 = sha1Hex(pack);
                 LOG.info("Resource pack SHA-1 from local zip");
             } else if (githubCdn) {
-                // GitHub /latest drifts — always hash the bytes clients will download.
+                // GitHub tag CDN — always hash the bytes clients will download.
                 try {
                     sha1 = sha1HexFromUrl(url);
                     LOG.info("Resource pack SHA-1 from remote URL (matches what clients download)");

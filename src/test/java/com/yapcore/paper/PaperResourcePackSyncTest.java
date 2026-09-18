@@ -39,7 +39,7 @@ class PaperResourcePackSyncTest {
                 resource-pack-forced=false
                 resource-pack-prompt=Accept HD textures
                 resource-pack-public-host=packs.example.com
-                public-pack-port=80
+                resource-pack-url=
                 port=25566
                 """, StandardCharsets.UTF_8);
         ServerConfig config = new ServerConfig(cfgFile);
@@ -82,6 +82,29 @@ class PaperResourcePackSyncTest {
         assertEquals("http://cdn.example.com/pack/a.zip", ep.packUrl("a.zip"));
         assertEquals("http://cdn.example.com/pack/b.zip", ep.packUrl("b.zip"));
         assertTrue(config.getResourcePackFiles().contains("b.zip"));
+    }
+
+    @Test
+    void githubLatestPackUrlPinsToPrereleaseTag() throws Exception {
+        Path cfgFile = temp.resolve("pin.properties");
+        Files.writeString(cfgFile, """
+                resource-pack-enabled=true
+                resource-pack-files=yapcore-default.zip
+                resource-pack-url=https://github.com/Xydroc-IO/YaPcore/releases/latest/download/{file}
+                port=25566
+                """, StandardCharsets.UTF_8);
+        ServerConfig config = new ServerConfig(cfgFile);
+        config.load();
+        assertEquals(
+                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}",
+                config.getResourcePackUrl());
+        String persisted = Files.readString(cfgFile);
+        assertTrue(persisted.contains("/releases/download/0.0.0.1/{file}"), persisted);
+        assertFalse(persisted.contains("/releases/latest/download/"), persisted);
+        var ep = new com.yapcore.network.publicity.PublicEndpoint(config);
+        assertEquals(
+                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/yapcore-default.zip",
+                ep.packUrl("yapcore-default.zip"));
     }
 
     @Test

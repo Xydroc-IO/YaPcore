@@ -5,6 +5,7 @@ import com.yapcore.config.ConfigSupport;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 
 /** Resource / texture pack settings. */
@@ -16,6 +17,11 @@ public final class ResourcePackConfig {
      */
     public static final String GITHUB_PRERELEASE_PACK_URL =
             "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}";
+
+    private static final String GITHUB_LATEST_PACK_PATH =
+            "github.com/xydroc-io/yapcore/releases/latest/download";
+    private static final String GITHUB_PRERELEASE_PACK_PATH =
+            "github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1";
 
     private final Properties props;
 
@@ -135,7 +141,7 @@ public final class ResourcePackConfig {
      * Empty → build from public host / pack port (see {@code PublicEndpoint#packUrl}).
      */
     public String getResourcePackUrl() {
-        return props.getProperty("resource-pack-url", "");
+        return pinPrereleasePackUrl(props.getProperty("resource-pack-url", ""));
     }
 
     public void setResourcePackUrl(String url) {
@@ -166,5 +172,35 @@ public final class ResourcePackConfig {
 
     public void setResourcePackPrompt(String prompt) {
         props.setProperty("resource-pack-prompt", prompt == null ? "" : prompt);
+    }
+
+    /**
+     * GitHub {@code /releases/latest} ignores prereleases (and currently 404s the pack).
+     * Rewrite our repo's latest pack CDN onto tag {@code 0.0.0.1}.
+     *
+     * @return true when {@code resource-pack-url} was rewritten
+     */
+    public boolean rewriteStaleGithubLatest() {
+        String url = props.getProperty("resource-pack-url", "");
+        String pinned = pinPrereleasePackUrl(url);
+        if (pinned.equals(url == null ? "" : url)) {
+            return false;
+        }
+        props.setProperty("resource-pack-url", pinned);
+        return true;
+    }
+
+    /** Pin YaP GitHub {@code /releases/latest/download/…} onto the 0.0.0.1 prerelease tag. */
+    public static String pinPrereleasePackUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return url == null ? "" : url;
+        }
+        String lower = url.toLowerCase(Locale.ROOT);
+        int i = lower.indexOf(GITHUB_LATEST_PACK_PATH);
+        if (i < 0) {
+            return url;
+        }
+        return url.substring(0, i) + GITHUB_PRERELEASE_PACK_PATH
+                + url.substring(i + GITHUB_LATEST_PACK_PATH.length());
     }
 }
