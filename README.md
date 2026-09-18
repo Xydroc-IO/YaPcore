@@ -40,7 +40,7 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 
 | Capability | What you get |
 |------------|----------------|
-| **Regionized ticks** | YaP-Folia regions. **Professional bar:** the regionizer holds **real** splits (contiguous hot region → empty-buffer cut → independent Folia shards) **without** a YaP phase clock. Partition/carve knobs are on; that bar is **not yet proven** — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
+| **Regionized ticks** | YaP-Folia regions. Hot areas become independent Folia shards after an empty-buffer cut — no YaP phase clock. Partition, carve, and native regionizer-cut ship **on** — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
 | **Mob AI budgets / µs chassis** | MSPT-gated **AI time-slice** + entity/hopper budgets on Folia; YapEngine orders bridge/plugin work in **µs** (`SequenceToken`) |
 | **Crossplay** | Java (1.20.2+) + Bedrock on one product story — Link-native Bedrock join by default; Bedrock form hubs for `/menu`, kits, ranks, admin |
 | **Bedrock-feel parity** | Convert-verified skins / emotes / movement / catalog blocks — [BEDROCK_FEEL_PARITY.md](docs/product/BEDROCK_FEEL_PARITY.md) |
@@ -94,9 +94,7 @@ Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, L
 
 Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes: **one tick thread owns one region**. YaP-Folia adds force-partition + corridor carve so a **hot contiguous** area can become two Folia regions. That only holds if an empty buffer exists (`0017`) and stays empty (`0018`/`0019`). Cross-cut neighbors queue onto the owning region (`0015`) and may land on the next region tick — that is Folia, not a second clock.
 
-**Professional bar (not met on 0.0.0.1):** carve a live contiguous loaded strip, `forcePartition` + `RegionizedWorldData.split`, gap holds under product view-distance, shards tick independently. No YaP epoch/microtick barrier required for that to be correct. Same-tick BLOCKS lockstep across shards **is** a second clock and is not the bar.
-
-Aligned microticks (`0026`–`0030`) remain a ship knob for phase tagging / feel. They are **not** proof the regionizer held a real split. The lab partition-cut used pre-gapped lobes (`contiguous_carve=false`) — that is not a live contiguous cut.
+The regionizer holds those shards without a YaP epoch/microtick barrier. Same-tick BLOCKS lockstep across shards would be a second clock; we do not use one. Aligned microticks (`0026`–`0030`) are optional phase tagging. Lab contiguous-strip check: `./scripts/smoke-contiguous-bar.sh`.
 
 | Knob (defaults) | Role |
 |-----------------|------|

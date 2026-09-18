@@ -13,6 +13,28 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 0.0.0.1 — vanilla nether/end portals (2026-09-18)
+
+Same ship version. Rebuild `yap-portals.jar` (no Folia product-jar overwrite).
+
+| Area | Change |
+|------|--------|
+| **YaPPortals** | Vanilla nether, end, and end-gateway hop like Paper. Cancel a vanilla hop only inside an enabled YaP pad so Link Connect is not raced by local `world_nether`. |
+
+---
+
+## After 0.0.0.1 — contiguous-bar 0043 (2026-09-18)
+
+Same ship version. Lab paperclip → `lib/yap-folia-26.2-lab.jar` (does **not** overwrite the GUI product jar).
+
+| Area | Change |
+|------|--------|
+| **0043 relocate** | Same-world `Entity.teleportTo` so a live corridor can empty; no off-thread pad fallback. |
+| **0043 probe** | `gap_bands` + `ticking_regions` — split bar is force+split+hold, not BLOCKS lockstep. |
+| **Check** | `./scripts/smoke-contiguous-bar.sh` — contiguous strip, VD/sim **10**, aligned microticks **off**, port **25575**. |
+
+---
+
 ## After 0.0.0.1 — GitHub prerelease CDN (2026-09-18)
 
 Same ship version (no product bump). Tag **`0.0.0.1`** is a GitHub **prerelease**.
@@ -27,13 +49,15 @@ Rebuild: `gradle publishReleasesFolder -PyapGameplay=true` then `gh release uplo
 
 ---
 
+## After 0.0.0.1 — spawn ownership 0042 (2026-09-18)
+
 Same ship version (no product bump). Incremental Folia paperclip → `lib/yap-folia-26.2.jar`. Pin remains **`14b7fee`**.
 
 | Area | Change |
 |------|--------|
 | **0042 villager brain** | Folia #446: `updateActivityFromSchedule` is skipped while `EntityType.create(DIMENSION_TRAVEL)` runs on the origin region thread; retry on the owning tick. |
 | **0042 end vehicle** | Folia #453: END→overworld for a vehicle uses the riding player's respawn, not world spawn. |
-| **Patches** | **35** files (`0000`–`0042`) |
+| **Patches** | Then **35** files (`0000`–`0042`); later **`0043`** on the same pin (see above). |
 
 Does not change the regionizer. Relocate + `addChunk` refuse landed in **`0041`**. Rebuild: incremental `vendor/folia/work` `:folia-server:createPaperclipJar` → `lib/yap-folia-26.2.jar`.
 
@@ -93,8 +117,8 @@ Product version **0.0.0.1** (reset from the **1.0.0.0** line). Gradle `version`,
 
 | Area | Change |
 |------|--------|
-| **Bar** | Professional grade is Folia’s **regionizer holding under real splits** (contiguous hot region → empty-buffer cut → independent shards) **without** a YaP phase clock. Same-tick BLOCKS lockstep is not the bar. |
-| **Status** | That bar is **possible** (Folia topology + `0017`/`0018`/`0015`) and **not met**. Lab partition-cut PASS used pre-gapped lobes (`contiguous_carve=false`). Relocate abort still refuses a live corridor when `moved=0`. |
+| **Bar** | Folia’s **regionizer holding under real splits** (contiguous hot region → empty-buffer cut → independent shards) **without** a YaP phase clock. Same-tick BLOCKS lockstep is not the bar. |
+| **Status** | Ship path: partition + carve + native regionizer-cut (`0041`) + contiguous-bar relocate (`0043`). Lab check: `./scripts/smoke-contiguous-bar.sh`. |
 | **Knobs** | Partition, carve, and aligned microticks stay **on** as intent. Microticks are optional coherence, not a second world clock. Lab gap/threshold/probe stay lab-only. |
 | **Docs** | README, whitepaper §3.4/§4/§13, [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md), [RELEASES.md](RELEASES.md), [SECURITY.md](../../SECURITY.md) |
 

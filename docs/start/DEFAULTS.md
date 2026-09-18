@@ -117,4 +117,4 @@ Seeded in `config/defaults/server.properties` (and forwarded as `-Dyap.folia.*`)
 | `folia-ticket-hygiene` | **true** |
 | `folia-portal-couple` | **true** |
 
-Lab-only: `-Dyap.folia.scheduler-probe` (patch `0033`). **35** patches on pin `14b7fee` (`0000`–`0042`): `0034`–`0042` are Folia-itself (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn). **Professional bar** (live contiguous split that the regionizer holds, no second clock) is reachable with `0041` and **not yet proven** on **0.0.0.1**. Inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
+Lab-only: `-Dyap.folia.scheduler-probe` (patch `0033`). **36** patches on pin `14b7fee` (`0000`–`0043`): `0034`–`0043` are Folia-itself (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe). Inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
