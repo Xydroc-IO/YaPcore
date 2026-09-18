@@ -30,7 +30,7 @@ public final class RegionsPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new RegionListener(config, regionService), this);
         getServer().getPluginManager().registerEvents(new RegionWorldFlagsListener(regionService), this);
-        gamemodeListener = new RegionGamemodeListener(this, regionService);
+        gamemodeListener = new RegionGamemodeListener(this, config, regionService);
         getServer().getPluginManager().registerEvents(gamemodeListener, this);
 
         PluginCommand cmd = getCommand("region");

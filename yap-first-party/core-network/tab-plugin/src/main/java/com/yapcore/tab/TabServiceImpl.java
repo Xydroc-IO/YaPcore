@@ -209,10 +209,12 @@ public final class TabServiceImpl implements com.yapcore.tab.TabService {
                 score--;
                 continue;
             }
-            String entry = uniqueEntry(score);
+            String entry = uniqueEntry(score, applyPlaceholders(player, trim(line, 40)));
             Team team = board.registerNewTeam("line" + score);
             team.addEntry(entry);
-            team.prefix(LegacyColors.component(applyPlaceholders(player, trim(line, 64))));
+            // Put text in the entry itself so Bedrock (no team-prefix translate) shows it.
+            // Keep prefix empty to avoid Java double-rendering.
+            team.prefix(net.kyori.adventure.text.Component.empty());
             obj.getScore(entry).setScore(score);
             score--;
             index++;
@@ -310,8 +312,20 @@ public final class TabServiceImpl implements com.yapcore.tab.TabService {
         return "yt_" + uuid.toString().substring(0, 8);
     }
 
+    private static String uniqueEntry(int score, String display) {
+        String plain = LegacyColors.plain(display == null ? "" : display).trim();
+        if (plain.isEmpty()) {
+            plain = " ";
+        }
+        if (plain.length() > 38) {
+            plain = plain.substring(0, 38);
+        }
+        // Unique scoreboard entry: visible text + invisible uniqueness for Java.
+        return plain + "§" + Integer.toHexString(Math.max(0, Math.min(15, score % 16))) + "§r";
+    }
+
     private static String uniqueEntry(int score) {
-        return "§" + Integer.toHexString(Math.max(0, Math.min(15, score % 16))) + "§r";
+        return uniqueEntry(score, "");
     }
 
     private static String trim(String line, int max) {

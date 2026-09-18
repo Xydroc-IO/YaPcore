@@ -1,6 +1,7 @@
 package com.yapcore.regions.listener;
 
 import com.yapcore.regions.AdminRegion;
+import com.yapcore.regions.RegionsConfig;
 import com.yapcore.regions.service.RegionServiceImpl;
 import com.yapcore.sched.StaffBypass;
 import com.yapcore.sched.YapSched;
@@ -24,18 +25,21 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Forces a region's configured gamemode on enter; restores the previous mode on leave.
- * Staff with land bypass keep their current mode (builders stay creative).
+ * Forces a region's configured gamemode on enter; on leave restores previous
+ * or applies {@link RegionsConfig#outsideGameMode()} when set (e.g. survival
+ * outside spawn). Staff with land bypass keep their current mode.
  */
 public final class RegionGamemodeListener implements Listener {
 
     private final JavaPlugin plugin;
+    private final RegionsConfig config;
     private final RegionServiceImpl regions;
-    /** Previous gamemode before a region forced one. */
+    /** Previous gamemode before a region forced one (used when outside-gamemode unset). */
     private final Map<UUID, GameMode> previous = new ConcurrentHashMap<>();
 
-    public RegionGamemodeListener(JavaPlugin plugin, RegionServiceImpl regions) {
+    public RegionGamemodeListener(JavaPlugin plugin, RegionsConfig config, RegionServiceImpl regions) {
         this.plugin = plugin;
+        this.config = config;
         this.regions = regions;
     }
 
@@ -68,7 +72,11 @@ public final class RegionGamemodeListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         Optional<AdminRegion> here = regions.at(player.getLocation());
-        here.ifPresent(r -> enter(player, r));
+        if (here.isPresent() && here.get().hasGameMode()) {
+            enter(player, here.get());
+        } else {
+            applyOutside(player);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -116,7 +124,11 @@ public final class RegionGamemodeListener implements Listener {
         if (from.isPresent() && (to.isEmpty() || !sameGameMode(from.get(), to.get()))) {
             leave(player);
         }
-        to.ifPresent(r -> enter(player, r));
+        if (to.isPresent() && to.get().hasGameMode()) {
+            enter(player, to.get());
+        } else if (to.isEmpty() || !to.get().hasGameMode()) {
+            applyOutside(player);
+        }
     }
 
     private void enter(Player player, AdminRegion region) {
@@ -132,9 +144,25 @@ public final class RegionGamemodeListener implements Listener {
     }
 
     private void leave(Player player) {
+        if (config.outsideGameMode() != null) {
+            previous.remove(player.getUniqueId());
+            applyOutside(player);
+            return;
+        }
         GameMode restore = previous.remove(player.getUniqueId());
-        if (restore != null && !StaffBypass.land(player)) {
+        if (restore != null && !StaffBypass.land(player) && player.getGameMode() != restore) {
             player.setGameMode(restore);
+        }
+    }
+
+    /** Enforce configured outside mode when set. */
+    private void applyOutside(Player player) {
+        if (StaffBypass.land(player)) {
+            return;
+        }
+        GameMode outside = config.outsideGameMode();
+        if (outside != null && player.getGameMode() != outside) {
+            player.setGameMode(outside);
         }
     }
 

@@ -35,10 +35,14 @@ public final class StaffBypass {
                 || player.hasPermission("yapdata.admin");
     }
 
-    /** Land protection (claims / admin regions). */
+    /**
+     * Land protection (claims / admin regions).
+     * Does <b>not</b> include creative gamemode — otherwise creative-server
+     * players (and builders flying creative) ignore {@code build deny} at spawn.
+     * Use OP / {@code yap.bypass} / {@code yapregions.admin} / claims admin to bypass.
+     */
     public static boolean land(Player player) {
-        return creative(player)
-                || staff(player)
+        return staff(player)
                 || player.hasPermission("yapdata.claims.admin")
                 || player.hasPermission("yapregions.admin");
     }

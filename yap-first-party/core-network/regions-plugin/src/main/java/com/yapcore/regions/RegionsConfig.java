@@ -21,6 +21,8 @@ public final class RegionsConfig {
     private String notifyLeaveSubtitle = "&f{region}";
     private String notifyActionBarEnter = "&a» &f{region}";
     private String notifyActionBarLeave = "&7« &f{region}";
+    /** When set, players outside any region gamemode override use this mode. */
+    private org.bukkit.GameMode outsideGameMode;
 
     public RegionsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -53,6 +55,18 @@ public final class RegionsConfig {
         notifyLeaveSubtitle = c.getString("notify.leave-subtitle", "&f{region}");
         notifyActionBarEnter = c.getString("notify.action-bar-enter", "&a» &f{region}");
         notifyActionBarLeave = c.getString("notify.action-bar-leave", "&7« &f{region}");
+        outsideGameMode = parseGameMode(c.getString("outside-gamemode", ""));
+    }
+
+    private static org.bukkit.GameMode parseGameMode(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            return org.bukkit.GameMode.valueOf(raw.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public String serverId() {
@@ -109,5 +123,10 @@ public final class RegionsConfig {
 
     public String notifyActionBarLeave() {
         return notifyActionBarLeave;
+    }
+
+    /** Null when unset — leave restores previous mode (legacy). */
+    public org.bukkit.GameMode outsideGameMode() {
+        return outsideGameMode;
     }
 }
