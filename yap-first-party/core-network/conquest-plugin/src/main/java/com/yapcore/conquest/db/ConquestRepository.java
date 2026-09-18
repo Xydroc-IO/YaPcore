@@ -113,6 +113,22 @@ public final class ConquestRepository {
         }
     }
 
+    public void setFrozen(String world, int chunkX, int chunkZ, boolean frozen) throws SQLException {
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     UPDATE yap_conquest_chunks SET frozen = ?
+                     WHERE world = ? AND chunk_x = ? AND chunk_z = ?
+                     """)) {
+            ps.setBoolean(1, frozen);
+            ps.setString(2, world);
+            ps.setInt(3, chunkX);
+            ps.setInt(4, chunkZ);
+            if (ps.executeUpdate() == 0) {
+                throw new SQLException("no conquest claim on this chunk");
+            }
+        }
+    }
+
     private static ConquestChunk map(ResultSet rs) throws SQLException {
         Timestamp claimed = rs.getTimestamp("claimed_at");
         return new ConquestChunk(

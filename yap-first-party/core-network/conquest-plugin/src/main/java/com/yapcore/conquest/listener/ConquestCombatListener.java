@@ -64,14 +64,11 @@ public final class ConquestCombatListener implements Listener {
             return;
         }
         String cause = event.getCause().name();
-        if (cause.equals("ENDER_PEARL")
-                || cause.equals("CHORUS_FRUIT")
-                || cause.equals("COMMAND")
-                || cause.equals("PLUGIN")
-                || cause.equals("SPECTATE")) {
-            event.setCancelled(true);
-            player.sendMessage("§cYou cannot teleport while combat tagged.");
+        if ("RESPAWN".equals(cause)) {
+            return;
         }
+        event.setCancelled(true);
+        player.sendMessage("§cYou cannot teleport while combat tagged.");
     }
 
     @EventHandler

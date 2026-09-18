@@ -57,6 +57,12 @@ class ConquestTerritoryRulesTest {
     }
 
     @Test
+    void neutralDeniedWhenEnemyPvpOnly() {
+        var ctx = ctx(true, false, 2L, 3L, FactionRelation.NEUTRAL, FactionRelation.NEUTRAL);
+        assertEquals(Optional.of(false), ConquestTerritoryRules.evaluatePvp(ctx));
+    }
+
+    @Test
     void powerGate() {
         assertTrue(ConquestTerritoryRules.canAfford(0, 1, 10));
         assertFalse(ConquestTerritoryRules.canAfford(10, 1, 10));

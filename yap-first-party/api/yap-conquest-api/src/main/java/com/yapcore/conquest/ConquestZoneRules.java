@@ -103,6 +103,9 @@ public final class ConquestZoneRules {
         if (type == ConquestZoneType.SAFEZONE) {
             return Optional.of(false);
         }
+        if (type == ConquestZoneType.WARZONE && !policy(type, settings).build().orElse(true)) {
+            return Optional.of(false);
+        }
         if (claimed) {
             return factionBuild;
         }

@@ -55,6 +55,12 @@ class ConquestZoneRulesTest {
     }
 
     @Test
+    void warzoneDeniesBuildEvenWhenClaimed() {
+        assertEquals(Optional.of(false), ConquestZoneRules.evaluateBuild(
+                ConquestZoneType.WARZONE, DEFAULT, true, Optional.of(true)));
+    }
+
+    @Test
     void warzoneClaimableWhenConfigured() {
         var s = new ConquestZoneRules.Settings(
                 true, false, true, true,

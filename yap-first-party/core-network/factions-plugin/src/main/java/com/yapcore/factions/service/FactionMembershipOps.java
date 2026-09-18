@@ -77,6 +77,7 @@ final class FactionMembershipOps {
                     s.chatState.clear(m.playerId());
                     s.clearMemberPerks(m.playerId(), faction);
                 }
+                s.unfreezeLinkedClaims(factionId);
                 s.repository.deleteFaction(factionId);
                 s.overlayCache.clear();
             } catch (SQLException e) {
@@ -123,7 +124,7 @@ final class FactionMembershipOps {
                     throw new IllegalStateException("invite expired");
                 }
                 s.repository.deleteInvite(factionId, playerId);
-                s.joinInternal(factionId, playerId, FactionRole.MEMBER);
+                s.joinInternal(factionId, playerId, FactionRole.RECRUIT);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -156,7 +157,7 @@ final class FactionMembershipOps {
                     }
                     s.repository.deleteInvite(factionId, playerId);
                 }
-                s.joinInternal(factionId, playerId, FactionRole.MEMBER);
+                s.joinInternal(factionId, playerId, FactionRole.RECRUIT);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

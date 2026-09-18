@@ -137,7 +137,7 @@ public final class ConquestServiceImpl implements ConquestService {
 
     @Override
     public CompletableFuture<Void> setChunkZone(String world, int chunkX, int chunkZ, ConquestZoneType type) {
-        return CompletableFuture.runAsync(() -> {
+        return ConquestAsync.run(plugin, () -> {
             if (!config.zonesEnabled()) {
                 throw new IllegalStateException("Zones are disabled. Set zones.enabled: true then reload.");
             }
@@ -156,7 +156,7 @@ public final class ConquestServiceImpl implements ConquestService {
 
     @Override
     public CompletableFuture<Void> clearChunkZone(String world, int chunkX, int chunkZ) {
-        return CompletableFuture.runAsync(() -> {
+        return ConquestAsync.run(plugin, () -> {
             if (!config.zonesEnabled()) {
                 throw new IllegalStateException("Zones are disabled. Set zones.enabled: true then reload.");
             }
@@ -170,12 +170,12 @@ public final class ConquestServiceImpl implements ConquestService {
 
     @Override
     public CompletableFuture<ConquestChunk> claim(Player player, Location location) {
-        return CompletableFuture.supplyAsync(() -> claimSync(player, location));
+        return ConquestAsync.supply(plugin, () -> claimSync(player, location));
     }
 
     @Override
     public CompletableFuture<Void> unclaim(Player player, Location location) {
-        return CompletableFuture.runAsync(() -> unclaimSync(player, location));
+        return ConquestAsync.run(plugin, () -> unclaimSync(player, location));
     }
 
     @Override
@@ -434,6 +434,16 @@ public final class ConquestServiceImpl implements ConquestService {
             plugin.getLogger().warning("Conquest zone lookup failed: " + e.getMessage());
         }
         return config.worldDefaultZone(world);
+    }
+
+    public CompletableFuture<Void> setChunkFrozen(String world, int chunkX, int chunkZ, boolean frozen) {
+        return ConquestAsync.run(plugin, () -> {
+            try {
+                repository.setFrozen(world, chunkX, chunkZ, frozen);
+            } catch (Exception e) {
+                throw new IllegalStateException(e.getMessage() == null ? "Freeze failed." : e.getMessage(), e);
+            }
+        });
     }
 
     private static FactionService requireFactions() {

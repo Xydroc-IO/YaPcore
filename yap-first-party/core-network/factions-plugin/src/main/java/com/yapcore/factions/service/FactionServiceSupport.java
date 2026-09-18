@@ -9,6 +9,7 @@ import com.yapcore.factions.FactionRole;
 import com.yapcore.factions.FactionsConfig;
 import com.yapcore.factions.chat.FactionChatState;
 import com.yapcore.factions.db.FactionRepository;
+import com.yapcore.factions.integration.ClaimIntegration;
 import com.yapcore.factions.integration.FactionPerkIntegration;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
@@ -16,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -242,8 +244,24 @@ final class FactionServiceSupport {
                 available = FactionPowerCalculator.clampPower(max - used, max);
             }
             repository.updatePower(factionId, available, max);
+            // Shield when land has eaten all available power, not only on death.
+            if (available <= 0 && config.shieldSeconds() > 0) {
+                repository.updateShield(factionId, Instant.now().plusSeconds(config.shieldSeconds()));
+            } else if (available > 0) {
+                repository.updateShield(factionId, null);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    void unfreezeLinkedClaims(long factionId) {
+        try {
+            for (FactionClaimOverlay overlay : repository.overlaysForFaction(factionId)) {
+                ClaimIntegration.setTaxFrozen(overlay.claimId(), false);
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "unfreeze faction claims " + factionId, e);
         }
     }
 

@@ -50,7 +50,10 @@ public final class YapConquestCommand implements CommandExecutor, TabCompleter {
         if (args.length >= 1 && "clearzone".equalsIgnoreCase(args[0])) {
             return clearZone(sender);
         }
-        sender.sendMessage("§eUsage: /yapconquest reload|setzone <warzone|safezone|wilderness>|clearzone");
+        if (args.length >= 1 && ("freeze".equalsIgnoreCase(args[0]) || "unfreeze".equalsIgnoreCase(args[0]))) {
+            return freezeChunk(sender, "freeze".equalsIgnoreCase(args[0]));
+        }
+        sender.sendMessage("§eUsage: /yapconquest reload|setzone <type>|clearzone|freeze|unfreeze");
         return true;
     }
 
@@ -105,12 +108,33 @@ public final class YapConquestCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean freezeChunk(CommandSender sender, boolean frozen) {
+        if (!(sender instanceof Player player) || player.getWorld() == null) {
+            sender.sendMessage("§cStand in the claimed chunk.");
+            return true;
+        }
+        String world = player.getWorld().getName();
+        int cx = player.getLocation().getBlockX() >> 4;
+        int cz = player.getLocation().getBlockZ() >> 4;
+        plugin.conquestService().setChunkFrozen(world, cx, cz, frozen)
+                .thenRun(() -> YapSched.entity(plugin, player, () ->
+                        player.sendMessage(frozen
+                                ? "§aChunk frozen (" + cx + "," + cz + ")."
+                                : "§aChunk unfrozen (" + cx + "," + cz + ").")))
+                .exceptionally(ex -> {
+                    YapSched.entity(plugin, player, () ->
+                            player.sendMessage("§c" + ConquestCommands.rootMessage(ex)));
+                    return null;
+                });
+        return true;
+    }
+
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
             String p = args[0].toLowerCase(Locale.ROOT);
             List<String> out = new ArrayList<>();
-            for (String s : List.of("reload", "setzone", "clearzone")) {
+            for (String s : List.of("reload", "setzone", "clearzone", "freeze", "unfreeze")) {
                 if (s.startsWith(p)) {
                     out.add(s);
                 }

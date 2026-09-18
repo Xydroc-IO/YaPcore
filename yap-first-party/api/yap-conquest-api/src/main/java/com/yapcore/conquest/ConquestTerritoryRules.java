@@ -57,7 +57,10 @@ public final class ConquestTerritoryRules {
         if (ctx.attackerToVictim() == FactionRelation.ALLY) {
             return Optional.of(false);
         }
-        if (ctx.attackerToVictim() == FactionRelation.ENEMY && ctx.enemyPvpOnly()) {
+        if (ctx.enemyPvpOnly()) {
+            return Optional.of(ctx.attackerToVictim() == FactionRelation.ENEMY);
+        }
+        if (ctx.attackerToVictim() == FactionRelation.ENEMY) {
             return Optional.of(true);
         }
         if (ctx.actorFactionId() == ctx.territoryFactionId()

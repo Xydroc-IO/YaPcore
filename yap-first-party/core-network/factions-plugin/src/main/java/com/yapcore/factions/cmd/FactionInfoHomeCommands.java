@@ -136,6 +136,10 @@ final class FactionInfoHomeCommands {
 
     boolean chat(Player player, String[] args) {
         if (args.length < 2) {
+            if (!ctx.config.perksChatChannelToggle()) {
+                player.sendMessage("§7Chat toggle is off. Use §f/" + ctx.cmd() + " chat <message>§7.");
+                return true;
+            }
             ctx.factions.chatState().setChannel(player.getUniqueId(), FactionChatState.Channel.FACTION);
             player.sendMessage("§a" + ctx.singular() + " chat enabled. Use §f/" + ctx.cmd() + " chat off §ato disable.");
             return true;
@@ -152,6 +156,10 @@ final class FactionInfoHomeCommands {
 
     boolean allyChat(Player player, String[] args) {
         if (args.length < 2) {
+            if (!ctx.config.perksChatChannelToggle()) {
+                player.sendMessage("§7Chat toggle is off. Use §f/" + ctx.cmd() + " ac <message>§7.");
+                return true;
+            }
             ctx.factions.chatState().setChannel(player.getUniqueId(), FactionChatState.Channel.ALLY);
             player.sendMessage("§aAlly chat enabled. Use §f/" + ctx.cmd() + " ac off §ato disable.");
             return true;

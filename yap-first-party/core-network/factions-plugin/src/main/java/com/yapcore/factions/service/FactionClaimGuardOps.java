@@ -66,6 +66,7 @@ final class FactionClaimGuardOps {
                     throw new IllegalStateException("officer only");
                 }
                 s.repository.unlinkClaim(claimId);
+                ClaimIntegration.setTaxFrozen(claimId, false);
                 s.overlayCache.put(claimId, Optional.empty());
                 s.refreshPower(overlay.factionId());
             } catch (SQLException e) {
@@ -252,6 +253,7 @@ final class FactionClaimGuardOps {
             s.chatState.clear(m.playerId());
             s.clearMemberPerks(m.playerId(), faction);
         }
+        s.unfreezeLinkedClaims(faction.id());
         s.repository.deleteFaction(faction.id());
         s.overlayCache.clear();
     }
