@@ -99,7 +99,7 @@ public final class LinkBedrockSession {
     final java.util.Set<Integer> playerJavaEntityIds = ConcurrentHashMap.newKeySet();
     final ConcurrentHashMap<UUID, String> playerNamesByUuid = new ConcurrentHashMap<>();
     /** JE add_entity arrived before StartGame — flush after Bedrock can render. */
-    final ConcurrentHashMap<Integer, PendingAddEntity> pendingAddEntities = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Integer, LinkBedrockSessionPending.PendingAddEntity> pendingAddEntities = new ConcurrentHashMap<>();
     final Set<String> pluginCommandNames = ConcurrentHashMap.newKeySet();
     volatile int lastJeInventorySlots = 46;
     volatile int lastJeWindowId = -1;
@@ -453,32 +453,11 @@ public final class LinkBedrockSession {
 
     public void bufferPendingAddEntity(int entityId, UUID uuid, String typeKey,
                                        double x, double y, double z, float yaw, float pitch) {
-        if (entityId == javaEntityId) {
-            return;
-        }
-        pendingAddEntities.put(entityId, new PendingAddEntity(
-                entityId, uuid, typeKey, x, y, z, yaw, pitch));
-        BedrockJoinProbe.noteEvent(guid, "pending_add_entity id=" + entityId
-                + " type=" + typeKey + " buffered=" + pendingAddEntities.size());
+        LinkBedrockSessionPending.buffer(this, entityId, uuid, typeKey, x, y, z, yaw, pitch);
     }
 
     public void flushPendingAddEntities() {
-        if (!sentSpawnPacket || pendingAddEntities.isEmpty()) {
-            return;
-        }
-        java.util.ArrayList<PendingAddEntity> batch = new java.util.ArrayList<>(pendingAddEntities.values());
-        pendingAddEntities.clear();
-        LOG.info("BE flush pending add_entity count=" + batch.size() + " user=" + username);
-        BedrockJoinProbe.noteEvent(guid, "flush_pending_add_entity count=" + batch.size());
-        for (PendingAddEntity p : batch) {
-            com.yapcore.link.bedrock.translator.JavaEntityTranslator.onAddEntity(
-                    this, p.entityId(), p.uuid(), p.typeKey(),
-                    p.x(), p.y(), p.z(), p.yaw(), p.pitch());
-        }
-    }
-
-    public record PendingAddEntity(int entityId, UUID uuid, String typeKey,
-                                   double x, double y, double z, float yaw, float pitch) {
+        LinkBedrockSessionPending.flush(this);
     }
 
     public void rememberPluginCommands(Iterable<String> names) {

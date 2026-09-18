@@ -10,8 +10,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -333,7 +331,7 @@ public final class JavaDownstreamClient {
                         ch.pipeline()
                                 .addLast("frame-dec", new McFrameCodec.Decoder())
                                 .addLast("frame-enc", new McOutboundPacketEncoder())
-                                .addLast("handler", new Handler());
+                                .addLast("handler", new JavaDownstreamInbound(JavaDownstreamClient.this));
                     }
                 });
         LOG.info("JE downstream connect → " + backend
@@ -466,47 +464,4 @@ public final class JavaDownstreamClient {
             listener.onDisconnect(reason);
         }
     }
-
-
-    private final class Handler extends ChannelInboundHandlerAdapter {
-        @Override
-        public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            if (!(msg instanceof ByteBuf buf)) {
-                return;
-            }
-            try {
-                switch (phase) {
-                    case LOGIN -> login.handleLogin(ctx, buf);
-                    case CONFIGURATION -> login.handleConfiguration(ctx, buf);
-                    case PLAY -> play.handlePlay(ctx, buf);
-                    default -> buf.release();
-                }
-            } catch (Exception e) {
-                // handlePlay already releases in its finally — never double-release
-                // (that masked real parse errors as "refCnt: 0, decrement: 1" / IC-41).
-                if (buf.refCnt() > 0) {
-                    buf.release();
-                }
-                LOG.log(Level.WARNING, "JE downstream packet error phase=" + phase, e);
-                fail("Java downstream error: " + e.getMessage());
-            }
-        }
-
-        @Override
-        public void channelInactive(ChannelHandlerContext ctx) {
-            if (!closed.get()) {
-                fail("Java backend closed");
-            }
-        }
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            LOG.log(Level.FINE, "JE downstream exception", cause);
-            fail(cause.getMessage() != null ? cause.getMessage() : "exception");
-        }
-    }
-
-
-
-
 }

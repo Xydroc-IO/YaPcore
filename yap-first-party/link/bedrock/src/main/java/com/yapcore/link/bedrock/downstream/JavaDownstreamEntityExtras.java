@@ -35,6 +35,22 @@ final class JavaDownstreamEntityExtras {
                 parseAttributes(client, buf);
                 yield true;
             }
+            case JavaPlayWire.CB_SET_ENTITY_DATA -> {
+                parseSetEntityData(client, buf);
+                yield true;
+            }
+            case JavaPlayWire.CB_ENTITY_EVENT -> {
+                int entityId = McCodec.readVarInt(buf);
+                int status = buf.isReadable() ? (buf.readUnsignedByte()) : -1;
+                if (client.listener != null) {
+                    client.listener.onEntityEvent(entityId, status);
+                }
+                yield true;
+            }
+            case JavaPlayWire.CB_CUSTOM_PAYLOAD -> {
+                parseCustomPayload(client, buf);
+                yield true;
+            }
             default -> false;
         };
     }
@@ -102,6 +118,60 @@ final class JavaDownstreamEntityExtras {
             }
         } catch (Exception e) {
             LOG.fine("JE update_attributes skim: " + e.getMessage());
+        }
+    }
+
+    private static void parseSetEntityData(JavaDownstreamClient client, ByteBuf buf) {
+        int entityId = McCodec.readVarInt(buf);
+        String customName = null;
+        boolean nameVisible = false;
+        try {
+            while (buf.isReadable()) {
+                int index = buf.readUnsignedByte();
+                if (index == 0xFF) {
+                    break;
+                }
+                int serializer = McCodec.readVarInt(buf);
+                if (index == 2 && (serializer == 5 || serializer == 6)) {
+                    boolean present = serializer != 6 || buf.readBoolean();
+                    if (present) {
+                        customName = JavaDownstreamParse.tryPlainFromComponent(buf);
+                    }
+                } else if (index == 3 && serializer == 8) {
+                    nameVisible = buf.readBoolean();
+                } else {
+                    JavaDownstreamNbt.skipEntityMetaValue(buf, serializer);
+                }
+            }
+        } catch (Exception e) {
+            LOG.fine("JE set_entity_data skim: " + e.getMessage());
+        }
+        if (client.listener != null) {
+            client.listener.onSetEntityData(entityId);
+            if (customName != null && !customName.isBlank()) {
+                client.listener.onEntityCustomName(entityId, customName, nameVisible);
+            }
+        }
+    }
+
+    private static void parseCustomPayload(JavaDownstreamClient client, ByteBuf buf) {
+        String channel = JavaDownstreamParse.safeString(buf);
+        byte[] data = new byte[Math.max(0, buf.readableBytes())];
+        if (data.length > 0) {
+            buf.readBytes(data);
+        }
+        if (client.listener == null || channel == null) {
+            return;
+        }
+        client.listener.onCustomPayload(channel, data);
+        var target = BedrockBungeeConnect.sniffTarget(data);
+        if (target.isEmpty() && BedrockBungeeConnect.isBungeeChannel(channel)) {
+            target = BedrockBungeeConnect.sniffTarget(data);
+        }
+        if (target.isPresent()) {
+            LOG.info("JE BungeeCord Connect → " + target.get()
+                    + " user=" + client.username);
+            client.listener.onBungeeConnect(target.get());
         }
     }
 }
