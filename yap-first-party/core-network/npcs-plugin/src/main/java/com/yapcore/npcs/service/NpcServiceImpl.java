@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -250,15 +251,13 @@ public final class NpcServiceImpl implements NpcService {
 
     @Override
     public void respawnAll() {
-        YapSched.global(plugin, () -> {
-            try {
-                for (var npc : repository.listForServer(config.serverId())) {
-                    spawnOrRefresh(npc);
-                }
-            } catch (SQLException e) {
-                plugin.getLogger().log(Level.SEVERE, "npc respawn", e);
+        try {
+            for (var npc : repository.listForServer(config.serverId())) {
+                spawnOrRefresh(npc);
             }
-        });
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "npc respawn", e);
+        }
     }
 
     public Optional<NpcRepository.NpcRecord> get(String id) {
@@ -282,50 +281,85 @@ public final class NpcServiceImpl implements NpcService {
         if (world == null) {
             return;
         }
-        boolean useMannequin = npc.skinUrl() != null && !npc.skinUrl().isBlank();
         Location loc = npc.toLocation(world);
+        if (!ownedByCurrentRegion(world, loc)) {
+            YapSched.region(plugin, loc, () -> {
+                try {
+                    spawnOrRefreshOnRegion(npc);
+                } catch (Exception e) {
+                    plugin.getLogger().log(Level.SEVERE, "npc spawn " + npc.id(), e);
+                }
+            });
+            return;
+        }
+        try {
+            spawnOrRefreshOnRegion(npc);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "npc spawn " + npc.id(), e);
+        }
+    }
 
+    private void spawnOrRefreshOnRegion(NpcRepository.NpcRecord npc) throws SQLException {
+        World world = Bukkit.getWorld(npc.world());
+        if (world == null) {
+            return;
+        }
+        Location loc = npc.toLocation(world);
+        loc.getChunk();
         if (npc.entityUuid() != null) {
             Entity existing = Bukkit.getEntity(npc.entityUuid());
             if (existing != null && !existing.isDead()) {
-                if (useMannequin && existing instanceof Mannequin mannequin) {
-                    YapSched.entity(plugin, mannequin, () -> {
-                        mannequin.teleport(loc);
-                        applyMannequin(mannequin, npc);
-                    });
-                    return;
-                }
-                if (!useMannequin && existing instanceof Villager villager) {
-                    YapSched.entity(plugin, villager, () -> {
-                        villager.teleport(loc);
-                        tag(villager, npc.id());
-                        villager.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
-                        villager.setCustomNameVisible(true);
-                    });
-                    return;
-                }
-                // Wrong entity type for current skin config — respawn
-                existing.remove();
+                YapSched.entity(plugin, existing, () -> {
+                    existing.remove();
+                    YapSched.region(plugin, loc, () -> spawnFreshSafe(npc));
+                });
+                return;
             }
         }
+        spawnFresh(npc);
+    }
 
+    private void spawnFreshSafe(NpcRepository.NpcRecord npc) {
+        try {
+            spawnFresh(npc);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "npc spawn " + npc.id(), e);
+        }
+    }
+
+    private void spawnFresh(NpcRepository.NpcRecord npc) throws SQLException {
+        World world = Bukkit.getWorld(npc.world());
+        if (world == null) {
+            return;
+        }
+        Location loc = npc.toLocation(world);
+        loc.getChunk();
+        despawnTaggedNear(loc, npc.id());
+        boolean useMannequin = npc.skinUrl() != null && !npc.skinUrl().isBlank();
         if (useMannequin) {
             Mannequin mannequin = (Mannequin) world.spawnEntity(loc, EntityType.MANNEQUIN);
             applyMannequin(mannequin, npc);
             repository.setEntityUuid(config.serverId(), npc.id(), mannequin.getUniqueId());
             return;
         }
-
         Villager villager = (Villager) world.spawnEntity(loc, EntityType.VILLAGER);
         villager.setAI(false);
         villager.setInvulnerable(true);
         villager.setSilent(true);
         villager.setRemoveWhenFarAway(false);
-        villager.setProfession(Villager.Profession.NITWIT);
+        villager.setProfession(professionFor(npc.id()));
         villager.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
         villager.setCustomNameVisible(true);
         tag(villager, npc.id());
         repository.setEntityUuid(config.serverId(), npc.id(), villager.getUniqueId());
+    }
+
+    private static boolean ownedByCurrentRegion(World world, Location loc) {
+        try {
+            return Bukkit.isOwnedByCurrentRegion(loc);
+        } catch (Throwable t) {
+            return true;
+        }
     }
 
     private void applyMannequin(Mannequin mannequin, NpcRepository.NpcRecord npc) {
@@ -381,13 +415,42 @@ public final class NpcServiceImpl implements NpcService {
         return name.length() > 16 ? name.substring(0, 16) : name;
     }
 
+    private static Villager.Profession professionFor(String id) {
+        if (id == null) {
+            return Villager.Profession.NITWIT;
+        }
+        return switch (id.toLowerCase(Locale.ROOT)) {
+            case "armorer" -> Villager.Profession.ARMORER;
+            case "weaponsmith" -> Villager.Profession.WEAPONSMITH;
+            case "tools", "toolsmith" -> Villager.Profession.TOOLSMITH;
+            case "enchant", "librarian" -> Villager.Profession.LIBRARIAN;
+            case "chef", "butcher" -> Villager.Profession.BUTCHER;
+            case "blocks", "mason" -> Villager.Profession.MASON;
+            case "redstone", "cleric" -> Villager.Profession.CLERIC;
+            default -> Villager.Profession.NITWIT;
+        };
+    }
+
     private void despawn(NpcRepository.NpcRecord npc) {
         if (npc.entityUuid() == null) {
             return;
         }
         Entity entity = Bukkit.getEntity(npc.entityUuid());
         if (entity != null) {
-            entity.remove();
+            YapSched.entity(plugin, entity, entity::remove);
+        }
+    }
+
+    private void despawnTaggedNear(Location loc, String id) {
+        World world = loc.getWorld();
+        if (world == null) {
+            return;
+        }
+        for (Entity e : world.getNearbyEntities(loc, 8.0, 4.0, 8.0)) {
+            String tagged = e.getPersistentDataContainer().get(npcKey, PersistentDataType.STRING);
+            if (id.equals(tagged)) {
+                e.remove();
+            }
         }
     }
 

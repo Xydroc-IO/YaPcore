@@ -12,6 +12,7 @@ import com.yapcore.npcs.listener.QuestMmoListener;
 import com.yapcore.npcs.quest.QuestPackLoader;
 import com.yapcore.npcs.service.NpcServiceImpl;
 import com.yapcore.npcs.service.QuestServiceImpl;
+import com.yapcore.sched.YapSched;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -68,7 +69,7 @@ public final class NpcsPlugin extends JavaPlugin {
         sm.register(NpcService.class, npcService, this, ServicePriority.Normal);
         sm.register(QuestService.class, questService, this, ServicePriority.Normal);
 
-        npcService.respawnAll();
+        YapSched.globalLater(this, () -> npcService.respawnAll(), 40);
         getLogger().info("YaPNpcs ready — server=" + config.serverId()
                 + " npcs=" + npcService.listIds().size()
                 + " quests=" + questService.questIds().size());
