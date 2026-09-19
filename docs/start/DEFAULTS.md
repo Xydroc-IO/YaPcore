@@ -20,7 +20,7 @@ that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when m
 | YaPConquest / chunk land | **Off** (`enabled: false`) — hardcore grid; needs YaPFactions · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
 | YaP-QoL (timber / excavator) | **On** — product default · VIP kit grants tools |
 | YaPItems | **On** — product default |
-| YaPSkills / YaPLeveledMobs | **On** in shipped defaults (thin skills + distance mob levels) — turn off in plugin config if undesired |
+| YaPSkills / YaPLeveledMobs | **On** in shipped defaults (skills + distance mob levels) — [PLUGINS.md](../plugins/PLUGINS.md) |
 | YaPStacker / Dungeons / Disasters / GameplayKnobs | **Off** until opted in (`enabled: false` / knobs settings) |
 | YaPMap 3D mesh | **Off** (`mesh.enabled: false`) — enable + `/yapmap render` for BlueMap-class 3D |
 | Economy / claims / moderation / SQL plugins | **Needs SQL** (MariaDB default; Postgres or SQLite OK — [YAPDB.md](../data/YAPDB.md)) |
@@ -60,7 +60,7 @@ config/defaults/
   plugins/YaPTailor/…         # skins/wardrobe; skin-host URL empty until set
   plugins/YaPTebex/…          # webhook inbound off until secret set
   plugins/YaPPortals/…        # product default on — fleet walk-through portals
-  plugins/YaPSkills/…         # enabled: true (thin skills)
+  plugins/YaPSkills/…         # enabled: true (mining/woodcutting/strength/marathon/builder/herbalism/excavation/alchemy/health)
   plugins/YaPLeveledMobs/…    # enabled: true
   plugins/YaPStacker|Dungeons|Disasters/…  # enabled: false (opt-in)
   plugins/YaPGameplayKnobs/knobs.yml    # settings.enabled: false
@@ -117,4 +117,4 @@ Seeded in `config/defaults/server.properties` (and forwarded as `-Dyap.folia.*`)
 | `folia-ticket-hygiene` | **true** |
 | `folia-portal-couple` | **true** |
 
-Lab-only: `-Dyap.folia.scheduler-probe` (patch `0033`). **38** patches on pin `14b7fee` (`0000`–`0045`): `0034`–`0045` are Folia-itself (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe, fork-correctness, ticket-gap hold). Inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
+Lab-only: `-Dyap.folia.scheduler-probe` (patch `0033`). **39** patches on pin `14b7fee` (`0000`–`0046`): `0034`–`0046` are Folia-itself (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe, fork-correctness, ticket-gap hold, spawn portal pin). Inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).

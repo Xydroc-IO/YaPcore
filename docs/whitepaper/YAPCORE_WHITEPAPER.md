@@ -165,7 +165,7 @@ Production launch scripts prefer **Generational ZGC** with optional **NUMA** pin
 
 ## 4. YaP-Folia fork
 
-YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream pin is **`14b7fee`** (`ver/26.2.x`, 2026-09-06) in `vendor/folia/UPSTREAM.lock`. **38** ordered files in `vendor/folia/patches/`: `0000`–`0033` are YaP behavior or repairs; `0034`–`0045` are Folia-itself improvements on that pin (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe, fork-correctness, ticket-gap hold). Later upstream regionizer commits still come from moving the pin.
+YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream pin is **`14b7fee`** (`ver/26.2.x`, 2026-09-06) in `vendor/folia/UPSTREAM.lock`. **39** ordered files in `vendor/folia/patches/`: `0000`–`0033` are YaP behavior or repairs; `0034`–`0046` are Folia-itself improvements on that pin (tickets, ownership, portal couple, split, teleport events, map autosave, debug CME, packed-spawn cut, async brain + end-vehicle spawn, contiguous-bar relocate/probe, fork-correctness, ticket-gap hold, spawn portal pin). Later upstream regionizer commits still come from moving the pin.
 
 | Patch | Purpose | Default |
 |-------|---------|---------|
@@ -193,11 +193,12 @@ YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream 
 | `0043` | Contiguous-bar relocate + gap/region probe | lab / always |
 | `0044` | Fork-correctness: cut AABB, on-thread gap, RTQ handoff, portal lookup, save wait | always |
 | `0045` | Ticket-level clamp + gap hold under product view-distance | **on** (ship) |
+| `0046` | Exact-key this-world cuts; pin spawn nether/end portal chunks | **on** (ship) |
 
 Build: `./scripts/build-yap-folia.sh` → `lib/yap-folia-26.2.jar`.  
 Docs: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [QUICK_START.md](../start/QUICK_START.md).
 
-A **live contiguous** hot region that the Folia regionizer then holds, without a YaP phase clock, is the split the product is built for. Patch `0041` is the native cut; `0043` relocates a live corridor so the hole can empty; `0045` keeps neighbor sim-distance from refilling it. Lab check: `./scripts/smoke-contiguous-bar.sh`.
+A **live contiguous** hot region that the Folia regionizer then holds, without a YaP phase clock, is the split the product is built for. Patch `0041` is the native cut; `0043` relocates a live corridor so the hole can empty; `0045` keeps neighbor sim-distance from refilling it; `0046` keeps spawn nether/end frames off that clamp. Lab check: `./scripts/smoke-contiguous-bar.sh`.
 
 Stock Folia fallback: `folia-jar-source=fetch` + `./scripts/fetch-folia.sh` (bench / comparison only).
 
@@ -270,7 +271,7 @@ Sources live under `yap-first-party/`. Install tiers:
 
 | Jar | Plugin | Role |
 |-----|--------|------|
-| `yap-skills.jar` | YaPSkills | Thin skills — mining / woodcutting / strength + stored overall — [PLUGINS.md](../plugins/PLUGINS.md) |
+| `yap-skills.jar` | YaPSkills | Thin skills — mining through health + stored overall — [PLUGINS.md](../plugins/PLUGINS.md) |
 | `yap-dungeons.jar` | YaPDungeons | Procedural instances L1–50 + prestige 51–100 — [PLUGINS.md](../plugins/PLUGINS.md) |
 | `yap-stacker.jar` | YaPStacker | PDC mob / item / spawner stacker |
 | `yap-gameplay-knobs.jar` | YaPGameplayKnobs | Purpur-inspired encyclopedia; crop/fluid NMS opt-in via YaP-Folia 0025 |

@@ -88,7 +88,7 @@ like mods. See [PLUGINS.md](PLUGINS.md).
 `yap-qol` (timber axe + area excavator — [PLUGINS.md](PLUGINS.md)).
 
 **GAMEPLAY opt-in** (`gradle installGameplayDefaults` or `-PyapGameplay=true`):
-`yap-skills` (thin mining/woodcutting/strength — [PLUGINS.md](PLUGINS.md)),
+`yap-skills` (thin mining/woodcutting/strength/marathon/builder/herbalism/excavation/alchemy/health — [PLUGINS.md](PLUGINS.md)),
 `yap-dungeons` (procedural instances L1–50 + prestige 51–100 — [PLUGINS.md](PLUGINS.md)),
 `yap-stacker`, `yap-disasters`, `yap-leveled-mobs` (distance-based mob levels),
 `yap-gameplay-knobs` (YaP Encyclopedia — [TUNE.md](../ops/TUNE.md)).
@@ -145,7 +145,7 @@ code — not a Purpur port) is the Paper plugin `yap-gameplay-knobs`
 **Stacker:** Paper plugin `yap-stacker` + optional module `provides: [stacker]`.
 See [PLUGINS.md](PLUGINS.md) (`/yapstacker`).
 
-**Skills:** Paper plugin `yap-skills` — thin mining / woodcutting / strength. See [PLUGINS.md](PLUGINS.md).
+**Skills:** Paper plugin `yap-skills` — thin mining / woodcutting / strength / marathon / builder / herbalism / excavation / alchemy / health. See [PLUGINS.md](PLUGINS.md).
 
 **Shared messages (P0/P1 polish):** [PLUGINS.md](PLUGINS.md) — `yap-messages-api` for Adventure text, permission nodes, reload/DB UX, and light help.
 
@@ -640,13 +640,13 @@ See [PLUGINS.md](PLUGINS.md) · [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md).
 
 ## Skills
 
-Optional gameplay plugin (`yap-skills.jar`). Thin progression — **mining**, **woodcutting**, **strength**, plus a real **overall player level**.
+Optional gameplay plugin (`yap-skills.jar`). Thin progression — **mining**, **woodcutting**, **strength**, **marathon**, **builder**, **herbalism**, **excavation**, **alchemy**, **health**, plus a real **overall player level**.
 
 ## Progression
 
 | Track | Cap (default) | How XP works |
 |-------|---------------|--------------|
-| Per-skill | **120** | Mining/woodcutting breaks + melee → strength; RS curve |
+| Per-skill | **120** | Breaks (mine/chop/dig/harvest) + melee → strength + travel → marathon + placing → builder + brewing → alchemy + damage taken → health; RS curve |
 | **Overall** | **120** | Stored in `yap_player_overall`. Each skill XP grant also adds `amount × overall.xp-share` (default **0.5**) to overall. Same RS curve, separate table. Continues after a skill is maxed. |
 | Total level | n/a | Sum of skill levels (display / PlaceholderAPI only) |
 
@@ -662,7 +662,29 @@ overall:
   xp-share: 0.5
   maxed-xp-share: 0.75
   multiplier: 1.0
+power:
+  break-speed-bonus-at-max: 2.0   # 3x mine/chop speed at 120
+  extra-drops-at-max: 2.0         # +2 copies (3x loot) at 120
+  damage-bonus-at-max: 2.0        # 3x melee damage at 120
+  movement-speed-bonus-at-max: 1.0  # 2x walk speed (Marathon) at 120
+  place-reach-bonus-at-max: 1.0     # +1 place/break reach (Builder) at 120
+  keep-block-chance-at-max: 0.25    # 25% keep the placed block (Builder) at 120
+  extra-hearts-at-max: 10.0         # +5 hearts (Health) at 120
+  brew-speed-bonus-at-max: 1.0      # 2x brewing (Alchemy) at 120
 ```
+
+Builder does **not** speed placing (YaPGuard scaffold / Grim). Extra reach is additive on YaPEssentials `block-reach` (~6.5 survival → ~7.5 at 120). Keep-block refunds a blank extra of the same block type (not buckets, shulkers, or heads).
+
+Max-level abilities (12s window, 90s cooldown; sneak + right-click **air** with the tool):
+
+| Skill | Unlock at 120 |
+|-------|----------------|
+| Mining | **Super Breaker** — insta-mine ores/stone with a pickaxe |
+| Woodcutting | **Tree Feller** — chops connected logs (cap 32, no leaves; VIP timber axe still better) |
+| Herbalism | **Green Terra** — harvest fully grown crops and replant (needs a seed) |
+| Excavation | Rare dig loot: clay ~8%, glowstone dust ~1.5%, diamond ~1/2500 |
+| Alchemy | Brew speed scales 1x→2x (hopper arrays without a nearby player stay vanilla) |
+| Health | Extra max health as you level; **combat regen** at 120 |
 
 ## Requirements
 
@@ -673,7 +695,7 @@ overall:
 
 | Command | Permission | Description |
 |---------|------------|-------------|
-| `/skills` `[player]` | `yapskills.use` | Skills menu (overall + per-skill) |
+| `/skills` `[player]` `/stats` | `yapskills.use` | Skills menu (overall + per-skill). `/skill` with no args opens the same menu |
 | `/skill top` `<skill\|overall>` `[page]` | `yapskills.use` | Leaderboard |
 | `/skill set` / `addxp` … | `yapskills.admin` | Staff level/XP |
 | `/yskills reload` | `yapskills.admin` | Reload config + skill packs |

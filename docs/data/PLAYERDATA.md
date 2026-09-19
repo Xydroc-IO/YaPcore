@@ -83,7 +83,7 @@ Session lock and password auth are independent: lock always runs; auth is option
 
 Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin.
 
-**Bedrock hub forms (P0):** When `yap-bedrock-ui.jar` (YaPBedrockUI) is present, Floodgate/native Bedrock players get simple forms for `/menu` (bag/homes/kits/warps/balance + other feature buttons), kit claim, homes, and warps. JE keeps the chest GUIs. Soft-dep — without YaPBedrockUI, behavior is unchanged. See [CROSSPLAY.md](../network/CROSSPLAY.md).
+**Bedrock hub forms (P0):** When `yap-bedrock-ui.jar` (YaPBedrockUI) is present, Floodgate/native Bedrock players get simple forms for `/menu` (bag/homes/kits/warps/balance/skills + other feature buttons), kit claim, homes, and warps. JE keeps the chest GUIs. Soft-dep — without YaPBedrockUI, behavior is unchanged. See [CROSSPLAY.md](../network/CROSSPLAY.md).
 
 | Area | Default | Config |
 |------|---------|--------|
@@ -91,7 +91,7 @@ Always on: session lock · inv/XP/vitals sync · `/menu` hub · `/yapdata` admin
 | Economy balance API + optional Vault | on | `economy.enabled` — cmds `/bal` `/pay` `/eco` via Essentials |
 | Homes / warps / kits / mail | on | `features.homes` … — cmds via Essentials |
 | Claims | on | `features.claims` (+ `claims.*`) — `/claim` via Essentials |
-| Shops / auctions (AH) | **on** | `features.shops` / `auctions` — cmds via Essentials |
+| Shops / auctions (AH) | **on** | `features.shops` / `auctions` — `/shop` chest shops (dashboard Shops → Chest shops) · `/ah` via Essentials |
 | Jobs | **off** (forced off when YaPSkills is loaded) | `features.jobs` |
 | NPC shop catalogs | **on** | `features.traders` — used by YaPNpcs `/npc shop` (no `/trader`) |
 | Backpack storage | **on** | `features.backpack` — `/bag` via Essentials |

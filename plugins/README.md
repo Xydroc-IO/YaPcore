@@ -64,7 +64,7 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 
 | Jar | Role |
 |-----|------|
-| `yap-skills.jar` | Thin skills — mining / woodcutting / strength (`/skills`) — [PLUGINS.md](../docs/plugins/PLUGINS.md) |
+| `yap-skills.jar` | Thin skills — mining / woodcutting / strength / marathon / builder / herbalism / excavation / alchemy / health (`/skills`) — [PLUGINS.md](../docs/plugins/PLUGINS.md) |
 | `yap-dungeons.jar` | Instanced procedural dungeons L1–50 + prestige 51–100 — [PLUGINS.md](../docs/plugins/PLUGINS.md) |
 | `yap-stacker.jar` | PDC mob/item/spawner stacker (`/yapstacker`) |
 | `yap-disasters.jar` | Extreme weather + disasters (`/yapdisaster`) |

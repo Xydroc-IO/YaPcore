@@ -7,7 +7,7 @@ Ordered deltas under [`vendor/folia/patches/`](../../vendor/folia/patches/). Aut
 
 Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
 
-The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0045` (**12**) are Folia-itself improvements on that pin: ticket/unload hygiene, AI/leash/dragon ownership (Folia PRs 491/495/504), portal-linked region thread coupling (#469), split NPE harden, teleport Bukkit events (#490), map autosave storage (#505/#506), debug-subscriber CME (#472), a **native regionizer cut** so a packed spawn can hold a legal hole, async villager-brain / end-vehicle spawn ownership (Folia #446 / #453), contiguous-bar relocate + gap/region probe, fork-correctness (cut AABB, on-thread gap, RTQ handoff, portal lookup, save wait), and the ticket-level clamp that holds a live contiguous split under product view-distance. Moving the pin is still how you pick up later upstream regionizer commits.
+The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0046` (**13**) are Folia-itself improvements on that pin: ticket/unload hygiene, AI/leash/dragon ownership (Folia PRs 491/495/504), portal-linked region thread coupling (#469), split NPE harden, teleport Bukkit events (#490), map autosave storage (#505/#506), debug-subscriber CME (#472), a **native regionizer cut** so a packed spawn can hold a legal hole, async villager-brain / end-vehicle spawn ownership (Folia #446 / #453), contiguous-bar relocate + gap/region probe, fork-correctness (cut AABB, on-thread gap, RTQ handoff, portal lookup, save wait), the ticket-level clamp that holds a live contiguous split under product view-distance, and spawn nether/end portal pin (exact-key cuts, no cross-world clamp). Moving the pin is still how you pick up later upstream regionizer commits.
 
 ## Patches
 
@@ -51,6 +51,7 @@ The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or rep
 | `0043-yap-contiguous-bar-relocate-probe.patch` | Same-world `teleportTo` evacuate; probe `gap_bands` / `ticking_regions` (split bar, not BLOCKS lockstep) | landed |
 | `0044-yap-fork-correctness.patch` | Cut AABB (not infinite slab); on-thread gap maintain; RTQ requeue on split; portal couple by portal chunk; `synchronize(flush)` waits; never strip PLAYER tickets | landed |
 | `0045-yap-contiguous-bar-ticket-gap-hold.patch` | Ticket-level clamp + no sync-load into the cut; keep carve plan so gap hold registers. Lab: `smoke-contiguous-bar` PASS | landed |
+| `0046-yap-spawn-portal-cut.patch` | Exact-key this-world cuts; pin nether/end portal chunks; portal-travel tickets skip clamp; `unloadIfCut` only when `blocksAddChunk` | landed |
 
 Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent`). See [PLUGINS.md](../plugins/PLUGINS.md).
 
@@ -94,7 +95,7 @@ YaP split guards (`0016`/`0032`) keep entities, connections, players, block-enti
 
 **Packed spawn:** stock Folia (and Canvas) will not split a contiguous loaded blob. `0041` registers the corridor as a first-class cut: `addChunk` will not create empty glue sections, merge BFS will not jump the band, and PLAYER/sim tickets will not refill it (a player standing in the strip still pins that chunk). Ship `folia-grid-exponent=3` so a default view-distance-10 spawn has four 8-chunk sections — enough for left / hole / right. A blob that fits in one section still cannot split; that is the regionizer atom.
 
-**Split bar:** a **live contiguous** hot region splits and holds without a YaP epoch/microtick barrier. Aligned microticks (`0026`–`0030`) are optional phase tagging. Same-tick BLOCKS lockstep across shards **is** a second clock and is not required for the regionizer to be correct. `0041` is the native cut; `0043` relocates a live corridor; `0045` keeps neighbor sim-distance from refilling the hole. Lab check: `./scripts/smoke-contiguous-bar.sh` (PASS: force+split+gap hold, `pulses_ran=0`).
+**Split bar:** a **live contiguous** hot region splits and holds without a YaP epoch/microtick barrier. Aligned microticks (`0026`–`0030`) are optional phase tagging. Same-tick BLOCKS lockstep across shards **is** a second clock and is not required for the regionizer to be correct. `0041` is the native cut; `0043` relocates a live corridor; `0045` keeps neighbor sim-distance from refilling the hole; `0046` keeps spawn nether/end frames and dest-search tickets off that clamp. Lab check: `./scripts/smoke-contiguous-bar.sh` (PASS: force+split+gap hold, `pulses_ran=0`).
 
 ### Aligned micro/sub-ticks (patches 0026–0030)
 

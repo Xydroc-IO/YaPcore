@@ -168,7 +168,7 @@ Duration examples: `30m`, `2h`, `7d`, `1w`.
 | `/warp` `/warps` `/setwarp` `/delwarp` | `yapdata.warp` | Warps |
 | `/kit` `/kits` `/createkit` … | `yapdata.kit*` | Kits |
 | `/mail` | `yapdata.mail` | Mail |
-| `/shop` `/ah` `/jobs` | `yapdata.shop` / `.ah` / `.jobs` | Economy features |
+| `/shop` `/ah` `/jobs` | `yapdata.shop` / `.ah` / `.jobs` | Chest shops (`/shop create <price>` look-at-chest; admin `/shop list json all`) · AH · jobs |
 | `/claim` | `yapdata.claim` | Land claims UX |
 | `/bag` `/backpack` `/bp` | `yapdata.bag` | Extra bag pages |
 
@@ -210,7 +210,7 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 | Pregen | `/yappregen …` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | Stacker | `/yapstacker …` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | Custom items | `/yapitems …` · `/yitems` · create/edit/CD via admin **Custom items** or yap-staff | [YAPITEMS.md](../plugins/YAPITEMS.md) |
-| Skills | `/skills` · `/skill top` · `/yskills reload` | [PLUGINS.md](../plugins/PLUGINS.md) |
+| Skills | `/skills` · `/stats` · `/skill` · `/skill top` · `/yskills reload` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | Dungeons | `/dungeon` · `/dungeon invite\|accept\|deny\|leave\|status` · `/yapdungeons …` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | NPCs | `/npc …` · `/quests …` · `/npc shop …` · `/npc setname` · `/npc move` · `/npc respawn` · `/npc setspawn` · `/npc setserver` | dashboard **NPCs** + **Shops** · [PLAYERDATA.md](../data/PLAYERDATA.md) |
 | Fleet portals | `/portal …` (wand / create `[color]` / setcolor / go) · Link `/hub` `/server` | [PORTALS.md](../network/PORTALS.md) |

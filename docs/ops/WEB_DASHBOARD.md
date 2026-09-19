@@ -88,7 +88,7 @@ POST actions: `save-access`, `save-nginx`, `save-dashboard`, `save-proxy`, `rota
 | **World** | `/api/world` | schematics, brush max, load/unload flags | create (type/env/seed/generator), load, unload, reload, schem-list, **save-brush** |
 | **Regions** | `/api/regions` | region table (JSON), flag names | **define** (cuboid coords), **flag-set**, list |
 | **NPCs** | `/api/npcs` | npc table, quest ids | create, remove, setquest, setdialogue, setwarp, setspawn, setcommand, setplayer, shopenable, shopclear, setaction (advanced), respawn, reload, info |
-| **Shops** | `/api/shops` | NPC shop catalogs (PlayerData) | list, setitem (buy+sell), apply preset, addbuy/addsell, setoffer, deloffer, clearoffers, enable, clear |
+| **Shops** | `/api/shops` | NPC catalogs + chest shops (sub-tabs) | NPC: list, setitem, presets. Chest: `chest-list`, `chest-create`, `chest-set`, `chest-remove`, `chest-info` (world/x/y/z/material/amount/price/owner, `instance` for fleet) |
 | **Essentials** | `/api/essentials` | features, MOTD, rules, spawn | reload, broadcast, save-motd, save-rules, set-feature |
 | **Pregen** | `/api/pregen` | job status | start, pause, resume, cancel |
 | **Player data** | `/api/playerdata` | economy, auth, feature toggles | reload, save, set-feature |
@@ -200,7 +200,7 @@ Requires YaP-Folia running + `yap-moderation` / `yap-perms` / `yap-playerdata`. 
 
 ### Skills (`yap-skills`)
 
-**Gameplay → Skills** — thin progression (mining / woodcutting / strength). See [PLUGINS.md](../plugins/PLUGINS.md).
+**Gameplay → Skills** — thin progression (mining / woodcutting / strength / marathon / builder / herbalism / excavation / alchemy / health). See [PLUGINS.md](../plugins/PLUGINS.md).
 
 ### Dungeons (`yap-dungeons`)
 
@@ -264,13 +264,21 @@ Dashboard drives the plugin directly:
 
 ### Shops (`/api/shops`)
 
-Edit NPC shop catalogs without splitting buy/sell into separate rows:
+One **Shops** sidebar item with two sub-tabs:
+
+**NPC shops** — catalogs on NPCs, without splitting buy/sell into separate rows:
 
 - Lists NPCs that already have a `shop:<id>` action (enable a shop on the **NPCs** tab first)
 - **One row per item** — Buy $ (player pays) and Sell $ (player receives); blank disables that side
 - Apply built-in presets (replace), clear offers, or unlink the catalog
 - POST `setitem` → `npc shop setitem <npc> <material> <amount> <buy|-> <sell|-> [stock]`
 - In-game: left-click buy / right-click sell + quantity totals — see [PLAYERDATA.md](../data/PLAYERDATA.md)
+
+**Chest shops** — look-at-chest `/shop` registrations (stock in the chest, left-click to buy):
+
+- POST `chest-list` / `chest-create` / `chest-set` / `chest-remove` / `chest-info`
+- Fields: `instance` (fleet backend), world, x/y/z, material, amount, price, owner
+- Place the chest in the world first, then create from this tab
 
 ### Regions (`yap-regions`)
 

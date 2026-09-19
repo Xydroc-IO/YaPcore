@@ -13,6 +13,32 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 0.0.0.1 — skills expansion (2026-09-18)
+
+Same ship version. Rebuild `yap-skills.jar` (`gradle :skills-plugin:shadowJar` or `publishReleasesFolder -PyapGameplay=true`).
+
+| Area | Change |
+|------|--------|
+| **Live skills** | Mining, woodcutting, strength, marathon, builder, herbalism, excavation, alchemy, health (cap 120, RS curve). `/skills` `/stats`. |
+| **Power** | 3× mine/chop and hits at 120; Marathon 2× walk; Builder +1 place reach and 25% keep-block (no fast-place). |
+| **Max abilities** | Super Breaker / Tree Feller (sneak + right-click air, 12s / 90s). Green Terra auto-replant. Excavation rare loot (diamond ~1/2500). Alchemy brew speed 1×→2×. Health +5 hearts and combat regen. |
+| **Hub** | `/menu` Skills button when jobs are off. Level-up title/chat/sound. |
+
+---
+
+## After 0.0.0.1 — dashboard chest shops (2026-09-18)
+
+Same ship version. Rebuild chassis + `yap-playerdata.jar`. Restart the GUI so the Shops sub-tabs load.
+
+| Area | Change |
+|------|--------|
+| **Shops tab** | NPC catalogs and chest shops as two sub-tabs. |
+| **API** | `GET/POST /api/shops` chest-list/create/set/remove/info (fleet `instance`). |
+| **In-game** | `/shop create <price>` look-at-chest; admin `/shop list json all`. |
+| **NPCs** | Honor `server-id` so lobby hub catalogs load. |
+
+---
+
 ## After 0.0.0.1 — vanilla nether/end portals (2026-09-18)
 
 Same ship version. Rebuild `yap-portals.jar` (no Folia product-jar overwrite).
@@ -32,6 +58,19 @@ Same ship version. Lab paperclip → `lib/yap-folia-26.2-lab.jar` (does **not** 
 | **0043 relocate** | Same-world `Entity.teleportTo` so a live corridor can empty; no off-thread pad fallback. |
 | **0043 probe** | `gap_bands` + `ticking_regions` — split bar is force+split+hold, not BLOCKS lockstep. |
 | **Check** | `./scripts/smoke-contiguous-bar.sh` — contiguous strip, VD/sim **10**, aligned microticks **off**, port **25575**. |
+
+---
+
+## After 0.0.0.1 — spawn nether portal 0046 (2026-09-18)
+
+Same ship version. Incremental Folia `:folia-server:jar` only (does **not** overwrite the GUI product jar). Lab paperclip → `lib/yap-folia-26.2-lab.jar`.
+
+| Area | Change |
+|------|--------|
+| **0046** | Packed-spawn cuts stay. Ticket/unload use this-world corridor **keys** (not the spawn AABB, not another world's cut). Pin loaded nether/end portal chunks; portal-travel tickets skip the clamp; `unloadIfCut` no longer MAX+1s a pinned holder. |
+| **Patches** | **39** files (`0000`–`0046`) |
+
+Swap the running Folia jar to pick this up; an already-cut spawn does not need a recarve for dest search.
 
 ---
 
