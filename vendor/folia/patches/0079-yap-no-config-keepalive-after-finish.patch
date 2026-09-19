@@ -1,0 +1,46 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP stop configuration keepalives after finish
+
+The client switches to play as soon as it reads finish_configuration.
+A configuration keepalive sent after that is not a keepalive on the
+play protocol, and the answer the client sends is not a configuration
+keepalive. Those bots stay up and never answer, then drop at 30s.
+Do not send one after finish. Not a longer timeout.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+@@ -54,6 +54,12 @@
+     private @Nullable PrepareSpawnTask prepareSpawnTask;
+     public io.papermc.paper.connection.PaperPlayerConfigurationConnection paperConnection; // Paper
+     public net.minecraft.server.level.ServerPlayer switchToMain; // Folia - region threading - rewrite login process
++    // Set when finish_configuration is queued. The client switches to play as
++    // soon as it reads that packet. A later configuration keepalive is play
++    // packet 0x04 (acknowledge_player_digging) on the wire, and the play
++    // keepalive the client does send back is not the configuration id. Those
++    // bots stay connected and never answer, then drop at the 30s limit.
++    private boolean configurationSentFinish;
+ 
+     public ServerConfigurationPacketListenerImpl(final MinecraftServer server, final Connection connection, final CommonListenerCookie cookie) {
+         super(server, connection, cookie);
+@@ -261,8 +267,18 @@
+     }
+ 
+     @Override
++    public void send(final net.minecraft.network.protocol.Packet<?> packet, final io.netty.channel.ChannelFutureListener listener) {
++        if (packet instanceof net.minecraft.network.protocol.configuration.ClientboundFinishConfigurationPacket) {
++            this.configurationSentFinish = true;
++        }
++        super.send(packet, listener);
++    }
++
++    @Override
+     public void tick() {
+-        this.keepConnectionAlive();
++        if (!this.configurationSentFinish) {
++            this.keepConnectionAlive();
++        }
+         ConfigurationTask task = this.currentTask;
+         if (task != null) {
+             try {

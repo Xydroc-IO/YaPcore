@@ -1,0 +1,28 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP login keepalive while spawn is queued
+
+ReadTimeoutHandler is 30s. switchToMain used to drop the connection
+from the global tick before the region runs spawnPlayer, so nobody
+sent a keepalive and the join was kicked. Keep the configuration
+connection on the global tick until the play listener is installed,
+including after spawn is queued. Not a longer timeout.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedServer.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedServer.java
+@@ -291,8 +291,12 @@
+             return !gamePacketListener.waitingForSwitchToConfig;
+         }
+ 
+-        if (conn.getPacketListener() instanceof net.minecraft.server.network.ServerConfigurationPacketListenerImpl configurationPacketListener) {
+-            return configurationPacketListener.switchToMain != null;
++        if (packetListener instanceof net.minecraft.server.network.ServerConfigurationPacketListenerImpl) {
++            // switchToMain is set before the region runs spawnPlayer. Until the
++            // play listener is installed, this thread is the only one that can
++            // send a keepalive. ReadTimeoutHandler is 30s. Dropping the
++            // connection here kicks the join while it waits on the region queue.
++            return false;
+         }
+ 
+         return false;

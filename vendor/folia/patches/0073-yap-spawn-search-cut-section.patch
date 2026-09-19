@@ -1,0 +1,41 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP spawn search skips a cut section
+
+blocksAddChunk is false while a player stands in the column. Login
+findSpawnAround walks west from spawn into that section, one bot there
+re-opens syncLoadNonFull, and the region thread waits for a chunk the
+carve will not finish. Return null for a registered cut section.
+playerInChunk stays on tickets and the chunk loader. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/PlayerSpawnFinder.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/PlayerSpawnFinder.java
+@@ -152,10 +152,10 @@
+     public static @Nullable BlockPos getLevelRespawnPos(final ServerLevel level, final int x, final int z) { // Folia - public
+         final int chunkX = SectionPos.blockToSectionCoord(x);
+         final int chunkZ = SectionPos.blockToSectionCoord(z);
+-        // Packed-spawn cut: syncLoadNonFull into the empty buffer parks the region thread
+-        // forever (ticket wall never completes). Death during carve then watchdog-stalls
+-        // before forcePartition can log into-shards.
+-        if (io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(level, chunkX, chunkZ)) {
++        // Registered cut section. blocksAddChunk is false while a player stands in
++        // the column, and syncLoadNonFull then waits for a chunk the carve will not
++        // finish. findSpawnAround tries the next column. Tickets still pin that player.
++        if (io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(level, chunkX, chunkZ)) {
+             return null;
+         }
+         boolean caveWorld = level.dimensionType().hasCeiling();
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkTaskScheduler.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkTaskScheduler.java
+@@ -530,8 +530,9 @@
+             return loaded;
+         }
+ 
+-        // Cut keys never reach FULL. managedBlock here is the packed-spawn watchdog.
+-        if (io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(this.world, chunkX, chunkZ)) {
++        // Registered cut section. Do not consult playerInChunk: a bot standing in
++        // the strip must not reopen managedBlock on a chunk the carve will not finish.
++        if (io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(this.world, chunkX, chunkZ)) {
+             return null;
+         }
+ 

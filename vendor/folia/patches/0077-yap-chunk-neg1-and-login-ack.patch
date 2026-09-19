@@ -1,0 +1,43 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP refuse chunk -1 and do not park login ack
+
+Spawn search accepts chunk -1 until the carve is registered, so the
+first joins stand in the corridor and pin it. Return null for that
+column before the cut exists. Login acknowledgement runs on the global
+tick and was calling syncUninterruptibly, which parks that thread in
+Netty. Do not wait. Not a longer timeout.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/PlayerSpawnFinder.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/PlayerSpawnFinder.java
+@@ -152,10 +152,10 @@
+     public static @Nullable BlockPos getLevelRespawnPos(final ServerLevel level, final int x, final int z) { // Folia - public
+         final int chunkX = SectionPos.blockToSectionCoord(x);
+         final int chunkZ = SectionPos.blockToSectionCoord(z);
+-        // Registered cut section. blocksAddChunk is false while a player stands in
+-        // the column, and syncLoadNonFull then waits for a chunk the carve will not
+-        // finish. findSpawnAround tries the next column. Tickets still pin that player.
+-        if (io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(level, chunkX, chunkZ)) {
++        // Chunk -1 is the packed-spawn corridor column. The cut is not
++        // registered until the carve is scheduled, and a player standing
++        // here pins that column. findSpawnAround tries the next column.
++        if (chunkX == -1 || io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(level, chunkX, chunkZ)) {
+             return null;
+         }
+         boolean caveWorld = level.dimensionType().hasCeiling();
+--- a/folia-server/src/minecraft/java/net/minecraft/network/Connection.java
++++ b/folia-server/src/minecraft/java/net/minecraft/network/Connection.java
+@@ -338,6 +338,12 @@
+     }
+ 
+     private static void syncAfterConfigurationChange(final ChannelFuture future) {
++        // Login acknowledgement runs on the global tick. syncUninterruptibly
++        // waits for the event loop to finish a pipeline task that cannot run
++        // while this thread is still inside the packet. That is the park.
++        if (io.papermc.paper.threadedregions.RegionizedServer.isGlobalTickThread()) {
++            return;
++        }
+         try {
+             future.syncUninterruptibly();
+         } catch (Exception e) {

@@ -1,0 +1,179 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP send play packets after the protocol switch
+
+The global tick must not call syncUninterruptibly, but it also must
+not send the login packet before the play encoder is installed. Chain
+the configuration start and the spawn queue on that future. A missed
+play keepalive was dropping bots during the sample. Not a longer timeout.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/network/Connection.java
++++ b/folia-server/src/minecraft/java/net/minecraft/network/Connection.java
+@@ -337,10 +337,11 @@
+         }
+     }
+ 
+-    private static void syncAfterConfigurationChange(final ChannelFuture future) {
++    private static void awaitProtocolChange(final io.netty.channel.ChannelFuture future) {
+         // Login acknowledgement runs on the global tick. syncUninterruptibly
+         // waits for the event loop to finish a pipeline task that cannot run
+-        // while this thread is still inside the packet. That is the park.
++        // while this thread is still inside the packet. Callers on this thread
++        // must chain on the returned future instead of sending immediately.
+         if (io.papermc.paper.threadedregions.RegionizedServer.isGlobalTickThread()) {
+             return;
+         }
+@@ -355,7 +356,7 @@
+         }
+     }
+ 
+-    public <T extends PacketListener> void setupInboundProtocol(final ProtocolInfo<T> protocol, final T packetListener) {
++    public <T extends PacketListener> io.netty.channel.ChannelFuture setupInboundProtocol(final ProtocolInfo<T> protocol, final T packetListener) {
+         this.validateListener(protocol, packetListener);
+         if (protocol.flow() != this.getReceiving()) {
+             throw new IllegalStateException("Invalid inbound protocol: " + protocol.id());
+@@ -370,10 +371,12 @@
+             configMessage = configMessage.andThen(ctx -> ctx.pipeline().addAfter(HandlerNames.DECODER, HandlerNames.BUNDLER, newBundler));
+         }
+ 
+-        syncAfterConfigurationChange(this.channel.writeAndFlush(configMessage));
++        final io.netty.channel.ChannelFuture future = this.channel.writeAndFlush(configMessage);
++        awaitProtocolChange(future);
++        return future;
+     }
+ 
+-    public void setupOutboundProtocol(final ProtocolInfo<?> protocol) {
++    public io.netty.channel.ChannelFuture setupOutboundProtocol(final ProtocolInfo<?> protocol) {
+         if (protocol.flow() != this.getSending()) {
+             throw new IllegalStateException("Invalid outbound protocol: " + protocol.id());
+         }
+@@ -386,7 +389,9 @@
+         }
+ 
+         boolean isLoginProtocol = protocol.id() == ConnectionProtocol.LOGIN;
+-        syncAfterConfigurationChange(this.channel.writeAndFlush(configMessage.andThen(ctx -> this.sendLoginDisconnect = isLoginProtocol)));
++        final io.netty.channel.ChannelFuture future = this.channel.writeAndFlush(configMessage.andThen(ctx -> this.sendLoginDisconnect = isLoginProtocol));
++        awaitProtocolChange(future);
++        return future;
+     }
+ 
+     public void setListenerForServerboundHandshake(final PacketListener packetListener) {
+--- a/folia-server/src/minecraft/java/net/minecraft/server/network/ServerCommonPacketListenerImpl.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+@@ -270,6 +270,7 @@
+ 
+             io.papermc.paper.util.KeepAlive.PendingKeepAlive oldest = this.keepAlive.pendingKeepAlives.peek();
+             if (oldest != null && (currTime - oldest.txTimeNS()) > java.util.concurrent.TimeUnit.MILLISECONDS.toNanos(KEEPALIVE_LIMIT)) {
++                this.keepAlive.pendingKeepAlives.clear();
+                 LOGGER.info("{} was kicked due to keepalive timeout!", this.playerProfile().name());
+                 this.disconnect(TIMEOUT_DISCONNECTION_MESSAGE, io.papermc.paper.connection.DisconnectionReason.TIMEOUT); // Paper - kick event cause
+                 // Paper end - improve keepalives
+--- a/folia-server/src/minecraft/java/net/minecraft/server/network/ServerLoginPacketListenerImpl.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/network/ServerLoginPacketListenerImpl.java
+@@ -439,12 +439,32 @@
+     public void handleLoginAcknowledgement(final ServerboundLoginAcknowledgedPacket packet) {
+         net.minecraft.network.protocol.PacketUtils.ensureRunningOnSameThread(packet, this, this.server.packetProcessor()); // CraftBukkit
+         Validate.validState(this.state == ServerLoginPacketListenerImpl.State.PROTOCOL_SWITCHING, "Unexpected login acknowledgement packet");
+-        this.connection.setupOutboundProtocol(ConfigurationProtocols.CLIENTBOUND);
+-        CommonListenerCookie cookie = CommonListenerCookie.createInitial(Objects.requireNonNull(this.authenticatedProfile), this.transferred);
+-        ServerConfigurationPacketListenerImpl configPacketListener = new ServerConfigurationPacketListenerImpl(this.server, this.connection, cookie);
+-        this.connection.setupInboundProtocol(ConfigurationProtocols.SERVERBOUND, configPacketListener);
+-        configPacketListener.startConfiguration();
+         this.state = ServerLoginPacketListenerImpl.State.ACCEPTED;
++        final io.netty.channel.ChannelFuture outbound = this.connection.setupOutboundProtocol(ConfigurationProtocols.CLIENTBOUND);
++        final CommonListenerCookie cookie = CommonListenerCookie.createInitial(Objects.requireNonNull(this.authenticatedProfile), this.transferred);
++        final ServerConfigurationPacketListenerImpl configPacketListener = new ServerConfigurationPacketListenerImpl(this.server, this.connection, cookie);
++        outbound.addListener(future -> {
++            if (!future.isSuccess()) {
++                return;
++            }
++            io.papermc.paper.threadedregions.RegionizedServer.getInstance().addTask(() -> {
++                if (!this.connection.isConnected()) {
++                    return;
++                }
++                final io.netty.channel.ChannelFuture inbound = this.connection.setupInboundProtocol(ConfigurationProtocols.SERVERBOUND, configPacketListener);
++                inbound.addListener(inboundFuture -> {
++                    if (!inboundFuture.isSuccess()) {
++                        return;
++                    }
++                    io.papermc.paper.threadedregions.RegionizedServer.getInstance().addTask(() -> {
++                        if (this.connection.isConnected()) {
++                            configPacketListener.startConfiguration();
++                        }
++                    });
++                });
++            });
++        });
++    }
+ 
+     @Override
+     public void fillListenerSpecificCrashDetails(final CrashReport report, final CrashReportCategory connectionDetails) {
+--- a/folia-server/src/minecraft/java/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+@@ -197,7 +197,7 @@
+     public void handleConfigurationFinished(final ServerboundFinishConfigurationPacket packet) {
+         PacketUtils.ensureRunningOnSameThread(packet, this, this.server.packetProcessor());
+         this.finishCurrentTask(JoinWorldTask.TYPE);
+-        this.connection.setupOutboundProtocol(GameProtocols.CLIENTBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(this.server.registryAccess())));
++        final io.netty.channel.ChannelFuture outbound = this.connection.setupOutboundProtocol(GameProtocols.CLIENTBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(this.server.registryAccess())));
+ 
+         try {
+             PlayerList playerList = this.server.getPlayerList();
+@@ -220,24 +220,39 @@
+             this.switchToMain = serverPlayer;
+             // Play listener is installed in placeNewPlayer. Until then this
+             // connection stays on the global tick so it can send a keepalive.
+-            world.moonrise$getChunkTaskScheduler().scheduleTickingState(
+-                    chunkPos.x(), chunkPos.z(), net.minecraft.server.level.FullChunkStatus.ENTITY_TICKING, true,
+-                    ca.spottedleaf.concurrentutil.util.Priority.HIGHER,
+-                    (final net.minecraft.world.level.chunk.LevelChunk chunk) -> {
+-                        world.moonrise$getChunkTaskScheduler().chunkHolderManager.addTicketAtLevel(
+-                                net.minecraft.server.level.TicketType.PLAYER_SPAWN, chunkPos,
+-                                ca.spottedleaf.moonrise.patches.chunk_system.scheduling.ChunkHolderManager.ENTITY_TICKING_TICKET_LEVEL,
+-                                null
+-                        );
+-                        io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(
+-                                world, chunkPos.x(), chunkPos.z(), () -> {
+-                                    net.minecraft.server.network.ServerConfigurationPacketListenerImpl.this.prepareSpawnTask.spawnPlayer(
+-                                            this.connection, commonListenerCookie, serverPlayer
+-                                    );
+-                                }
+-                        );
++            // Do not queue spawn until the play encoder is installed. Sending
++            // the login packet with the configuration encoder is a keepalive
++            // the client never answers.
++            final net.minecraft.server.level.ServerLevel world = this.prepareSpawnTask.getSpawnWorld();
++            final net.minecraft.world.level.ChunkPos chunkPos = net.minecraft.world.level.ChunkPos.containing(net.minecraft.core.BlockPos.containing(this.prepareSpawnTask.getSpawnPosition()));
++            outbound.addListener(future -> {
++                if (!future.isSuccess()) {
++                    return;
++                }
++                io.papermc.paper.threadedregions.RegionizedServer.getInstance().addTask(() -> {
++                    if (!connection.isConnected()) {
++                        return;
+                     }
+-            );
++                    world.moonrise$getChunkTaskScheduler().scheduleTickingState(
++                            chunkPos.x(), chunkPos.z(), net.minecraft.server.level.FullChunkStatus.ENTITY_TICKING, true,
++                            ca.spottedleaf.concurrentutil.util.Priority.HIGHER,
++                            (final net.minecraft.world.level.chunk.LevelChunk chunk) -> {
++                                world.moonrise$getChunkTaskScheduler().chunkHolderManager.addTicketAtLevel(
++                                        net.minecraft.server.level.TicketType.PLAYER_SPAWN, chunkPos,
++                                        ca.spottedleaf.moonrise.patches.chunk_system.scheduling.ChunkHolderManager.ENTITY_TICKING_TICKET_LEVEL,
++                                        null
++                                );
++                                io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(
++                                        world, chunkPos.x(), chunkPos.z(), () -> {
++                                            net.minecraft.server.network.ServerConfigurationPacketListenerImpl.this.prepareSpawnTask.spawnPlayer(
++                                                    connection, commonListenerCookie, serverPlayer
++                                            );
++                                        }
++                                );
++                            }
++                    );
++                });
++            });
+             // Folia end - region threading - rewrite login process
+         } catch (Exception e) {
+             LOGGER.error("Couldn't place player in world", e);

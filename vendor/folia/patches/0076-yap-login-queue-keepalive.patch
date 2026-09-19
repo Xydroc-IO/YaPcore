@@ -1,0 +1,144 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP keep queued joins alive and off the cut
+
+A join that has a UUID but no play listener was sitting silent, so
+ReadTimeoutHandler kicked it at 30s. Do not refuse the login slot, and
+do not hand the connection to a region until the play listener is
+installed. A cut column is not a spawn: the search already returns null,
+and a position already chosen for that column steps to the next section
+so the spawn task can finish. Not a longer timeout.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/server/players/PlayerList.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/players/PlayerList.java
+@@ -149,17 +149,6 @@
+             conflictingId = this.connectionById.get(byId);
+ 
+             if (conflictingName == null && conflictingId == null) {
+-                // Folia start - max concurrent login
+-                int loggedInCount = 0;
+-                for (Connection value : this.connectionById.values()) {
+-                    if (value.getPacketListener() instanceof ServerGamePacketListenerImpl) {
+-                        ++loggedInCount;
+-                    }
+-                }
+-                if ((this.connectionById.size() - loggedInCount) >= io.papermc.paper.configuration.GlobalConfiguration.get().misc.maxJoinsPerTick) {
+-                    return false;
+-                }
+-                // Folia end - max concurrent login
+                 this.connectionByName.put(userName, conn);
+                 this.connectionById.put(byId, conn);
+             }
+@@ -222,12 +211,11 @@
+         LevelData levelData = level.getLevelData();
+         ServerGamePacketListenerImpl playerConnection = new ServerGamePacketListenerImpl(this.server, connection, player, cookie);
+-        // Folia start - rewrite login process
+-        // only after setting the connection listener to game type, add the connection to this regions list
+-        level.getCurrentWorldData().addConnection(player);
+-        // Folia end - rewrite login process
++        // Play listener first. Adding the connection before that hands the join to a
++        // region thread that does not tick configuration, so no keepalive is sent.
+         connection.setupInboundProtocol(
+             GameProtocols.SERVERBOUND_TEMPLATE.bind(RegistryFriendlyByteBuf.decorator(this.server.registryAccess()), playerConnection), playerConnection
+         );
++        level.getCurrentWorldData().addConnection(player);
+         playerConnection.suspendFlushing();
+         GameRules gameRules = level.getGameRules();
+         boolean immediateRespawn = gameRules.get(GameRules.IMMEDIATE_RESPAWN);
+--- a/folia-server/src/minecraft/java/net/minecraft/server/network/ServerCommonPacketListenerImpl.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/network/ServerCommonPacketListenerImpl.java
+@@ -348,9 +348,9 @@
+         boolean onMain;
+         if (this instanceof ServerGamePacketListenerImpl serverGamePacketListener) {
+             onMain = ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(serverGamePacketListener.player);
+-        } else if (this instanceof ServerConfigurationPacketListenerImpl configurationPacketListener) {
+-            net.minecraft.server.level.ServerPlayer player = configurationPacketListener.switchToMain;
+-            onMain = player == null ? io.papermc.paper.threadedregions.RegionizedServer.isGlobalTickThread() : ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(player);
++        } else if (this instanceof ServerConfigurationPacketListenerImpl) {
++            // Play listener is not installed yet. The region does not tick this connection.
++            onMain = io.papermc.paper.threadedregions.RegionizedServer.isGlobalTickThread();
+         } else {
+             onMain = io.papermc.paper.threadedregions.RegionizedServer.isGlobalTickThread();
+         }
+--- a/folia-server/src/minecraft/java/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/network/ServerConfigurationPacketListenerImpl.java
+@@ -217,8 +217,9 @@
+             final CommonListenerCookie commonListenerCookie = this.createCookie(this.clientInformation);
+             final net.minecraft.server.level.ServerPlayer serverPlayer = this.prepareSpawnTask.createPlayer(connection, commonListenerCookie);
+ 
+             this.switchToMain = serverPlayer;
+-            // now the connection responsibility is transferred to the region
++            // Play listener is installed in placeNewPlayer. Until then this
++            // connection stays on the global tick so it can send a keepalive.
+             final net.minecraft.server.level.ServerLevel world = this.prepareSpawnTask.getSpawnWorld();
+             final net.minecraft.world.level.ChunkPos chunkPos = net.minecraft.world.level.ChunkPos.containing(net.minecraft.core.BlockPos.containing(this.prepareSpawnTask.getSpawnPosition()));
+             world.moonrise$getChunkTaskScheduler().scheduleTickingState(
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/ServerPlayer.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/ServerPlayer.java
+@@ -598,11 +598,30 @@
+         } while (!trySpawnOrSchedule(world, random, attemptCount, maxAttempts, toComplete));
+     }
+ 
++    public static BlockPos avoidCutColumn(final ServerLevel world, final BlockPos spawn) {
++        final int cz = spawn.getZ() >> 4;
++        int cx = spawn.getX() >> 4;
++        if (!io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(world, cx, cz)) {
++            return spawn;
++        }
++        final int shift = io.papermc.paper.threadedregions.TickRegions.getRegionChunkShift();
++        int section = cx >> shift;
++        for (int i = 0; i < 4; ++i) {
++            section++;
++            cx = section << shift;
++            if (!io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(world, cx, cz)) {
++                return new BlockPos((cx << 4) + 8, spawn.getY(), spawn.getZ());
++            }
++        }
++        return spawn;
++    }
++
+     private static void selectSpawnWithoutRadius(ServerLevel world, BlockPos spawn, ca.spottedleaf.concurrentutil.completable.CallbackCompletable<org.bukkit.Location> toComplete) {
+-        world.loadChunksForMoveAsync(PlayerSpawnFinder.PLAYER_DIMENSIONS.makeBoundingBox(spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5),
++        final BlockPos clear = avoidCutColumn(world, spawn);
++        world.loadChunksForMoveAsync(PlayerSpawnFinder.PLAYER_DIMENSIONS.makeBoundingBox(clear.getX() + 0.5, clear.getY(), clear.getZ() + 0.5),
+                 ca.spottedleaf.concurrentutil.util.Priority.HIGHER,
+                 (c) -> {
+-                    BlockPos ret = spawn;
++                    BlockPos ret = clear;
+                     while (!world.noCollision(null, PlayerSpawnFinder.PLAYER_DIMENSIONS.makeBoundingBox(ret.getX() + 0.5, ret.getY(), ret.getZ() + 0.5), true) && ret.getY() < (double)world.getMaxY()) {
+                         ret = ret.above();
+                     }
+--- a/folia-server/src/minecraft/java/net/minecraft/server/network/config/PrepareSpawnTask.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/network/config/PrepareSpawnTask.java
+@@ -305,14 +305,19 @@
+             return this.spawnLevel;
+         }
+ 
+         public Vec3 getSpawnPosition() {
+-            return this.spawnPosition;
++            final net.minecraft.core.BlockPos raw = net.minecraft.core.BlockPos.containing(this.spawnPosition);
++            final net.minecraft.core.BlockPos clear = net.minecraft.server.level.ServerPlayer.avoidCutColumn(this.spawnLevel, raw);
++            if ((clear.getX() >> 4) == (raw.getX() >> 4) && (clear.getZ() >> 4) == (raw.getZ() >> 4)) {
++                return this.spawnPosition;
++            }
++            return new Vec3(clear.getX() + 0.5, this.spawnPosition.y, clear.getZ() + 0.5);
+         }
+         // Folia end - region threading
+ 
+ 
+         public void keepAlive() {
+-            this.spawnLevel.getChunkSource().addTicketWithRadius(TicketType.PLAYER_SPAWN, ChunkPos.containing(BlockPos.containing(this.spawnPosition)), 3);
++            this.spawnLevel.getChunkSource().addTicketWithRadius(TicketType.PLAYER_SPAWN, ChunkPos.containing(BlockPos.containing(this.getSpawnPosition())), 3);
+         }
+ 
+         // Folia start - region threading - split out createPlayer and spawn
+@@ -367,7 +372,7 @@
+                     player.spawnReason = org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.DEFAULT; // set Player SpawnReason to DEFAULT on first login
+                 }
+                 // Paper end - Entity#getEntitySpawnReason
+-                player.snapTo(this.spawnPosition, this.spawnAngle.x, this.spawnAngle.y);
++                player.snapTo(this.getSpawnPosition(), this.spawnAngle.x, this.spawnAngle.y);
+                 PrepareSpawnTask.this.server.getPlayerList().placeNewPlayer(connection, player, cookie);
+                 input.ifPresent(tag -> {
+                     player.loadAndSpawnEnderPearls(tag);

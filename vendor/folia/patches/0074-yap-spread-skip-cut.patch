@@ -1,0 +1,49 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP block spread must not snapshot the cut
+
+Spawn search no longer parks the region thread, so random ticks run.
+Budding amethyst then snapshots a neighbor in the empty corridor from
+the east shard. That read fails the region thread check and Folia
+stops the server. Skip spread and grow into a registered cut section.
+The corridor stays empty. Not a bench change. Post-applyAllPatches.
+---
+
+--- a/paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
++++ b/paper-server/src/main/java/org/bukkit/craftbukkit/event/CraftEventFactory.java
+@@ -943,6 +943,11 @@
+             boolean result = level.setBlock(target, state, flags);
+             return !checkSetResult || result;
+         }
++        // Packed-spawn cut: the snapshot reads a chunk this region does not own
++        // and the tick dies (server stop). The corridor stays empty.
++        if (targetIsCut(level, target)) {
++            return false;
++        }
+ 
+         CraftBlockState snapshot = CraftBlockStates.getBlockState(level, target);
+         snapshot.setBlock(state);
+@@ -955,6 +960,14 @@
+         return false;
+     }
+ 
++    private static boolean targetIsCut(final LevelAccessor level, final BlockPos pos) {
++        if (!(level instanceof net.minecraft.server.level.ServerLevel serverLevel) || pos == null) {
++            return false;
++        }
++        return io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(
++                serverLevel, pos.getX() >> 4, pos.getZ() >> 4);
++    }
++
+     private static final java.util.function.Function<org.bukkit.inventory.ItemStack, Entity.DefaultDrop> FROM_FUNCTION = stack -> {
+         if (stack == null) return null;
+         return new Entity.DefaultDrop(CraftItemType.bukkitToMinecraft(stack.getType()), stack, null);
+@@ -1274,6 +1287,9 @@
+     }
+ 
+     public static boolean handleBlockGrowEvent(Level level, BlockPos pos, net.minecraft.world.level.block.state.BlockState state, @net.minecraft.world.level.block.Block.UpdateFlags int flags) {
++        if (targetIsCut(level, pos)) {
++            return false;
++        }
+         CraftBlockState snapshot = CraftBlockStates.getBlockState(level, pos);
+         snapshot.setBlock(state);
+ 
