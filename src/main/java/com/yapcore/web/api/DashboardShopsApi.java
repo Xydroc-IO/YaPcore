@@ -2,6 +2,7 @@ package com.yapcore.web.api;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.yapcore.server.YaPcoreServer;
+import com.yapcore.web.DashboardChestShopUtil;
 import com.yapcore.web.DashboardNpcUtil;
 import com.yapcore.web.DashboardShopUtil;
 import com.yapcore.web.TinyJson;
@@ -60,14 +61,23 @@ public final class DashboardShopsApi {
             snap.put("shopCount", shops.size());
             snap.put("presets", presets);
             snap.put("npcCount", npcs.size());
+            List<Map<String, Object>> chest = DashboardChestShopUtil.parseList(
+                    gameCommand("", "shop list json all"));
+            snap.put("chestShops", chest);
+            snap.put("chestCount", chest.size());
+            snap.put("instances", instanceIds());
             snap.put("root", root.toString());
-            snap.put("hint", "POST list | setitem | addbuy | addsell | setoffer | deloffer | clearoffers | apply | enable | clear");
+            snap.put("hint", "POST list | setitem | chest-list | chest-create | chest-set | chest-remove | chest-info");
             DashboardHttp.json(ex, 200, snap);
             return;
         }
         if ("POST".equalsIgnoreCase(ex.getRequestMethod())) {
             Map<String, String> body = TinyJson.parseFlatObject(DashboardHttp.readBody(ex));
             String action = body.getOrDefault("action", "").toLowerCase(Locale.ROOT);
+            if (action.startsWith("chest-") || "chestlist".equals(action)) {
+                handleChest(ex, action, body);
+                return;
+            }
             String cmd = shopCommand(action, body);
             if (cmd == null) {
                 DashboardHttp.json(ex, 400, Map.of("error", "unknown action or missing fields"));
@@ -222,5 +232,80 @@ public final class DashboardShopsApi {
             }
         }
         return null;
+    }
+
+    private void handleChest(HttpExchange ex, String action, Map<String, String> body) throws IOException {
+        String instance = body.getOrDefault("instance", body.getOrDefault("serverId", "")).trim();
+        String cmd = chestCommand(action, body);
+        if (cmd == null) {
+            DashboardHttp.json(ex, 400, Map.of("error", "unknown chest action or missing fields"));
+            return;
+        }
+        String result = gameCommand(instance, cmd);
+        Map<String, Object> resp = new LinkedHashMap<>();
+        resp.put("ok", true);
+        resp.put("command", cmd);
+        resp.put("result", result == null ? "" : result);
+        resp.put("chestShops", DashboardChestShopUtil.parseList(gameCommand(instance, "shop list json all")));
+        if ("chest-info".equals(action) || "chestinfo".equals(action)) {
+            resp.put("chest", DashboardChestShopUtil.parseOne(result));
+        }
+        DashboardHttp.json(ex, 200, resp);
+    }
+
+    private static String chestCommand(String action, Map<String, String> body) {
+        String world = body.getOrDefault("world", "world").trim();
+        String x = body.getOrDefault("x", "").trim();
+        String y = body.getOrDefault("y", "").trim();
+        String z = body.getOrDefault("z", "").trim();
+        return switch (action) {
+            case "chest-list", "chestlist" -> "shop list json all";
+            case "chest-create", "chest-set", "chestcreate", "chestset" -> {
+                String material = body.getOrDefault("material", "").trim().toUpperCase(Locale.ROOT);
+                String amount = body.getOrDefault("amount", "1").trim();
+                String price = body.getOrDefault("price", "").trim();
+                if (world.isEmpty() || x.isEmpty() || y.isEmpty() || z.isEmpty()
+                        || material.isEmpty() || price.isEmpty()) {
+                    yield null;
+                }
+                String owner = body.getOrDefault("owner", "").trim();
+                String op = "chest-set".equals(action) || "chestset".equals(action) ? "set" : "create";
+                String cmd = "shop " + op + " " + world + " " + x + " " + y + " " + z
+                        + " " + material + " " + amount + " " + price;
+                yield owner.isEmpty() ? cmd : cmd + " " + owner;
+            }
+            case "chest-remove", "chestremove" -> {
+                if (world.isEmpty() || x.isEmpty() || y.isEmpty() || z.isEmpty()) {
+                    yield null;
+                }
+                yield "shop remove " + world + " " + x + " " + y + " " + z;
+            }
+            case "chest-info", "chestinfo" -> {
+                if (world.isEmpty() || x.isEmpty() || y.isEmpty() || z.isEmpty()) {
+                    yield null;
+                }
+                yield "shop info " + world + " " + x + " " + y + " " + z + " json";
+            }
+            default -> null;
+        };
+    }
+
+    private String gameCommand(String instanceId, String cmd) {
+        if (instanceId != null && !instanceId.isBlank() && instanceId.matches("[A-Za-z0-9_-]{1,32}")
+                && server.fleet() != null && server.getConfig().isFleetEnabled()) {
+            try {
+                return server.fleet().dispatch(instanceId, cmd);
+            } catch (Exception e) {
+                return "dispatch failed: " + (e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+            }
+        }
+        return server.executeCommand(cmd);
+    }
+
+    private List<String> instanceIds() {
+        if (server.fleet() == null || !server.getConfig().isFleetEnabled()) {
+            return List.of();
+        }
+        return server.fleet().store().instances().stream().map(i -> i.id()).toList();
     }
 }

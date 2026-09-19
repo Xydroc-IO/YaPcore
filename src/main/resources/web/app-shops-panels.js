@@ -7,6 +7,8 @@ window.YapDashRegisterShopsPanels = function (YapDash) {
     offers: [],
     catalogId: null,
     displayName: "",
+    chestShops: [],
+    instances: [],
   };
 
   const MATERIALS = [
@@ -30,6 +32,108 @@ window.YapDashRegisterShopsPanels = function (YapDash) {
   function setOut(text) {
     const el = $("shopOut");
     if (el) el.textContent = text || "";
+  }
+
+  function setChestOut(text) {
+    const el = $("chestOut");
+    if (el) el.textContent = text || "";
+  }
+
+  function switchShopPane(pane) {
+    document.querySelectorAll("#shopSubnav [data-shop-pane]").forEach((b) => {
+      b.classList.toggle("active", b.dataset.shopPane === pane);
+    });
+    const npc = $("shopPaneNpc");
+    const chest = $("shopPaneChest");
+    if (npc) npc.hidden = pane !== "npc";
+    if (chest) chest.hidden = pane !== "chest";
+  }
+
+  function fillInstances(ids) {
+    const sel = $("chestInstance");
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = "";
+    const list = (ids && ids.length) ? ids : ["lobby"];
+    list.forEach((id) => {
+      const o = document.createElement("option");
+      o.value = id;
+      o.textContent = id;
+      sel.appendChild(o);
+    });
+    if (cur && list.includes(cur)) sel.value = cur;
+  }
+
+  function chestKey(s) {
+    return [s.serverId || "", s.world || "", s.x, s.y, s.z].join(":");
+  }
+
+  function fillChestForm(s) {
+    if (!s) return;
+    if (s.serverId) {
+      const sel = $("chestInstance");
+      if (sel) sel.value = s.serverId;
+    }
+    $("chestWorld") && ($("chestWorld").value = s.world || "world");
+    $("chestX") && ($("chestX").value = s.x ?? "");
+    $("chestY") && ($("chestY").value = s.y ?? "");
+    $("chestZ") && ($("chestZ").value = s.z ?? "");
+    $("chestMaterial") && ($("chestMaterial").value = s.material || "");
+    $("chestAmount") && ($("chestAmount").value = s.amount ?? 1);
+    $("chestPrice") && ($("chestPrice").value = s.price ?? "");
+    $("chestOwner") && ($("chestOwner").value = s.ownerName || "");
+  }
+
+  function chestPayload(extra) {
+    const body = Object.assign({
+      instance: $("chestInstance")?.value || "",
+      world: ($("chestWorld")?.value || "world").trim(),
+      x: ($("chestX")?.value || "").trim(),
+      y: ($("chestY")?.value || "").trim(),
+      z: ($("chestZ")?.value || "").trim(),
+      material: ($("chestMaterial")?.value || "").trim().toUpperCase(),
+      amount: $("chestAmount")?.value || "1",
+      price: ($("chestPrice")?.value || "").trim(),
+      owner: ($("chestOwner")?.value || "").trim(),
+    }, extra || {});
+    return body;
+  }
+
+  function renderChestTable() {
+    const tbody = $("chestBody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    (state.chestShops || []).forEach((s) => {
+      const tr = document.createElement("tr");
+      tr.style.cursor = "pointer";
+      tr.innerHTML =
+        `<td>${s.serverId || ""}</td>`
+        + `<td>${s.world || ""}</td>`
+        + `<td>${s.x}, ${s.y}, ${s.z}</td>`
+        + `<td>${s.material || ""}</td>`
+        + `<td>${s.amount ?? ""}</td>`
+        + `<td>${s.price ?? ""}</td>`
+        + `<td>${s.ownerName || ""}</td>`;
+      tr.addEventListener("click", () => fillChestForm(s));
+      tbody.appendChild(tr);
+    });
+    const empty = $("chestEmpty");
+    if (empty) empty.classList.toggle("hidden", (state.chestShops || []).length > 0);
+    $("chestCount") && ($("chestCount").textContent = String((state.chestShops || []).length));
+  }
+
+  async function refreshChest(fromGet) {
+    if (fromGet) {
+      renderChestTable();
+      return;
+    }
+    try {
+      const r = await netPost("/api/shops", { action: "chest-list", instance: $("chestInstance")?.value || "" });
+      state.chestShops = r.chestShops || [];
+      renderChestTable();
+    } catch (e) {
+      setChestOut(e.message);
+    }
   }
 
   function fillMaterials() {
@@ -279,8 +383,13 @@ window.YapDashRegisterShopsPanels = function (YapDash) {
       const data = await api("/api/shops");
       state.shops = data.shops || [];
       state.presets = data.presets || [];
+      state.chestShops = data.chestShops || [];
+      state.instances = data.instances || [];
       fillPresets(state.presets);
+      fillInstances(state.instances);
+      renderChestTable();
       $("shopCount") && ($("shopCount").textContent = String(data.shopCount ?? state.shops.length));
+      $("chestCount") && ($("chestCount").textContent = String(data.chestCount ?? state.chestShops.length));
       $("shopNpcCount") && ($("shopNpcCount").textContent = String(data.npcCount ?? "—"));
       $("shopPresetCount") && ($("shopPresetCount").textContent = String(state.presets.length));
       renderShopCards();
@@ -302,6 +411,53 @@ window.YapDashRegisterShopsPanels = function (YapDash) {
   }
 
   $("shopRefresh")?.addEventListener("click", () => refreshShops(true));
+
+  document.querySelectorAll("#shopSubnav [data-shop-pane]").forEach((btn) => {
+    btn.addEventListener("click", () => switchShopPane(btn.dataset.shopPane));
+  });
+
+  $("chestRefresh")?.addEventListener("click", () => refreshChest(false));
+  $("chestCreate")?.addEventListener("click", async () => {
+    const body = chestPayload({ action: "chest-create" });
+    if (!body.world || !body.x || !body.y || !body.z || !body.material || !body.price) {
+      setChestOut("World, XYZ, material, and price are required. Place the chest first.");
+      return;
+    }
+    try {
+      const r = await netPost("/api/shops", body);
+      state.chestShops = r.chestShops || state.chestShops;
+      renderChestTable();
+      setChestOut(r.result || "Chest shop saved.");
+    } catch (e) { setChestOut(e.message); }
+  });
+  $("chestRemove")?.addEventListener("click", async () => {
+    const body = chestPayload({ action: "chest-remove" });
+    if (!body.world || !body.x || !body.y || !body.z) {
+      setChestOut("Select a row or fill XYZ.");
+      return;
+    }
+    if (!confirm("Remove chest shop at " + body.world + " " + body.x + "," + body.y + "," + body.z + "?")) return;
+    try {
+      const r = await netPost("/api/shops", body);
+      state.chestShops = r.chestShops || state.chestShops;
+      renderChestTable();
+      setChestOut(r.result || "Removed.");
+    } catch (e) { setChestOut(e.message); }
+  });
+  $("chestInfo")?.addEventListener("click", async () => {
+    const body = chestPayload({ action: "chest-info" });
+    if (!body.world || !body.x || !body.y || !body.z) {
+      setChestOut("Select a row or fill XYZ.");
+      return;
+    }
+    try {
+      const r = await netPost("/api/shops", body);
+      const c = r.chest || {};
+      const stock = c.stock != null ? c.stock : "?";
+      setChestOut(r.result || ("Stock " + stock + " · " + (c.material || "") + " @ $" + (c.price || "")));
+      if (c.material) fillChestForm(c);
+    } catch (e) { setChestOut(e.message); }
+  });
 
   $("shopApplyPreset")?.addEventListener("click", async () => {
     if (!state.selected) {

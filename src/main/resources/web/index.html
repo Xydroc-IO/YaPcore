@@ -2129,70 +2129,121 @@
       <section id="tab-shops" class="panel">
         <div class="page-header">
           <h2>Shops</h2>
-          <p>Edit NPC shop catalogs — add or remove offers, change prices, apply presets. Enable a shop on an NPC first (NPCs tab or <code>/npc shop enable</code>).</p>
+          <p>NPC catalogs (buy/sell GUI) and chest shops (left-click a chest to buy). Use the tabs below — they are separate systems.</p>
         </div>
         <div class="grid stats">
-          <div class="stat"><span>Shops linked</span><strong id="shopCount">—</strong></div>
+          <div class="stat"><span>NPC shops</span><strong id="shopCount">—</strong></div>
+          <div class="stat"><span>Chest shops</span><strong id="chestCount">—</strong></div>
           <div class="stat"><span>NPCs total</span><strong id="shopNpcCount">—</strong></div>
           <div class="stat"><span>Presets</span><strong id="shopPresetCount">—</strong></div>
           <div class="stat"><span>Items (selected)</span><strong id="shopOfferCount">—</strong></div>
         </div>
 
-        <div class="card">
-          <h3>Shop NPCs</h3>
-          <div id="shopCards" class="group-cards"></div>
-          <p id="shopEmpty" class="muted hint hidden">No shops yet — open the NPCs tab, select an NPC, click <strong>Enable shop catalog</strong>, then come back here.</p>
+        <div class="subnav" id="shopSubnav">
+          <button type="button" class="active" data-shop-pane="npc">NPC shops</button>
+          <button type="button" data-shop-pane="chest">Chest shops</button>
         </div>
 
-        <div class="card">
-          <h3>Selected · <span id="shopEditLabel" class="muted">—</span></h3>
-          <div class="form-grid">
-            <label>Preset
-              <select id="shopPreset"></select>
-            </label>
-            <div class="toolbar" style="align-items:end;margin:0">
-              <button type="button" id="shopApplyPreset" class="primary">Apply preset (replace)</button>
-              <button type="button" id="shopClearOffers" class="ghost">Clear offers</button>
-              <button type="button" id="shopClearLink" class="danger ghost">Unlink shop</button>
+        <div class="shop-pane" id="shopPaneNpc">
+          <div class="card">
+            <h3>Shop NPCs</h3>
+            <div id="shopCards" class="group-cards"></div>
+            <p id="shopEmpty" class="muted hint hidden">No shops yet — open the NPCs tab, select an NPC, click <strong>Enable shop catalog</strong>, then come back here.</p>
+          </div>
+
+          <div class="card">
+            <h3>Selected · <span id="shopEditLabel" class="muted">—</span></h3>
+            <div class="form-grid">
+              <label>Preset
+                <select id="shopPreset"></select>
+              </label>
+              <div class="toolbar" style="align-items:end;margin:0">
+                <button type="button" id="shopApplyPreset" class="primary">Apply preset (replace)</button>
+                <button type="button" id="shopClearOffers" class="ghost">Clear offers</button>
+                <button type="button" id="shopClearLink" class="danger ghost">Unlink shop</button>
+              </div>
+            </div>
+            <p class="muted hint">One row per item — set <strong>Buy</strong> (player pays) and <strong>Sell</strong> (player receives). Leave a price blank to disable that side. Stock <code>-1</code> = unlimited.</p>
+          </div>
+
+          <div class="card">
+            <h3>Add / update item</h3>
+            <div class="form-grid">
+              <label>Material
+                <input id="shopAddMaterial" list="shopMaterials" placeholder="COOKED_BEEF"/>
+                <datalist id="shopMaterials"></datalist>
+              </label>
+              <label>Amount <input id="shopAddAmount" type="number" min="1" step="1" value="1"/></label>
+              <label>Buy price <input id="shopAddBuy" type="number" min="0" step="0.01" placeholder="64.00"/></label>
+              <label>Sell price <input id="shopAddSell" type="number" min="0" step="0.01" placeholder="24.00"/></label>
+              <label>Stock <input id="shopAddStock" type="number" step="1" value="-1" title="-1 = unlimited"/></label>
+            </div>
+            <p class="muted hint">Sell ≈ 38% of buy is typical for presets. Blank buy or sell skips that side.</p>
+            <button type="button" id="shopAddOffer" class="primary">Save item</button>
+          </div>
+
+          <div class="card">
+            <h3>Items</h3>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Item</th><th>Amount</th><th>Buy $</th><th>Sell $</th><th>Stock</th><th></th>
+                  </tr>
+                </thead>
+                <tbody id="shopOfferBody"></tbody>
+              </table>
             </div>
           </div>
-          <p class="muted hint">One row per item — set <strong>Buy</strong> (player pays) and <strong>Sell</strong> (player receives). Leave a price blank to disable that side. Stock <code>-1</code> = unlimited.</p>
-        </div>
 
-        <div class="card">
-          <h3>Add / update item</h3>
-          <div class="form-grid">
-            <label>Material
-              <input id="shopAddMaterial" list="shopMaterials" placeholder="COOKED_BEEF"/>
-              <datalist id="shopMaterials"></datalist>
-            </label>
-            <label>Amount <input id="shopAddAmount" type="number" min="1" step="1" value="1"/></label>
-            <label>Buy price <input id="shopAddBuy" type="number" min="0" step="0.01" placeholder="64.00"/></label>
-            <label>Sell price <input id="shopAddSell" type="number" min="0" step="0.01" placeholder="24.00"/></label>
-            <label>Stock <input id="shopAddStock" type="number" step="1" value="-1" title="-1 = unlimited"/></label>
+          <div class="toolbar">
+            <button type="button" id="shopRefresh">Refresh</button>
           </div>
-          <p class="muted hint">Sell ≈ 38% of buy is typical for presets. Blank buy or sell skips that side.</p>
-          <button type="button" id="shopAddOffer" class="primary">Save item</button>
+          <pre id="shopOut" class="report"></pre>
         </div>
 
-        <div class="card">
-          <h3>Items</h3>
-          <div class="table-wrap">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Item</th><th>Amount</th><th>Buy $</th><th>Sell $</th><th>Stock</th><th></th>
-                </tr>
-              </thead>
-              <tbody id="shopOfferBody"></tbody>
-            </table>
+        <div class="shop-pane" id="shopPaneChest" hidden>
+          <div class="card">
+            <h3>Register a chest</h3>
+            <p class="muted hint">Stock lives in the chest. Players <strong>left-click</strong> to buy. Dispatch create/remove to the backend that owns the chest. Place the chest in the world first.</p>
+            <div class="form-grid">
+              <label>Backend
+                <select id="chestInstance"></select>
+              </label>
+              <label>World <input id="chestWorld" placeholder="world" value="world"/></label>
+              <label>X <input id="chestX" type="number" step="1"/></label>
+              <label>Y <input id="chestY" type="number" step="1"/></label>
+              <label>Z <input id="chestZ" type="number" step="1"/></label>
+              <label>Material
+                <input id="chestMaterial" list="shopMaterials" placeholder="BREAD"/>
+              </label>
+              <label>Amount <input id="chestAmount" type="number" min="1" step="1" value="1"/></label>
+              <label>Price <input id="chestPrice" type="number" min="0" step="0.01" placeholder="16.00"/></label>
+              <label>Owner <input id="chestOwner" placeholder="player name (blank = Console)"/></label>
+            </div>
+            <div class="toolbar">
+              <button type="button" id="chestCreate" class="primary">Create / update</button>
+              <button type="button" id="chestInfo" class="ghost">Stock / info</button>
+              <button type="button" id="chestRemove" class="danger ghost">Remove</button>
+              <button type="button" id="chestRefresh" class="ghost">Refresh list</button>
+            </div>
           </div>
+          <div class="card">
+            <h3>Chest shops</h3>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Backend</th><th>World</th><th>XYZ</th><th>Item</th><th>Amount</th><th>Price</th><th>Owner</th>
+                  </tr>
+                </thead>
+                <tbody id="chestBody"></tbody>
+              </table>
+            </div>
+            <p id="chestEmpty" class="muted hint hidden">No chest shops yet. Place a chest, fill the form, Create.</p>
+          </div>
+          <pre id="chestOut" class="report"></pre>
         </div>
-
-        <div class="toolbar">
-          <button type="button" id="shopRefresh">Refresh</button>
-        </div>
-        <pre id="shopOut" class="report"></pre>
       </section>
 
       <section id="tab-skills" class="panel">

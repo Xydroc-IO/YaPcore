@@ -277,7 +277,7 @@ commands:
     permission: yapdata.mail
   shop:
     description: Chest shops
-    usage: /shop <create <price>|remove|info>
+    usage: /shop <create <price>|list|remove|info>
     permission: yapdata.shop
   jobs:
     description: Jobs GUI / join / leave

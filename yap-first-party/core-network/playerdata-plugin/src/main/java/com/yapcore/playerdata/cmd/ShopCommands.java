@@ -14,6 +14,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
 import java.util.Locale;
@@ -24,20 +25,21 @@ public final class ShopCommands implements CommandExecutor, TabCompleter {
     private final ShopRepository shops;
     private final BalanceStore balances;
     private final SyncService sync;
+    private final ShopAdminOps admin;
 
-    public ShopCommands(PlayerDataConfig config, ShopRepository shops,
+    public ShopCommands(JavaPlugin plugin, PlayerDataConfig config, ShopRepository shops,
                         BalanceStore balances, SyncService sync) {
         this.config = config;
         this.shops = shops;
         this.balances = balances;
         this.sync = sync;
+        this.admin = new ShopAdminOps(plugin, config, shops);
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!(sender instanceof Player player)) {
-            YapMessages.playersOnly(sender);
-            return true;
+            return console(sender, args);
         }
         if (!Perms.require(sender, "yapdata.shop")) {
             return true;
@@ -46,16 +48,18 @@ public final class ShopCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args.length < 1) {
-            player.sendMessage("Usage: /shop <create <price>|remove|info>");
+            player.sendMessage("Usage: /shop <create <price>|remove|info|list>");
             return true;
         }
         try {
             return switch (args[0].toLowerCase(Locale.ROOT)) {
-                case "create" -> create(player, args);
-                case "remove", "delete" -> remove(player);
-                case "info" -> info(player);
+                case "list" -> admin.list(sender, args);
+                case "create" -> args.length >= 8 ? adminCreate(player, args) : create(player, args);
+                case "set" -> adminCreate(player, args);
+                case "remove", "delete" -> args.length >= 5 ? admin.removeAt(sender, args) : remove(player);
+                case "info" -> args.length >= 5 ? admin.infoAt(sender, args) : info(player);
                 default -> {
-                    player.sendMessage("Usage: /shop <create <price>|remove|info>");
+                    player.sendMessage("Usage: /shop <create <price>|remove|info|list>");
                     yield true;
                 }
             };
@@ -63,6 +67,39 @@ public final class ShopCommands implements CommandExecutor, TabCompleter {
             com.yapcore.messages.YapMessages.commandFailed(player, e);
             return true;
         }
+    }
+
+    private boolean console(CommandSender sender, String[] args) {
+        if (!Perms.require(sender, "yapdata.admin")) {
+            return true;
+        }
+        if (args.length < 1) {
+            sender.sendMessage("Usage: /shop <list [json] [all]|create|set|remove|info> …");
+            return true;
+        }
+        try {
+            return switch (args[0].toLowerCase(Locale.ROOT)) {
+                case "list" -> admin.list(sender, args);
+                case "create", "set" -> admin.createAt(sender, args);
+                case "remove", "delete" -> admin.removeAt(sender, args);
+                case "info" -> admin.infoAt(sender, args);
+                default -> {
+                    sender.sendMessage("Usage: /shop <list [json] [all]|create|set|remove|info> …");
+                    yield true;
+                }
+            };
+        } catch (Exception e) {
+            com.yapcore.messages.YapMessages.commandFailed(sender, e);
+            return true;
+        }
+    }
+
+    private boolean adminCreate(Player player, String[] args) throws Exception {
+        if (!player.hasPermission("yapdata.admin")) {
+            player.sendMessage("§cNeed yapdata.admin for coordinate create.");
+            return true;
+        }
+        return admin.createAt(player, args);
     }
 
     private boolean create(Player player, String[] args) throws Exception {
@@ -181,7 +218,7 @@ public final class ShopCommands implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return List.of("create", "remove", "info").stream()
+            return List.of("create", "remove", "info", "list", "set").stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT)))
                     .toList();
         }

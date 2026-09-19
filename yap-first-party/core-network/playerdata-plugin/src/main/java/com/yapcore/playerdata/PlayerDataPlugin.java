@@ -260,7 +260,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
         }
 
         if (config.featureShops()) {
-            ShopCommands shopCommands = new ShopCommands(config, shops, balances, sync);
+            ShopCommands shopCommands = new ShopCommands(this, config, shops, balances, sync);
             playerFeatures.put("shop", shopCommands, shopCommands);
             playerFeatures.addListener(new ShopListener(shopCommands));
         } else {

@@ -487,7 +487,8 @@ code { font-family: var(--mono); font-size: 0.88em; background: var(--bg-elevate
   background: var(--accent-dim);
   color: var(--accent);
 }
-.acc-pane[hidden] { display: none !important; }
+.acc-pane[hidden],
+.shop-pane[hidden] { display: none !important; }
 
 details.soft-details {
   background: var(--card);

@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -42,6 +43,40 @@ public final class ShopRepository {
                 return Optional.of(map(rs));
             }
         }
+    }
+
+    public List<Shop> list(String serverId) throws SQLException {
+        List<Shop> out = new ArrayList<>();
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     SELECT id, owner_uuid, server_id, world, x, y, z, material, amount, price
+                     FROM shops WHERE server_id = ?
+                     ORDER BY world, x, z, y
+                     """)) {
+            ps.setString(1, serverId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    out.add(map(rs));
+                }
+            }
+        }
+        return out;
+    }
+
+    public List<Shop> listAll() throws SQLException {
+        List<Shop> out = new ArrayList<>();
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement("""
+                     SELECT id, owner_uuid, server_id, world, x, y, z, material, amount, price
+                     FROM shops
+                     ORDER BY server_id, world, x, z, y
+                     """);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                out.add(map(rs));
+            }
+        }
+        return out;
     }
 
     public void upsert(Shop shop) throws SQLException {
