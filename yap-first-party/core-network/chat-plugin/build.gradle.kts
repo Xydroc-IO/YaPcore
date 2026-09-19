@@ -25,11 +25,13 @@ dependencies {
     implementation(project(":yap-messages-api"))
     compileOnly(project(":yap-perms-api"))
     compileOnly(project(":yap-moderation-api"))
+    compileOnly(project(":yap-lib-api"))
 
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("io.papermc.paper:paper-api:$paperApi")
     testImplementation(project(":yap-messages-api"))
+    testImplementation(project(":yap-lib-api"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

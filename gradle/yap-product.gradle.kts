@@ -38,6 +38,12 @@ tasks.register("installProductDefaults") {
     if (findProject(":admin-plugin") != null) {
         dependsOn(":admin-plugin:installIntoPlugins")
     }
+    if (findProject(":lib-plugin") != null) {
+        dependsOn(":lib-plugin:installIntoPlugins")
+    }
+    if (findProject(":holo-plugin") != null) {
+        dependsOn(":holo-plugin:installIntoPlugins")
+    }
     if (findProject(":protect-plugin") != null) {
         dependsOn(":protect-plugin:installIntoPlugins")
     }
@@ -165,6 +171,8 @@ tasks.register("assemblePluginDist") {
         ":moderation-plugin:shadowJar",
         ":essentials-plugin:shadowJar",
         ":admin-plugin:jar",
+        ":lib-plugin:shadowJar",
+        ":holo-plugin:shadowJar",
         ":protect-plugin:shadowJar",
         ":world-plugin:shadowJar",
         ":worldedit-shim-plugin:shadowJar",
@@ -208,6 +216,8 @@ tasks.register("assemblePluginDist") {
         ":yap-messages-api:jar",
         ":yap-discord-api:jar",
         ":yap-playerdata-api:jar",
+        ":yap-lib-api:jar",
+        ":yap-holo-api:jar",
         ":yap-protect-api:jar",
         ":yap-world-api:jar",
         ":yap-regions-api:jar",
@@ -254,6 +264,12 @@ tasks.register("assemblePluginDist") {
         copyNamed(jarOf(":essentials-plugin", "shadowJar"), coreDir)
         if (findProject(":admin-plugin") != null) {
             copyNamed(jarOf(":admin-plugin"), coreDir)
+        }
+        if (findProject(":lib-plugin") != null) {
+            copyNamed(jarOf(":lib-plugin", "shadowJar"), coreDir)
+        }
+        if (findProject(":holo-plugin") != null) {
+            copyNamed(jarOf(":holo-plugin", "shadowJar"), coreDir)
         }
         copyNamed(jarOf(":protect-plugin", "shadowJar"), coreDir)
         copyNamed(jarOf(":world-plugin", "shadowJar"), coreDir)
@@ -344,6 +360,12 @@ tasks.register("assemblePluginDist") {
             copyNamed(jarOf(":yap-discord-api"), apiDir)
         }
         copyNamed(jarOf(":yap-playerdata-api"), apiDir)
+        if (findProject(":yap-lib-api") != null) {
+            copyNamed(jarOf(":yap-lib-api"), apiDir)
+        }
+        if (findProject(":yap-holo-api") != null) {
+            copyNamed(jarOf(":yap-holo-api"), apiDir)
+        }
         copyNamed(jarOf(":yap-protect-api"), apiDir)
         if (findProject(":yap-items-api") != null) {
             copyNamed(jarOf(":yap-items-api"), apiDir)

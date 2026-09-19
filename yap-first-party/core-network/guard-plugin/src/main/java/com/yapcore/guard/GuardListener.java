@@ -26,6 +26,9 @@ public final class GuardListener implements Listener {
     private final ViolationTracker tracker;
     private final GuardServiceImpl service;
     private YapTask movementTask;
+    private boolean packetSpeed;
+    private boolean packetReach;
+    private boolean packetScaffold;
 
     public GuardListener(JavaPlugin plugin, GuardConfig config, ViolationTracker tracker,
                          GuardServiceImpl service) {
@@ -37,6 +40,18 @@ public final class GuardListener implements Listener {
 
     public void setConfig(GuardConfig config) {
         this.config = config;
+    }
+
+    public void setPacketSpeed(boolean packetSpeed) {
+        this.packetSpeed = packetSpeed;
+    }
+
+    public void setPacketReach(boolean packetReach) {
+        this.packetReach = packetReach;
+    }
+
+    public void setPacketScaffold(boolean packetScaffold) {
+        this.packetScaffold = packetScaffold;
     }
 
     public void startMovementChecks() {
@@ -68,7 +83,7 @@ public final class GuardListener implements Listener {
         if (config.flyEnabled()) {
             checkFly(player, state);
         }
-        if (config.speedEnabled()) {
+        if (config.speedEnabled() && !packetSpeed) {
             checkSpeed(player, state);
         }
     }
@@ -199,7 +214,7 @@ public final class GuardListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onReach(EntityDamageByEntityEvent event) {
-        if (!config.reachEnabled()) {
+        if (!config.reachEnabled() || packetReach) {
             return;
         }
         Entity damager = event.getDamager();
@@ -228,7 +243,7 @@ public final class GuardListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onScaffold(BlockPlaceEvent event) {
-        if (!config.scaffoldEnabled()) {
+        if (!config.scaffoldEnabled() || packetScaffold) {
             return;
         }
         Player player = event.getPlayer();
@@ -273,7 +288,7 @@ public final class GuardListener implements Listener {
         state.speedOverStreak = 0;
     }
 
-    private void flag(Player player, String check) {
+    public void flag(Player player, String check) {
         int count = tracker.recordViolation(player, check);
         if (count >= config.maxViolationsBeforeKick()) {
             YapSched.entity(plugin, player, () -> {

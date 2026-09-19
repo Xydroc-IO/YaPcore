@@ -82,7 +82,7 @@ like mods. See [PLUGINS.md](PLUGINS.md).
 
 `yap-placeholderapi`, `yap-pregen`, `yap-plugin-compat`, `yap-db`, `yap-perms`,
 `yap-playerdata`, `yap-moderation`, `yap-essentials`, `yap-admin`, `yap-packs`, `yap-commands`, `yap-chat`, `yap-tab`,
-`yap-discord`, `yap-protect`, `yap-world`, `yap-regions`, `yap-portals`, `yap-guard`, `yap-lagguard`,
+`yap-discord`, `yap-lib`, `yap-holo`, `yap-protect`, `yap-world`, `yap-regions`, `yap-portals`, `yap-guard`, `yap-lagguard`,
 `yap-map`, `yap-npcs`, `yap-factions`, `yap-floodgate`, `yap-bedrock-ui`, `yap-tailor`,
 `yap-bedrock-blocks`, `yap-folia-bridge`, `yap-items` ([YAPITEMS.md](YAPITEMS.md)),
 `yap-qol` (timber axe + area excavator — [PLUGINS.md](PLUGINS.md)).

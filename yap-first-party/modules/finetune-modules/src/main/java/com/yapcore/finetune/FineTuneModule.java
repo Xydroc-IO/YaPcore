@@ -58,6 +58,8 @@ abstract class FineTuneModule extends YaPModule {
                 case "YaPModeration" -> "yap-moderation.jar";
                 case "YaPEssentials" -> "yap-essentials.jar";
                 case "YaPProtect" -> "yap-protect.jar";
+                case "YaPLib" -> "yap-lib.jar";
+                case "YaPHolo" -> "yap-holo.jar";
                 case "YaPWorld" -> "yap-world.jar";
                 default -> null;
             };

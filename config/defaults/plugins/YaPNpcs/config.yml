@@ -7,3 +7,7 @@ server-id: default
 
 dialogue:
   default: "&7Hello, traveler!"
+
+hologram-nametags: true
+nametag-offset: 0.25
+

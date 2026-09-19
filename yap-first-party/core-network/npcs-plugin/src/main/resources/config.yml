@@ -2,3 +2,8 @@ server-id: default
 
 dialogue:
   default: "&7Hello, traveler!"
+
+# Packet nametag via YaPHolo (falls back to vanilla customName if Holo is off)
+hologram-nametags: true
+nametag-offset: 0.25
+

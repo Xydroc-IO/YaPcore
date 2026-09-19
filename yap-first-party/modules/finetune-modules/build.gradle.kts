@@ -117,6 +117,18 @@ val fineTuneModules = listOf(
         description = "Fine-tune Essentials-class QoL commands",
     ),
     FineTuneSpec(
+        "lib", "YaPLibModule",
+        "com.yapcore.finetune.LibTuneModule",
+        listOf("lib"),
+        description = "Fine-tune packet intercept (YaPLib)",
+    ),
+    FineTuneSpec(
+        "holo", "YaPHoloModule",
+        "com.yapcore.finetune.HoloTuneModule",
+        listOf("holo"), listOf("lib"),
+        description = "Fine-tune packet holograms (YaPHolo)",
+    ),
+    FineTuneSpec(
         "protect", "YaPProtectModule",
         "com.yapcore.finetune.ProtectTuneModule",
         listOf("protect"), listOf("yapdb", "moderation"),
@@ -190,7 +202,7 @@ tasks.register("buildAllFineTuneModules") {
 val coreIds = setOf(
     "playerdata", "economy", "packs", "highpop", "ops-dashboard",
     "pregen", "chat", "floodgate", "db", "perms", "moderation", "essentials",
-    "protect", "world", "tab", "discord",
+    "lib", "holo", "protect", "world", "tab", "discord",
 )
 val gameplayIds = setOf("stacker", "gameplay-knobs")
 

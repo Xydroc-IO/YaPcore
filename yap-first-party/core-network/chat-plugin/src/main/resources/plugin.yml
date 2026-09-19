@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: Full first-party chat — channels, PM, mute integration, unsigned fix
 website: https://github.com/yaplabs
-softdepend: [YaPPerms, YaPModeration, PlaceholderAPI]
+softdepend: [YaPPerms, YaPModeration, PlaceholderAPI, YaPLib]
 commands:
   msg:
     description: Private message a player

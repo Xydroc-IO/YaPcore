@@ -66,7 +66,7 @@ Restart Folia after enable/disable. Config appears under `plugins/GrimAC/`.
 | | YaPGuard (native) | Grim (optional) |
 |--|-------------------|-----------------|
 | Jars | `yap-guard.jar` (product default, **on**) | `grim.jar.disabled` → `grim.jar` after enable |
-| Depth | Fly/speed/reach/scaffold heuristics | Full movement simulation |
+| Depth | Fly timer + packet speed/reach/scaffold when YaPLib is installed | Full movement simulation |
 | Best for | Casual SMP, low cheat pressure | PvP, minigames, competitive |
 
 **Do not run both at full sensitivity.** Typical setups:

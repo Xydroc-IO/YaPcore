@@ -232,6 +232,7 @@ public final class NpcServiceImpl implements NpcService {
                 return false;
             }
             despawn(opt.get());
+            NpcHologramNametags.remove(plugin, id);
             return repository.delete(config.serverId(), id);
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "npc remove", e);
@@ -348,9 +349,11 @@ public final class NpcServiceImpl implements NpcService {
         villager.setSilent(true);
         villager.setRemoveWhenFarAway(false);
         villager.setProfession(professionFor(npc.id()));
-        villager.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
-        villager.setCustomNameVisible(true);
         tag(villager, npc.id());
+        if (!NpcHologramNametags.apply(plugin, config, npc.id(), npc.displayName(), villager)) {
+            villager.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
+            villager.setCustomNameVisible(true);
+        }
         repository.setEntityUuid(config.serverId(), npc.id(), villager.getUniqueId());
     }
 
@@ -368,10 +371,15 @@ public final class NpcServiceImpl implements NpcService {
         mannequin.setSilent(true);
         mannequin.setRemoveWhenFarAway(false);
         mannequin.setGravity(false);
-        mannequin.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
-        mannequin.setCustomNameVisible(true);
         mannequin.setDescription(Component.empty());
         tag(mannequin, npc.id());
+        if (!NpcHologramNametags.apply(plugin, config, npc.id(), npc.displayName(), mannequin)) {
+            mannequin.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
+            mannequin.setCustomNameVisible(true);
+        } else {
+            mannequin.customName(Component.empty());
+            mannequin.setCustomNameVisible(false);
+        }
         try {
             UUID profileUuid = UUID.nameUUIDFromBytes(("yap-npc:" + npc.id()).getBytes(StandardCharsets.UTF_8));
             PlayerProfile profile = Bukkit.createProfile(profileUuid, truncateName(npc.displayName()));

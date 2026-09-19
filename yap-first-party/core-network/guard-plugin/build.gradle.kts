@@ -23,6 +23,7 @@ dependencies {
     implementation(project(":yap-sched"))
     implementation(project(":yap-messages-api"))
     implementation(project(":yap-guard-api"))
+    compileOnly(project(":yap-lib-api"))
 
     testImplementation("io.papermc.paper:paper-api:$paperApi")
     testImplementation(platform("org.junit:junit-bom:5.11.3"))

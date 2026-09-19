@@ -37,6 +37,8 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-moderation.jar` | Ban/mute/warn/kick + history (`/ban`, `/modhistory`) |
 | `yap-essentials.jar` | Essentials QoL + data-backed cmds (`/bag`, `/home`, `/kit`, `/bal`, `/shop`, …) |
 | `yap-admin.jar` | In-game staff super menu (`/yapadmin`, `/staff`) — [WEB_DASHBOARD.md](../docs/ops/WEB_DASHBOARD.md) |
+| `yap-lib.jar` | Folia-safe packet intercept (`/yaplib`, ProtocolLib-class API) — [YAPLIB.md](../docs/plugins/YAPLIB.md) |
+| `yap-holo.jar` | Packet holograms — attach, PAPI, clicks, items, pages (`/yapholo`) — [YAPHOLO.md](../docs/plugins/YAPHOLO.md) |
 | `yap-protect.jar` | Block logging / rollback |
 | `yap-world.jar` | Multi-world + WorldEdit-class tools (`/yapworld`) |
 | `WorldEdit.jar` | WorldEdit API shim (`yap-worldedit-shim`) |

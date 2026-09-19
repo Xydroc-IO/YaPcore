@@ -26,6 +26,8 @@ public final class FleetDefaultPlugins {
             "yap-moderation.jar",
             "yap-essentials.jar",
             "yap-admin.jar",
+            "yap-lib.jar",
+            "yap-holo.jar",
             "yap-protect.jar",
             "yap-world.jar",
             "WorldEdit.jar",

@@ -25,15 +25,13 @@ public final class ChatPlugin extends JavaPlugin {
     private PlayerChannelService channels;
     private IgnoreService ignore;
     private SecureChatRewriter secureChat;
+    private boolean libHooked;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         reloadChat();
         secureChat = new SecureChatRewriter(this);
-        if (config.unsignedSystemChat()) {
-            secureChat.install();
-        }
 
         MsgCommands msgCommands = new MsgCommands(this, config, privateMessages, channels);
         ChatExtraCommands extraCommands = new ChatExtraCommands(this, config, channels, ignore);
@@ -54,7 +52,7 @@ public final class ChatPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new org.bukkit.event.Listener() {
             @org.bukkit.event.EventHandler
             public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
-                if (secureChat != null && config.unsignedSystemChat()) {
+                if (secureChat != null && config.unsignedSystemChat() && !libHooked) {
                     secureChat.injectPlayer(event.getPlayer());
                 }
             }
@@ -63,13 +61,23 @@ public final class ChatPlugin extends JavaPlugin {
         getServer().getServicesManager().register(
                 com.yapcore.chat.ChatService.class, chatService, this, ServicePriority.Normal);
 
+        libHooked = hookLib();
+        if (!libHooked && config.unsignedSystemChat()) {
+            secureChat.install();
+        }
+
         getLogger().info("YaPChat ready — unsigned=" + config.unsignedSystemChat()
                 + " network=" + config.networkEnabled()
+                + " packets=" + libHooked
                 + " secure-rewrite=" + (secureChat != null && config.unsignedSystemChat()));
     }
 
     @Override
     public void onDisable() {
+        if (libHooked) {
+            unhookLib();
+            libHooked = false;
+        }
         if (secureChat != null) {
             secureChat.uninstall();
         }
@@ -107,5 +115,38 @@ public final class ChatPlugin extends JavaPlugin {
         }
         filter = new ChatFilterService(config);
         chatService = new ChatServiceImpl(this, config);
+    }
+
+    public ChatConfig chatConfig() {
+        return config;
+    }
+
+    public ChatFilterService filter() {
+        return filter;
+    }
+
+    private boolean hookLib() {
+        if (getServer().getPluginManager().getPlugin("YaPLib") == null) {
+            return false;
+        }
+        try {
+            Object ok = Class.forName("com.yapcore.chat.ChatLibHook")
+                    .getMethod("install", ChatPlugin.class)
+                    .invoke(null, this);
+            return Boolean.TRUE.equals(ok);
+        } catch (ReflectiveOperationException e) {
+            getLogger().warning("YaPLib present but chat packet hook failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void unhookLib() {
+        try {
+            Class.forName("com.yapcore.chat.ChatLibHook")
+                    .getMethod("uninstall", org.bukkit.plugin.Plugin.class)
+                    .invoke(null, this);
+        } catch (ReflectiveOperationException ignored) {
+            // YaPLib already gone
+        }
     }
 }

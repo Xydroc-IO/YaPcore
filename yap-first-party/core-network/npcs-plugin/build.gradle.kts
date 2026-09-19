@@ -27,6 +27,7 @@ dependencies {
     compileOnly(project(":yap-playerdata-api"))
     compileOnly(project(":yap-mmo-api"))
     compileOnly(project(":yap-portals-api"))
+    compileOnly(project(":yap-holo-api"))
 
     implementation("com.zaxxer:HikariCP:6.2.1")
     implementation("com.mysql:mysql-connector-j:9.1.0")

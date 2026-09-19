@@ -73,6 +73,8 @@ tasks.register("assembleRelease") {
             "yap-moderation.jar",
             "yap-essentials.jar",
             "yap-admin.jar",
+            "yap-lib.jar",
+            "yap-holo.jar",
             "yap-protect.jar",
             "yap-world.jar",
             "WorldEdit.jar",
@@ -264,6 +266,7 @@ tasks.register("assembleRelease") {
                     from(libDir)
                     into(dest.resolve("lib"))
                     include("yap-folia-*.jar", "folia-*.jar")
+                    exclude("*-lab.jar")
                 }
             }
         }

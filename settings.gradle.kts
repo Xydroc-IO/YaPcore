@@ -104,6 +104,18 @@ project(":yap-protect-api").projectDir = file("yap-first-party/api/yap-protect-a
 include("protect-plugin")
 project(":protect-plugin").projectDir = file("yap-first-party/core-network/protect-plugin")
 
+include("yap-lib-api")
+project(":yap-lib-api").projectDir = file("yap-first-party/api/yap-lib-api")
+
+include("lib-plugin")
+project(":lib-plugin").projectDir = file("yap-first-party/core-network/lib-plugin")
+
+include("yap-holo-api")
+project(":yap-holo-api").projectDir = file("yap-first-party/api/yap-holo-api")
+
+include("holo-plugin")
+project(":holo-plugin").projectDir = file("yap-first-party/core-network/holo-plugin")
+
 include("yap-world-api")
 project(":yap-world-api").projectDir = file("yap-first-party/api/yap-world-api")
 

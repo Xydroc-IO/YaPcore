@@ -13,6 +13,9 @@ public final class NpcsConfig {
     private String serverId = "default";
     private String defaultDialogue = "Hello, traveler!";
 
+    private boolean hologramNametags = true;
+    private double nametagOffset = 0.25;
+
     public NpcsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
     }
@@ -30,6 +33,8 @@ public final class NpcsConfig {
             }
         }
         defaultDialogue = color(c.getString("dialogue.default", "&7Hello, traveler!"));
+        hologramNametags = c.getBoolean("hologram-nametags", true);
+        nametagOffset = c.getDouble("nametag-offset", 0.25);
     }
 
     /** Fleet instances stamp {@code yap-server-id.txt}; seed YAML often stays {@code default}. */
@@ -73,6 +78,14 @@ public final class NpcsConfig {
 
     public String defaultDialogue() {
         return defaultDialogue;
+    }
+
+    public boolean hologramNametags() {
+        return hologramNametags;
+    }
+
+    public double nametagOffset() {
+        return nametagOffset;
     }
 
     private static String color(String raw) {

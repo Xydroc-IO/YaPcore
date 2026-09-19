@@ -1,0 +1,19 @@
+name: YaPHolo
+version: '0.0.0.1'
+main: com.yapcore.holo.HoloPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Packet holograms (DecentHolograms-class) on YaPLib
+website: https://github.com/yaplabs
+depend: [YaPLib]
+softdepend: [PlaceholderAPI, YaPNpcs]
+commands:
+  yapholo:
+    description: Packet holograms
+    usage: /yapholo create|delete|list|near|info|move|movehere|addline|setline|setlines|setpages|attach|click|see|view|reload|status
+    permission: yapholo.admin
+    aliases: [holo, hologram, hd, decentholograms]
+permissions:
+  yapholo.admin:
+    default: op

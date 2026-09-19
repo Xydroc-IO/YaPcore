@@ -1,0 +1,12 @@
+# YaPHolo — packet-only floating text (no world entities). Requires yap-lib.jar.
+
+enabled: true
+persist: true
+line-spacing: 0.28
+view-distance: 48
+refresh-ticks: 10
+# text_display (26.2) with armor_stand fallback if NMS constructors change
+entity: text_display
+# %player_name%, %online%, and PlaceholderAPI expansions
+placeholders: true
+click-cooldown-ticks: 5

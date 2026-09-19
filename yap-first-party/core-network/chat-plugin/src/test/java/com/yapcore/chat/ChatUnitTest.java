@@ -44,6 +44,16 @@ class ChatUnitTest {
     }
 
     @Test
+    void packetTextAndMuteAllowList() {
+        var box = com.yapcore.lib.packet.PacketContainer.wrap(
+                "hello world", com.yapcore.lib.packet.PacketTypes.Play.Client.CHAT);
+        assertEquals("hello world", ChatPacketText.read(box));
+        assertTrue(ChatPacketText.commandAllowedWhenMuted("/login Steve"));
+        assertTrue(ChatPacketText.commandAllowedWhenMuted("login Steve"));
+        assertFalse(ChatPacketText.commandAllowedWhenMuted("/say hi"));
+    }
+
+    @Test
     void formatNetworkFillsPlayerAndMessage() {
         ChatConfig config = new ChatConfig(null);
         config.applyChannelsForTest("global", Map.of(

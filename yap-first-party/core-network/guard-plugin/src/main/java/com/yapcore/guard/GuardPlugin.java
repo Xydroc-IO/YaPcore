@@ -1,6 +1,7 @@
 package com.yapcore.guard;
 
 import org.bukkit.command.PluginCommand;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -11,6 +12,7 @@ public final class GuardPlugin extends JavaPlugin {
     private GuardServiceImpl service;
     private GuardListener listener;
     private GuardCommands commands;
+    private boolean libHooked;
 
     @Override
     public void onEnable() {
@@ -20,6 +22,12 @@ public final class GuardPlugin extends JavaPlugin {
         listener = new GuardListener(this, config, tracker, service);
         getServer().getPluginManager().registerEvents(listener, this);
         listener.startMovementChecks();
+        libHooked = hookLib();
+        if (libHooked) {
+            listener.setPacketSpeed(true);
+            listener.setPacketReach(true);
+            listener.setPacketScaffold(true);
+        }
 
         getServer().getServicesManager().register(GuardService.class, service, this, ServicePriority.Normal);
 
@@ -32,6 +40,7 @@ public final class GuardPlugin extends JavaPlugin {
 
         getLogger().info("YaPGuard ready — lightweight heuristics (not Grim). "
                 + "PvP: ./scripts/grim-ac.sh enable · maxViolations=" + config.maxViolationsBeforeKick()
+                + " packets=" + libHooked
                 + " sampleRandomly=" + config.sampleRandomly());
     }
 
@@ -58,6 +67,12 @@ public final class GuardPlugin extends JavaPlugin {
         return config;
     }
 
+    public void flag(Player player, String check) {
+        if (listener != null) {
+            listener.flag(player, check);
+        }
+    }
+
     public ViolationTracker tracker() {
         return tracker;
     }
@@ -68,11 +83,40 @@ public final class GuardPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (libHooked) {
+            unhookLib();
+            libHooked = false;
+        }
         if (service != null) {
             getServer().getServicesManager().unregister(GuardService.class, service);
         }
         if (listener != null) {
             listener.stopMovementChecks();
+        }
+    }
+
+    private boolean hookLib() {
+        if (getServer().getPluginManager().getPlugin("YaPLib") == null) {
+            return false;
+        }
+        try {
+            Object ok = Class.forName("com.yapcore.guard.GuardLibHook")
+                    .getMethod("install", GuardPlugin.class)
+                    .invoke(null, this);
+            return Boolean.TRUE.equals(ok);
+        } catch (ReflectiveOperationException e) {
+            getLogger().warning("YaPLib present but guard packet hook failed: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void unhookLib() {
+        try {
+            Class.forName("com.yapcore.guard.GuardLibHook")
+                    .getMethod("uninstall", org.bukkit.plugin.Plugin.class)
+                    .invoke(null, this);
+        } catch (ReflectiveOperationException ignored) {
+            // YaPLib already gone
         }
     }
 }

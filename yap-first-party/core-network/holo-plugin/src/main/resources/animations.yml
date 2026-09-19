@@ -1,0 +1,21 @@
+wave:
+  interval: 4
+  frames:
+    - "&e&l✦"
+    - "&6&l✦"
+    - "&c&l✦"
+    - "&6&l✦"
+
+blink:
+  interval: 8
+  frames:
+    - "&f•"
+    - "&8•"
+
+scroll:
+  interval: 6
+  frames:
+    - "&b>>>"
+    - "&3>>&f>"
+    - "&3>&f>>"
+    - "&f>>>"

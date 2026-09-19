@@ -10,6 +10,8 @@ final class FleetDefaultPluginsTest {
 
     @Test
     void coreNetworkRecognizesProductJars() {
+        assertTrue(FleetDefaultPlugins.isCoreNetwork("yap-holo.jar"));
+        assertTrue(FleetDefaultPlugins.isCoreNetwork("yap-lib.jar"));
         assertTrue(FleetDefaultPlugins.isCoreNetwork("yap-db.jar"));
         assertTrue(FleetDefaultPlugins.isCoreDefault("yap-perms.jar"));
         assertTrue(FleetDefaultPlugins.isCoreNetwork("WorldEdit.jar"));

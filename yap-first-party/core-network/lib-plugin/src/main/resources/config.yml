@@ -1,0 +1,5 @@
+# YaPLib — Folia-safe packet intercept (ProtocolLib-class).
+# Holograms are a separate plugin: yap-holo.jar
+
+intercept: true
+debug-listeners: false

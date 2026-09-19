@@ -25,7 +25,8 @@ gradle assemblePluginDist          # build/dist/yap-plugins/{…,modules/core,mo
 | `yap-highpop-module.jar` | `highpop` | `config/templates/highpop` |
 | `yap-ops-dashboard-module.jar` | `web-dashboard` | `web-dashboard-*` |
 | `yap-pregen-module.jar` | `pregen` | YaPPregen |
-| `yap-chat-module.jar` | `chat` | YaPChat |
+| `yap-lib-module.jar` | `lib` | YaPLib packet intercept |
+| `yap-holo-module.jar` | `holo` | YaPHolo packet holograms |
 | `yap-floodgate-module.jar` | `floodgate` | YaPFloodgate |
 | `yap-db-module.jar` | `yapdb` | YaPDB |
 
