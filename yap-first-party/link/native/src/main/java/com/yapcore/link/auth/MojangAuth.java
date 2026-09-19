@@ -16,13 +16,30 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /** Mojang sessionserver hasJoined for online-mode + profile texture lookup for offline skins. */
 public final class MojangAuth {
 
+    private static final Logger LOG = Logger.getLogger("YaP.Link.Auth");
     private static final Gson GSON = new Gson();
+    private static final int HAS_JOINED_ATTEMPTS = 3;
+    private static final Executor EXEC = Executors.newFixedThreadPool(8, r -> {
+        Thread t = new Thread(r, "yap-mojang-auth");
+        t.setDaemon(true);
+        return t;
+    });
+    /** HTTP/1.1: Java HttpClient HTTP/2 + Mojang 204s hang or look like a bad session. */
     private static final HttpClient HTTP = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(8))
+            .version(HttpClient.Version.HTTP_1_1)
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .connectTimeout(Duration.ofSeconds(5))
+            .executor(EXEC)
             .build();
 
     private MojangAuth() {
@@ -31,22 +48,56 @@ public final class MojangAuth {
     public record Profile(UUID id, String name, List<ModernForwarding.Property> properties) {
     }
 
+    public static CompletableFuture<Profile> hasJoinedAsync(String username, String serverId) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                return hasJoined(username, serverId);
+            } catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        }, EXEC);
+    }
+
     public static Profile hasJoined(String username, String serverId) throws Exception {
-        String url = "https://sessionserver.mojang.com/session/minecraft/hasJoined?username="
-                + URLEncoder.encode(username, StandardCharsets.UTF_8)
-                + "&serverId=" + URLEncoder.encode(serverId, StandardCharsets.UTF_8);
-        HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                .timeout(Duration.ofSeconds(10))
-                .GET()
-                .build();
-        HttpResponse<String> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
-        if (resp.statusCode() == 204 || resp.body() == null || resp.body().isBlank()) {
-            throw new IllegalStateException("Mojang auth failed (offline account or bad session)");
+        Exception last = null;
+        for (int attempt = 1; attempt <= HAS_JOINED_ATTEMPTS; attempt++) {
+            try {
+                HttpResponse<String> resp = sendHasJoined(username, serverId);
+                int code = resp.statusCode();
+                String body = resp.body();
+                if (code == 200 && body != null && !body.isBlank()) {
+                    if (attempt > 1) {
+                        LOG.info("Mojang hasJoined ok user=" + username + " after retry " + attempt);
+                    }
+                    return parseProfile(body, username);
+                }
+                if (retryableStatus(code) && attempt < HAS_JOINED_ATTEMPTS) {
+                    LOG.warning("Mojang hasJoined retry " + attempt + "/" + HAS_JOINED_ATTEMPTS
+                            + " user=" + username + " HTTP " + code);
+                    sleepBackoff(attempt);
+                    continue;
+                }
+                if (code == 204 || body == null || body.isBlank()) {
+                    throw new IllegalStateException("invalid session");
+                }
+                throw new IllegalStateException("Mojang auth HTTP " + code);
+            } catch (IllegalStateException e) {
+                throw e;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw e;
+            } catch (Exception e) {
+                last = e;
+                if (attempt < HAS_JOINED_ATTEMPTS) {
+                    LOG.log(Level.WARNING, "Mojang hasJoined retry " + attempt + "/" + HAS_JOINED_ATTEMPTS
+                            + " user=" + username + " " + e.getMessage());
+                    sleepBackoff(attempt);
+                    continue;
+                }
+                throw e;
+            }
         }
-        if (resp.statusCode() != 200) {
-            throw new IllegalStateException("Mojang auth HTTP " + resp.statusCode());
-        }
-        return parseProfile(resp.body(), username);
+        throw last != null ? last : new IllegalStateException("invalid session");
     }
 
     /**
@@ -70,10 +121,7 @@ public final class MojangAuth {
             }
             String url = "https://sessionserver.mojang.com/session/minecraft/profile/"
                     + mojangId.toString().replace("-", "") + "?unsigned=false";
-            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                    .timeout(Duration.ofSeconds(8))
-                    .GET()
-                    .build();
+            HttpRequest req = mojangGet(url, Duration.ofSeconds(8));
             HttpResponse<String> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() != 200 || resp.body() == null || resp.body().isBlank()) {
                 return null;
@@ -88,19 +136,13 @@ public final class MojangAuth {
         try {
             String url = "https://api.minecraftservices.com/users/profiles/minecraft/"
                     + URLEncoder.encode(username, StandardCharsets.UTF_8);
-            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                    .timeout(Duration.ofSeconds(8))
-                    .GET()
-                    .build();
+            HttpRequest req = mojangGet(url, Duration.ofSeconds(8));
             HttpResponse<String> resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() != 200 || resp.body() == null || resp.body().isBlank()) {
                 // Fallback legacy API
                 url = "https://api.mojang.com/users/profiles/minecraft/"
                         + URLEncoder.encode(username, StandardCharsets.UTF_8);
-                req = HttpRequest.newBuilder(URI.create(url))
-                        .timeout(Duration.ofSeconds(8))
-                        .GET()
-                        .build();
+                req = mojangGet(url, Duration.ofSeconds(8));
                 resp = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
             }
             if (resp.statusCode() != 200 || resp.body() == null || resp.body().isBlank()) {
@@ -116,7 +158,11 @@ public final class MojangAuth {
         }
     }
 
-    private static Profile parseProfile(String body, String fallbackName) {
+    static boolean retryableStatus(int code) {
+        return code == 204 || code == 408 || code == 429 || code >= 500;
+    }
+
+    static Profile parseProfile(String body, String fallbackName) {
         JsonObject json = GSON.fromJson(body, JsonObject.class);
         String id = json.get("id").getAsString();
         UUID uuid = dashUuid(id);
@@ -134,6 +180,27 @@ public final class MojangAuth {
             }
         }
         return new Profile(uuid, name, props);
+    }
+
+    private static HttpResponse<String> sendHasJoined(String username, String serverId) throws Exception {
+        String url = "https://sessionserver.mojang.com/session/minecraft/hasJoined?username="
+                + URLEncoder.encode(username, StandardCharsets.UTF_8)
+                + "&serverId=" + URLEncoder.encode(serverId, StandardCharsets.UTF_8);
+        HttpRequest req = mojangGet(url, Duration.ofSeconds(8));
+        return HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private static HttpRequest mojangGet(String url, Duration timeout) {
+        return HttpRequest.newBuilder(URI.create(url))
+                .timeout(timeout)
+                .header("User-Agent", "YaP-Link/0.6 (Minecraft hasJoined)")
+                .header("Accept", "application/json")
+                .GET()
+                .build();
+    }
+
+    private static void sleepBackoff(int attempt) throws InterruptedException {
+        Thread.sleep(200L * attempt);
     }
 
     private static UUID dashUuid(String undashed) {

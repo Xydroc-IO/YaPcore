@@ -133,7 +133,31 @@ final class ClientSessionLoginFlow {
         ctx.pipeline().addFirst("encrypt", new MinecraftCrypto.CipherCodec(decrypt, encrypt));
 
         String serverId = MinecraftCrypto.serverId(sharedSecret, session.server.rsaKeyPair().getPublic());
-        MojangAuth.Profile profile = MojangAuth.hasJoined(session.username, serverId);
+        String user = session.username;
+        session.phase = ClientSession.Phase.CONNECTING_BACKEND;
+        MojangAuth.hasJoinedAsync(user, serverId).whenComplete((profile, err) -> {
+            Runnable cont = () -> finishOnlineAuth(ctx, user, profile, err);
+            if (ctx.channel().eventLoop().inEventLoop()) {
+                cont.run();
+            } else {
+                ctx.channel().eventLoop().execute(cont);
+            }
+        });
+    }
+
+    private void finishOnlineAuth(ChannelHandlerContext ctx, String user,
+                                  MojangAuth.Profile profile, Throwable err) {
+        if (!ctx.channel().isActive()) {
+            return;
+        }
+        if (err != null || profile == null) {
+            Throwable root = err instanceof java.util.concurrent.CompletionException && err.getCause() != null
+                    ? err.getCause() : err;
+            String detail = root != null && root.getMessage() != null ? root.getMessage() : "invalid session";
+            LOG.warning("AUTH fail user=" + user + " addr=" + session.clientAddress + " " + detail);
+            session.kick(ctx, "Invalid session — restart the Minecraft launcher and try again");
+            return;
+        }
         session.playerId = profile.id();
         session.username = profile.name();
         session.properties = profile.properties();
