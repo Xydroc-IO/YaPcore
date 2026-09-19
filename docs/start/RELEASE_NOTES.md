@@ -13,6 +13,203 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 0.0.0.1 — teleport join on the destination chunk 0068 (2026-09-19)
+
+Same ship version. Lab jar only. Home-leash commits were running on the shard whose center is chunk 10 while the position was chunk 0. That throw in `Player.aiStep` became `Internal server error`. The cut neighbor in the accept halo became `Invalid move player packet`.
+
+| Area | Change |
+|------|--------|
+| **0068** | Join re-queues by the destination chunk until this thread owns it. `aiStep` returns instead of `getEntities` off-thread. `isInWall` skips a null chunk. Accept does not require the carved hole. |
+| **Proof** | `20260919T105329Z`: `into 2 shards`, fuse drop 802, `players_end=100`, no `Internal server error`. That jar is the product file (`cfaefe5d`). |
+
+---
+
+## After 0.0.0.1 — cut is a status boundary 0067 (2026-09-19)
+
+Same ship version. Lab jar only. Entity ticking needs a full radius-2 ring. The corridor unload cleared that on west piles one chunk off the hole. Leaving the loaded-bit set would claim the hole is still a chunk.
+
+| Area | Change |
+|------|--------|
+| **0067** | `updatePendingStatus` treats a registered cut as a finished neighbor. `isNeighbourFullLoaded` stays false after the unload. |
+| **Proof** | Landed in product cite `20260919T105329Z` (`into 2 shards`, fuse drop 802, `players_end=100`). |
+
+---
+
+## After 0.0.0.1 — grass skip cut neighbor 0066 (2026-09-19)
+
+Same ship version. Lab jar only. 0065 made the west shard entity-tick; grass then `getChunkAt` the empty corridor (null) and `ReportedException` halted region #1 before fuse could drain.
+
+| Area | Change |
+|------|--------|
+| **0066** | `SpreadingSnowyBlock.randomTick` uses `getChunkIfLoaded` and skips a missing neighbor. Does not sync-load the cut. |
+| **Proof** | Landed in product cite `20260919T105329Z` (`into 2 shards`, fuse drop 802, `players_end=100`). |
+
+---
+
+## After 0.0.0.1 — kept SIM tickets after cut 0065 (2026-09-19)
+
+Same ship version. Lab jar only. 0064 packed fullcite logged `into 2 shards` then fuse drop 401: east TNT ticked, west piles froze. The ticket wall zeroed flood-propagated PLAYER sim; PLUGIN/FORCED on the kept shards did not keep entity-ticking. Not bot herding.
+
+| Area | Change |
+|------|--------|
+| **0065** | `processLevelUpdates` takes min(flood, remaining PLUGIN/FORCED ticket level) so a cut-wall decrease cannot leave kept piles at BLOCK_TICKING. `setChunkForceLoaded` on the owning region thread. `PLUGIN_TICKET`/`PLUGIN` get `FLAG_KEEP_DIMENSION_ACTIVE`. |
+| **Proof** | Landed in product cite `20260919T105329Z` (`into 2 shards`, fuse drop 802, `players_end=100`). |
+
+---
+
+## After 0.0.0.1 — spawn finder skip cut 0064 (2026-09-19)
+
+Same ship version. Lab jar only. 0063 packed fullcite emptied the hole then a bot death `syncLoadNonFull`’d the cut and watchdog-stalled the region — still no `into 2 shards`.
+
+| Area | Change |
+|------|--------|
+| **0064** | `PlayerSpawnFinder.getLevelRespawnPos` returns null for cut keys; `syncLoadNonFull` does not `managedBlock` on the empty buffer. |
+| **Proof** | Landed in product cite `20260919T105329Z` (`into 2 shards`, fuse drop 802, `players_end=100`). |
+
+---
+
+## After 0.0.0.1 — cut ticket wall 0062 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar`. Does **not** overwrite the GUI product jar. Does **not** force-unload occupied corridor chunks or delete TNT.
+
+| Area | Change |
+|------|--------|
+| **0062** | Neighbor view-distance skip zeros the Moonrise propagator cell so the Folia empty buffer can unload. Ticket clamp is the bounded section AABB. Carve still aborts if corridor keys remain. |
+| **Proof** | Live packed fullcite must log `YaP force-partition region #N into 2 shards`. Fuse/hoppers stay matched. Empty-strip bar must still PASS. |
+| **Patches** | **56** files (`0000`–`0063`) |
+
+---
+
+## After 0.0.0.1 — partition region 0 (0063) (2026-09-19)
+
+Same ship version. Lab jar only. 0062 packed fullcite emptied the corridor (`carve complete`) then never logged `into 2 shards` because `requestPartition` ignored region id 0.
+
+| Area | Change |
+|------|--------|
+| **0063** | Spawn is region 0. Post-carve `requestPartition(0)` now enqueues `tryForcePartition`. Silent “not buffered” requeue now logs. |
+| **Not a cite** | `20260919T090050Z` MSPT 16.1 / fuse 401 vs 800 — hole emptied, **no split**, do not publish. |
+
+---
+
+## After 0.0.0.1 — YaPChat / YaPGuard packet listeners (2026-09-19)
+
+Same ship version. Rebuild `yap-chat.jar` + `yap-guard.jar` (needs `yap-lib.jar`).
+
+| Area | Change |
+|------|--------|
+| **YaPChat** | Mute + block-filter cancel `Play.Client.CHAT` / `CHAT_COMMAND`. Unsigned rewrite uses YaPLib when present. |
+| **YaPGuard** | Packet speed (flag), reach (cancel interact), scaffold (cancel place). Fly stays on the timer (needs blocks). Not Grim. |
+
+---
+
+## After 0.0.0.1 — partition along carved corridor 0061 (2026-09-19)
+
+Same ship version. Lab jar only until a hot packed-spawn log shows `into 2 shards`.
+
+| Area | Change |
+|------|--------|
+| **0061** | After a finished carve, force-partition splits left/right of that corridor. Median recut was why packed spawn stayed `force-partition deferred` with no `into 2 shards`. |
+| **Patches** | **54** files (`0000`–`0061`) |
+
+---
+
+## After 0.0.0.1 — loaded kept-edge pads 0060 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar`.
+
+| Area | Change |
+|------|--------|
+| **0060** | Corridor landing pads are the nearest already-loaded kept-edge chunks, not the view-distance rim. 0059 skipped unload dests (correct); pads at chunk 18 made relocate move 0 so packed-spawn carve aborted. |
+| **Patches** | **53** files (`0000`–`0060`) |
+
+---
+
+## After 0.0.0.1 — player pad no sync-load 0059 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar`.
+
+| Area | Change |
+|------|--------|
+| **0059** | Player pad relocate skips `getChunk(load)` / 7-arg `teleportTo`. After a packed live split those nested `PlayerSpawnFinder` sync-load and watchdog-stalled the region. |
+| **Patches** | **52** files (`0000`–`0059`) |
+
+---
+
+## After 0.0.0.1 — YaPLib handshake hop + entity-data codecs (2026-09-19)
+
+Same ship version. Rebuild `yap-lib.jar`.
+
+| Area | Change |
+|------|--------|
+| **Handshake/login REGION** | No Bukkit player → Folia global scheduler + `event.address()`. Cancel still holds the packet. |
+| **New metadata indexes** | `WrappedEntityData.setValue` packs via `EntityDataSerializers` (Component, ItemStack, Optional, …). |
+| **Not a shim** | Still no `com.comphenix.protocol` — ProtocolLib plugins do not load. |
+
+---
+
+## After 0.0.0.1 — YaPLib region hold + entity data (2026-09-19)
+
+Same ship version. Rebuild `yap-lib.jar`.
+
+| Area | Change |
+|------|--------|
+| **REGION cancel** | Cancelable region listeners **hold** the packet before `packet_handler`. Folia hop, then drop or deliver. Netty is never blocked. `MONITOR` region stays observe-only. |
+| **Entity metadata** | `WrappedEntityData` / `packet.entityMetadata()` — entity id + watcher-index get/set. No generated `WrapperPlay*` catalog. |
+
+---
+
+## After 0.0.0.1 — YaPLib ProtocolLib-class API (2026-09-19)
+
+Same ship version. Rebuild `yap-lib.jar` + `yap-holo.jar`.
+
+| Area | Change |
+|------|--------|
+| **Naming** | `Play.Client` = from the player (serverbound), `Play.Server` = to the player (clientbound) — ProtocolLib convention. |
+| **Registry** | Full PLAY constants + ProtocolLib aliases (`SPAWN_ENTITY`, `USE_ENTITY`, `ENTITY_METADATA`, …). |
+| **Modifiers** | `StructureModifier` + ItemStack / chat / BlockPos / GameProfile / NBT / packed entity-data views. |
+| **createPacket** | Empty NMS instance from `PacketType` (no-arg ctor or Unsafe). |
+| **Not a shim** | No `com.comphenix.protocol` drop-in; existing ProtocolLib plugins still do not load. |
+
+---
+
+## After 0.0.0.1 — YaPHolo DH extras (2026-09-19)
+
+Same ship version. Rebuild `yap-holo.jar` + `yap-npcs.jar`.
+
+| Area | Change |
+|------|--------|
+| **Attach** | Follow NPC / player / entity (`/yapholo attach`). |
+| **Placeholders** | `%player_name%`, `%online%`, and PlaceholderAPI on the viewer’s entity thread. |
+| **Clicks** | Left punch / right interact → console, player command, next/prev page. |
+| **Items / anims** | `#ICON:DIAMOND`, `#ANIM:wave` (`animations.yml`). |
+| **Pages** | Per-viewer pages (`;;` or dashboard blank line). |
+| **NPC nametags** | YaPNpcs `hologram-nametags` uses `npcntag_<id>` instead of vanilla customName. |
+
+---
+
+## After 0.0.0.1 — YaPHolo split (2026-09-19)
+
+Same ship version. Rebuild `yap-lib.jar` + `yap-holo.jar`.
+
+| Area | Change |
+|------|--------|
+| **YaPLib** | Packet intercept only (`PacketService`). |
+| **YaPHolo** | Packet holograms (`/yapholo`, `HologramService`) — `depend: [YaPLib]`. |
+
+---
+
+## After 0.0.0.1 — YaPLib packet intercept (2026-09-19)
+
+Same ship version. Rebuild `yap-lib.jar` (`gradle :lib-plugin:shadowJar` or `installProductDefaults`).
+
+| Area | Change |
+|------|--------|
+| **YaPLib** | Folia-safe ProtocolLib-class intercept (`PacketService`). Holograms moved to YaPHolo. |
+| **Thread model** | Listen/cancel/rewrite on the Netty event loop; `REGION` listeners are observe-only. |
+| **Compat** | ProtocolLib / PacketEvents → `yap-lib.jar`. DecentHolograms → `yap-holo.jar`. |
+
+---
+
 ## After 0.0.0.1 — skills expansion (2026-09-18)
 
 Same ship version. Rebuild `yap-skills.jar` (`gradle :skills-plugin:shadowJar` or `publishReleasesFolder -PyapGameplay=true`).
@@ -61,7 +258,139 @@ Same ship version. Lab paperclip → `lib/yap-folia-26.2-lab.jar` (does **not** 
 
 ---
 
-## After 0.0.0.1 — spawn nether portal 0046 (2026-09-18)
+## After 0.0.0.1 — evacuate cut players 0058 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar`.
+
+| Area | Change |
+|------|--------|
+| **0058** | Corridor evacuate includes `ServerPlayer`. Packed-spawn bots were pinning the cut section; force-partition aborted. |
+| **Bench** | Home-leash does not teleport into an unloaded home chunk (would PLAYER-ticket the hole back). |
+| **Patches** | **51** files (`0000`–`0058`) |
+
+---
+
+## After 0.0.0.1 — strip unpinned cut tickets 0057 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar`.
+
+| Area | Change |
+|------|--------|
+| **0057** | Corridor strip no longer keeps neighbor view-distance PLAYER tickets on an empty cut chunk. Occupied chunks and portal chunks stay pinned. Lets packed-spawn force-partition finish under VD 8. |
+| **Cite** | `cite-fullcite.sh` defaults `YAP_FOLIA_SUBREGION_CARVE=true` (ship profile). |
+| **Patches** | **50** files (`0000`–`0057`) |
+
+---
+
+## After 0.0.0.1 — missing holder is a gap 0056 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar`.
+
+| Area | Change |
+|------|--------|
+| **0056** | `checkNeighbour` / neighbour cache: a null holder is already-at-status (halo or mid-reap), not a crash. `CraftWorld.getChunkAt` does not NPE when `getChunk(load)` returns null. |
+| **Bench** | Region-load snapshot skips unloaded chunks instead of `getChunkAt`+`load` into the corridor. |
+| **Patches** | **49** files (`0000`–`0056`) |
+
+---
+
+## After 0.0.0.1 — player-loader cut load count 0055 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar`.
+
+| Area | Change |
+|------|--------|
+| **0055** | After skipCutHole, scheduleChunkLoad walks the queued list size instead of maxLoadsThisTick (IOBE on region tick). |
+| **Patches** | **48** files (`0000`–`0055`) |
+
+---
+
+## After 0.0.0.1 — cut FULL-neighbour holder 0054 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar`.
+
+| Area | Change |
+|------|--------|
+| **0054** | Kept-edge FULL load no longer NPEs `setNeighbourFullLoaded` on a dropped corridor holder. Player send/unload skips missing holders and received-set misses. |
+| **Patches** | **47** files (`0000`–`0054`) |
+
+---
+
+## After 0.0.0.1 — cut getChunk / player unload 0053 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar`.
+
+| Area | Change |
+|------|--------|
+| **0053** | `getChunk(load)` on a registered cut returns loaded-or-null (getBlockState → air) instead of throwing. Player-loader unload sends forget without requiring a holder. |
+| **Patches** | **46** files (`0000`–`0053`) |
+
+---
+
+## After 0.0.0.1 — cut missing chunkholder 0052 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar` (does **not** overwrite the GUI product jar). Bench home-leash no longer `getHighestBlockYAt` off-owner after a live carve.
+
+| Area | Change |
+|------|--------|
+| **0052** | Ticket FULL-load beside an unloaded corridor threw `Missing chunkholder`. Treat a registered cut as an intentional gap. |
+| **Bench** | Home-leash / bot send-home run on the entity thread; height sample only if this region owns the home chunk. |
+| **Patches** | **45** files (`0000`–`0052`) |
+
+---
+
+## After 0.0.0.1 — fluid spread ownership 0051 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar` (does **not** overwrite the GUI product jar).
+
+| Area | Change |
+|------|--------|
+| **0051** | After a live split, `FlowingFluid.spreadTo` can `setBlock` a neighbour shard. Defer onto the owning region (same pattern as 0015). Unloaded/cut chunks drop. Water still flows; carve stays on. |
+| **Patches** | **44** files (`0000`–`0051`) |
+
+---
+
+## After 0.0.0.1 — unload/POI ownership 0050 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar` (does **not** overwrite the GUI product jar).
+
+| Area | Change |
+|------|--------|
+| **0050** | `regioniser.removeChunk` no-ops if the section bit is already clear (holder-delete after corridor repair). POI search skips chunks the current TickThread does not own, so villager `AcquirePoi` cannot `ensureTickThread` a neighbour-region POI chunk after split. Carve/partition/async stay on. |
+| **Patches** | **43** files (`0000`–`0050`) |
+
+---
+
+## After 0.0.0.1 — ticking-chunk null skip 0049 (2026-09-19)
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar` (does **not** overwrite the GUI product jar).
+
+| Area | Change |
+|------|--------|
+| **0049** | Mid-tick corridor unload can null entity-ticking list slots while `iterateTickingChunksFaster` still walks a captured size. Skip nulls; `tickChunk(null)` returns. |
+| **Patches** | **42** files (`0000`–`0049`) |
+
+---
+
+Same ship version. Incremental Folia → `lib/yap-folia-26.2-lab.jar` (does **not** overwrite the GUI product jar).
+
+| Area | Change |
+|------|--------|
+| **0048** | In-flight gap key is `~regionId`. Region 0 used `-regionId` (=0); register ignored it so `unloadIfCut` never dropped corridor holders (lvl=39, tickets empty). |
+| **Check** | `./scripts/smoke-contiguous-bar.sh` on the lab jar. |
+| **Patches** | **41** files (`0000`–`0048`) |
+
+---
+
+Same ship version. Incremental Folia `:folia-server:jar` + `createPaperclipJar` → `lib/yap-folia-26.2-lab.jar` (does **not** overwrite the GUI product jar).
+
+| Area | Change |
+|------|--------|
+| **0047** | Moonrise player chunk loader skips unpinned registered cut keys (load/gen/tick/send). Null FULL chunk no longer NPEs `updateQueues` after corridor evacuate. |
+| **Check** | `./scripts/smoke-contiguous-bar.sh` on the lab jar. Chassis fullcite previously died here (`RegionizedPlayerChunkLoader.updateQueues` chunk null). |
+| **Patches** | **40** files (`0000`–`0047`) |
+
+---
 
 Same ship version. Incremental Folia `:folia-server:jar` only (does **not** overwrite the GUI product jar). Lab paperclip → `lib/yap-folia-26.2-lab.jar`.
 
