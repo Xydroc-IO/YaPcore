@@ -1,0 +1,25 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP fastClip treats a corridor chunk as a miss
+
+Level.fastClip calls getChunk on the ray and uses the sections. A cut key
+returns null, so an arrow whose clip enters the carved corridor throws.
+The hole has no blocks. Treat that chunk as a miss. Not a new splitter.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/Level.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/Level.java
+@@ -426,7 +426,12 @@
+ 
+             if ((chunkDiff | chunkYDiff) != 0) {
+                 if (chunkDiff != 0) {
+-                    lastChunk = level.getChunk(newChunkX, newChunkZ).getSections();
++                    // YaP: a cut key returns null. The corridor is empty, so the clip misses.
++                    if (level instanceof net.minecraft.server.level.ServerLevel yapClipLevel
++                            && io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(yapClipLevel, newChunkX, newChunkZ)) {
++                        return miss(clipContext);
++                    }
++                    lastChunk = level.getChunk(newChunkX, newChunkZ).getSections();
+                 }
+                 final int sectionY = newChunkY - minSection;
+                 lastSection = sectionY >= 0 && sectionY < lastChunk.length ? lastChunk[sectionY].getStates() : null;
