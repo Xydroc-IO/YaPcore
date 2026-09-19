@@ -28,7 +28,7 @@ final class BenchRegionLoadLoops {
     }
 
     static final int[][] INTERIOR = {
-            {2, 2}, {-3, 2}, {2, -3}, {-3, -3}
+            {2, 2}, {-12, 2}, {2, -3}, {-12, -3}
     };
 
     static final int[][][] HEAVY_PILES = {
@@ -83,19 +83,26 @@ final class BenchRegionLoadLoops {
 
     static void forEachChunk(JavaPlugin plugin, World world, Set<long[]> chunks,
                              Consumer<long[]> perChunk, Runnable onDone) {
+        forEachChunk(plugin, world, chunks, perChunk, onDone, false);
+    }
+
+    static void forEachChunk(JavaPlugin plugin, World world, Set<long[]> chunks,
+                             Consumer<long[]> perChunk, Runnable onDone, boolean forceRegion) {
         if (chunks.isEmpty()) {
             onDone.run();
             return;
         }
-        // Sync path: ServerLoad / global tick can touch all chunks before soft-wave stall.
-        try {
-            for (long[] c : chunks) {
-                perChunk.accept(c);
+        // Sync getEntities from the (0,0) thread after a cut only sees one shard.
+        if (!forceRegion) {
+            try {
+                for (long[] c : chunks) {
+                    perChunk.accept(c);
+                }
+                onDone.run();
+                return;
+            } catch (IllegalStateException | UnsupportedOperationException syncFail) {
+                plugin.getLogger().info("forEachChunk sync unavailable — region fan-out (" + syncFail.getMessage() + ")");
             }
-            onDone.run();
-            return;
-        } catch (IllegalStateException | UnsupportedOperationException syncFail) {
-            plugin.getLogger().info("forEachChunk sync unavailable — region fan-out (" + syncFail.getMessage() + ")");
         }
         AtomicInteger left = new AtomicInteger(chunks.size());
         for (long[] c : chunks) {
@@ -255,21 +262,35 @@ final class BenchRegionLoadLoops {
         AtomicInteger hoppers = new AtomicInteger();
         AtomicInteger entities = new AtomicInteger();
         AtomicInteger villagers = new AtomicInteger();
+        Map<String, int[]> pileFuse = new ConcurrentHashMap<>();
 
         String scenario = System.getProperty("yap.bench.scenario", "");
+        boolean regionFanout = YapSched.isRegionized();
         forEachChunk(plugin, world, interestChunks(scenario), c -> {
             int cx = (int) c[0];
             int cz = (int) c[1];
-            var chunk = world.getChunkAt(cx, cz);
+            if (!world.isChunkLoaded(cx, cz)) {
+                return;
+            }
+            var chunk = world.getChunkAt(cx, cz, false);
             if (!chunk.isLoaded()) {
-                chunk.load(true);
+                return;
             }
             for (Entity e : chunk.getEntities()) {
                 entities.incrementAndGet();
                 byType.merge(e.getType().name(), 1, Integer::sum);
                 if (e instanceof TNTPrimed tntPrimed) {
+                    int fuse = tntPrimed.getFuseTicks();
                     tnt.incrementAndGet();
-                    fuseSum.addAndGet(tntPrimed.getFuseTicks());
+                    fuseSum.addAndGet(fuse);
+                    pileFuse.compute(cx + "," + cz, (k, acc) -> {
+                        if (acc == null) {
+                            acc = new int[2];
+                        }
+                        acc[0]++;
+                        acc[1] += fuse;
+                        return acc;
+                    });
                 }
                 if (e instanceof Villager) {
                     villagers.incrementAndGet();
@@ -283,6 +304,18 @@ final class BenchRegionLoadLoops {
         }, () -> {
             int t = tnt.get();
             double fuseMean = t == 0 ? 0.0 : (double) fuseSum.get() / t;
+            if (!pileFuse.isEmpty()) {
+                String piles = pileFuse.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .map(en -> {
+                            int[] acc = en.getValue();
+                            double mean = acc[0] == 0 ? 0.0 : (double) acc[1] / acc[0];
+                            return en.getKey() + "=" + acc[0] + "@" + (int) mean;
+                        })
+                        .reduce((a, b) -> a + " " + b)
+                        .orElse("");
+                plugin.getLogger().info("fuse piles " + piles + " mean=" + fmt(fuseMean));
+            }
             String entityTop = byType.entrySet().stream()
                     .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
                     .limit(12)
@@ -293,7 +326,7 @@ final class BenchRegionLoadLoops {
                     t, fuseMean, hoppers.get(), entities.get(),
                     Bukkit.getOnlinePlayers().size(), villagers.get(),
                     world.getLoadedChunks().length, entityTop));
-        });
+        }, regionFanout);
     }
 
     record Job(int cx, int cz, int tnt, int hoppers) {

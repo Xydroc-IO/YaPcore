@@ -1,0 +1,114 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP player loader skips cut holes (null-chunk NPE)
+
+After corridor gap register, Moonrise still tries to send/generate the hole.
+Neighbors look ready, FULL chunk is null, region tick dies. Skip unpinned cut
+keys in the player loader and null-check the send path. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
+@@ -534,6 +534,11 @@
+             return ChunkTrackingView.isWithinDistance(centerX, centerZ, sendRadius, chunkX, chunkZ, true);
+         }
+ 
++        /** Registered corridor hole: do not load/generate/send. A player standing in the chunk stays pinned. */
++        private boolean skipCutHole(final int chunkX, final int chunkZ) {
++            return io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(this.world, chunkX, chunkZ);
++        }
++
+         private static int getClientViewDistance(final ServerPlayer player) {
+             final Integer vd = player.requestedViewDistance();
+             return vd == null ? -1 : Math.max(0, vd.intValue());
+@@ -702,8 +707,15 @@
+             final int maxLoadsThisTick = (int)this.chunkLoadTicketLimiter.takeAllocation(maxLoads);
+             if (maxLoadsThisTick > 0) {
+                 final LongArrayList chunks = new LongArrayList(maxLoadsThisTick);
+-                for (int i = 0; i < maxLoadsThisTick; ++i) {
+-                    final long chunk = this.loadQueue.dequeueLong();
++                for (int i = 0; i < maxLoadsThisTick && !this.loadQueue.isEmpty(); ++i) {
++                    final long chunk = this.loadQueue.firstLong();
++                    final int loadX = CoordinateUtils.getChunkX(chunk);
++                    final int loadZ = CoordinateUtils.getChunkZ(chunk);
++                    if (this.skipCutHole(loadX, loadZ)) {
++                        this.loadQueue.dequeueLong();
++                        continue;
++                    }
++                    this.loadQueue.dequeueLong();
+                     final byte prev = this.chunkTicketStage.put(chunk, CHUNK_TICKET_STAGE_LOADING);
+                     if (prev != CHUNK_TICKET_STAGE_NONE) {
+                         throw new IllegalStateException("Previous state should be " + CHUNK_TICKET_STAGE_NONE + ", not " + prev);
+@@ -748,6 +760,10 @@
+                 final long pendingGenChunk = this.generatingQueue.firstLong();
+                 final int pendingChunkX = CoordinateUtils.getChunkX(pendingGenChunk);
+                 final int pendingChunkZ = CoordinateUtils.getChunkZ(pendingGenChunk);
++                if (this.skipCutHole(pendingChunkX, pendingChunkZ)) {
++                    this.generatingQueue.dequeueLong();
++                    continue;
++                }
+                 final LevelChunk pending = ((ChunkSystemLevel)this.world).moonrise$getFullChunkIfLoaded(pendingChunkX, pendingChunkZ);
+                 if (pending == null) {
+                     // nothing to do here
+@@ -780,7 +796,14 @@
+                 final long chunkKey = this.genQueue.firstLong();
+                 final int chunkX = CoordinateUtils.getChunkX(chunkKey);
+                 final int chunkZ = CoordinateUtils.getChunkZ(chunkKey);
++                if (this.skipCutHole(chunkX, chunkZ)) {
++                    this.genQueue.dequeueLong();
++                    continue;
++                }
+                 final ChunkAccess chunk = ((ChunkSystemLevel)this.world).moonrise$getAnyChunkIfLoaded(chunkX, chunkZ);
++                if (chunk == null) {
++                    break;
++                }
+                 if (chunk.getPersistedStatus() != ChunkStatus.FULL) {
+                     // only rate limit actual generations
+                     if ((ratedGensThisTick + 1L) > maxGensThisTick) {
+@@ -813,6 +836,11 @@
+                 final int pendingChunkX = CoordinateUtils.getChunkX(pendingTicking);
+                 final int pendingChunkZ = CoordinateUtils.getChunkZ(pendingTicking);
+ 
++                if (this.skipCutHole(pendingChunkX, pendingChunkZ)) {
++                    this.tickingQueue.dequeueLong();
++                    continue;
++                }
++
+                 if (!this.areNeighboursGenerated(pendingChunkX, pendingChunkZ,
+                     ChunkHolderManager.FULL_LOADED_TICKET_LEVEL - ChunkHolderManager.ENTITY_TICKING_TICKET_LEVEL)) {
+                     break;
+@@ -838,14 +866,19 @@
+             final long maxSends = Math.max(0L, Math.min(MAX_RATE, Math.min(this.sendQueue.size(), Integer.MAX_VALUE))); // note: no logic to track concurrent sends
+             final long maxSendsThisTick = this.chunkSendLimiter.takeAllocation(maxSends);
+             // we do not return sends that we took from the allocation back because we want to limit the max send rate, not target it
+-            for (long i = 0; i < maxSendsThisTick; ++i) {
++            for (long i = 0; i < maxSendsThisTick && !this.sendQueue.isEmpty(); ++i) {
+                 final long pendingSend = this.sendQueue.firstLong();
+                 final int pendingSendX = CoordinateUtils.getChunkX(pendingSend);
+                 final int pendingSendZ = CoordinateUtils.getChunkZ(pendingSend);
++                if (this.skipCutHole(pendingSendX, pendingSendZ)) {
++                    this.sendQueue.dequeueLong();
++                    continue;
++                }
+                 final LevelChunk chunk = ((ChunkSystemLevel)this.world).moonrise$getFullChunkIfLoaded(pendingSendX, pendingSendZ);
+-                if (!this.areNeighboursGenerated(pendingSendX, pendingSendZ, 1) || !TickThread.isTickThreadFor(this.world, pendingSendX, pendingSendZ)) {
++                if (chunk == null || !this.areNeighboursGenerated(pendingSendX, pendingSendZ, 1) || !TickThread.isTickThreadFor(this.world, pendingSendX, pendingSendZ)) {
+                     // nothing to do
+                     // the target chunk may not be owned by this region, but this should be resolved in the future
++                    // YaP: a registered cut can be owned and still have no FULL chunk — never NPE
+                     break;
+                 }
+                 if (!((ChunkSystemLevelChunk)chunk).moonrise$isPostProcessingDone()) {
+@@ -1005,6 +1038,13 @@
+                 final int squareDistance = Math.max(Math.abs(dx), Math.abs(dz));
+                 final int manhattanDistance = Math.abs(dx) + Math.abs(dz);
+ 
++                if (this.skipCutHole(chunkX, chunkZ)) {
++                    if (this.sentChunks.remove(chunk)) {
++                        this.sendUnloadChunkRaw(chunkX, chunkZ);
++                    }
++                    continue;
++                }
++
+                 // since chunk sending is not by radius alone, we need an extra check here to account for
+                 // everything <= sendDistance
+                 // Note: Vanilla may want to send chunks outside the send view distance, so we do need

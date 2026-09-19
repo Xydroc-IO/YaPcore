@@ -1,0 +1,68 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP evacuate players out of the empty-buffer cut
+
+Packed spawn keeps PLAYER tickets on the corridor section because carve
+skipped ServerPlayer and the bench home-leash yanked bots back into
+section X=-1. Relocate players onto same-thread pads so force-partition
+can finish under product view-distance. Carve stays on.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
+@@ -4,7 +4,6 @@
+ import com.mojang.logging.LogUtils;
+ import net.minecraft.server.level.ServerLevel;
+ import org.bukkit.entity.Entity;
+-import org.bukkit.entity.Player;
+ import org.slf4j.Logger;
+ 
+ import java.util.List;
+@@ -19,7 +18,7 @@
+     private YapCorridorEntities() {
+     }
+ 
+-    /** Returns {totalNonPlayerLocal, inCorridorKeys}. */
++    /** Returns {totalLocal, inCorridorKeys} including players (they pin the empty buffer). */
+     static int[] countCorridorEntities(final ServerLevel world, final YapCorridorCarver.CorridorPlan plan) {
+         final RegionizedWorldData data = world.getCurrentWorldData();
+         if (data == null) {
+@@ -28,8 +27,7 @@
+         int total = 0;
+         int inBand = 0;
+         for (final net.minecraft.world.entity.Entity e : data.getLocalEntitiesCopy()) {
+-            if (e == null || e instanceof net.minecraft.world.entity.player.Player) {
++            if (e == null) {
+                 continue;
+             }
+             total++;
+@@ -119,8 +117,7 @@
+         }
+         final net.minecraft.world.entity.Entity[] local = data.getLocalEntitiesCopy();
+         for (final net.minecraft.world.entity.Entity nmsEntity : local) {
+-            if (nmsEntity == null || nmsEntity instanceof net.minecraft.world.entity.player.Player) {
++            if (nmsEntity == null) {
+                 continue;
+             }
+             final int cx = nmsEntity.chunkPosition().x();
+@@ -166,9 +163,8 @@
+             return;
+         }
+         for (final net.minecraft.world.entity.Entity nmsEntity : snapshot) {
+-            if (nmsEntity instanceof net.minecraft.world.entity.player.Player) {
+-                continue;
+-            }
++            // Players pin the empty buffer; they must land on the same-thread pad too.
+             // Only relocate entities actually in this chunk (AABB may spill edges).
+             if (nmsEntity.chunkPosition().x() != cx || nmsEntity.chunkPosition().z() != cz) {
+                 continue;
+@@ -208,9 +204,6 @@
+                 return;
+             }
+             for (final Entity entity : chunk.getEntities()) {
+-                if (entity instanceof Player) {
+-                    continue;
+-                }
+                 try {
+                     final int[] dest = pickSameThreadPad(hold.world, hold.landings, toLeft);
+                     if (dest == null) {

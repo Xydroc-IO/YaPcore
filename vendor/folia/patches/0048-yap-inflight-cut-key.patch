@@ -1,0 +1,76 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP in-flight cut key never 0 (region 0 unload)
+
+Region 0 used -regionId as the in-flight gap key, which is 0. register/release
+ignore 0, so unloadIfCut saw no cut and neighbor sim-distance kept holders at
+lvl=39 with empty tickets. Use ~regionId. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
+@@ -22,8 +22,10 @@
+  * <em>section AABB</em> of the planned corridor (never an infinite world slab), and
+  * refuse tickets that would reload it (players standing in the band keep their own chunk).
+  *
+- * <p>Keys: negative = in-flight carve ({@code -regionId}); positive = post-partition
+- * shard group. Regionizer write lock for topology; ticket lock for {@link #blocksTicket}.
++ * <p>Keys: in-flight carve is {@link #inFlightKey} ({@code ~regionId}, never 0);
++ * positive = post-partition shard group. {@code -regionId} is 0 for region 0, which
++ * {@link #register} treats as unset. Regionizer write lock for topology; ticket lock
++ * for {@link #blocksTicket}.
+  */
+ public final class YapRegionizerGap {
+ 
+@@ -57,6 +59,14 @@
+         return thinGap() ? r + 1 : 2 * r + 1;
+     }
+ 
++    /**
++     * In-flight carve cut key. {@code -regionId} is 0 when the first region is id 0,
++     * and {@link #register}/{@link #release} ignore 0.
++     */
++    public static long inFlightKey(final long regionId) {
++        return ~regionId;
++    }
++
+     public static void register(final ServerLevel world,
+                                 final YapCorridorCarver.CorridorPlan plan,
+                                 final long key) {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
+@@ -85,7 +85,7 @@
+         PENDING_PLANS.remove(regionId);
+         PENDING_ANCHORS.remove(regionId);
+         LAST_CORRIDOR.remove(regionId);
+-        YapRegionizerGap.release(-regionId);
++        YapRegionizerGap.release(YapRegionizerGap.inFlightKey(regionId));
+         final long holdKey = shardGroup != 0L ? shardGroup : 1L;
+         if (world != null && plan != null && !plan.keys.isEmpty()) {
+             if (anchor != null) {
+@@ -211,7 +211,7 @@
+             return false;
+         }
+         PENDING_ANCHORS.put(regionId, anchor.clone());
+-        YapRegionizerGap.register(world, plan, -regionId);
++        YapRegionizerGap.register(world, plan, YapRegionizerGap.inFlightKey(regionId));
+ 
+         final LongOpenHashSet keysCopy = new LongOpenHashSet(plan.keys);
+         final int shards = shardCount;
+@@ -367,7 +367,7 @@
+         PENDING_PLANS.remove(regionId);
+         PENDING_ANCHORS.remove(regionId);
+         LAST_CORRIDOR.remove(regionId);
+-        YapRegionizerGap.release(-regionId);
++        YapRegionizerGap.release(YapRegionizerGap.inFlightKey(regionId));
+     }
+ 
+     static boolean isCancelled(final long regionId) {
+@@ -391,7 +391,7 @@
+             PENDING_PLANS.remove(regionId);
+             PENDING_ANCHORS.remove(regionId);
+             LAST_CARVE_DONE_MS.put(regionId, System.currentTimeMillis());
+-            YapRegionizerGap.release(-regionId);
++            YapRegionizerGap.release(YapRegionizerGap.inFlightKey(regionId));
+             return;
+         }
+         IN_FLIGHT.remove(regionId);

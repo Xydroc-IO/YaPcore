@@ -1,0 +1,45 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP cut: no getChunk create, null-safe player unload
+
+Players whose AABB overlaps the unloaded corridor hit getChunk(load=true)
+and throw Should always be able to create a chunk. Player-loader unload
+NPE on a missing holder. Return loaded-or-null for cut keys; send forget
+packet without vanillaChunkHolder. Carve stays on. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/Level.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/Level.java
+@@ -1061,6 +1061,11 @@
+ 
+     @Override
+     public @Nullable ChunkAccess getChunk(final int chunkX, final int chunkZ, final ChunkStatus status, final boolean loadOrGenerate) {
++        // YaP: a registered corridor hole has no holder. getBlockState maps null → AIR.
++        if (loadOrGenerate && this instanceof net.minecraft.server.level.ServerLevel sl
++                && io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(sl, chunkX, chunkZ)) {
++            return this.getChunkIfLoaded(chunkX, chunkZ);
++        }
+         ChunkAccess chunk = this.getChunkSource().getChunk(chunkX, chunkZ, status, loadOrGenerate);
+         if (chunk == null && loadOrGenerate) {
+             throw new IllegalStateException("Should always be able to create a chunk!");
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
+@@ -456,11 +456,15 @@
+             PlatformHooks.get().onChunkUnWatch(this.world, new ChunkPos(chunkX, chunkZ), this.player);
+             // Note: Check PlayerChunkSender#dropChunk for other logic
+             // Note: drop isAlive() check so that chunks properly unload client-side when the player dies
+-            ((ChunkSystemChunkHolder)((ChunkSystemServerLevel)this.world).moonrise$getChunkTaskScheduler().chunkHolderManager
+-                .getChunkHolder(chunkX, chunkZ).vanillaChunkHolder).moonrise$removeReceivedChunk(this.player);
++            final ca.spottedleaf.moonrise.patches.chunk_system.scheduling.NewChunkHolder holder =
++                    ((ChunkSystemServerLevel)this.world).moonrise$getChunkTaskScheduler().chunkHolderManager
++                            .getChunkHolder(chunkX, chunkZ);
++            if (holder != null) {
++                ((ChunkSystemChunkHolder)holder.vanillaChunkHolder).moonrise$removeReceivedChunk(this.player);
++            }
+             this.player.connection.send(new ClientboundForgetLevelChunkPacket(new ChunkPos(chunkX, chunkZ)));
+             // Paper start - PlayerChunkUnloadEvent
+-            if (io.papermc.paper.event.packet.PlayerChunkUnloadEvent.getHandlerList().getRegisteredListeners().length > 0) {
++            if (holder != null && io.papermc.paper.event.packet.PlayerChunkUnloadEvent.getHandlerList().getRegisteredListeners().length > 0) {
+                 new io.papermc.paper.event.packet.PlayerChunkUnloadEvent(player.getBukkitEntity().getWorld().getChunkAt(new ChunkPos(chunkX, chunkZ).longKey()), player.getBukkitEntity()).callEvent();
+             }
+             // Paper end - PlayerChunkUnloadEvent
+

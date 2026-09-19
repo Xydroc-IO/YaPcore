@@ -1,0 +1,43 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP player pad relocate must not nested sync-load
+
+0058 evacuated players so packed spawn could split. The 7-arg
+teleportTo plus getChunk(load)/getHeight then nested managedBlock
+in PlayerSpawnFinder after the live split (region [18,-1]
+watchdog). Skip unload pads; players use snapTo + internalTeleport.
+Carve stays on.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
+@@ -70,6 +70,9 @@
+         if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, dest[0], dest[1])) {
+             return false;
+         }
++        if (world.getChunkIfLoaded(dest[0], dest[1]) == null) {
++            return false;
++        }
+         final double x = (dest[0] << 4) + 8.0;
+         final double z = (dest[1] << 4) + 8.0;
+         double y = nms.getY();
+@@ -81,9 +84,16 @@
+         }
+         final int fromCx = nms.chunkPosition().x();
+         final int fromCz = nms.chunkPosition().z();
+-        try {
+-            world.getChunk(dest[0], dest[1]);
+-        } catch (final Throwable ignored) {
++        // Never getChunk(load) / teleportTo(world,…) here: after a live split that
++        // nested managedBlock in PlayerSpawnFinder and watchdog-stalled the region.
++        if (nms instanceof net.minecraft.server.level.ServerPlayer sp) {
++            nms.snapTo(x, y, z, nms.getYRot(), nms.getXRot());
++            try {
++                sp.connection.internalTeleport(x, y, z, nms.getYRot(), nms.getXRot());
++            } catch (final Throwable ignored) {
++            }
++            return nms.chunkPosition().x() != fromCx || nms.chunkPosition().z() != fromCz
++                    || nms.chunkPosition().x() == dest[0];
+         }
+         try {
+             if (nms.teleportTo(world, x, y, z, java.util.Set.of(), nms.getYRot(), nms.getXRot(), false)) {

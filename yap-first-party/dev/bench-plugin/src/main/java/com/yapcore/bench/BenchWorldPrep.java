@@ -20,9 +20,9 @@ import java.util.List;
 import java.util.Locale;
 
 final class BenchWorldPrep {
-    /** Near-spawn interiors for highpop fixtures (within view-distance). */
+    /** Near-spawn interiors. West cells stay west of packed corridor (chunks −8..−1). */
     static final int[][] INTERIOR = {
-            {2, 2}, {-3, 2}, {2, -3}, {-3, -3}
+            {2, 2}, {-12, 2}, {2, -3}, {-12, -3}
     };
 
     /**

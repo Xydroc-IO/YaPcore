@@ -1,0 +1,158 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP teleport join queues by destination chunk
+
+After the split, chunk 0 is not region id 0. The 0001 join was delivered
+on the shard whose center is chunk 10 while the position was written at
+0.5, 6.5. Commit only after this thread owns the destination chunk, and
+re-queue by that chunk rather than a captured region id. Player.aiStep
+skips getEntities when the pickup box is off-thread so a one-tick-late
+teleport does not become "Internal server error". isInWall skips a null
+getChunk (0053 cut keys). Teleport accept no longer requires the 1-chunk
+halo when that neighbor is the cut. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedTaskQueue.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/RegionizedTaskQueue.java
+@@ -75,6 +75,19 @@
+         return ret;
+     }
+ 
++    /**
++     * Queue onto whichever region currently owns {@code chunkX, chunkZ}.
++     * Does not capture a region data id. Id 0 is the global/unset sentinel
++     * ({@code TickRegionData} ids start at 1). After a split, chunk 0 is not region 0.
++     */
++    public PrioritisedExecutor.PrioritisedTask queueTickTaskByDestinationChunk(final ServerLevel world, final int chunkX, final int chunkZ,
++                                                                              final Runnable run) {
++        final PrioritisedExecutor.PrioritisedTask ret = new PrioritisedQueue.ChunkBasedPriorityTask(
++            world.taskQueueRegionData, chunkX, chunkZ, false, run, Priority.NORMAL);
++        ret.queue();
++        return ret;
++    }
++
+     public PrioritisedExecutor.PrioritisedTask queueOrExecuteTickTask(final ServerLevel world, final int chunkX, final int chunkZ,
+                                                                       final Runnable run) {
+         return this.queueOrExecuteTickTask(world, chunkX, chunkZ, run, Priority.NORMAL);
+--- a/paper-server/src/main/java/ca/spottedleaf/moonrise/common/util/TickThread.java
++++ b/paper-server/src/main/java/ca/spottedleaf/moonrise/common/util/TickThread.java
+@@ -179,6 +179,38 @@
+         return ((net.minecraft.server.level.ServerLevel)world).regioniser.getRegionAtUnsynchronised(chunkX, chunkZ) == region;
+     }
+ 
++    /**
++     * Teleport accept: this thread must own the destination chunk. A 1-chunk halo
++     * includes the carved corridor, which has no region, so a commit on the shard
++     * that owns the destination was still rejected as a foreign shard.
++     */
++    public static boolean isTickThreadForTeleportDest(final Level world, final int chunkX, final int chunkZ) {
++        final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region =
++            TickRegionScheduler.getCurrentRegion();
++        if (region == null) {
++            return isShutdownThread();
++        }
++        final net.minecraft.server.level.ServerLevel serverLevel = (net.minecraft.server.level.ServerLevel)world;
++        if (serverLevel.regioniser.getRegionAtUnsynchronised(chunkX, chunkZ) != region) {
++            return false;
++        }
++        final int shift = serverLevel.regioniser.sectionChunkShift;
++        final int minSectionX = (chunkX - 1) >> shift;
++        final int maxSectionX = (chunkX + 1) >> shift;
++        final int minSectionZ = (chunkZ - 1) >> shift;
++        final int maxSectionZ = (chunkZ + 1) >> shift;
++        for (int secZ = minSectionZ; secZ <= maxSectionZ; ++secZ) {
++            for (int secX = minSectionX; secX <= maxSectionX; ++secX) {
++                final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> other =
++                    serverLevel.regioniser.getRegionAtUnsynchronised(secX << shift, secZ << shift);
++                if (other != null && other != region) {
++                    return false;
++                }
++            }
++        }
++        return true;
++    }
++
+     public static boolean isTickThreadFor(final Level world, final AABB aabb) {
+         return isTickThreadFor(
+             world,
+--- a/folia-server/src/minecraft/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
+@@ -814,11 +814,10 @@
+             }
+ 
+             // Folia start - do not allow out of region teleport accept
+-            if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(
++            if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadForTeleportDest(
+                     this.player.level(),
+                     ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkCoordinate(this.awaitingPositionFromClient.x),
+-                    ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkCoordinate(this.awaitingPositionFromClient.z),
+-                    1)
++                    ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkCoordinate(this.awaitingPositionFromClient.z))
+             ) {
+                 LOGGER.warn("Disconnecting '" + this.player.getScoreboardName() + "' for out of region teleport accept");
+                 this.disconnect(Component.translatable("multiplayer.disconnect.invalid_player_movement"), org.bukkit.event.player.PlayerKickEvent.Cause.INVALID_PLAYER_MOVEMENT);
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/player/Player.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/player/Player.java
+@@ -501,6 +501,11 @@
+                 pickupArea = this.getBoundingBox().inflate(1.0, 0.5, 1.0);
+             }
+ 
++            // YaP: one-tick-late teleport still ticks on the old shard. Skip the pickup
++            // query instead of throwing, which doTick turns into "Internal server error".
++            if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(this.level(), pickupArea)) {
++                return;
++            }
+             List<Entity> entities = this.level().getEntities(this, pickupArea);
+             List<Entity> orbs = Lists.newArrayList();
+ 
+--- a/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/entity/Entity.java
+@@ -3064,7 +3064,12 @@
+ 
+         for (int currChunkZ = minChunkZ; currChunkZ <= maxChunkZ; ++currChunkZ) {
+             for (int currChunkX = minChunkX; currChunkX <= maxChunkX; ++currChunkX) {
+-                final net.minecraft.world.level.chunk.LevelChunkSection[] sections = chunkSource.getChunk(currChunkX, currChunkZ, net.minecraft.world.level.chunk.status.ChunkStatus.FULL, true).getSections();
++                final net.minecraft.world.level.chunk.ChunkAccess wallChunk = chunkSource.getChunk(currChunkX, currChunkZ, net.minecraft.world.level.chunk.status.ChunkStatus.FULL, true);
++                // YaP: a cut key returns null. Do not call getSections on it.
++                if (wallChunk == null) {
++                    continue;
++                }
++                final net.minecraft.world.level.chunk.LevelChunkSection[] sections = wallChunk.getSections();
+ 
+                 for (int currChunkY = minChunkY; currChunkY <= maxChunkY; ++currChunkY) {
+                     final int sectionIdx = currChunkY - minSection;
+@@ -4332,11 +4337,17 @@
+         }
+         // YaP end - teleport transactions
+ 
+-        Runnable scheduleEntityJoin = () -> {
+-            io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(
+-                destination,
+-                ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkX(pos), ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkZ(pos),
+-                () -> {
++        // YaP: queue by the destination chunk after the split, not by region id 0.
++        // Commit runs only on the shard that owns that chunk.
++        final int yapDestChunkX = ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkX(pos);
++        final int yapDestChunkZ = ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkZ(pos);
++        final Runnable[] yapCommitOnOwner = new Runnable[1];
++        yapCommitOnOwner[0] = () -> {
++            if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(destination, yapDestChunkX, yapDestChunkZ)) {
++                io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskByDestinationChunk(
++                    destination, yapDestChunkX, yapDestChunkZ, yapCommitOnOwner[0]);
++                return;
++            }
+                     if (!destination.removePendingTeleport(pendingTeleport)) {
+                         // shutdown logic placed the entity already, and we are shutting down - do nothing to ensure
+                         // we do not produce any errors here
+@@ -4380,8 +4391,10 @@
+                     if (teleportComplete != null) {
+                         teleportComplete.accept(Entity.this);
+                     }
+-                }
+-            );
++        };
++        final Runnable scheduleEntityJoin = () -> {
++            io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskByDestinationChunk(
++                destination, yapDestChunkX, yapDestChunkZ, yapCommitOnOwner[0]);
+         };
+ 
+         if ((teleportFlags & TELEPORT_FLAG_LOAD_CHUNK) != 0L) {

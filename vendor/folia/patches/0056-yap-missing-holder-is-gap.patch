@@ -1,0 +1,57 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP missing holder is a gap, not a crash
+
+checkNeighbour still threw Missing chunkholder when the neighbour was
+unloaded but not an exact cut key (halo / mid-reap). Treat any null
+holder as already-at-status and reuse the center in the neighbour cache.
+CraftWorld.getChunkAt must not NPE when getChunk(load) returns null.
+Carve stays on. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkTaskScheduler.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkTaskScheduler.java
+@@ -773,11 +773,11 @@
+         final StaticCache2D<GenerationChunkHolder> neighbours = StaticCache2D
+                 .create(chunkX, chunkZ, neighbourReadRadius, (final int nx, final int nz) -> {
+                     NewChunkHolder holder = nx == chunkX && nz == chunkZ ? chunkHolder : this.chunkHolderManager.getChunkHolder(nx, nz);
+-                    if (holder == null
+-                            && io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(this.world, nx, nz)) {
+-                        // Legal empty-buffer cut: no holder in the hole. Reuse the center so FULL
+-                        // load on the kept side does not NPE / Missing chunkholder.
++                    if (holder == null) {
++                        // YaP: corridor unload can drop a neighbour that is not in the exact-key
++                        // cut set (halo / race). Reuse the center so FULL on the kept side proceeds.
+                         holder = chunkHolder;
+                     }
+                     if (holder == null) {
+                         throw new IllegalStateException("Missing chunkholder when required");
+@@ -804,12 +804,9 @@
+         final NewChunkHolder chunkHolder = this.chunkHolderManager.getChunkHolder(chunkX, chunkZ);
+ 
+         if (chunkHolder == null) {
+-            if (io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(this.world, chunkX, chunkZ)) {
+-                // Corridor unload dropped the holder. Do not schedule gen into the hole;
+-                // treat the gap as already at the required status so the kept side can FULL-load.
+-                return false;
+-            }
+-            throw new IllegalStateException("Missing chunkholder when required");
++            // YaP: no holder means nothing to generate (cut, halo, or mid-unload). Do not throw;
++            // treat as already at the required status so the kept side can FULL-load.
++            return false;
+         }
+ 
+         final ChunkStatus holderStatus = chunkHolder.getCurrentGenStatus();
+--- a/paper-server/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
++++ b/paper-server/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
+@@ -373,7 +373,12 @@
+         ca.spottedleaf.moonrise.common.util.TickThread.ensureTickThread(this.getHandle(), x, z, "Async chunk retrieval"); // Folia - region threading
+         warnUnsafeChunk("getting a faraway chunk", x, z); // Paper
+         net.minecraft.world.level.chunk.LevelChunk chunk = (net.minecraft.world.level.chunk.LevelChunk) this.world.getChunk(x, z, ChunkStatus.FULL, true);
++        // YaP: a registered corridor hole returns null from getChunk(load) — do not NPE CraftChunk.
++        if (chunk == null) {
++            return new CraftChunk(this.getHandle(), x, z);
++        }
+         return new CraftChunk(chunk);
+     }
+ 
+     @NotNull

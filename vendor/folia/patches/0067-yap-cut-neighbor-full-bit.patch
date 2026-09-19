@@ -1,0 +1,52 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP cut is a neighbor boundary for chunk status
+
+Entity ticking needs every neighbor in radius 2 marked full. Packed-spawn
+carve unloads the corridor, so west piles one chunk off the hole drop out
+of ENTITY_TICKING even when their own tickets still demand it. East piles
+sit outside the ring and keep ticking. Do not leave the loaded-bit set —
+that bit means the chunk is readable. Count a registered cut as a finished
+boundary only when promoting full-chunk status. isNeighbourFullLoaded stays
+false. Not bot herding, not moving TNT. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/NewChunkHolder.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/NewChunkHolder.java
+@@ -1136,12 +1136,37 @@
+         }
+     }
+ 
++    /**
++     * Status promotion only. A registered cut is a finished region boundary, so it
++     * satisfies the radius-2 neighbor requirement. {@link #isNeighbourFullLoaded}
++     * stays false — the hole is not loaded and must not be read as a chunk.
++     */
++    private long neighbourBitsForStatus() {
++        long bits = this.fullNeighbourChunksLoadedBitset;
++        if (this.world == null) {
++            return bits;
++        }
++        for (int dz = -NEIGHBOUR_RADIUS; dz <= NEIGHBOUR_RADIUS; ++dz) {
++            for (int dx = -NEIGHBOUR_RADIUS; dx <= NEIGHBOUR_RADIUS; ++dx) {
++                if ((dx | dz) == 0) {
++                    continue;
++                }
++                if (io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(
++                        this.world, this.chunkX + dx, this.chunkZ + dz)) {
++                    bits |= (1L << getFullNeighbourIndex(dx, dz));
++                }
++            }
++        }
++        return bits;
++    }
++
+     // must hold scheduling lock
+     // returns whether the pending status was changed
+     private boolean updatePendingStatus() {
+         final FullChunkStatus byTicketLevel = ChunkLevel.fullStatus(this.oldTicketLevel); // oldTicketLevel is controlled by scheduling lock
+ 
+-        FullChunkStatus pending = getStatusForBitset(this.fullNeighbourChunksLoadedBitset);
++        FullChunkStatus pending = getStatusForBitset(this.neighbourBitsForStatus());
+         if (pending == FullChunkStatus.INACCESSIBLE && byTicketLevel.isOrAfter(FullChunkStatus.FULL) && this.currentGenStatus == ChunkStatus.FULL) {
+             // the bitset is only for chunks that have gone through the status updater
+             // but here we are ready to go to FULL

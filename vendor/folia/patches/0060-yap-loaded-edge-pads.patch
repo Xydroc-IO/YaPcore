@@ -1,0 +1,70 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP land corridor entities on loaded kept-edge pads
+
+0059 skipped unload dests so player relocate would not nested-syncLoad.
+Pads were the farthest view-distance rim (chunk 18), so relocate moved 0
+and packed-spawn carve aborted. Prefer nearest kept-edge chunks that
+are already loaded; still never getChunk(load) / 7-arg teleportTo for
+players. Carve stays on.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
+@@ -285,14 +285,17 @@
+                     final int cx = CoordinateUtils.getChunkX(key);
+                     final int cz = CoordinateUtils.getChunkZ(key);
+                     final int along = plan.cutOnX() ? cx : cz;
+-                    // Distance from nearest corridor edge (chunks) — prefer strip tips.
++                    // Distance from nearest corridor edge (chunks).
+                     final int dist = leftSide
+                             ? (plan.lo() * sectionSize) - along
+                             : along - ((plan.hi() + 1) * sectionSize - 1);
+                     scored.add(new int[]{cx, cz, dist});
+                 }
+             }
+-            scored.sort((a, b) -> Integer.compare(b[2], a[2]));
++            // Nearest kept-edge first. Farthest "strip tips" sit on the view-distance rim
++            // (e.g. chunk 18) — not loaded, so relocate moved 0 and carve aborted; force-loading
++            // those tips then PlayerSpawnFinder-stalled the region after split.
++            scored.sort((a, b) -> Integer.compare(a[2], b[2]));
+             final int n = Math.min(max, scored.size());
+             final int[][] out = new int[n][];
+             for (int i = 0; i < n; ++i) {
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
+@@ -44,11 +44,18 @@
+         if (pads.length == 0) {
+             return null;
+         }
+-        for (int n = 0; n < pads.length; n++) {
+-            final int[] dest = pads[Math.floorMod(landings.rr.getAndIncrement(), pads.length)];
+-            if (ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, dest[0], dest[1])) {
+-                return dest;
++        final int n = pads.length;
++        final int start = Math.floorMod(landings.rr.getAndIncrement(), n);
++        for (int i = 0; i < n; i++) {
++            final int[] dest = pads[(start + i) % n];
++            if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, dest[0], dest[1])) {
++                continue;
+             }
++            // Unloaded rim pads must not be chosen — getChunk(load) / spawn-find deadlocks.
++            if (world.getChunkIfLoaded(dest[0], dest[1]) == null) {
++                continue;
++            }
++            return dest;
+         }
+         return null;
+     }
+@@ -84,8 +91,8 @@
+         }
+         final int fromCx = nms.chunkPosition().x();
+         final int fromCz = nms.chunkPosition().z();
+-        // Never getChunk(load) / teleportTo(world,…) here: after a live split that
+-        // nested managedBlock in PlayerSpawnFinder and watchdog-stalled the region.
++        // Dest is already loaded (picker). Players must not 7-arg teleportTo — that
++        // nested PlayerSpawnFinder.syncLoadNonFull on the region thread after split.
+         if (nms instanceof net.minecraft.server.level.ServerPlayer sp) {
+             nms.snapTo(x, y, z, nms.getYRot(), nms.getXRot());
+             try {

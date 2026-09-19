@@ -1,0 +1,50 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP spawn search must not sync-load the cut
+
+100-bot carve emptied the hole and requestPartition(0) ran. A bot death
+then PlayerSpawnFinder.getLevelRespawnPos → syncLoadNonFull into the
+ticket wall. The region thread parked in managedBlock (never FULL) and
+watchdog-stalled before "into 2 shards". Skip cut keys; use loaded
+chunks only. Not force-unload, not delete load. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/PlayerSpawnFinder.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/PlayerSpawnFinder.java
+@@ -150,8 +150,22 @@
+     }
+ 
+     public static @Nullable BlockPos getLevelRespawnPos(final ServerLevel level, final int x, final int z) { // Folia - public
++        final int chunkX = SectionPos.blockToSectionCoord(x);
++        final int chunkZ = SectionPos.blockToSectionCoord(z);
++        // Packed-spawn cut: syncLoadNonFull into the empty buffer parks the region thread
++        // forever (ticket wall never completes). Death during carve then watchdog-stalls
++        // before forcePartition can log into-shards.
++        if (io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(level, chunkX, chunkZ)) {
++            return null;
++        }
+         boolean caveWorld = level.dimensionType().hasCeiling();
+-        net.minecraft.world.level.chunk.ChunkAccess chunk = level.moonrise$getChunkTaskScheduler().syncLoadNonFull(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(z), net.minecraft.world.level.chunk.status.ChunkStatus.SPAWN); // Folia - region threading
++        net.minecraft.world.level.chunk.ChunkAccess chunk = level.getChunkIfLoaded(chunkX, chunkZ);
++        if (chunk == null) {
++            chunk = level.moonrise$getChunkTaskScheduler().syncLoadNonFull(chunkX, chunkZ, net.minecraft.world.level.chunk.status.ChunkStatus.SPAWN); // Folia - region threading
++        }
++        if (chunk == null) {
++            return null;
++        }
+         int topY = caveWorld ? level.getChunkSource().getGenerator().getSpawnHeight(level) : chunk.getHeight(Heightmap.Types.MOTION_BLOCKING, x & 15, z & 15);
+         if (topY < level.getMinY()) {
+             return null;
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkTaskScheduler.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkTaskScheduler.java
+@@ -530,6 +530,12 @@
+             return loaded;
+         }
+ 
++        // Cut keys never reach FULL. managedBlock here is the packed-spawn watchdog.
++        if (io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(this.world, chunkX, chunkZ)) {
++            return null;
++        }
++
+         if (this.hasShutdown()) {
+             throw new IllegalStateException(
+                 "Chunk system has shut down, cannot process chunk requests in world '" + ca.spottedleaf.moonrise.common.util.WorldUtil.getWorldName(this.world) + "' at "

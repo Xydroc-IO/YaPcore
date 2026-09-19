@@ -23,6 +23,10 @@ import java.util.Locale;
 final class BenchSampler {
     private final JavaPlugin plugin;
     private final BenchWorldPrep worldPrep;
+    /** Fair split cite: hottest region MSPT, not the (0,0) shard after a cut. */
+    private String msptAggregation = "single_region";
+    private int reportedSampleCxWest;
+    private int reportedSampleCxEast;
 
     BenchSampler(JavaPlugin plugin, BenchWorldPrep worldPrep) {
         this.plugin = plugin;
@@ -130,18 +134,30 @@ final class BenchSampler {
         // Seconds into sample when to fire /save-all once (−1 = disabled). Used by async-save smoke.
         final int saveAllAt = Integer.getInteger("yap.bench.save_all_at", -1);
         final int[] saveFiredAt = {-1}; // sample index when save-all ran
-        // Folia: sample on the spawn/hot-region thread — getAverageTickTime() is region-local.
-        // spawncollapse / heavypop load lives around chunk (0,0); dual-lobe uses ±lobe_offset.
+        // Folia getAverageTickTime() is region-local. After a packed-spawn cut the
+        // (0,0) shard is only the +X side — citing that vs stock's one blob is a fake win.
+        // Packed fullcite/highpop samples kept-edge west (−12) and east (4), max MSPT / min TPS.
         final int lobes = Math.max(1, Integer.getInteger("yap.bench.lobes", 1));
         final int lobeOffset = Math.max(16, Integer.getInteger("yap.bench.lobe_offset_chunks", 40));
         final int stripHalf = Integer.getInteger("yap.bench.strip_half_width", 0);
-        final boolean multiSample = lobes >= 2 || stripHalf > 0;
+        final boolean packedSplitSample = YapSched.isRegionized()
+                && stripHalf <= 0
+                && lobes < 2
+                && ("fullcite".equals(scenario) || "highpop".equals(scenario));
+        final boolean multiSample = lobes >= 2 || stripHalf > 0 || packedSplitSample;
         final int sampleCx = 0;
         final int sampleCz = 0;
-        final int sampleCxEast = stripHalf > 0 ? Math.max(8, stripHalf - 4) : (lobes >= 2 ? lobeOffset : 0);
-        final int sampleCxWest = -sampleCxEast;
+        final int sampleCxEast = stripHalf > 0
+                ? Math.max(8, stripHalf - 4)
+                : (lobes >= 2 ? lobeOffset : (packedSplitSample ? 4 : 0));
+        final int sampleCxWest = packedSplitSample ? -12 : -sampleCxEast;
+        msptAggregation = multiSample ? "max_region" : "single_region";
+        reportedSampleCxWest = sampleCxWest;
+        reportedSampleCxEast = sampleCxEast;
         final double[] lastEast = {Double.NaN};
         final double[] lastWest = {Double.NaN};
+        final double[] lastEastTps = {Double.NaN};
+        final double[] lastWestTps = {Double.NaN};
         Runnable tick = () -> {
             int elapsed = sampleSec - left[0];
             if (saveAllAt >= 0 && saveFiredAt[0] < 0 && elapsed >= saveAllAt) {
@@ -165,15 +181,11 @@ final class BenchSampler {
             }
             try {
                 if (multiSample) {
-                    // Max of lobe MSPTs — cite the hotter parallel region (fair vs single-blob stock).
+                    // Both sides required — one shard vs stock blob is the 33% fake win.
                     double a = lastWest[0];
                     double b = lastEast[0];
                     if (!Double.isNaN(a) && !Double.isNaN(b)) {
                         mspt.add(Math.max(a, b));
-                    } else if (!Double.isNaN(a)) {
-                        mspt.add(a);
-                    } else if (!Double.isNaN(b)) {
-                        mspt.add(b);
                     }
                 } else {
                     mspt.add(Bukkit.getServer().getAverageTickTime());
@@ -182,25 +194,19 @@ final class BenchSampler {
                 // Not on a region thread somehow — skip sample
                 return;
             }
-            double regionTps = Double.NaN;
+            double regionTps = regionTpsAt(world, sampleCx, sampleCz);
+            if (multiSample) {
+                double westTps = lastWestTps[0];
+                double eastTps = lastEastTps[0];
+                if (!Double.isNaN(westTps) && !Double.isNaN(eastTps)) {
+                    regionTps = Math.min(westTps, eastTps);
+                }
+            }
             try {
                 double[] rt = Bukkit.getServer().getTPS();
-                if (YapSched.isRegionized()) {
-                    try {
-                        java.lang.reflect.Method m = Bukkit.getServer().getClass()
-                                .getMethod("getRegionTPS", org.bukkit.World.class, int.class, int.class);
-                        Object regObj = m.invoke(Bukkit.getServer(), world, sampleCx, sampleCz);
-                        if (regObj instanceof double[] reg && reg.length > 0) {
-                            regionTps = reg[0];
-                        }
-                    } catch (ReflectiveOperationException ignored) {
-                        // Paper API without Folia region TPS
-                    }
-                }
                 tps1m.add(!Double.isNaN(regionTps) ? regionTps : (rt.length > 0 ? rt[0] : 0));
             } catch (Throwable t) {
-                double[] tps = Bukkit.getServer().getTPS();
-                tps1m.add(tps.length > 0 ? tps[0] : 0);
+                tps1m.add(!Double.isNaN(regionTps) ? regionTps : 0);
             }
             left[0]--;
             if (left[0] <= 0) {
@@ -230,10 +236,13 @@ final class BenchSampler {
         };
         if (YapSched.isRegionized() && multiSample) {
             plugin.getLogger().info("MSPT sampler dual chunks (" + sampleCxWest + ",0) & ("
-                    + sampleCxEast + ",0) — max of region-local getAverageTickTime()");
+                    + sampleCxEast + ",0) — max region MSPT / min region TPS (not one shard vs blob)");
+            BenchRegionLoadLoops.pinChunk(plugin, world, sampleCxWest, sampleCz);
+            BenchRegionLoadLoops.pinChunk(plugin, world, sampleCxEast, sampleCz);
             YapSched.regionChunkTimer(plugin, world, sampleCxWest, sampleCz, () -> {
                 try {
                     lastWest[0] = Bukkit.getServer().getAverageTickTime();
+                    lastWestTps[0] = regionTpsAt(world, sampleCxWest, sampleCz);
                 } catch (UnsupportedOperationException ignored) {
                     // not owning thread
                 }
@@ -241,6 +250,7 @@ final class BenchSampler {
             YapSched.regionChunkTimer(plugin, world, sampleCxEast, sampleCz, () -> {
                 try {
                     lastEast[0] = Bukkit.getServer().getAverageTickTime();
+                    lastEastTps[0] = regionTpsAt(world, sampleCxEast, sampleCz);
                 } catch (UnsupportedOperationException ignored) {
                     // not owning thread
                 }
@@ -293,8 +303,9 @@ final class BenchSampler {
         }
         double fuseDrop = start.fuseMean() - end.fuseMean();
         double expectedFuseDrop = sampleSec * 20.0;
+        // 0.50 let a one-shard snapshot pass half fuse drain as "ticking" after a cut.
         boolean fuseOk = start.tntAlive() == 0
-                || (fuseDrop >= expectedFuseDrop * 0.50 && end.tntAlive() >= start.tntAlive() * 0.98);
+                || (fuseDrop >= expectedFuseDrop * 0.75 && end.tntAlive() >= start.tntAlive() * 0.98);
         int targetPlayers = Integer.getInteger("yap.bench.players", 0);
         // Highpop / fullcite: must HOLD population through the sample, not just
         // clear the join gate. Start+end ≥90% of target — bleeding 250→130 fails.
@@ -328,6 +339,9 @@ final class BenchSampler {
                   "mspt_p50": %.4f,
                   "mspt_p95": %.4f,
                   "tps_1m_mean": %.4f,
+                  "mspt_aggregation": %s,
+                  "sample_cx_west": %d,
+                  "sample_cx_east": %d,
                   "measurement_scope": %s,
                   "tick_model": %s,
                   "game_jvm_xms": %s,
@@ -386,6 +400,9 @@ final class BenchSampler {
                 p50,
                 p95,
                 tpsMean,
+                quote(msptAggregation),
+                reportedSampleCxWest,
+                reportedSampleCxEast,
                 quote(measurementScope),
                 quote(tickModel),
                 quote(gameXms),
@@ -451,6 +468,20 @@ final class BenchSampler {
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to write results: " + e.getMessage());
         }
+    }
+
+    static double regionTpsAt(World world, int chunkX, int chunkZ) {
+        try {
+            java.lang.reflect.Method m = Bukkit.getServer().getClass()
+                    .getMethod("getRegionTPS", org.bukkit.World.class, int.class, int.class);
+            Object regObj = m.invoke(Bukkit.getServer(), world, chunkX, chunkZ);
+            if (regObj instanceof double[] reg && reg.length > 0) {
+                return reg[0];
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // Paper API without Folia region TPS
+        }
+        return Double.NaN;
     }
 
     static double mean(List<Double> v) {

@@ -1,0 +1,29 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP player-loader load loop matches skipped cuts
+
+skipCutHole can dequeue hole keys so the ticket list is shorter than
+maxLoadsThisTick. The follow-up scheduleChunkLoad loop still indexed the
+original count and IOBE'd the region tick. Iterate the list that was
+actually queued. Carve stays on. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
+@@ -722,7 +722,7 @@
+             final int maxLoadsThisTick = (int)this.chunkLoadTicketLimiter.takeAllocation(maxLoads);
+             if (maxLoadsThisTick > 0) {
+                 final LongArrayList chunks = new LongArrayList(maxLoadsThisTick);
+-                for (int i = 0; i < maxLoadsThisTick && !this.loadQueue.isEmpty(); ++i) {
++                while (chunks.size() < maxLoadsThisTick && !this.loadQueue.isEmpty()) {
+                     final long chunk = this.loadQueue.firstLong();
+                     final int loadX = CoordinateUtils.getChunkX(chunk);
+                     final int loadZ = CoordinateUtils.getChunkZ(chunk);
+@@ -757,7 +757,7 @@
+                     return;
+                 }
+ 
+-                for (int i = 0; i < maxLoadsThisTick; ++i) {
++                for (int i = 0, n = chunks.size(); i < n; ++i) {
+                     final long queuedLoadChunk = chunks.getLong(i);
+                     final int queuedChunkX = CoordinateUtils.getChunkX(queuedLoadChunk);
+                     final int queuedChunkZ = CoordinateUtils.getChunkZ(queuedLoadChunk);

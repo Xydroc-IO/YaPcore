@@ -1,0 +1,25 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP strip unpinned PLAYER tickets from the cut
+
+Neighbor view-distance PLAYER tickets survived stripNonUnknownTickets
+because keepTicket is type-only. After relocate nobody is in the band,
+but those leftover tickets held 16 corridor keys and aborted partition.
+Strip PLAYER/portal tickets unless the chunk is pinned (occupant or
+dimension portal). Carve stays on. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorUnload.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorUnload.java
+@@ -264,8 +264,12 @@
+                 }
+                 boolean progress = false;
+                 for (final net.minecraft.server.level.Ticket ticket : tickets) {
+-                    if (YapRegionizerGap.keepTicket(ticket.getType())) {
++                    // Keep PLAYER/portal tickets only on a pinned chunk (someone standing here,
++                    // or a nether/end portal). Neighbor VD tickets must not hold the empty buffer.
++                    if (YapRegionizerGap.keepTicket(ticket.getType())
++                            && YapRegionizerGap.pinnedChunk(world, cx, cz)) {
+                         continue;
+                     }
+                     try {
+                         final Object id = ((ca.spottedleaf.moonrise.patches.chunk_system.ticket.ChunkSystemTicket<?>) ticket)

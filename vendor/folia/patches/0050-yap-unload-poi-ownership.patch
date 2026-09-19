@@ -1,0 +1,111 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP idempotent regionizer remove + on-thread POI search
+
+Corridor unload can repairRegionizer then Moonrise onChunkHolderDelete the
+same key; removeChunk must no-op if the bit is already clear. Villager
+AcquirePoi SCAN_RANGE can hit a neighbour-region POI chunk after split —
+skip those sections instead of ensureTickThread. Carve/partition/async stay
+on. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/ThreadedRegionizer.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/ThreadedRegionizer.java
+@@ -474,8 +474,10 @@
+         // Given that for each section, no addChunk/removeChunk can occur in parallel,
+         // we can avoid the lock IF the section exists AND it has a chunk count > 1
+         final ThreadedRegionSection<R, S> section = this.sections.get(sectionKey);
+-        if (section == null) {
+-            throw new IllegalStateException("Chunk (" + chunkX + "," + chunkZ + ") has no section");
++        if (section == null || !section.containsChunk(chunkX, chunkZ)) {
++            // YaP corridor unload can repairRegionizer then Moonrise onChunkHolderDelete
++            // the same key; double-remove must not kill the region thread.
++            return;
+         }
+         if (!section.hasOnlyOneChunk()) {
+             // chunk will not go empty, so we don't need to acquire the lock
+@@ -1266,6 +1268,11 @@
+             return this.chunkCount == 1;
+         }
+ 
++        private boolean containsChunk(final int chunkX, final int chunkZ) {
++            final int index = this.getChunkIndex(chunkX, chunkZ);
++            return (this.chunksBitset[index >>> 6] & (1L << (index & (Long.SIZE - 1)))) != 0;
++        }
++
+         public boolean hasNonEmptyNeighbours() {
+             return this.nonEmptyNeighbours != 0;
+         }
+@@ -1342,7 +1349,8 @@
+             final long before = this.chunksBitset[index >>> 6]; // index / Long.SIZE
+             final long bitset = this.chunksBitset[index >>> 6] = before & ~(1L << (index & (Long.SIZE - 1)));
+             if (before == bitset) {
+-                throw new IllegalStateException("Cannot remove a chunk from a section which does not have that chunk! RegionSection: " + this + ", global chunk: " + new ChunkPos(chunkX, chunkZ).toString());
++                // Already absent (holder-delete after repair). Do not decrement chunkCount/neighbours.
++                return false;
+             }
+             final boolean empty = --this.chunkCount == 0;
+             if (empty && this.nonEmptyNeighbours == 0) {
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/poi_lookup/PoiAccess.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/poi_lookup/PoiAccess.java
+@@ -31,6 +31,19 @@
+ 
+     public static final boolean LOAD_FOR_SEARCHING = true;
+ 
++    /**
++     * Folia: {@link PoiManager#get} / {@link PoiManager#getOrLoad} both
++     * {@code ensureTickThread}. After a regionizer split, villager SCAN_RANGE can
++     * include neighbour-region or cut chunks. Skip those sections — do not disable
++     * village AI, just stay on the owning region.
++     */
++    private static boolean ownedByCurrentRegion(final PoiManager poiStorage, final int chunkX, final int chunkZ) {
++        if (!(poiStorage.levelHeightAccessor instanceof net.minecraft.server.level.ServerLevel world)) {
++            return true;
++        }
++        return ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, chunkX, chunkZ);
++    }
++
+     public static int compareDistances(final double d1, final double d2) {
+         // we assume that the values are reasonably finite
+ 
+@@ -167,6 +180,10 @@
+                 }
+             }
+ 
++            if (!ownedByCurrentRegion(poiStorage, sectionX, sectionZ)) {
++                continue;
++            }
++
+             final Optional<PoiSection> poiSectionOptional = load ? poiStorage.getOrLoad(key) : poiStorage.get(key);
+ 
+             if (poiSectionOptional == null || !poiSectionOptional.isPresent()) {
+@@ -411,6 +428,10 @@
+                 }
+             }
+ 
++            if (!ownedByCurrentRegion(poiStorage, sectionX, sectionZ)) {
++                continue;
++            }
++
+             final Optional<PoiSection> poiSectionOptional = load ? poiStorage.getOrLoad(key) : poiStorage.get(key);
+ 
+             if (poiSectionOptional == null || !poiSectionOptional.isPresent()) {
+@@ -636,6 +657,9 @@
+         // vanilla also searches by increasing Y section value
+         for (int currZ = lowerZ; currZ <= upperZ; ++currZ) {
+             for (int currX = lowerX; currX <= upperX; ++currX) {
++                if (!ownedByCurrentRegion(poiStorage, currX, currZ)) {
++                    continue;
++                }
+                 for (int currY = lowerY; currY <= upperY; ++currY) { // vanilla searches the entire chunk because they're actually stupid. just search the sections we need
+                     final Optional<PoiSection> poiSectionOptional = load ? poiStorage.getOrLoad(CoordinateUtils.getChunkSectionKey(currX, currY, currZ)) :
+                             poiStorage.get(CoordinateUtils.getChunkSectionKey(currX, currY, currZ));
+@@ -735,6 +759,9 @@
+         // vanilla also searches by increasing Y section value
+         for (int currZ = lowerZ; currZ <= upperZ; ++currZ) {
+             for (int currX = lowerX; currX <= upperX; ++currX) {
++                if (!ownedByCurrentRegion(poiStorage, currX, currZ)) {
++                    continue;
++                }
+                 for (int currY = lowerY; currY <= upperY; ++currY) { // vanilla searches the entire chunk because they're actually stupid. just search the sections we need
+                     final Optional<PoiSection> poiSectionOptional = load ? poiStorage.getOrLoad(CoordinateUtils.getChunkSectionKey(currX, currY, currZ)) :
+                             poiStorage.get(CoordinateUtils.getChunkSectionKey(currX, currY, currZ));

@@ -7,7 +7,7 @@ Ordered deltas under [`vendor/folia/patches/`](../../vendor/folia/patches/). Aut
 
 Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
 
-The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0046` (**13**) are Folia-itself improvements on that pin: ticket/unload hygiene, AI/leash/dragon ownership (Folia PRs 491/495/504), portal-linked region thread coupling (#469), split NPE harden, teleport Bukkit events (#490), map autosave storage (#505/#506), debug-subscriber CME (#472), a **native regionizer cut** so a packed spawn can hold a legal hole, async villager-brain / end-vehicle spawn ownership (Folia #446 / #453), contiguous-bar relocate + gap/region probe, fork-correctness (cut AABB, on-thread gap, RTQ handoff, portal lookup, save wait), the ticket-level clamp that holds a live contiguous split under product view-distance, and spawn nether/end portal pin (exact-key cuts, no cross-world clamp). Moving the pin is still how you pick up later upstream regionizer commits.
+The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0068` (**35**) are Folia-itself improvements on that pin. Lab cite `20260919T105329Z` logged `into 2 shards`, fuse drop 802 (all four piles), `players_end=100`, and no `Internal server error`. That jar is the product file. `0067` counts a registered cut as a finished neighbor when promoting full-chunk status. `0068` commits the teleport on the shard that owns the destination chunk.
 
 ## Patches
 
@@ -52,6 +52,28 @@ The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or rep
 | `0044-yap-fork-correctness.patch` | Cut AABB (not infinite slab); on-thread gap maintain; RTQ requeue on split; portal couple by portal chunk; `synchronize(flush)` waits; never strip PLAYER tickets | landed |
 | `0045-yap-contiguous-bar-ticket-gap-hold.patch` | Ticket-level clamp + no sync-load into the cut; keep carve plan so gap hold registers. Lab: `smoke-contiguous-bar` PASS | landed |
 | `0046-yap-spawn-portal-cut.patch` | Exact-key this-world cuts; pin nether/end portal chunks; portal-travel tickets skip clamp; `unloadIfCut` only when `blocksAddChunk` | landed |
+| `0047-yap-player-loader-cut-null.patch` | Moonrise player loader skips unpinned cut keys; null-safe send so corridor carve cannot NPE the region | landed |
+| `0048-yap-inflight-cut-key.patch` | In-flight gap key is `~regionId` so region 0 actually registers; `unloadIfCut` can drop the corridor | landed |
+| `0049-yap-ticking-chunk-null-skip.patch` | Skip null entity-ticking slots after mid-tick corridor unload (`tickChunk` / spawn collect) | landed |
+| `0050-yap-unload-poi-ownership.patch` | Idempotent `regioniser.removeChunk`; POI search skips off-owner chunks (AcquirePoi TickThread) | landed |
+| `0051-yap-fluid-spread-ownership.patch` | Defer `FlowingFluid.spreadTo` onto the owning region after split | landed |
+| `0052-yap-cut-missing-chunkholder.patch` | Ticket FULL-load next to a cut must not `Missing chunkholder` | landed |
+| `0053-yap-cut-getchunk-unload.patch` | Cut keys do not `getChunk(load)`; player unload skips null holder | landed |
+| `0054-yap-cut-full-neighbour-holder.patch` | FULL-load on the kept edge skips null cut neighbours; player send/unload is holder-safe | landed |
+| `0055-yap-player-loader-cut-load-count.patch` | Player-loader scheduleChunkLoad iterates queued keys, not the pre-skip ticket count | landed |
+| `0056-yap-missing-holder-is-gap.patch` | Null Moonrise holder is a gap (not `Missing chunkholder`); CraftWorld.getChunkAt null-safe | landed |
+| `0057-yap-strip-unpinned-cut-tickets.patch` | Strip leftover PLAYER tickets from the cut unless the chunk is pinned | landed |
+| `0058-yap-evacuate-cut-players.patch` | Relocate players (not only mobs) out of the corridor so packed spawn can split | landed |
+| `0059-yap-player-pad-no-syncload.patch` | Player pad relocate uses loaded-chunk snapTo + internalTeleport; no nested spawn sync-load | landed |
+| `0060-yap-loaded-edge-pads.patch` | Landing pads are nearest loaded kept-edge chunks, not the VD rim (restore packed-spawn evacuate) | landed |
+| `0061-yap-partition-along-carve-plan.patch` | After carve, force-partition along the pending corridor (not a median recut). Packed spawn was stuck on `force-partition deferred` with no `into 2 shards` | landed |
+| `0062-yap-cut-ticket-wall-drop.patch` | Neighbor VD skip must zero the propagator cell; ticket clamp is the bounded section AABB. Still abort if corridor keys remain (no force-unload / no delete) | landed |
+| `0063-yap-partition-region-zero.patch` | `requestPartition` accepts region 0 (overworld spawn). 0062 emptied the packed hole then dropped the retry because 0 was treated as unset | landed |
+| `0064-yap-spawn-finder-skip-cut.patch` | Death during carve must not `syncLoadNonFull` the empty buffer (region-thread watchdog). Spawn search skips cut keys | landed |
+| `0065-yap-kept-sim-tickets-after-cut.patch` | Cut-wall decrease must not demote kept PLUGIN/FORCED chunks below their ticket level (BLOCK_TICKING froze TNT while grass still ran); force-load on owning region; plugin tickets KEEP_DIMENSION_ACTIVE | landed |
+| `0066-yap-grass-skip-cut-neighbor.patch` | Grass/mycelium randomTick must not `getChunkAt` a null cut neighbor (0065 ticking shards otherwise halt the server) | landed |
+| `0067-yap-cut-neighbor-full-bit.patch` | Registered cut counts as a finished neighbor only for full-chunk status. The loaded-bit still clears, so the hole is not treated as a readable chunk | landed |
+| `0068-yap-teleport-join-dest-chunk.patch` | Join commits only on the shard that owns the destination chunk (not region id 0). aiStep skips an off-thread pickup box. isInWall skips a null cut chunk. Teleport accept ignores a cut neighbor | landed |
 
 Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent`). See [PLUGINS.md](../plugins/PLUGINS.md).
 
@@ -93,7 +115,7 @@ Folia’s invariant: **one tick thread owns one region**. Two regions cannot tic
 
 YaP split guards (`0016`/`0032`) keep entities, connections, players, block-entities, and chunk lists on the source region when force-partition races a missing target — a repair of **YaP partition**, not a Folia regionizer backport.
 
-**Packed spawn:** stock Folia (and Canvas) will not split a contiguous loaded blob. `0041` registers the corridor as a first-class cut: `addChunk` will not create empty glue sections, merge BFS will not jump the band, and PLAYER/sim tickets will not refill it (a player standing in the strip still pins that chunk). Ship `folia-grid-exponent=3` so a default view-distance-10 spawn has four 8-chunk sections — enough for left / hole / right. A blob that fits in one section still cannot split; that is the regionizer atom.
+**Packed spawn:** stock Folia (and Canvas) will not split a contiguous loaded blob. `0041` registers the corridor as a first-class cut: `addChunk` will not create empty glue sections, merge BFS will not jump the band, and PLAYER/sim tickets will not refill it (a player standing in the strip still pins that chunk). `0062` actually drops the pre-cut ticket *level* on that band — skip without zero left holders at `lvl=MAX` with empty `getTicketsAt`. Ship `folia-grid-exponent=3` so a default view-distance-10 spawn has four 8-chunk sections — enough for left / hole / right. A blob that fits in one section still cannot split; that is the regionizer atom. Partition still refuses if the hole is loaded.
 
 **Split bar:** a **live contiguous** hot region splits and holds without a YaP epoch/microtick barrier. Aligned microticks (`0026`–`0030`) are optional phase tagging. Same-tick BLOCKS lockstep across shards **is** a second clock and is not required for the regionizer to be correct. `0041` is the native cut; `0043` relocates a live corridor; `0045` keeps neighbor sim-distance from refilling the hole; `0046` keeps spawn nether/end frames and dest-search tickets off that clamp. Lab check: `./scripts/smoke-contiguous-bar.sh` (PASS: force+split+gap hold, `pulses_ran=0`).
 

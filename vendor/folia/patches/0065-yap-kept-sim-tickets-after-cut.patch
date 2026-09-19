@@ -1,0 +1,97 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP kept SIM tickets stay entity-ticking after the cut
+
+Packed fullcite splits onto a second thread, then west TNT fuse freezes.
+The ticket wall zeros flood-propagated PLAYER sim through the hole, and
+processLevelUpdates applied that 0 to kept chunks that still had their
+own PLUGIN/FORCED tickets. Force-load was global-thread-only so region
+prepare never planted FORCED. PLUGIN_TICKET lacked KEEP_DIMENSION_ACTIVE.
+Do not clobber kept holders; allow force-load on the owning region;
+plugin tickets keep a playerless shard ticking. Not bot herding, not
+delete TNT. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
+@@ -483,11 +483,19 @@
+                 final Long2ByteMap.Entry entry = iterator.next();
+                 final long key = entry.getLongKey();
+                 int newLevel = convertBetweenTicketLevels((int)entry.getByteValue());
++                final int cx = CoordinateUtils.getChunkX(key);
++                final int cz = CoordinateUtils.getChunkZ(key);
+                 if (io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(
+-                        ChunkHolderManager.this.world,
+-                        CoordinateUtils.getChunkX(key),
+-                        CoordinateUtils.getChunkZ(key))) {
++                        ChunkHolderManager.this.world, cx, cz)) {
+                     newLevel = MAX_TICKET_LEVEL + 1;
++                } else {
++                    // Cut-wall decrease can leave a kept chunk at BLOCK_TICKING (grass
++                    // still runs) while PLUGIN/FORCED tickets demand ENTITY_TICKING (TNT).
++                    final TicketSet kept = ChunkHolderManager.this.tickets.get(key);
++                    if (kept != null && !kept.isEmpty()) {
++                        final int ticketLevel = getTicketLevelAt(kept);
++                        if (ticketLevel < newLevel) {
++                            newLevel = ticketLevel;
++                        }
++                    }
+                 }
+ 
+                 NewChunkHolder current = ChunkHolderManager.this.chunkHolders.get(key);
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/TicketType.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/TicketType.java
+@@ -63,9 +63,9 @@
+     public static final TicketType PORTAL = register("portal", 300L, FLAG_PERSIST | FLAG_LOADING | FLAG_SIMULATION | FLAG_KEEP_DIMENSION_ACTIVE);
+     public static final TicketType ENDER_PEARL = register("ender_pearl", 40L, FLAG_LOADING | FLAG_SIMULATION | FLAG_KEEP_DIMENSION_ACTIVE);
+     public static final TicketType UNKNOWN = register("unknown", 1L, FLAG_CAN_EXPIRE_IF_UNLOADED | FLAG_LOADING);
+-    public static final TicketType PLUGIN = register("plugin", NO_TIMEOUT, FLAG_LOADING | FLAG_SIMULATION); // CraftBukkit
++    public static final TicketType PLUGIN = register("plugin", NO_TIMEOUT, FLAG_LOADING | FLAG_SIMULATION | FLAG_KEEP_DIMENSION_ACTIVE); // CraftBukkit // YaP — keep split shards ticking
+     public static final TicketType POST_TELEPORT = register("post_teleport", 5L, FLAG_LOADING | FLAG_SIMULATION); // Paper
+-    public static final TicketType PLUGIN_TICKET = register("plugin_ticket", NO_TIMEOUT, FLAG_LOADING | FLAG_SIMULATION); static { ((TicketType<org.bukkit.plugin.Plugin>)PLUGIN_TICKET).moonrise$setIdentifierComparator((org.bukkit.plugin.Plugin p1, org.bukkit.plugin.Plugin p2) -> p1.getName().compareTo(p2.getName())); } // Paper // Paper - rewrite chunk system
++    public static final TicketType PLUGIN_TICKET = register("plugin_ticket", NO_TIMEOUT, FLAG_LOADING | FLAG_SIMULATION | FLAG_KEEP_DIMENSION_ACTIVE); static { ((TicketType<org.bukkit.plugin.Plugin>)PLUGIN_TICKET).moonrise$setIdentifierComparator((org.bukkit.plugin.Plugin p1, org.bukkit.plugin.Plugin p2) -> p1.getName().compareTo(p2.getName())); } // Paper // Paper - rewrite chunk system // YaP — split shard with plugin tickets must keep ticking
+     public static final TicketType FUTURE_AWAIT = register("future_await", NO_TIMEOUT, FLAG_LOADING | FLAG_SIMULATION); // Paper
+     public static final TicketType CHUNK_LOAD = register("chunk_load", NO_TIMEOUT, FLAG_LOADING); // Paper - moonrise
+     // Folia start - region threading
+--- a/paper-server/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
++++ b/paper-server/src/main/java/org/bukkit/craftbukkit/CraftWorld.java
+@@ -623,22 +623,37 @@
+ 
+         return chunks;
+     }
+ 
++    /** Global or the region that owns the chunk — Folia force-load used to be global-only. */
++    private void ensureForceLoadedThread(int x, int z, String op) {
++        if (io.papermc.paper.threadedregions.RegionizedServer.isGlobalTickThread()) {
++            return;
++        }
++        if (ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(this.world, x, z)) {
++            return;
++        }
++        throw new IllegalStateException("Cannot " + op + " force-loaded chunk off owning region");
++    }
++
+     @Override
+     public boolean isChunkForceLoaded(int x, int z) {
+-        io.papermc.paper.threadedregions.RegionizedServer.ensureGlobalTickThread("Cannot read force-loaded chunk off global region"); // Folia - region threading
++        ensureForceLoadedThread(x, z, "read");
+         return this.getHandle().getForceLoadedChunks().contains(ChunkPos.pack(x, z));
+     }
+ 
+     @Override
+     public void setChunkForceLoaded(int x, int z, boolean forced) {
+-        io.papermc.paper.threadedregions.RegionizedServer.ensureGlobalTickThread("Cannot modify force-loaded chunks off global region"); // Folia - region threading
++        ensureForceLoadedThread(x, z, "modify");
+         warnUnsafeChunk("forceloading a faraway chunk", x, z); // Paper
+         this.getHandle().setChunkForced(x, z, forced);
+     }
+ 
+     @Override
+     public Collection<Chunk> getForceLoadedChunks() {
+-        io.papermc.paper.threadedregions.RegionizedServer.ensureGlobalTickThread("Cannot read force-loaded chunks off global region"); // Folia - region threading
++        if (!io.papermc.paper.threadedregions.RegionizedServer.isGlobalTickThread()
++                && !ca.spottedleaf.moonrise.common.util.TickThread.isTickThread()) {
++            throw new IllegalStateException("Cannot read force-loaded chunks off a tick thread");
++        }
+         Set<Chunk> chunks = new HashSet<>();
+ 
+         for (long pos : this.getHandle().getForceLoadedChunks()) {

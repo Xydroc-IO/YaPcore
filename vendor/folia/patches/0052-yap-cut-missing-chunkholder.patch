@@ -1,0 +1,43 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP tolerate missing holders on a registered cut
+
+Corridor unload drops Moonrise holders in the hole. Ticket FULL-load on
+the kept side then checkNeighbour-throws Missing chunkholder. Treat a
+registered cut as an intentional gap: do not schedule gen into it, and
+reuse the center holder in the neighbour cache. Carve stays on.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkTaskScheduler.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkTaskScheduler.java
+@@ -772,7 +772,16 @@
+         final List<NewChunkHolder> chunkHolderNeighbours = new ArrayList<>((2 * neighbourReadRadius + 1) * (2 * neighbourReadRadius + 1));
+         final StaticCache2D<GenerationChunkHolder> neighbours = StaticCache2D
+                 .create(chunkX, chunkZ, neighbourReadRadius, (final int nx, final int nz) -> {
+-                    final NewChunkHolder holder = nx == chunkX && nz == chunkZ ? chunkHolder : this.chunkHolderManager.getChunkHolder(nx, nz);
++                    NewChunkHolder holder = nx == chunkX && nz == chunkZ ? chunkHolder : this.chunkHolderManager.getChunkHolder(nx, nz);
++                    if (holder == null
++                            && io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(this.world, nx, nz)) {
++                        // Legal empty-buffer cut: no holder in the hole. Reuse the center so FULL
++                        // load on the kept side does not NPE / Missing chunkholder.
++                        holder = chunkHolder;
++                    }
++                    if (holder == null) {
++                        throw new IllegalStateException("Missing chunkholder when required");
++                    }
+                     chunkHolderNeighbours.add(holder);
+ 
+                     return holder.vanillaChunkHolder;
+@@ -795,6 +804,11 @@
+         final NewChunkHolder chunkHolder = this.chunkHolderManager.getChunkHolder(chunkX, chunkZ);
+ 
+         if (chunkHolder == null) {
++            if (io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(this.world, chunkX, chunkZ)) {
++                // Corridor unload dropped the holder. Do not schedule gen into the hole;
++                // treat the gap as already at the required status so the kept side can FULL-load.
++                return false;
++            }
+             throw new IllegalStateException("Missing chunkholder when required");
+         }
+ 
+

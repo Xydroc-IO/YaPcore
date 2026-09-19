@@ -180,15 +180,7 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
             return;
         }
         int[] xz = BenchSpreadGrid.homeForBotId(id);
-        World world = p.getWorld();
-        int y = world.getHighestBlockYAt(xz[0], xz[1]) + 1;
-        Location dest = new Location(world, xz[0] + 0.5, y, xz[1] + 0.5);
-        YapSched.entity(this, p, () -> {
-            if (p.isOnline()) {
-                // Folia region threading requires teleportAsync (sync teleport throws).
-                p.teleportAsync(dest);
-            }
-        });
+        YapSched.entity(this, p, () -> sendBotHome(p, xz));
     }
 
     /** Keep fullcite bots near assigned homes so view-distance union stays stable. */
@@ -200,8 +192,13 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
             return;
         }
         final double maxDist = Double.parseDouble(System.getProperty("yap.bench.home_leash_blocks", "24"));
-        YapSched.regionChunkTimer(this, world, 0, 0, () -> {
+        // Do not sample getHighestBlockYAt from chunk (0,0) after a live carve — that
+        // region no longer owns bot homes. Dispatch onto each bot's entity thread.
+        YapSched.globalTimer(this, () -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
+                if (p.getWorld() != world) {
+                    continue;
+                }
                 String name = p.getName();
                 if (!name.startsWith("yapbot_")) {
                     continue;
@@ -213,21 +210,59 @@ public final class BenchMsptPlugin extends JavaPlugin implements Listener {
                     continue;
                 }
                 int[] xz = BenchSpreadGrid.homeForBotId(id);
-                Location loc = p.getLocation();
-                double dx = loc.getX() - (xz[0] + 0.5);
-                double dz = loc.getZ() - (xz[1] + 0.5);
-                if (dx * dx + dz * dz <= maxDist * maxDist) {
-                    continue;
-                }
-                int y = world.getHighestBlockYAt(xz[0], xz[1]) + 1;
-                Location dest = new Location(world, xz[0] + 0.5, y, xz[1] + 0.5);
-                YapSched.entity(this, p, () -> {
-                    if (p.isOnline()) {
-                        p.teleportAsync(dest);
-                    }
-                });
+                YapSched.entity(this, p, () -> leashBot(p, xz, maxDist));
             }
         }, 100L, 100L);
+    }
+
+    private static boolean owned(Location loc) {
+        try {
+            return Bukkit.isOwnedByCurrentRegion(loc);
+        } catch (Throwable ignored) {
+            return true;
+        }
+    }
+
+    /** Entity-thread: height sample only if this region owns the home chunk. */
+    private static Location botHomeDest(World world, int[] xz, double fallbackY) {
+        Location probe = new Location(world, xz[0] + 0.5, fallbackY, xz[1] + 0.5);
+        double y = fallbackY;
+        int cx = xz[0] >> 4;
+        int cz = xz[1] >> 4;
+        if (owned(probe) && world.isChunkLoaded(cx, cz)) {
+            y = world.getHighestBlockYAt(xz[0], xz[1]) + 1;
+        }
+        return new Location(world, xz[0] + 0.5, y, xz[1] + 0.5);
+    }
+
+    private void sendBotHome(Player p, int[] xz) {
+        if (!p.isOnline()) {
+            return;
+        }
+        Location here = p.getLocation();
+        World world = here.getWorld();
+        if (world == null || !world.isChunkLoaded(xz[0] >> 4, xz[1] >> 4)) {
+            // Corridor carve unloaded the home — do not PLAYER-ticket the hole back in.
+            return;
+        }
+        p.teleportAsync(botHomeDest(world, xz, here.getY()));
+    }
+
+    private void leashBot(Player p, int[] xz, double maxDist) {
+        if (!p.isOnline()) {
+            return;
+        }
+        Location loc = p.getLocation();
+        World world = loc.getWorld();
+        if (world == null || !world.isChunkLoaded(xz[0] >> 4, xz[1] >> 4)) {
+            return;
+        }
+        double dx = loc.getX() - (xz[0] + 0.5);
+        double dz = loc.getZ() - (xz[1] + 0.5);
+        if (dx * dx + dz * dz <= maxDist * maxDist) {
+            return;
+        }
+        p.teleportAsync(botHomeDest(world, xz, loc.getY()));
     }
 
     private void startPopBench(World world, String scenario, String label, String out,

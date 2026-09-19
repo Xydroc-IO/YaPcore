@@ -1,0 +1,67 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP skip null entity-ticking chunks after unload
+
+Corridor unloadIfCut can run from mid-tick tasks and compact the entity-ticking
+list while iterateTickingChunksFaster still walks a captured size. Skip nulls so
+tickChunk does not NPE on getPos(). Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/ServerChunkCache.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/ServerChunkCache.java
+@@ -172,13 +172,18 @@
+ 
+         // note: we can use the backing array here because:
+         // 1. we do not care about new additions
+-        // 2. _removes_ are impossible at this stage in the tick
++        // 2. YaP corridor unload can run from mid-tick tasks and compact the list,
++        //    leaving nulls in the captured [0, size) window — skip them.
+         final LevelChunk[] raw = entityTickingChunks.getRawDataUnchecked();
+         final int size = entityTickingChunks.size(); foliaProfiler.addCounter(ca.spottedleaf.leafprofiler.LProfilerRegistry.RANDOM_CHUNK_TICK_COUNT, (long)size); // Folia - profiler
+ 
+         java.util.Objects.checkFromToIndex(0, size, raw.length);
+         for (int i = 0; i < size; ++i) {
+-            world.tickChunk(raw[i], randomTickSpeed);
++            final LevelChunk ticking = raw[i];
++            if (ticking == null) {
++                continue;
++            }
++            world.tickChunk(ticking, randomTickSpeed);
+ 
+             // call mid-tick tasks for chunk system
+             if ((i & 7) == 0) {
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/ServerLevel.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/ServerLevel.java
+@@ -1131,6 +1131,9 @@
+     // Paper end - optimise random ticking
+ 
+     public void tickChunk(final LevelChunk chunk, final int tickSpeed) {
++        if (chunk == null) {
++            return;
++        }
+         final io.papermc.paper.threadedregions.util.SimpleThreadLocalRandomSource simpleRandom = this.simpleRandom; // Paper - optimise random ticking // Folia - region threading
+         ChunkPos chunkPos = chunk.getPos();
+         int minX = chunkPos.getMinBlockX();
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/ChunkMap.java
+@@ -759,6 +759,9 @@
+         Objects.checkFromToIndex(0, size, raw.length);
+         for (int i = 0; i < size; ++i) {
+             final LevelChunk levelChunk = raw[i];
++            if (levelChunk == null) {
++                continue;
++            }
+ 
+             if (!this.isChunkNearPlayer((ChunkMap)(Object)this, levelChunk.getPos(), levelChunk)) {
+                 continue;
+--- a/folia-server/src/minecraft/java/net/minecraft/server/level/DistanceManager.java
++++ b/folia-server/src/minecraft/java/net/minecraft/server/level/DistanceManager.java
+@@ -176,6 +176,9 @@
+         java.util.Objects.checkFromToIndex(0, size, raw.length);
+         for (int i = 0; i < size; ++i) {
+             final LevelChunk chunk = raw[i];
++            if (chunk == null) {
++                continue;
++            }
+ 
+             consumer.accept(ca.spottedleaf.moonrise.common.util.CoordinateUtils.getChunkKey(chunk.getPos()));
+         }

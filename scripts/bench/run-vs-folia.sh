@@ -162,7 +162,7 @@ case "$YAP_JAR" in /*) ;; *) YAP_JAR="$ROOT/$YAP_JAR" ;; esac
 
 STOCK_FOLIA="$ROOT/lib/folia-${VER}.jar"
 STOCK_CANVAS="$ROOT/lib/canvas-${VER}.jar"
-YAP_FOLIA="$ROOT/lib/yap-folia-${VER}.jar"
+YAP_FOLIA="${YAP_FOLIA_JAR:-$ROOT/lib/yap-folia-${VER}.jar}"
 STOCK_PAPER="$ROOT/lib/paper-${VER}.jar"
 STOCK_PURPUR="$ROOT/lib/purpur-${VER}.jar"
 STOCK_LEAF="$ROOT/lib/leaf-${VER}.jar"

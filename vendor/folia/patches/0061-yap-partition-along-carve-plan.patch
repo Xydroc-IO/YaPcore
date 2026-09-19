@@ -1,0 +1,140 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP force-partition along the carved corridor
+
+Packed-spawn carve empties the hole then requestPartition recuts the
+median. That ignores the gap, stays force-partition deferred, and never
+logs "into 2 shards". After carve, split left/right of the pending plan.
+If the corridor is still loaded, say so — do not recarve as if the cut
+never happened. Empty-strip bar still carves first; this only changes
+the retry after a finished carve. Goal: one live hot-region split.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionCuts.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionCuts.java
+@@ -102,6 +102,67 @@
+         return out;
+     }
+ 
+     /**
++     * Split along an already-carved corridor. Median recut after a packed-spawn carve
++     * ignores the hole and stays {@code force-partition deferred}.
++     * Corridor sections (lo..hi) are omitted — they must already be empty.
++     */
++    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> cutAlongPlan(
++            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sections,
++            final boolean cutOnX,
++            final int lo,
++            final int hi) {
++        final List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> out = new ArrayList<>();
++        if (sections == null || sections.size() < 2 || lo > hi) {
++            return out;
++        }
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> left = new ArrayList<>();
++        final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> right = new ArrayList<>();
++        int corridorLoaded = 0;
++        for (final ThreadedRegionizer.ThreadedRegionSection<R, S> s : sections) {
++            final int coord = cutOnX ? s.sectionX : s.sectionZ;
++            if (coord >= lo && coord <= hi) {
++                if (!s.isEmpty()) {
++                    corridorLoaded++;
++                } else {
++                    left.add(s);
++                }
++                continue;
++            }
++            if (coord < lo) {
++                left.add(s);
++            } else {
++                right.add(s);
++            }
++        }
++        if (corridorLoaded > 0 || left.isEmpty() || right.isEmpty()) {
++            return out;
++        }
++        out.add(left);
++        out.add(right);
++        return out;
++    }
++
++    static <R extends ThreadedRegionizer.ThreadedRegionData<R, S>, S extends ThreadedRegionizer.ThreadedRegionSectionData>
++    int countCorridorLoaded(
++            final List<ThreadedRegionizer.ThreadedRegionSection<R, S>> sections,
++            final boolean cutOnX,
++            final int lo,
++            final int hi) {
++        int n = 0;
++        if (sections == null) {
++            return 0;
++        }
++        for (final ThreadedRegionizer.ThreadedRegionSection<R, S> s : sections) {
++            final int coord = cutOnX ? s.sectionX : s.sectionZ;
++            if (coord >= lo && coord <= hi && !s.isEmpty()) {
++                n++;
++            }
++        }
++        return n;
++    }
++
++    /**
+      * Folia-safe: non-empty sections of different shard groups must be farther apart than
+      * {@link YapRegionizerGap#minChebyshev(int)} (Chebyshev). Thin-gap cuts need one empty section.
+      */
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
+@@ -204,12 +204,30 @@
+         if (sections.size() < MIN_SECTIONS || sections.size() < shardCount) {
+             return false;
+         }
+-        List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups =
+-                YapSubRegionCuts.cutSections(sections, shardCount);
+-        if (groups.size() >= 2 && YapSubRegionCuts.groupsAreSpatiallyBuffered(groups)) {
+-            // Pre-gapped layout — partition without carving.
+-        } else if (groups.size() < 2) {
+-            groups = YapSubRegionCuts.cutSectionsAggressive(sections, shardCount);
++        if (YapCorridorCarver.isInFlight(region.id)) {
++            return false;
++        }
++        final YapCorridorCarver.CorridorPlan pending = YapCorridorCarver.planForLandings(region.id);
++        List<List<ThreadedRegionizer.ThreadedRegionSection<R, S>>> groups;
++        if (pending != null && !pending.keys().isEmpty()) {
++            groups = YapSubRegionCuts.cutAlongPlan(sections, pending.cutOnX(), pending.lo(), pending.hi());
++            if (groups.size() < 2) {
++                final int still = YapSubRegionCuts.countCorridorLoaded(
++                        sections, pending.cutOnX(), pending.lo(), pending.hi());
++                LOGGER.info("YaP force-partition deferred region #{} — carve done but corridor still loaded sections={} (not into-shards)",
++                        region.id, still);
++                if (YapCorridorCarver.recentlyCarved(region.id)) {
++                    PARTITION_REQUESTS.put(region.id, Math.min(4, Math.max(2, shardCount)));
++                }
++                return false;
++            }
++        } else {
++            groups = YapSubRegionCuts.cutSections(sections, shardCount);
++            if (groups.size() >= 2 && YapSubRegionCuts.groupsAreSpatiallyBuffered(groups)) {
++                // Pre-gapped layout — partition without carving.
++            } else if (groups.size() < 2) {
++                groups = YapSubRegionCuts.cutSectionsAggressive(sections, shardCount);
++            }
+         }
+         if (groups.size() < 2) {
+             return false;
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
+@@ -35,6 +35,18 @@
+                     if (s.isEmpty()) {
+                         continue;
+                     }
++                    final int coord = plan.cutOnX() ? s.sectionX : s.sectionZ;
++                    if (coord >= plan.lo() && coord <= plan.hi()) {
++                        final LongArrayList chunks = s.getChunks();
++                        for (int i = 0; i < chunks.size(); ++i) {
++                            keys.add(chunks.getLong(i));
++                        }
++                        continue;
++                    }
+                     final LongArrayList chunks = s.getChunks();
+                     for (int i = 0; i < chunks.size(); ++i) {
+                         final long chunkKey = chunks.getLong(i);
+

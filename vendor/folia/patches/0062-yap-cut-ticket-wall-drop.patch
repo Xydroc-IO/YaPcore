@@ -1,0 +1,231 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP cut ticket wall actually drops neighbor levels
+
+Packed spawn relocated entities then aborted with corridor keys still
+held: getTicketsAt empty, holder lvl=MAX, isSafeToUnload=ticket_level.
+0045 skipPropagateTo left the pre-cut propagator cell in place, so
+view-distance never let the Folia empty buffer unload. Zero that cell
+and emit the holder update. Ticket clamp uses the bounded section AABB
+(same box as merge BFS), not exact keys that left refill holes. Extra
+cut-axis loads are absorbed into the hole and relocated — finishCarve
+still aborts if anything remains. Not force-unload, not delete load.
+Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ThreadedTicketLevelPropagator.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ThreadedTicketLevelPropagator.java
+@@ -1048,8 +1048,19 @@
+                     // now try to propagate
+                     final Section section = this.sections[sectionIndex];
+ 
+                     if (this.owner != null && this.owner.skipPropagateTo(offX, offZ)) {
++                        // Skipping without zeroing leaves the pre-cut propagator level on the
++                        // holder (getTicketsAt empty, lvl=MAX, isSafeToUnload=ticket_level).
++                        // Neighbor view-distance then never lets the Folia empty buffer drop.
++                        if (section != null) {
++                            final short cutStored = section.levels[localIndex];
++                            if ((cutStored & 0xFF) != 0) {
++                                section.levels[localIndex] = (short) (cutStored & ~0xFF);
++                                updatedPositions.putAndMoveToLast(CoordinateUtils.getChunkKey(offX, offZ), (byte) 0);
++                            }
++                        }
+                         continue;
+                     }
+ 
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
+@@ -141,25 +141,63 @@
+     }
+ 
+     /**
+-     * Ticket/add/unload use the planned corridor <em>keys</em> in this world only.
+-     * Never the section AABB (that is a spawn-wide slab) and never another world's cut.
++     * Ticket/add/unload use this world's bounded cut AABB (section atom). Same box as
++     * {@link #find} / merge BFS — not an infinite slab, not another world. Exact keys
++     * left unloaded cells inside a corridor section that player view-distance refilled.
+      */
+     public static boolean isCutChunk(final ServerLevel world, final int chunkX, final int chunkZ) {
+         if (!ENABLED || world == null) {
+             return false;
+         }
+-        final ConcurrentHashMap<Long, Cut> worldCuts = BY_WORLD.get(System.identityHashCode(world));
+-        if (worldCuts == null || worldCuts.isEmpty()) {
+-            return false;
+-        }
+-        final long chunkKey = CoordinateUtils.getChunkKey(chunkX, chunkZ);
+-        for (final Cut cut : worldCuts.values()) {
+-            if (cut.chunks.contains(chunkKey)) {
+-                return true;
+-            }
+-        }
+-        return false;
++        final int shift = TickRegions.getRegionChunkShift();
++        return find(world, chunkX >> shift, chunkZ >> shift) != null;
++    }
++
++    /**
++     * View-distance can load more cut-axis chunks after evacuate. Those are a real
++     * west–east bridge — absorb them into the hole and unload (relocate, not delete).
++     * Does not widen the cut axis into kept-edge spawn.
++     *
++     * @return newly added keys
++     */
++    public static int absorbCutAxisKeys(
++            final ServerLevel world,
++            final YapCorridorCarver.CorridorPlan plan,
++            final LongOpenHashSet loaded) {
++        if (!ENABLED || world == null || plan == null || loaded == null || loaded.isEmpty()) {
++            return 0;
++        }
++        final ConcurrentHashMap<Long, Cut> worldCuts = BY_WORLD.get(System.identityHashCode(world));
++        if (worldCuts == null || worldCuts.isEmpty()) {
++            return 0;
++        }
++        final int shift = TickRegions.getRegionChunkShift();
++        int added = 0;
++        final LongIterator it = loaded.longIterator();
++        while (it.hasNext()) {
++            final long chunkKey = it.nextLong();
++            final int sx = CoordinateUtils.getChunkX(chunkKey) >> shift;
++            final int sz = CoordinateUtils.getChunkZ(chunkKey) >> shift;
++            final int axis = plan.cutOnX() ? sx : sz;
++            if (axis < plan.lo() || axis > plan.hi()) {
++                continue;
++            }
++            for (final Cut cut : worldCuts.values()) {
++                if (cut.cutOnX != plan.cutOnX()) {
++                    continue;
++                }
++                if (cut.includeCutAxisSection(sx, sz) && cut.chunks.add(chunkKey)) {
++                    added++;
++                    plan.keys().add(chunkKey);
++                }
++            }
++        }
++        if (added > 0) {
++            LOGGER.info("YaP regionizer gap absorbed {} cut-axis keys (hole grew, still must empty)", added);
++        }
++        return added;
+     }
+ 
+     public static boolean pinnedChunk(final ServerLevel world, final int chunkX, final int chunkZ) {
+@@ -334,12 +372,12 @@
+     private static final class Cut {
+         final int worldId;
+         final boolean cutOnX;
+-        final int xLo;
+-        final int xHi;
+-        final int zLo;
+-        final int zHi;
++        int xLo;
++        int xHi;
++        int zLo;
++        int zHi;
+         final LongOpenHashSet chunks = new LongOpenHashSet();
+ 
+         Cut(final int worldId, final boolean cutOnX, final int xLo, final int xHi, final int zLo, final int zHi) {
+             this.worldId = worldId;
+@@ -351,6 +389,23 @@
+             this.zHi = zHi;
+         }
+ 
++        /** Grow along the interface only. Returns false when the section is off the cut axis. */
++        boolean includeCutAxisSection(final int sectionX, final int sectionZ) {
++            if (this.cutOnX) {
++                if (sectionX < this.xLo || sectionX > this.xHi) {
++                    return false;
++                }
++                this.zLo = Math.min(this.zLo, sectionZ);
++                this.zHi = Math.max(this.zHi, sectionZ);
++                return true;
++            }
++            if (sectionZ < this.zLo || sectionZ > this.zHi) {
++                return false;
++            }
++            this.xLo = Math.min(this.xLo, sectionX);
++            this.xHi = Math.max(this.xHi, sectionX);
++            return true;
++        }
++
+         boolean containsSection(final int sectionX, final int sectionZ) {
+             return sectionX >= this.xLo && sectionX <= this.xHi
+                     && sectionZ >= this.zLo && sectionZ <= this.zHi;
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
+@@ -58,6 +58,33 @@
+         YapRegionizerGap.stripPortalKeys(world, keys);
+         return keys;
+     }
++
++    /** Honest leftover report — inPlan vs view-distance extras, chunk AABB. */
++    static String remainingDebug(final YapCorridorCarver.CorridorPlan plan, final LongOpenHashSet still) {
++        if (still == null || still.isEmpty()) {
++            return "none";
++        }
++        int inPlan = 0;
++        int xLo = Integer.MAX_VALUE;
++        int xHi = Integer.MIN_VALUE;
++        int zLo = Integer.MAX_VALUE;
++        int zHi = Integer.MIN_VALUE;
++        final it.unimi.dsi.fastutil.longs.LongIterator it = still.longIterator();
++        while (it.hasNext()) {
++            final long key = it.nextLong();
++            if (plan != null && plan.keys().contains(key)) {
++                inPlan++;
++            }
++            final int cx = CoordinateUtils.getChunkX(key);
++            final int cz = CoordinateUtils.getChunkZ(key);
++            xLo = Math.min(xLo, cx);
++            xHi = Math.max(xHi, cx);
++            zLo = Math.min(zLo, cz);
++            zHi = Math.max(zHi, cz);
++        }
++        return "inPlan=" + inPlan + "/" + still.size()
++                + " chunks=[" + xLo + ".." + xHi + "]x[" + zLo + ".." + zHi + "]";
++    }
+ 
+     static final class GapHold {
+         final ServerLevel world;
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorCarver.java
+@@ -259,6 +259,7 @@
+                         }
+                         YapCorridorUnload.releaseCorridorTickets(world, regionId, cx, cz);
+                     }
++                    YapCorridorUnload.flushCorridorUnloads(world);
+                 })) {
+                     LOGGER.warn("YaP corridor carve region #{} ticket-strip timed out", regionId);
+                 }
+@@ -277,6 +278,8 @@
+                     }
+                     final int roundNo = round;
+                     if (!runOnAnchor(world, anchor, 120L, () -> {
++                        // Extras on the cut axis are a real bridge — grow the hole, then unload.
++                        YapRegionizerGap.absorbCutAxisKeys(world, plan, still);
+                         // Paper purgeUnload is a no-op; Moonrise processUnloads is the real drop.
+                         YapCorridorUnload.flushCorridorUnloads(world);
+                         int reaped = 0;
+@@ -383,8 +386,9 @@
+         }
+         final LongOpenHashSet still = YapCorridorPlanner.collectCorridorKeysFromWorld(world, plan);
+         if (!still.isEmpty()) {
+-            // Incomplete gap would freeze load in non-ticking chunks.
+-            LOGGER.warn("YaP corridor carve region #{} abort partition — {} corridor keys remain (relocated≈{} unloaded≈{})",
+-                    regionId, still.size(), ENTITIES_RELOCATED.sum(), chunksUnloaded());
++            // Incomplete gap would freeze load in non-ticking chunks. Do not partition anyway.
++            LOGGER.warn("YaP corridor carve region #{} abort partition — {} corridor keys remain {} (relocated≈{} unloaded≈{})",
++                    regionId, still.size(), YapCorridorPlanner.remainingDebug(plan, still),
++                    ENTITIES_RELOCATED.sum(), chunksUnloaded());
+             IN_FLIGHT.remove(regionId);
+             LANDINGS.remove(regionId);
+             PENDING_PLANS.remove(regionId);
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorUnload.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorUnload.java
+@@ -304,6 +304,7 @@
+                 final Thread wait = new Thread(() -> {
+                     try {
+                         YapCorridorCarver.runOnAnchor(world, anchor, 90L, () -> {
++                            YapRegionizerGap.absorbCutAxisKeys(world, plan, remaining);
+                             for (final long key : remaining) {
+                                 final int cx = CoordinateUtils.getChunkX(key);
+                                 final int cz = CoordinateUtils.getChunkZ(key);

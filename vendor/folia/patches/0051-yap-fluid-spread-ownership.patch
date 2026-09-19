@@ -1,0 +1,39 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP defer fluid spread onto owning region
+
+After force-partition, FlowingFluid.spreadTo can setBlock a neighbour
+shard (water/lava at the cut). That is TickThread, not a reason to turn
+carve off. Queue onto the owner like 0015 neighbor updates; drop if the
+chunk is unloaded. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/material/FlowingFluid.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/material/FlowingFluid.java
+@@ -322,6 +322,26 @@
+     protected abstract boolean canConvertToSource(ServerLevel level);
+ 
+     protected void spreadTo(final LevelAccessor level, final BlockPos pos, final BlockState state, final Direction direction, final FluidState target) {
++        // YaP / Folia — after force-partition, a fluid tick on this shard can spread into
++        // a neighbour region's block. setBlock ensureTickThread would kill the region.
++        // Defer onto the owner (same as 0015 neighbor updates). Unloaded/cut: drop.
++        if (level instanceof net.minecraft.server.level.ServerLevel serverLevel
++                && !ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(serverLevel, pos)) {
++            if (serverLevel.getChunkIfLoaded(pos) == null) {
++                return;
++            }
++            final BlockPos immutable = pos.immutable();
++            final BlockState capturedState = state;
++            final Direction capturedDir = direction;
++            final FluidState capturedTarget = target;
++            io.papermc.paper.threadedregions.RegionizedServer.getInstance().taskQueue.queueTickTaskQueue(
++                    serverLevel,
++                    immutable.getX() >> 4,
++                    immutable.getZ() >> 4,
++                    () -> this.spreadTo(serverLevel, immutable, capturedState, capturedDir, capturedTarget)
++            );
++            return;
++        }
+         if (state.getBlock() instanceof LiquidBlockContainer container) {
+             container.placeLiquid(level, pos, state, target);
+         } else {
+

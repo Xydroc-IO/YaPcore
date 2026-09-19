@@ -1,0 +1,26 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP grass spread must not NPE into the cut
+
+0065 kept west PLUGIN/FORCED chunks entity-ticking after the ticket wall.
+Grass randomTick then getChunkAt a neighbor in the empty corridor (null)
+and killed region #1 (ReportedException → whole server stop). Folia was
+not designed for a live packed-spawn hole. Skip unloaded/cut neighbors;
+do not sync-load the strip. Not bot herding. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/block/SpreadingSnowyBlock.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/block/SpreadingSnowyBlock.java
+@@ -91,9 +91,13 @@
+                         if (cachedChunk.locX == testPos.getX() >> 4 && cachedChunk.locZ == testPos.getZ() >> 4) {
+                             access = cachedChunk;
+                         } else {
+-                            access = level.getChunkAt(testPos);
++                            // Packed-spawn cut: neighbor is the empty corridor. getChunkAt is null.
++                            access = level.getChunkIfLoaded(testPos);
+                         }
++                        if (access == null) {
++                            continue;
++                        }
+                         if (access.getBlockState(testPos).is(baseBlock.get()) && SpreadingSnowyBlock.canPropagate(access, defaultBlockState, testPos)) {
+                             org.bukkit.craftbukkit.event.CraftEventFactory.handleBlockSpreadEvent(level, pos, testPos, defaultBlockState.setValue(SNOWY, isSnowySetting(access.getBlockState(testPos.above()))), Block.UPDATE_ALL); // CraftBukkit
+                             // Paper end - Perf: optimize dirt and snow spreading

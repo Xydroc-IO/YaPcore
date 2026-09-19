@@ -1,0 +1,72 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP cut: skip null FULL neighbours, null-safe send
+
+Kept-edge FULL load notifies a 5x5 of holders. Corridor unload drops the
+hole, so setNeighbourFullLoaded NPEs (unload already skipped nulls).
+Player send/unload must not assume a holder or a received-set entry after
+the cut. Carve stays on. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/NewChunkHolder.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/NewChunkHolder.java
+@@ -1168,12 +1168,17 @@
+             for (int dz = -NEIGHBOUR_RADIUS; dz <= NEIGHBOUR_RADIUS; ++dz) {
+                 for (int dx = -NEIGHBOUR_RADIUS; dx <= NEIGHBOUR_RADIUS; ++dx) {
+                     final NewChunkHolder holder = (dx | dz) == 0 ? this : this.scheduler.chunkHolderManager.getChunkHolder(dx + this.chunkX, dz + this.chunkZ);
++                    // YaP: corridor unload drops holders in the hole. Unload already skipped nulls;
++                    // load must too or FULL on the kept edge NPEs the region tick.
++                    if (holder == null) {
++                        continue;
++                    }
+                     if (loaded) {
+                         if (holder.setNeighbourFullLoaded(-dx, -dz)) {
+                             changedFullStatus.add(holder);
+                         }
+                     } else {
+-                        if (holder != null && holder.setNeighbourFullUnloaded(-dx, -dz)) {
++                        if (holder.setNeighbourFullUnloaded(-dx, -dz)) {
+                             changedFullStatus.add(holder);
+                         }
+                     }
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/player/RegionizedPlayerChunkLoader.java
+@@ -432,12 +432,23 @@
+ 
+         private void sendChunk(final int chunkX, final int chunkZ) {
+             if (this.sentChunks.add(CoordinateUtils.getChunkKey(chunkX, chunkZ))) {
+-                ((ChunkSystemChunkHolder)((ChunkSystemServerLevel)this.world).moonrise$getChunkTaskScheduler().chunkHolderManager
+-                        .getChunkHolder(chunkX, chunkZ).vanillaChunkHolder).moonrise$addReceivedChunk(this.player);
+-
++                final ca.spottedleaf.moonrise.patches.chunk_system.scheduling.NewChunkHolder holder =
++                        ((ChunkSystemServerLevel)this.world).moonrise$getChunkTaskScheduler().chunkHolderManager
++                                .getChunkHolder(chunkX, chunkZ);
++                if (holder == null) {
++                    this.sentChunks.remove(CoordinateUtils.getChunkKey(chunkX, chunkZ));
++                    return;
++                }
++                ((ChunkSystemChunkHolder)holder.vanillaChunkHolder).moonrise$addReceivedChunk(this.player);
++
+                 final LevelChunk chunk = ((ChunkSystemLevel)this.world).moonrise$getFullChunkIfLoaded(chunkX, chunkZ);
+-
++                if (chunk == null) {
++                    ((ChunkSystemChunkHolder)holder.vanillaChunkHolder).moonrise$removeReceivedChunk(this.player);
++                    this.sentChunks.remove(CoordinateUtils.getChunkKey(chunkX, chunkZ));
++                    return;
++                }
++
+                 PlatformHooks.get().onChunkWatch(this.world, chunk, this.player);
+                 PlayerChunkSender.sendChunk(this.player.connection, this.world, chunk);
+                 return;
+@@ -459,9 +470,7 @@
+             final ca.spottedleaf.moonrise.patches.chunk_system.scheduling.NewChunkHolder holder =
+                     ((ChunkSystemServerLevel)this.world).moonrise$getChunkTaskScheduler().chunkHolderManager
+                             .getChunkHolder(chunkX, chunkZ);
+-            if (holder != null) {
+-                ((ChunkSystemChunkHolder)holder.vanillaChunkHolder).moonrise$removeReceivedChunk(this.player);
+-            }
++            if (holder != null && ((ChunkSystemChunkHolder)holder.vanillaChunkHolder).moonrise$hasChunkBeenSent(this.player)) {
++                ((ChunkSystemChunkHolder)holder.vanillaChunkHolder).moonrise$removeReceivedChunk(this.player);
++            }
+             this.player.connection.send(new ClientboundForgetLevelChunkPacket(new ChunkPos(chunkX, chunkZ)));
+             // Paper start - PlayerChunkUnloadEvent
+             if (holder != null && io.papermc.paper.event.packet.PlayerChunkUnloadEvent.getHandlerList().getRegisteredListeners().length > 0) {

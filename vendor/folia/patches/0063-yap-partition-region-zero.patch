@@ -1,0 +1,35 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP requestPartition must accept region 0
+
+Spawn is Folia region id 0. requestPartition treated 0 as unset, so a
+finished packed-spawn carve logged "partition requested" and never
+enqueued tryForcePartition — no "into 2 shards". Hot streak still puts
+region 0 in PARTITION_REQUESTS (that is how carve started). Same class
+of bug as the in-flight cut key. Log when the post-carve groups are not
+spatially buffered instead of silent requeue. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapSubRegionPartitioner.java
+@@ -93,8 +93,11 @@
+     }
+ 
+     public static void requestPartition(final long regionId, final int shardCount) {
+-        if (!ENABLED || regionId == 0L) {
++        if (!ENABLED) {
+             return;
+         }
++        // Region 0 is the overworld spawn blob. Treating 0 as "unset" dropped the
++        // post-carve retry, so packed spawn emptied the hole and never into-shards.
+         PARTITION_REQUESTS.put(regionId, Math.min(4, Math.max(2, shardCount)));
+     }
+ 
+@@ -242,6 +245,8 @@
+                 return false;
+             }
+             if (YapCorridorCarver.recentlyCarved(region.id)) {
++                LOGGER.info("YaP force-partition deferred region #{} — carve done but shards not spatially buffered (not into-shards)",
++                        region.id);
+                 PARTITION_REQUESTS.put(region.id, Math.min(4, Math.max(2, shardCount)));
+                 return false;
+             }

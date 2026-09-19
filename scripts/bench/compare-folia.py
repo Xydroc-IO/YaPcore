@@ -64,7 +64,7 @@ def fairness_check(stock: dict, yap: dict) -> list[str]:
             reasons.append("MISSING_LOAD_PROOFS — re-run with updated yap-mspt-bench")
         return reasons
 
-    if scenario in ("entity", "heavypop", "spawncollapse"):
+    if scenario in ("entity", "heavypop", "spawncollapse", "fullcite", "highpop"):
         for side, d in ("stock", stock), ("yap", yap):
             exp = int(d.get("expected_tnt", 0))
             start = int(d.get("tnt_start", 0))
@@ -78,6 +78,13 @@ def fairness_check(stock: dict, yap: dict) -> list[str]:
                     f"{side} fuse not draining: drop={d.get('fuse_drop')} "
                     f"expected≈{d.get('fuse_drop_expected')}"
                 )
+            drop = float(d.get("fuse_drop", 0) or 0)
+            drop_exp = float(d.get("fuse_drop_expected", 0) or 0)
+            # 0.50 let a one-shard sample pass half fuse drain after a live cut.
+            if start > 0 and drop_exp > 0 and drop < drop_exp * 0.75:
+                reasons.append(
+                    f"{side} fuse drop too low for full tick: drop={drop} expected≈{drop_exp}"
+                )
         if not near(float(stock["tnt_start"]), float(yap["tnt_start"]), max(5.0, stock["tnt_start"] * 0.05)):
             reasons.append(
                 f"TNT mismatch start: stock={stock['tnt_start']} yap={yap['tnt_start']}"
@@ -87,7 +94,7 @@ def fairness_check(stock: dict, yap: dict) -> list[str]:
                 f"TNT mismatch end: stock={stock['tnt_end']} yap={yap['tnt_end']}"
             )
 
-    if scenario in ("heavypop", "spawncollapse"):
+    if scenario in ("heavypop", "spawncollapse", "fullcite", "highpop"):
         for side, d in ("stock", stock), ("yap", yap):
             hs, he = int(d.get("hoppers_start", 0)), int(d.get("hoppers_end", 0))
             if hs < 100:
