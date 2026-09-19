@@ -161,6 +161,12 @@ vendor/paper/
 # Folia vendor clone/build (Agent 1); keep lock + patches + README tracked
 vendor/folia/work/
 vendor/folia/*.tmp
+# Multi-agent worktree lock (not UPSTREAM.lock)
+vendor/folia/AGENT.lock
+
+# Lab-only paperclip copies (never the product lib/yap-folia-26.2.jar)
+lib/*-lab.jar
+lib/yap-folia-*-lab.jar
 
 # =============================================================================
 # Bench runtime artifacts (scripts/bench/ stays tracked)
@@ -323,6 +329,10 @@ agent-tools/
 # Scratch / draft notes (use proper docs/*.md names)
 docs/pre release*
 docs/pre-release-scratch*
+
+# Local smoke dumps next to lab scripts
+scripts/**/out/
+scripts/smoke-*/out/
 
 # Private internal assessments / lab briefs (never publish)
 /private/
