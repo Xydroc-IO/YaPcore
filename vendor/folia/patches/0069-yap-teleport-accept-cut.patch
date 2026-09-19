@@ -1,0 +1,44 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP teleport accept ignores the carved corridor
+
+Death respawn commits on the shard that owns the destination chunk, then
+the client accept is rejected. Folia's 1-chunk halo includes the corridor
+section. That section is not a foreign shard, even when a region pointer
+still sits on the other side of the hole. The destination chunk must still
+be owned. Post-applyAllPatches.
+---
+
+--- a/paper-server/src/main/java/ca/spottedleaf/moonrise/common/util/TickThread.java
++++ b/paper-server/src/main/java/ca/spottedleaf/moonrise/common/util/TickThread.java
+@@ -181,8 +181,8 @@
+ 
+     /**
+      * Teleport accept: this thread must own the destination chunk. A 1-chunk halo
+-     * includes the carved corridor, which has no region, so a commit on the shard
+-     * that owns the destination was still rejected as a foreign shard.
++     * reaches the carved corridor. That section is not a shard, even when a region
++     * pointer still sits on the other side of the hole.
+      */
+     public static boolean isTickThreadForTeleportDest(final Level world, final int chunkX, final int chunkZ) {
+         final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region =
+@@ -203,9 +203,18 @@
+             for (int secX = minSectionX; secX <= maxSectionX; ++secX) {
+                 final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> other =
+                     serverLevel.regioniser.getRegionAtUnsynchronised(secX << shift, secZ << shift);
+-                if (other != null && other != region) {
+-                    return false;
++                if (other == null || other == region) {
++                    continue;
+                 }
++                // The carved corridor is not a shard. A section pointer may still
++                // sit on the other side of the hole; that must not reject an accept
++                // whose destination chunk this region owns.
++                final int edgeChunkX = secX << shift;
++                final int edgeChunkZ = secZ << shift;
++                if (io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(serverLevel, edgeChunkX, edgeChunkZ)) {
++                    continue;
++                }
++                return false;
+             }
+         }
+         return true;

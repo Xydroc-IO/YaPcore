@@ -7,7 +7,7 @@ Ordered deltas under [`vendor/folia/patches/`](../../vendor/folia/patches/). Aut
 
 Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
 
-The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0068` (**35**) are Folia-itself improvements on that pin. Lab cite `20260919T105329Z` logged `into 2 shards`, fuse drop 802 (all four piles), `players_end=100`, and no `Internal server error`. That jar is the product file. `0067` counts a registered cut as a finished neighbor when promoting full-chunk status. `0068` commits the teleport on the shard that owns the destination chunk.
+The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0069` (**36**) are Folia-itself improvements on that pin. Two cites on jar `b956d19a` (`20260919T113134Z`, `20260919T113416Z`) each logged `into 2 shards`, fuse drop 802, and `players_end=100`, with no `Internal server error`. That jar is the product file. `0069` stops the teleport-accept halo from treating the carved corridor as a foreign shard.
 
 ## Patches
 
@@ -74,6 +74,7 @@ The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or rep
 | `0066-yap-grass-skip-cut-neighbor.patch` | Grass/mycelium randomTick must not `getChunkAt` a null cut neighbor (0065 ticking shards otherwise halt the server) | landed |
 | `0067-yap-cut-neighbor-full-bit.patch` | Registered cut counts as a finished neighbor only for full-chunk status. The loaded-bit still clears, so the hole is not treated as a readable chunk | landed |
 | `0068-yap-teleport-join-dest-chunk.patch` | Join commits only on the shard that owns the destination chunk (not region id 0). aiStep skips an off-thread pickup box. isInWall skips a null cut chunk. Teleport accept ignores a cut neighbor | landed |
+| `0069-yap-teleport-accept-cut.patch` | Accept halo must not treat the carved corridor as a foreign shard when a region pointer still sits on the other side of the hole | landed |
 
 Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent`). See [PLUGINS.md](../plugins/PLUGINS.md).
 
