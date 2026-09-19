@@ -744,10 +744,16 @@ run_yapfolia_plain() {
   fi
   local out="$RESULTS/${STAMP}-${SCENARIO}-yapfolia.json"
   local work="$ROOT/bench/workdir-folia-yapfolia"
+  local botlog="$ROOT/logs/bench/bots-${STAMP}-yapfolia.log"
   local port=25683
   prepare_plain "$work" "$YAP_FOLIA" "$port" "YaP MSPT bench yap-folia-plain"
   echo "=== yapfolia (plain) scenario=$SCENARIO → $out ==="
   echo "    knobs: entity-tick-budget=${ENTITY_TICK_BUDGET:-off} hopper-tick-budget=${HOPPER_TICK_BUDGET:-off} async-chunk-save=${ASYNC_CHUNK_SAVE:-off} subregion=${SUBREGION_PARTITION:-off} grid=${GRID_EXPONENT:-default}"
+  local botpid=""
+  if [ "$NEEDS_BOTS" = "1" ]; then
+    start_bots "$port" "$botlog"
+    botpid="$START_BOTS_PID"
+  fi
   mapfile -d '' -t extra < <(bench_jvm_extra "$port" 1 regionized)
   (
     cd "$work"
@@ -766,6 +772,7 @@ run_yapfolia_plain() {
       "${extra[@]}" \
       -jar server.jar --nogui </dev/null
   ) || true
+  if [ "$NEEDS_BOTS" = "1" ]; then stop_bots "$botpid"; fi
   if [ ! -f "$out" ]; then
     echo "WARN: yapfolia run did not write $out" >&2
   fi
