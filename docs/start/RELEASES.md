@@ -129,7 +129,7 @@ gradle publishReleasesFolder   # refreshes releases/0.0.0.1/ trees + zips
 
 Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 0.0.0.1” — do **not** change Gradle `version`.
 
-**Latest:** 2026-09-18 — **0.0.0.1** GitHub **prerelease**; packs pin `/releases/download/0.0.0.1/{file}` because `/releases/latest` ignores prereleases. Native regionizer cut (`0041`) + spawn ownership (`0042`) + contiguous-bar relocate (`0043`) + ticket-gap hold (`0045`) + spawn portal pin (`0046`). Vanilla nether/end hop like Paper. Lab check: `./scripts/smoke-contiguous-bar.sh`.
+**Latest:** 2026-09-18 — **0.0.0.1** GitHub **prerelease** (no version bump). Skills expansion + dashboard chest shops + spawn portal pin (`0046`) + contiguous-bar (`0043`/`0045`) + packed-spawn cut (`0041`). Packs pin `/releases/download/0.0.0.1/{file}`. Rebuild: `gradle publishReleasesFolder -PyapGameplay=true`.
 
 ## Version bump checklist (new tag only)
 
