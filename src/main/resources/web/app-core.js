@@ -274,6 +274,7 @@
   if (window.YapDashRegisterNetworkPanels) window.YapDashRegisterNetworkPanels(window.YapDash);
   if (window.YapDashRegisterFullPanels) window.YapDashRegisterFullPanels(window.YapDash);
   if (window.YapDashRegisterNpcPanels) window.YapDashRegisterNpcPanels(window.YapDash);
+  if (window.YapDashRegisterHoloPanels) window.YapDashRegisterHoloPanels(window.YapDash);
   if (window.YapDashRegisterShopsPanels) window.YapDashRegisterShopsPanels(window.YapDash);
   if (window.YapDashRegisterSkillsPanels) window.YapDashRegisterSkillsPanels(window.YapDash);
   if (window.YapDashRegisterDisastersPanels) window.YapDashRegisterDisastersPanels(window.YapDash);

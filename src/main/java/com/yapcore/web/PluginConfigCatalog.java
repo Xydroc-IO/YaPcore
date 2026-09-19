@@ -18,6 +18,8 @@ public final class PluginConfigCatalog {
                 e("yap-moderation", "YaPModeration", "YaPModeration", "config.yml", "yap-moderation", "yapmod reload"),
                 e("yap-essentials", "YaPEssentials", "YaPEssentials", "config.yml", "yap-essentials", "yapess reload"),
                 e("yap-admin", "YaPAdmin", "YaPAdmin", "config.yml", "yap-admin", "yapadmin reload"),
+                e("yap-lib", "YaPLib", "YaPLib", "config.yml", "yap-lib", "yaplib reload"),
+                e("yap-holo", "YaPHolo", "YaPHolo", "config.yml", "yap-holo", "yapholo reload"),
                 e("yap-protect", "YaPProtect", "YaPProtect", "config.yml", "yap-protect", "yapprotect reload"),
                 e("yap-world", "YaPWorld", "YaPWorld", "config.yml", "yap-world", "yapworld reload"),
                 e("yap-packs", "YaPPacks", "YaPPacks", "config.yml", "yap-packs", "yappacks reload"),

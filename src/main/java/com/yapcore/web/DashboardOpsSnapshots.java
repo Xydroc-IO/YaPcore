@@ -310,6 +310,18 @@ public final class DashboardOpsSnapshots {
         return out;
     }
 
+    public static Map<String, Object> holo(Path root) {
+        Map<String, Object> out = DashboardNetworkSnapshots.base(root, "yap-holo", "YaPHolo");
+        Map<String, Object> yaml = DashboardNetworkSnapshots.yaml(root, "YaPHolo", "config.yml");
+        out.put("enabled", DashboardNetworkSnapshots.bool(yaml.get("enabled"), true));
+        out.put("persist", DashboardNetworkSnapshots.bool(yaml.get("persist"), true));
+        out.put("lineSpacing", yaml.getOrDefault("line-spacing", 0.28));
+        out.put("viewDistance", yaml.getOrDefault("view-distance", 48));
+        out.put("refreshTicks", yaml.getOrDefault("refresh-ticks", 10));
+        out.put("entity", DashboardNetworkSnapshots.str(yaml.get("entity"), "text_display"));
+        return out;
+    }
+
     static List<String> listQuestIds(Path questDir) {
         List<String> ids = new ArrayList<>();
         if (!Files.isDirectory(questDir)) {

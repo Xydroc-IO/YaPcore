@@ -72,6 +72,8 @@ class PluginConfigIoTest {
         assertTrue(PluginConfigCatalog.byId("yap-dungeons") != null);
         assertTrue(PluginConfigCatalog.byId("yap-db") != null);
         assertEquals("yapadmin reload", PluginConfigCatalog.byId("yap-admin").reload());
+        assertEquals("yapholo reload", PluginConfigCatalog.byId("yap-holo").reload());
+        assertEquals("yaplib reload", PluginConfigCatalog.byId("yap-lib").reload());
         assertEquals("yappregen reload", PluginConfigCatalog.byId("yap-pregen").reload());
         assertEquals("yapfloodgate reload", PluginConfigCatalog.byId("yap-floodgate").reload());
         assertTrue(PluginConfigCatalog.byId("yap-bedrock-ui").reload().isBlank());

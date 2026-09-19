@@ -14,6 +14,7 @@ public final class DashboardGameplayApi {
     private final DashboardGameplayContentApi content;
     private final DashboardGameplayLinkApi link;
     private final DashboardGameplayModesApi modes;
+    private final DashboardHoloApi holo;
 
     public DashboardGameplayApi(YaPcoreServer server, DashboardAuth auth) {
         this.network = new DashboardGameplayNetworkApi(server, auth);
@@ -21,6 +22,7 @@ public final class DashboardGameplayApi {
         this.content = new DashboardGameplayContentApi(server, auth);
         this.link = new DashboardGameplayLinkApi(server, auth);
         this.modes = new DashboardGameplayModesApi(server, auth);
+        this.holo = new DashboardHoloApi(server, auth);
     }
 
     public void apiPregen(HttpExchange ex) throws IOException { content.apiPregen(ex); }
@@ -43,6 +45,7 @@ public final class DashboardGameplayApi {
     public void apiLagGuard(HttpExchange ex) throws IOException { network.apiLagGuard(ex); }
     public void apiRegions(HttpExchange ex) throws IOException { network.apiRegions(ex); }
     public void apiNpcs(HttpExchange ex) throws IOException { network.apiNpcs(ex); }
+    public void apiHolo(HttpExchange ex) throws IOException { holo.apiHolo(ex); }
     public void apiShops(HttpExchange ex) throws IOException { network.apiShops(ex); }
     public void apiSkills(HttpExchange ex) throws IOException { modes.apiSkills(ex); }
     public void apiFactions(HttpExchange ex) throws IOException { modes.apiFactions(ex); }

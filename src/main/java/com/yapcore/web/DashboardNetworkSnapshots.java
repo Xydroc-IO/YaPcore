@@ -102,6 +102,10 @@ public final class DashboardNetworkSnapshots {
         return DashboardOpsSnapshots.npcs(root);
     }
 
+    public static Map<String, Object> holo(Path root) {
+        return DashboardOpsSnapshots.holo(root);
+    }
+
     public static Map<String, Object> guard(Path root) {
         return DashboardNetworkPluginSnapshots.guard(root);
     }

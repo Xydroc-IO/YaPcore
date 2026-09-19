@@ -2126,6 +2126,72 @@
         <pre id="npcOut" class="report"></pre>
       </section>
 
+      <section id="tab-holo" class="panel">
+        <div class="page-header">
+          <h2>Holograms</h2>
+          <p>Packet floating text from <code>yap-holo</code> — lines, items, pages, clicks, and entity attach. Needs <code>yap-lib</code>.</p>
+        </div>
+        <div class="grid stats">
+          <div class="stat"><span>Plugin</span><strong id="holoInstalled">—</strong></div>
+          <div class="stat"><span>Count</span><strong id="holoCount">—</strong></div>
+          <div class="stat"><span>Enabled</span><strong id="holoEnabled">—</strong></div>
+          <div class="stat"><span>Entity</span><strong id="holoEntity">—</strong></div>
+        </div>
+
+        <div class="card">
+          <h3>Create hologram</h3>
+          <div class="form-grid">
+            <label>Id <input id="holoNewId" placeholder="spawn"/></label>
+            <label>World <input id="holoNewWorld" value="world"/></label>
+            <label>X <input id="holoNewX" type="number" step="0.1" value="0"/></label>
+            <label>Y <input id="holoNewY" type="number" step="0.1" value="66"/></label>
+            <label>Z <input id="holoNewZ" type="number" step="0.1" value="0"/></label>
+          </div>
+          <label class="field-block">Lines <span class="muted">(one per row; blank line starts a page; <code>#ICON:DIAMOND</code> item; <code>#ANIM:wave</code>; <code>%player_name%</code>)</span>
+            <textarea id="holoNewLines" rows="3" data-mc-color="insert" data-mc-preview="1" placeholder="&amp;6Welcome %player_name%&#10;&amp;7to the server"></textarea>
+          </label>
+          <button id="holoCreateBtn" class="primary">Create hologram</button>
+          <p class="muted hint">Copy coords from F3 in-game. Global config (view distance, persist) is on <strong>Plugin settings → YaPHolo</strong>.</p>
+        </div>
+
+        <div class="card">
+          <h3>Holograms</h3>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Id</th><th>World</th><th>Location</th><th>Preview</th><th>View</th><th></th></tr></thead>
+              <tbody id="holoBody"></tbody>
+            </table>
+          </div>
+          <p id="holoEmpty" class="muted hint hidden">No holograms yet — create one above or use <code>/yapholo create</code> in-game.</p>
+        </div>
+
+        <div class="card">
+          <h3>Edit selected · <span id="holoEditId" class="muted">—</span></h3>
+          <div class="form-grid">
+            <label>World <input id="holoEditWorld"/></label>
+            <label>X <input id="holoEditX" type="number" step="0.1"/></label>
+            <label>Y <input id="holoEditY" type="number" step="0.1"/></label>
+            <label>Z <input id="holoEditZ" type="number" step="0.1"/></label>
+            <label>View distance <input id="holoEditView" type="number" min="8" step="1"/></label>
+            <label>Attach <input id="holoEditAttach" placeholder="none or npc:shop:0.25"/></label>
+            <label>See permission <input id="holoEditPerm" placeholder="none"/></label>
+          </div>
+          <label class="field-block">Lines <span class="muted">(blank line = next page)</span>
+            <textarea id="holoEditLines" rows="4" data-mc-color="insert" data-mc-preview="1"></textarea>
+          </label>
+          <label class="field-block">Clicks <span class="muted">space-separated <code>LEFT:NEXT</code> <code>RIGHT:CONSOLE:say hi</code></span>
+            <input id="holoEditClicks" placeholder="LEFT:NEXT RIGHT:PLAYER:warp spawn"/>
+          </label>
+          <button id="holoSaveEdit" class="primary">Save changes</button>
+        </div>
+
+        <div class="toolbar">
+          <button id="holoRefresh">Refresh</button>
+          <button id="holoReload">Reload plugin</button>
+        </div>
+        <pre id="holoOut" class="report"></pre>
+      </section>
+
       <section id="tab-shops" class="panel">
         <div class="page-header">
           <h2>Shops</h2>
@@ -2377,6 +2443,7 @@
   <script src="/app-network-panels.js"></script>
   <script src="/app-full-panels.js"></script>
   <script src="/app-npcs-panels.js"></script>
+  <script src="/app-holo-panels.js"></script>
   <script src="/app-shops-panels.js"></script>
   <script src="/app-skills-panels.js"></script>
   <script src="/app-disasters-panels.js"></script>
