@@ -5,12 +5,15 @@ import org.bukkit.World;
 
 /**
  * Shared bot spread + per-home redstone fixtures (matches {@code swarm.js} grid).
- * 4 quadrants × 8 cells = 32 homes — keeps 250 bots off origin-border planes.
+ * 4 quadrants × 8 cells = 32 homes — keeps bots off the carved corridor.
+ * Negative X is shifted past the 8-chunk hole (chunks −8..−1) onto the kept west side.
  */
 final class BenchSpreadGrid {
 
     private static final int BASE = 64;
     private static final int STEP = 16;
+    /** Chunks −4..−6 sit in the carved section. Six chunks further west is −10..−12. */
+    private static final int WEST_CLEAR_OF_CUT = 6 * STEP;
     private static final int[][] QUAD_SIGN = {{1, 1}, {-1, 1}, {1, -1}, {-1, -1}};
     private static final int[][] CELLS = {{0, 0}, {1, 0}, {2, 0}, {0, 1}, {1, 1}, {2, 1}, {0, 2}, {1, 2}};
 
@@ -53,7 +56,11 @@ final class BenchSpreadGrid {
         int i = 0;
         for (int[] sign : QUAD_SIGN) {
             for (int[] cell : CELLS) {
-                out[i][0] = sign[0] * (BASE + cell[0] * STEP);
+                int x = sign[0] * (BASE + cell[0] * STEP);
+                if (sign[0] < 0) {
+                    x -= WEST_CLEAR_OF_CUT;
+                }
+                out[i][0] = x;
                 out[i][1] = sign[1] * (BASE + cell[1] * STEP);
                 i++;
             }

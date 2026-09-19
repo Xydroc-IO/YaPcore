@@ -27,7 +27,7 @@ final class BenchWorldPrep {
 
     /**
      * Deep bot homes — 32-cell spread grid (see {@link BenchSpreadGrid}).
-     * Matches swarm.js spread; |xz|≥64 so chunk≥4, off origin-border planes.
+     * Matches swarm.js spread. East homes stay at |x|≥64. West homes are past the carved hole.
      */
     static int[][] botHomeXz() {
         return BenchSpreadGrid.homes();
