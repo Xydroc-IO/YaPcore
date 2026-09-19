@@ -1,0 +1,220 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP spawn portal: exact-key cuts, pin nether frames
+
+Packed-spawn cuts stay. Ticket/unload use this-world corridor keys only so
+an overworld AABB does not clamp nether dest search. Pin loaded nether/end
+portal chunks and portal-travel tickets; do not MAX+1 unload a pinned
+holder. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
+@@ -89,6 +89,17 @@
+                 || type == TicketType.PLAYER_SIMULATION
+                 || type == TicketType.PLAYER_SPAWN
+                 || type == TicketType.PORTAL
++                || type == TicketType.NETHER_PORTAL_DOUBLE_CHECK
++                || type == TicketType.END_GATEWAY_EXIT_SEARCH
++                || type == TicketType.POST_TELEPORT
++                || type == TicketType.TELEPORT_HOLD_TICKET;
++    }
++
++    /** Portal-search tickets must reach dest chunks even if they sit on a cut key. */
++    public static boolean isPortalTravelTicket(final TicketType type) {
++        return type == TicketType.PORTAL
++                || type == TicketType.NETHER_PORTAL_DOUBLE_CHECK
++                || type == TicketType.END_GATEWAY_EXIT_SEARCH
+                 || type == TicketType.POST_TELEPORT
+                 || type == TicketType.TELEPORT_HOLD_TICKET;
+     }
+@@ -117,43 +128,34 @@
+         if (!isCutChunk(world, chunkX, chunkZ)) {
+             return false;
+         }
+-        return !playerInChunk(world, chunkX, chunkZ);
++        return !pinnedChunk(world, chunkX, chunkZ);
+     }
+ 
++    /**
++     * Ticket/add/unload use the planned corridor <em>keys</em> in this world only.
++     * Never the section AABB (that is a spawn-wide slab) and never another world's cut.
++     */
+     public static boolean isCutChunk(final ServerLevel world, final int chunkX, final int chunkZ) {
+         if (!ENABLED || world == null) {
+             return false;
+         }
+-        final long chunkKey = CoordinateUtils.getChunkKey(chunkX, chunkZ);
+-        final int shift = TickRegions.getRegionChunkShift();
+-        final int sectionX = chunkX >> shift;
+-        final int sectionZ = chunkZ >> shift;
+         final ConcurrentHashMap<Long, Cut> worldCuts = BY_WORLD.get(System.identityHashCode(world));
+-        if (worldCuts != null && chunkInCuts(worldCuts, chunkKey, sectionX, sectionZ)) {
+-            return true;
+-        }
+-        // identityHashCode can miss if register used a different ServerLevel instance
+-        for (final ConcurrentHashMap<Long, Cut> cuts : BY_WORLD.values()) {
+-            if (cuts != worldCuts && chunkInCuts(cuts, chunkKey, sectionX, sectionZ)) {
+-                return true;
+-            }
+-        }
+-        return false;
+-    }
+-
+-    private static boolean chunkInCuts(final ConcurrentHashMap<Long, Cut> worldCuts,
+-                                       final long chunkKey, final int sectionX, final int sectionZ) {
+         if (worldCuts == null || worldCuts.isEmpty()) {
+             return false;
+         }
++        final long chunkKey = CoordinateUtils.getChunkKey(chunkX, chunkZ);
+         for (final Cut cut : worldCuts.values()) {
+-            if (cut.chunks.contains(chunkKey) || cut.containsSection(sectionX, sectionZ)) {
++            if (cut.chunks.contains(chunkKey)) {
+                 return true;
+             }
+         }
+         return false;
+     }
+ 
++    public static boolean pinnedChunk(final ServerLevel world, final int chunkX, final int chunkZ) {
++        return playerInChunk(world, chunkX, chunkZ) || hasDimensionPortal(world, chunkX, chunkZ);
++    }
++
+     public static boolean blocksSection(final ThreadedRegionizer<?, ?> regionizer, final int sectionX, final int sectionZ) {
+         if (!ENABLED || regionizer == null) {
+             return false;
+@@ -199,7 +201,7 @@
+         if (!isCutChunk(world, chunkX, chunkZ)) {
+             return false;
+         }
+-        if (playerInChunk(world, chunkX, chunkZ)) {
++        if (isPortalTravelTicket(type) || pinnedChunk(world, chunkX, chunkZ)) {
+             return false;
+         }
+         TICKETS_CLAMPED.increment();
+@@ -264,6 +266,46 @@
+         return null;
+     }
+ 
++    static void stripPortalKeys(final ServerLevel world, final LongOpenHashSet keys) {
++        if (world == null || keys == null || keys.isEmpty()) {
++            return;
++        }
++        final LongOpenHashSet drop = new LongOpenHashSet();
++        final LongIterator it = keys.iterator();
++        while (it.hasNext()) {
++            final long chunkKey = it.nextLong();
++            if (hasDimensionPortal(world, CoordinateUtils.getChunkX(chunkKey), CoordinateUtils.getChunkZ(chunkKey))) {
++                drop.add(chunkKey);
++            }
++        }
++        keys.removeAll(drop);
++    }
++
++    static boolean hasDimensionPortal(final ServerLevel world, final int chunkX, final int chunkZ) {
++        if (world == null) {
++            return false;
++        }
++        try {
++            final net.minecraft.world.level.chunk.LevelChunk chunk = world.getChunkIfLoaded(chunkX, chunkZ);
++            if (chunk == null) {
++                return false;
++            }
++            for (final net.minecraft.world.level.chunk.LevelChunkSection section : chunk.getSections()) {
++                if (section == null || section.hasOnlyAir()) {
++                    continue;
++                }
++                if (section.maybeHas(state ->
++                        state.is(net.minecraft.world.level.block.Blocks.NETHER_PORTAL)
++                                || state.is(net.minecraft.world.level.block.Blocks.END_PORTAL)
++                                || state.is(net.minecraft.world.level.block.Blocks.END_GATEWAY))) {
++                    return true;
++                }
++            }
++        } catch (final Throwable ignored) {
++        }
++        return false;
++    }
++
+     private static boolean playerInChunk(final ServerLevel world, final int chunkX, final int chunkZ) {
+         if (world == null) {
+             return false;
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
+@@ -47,6 +47,7 @@
+         } catch (final Throwable t) {
+             LOGGER.warn("YaP corridor collect remaining failed", t);
+         }
++        YapRegionizerGap.stripPortalKeys(world, keys);
+         return keys;
+     }
+ 
+@@ -161,10 +162,16 @@
+                 if (keys.size() >= maxChunks) {
+                     LOGGER.warn("YaP corridor carve capped at {} chunks (lo={} hi={})",
+                             maxChunks, corridorLo, corridorHi);
++                    if (region.getData() instanceof TickRegions.TickRegionData tickData) {
++                        YapRegionizerGap.stripPortalKeys(tickData.world, keys);
++                    }
+                     return new YapCorridorCarver.CorridorPlan(region.id, cutOnX, corridorLo, corridorHi, keys);
+                 }
+             }
+         }
++        if (region.getData() instanceof TickRegions.TickRegionData tickData) {
++            YapRegionizerGap.stripPortalKeys(tickData.world, keys);
++        }
+         return new YapCorridorCarver.CorridorPlan(region.id, cutOnX, corridorLo, corridorHi, keys);
+     }
+ 
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorUnload.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorUnload.java
+@@ -29,19 +29,25 @@
+             if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(hold.world, cx, cz)) {
+                 continue;
+             }
++            if (YapRegionizerGap.pinnedChunk(hold.world, cx, cz)) {
++                continue;
++            }
+             try {
+                 hold.world.setChunkForced(cx, cz, false);
+             } catch (final Throwable ignored) {
+             }
+-                stripNonUnknownTickets(hold.world, cx, cz);
+-                holderManager(hold.world).unloadIfCut(cx, cz);
+-                maintainGapChunk(hold, cx, cz);
++            stripNonUnknownTickets(hold.world, cx, cz);
++            holderManager(hold.world).unloadIfCut(cx, cz);
++            maintainGapChunk(hold, cx, cz);
+         }
+         flushCorridorUnloads(hold.world);
+     }
+ 
+     /** Strip sim tickets and unload corridor chunks re-pinned after partition — no regionizer.removeChunk. */
+     static void maintainGapChunk(final YapCorridorPlanner.GapHold hold, final int cx, final int cz) {
++        if (YapRegionizerGap.pinnedChunk(hold.world, cx, cz)) {
++            return;
++        }
+         final org.bukkit.World bukkit = hold.world.getWorld();
+         if (hold.landings != null) {
+             YapCorridorEntities.relocateGapEntities(hold, cx, cz);
+@@ -65,6 +71,9 @@
+      */
+     static void carveOneChunk(final ServerLevel world, final long regionId, final int cx, final int cz,
+                               final boolean unloadOnly) {
++        if (YapRegionizerGap.pinnedChunk(world, cx, cz)) {
++            return;
++        }
+         final org.bukkit.World bukkit = world.getWorld();
+ 
+         // Relocate WHILE chunk is still held (force-loaded / tickets). Unforcing first orphans TNT.
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/chunk_system/scheduling/ChunkHolderManager.java
+@@ -680,6 +680,9 @@
+      * then refuses to recreate it.
+      */
+     public void unloadIfCut(final int chunkX, final int chunkZ) {
++        if (!io.papermc.paper.threadedregions.YapRegionizerGap.blocksAddChunk(this.world, chunkX, chunkZ)) {
++            return;
++        }
+         final long key = CoordinateUtils.getChunkKey(chunkX, chunkZ);
+         final NewChunkHolder current = this.chunkHolders.get(key);
+         if (current == null) {
