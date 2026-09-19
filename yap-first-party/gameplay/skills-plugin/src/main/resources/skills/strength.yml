@@ -1,7 +1,7 @@
 id: strength
 display: Strength
 enabled: true
-icon: CLAY_BALL
+icon: IRON_SWORD
 icon-cmd: 79002
 combat-dealt:
   xp-per-damage: 2.0

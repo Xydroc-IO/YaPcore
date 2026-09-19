@@ -1,7 +1,7 @@
 id: woodcutting
 display: Woodcutting
 enabled: true
-icon: CLAY_BALL
+icon: IRON_AXE
 icon-cmd: 79009
 break:
   OAK_LOG:

@@ -1,7 +1,7 @@
 id: mining
 display: Mining
 enabled: true
-icon: CLAY_BALL
+icon: IRON_PICKAXE
 icon-cmd: 79008
 break:
   STONE:

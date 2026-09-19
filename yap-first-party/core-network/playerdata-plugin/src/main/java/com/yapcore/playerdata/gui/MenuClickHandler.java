@@ -87,6 +87,11 @@ final class MenuClickHandler {
                 }
                 yield true;
             }
+            case "Skills" -> {
+                player.closeInventory();
+                player.performCommand("skills");
+                yield true;
+            }
             case "Auctions" -> {
                 if (menus.config.featureAuctions()) {
                     menus.openAuctions(player);

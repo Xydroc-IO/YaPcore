@@ -158,7 +158,7 @@ public final class PermissionCatalog {
                 n("bukkit.command.reload", "/reload", "Reload plugins", true),
                 n("bukkit.command.timings", "/timings", "Timings report"),
                 n("paper.command.paper", "/paper", "Paper admin command", true)));
-        out.add(cat("skills", "Skills", "Thin skills — mining, woodcutting, strength + overall.",
+        out.add(cat("skills", "Skills", "Thin skills — mining through health + overall.",
                 n("yapskills.use", "/skills", "Open skills"),
                 n("yapskills.others", "Skills others", "View another player's skills"),
                 n("yapskills.admin", "Skills admin", "Reload / grant skills"),

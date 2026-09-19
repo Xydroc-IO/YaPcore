@@ -67,8 +67,8 @@ public final class SkillPackLoader {
             String display = yaml.getString("display", id.id());
             boolean enabled = yaml.getBoolean("enabled", true);
             Material icon = Material.matchMaterial(yaml.getString("icon", "CLAY_BALL"));
-            if (icon == null) {
-                icon = Material.CLAY_BALL;
+            if (icon == null || icon == Material.CLAY_BALL) {
+                icon = defaultIcon(id);
             }
             int iconCmd = yaml.getInt("icon-cmd", yaml.getInt("icon_cmd", 0));
             Map<Material, SkillDefinition.BreakAction> breakActions = parseBreak(yaml.getConfigurationSection("break"));
@@ -80,13 +80,34 @@ public final class SkillPackLoader {
             SkillDefinition.CombatTakenAction combatTaken = parseCombatTaken(yaml.getConfigurationSection("combat-taken"));
             SkillDefinition.HitpointsRatio hitpointsRatio = parseHitpoints(yaml.getConfigurationSection("combat-hitpoints"));
             SkillDefinition.PrayerDrainAction prayerDrain = parsePrayerDrain(yaml.getConfigurationSection("prayer-drain"));
+            SkillDefinition.TravelAction travel = parseTravel(yaml.getConfigurationSection("travel"));
+            SkillDefinition.PlaceAction place = parsePlace(yaml.getConfigurationSection("place"));
+            SkillDefinition.BrewAction brew = parseBrew(yaml.getConfigurationSection("brew"));
+            java.util.List<SkillDefinition.TreasureDrop> treasure = parseTreasure(yaml.getConfigurationSection("treasure"));
             return java.util.Optional.of(new SkillDefinition(
                     id, display, icon, iconCmd, enabled, breakActions, fishActions, smeltActions,
-                    combatDealt, rangedDealt, magicDealt, combatTaken, hitpointsRatio, prayerDrain));
+                    combatDealt, rangedDealt, magicDealt, combatTaken, hitpointsRatio, prayerDrain,
+                    travel, place, brew, treasure));
         } catch (Exception e) {
             LOG.log(Level.WARNING, "Failed to load skill " + path.getFileName(), e);
             return java.util.Optional.empty();
         }
+    }
+
+    private static Material defaultIcon(SkillId id) {
+        String key = id == null ? "" : id.id();
+        return switch (key) {
+            case "mining" -> Material.IRON_PICKAXE;
+            case "woodcutting" -> Material.IRON_AXE;
+            case "strength" -> Material.IRON_SWORD;
+            case "marathon" -> Material.LEATHER_BOOTS;
+            case "builder" -> Material.BRICKS;
+            case "herbalism" -> Material.WHEAT;
+            case "excavation" -> Material.IRON_SHOVEL;
+            case "alchemy" -> Material.BREWING_STAND;
+            case "health" -> Material.GOLDEN_APPLE;
+            default -> Material.EXPERIENCE_BOTTLE;
+        };
     }
 
     private static Map<Material, SkillDefinition.BreakAction> parseBreak(ConfigurationSection section) {
@@ -206,5 +227,65 @@ public final class SkillPackLoader {
             return null;
         }
         return new SkillDefinition.PrayerDrainAction(xpPerPoint);
+    }
+
+    private static SkillDefinition.TravelAction parseTravel(ConfigurationSection section) {
+        if (section == null) {
+            return null;
+        }
+        double xpPerBlock = section.getDouble("xp-per-block", 0);
+        if (xpPerBlock <= 0) {
+            return null;
+        }
+        double maxBps = Math.max(1.0, section.getDouble("max-blocks-per-second", 12));
+        return new SkillDefinition.TravelAction(xpPerBlock, maxBps);
+    }
+
+    private static SkillDefinition.PlaceAction parsePlace(ConfigurationSection section) {
+        if (section == null) {
+            return null;
+        }
+        double xp = section.getDouble("xp", 0);
+        if (xp <= 0) {
+            return null;
+        }
+        return new SkillDefinition.PlaceAction(xp);
+    }
+
+    private static SkillDefinition.BrewAction parseBrew(ConfigurationSection section) {
+        if (section == null) {
+            return null;
+        }
+        double xp = section.getDouble("xp", 0);
+        if (xp <= 0) {
+            return null;
+        }
+        return new SkillDefinition.BrewAction(xp);
+    }
+
+    private static java.util.List<SkillDefinition.TreasureDrop> parseTreasure(ConfigurationSection section) {
+        if (section == null) {
+            return java.util.List.of();
+        }
+        java.util.List<SkillDefinition.TreasureDrop> out = new java.util.ArrayList<>();
+        for (String key : section.getKeys(false)) {
+            Material mat = Material.matchMaterial(key.toUpperCase(Locale.ROOT));
+            if (mat == null || "AIR".equals(mat.name()) || "CAVE_AIR".equals(mat.name()) || "VOID_AIR".equals(mat.name())) {
+                continue;
+            }
+            ConfigurationSection row = section.getConfigurationSection(key);
+            double chance;
+            int amount = 1;
+            if (row != null) {
+                chance = row.getDouble("chance", 0);
+                amount = Math.max(1, row.getInt("amount", 1));
+            } else {
+                chance = section.getDouble(key, 0);
+            }
+            if (chance > 0.0) {
+                out.add(new SkillDefinition.TreasureDrop(mat, Math.min(1.0, chance), amount));
+            }
+        }
+        return java.util.List.copyOf(out);
     }
 }

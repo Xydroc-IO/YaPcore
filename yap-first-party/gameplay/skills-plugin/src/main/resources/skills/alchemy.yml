@@ -1,0 +1,7 @@
+id: alchemy
+display: Alchemy
+enabled: true
+icon: BREWING_STAND
+# XP when a brewing stand you started finishes. Brew speed scales to 2x at 120.
+brew:
+  xp: 25

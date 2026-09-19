@@ -12,6 +12,8 @@ public final class SkillPowerBlocks {
     public static final SkillId MINING = SkillId.of("mining");
     public static final SkillId WOODCUTTING = SkillId.of("woodcutting");
     public static final SkillId STRENGTH = SkillId.of("strength");
+    public static final SkillId MARATHON = SkillId.of("marathon");
+    public static final SkillId BUILDER = SkillId.of("builder");
 
     private SkillPowerBlocks() {
     }

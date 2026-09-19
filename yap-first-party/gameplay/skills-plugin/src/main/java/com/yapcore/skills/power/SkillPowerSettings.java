@@ -7,17 +7,30 @@ public record SkillPowerSettings(
         boolean enabled,
         double breakSpeedBonusAtMax,
         double extraDropsAtMax,
-        double damageBonusAtMax) {
+        double damageBonusAtMax,
+        double movementSpeedBonusAtMax,
+        double placeReachBonusAtMax,
+        double keepBlockChanceAtMax,
+        double extraHeartsAtMax,
+        double brewSpeedBonusAtMax,
+        SkillAbilitySettings abilities) {
 
     public SkillPowerSettings {
         breakSpeedBonusAtMax = Math.max(0.0, breakSpeedBonusAtMax);
         extraDropsAtMax = Math.max(0.0, extraDropsAtMax);
         damageBonusAtMax = Math.max(0.0, damageBonusAtMax);
+        movementSpeedBonusAtMax = Math.max(0.0, movementSpeedBonusAtMax);
+        placeReachBonusAtMax = Math.max(0.0, placeReachBonusAtMax);
+        keepBlockChanceAtMax = Math.max(0.0, Math.min(1.0, keepBlockChanceAtMax));
+        extraHeartsAtMax = Math.max(0.0, extraHeartsAtMax);
+        brewSpeedBonusAtMax = Math.max(0.0, brewSpeedBonusAtMax);
+        abilities = abilities == null ? SkillAbilitySettings.defaults() : abilities;
     }
 
-    /** Level 120: 2.5x break speed, one extra drop copy, 2x hit damage. */
+    /** Level 120: 3x mine/chop, 3x hits, 2x walk, +5 hearts, 2x brew, max-level abilities. */
     public static SkillPowerSettings defaults() {
-        return new SkillPowerSettings(true, 1.5, 1.0, 1.0);
+        return new SkillPowerSettings(true, 2.0, 2.0, 2.0, 1.0, 1.0, 0.25, 10.0, 1.0,
+                SkillAbilitySettings.defaults());
     }
 
     public static SkillPowerSettings from(FileConfiguration config) {
@@ -26,8 +39,14 @@ public record SkillPowerSettings(
         }
         return new SkillPowerSettings(
                 config.getBoolean("power.enabled", true),
-                config.getDouble("power.break-speed-bonus-at-max", 1.5),
-                config.getDouble("power.extra-drops-at-max", 1.0),
-                config.getDouble("power.damage-bonus-at-max", 1.0));
+                config.getDouble("power.break-speed-bonus-at-max", 2.0),
+                config.getDouble("power.extra-drops-at-max", 2.0),
+                config.getDouble("power.damage-bonus-at-max", 2.0),
+                config.getDouble("power.movement-speed-bonus-at-max", 1.0),
+                config.getDouble("power.place-reach-bonus-at-max", 1.0),
+                config.getDouble("power.keep-block-chance-at-max", 0.25),
+                config.getDouble("power.extra-hearts-at-max", 10.0),
+                config.getDouble("power.brew-speed-bonus-at-max", 1.0),
+                SkillAbilitySettings.from(config));
     }
 }

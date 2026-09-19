@@ -9,20 +9,33 @@ import com.yapcore.skills.db.SkillDatabase;
 import com.yapcore.skills.db.SkillRepository;
 import com.yapcore.skills.gui.SkillsMenu;
 import com.yapcore.skills.gui.SkillsMenuListener;
+import com.yapcore.skills.listener.AlchemySkillListener;
 import com.yapcore.skills.listener.BreakSkillListener;
+import com.yapcore.skills.listener.BuilderSkillListener;
 import com.yapcore.skills.listener.CombatSkillListener;
+import com.yapcore.skills.listener.ExcavationSkillListener;
 import com.yapcore.skills.listener.FishingSkillListener;
+import com.yapcore.skills.listener.HealthSkillListener;
+import com.yapcore.skills.listener.HerbalismSkillListener;
+import com.yapcore.skills.listener.MarathonSkillListener;
+import com.yapcore.skills.listener.SkillAbilityListener;
 import com.yapcore.skills.listener.SkillLevelListener;
 import com.yapcore.skills.listener.SkillPowerBreakListener;
 import com.yapcore.skills.listener.SkillPowerCombatListener;
 import com.yapcore.skills.listener.SmeltSkillListener;
 import com.yapcore.skills.papi.SkillsPlaceholders;
+import com.yapcore.skills.power.SkillAbilities;
 import com.yapcore.skills.power.SkillBreakSpeed;
 import com.yapcore.skills.power.SkillLevelCache;
+import com.yapcore.skills.power.SkillMaxHealth;
+import com.yapcore.skills.power.SkillMoveSpeed;
+import com.yapcore.skills.power.SkillPlaceReach;
+import com.yapcore.skills.power.SkillPowerMath;
 import com.yapcore.skills.power.SkillPowerSettings;
 import com.yapcore.skills.service.SkillServiceImpl;
 import com.yapcore.skills.skill.SkillPackLoader;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.ServicePriority;
@@ -35,7 +48,8 @@ import java.util.List;
 public final class SkillsPlugin extends JavaPlugin {
 
     private static final List<String> DEFAULT_SKILL_PACKS = List.of(
-            "mining.yml", "woodcutting.yml", "strength.yml");
+            "mining.yml", "woodcutting.yml", "strength.yml", "marathon.yml", "builder.yml",
+            "herbalism.yml", "excavation.yml", "alchemy.yml", "health.yml");
 
     private SkillsConfig config;
     private SkillDatabase database;
@@ -47,6 +61,9 @@ public final class SkillsPlugin extends JavaPlugin {
     private SkillsMenu menu;
     private SkillsPlaceholders placeholders;
     private SkillLevelListener levelListener;
+    private MarathonSkillListener marathon;
+    private HealthSkillListener health;
+    private final SkillAbilities abilities = new SkillAbilities();
 
     @Override
     public void onEnable() {
@@ -67,10 +84,18 @@ public final class SkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new SkillPowerCombatListener(this), this);
         levelListener = new SkillLevelListener(this);
         getServer().getPluginManager().registerEvents(levelListener, this);
+        marathon = new MarathonSkillListener(this);
+        getServer().getPluginManager().registerEvents(marathon, this);
+        getServer().getPluginManager().registerEvents(new BuilderSkillListener(this), this);
+        getServer().getPluginManager().registerEvents(new SkillAbilityListener(this), this);
+        getServer().getPluginManager().registerEvents(new HerbalismSkillListener(this), this);
+        getServer().getPluginManager().registerEvents(new ExcavationSkillListener(this), this);
+        getServer().getPluginManager().registerEvents(new AlchemySkillListener(this), this);
+        health = new HealthSkillListener(this);
+        getServer().getPluginManager().registerEvents(health, this);
         getServer().getPluginManager().registerEvents(new SkillsMenuListener(), this);
 
-        bindCommand("skills", new SkillsCommand(menu));
-        bindCommand("skill", new SkillAdminCommand(skillService));
+        bindPlayerCommands();
         bindCommand("yskills", new YSkillsCommand(this));
 
         getServer().getServicesManager().register(SkillService.class, skillService, this, ServicePriority.Normal);
@@ -96,9 +121,18 @@ public final class SkillsPlugin extends JavaPlugin {
         for (Player player : Bukkit.getOnlinePlayers()) {
             try {
                 SkillBreakSpeed.clear(this, player);
+                SkillMoveSpeed.clear(this, player);
+                SkillPlaceReach.clear(this, player);
+                SkillMaxHealth.clear(this, player);
             } catch (Throwable ignored) {
                 // Disable is not always the owning region. The modifier is transient either way.
             }
+        }
+        if (marathon != null) {
+            marathon.untrackAll();
+        }
+        if (health != null) {
+            health.stopAll();
         }
         if (database != null) {
             database.close();
@@ -167,6 +201,15 @@ public final class SkillsPlugin extends JavaPlugin {
         }
         placeholders = new SkillsPlaceholders(skillService);
         placeholders.tryRegister();
+        bindPlayerCommands();
+    }
+
+    private void bindPlayerCommands() {
+        if (menu == null || skillService == null) {
+            return;
+        }
+        bindCommand("skills", new SkillsCommand(menu));
+        bindCommand("skill", new SkillAdminCommand(skillService, menu));
     }
 
     public SkillServiceImpl skillService() {
@@ -181,10 +224,95 @@ public final class SkillsPlugin extends JavaPlugin {
         return powerSettings;
     }
 
+    public SkillAbilities abilities() {
+        return abilities;
+    }
+
     public void warmLevels() {
         if (levelListener != null && skillService != null) {
             levelListener.warmOnline();
         }
+        if (marathon != null) {
+            marathon.trackOnline();
+        }
+        if (health != null) {
+            health.startOnline();
+        }
+    }
+
+    public void applyMarathonSpeed(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        if (player.getGameMode() == GameMode.SPECTATOR || !powerSettings.enabled()) {
+            SkillMoveSpeed.clear(this, player);
+            return;
+        }
+        if (skillService == null) {
+            SkillMoveSpeed.clear(this, player);
+            return;
+        }
+        var def = skillService.definition(MarathonSkillListener.MARATHON).orElse(null);
+        if (def == null || !def.enabled()) {
+            SkillMoveSpeed.clear(this, player);
+            return;
+        }
+        int level = levelCache.loaded(player.getUniqueId())
+                ? levelCache.level(player.getUniqueId(), def.id())
+                : 1;
+        double multiplier = SkillPowerMath.moveSpeed(
+                level, skillService.xpTable().maxLevel(), powerSettings.movementSpeedBonusAtMax());
+        SkillMoveSpeed.apply(this, player, multiplier);
+    }
+
+    public void applyBuilderReach(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        if (player.getGameMode() == GameMode.SPECTATOR || !powerSettings.enabled()) {
+            SkillPlaceReach.clear(this, player);
+            return;
+        }
+        if (skillService == null) {
+            SkillPlaceReach.clear(this, player);
+            return;
+        }
+        var def = skillService.definition(BuilderSkillListener.BUILDER).orElse(null);
+        if (def == null || !def.enabled()) {
+            SkillPlaceReach.clear(this, player);
+            return;
+        }
+        int level = levelCache.loaded(player.getUniqueId())
+                ? levelCache.level(player.getUniqueId(), def.id())
+                : 1;
+        double extra = SkillPowerMath.placeReach(
+                level, skillService.xpTable().maxLevel(), powerSettings.placeReachBonusAtMax());
+        SkillPlaceReach.apply(this, player, extra);
+    }
+
+    public void applyHealth(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        if (player.getGameMode() == GameMode.SPECTATOR || !powerSettings.enabled()) {
+            SkillMaxHealth.clear(this, player);
+            return;
+        }
+        if (skillService == null) {
+            SkillMaxHealth.clear(this, player);
+            return;
+        }
+        var def = skillService.definition(HealthSkillListener.HEALTH).orElse(null);
+        if (def == null || !def.enabled()) {
+            SkillMaxHealth.clear(this, player);
+            return;
+        }
+        int level = levelCache.loaded(player.getUniqueId())
+                ? levelCache.level(player.getUniqueId(), def.id())
+                : 1;
+        double extra = SkillPowerMath.extraHearts(
+                level, skillService.xpTable().maxLevel(), powerSettings.extraHeartsAtMax());
+        SkillMaxHealth.apply(this, player, extra);
     }
 
     private void bindCommand(String name, Object executor) {

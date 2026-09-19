@@ -1,0 +1,7 @@
+id: builder
+display: Builder
+enabled: true
+icon: BRICKS
+# Placing blocks. No fast-place — that trips anti-cheat.
+place:
+  xp: 2

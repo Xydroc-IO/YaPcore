@@ -3,14 +3,15 @@ version: 0.0.0.1
 main: com.yapcore.skills.SkillsPlugin
 api-version: '1.21'
 folia-supported: true
-description: Mining, woodcutting, and strength. Levels lock content and scale break speed, drops, and hit damage.
+description: Mining, woodcutting, strength, marathon, builder, herbalism, excavation, alchemy, and health.
 authors: [YapLabs]
 depend: []
 softdepend: [YaPDB, PlaceholderAPI]
 commands:
   skills:
-    description: Open skills menu or inspect another player
+    description: Open your skills / stats menu
     usage: /skills [player]
+    aliases: [stats, skillstats, yapskills]
   skill:
     description: Skill admin and leaderboard commands
     usage: /skill addxp|set|top <player|skill> ...

@@ -1,5 +1,5 @@
 # YaP Skills — shipped defaults (typical SMP)
-# Enable for mining / woodcutting / strength + overall level progression.
+# Enable for mining / woodcutting / strength / marathon / builder / herbalism / excavation / alchemy / health + overall.
 enabled: true
 
 # Shared MariaDB via YaPDB when available
@@ -32,8 +32,29 @@ feedback:
   action-bar-xp: true
   level-up-title: true
   level-up-chat: true
+  level-up-sound: true
 
 # When true, legacy playerdata jobs should stay disabled (features.jobs: false)
 prefer-over-jobs: true
 
 skills-directory: skills
+
+# Power sits on top of the level locks. Level 1 is vanilla.
+# At max level (120): 3x break speed, two extra drop copies (3x loot), 3x hit damage, 2x walk.
+# Builder: +1 place reach and 25% keep-block. No fast-place.
+# Health: +5 hearts at 120. Alchemy: 2x brew speed at 120.
+power:
+  enabled: true
+  break-speed-bonus-at-max: 2.0
+  extra-drops-at-max: 2.0
+  damage-bonus-at-max: 2.0
+  movement-speed-bonus-at-max: 1.0
+  place-reach-bonus-at-max: 1.0
+  keep-block-chance-at-max: 0.25
+  extra-hearts-at-max: 10.0
+  brew-speed-bonus-at-max: 1.0
+  abilities:
+    duration-seconds: 12
+    cooldown-seconds: 90
+    super-breaker-speed: 8.0
+    tree-feller-max-logs: 32

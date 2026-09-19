@@ -1,0 +1,7 @@
+id: health
+display: Health
+enabled: true
+icon: GOLDEN_APPLE
+# XP from taking hits. Extra max health scales up; combat regen unlocks at 120.
+combat-taken:
+  xp-per-damage: 3.0

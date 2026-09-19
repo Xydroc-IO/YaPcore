@@ -5,6 +5,7 @@ import com.yapcore.mmo.XpSource;
 import com.yapcore.sched.StaffBypass;
 import com.yapcore.sched.YapSched;
 import com.yapcore.skills.SkillsPlugin;
+import com.yapcore.skills.power.SkillCrops;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -54,6 +55,9 @@ public final class BreakSkillListener implements Listener {
     public void onBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
         Material block = event.getBlock().getType();
+        if (SkillCrops.isCrop(block) && !SkillCrops.isMature(event.getBlock())) {
+            return;
+        }
         for (SkillDefinition def : plugin.skillService().definitions()) {
             if (!def.enabled()) {
                 continue;

@@ -18,9 +18,16 @@ public record SkillDefinition(
         CombatDealtAction magicDealt,
         CombatTakenAction combatTaken,
         HitpointsRatio hitpointsRatio,
-        PrayerDrainAction prayerDrain
+        PrayerDrainAction prayerDrain,
+        TravelAction travel,
+        PlaceAction place,
+        BrewAction brew,
+        java.util.List<TreasureDrop> treasure
 ) {
-    /** Back-compat without custom model data. */
+    public SkillDefinition {
+        treasure = treasure == null ? java.util.List.of() : java.util.List.copyOf(treasure);
+    }
+    /** Back-compat without travel / place / custom model data. */
     public SkillDefinition(
             SkillId id,
             String display,
@@ -36,7 +43,71 @@ public record SkillDefinition(
             HitpointsRatio hitpointsRatio,
             PrayerDrainAction prayerDrain) {
         this(id, display, icon, 0, enabled, breakActions, fishActions, smeltActions,
-                combatDealt, rangedDealt, magicDealt, combatTaken, hitpointsRatio, prayerDrain);
+                combatDealt, rangedDealt, magicDealt, combatTaken, hitpointsRatio, prayerDrain, null, null, null, java.util.List.of());
+    }
+
+    /** Back-compat without travel / place. */
+    public SkillDefinition(
+            SkillId id,
+            String display,
+            Material icon,
+            int iconCmd,
+            boolean enabled,
+            Map<Material, BreakAction> breakActions,
+            Map<String, FishAction> fishActions,
+            Map<Material, SmeltAction> smeltActions,
+            CombatDealtAction combatDealt,
+            CombatDealtAction rangedDealt,
+            CombatDealtAction magicDealt,
+            CombatTakenAction combatTaken,
+            HitpointsRatio hitpointsRatio,
+            PrayerDrainAction prayerDrain) {
+        this(id, display, icon, iconCmd, enabled, breakActions, fishActions, smeltActions,
+                combatDealt, rangedDealt, magicDealt, combatTaken, hitpointsRatio, prayerDrain, null, null, null, java.util.List.of());
+    }
+
+    /** Back-compat without place. */
+    public SkillDefinition(
+            SkillId id,
+            String display,
+            Material icon,
+            int iconCmd,
+            boolean enabled,
+            Map<Material, BreakAction> breakActions,
+            Map<String, FishAction> fishActions,
+            Map<Material, SmeltAction> smeltActions,
+            CombatDealtAction combatDealt,
+            CombatDealtAction rangedDealt,
+            CombatDealtAction magicDealt,
+            CombatTakenAction combatTaken,
+            HitpointsRatio hitpointsRatio,
+            PrayerDrainAction prayerDrain,
+            TravelAction travel) {
+        this(id, display, icon, iconCmd, enabled, breakActions, fishActions, smeltActions,
+                combatDealt, rangedDealt, magicDealt, combatTaken, hitpointsRatio, prayerDrain, travel, null, null, java.util.List.of());
+    }
+
+    /** Back-compat without brew / treasure. */
+    public SkillDefinition(
+            SkillId id,
+            String display,
+            Material icon,
+            int iconCmd,
+            boolean enabled,
+            Map<Material, BreakAction> breakActions,
+            Map<String, FishAction> fishActions,
+            Map<Material, SmeltAction> smeltActions,
+            CombatDealtAction combatDealt,
+            CombatDealtAction rangedDealt,
+            CombatDealtAction magicDealt,
+            CombatTakenAction combatTaken,
+            HitpointsRatio hitpointsRatio,
+            PrayerDrainAction prayerDrain,
+            TravelAction travel,
+            PlaceAction place) {
+        this(id, display, icon, iconCmd, enabled, breakActions, fishActions, smeltActions,
+                combatDealt, rangedDealt, magicDealt, combatTaken, hitpointsRatio, prayerDrain, travel, place,
+                null, java.util.List.of());
     }
 
     public record BreakAction(double xp, int minLevel) {
@@ -62,5 +133,21 @@ public record SkillDefinition(
 
     /** XP per prayer point drained while prayers are active. */
     public record PrayerDrainAction(double xpPerPoint) {
+    }
+
+    /** On-foot travel (walk/sprint/swim/climb). Blocks/sec cap stops ice-boat / fly farms. */
+    public record TravelAction(double xpPerBlock, double maxBlocksPerSecond) {
+    }
+
+    /** XP for placing a block (builder). */
+    public record PlaceAction(double xp) {
+    }
+
+    /** XP when a brewing stand finishes (alchemy). */
+    public record BrewAction(double xp) {
+    }
+
+    /** Extra loot at max excavation. {@code chance} is 0–1 per block. */
+    public record TreasureDrop(Material item, double chance, int amount) {
     }
 }

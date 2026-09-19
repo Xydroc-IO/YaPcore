@@ -19,6 +19,79 @@ class SkillPackLoaderTest {
     Path tempDir;
 
     @Test
+    void clayBallFallsBackToVanillaToolIcon() throws Exception {
+        Files.writeString(tempDir.resolve("mining.yml"), """
+                id: mining
+                icon: CLAY_BALL
+                break:
+                  STONE:
+                    xp: 5
+                """);
+        SkillPackLoader loader = new SkillPackLoader(tempDir);
+        loader.reload();
+        assertEquals(Material.IRON_PICKAXE, loader.get(SkillId.of("mining")).icon());
+    }
+
+    @Test
+    void loadsMarathonTravel() throws Exception {
+        Files.writeString(tempDir.resolve("marathon.yml"), """
+                id: marathon
+                travel:
+                  xp-per-block: 1.0
+                  max-blocks-per-second: 12
+                """);
+        SkillPackLoader loader = new SkillPackLoader(tempDir);
+        loader.reload();
+        SkillDefinition marathon = loader.get(SkillId.of("marathon"));
+        assertNotNull(marathon);
+        assertEquals(Material.LEATHER_BOOTS, marathon.icon());
+        assertEquals(1.0, marathon.travel().xpPerBlock(), 0.01);
+        assertEquals(12.0, marathon.travel().maxBlocksPerSecond(), 0.01);
+    }
+
+    @Test
+    void loadsBuilderPlace() throws Exception {
+        Files.writeString(tempDir.resolve("builder.yml"), """
+                id: builder
+                place:
+                  xp: 2
+                """);
+        SkillPackLoader loader = new SkillPackLoader(tempDir);
+        loader.reload();
+        SkillDefinition builder = loader.get(SkillId.of("builder"));
+        assertNotNull(builder);
+        assertEquals(Material.BRICKS, builder.icon());
+        assertEquals(2.0, builder.place().xp(), 0.01);
+    }
+
+    @Test
+    void loadsAlchemyAndExcavation() throws Exception {
+        Files.writeString(tempDir.resolve("alchemy.yml"), """
+                id: alchemy
+                brew:
+                  xp: 25
+                """);
+        Files.writeString(tempDir.resolve("excavation.yml"), """
+                id: excavation
+                treasure:
+                  DIAMOND:
+                    chance: 0.0004
+                    amount: 1
+                """);
+        SkillPackLoader loader = new SkillPackLoader(tempDir);
+        loader.reload();
+        SkillDefinition alchemy = loader.get(SkillId.of("alchemy"));
+        assertNotNull(alchemy);
+        assertEquals(Material.BREWING_STAND, alchemy.icon());
+        assertEquals(25.0, alchemy.brew().xp(), 0.01);
+        SkillDefinition excavation = loader.get(SkillId.of("excavation"));
+        assertNotNull(excavation);
+        assertEquals(Material.IRON_SHOVEL, excavation.icon());
+        assertEquals(1, excavation.treasure().size());
+        assertEquals(Material.DIAMOND, excavation.treasure().get(0).item());
+    }
+
+    @Test
     void loadsMiningBreakMap() throws Exception {
         Files.writeString(tempDir.resolve("mining.yml"), """
                 id: mining

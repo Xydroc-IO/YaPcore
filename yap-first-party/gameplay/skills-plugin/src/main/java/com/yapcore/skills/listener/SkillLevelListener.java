@@ -3,6 +3,9 @@ package com.yapcore.skills.listener;
 import com.yapcore.sched.YapSched;
 import com.yapcore.skills.SkillsPlugin;
 import com.yapcore.skills.power.SkillBreakSpeed;
+import com.yapcore.skills.power.SkillMaxHealth;
+import com.yapcore.skills.power.SkillMoveSpeed;
+import com.yapcore.skills.power.SkillPlaceReach;
 import com.yapcore.skills.service.SkillServiceImpl;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -36,6 +39,10 @@ public final class SkillLevelListener implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         SkillBreakSpeed.clear(plugin, player);
+        SkillMoveSpeed.clear(plugin, player);
+        SkillPlaceReach.clear(plugin, player);
+        SkillMaxHealth.clear(plugin, player);
+        plugin.abilities().clear(player.getUniqueId());
         plugin.levels().forget(player.getUniqueId());
     }
 
@@ -64,6 +71,11 @@ public final class SkillLevelListener implements Listener {
                 return;
             }
             plugin.levels().rememberAll(id, all);
+            YapSched.entity(plugin, player, () -> {
+                plugin.applyMarathonSpeed(player);
+                plugin.applyBuilderReach(player);
+                plugin.applyHealth(player);
+            });
         }));
     }
 }

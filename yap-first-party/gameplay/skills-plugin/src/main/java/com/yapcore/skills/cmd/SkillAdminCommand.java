@@ -3,6 +3,7 @@ package com.yapcore.skills.cmd;
 import com.yapcore.mmo.SkillId;
 import com.yapcore.mmo.XpSource;
 import com.yapcore.skills.db.SkillRepository;
+import com.yapcore.skills.gui.SkillsMenu;
 import com.yapcore.skills.service.SkillServiceImpl;
 import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
@@ -23,16 +24,24 @@ public final class SkillAdminCommand implements CommandExecutor, TabCompleter {
     private static final int PAGE_SIZE = 10;
 
     private final SkillServiceImpl skills;
+    private final SkillsMenu menu;
 
-    public SkillAdminCommand(SkillServiceImpl skills) {
+    public SkillAdminCommand(SkillServiceImpl skills, SkillsMenu menu) {
         this.skills = skills;
+        this.menu = menu;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
+            if (sender instanceof Player player && player.hasPermission("yapskills.use") && menu != null) {
+                menu.open(player, player.getUniqueId(), player.getName());
+                return true;
+            }
+            sender.sendMessage("§e/skills §7or §e/stats §7— open your stats");
+            sender.sendMessage("§e/skill top <skill|overall> [page]");
             sender.sendMessage("§e/skill addxp <player> <skill> <amount>");
-            sender.sendMessage("§e/skill set <player> <skill> <level> §7· §e/skill top <skill|overall> [page]");
+            sender.sendMessage("§e/skill set <player> <skill> <level>");
             return true;
         }
         return switch (args[0].toLowerCase(Locale.ROOT)) {

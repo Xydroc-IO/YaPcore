@@ -79,6 +79,11 @@ public final class PlayerDataBedrockForms {
             buttons.add("Jobs");
             actions.add(() -> menus.openJobs(player));
         }
+        if (org.bukkit.Bukkit.getPluginManager().getPlugin("YaPSkills") != null
+                && player.hasPermission("yapskills.use")) {
+            buttons.add("Skills");
+            actions.add(() -> YapSched.entity(menus.plugin, player, () -> player.performCommand("skills")));
+        }
         if (menus.config.featureAuctions() && player.hasPermission("yapdata.ah")) {
             buttons.add("Auctions");
             actions.add(() -> menus.openAuctions(player));

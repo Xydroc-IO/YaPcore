@@ -2,6 +2,7 @@ package com.yapcore.skills.listener;
 
 import com.yapcore.mmo.SkillId;
 import com.yapcore.skills.SkillsPlugin;
+import com.yapcore.skills.power.SkillAbilities;
 import com.yapcore.skills.power.SkillBreakSpeed;
 import com.yapcore.skills.power.SkillPowerBlocks;
 import com.yapcore.skills.power.SkillPowerMath;
@@ -56,7 +57,15 @@ public final class SkillPowerBreakListener implements Listener {
             SkillBreakSpeed.clear(plugin, event.getPlayer());
             return;
         }
-        syncSpeed(event.getPlayer(), event.getBlock());
+        Player player = event.getPlayer();
+        Block block = event.getBlock();
+        if (plugin.abilities().isActive(player.getUniqueId(), SkillAbilities.Kind.SUPER_BREAKER)
+                && canInstaMine(player, block)) {
+            event.setInstaBreak(true);
+            SkillBreakSpeed.clear(plugin, player);
+            return;
+        }
+        syncSpeed(player, block);
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -133,11 +142,36 @@ public final class SkillPowerBreakListener implements Listener {
             SkillBreakSpeed.clear(plugin, player);
             return;
         }
-        double multiplier = SkillPowerMath.breakSpeed(
-                plugin.levels().level(player.getUniqueId(), skill),
-                skills.xpTable().maxLevel(),
-                plugin.power().breakSpeedBonusAtMax());
+        double multiplier;
+        if (SkillPowerBlocks.MINING.equals(skill)
+                && plugin.abilities().isActive(player.getUniqueId(), SkillAbilities.Kind.SUPER_BREAKER)) {
+            multiplier = plugin.power().abilities().superBreakerSpeed();
+        } else {
+            multiplier = SkillPowerMath.breakSpeed(
+                    plugin.levels().level(player.getUniqueId(), skill),
+                    skills.xpTable().maxLevel(),
+                    plugin.power().breakSpeedBonusAtMax());
+        }
         SkillBreakSpeed.apply(plugin, player, multiplier);
+    }
+
+    private boolean canInstaMine(Player player, Block block) {
+        if (plugin.skillService() == null || block == null) {
+            return false;
+        }
+        SkillId skill = SkillPowerBlocks.breakSkill(plugin.skillService().definitions(), block.getType());
+        if (!SkillPowerBlocks.MINING.equals(skill)) {
+            return false;
+        }
+        ItemStack tool = player.getInventory().getItemInMainHand();
+        if (tool == null || tool.getType().isAir()) {
+            return false;
+        }
+        try {
+            return block.isPreferredTool(tool);
+        } catch (Throwable ignored) {
+            return true;
+        }
     }
 
     private static void spawnCopies(Block block, Location at, ItemStack template, int copies) {

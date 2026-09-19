@@ -5,7 +5,6 @@ import com.yapcore.playerdata.PlayerDataPlugin;
 import com.yapcore.playerdata.bag.BackpackService;
 import com.yapcore.playerdata.claims.Claim;
 import com.yapcore.playerdata.claims.ClaimService;
-import com.yapcore.playerdata.claims.ClaimVisualizer;
 import com.yapcore.playerdata.cmd.Perms;
 import com.yapcore.playerdata.db.AuctionRepository;
 import com.yapcore.playerdata.db.HomesRepository;
@@ -28,7 +27,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -118,6 +116,8 @@ public final class Menus {
         }
         if (config.featureJobs()) {
             inv.setItem(25, YapMenuHolder.icon(Material.IRON_PICKAXE, "Jobs", "Click to open"));
+        } else if (Bukkit.getPluginManager().getPlugin("YaPSkills") != null) {
+            inv.setItem(25, YapMenuHolder.icon(Material.EXPERIENCE_BOTTLE, "Skills", "/skills · /stats"));
         }
         if (config.featureAuctions()) {
             inv.setItem(29, YapMenuHolder.icon(Material.GOLDEN_HORSE_ARMOR, "Auctions", "Click to open"));

@@ -19,6 +19,7 @@ import com.yapcore.skills.skill.SkillPackLoader;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -308,18 +309,10 @@ public final class SkillServiceImpl implements SkillService {
         if (player == null || !player.isOnline()) {
             return;
         }
-        YapSched.entity(plugin, player, () -> {
-            if (config.levelUpChat()) {
-                player.sendMessage("§aOverall level up! §7You are now overall level §e" + newLevel
-                        + "§7/§e" + overallXpTable.maxLevel());
-            }
-            if (config.levelUpTitle()) {
-                player.showTitle(Title.title(
-                        Component.text("Overall Level Up!"),
-                        Component.text(oldLevel + " → " + newLevel),
-                        Title.Times.times(Duration.ofMillis(250), Duration.ofSeconds(2), Duration.ofMillis(500))));
-            }
-        });
+        String chat = "§6§lLEVEL UP! §eOverall §7" + oldLevel + " §8→ §a§l" + newLevel
+                + "§7/" + overallXpTable.maxLevel() + "  §8· §f/stats";
+        YapSched.entity(plugin, player, () ->
+                playLevelUpFx(player, "Overall Level Up!", oldLevel + " → " + newLevel, chat));
     }
 
     private SkillProgress persist(
@@ -353,20 +346,30 @@ public final class SkillServiceImpl implements SkillService {
         }
         SkillDefinition def = loader.get(skillId);
         String name = def == null ? skillId.id() : def.display();
+        String detail = SkillPowerText.levelUpDetail(skillId.id(), newLevel, xpTable.maxLevel(), power);
+        String chat = "§6§lLEVEL UP! §e" + name + " §7" + oldLevel + " §8→ §a§l" + newLevel
+                + "§7/" + xpTable.maxLevel() + detail + "  §8· §f/stats";
         YapSched.entity(plugin, player, () -> {
             SkillLevelUpEvent event = new SkillLevelUpEvent(player, skillId, oldLevel, newLevel, totalXp, source);
             Bukkit.getPluginManager().callEvent(event);
-            if (config.levelUpChat()) {
-                String detail = SkillPowerText.levelUpDetail(skillId.id(), newLevel, xpTable.maxLevel(), power);
-                player.sendMessage("§aLevel up! §f" + name + " §7is now level §e" + newLevel + detail);
-            }
-            if (config.levelUpTitle()) {
-                player.showTitle(Title.title(
-                        Component.text("Level Up!"),
-                        Component.text(name + " → " + newLevel),
-                        Title.Times.times(Duration.ofMillis(250), Duration.ofSeconds(2), Duration.ofMillis(500))));
-            }
+            playLevelUpFx(player, "Level Up!", name + " " + oldLevel + " → " + newLevel, chat);
         });
+    }
+
+    private void playLevelUpFx(Player player, String title, String subtitle, String chat) {
+        if (config.levelUpChat() && chat != null && !chat.isBlank()) {
+            player.sendMessage(chat);
+        }
+        if (config.levelUpTitle()) {
+            player.showTitle(Title.title(
+                    Component.text(title),
+                    Component.text(subtitle),
+                    Title.Times.times(Duration.ofMillis(200), Duration.ofSeconds(3), Duration.ofMillis(600))));
+        }
+        if (config.levelUpSound()) {
+            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.15f);
+        }
+        player.sendActionBar(Component.text(title + " — " + subtitle));
     }
 
     public void showXpGain(Player player, SkillId skillId, double amount) {
@@ -375,20 +378,20 @@ public final class SkillServiceImpl implements SkillService {
         }
         SkillDefinition def = loader.get(skillId);
         String name = def == null ? skillId.id() : def.display();
-        boolean skillMaxed;
+        SkillProgress row = null;
         try {
-            skillMaxed = repository.get(player.getUniqueId(), skillId)
-                    .map(p -> p.level() >= xpTable.maxLevel())
-                    .orElse(false);
+            row = repository.get(player.getUniqueId(), skillId).orElse(null);
         } catch (SQLException e) {
-            skillMaxed = false;
+            row = null;
         }
+        boolean skillMaxed = row != null && row.level() >= xpTable.maxLevel();
         String label;
         if (skillMaxed) {
             double overallAmount = amount * Math.max(config.overallXpShare(), config.overallMaxedXpShare());
             label = "+" + formatXp(overallAmount) + " Overall XP";
         } else {
-            label = "+" + formatXp(amount) + " " + name + " XP";
+            String lv = row == null ? "" : (" · lv " + row.level());
+            label = "+" + formatXp(amount) + " " + name + " XP" + lv;
         }
         player.sendActionBar(Component.text(label));
         SkillFeedbackServices.find().ifPresent(bridge ->

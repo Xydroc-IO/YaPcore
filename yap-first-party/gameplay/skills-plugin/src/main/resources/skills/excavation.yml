@@ -1,0 +1,52 @@
+id: excavation
+display: Excavation
+enabled: true
+icon: IRON_SHOVEL
+# Shovel blocks. Rare loot (clay / glowstone / diamond) unlocks at level 120.
+break:
+  DIRT:
+    xp: 4
+  GRASS_BLOCK:
+    xp: 4
+  COARSE_DIRT:
+    xp: 4
+  ROOTED_DIRT:
+    xp: 5
+  PODZOL:
+    xp: 5
+  MYCELIUM:
+    xp: 6
+  MUD:
+    xp: 5
+  MUDDY_MANGROVE_ROOTS:
+    xp: 5
+  SAND:
+    xp: 5
+  RED_SAND:
+    xp: 5
+  GRAVEL:
+    xp: 6
+  CLAY:
+    xp: 8
+  SNOW:
+    xp: 2
+  SNOW_BLOCK:
+    xp: 4
+  SOUL_SAND:
+    xp: 8
+  SOUL_SOIL:
+    xp: 8
+  SUSPICIOUS_SAND:
+    xp: 20
+  SUSPICIOUS_GRAVEL:
+    xp: 20
+treasure:
+  CLAY_BALL:
+    chance: 0.08
+    amount: 2
+  GLOWSTONE_DUST:
+    chance: 0.015
+    amount: 1
+  DIAMOND:
+    chance: 0.0004
+    amount: 1

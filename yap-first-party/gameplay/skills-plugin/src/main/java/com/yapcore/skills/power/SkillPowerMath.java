@@ -28,6 +28,35 @@ public final class SkillPowerMath {
         return 1.0 + progress(level, maxLevel) * Math.max(0.0, bonusAtMax);
     }
 
+    /** Walk-speed multiplier. 1.0 at level 1, {@code 1 + bonusAtMax} at the cap. */
+    public static double moveSpeed(int level, int maxLevel, double bonusAtMax) {
+        return 1.0 + progress(level, maxLevel) * Math.max(0.0, bonusAtMax);
+    }
+
+    /** Extra block-interaction range in blocks. 0 at level 1, {@code bonusAtMax} at the cap. */
+    public static double placeReach(int level, int maxLevel, double bonusAtMax) {
+        return progress(level, maxLevel) * Math.max(0.0, bonusAtMax);
+    }
+
+    /** Chance to keep the placed block. 0 at level 1, {@code chanceAtMax} (0–1) at the cap. */
+    public static double keepBlockChance(int level, int maxLevel, double chanceAtMax) {
+        return progress(level, maxLevel) * Math.max(0.0, Math.min(1.0, chanceAtMax));
+    }
+
+    public static boolean atMax(int level, int maxLevel) {
+        return Math.max(1, level) >= Math.max(1, maxLevel);
+    }
+
+    /** Extra max-health points (2 HP = 1 heart). 0 at level 1, {@code bonusAtMax} at the cap. */
+    public static double extraHearts(int level, int maxLevel, double bonusAtMax) {
+        return progress(level, maxLevel) * Math.max(0.0, bonusAtMax);
+    }
+
+    /** Brew-speed multiplier. 1.0 at level 1, {@code 1 + bonusAtMax} at the cap. */
+    public static double brewSpeed(int level, int maxLevel, double bonusAtMax) {
+        return 1.0 + progress(level, maxLevel) * Math.max(0.0, bonusAtMax);
+    }
+
     /** Expected extra copies of each vanilla drop (the rolled amount uses {@link #extraCopies}). */
     public static double expectedExtra(int level, int maxLevel, double extraAtMax) {
         return progress(level, maxLevel) * Math.max(0.0, extraAtMax);

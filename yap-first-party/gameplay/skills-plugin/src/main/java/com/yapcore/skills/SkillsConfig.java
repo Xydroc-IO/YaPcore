@@ -23,6 +23,7 @@ public final class SkillsConfig {
     private boolean actionBarXp = true;
     private boolean levelUpTitle = true;
     private boolean levelUpChat = true;
+    private boolean levelUpSound = true;
     private boolean preferOverJobs = true;
     private String skillsDirectory = "skills";
 
@@ -51,6 +52,7 @@ public final class SkillsConfig {
         actionBarXp = c.getBoolean("feedback.action-bar-xp", true);
         levelUpTitle = c.getBoolean("feedback.level-up-title", true);
         levelUpChat = c.getBoolean("feedback.level-up-chat", true);
+        levelUpSound = c.getBoolean("feedback.level-up-sound", true);
         preferOverJobs = c.getBoolean("prefer-over-jobs", true);
         skillsDirectory = c.getString("skills-directory", "skills");
     }
@@ -122,6 +124,10 @@ public final class SkillsConfig {
 
     public boolean levelUpChat() {
         return levelUpChat;
+    }
+
+    public boolean levelUpSound() {
+        return levelUpSound;
     }
 
     public boolean preferOverJobs() {

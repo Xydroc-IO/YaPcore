@@ -30,6 +30,7 @@ feedback:
   action-bar-xp: true
   level-up-title: true
   level-up-chat: true
+  level-up-sound: true
 
 # When true, legacy playerdata jobs should stay disabled (features.jobs: false)
 prefer-over-jobs: true
@@ -37,11 +38,25 @@ prefer-over-jobs: true
 skills-directory: skills
 
 # Power sits on top of the level locks. Level 1 is vanilla.
-# At max level (120): break speed 2.5x, one extra copy of each drop, hits deal 2x damage.
-# Mining only speeds and multiplies mining blocks. Woodcutting only speeds and multiplies wood.
-# Strength only changes hit damage. Fortune and silk touch still apply before the extra copy.
+# At max level (120): 3x break speed, two extra drop copies (3x loot), 3x hit damage, 2x walk speed,
+# +1 block place reach, 25% keep-block, +5 hearts, 2x brew speed.
+# Super Breaker / Tree Feller / Green Terra / excavation loot unlock at 120 (abilities are timed, not always-on).
 power:
   enabled: true
-  break-speed-bonus-at-max: 1.5
-  extra-drops-at-max: 1.0
-  damage-bonus-at-max: 1.0
+  break-speed-bonus-at-max: 2.0
+  extra-drops-at-max: 2.0
+  damage-bonus-at-max: 2.0
+  movement-speed-bonus-at-max: 1.0
+  place-reach-bonus-at-max: 1.0
+  keep-block-chance-at-max: 0.25
+  extra-hearts-at-max: 10.0
+  brew-speed-bonus-at-max: 1.0
+  abilities:
+    duration-seconds: 12
+    cooldown-seconds: 90
+    super-breaker-speed: 8.0
+    tree-feller-max-logs: 32
+    green-terra: true
+    excavation-treasure: true
+    health-regen-interval-ticks: 80
+    health-regen-hp: 1.0

@@ -1,0 +1,32 @@
+id: herbalism
+display: Herbalism
+enabled: true
+icon: WHEAT
+# Fully grown crops only (immature breaks grant no XP). Green Terra at 120 auto-replants.
+break:
+  WHEAT:
+    xp: 8
+  CARROTS:
+    xp: 8
+  POTATOES:
+    xp: 8
+  BEETROOTS:
+    xp: 10
+  NETHER_WART:
+    xp: 12
+  COCOA:
+    xp: 10
+  MELON:
+    xp: 12
+  PUMPKIN:
+    xp: 12
+  SUGAR_CANE:
+    xp: 4
+  CACTUS:
+    xp: 6
+  SWEET_BERRY_BUSH:
+    xp: 6
+  TORCHFLOWER_CROP:
+    xp: 14
+  PITCHER_CROP:
+    xp: 14
