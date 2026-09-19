@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TNTPrimed;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -115,6 +116,7 @@ final class BenchRegionLoadSetup {
                                               Consumer<Integer> onReady) {
         int hopperCount = Integer.getInteger("yap.bench.hoppers", 64);
         int villagers = Integer.getInteger("yap.bench.villagers", 32);
+        BenchRegionLoadLoops.clearPlantedVillagers();
         int animals = Integer.getInteger("yap.bench.animals", 48);
         EntityType[] animalTypes = {EntityType.COW, EntityType.SHEEP, EntityType.PIG, EntityType.CHICKEN};
 
@@ -152,10 +154,8 @@ final class BenchRegionLoadSetup {
             int y = Math.max(world.getHighestBlockYAt(cxOff, czOff), 64) + 1;
             world.getBlockAt(cxOff, y, czOff).setType(Material.CHEST);
             world.getBlockAt(cxOff + 1, y, czOff).setType(Material.CHEST);
-            for (int i = 0; i < villagers / 4; i++) {
-                world.spawnEntity(
-                        new Location(world, cxOff + 0.5, y, czOff + 2.5 + i * 0.3), EntityType.VILLAGER);
-            }
+            List<Entity> planted = penVillagers(world, bx, bz, villagers / 4);
+            BenchRegionLoadLoops.logVillagersPlaced(plugin, cx, cz, planted);
             int ax = bx + 10;
             int az = bz + 10;
             int ay = Math.max(world.getHighestBlockYAt(ax, az), 64) + 1;
@@ -414,5 +414,40 @@ final class BenchRegionLoadSetup {
                 }
             });
         }
+    }
+
+    /**
+     * Fence the planted villagers above the chunk so packed spawn cannot walk them into a wall.
+     * The box sits on local z 6–10, clear of the hopper rows on z 0–3.
+     */
+    private static List<Entity> penVillagers(World world, int bx, int bz, int count) {
+        int x0 = bx + 4;
+        int z0 = bz + 6;
+        int x1 = x0 + 4;
+        int z1 = z0 + 4;
+        int top = 64;
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                top = Math.max(top, world.getHighestBlockYAt(x, z));
+            }
+        }
+        int floor = top + 1;
+        for (int x = x0; x <= x1; x++) {
+            for (int z = z0; z <= z1; z++) {
+                boolean edge = x == x0 || x == x1 || z == z0 || z == z1;
+                world.getBlockAt(x, floor, z).setType(Material.STONE);
+                world.getBlockAt(x, floor + 1, z).setType(edge ? Material.OAK_FENCE : Material.AIR);
+                world.getBlockAt(x, floor + 2, z).setType(Material.AIR);
+                world.getBlockAt(x, floor + 3, z).setType(edge ? Material.OAK_FENCE : Material.AIR);
+            }
+        }
+        List<Entity> planted = new ArrayList<>();
+        for (int x = x0 + 1; x < x1 && planted.size() < count; x++) {
+            for (int z = z0 + 1; z < z1 && planted.size() < count; z++) {
+                planted.add(world.spawnEntity(
+                        new Location(world, x + 0.5, floor + 1, z + 0.5), EntityType.VILLAGER));
+            }
+        }
+        return planted;
     }
 }

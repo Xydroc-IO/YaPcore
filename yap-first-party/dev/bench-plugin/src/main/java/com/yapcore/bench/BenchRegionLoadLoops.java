@@ -13,11 +13,15 @@ import org.bukkit.entity.TNTPrimed;
 import org.bukkit.entity.Villager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -39,6 +43,38 @@ final class BenchRegionLoadLoops {
     };
 
     static final int MAX_TNT_PER_CHUNK = 600;
+
+    /** Villagers the bench planted on the four interior chunks. Sample-start classifies each. */
+    record PlantedVillager(UUID id, int cx, int cz) {
+    }
+
+    static final List<PlantedVillager> PLANTED_VILLAGERS = new CopyOnWriteArrayList<>();
+
+    static void clearPlantedVillagers() {
+        PLANTED_VILLAGERS.clear();
+    }
+
+    static boolean interiorChunk(int cx, int cz) {
+        for (int[] c : INTERIOR) {
+            if (c[0] == cx && c[1] == cz) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static void logVillagersPlaced(JavaPlugin plugin, int cx, int cz, List<Entity> spawned) {
+        StringBuilder line = new StringBuilder();
+        line.append("villagers placed chunk=").append(cx).append(',').append(cz)
+                .append(" n=").append(spawned.size());
+        for (Entity e : spawned) {
+            PLANTED_VILLAGERS.add(new PlantedVillager(e.getUniqueId(), cx, cz));
+            var loc = e.getLocation();
+            line.append(' ').append(e.getUniqueId())
+                    .append('@').append(String.format(Locale.ROOT, "%.1f,%.1f,%.1f", loc.getX(), loc.getY(), loc.getZ()));
+        }
+        plugin.getLogger().info(line.toString());
+    }
 
     static Set<long[]> interestChunks() {
         return interestChunks(System.getProperty("yap.bench.scenario", ""));
@@ -263,19 +299,30 @@ final class BenchRegionLoadLoops {
         AtomicInteger entities = new AtomicInteger();
         AtomicInteger villagers = new AtomicInteger();
         Map<String, int[]> pileFuse = new ConcurrentHashMap<>();
+        Map<UUID, String> seenVillager = new ConcurrentHashMap<>();
+        Map<String, String> interiorLine = new ConcurrentHashMap<>();
 
         String scenario = System.getProperty("yap.bench.scenario", "");
         boolean regionFanout = YapSched.isRegionized();
         forEachChunk(plugin, world, interestChunks(scenario), c -> {
             int cx = (int) c[0];
             int cz = (int) c[1];
+            boolean interior = interiorChunk(cx, cz);
             if (!world.isChunkLoaded(cx, cz)) {
+                if (interior) {
+                    interiorLine.put(cx + "," + cz, "chunk=" + cx + "," + cz + " loaded=false n=0");
+                }
                 return;
             }
             var chunk = world.getChunkAt(cx, cz, false);
             if (!chunk.isLoaded()) {
+                if (interior) {
+                    interiorLine.put(cx + "," + cz, "chunk=" + cx + "," + cz + " loaded=false n=0");
+                }
                 return;
             }
+            StringBuilder onChunk = interior ? new StringBuilder() : null;
+            int onChunkN = 0;
             for (Entity e : chunk.getEntities()) {
                 entities.incrementAndGet();
                 byType.merge(e.getType().name(), 1, Integer::sum);
@@ -294,7 +341,21 @@ final class BenchRegionLoadLoops {
                 }
                 if (e instanceof Villager) {
                     villagers.incrementAndGet();
+                    var loc = e.getLocation();
+                    String where = cx + "," + cz + "@"
+                            + String.format(Locale.ROOT, "%.1f,%.1f,%.1f", loc.getX(), loc.getY(), loc.getZ())
+                            + (e.isDead() ? " dead" : "");
+                    seenVillager.put(e.getUniqueId(), where);
+                    if (onChunk != null) {
+                        onChunkN++;
+                        onChunk.append(' ').append(e.getUniqueId())
+                                .append('@')
+                                .append(String.format(Locale.ROOT, "%.1f,%.1f,%.1f", loc.getX(), loc.getY(), loc.getZ()));
+                    }
                 }
+            }
+            if (interior) {
+                interiorLine.put(cx + "," + cz, "chunk=" + cx + "," + cz + " loaded=true n=" + onChunkN + onChunk);
             }
             for (BlockState state : chunk.getTileEntities()) {
                 if (state instanceof Hopper) {
@@ -316,6 +377,8 @@ final class BenchRegionLoadLoops {
                         .orElse("");
                 plugin.getLogger().info("fuse piles " + piles + " mean=" + fmt(fuseMean));
             }
+            int living = logVillagerTrace(plugin, world, interiorLine, seenVillager);
+            int reported = PLANTED_VILLAGERS.isEmpty() ? villagers.get() : living;
             String entityTop = byType.entrySet().stream()
                     .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
                     .limit(12)
@@ -324,9 +387,74 @@ final class BenchRegionLoadLoops {
                     .orElse("");
             cb.accept(new BenchRegionLoad.LoadSnapshot(
                     t, fuseMean, hoppers.get(), entities.get(),
-                    Bukkit.getOnlinePlayers().size(), villagers.get(),
+                    Bukkit.getOnlinePlayers().size(), reported,
                     world.getLoadedChunks().length, entityTop));
         }, regionFanout);
+    }
+
+    /**
+     * Each planted villager is still on its chunk, alive somewhere else, or gone.
+     * The sample count is planted villagers who are still alive, not whoever stayed on the four chunks.
+     */
+    static int logVillagerTrace(JavaPlugin plugin, World world,
+                                Map<String, String> interiorLine, Map<UUID, String> seenVillager) {
+        for (int[] c : INTERIOR) {
+            String key = c[0] + "," + c[1];
+            plugin.getLogger().info("villagers sample-start "
+                    + interiorLine.getOrDefault(key, "chunk=" + key + " loaded=false n=0"));
+        }
+        int still = 0;
+        int moved = 0;
+        int removed = 0;
+        List<String> lines = new ArrayList<>();
+        for (PlantedVillager planted : PLANTED_VILLAGERS) {
+            String origin = planted.cx() + "," + planted.cz();
+            String seen = seenVillager.get(planted.id());
+            String disposition;
+            if (seen != null && seen.endsWith(" dead")) {
+                disposition = "removed " + seen;
+                removed++;
+            } else if (seen != null && seen.startsWith(origin + "@")) {
+                disposition = "still " + seen;
+                still++;
+            } else if (seen != null) {
+                disposition = "moved " + seen;
+                moved++;
+            } else {
+                disposition = dispositionOffChunk(world, planted.id());
+                if (disposition.startsWith("moved")) {
+                    moved++;
+                } else {
+                    removed++;
+                }
+            }
+            lines.add("villagers trace " + planted.id() + " from=" + origin + " " + disposition);
+        }
+        int alive = still + moved;
+        plugin.getLogger().info("villagers sample-start planted=" + PLANTED_VILLAGERS.size()
+                + " alive=" + alive
+                + " still=" + still + " moved=" + moved + " removed=" + removed);
+        for (String line : lines) {
+            plugin.getLogger().info(line);
+        }
+        return alive;
+    }
+
+    static String dispositionOffChunk(World world, UUID id) {
+        try {
+            Entity e = world.getEntity(id);
+            if (e == null || e.isDead() || !e.isValid()) {
+                return "removed";
+            }
+            var loc = e.getLocation();
+            int cx = loc.getBlockX() >> 4;
+            int cz = loc.getBlockZ() >> 4;
+            return "moved " + cx + "," + cz + "@"
+                    + String.format(Locale.ROOT, "%.1f,%.1f,%.1f", loc.getX(), loc.getY(), loc.getZ())
+                    + (e.isDead() ? " dead" : "");
+        } catch (Throwable failed) {
+            return "removed lookup=" + failed.getClass().getSimpleName();
+        }
     }
 
     record Job(int cx, int cz, int tnt, int hoppers) {
