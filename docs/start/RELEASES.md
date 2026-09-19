@@ -129,7 +129,7 @@ gradle publishReleasesFolder   # refreshes releases/0.0.0.1/ trees + zips
 
 Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 0.0.0.1” — do **not** change Gradle `version`.
 
-**Latest:** 2026-09-19 — **0.0.0.1** GitHub **prerelease** (no version bump). Packed-spawn split on product jar `398d2c6f` (`0071`/`0072`): `20260919T134700Z` into 2 shards, 600 TNT per pile, 770 hoppers, fuse drop 802, 32 villagers; stock `20260919T135026Z` same start. Packs pin `/releases/download/0.0.0.1/{file}`. Rebuild: `gradle publishReleasesFolder -PyapGameplay=true`.
+**Latest:** 2026-09-19 — **0.0.0.1** (no version bump). Product jar `76aeaf3f` (`0073`–`0079`). Fullcite `20260919T165559Z` held 500 at 37.24 ms against stock `20260919T171015Z` ending at 119 (65.03 ms; encoder out of direct memory, not a watchdog). Packs pin `/releases/download/0.0.0.1/{file}`. Rebuild: `gradle publishReleasesFolder -PyapGameplay=true`.
 
 ## Version bump checklist (new tag only)
 

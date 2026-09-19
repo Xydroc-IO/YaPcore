@@ -9,7 +9,7 @@ Build requires: **JDK 25+** (Temurin/OpenJDK), Git, network for Paperweight down
 | Path | Tracked? | Purpose |
 |------|----------|---------|
 | `UPSTREAM.lock` | yes | Pinned branch + commit SHA |
-| `patches/` | yes | Ordered YaP patches (`0000`–`0072`, 65 files). Packed-spawn split: `20260919T134700Z` beside stock `20260919T135026Z` |
+| `patches/` | yes | Ordered YaP patches (`0000`–`0079`, 72 files). 500 hold: `20260919T165559Z` against stock `20260919T171015Z` ending at 119 |
 | `README.md` | yes | This file |
 | `work/` | **no** (gitignored) | Shallow clone of Folia |
 | `work/build/` | no | Gradle outputs |

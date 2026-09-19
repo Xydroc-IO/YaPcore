@@ -40,7 +40,7 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 
 | Capability | What you get |
 |------------|----------------|
-| **Regionized ticks** | YaP-Folia regions. A packed spawn becomes two independent shards that both keep ticking entities — no YaP phase clock. Two fullcites on the same jar (`20260919T113134Z`, `20260919T113416Z`): `into 2 shards`, fuse drop 802, 100 players held. Partition, carve, and the cut ship **on** — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
+| **Regionized ticks** | YaP-Folia regions. A packed spawn becomes two independent shards that both keep ticking entities — no YaP phase clock. Fullcite `20260919T165559Z` held 500 at 37.24 ms against stock `20260919T171015Z` ending at 119. Partition, carve, and the cut ship **on** — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
 | **Mob AI budgets / µs chassis** | MSPT-gated **AI time-slice** + entity/hopper budgets on Folia; YapEngine orders bridge/plugin work in **µs** (`SequenceToken`) |
 | **Crossplay** | Java (1.20.2+) + Bedrock on one product story — Link-native Bedrock join by default; Bedrock form hubs for `/menu`, kits, ranks, admin |
 | **Bedrock-feel parity** | Convert-verified skins / emotes / movement / catalog blocks — [BEDROCK_FEEL_PARITY.md](docs/product/BEDROCK_FEEL_PARITY.md) |
@@ -83,8 +83,7 @@ Honest product bars — not “unlimited players.” Scale is **regionized + mul
 
 | Bar | Players | Meaning |
 |-----|---------|---------|
-| **Citeable MSPT (stable)** | **~100 active** | Fullcite ship profile vs stock Folia / Canvas — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
-| **Packed-spawn split** | **100 held, same scene as stock** | `20260919T134700Z`: `into 2 shards`, 600 TNT on every pile, 770 hoppers, fuse drop 802, 32 villagers, no void deaths |
+| **Citeable packed spawn** | **500 held** | `20260919T165559Z`: 500 at both ends, busiest region 37.24 ms, against stock `20260919T171015Z` ending at 119 with the busiest region at 65.03 ms |
 | **Join verified** | **100 / 200** bots | Connection / routing checked; not a free MSPT blank check |
 | **Network scale** | Multi-backend via **YaP Link** | Split worlds/lobbies across YaP-Folia jars; proxy fronts the fleet |
 | **250 keepalive** | **Hold only** | Not a citeable ship claim — capacity testing, not marketing |
@@ -93,9 +92,9 @@ Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, L
 
 ### Parallel ticks (why it’s not “stock Folia”)
 
-Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes: **one tick thread owns one region**. Stock Folia will not split a packed spawn and keep both sides entity-ticking. YaP-Folia carves an empty corridor, then force-partitions along that cut (`0061`–`0072`). Both shards stay on the Folia regionizer — no second clock.
+Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes: **one tick thread owns one region**. Stock Folia will not split a packed spawn and keep both sides entity-ticking. YaP-Folia carves an empty corridor, then force-partitions along that cut (`0061`–`0079`). Both shards stay on the Folia regionizer — no second clock.
 
-That split is the product jar. Fullcite `20260919T134700Z` on `398d2c6f6c93225a810abedf17ba1f9c` logged `YaP force-partition region #0 into 2 shards`, 600 TNT on every pile, 770 hoppers, fuse drop 802, `players_end=100`, and 32 living villagers, with no void deaths. Stock on the same scene (`20260919T135026Z`) held those piles, hoppers, and 32 villagers, fuse drop 801, at 26.75 ms against 12.60 ms. `0071` relocates only an entity whose chunk is in the corridor, onto a loaded pad with a motion-blocking floor. `0072` keeps collision blocks on chunks this thread owns. The corridor stays empty. Aligned microticks (`0026`–`0030`) stay optional phase tagging. Lab contiguous-strip check: `./scripts/smoke-contiguous-bar.sh`.
+That split is the product jar. Fullcite `20260919T165559Z` on `76aeaf3fefcf34bc9e80f441d0419df7` held 500 players at both ends, TNT 2400, hoppers 770, 32 villagers, fuse drop 808.5, and logged `YaP force-partition region #0 into 2 shards`. The busiest region was 37.24 ms. Stock on the same scene (`20260919T171015Z`) started at 500 and ended at 119, busiest region 65.03 ms. Those 119 left because the encoder ran out of direct memory, not because a watchdog fired. `0073`–`0079` keep spawn search off the cut, including chunk X=−1, and finish login without a configuration keepalive after the client is in play. Aligned microticks (`0026`–`0030`) stay optional phase tagging. Lab contiguous-strip check: `./scripts/smoke-contiguous-bar.sh`.
 
 | Knob (defaults) | Role |
 |-----------------|------|

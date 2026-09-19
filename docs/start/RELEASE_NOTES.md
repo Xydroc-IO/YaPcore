@@ -13,16 +13,33 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 0.0.0.1 — 500 held on the packed spawn (2026-09-19)
+
+Same ship version. No version bump. Product jar is `lib/yap-folia-26.2.jar` md5 `76aeaf3fefcf34bc9e80f441d0419df7`.
+
+| Area | Change |
+|------|--------|
+| **0073** | Spawn search uses the registered cut, not a player standing in the chunk. |
+| **0074** | Block spread and grow into a cut section return before snapshotting the missing chunk. |
+| **0075** | Configuration stays on the global tick so a queued login still gets keepalives. |
+| **0076** | Joins are not capped per tick. The play listener is installed before the connection is added. Spawn avoids the cut column. |
+| **0077** | Spawn search returns null for chunk X=−1 before the cut is registered. Login acknowledgement does not park the global tick. |
+| **0078** | Play packets are sent only after the protocol switch. |
+| **0079** | No configuration keepalive after `finish_configuration`. The client is already in play. |
+| **Proof** | `20260919T165559Z`: 500 at both ends, `into 2 shards`, TNT 2400, hoppers 770, 32 villagers, fuse drop 808.5, busiest region 37.24 ms. Stock `20260919T171015Z` started at 500 on that scene and ended at 119, busiest region 65.03 ms. Those 119 left because the encoder ran out of direct memory, not because a watchdog fired. |
+
+---
+
 ## After 0.0.0.1 — owned floor 0071 / 0072 (2026-09-19)
 
-Same ship version. No version bump. Product jar is `lib/yap-folia-26.2.jar` md5 `398d2c6f6c93225a810abedf17ba1f9c`.
+Same ship version. No version bump. That cite was jar `398d2c6f6c93225a810abedf17ba1f9c`. The product file is now `76aeaf3fefcf34bc9e80f441d0419df7`.
 
 | Area | Change |
 |------|--------|
 | **0071** | Relocate only an entity whose chunk key is in the corridor. A pad is a loaded chunk at least two chunks off the hole with a motion-blocking floor. |
 | **0072** | A cut chunk contributes no collision box. An owned chunk keeps its blocks when the radius-4 miss is only the corridor. `fastClip` treats that chunk as empty air. |
 | **Bench** | Villagers are penned on the four interior chunks. `villagers_start` counts planted villagers who are still alive. |
-| **Proof** | `20260919T134700Z`: `into 2 shards`, 600 TNT on every pile, 770 hoppers, fuse drop 802, `players_end=100`, 32 villagers, no void deaths, 12.60 ms. Stock `20260919T135026Z`: same piles, hoppers, and 32 villagers, fuse drop 801, 26.75 ms. |
+| **Proof** | Superseded as the product file. Jar `398d2c6f` held 100 (`20260919T134700Z`, 12.60 ms) beside stock `20260919T135026Z` (26.75 ms). See the 500 hold note above. |
 
 ---
 
@@ -33,7 +50,7 @@ Same ship version. Death respawn already committed on the shard that owns the de
 | Area | Change |
 |------|--------|
 | **0069** | A registered cut is not a foreign shard. The destination chunk must still be owned by this thread. |
-| **Proof** | Superseded. Those cites were jar `b956d19a`. The product file is now `398d2c6f` — see the 0071/0072 note above. |
+| **Proof** | Superseded. Those cites were jar `b956d19a`. The product file is now `76aeaf3f` — see the 500 hold note above. |
 
 ---
 
