@@ -13,6 +13,17 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 0.0.0.1 — teleport accept across the cut 0069 (2026-09-19)
+
+Same ship version. Death respawn already committed on the shard that owns the destination chunk. The client accept was still rejected because Folia's 1-chunk halo includes the corridor, and that section still has a region pointer.
+
+| Area | Change |
+|------|--------|
+| **0069** | A registered cut is not a foreign shard. The destination chunk must still be owned by this thread. |
+| **Proof** | Two cites on `b956d19a`: `20260919T113134Z` and `20260919T113416Z`. Each: `into 2 shards`, fuse drop 802, `players_end=100`, no `Internal server error`, no `out of region teleport accept`. That jar is the product file. |
+
+---
+
 ## After 0.0.0.1 — teleport join on the destination chunk 0068 (2026-09-19)
 
 Same ship version. Lab jar only. Home-leash commits were running on the shard whose center is chunk 10 while the position was chunk 0. That throw in `Player.aiStep` became `Internal server error`. The cut neighbor in the accept halo became `Invalid move player packet`.
@@ -20,7 +31,7 @@ Same ship version. Lab jar only. Home-leash commits were running on the shard wh
 | Area | Change |
 |------|--------|
 | **0068** | Join re-queues by the destination chunk until this thread owns it. `aiStep` returns instead of `getEntities` off-thread. `isInWall` skips a null chunk. Accept does not require the carved hole. |
-| **Proof** | `20260919T105329Z`: `into 2 shards`, fuse drop 802, `players_end=100`, no `Internal server error`. That jar is the product file (`cfaefe5d`). |
+| **Proof** | Superseded by `0069` cites `20260919T113134Z` and `20260919T113416Z`. |
 
 ---
 

@@ -40,7 +40,7 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 
 | Capability | What you get |
 |------------|----------------|
-| **Regionized ticks** | YaP-Folia regions. A packed spawn becomes two independent shards that both keep ticking entities — no YaP phase clock. Proven on fullcite `20260919T105329Z` (`into 2 shards`, fuse drop 802, 100 players). Partition, carve, and the cut ship **on** — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
+| **Regionized ticks** | YaP-Folia regions. A packed spawn becomes two independent shards that both keep ticking entities — no YaP phase clock. Two fullcites on the same jar (`20260919T113134Z`, `20260919T113416Z`): `into 2 shards`, fuse drop 802, 100 players held. Partition, carve, and the cut ship **on** — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
 | **Mob AI budgets / µs chassis** | MSPT-gated **AI time-slice** + entity/hopper budgets on Folia; YapEngine orders bridge/plugin work in **µs** (`SequenceToken`) |
 | **Crossplay** | Java (1.20.2+) + Bedrock on one product story — Link-native Bedrock join by default; Bedrock form hubs for `/menu`, kits, ranks, admin |
 | **Bedrock-feel parity** | Convert-verified skins / emotes / movement / catalog blocks — [BEDROCK_FEEL_PARITY.md](docs/product/BEDROCK_FEEL_PARITY.md) |
@@ -84,7 +84,7 @@ Honest product bars — not “unlimited players.” Scale is **regionized + mul
 | Bar | Players | Meaning |
 |-----|---------|---------|
 | **Citeable MSPT (stable)** | **~100 active** | Fullcite ship profile vs stock Folia / Canvas — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
-| **Packed-spawn split** | **100 held** | Same cite: `region #0 into 2 shards`, all four TNT piles dropped fuse ~800, no `Internal server error` (`20260919T105329Z`) |
+| **Packed-spawn split** | **100 held, twice** | `20260919T113134Z` and `20260919T113416Z`: `into 2 shards`, fuse drop 802, `players_end=100`, no `Internal server error` |
 | **Join verified** | **100 / 200** bots | Connection / routing checked; not a free MSPT blank check |
 | **Network scale** | Multi-backend via **YaP Link** | Split worlds/lobbies across YaP-Folia jars; proxy fronts the fleet |
 | **250 keepalive** | **Hold only** | Not a citeable ship claim — capacity testing, not marketing |
@@ -95,7 +95,7 @@ Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, L
 
 Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes: **one tick thread owns one region**. Stock Folia will not split a packed spawn and keep both sides entity-ticking. YaP-Folia carves an empty corridor, then force-partitions along that cut (`0061`–`0068`). Both shards stay on the Folia regionizer — no second clock.
 
-That split is no longer a lab target. Fullcite `20260919T105329Z` logged `YaP force-partition region #0 into 2 shards`, fuse drop 802 on all four TNT piles, and `players_end=100`, with no `Internal server error`. Cross-cut teleports commit on the shard that owns the destination chunk (`0068`). Aligned microticks (`0026`–`0030`) stay optional phase tagging. Lab contiguous-strip check: `./scripts/smoke-contiguous-bar.sh`.
+That split is no longer a lab target. Two fullcites on jar `b956d19a` (`20260919T113134Z` and `20260919T113416Z`) each logged `YaP force-partition region #0 into 2 shards`, fuse drop 802, and `players_end=100`, with no `Internal server error` and no `out of region teleport accept`. Cross-cut teleports commit on the shard that owns the destination chunk (`0068`). The accept halo does not treat the carved corridor as a foreign shard (`0069`). Aligned microticks (`0026`–`0030`) stay optional phase tagging. Lab contiguous-strip check: `./scripts/smoke-contiguous-bar.sh`.
 
 | Knob (defaults) | Role |
 |-----------------|------|

@@ -73,7 +73,7 @@ YaPcore contributes:
 - **Stock Paper plugins on YaP-Folia** are unsupported (same reality as upstream Folia). Prefer Folia-aware jars or YaP natives — [PLUGIN_COMPAT.md](../plugins/PLUGIN_COMPAT.md).
 - YaPcore is **not** a clean-room rewrite of Minecraft; it **forks Folia on purpose**.
 - We do **not** claim “faster than Paper/Leaf on every workload.” Population cite: **fullcite** (100 active bots + fixtures) under the **ship Folia knob profile** (async-save, hopper budget, MSPT-gated entity/microtick budgets, subregion partition) — yapcore **−12.4%** vs stock Folia (`20260904TshipFc2`); knobs disclosed in bench JSON (`knob_*`). Heavypop peer: **−8.09% vs Canvas** and **−16.56% vs stock** (`20260904T065505Z`) — [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md). **250 keepalive = HOLD-ONLY**. Paper/Purpur single-thread MSPT is out of scope for that cite.
-- We **do** claim a packed-spawn hot split that stock Folia does not do. Cite `20260919T105329Z`: `YaP force-partition region #0 into 2 shards`, fuse drop **802** (expected 800, all four TNT piles), `players_end=100`, no `Internal server error`. MSPT mean 11.78, TPS 20. Product jar md5 `cfaefe5d555c7afa4df91e7fe5ef885f`.
+- We **do** claim a packed-spawn hot split that stock Folia does not do. Two cites on the same jar (`b956d19aced40dfa26ceae54309d724d`): `20260919T113134Z` and `20260919T113416Z`. Each logged `YaP force-partition region #0 into 2 shards`, fuse drop **802**, `players_end=100`, no `Internal server error`, no `out of region teleport accept`.
 - Bedrock play-depth is **join/spawn + play-depth smoke green**; Wave 2 fidelity matrix
   (inventory/forms/G.33 heads) is in [CROSSPLAY.md](../network/CROSSPLAY.md) — Floodgate-only
   forms are **Green** via `floodgate:form` (Geyser+Floodgate on proxy); anvil/smithing/loom/stonecutter/cartography are **Green (best-effort)** Paper-backed.
@@ -156,7 +156,7 @@ Each logical stream obtains a `SequenceToken` carrying a per-stream sequence and
 
 ### 3.4 Spatial model
 
-**YaP-Folia** indexes world interest by region and runs authoritative tick on a dynamic region thread pool. YaP patches add teleport transactions (default **on**), entity tick budgets, async chunk save, scoreboard SWMR, and **subregion partition + corridor carve** (default **on**) — §4. Partition is a Folia-legal **empty-buffer cut**, not a second clock; aligned microticks are optional. A packed spawn is split by carving that corridor, then force-partitioning along it (`0061`–`0068`). Both shards keep entity-ticking. Cite `20260919T105329Z` is the proof. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin work; they do **not** replace YaP-Folia game tick. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (**benches only**).
+**YaP-Folia** indexes world interest by region and runs authoritative tick on a dynamic region thread pool. YaP patches add teleport transactions (default **on**), entity tick budgets, async chunk save, scoreboard SWMR, and **subregion partition + corridor carve** (default **on**) — §4. Partition is a Folia-legal **empty-buffer cut**, not a second clock; aligned microticks are optional. A packed spawn is split by carving that corridor, then force-partitioning along it (`0061`–`0069`). Both shards keep entity-ticking. Cites `20260919T113134Z` and `20260919T113416Z` are the proof. **YapEngine chassis quads (T3–6)** route sequenced bridge/plugin work; they do **not** replace YaP-Folia game tick. Legacy Paper Phase 3 used quads + T7/T8 for interior NMS tick (**benches only**).
 
 ### 3.5 Memory & GC posture
 
@@ -166,7 +166,7 @@ Production launch scripts prefer **Generational ZGC** with optional **NUMA** pin
 
 ## 4. YaP-Folia fork
 
-YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream pin is **`14b7fee`** (`ver/26.2.x`, 2026-09-06) in `vendor/folia/UPSTREAM.lock`. **61** ordered files in `vendor/folia/patches/`: `0000`–`0033` are YaP behavior or repairs; `0034`–`0068` are Folia-itself improvements on that pin. `0047`–`0068` are the packed-spawn hot split: the corridor stays empty, both shards keep entity-ticking, and a cross-cut teleport commits on the shard that owns the destination chunk. Later upstream regionizer commits still come from moving the pin. Full inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
+YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream pin is **`14b7fee`** (`ver/26.2.x`, 2026-09-06) in `vendor/folia/UPSTREAM.lock`. **62** ordered files in `vendor/folia/patches/`: `0000`–`0033` are YaP behavior or repairs; `0034`–`0069` are Folia-itself improvements on that pin. `0047`–`0069` are the packed-spawn hot split: the corridor stays empty, both shards keep entity-ticking, a cross-cut teleport commits on the shard that owns the destination chunk, and the accept halo does not treat the corridor as a foreign shard. Later upstream regionizer commits still come from moving the pin. Full inventory: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md).
 
 | Patch | Purpose | Default |
 |-------|---------|---------|
@@ -199,11 +199,12 @@ YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream 
 | `0061`–`0064` | Partition along the carved corridor; region 0 is a real id; spawn finder skips the cut | **on** (ship) |
 | `0065`–`0067` | Kept-edge tickets stay entity-ticking; grass skips a null neighbor; cut is a status boundary | **on** (ship) |
 | `0068` | Teleport join commits on the destination chunk’s shard; off-thread pickup does not kick | **on** (ship) |
+| `0069` | Teleport accept ignores the carved corridor even if a region pointer remains | **on** (ship) |
 
 Build: `./scripts/build-yap-folia.sh` → `lib/yap-folia-26.2.jar`.  
 Docs: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [QUICK_START.md](../start/QUICK_START.md).
 
-Packed spawn is a live split the regionizer holds, without a YaP phase clock. Cite `20260919T105329Z`: `into 2 shards`, fuse drop 802, 100 players, no `Internal server error`. Product jar md5 `cfaefe5d555c7afa4df91e7fe5ef885f`. Lab strip check remains `./scripts/smoke-contiguous-bar.sh`.
+Packed spawn is a live split the regionizer holds, without a YaP phase clock. Cites `20260919T113134Z` and `20260919T113416Z`: `into 2 shards`, fuse drop 802, 100 players held, no `Internal server error`. Product jar md5 `b956d19aced40dfa26ceae54309d724d`. Lab strip check remains `./scripts/smoke-contiguous-bar.sh`.
 
 Stock Folia fallback: `folia-jar-source=fetch` + `./scripts/fetch-folia.sh` (bench / comparison only).
 
