@@ -7,7 +7,7 @@ Ordered deltas under [`vendor/folia/patches/`](../../vendor/folia/patches/). Aut
 
 Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
 
-The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0070` (**37**) are Folia-itself improvements on that pin. Two cites on jar `b956d19a` (`20260919T113134Z`, `20260919T113416Z`) each logged `into 2 shards`, fuse drop 802, and `players_end=100`, with no `Internal server error`. That jar is the product file. `0069` stops the teleport-accept halo from treating the carved corridor as a foreign shard. `0070` treats a corridor chunk in `fastClip` as a miss.
+The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0072` (**39**) are Folia-itself improvements on that pin. Product jar md5 `398d2c6f6c93225a810abedf17ba1f9c`. Fullcite `20260919T134700Z` logged `into 2 shards`, 600 TNT on every pile, 770 hoppers, fuse drop 802, `players_end=100`, and 32 living villagers, with no void deaths. Stock `20260919T135026Z` held the same scene (32 villagers, fuse drop 801) at 26.75 ms against 12.60 ms. `0071` relocates only corridor entities onto a real floor. `0072` keeps collision blocks on chunks this thread owns, and a corridor chunk in `fastClip` is empty air rather than a whole-ray miss. `0069` stops the teleport-accept halo from treating the carved corridor as a foreign shard.
 
 ## Patches
 
@@ -75,7 +75,9 @@ The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or rep
 | `0067-yap-cut-neighbor-full-bit.patch` | Registered cut counts as a finished neighbor only for full-chunk status. The loaded-bit still clears, so the hole is not treated as a readable chunk | landed |
 | `0068-yap-teleport-join-dest-chunk.patch` | Join commits only on the shard that owns the destination chunk (not region id 0). aiStep skips an off-thread pickup box. isInWall skips a null cut chunk. Teleport accept ignores a cut neighbor | landed |
 | `0069-yap-teleport-accept-cut.patch` | Accept halo must not treat the carved corridor as a foreign shard when a region pointer still sits on the other side of the hole | landed |
-| `0070-yap-fastclip-cut-miss.patch` | `fastClip` treats a missing corridor chunk as a miss instead of calling `getSections` on null | landed |
+| `0070-yap-fastclip-cut-miss.patch` | `fastClip` treats a missing corridor chunk as a miss instead of calling `getSections` on null. Superseded for the kept floor by `0072` | landed |
+| `0071-yap-carve-edge-keep.patch` | Relocate only an entity whose chunk key is in the corridor. Pads are loaded, at least two chunks off the hole, with a motion-blocking floor | landed |
+| `0072-yap-collision-owned-floor.patch` | A cut chunk contributes no collision box. An owned chunk keeps its blocks when the radius-4 miss is only the corridor | landed |
 
 Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent`). See [PLUGINS.md](../plugins/PLUGINS.md).
 

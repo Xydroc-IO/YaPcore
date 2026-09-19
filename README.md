@@ -84,7 +84,7 @@ Honest product bars — not “unlimited players.” Scale is **regionized + mul
 | Bar | Players | Meaning |
 |-----|---------|---------|
 | **Citeable MSPT (stable)** | **~100 active** | Fullcite ship profile vs stock Folia / Canvas — [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) |
-| **Packed-spawn split** | **100 held, twice** | `20260919T113134Z` and `20260919T113416Z`: `into 2 shards`, fuse drop 802, `players_end=100`, no `Internal server error` |
+| **Packed-spawn split** | **100 held, same scene as stock** | `20260919T134700Z`: `into 2 shards`, 600 TNT on every pile, 770 hoppers, fuse drop 802, 32 villagers, no void deaths |
 | **Join verified** | **100 / 200** bots | Connection / routing checked; not a free MSPT blank check |
 | **Network scale** | Multi-backend via **YaP Link** | Split worlds/lobbies across YaP-Folia jars; proxy fronts the fleet |
 | **250 keepalive** | **Hold only** | Not a citeable ship claim — capacity testing, not marketing |
@@ -93,9 +93,9 @@ Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, L
 
 ### Parallel ticks (why it’s not “stock Folia”)
 
-Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes: **one tick thread owns one region**. Stock Folia will not split a packed spawn and keep both sides entity-ticking. YaP-Folia carves an empty corridor, then force-partitions along that cut (`0061`–`0068`). Both shards stay on the Folia regionizer — no second clock.
+Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes: **one tick thread owns one region**. Stock Folia will not split a packed spawn and keep both sides entity-ticking. YaP-Folia carves an empty corridor, then force-partitions along that cut (`0061`–`0072`). Both shards stay on the Folia regionizer — no second clock.
 
-That split is no longer a lab target. Two fullcites on jar `b956d19a` (`20260919T113134Z` and `20260919T113416Z`) each logged `YaP force-partition region #0 into 2 shards`, fuse drop 802, and `players_end=100`, with no `Internal server error` and no `out of region teleport accept`. Cross-cut teleports commit on the shard that owns the destination chunk (`0068`). The accept halo does not treat the carved corridor as a foreign shard (`0069`). Aligned microticks (`0026`–`0030`) stay optional phase tagging. Lab contiguous-strip check: `./scripts/smoke-contiguous-bar.sh`.
+That split is the product jar. Fullcite `20260919T134700Z` on `398d2c6f6c93225a810abedf17ba1f9c` logged `YaP force-partition region #0 into 2 shards`, 600 TNT on every pile, 770 hoppers, fuse drop 802, `players_end=100`, and 32 living villagers, with no void deaths. Stock on the same scene (`20260919T135026Z`) held those piles, hoppers, and 32 villagers, fuse drop 801, at 26.75 ms against 12.60 ms. `0071` relocates only an entity whose chunk is in the corridor, onto a loaded pad with a motion-blocking floor. `0072` keeps collision blocks on chunks this thread owns. The corridor stays empty. Aligned microticks (`0026`–`0030`) stay optional phase tagging. Lab contiguous-strip check: `./scripts/smoke-contiguous-bar.sh`.
 
 | Knob (defaults) | Role |
 |-----------------|------|

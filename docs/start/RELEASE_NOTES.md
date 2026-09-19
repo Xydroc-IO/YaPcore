@@ -13,6 +13,19 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 0.0.0.1 — owned floor 0071 / 0072 (2026-09-19)
+
+Same ship version. No version bump. Product jar is `lib/yap-folia-26.2.jar` md5 `398d2c6f6c93225a810abedf17ba1f9c`.
+
+| Area | Change |
+|------|--------|
+| **0071** | Relocate only an entity whose chunk key is in the corridor. A pad is a loaded chunk at least two chunks off the hole with a motion-blocking floor. |
+| **0072** | A cut chunk contributes no collision box. An owned chunk keeps its blocks when the radius-4 miss is only the corridor. `fastClip` treats that chunk as empty air. |
+| **Bench** | Villagers are penned on the four interior chunks. `villagers_start` counts planted villagers who are still alive. |
+| **Proof** | `20260919T134700Z`: `into 2 shards`, 600 TNT on every pile, 770 hoppers, fuse drop 802, `players_end=100`, 32 villagers, no void deaths, 12.60 ms. Stock `20260919T135026Z`: same piles, hoppers, and 32 villagers, fuse drop 801, 26.75 ms. |
+
+---
+
 ## After 0.0.0.1 — teleport accept across the cut 0069 (2026-09-19)
 
 Same ship version. Death respawn already committed on the shard that owns the destination chunk. The client accept was still rejected because Folia's 1-chunk halo includes the corridor, and that section still has a region pointer.
@@ -20,7 +33,7 @@ Same ship version. Death respawn already committed on the shard that owns the de
 | Area | Change |
 |------|--------|
 | **0069** | A registered cut is not a foreign shard. The destination chunk must still be owned by this thread. |
-| **Proof** | Two cites on `b956d19a`: `20260919T113134Z` and `20260919T113416Z`. Each: `into 2 shards`, fuse drop 802, `players_end=100`, no `Internal server error`, no `out of region teleport accept`. That jar is the product file. |
+| **Proof** | Superseded. Those cites were jar `b956d19a`. The product file is now `398d2c6f` — see the 0071/0072 note above. |
 
 ---
 

@@ -129,7 +129,7 @@ gradle publishReleasesFolder   # refreshes releases/0.0.0.1/ trees + zips
 
 Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 0.0.0.1” — do **not** change Gradle `version`.
 
-**Latest:** 2026-09-18 — **0.0.0.1** GitHub **prerelease** (no version bump). Skills expansion + dashboard chest shops + spawn portal pin (`0046`) + contiguous-bar (`0043`/`0045`) + packed-spawn cut (`0041`). Packs pin `/releases/download/0.0.0.1/{file}`. Rebuild: `gradle publishReleasesFolder -PyapGameplay=true`.
+**Latest:** 2026-09-19 — **0.0.0.1** GitHub **prerelease** (no version bump). Packed-spawn split on product jar `398d2c6f` (`0071`/`0072`): `20260919T134700Z` into 2 shards, 600 TNT per pile, 770 hoppers, fuse drop 802, 32 villagers; stock `20260919T135026Z` same start. Packs pin `/releases/download/0.0.0.1/{file}`. Rebuild: `gradle publishReleasesFolder -PyapGameplay=true`.
 
 ## Version bump checklist (new tag only)
 
