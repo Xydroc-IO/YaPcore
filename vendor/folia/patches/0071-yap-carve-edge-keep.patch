@@ -1,0 +1,172 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP carve keeps the west edge
+
+0070 missed the whole ray when it stepped into the corridor, so the floor
+in the kept chunk never counted and the entity fell out of the world.
+Stop that ray at the last kept chunk. The corridor is empty. Relocate
+only an entity whose chunk key is in the hole. A box that crosses the
+edge is not in it. Landing pads are a loaded chunk at least two chunks
+off the hole with a motion-blocking floor. If that floor is not there,
+leave the entity. The nearest-edge pads are the chunks that fall.
+Not a new splitter. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/Level.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/Level.java
+@@ -413,6 +413,9 @@
+         int lastChunkZ = Integer.MIN_VALUE;
+ 
+         final int minSection = ca.spottedleaf.moonrise.common.util.WorldUtil.getMinSection(level);
++        int prevX = currX;
++        int prevY = currY;
++        int prevZ = currZ;
+ 
+         for (;;) {
+             currPos.set(currX, currY, currZ);
+@@ -426,15 +429,27 @@
+ 
+             if ((chunkDiff | chunkYDiff) != 0) {
+                 if (chunkDiff != 0) {
+-                    // YaP: a cut key returns null. The corridor is empty, so the clip misses.
+-                    if (level instanceof net.minecraft.server.level.ServerLevel yapClipLevel
+-                            && io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(yapClipLevel, newChunkX, newChunkZ)) {
+-                        return miss(clipContext);
++                    final boolean yapCut = level instanceof net.minecraft.server.level.ServerLevel yapClipLevel
++                            && io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(yapClipLevel, newChunkX, newChunkZ);
++                    if (yapCut && lastChunk != null) {
++                        // Stop at the last kept chunk. The corridor is empty.
++                        // Blocks already crossed still count; do not miss the whole ray.
++                        final Direction face = Direction.getApproximateNearest(
++                                newChunkX - lastChunkX, 0.0, newChunkZ - lastChunkZ);
++                        return new net.minecraft.world.phys.BlockHitResult(
++                                new Vec3(prevX + 0.5, prevY + 0.5, prevZ + 0.5),
++                                face, new BlockPos(prevX, prevY, prevZ), false);
+                     }
+-                    lastChunk = level.getChunk(newChunkX, newChunkZ).getSections();
++                    if (!yapCut) {
++                        lastChunk = level.getChunk(newChunkX, newChunkZ).getSections();
++                    }
++                }
++                if (lastChunk == null) {
++                    lastSection = null;
++                } else {
++                    final int sectionY = newChunkY - minSection;
++                    lastSection = sectionY >= 0 && sectionY < lastChunk.length ? lastChunk[sectionY].getStates() : null;
+                 }
+-                final int sectionY = newChunkY - minSection;
+-                lastSection = sectionY >= 0 && sectionY < lastChunk.length ? lastChunk[sectionY].getStates() : null;
+ 
+                 lastChunkX = newChunkX;
+                 lastChunkY = newChunkY;
+@@ -472,6 +487,10 @@
+                 return miss(clipContext);
+             }
+ 
++            prevX = currX;
++            prevY = currY;
++            prevZ = currZ;
++
+             // inc the smallest normalized coordinate
+ 
+             if (normalizedCurrX < normalizedCurrY) {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorPlanner.java
+@@ -324,6 +324,10 @@
+                     final int dist = leftSide
+                             ? (plan.lo() * sectionSize) - along
+                             : along - ((plan.hi() + 1) * sectionSize - 1);
++                    // Nearest-edge pads (dist 1) are the kept chunk touching the hole. They fall.
++                    if (dist < 2) {
++                        continue;
++                    }
+                     scored.add(new int[]{cx, cz, dist});
+                 }
+             }
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
+@@ -52,7 +52,7 @@
+                 continue;
+             }
+             // Unloaded rim pads must not be chosen — getChunk(load) / spawn-find deadlocks.
+-            if (world.getChunkIfLoaded(dest[0], dest[1]) == null) {
++            if (motionFloorY(world, dest[0], dest[1]) == Integer.MIN_VALUE) {
+                 continue;
+             }
+             return dest;
+@@ -60,6 +60,24 @@
+         return null;
+     }
+ 
++    /**
++     * First air block above a motion-blocking column, or {@link Integer#MIN_VALUE}
++     * when the chunk is unloaded or the column has no floor. Do not land there.
++     */
++    static int motionFloorY(final ServerLevel world, final int chunkX, final int chunkZ) {
++        if (world.getChunkIfLoaded(chunkX, chunkZ) == null) {
++            return Integer.MIN_VALUE;
++        }
++        try {
++            final int h = world.getHeight(
++                    net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
++                    (chunkX << 4) + 8, (chunkZ << 4) + 8);
++            return h > world.getMinY() ? h : Integer.MIN_VALUE;
++        } catch (final Throwable ignored) {
++            return Integer.MIN_VALUE;
++        }
++    }
++
+     static boolean toLeftPad(final YapCorridorCarver.CorridorPlan plan, final int cx, final int cz) {
+         final int shift = TickRegions.getRegionChunkShift();
+         final int section = plan.cutOnX() ? (cx >> shift) : (cz >> shift);
+@@ -77,18 +95,13 @@
+         if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, dest[0], dest[1])) {
+             return false;
+         }
+-        if (world.getChunkIfLoaded(dest[0], dest[1]) == null) {
++        final int floor = motionFloorY(world, dest[0], dest[1]);
++        if (floor == Integer.MIN_VALUE) {
+             return false;
+         }
+         final double x = (dest[0] << 4) + 8.0;
+         final double z = (dest[1] << 4) + 8.0;
+-        double y = nms.getY();
+-        try {
+-            y = Math.max(y, world.getHeight(
+-                    net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+-                    (int) x, (int) z) + 1.0);
+-        } catch (final Throwable ignored) {
+-        }
++        final double y = floor;
+         final int fromCx = nms.chunkPosition().x();
+         final int fromCz = nms.chunkPosition().z();
+         // Dest is already loaded (picker). Players must not 7-arg teleportTo — that
+@@ -140,6 +153,7 @@
+             }
+             final int cx = nmsEntity.chunkPosition().x();
+             final int cz = nmsEntity.chunkPosition().z();
++            // Box overlap is not the hole. Only the entity's chunk key.
+             if (!plan.keys().contains(CoordinateUtils.getChunkKey(cx, cz))) {
+                 continue;
+             }
+@@ -223,12 +237,19 @@
+             }
+             for (final Entity entity : chunk.getEntities()) {
+                 try {
++                    final net.minecraft.world.entity.Entity nms =
++                            ((org.bukkit.craftbukkit.entity.CraftEntity) entity).getHandle();
++                    // A box that merely crosses the edge is not in the hole.
++                    if (nms.chunkPosition().x() != cx || nms.chunkPosition().z() != cz) {
++                        continue;
++                    }
++                    if (!hold.plan.keys().contains(CoordinateUtils.getChunkKey(cx, cz))) {
++                        continue;
++                    }
+                     final int[] dest = pickSameThreadPad(hold.world, hold.landings, toLeft);
+                     if (dest == null) {
+                         continue;
+                     }
+-                    final net.minecraft.world.entity.Entity nms =
+-                            ((org.bukkit.craftbukkit.entity.CraftEntity) entity).getHandle();
+                     relocateEntityToPad(hold.world, nms, dest);
+                 } catch (final Throwable ignored) {
+                 }

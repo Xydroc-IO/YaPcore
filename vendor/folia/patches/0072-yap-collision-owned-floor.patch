@@ -1,0 +1,166 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: [PATCH] YaP collision keeps the owned floor
+
+A radius-4 ownership miss treats a kept chunk as foreign once the
+halo touches the carved corridor. The stand-in box does not stop a
+fall when the entity is already inside it, so villagers dropped
+through pads this thread owned. The corridor stays empty. Owned
+chunks keep their blocks. A heightmap above minY is not a floor.
+Not a new splitter. Post-applyAllPatches.
+---
+
+--- a/folia-server/src/minecraft/java/net/minecraft/world/level/Level.java
++++ b/folia-server/src/minecraft/java/net/minecraft/world/level/Level.java
+@@ -413,9 +413,6 @@
+         int lastChunkZ = Integer.MIN_VALUE;
+ 
+         final int minSection = ca.spottedleaf.moonrise.common.util.WorldUtil.getMinSection(level);
+-        int prevX = currX;
+-        int prevY = currY;
+-        int prevZ = currZ;
+ 
+         for (;;) {
+             currPos.set(currX, currY, currZ);
+@@ -431,16 +428,12 @@
+                 if (chunkDiff != 0) {
+                     final boolean yapCut = level instanceof net.minecraft.server.level.ServerLevel yapClipLevel
+                             && io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(yapClipLevel, newChunkX, newChunkZ);
+-                    if (yapCut && lastChunk != null) {
+-                        // Stop at the last kept chunk. The corridor is empty.
+-                        // Blocks already crossed still count; do not miss the whole ray.
+-                        final Direction face = Direction.getApproximateNearest(
+-                                newChunkX - lastChunkX, 0.0, newChunkZ - lastChunkZ);
+-                        return new net.minecraft.world.phys.BlockHitResult(
+-                                new Vec3(prevX + 0.5, prevY + 0.5, prevZ + 0.5),
+-                                face, new BlockPos(prevX, prevY, prevZ), false);
+-                    }
+-                    if (!yapCut) {
++                    if (yapCut) {
++                        // Corridor is empty. Do not getChunk (null sections NPE).
++                        // Do not invent a block, and do not miss the whole ray:
++                        // hits already returned from kept chunks stay returned.
++                        lastChunk = null;
++                    } else {
+                         lastChunk = level.getChunk(newChunkX, newChunkZ).getSections();
+                     }
+                 }
+@@ -487,10 +480,6 @@
+                 return miss(clipContext);
+             }
+ 
+-            prevX = currX;
+-            prevY = currY;
+-            prevZ = currZ;
+-
+             // inc the smallest normalized coordinate
+ 
+             if (normalizedCurrX < normalizedCurrY) {
+--- a/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/collisions/CollisionUtil.java
++++ b/folia-server/src/minecraft/java/ca/spottedleaf/moonrise/patches/collisions/CollisionUtil.java
+@@ -1941,7 +1941,14 @@
+         for (int currChunkZ = minChunkZ; currChunkZ <= maxChunkZ; ++currChunkZ) {
+             for (int currChunkX = minChunkX; currChunkX <= maxChunkX; ++currChunkX) {
+                 // Folia start - region threading
+-                if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, currChunkX, currChunkZ, 4)) {
++                // The carved corridor is empty. A phantom chunk box does not hold an
++                // entity already inside it (collideY returns the full fall). Do not
++                // substitute one. A kept chunk this thread owns still has its blocks.
++                if (world instanceof net.minecraft.server.level.ServerLevel yapColLevel
++                        && io.papermc.paper.threadedregions.YapRegionizerGap.isCutChunk(yapColLevel, currChunkX, currChunkZ)) {
++                    continue;
++                }
++                if (!io.papermc.paper.threadedregions.YapRegionizerGap.collisionOwnsChunk(world, currChunkX, currChunkZ, 4)) {
+                     if (checkOnly) {
+                         return true;
+                     } else {
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapRegionizerGap.java
+@@ -155,6 +155,49 @@
+     }
+ 
+     /**
++     * This thread may read the chunk's real block shapes. Radius-4 ownership
++     * fails when the halo reaches the carved corridor. That section is empty,
++     * not another shard. Treating the owned chunk as a foreign box drops
++     * entities that are already inside it — collideY does not stop a fall
++     * through a box the entity already overlaps.
++     */
++    public static boolean collisionOwnsChunk(
++            final net.minecraft.world.level.Level world, final int chunkX, final int chunkZ, final int radius) {
++        if (ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(world, chunkX, chunkZ, radius)) {
++            return true;
++        }
++        if (!(world instanceof ServerLevel serverLevel)) {
++            return false;
++        }
++        if (!ca.spottedleaf.moonrise.common.util.TickThread.isTickThreadFor(serverLevel, chunkX, chunkZ)) {
++            return false;
++        }
++        final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> region =
++                TickRegionScheduler.getCurrentRegion();
++        if (region == null) {
++            return false;
++        }
++        final int shift = serverLevel.regioniser.sectionChunkShift;
++        final int minSectionX = (chunkX - radius) >> shift;
++        final int maxSectionX = (chunkX + radius) >> shift;
++        final int minSectionZ = (chunkZ - radius) >> shift;
++        final int maxSectionZ = (chunkZ + radius) >> shift;
++        for (int secZ = minSectionZ; secZ <= maxSectionZ; ++secZ) {
++            for (int secX = minSectionX; secX <= maxSectionX; ++secX) {
++                final int lowerLeftX = secX << shift;
++                final int lowerLeftZ = secZ << shift;
++                if (serverLevel.regioniser.getRegionAtUnsynchronised(lowerLeftX, lowerLeftZ) == region) {
++                    continue;
++                }
++                if (!isCutChunk(serverLevel, lowerLeftX, lowerLeftZ)) {
++                    return false;
++                }
++            }
++        }
++        return true;
++    }
++
++    /**
+      * View-distance can load more cut-axis chunks after evacuate. Those are a real
+      * west–east bridge — absorb them into the hole and unload (relocate, not delete).
+      * Does not widen the cut axis into kept-edge spawn.
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapCorridorEntities.java
+@@ -61,18 +61,29 @@
+     }
+ 
+     /**
+-     * First air block above a motion-blocking column, or {@link Integer#MIN_VALUE}
+-     * when the chunk is unloaded or the column has no floor. Do not land there.
++     * Feet Y above a block that actually blocks motion, or {@link Integer#MIN_VALUE}.
++     * A heightmap integer above minY is not a floor: an empty column primes to minY+1.
++     * If the block is not there, the caller leaves the entity.
+      */
+     static int motionFloorY(final ServerLevel world, final int chunkX, final int chunkZ) {
+-        if (world.getChunkIfLoaded(chunkX, chunkZ) == null) {
++        final net.minecraft.world.level.chunk.LevelChunk chunk = world.getChunkIfLoaded(chunkX, chunkZ);
++        if (chunk == null) {
+             return Integer.MIN_VALUE;
+         }
++        final int x = (chunkX << 4) + 8;
++        final int z = (chunkZ << 4) + 8;
+         try {
+-            final int h = world.getHeight(
+-                    net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING,
+-                    (chunkX << 4) + 8, (chunkZ << 4) + 8);
+-            return h > world.getMinY() ? h : Integer.MIN_VALUE;
++            final int solidY = chunk.getHeight(
++                    net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, x & 15, z & 15);
++            if (solidY < world.getMinY()) {
++                return Integer.MIN_VALUE;
++            }
++            final net.minecraft.world.level.block.state.BlockState state =
++                    chunk.getBlockState(new net.minecraft.core.BlockPos(x, solidY, z));
++            if (state.isAir() || !state.blocksMotion()) {
++                return Integer.MIN_VALUE;
++            }
++            return solidY + 1;
+         } catch (final Throwable ignored) {
+             return Integer.MIN_VALUE;
+         }
