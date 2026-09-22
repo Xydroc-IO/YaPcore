@@ -107,7 +107,7 @@ public final class NginxPanel {
         GuiTheme.stylePrimary(install);
         install.addActionListener(e -> {
             int ok = JOptionPane.showConfirmDialog(root,
-                    "This runs scripts/nginx-setup.sh with sudo.\nContinue?",
+                    "This runs scripts/setup/nginx-setup.sh with sudo.\nContinue?",
                     "nginx install", JOptionPane.OK_CANCEL_OPTION);
             if (ok == JOptionPane.OK_OPTION) {
                 runScript("");
@@ -205,7 +205,7 @@ public final class NginxPanel {
                         Process p = pb.start();
                         String out = new String(p.getInputStream().readAllBytes());
                         log.setText("pkexec unavailable — dry-run instead:\n" + out
-                                + "\n\nInstall manually:\n  sudo ./scripts/nginx-setup.sh");
+                                + "\n\nInstall manually:\n  sudo ./scripts/setup/nginx-setup.sh");
                     } catch (Exception e2) {
                         log.setText("Failed: " + e.getMessage() + " / " + e2.getMessage());
                     }

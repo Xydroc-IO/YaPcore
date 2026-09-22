@@ -42,7 +42,8 @@ public final class DashboardNetworkPluginSnapshots {
         out.put("serverId", DashboardNetworkSnapshots.str(yaml.get("server-id"), "default"));
         Path schemDir = root.resolve("plugins").resolve("YaPWorld")
                 .resolve(DashboardNetworkSnapshots.str(schem.get("folder"), "schematics"));
-        out.put("schematicCount", DashboardNetworkSnapshots.countFiles(schemDir, ".yschem", ".schem"));
+        out.put("schematicCount", DashboardNetworkSnapshots.countFiles(
+                schemDir, ".yschem", ".schem", ".schematic", ".litematic"));
         return out;
     }
 
@@ -151,7 +152,7 @@ public final class DashboardNetworkPluginSnapshots {
         out.put("creatorUrl", "https://creator.tebex.io/");
         out.put("docsUrl", "https://docs.tebex.io/creators/tebex-control-panel/game-servers/minecraft-java-edition");
         out.put("yapDocs", "docs/ops/TEBEX.md");
-        out.put("fetchHint", "./scripts/fetch-tebex.sh");
+        out.put("fetchHint", "./scripts/plugins/fetch-tebex.sh");
         out.put("packageRecipes", DashboardTebexRecipes.load(root));
         try {
             out.put("recipesYaml", DashboardTebexRecipes.loadYamlText(root));
@@ -171,7 +172,7 @@ public final class DashboardNetworkPluginSnapshots {
         if (!DashboardNetworkSnapshots.bool(out.get("installed"), false)
                 && !DashboardNetworkSnapshots.bool(out.get("rootInstalled"), false)
                 && withTebex.isEmpty()) {
-            out.put("setupHint", "Run ./scripts/fetch-tebex.sh (or gradle fetchTebex), install on Hub/lobby only, then paste your game-server secret key.");
+            out.put("setupHint", "Run ./scripts/plugins/fetch-tebex.sh (or gradle fetchTebex), install on Hub/lobby only, then paste your game-server secret key.");
         } else if (!secretSet) {
             out.put("setupHint", "Paste the game-server secret from creator.tebex.io → Game Servers, then Save secret.");
         } else if (!DashboardNetworkSnapshots.bool(out.get("hubOnlyOk"), true)) {
@@ -268,7 +269,7 @@ public final class DashboardNetworkPluginSnapshots {
         if (grimEnabled) {
             out.put("acHint", "Grim AC is enabled — YaPGuard movement checks should be off to avoid double punishment. See docs/ops/GRIM.md");
         } else if (grimDownloaded) {
-            out.put("acHint", "Grim AC downloaded but disabled. Run ./scripts/grim-ac.sh enable and restart YaP-Folia for top-tier AC.");
+            out.put("acHint", "Grim AC downloaded but disabled. Run ./scripts/plugins/grim-ac.sh enable and restart YaP-Folia for top-tier AC.");
         }
         return out;
     }

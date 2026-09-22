@@ -48,9 +48,9 @@ public final class SetupActions {
     private static Map<String, Object> seedDefaults(Path root) throws Exception {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("action", "seed-defaults");
-        if (Files.isRegularFile(root.resolve("scripts/seed-defaults.sh"))) {
+        if (Files.isRegularFile(root.resolve("scripts/setup/seed-defaults.sh"))) {
             Map<String, Object> ran = runBashOrWindows(
-                    root, "scripts/seed-defaults.sh", "Seed-Defaults",
+                    root, "scripts/setup/seed-defaults.sh", "Seed-Defaults",
                     List.of("--root", root.toString()), 180);
             if (Boolean.TRUE.equals(ran.get("ok")) || ran.containsKey("exit")) {
                 out.putAll(ran);
@@ -74,14 +74,14 @@ public final class SetupActions {
         boolean enable = !"false".equalsIgnoreCase(body.getOrDefault("enable", "true"));
         String flag = enable ? "--enable" : "--disable";
         Map<String, Object> ran = runBashOrWindows(
-                root, "scripts/setup-velocity-forwarding.sh", "Forwarding", List.of(flag), 60);
+                root, "scripts/setup/setup-velocity-forwarding.sh", "Forwarding", List.of(flag), 60);
         ran.put("action", "link-forwarding");
         return ran;
     }
 
     private static Map<String, Object> fetchTebex(Path root) throws Exception {
         Map<String, Object> ran = runBashOrWindows(
-                root, "scripts/fetch-tebex.sh", "Fetch-Tebex", List.of(), 180);
+                root, "scripts/plugins/fetch-tebex.sh", "Fetch-Tebex", List.of(), 180);
         ran.put("action", "fetch-tebex");
         ran.put("ready", SetupChecklist.tebexPresent(root));
         return ran;
@@ -89,7 +89,7 @@ public final class SetupActions {
 
     private static Map<String, Object> fetchGrim(Path root) throws Exception {
         Map<String, Object> ran = runBashOrWindows(
-                root, "scripts/fetch-grim.sh", "Fetch-Grim",
+                root, "scripts/plugins/fetch-grim.sh", "Fetch-Grim",
                 List.of("--disabled", "--root", root.toString()), 180);
         ran.put("action", "fetch-grim");
         ran.put("downloaded", SetupChecklist.grimDownloaded(root));
@@ -99,9 +99,9 @@ public final class SetupActions {
     private static Map<String, Object> grim(Path root, boolean enable) throws Exception {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("action", enable ? "enable-grim" : "disable-grim");
-        if (SetupOs.bashAvailable() && Files.isRegularFile(root.resolve("scripts/grim-ac.sh"))) {
+        if (SetupOs.bashAvailable() && Files.isRegularFile(root.resolve("scripts/plugins/grim-ac.sh"))) {
             Map<String, Object> ran = SetupScriptRunner.runBash(
-                    root, "scripts/grim-ac.sh",
+                    root, "scripts/plugins/grim-ac.sh",
                     List.of(enable ? "enable" : "disable", "--root", root.toString()), 60);
             out.putAll(ran);
             out.put("ready", SetupChecklist.grimEnabled(root));
@@ -138,9 +138,9 @@ public final class SetupActions {
     }
 
     private static Map<String, Object> grimStatus(Path root) throws Exception {
-        if (SetupOs.bashAvailable() && Files.isRegularFile(root.resolve("scripts/grim-ac.sh"))) {
+        if (SetupOs.bashAvailable() && Files.isRegularFile(root.resolve("scripts/plugins/grim-ac.sh"))) {
             Map<String, Object> ran = SetupScriptRunner.runBash(
-                    root, "scripts/grim-ac.sh", List.of("status", "--root", root.toString()), 30);
+                    root, "scripts/plugins/grim-ac.sh", List.of("status", "--root", root.toString()), 30);
             ran.put("action", "grim-status");
             ran.put("enabled", SetupChecklist.grimEnabled(root));
             ran.put("downloaded", SetupChecklist.grimDownloaded(root));
@@ -164,7 +164,7 @@ public final class SetupActions {
             args.add("--with-link");
         }
         Map<String, Object> ran = runBashOrWindows(
-                root, "scripts/apply-production-profile.sh", "Apply-Production", args, 60);
+                root, "scripts/setup/apply-production-profile.sh", "Apply-Production", args, 60);
         ran.put("action", "production-profile");
         return ran;
     }
@@ -172,14 +172,14 @@ public final class SetupActions {
     private static Map<String, Object> nginxDryRun(Path root) throws Exception {
         Map<String, Object> ran = SetupScriptRunner.run(
                 root,
-                "scripts/nginx-setup.sh",
+                "scripts/setup/nginx-setup.sh",
                 "scripts/windows/Nginx-Setup.ps1",
                 List.of("--dry-run"),
                 120);
         if (!Boolean.TRUE.equals(ran.get("ok")) && SetupOs.isWindows() && SetupOs.powershellAvailable()) {
             Map<String, Object> ps = SetupScriptRunner.run(
                     root,
-                    "scripts/nginx-setup.sh",
+                    "scripts/setup/nginx-setup.sh",
                     "scripts/windows/Nginx-Setup.ps1",
                     List.of("-DryRun"),
                     120);
@@ -189,7 +189,7 @@ public final class SetupActions {
             }
         }
         ran.put("action", "nginx-dry-run");
-        ran.put("hint", "Full install: Swing → nginx tab (sudo) or scripts/nginx-setup.sh");
+        ran.put("hint", "Full install: Swing → nginx tab (sudo) or scripts/setup/nginx-setup.sh");
         return ran;
     }
 
@@ -203,7 +203,7 @@ public final class SetupActions {
             return out;
         }
         Map<String, Object> ran = runBashOrWindows(
-                root, "scripts/build-yap-folia.sh", null, List.of(), 3_600);
+                root, "scripts/folia/build-yap-folia.sh", null, List.of(), 3_600);
         ran.put("action", "build-folia");
         ran.put("ready", SetupChecklist.foliaJarPresent(root));
         return ran;

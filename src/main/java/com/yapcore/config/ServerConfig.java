@@ -7,7 +7,6 @@ import com.yapcore.config.core.CoreServerConfig;
 import com.yapcore.config.fleet.FleetFeatureConfig;
 import com.yapcore.config.kernel.GameKernelConfig;
 import com.yapcore.config.network.PublicEndpointConfig;
-import com.yapcore.config.plugin.PluginCompatConfig;
 import com.yapcore.config.protocol.ProtocolEdgeConfig;
 import com.yapcore.config.proxy.VelocityProxyConfig;
 import com.yapcore.config.resource.ResourcePackConfig;
@@ -44,7 +43,6 @@ public final class ServerConfig {
     private final VelocityProxyConfig velocity;
     private final ProtocolEdgeConfig protocol;
     private final PublicEndpointConfig publicEndpoint;
-    private final PluginCompatConfig pluginCompat;
     private final ResourcePackConfig resourcePack;
     private final WebDashboardConfig webDashboard;
     private final FleetFeatureConfig fleet;
@@ -59,7 +57,6 @@ public final class ServerConfig {
         this.velocity = new VelocityProxyConfig(props);
         this.protocol = new ProtocolEdgeConfig(this, props);
         this.publicEndpoint = new PublicEndpointConfig(props);
-        this.pluginCompat = new PluginCompatConfig(props);
         this.resourcePack = new ResourcePackConfig(props);
         this.webDashboard = new WebDashboardConfig(props);
         this.fleet = new FleetFeatureConfig(props);
@@ -116,7 +113,6 @@ public final class ServerConfig {
         VelocityProxyConfig.applyDefaults(props);
         ProtocolEdgeConfig.applyDefaults(props);
         PublicEndpointConfig.applyDefaults(props);
-        PluginCompatConfig.applyDefaults(props);
         ResourcePackConfig.applyDefaults(props);
         WebDashboardConfig.applyDefaults(props);
         FleetFeatureConfig.applyDefaults(props);
@@ -232,13 +228,6 @@ public final class ServerConfig {
     public void setParityBedrockFeel(boolean enabled) { protocol.setParityBedrockFeel(enabled); }
     public String getParityBedrockBand() { return protocol.getParityBedrockBand(); }
     public void setParityBedrockBand(String band) { protocol.setParityBedrockBand(band); }
-
-    public boolean isPluginCompatEnabled() { return pluginCompat.isPluginCompatEnabled(); }
-    public void setPluginCompatEnabled(boolean enabled) { pluginCompat.setPluginCompatEnabled(enabled); }
-    public boolean isPluginCompatRewrite() { return pluginCompat.isPluginCompatRewrite(); }
-    public void setPluginCompatRewrite(boolean enabled) { pluginCompat.setPluginCompatRewrite(enabled); }
-    public boolean isPluginCompatBackup() { return pluginCompat.isPluginCompatBackup(); }
-    public void setPluginCompatBackup(boolean enabled) { pluginCompat.setPluginCompatBackup(enabled); }
 
     public boolean isResourcePackEnabled() { return resourcePack.isResourcePackEnabled(); }
     public void setResourcePackEnabled(boolean enabled) { resourcePack.setResourcePackEnabled(enabled); }

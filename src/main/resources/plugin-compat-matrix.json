@@ -70,7 +70,6 @@
   {"id":"yap-chat","jarPattern":"yap-chat.jar","status":"native","nativeAlternative":"","note":"First-party chat network."},
   {"id":"yap-moderation","jarPattern":"yap-moderation.jar","status":"native","nativeAlternative":"","note":"First-party moderation."},
   {"id":"yap-floodgate","jarPattern":"yap-floodgate.jar","status":"native","nativeAlternative":"","note":"First-party Bedrock auth."},
-  {"id":"yap-plugin-compat","jarPattern":"yap-plugin-compat.jar","status":"native","nativeAlternative":"","note":"First-party ASM bridge for legacy fields."},
   {"id":"yap-pregen","jarPattern":"yap-pregen.jar","status":"native","nativeAlternative":"","note":"First-party chunk pregen."},
   {"id":"yap-db","jarPattern":"yap-db.jar","status":"native","nativeAlternative":"","note":"Shared SQL pool (YaPDB) — MariaDB/MySQL, PostgreSQL, SQLite."},
   {"id":"yap-packs","jarPattern":"yap-packs.jar","status":"native","nativeAlternative":"","note":"First-party resource packs."},

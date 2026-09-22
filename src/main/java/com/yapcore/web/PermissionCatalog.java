@@ -74,7 +74,8 @@ public final class PermissionCatalog {
                 n("yapessentials.staff.freeze", "/freeze", "Freeze a player"),
                 n("yapessentials.staff.check", "/check", "Staff inspect (Essentials)"),
                 n("yapguard.alerts", "AC alerts", "See anti-cheat alerts"),
-                n("yapadmin.menu", "/yapadmin", "Staff admin menu")));
+                n("yapadmin.menu", "/yapadmin", "Staff admin menu"),
+                n("yapadmin.auto-nv", "auto NV", "Night vision on join for staff")));
         out.add(cat("staff-move", "Staff movement", "Teleport and heal tools.",
                 n("yapessentials.teleport", "/tp /tphere", "Force teleport"),
                 n("yapessentials.setspawn", "/setspawn", "Set world spawn"),
@@ -172,7 +173,6 @@ public final class PermissionCatalog {
                 n("yapknobs.reload", "Knobs reload", "Reload performance knobs"),
                 n("yapdb.admin", "Database admin", "YaPDB admin"),
                 n("yappacks.admin", "Packs admin", "Resource pack admin"),
-                n("yapcompat.status", "Compat status", "Plugin compatibility status"),
                 n("placeholderapi.parse", "Parse placeholders", "Use PlaceholderAPI"),
                 n("placeholderapi.admin", "Placeholder admin", "Reload PlaceholderAPI"),
                 n("yapfactions.use", "/f", "Factions"),

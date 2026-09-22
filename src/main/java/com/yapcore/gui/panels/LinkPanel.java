@@ -321,7 +321,7 @@ public final class LinkPanel {
         if (ok != JOptionPane.OK_OPTION) {
             return;
         }
-        Path script = server.getRootDir().resolve("scripts/setup-velocity-forwarding.sh");
+        Path script = server.getRootDir().resolve("scripts/setup/setup-velocity-forwarding.sh");
         console.append("[Link] Running " + script.getFileName() + " " + flag + "…\n");
         new SwingWorker<String, Void>() {
             @Override

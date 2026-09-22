@@ -147,7 +147,7 @@ public final class InstanceLayout {
         Files.createDirectories(localPlugins);
         int copied = 0;
         // Product data folders operators edit in the catalog and expect on every backend.
-        for (String folder : List.of("YaPItems", "YaP-QoL", "YaPPlayerData", "YaPDB")) {
+        for (String folder : List.of("YaPItems", "YaPPlayerData", "YaPDB")) {
             Path srcRoot = resolvePluginFolder(rootPlugins, folder);
             if (srcRoot == null) {
                 continue;
@@ -178,7 +178,7 @@ public final class InstanceLayout {
         written += syncRelativeTree(rootPlugins, localPlugins, Path.of("YaPItems", "items"));
         written += syncRelativeFile(rootPlugins, localPlugins, Path.of("YaPItems", "furniture.yml"));
         written += syncRelativeFile(rootPlugins, localPlugins, Path.of("YaPPlayerData", "kits.yml"));
-        written += syncRelativeFile(rootPlugins, localPlugins, Path.of("YaP-QoL", "config.yml"));
+        written += syncRelativeFile(rootPlugins, localPlugins, Path.of("YaPItems", "qol.yml"));
         written += syncRelativeFile(rootPlugins, localPlugins, Path.of("YaPDB", "config.yml"));
         if (written > 0) {
             LOG.info("Synced " + written + " shared catalog file(s) → " + localPlugins);
@@ -412,6 +412,7 @@ public final class InstanceLayout {
         // Shared-DB plugins must not keep the lobby seed server-id on survival/etc.
         String[] pluginFolders = {
                 "YaPPlayerData", "yap-playerdata",
+                "YaPClaims", "yap-claims",
                 "YaPEssentials", "yap-essentials",
                 "YaPPortals", "yap-portals",
                 "YaPNpcs", "yap-npcs",

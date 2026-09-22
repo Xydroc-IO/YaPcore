@@ -33,17 +33,16 @@ public final class YapPluginControl {
     }
 
     private static final Set<String> CORE_TOKENS = Set.of(
-            "yap-db", "yap-folia-bridge", "yap-perms", "yap-playerdata", "yap-essentials",
+            "yap-db", "yap-folia-bridge", "yap-perms", "yap-playerdata", "yap-claims", "yap-essentials",
             "yap-chat", "yap-moderation", "yap-protect", "yap-admin");
 
     private static final Set<String> GAMEPLAY_TOKENS = Set.of(
-            "yap-stacker", "yap-gameplay-knobs", "yap-skills", "yap-disasters",
-            "yap-factions", "yap-conquest", "yap-dungeons", "yap-items", "yap-qol",
-            "yap-leveled-mobs");
+            "yap-stacker", "yap-mobs", "yap-gameplay-knobs", "yap-skills", "yap-disasters",
+            "yap-factions", "yap-dungeons", "yap-items", "yap-leveled-mobs", "yap-420");
 
     /** Installed in the box but off by default — owners enable when ready. */
     private static final Set<String> OPT_IN_TOKENS = Set.of(
-            "yap-factions", "yap-conquest", "yap-stacker",
+            "yap-factions", "yap-stacker", "yap-mobs",
             "yap-dungeons", "yap-disasters", "yap-gameplay-knobs");
 
     private final Path root;

@@ -49,6 +49,7 @@ window.YapDashRegisterSocialPanels = function (YapDash) {
       setText("facMembers", d.members ?? 0);
       setText("facClaims", d.claimOverlays ?? 0);
       setText("facAllies", d.alliances ?? 0);
+      setText("facConquest", d.conquestPresent ? (d.conquestEnabled ? "on" : "off") : "no file");
       checked("facEnabled", d.enabled !== false);
       checked("facBank", d.bankEnabled !== false);
       checked("facAlliesBuild", d.alliesCanBuild !== false);

@@ -80,7 +80,7 @@ public final class DashboardAdminApi {
                             "ok", true, "action", action, "token", token,
                             "note", "New token saved — update your login."));
                 }
-                case "nginx-dry-run" -> runScript(ex, root, "scripts/nginx-setup.sh", "--dry-run", 120);
+                case "nginx-dry-run" -> runScript(ex, root, "scripts/setup/nginx-setup.sh", "--dry-run", 120);
                 case "run-smoke" -> runScript(ex, root, "scripts/smoke-network-full.sh", "", 600);
                 case "crashdump" -> {
                     String result = server.executeCommand("crashdump");

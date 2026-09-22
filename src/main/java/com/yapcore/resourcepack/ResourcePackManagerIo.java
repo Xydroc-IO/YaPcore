@@ -90,7 +90,7 @@ final class ResourcePackManagerIo {
     /**
      * Faithful upstream often ships {@code min_engine_version 1.26.x} + {@code capabilities:[pbr]},
      * which makes 1.21 / cracked Bedrock abort the pack handshake before any HTTP fetch.
-     * Pin to product BE floor and drop PBR (same as {@code scripts/build-default-bedrock-pack.sh}).
+     * Pin to product BE floor and drop PBR (same as {@code scripts/packs/build-default-bedrock-pack.sh}).
      */
     static void normalizeBedrockMcpackManifest(Path mcpack) throws IOException {
         if (mcpack == null || !Files.isRegularFile(mcpack)) {
@@ -105,6 +105,12 @@ final class ResourcePackManagerIo {
             while (entries.hasMoreElements()) {
                 java.util.zip.ZipEntry entry = entries.nextElement();
                 String name = entry.getName();
+                // Manifest "no PBR" is not enough. texture_set + *_mers still make
+                // clear glass render as missing on clients that are not RTX.
+                if (!entry.isDirectory() && isStrippedPbrAsset(name)) {
+                    rewritten = true;
+                    continue;
+                }
                 out.putNextEntry(new java.util.zip.ZipEntry(name));
                 if (!entry.isDirectory()) {
                     byte[] bytes;
@@ -130,10 +136,24 @@ final class ResourcePackManagerIo {
             } catch (java.nio.file.AtomicMoveNotSupportedException e) {
                 Files.move(tmp, mcpack, StandardCopyOption.REPLACE_EXISTING);
             }
-            LOG.info("Normalized Bedrock pack manifest (min_engine=1.21.60, no PBR) in " + mcpack.getFileName());
+            LOG.info("Normalized Bedrock pack (min_engine=1.21.60, stripped PBR texture sets) in "
+                    + mcpack.getFileName());
         } else {
             Files.deleteIfExists(tmp);
         }
+    }
+
+    /** Faithful PBR overrides. Left in place they hide clear glass once the manifest drops {@code pbr}. */
+    static boolean isStrippedPbrAsset(String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+        String lower = name.replace('\\', '/').toLowerCase(java.util.Locale.ROOT);
+        int slash = lower.lastIndexOf('/');
+        String file = slash >= 0 ? lower.substring(slash + 1) : lower;
+        return file.endsWith(".texture_set.json")
+                || file.endsWith("_mers.tga")
+                || file.endsWith("_mers.png");
     }
 
     static String pinBedrockManifest(String json) {

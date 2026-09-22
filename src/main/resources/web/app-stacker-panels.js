@@ -5,7 +5,7 @@
   async function refreshStacker() {
     try {
       const r = await api("/api/stacker");
-      $("stkInstalled").textContent = r.installed ? "yes" : "no";
+      $("stkInstalled").textContent = r.installed ? "yap-mobs" : "missing";
       $("stkEnabled").textContent = r.enabled ? "on" : "off";
       $("stkKillMode").textContent = r.killMode || "—";
       $("stkMobMax").textContent = String(r.mobMaxStack ?? "—");
@@ -48,7 +48,7 @@
         killMode: $("stkKillSelect")?.value || "DECREMENT",
         mobMaxStack: $("stkMobMaxInput")?.value || "100",
       });
-      setOut("stkOut", "Stacker settings saved.");
+      setOut("stkOut", "Mob stacking settings saved.");
       refreshStacker();
     } catch (e) { setOut("stkOut", e.message); }
   });

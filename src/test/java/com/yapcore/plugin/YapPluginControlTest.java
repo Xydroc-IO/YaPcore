@@ -29,8 +29,11 @@ class YapPluginControlTest {
         assertEquals(YapPluginControl.Tier.GAMEPLAY, YapPluginControl.tierFor("yap-skills.jar", skills));
         var db = YapPluginControl.findEntry("yap-db.jar");
         assertEquals(YapPluginControl.Tier.CORE, YapPluginControl.tierFor("yap-db.jar", db));
-        var conquest = YapPluginControl.findEntry("yap-conquest.jar");
-        assertEquals(YapPluginControl.Tier.GAMEPLAY, YapPluginControl.tierFor("yap-conquest.jar", conquest));
+        var claims = YapPluginControl.findEntry("yap-claims.jar");
+        assertEquals(YapPluginControl.Tier.CORE, YapPluginControl.tierFor("yap-claims.jar", claims));
+        assertEquals(false, YapPluginControl.isOptIn("yap-claims.jar"));
+        var mobs = YapPluginControl.findEntry("yap-mobs.jar");
+        assertEquals(YapPluginControl.Tier.GAMEPLAY, YapPluginControl.tierFor("yap-mobs.jar", mobs));
         var dungeons = YapPluginControl.findEntry("yap-dungeons.jar");
         assertEquals(YapPluginControl.Tier.GAMEPLAY, YapPluginControl.tierFor("yap-dungeons.jar", dungeons));
     }

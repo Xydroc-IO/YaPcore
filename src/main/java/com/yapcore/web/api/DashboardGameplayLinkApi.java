@@ -174,9 +174,9 @@ public final class DashboardGameplayLinkApi {
 
     private void runVelocityForwardingScript(HttpExchange ex, Path root, boolean enable) throws IOException {
         try {
-            Path script = root.resolve("scripts/setup-velocity-forwarding.sh");
+            Path script = root.resolve("scripts/setup/setup-velocity-forwarding.sh");
             if (!java.nio.file.Files.isRegularFile(script)) {
-                DashboardHttp.json(ex, 404, Map.of("error", "missing scripts/setup-velocity-forwarding.sh"));
+                DashboardHttp.json(ex, 404, Map.of("error", "missing scripts/setup/setup-velocity-forwarding.sh"));
                 return;
             }
             String flag = enable ? "--enable" : "--disable";

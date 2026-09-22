@@ -23,7 +23,7 @@ final class InstanceLayoutPluginPreserveTest {
         Files.createDirectories(catalog);
         Files.writeString(catalog.resolve("yap-db.jar"), "catalog-db-v2", StandardCharsets.UTF_8);
         Files.writeString(catalog.resolve("yap-items.jar"), "catalog-items", StandardCharsets.UTF_8);
-        Files.writeString(catalog.resolve("yap-qol.jar"), "catalog-qol", StandardCharsets.UTF_8);
+        Files.writeString(catalog.resolve("yap-guard.jar"), "catalog-guard", StandardCharsets.UTF_8);
 
         Path instanceDir = root.resolve("fleet/instances/survival");
         Path plugins = instanceDir.resolve("plugins");
@@ -31,7 +31,7 @@ final class InstanceLayoutPluginPreserveTest {
         Files.writeString(plugins.resolve("grim.jar"), "operator-grim", StandardCharsets.UTF_8);
         Files.writeString(plugins.resolve("yap-disasters.jar"), "operator-disasters", StandardCharsets.UTF_8);
         Files.writeString(plugins.resolve("yap-db.jar"), "instance-db-v1", StandardCharsets.UTF_8);
-        Files.writeString(plugins.resolve("yap-qol.jar.disabled"), "hard-disabled-qol", StandardCharsets.UTF_8);
+        Files.writeString(plugins.resolve("yap-guard.jar.disabled"), "hard-disabled-guard", StandardCharsets.UTF_8);
         Files.createDirectories(plugins.resolve("GrimAC"));
         Files.writeString(plugins.resolve("GrimAC/config.yml"), "custom: true\n", StandardCharsets.UTF_8);
 
@@ -42,8 +42,8 @@ final class InstanceLayoutPluginPreserveTest {
         assertEquals("operator-disasters", Files.readString(plugins.resolve("yap-disasters.jar")));
         assertEquals("instance-db-v1", Files.readString(plugins.resolve("yap-db.jar")),
                 "must not overwrite existing jar from catalog");
-        assertTrue(Files.isRegularFile(plugins.resolve("yap-qol.jar.disabled")));
-        assertFalse(Files.isRegularFile(plugins.resolve("yap-qol.jar")),
+        assertTrue(Files.isRegularFile(plugins.resolve("yap-guard.jar.disabled")));
+        assertFalse(Files.isRegularFile(plugins.resolve("yap-guard.jar")),
                 "must not re-seed over a hard-disabled default");
         assertEquals("custom: true\n", Files.readString(plugins.resolve("GrimAC/config.yml")));
         assertTrue(Files.isRegularFile(plugins.resolve("yap-items.jar")),

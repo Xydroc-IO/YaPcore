@@ -34,6 +34,9 @@ public final class DashboardFactionsSnapshot {
         out.put("installed", installed(pluginsDir));
         Path configFile = pluginsDir.resolve(DATA_DIR).resolve("config.yml");
         out.put("configPresent", Files.isRegularFile(configFile));
+        Path conquestFile = pluginsDir.resolve(DATA_DIR).resolve("conquest.yml");
+        out.put("conquestPresent", Files.isRegularFile(conquestFile));
+        out.put("conquestEnabled", false);
         out.put("factions", 0);
         out.put("members", 0);
         out.put("claimOverlays", 0);
@@ -53,6 +56,10 @@ public final class DashboardFactionsSnapshot {
             out.put("bankEnabled", bool(nested(yaml, "bank", "enabled"), true));
             out.put("alliesCanBuild", bool(nested(yaml, "relations", "allies-can-build"), true));
             out.put("enemyPvpOnly", bool(nested(yaml, "relations", "enemy-pvp-only"), true));
+            if (Files.isRegularFile(conquestFile)) {
+                Map<String, Object> conquest = loadYaml(conquestFile);
+                out.put("conquestEnabled", bool(conquest.get("enabled"), false));
+            }
             String jdbcUrl = str(nested(yaml, "jdbc", "url"), "");
             String user = str(nested(yaml, "jdbc", "user"), "yap");
             String password = str(nested(yaml, "jdbc", "password"), "");

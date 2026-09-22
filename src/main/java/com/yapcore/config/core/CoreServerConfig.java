@@ -23,7 +23,7 @@ public final class CoreServerConfig {
         props.setProperty("max-players", "300");
         props.setProperty("ram-mb", "2048");
         props.setProperty("ram-min-mb", "512");
-        props.setProperty("view-distance", "16");
+        props.setProperty("view-distance", "32");
         props.setProperty("motd", "YaPcore · Folia Game · Yap Edge");
         props.setProperty("plugins-dir", "plugins");
         props.setProperty("modules-dir", "modules");
@@ -84,7 +84,7 @@ public final class CoreServerConfig {
     }
 
     public int getViewDistance() {
-        return ConfigSupport.parseInt(props, "view-distance", 16);
+        return ConfigSupport.parseInt(props, "view-distance", 32);
     }
 
     public void setViewDistance(int chunks) {

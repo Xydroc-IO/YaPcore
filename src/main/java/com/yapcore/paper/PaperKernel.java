@@ -116,7 +116,7 @@ public final class PaperKernel {
         Path dir = paperDir();
         Files.createDirectories(dir);
         Files.deleteIfExists(dir.resolve("yap-paper-ready.marker"));
-        PaperPluginsLayout.ensureUnifiedAndCompat(rootDir, dir, config);
+        PaperPluginsLayout.ensureUnified(rootDir, dir);
         Path jar = PaperFiles.ensurePaperJar(rootDir, dir, config);
         PaperFiles.writeEula(dir);
         PaperFiles.writeServerProperties(rootDir, dir, config, port, bindIp, propsComment);

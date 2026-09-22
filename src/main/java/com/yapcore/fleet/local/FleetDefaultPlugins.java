@@ -10,19 +10,19 @@ import java.util.Set;
 /**
  * Product jar sets seeded onto every fleet instance by default.
  * <p>
- * CORE+NETWORK always ships. Gameplay defaults ({@code yap-items}, {@code yap-qol}) also seed
- * when present in the root catalog — other gameplay jars stay opt-in via catalog install.
+ * CORE+NETWORK always ships. {@code yap-items} (including timber axe and excavator definitions)
+ * also seeds when present in the root catalog — other gameplay jars stay opt-in via catalog install.
  */
 public final class FleetDefaultPlugins {
 
     private static final List<String> CORE_NETWORK = List.of(
             "yap-folia-bridge.jar",
             "yap-placeholderapi.jar",
-            "yap-plugin-compat.jar",
             "yap-pregen.jar",
             "yap-db.jar",
             "yap-perms.jar",
             "yap-playerdata.jar",
+            "yap-claims.jar",
             "yap-moderation.jar",
             "yap-essentials.jar",
             "yap-admin.jar",
@@ -38,7 +38,6 @@ public final class FleetDefaultPlugins {
             "yap-lagguard.jar",
             "yap-map.jar",
             "yap-factions.jar",
-            "yap-conquest.jar",
             "yap-packs.jar",
             "yap-commands.jar",
             "yap-chat.jar",
@@ -50,10 +49,11 @@ public final class FleetDefaultPlugins {
             "yap-tailor.jar",
             "yap-bedrock-blocks.jar");
 
-    /** Always-on gameplay suite (VIP tools + custom items). */
+    /** Always-on gameplay suite (VIP tools + custom items + skills + YaP420). */
     private static final List<String> GAMEPLAY_DEFAULTS = List.of(
             "yap-items.jar",
-            "yap-qol.jar");
+            "yap-skills.jar",
+            "yap-420.jar");
 
     private static final Set<String> CORE_NETWORK_SET =
             Collections.unmodifiableSet(new LinkedHashSet<>(CORE_NETWORK));

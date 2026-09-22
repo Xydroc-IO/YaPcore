@@ -150,14 +150,9 @@ public final class InstanceJvmCommand {
         if (shards != 2) {
             cmd.add("-Dyap.folia.subregion-shards=" + shards);
         }
-        int mspt = config.getFoliaSubregionMsptThreshold();
-        if (mspt != 20) {
-            cmd.add("-Dyap.folia.subregion-mspt-threshold=" + mspt);
-        }
-        int msptClear = config.getFoliaSubregionMsptClear();
-        if (msptClear != 16) {
-            cmd.add("-Dyap.folia.subregion-mspt-clear=" + msptClear);
-        }
+        // Always forward ship engage thresholds so soak can assert the live path.
+        cmd.add("-Dyap.folia.subregion-mspt-threshold=" + config.getFoliaSubregionMsptThreshold());
+        cmd.add("-Dyap.folia.subregion-mspt-clear=" + config.getFoliaSubregionMsptClear());
         int minSec = config.getFoliaSubregionMinSections();
         if (minSec != 4) {
             cmd.add("-Dyap.folia.subregion-min-sections=" + minSec);

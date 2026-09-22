@@ -68,7 +68,7 @@
           { tab: "skills", icon: "⚔", label: "Skills" },
           { tab: "factions", icon: "⚑", label: "Factions" },
           { tab: "disasters", icon: "🌩", label: "Disasters" },
-          { tab: "stacker", icon: "☰", label: "Stacker" },
+          { tab: "stacker", icon: "☰", label: "Mobs" },
         ]},
       ],
     },

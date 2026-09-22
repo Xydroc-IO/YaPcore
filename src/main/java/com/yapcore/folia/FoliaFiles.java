@@ -55,7 +55,7 @@ public final class FoliaFiles {
             }
             LOG.warning("folia-jar-source=build but missing usable "
                     + yapBuilt + " — falling back to stock cache / Fill if available. "
-                    + "Run: ./scripts/build-yap-folia.sh");
+                    + "Run: ./scripts/folia/build-yap-folia.sh");
         } else if ("path".equals(source)) {
             throw new IOException("folia-jar-source=path requires folia-jar-path=");
         }
@@ -74,7 +74,7 @@ public final class FoliaFiles {
 
         if ("build".equals(source)) {
             throw new IOException("folia-jar-source=build but missing usable jar at "
-                    + yapBuilt + " — run ./scripts/build-yap-folia.sh "
+                    + yapBuilt + " — run ./scripts/folia/build-yap-folia.sh "
                     + "(or set folia-jar-source=fetch for stock Folia)");
         }
 

@@ -148,7 +148,7 @@ public final class FoliaKernel {
                     : config.getFoliaJarSource().trim().toLowerCase(Locale.ROOT);
             if ("fetch".equals(jarSource) || "stock".equals(jarSource)) {
                 LOG.severe("folia-teleport-transactions=true requires YaP-Folia (folia-jar-source=build). "
-                        + "Stock Fill Folia has no YapTeleportTransaction — run ./scripts/build-yap-folia.sh "
+                        + "Stock Fill Folia has no YapTeleportTransaction — run ./scripts/folia/build-yap-folia.sh "
                         + "or set folia-teleport-transactions=false.");
             }
             cmd.add("-Dyap.folia.teleport-transactions=true");

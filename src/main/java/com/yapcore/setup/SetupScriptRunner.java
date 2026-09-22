@@ -21,7 +21,7 @@ public final class SetupScriptRunner {
     /**
      * Resolve and run a setup script.
      *
-     * @param bashRelative path under root, e.g. {@code scripts/fetch-tebex.sh}
+     * @param bashRelative path under root, e.g. {@code scripts/plugins/fetch-tebex.sh}
      * @param psRelative   optional Windows script, e.g. {@code scripts/windows/Nginx-Setup.ps1}
      * @param args         extra args (same for both when possible)
      */

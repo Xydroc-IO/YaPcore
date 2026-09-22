@@ -1262,8 +1262,8 @@
 
       <section id="tab-stacker" class="panel">
         <div class="page-header">
-          <h2>Stacker</h2>
-          <p>Mob, item, and spawner stacking via <code>yap-stacker</code> — status, stats, and toggles.</p>
+          <h2>Mobs</h2>
+          <p>Mob, item, and spawner stacking in <code>yap-mobs</code> (<code>plugins/YaPMobs/stacker.yml</code>). Distance levels live in <code>leveled.yml</code> in the same jar.</p>
         </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="stkInstalled">—</strong></div>
@@ -1543,7 +1543,7 @@
         </div>
         <div class="card">
           <h3>1. Connect store</h3>
-          <p class="muted hint">Create a game server at <a href="https://creator.tebex.io/" target="_blank" rel="noopener">creator.tebex.io</a>, copy the secret key, paste below. Install jar with <code>./scripts/fetch-tebex.sh</code> if missing (Hub only).</p>
+          <p class="muted hint">Create a game server at <a href="https://creator.tebex.io/" target="_blank" rel="noopener">creator.tebex.io</a>, copy the secret key, paste below. Install jar with <code>./scripts/plugins/fetch-tebex.sh</code> if missing (Hub only).</p>
           <div class="form-grid">
             <label>Secret key
               <input id="tbxSecretInput" type="password" autocomplete="off" placeholder="paste game-server secret"/>
@@ -1945,7 +1945,7 @@
       <section id="tab-guard" class="panel">
         <div class="page-header">
           <h2>Guard</h2>
-          <p>Anti-cheat heuristics — fly, speed, reach, scaffold detection. Top-tier AC: Grim (auto-downloaded on setup, run <code>./scripts/grim-ac.sh enable</code>) — <a href="docs/ops/GRIM.md">GRIM.md</a>.</p>
+          <p>Anti-cheat heuristics — fly, speed, reach, scaffold detection. Top-tier AC: Grim (auto-downloaded on setup, run <code>./scripts/plugins/grim-ac.sh enable</code>) — <a href="docs/ops/GRIM.md">GRIM.md</a>.</p>
         </div>
         <p id="grdAcHint" class="muted hint hidden"></p>
         <div class="grid stats">
@@ -2364,7 +2364,7 @@
       <section id="tab-factions" class="panel">
         <div class="page-header">
           <h2>Factions</h2>
-          <p>Land claims, power, join mode, and admin force-disband. Player create/join stays in-game.</p>
+          <p>Land claims, power, join mode, and admin force-disband. Conquest chunk-grid land is inside this jar (<code>plugins/YaPFactions/conquest.yml</code>, off by default). Player create/join stays in-game.</p>
         </div>
         <div class="grid stats">
           <div class="stat"><span>Plugin</span><strong id="facInstalled">—</strong></div>
@@ -2372,6 +2372,7 @@
           <div class="stat"><span>Members</span><strong id="facMembers">—</strong></div>
           <div class="stat"><span>Claims</span><strong id="facClaims">—</strong></div>
           <div class="stat"><span>Alliances</span><strong id="facAllies">—</strong></div>
+          <div class="stat"><span>Conquest</span><strong id="facConquest">—</strong></div>
         </div>
         <div class="card">
           <h3>Settings</h3>

@@ -48,13 +48,13 @@ class PluginConfigIoTest {
 
     @Test
     void saveWritesPluginConfigFile() throws Exception {
-        PluginConfigCatalog.Entry entry = PluginConfigCatalog.byId("yap-stacker");
+        PluginConfigCatalog.Entry entry = PluginConfigCatalog.byId("yap-mobs");
         Path dir = tmp.resolve("plugins").resolve(entry.dataDir());
         Files.createDirectories(dir);
         Files.writeString(dir.resolve(entry.file()), "enabled: true\nmobs:\n  max-stack: 100\n");
         PluginConfigIo.save(tmp, entry, Map.of(
                 "action", "save",
-                "plugin", "yap-stacker",
+                "plugin", "yap-mobs",
                 "enabled", "false",
                 "mobs.max-stack", "250"));
         Map<String, Object> loaded = PluginConfigIo.load(tmp, entry);

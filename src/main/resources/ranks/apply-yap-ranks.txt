@@ -69,7 +69,6 @@ lp group mod permission set yapstacker.give true
 lp group mod permission set yapstacker.wand true
 lp group mod permission set yapstacker.tool true
 lp group mod permission set yapstacker.aura true
-lp group mod permission set yapcompat.status true
 lp group mod permission set placeholderapi.parse true
 
 # --- admin ---

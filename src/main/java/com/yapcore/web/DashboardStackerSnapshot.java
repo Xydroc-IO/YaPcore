@@ -4,15 +4,15 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** YAML + live-command snapshot for YaPStacker dashboard tab. */
+/** YAML + live-command snapshot for the YaPMobs stacking tab. */
 public final class DashboardStackerSnapshot {
 
     private DashboardStackerSnapshot() {
     }
 
     public static Map<String, Object> snapshot(Path root) {
-        Map<String, Object> out = new LinkedHashMap<>(DashboardNetworkSnapshots.base(root, "yap-stacker", "YaPStacker"));
-        Map<String, Object> yaml = DashboardNetworkSnapshots.yaml(root, "YaPStacker", "config.yml");
+        Map<String, Object> out = new LinkedHashMap<>(DashboardNetworkSnapshots.base(root, "yap-mobs", "YaPMobs"));
+        Map<String, Object> yaml = DashboardNetworkSnapshots.yaml(root, "YaPMobs", "stacker.yml");
         out.put("enabled", DashboardNetworkSnapshots.bool(yaml.get("enabled"), true));
         Map<String, Object> mobs = DashboardNetworkSnapshots.map(yaml.get("mobs"));
         Map<String, Object> items = DashboardNetworkSnapshots.map(yaml.get("items"));
@@ -28,7 +28,7 @@ public final class DashboardStackerSnapshot {
     }
 
     public static void saveSettings(Path root, Map<String, String> body) throws Exception {
-        Path file = root.resolve("plugins").resolve("YaPStacker").resolve("config.yml");
+        Path file = root.resolve("plugins").resolve("YaPMobs").resolve("stacker.yml");
         Map<String, Object> yaml = DashboardNetworkSnapshots.loadYaml(file);
         if (body.containsKey("enabled")) {
             yaml.put("enabled", !"false".equalsIgnoreCase(body.get("enabled")));

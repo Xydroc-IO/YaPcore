@@ -3,7 +3,7 @@ package com.yapcore.config;
 import java.nio.file.Path;
 import java.util.Map;
 
-/** CLI entry for {@link BedrockModeApplier} used by {@code scripts/set-bedrock-mode.sh}. */
+/** CLI entry for {@link BedrockModeApplier} used by {@code scripts/setup/set-bedrock-mode.sh}. */
 public final class BedrockModeApplierCli {
 
     private BedrockModeApplierCli() {}

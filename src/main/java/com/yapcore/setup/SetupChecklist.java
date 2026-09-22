@@ -64,7 +64,7 @@ public final class SetupChecklist {
         steps.add(step("production-profile", "Production profile", productionHint(root),
                 "Apply public production keys from defaults", true));
         steps.add(step("nginx-dry-run", "nginx dry-run",
-                Files.isRegularFile(root.resolve("scripts/nginx-setup.sh"))
+                Files.isRegularFile(root.resolve("scripts/setup/nginx-setup.sh"))
                         || Files.isRegularFile(root.resolve("scripts/windows/Nginx-Setup.ps1")),
                 "Preview nginx edge config (install needs sudo / Swing)", true));
         steps.add(step("build-folia", "YaP-Folia jar", foliaJarPresent(root),
@@ -97,10 +97,10 @@ public final class SetupChecklist {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("linux", List.of(
                 "./start.sh --gui",
-                "./scripts/seed-defaults.sh",
+                "./scripts/setup/seed-defaults.sh",
                 "./configure-db.sh --server-id lobby",
-                "./scripts/fetch-tebex.sh",
-                "./scripts/grim-ac.sh enable"));
+                "./scripts/plugins/fetch-tebex.sh",
+                "./scripts/plugins/grim-ac.sh enable"));
         out.put("windows", List.of(
                 ".\\start.cmd",
                 ".\\gui.cmd",
