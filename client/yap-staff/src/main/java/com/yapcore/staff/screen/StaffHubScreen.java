@@ -31,6 +31,10 @@ public final class StaffHubScreen extends StaffPanelScreen {
         addButtonGrid(
                 nav("Self tools", "God, fly, vanish, gamemode, speed", () ->
                         open(new SelfToolsScreen(this))),
+                nav("Skills", "Give XP · set skill levels · /skills", () ->
+                        open(new SkillsHubScreen(this))),
+                nav("YaP420", "Plant · cure · give · reload", () ->
+                        open(new Yap420HubScreen(this))),
                 nav("Give", "Items, kits, and material browser", () ->
                         open(new GiveScreen(this))),
                 nav("Custom items…", "Browse, give, and create YaPItems", () ->

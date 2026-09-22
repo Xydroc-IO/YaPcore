@@ -1,0 +1,22 @@
+name: YaP420
+version: '0.0.0.1'
+main: com.yapcore.yap420.Yap420Plugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Folia-safe plant, cure, craft, and consume loop
+website: https://github.com/yaplabs
+softdepend: [YaPItems, YaPSkills, YaPPlayerData]
+commands:
+  yap420:
+    description: YaP420 admin, dealer, and pack
+    usage: /yap420 <reload|info|remove|give|sell|pack|unpack>
+    aliases: [y420, yapweed]
+    permission: yap420.use
+permissions:
+  yap420.use:
+    description: Plant, harvest, cure, craft, pack, and sell YaP420 content
+    default: true
+  yap420.admin:
+    description: Reload, remove plots/racks, give items
+    default: op

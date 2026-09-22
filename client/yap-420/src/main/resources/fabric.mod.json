@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "yap-420",
+  "version": "${version}",
+  "name": "YaP 420",
+  "description": "Optional JE haze FX for YaP420 consumables (channel yap:420). Vanilla and Bedrock still get potion effects.",
+  "authors": [
+    "YaP Labs"
+  ],
+  "contact": {
+    "homepage": "https://yaplabs.us",
+    "sources": "https://github.com/YapLabs/YaPcore"
+  },
+  "license": "GPL-3.0-or-later",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.yapcore.haze.Yap420Client"
+    ]
+  },
+  "mixins": [
+    "yap-420.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~26.2",
+    "java": ">=25"
+  }
+}

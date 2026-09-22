@@ -1,0 +1,106 @@
+# YaP420 — plant / cure / consume
+enabled: true
+
+growth:
+  # Ticks between growth checks per plot (region-bound)
+  check-period-ticks: 100
+  # Chance (0-1) to advance one stage when rules pass
+  advance-chance: 0.35
+  stages: 6
+  min-light: 9
+  require-water-nearby: true
+  water-radius: 4
+  soils:
+    - FARMLAND
+  herbalism-xp: 12.0
+
+# Sparse plants on newly generated overworld chunks (like flowers/trees).
+# Already-explored chunks are not backfilled.
+wild:
+  enabled: true
+  chance-per-chunk: 0.14
+  attempts-per-chunk: 4
+  max-per-chunk: 2
+  min-light: 8
+  initial-stage-min: 0
+  initial-stage-max: 3
+  soils:
+    - GRASS_BLOCK
+    - DIRT
+    - PODZOL
+    - ROOTED_DIRT
+    - MOSS_BLOCK
+  # Empty worlds = all overworld environments (never nether/end)
+  worlds: []
+  # Empty biomes = any; else lowercase biome keys e.g. plains, forest, swamp
+  biomes: []
+  strains:
+    - sativa
+    - indica
+
+cure:
+  check-period-ticks: 80
+  # Milliseconds of rack time to cure one wet bud
+  millis-per-bud: 45000
+  max-slots: 8
+
+haze:
+  channel: yap:420
+  default-intensity: 0.65
+  default-duration-ticks: 200
+
+# Dealer + pack ladder (1 cured bud ≡ 1g; 28g = 1oz; 16oz = 1 pound).
+# Pack/unpack via /yap420 pack|unpack or the dealer GUI. NPC: player:yap420 sell
+market:
+  enabled: true
+  buy-enabled: true
+  grams-per-ounce: 28
+  ounces-per-brick: 16
+  sell:
+    yap420_bud_cured_sativa: 8.0
+    yap420_bud_cured_indica: 9.0
+    yap420_gram_sativa: 8.0
+    yap420_gram_indica: 9.0
+    yap420_ounce_sativa: 200.0
+    yap420_ounce_indica: 225.0
+    yap420_brick_sativa: 2800.0
+    yap420_brick_indica: 3200.0
+    yap420_joint_sativa: 18.0
+    yap420_joint_indica: 20.0
+    yap420_blunt_sativa: 35.0
+    yap420_blunt_indica: 40.0
+    yap420_brownie: 28.0
+    yap420_hemp_fiber: 3.0
+  buy:
+    yap420_seed_sativa: 12.0
+    yap420_seed_indica: 12.0
+    yap420_rolling_paper: 4.0
+    yap420_drying_rack: 80.0
+    yap420_packaging_press: 120.0
+  messages:
+    sold: "&aSold &f{amount}x {item}&a for &f{money}&a."
+    sold-all: "&aSold &f{count}&a stacks for &f{money}&a."
+    bought: "&aBought &f{amount}x {item}&a for &f{money}&a."
+    packed: "&aPacked &f{amount}x {item}&a."
+    unpacked: "&aUnpacked into &f{amount}x {item}&a."
+    need-items: "&cNeed &f{need}x {item}&c (have &f{have}&c)."
+    no-economy: "&cEconomy unavailable — enable YaPPlayerData."
+    disabled: "&cYaP420 dealer is disabled."
+    cannot-afford: "&cNeed &f{money}&c (balance &f{balance}&c)."
+    nothing-to-sell: "&cNo sellable YaP420 items in inventory."
+    inventory-full: "&cInventory full."
+
+messages:
+  planted: "&aPlanted &f{strain}&a."
+  harvested: "&aHarvested wet &f{strain}&a bud."
+  not-mature: "&cNot mature yet (stage &f{stage}&c/&f{max}&c)."
+  wrong-soil: "&cPlant on farmland."
+  no-space: "&cThat block is occupied."
+  deposited: "&aDrying &f{count}&a wet bud(s)."
+  cured-ready: "&aCured buds ready — right-click to collect."
+  collected: "&aCollected &f{count}&a cured bud(s)."
+  rack-full: "&cDrying rack is full."
+  need-wet: "&cHold wet buds to deposit."
+  reloaded: "&aYaP420 reloaded."
+  removed: "&aRemoved YaP420 plot/rack."
+  nothing: "&cNothing YaP420 here."

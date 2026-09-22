@@ -38,6 +38,7 @@ public final class LinksScreen extends StaffPanelScreen {
                 link("QoL tools", "Timber · excavator staff GUI", "yapqol gui"),
                 link("Player menu", "Open /menu", "menu"),
                 link("Skills", "Skills menu", "skills"),
+                link("YaP420 chest", "Plant · cure · give hub", "yapadmin chest"),
                 link("Dungeons", "Dungeon tools", "dungeon"),
                 link("Disasters", "Weather / disasters", "yapdisaster"),
                 link("NPCs", "NPC tools", "yapnpc")
