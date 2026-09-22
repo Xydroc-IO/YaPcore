@@ -125,7 +125,7 @@ public final class MapMarkers {
     private static void appendClaims(StringBuilder sb, boolean factionColors) {
         sb.append('[');
         try {
-            Plugin plug = Bukkit.getPluginManager().getPlugin("YaPPlayerData");
+            Plugin plug = Bukkit.getPluginManager().getPlugin("YaPClaims");
             if (plug == null) {
                 sb.append(']');
                 return;

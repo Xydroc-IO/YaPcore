@@ -58,6 +58,21 @@ final class EssentialsTeleportCommands {
         return true;
     }
 
+    boolean rtp(CommandSender sender) {
+        if (ctx.disabled(sender, "rtp")) {
+            return true;
+        }
+        if (!ctx.requirePlayer(sender)) {
+            return true;
+        }
+        if (ctx.rtp == null) {
+            sender.sendMessage("§cRTP is unavailable.");
+            return true;
+        }
+        ctx.rtp.start((Player) sender);
+        return true;
+    }
+
     boolean setSpawn(CommandSender sender) {
         if (ctx.disabled(sender, "spawn")) {
             return true;

@@ -54,7 +54,7 @@
   }
 
   async function act(action, extra, silent) {
-    if (busy || !token) return;
+    if (busy || !token) return null;
     setBusy(true);
     try {
       const body = Object.assign({ token, action }, extra || {});
@@ -68,9 +68,23 @@
       return data;
     } catch (e) {
       toast(e.message, false);
+      return null;
     } finally {
       setBusy(false);
     }
+  }
+
+  function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = String(reader.result || "");
+        const comma = result.indexOf(",");
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = () => reject(reader.error || new Error("Failed to read file"));
+      reader.readAsDataURL(file);
+    });
   }
 
   async function refresh(silent) {
@@ -205,17 +219,21 @@
     const lib = filterSchematics(s.schematicLibrary || []);
     if (!lib.length) {
       tbody.innerHTML = "";
+      empty.textContent = "No schematics in plugins/YaPWorld/schematics — save or import one above.";
       empty.classList.remove("hidden");
       return;
     }
     empty.classList.add("hidden");
     tbody.innerHTML = lib.map((item) => {
       const sel = selectedSchem === item.name ? " row-selected" : "";
-      const size = item.sizeX + "×" + item.sizeY + "×" + item.sizeZ;
+      const size = (item.sizeX != null)
+        ? (item.sizeX + "×" + item.sizeY + "×" + item.sizeZ)
+        : fmtBytes(item.bytes);
+      const blocks = item.blocks != null ? fmtNum(item.blocks) : "—";
       return '<tr class="schem-row' + sel + '" data-name="' + item.name + '">' +
         '<td><strong>' + item.name + '</strong></td>' +
         '<td class="mono">' + size + '</td>' +
-        '<td class="mono">' + fmtNum(item.blocks) + '</td>' +
+        '<td class="mono">' + blocks + '</td>' +
         '<td><span class="fmt-badge">' + item.format + '</span></td>' +
         '<td><button type="button" class="ghost sm" data-quick-paste="' + item.name + '">Paste</button></td>' +
         '</tr>';
@@ -238,6 +256,24 @@
       const found = lib.find((x) => x.name === selectedSchem);
       if (found) showSchemDetail(found);
     }
+    updateUndoPaste(s);
+  }
+
+  function updateUndoPaste(s) {
+    const btn = $("#btn-undo-paste");
+    const hint = $("#undo-paste-hint");
+    if (!btn) return;
+    const depth = s.undoDepth || 0;
+    const max = s.maxUndoSessions || 10;
+    btn.disabled = depth <= 0;
+    btn.textContent = depth > 0
+      ? ("↩ Undo paste (" + depth + "/" + max + ")")
+      : "↩ Undo paste";
+    if (hint) {
+      hint.textContent = depth > 0
+        ? "Reverts the last paste / fill / brush from this session"
+        : "Nothing to undo yet — paste something first";
+    }
   }
 
   function selectSchematic(name, lib) {
@@ -245,18 +281,34 @@
     const item = (lib || state.schematicLibrary || []).find((x) => x.name === name);
     if (item) showSchemDetail(item);
     renderSchematics(state);
+    if (item && item.blocks == null) {
+      act("schem-info", { name: name }, true).then((data) => {
+        if (!data || !data.info) return;
+        const info = data.info;
+        const libList = state.schematicLibrary || [];
+        const idx = libList.findIndex((x) => x.name === name);
+        if (idx >= 0) libList[idx] = Object.assign({}, libList[idx], info);
+        if (selectedSchem === name) showSchemDetail(info);
+        renderSchematics(state);
+      });
+    }
   }
 
   function showSchemDetail(item) {
     $("#schem-detail-empty").classList.add("hidden");
     $("#schem-detail-body").classList.remove("hidden");
+    const dims = (item.sizeX != null)
+      ? (item.sizeX + " × " + item.sizeY + " × " + item.sizeZ)
+      : "loading…";
+    const blocks = item.blocks != null ? fmtNum(item.blocks) : "—";
     $("#schem-detail-meta").innerHTML =
       '<dt>Name</dt><dd>' + item.name + '</dd>' +
-      '<dt>Dimensions</dt><dd>' + item.sizeX + ' × ' + item.sizeY + ' × ' + item.sizeZ + '</dd>' +
-      '<dt>Blocks</dt><dd>' + fmtNum(item.blocks) + '</dd>' +
+      '<dt>Dimensions</dt><dd>' + dims + '</dd>' +
+      '<dt>Blocks</dt><dd>' + blocks + '</dd>' +
       '<dt>Format</dt><dd>' + item.format + '</dd>' +
       '<dt>File size</dt><dd>' + fmtBytes(item.bytes) + '</dd>' +
-      '<dt>Modified</dt><dd>' + fmtDate(item.modified) + '</dd>';
+      '<dt>Modified</dt><dd>' + fmtDate(item.modified) + '</dd>' +
+      (item.error ? '<dt>Error</dt><dd class="err-text">' + item.error + '</dd>' : '');
     $("#schem-rename-to").placeholder = item.name + "-copy";
   }
 
@@ -310,24 +362,38 @@
   }
 
   async function importFile(file) {
-    if (!file) return;
+    if (!file || busy || !token) return;
+    const lower = file.name.toLowerCase();
+    if (!/\.(schem|yschem|schematic|litematic)$/.test(lower)) {
+      toast("Use .schem, .yschem, .schematic, or .litematic", false);
+      return;
+    }
     if (file.size > 8 * 1024 * 1024) {
       toast("File too large (max 8 MB)", false);
       return;
     }
     setBusy(true);
     try {
-      const buf = await file.arrayBuffer();
-      const bytes = new Uint8Array(buf);
-      let binary = "";
-      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-      const data = btoa(binary);
-      await act("import-schem", { filename: file.name, data: data }, true);
-      toast("Imported " + file.name, true);
+      const data = await fileToBase64(file);
+      const result = await api("/api/world-edit/action", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token: token,
+          action: "import-schem",
+          filename: file.name,
+          data: data
+        })
+      });
+      toast(result.message || ("Imported " + file.name), true);
+      selectedSchem = (result.info && result.info.name) || null;
+      await refresh(true);
     } catch (e) {
-      toast(e.message, false);
+      toast(e.message || "Import failed", false);
     } finally {
       setBusy(false);
+      const input = $("#schem-file-input");
+      if (input) input.value = "";
     }
   }
 
@@ -421,6 +487,14 @@
       extra.z = $("#paste-z").value;
     }
     act("paste-schem", extra);
+  });
+
+  $("#btn-undo-paste") && $("#btn-undo-paste").addEventListener("click", () => {
+    if ((state.undoDepth || 0) <= 0) {
+      toast("Nothing to undo", false);
+      return;
+    }
+    act("undo");
   });
 
   $("#btn-download-schem").addEventListener("click", () => {

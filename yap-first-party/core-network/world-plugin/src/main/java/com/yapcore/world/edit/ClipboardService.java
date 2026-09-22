@@ -309,7 +309,7 @@ public final class ClipboardService {
             }
             plans.add(new BlockBatch.Encoded(wx, wy, wz, entry.encoded(), entry.tileNbt()));
         }
-        return batch.applyEncoded(player, world, plans).thenCompose(n -> {
+        return batch.applyEncoded(player, world, plans, true).thenCompose(n -> {
             if (editState != null) {
                 editState.setLastEditBounds(player.getUniqueId(), world.getName(),
                         originX, originY, originZ,
@@ -385,7 +385,7 @@ public final class ClipboardService {
                     plans.add(new BlockBatch.Encoded(ox + e.dx(), oy + e.dy(), oz + e.dz(), e.encoded(), e.tileNbt()));
                 }
             }
-            return batch.applyEncoded(player, world, plans);
+            return batch.applyEncoded(player, world, plans, true);
         });
     }
 
@@ -411,7 +411,7 @@ public final class ClipboardService {
                         e.encoded(),
                         e.tileNbt()));
             }
-            return batch.applyEncoded(player, world, plans).thenCompose(blocks -> {
+            return batch.applyEncoded(player, world, plans, true).thenCompose(blocks -> {
                 if (clip.entities().isEmpty()) {
                     return CompletableFuture.completedFuture(blocks);
                 }

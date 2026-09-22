@@ -62,12 +62,26 @@ public final class EssentialsConfig {
     private boolean featureHat = true;
     private boolean featureStaff = true;
     private boolean featureWaterWaves = true;
+    private boolean featureRtp = true;
     private boolean waterSplashEnabled = true;
     private double waterWaveAmplitude = 0.045;
     private double waterWaveSpeed = 1.0;
     private boolean keepInventory = false;
     private boolean keepXp = false;
     private boolean syncKeepInventoryGamerule = true;
+
+    private boolean rtpEnabled = true;
+    private int rtpMinRadius = 500;
+    private int rtpMaxRadius = 8000;
+    private int rtpMinY = 40;
+    private int rtpMaxY = 200;
+    private int rtpMaxAttempts = 24;
+    private int rtpCooldownSeconds = 60;
+    private boolean rtpAvoidClaims = true;
+    private boolean rtpCenterSpawn = true;
+    private double rtpCenterX = 0.0;
+    private double rtpCenterZ = 0.0;
+    private List<String> rtpWorlds = List.of("world");
 
     public EssentialsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -153,6 +167,7 @@ public final class EssentialsConfig {
         featureHat = c.getBoolean("features.hat", true);
         featureStaff = c.getBoolean("features.staff", true);
         featureWaterWaves = c.getBoolean("features.water-waves", true);
+        featureRtp = c.getBoolean("features.rtp", true);
         waterSplashEnabled = c.getBoolean("water-waves.splash", true);
         waterWaveAmplitude = c.getDouble("water-waves.amplitude", 0.045);
         waterWaveSpeed = c.getDouble("water-waves.speed", 1.0);
@@ -160,6 +175,22 @@ public final class EssentialsConfig {
         keepInventory = c.getBoolean("death.keep-inventory", false);
         keepXp = c.getBoolean("death.keep-xp", false);
         syncKeepInventoryGamerule = c.getBoolean("death.sync-gamerule", true);
+
+        rtpEnabled = c.getBoolean("rtp.enabled", true);
+        rtpMinRadius = Math.max(0, c.getInt("rtp.min-radius", 500));
+        rtpMaxRadius = Math.max(rtpMinRadius + 1, c.getInt("rtp.max-radius", 8000));
+        rtpMinY = c.getInt("rtp.min-y", 40);
+        rtpMaxY = c.getInt("rtp.max-y", 200);
+        rtpMaxAttempts = Math.max(1, c.getInt("rtp.max-attempts", 24));
+        rtpCooldownSeconds = Math.max(0, c.getInt("rtp.cooldown-seconds", 60));
+        rtpAvoidClaims = c.getBoolean("rtp.avoid-claims", true);
+        rtpCenterSpawn = c.getBoolean("rtp.center-on-spawn", true);
+        rtpCenterX = c.getDouble("rtp.center-x", 0.0);
+        rtpCenterZ = c.getDouble("rtp.center-z", 0.0);
+        rtpWorlds = c.getStringList("rtp.worlds");
+        if (rtpWorlds == null || rtpWorlds.isEmpty()) {
+            rtpWorlds = List.of("world");
+        }
     }
 
     public Location fileSpawn() {
@@ -276,6 +307,7 @@ public final class EssentialsConfig {
             case "hat" -> featureHat;
             case "staff" -> featureStaff;
             case "water-waves" -> featureWaterWaves;
+            case "rtp" -> featureRtp;
             default -> true;
         };
     }
@@ -316,5 +348,53 @@ public final class EssentialsConfig {
         c.set("death.keep-inventory", keep);
         c.set("death.keep-xp", alsoXp);
         plugin.saveConfig();
+    }
+
+    public boolean rtpEnabled() {
+        return featureRtp && rtpEnabled;
+    }
+
+    public int rtpMinRadius() {
+        return rtpMinRadius;
+    }
+
+    public int rtpMaxRadius() {
+        return rtpMaxRadius;
+    }
+
+    public int rtpMinY() {
+        return rtpMinY;
+    }
+
+    public int rtpMaxY() {
+        return rtpMaxY;
+    }
+
+    public int rtpMaxAttempts() {
+        return rtpMaxAttempts;
+    }
+
+    public int rtpCooldownSeconds() {
+        return rtpCooldownSeconds;
+    }
+
+    public boolean rtpAvoidClaims() {
+        return rtpAvoidClaims;
+    }
+
+    public boolean rtpCenterSpawn() {
+        return rtpCenterSpawn;
+    }
+
+    public double rtpCenterX() {
+        return rtpCenterX;
+    }
+
+    public double rtpCenterZ() {
+        return rtpCenterZ;
+    }
+
+    public List<String> rtpWorlds() {
+        return rtpWorlds;
     }
 }

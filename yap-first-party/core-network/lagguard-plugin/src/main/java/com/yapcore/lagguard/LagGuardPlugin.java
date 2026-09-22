@@ -18,6 +18,7 @@ public final class LagGuardPlugin extends JavaPlugin {
     private LagGuardServiceImpl service;
     private LagGuardListener listener;
     private LagGuardCommands commands;
+    private ItemClearTask itemClear;
     private YapTask statsTask;
 
     @Override
@@ -31,9 +32,12 @@ public final class LagGuardPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(listener, this);
         getServer().getServicesManager().register(LagGuardService.class, service, this, ServicePriority.Normal);
 
+        itemClear = new ItemClearTask(this, config);
+        itemClear.start();
+
         PluginCommand cmd = getCommand("yaplagguard");
         if (cmd != null) {
-            commands = new LagGuardCommands(this, config, tracker);
+            commands = new LagGuardCommands(this, config, tracker, itemClear);
             cmd.setExecutor(commands);
             cmd.setTabCompleter(commands);
         }
@@ -41,6 +45,7 @@ public final class LagGuardPlugin extends JavaPlugin {
         startStatsWriter();
         getLogger().info("YaPLagGuard ready — entities/chunk≤" + config.maxEntitiesPerChunk()
                 + " tnt≤" + config.maxPrimedTntPerChunk()
+                + " item-clear=" + config.itemClearEnabled()
                 + " (YapSched regionized=" + YapSched.isRegionized() + ")");
     }
 
@@ -52,6 +57,10 @@ public final class LagGuardPlugin extends JavaPlugin {
         }
         if (commands != null) {
             commands.setConfig(config);
+        }
+        if (itemClear != null) {
+            itemClear.setConfig(config);
+            itemClear.start();
         }
         startStatsWriter();
     }
@@ -113,6 +122,9 @@ public final class LagGuardPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (itemClear != null) {
+            itemClear.stop();
+        }
         if (statsTask != null) {
             statsTask.cancel();
             statsTask = null;
@@ -121,5 +133,9 @@ public final class LagGuardPlugin extends JavaPlugin {
             getServer().getServicesManager().unregister(LagGuardService.class, service);
         }
         writeStatsJson();
+    }
+
+    public ItemClearTask itemClear() {
+        return itemClear;
     }
 }

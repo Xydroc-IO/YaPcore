@@ -26,6 +26,7 @@ dependencies {
     compileOnly(project(":yap-perms-api"))
     compileOnly(project(":yap-moderation-api"))
     compileOnly(project(":yap-playerdata-api"))
+    compileOnly(project(":yap-claims-api"))
 
     implementation("com.zaxxer:HikariCP:6.2.1")
     implementation("com.mysql:mysql-connector-j:9.1.0")

@@ -10,7 +10,7 @@ softdepend: [YaPRegions]
 commands:
   yaplagguard:
     description: LagGuard admin
-    usage: /yaplagguard status|reload|top [n]
+    usage: /yaplagguard status|reload|top [n]|clear
     permission: yaplagguard.admin
     aliases: [lagguard, ylg]
 permissions:

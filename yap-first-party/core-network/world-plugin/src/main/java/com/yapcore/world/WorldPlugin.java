@@ -23,6 +23,8 @@ import com.yapcore.world.listener.ToolModeListener;
 import com.yapcore.world.listener.WorldClimateListener;
 import com.yapcore.world.listener.WorldEditSlashBridge;
 import com.yapcore.world.listener.WorldEditToolListener;
+import com.yapcore.world.resource.ResourceReplenishListener;
+import com.yapcore.world.resource.ResourceWorldService;
 import com.yapcore.world.schem.SchematicPastePreview;
 import com.yapcore.world.schem.SchematicPreviewControls;
 import com.yapcore.world.schem.SchematicPaster;
@@ -70,6 +72,8 @@ public final class WorldPlugin extends JavaPlugin {
     private WorldEditBridge worldEditBridge;
     private WorldEditCuiBridge cuiBridge;
     private WorldClimateListener climate;
+    private ResourceWorldService resourceWorlds;
+    private ResourceReplenishListener resourceReplenish;
 
     @Override
     public void onEnable() {
@@ -95,6 +99,13 @@ public final class WorldPlugin extends JavaPlugin {
         climate = new WorldClimateListener(this);
         getServer().getPluginManager().registerEvents(climate, this);
         climate.applyAll();
+
+        if (resourceReplenish != null) {
+            getServer().getPluginManager().registerEvents(resourceReplenish, this);
+        }
+        if (resourceWorlds != null) {
+            resourceWorlds.start();
+        }
 
         ClipboardFormat.setLoader(new YapClipboardLoader());
 
@@ -256,8 +267,18 @@ public final class WorldPlugin extends JavaPlugin {
             editSessions = new WorldEditSessionRegistry();
         }
         restartEditorHttp();
+        if (resourceReplenish == null) {
+            resourceReplenish = new ResourceReplenishListener(this, config);
+        } else {
+            resourceReplenish.setConfig(config);
+        }
+        if (resourceWorlds == null) {
+            resourceWorlds = new ResourceWorldService(this, worldManager, config);
+        } else {
+            resourceWorlds.setConfig(config);
+        }
         commands = new WorldCommands(this, config, worldManager, selection, paster, brushService,
-                undoService, selectionEditService, editOps, worldEditTool, worldEditGui);
+                undoService, selectionEditService, editOps, worldEditTool, worldEditGui, resourceWorlds);
         if (climate != null) {
             climate.applyAll();
         }
@@ -404,6 +425,10 @@ public final class WorldPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         ClipboardFormat.setLoader(null);
+        if (resourceWorlds != null) {
+            resourceWorlds.stop();
+            resourceWorlds = null;
+        }
         if (pastePreview != null) {
             pastePreview.clearAll();
         }

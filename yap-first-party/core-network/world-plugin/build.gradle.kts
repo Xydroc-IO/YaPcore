@@ -26,11 +26,14 @@ dependencies {
     implementation(project(":yap-worldedit-compat"))
     compileOnly(project(":yap-perms-api"))
     compileOnly(project(":yap-protect-api"))
+    compileOnly(project(":yap-playerdata-api"))
+    compileOnly(project(":yap-claims-api"))
     compileOnly(project(":pregen-plugin"))
 
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation(project(":yap-world-api"))
+    testImplementation(project(":yap-claims-api"))
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

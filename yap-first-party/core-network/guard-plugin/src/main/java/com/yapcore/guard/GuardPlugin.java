@@ -39,7 +39,7 @@ public final class GuardPlugin extends JavaPlugin {
         }
 
         getLogger().info("YaPGuard ready — lightweight heuristics (not Grim). "
-                + "PvP: ./scripts/grim-ac.sh enable · maxViolations=" + config.maxViolationsBeforeKick()
+                + "PvP: ./scripts/plugins/grim-ac.sh enable · maxViolations=" + config.maxViolationsBeforeKick()
                 + " packets=" + libHooked
                 + " sampleRandomly=" + config.sampleRandomly());
     }

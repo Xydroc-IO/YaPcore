@@ -8,6 +8,7 @@ import com.yapcore.essentials.store.SpawnStore;
 import com.yapcore.essentials.store.StaffService;
 import com.yapcore.essentials.store.TpaService;
 import com.yapcore.essentials.store.VanishService;
+import com.yapcore.essentials.rtp.RtpService;
 import com.yapcore.essentials.util.TeleportHelper;
 import com.yapcore.messages.YapMessages;
 import com.yapcore.moderation.ModerationService;
@@ -38,10 +39,11 @@ final class EssentialsCommandSupport {
     final AfkService afk;
     final VanishService vanish;
     final StaffService staff;
+    final RtpService rtp;
 
     EssentialsCommandSupport(EssentialsPlugin plugin, EssentialsConfig config, SpawnStore spawnStore,
                              BackStore back, TpaService tpa, AfkService afk, VanishService vanish,
-                             StaffService staff) {
+                             StaffService staff, RtpService rtp) {
         this.plugin = plugin;
         this.config = config;
         this.spawnStore = spawnStore;
@@ -50,6 +52,7 @@ final class EssentialsCommandSupport {
         this.afk = afk;
         this.vanish = vanish;
         this.staff = staff;
+        this.rtp = rtp;
     }
 
     boolean requirePlayer(CommandSender sender) {

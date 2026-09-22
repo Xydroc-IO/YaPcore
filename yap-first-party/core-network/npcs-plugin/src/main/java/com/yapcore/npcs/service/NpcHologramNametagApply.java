@@ -24,10 +24,11 @@ final class NpcHologramNametagApply {
         if (service == null || !service.enabled()) {
             return false;
         }
-        entity.customName(Component.empty());
-        entity.setCustomNameVisible(false);
         String hid = hologramId(npcId);
         String line = colorName(displayName, npcId);
+        // YaPHolo draws the name. Leaving the vanilla tag on stacks a second copy on Java.
+        entity.customName(Component.empty());
+        entity.setCustomNameVisible(false);
         Location loc = HologramFollowLoc.at(entity, config.nametagOffset());
         Optional<Hologram> existing = service.get(hid);
         Hologram holo = existing.orElseGet(() -> service.create(hid, loc, List.of(line)));

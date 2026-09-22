@@ -131,8 +131,17 @@ public final class WorldEditGui {
         inv.setItem(SLOT_CYL, WorldEditGuiHolder.icon(Material.END_ROD, "Cylinder here",
                 "Radius/height = brush · material from palette"));
 
-        inv.setItem(SLOT_UNDO, WorldEditGuiHolder.icon(Material.ORANGE_STAINED_GLASS, "Undo"));
-        inv.setItem(SLOT_REDO, WorldEditGuiHolder.icon(Material.CYAN_STAINED_GLASS, "Redo"));
+        int undoDepth = plugin.undoService() != null ? plugin.undoService().undoDepth(player.getUniqueId()) : 0;
+        inv.setItem(SLOT_UNDO, WorldEditGuiHolder.icon(
+                undoDepth > 0 ? Material.ORANGE_CONCRETE : Material.ORANGE_STAINED_GLASS,
+                undoDepth > 0 ? NamedTextColor.GOLD : NamedTextColor.GRAY,
+                "Undo paste",
+                undoDepth > 0
+                        ? "Stack: " + undoDepth + " · undoes last paste / fill / brush"
+                        : "Nothing to undo yet",
+                "Also: //undo · schematics menu Undo"));
+        inv.setItem(SLOT_REDO, WorldEditGuiHolder.icon(Material.CYAN_STAINED_GLASS, "Redo",
+                "Redo last undone edit"));
 
         for (int i = 0; i < PALETTE.length && i < 9; i++) {
             Material mat = PALETTE[i];
@@ -216,8 +225,12 @@ public final class WorldEditGui {
                 preview ? NamedTextColor.RED : NamedTextColor.GRAY,
                 "Cancel preview",
                 "Abort pending paste"));
-        inv.setItem(SCHEM_UNDO, WorldEditGuiHolder.icon(Material.ORANGE_CONCRETE, "Undo last edit",
-                "Undo last paste / fill"));
+        inv.setItem(SCHEM_UNDO, WorldEditGuiHolder.icon(
+                Material.ORANGE_CONCRETE,
+                NamedTextColor.GOLD,
+                "Undo paste",
+                "Undo last confirmed paste / fill",
+                "Also works from main World Edit menu"));
         inv.setItem(SCHEM_ROTATE, WorldEditGuiHolder.icon(
                 preview ? Material.REPEATER : Material.GRAY_CONCRETE,
                 preview ? NamedTextColor.YELLOW : NamedTextColor.GRAY,

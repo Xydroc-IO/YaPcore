@@ -376,9 +376,6 @@ public final class NpcServiceImpl implements NpcService {
         if (!NpcHologramNametags.apply(plugin, config, npc.id(), npc.displayName(), mannequin)) {
             mannequin.customName(Component.text(npc.displayName(), NamedTextColor.GOLD));
             mannequin.setCustomNameVisible(true);
-        } else {
-            mannequin.customName(Component.empty());
-            mannequin.setCustomNameVisible(false);
         }
         try {
             UUID profileUuid = UUID.nameUUIDFromBytes(("yap-npc:" + npc.id()).getBytes(StandardCharsets.UTF_8));

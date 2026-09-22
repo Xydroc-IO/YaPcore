@@ -123,6 +123,7 @@ public final class RegionsDatabase implements AutoCloseable, RegionSql {
                       PRIMARY KEY (server_id, name)
                     )
                     """);
+            tryAlter(st, "ALTER TABLE yap_admin_region_templates ADD COLUMN game_mode VARCHAR(16) NULL");
         }
     }
 

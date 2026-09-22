@@ -1,3 +1,4 @@
+# Fleet stamps yap-server-id.txt next to the server jar. That file wins over this value.
 server-id: default
 
 # When set (survival|creative|adventure|spectator), players outside any region

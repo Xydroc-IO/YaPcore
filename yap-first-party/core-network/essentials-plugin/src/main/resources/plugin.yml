@@ -6,13 +6,18 @@ folia-supported: true
 author: YapLabs
 description: Essentials-class QoL — spawn/TPA/fly plus bag/homes/kits/economy/shops (data via YaPPlayerData)
 website: https://github.com/yaplabs
-softdepend: [YaPPerms, YaPPlayerData, YaPDisasters]
+softdepend: [YaPPerms, YaPPlayerData, YaPClaims, YaPDisasters]
 loadbefore: []
 commands:
   spawn:
     description: Teleport to spawn
     usage: /spawn
     permission: yapessentials.spawn
+  rtp:
+    description: Teleport to a random safe spot in the wild
+    usage: /rtp
+    aliases: [wild]
+    permission: yapessentials.rtp
   setspawn:
     description: Set the server spawn
     usage: /setspawn
@@ -302,6 +307,12 @@ commands:
 permissions:
   yapessentials.spawn:
     default: true
+  yapessentials.rtp:
+    default: true
+    description: Use /rtp or /wild
+  yapessentials.rtp.bypass:
+    default: op
+    description: Skip RTP cooldown
   yapessentials.setspawn:
     default: op
   yapessentials.back:

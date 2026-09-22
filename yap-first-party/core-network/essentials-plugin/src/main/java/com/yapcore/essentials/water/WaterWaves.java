@@ -56,10 +56,18 @@ public final class WaterWaves {
         if (!inFluid) {
             return;
         }
-        if (player.isOnGround() || player.isSwimming() || player.isInWater()) {
+        // Never fight the vanilla swim / sprint-in-water controller — setVelocity every
+        // few ticks was deleting horizontal speed so players felt stuck crawling.
+        if (player.isSwimming() || (player.isInWater() && player.isSprinting())) {
+            if ((tick & 3L) == 0L) {
+                maybeFoam(player.getLocation(), 0.55);
+            }
+            return;
+        }
+        if (player.isOnGround() || player.isInWater()) {
             bobEntity(player, amp, speed);
             if ((tick & 3L) == 0L) {
-                maybeFoam(player.getLocation(), player.isSwimming() ? 0.55 : 0.25);
+                maybeFoam(player.getLocation(), 0.25);
             }
         }
     }

@@ -1,5 +1,5 @@
 # YaPGuard — lightweight movement heuristics (not Grim).
-# Competitive / PvP: ./scripts/grim-ac.sh enable  then restart Folia.
+# Competitive / PvP: ./scripts/plugins/grim-ac.sh enable  then restart Folia.
 # See docs/ops/GRIM.md · docs/ops/GRIM.md
 
 checks:

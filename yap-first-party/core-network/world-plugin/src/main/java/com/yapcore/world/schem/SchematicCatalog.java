@@ -18,6 +18,7 @@ public final class SchematicCatalog {
     private SchematicCatalog() {
     }
 
+    /** Lightweight library listing — file metadata only (no parse). */
     public static List<Map<String, Object>> list(Path dir) {
         List<Map<String, Object>> out = new ArrayList<>();
         if (!Files.isDirectory(dir)) {
@@ -26,20 +27,19 @@ public final class SchematicCatalog {
         try (Stream<Path> stream = Files.list(dir)) {
             stream.filter(SchematicCatalog::isSchematicFile)
                     .sorted(Comparator.comparing(p -> p.getFileName().toString().toLowerCase(Locale.ROOT)))
-                    .forEach(p -> out.add(inspect(p)));
+                    .forEach(p -> out.add(listEntry(p)));
         } catch (IOException ignored) {
         }
         return out;
     }
 
-    public static Map<String, Object> inspect(Path file) {
+    /** File metadata for library rows (safe to call on every state poll). */
+    public static Map<String, Object> listEntry(Path file) {
         Map<String, Object> info = new LinkedHashMap<>();
         String filename = file.getFileName().toString();
         String lower = filename.toLowerCase(Locale.ROOT);
-        String format = formatOf(lower);
-        String name = stripExtension(filename);
-        info.put("name", name);
-        info.put("format", format);
+        info.put("name", stripExtension(filename));
+        info.put("format", formatOf(lower));
         info.put("filename", filename);
         try {
             BasicFileAttributes attrs = Files.readAttributes(file, BasicFileAttributes.class);
@@ -49,6 +49,12 @@ public final class SchematicCatalog {
             info.put("bytes", 0L);
             info.put("modified", 0L);
         }
+        return info;
+    }
+
+    /** Full parse for detail / paste prep (expensive for large .litematic). */
+    public static Map<String, Object> inspect(Path file) {
+        Map<String, Object> info = listEntry(file);
         try {
             Schematic schem = load(file);
             Schematic.Bounds b = schem.bounds();

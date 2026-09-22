@@ -52,6 +52,27 @@ escalation:
   window-ticks: 200
   max-items-removed: 32
 
+# ClearLagg-style timed ground-item / XP clear with countdown warnings (Folia-safe).
+# Vanilla item-despawn-rate still applies; this is the periodic sweep + chat warn.
+item-clear:
+  enabled: true
+  interval-seconds: 900
+  warn-seconds: [60, 30, 10]
+  clear-items: true
+  clear-xp-orbs: true
+  # Skip freshly dropped stacks (ticks). Protects mid-pickup during the sweep.
+  min-age-ticks: 40
+  # Skip items with a custom display name (dropped named gear / hologram bait).
+  skip-named: false
+  # Empty worlds = all. Blacklist always wins.
+  worlds: []
+  world-blacklist: []
+  # Soft-depend YaPRegions: never clear inside these admin region names.
+  exempt-regions: []
+  #  - spawn
+  warn-message: "&eGround items clear in &f{seconds}&e seconds."
+  clear-message: "&aCleared &f{items}&a items and &f{xp}&a XP orbs."
+
 # Write plugins/YaPLagGuard/stats.json for dashboard / Prometheus
 stats-write-interval-ticks: 100
 

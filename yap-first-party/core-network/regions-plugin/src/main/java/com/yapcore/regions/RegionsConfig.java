@@ -3,6 +3,9 @@ package com.yapcore.regions;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 public final class RegionsConfig {
 
     private final JavaPlugin plugin;
@@ -40,7 +43,14 @@ public final class RegionsConfig {
         }
         plugin.reloadConfig();
         FileConfiguration c = plugin.getConfig();
-        serverId = c.getString("server-id", "default");
+        String configured = c.getString("server-id", "default");
+        String hinted = readInstanceServerId();
+        serverId = resolveServerId(configured, hinted);
+        if (hinted != null && !hinted.isBlank()
+                && (configured == null || !serverId.equalsIgnoreCase(configured.trim()))) {
+            plugin.getLogger().info("YaPRegions server-id " + configured + " → " + serverId
+                    + " (fleet yap-server-id.txt)");
+        }
 
         notifyEnabled = c.getBoolean("notify.enabled", true);
         notifyTitle = c.getBoolean("notify.title", true);
@@ -67,6 +77,71 @@ public final class RegionsConfig {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    /**
+     * Fleet stamps {@code yap-server-id.txt}. A copied seed YAML often stays {@code default}
+     * (or the wrong backend), which loads zero regions and skips spawn flags.
+     */
+    static String resolveServerId(String configured, String hinted) {
+        if (hinted != null) {
+            String line = firstLine(hinted);
+            if (!line.isEmpty()) {
+                return line;
+            }
+        }
+        if (configured == null || configured.isBlank()) {
+            return "default";
+        }
+        return configured.trim();
+    }
+
+    /**
+     * {@code plugins/YaPRegions} → instance root. Must absolutize: a relative data folder
+     * has a null grandparent, so the hint is skipped.
+     */
+    static Path instanceServerIdHint(Path dataFolder) {
+        if (dataFolder == null) {
+            return null;
+        }
+        Path abs = dataFolder.toAbsolutePath().normalize();
+        Path plugins = abs.getParent();
+        if (plugins == null) {
+            return null;
+        }
+        Path instance = plugins.getParent();
+        if (instance == null) {
+            return null;
+        }
+        return instance.resolve("yap-server-id.txt");
+    }
+
+    private String readInstanceServerId() {
+        try {
+            Path hint = instanceServerIdHint(plugin.getDataFolder().toPath());
+            if (hint != null && Files.isRegularFile(hint)) {
+                return firstLine(Files.readString(hint));
+            }
+        } catch (Exception ignored) {
+            // keep YAML value
+        }
+        return null;
+    }
+
+    private static String firstLine(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String line = raw.trim();
+        int nl = line.indexOf('\n');
+        if (nl >= 0) {
+            line = line.substring(0, nl).trim();
+        }
+        int cr = line.indexOf('\r');
+        if (cr >= 0) {
+            line = line.substring(0, cr).trim();
+        }
+        return line;
     }
 
     public String serverId() {

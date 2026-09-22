@@ -67,7 +67,7 @@ public final class EncyclopediaNms {
         }
         log.warning("Encyclopedia NMS knobs enabled (crop-growth-nms and/or tick-fluids=false) "
                 + "but YapEncyclopediaHooks is absent — rebuild YaP-Folia with "
-                + "0025-yap-encyclopedia-hooks.patch (./scripts/build-yap-folia.sh). "
+                + "0025-yap-encyclopedia-hooks.patch (./scripts/folia/build-yap-folia.sh). "
                 + "Event-wired knobs still work; NMS crop/fluid gates will not.");
     }
 

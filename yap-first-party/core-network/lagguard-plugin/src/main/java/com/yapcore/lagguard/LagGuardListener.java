@@ -66,6 +66,14 @@ public final class LagGuardListener implements Listener {
         if (entity instanceof Player) {
             return;
         }
+        if (event instanceof org.bukkit.event.entity.CreatureSpawnEvent cse) {
+            var reason = cse.getSpawnReason();
+            if (reason == org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.COMMAND
+                    || reason == org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM
+                    || reason == org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.SPAWNER_EGG) {
+                return;
+            }
+        }
         Location loc = event.getLocation();
         if (playerNearbyBypass(loc) || inExemptRegion(loc)) {
             return;

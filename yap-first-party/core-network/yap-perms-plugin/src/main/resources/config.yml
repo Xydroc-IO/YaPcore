@@ -129,7 +129,6 @@ starter-grants:
     - yapstacker.wand
     - yapstacker.tool
     - yapstacker.aura
-    - yapcompat.status
     - placeholderapi.parse
     - yapchat.staff
     - yapchat.socialspy
@@ -191,6 +190,7 @@ starter-grants:
     - yapadmin.give
     - yapadmin.server
     - yapadmin.economy
+    - yapadmin.auto-nv
     - yapregions.admin
     - yapworld.admin
     - yapworld.load

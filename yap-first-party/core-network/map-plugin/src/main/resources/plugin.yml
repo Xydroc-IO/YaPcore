@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: Flat web map with PNG tiles and Leaflet UI
 website: https://github.com/yaplabs
-softdepend: [YaPNpcs, YaPRegions, YaPPlayerData, YaPFactions]
+softdepend: [YaPNpcs, YaPRegions, YaPClaims, YaPPlayerData, YaPFactions]
 commands:
   yapmap:
     description: Map admin

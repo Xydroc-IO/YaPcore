@@ -8,6 +8,7 @@ import com.yapcore.essentials.store.SpawnStore;
 import com.yapcore.essentials.store.StaffService;
 import com.yapcore.essentials.store.TpaService;
 import com.yapcore.essentials.store.VanishService;
+import com.yapcore.essentials.rtp.RtpService;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.command.Command;
@@ -30,8 +31,8 @@ public final class EssentialsCommands implements CommandExecutor, TabCompleter {
 
     public EssentialsCommands(EssentialsPlugin plugin, EssentialsConfig config, SpawnStore spawnStore,
                               BackStore back, TpaService tpa, AfkService afk, VanishService vanish,
-                              StaffService staff) {
-        this.ctx = new EssentialsCommandSupport(plugin, config, spawnStore, back, tpa, afk, vanish, staff);
+                              StaffService staff, RtpService rtp) {
+        this.ctx = new EssentialsCommandSupport(plugin, config, spawnStore, back, tpa, afk, vanish, staff, rtp);
         this.teleport = new EssentialsTeleportCommands(ctx);
         this.player = new EssentialsPlayerCommands(ctx);
         this.inventory = new EssentialsInventoryCommands(ctx);
@@ -43,6 +44,7 @@ public final class EssentialsCommands implements CommandExecutor, TabCompleter {
         String name = command.getName().toLowerCase(Locale.ROOT);
         return switch (name) {
             case "spawn" -> teleport.spawn(sender);
+            case "rtp", "wild" -> teleport.rtp(sender);
             case "setspawn" -> teleport.setSpawn(sender);
             case "back" -> teleport.back(sender);
             case "tpa" -> teleport.tpa(sender, args, false);

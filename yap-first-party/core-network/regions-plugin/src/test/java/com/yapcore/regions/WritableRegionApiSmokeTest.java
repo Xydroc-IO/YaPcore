@@ -86,6 +86,7 @@ class WritableRegionApiSmokeTest {
                       name VARCHAR(64) NOT NULL,
                       flags_json TEXT NOT NULL,
                       messages_json TEXT NOT NULL,
+                      game_mode VARCHAR(16) NULL,
                       PRIMARY KEY (server_id, name)
                     )
                     """);
@@ -141,9 +142,15 @@ class WritableRegionApiSmokeTest {
         AdminRegion applied = api.named("arena").orElseThrow();
         assertEquals(FlagValue.DENY, applied.flags().get(RegionFlag.PVP));
         assertEquals(Optional.of("Welcome!"), api.message(applied.id(), RegionMessageKind.GREETING));
-        assertEquals("adventure", api.named("spawn").orElseThrow().gameMode());
+        assertEquals("adventure", applied.gameMode());
 
         assertTrue(api.listTemplates().contains("safe-hub"));
+        assertTrue(api.listTemplates().contains("spawn"));
+        api.applyTemplate("arena", "wilderness");
+        service.reload();
+        AdminRegion wild = api.named("arena").orElseThrow();
+        assertEquals("survival", wild.gameMode());
+        assertTrue(wild.flags().isEmpty());
         api.remove("spawn");
         assertTrue(api.named("spawn").isEmpty());
     }

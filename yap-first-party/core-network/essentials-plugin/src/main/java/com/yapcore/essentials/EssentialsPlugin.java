@@ -9,6 +9,7 @@ import com.yapcore.essentials.listener.SpawnJoinListener;
 import com.yapcore.essentials.listener.TeleportListener;
 import com.yapcore.essentials.listener.VanishListener;
 import com.yapcore.essentials.listener.WaterWavesListener;
+import com.yapcore.essentials.rtp.RtpService;
 import com.yapcore.essentials.store.AfkService;
 import com.yapcore.essentials.store.BackStore;
 import com.yapcore.essentials.store.SpawnStore;
@@ -34,6 +35,7 @@ public final class EssentialsPlugin extends JavaPlugin {
     private AfkService afk;
     private VanishService vanish;
     private StaffService staff;
+    private RtpService rtp;
     private WaterWaves waterWaves;
     private YapTask waterWavesTask;
     private PlayerFeatures playerFeatures;
@@ -45,9 +47,10 @@ public final class EssentialsPlugin extends JavaPlugin {
         reloadEssentials();
 
         EssentialsCommands commands = new EssentialsCommands(
-                this, config, spawnStore, back, tpa, afk, vanish, staff);
+                this, config, spawnStore, back, tpa, afk, vanish, staff, rtp);
         String[] names = {
                 "spawn", "setspawn", "back", "tpa", "tpahere", "tpaccept", "tpdeny",
+                "rtp", "wild",
                 "gm", "gmc", "gms", "gma", "gmsp", "i",
                 "fly", "god", "speed", "heal", "feed", "repair", "clear", "vanish",
                 "invsee", "echest", "nick", "afk", "list", "ptime", "pweather", "weather",
@@ -113,6 +116,10 @@ public final class EssentialsPlugin extends JavaPlugin {
         return spawnStore;
     }
 
+    public RtpService rtpService() {
+        return rtp;
+    }
+
     public WaterWaves waterWaves() {
         return waterWaves;
     }
@@ -150,6 +157,9 @@ public final class EssentialsPlugin extends JavaPlugin {
         }
         if (staff == null) {
             staff = new StaffService();
+        }
+        if (rtp == null) {
+            rtp = new RtpService(this, back);
         }
         if (waterWaves != null) {
             waterWaves = new WaterWaves(this, this::essentialsConfig);

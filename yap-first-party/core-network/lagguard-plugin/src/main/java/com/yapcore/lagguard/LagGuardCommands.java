@@ -15,11 +15,17 @@ public final class LagGuardCommands implements CommandExecutor, TabCompleter {
     private final LagGuardPlugin plugin;
     private LagGuardConfig config;
     private final ChunkBudgetTracker tracker;
+    private final ItemClearTask itemClear;
 
-    public LagGuardCommands(LagGuardPlugin plugin, LagGuardConfig config, ChunkBudgetTracker tracker) {
+    public LagGuardCommands(
+            LagGuardPlugin plugin,
+            LagGuardConfig config,
+            ChunkBudgetTracker tracker,
+            ItemClearTask itemClear) {
         this.plugin = plugin;
         this.config = config;
         this.tracker = tracker;
+        this.itemClear = itemClear;
     }
 
     public void setConfig(LagGuardConfig config) {
@@ -47,6 +53,13 @@ public final class LagGuardCommands implements CommandExecutor, TabCompleter {
                         + " tntCancelled=" + tracker.tntCancelled()
                         + " hopper=" + tracker.hopperThrottled()
                         + " redstone=" + tracker.redstoneThrottled());
+                if (config.itemClearEnabled()) {
+                    int next = itemClear.secondsUntilClear();
+                    sender.sendMessage("§7item-clear=on every " + config.itemClearIntervalSeconds()
+                            + "s · next in " + Math.max(0, next) + "s");
+                } else {
+                    sender.sendMessage("§7item-clear=off");
+                }
             }
             case "top" -> {
                 int n = 10;
@@ -70,7 +83,11 @@ public final class LagGuardCommands implements CommandExecutor, TabCompleter {
                             + " §atrips=§f" + c.trips());
                 }
             }
-            default -> sender.sendMessage("§7Usage: /yaplagguard status|reload|top [n]");
+            case "clear" -> {
+                itemClear.clearNow();
+                sender.sendMessage("§aForced ground-item clear.");
+            }
+            default -> sender.sendMessage("§7Usage: /yaplagguard status|reload|top [n]|clear");
         }
         return true;
     }
@@ -79,7 +96,7 @@ public final class LagGuardCommands implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         List<String> out = new ArrayList<>();
         if (args.length == 1) {
-            for (String s : List.of("status", "reload", "top")) {
+            for (String s : List.of("status", "reload", "top", "clear")) {
                 if (s.startsWith(args[0].toLowerCase(Locale.ROOT))) {
                     out.add(s);
                 }

@@ -177,12 +177,22 @@ public final class WorldEditGuiListener implements Listener {
         }
         if (slot == WorldEditGui.SLOT_UNDO) {
             undoService.undo(player.getUniqueId()).thenAccept(count ->
-                    YapSched.global(plugin, () -> player.sendMessage("§aUndid §f" + count + " §ablocks.")));
+                    YapSched.global(plugin, () -> {
+                        player.sendMessage(count > 0
+                                ? "§aUndid paste — §f" + count + " §ablocks."
+                                : "§eNothing to undo.");
+                        gui.refreshMain(player, inv);
+                    }));
             return;
         }
         if (slot == WorldEditGui.SLOT_REDO) {
             undoService.redo(player.getUniqueId()).thenAccept(count ->
-                    YapSched.global(plugin, () -> player.sendMessage("§aRedid §f" + count + " §ablocks.")));
+                    YapSched.global(plugin, () -> {
+                        player.sendMessage(count > 0
+                                ? "§aRedid §f" + count + " §ablocks."
+                                : "§eNothing to redo.");
+                        gui.refreshMain(player, inv);
+                    }));
             return;
         }
         if (slot == WorldEditGui.SLOT_SAVE) {
@@ -243,7 +253,9 @@ public final class WorldEditGuiListener implements Listener {
         if (slot == WorldEditGui.SCHEM_UNDO) {
             undoService.undo(player.getUniqueId()).thenAccept(count ->
                     YapSched.global(plugin, () -> {
-                        player.sendMessage("§aUndid §f" + count + " §ablocks.");
+                        player.sendMessage(count > 0
+                                ? "§aUndid paste — §f" + count + " §ablocks."
+                                : "§eNothing to undo.");
                         gui.openSchematics(player);
                     }));
             return;

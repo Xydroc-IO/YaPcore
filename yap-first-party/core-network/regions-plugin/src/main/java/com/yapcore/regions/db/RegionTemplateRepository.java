@@ -50,20 +50,27 @@ public final class RegionTemplateRepository {
 
     public void save(String serverId, String name,
                      Map<RegionFlag, FlagValue> flags,
-                     Map<RegionMessageKind, String> messages) throws SQLException {
+                     Map<RegionMessageKind, String> messages,
+                     String gameMode) throws SQLException {
         String sql = dialect.upsert(
                 "yap_admin_region_templates",
                 List.of("server_id", "name"),
-                List.of("server_id", "name", "flags_json", "messages_json"),
+                List.of("server_id", "name", "flags_json", "messages_json", "game_mode"),
                 Map.of(
                         "flags_json", "EXCLUDED.flags_json",
-                        "messages_json", "EXCLUDED.messages_json"));
+                        "messages_json", "EXCLUDED.messages_json",
+                        "game_mode", "EXCLUDED.game_mode"));
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement(sql)) {
             ps.setString(1, serverId);
             ps.setString(2, name);
             ps.setString(3, flagsToJson(flags));
             ps.setString(4, messagesToJson(messages));
+            if (gameMode == null || gameMode.isBlank()) {
+                ps.setNull(5, java.sql.Types.VARCHAR);
+            } else {
+                ps.setString(5, gameMode.trim().toLowerCase(Locale.ROOT));
+            }
             ps.executeUpdate();
         }
     }
@@ -71,7 +78,7 @@ public final class RegionTemplateRepository {
     public Optional<Template> find(String serverId, String name) throws SQLException {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
-                     SELECT flags_json, messages_json FROM yap_admin_region_templates
+                     SELECT flags_json, messages_json, game_mode FROM yap_admin_region_templates
                      WHERE server_id = ? AND name = ?
                      """)) {
             ps.setString(1, serverId);
@@ -82,7 +89,8 @@ public final class RegionTemplateRepository {
                 }
                 return Optional.of(new Template(
                         parseFlags(rs.getString("flags_json")),
-                        parseMessages(rs.getString("messages_json"))));
+                        parseMessages(rs.getString("messages_json")),
+                        rs.getString("game_mode")));
             }
         }
     }
@@ -97,7 +105,14 @@ public final class RegionTemplateRepository {
         }
     }
 
-    public record Template(Map<RegionFlag, FlagValue> flags, Map<RegionMessageKind, String> messages) {
+    public record Template(
+            Map<RegionFlag, FlagValue> flags,
+            Map<RegionMessageKind, String> messages,
+            String gameMode
+    ) {
+        public Template(Map<RegionFlag, FlagValue> flags, Map<RegionMessageKind, String> messages) {
+            this(flags, messages, null);
+        }
     }
 
     private static String flagsToJson(Map<RegionFlag, FlagValue> flags) {

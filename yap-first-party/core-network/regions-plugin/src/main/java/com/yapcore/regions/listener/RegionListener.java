@@ -222,6 +222,9 @@ public final class RegionListener implements Listener {
         if (!(entity instanceof Enemy)) {
             return;
         }
+        if (intentionalSpawn(entity)) {
+            return;
+        }
         Location to = event.getTo();
         if (to == null || regions.isMobEntryAllowed(to)) {
             return;
@@ -236,6 +239,9 @@ public final class RegionListener implements Listener {
     public void onHostileTeleport(EntityTeleportEvent event) {
         Entity entity = event.getEntity();
         if (!(entity instanceof Enemy)) {
+            return;
+        }
+        if (intentionalSpawn(entity)) {
             return;
         }
         Location to = event.getTo();
@@ -266,17 +272,31 @@ public final class RegionListener implements Listener {
         if (!regions.at(event.getLocation()).isPresent()) {
             return;
         }
+        if (isIntentionalSpawnReason(event.getSpawnReason())) {
+            return;
+        }
         if (event.getEntity() instanceof Enemy && !regions.isMobEntryAllowed(event.getLocation())) {
             event.setCancelled(true);
             return;
         }
-        if (event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.CUSTOM
-                || event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER_EGG
-                || event.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SPAWNER) {
-            return;
-        }
         if (!regions.isMobSpawningAllowed(event.getLocation())) {
             event.setCancelled(true);
+        }
+    }
+
+    private static boolean isIntentionalSpawnReason(CreatureSpawnEvent.SpawnReason reason) {
+        return reason == CreatureSpawnEvent.SpawnReason.CUSTOM
+                || reason == CreatureSpawnEvent.SpawnReason.COMMAND
+                || reason == CreatureSpawnEvent.SpawnReason.SPAWNER_EGG
+                || reason == CreatureSpawnEvent.SpawnReason.SPAWNER;
+    }
+
+    private static boolean intentionalSpawn(Entity entity) {
+        try {
+            var reason = entity.getEntitySpawnReason();
+            return reason != null && isIntentionalSpawnReason(reason);
+        } catch (Throwable ignored) {
+            return false;
         }
     }
 
@@ -347,19 +367,30 @@ public final class RegionListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onExplode(EntityExplodeEvent event) {
         Entity entity = event.getEntity();
-        if (entity instanceof TNTPrimed) {
-            if (!regions.isTntAllowed(event.getLocation())) {
-                event.setCancelled(true);
-                event.blockList().clear();
-            }
+        boolean tnt = entity instanceof TNTPrimed;
+        boolean creeper = entity instanceof Creeper;
+        if (!tnt && !creeper) {
             return;
         }
-        if (entity instanceof Creeper) {
-            if (!regions.isCreeperExplosionAllowed(event.getLocation())) {
-                event.setCancelled(true);
-                event.blockList().clear();
+        // Flag applies to blocks in the region, not only the entity standing in it.
+        // A creeper just outside spawn still craters the cuboid otherwise.
+        Location origin = event.getLocation();
+        boolean originDenied = origin != null && !explosionAllowed(tnt, origin);
+        var blocks = event.blockList().iterator();
+        while (blocks.hasNext()) {
+            Block block = blocks.next();
+            if (block == null || !explosionAllowed(tnt, block.getLocation())) {
+                blocks.remove();
             }
         }
+        if (originDenied) {
+            event.setCancelled(true);
+            event.blockList().clear();
+        }
+    }
+
+    private boolean explosionAllowed(boolean tnt, Location location) {
+        return tnt ? regions.isTntAllowed(location) : regions.isCreeperExplosionAllowed(location);
     }
 
     private void applyRegionWeather(Player player, Location location) {

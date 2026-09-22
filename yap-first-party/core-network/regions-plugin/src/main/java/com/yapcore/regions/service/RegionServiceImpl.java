@@ -1,6 +1,7 @@
 package com.yapcore.regions.service;
 
 import com.yapcore.regions.AdminRegion;
+import com.yapcore.regions.BuiltinRegionTemplates;
 import com.yapcore.regions.FlagValue;
 import com.yapcore.regions.PolyDraftService;
 import com.yapcore.regions.RegionFlag;
@@ -209,7 +210,7 @@ public final class RegionServiceImpl implements RegionService {
                 messages.get(region.id(), kind).ifPresent(text -> msgs.put(kind, text));
             }
         }
-        templates.save(config.serverId(), templateName.trim(), region.flags(), msgs);
+        templates.save(config.serverId(), templateName.trim(), region.flags(), msgs, region.gameMode());
     }
 
     @Override
@@ -218,7 +219,7 @@ public final class RegionServiceImpl implements RegionService {
             throw new SQLException("Region templates unavailable");
         }
         AdminRegion region = requireNamed(regionName);
-        var template = templates.find(config.serverId(), templateName.trim())
+        var template = resolveTemplate(templateName.trim())
                 .orElseThrow(() -> new SQLException("Unknown template: " + templateName));
         repository.clearFlags(region.id());
         for (var e : template.flags().entrySet()) {
@@ -234,20 +235,46 @@ public final class RegionServiceImpl implements RegionService {
                 }
             }
         }
+        if (template.gameMode() != null && !template.gameMode().isBlank()) {
+            repository.setGameMode(region.id(), template.gameMode());
+        }
         reload();
     }
 
     @Override
     public List<String> listTemplates() {
+        java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>(BuiltinRegionTemplates.names());
         if (templates == null) {
-            return List.of();
+            return List.copyOf(names);
         }
         try {
-            return templates.listNames(config.serverId());
+            names.addAll(templates.listNames(config.serverId()));
+            if (!"default".equalsIgnoreCase(config.serverId())) {
+                names.addAll(templates.listNames("default"));
+            }
+            return List.copyOf(names);
         } catch (SQLException e) {
             LOG.log(Level.WARNING, "Failed to list region templates", e);
-            return List.of();
+            return List.copyOf(names);
         }
+    }
+
+    private Optional<RegionTemplateRepository.Template> resolveTemplate(String name) throws SQLException {
+        if (templates != null) {
+            Optional<RegionTemplateRepository.Template> saved = templates.find(config.serverId(), name);
+            if (saved.isEmpty() && !"default".equalsIgnoreCase(config.serverId())) {
+                saved = templates.find("default", name);
+            }
+            if (saved.isPresent()) {
+                return saved;
+            }
+        }
+        BuiltinRegionTemplates.Preset preset = BuiltinRegionTemplates.get(name);
+        if (preset == null) {
+            return Optional.empty();
+        }
+        return Optional.of(new RegionTemplateRepository.Template(
+                preset.flags(), preset.messages(), preset.gameMode()));
     }
 
     @Override

@@ -74,6 +74,25 @@ features:
   hat: true
   staff: true
   water-waves: true
+  rtp: true
+
+# Random / wild teleport (survival + factions). Folia-safe surface search.
+rtp:
+  enabled: true
+  # Empty list = any world. Prefer overworld for survival RTP.
+  worlds:
+    - world
+  min-radius: 500
+  max-radius: 8000
+  min-y: 40
+  max-y: 200
+  max-attempts: 24
+  cooldown-seconds: 60
+  avoid-claims: true
+  # Sample around world spawn; set false to use center-x / center-z.
+  center-on-spawn: true
+  center-x: 0.0
+  center-z: 0.0
 
 # Death drops — false = vanilla drops for everyone.
 # Players with yapessentials.keepinventory (e.g. VIP) still keep items when this is false.

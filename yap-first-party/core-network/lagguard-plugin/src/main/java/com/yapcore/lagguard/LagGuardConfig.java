@@ -40,6 +40,19 @@ public final class LagGuardConfig {
     private int escalationWindowTicks = 200;
     private int escalationMaxItemsRemoved = 32;
 
+    private boolean itemClearEnabled = true;
+    private int itemClearIntervalSeconds = 900;
+    private List<Integer> itemClearWarnSeconds = List.of(60, 30, 10);
+    private boolean itemClearItems = true;
+    private boolean itemClearXpOrbs = true;
+    private int itemClearMinAgeTicks = 40;
+    private boolean itemClearSkipNamed = false;
+    private List<String> itemClearWorlds = List.of();
+    private List<String> itemClearWorldBlacklist = List.of();
+    private List<String> itemClearExemptRegions = List.of();
+    private String itemClearWarnMessage = "&eGround items clear in &f{seconds}&e seconds.";
+    private String itemClearClearMessage = "&aCleared &f{items}&a items and &f{xp}&a XP orbs.";
+
     public LagGuardConfig(JavaPlugin plugin) {
         this.plugin = plugin;
     }
@@ -76,6 +89,39 @@ public final class LagGuardConfig {
         escalationTripsThreshold = Math.max(0, c.getInt("escalation.trips-threshold", 50));
         escalationWindowTicks = Math.max(20, c.getInt("escalation.window-ticks", 200));
         escalationMaxItemsRemoved = Math.max(0, c.getInt("escalation.max-items-removed", 32));
+
+        itemClearEnabled = c.getBoolean("item-clear.enabled", true);
+        itemClearIntervalSeconds = Math.max(30, c.getInt("item-clear.interval-seconds", 900));
+        List<Integer> warnRaw = new ArrayList<>();
+        for (Object o : c.getList("item-clear.warn-seconds", List.of(60, 30, 10))) {
+            if (o instanceof Number n) {
+                warnRaw.add(n.intValue());
+            } else if (o != null) {
+                try {
+                    warnRaw.add(Integer.parseInt(o.toString().trim()));
+                } catch (NumberFormatException ignored) {
+                    // skip
+                }
+            }
+        }
+        itemClearWarnSeconds = ItemClearPolicy.normalizeWarnSeconds(warnRaw);
+        itemClearItems = c.getBoolean("item-clear.clear-items", true);
+        itemClearXpOrbs = c.getBoolean("item-clear.clear-xp-orbs", true);
+        itemClearMinAgeTicks = Math.max(0, c.getInt("item-clear.min-age-ticks", 40));
+        itemClearSkipNamed = c.getBoolean("item-clear.skip-named", false);
+        itemClearWorlds = copyStringList(c.getStringList("item-clear.worlds"));
+        itemClearWorldBlacklist = copyStringList(c.getStringList("item-clear.world-blacklist"));
+        itemClearExemptRegions = copyStringList(c.getStringList("item-clear.exempt-regions"));
+        itemClearWarnMessage = c.getString("item-clear.warn-message",
+                "&eGround items clear in &f{seconds}&e seconds.");
+        itemClearClearMessage = c.getString("item-clear.clear-message",
+                "&aCleared &f{items}&a items and &f{xp}&a XP orbs.");
+        if (itemClearWarnMessage == null) {
+            itemClearWarnMessage = "&eGround items clear in &f{seconds}&e seconds.";
+        }
+        if (itemClearClearMessage == null) {
+            itemClearClearMessage = "&aCleared &f{items}&a items and &f{xp}&a XP orbs.";
+        }
 
         List<String> exempt = new ArrayList<>();
         for (String name : c.getStringList("exempt-regions")) {
@@ -234,5 +280,66 @@ public final class LagGuardConfig {
 
     public int escalationMaxItemsRemoved() {
         return escalationMaxItemsRemoved;
+    }
+
+    public boolean itemClearEnabled() {
+        return itemClearEnabled;
+    }
+
+    public int itemClearIntervalSeconds() {
+        return itemClearIntervalSeconds;
+    }
+
+    public List<Integer> itemClearWarnSeconds() {
+        return itemClearWarnSeconds;
+    }
+
+    public boolean itemClearItems() {
+        return itemClearItems;
+    }
+
+    public boolean itemClearXpOrbs() {
+        return itemClearXpOrbs;
+    }
+
+    public int itemClearMinAgeTicks() {
+        return itemClearMinAgeTicks;
+    }
+
+    public boolean itemClearSkipNamed() {
+        return itemClearSkipNamed;
+    }
+
+    public List<String> itemClearWorlds() {
+        return itemClearWorlds;
+    }
+
+    public List<String> itemClearWorldBlacklist() {
+        return itemClearWorldBlacklist;
+    }
+
+    public List<String> itemClearExemptRegions() {
+        return itemClearExemptRegions;
+    }
+
+    public String itemClearWarnMessage() {
+        return itemClearWarnMessage;
+    }
+
+    public String itemClearClearMessage() {
+        return itemClearClearMessage;
+    }
+
+    private static List<String> copyStringList(List<String> raw) {
+        if (raw == null || raw.isEmpty()) {
+            return List.of();
+        }
+        List<String> out = new ArrayList<>();
+        for (String s : raw) {
+            if (s != null && !s.isBlank()) {
+                out.add(s.trim());
+            }
+        }
+        return List.copyOf(out);
     }
 }

@@ -207,11 +207,11 @@
 
               <div class="card">
                 <h3>Import schematic</h3>
-                <p class="hint">Upload WorldEdit <code>.schem</code> or YaP <code>.yschem</code> files (max 8 MB).</p>
+                <p class="hint">Upload <code>.schem</code>, <code>.yschem</code>, <code>.schematic</code>, or <code>.litematic</code> (max 8 MB).</p>
                 <div id="schem-drop" class="drop-zone">
-                  <input id="schem-file-input" type="file" accept=".schem,.yschem" hidden/>
+                  <input id="schem-file-input" type="file" accept=".schem,.yschem,.schematic,.litematic" hidden/>
                   <p><strong>Drop file here</strong> or <button type="button" class="ghost" id="schem-browse">browse</button></p>
-                  <p class="hint">Imported .schem files are also converted to .yschem</p>
+                  <p class="hint">Foreign formats are also mirrored to <code>.yschem</code> after import</p>
                 </div>
               </div>
 
@@ -255,6 +255,8 @@
                   <label>Z <input id="paste-z" type="number"/></label>
                 </div>
                 <button class="primary block" id="btn-paste-selected">Paste schematic</button>
+                <button class="block" id="btn-undo-paste" type="button" disabled>↩ Undo paste</button>
+                <p class="hint muted" id="undo-paste-hint">Nothing to undo yet</p>
                 <div class="btn-row">
                   <button id="btn-download-schem">Download</button>
                   <button id="btn-duplicate-schem">Duplicate</button>

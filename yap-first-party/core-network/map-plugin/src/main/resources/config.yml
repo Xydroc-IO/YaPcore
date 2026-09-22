@@ -50,7 +50,7 @@ markers:
   regions: false
   # Static pins from plugins/YaPMap/poi.json (example shipped in jar).
   pois: true
-  # Soft-depend YaPPlayerData ClaimService.localClaims(). On by default for typical SMP.
+  # Soft-depend YaPClaims ClaimService.localClaims(). On by default for typical SMP.
   claims: true
   # When claims are on, tint by YaPFactions overlay (hashed color) if available.
   faction-colors: false

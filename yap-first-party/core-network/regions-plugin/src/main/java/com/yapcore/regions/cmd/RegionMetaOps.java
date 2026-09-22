@@ -211,6 +211,7 @@ final class RegionMetaOps {
                 sender.sendMessage("§7No region templates.");
             } else {
                 sender.sendMessage("§6Templates: §f" + String.join("§7, §f", names));
+                sender.sendMessage("§7Built-in: spawn, hub, wilderness, arena, creative, market.");
             }
             return true;
         }

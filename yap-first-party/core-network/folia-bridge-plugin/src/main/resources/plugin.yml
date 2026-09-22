@@ -1,16 +1,24 @@
 name: YaPFoliaBridge
-version: '0.0.0.1'
+version: '0.0.0.2'
 main: com.yapcore.folia.bridge.FoliaBridgePlugin
 api-version: '1.21'
 folia-supported: true
 author: YapLabs
-description: First-party Folia surface — GlobalRegionScheduler-safe status / chassis hook
+description: First-party Folia surface — view-distance apply + status
 website: https://github.com/yaplabs
 commands:
   yapbridge:
-    description: YaP Folia bridge status
-    usage: /yapbridge
+    description: YaP Folia bridge status / viewdistance
+    usage: /yapbridge [viewdistance [view] [simulation]]
     permission: yapbridge.status
+  yapviewdistance:
+    description: Apply server view/simulation distance live
+    usage: /yapviewdistance <view> [simulation]
+    permission: yapbridge.viewdistance
+    aliases: [viewdistance]
 permissions:
   yapbridge.status:
+    default: op
+  yapbridge.viewdistance:
+    description: Change live view-distance / simulation-distance
     default: op

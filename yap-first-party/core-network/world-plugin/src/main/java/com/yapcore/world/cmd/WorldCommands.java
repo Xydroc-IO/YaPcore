@@ -7,6 +7,7 @@ import com.yapcore.world.edit.BrushService;
 import com.yapcore.world.edit.SelectionEditService;
 import com.yapcore.world.edit.UndoService;
 import com.yapcore.world.gui.WorldEditGui;
+import com.yapcore.world.resource.ResourceWorldService;
 import com.yapcore.world.schem.SchematicPaster;
 import com.yapcore.world.service.SelectionServiceImpl;
 import com.yapcore.world.service.WorldManagerServiceImpl;
@@ -19,6 +20,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
@@ -37,12 +39,14 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
     private final WorldCommandsWorldOps worldOps;
     private final WorldCommandsSchematics schematics;
     private final WorldCommandsSelectionEdit selectionEditCmds;
+    private final ResourceWorldService resourceWorlds;
 
     public WorldCommands(WorldPlugin plugin, WorldConfig config, WorldManagerServiceImpl worlds,
                          SelectionServiceImpl selection, SchematicPaster paster,
                          BrushService brushService, UndoService undoService,
                          SelectionEditService selectionEdit, WorldEditOps editOps,
-                         WorldEditTool worldEditTool, WorldEditGui gui) {
+                         WorldEditTool worldEditTool, WorldEditGui gui,
+                         ResourceWorldService resourceWorlds) {
         this.plugin = plugin;
         this.config = config;
         this.worlds = worlds;
@@ -52,6 +56,7 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
         this.editOps = editOps;
         this.worldEditTool = worldEditTool;
         this.gui = gui;
+        this.resourceWorlds = resourceWorlds;
         this.worldOps = new WorldCommandsWorldOps(plugin, worlds, selection);
         this.schematics = new WorldCommandsSchematics(plugin, config, selection, paster, editOps);
         this.selectionEditCmds = new WorldCommandsSelectionEdit(plugin, selection, selectionEdit);
@@ -108,11 +113,53 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
             case "undo" -> undo(sender);
             case "redo" -> redo(sender);
             case "pregen" -> worldOps.pregen(sender, args);
+            case "resource" -> resource(sender, args);
             default -> {
                 help(sender);
                 yield true;
             }
         };
+    }
+
+    private boolean resource(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("yapworld.admin") && !sender.hasPermission("yapworld.resource")) {
+            YapMessages.noPermission(sender, "yapworld.resource");
+            return true;
+        }
+        if (resourceWorlds == null) {
+            sender.sendMessage("§cResource worlds are not available.");
+            return true;
+        }
+        if (args.length < 2) {
+            sender.sendMessage("§e/yapworld resource reset <world>");
+            sender.sendMessage("§e/yapworld resource list");
+            return true;
+        }
+        String sub = args[1].toLowerCase(Locale.ROOT);
+        if ("list".equals(sub)) {
+            var specs = config.resourceWorlds();
+            if (specs.isEmpty()) {
+                sender.sendMessage("§7No resource worlds configured (resource.worlds).");
+                return true;
+            }
+            sender.sendMessage("§6Resource worlds:");
+            for (var spec : specs.values()) {
+                sender.sendMessage("§f- " + spec.name()
+                        + " §7reset every §f" + spec.resetIntervalHours() + "h"
+                        + (spec.denyClaims() ? " §8(no claims)" : ""));
+            }
+            return true;
+        }
+        if ("reset".equals(sub)) {
+            if (args.length < 3) {
+                sender.sendMessage("§e/yapworld resource reset <world>");
+                return true;
+            }
+            resourceWorlds.resetNow(sender, args[2]);
+            return true;
+        }
+        sender.sendMessage("§e/yapworld resource reset <world> | list");
+        return true;
     }
 
     private boolean weOp(CommandSender sender, String[] args) {
@@ -294,8 +341,9 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
         sender.sendMessage("§e/yapworld §7or §e// §7— GUI / help · §e/yapworld tool §7— wand");
         sender.sendMessage("§e//set //replace //mask //gmask //sel //copy //paste //brush //fast");
         sender.sendMessage("§e//regen //forest //setbiome //deform //undo //redo");
-        sender.sendMessage("§e/yapworld schem|brush|editor|create|load|unload|tp|pregen|status|reload");
+        sender.sendMessage("§e/yapworld schem|brush|editor|create|load|unload|tp|pregen|resource|status|reload");
         sender.sendMessage("§e/yapworld create <name> --type flat|normal|large_biomes|amplified --env overworld|nether|end [--seed n] [--generator id]");
+        sender.sendMessage("§e/yapworld resource list|reset <world> §7— wipe + recreate mining worlds");
     }
 
     @Override
@@ -306,7 +354,14 @@ public final class WorldCommands implements CommandExecutor, TabCompleter {
                     "copy", "cut", "paste", "rotate", "flip", "stack", "move",
                     "expand", "contract", "shift", "cyl", "sphere", "pyramid", "smooth",
                     "sel", "mask", "gmask", "fast", "regen", "forest", "setbiome",
-                    "schem", "brush", "undo", "redo", "pregen", "create", "load", "unload", "tp", "status", "reload"), args[0]);
+                    "schem", "brush", "undo", "redo", "pregen", "resource", "create", "load", "unload", "tp", "status", "reload"), args[0]);
+        }
+        if (args.length == 2 && "resource".equalsIgnoreCase(args[0])) {
+            return filter(List.of("list", "reset"), args[1]);
+        }
+        if (args.length == 3 && "resource".equalsIgnoreCase(args[0]) && "reset".equalsIgnoreCase(args[1])) {
+            List<String> names = new ArrayList<>(config.resourceWorlds().keySet());
+            return filter(names, args[2]);
         }
         if (args.length == 2 && "brush".equalsIgnoreCase(args[0])) {
             return filter(List.of("sphere", "cyl", "smooth", "gravity", "clipboard", "butcher"), args[1]);
