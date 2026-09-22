@@ -13,9 +13,13 @@ import com.yapcore.items.item.ItemRegistry;
 import com.yapcore.items.item.ItemWriter;
 import com.yapcore.items.item.ItemCatalogPropagator;
 import com.yapcore.items.item.ItemCatalogWatcher;
+import com.yapcore.items.item.CustomRecipeListener;
 import com.yapcore.items.item.RainbowNameService;
 import com.yapcore.items.item.RecipeRegistrar;
 import com.yapcore.items.listener.ItemsListener;
+import com.yapcore.qol.QolConfig;
+import com.yapcore.qol.QolItems;
+import com.yapcore.qol.QolPlugin;
 import com.yapcore.mmo.CombatService;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -42,6 +46,7 @@ public final class ItemsPlugin extends JavaPlugin {
     private RainbowNameService rainbowNames;
     private ItemCatalogPropagator catalogPropagator;
     private ItemCatalogWatcher catalogWatcher;
+    private QolPlugin qol;
 
     @Override
     public void onEnable() {
@@ -85,6 +90,8 @@ public final class ItemsPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new ItemsListener(this, abilities, furniture), this);
         getServer().getPluginManager().registerEvents(new ItemsGuiListener(this), this);
+        getServer().getPluginManager().registerEvents(
+                new CustomRecipeListener(this, factory, recipes), this);
 
         if (config.fleetWatchCatalog()) {
             this.catalogWatcher = new ItemCatalogWatcher(
@@ -96,6 +103,9 @@ public final class ItemsPlugin extends JavaPlugin {
                 + (catalogPropagator.findYapRoot().isPresent()
                 ? " (fleet catalog sync on)"
                 : ""));
+
+        this.qol = new QolPlugin(this, factory);
+        qol.enable();
     }
 
     @Override
@@ -153,6 +163,14 @@ public final class ItemsPlugin extends JavaPlugin {
         if (!rainbow.isFile()) {
             saveResource("items/rainbow.yml", false);
         }
+        File tools = new File(getDataFolder(), "items/tools.yml");
+        if (!tools.isFile()) {
+            saveResource("items/tools.yml", false);
+        }
+        File yap420 = new File(getDataFolder(), "items/yap420.yml");
+        if (!yap420.isFile()) {
+            saveResource("items/yap420.yml", false);
+        }
         File custom = new File(getDataFolder(), "items/custom");
         if (!custom.isDirectory()) {
             custom.mkdirs();
@@ -180,6 +198,20 @@ public final class ItemsPlugin extends JavaPlugin {
 
     public ItemFactory factory() {
         return factory;
+    }
+
+    public QolConfig qolConfig() {
+        return qol == null ? null : qol.qolConfig();
+    }
+
+    public QolItems items() {
+        return qol == null ? null : qol.items();
+    }
+
+    public void reloadQol() {
+        if (qol != null) {
+            qol.reloadQol();
+        }
     }
 
     public ItemWriter writer() {

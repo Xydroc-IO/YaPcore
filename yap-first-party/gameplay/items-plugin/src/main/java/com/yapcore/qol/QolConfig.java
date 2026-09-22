@@ -3,7 +3,6 @@ package com.yapcore.qol;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +13,7 @@ public final class QolConfig {
 
     private static final LegacyComponentSerializer LEGACY = LegacyComponentSerializer.legacyAmpersand();
 
-    private final JavaPlugin plugin;
+    private final QolPlugin plugin;
     private boolean enabled;
     private boolean timberEnabled;
     private int maxLogs;
@@ -38,7 +37,7 @@ public final class QolConfig {
     private String msgTimberFell;
     private String msgDisabled;
 
-    public QolConfig(JavaPlugin plugin) {
+    public QolConfig(QolPlugin plugin) {
         this.plugin = plugin;
     }
 

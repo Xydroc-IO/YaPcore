@@ -1,0 +1,390 @@
+# YaP420 catalog — CMD 12200–12231 (original art in resourcepacks/yap-items)
+
+yap420_seed_sativa:
+  base: WHEAT_SEEDS
+  name: "&aSativa Seeds"
+  lore:
+    - "&7Right-click farmland to plant"
+  custom-model-data: 12200
+  item-model: yapitems:yap420_seed
+
+yap420_seed_indica:
+  base: WHEAT_SEEDS
+  name: "&2Indica Seeds"
+  lore:
+    - "&7Right-click farmland to plant"
+  custom-model-data: 12201
+  item-model: yapitems:yap420_seed
+
+yap420_plant_sativa_0:
+  base: PAPER
+  name: "&aSativa Sprout"
+  custom-model-data: 12202
+  item-model: yapitems:yap420_plant_0
+yap420_plant_sativa_1:
+  base: PAPER
+  name: "&aSativa"
+  custom-model-data: 12203
+  item-model: yapitems:yap420_plant_1
+yap420_plant_sativa_2:
+  base: PAPER
+  name: "&aSativa"
+  custom-model-data: 12204
+  item-model: yapitems:yap420_plant_2
+yap420_plant_sativa_3:
+  base: PAPER
+  name: "&aSativa"
+  custom-model-data: 12205
+  item-model: yapitems:yap420_plant_3
+yap420_plant_sativa_4:
+  base: PAPER
+  name: "&aSativa"
+  custom-model-data: 12206
+  item-model: yapitems:yap420_plant_4
+yap420_plant_sativa_5:
+  base: PAPER
+  name: "&aMature Sativa"
+  custom-model-data: 12207
+  item-model: yapitems:yap420_plant_5
+
+yap420_plant_indica_0:
+  base: PAPER
+  name: "&2Indica Sprout"
+  custom-model-data: 12208
+  item-model: yapitems:yap420_plant_indica_0
+yap420_plant_indica_1:
+  base: PAPER
+  name: "&2Indica"
+  custom-model-data: 12209
+  item-model: yapitems:yap420_plant_indica_1
+yap420_plant_indica_2:
+  base: PAPER
+  name: "&2Indica"
+  custom-model-data: 12210
+  item-model: yapitems:yap420_plant_indica_2
+yap420_plant_indica_3:
+  base: PAPER
+  name: "&2Indica"
+  custom-model-data: 12211
+  item-model: yapitems:yap420_plant_indica_3
+yap420_plant_indica_4:
+  base: PAPER
+  name: "&2Indica"
+  custom-model-data: 12212
+  item-model: yapitems:yap420_plant_indica_4
+yap420_plant_indica_5:
+  base: PAPER
+  name: "&2Mature Indica"
+  custom-model-data: 12213
+  item-model: yapitems:yap420_plant_indica_5
+
+yap420_bud_wet_sativa:
+  base: KELP
+  name: "&aWet Sativa Bud"
+  lore:
+    - "&7Hang on a drying rack"
+  custom-model-data: 12214
+  item-model: yapitems:yap420_bud_wet
+
+yap420_bud_wet_indica:
+  base: KELP
+  name: "&2Wet Indica Bud"
+  lore:
+    - "&7Hang on a drying rack"
+  custom-model-data: 12215
+  item-model: yapitems:yap420_bud_wet
+
+yap420_bud_cured_sativa:
+  base: DRIED_KELP
+  name: "&aCured Sativa Bud"
+  lore:
+    - "&7Ready to craft"
+  custom-model-data: 12216
+  item-model: yapitems:yap420_bud_cured
+
+yap420_bud_cured_indica:
+  base: DRIED_KELP
+  name: "&2Cured Indica Bud"
+  lore:
+    - "&7Ready to craft"
+  custom-model-data: 12217
+  item-model: yapitems:yap420_bud_cured
+
+yap420_rolling_paper:
+  base: PAPER
+  name: "&fRolling Paper"
+  lore:
+    - "&7Craft with cured buds"
+  custom-model-data: 12218
+  item-model: yapitems:yap420_paper
+  recipe:
+    type: shapeless
+    ingredients-list:
+      - PAPER
+      - PAPER
+
+yap420_joint_sativa:
+  base: COOKIE
+  name: "&aSativa Joint"
+  lore:
+    - "&7Eat for a chill boost"
+  custom-model-data: 12219
+  item-model: yapitems:yap420_joint
+  consume: true
+  abilities:
+    - trigger: CONSUME
+      type: effect
+      cooldown: 8s
+      params:
+        effects: [NAUSEA, SLOWNESS, REGENERATION]
+        duration: 160
+        amplifier: 0
+        particle: HAPPY_VILLAGER
+        sound: ENTITY_PLAYER_BURP
+    - trigger: CONSUME
+      type: feed
+      cooldown: 8s
+      params:
+        food: 2
+        saturation: 1
+  recipe:
+    type: shapeless
+    ingredients-list:
+      - yap420_bud_cured_sativa
+      - yap420_rolling_paper
+
+yap420_joint_indica:
+  base: COOKIE
+  name: "&2Indica Joint"
+  lore:
+    - "&7Eat for a heavy chill"
+  custom-model-data: 12220
+  item-model: yapitems:yap420_joint
+  consume: true
+  abilities:
+    - trigger: CONSUME
+      type: effect
+      cooldown: 8s
+      params:
+        effects: [NAUSEA, SLOWNESS, ABSORPTION]
+        duration: 200
+        amplifier: 0
+        particle: HAPPY_VILLAGER
+        sound: ENTITY_PLAYER_BURP
+    - trigger: CONSUME
+      type: feed
+      cooldown: 8s
+      params:
+        food: 2
+        saturation: 1
+  recipe:
+    type: shapeless
+    ingredients-list:
+      - yap420_bud_cured_indica
+      - yap420_rolling_paper
+
+yap420_blunt_sativa:
+  base: COOKIE
+  name: "&aSativa Blunt"
+  lore:
+    - "&7Dark wrap — stronger chill"
+  custom-model-data: 12224
+  item-model: yapitems:yap420_blunt
+  consume: true
+  abilities:
+    - trigger: CONSUME
+      type: effect
+      cooldown: 12s
+      params:
+        effects: [NAUSEA, SLOWNESS, REGENERATION, NIGHT_VISION]
+        duration: 240
+        amplifier: 0
+        particle: HAPPY_VILLAGER
+        sound: ENTITY_PLAYER_BURP
+    - trigger: CONSUME
+      type: feed
+      cooldown: 12s
+      params:
+        food: 3
+        saturation: 2
+  recipe:
+    type: shapeless
+    ingredients-list:
+      - yap420_bud_cured_sativa
+      - yap420_bud_cured_sativa
+      - yap420_rolling_paper
+
+yap420_blunt_indica:
+  base: COOKIE
+  name: "&2Indica Blunt"
+  lore:
+    - "&7Dark wrap — heavy chill"
+  custom-model-data: 12224
+  item-model: yapitems:yap420_blunt
+  consume: true
+  abilities:
+    - trigger: CONSUME
+      type: effect
+      cooldown: 12s
+      params:
+        effects: [NAUSEA, SLOWNESS, ABSORPTION, BLINDNESS]
+        duration: 280
+        amplifier: 0
+        particle: HAPPY_VILLAGER
+        sound: ENTITY_PLAYER_BURP
+    - trigger: CONSUME
+      type: feed
+      cooldown: 12s
+      params:
+        food: 3
+        saturation: 2
+  recipe:
+    type: shapeless
+    ingredients-list:
+      - yap420_bud_cured_indica
+      - yap420_bud_cured_indica
+      - yap420_rolling_paper
+
+yap420_brownie:
+  base: COOKIE
+  name: "&6Medicated Brownie"
+  lore:
+    - "&7Edible — stronger, slower"
+  custom-model-data: 12221
+  item-model: yapitems:yap420_brownie
+  consume: true
+  abilities:
+    - trigger: CONSUME
+      type: effect
+      cooldown: 20s
+      params:
+        effects: [NAUSEA, SLOWNESS, REGENERATION, HUNGER]
+        duration: 300
+        amplifier: 0
+        particle: CRIT
+        sound: ENTITY_GENERIC_EAT
+    - trigger: CONSUME
+      type: feed
+      cooldown: 20s
+      params:
+        food: 6
+        saturation: 4
+  recipe:
+    type: shapeless
+    ingredients-list:
+      - yap420_bud_cured_sativa
+      - COCOA_BEANS
+      - SUGAR
+      - WHEAT
+
+yap420_drying_rack:
+  base: TRIPWIRE_HOOK
+  name: "&eDrying Rack"
+  lore:
+    - "&7Right-click to place"
+    - "&7Deposit wet buds to cure"
+  custom-model-data: 12222
+  item-model: yapitems:yap420_rack
+  recipe:
+    type: shaped
+    shape:
+      - "S S"
+      - "SSS"
+      - "S S"
+    ingredients:
+      S: STICK
+
+yap420_hemp_fiber:
+  base: PAPER
+  name: "&aHemp Fiber"
+  lore:
+    - "&7Craft into string"
+  custom-model-data: 12223
+  item-model: yapitems:yap420_fiber
+  recipe:
+    type: shapeless
+    ingredients-list:
+      - yap420_bud_cured_sativa
+      - yap420_bud_cured_sativa
+
+yap420_gram_sativa:
+  base: DRIED_KELP
+  name: "&aSativa Gram"
+  lore:
+    - "&71g bagged cured bud"
+    - "&7Pack 28 → ounce · sell at dealer"
+  custom-model-data: 12225
+  item-model: yapitems:yap420_gram
+  recipe:
+    type: shapeless
+    ingredients-list:
+      - yap420_bud_cured_sativa
+
+yap420_gram_indica:
+  base: DRIED_KELP
+  name: "&2Indica Gram"
+  lore:
+    - "&71g bagged cured bud"
+    - "&7Pack 28 → ounce · sell at dealer"
+  custom-model-data: 12226
+  item-model: yapitems:yap420_gram
+  recipe:
+    type: shapeless
+    ingredients-list:
+      - yap420_bud_cured_indica
+
+yap420_ounce_sativa:
+  base: HAY_BLOCK
+  name: "&aSativa Ounce"
+  lore:
+    - "&728g ounce"
+    - "&7Use packaging press · sell at dealer"
+  custom-model-data: 12227
+  item-model: yapitems:yap420_ounce
+
+yap420_ounce_indica:
+  base: HAY_BLOCK
+  name: "&2Indica Ounce"
+  lore:
+    - "&728g ounce"
+    - "&7Use packaging press · sell at dealer"
+  custom-model-data: 12228
+  item-model: yapitems:yap420_ounce
+
+yap420_brick_sativa:
+  base: HAY_BLOCK
+  name: "&aSativa Pound"
+  lore:
+    - "&71 lb / 16 oz"
+    - "&7Use packaging press · sell at dealer"
+  custom-model-data: 12229
+  item-model: yapitems:yap420_brick
+
+yap420_brick_indica:
+  base: HAY_BLOCK
+  name: "&2Indica Pound"
+  lore:
+    - "&71 lb / 16 oz"
+    - "&7Use packaging press · sell at dealer"
+  custom-model-data: 12230
+  item-model: yapitems:yap420_brick
+
+yap420_packaging_press:
+  base: PISTON
+  name: "&6Packaging Press"
+  lore:
+    - "&7Right-click to place"
+    - "&7Press grams → ounces → pounds"
+    - "&7Empty hand opens pack GUI"
+  custom-model-data: 12231
+  item-model: yapitems:yap420_press
+  recipe:
+    type: shaped
+    shape:
+      - "III"
+      - "IPI"
+      - "ICI"
+    ingredients:
+      I: IRON_INGOT
+      P: PISTON
+      C: CHEST

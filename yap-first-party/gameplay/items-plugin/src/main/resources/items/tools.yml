@@ -1,0 +1,39 @@
+# Default VIP tools. Behavior knobs live in plugins/YaPItems/qol.yml.
+# Give: /yapitems give timber_axe|excavator|excavator_6|excavator_9
+# Staff alias: /yapqol give timber_axe|excavator:3|excavator:6|excavator:9
+
+timber_axe:
+  base: NETHERITE_AXE
+  name: "&aTimber Axe"
+  lore:
+    - "&7Chop one trunk block to fell the whole tree."
+    - "&8VIP tool"
+  glow: true
+  unbreakable: false
+
+excavator:
+  base: NETHERITE_PICKAXE
+  name: "&bArea Excavator"
+  lore:
+    - "&7Mines a flat 3×3 around the block you break."
+    - "&8VIP tool"
+  glow: true
+  unbreakable: false
+
+excavator_6:
+  base: NETHERITE_PICKAXE
+  name: "&bArea Excavator"
+  lore:
+    - "&7Mines a flat 6×6 around the block you break."
+    - "&8VIP tool"
+  glow: true
+  unbreakable: false
+
+excavator_9:
+  base: NETHERITE_PICKAXE
+  name: "&bArea Excavator"
+  lore:
+    - "&7Mines a flat 9×9 around the block you break."
+    - "&8VIP tool"
+  glow: true
+  unbreakable: false

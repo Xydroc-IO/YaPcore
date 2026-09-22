@@ -7,12 +7,18 @@ author: YapLabs
 description: Custom items registry — abilities, furniture, recipes, combat gear tags
 website: https://github.com/yaplabs
 softdepend: [YaPPlayerData, YaPSkills, PlaceholderAPI]
+provides: [YaP-QoL]
 commands:
   yapitems:
     description: YaPItems admin — give, take, list, create, gui, furniture
     usage: /yapitems <give|take|list|info|gui|reload|create|delete|cooldown|furniture>
     aliases: [yitems]
     permission: yapitems.use
+  yapqol:
+    description: Staff timber axe and excavator tools
+    usage: /yapqol <reload|status|give <timber_axe|excavator|excavator:N> [player]|gui>
+    aliases: [qol, yap-qol]
+    permission: yapqol.admin
 permissions:
   yapitems.use:
     description: Base YaPItems access (list/info; ungated item use)
@@ -42,3 +48,18 @@ permissions:
       yapitems.create: true
       yapitems.use: true
       yapitems.craft: true
+  yapqol.timber:
+    description: Use the timber axe when holding it
+    default: true
+  yapqol.excavator:
+    description: Use the area excavator when holding it
+    default: true
+  yapqol.admin:
+    description: Reload tool knobs and open /yapqol gui
+    default: op
+  yapqol.give:
+    description: Give timber axe and excavator items
+    default: op
+  yapqol.gui:
+    description: Open the tool staff GUI
+    default: op

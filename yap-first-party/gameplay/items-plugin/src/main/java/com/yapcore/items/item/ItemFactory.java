@@ -72,6 +72,19 @@ public final class ItemFactory {
         }
         if (def.customModelData() > 0) {
             meta.setCustomModelData(def.customModelData());
+            try {
+                var cmdComp = meta.getCustomModelDataComponent();
+                cmdComp.setFloats(List.of((float) def.customModelData()));
+                meta.setCustomModelDataComponent(cmdComp);
+            } catch (Throwable ignored) {
+                // older meta stubs
+            }
+        }
+        if (def.itemModel() != null) {
+            NamespacedKey modelKey = NamespacedKey.fromString(def.itemModel());
+            if (modelKey != null) {
+                meta.setItemModel(modelKey);
+            }
         }
         meta.setUnbreakable(def.unbreakable());
         boolean hideEnchants = false;
@@ -109,9 +122,21 @@ public final class ItemFactory {
         if (def.glow()) {
             meta.setEnchantmentGlintOverride(Boolean.TRUE);
         }
+        com.yapcore.qol.ToolTags.apply(meta, def.id());
         stack.setItemMeta(meta);
 
         // Authoritative 26.2 data-component write (survives meta/handle sync quirks).
+        if (def.customModelData() > 0) {
+            stack.setData(
+                    DataComponentTypes.CUSTOM_MODEL_DATA,
+                    io.papermc.paper.datacomponent.item.CustomModelData.customModelData()
+                            .addFloat(def.customModelData())
+                            .build());
+        }
+        if (def.itemModel() != null) {
+            net.kyori.adventure.key.Key modelKey = net.kyori.adventure.key.Key.key(def.itemModel());
+            stack.setData(DataComponentTypes.ITEM_MODEL, modelKey);
+        }
         if (!enchants.isEmpty()) {
             ItemEnchantments.Builder builder = ItemEnchantments.itemEnchantments();
             for (Map.Entry<Enchantment, Integer> e : enchants.entrySet()) {

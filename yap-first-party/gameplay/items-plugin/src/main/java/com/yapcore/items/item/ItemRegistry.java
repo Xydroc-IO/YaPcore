@@ -99,6 +99,7 @@ public final class ItemRegistry {
         if (cmd != 0 && !config.inCmdRange(cmd)) {
             plugin.getLogger().warning("Item " + id + " CMD " + cmd + " outside " + config.cmdMin() + "-" + config.cmdMax());
         }
+        String itemModel = ks.getString("item-model", null);
         boolean unbreakable = ks.getBoolean("unbreakable", false);
         boolean glow = ks.getBoolean("glow", false);
         boolean rainbow = ks.getBoolean("rainbow", false)
@@ -159,24 +160,23 @@ public final class ItemRegistry {
         if (recSec != null) {
             String type = recSec.getString("type", "shaped");
             List<String> shape = recSec.getStringList("shape");
-            Map<Character, Material> ingredients = new LinkedHashMap<>();
+            Map<Character, String> ingredients = new LinkedHashMap<>();
             ConfigurationSection ing = recSec.getConfigurationSection("ingredients");
             if (ing != null) {
                 for (String ik : ing.getKeys(false)) {
                     if (ik.isEmpty()) {
                         continue;
                     }
-                    Material m = Material.matchMaterial(ing.getString(ik, "AIR"));
-                    if (m != null && m != Material.AIR) {
-                        ingredients.put(ik.charAt(0), m);
+                    String ref = ing.getString(ik, "");
+                    if (ref != null && !ref.isBlank()) {
+                        ingredients.put(ik.charAt(0), ref.trim());
                     }
                 }
             }
-            List<Material> shapeless = new ArrayList<>();
+            List<String> shapeless = new ArrayList<>();
             for (String sm : recSec.getStringList("ingredients-list")) {
-                Material m = Material.matchMaterial(sm);
-                if (m != null && m.isItem()) {
-                    shapeless.add(m);
+                if (sm != null && !sm.isBlank()) {
+                    shapeless.add(sm.trim());
                 }
             }
             recipe = new ItemDefinition.RecipeDef(type, shape, ingredients, shapeless);
@@ -187,6 +187,7 @@ public final class ItemRegistry {
                 name,
                 List.copyOf(lore),
                 cmd,
+                itemModel,
                 unbreakable,
                 glow,
                 rainbow,

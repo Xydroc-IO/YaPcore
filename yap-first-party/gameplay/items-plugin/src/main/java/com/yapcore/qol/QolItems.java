@@ -1,5 +1,6 @@
 package com.yapcore.qol;
 
+import com.yapcore.items.item.ItemFactory;
 import io.papermc.paper.datacomponent.DataComponentTypes;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /** Factory for timber axe and area excavator items. */
 public final class QolItems {
@@ -22,10 +24,12 @@ public final class QolItems {
 
     private final QolConfig config;
     private final QolKeys keys;
+    private final ItemFactory factory;
 
-    public QolItems(QolConfig config, QolKeys keys) {
+    public QolItems(QolConfig config, QolKeys keys, ItemFactory factory) {
         this.config = config;
         this.keys = keys;
+        this.factory = factory;
     }
 
     public ItemStack createTimberAxe() {
@@ -56,6 +60,13 @@ public final class QolItems {
     }
 
     public ItemStack create(String type) {
+        String id = catalogId(type);
+        if (factory != null && id != null) {
+            Optional<ItemStack> built = factory.create(id);
+            if (built.isPresent()) {
+                return built.get();
+            }
+        }
         String key = type.toLowerCase(Locale.ROOT).trim().replace('-', '_');
         if (key.startsWith("excavator:")) {
             try {
@@ -76,6 +87,21 @@ public final class QolItems {
             case TIMBER_AXE, "timber", "axe" -> createTimberAxe();
             case EXCAVATOR, "pick", "pickaxe", "hammer" -> createExcavator();
             default -> throw new IllegalArgumentException("Unknown tool: " + type);
+        };
+    }
+
+    /** Map staff give tokens onto items/tools.yml ids. */
+    private static String catalogId(String type) {
+        String key = type.toLowerCase(Locale.ROOT).trim().replace('-', '_');
+        if (key.startsWith("excavator:")) {
+            key = "excavator_" + key.substring("excavator:".length());
+        }
+        return switch (key) {
+            case "timber_axe", "timber", "axe" -> "timber_axe";
+            case "excavator", "excavator_3", "pick", "pickaxe", "hammer" -> "excavator";
+            case "excavator_6" -> "excavator_6";
+            case "excavator_9" -> "excavator_9";
+            default -> null;
         };
     }
 

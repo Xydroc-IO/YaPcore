@@ -17,6 +17,7 @@ public record ItemDefinition(
         String name,
         List<String> lore,
         int customModelData,
+        String itemModel,
         boolean unbreakable,
         boolean glow,
         boolean rainbow,
@@ -33,6 +34,7 @@ public record ItemDefinition(
 
     public ItemDefinition {
         abilities = abilities == null ? List.of() : List.copyOf(abilities);
+        itemModel = itemModel == null || itemModel.isBlank() ? null : itemModel.trim();
     }
 
     /** First ability, if any (legacy helper). */
@@ -81,7 +83,7 @@ public record ItemDefinition(
     public record RecipeDef(
             String type,
             List<String> shape,
-            Map<Character, Material> ingredients,
-            List<Material> shapeless) {
+            Map<Character, String> ingredients,
+            List<String> shapeless) {
     }
 }
