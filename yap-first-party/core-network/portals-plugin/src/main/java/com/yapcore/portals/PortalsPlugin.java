@@ -40,6 +40,12 @@ public final class PortalsPlugin extends JavaPlugin {
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, LinkConnect.CHANNEL_LEGACY);
         getServer().getMessenger().registerOutgoingPluginChannel(this, LinkConnect.CHANNEL_MODERN);
+        // Touch Connect encoder at enable so a broken jar fails here, not on first walk-in.
+        try {
+            LinkConnect.connectPayload("_boot");
+        } catch (Exception e) {
+            getLogger().log(java.util.logging.Level.SEVERE, "LinkConnect unavailable — transfers will fail", e);
+        }
 
         getServer().getServicesManager().register(PortalService.class, service, this, ServicePriority.Normal);
         getServer().getServicesManager().register(PortalTransfer.class, service, this, ServicePriority.Normal);
@@ -59,9 +65,9 @@ public final class PortalsPlugin extends JavaPlugin {
             cmd.setTabCompleter(commands);
         }
 
-        // Worlds may still be loading — paint after a short delay, then keep particles alive.
+        // Worlds may still be loading — paint after a short delay, then keep cinematic FX alive.
         YapSched.globalLater(this, () -> service.visuals().applyAll(service.list()), 40L);
-        YapSched.globalTimer(this, () -> service.visuals().tickParticles(service.list()), 20L, 10L);
+        YapSched.globalTimer(this, () -> service.visuals().tickParticles(service.list()), 20L, 5L);
 
         getLogger().info("YaPPortals ready — server-id=" + config.serverId()
                 + " portals=" + service.list().size()

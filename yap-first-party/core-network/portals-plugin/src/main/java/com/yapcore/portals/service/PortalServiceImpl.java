@@ -1,6 +1,7 @@
 package com.yapcore.portals.service;
 
 import com.yapcore.portals.Portal;
+import com.yapcore.portals.PortalArrival;
 import com.yapcore.portals.PortalCuboid;
 import com.yapcore.portals.PortalService;
 import com.yapcore.portals.PortalTransfer;
@@ -10,7 +11,6 @@ import com.yapcore.portals.store.PortalYamlStore;
 import com.yapcore.portals.store.SelectionDrafts;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Location;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -31,10 +31,13 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
     private final PortalYamlStore store;
     private final PortalArrivalPending arrivals;
     private final PortalVisuals visuals;
+    private final PortalLocalTransferOps localTransfer;
     private final SelectionDrafts drafts = new SelectionDrafts();
     private final PortalCooldown cooldown = new PortalCooldown();
     /** Last portal name the player stood in (boundary fire). */
     private final Map<UUID, String> inside = new ConcurrentHashMap<>();
+    /** Wand paint target (portal name) while the admin is editing a custom mask. */
+    private final Map<UUID, String> painting = new ConcurrentHashMap<>();
     /**
      * Soft-switch / join often restores the player next to a pad (lobby logout at the
      * creative portal). Suppress transfer until they leave the volume or grace ends.
@@ -50,6 +53,15 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
         this.store = store;
         this.arrivals = arrivals;
         this.visuals = new PortalVisuals(plugin);
+        this.localTransfer = new PortalLocalTransferOps(this);
+    }
+
+    JavaPlugin plugin() {
+        return plugin;
+    }
+
+    PortalsConfig config() {
+        return config;
     }
 
     public PortalVisuals visuals() {
@@ -69,6 +81,64 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
         inside.remove(uuid);
         joinGraceUntilMs.remove(uuid);
         drafts.clear(uuid);
+        painting.remove(uuid);
+    }
+
+    public java.util.Optional<String> painting(UUID uuid) {
+        if (uuid == null) {
+            return java.util.Optional.empty();
+        }
+        return java.util.Optional.ofNullable(painting.get(uuid));
+    }
+
+    public void stopPaint(UUID uuid) {
+        if (uuid != null) {
+            painting.remove(uuid);
+        }
+    }
+
+    /** Freeze the current shape into a custom mask and arm the wand. */
+    public boolean beginPaint(Player player, String name) {
+        java.util.Optional<Portal> opt = store.get(name);
+        if (opt.isEmpty() || player == null) {
+            return false;
+        }
+        Portal seeded = opt.get().asCustomMask();
+        if (seeded != opt.get()) {
+            save(seeded);
+        }
+        painting.put(player.getUniqueId(), seeded.name());
+        return true;
+    }
+
+    public void paintBlock(Player player, org.bukkit.block.Block block, boolean add) {
+        if (player == null || block == null || block.getWorld() == null) {
+            return;
+        }
+        String name = painting.get(player.getUniqueId());
+        if (name == null) {
+            return;
+        }
+        java.util.Optional<Portal> opt = store.get(name);
+        if (opt.isEmpty()) {
+            painting.remove(player.getUniqueId());
+            player.sendMessage("§cPaint target is gone.");
+            return;
+        }
+        Portal portal = opt.get();
+        if (!portal.world().equals(block.getWorld().getName())) {
+            player.sendMessage("§cThat block is not in §f" + portal.world() + "§c.");
+            return;
+        }
+        Portal next = portal.withMaskBlock(block.getX(), block.getY(), block.getZ(), add);
+        if (next == portal) {
+            player.sendMessage("§cStay inside the portal box " + portal.cuboid() + ".");
+            return;
+        }
+        save(next);
+        player.sendMessage((add ? "§aAdded" : "§7Removed")
+                + " §f" + block.getX() + "," + block.getY() + "," + block.getZ()
+                + " §7(" + next.shape().customCount() + " blocks)");
     }
 
     public Map<UUID, String> insideTracker() {
@@ -194,7 +264,7 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
         if (player == null || targetServer == null || targetServer.isBlank()) {
             return false;
         }
-        return queueConnect(player, targetServer.trim(), config.defaultCooldownSeconds(), null);
+        return queueConnect(player, targetServer.trim(), config.defaultCooldownSeconds(), null, null);
     }
 
     @Override
@@ -208,7 +278,7 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
         }
         String custom = portal.enterMessage();
         return queueConnect(player, portal.targetServer(), portal.cooldownSeconds(),
-                custom == null || custom.isBlank() ? null : custom);
+                custom == null || custom.isBlank() ? null : custom, portal);
     }
 
     public boolean canUse(Player player, Portal portal) {
@@ -225,14 +295,22 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
         return true;
     }
 
-    private boolean queueConnect(Player player, String targetServer, int cooldownSec, String customMsg) {
+    private boolean queueConnect(Player player, String targetServer, int cooldownSec, String customMsg,
+                                 Portal portal) {
         if (!config.enabled()) {
             return false;
         }
         String local = config.serverId();
+        PortalArrival arrival = portal == null ? PortalArrival.SPAWN : portal.arrival();
         if (local != null && local.equalsIgnoreCase(targetServer)) {
-            player.sendMessage(config.msgAlreadyHere().replace("{server}", targetServer));
-            return false;
+            if (arrival == PortalArrival.RTP) {
+                return localTransfer.queueLocalRtp(player, cooldownSec, customMsg, portal);
+            }
+            if (arrival == PortalArrival.HOME) {
+                return localTransfer.queueLocalHome(player, cooldownSec, customMsg, portal);
+            }
+            // SPAWN (default): same-server pad → /setspawn (or world spawn)
+            return localTransfer.queueLocalSpawn(player, cooldownSec, customMsg, portal);
         }
         long now = System.currentTimeMillis();
         if (!player.hasPermission("yapportals.bypass.cooldown")
@@ -246,9 +324,19 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
                 : config.msgTransferring().replace("{server}", targetServer);
         YapSched.entity(plugin, player, () -> {
             try {
+                try {
+                    if (portal != null) {
+                        visuals.playEnter(player, portal);
+                    } else {
+                        PortalFx.playWarp(player);
+                    }
+                } catch (Exception fx) {
+                    plugin.getLogger().log(Level.FINE, "portal enter FX", fx);
+                }
                 releaseSessionLockForTransfer(player);
                 if (arrivals != null) {
-                    arrivals.mark(player.getUniqueId(), targetServer);
+                    String home = portal == null ? "home" : portal.homeName();
+                    arrivals.mark(player.getUniqueId(), targetServer, arrival, home);
                 }
                 byte[] payload = LinkConnect.connectPayload(targetServer);
                 // Paper remaps BungeeCord → bungeecord:main; send both for proxy compat.
@@ -270,11 +358,6 @@ public final class PortalServiceImpl implements PortalService, PortalTransfer {
                 }
                 player.sendMessage(message);
                 plugin.getLogger().info("Connect queued " + player.getName() + " → " + targetServer);
-                try {
-                    player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 0.7f, 1.1f);
-                } catch (Exception ignored) {
-                    // sound optional
-                }
                 cooldown.mark(player.getUniqueId(), cooldownSec, System.currentTimeMillis());
             } catch (IOException e) {
                 player.sendMessage(config.msgNoProxy());

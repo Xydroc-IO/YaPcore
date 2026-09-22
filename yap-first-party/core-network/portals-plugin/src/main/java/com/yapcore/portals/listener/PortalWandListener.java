@@ -93,7 +93,20 @@ public final class PortalWandListener implements Listener {
         }
         denyUse(event);
         if (block == null || block.getType().isAir()) {
-            player.sendMessage("§cLook at a block to set the portal corner.");
+            player.sendMessage(portals.painting(player.getUniqueId()).isPresent()
+                    ? "§cLook at a block inside the portal."
+                    : "§cLook at a block to set the portal corner.");
+            return;
+        }
+        if (portals.painting(player.getUniqueId()).isPresent()) {
+            if (left) {
+                long now = System.currentTimeMillis();
+                Long prev = lastLeftMs.put(player.getUniqueId(), now);
+                if (prev != null && now - prev < LEFT_DEBOUNCE_MS) {
+                    return;
+                }
+            }
+            portals.paintBlock(player, block, left);
             return;
         }
         if (left) {
@@ -121,6 +134,15 @@ public final class PortalWandListener implements Listener {
         }
         Block block = rayTarget(player);
         if (block == null || block.getType().isAir()) {
+            return;
+        }
+        if (portals.painting(player.getUniqueId()).isPresent()) {
+            long now = System.currentTimeMillis();
+            Long prev = lastLeftMs.put(player.getUniqueId(), now);
+            if (prev != null && now - prev < LEFT_DEBOUNCE_MS) {
+                return;
+            }
+            portals.paintBlock(player, block, true);
             return;
         }
         setCorner(player, block, true);

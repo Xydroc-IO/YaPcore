@@ -92,6 +92,24 @@ public final class PortalYamlStore {
             yaml.set(path + ".cooldown-seconds", p.cooldownSeconds());
             yaml.set(path + ".message", p.enterMessage());
             yaml.set(path + ".color", p.color());
+            if (p.arrival() != com.yapcore.portals.PortalArrival.SPAWN) {
+                yaml.set(path + ".arrival", p.arrival().name().toLowerCase(java.util.Locale.ROOT));
+            }
+            if (p.arrival() == com.yapcore.portals.PortalArrival.HOME
+                    && p.homeName() != null
+                    && !"home".equals(p.homeName())) {
+                yaml.set(path + ".home-name", p.homeName());
+            }
+            if (p.shape().kind() != com.yapcore.portals.PortalShape.Kind.FULL) {
+                yaml.set(path + ".shape", p.shape().kind().name().toLowerCase(java.util.Locale.ROOT));
+            }
+            if (p.shape().kind() == com.yapcore.portals.PortalShape.Kind.CUSTOM) {
+                java.util.List<java.util.List<Integer>> blocks = new java.util.ArrayList<>();
+                for (int[] b : p.shape().customBlocks()) {
+                    blocks.add(java.util.List.of(b[0], b[1], b[2]));
+                }
+                yaml.set(path + ".blocks", blocks);
+            }
         }
         if (byName.isEmpty()) {
             yaml.createSection("portals");
@@ -156,10 +174,10 @@ public final class PortalYamlStore {
             if (!p.enabled() || !world.equals(p.world())) {
                 continue;
             }
-            if (!p.cuboid().containsBlock(x, y, z)) {
+            if (!p.containsBlock(x, y, z)) {
                 continue;
             }
-            int vol = p.cuboid().volumeBlocks();
+            int vol = p.shape().estimateCount(p.cuboid());
             if (best == null || vol < bestVol) {
                 best = p;
                 bestVol = vol;
@@ -182,6 +200,12 @@ public final class PortalYamlStore {
         if (target == null || target.isBlank()) {
             throw new IllegalArgumentException("target-server required");
         }
+        String arrivalRaw = sec.getString("arrival", "spawn");
+        com.yapcore.portals.PortalArrival arrival = com.yapcore.portals.PortalArrival.parse(arrivalRaw);
+        String homeName = sec.getString("home-name", null);
+        if (homeName == null || homeName.isBlank()) {
+            homeName = com.yapcore.portals.PortalArrival.homeNameOf(arrivalRaw);
+        }
         return new Portal(
                 key,
                 world,
@@ -191,7 +215,52 @@ public final class PortalYamlStore {
                 sec.getInt("cooldown-seconds", 3),
                 sec.getBoolean("enabled", true),
                 sec.getString("message", ""),
-                sec.getString("color", PortalColors.DEFAULT)
+                sec.getString("color", PortalColors.DEFAULT),
+                readShape(sec, cuboid),
+                arrival,
+                homeName
         );
+    }
+
+    private static com.yapcore.portals.PortalShape readShape(
+            ConfigurationSection sec, PortalCuboid cuboid) {
+        String raw = sec.getString("shape", "full");
+        com.yapcore.portals.PortalShape.Kind kind = com.yapcore.portals.PortalShape.Kind.parse(raw);
+        if (kind != com.yapcore.portals.PortalShape.Kind.CUSTOM) {
+            return com.yapcore.portals.PortalShape.of(kind);
+        }
+        com.yapcore.portals.PortalShape shape = com.yapcore.portals.PortalShape.of(kind);
+        java.util.List<?> rawBlocks = sec.getList("blocks");
+        if (rawBlocks == null) {
+            return shape;
+        }
+        for (Object entry : rawBlocks) {
+            int dx;
+            int dy;
+            int dz;
+            if (entry instanceof java.util.List<?> list && list.size() >= 3) {
+                dx = toInt(list.get(0));
+                dy = toInt(list.get(1));
+                dz = toInt(list.get(2));
+            } else if (entry instanceof String text && text.split(",").length >= 3) {
+                String[] parts = text.split(",");
+                dx = Integer.parseInt(parts[0].trim());
+                dy = Integer.parseInt(parts[1].trim());
+                dz = Integer.parseInt(parts[2].trim());
+            } else {
+                continue;
+            }
+            if (cuboid.containsBlock(cuboid.minX() + dx, cuboid.minY() + dy, cuboid.minZ() + dz)) {
+                shape = shape.withBlock(dx, dy, dz, true);
+            }
+        }
+        return shape;
+    }
+
+    private static int toInt(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        return Integer.parseInt(String.valueOf(value).trim());
     }
 }

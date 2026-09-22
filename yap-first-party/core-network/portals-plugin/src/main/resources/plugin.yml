@@ -6,11 +6,11 @@ folia-supported: true
 author: YapLabs
 description: Fleet walk-through portals — BungeeCord Connect via YaP Link
 website: https://github.com/yaplabs
-softdepend: [YaPNpcs, YaPPlayerData]
+softdepend: [YaPNpcs, YaPPlayerData, YaPEssentials]
 commands:
   portal:
     description: Fleet portal admin
-    usage: /portal wand|pos1|pos2|create|delete|list|info|settarget|setperm|setcooldown|setmessage|setcolor|enable|disable|go|reload
+    usage: /portal wand|pos1|pos2|create|delete|list|info|settarget|setperm|setcooldown|setmessage|setcolor|setarrival|setshape|paint|enable|disable|go|reload
     aliases: [yapportal, portals]
     permission: yapportals.admin
 permissions:

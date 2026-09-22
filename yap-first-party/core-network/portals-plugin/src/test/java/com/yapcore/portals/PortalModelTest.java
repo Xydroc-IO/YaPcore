@@ -13,13 +13,15 @@ final class PortalModelTest {
         Portal p = new Portal("To-Survival", "world", box, "survival", "", 3, true, "");
         assertEquals("to-survival", p.name());
         Portal next = p.withTarget("lobby").withCooldown(5).withEnabled(false).withPermission("vip.portal")
-                .withColor("lime");
+                .withColor("lime").withArrival(PortalArrival.RTP);
         assertEquals("to-survival", next.name());
         assertEquals("lobby", next.targetServer());
         assertEquals(5, next.cooldownSeconds());
         assertFalseEnabled(next);
         assertEquals("vip.portal", next.permission());
         assertEquals("lime", next.color());
+        assertEquals(PortalArrival.RTP, next.arrival());
+        assertEquals(PortalArrival.SPAWN, p.arrival());
         assertEquals("purple", p.color());
         assertTrue(next.cuboid().containsBlock(1, 65, 1));
     }

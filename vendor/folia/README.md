@@ -17,9 +17,9 @@ Build requires: **JDK 25+** (Temurin/OpenJDK), Git, network for Paperweight down
 ## Quick start
 
 ```bash
-./scripts/vendor-folia.sh          # clone/pin into vendor/folia/work
-./scripts/folia-patch.sh           # apply YaP patches (after Folia applyAllPatches)
-./scripts/build-yap-folia.sh       # → lib/yap-folia-26.2.jar
+./scripts/folia/vendor-folia.sh          # clone/pin into vendor/folia/work
+./scripts/folia/folia-patch.sh           # apply YaP patches (after Folia applyAllPatches)
+./scripts/folia/build-yap-folia.sh       # → lib/yap-folia-26.2.jar
 ```
 
 Product config (prefer built jar):
@@ -29,7 +29,7 @@ folia-jar-source=build
 folia-version=26.2
 ```
 
-Stock Fill download remains available via `folia-jar-source=fetch` and `./scripts/fetch-folia.sh`.
+Stock Fill download remains available via `folia-jar-source=fetch` and `./scripts/folia/fetch-folia.sh`.
 
 ## License note
 

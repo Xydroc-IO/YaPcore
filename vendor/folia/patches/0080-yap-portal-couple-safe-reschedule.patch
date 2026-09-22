@@ -1,0 +1,38 @@
+--- a/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPortalRegionCoupler.java
++++ b/folia-server/src/minecraft/java/io/papermc/paper/threadedregions/YapPortalRegionCoupler.java
+@@ -113,18 +113,33 @@
+         try {
+             final boolean keep = partner.runTick();
+             if (keep && !partner.isMarkedAsNonSchedulable()) {
+-                scheduler.scheduleRegion(partner);
++                trySchedulePartner(scheduler, partner);
+             }
+         } catch (final Throwable t) {
+             LOGGER.error("YaP portal couple: partner region tick failed, rescheduling", t);
+             if (!partner.isMarkedAsNonSchedulable()) {
+-                scheduler.scheduleRegion(partner);
++                trySchedulePartner(scheduler, partner);
+             }
+         } finally {
+             STEALING.set(Boolean.FALSE);
+         }
+     }
+ 
++    /**
++     * Partner may already be on the EDF queue (race with the normal scheduler).
++     * Never let {@link IllegalStateException} escape — it takes down the region thread.
++     */
++    private static void trySchedulePartner(final TickRegionScheduler scheduler,
++                                           final TickRegionScheduler.RegionScheduleHandle partner) {
++        try {
++            scheduler.scheduleRegion(partner);
++        } catch (final IllegalStateException already) {
++            LOGGER.debug("YaP portal couple: partner already scheduled/cancelled", already);
++        } catch (final Throwable t) {
++            LOGGER.warn("YaP portal couple: failed to reschedule partner", t);
++        }
++    }
++
+     private static void pullPartnerDeadline(final Link link) {
+         try {
+             final ThreadedRegionizer.ThreadedRegion<TickRegions.TickRegionData, TickRegions.TickRegionSectionData> from

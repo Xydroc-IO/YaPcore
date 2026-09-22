@@ -18,9 +18,13 @@ import java.util.stream.Collectors;
 
 public final class PortalCommands implements CommandExecutor, TabCompleter {
 
+    private static final List<String> SHAPES = List.of(
+            "full", "frame", "oval", "ring", "cross", "arch", "custom");
+
     private static final List<String> SUBS = List.of(
             "wand", "pos1", "pos2", "create", "delete", "list", "info",
-            "settarget", "setperm", "setcooldown", "setmessage", "setcolor",
+            "settarget", "setperm", "setcooldown", "setmessage", "setcolor", "setarrival",
+            "setshape", "paint",
             "enable", "disable", "go", "reload");
 
     private final PortalsPlugin plugin;
@@ -44,8 +48,11 @@ public final class PortalCommands implements CommandExecutor, TabCompleter {
         if (args.length == 0) {
             sender.sendMessage("§e/portal wand§7 · §fpos1§7 · §fpos2§7 · §fcreate <name> <server> [color]");
             sender.sendMessage("§e/portal delete|list|info|enable|disable|go|reload");
-            sender.sendMessage("§e/portal settarget|setperm|setcooldown|setmessage|setcolor <name> …");
-            sender.sendMessage("§7Walk-through colored fields (no glass) → YaP Link Connect.");
+            sender.sendMessage("§e/portal settarget|setperm|setcooldown|setmessage|setcolor|setarrival|setshape <name> …");
+            sender.sendMessage("§e/portal paint <name|off> §7· wand left adds, right removes");
+            sender.sendMessage("§7Shapes: /portal setshape <shape> while inside, or setshape <name> <shape>.");
+            sender.sendMessage("§7Arrival: spawn (default /setspawn), rtp (wild), or home (/sethome).");
+            sender.sendMessage("§7Same-server spawn pad: create with this server-id as target + setarrival spawn.");
             return true;
         }
         String sub = args[0].toLowerCase(Locale.ROOT);
@@ -62,6 +69,9 @@ public final class PortalCommands implements CommandExecutor, TabCompleter {
             case "setcooldown" -> metaOps.handleSetCooldown(sender, args);
             case "setmessage" -> metaOps.handleSetMessage(sender, args);
             case "setcolor" -> metaOps.handleSetColor(sender, args);
+            case "setarrival" -> metaOps.handleSetArrival(sender, args);
+            case "setshape" -> metaOps.handleSetShape(sender, args);
+            case "paint" -> metaOps.handlePaint(sender, args);
             case "enable" -> metaOps.handleEnable(sender, args, true);
             case "disable" -> metaOps.handleEnable(sender, args, false);
             case "go", "enter" -> metaOps.handleGo(sender, args);
@@ -98,9 +108,21 @@ public final class PortalCommands implements CommandExecutor, TabCompleter {
         String sub = args[0].toLowerCase(Locale.ROOT);
         if (args.length == 2) {
             return switch (sub) {
+                case "setshape" -> {
+                    List<String> both = new ArrayList<>(metaOps.portalNames());
+                    both.addAll(SHAPES);
+                    yield filter(both, args[1]);
+                }
                 case "delete", "remove", "info", "settarget", "setperm", "setpermission",
-                     "setcooldown", "setmessage", "setcolor", "enable", "disable", "go", "enter" ->
+                     "setcooldown", "setmessage", "setcolor", "setarrival",
+                     "enable", "disable", "go", "enter" ->
                         filter(metaOps.portalNames(), args[1]);
+                case "paint" -> {
+                    List<String> names = new ArrayList<>();
+                    names.add("off");
+                    names.addAll(metaOps.portalNames());
+                    yield filter(names, args[1]);
+                }
                 default -> List.of();
             };
         }
@@ -110,6 +132,15 @@ public final class PortalCommands implements CommandExecutor, TabCompleter {
             }
             if ("setcolor".equals(sub)) {
                 return filter(PortalColors.names(), args[2]);
+            }
+            if ("setarrival".equals(sub)) {
+                return filter(List.of("spawn", "rtp", "wild", "home"), args[2]);
+            }
+            if ("setshape".equals(sub)) {
+                if (com.yapcore.portals.PortalShape.Kind.known(args[1])) {
+                    return filter(metaOps.portalNames(), args[2]);
+                }
+                return filter(SHAPES, args[2]);
             }
         }
         if (args.length == 4 && ("create".equals(sub) || "define".equals(sub))) {
