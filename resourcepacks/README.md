@@ -16,11 +16,11 @@ resource-pack-forced=true
 
 - **Forced** (`resource-pack-forced=true`): decline → kick
 - **Default Java pack:** `yapcore-default.zip` = Faithful **64× blocks + held items** + **YaP Skies** + **YaP Water**
-  (built by `gradle prepareClientPack` / `./scripts/build-default-resourcepack.sh`)
+  (built by `gradle prepareClientPack` / `./scripts/packs/build-default-resourcepack.sh`)
 - **Default Bedrock pack:** `yapcore-default.mcpack` (built by `gradle prepareClientPackBedrock`)
-- Skies overlay: [`yap-skies/`](yap-skies/) (`python3 scripts/generate-yap-skies.py`)
-- Water/weather: `python3 scripts/generate-yap-water.py` (into `yap-skies/`)
-- Foliage: `python3 scripts/generate-yap-foliage.py` (dense Faithful-based leaf cutouts)
+- Skies overlay: [`yap-skies/`](yap-skies/) (`python3 scripts/packs/generate-yap-skies.py`)
+- Water/weather: `python3 scripts/packs/generate-yap-water.py` (into `yap-skies/`)
+- Foliage: `python3 scripts/packs/generate-yap-foliage.py` (dense Faithful-based leaf cutouts)
 - Default pack is Faithful 64x + YaP Skies + YaP Water + YaP Foliage (no vehicles/abilities overlays)
 - Iris / Complementary volumetric shaders are still client-only — YaP ships an
   optional Fabric stack (official Sodium pin + YaP Iris + YaP Shaders); see

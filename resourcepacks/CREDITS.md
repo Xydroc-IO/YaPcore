@@ -2,16 +2,16 @@
 
 ## YaPcore default pack (`yapcore-default.zip` / `.mcpack`)
 
-Built by `scripts/build-default-resourcepack.sh` (Java) and
-`scripts/build-default-bedrock-pack.sh` (Bedrock) on product builds:
+Built by `scripts/packs/build-default-resourcepack.sh` (Java) and
+`scripts/packs/build-default-bedrock-pack.sh` (Bedrock) on product builds:
 
 - **Faithful 64x** (world textures) — see below
 - **YaP Skies** (`yap-skies/`) — realistic sun, moon, multi-scale clouds, atmosphere, OptiFine skyboxes
-- **YaP Water / weather** (same overlay) — still/flow, underwater, drips (`scripts/generate-yap-water.py`)
+- **YaP Water / weather** (same overlay) — still/flow, underwater, drips (`scripts/packs/generate-yap-water.py`)
 - **YaP Foliage** (same overlay) — denser Faithful-based leaf cutouts + `strict_cutout` mcmeta
-  (`scripts/generate-yap-foliage.py`)
+  (`scripts/packs/generate-yap-foliage.py`)
 - **YaP Portals** (`yap-portals/`) — multi-color animated portal sheets on stained glass
-  (`scripts/generate-yap-portals.py`) for YaPPortals
+  (`scripts/packs/generate-yap-portals.py`) for YaPPortals
 
 `config/server.properties` → `resource-pack-file=yapcore-default.zip` (Java)
 and `resource-pack-bedrock-file=yapcore-default.mcpack` (Bedrock).
@@ -25,7 +25,7 @@ and `resource-pack-bedrock-file=yapcore-default.mcpack` (Bedrock).
   https://faithfulpack.net/license
 - **Shipped file (Java):** `faithful-64x.zip` (Release 14 Chaos Cubed, game version 26.2)
 - **Shipped file (Bedrock):** `faithful-64x-bedrock.mcpack` (fetched via
-  `scripts/fetch-faithful-64x-bedrock.sh`; not committed — rebuild locally)
+  `scripts/packs/fetch-faithful-64x-bedrock.sh`; not committed — rebuild locally)
 
 YaPcore redistributes this pack as a **server resource pack** under the terms of
 the Faithful License (credit + license link required; no paywall).
@@ -33,12 +33,19 @@ the Faithful License (credit + license link required; no paywall).
 YaP-authored overlays in this tree (skies, water, foliage, etc.) follow YaPcore’s
 **[GPLv3](../LICENSE)** — [docs/start/LICENSING.md](../docs/start/LICENSING.md).
 
+## YaP420 item art (CMD 12200–12230)
+
+GanjaCraft / Hempdustry 2 textures (GPLv3, warlonmhite) vendored under
+`THIRD_PARTY/ganjacraft/` and mapped into `yap-items` as `yap420_*.png`.
+See `THIRD_PARTY/ganjacraft-NOTICE.txt`. Original YaP rolling-paper booklet,
+3D drying rack, and blunt wrap variant are also YaP-authored.
+
 ## YaP Skies + Water + Foliage + Portals
 
-First-party. Skies: `scripts/generate-yap-skies.py`. Water/weather:
-`scripts/generate-yap-water.py`. Foliage: `scripts/generate-yap-foliage.py`
+First-party. Skies: `scripts/packs/generate-yap-skies.py`. Water/weather:
+`scripts/packs/generate-yap-water.py`. Foliage: `scripts/packs/generate-yap-foliage.py`
 (densifies Faithful leaves, binary alpha, `strict_cutout`). Portals:
-`scripts/generate-yap-portals.py` — animated dye-colored portal sheets on
+`scripts/packs/generate-yap-portals.py` — animated dye-colored portal sheets on
 stained glass / panes for YaPPortals (vanilla only has one nether-portal look).
 No third-party photos or Complementary/BSL assets.
 
@@ -55,5 +62,5 @@ bundle (`client_mods.zip` / **yap-visuals**):
 - **yap-visuals** — nests official Sodium + YaP Iris; extracts YaP Shaders on launch
 - **yap-bag** / **yap-staff** / **yap-ultrawide** — optional UI / Esc staff / Hor+ FOV (also in `client_mods.zip`)
 
-Build: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.
+Build: `./scripts/packs/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.
 See [docs/network/CLIENTS_AND_PACKS.md](../docs/network/CLIENTS_AND_PACKS.md).

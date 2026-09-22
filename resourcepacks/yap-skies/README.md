@@ -21,8 +21,8 @@ vanilla `celestial/sun` is the single sun.
 Regenerate:
 
 ```bash
-python3 scripts/generate-yap-skies.py
-python3 scripts/generate-yap-water.py
-python3 scripts/generate-yap-foliage.py
-./scripts/build-default-resourcepack.sh
+python3 scripts/packs/generate-yap-skies.py
+python3 scripts/packs/generate-yap-water.py
+python3 scripts/packs/generate-yap-foliage.py
+./scripts/packs/build-default-resourcepack.sh
 ```
