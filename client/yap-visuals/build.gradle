@@ -19,7 +19,7 @@ def shadersZip = file("${stackDir}/yap-shaders.zip")
 tasks.register("verifyStackArtifacts") {
     doLast {
         if (!sodiumJar.exists()) {
-            throw new GradleException("Missing ${sodiumJar}. Run ../../scripts/fetch-sodium.sh first.")
+            throw new GradleException("Missing ${sodiumJar}. Run ../../scripts/packs/fetch-sodium.sh first.")
         }
         if (irisJar == null || !irisJar.exists()) {
             throw new GradleException("Missing yap-iris-fabric-*.jar in ${stackDir}. Build YaP Iris first.")

@@ -14,7 +14,10 @@ public final class YapUltrawide implements ClientModInitializer {
 
     private static float lastVanillaVfov = HorPlus.VANILLA_HUD_FOV;
     private static float lastAppliedVfov = HorPlus.VANILLA_HUD_FOV;
+    private static float lastAspect = HorPlus.REFERENCE_16_9;
     private static float lastViewmodelScale = 1.0f;
+    private static float lastViewmodelOffsetX;
+    private static float lastViewmodelOffsetY;
     private static boolean lastHorPlusActive;
 
     @Override
@@ -22,9 +25,9 @@ public final class YapUltrawide implements ClientModInitializer {
         config = UltrawideConfig.load();
         BandSettings u21 = config.ultrawide_21_9;
         BandSettings s32 = config.superwide_32_9;
-        LOGGER.info("YaP Ultrawide ready — 21:9[{} maxH={} scale={}] 32:9[{} maxH={} scale={}] hud={}",
+        LOGGER.info("YaP Ultrawide ready — 21:9[{} maxH={} scale={}] 32:9[{} maxH={} scale={} handExtra={}] hud={}",
                 u21.mode, u21.maxHorizontalFov, u21.fovScale,
-                s32.mode, s32.maxHorizontalFov, s32.fovScale,
+                s32.mode, s32.maxHorizontalFov, s32.fovScale, s32.viewmodelExtraScale,
                 config.affectHudFov);
     }
 
@@ -47,6 +50,7 @@ public final class YapUltrawide implements ClientModInitializer {
         lastHorPlusActive = false;
         float applied = computeHorPlus(vanillaVerticalFov);
         lastAppliedVfov = applied;
+        refreshViewmodelAdjustments(applied, HorPlus.VANILLA_HUD_FOV);
         return applied;
     }
 
@@ -54,20 +58,39 @@ public final class YapUltrawide implements ClientModInitializer {
      * First-person hand camera. When Hor+ is active, use the <em>world</em>
      * VFOV so the held item shares the world frustum (block aim matches the
      * crosshair). {@link #viewmodelScale()} then undoes the zoom so weapons
-     * stay on screen.
+     * stay on screen; offsets pull the hand back from the bottom-right edge.
      */
     public static float applyHud(float vanillaHudFov) {
-        if (!config.affectHudFov || !lastHorPlusActive) {
-            lastViewmodelScale = 1.0f;
+        if (!config.affectHudFov) {
+            clearViewmodelAdjustments();
             return vanillaHudFov;
         }
-        lastViewmodelScale = HorPlus.viewmodelScale(lastAppliedVfov, vanillaHudFov);
+        // If HUD FOV is sampled before world FOV this frame, still compute Hor+.
+        if (!lastHorPlusActive) {
+            float computed = computeHorPlus(lastVanillaVfov);
+            if (!lastHorPlusActive) {
+                clearViewmodelAdjustments();
+                return vanillaHudFov;
+            }
+            lastAppliedVfov = computed;
+        }
+        refreshViewmodelAdjustments(lastAppliedVfov, vanillaHudFov);
         return lastAppliedVfov;
     }
 
     /** Pose scale for {@code ItemInHandRenderer} when HUD Hor+ is on. */
     public static float viewmodelScale() {
         return lastViewmodelScale;
+    }
+
+    /** View-space X nudge (negative = left) applied before hand submit. */
+    public static float viewmodelOffsetX() {
+        return lastViewmodelOffsetX;
+    }
+
+    /** View-space Y nudge (positive = up) applied before hand submit. */
+    public static float viewmodelOffsetY() {
+        return lastViewmodelOffsetY;
     }
 
     /** Multiplier for {@code GameRenderer.bobView} amplitude. */
@@ -88,6 +111,24 @@ public final class YapUltrawide implements ClientModInitializer {
         return applyWorld(vanillaVerticalFov);
     }
 
+    private static void clearViewmodelAdjustments() {
+        lastViewmodelScale = 1.0f;
+        lastViewmodelOffsetX = 0.0f;
+        lastViewmodelOffsetY = 0.0f;
+    }
+
+    private static void refreshViewmodelAdjustments(float worldVfov, float hudVfov) {
+        if (!lastHorPlusActive) {
+            clearViewmodelAdjustments();
+            return;
+        }
+        BandSettings band = config.forBand(lastBand);
+        float scale = HorPlus.viewmodelScale(worldVfov, hudVfov) * band.viewmodelExtraScale;
+        lastViewmodelScale = Math.max(0.55f, Math.min(1.55f, scale));
+        lastViewmodelOffsetX = HorPlus.autoViewmodelOffsetX(lastAspect) + band.viewmodelOffsetX;
+        lastViewmodelOffsetY = HorPlus.autoViewmodelOffsetY(lastAspect) + band.viewmodelOffsetY;
+    }
+
     private static float computeHorPlus(float vanillaVerticalFov) {
         UltrawideConfig cfg = config;
         if (!cfg.enabled || vanillaVerticalFov <= HorPlus.ZOOM_PASSTHROUGH_MAX) {
@@ -103,6 +144,7 @@ public final class YapUltrawide implements ClientModInitializer {
             return vanillaVerticalFov;
         }
         float aspect = width / (float) height;
+        lastAspect = aspect;
         AspectBand band = AspectBand.of(aspect);
         if (band != lastBand) {
             lastBand = band;
@@ -126,7 +168,11 @@ public final class YapUltrawide implements ClientModInitializer {
         if (bandCfg.fovScale != 1.0f) {
             vfov *= bandCfg.fovScale;
         }
+        vfov = HorPlus.clampHorizontal(vfov, aspect, bandCfg.maxHorizontalFov);
+        if (bandCfg.minVerticalFov > 0.0f && vfov < bandCfg.minVerticalFov) {
+            vfov = bandCfg.minVerticalFov;
+        }
         lastHorPlusActive = true;
-        return HorPlus.clampHorizontal(vfov, aspect, bandCfg.maxHorizontalFov);
+        return vfov;
     }
 }

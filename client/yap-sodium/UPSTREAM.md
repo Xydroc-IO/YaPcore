@@ -11,4 +11,4 @@
 | Jar | sodium-fabric-0.9.1+mc26.2.jar |
 | Maven (Iris compile) | net.caffeinemc:sodium-fabric:0.9.1+mc26.2 |
 
-Fetch with `./scripts/fetch-sodium.sh`.
+Fetch with `./scripts/packs/fetch-sodium.sh`.

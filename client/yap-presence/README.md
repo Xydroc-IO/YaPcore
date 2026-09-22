@@ -33,4 +33,4 @@ cd client/yap-presence
 
 Jar: `build/libs/yap-presence-1.0.0.jar`
 
-Or via repo script: `scripts/build-yap-client-render.sh`
+Or via repo script: `scripts/packs/build-yap-client-render.sh`

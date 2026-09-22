@@ -20,7 +20,7 @@ import java.nio.file.Path;
 public final class UltrawideConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     /** Bumped when defaults change in a way that should rewrite existing configs. */
-    private static final int CURRENT_VERSION = 5;
+    private static final int CURRENT_VERSION = 7;
 
     public int configVersion = 0;
     public boolean enabled = true;
@@ -133,6 +133,36 @@ public final class UltrawideConfig {
                 YapUltrawide.LOGGER.info(
                         "v5: tighter HFOV (16:9 match / ~100°) + HUD Hor+ with viewmodel scale");
             }
+            // v6: 32:9 v5 was telephoto (~39° V) — hand/world vanished. Open HFOV + match 21:9.
+            if (configVersion < 6) {
+                if (superwide_32_9 != null) {
+                    superwide_32_9.mode = "match_21_9";
+                    superwide_32_9.maxHorizontalFov = 128.0f;
+                    superwide_32_9.fovScale = 1.0f;
+                    superwide_32_9.targetHorizontalFov = 120.0f;
+                    superwide_32_9.minVerticalFov = 48.0f;
+                }
+                if (ultrawide_21_9 != null) {
+                    ultrawide_21_9.minVerticalFov = 50.0f;
+                }
+                affectHudFov = true;
+                YapUltrawide.LOGGER.info(
+                        "v6: 32:9 match_21_9 / maxH 128 / minV 48 (restore hand + world)");
+            }
+            // v7: aspect-aware hand translate + larger 32:9 viewmodel (sword was clipped).
+            if (configVersion < 7) {
+                if (superwide_32_9 != null) {
+                    superwide_32_9.viewmodelOffsetX = -0.08f;
+                    superwide_32_9.viewmodelOffsetY = 0.06f;
+                    superwide_32_9.viewmodelExtraScale = 1.22f;
+                }
+                if (ultrawide_21_9 != null) {
+                    ultrawide_21_9.viewmodelExtraScale = 1.05f;
+                }
+                affectHudFov = true;
+                YapUltrawide.LOGGER.info(
+                        "v7: 32:9 viewmodel offset + extra scale (keep sword on screen)");
+            }
             configVersion = CURRENT_VERSION;
         }
 
@@ -170,6 +200,10 @@ public final class UltrawideConfig {
         s.targetHorizontalFov = src.targetHorizontalFov;
         s.maxHorizontalFov = src.maxHorizontalFov;
         s.fovScale = src.fovScale;
+        s.minVerticalFov = src.minVerticalFov;
+        s.viewmodelOffsetX = src.viewmodelOffsetX;
+        s.viewmodelOffsetY = src.viewmodelOffsetY;
+        s.viewmodelExtraScale = src.viewmodelExtraScale;
         return s;
     }
 

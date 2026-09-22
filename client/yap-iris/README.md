@@ -22,12 +22,12 @@ cd client/yap-iris
 # → fabric/build/libs/yap-iris-*.jar  (or iris-*.jar depending on archives name)
 ```
 
-Or from repo root: `./scripts/build-yap-client-render.sh`
+Or from repo root: `./scripts/packs/build-yap-client-render.sh`
 
 ## Install
 
 1. Fabric Loader **0.19+** for Minecraft **26.2**
-2. Official Sodium jar (`./scripts/fetch-sodium.sh`)
+2. Official Sodium jar (`./scripts/packs/fetch-sodium.sh`)
 3. This YaP Iris jar
 4. Drop [yap-shaders](../yap-shaders/) zip into `.minecraft/shaderpacks/` and enable it
 

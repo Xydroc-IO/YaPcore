@@ -12,13 +12,14 @@ plugins — they go in the player’s `.minecraft/mods/`, never `plugins/`.
 | [yap-presence](yap-presence/) | Bedrock-feel: skins geo, emotes, movement, wardrobe UI (**P**) |
 | [yap-blocks](yap-blocks/) | Bedrock catalog block HELLO (`yap:blocks`) |
 | [yap-bag](yap-bag/) | Bag keybind + inventory tabs (talks to YaPPlayerData `/bag`) |
+| [yap-420](yap-420/) | Optional JE haze FX for YaP420 consumables (`yap:420`) |
 | [yap-staff](yap-staff/) | Esc / **R** full Staff GUI (ranks, economy, trolls, …) |
 | [yap-ultrawide](yap-ultrawide/) | Hor+ FOV for 21:9 / 32:9 |
 
 Build all optional client jars + the release zip from repo root:
 
 ```bash
-./scripts/build-yap-client-render.sh
+./scripts/packs/build-yap-client-render.sh
 # → dist/client-mods/client_mods.zip   (upload this on GitHub Releases)
 # → dist/client-mods/yap-*.jar
 ./scripts/parity/smoke-bedrock-feel.sh

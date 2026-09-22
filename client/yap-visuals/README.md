@@ -22,7 +22,7 @@ Vanilla / Bedrock / no-mods clients still join without this jar.
 ## Build
 
 ```bash
-./scripts/build-yap-client-render.sh
+./scripts/packs/build-yap-client-render.sh
 # → dist/client-mods/yap-visuals-1.0.0.jar
 ```
 

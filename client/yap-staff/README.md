@@ -46,7 +46,7 @@ The **server** enforces permissions. Command shapes follow [Staff / menu contrac
 2. Drop `yap-staff-1.0.27.jar` into `.minecraft/mods/` (only one `yap-staff-*.jar`)
 3. Join YaPcore / Folia with YaPAdmin + YaPItems loaded (**full Folia restart** after swapping `yap-admin.jar`)
 
-Also shipped in `client_mods.zip` from `./scripts/build-yap-client-render.sh`.
+Also shipped in `client_mods.zip` from `./scripts/packs/build-yap-client-render.sh`.
 
 ## Build
 

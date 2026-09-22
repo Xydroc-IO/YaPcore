@@ -57,6 +57,7 @@
     "MixinMinecraft_PipelineManagement",
     "MixinModelViewBobbing",
     "MixinOptions_Entrypoint",
+    "MixinOptions_MenuBlur",
     "MixinParticleEngine",
     "MixinPreparedRenderType",
     "MixinShaderManager_Overrides",

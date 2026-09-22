@@ -18,6 +18,19 @@ public final class BandSettings {
     public float maxHorizontalFov = 100.0f;
     /** Extra scale on computed VFOV (&lt;1 = tighter / less edge stretch). */
     public float fovScale = 1.0f;
+    /**
+     * Floor on applied vertical FOV so Hor+ never telephotos the world
+     * (hand + blocks vanish). {@code 0} = no floor. Spyglass still bypasses Hor+.
+     */
+    public float minVerticalFov = 0.0f;
+    /**
+     * Extra hand nudge on top of auto aspect offset (view space). Negative X =
+     * pull left (keeps swords on-screen on 32:9); positive Y = lift up.
+     */
+    public float viewmodelOffsetX = 0.0f;
+    public float viewmodelOffsetY = 0.0f;
+    /** Multiplier on Hor+ viewmodel scale ({@code >1} = bigger hand on screen). */
+    public float viewmodelExtraScale = 1.0f;
 
     public static BandSettings ultrawide21Defaults() {
         BandSettings s = new BandSettings();
@@ -25,16 +38,25 @@ public final class BandSettings {
         s.targetHorizontalFov = 100.0f;
         s.maxHorizontalFov = 100.0f;
         s.fovScale = 0.98f;
+        s.minVerticalFov = 50.0f;
+        s.viewmodelOffsetX = 0.0f;
+        s.viewmodelOffsetY = 0.0f;
+        s.viewmodelExtraScale = 1.05f;
         return s;
     }
 
     public static BandSettings superwide32Defaults() {
         BandSettings s = new BandSettings();
-        // Same HFOV as 16:9 — match_21_9 + 115 left a wide-angle stretch on 32:9.
-        s.mode = "match_16_9";
-        s.targetHorizontalFov = 103.0f;
-        s.maxHorizontalFov = 103.0f;
-        s.fovScale = 0.97f;
+        // Match 21:9 HFOV — match_16_9 + ~103° H cap was ~39° V on 32:9 (unplayable).
+        s.mode = "match_21_9";
+        s.targetHorizontalFov = 120.0f;
+        s.maxHorizontalFov = 128.0f;
+        s.fovScale = 1.0f;
+        s.minVerticalFov = 48.0f;
+        // Dual-4K 32:9 pushes vanilla bottom-right hand off-frame — pull + enlarge.
+        s.viewmodelOffsetX = -0.08f;
+        s.viewmodelOffsetY = 0.06f;
+        s.viewmodelExtraScale = 1.22f;
         return s;
     }
 
@@ -46,6 +68,10 @@ public final class BandSettings {
         targetHorizontalFov = clamp(targetHorizontalFov, 30.0f, 150.0f);
         maxHorizontalFov = clamp(maxHorizontalFov, 0.0f, 160.0f);
         fovScale = clamp(fovScale, 0.70f, 1.15f);
+        minVerticalFov = clamp(minVerticalFov, 0.0f, 90.0f);
+        viewmodelOffsetX = clamp(viewmodelOffsetX, -1.0f, 1.0f);
+        viewmodelOffsetY = clamp(viewmodelOffsetY, -1.0f, 1.0f);
+        viewmodelExtraScale = clamp(viewmodelExtraScale, 0.50f, 2.0f);
     }
 
     private static float clamp(float v, float lo, float hi) {

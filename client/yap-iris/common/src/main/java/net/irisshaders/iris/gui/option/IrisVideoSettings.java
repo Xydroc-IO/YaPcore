@@ -8,37 +8,26 @@ import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
+import java.util.OptionalInt;
 
 public class IrisVideoSettings {
 	private static final Tooltip DISABLED_TOOLTIP = Tooltip.create(Component.translatable("options.iris.shadowDistance.disabled"));
 	private static final Tooltip ENABLED_TOOLTIP = Tooltip.create(Component.translatable("options.iris.shadowDistance.enabled"));
 	public static int shadowDistance = 32;
 	public static ColorSpace colorSpace = ColorSpace.SRGB;
+
+	/** Cached pack-forced shadow chunks; invalidated when the active pipeline identity changes. */
+	private static WorldRenderingPipeline cachedPipeline;
+	private static OptionalInt cachedForcedChunks = OptionalInt.empty();
+
+	/**
+	 * Uses the stored slider value at construction — not a live pipeline override — so class
+	 * load / Video Options open does not query the Iris pipeline on the main thread.
+	 */
 	public static final OptionInstance<Integer> RENDER_DISTANCE = new ShadowDistanceOption<>("options.iris.shadowDistance",
-		mc -> {
-			WorldRenderingPipeline pipeline = Iris.getPipelineManager().getPipelineNullable();
-
-			Tooltip tooltip;
-
-			if (pipeline != null) {
-				if (pipeline.getForcedShadowRenderDistanceChunksForDisplay().isPresent()) {
-					tooltip = DISABLED_TOOLTIP;
-				} else {
-					tooltip = ENABLED_TOOLTIP;
-				}
-			} else {
-				tooltip = ENABLED_TOOLTIP;
-			}
-
-			return tooltip;
-		},
+		mc -> isShadowDistanceSliderEnabled() ? ENABLED_TOOLTIP : DISABLED_TOOLTIP,
 		(arg, d) -> {
-			WorldRenderingPipeline pipeline = Iris.getPipelineManager().getPipelineNullable();
-
-			if (pipeline != null) {
-				d = pipeline.getForcedShadowRenderDistanceChunksForDisplay().orElse(d);
-			}
-
+			d = getOverriddenShadowDistance(d);
 			if (d <= 0.0) {
 				return Component.translatable("options.generic_value", Component.translatable("options.iris.shadowDistance"), "0 (disabled)");
 			} else {
@@ -48,7 +37,7 @@ public class IrisVideoSettings {
 			}
 		},
 		new OptionInstance.IntRange(0, 32),
-		getOverriddenShadowDistance(shadowDistance),
+		shadowDistance,
 		integer -> {
 			shadowDistance = integer;
 			try {
@@ -58,15 +47,30 @@ public class IrisVideoSettings {
 			}
 		});
 
+	private static void refreshCache() {
+		WorldRenderingPipeline pipeline = Iris.getPipelineManager().getPipelineNullable();
+		if (pipeline == cachedPipeline) {
+			return;
+		}
+		cachedPipeline = pipeline;
+		cachedForcedChunks = pipeline == null
+			? OptionalInt.empty()
+			: pipeline.getForcedShadowRenderDistanceChunksForDisplay();
+	}
+
 	public static int getOverriddenShadowDistance(int base) {
-		return Iris.getPipelineManager().getPipeline()
-			.map(pipeline -> pipeline.getForcedShadowRenderDistanceChunksForDisplay().orElse(base))
-			.orElse(base);
+		refreshCache();
+		return cachedForcedChunks.orElse(base);
 	}
 
 	public static boolean isShadowDistanceSliderEnabled() {
-		return Iris.getPipelineManager().getPipeline()
-			.map(pipeline -> pipeline.getForcedShadowRenderDistanceChunksForDisplay().isEmpty())
-			.orElse(true);
+		refreshCache();
+		return cachedForcedChunks.isEmpty();
+	}
+
+	/** Drop cached pack overrides after a pipeline swap/reload. */
+	public static void invalidateShadowDistanceCache() {
+		cachedPipeline = null;
+		cachedForcedChunks = OptionalInt.empty();
 	}
 }

@@ -20,7 +20,8 @@ public final class SelfToolsScreen extends StaffPanelScreen {
                 action("God mode", "Toggle invulnerability", () -> StaffCmds.run("god")),
                 action("Fly", "Toggle flight", () -> StaffCmds.run("fly")),
                 action("Vanish", "Hide from players", () -> StaffCmds.run("vanish")),
-                action("Night vision", "Toggle for 5 minutes", () -> StaffCmds.run("yapadmin nv"))
+                action("Night vision…", "15m · 1h · unlimited · off", () ->
+                        open(new NightVisionScreen(this, null)))
         );
 
         addSection("Health");

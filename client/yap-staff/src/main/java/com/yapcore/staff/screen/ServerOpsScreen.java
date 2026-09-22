@@ -55,5 +55,11 @@ public final class ServerOpsScreen extends StaffPanelScreen {
                 action("Guard", "Anti-cheat status", () -> StaffCmds.run("yapguard status")),
                 action("Knobs", "Reload gameplay knobs", () -> StaffCmds.run("yapknobs reload"))
         );
+
+        addSection("Rollback");
+        addButtonGrid(
+                action("Rollback…", "Undo logged blocks on this world (5m–24h)", () ->
+                        open(new ServerRollbackScreen(this)))
+        );
     }
 }

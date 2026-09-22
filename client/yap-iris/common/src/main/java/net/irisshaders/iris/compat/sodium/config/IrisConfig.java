@@ -12,7 +12,6 @@ import net.caffeinemc.mods.sodium.api.config.structure.*;
 import net.caffeinemc.mods.sodium.client.config.builder.ColorThemeBuilderImpl;
 import net.caffeinemc.mods.sodium.client.gui.ColorTheme;
 import net.caffeinemc.mods.sodium.client.gui.VideoSettingsScreen;
-import net.caffeinemc.mods.sodium.client.gui.options.control.ControlValueFormatterImpls;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.features.FeatureFlags;
 import net.irisshaders.iris.gui.option.IrisVideoSettings;
@@ -165,9 +164,9 @@ public class IrisConfig implements ConfigEntryPoint {
                         Identifier.fromNamespaceAndPath("iris", "shadow_distance"))
                 .setDefaultValue(32)
                 .setBinding(
+                        // Persist the user's slider; pack overrides are display-only.
                         value -> IrisVideoSettings.shadowDistance = value,
-                        () -> IrisVideoSettings.getOverriddenShadowDistance(
-                                IrisVideoSettings.shadowDistance)
+                        () -> IrisVideoSettings.shadowDistance
                 )
                 .setName(Component.translatable("options.iris.shadowDistance"))
                 .setTooltip(i -> {
@@ -179,12 +178,13 @@ public class IrisConfig implements ConfigEntryPoint {
                     return Component.translatable(
                             "options.iris.shadowDistance.sodium_tooltip");
                 })
-                .setValueFormatter(
-                        ControlValueFormatterImpls.quantityOrDisabled(
-                                i -> Component.translatable("options.chunks", i),
-                                Component.literal("None")
-                        )
-                )
+                .setValueFormatter(value -> {
+                    int shown = IrisVideoSettings.getOverriddenShadowDistance(value);
+                    if (shown <= 0) {
+                        return Component.literal("None");
+                    }
+                    return Component.translatable("options.chunks", shown);
+                })
                 .setEnabledProvider(
                         i -> IrisVideoSettings.isShadowDistanceSliderEnabled(),
                         ConfigState.UPDATE_ON_REBUILD

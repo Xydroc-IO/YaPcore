@@ -17,7 +17,7 @@ alongside YaP Iris + YaP Shaders. Players may also install Sodium from
 | Upstream | https://github.com/CaffeineMC/sodium |
 | License | [PolyForm Shield 1.0.0](LICENSE-PolyForm-Shield.txt) |
 | Pin | `sodium-fabric-0.9.1+mc26.2` (Fabric) |
-| Fetch | `./scripts/fetch-sodium.sh` → `dist/client-mods/` |
+| Fetch | `./scripts/packs/fetch-sodium.sh` → `dist/client-mods/` |
 
 Required Notice (upstream): see [NOTICE.txt](NOTICE.txt).
 
@@ -29,6 +29,6 @@ Required Notice (upstream): see [NOTICE.txt](NOTICE.txt).
 | [yap-iris](../yap-iris/) | LGPL Iris fork — shader loader |
 | [yap-shaders](../yap-shaders/) | YaP water + skies shader pack |
 
-Build everything: `./scripts/build-yap-client-render.sh`
+Build everything: `./scripts/packs/build-yap-client-render.sh`
 
 Vanilla / Bedrock clients do **not** need these jars.

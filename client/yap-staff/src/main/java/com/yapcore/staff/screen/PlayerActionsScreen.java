@@ -52,6 +52,8 @@ public final class PlayerActionsScreen extends StaffPanelScreen {
         addButtonGrid(
                 action("Heal", "Restore health", () -> StaffCmds.runFmt("yapadmin heal %s", p)),
                 action("Feed", "Fill hunger", () -> StaffCmds.runFmt("yapadmin feed %s", p)),
+                action("Night vision…", "15m · 1h · unlimited · off", () ->
+                        open(new NightVisionScreen(this, p))),
                 action("God", "Toggle god mode for them", () -> StaffCmds.runFmt("god %s", p)),
                 action("Walk speed…", "Pick 1–10 for them", () ->
                         open(new SpeedPickerScreen(this, p, false))),
@@ -59,6 +61,16 @@ public final class PlayerActionsScreen extends StaffPanelScreen {
                         open(new SpeedPickerScreen(this, p, true))),
                 action("Clear inv", "Clear their inventory", () -> StaffCmds.runFmt("yapadmin clear %s", p)),
                 action("Creative", "Set them to creative", () -> StaffCmds.runFmt("gmc %s", p))
+        );
+
+        addSection("Skills");
+        addButtonGrid(
+                action("Give skill XP…", "Pick skill and amount", () ->
+                        open(new SkillGrantScreen(this, p, true))),
+                action("Set skill level…", "Pick skill and level", () ->
+                        open(new SkillGrantScreen(this, p, false))),
+                action("Open /skills", "View their skills menu (on skills worlds)", () ->
+                        StaffCmds.runFmt("skills %s", p))
         );
 
         addSection("Ranks & economy");

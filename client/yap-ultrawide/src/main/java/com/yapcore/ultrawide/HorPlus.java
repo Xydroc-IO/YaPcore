@@ -88,7 +88,23 @@ public final class HorPlus {
         }
         double scale = Math.tan(Math.toRadians(worldVfov) * 0.5)
                 / Math.tan(Math.toRadians(hudVfov) * 0.5);
-        return (float) Math.max(0.35, Math.min(1.0, scale));
+        // Allow >1 when world VFOV is wider than vanilla HUD (minVerticalFov floor).
+        return (float) Math.max(0.55, Math.min(1.45, scale));
+    }
+
+    /**
+     * Auto hand nudge for ultrawide: vanilla places the viewmodel bottom-right;
+     * extreme aspect maps that offset further off-frame. {@code excess} is
+     * {@code aspect / (16/9) - 1} (≈1.0 on 7680×2160).
+     */
+    public static float autoViewmodelOffsetX(float aspect) {
+        float excess = Math.max(0.0f, aspect / REFERENCE_16_9 - 1.0f);
+        return -0.28f * excess;
+    }
+
+    public static float autoViewmodelOffsetY(float aspect) {
+        float excess = Math.max(0.0f, aspect / REFERENCE_16_9 - 1.0f);
+        return 0.12f * excess;
     }
 
     /**

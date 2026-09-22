@@ -2,6 +2,7 @@ package net.irisshaders.iris.pipeline;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
 import net.irisshaders.iris.Iris;
+import net.irisshaders.iris.gui.option.IrisVideoSettings;
 import net.irisshaders.iris.shaderpack.materialmap.NamespacedId;
 import net.irisshaders.iris.shaderpack.materialmap.WorldRenderingSettings;
 import net.irisshaders.iris.uniforms.SystemTimeUniforms;
@@ -32,6 +33,7 @@ public class PipelineManager {
 			Iris.logger.info("Creating pipeline for dimension {}", currentDimension);
 			pipeline = pipelineFactory.apply(currentDimension);
 			pipelinesPerDimension.put(currentDimension, pipeline);
+			IrisVideoSettings.invalidateShadowDistanceCache();
 
 			if (WorldRenderingSettings.INSTANCE.isReloadRequired()) {
 				if (Minecraft.getInstance().levelExtractor != null) {
@@ -89,6 +91,7 @@ public class PipelineManager {
 
 		pipelinesPerDimension.clear();
 		pipeline = null;
+		IrisVideoSettings.invalidateShadowDistanceCache();
 		versionCounterForSodiumShaderReload++;
 	}
 

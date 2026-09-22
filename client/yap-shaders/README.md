@@ -29,7 +29,7 @@ Prefer **yap-visuals** (one jar; also ships in `client_mods.zip`). Or drop
 `yap-shaders.zip` into `.minecraft/shaderpacks/` and enable it.
 
 ```bash
-./scripts/build-yap-client-render.sh
+./scripts/packs/build-yap-client-render.sh
 ```
 
 Vanilla / Bedrock players still get improved **pack** water + leaf textures from
