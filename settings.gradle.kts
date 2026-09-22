@@ -13,12 +13,11 @@ project(":bench-plugin").projectDir = file("yap-first-party/dev/bench-plugin")
 include("gameplay-knobs-plugin")
 project(":gameplay-knobs-plugin").projectDir = file("yap-first-party/gameplay/gameplay-knobs-plugin")
 
+include("mobs-plugin")
+project(":mobs-plugin").projectDir = file("yap-first-party/gameplay/mobs-plugin")
 
-include("stacker-plugin")
-project(":stacker-plugin").projectDir = file("yap-first-party/gameplay/stacker-plugin")
-
-include("qol-plugin")
-project(":qol-plugin").projectDir = file("yap-first-party/gameplay/qol-plugin")
+include("yap420-plugin")
+project(":yap420-plugin").projectDir = file("yap-first-party/gameplay/yap420-plugin")
 
 include("yap-items-api")
 project(":yap-items-api").projectDir = file("yap-first-party/api/yap-items-api")
@@ -28,9 +27,6 @@ project(":items-plugin").projectDir = file("yap-first-party/gameplay/items-plugi
 
 include("placeholderapi-plugin")
 project(":placeholderapi-plugin").projectDir = file("yap-first-party/core-network/placeholderapi-plugin")
-
-include("plugin-compat-plugin")
-project(":plugin-compat-plugin").projectDir = file("yap-first-party/core-network/plugin-compat-plugin")
 
 include("pregen-plugin")
 project(":pregen-plugin").projectDir = file("yap-first-party/core-network/pregen-plugin")
@@ -77,9 +73,6 @@ project(":essentials-plugin").projectDir = file("yap-first-party/core-network/es
 include("disasters-plugin")
 project(":disasters-plugin").projectDir = file("yap-first-party/gameplay/disasters-plugin")
 
-include("leveled-mobs-plugin")
-project(":leveled-mobs-plugin").projectDir = file("yap-first-party/gameplay/leveled-mobs-plugin")
-
 include("admin-plugin")
 project(":admin-plugin").projectDir = file("yap-first-party/core-network/admin-plugin")
 
@@ -94,6 +87,9 @@ project(":yap-playerdata-api").projectDir = file("yap-first-party/api/yap-player
 
 include("yap-regions-api")
 project(":yap-regions-api").projectDir = file("yap-first-party/api/yap-regions-api")
+
+include("yap-claims-api")
+project(":yap-claims-api").projectDir = file("yap-first-party/api/yap-claims-api")
 
 include("yap-portals-api")
 project(":yap-portals-api").projectDir = file("yap-first-party/api/yap-portals-api")
@@ -124,6 +120,9 @@ project(":yap-worldedit-compat").projectDir = file("yap-first-party/api/yap-worl
 
 include("regions-plugin")
 project(":regions-plugin").projectDir = file("yap-first-party/core-network/regions-plugin")
+
+include("claims-plugin")
+project(":claims-plugin").projectDir = file("yap-first-party/core-network/claims-plugin")
 
 include("portals-plugin")
 project(":portals-plugin").projectDir = file("yap-first-party/core-network/portals-plugin")
@@ -252,9 +251,6 @@ project(":factions-plugin").projectDir = file("yap-first-party/core-network/fact
 
 include("yap-conquest-api")
 project(":yap-conquest-api").projectDir = file("yap-first-party/api/yap-conquest-api")
-
-include("conquest-plugin")
-project(":conquest-plugin").projectDir = file("yap-first-party/core-network/conquest-plugin")
 
 include("yap-fleet-agent")
 project(":yap-fleet-agent").projectDir = file("yap-first-party/fleet/yap-fleet-agent")

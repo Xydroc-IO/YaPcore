@@ -324,21 +324,21 @@ tasks.register<Exec>("checkDomainLineLimits") {
     group = "verification"
     description = "Fail if any chassis/first-party Java source exceeds 500 lines"
     workingDir = project.projectDir
-    commandLine("bash", "scripts/check-domain-line-limits.sh")
+    commandLine("bash", "scripts/check/check-domain-line-limits.sh")
 }
 
 tasks.register<Exec>("checkDbBootstrapHygiene") {
     group = "verification"
     description = "Fail if plugin db packages reintroduce raw YapDbProvider+Hikari open blocks"
     workingDir = project.projectDir
-    commandLine("bash", "scripts/check-db-bootstrap-hygiene.sh")
+    commandLine("bash", "scripts/check/check-db-bootstrap-hygiene.sh")
 }
 
 tasks.register<Exec>("checkDefaultsSeedJarDrift") {
     group = "verification"
     description = "Fail if typical-SMP seed YAML scalar values drift from jar resources"
     workingDir = project.projectDir
-    commandLine("bash", "scripts/check-defaults-seed-jar-drift.sh")
+    commandLine("bash", "scripts/check/check-defaults-seed-jar-drift.sh")
 }
 
 tasks.named("check") {

@@ -53,6 +53,7 @@ abstract class FineTuneModule extends YaPModule {
             String jarHint = switch (name) {
                 case "YaPDB" -> "yap-db.jar";
                 case "YaPPlayerData" -> "yap-playerdata.jar";
+                case "YaPClaims" -> "yap-claims.jar";
                 case "YaPPerms" -> "yap-perms.jar";
                 case "YaPChat" -> "yap-chat.jar";
                 case "YaPModeration" -> "yap-moderation.jar";

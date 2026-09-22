@@ -56,14 +56,13 @@ tasks.register("assembleGameplaySuite") {
     dependsOn(
         "installGameplayDefaults",
         "prepareClientPack",
-        ":stacker-plugin:jar",
+        ":mobs-plugin:jar",
+        ":yap420-plugin:jar",
         ":gameplay-knobs-plugin:jar",
         ":items-plugin:jar",
-        ":qol-plugin:jar",
         ":skills-plugin:shadowJar",
         ":dungeons-plugin:shadowJar",
         ":disasters-plugin:jar",
-        ":leveled-mobs-plugin:jar",
         ":finetune-modules:buildAllFineTuneModules",
     )
     doLast {
@@ -75,14 +74,13 @@ tasks.register("assembleGameplaySuite") {
         fun jarOf(path: String, taskName: String = "jar"): java.io.File =
             project.project(path).tasks.named(taskName, Jar::class.java).get().archiveFile.get().asFile
         listOf(
-            jarOf(":stacker-plugin") to "yap-stacker.jar",
+            jarOf(":mobs-plugin") to "yap-mobs.jar",
+            jarOf(":yap420-plugin") to "yap-420.jar",
             jarOf(":gameplay-knobs-plugin") to "yap-gameplay-knobs.jar",
             jarOf(":items-plugin") to "yap-items.jar",
-            jarOf(":qol-plugin") to "yap-qol.jar",
             jarOf(":skills-plugin", "shadowJar") to "yap-skills.jar",
             jarOf(":dungeons-plugin", "shadowJar") to "yap-dungeons.jar",
             jarOf(":disasters-plugin") to "yap-disasters.jar",
-            jarOf(":leveled-mobs-plugin") to "yap-leveled-mobs.jar",
         ).forEach { (src, name) -> src.copyTo(plugins.resolve(name), overwrite = true) }
         project.project(":finetune-modules").tasks.withType(Jar::class.java).forEach { jarTask ->
             if (!jarTask.enabled || jarTask.name == "jar") return@forEach
@@ -220,7 +218,7 @@ tasks.register("publishReleasesFolder") {
             clientMods.copyTo(dest.resolve("client_mods.zip"), overwrite = true)
             logger.lifecycle("Copied client_mods.zip (${clientMods.length() / 1024} KiB)")
         } else {
-            logger.warn("client_mods.zip missing — run ./scripts/build-yap-client-render.sh before upload")
+            logger.warn("client_mods.zip missing — run ./scripts/packs/build-yap-client-render.sh before upload")
         }
         val defaultPack = project.layout.projectDirectory.file("resourcepacks/yapcore-default.zip").asFile
         if (defaultPack.isFile) {
@@ -266,7 +264,7 @@ tasks.register("publishReleasesFolder") {
 
             Rebuild (deletes this folder first, then writes fresh):
               gradle publishReleasesFolder -PyapGameplay=true
-            Clients: ./scripts/build-yap-client-render.sh
+            Clients: ./scripts/packs/build-yap-client-render.sh
             Docs: docs/start/RELEASES.md
             """.trimIndent() + "\n"
         )

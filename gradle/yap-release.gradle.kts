@@ -7,10 +7,10 @@ tasks.register<Exec>("prepareClientPack") {
     description =
         "Build yapcore-default.zip (Faithful CORE + YaP Skies overlays)"
     workingDir = project.projectDir
-    commandLine("bash", "scripts/build-default-resourcepack.sh")
+    commandLine("bash", "scripts/packs/build-default-resourcepack.sh")
     outputs.file(project.file("resourcepacks/yapcore-default.zip"))
     inputs.dir(project.file("resourcepacks/yap-skies")).optional()
-    inputs.file(project.file("scripts/generate-yap-skies.py")).optional()
+    inputs.file(project.file("scripts/packs/generate-yap-skies.py")).optional()
     inputs.file(project.file("resourcepacks/faithful-64x.zip")).optional()
 }
 
@@ -19,7 +19,7 @@ tasks.register<Exec>("prepareClientPackBedrock") {
     description =
         "Build yapcore-default.mcpack (Faithful Bedrock + YaP overlays)"
     workingDir = project.projectDir
-    commandLine("bash", "scripts/build-default-bedrock-pack.sh")
+    commandLine("bash", "scripts/packs/build-default-bedrock-pack.sh")
     outputs.file(project.file("resourcepacks/yapcore-default.mcpack"))
     inputs.dir(project.file("resourcepacks/yap-skies")).optional()
     inputs.file(project.file("resourcepacks/faithful-64x-bedrock.mcpack")).optional()
@@ -47,9 +47,6 @@ tasks.register("assembleRelease") {
     if (findProject(":items-plugin") != null) {
         dependsOn(":items-plugin:installIntoPlugins")
     }
-    if (findProject(":qol-plugin") != null) {
-        dependsOn(":qol-plugin:installIntoPlugins")
-    }
     if (yapGameplayEnabled) {
         dependsOn("installGameplayDefaults")
     }
@@ -65,11 +62,11 @@ tasks.register("assembleRelease") {
 
         val corePluginJars = listOf(
             "yap-placeholderapi.jar",
-            "yap-plugin-compat.jar",
             "yap-pregen.jar",
             "yap-db.jar",
             "yap-perms.jar",
             "yap-playerdata.jar",
+            "yap-claims.jar",
             "yap-moderation.jar",
             "yap-essentials.jar",
             "yap-admin.jar",
@@ -87,7 +84,6 @@ tasks.register("assembleRelease") {
             "yap-lagguard.jar",
             "yap-map.jar",
             "yap-factions.jar",
-            "yap-conquest.jar",
             "yap-packs.jar",
             "yap-commands.jar",
             "yap-chat.jar",
@@ -99,17 +95,14 @@ tasks.register("assembleRelease") {
             "yap-folia-bridge.jar",
             // Always-on gameplay suite (VIP tools + custom items) — also fleet seed defaults
             "yap-items.jar",
-            "yap-qol.jar",
         )
         val gameplayPluginJars = listOf(
             "yap-gameplay-knobs.jar",
-            "yap-stacker.jar",
-            "yap-items.jar",
-            "yap-qol.jar",
-            "yap-leveled-mobs.jar",
+            "yap-mobs.jar",
             "yap-skills.jar",
             "yap-dungeons.jar",
             "yap-disasters.jar",
+            "yap-420.jar",
         )
         val pluginJars = if (includeGameplay) {
             corePluginJars + gameplayPluginJars
@@ -125,15 +118,18 @@ tasks.register("assembleRelease") {
             add("README.md")
         }
         val linuxScripts = listOf(
-            "lib.sh", "start.sh", "start-prod.sh", "stop.sh", "status.sh", "gui.sh",
-            "start-yap-link.sh", "nginx-setup.sh", "setup-velocity-forwarding.sh",
-            "build-default-resourcepack.sh", "build-default-bedrock-pack.sh",
-            "fetch-faithful-64x.sh", "fetch-faithful-64x-bedrock.sh",
-            "generate-yap-skies.py",
-            "fetch-folia.sh", "fetch-tebex.sh", "fetch-grim.sh", "grim-ac.sh",
-            "vendor-folia.sh", "folia-patch.sh", "build-yap-folia.sh",
-            "seed-defaults.sh", "apply-production-profile.sh",
-            "yapctl",
+            "lib.sh",
+            "lifecycle/start.sh", "lifecycle/start-prod.sh", "lifecycle/stop.sh",
+            "lifecycle/status.sh", "lifecycle/gui.sh", "lifecycle/start-yap-link.sh",
+            "lifecycle/yapctl",
+            "setup/nginx-setup.sh", "setup/setup-velocity-forwarding.sh",
+            "setup/seed-defaults.sh", "setup/apply-production-profile.sh",
+            "packs/build-default-resourcepack.sh", "packs/build-default-bedrock-pack.sh",
+            "packs/fetch-faithful-64x.sh", "packs/fetch-faithful-64x-bedrock.sh",
+            "packs/generate-yap-skies.py",
+            "folia/fetch-folia.sh", "folia/vendor-folia.sh", "folia/folia-patch.sh",
+            "folia/build-yap-folia.sh",
+            "plugins/fetch-tebex.sh", "plugins/fetch-grim.sh", "plugins/grim-ac.sh",
         )
 
         fun copyCommon(dest: File) {
@@ -175,7 +171,7 @@ tasks.register("assembleRelease") {
                 into(dest.resolve("plugins"))
                 include(*(pluginJars + "README.md").toTypedArray())
             }
-            // Optional Tebex Folia plugin (GPLv3) — run ./scripts/fetch-tebex.sh before assemble
+            // Optional Tebex Folia plugin (GPLv3) — run ./scripts/plugins/fetch-tebex.sh before assemble
             val tebexJar = project.file("plugins/tebex.jar")
             if (tebexJar.isFile) {
                 tebexJar.copyTo(dest.resolve("plugins/tebex.jar"), overwrite = true)
@@ -272,30 +268,29 @@ tasks.register("assembleRelease") {
         }
 
         fun writeLinuxWrappers(dest: File) {
-            listOf("start", "stop", "status", "gui", "nginx-setup").forEach { name ->
+            val wrappers = mapOf(
+                "start" to "lifecycle/start.sh",
+                "stop" to "lifecycle/stop.sh",
+                "status" to "lifecycle/status.sh",
+                "gui" to "lifecycle/gui.sh",
+                "nginx-setup" to "setup/nginx-setup.sh",
+                "start-prod" to "lifecycle/start-prod.sh",
+            )
+            wrappers.forEach { (name, rel) ->
                 val wrapper = dest.resolve("$name.sh")
                 wrapper.writeText(
                     """
                     #!/usr/bin/env bash
                     set -eu
                     ROOT="${'$'}(CDPATH= cd -- "${'$'}(dirname -- "${'$'}0")" && pwd)"
-                    exec bash "${'$'}ROOT/scripts/$name.sh" "${'$'}@"
+                    exec bash "${'$'}ROOT/scripts/$rel" "${'$'}@"
                     """.trimIndent() + "\n"
                 )
                 wrapper.setExecutable(true)
             }
-            dest.resolve("start-prod.sh").writeText(
-                """
-                #!/usr/bin/env bash
-                set -eu
-                ROOT="${'$'}(CDPATH= cd -- "${'$'}(dirname -- "${'$'}0")" && pwd)"
-                exec bash "${'$'}ROOT/scripts/start-prod.sh" "${'$'}@"
-                """.trimIndent() + "\n"
-            )
-            dest.resolve("start-prod.sh").setExecutable(true)
-            dest.resolve("scripts").listFiles()
-                ?.filter { it.name.endsWith(".sh") || it.name == "yapctl" }
-                ?.forEach { it.setExecutable(true) }
+            dest.resolve("scripts").walkTopDown()
+                .filter { it.isFile && (it.name.endsWith(".sh") || it.name == "yapctl") }
+                .forEach { it.setExecutable(true) }
         }
 
         fun writeWindowsCmdWrappers(dest: File) {
@@ -331,7 +326,7 @@ tasks.register("assembleRelease") {
             yap-link.jar          native network proxy (see docs/network/YAP_LINK.md)
             link-data/            Link config + plugins (link.properties, plugins/*.jar)
             plugins/  all first-party jars (CORE+NETWORK+GAMEPLAY: skills, stacker, disasters, …)
-                      Optional: tebex.jar (GPLv3) via ./scripts/fetch-tebex.sh — Hub store
+                      Optional: tebex.jar (GPLv3) via ./scripts/plugins/fetch-tebex.sh — Hub store
                       Optional: grim.jar.disabled (GPLv3) — fetched on seed-defaults; enable via grim-ac.sh
             modules/  CORE + GAMEPLAY fine-tune modules
                       (gradle installFineTuneModules · docs/plugins/PLUGINS.md)
@@ -345,7 +340,7 @@ tasks.register("assembleRelease") {
             Token: config/server.properties → web-dashboard-token
 
             Requires Java 25+ on PATH (or JAVA_HOME).
-            Product path: YaP-Folia recommended (./scripts/build-yap-folia.sh +
+            Product path: YaP-Folia recommended (./scripts/folia/build-yap-folia.sh +
             folia-jar-source=build). Stock Fill: fetch-folia / folia-jar-source=fetch.
             """.trimIndent()
 
@@ -401,8 +396,9 @@ tasks.register("assembleRelease") {
 
             Launch
             ------
-              chmod +x *.sh scripts/*.sh scripts/db/*.sh scripts/yapctl
-              ./scripts/seed-defaults.sh   # first boot configs (safe if already present)
+              find scripts -type f \( -name '*.sh' -o -name yapctl \) -exec chmod +x {} +
+              chmod +x *.sh
+              ./scripts/setup/seed-defaults.sh   # first boot configs (safe if already present)
               ./configure-db.sh --server-id lobby   # MariaDB + JDBC (recommended)
               # or: ./ensure-postgres.sh --server-id lobby
               # or: ./configure-db.sh --engine sqlite --server-id lobby
@@ -427,8 +423,8 @@ tasks.register("assembleRelease") {
 
             Folia (product game authority)
             ------------------------------
-              ./scripts/build-yap-folia.sh
-              ./scripts/fetch-folia.sh
+              ./scripts/folia/build-yap-folia.sh
+              ./scripts/folia/fetch-folia.sh
 
             nginx edge
             ----------

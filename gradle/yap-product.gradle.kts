@@ -14,7 +14,6 @@ tasks.register("installProductDefaults") {
         "CORE+NETWORK plugins + CORE fine-tune modules"
     dependsOn(
         ":placeholderapi-plugin:installIntoPlugins",
-        ":plugin-compat-plugin:installIntoPlugins",
         ":finetune-modules:installCoreIntoModules",
     )
     if (findProject(":pregen-plugin") != null) {
@@ -28,6 +27,9 @@ tasks.register("installProductDefaults") {
     }
     if (findProject(":playerdata-plugin") != null) {
         dependsOn(":playerdata-plugin:installIntoPlugins")
+    }
+    if (findProject(":claims-plugin") != null) {
+        dependsOn(":claims-plugin:installIntoPlugins")
     }
     if (findProject(":moderation-plugin") != null) {
         dependsOn(":moderation-plugin:installIntoPlugins")
@@ -107,14 +109,11 @@ tasks.register("installProductDefaults") {
     if (findProject(":factions-plugin") != null) {
         dependsOn(":factions-plugin:installIntoPlugins")
     }
-    if (findProject(":conquest-plugin") != null) {
-        dependsOn(":conquest-plugin:installIntoPlugins")
-    }
 }
 
 tasks.register("installGameplayDefaults") {
     group = "distribution"
-    description = "GAMEPLAY opt-in: Skills + Dungeons + Disasters + LeveledMobs + Stacker + GameplayKnobs (+ fine-tune modules)"
+    description = "GAMEPLAY opt-in: Skills + Dungeons + Disasters + Mobs + GameplayKnobs (+ fine-tune modules)"
     dependsOn(
         ":gameplay-knobs-plugin:installIntoPlugins",
         ":finetune-modules:installGameplayIntoModules",
@@ -128,14 +127,11 @@ tasks.register("installGameplayDefaults") {
     if (findProject(":disasters-plugin") != null) {
         dependsOn(":disasters-plugin:installIntoPlugins")
     }
-    if (findProject(":leveled-mobs-plugin") != null) {
-        dependsOn(":leveled-mobs-plugin:installIntoPlugins")
+    if (findProject(":mobs-plugin") != null) {
+        dependsOn(":mobs-plugin:installIntoPlugins")
     }
-    if (findProject(":stacker-plugin") != null) {
-        dependsOn(":stacker-plugin:installIntoPlugins")
-    }
-    if (findProject(":qol-plugin") != null) {
-        dependsOn(":qol-plugin:installIntoPlugins")
+    if (findProject(":yap420-plugin") != null) {
+        dependsOn(":yap420-plugin:installIntoPlugins")
     }
     if (findProject(":items-plugin") != null) {
         dependsOn(":items-plugin:installIntoPlugins")
@@ -163,11 +159,11 @@ tasks.register("assemblePluginDist") {
 
     dependsOn(
         ":placeholderapi-plugin:shadowJar",
-        ":plugin-compat-plugin:jar",
         ":pregen-plugin:jar",
         ":yap-db-plugin:shadowJar",
         ":yap-perms-plugin:shadowJar",
         ":playerdata-plugin:shadowJar",
+        ":claims-plugin:shadowJar",
         ":moderation-plugin:shadowJar",
         ":essentials-plugin:shadowJar",
         ":admin-plugin:jar",
@@ -193,19 +189,17 @@ tasks.register("assemblePluginDist") {
         ":lagguard-plugin:shadowJar",
         ":map-plugin:shadowJar",
         ":factions-plugin:shadowJar",
-        ":conquest-plugin:shadowJar",
         ":gameplay-knobs-plugin:jar",
-        ":stacker-plugin:jar",
+        ":mobs-plugin:jar",
+        ":yap420-plugin:jar",
         ":yap-items-api:jar",
         ":items-plugin:jar",
-        ":qol-plugin:jar",
         ":yap-mmo-api:jar",
         ":skills-plugin:shadowJar",
         ":yap-dungeons-api:jar",
         ":dungeons-plugin:shadowJar",
         ":bedrock-ui-plugin:jar",
         ":disasters-plugin:jar",
-        ":leveled-mobs-plugin:jar",
         ":yap-bedrock-ui-api:jar",
         ":yap-tailor-api:jar",
         ":yap-bedrock-blocks-api:jar",
@@ -216,6 +210,7 @@ tasks.register("assemblePluginDist") {
         ":yap-messages-api:jar",
         ":yap-discord-api:jar",
         ":yap-playerdata-api:jar",
+        ":yap-claims-api:jar",
         ":yap-lib-api:jar",
         ":yap-holo-api:jar",
         ":yap-protect-api:jar",
@@ -255,11 +250,13 @@ tasks.register("assemblePluginDist") {
         }
 
         copyNamed(jarOf(":placeholderapi-plugin", "shadowJar"), coreDir)
-        copyNamed(jarOf(":plugin-compat-plugin"), coreDir)
         copyNamed(jarOf(":pregen-plugin"), coreDir)
         copyNamed(jarOf(":yap-db-plugin", "shadowJar"), coreDir)
         copyNamed(jarOf(":yap-perms-plugin", "shadowJar"), coreDir)
         copyNamed(jarOf(":playerdata-plugin", "shadowJar"), coreDir)
+        if (findProject(":claims-plugin") != null) {
+            copyNamed(jarOf(":claims-plugin", "shadowJar"), coreDir)
+        }
         copyNamed(jarOf(":moderation-plugin", "shadowJar"), coreDir)
         copyNamed(jarOf(":essentials-plugin", "shadowJar"), coreDir)
         if (findProject(":admin-plugin") != null) {
@@ -321,20 +318,19 @@ tasks.register("assemblePluginDist") {
         if (findProject(":factions-plugin") != null) {
             copyNamed(jarOf(":factions-plugin", "shadowJar"), coreDir)
         }
-        if (findProject(":conquest-plugin") != null) {
-            copyNamed(jarOf(":conquest-plugin", "shadowJar"), coreDir)
-        }
         if (findProject(":bedrock-ui-plugin") != null) {
             copyNamed(jarOf(":bedrock-ui-plugin"), coreDir)
         }
 
         copyNamed(jarOf(":gameplay-knobs-plugin"), gameplayDir)
-        copyNamed(jarOf(":stacker-plugin"), gameplayDir)
+        if (findProject(":mobs-plugin") != null) {
+            copyNamed(jarOf(":mobs-plugin"), gameplayDir)
+        }
+        if (findProject(":yap420-plugin") != null) {
+            copyNamed(jarOf(":yap420-plugin"), gameplayDir)
+        }
         if (findProject(":items-plugin") != null) {
             copyNamed(jarOf(":items-plugin"), gameplayDir)
-        }
-        if (findProject(":qol-plugin") != null) {
-            copyNamed(jarOf(":qol-plugin"), gameplayDir)
         }
         if (findProject(":skills-plugin") != null) {
             copyNamed(jarOf(":skills-plugin", "shadowJar"), gameplayDir)
@@ -344,9 +340,6 @@ tasks.register("assemblePluginDist") {
         }
         if (findProject(":disasters-plugin") != null) {
             copyNamed(jarOf(":disasters-plugin"), gameplayDir)
-        }
-        if (findProject(":leveled-mobs-plugin") != null) {
-            copyNamed(jarOf(":leveled-mobs-plugin"), gameplayDir)
         }
 
         copyNamed(jarOf(":yap-db-api"), apiDir)
@@ -360,6 +353,9 @@ tasks.register("assemblePluginDist") {
             copyNamed(jarOf(":yap-discord-api"), apiDir)
         }
         copyNamed(jarOf(":yap-playerdata-api"), apiDir)
+        if (findProject(":yap-claims-api") != null) {
+            copyNamed(jarOf(":yap-claims-api"), apiDir)
+        }
         if (findProject(":yap-lib-api") != null) {
             copyNamed(jarOf(":yap-lib-api"), apiDir)
         }
@@ -459,7 +455,7 @@ tasks.register<Exec>("fetchTebex") {
     description =
         "Download official Tebex Folia plugin (GPLv3) into plugins/tebex.jar"
     workingDir = project.projectDir
-    commandLine("bash", "scripts/fetch-tebex.sh")
+    commandLine("bash", "scripts/plugins/fetch-tebex.sh")
 }
 
 tasks.register<Exec>("fetchGrim") {
@@ -467,6 +463,6 @@ tasks.register<Exec>("fetchGrim") {
     description =
         "Download official Grim Anticheat Folia jar (GPLv3) into plugins/grim.jar"
     workingDir = project.projectDir
-    commandLine("bash", "scripts/fetch-grim.sh")
+    commandLine("bash", "scripts/plugins/fetch-grim.sh")
 }
 

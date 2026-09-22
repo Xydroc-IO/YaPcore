@@ -29,11 +29,11 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 |-----|------|
 | `yap-folia-bridge.jar` | Folia surface / GlobalRegionScheduler smoke (`/yapbridge`) |
 | `yap-placeholderapi.jar` | Clip-compatible PlaceholderAPI (plugin name `PlaceholderAPI`) |
-| `yap-plugin-compat.jar` | 1.20–1.21 → 26.2 back-compat (`/yapcompat`) |
 | `yap-pregen.jar` | Chunk pre-generator (`/yappregen`) |
 | `yap-db.jar` | Shared SQL Hikari pool (`YaPDB`) — MariaDB/MySQL · PostgreSQL · SQLite — [`YAPDB.md`](../docs/data/YAPDB.md) |
 | `yap-perms.jar` | Native permissions — groups, tracks, prefixes (`/yapperm`, `/promote`) |
 | `yap-playerdata.jar` | Cross-server sync, auth, session lock, schema — data plane ([PLAYERDATA.md](../docs/data/PLAYERDATA.md)) |
+| `yap-claims.jar` | Player land claims (`/claim` via Essentials; shared SQL tables) |
 | `yap-moderation.jar` | Ban/mute/warn/kick + history (`/ban`, `/modhistory`) |
 | `yap-essentials.jar` | Essentials QoL + data-backed cmds (`/bag`, `/home`, `/kit`, `/bal`, `/shop`, …) |
 | `yap-admin.jar` | In-game staff super menu (`/yapadmin`, `/staff`) — [WEB_DASHBOARD.md](../docs/ops/WEB_DASHBOARD.md) |
@@ -45,7 +45,7 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-regions.jar` | WorldGuard-class regions (`/region`) |
 | `yap-portals.jar` | Fleet walk-through portals (`/portal`) — **on** by default · [PORTALS.md](../docs/network/PORTALS.md) |
 | `yap-npcs.jar` | NPCs + quests + hub actions (`/npc`, `/quests`) |
-| `yap-guard.jar` | Lightweight movement heuristics (not Grim) — PvP: `./scripts/grim-ac.sh enable` |
+| `yap-guard.jar` | Lightweight movement heuristics (not Grim) — PvP: `./scripts/plugins/grim-ac.sh enable` |
 | `yap-lagguard.jar` | Lag / entity budgets |
 | `yap-map.jar` | Flat web map (Leaflet tiles + markers; no 3D) |
 | `yap-factions.jar` | Factions/guilds overlay on playerdata claims (off by default) |
@@ -72,6 +72,7 @@ See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUG
 | `yap-disasters.jar` | Extreme weather + disasters (`/yapdisaster`) |
 | `yap-leveled-mobs.jar` | Distance-based mob levels (`/yaplevel`) |
 | `yap-gameplay-knobs.jar` | Purpur-inspired encyclopedia (event-wired; crop/fluid NMS opt-in via YaP-Folia 0025) |
+| `yap-420.jar` | Plant / cure / craft / consume loop (`/yap420`) — [YAP420.md](../docs/plugins/YAP420.md) |
 
 Plus GAMEPLAY fine-tune modules (`yap-stacker-module`, `yap-gameplay-knobs-module`)
 when `-PyapGameplay=true`. CORE fine-tune modules install with `installProductDefaults`
@@ -81,8 +82,8 @@ when `-PyapGameplay=true`. CORE fine-tune modules install with `installProductDe
 
 | Jar | How | Notes |
 |-----|-----|-------|
-| `tebex.jar` | `./scripts/fetch-tebex.sh` or `gradle fetchTebex` | Official **GPLv3** Folia store plugin — Hub only · [INTEGRATIONS.md](../docs/ops/INTEGRATIONS.md) |
-| `grim.jar` | `./scripts/fetch-grim.sh` or `gradle fetchGrim` | Official **GPLv3** Grim AC — auto-downloaded **disabled** on `seed-defaults.sh`; enable with `./scripts/grim-ac.sh enable` · [GRIM.md](../docs/ops/GRIM.md) |
+| `tebex.jar` | `./scripts/plugins/fetch-tebex.sh` or `gradle fetchTebex` | Official **GPLv3** Folia store plugin — Hub only · [INTEGRATIONS.md](../docs/ops/INTEGRATIONS.md) |
+| `grim.jar` | `./scripts/plugins/fetch-grim.sh` or `gradle fetchGrim` | Official **GPLv3** Grim AC — auto-downloaded **disabled** on `seed-defaults.sh`; enable with `./scripts/plugins/grim-ac.sh enable` · [GRIM.md](../docs/ops/GRIM.md) |
 
 See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) · [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) ·
 [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) ·

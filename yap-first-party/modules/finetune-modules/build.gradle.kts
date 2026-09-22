@@ -36,7 +36,13 @@ val fineTuneModules = listOf(
         "playerdata", "YaPPlayerDataModule",
         "com.yapcore.finetune.PlayerDataTuneModule",
         listOf("playerdata"),
-        description = "Fine-tune YaPPlayerData — economy, features.*, auth, sync, claims",
+        description = "Fine-tune YaPPlayerData — economy, features.*, auth, sync",
+    ),
+    FineTuneSpec(
+        "claims", "YaPClaimsModule",
+        "com.yapcore.finetune.ClaimsTuneModule",
+        listOf("claims"),
+        description = "Fine-tune YaPClaims — land claims, deny-worlds, tax",
     ),
     FineTuneSpec(
         "economy", "YaPEconomyModule",
