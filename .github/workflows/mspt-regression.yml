@@ -34,7 +34,7 @@ jobs:
     steps:
       - run: |
           echo "Live fullcite A/B is local/self-hosted."
-          echo "1) ./scripts/fetch-folia.sh && ./scripts/build-yap-folia.sh"
+          echo "1) ./scripts/folia/fetch-folia.sh && ./scripts/folia/build-yap-folia.sh"
           echo "2) Run MSPT benches for stock Folia + yap-folia (same scenario/seconds/heap)"
           echo "3) ./scripts/bench/check-mspt-regression.sh stock.json yap.json"
           echo "Scenario input: ${{ github.event.inputs.scenario }} seconds=${{ github.event.inputs.seconds }}"

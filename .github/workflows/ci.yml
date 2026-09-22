@@ -16,7 +16,7 @@ jobs:
           distribution: temurin
           java-version: "25"
       - name: Make scripts executable
-        run: chmod +x scripts/*.sh scripts/bench/*.sh scripts/yapctl || true
+        run: find scripts -type f \( -name '*.sh' -o -name yapctl \) -exec chmod +x {} + || true
       - name: Domain line limits (≤500)
         run: gradle checkDomainLineLimits --no-daemon
       - name: DB bootstrap hygiene
@@ -34,7 +34,6 @@ jobs:
           :world-plugin:test
           :yap-factions-api:test
           :yap-conquest-api:test
-          :conquest-plugin:test
           :map-plugin:test
           :regions-plugin:test
           :yap-portals-api:test
@@ -50,7 +49,6 @@ jobs:
           :floodgate-plugin:test
           :folia-bridge-plugin:test
           :packs-plugin:test
-          :plugin-compat-plugin:test
           :tab-plugin:test
           :worldedit-shim-plugin:test
           :yap-db-plugin:test

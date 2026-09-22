@@ -14,7 +14,7 @@
 
 ## Notes
 
-- Keep domain `.java` files ≤**500** lines (`./scripts/check-domain-line-limits.sh`)
+- Keep domain `.java` files ≤**500** lines (`./scripts/check/check-domain-line-limits.sh`)
 - Prefer `YapDbBootstrap` for plugin SQL pools ([YAPDB.md](../docs/data/YAPDB.md))
 - World / inventory mutations must stay on **SYNC**
 - Production closeout phases: [RELEASES.md](../start/RELEASES.md)

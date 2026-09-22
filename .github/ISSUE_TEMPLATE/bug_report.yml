@@ -19,7 +19,7 @@ body:
     attributes:
       label: Steps to reproduce
       placeholder: |
-        1. Start with ./scripts/gui.sh
+        1. Start with ./scripts/lifecycle/gui.sh
         2. Connect with …
     validations:
       required: true

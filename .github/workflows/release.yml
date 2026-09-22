@@ -22,7 +22,7 @@ jobs:
           java-version: "25"
 
       - name: Fetch Folia
-        run: bash scripts/fetch-folia.sh
+        run: bash scripts/folia/fetch-folia.sh
 
       - name: Build release
         run: gradle assembleRelease --no-daemon
