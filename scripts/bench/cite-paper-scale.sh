@@ -52,7 +52,7 @@ done
 
 if [[ ! -f "$ROOT/lib/yap-folia-${VER}.jar" ]]; then
   echo "Building YaP-Folia…"
-  "$ROOT/scripts/build-yap-folia.sh"
+  "$ROOT/scripts/folia/build-yap-folia.sh"
 fi
 
 "$SCRIPT_DIR/run-vs-paper-scale.sh" fullcite "$SECONDS_N"

@@ -30,12 +30,12 @@ function Find-Bash {
 }
 
 $map = @{
-    "Seed-Defaults"    = "scripts/seed-defaults.sh"
-    "Fetch-Tebex"       = "scripts/fetch-tebex.sh"
-    "Fetch-Grim"        = "scripts/fetch-grim.sh"
-    "Grim-Ac"           = "scripts/grim-ac.sh"
-    "Apply-Production"  = "scripts/apply-production-profile.sh"
-    "Forwarding"        = "scripts/setup-velocity-forwarding.sh"
+    "Seed-Defaults"    = "scripts/setup/seed-defaults.sh"
+    "Fetch-Tebex"       = "scripts/plugins/fetch-tebex.sh"
+    "Fetch-Grim"        = "scripts/plugins/fetch-grim.sh"
+    "Grim-Ac"           = "scripts/plugins/grim-ac.sh"
+    "Apply-Production"  = "scripts/setup/apply-production-profile.sh"
+    "Forwarding"        = "scripts/setup/setup-velocity-forwarding.sh"
 }
 
 $rel = $map[$Action]

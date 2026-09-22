@@ -1,4 +1,4 @@
-# YaPcore nginx setup (Windows) — same templates as Linux scripts/nginx-setup.sh
+# YaPcore nginx setup (Windows) — same templates as Linux scripts/setup/nginx-setup.sh
 # Usage:
 #   .\Nginx-Setup.ps1              # generate + install if nginx found
 #   .\Nginx-Setup.ps1 -DryRun      # print only

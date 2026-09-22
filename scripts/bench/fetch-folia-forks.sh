@@ -33,7 +33,7 @@ fetch_folia() {
     return
   fi
   echo "Downloading Folia ${VER}…"
-  "$ROOT/scripts/fetch-folia.sh" "$VER"
+  "$ROOT/scripts/folia/fetch-folia.sh" "$VER"
 }
 
 fetch_canvas() {

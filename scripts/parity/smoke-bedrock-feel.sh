@@ -63,7 +63,7 @@ fi
 echo "==> Client mods zip"
 ZIP="dist/client-mods/client_mods.zip"
 if [[ ! -f "$ZIP" ]]; then
-  echo "MISSING $ZIP — run ./scripts/build-yap-client-render.sh" >&2
+  echo "MISSING $ZIP — run ./scripts/packs/build-yap-client-render.sh" >&2
   FAIL=1
 else
   python3 - <<PY || FAIL=1

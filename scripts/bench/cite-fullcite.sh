@@ -54,11 +54,11 @@ yap_banner "cite-fullcite · stamp=$STAMP · players=$PLAYERS · ${SECONDS_N}s"
 
 if [ ! -f "$ROOT/lib/folia-26.2.jar" ] && [ ! -f "$ROOT/lib/folia-${FOLIA_VERSION:-26.2}.jar" ]; then
   echo "Fetching stock Folia…"
-  "$ROOT/scripts/fetch-folia.sh" || "$SCRIPT_DIR/fetch-folia-forks.sh" "${FOLIA_VERSION:-26.2}"
+  "$ROOT/scripts/folia/fetch-folia.sh" || "$SCRIPT_DIR/fetch-folia-forks.sh" "${FOLIA_VERSION:-26.2}"
 fi
 if [ ! -f "$ROOT/lib/yap-folia-26.2.jar" ] && [ ! -f "$ROOT/lib/yap-folia-${FOLIA_VERSION:-26.2}.jar" ]; then
   echo "Building YaP-Folia…"
-  "$ROOT/scripts/build-yap-folia.sh"
+  "$ROOT/scripts/folia/build-yap-folia.sh"
 fi
 
 "$SCRIPT_DIR/run-vs-folia.sh" fullcite "$SECONDS_N"

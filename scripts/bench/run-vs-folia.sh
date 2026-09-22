@@ -643,7 +643,7 @@ run_yap() {
   local work="$ROOT/bench/workdir-yap-folia"
   local botlog="$ROOT/logs/bench/bots-${STAMP}-yapcore.log"
   if [ ! -f "$YAP_FOLIA" ]; then
-    echo "WARN: missing $YAP_FOLIA — skip yapcore (run ./scripts/build-yap-folia.sh)" >&2
+    echo "WARN: missing $YAP_FOLIA — skip yapcore (run ./scripts/folia/build-yap-folia.sh)" >&2
     return
   fi
   rm -rf "$work"

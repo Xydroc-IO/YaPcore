@@ -226,10 +226,10 @@ yap_ensure_dirs() {
   yap_ensure_config_hub
   yap_ensure_forwarding_secret
   # Shippable defaults (never overwrite operator files)
-  if [ -x "$ROOT/scripts/seed-defaults.sh" ]; then
-    bash "$ROOT/scripts/seed-defaults.sh" --root "$ROOT" || true
-  elif [ -f "$ROOT/scripts/seed-defaults.sh" ]; then
-    bash "$ROOT/scripts/seed-defaults.sh" --root "$ROOT" || true
+  if [ -x "$ROOT/scripts/setup/seed-defaults.sh" ]; then
+    bash "$ROOT/scripts/setup/seed-defaults.sh" --root "$ROOT" || true
+  elif [ -f "$ROOT/scripts/setup/seed-defaults.sh" ]; then
+    bash "$ROOT/scripts/setup/seed-defaults.sh" --root "$ROOT" || true
   fi
   if [ ! -f "$ROOT/config/server.properties" ]; then
     if [ -f "$ROOT/config/defaults/server.properties" ]; then
