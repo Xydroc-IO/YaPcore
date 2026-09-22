@@ -57,6 +57,16 @@ public final class SkillPowerMath {
         return 1.0 + progress(level, maxLevel) * Math.max(0.0, bonusAtMax);
     }
 
+    /** Additive {@code WATER_MOVEMENT_EFFICIENCY}. 0 at level 1, {@code bonusAtMax} at the cap. */
+    public static double swimWaterEfficiency(int level, int maxLevel, double bonusAtMax) {
+        return progress(level, maxLevel) * Math.max(0.0, bonusAtMax);
+    }
+
+    /** Additive {@code OXYGEN_BONUS}. 0 at level 1, {@code bonusAtMax} at the cap. */
+    public static double swimOxygenBonus(int level, int maxLevel, double bonusAtMax) {
+        return progress(level, maxLevel) * Math.max(0.0, bonusAtMax);
+    }
+
     /** Expected extra copies of each vanilla drop (the rolled amount uses {@link #extraCopies}). */
     public static double expectedExtra(int level, int maxLevel, double extraAtMax) {
         return progress(level, maxLevel) * Math.max(0.0, extraAtMax);

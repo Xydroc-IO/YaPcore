@@ -1,0 +1,8 @@
+id: swimming
+display: Swimming
+enabled: true
+icon: HEART_OF_THE_SEA
+# Swim / underwater / surface-water distance only.
+travel:
+  xp-per-block: 1.5
+  max-blocks-per-second: 10

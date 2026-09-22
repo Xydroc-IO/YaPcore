@@ -101,6 +101,7 @@ public final class SkillPackLoader {
             case "woodcutting" -> Material.IRON_AXE;
             case "strength" -> Material.IRON_SWORD;
             case "marathon" -> Material.LEATHER_BOOTS;
+            case "swimming" -> Material.HEART_OF_THE_SEA;
             case "builder" -> Material.BRICKS;
             case "herbalism" -> Material.WHEAT;
             case "excavation" -> Material.IRON_SHOVEL;

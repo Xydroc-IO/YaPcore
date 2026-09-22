@@ -63,16 +63,41 @@ public final class SkillPowerText {
             }
             return List.of(hearts, "Regen: unlocks at max");
         }
+        if ("swimming".equals(id)) {
+            double water = SkillPowerMath.swimWaterEfficiency(
+                    level, maxLevel, settings.swimWaterEfficiencyAtMax());
+            double air = SkillPowerMath.swimOxygenBonus(level, maxLevel, settings.swimOxygenBonusAtMax());
+            java.util.ArrayList<String> out = new java.util.ArrayList<>();
+            out.add(String.format(Locale.ROOT, "Swim speed: +%.0f%%", water * 100.0));
+            out.add(String.format(Locale.ROOT, "Breath: +%.0f oxygen", air));
+            out.add(SkillPowerMath.atMax(level, maxLevel)
+                    ? "Underwater breath: infinite"
+                    : "Underwater breath: unlocks at max");
+            return List.copyOf(out);
+        }
         return List.of();
     }
 
-    /** Leading section colors, or empty when this skill has no power curve. */
+    /**
+     * Short chat parenthetical: live numbers, or the ability that just unlocked at max.
+     * Menu still uses {@link #lines}; this skips “unlocks at max” teases so early levels
+     * do not wrap into {@code /stats} on its own line.
+     */
     public static String levelUpDetail(String skillId, int level, int maxLevel, SkillPowerSettings settings) {
-        List<String> lines = lines(skillId, level, maxLevel, settings);
-        if (lines.isEmpty()) {
+        List<String> picked = new java.util.ArrayList<>();
+        for (String line : lines(skillId, level, maxLevel, settings)) {
+            if (line.contains("unlocks at max")) {
+                continue;
+            }
+            if (line.endsWith(": none") || line.contains("+0.00")) {
+                continue;
+            }
+            picked.add(line);
+        }
+        if (picked.isEmpty()) {
             return "";
         }
-        return " §7(§f" + String.join("§7, §f", lines) + "§7)";
+        return String.join(", ", picked);
     }
 
     private static String speedLine(double speed) {

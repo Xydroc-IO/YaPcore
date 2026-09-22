@@ -43,6 +43,7 @@ public final class SkillServiceImpl implements SkillService {
     private final XpTable overallXpTable;
     private final SkillLevelCache levelCache;
     private final SkillPowerSettings power;
+    private final SkillXpLocks xpLocks = new SkillXpLocks();
 
     public SkillServiceImpl(
             JavaPlugin plugin,
@@ -105,7 +106,8 @@ public final class SkillServiceImpl implements SkillService {
         if (amount <= 0) {
             return get(playerId, skillId);
         }
-        return CompletableFuture.supplyAsync(() -> applyXp(playerId, skillId, amount, source));
+        return CompletableFuture.supplyAsync(
+                () -> xpLocks.withPlayer(playerId, () -> applyXp(playerId, skillId, amount, source)));
     }
 
     @Override
@@ -261,16 +263,12 @@ public final class SkillServiceImpl implements SkillService {
             SkillProgress cur = repository.get(playerId, skillId)
                     .orElse(new SkillProgress(playerId, skillId, 0, 1));
             boolean skillMaxed = cur.level() >= xpTable.maxLevel();
-            int oldLevel = cur.level();
             SkillProgress progress = cur;
             if (!skillMaxed) {
-                double newXp = cur.xp() + amount;
-                int newLevel = xpTable.levelForXp(newXp);
-                if (newLevel > xpTable.maxLevel()) {
-                    newLevel = xpTable.maxLevel();
-                    newXp = xpTable.xpForLevel(newLevel);
-                }
-                progress = persist(playerId, skillId, newXp, newLevel, source, oldLevel);
+                SkillXpGrant.Outcome granted = SkillXpGrant.apply(cur, amount, xpTable);
+                progress = persist(
+                        playerId, skillId, granted.progress().xp(), granted.progress().level(),
+                        source, granted.oldLevel());
             }
             // Overall keeps progressing from skill actions even after that skill is maxed.
             double overallGrant = amount * config.overallXpShare();
@@ -309,8 +307,7 @@ public final class SkillServiceImpl implements SkillService {
         if (player == null || !player.isOnline()) {
             return;
         }
-        String chat = "§6§lLEVEL UP! §eOverall §7" + oldLevel + " §8→ §a§l" + newLevel
-                + "§7/" + overallXpTable.maxLevel() + "  §8· §f/stats";
+        Component chat = SkillLevelUpChat.message("Overall", oldLevel, newLevel, "");
         YapSched.entity(plugin, player, () ->
                 playLevelUpFx(player, "Overall Level Up!", oldLevel + " → " + newLevel, chat));
     }
@@ -347,8 +344,7 @@ public final class SkillServiceImpl implements SkillService {
         SkillDefinition def = loader.get(skillId);
         String name = def == null ? skillId.id() : def.display();
         String detail = SkillPowerText.levelUpDetail(skillId.id(), newLevel, xpTable.maxLevel(), power);
-        String chat = "§6§lLEVEL UP! §e" + name + " §7" + oldLevel + " §8→ §a§l" + newLevel
-                + "§7/" + xpTable.maxLevel() + detail + "  §8· §f/stats";
+        Component chat = SkillLevelUpChat.message(name, oldLevel, newLevel, detail);
         YapSched.entity(plugin, player, () -> {
             SkillLevelUpEvent event = new SkillLevelUpEvent(player, skillId, oldLevel, newLevel, totalXp, source);
             Bukkit.getPluginManager().callEvent(event);
@@ -356,8 +352,8 @@ public final class SkillServiceImpl implements SkillService {
         });
     }
 
-    private void playLevelUpFx(Player player, String title, String subtitle, String chat) {
-        if (config.levelUpChat() && chat != null && !chat.isBlank()) {
+    private void playLevelUpFx(Player player, String title, String subtitle, Component chat) {
+        if (config.levelUpChat() && chat != null) {
             player.sendMessage(chat);
         }
         if (config.levelUpTitle()) {

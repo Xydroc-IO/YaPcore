@@ -39,7 +39,8 @@ skills-directory: skills
 
 # Power sits on top of the level locks. Level 1 is vanilla.
 # At max level (120): 3x break speed, two extra drop copies (3x loot), 3x hit damage, 2x walk speed,
-# +1 block place reach, 25% keep-block, +5 hearts, 2x brew speed.
+# +1 block place reach, 25% keep-block, +5 hearts, 2x brew speed, Depth-Strider swim + long breath
+# (infinite underwater air at Swimming 120).
 # Super Breaker / Tree Feller / Green Terra / excavation loot unlock at 120 (abilities are timed, not always-on).
 power:
   enabled: true
@@ -51,6 +52,9 @@ power:
   keep-block-chance-at-max: 0.25
   extra-hearts-at-max: 10.0
   brew-speed-bonus-at-max: 1.0
+  # Swimming: additive WATER_MOVEMENT_EFFICIENCY (1.0 ≈ Depth Strider III) and OXYGEN_BONUS.
+  swim-water-efficiency-at-max: 1.0
+  swim-oxygen-bonus-at-max: 8.0
   abilities:
     duration-seconds: 12
     cooldown-seconds: 90

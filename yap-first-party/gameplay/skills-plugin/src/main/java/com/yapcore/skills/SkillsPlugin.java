@@ -23,6 +23,7 @@ import com.yapcore.skills.listener.SkillLevelListener;
 import com.yapcore.skills.listener.SkillPowerBreakListener;
 import com.yapcore.skills.listener.SkillPowerCombatListener;
 import com.yapcore.skills.listener.SmeltSkillListener;
+import com.yapcore.skills.listener.SwimmingSkillListener;
 import com.yapcore.skills.papi.SkillsPlaceholders;
 import com.yapcore.skills.power.SkillAbilities;
 import com.yapcore.skills.power.SkillBreakSpeed;
@@ -32,6 +33,7 @@ import com.yapcore.skills.power.SkillMoveSpeed;
 import com.yapcore.skills.power.SkillPlaceReach;
 import com.yapcore.skills.power.SkillPowerMath;
 import com.yapcore.skills.power.SkillPowerSettings;
+import com.yapcore.skills.power.SkillSwimPower;
 import com.yapcore.skills.service.SkillServiceImpl;
 import com.yapcore.skills.skill.SkillPackLoader;
 import org.bukkit.Bukkit;
@@ -48,7 +50,7 @@ import java.util.List;
 public final class SkillsPlugin extends JavaPlugin {
 
     private static final List<String> DEFAULT_SKILL_PACKS = List.of(
-            "mining.yml", "woodcutting.yml", "strength.yml", "marathon.yml", "builder.yml",
+            "mining.yml", "woodcutting.yml", "strength.yml", "marathon.yml", "swimming.yml", "builder.yml",
             "herbalism.yml", "excavation.yml", "alchemy.yml", "health.yml");
 
     private SkillsConfig config;
@@ -62,6 +64,7 @@ public final class SkillsPlugin extends JavaPlugin {
     private SkillsPlaceholders placeholders;
     private SkillLevelListener levelListener;
     private MarathonSkillListener marathon;
+    private SwimmingSkillListener swimming;
     private HealthSkillListener health;
     private final SkillAbilities abilities = new SkillAbilities();
 
@@ -86,6 +89,8 @@ public final class SkillsPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(levelListener, this);
         marathon = new MarathonSkillListener(this);
         getServer().getPluginManager().registerEvents(marathon, this);
+        swimming = new SwimmingSkillListener(this);
+        getServer().getPluginManager().registerEvents(swimming, this);
         getServer().getPluginManager().registerEvents(new BuilderSkillListener(this), this);
         getServer().getPluginManager().registerEvents(new SkillAbilityListener(this), this);
         getServer().getPluginManager().registerEvents(new HerbalismSkillListener(this), this);
@@ -122,6 +127,7 @@ public final class SkillsPlugin extends JavaPlugin {
             try {
                 SkillBreakSpeed.clear(this, player);
                 SkillMoveSpeed.clear(this, player);
+                SkillSwimPower.clear(this, player);
                 SkillPlaceReach.clear(this, player);
                 SkillMaxHealth.clear(this, player);
             } catch (Throwable ignored) {
@@ -130,6 +136,9 @@ public final class SkillsPlugin extends JavaPlugin {
         }
         if (marathon != null) {
             marathon.untrackAll();
+        }
+        if (swimming != null) {
+            swimming.untrackAll();
         }
         if (health != null) {
             health.stopAll();
@@ -235,6 +244,9 @@ public final class SkillsPlugin extends JavaPlugin {
         if (marathon != null) {
             marathon.trackOnline();
         }
+        if (swimming != null) {
+            swimming.trackOnline();
+        }
         if (health != null) {
             health.startOnline();
         }
@@ -263,6 +275,34 @@ public final class SkillsPlugin extends JavaPlugin {
         double multiplier = SkillPowerMath.moveSpeed(
                 level, skillService.xpTable().maxLevel(), powerSettings.movementSpeedBonusAtMax());
         SkillMoveSpeed.apply(this, player, multiplier);
+    }
+
+    public void applySwimming(Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        if (player.getGameMode() == GameMode.SPECTATOR || !powerSettings.enabled()) {
+            SkillSwimPower.clear(this, player);
+            return;
+        }
+        if (skillService == null) {
+            SkillSwimPower.clear(this, player);
+            return;
+        }
+        var def = skillService.definition(SwimmingSkillListener.SWIMMING).orElse(null);
+        if (def == null || !def.enabled()) {
+            SkillSwimPower.clear(this, player);
+            return;
+        }
+        int level = levelCache.loaded(player.getUniqueId())
+                ? levelCache.level(player.getUniqueId(), def.id())
+                : 1;
+        int max = skillService.xpTable().maxLevel();
+        double water = SkillPowerMath.swimWaterEfficiency(
+                level, max, powerSettings.swimWaterEfficiencyAtMax());
+        double oxygen = SkillPowerMath.swimOxygenBonus(
+                level, max, powerSettings.swimOxygenBonusAtMax());
+        SkillSwimPower.apply(this, player, water, oxygen);
     }
 
     public void applyBuilderReach(Player player) {

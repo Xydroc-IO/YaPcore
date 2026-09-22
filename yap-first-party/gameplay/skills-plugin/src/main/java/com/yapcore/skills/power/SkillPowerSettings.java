@@ -13,6 +13,8 @@ public record SkillPowerSettings(
         double keepBlockChanceAtMax,
         double extraHeartsAtMax,
         double brewSpeedBonusAtMax,
+        double swimWaterEfficiencyAtMax,
+        double swimOxygenBonusAtMax,
         SkillAbilitySettings abilities) {
 
     public SkillPowerSettings {
@@ -24,13 +26,15 @@ public record SkillPowerSettings(
         keepBlockChanceAtMax = Math.max(0.0, Math.min(1.0, keepBlockChanceAtMax));
         extraHeartsAtMax = Math.max(0.0, extraHeartsAtMax);
         brewSpeedBonusAtMax = Math.max(0.0, brewSpeedBonusAtMax);
+        swimWaterEfficiencyAtMax = Math.max(0.0, swimWaterEfficiencyAtMax);
+        swimOxygenBonusAtMax = Math.max(0.0, swimOxygenBonusAtMax);
         abilities = abilities == null ? SkillAbilitySettings.defaults() : abilities;
     }
 
-    /** Level 120: 3x mine/chop, 3x hits, 2x walk, +5 hearts, 2x brew, max-level abilities. */
+    /** Level 120: 3x mine/chop, 3x hits, 2x walk, +5 hearts, 2x brew, swim Depth-Strider-like + air. */
     public static SkillPowerSettings defaults() {
         return new SkillPowerSettings(true, 2.0, 2.0, 2.0, 1.0, 1.0, 0.25, 10.0, 1.0,
-                SkillAbilitySettings.defaults());
+                1.0, 8.0, SkillAbilitySettings.defaults());
     }
 
     public static SkillPowerSettings from(FileConfiguration config) {
@@ -47,6 +51,8 @@ public record SkillPowerSettings(
                 config.getDouble("power.keep-block-chance-at-max", 0.25),
                 config.getDouble("power.extra-hearts-at-max", 10.0),
                 config.getDouble("power.brew-speed-bonus-at-max", 1.0),
+                config.getDouble("power.swim-water-efficiency-at-max", 1.0),
+                config.getDouble("power.swim-oxygen-bonus-at-max", 8.0),
                 SkillAbilitySettings.from(config));
     }
 }

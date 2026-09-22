@@ -2,8 +2,8 @@ id: marathon
 display: Marathon
 enabled: true
 icon: LEATHER_BOOTS
-# On-foot distance only (walk / sprint / crouch / swim / climb).
-# Vehicles, elytra, and creative flight do not count.
+# On-foot distance only (walk / sprint / crouch / climb).
+# Swim XP is the Swimming skill. Vehicles, elytra, and creative flight do not count.
 travel:
   xp-per-block: 1.0
   max-blocks-per-second: 12

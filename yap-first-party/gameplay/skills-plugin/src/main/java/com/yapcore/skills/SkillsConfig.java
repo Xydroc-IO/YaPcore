@@ -35,7 +35,7 @@ public final class SkillsConfig {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
         FileConfiguration c = plugin.getConfig();
-        enabled = c.getBoolean("enabled", false);
+        enabled = c.getBoolean("enabled", true);
         useSharedYapdb = c.getBoolean("use-shared-yapdb", true);
         jdbcUrl = c.getString("jdbc.url", "jdbc:mysql://127.0.0.1:3306/yap");
         jdbcUser = c.getString("jdbc.user", "yap");
