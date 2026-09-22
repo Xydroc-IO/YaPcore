@@ -194,11 +194,22 @@ public final class BedrockActionTranslator {
         InventoryTransactionType type = tx.getTransactionType();
         if (type == InventoryTransactionType.ITEM_USE_ON_ENTITY) {
             long runtime = tx.getRuntimeEntityId();
-            // actionType 1 = attack (Geyser); 0 = interact/use.
-            if (runtime != 0L && tx.getActionType() == 1) {
+            int actionType = tx.getActionType();
+            BedrockJoinProbe.noteEvent(session.guid(),
+                    "be_INV_TX ITEM_USE_ON_ENTITY actionType=" + actionType
+                            + " runtime=" + runtime
+                            + " lookTarget=" + session.lastAttackTarget());
+            // actionType 1 = attack (Geyser); 0 = interact/use. Some builds send other
+            // non-1 values for tap-to-trade — treat anything except attack as shop open.
+            if (runtime == 0L && session.lastAttackTarget() > 0) {
+                runtime = session.lastAttackTarget();
+            }
+            if (runtime != 0L && actionType == 1) {
                 BedrockCombat.translateAttack(session, runtime);
-            } else if (tx.getActionType() == 1 && session.lastAttackTarget() > 0) {
+            } else if (actionType == 1 && session.lastAttackTarget() > 0) {
                 BedrockCombat.translateAttackJava(session, session.lastAttackTarget());
+            } else if (runtime != 0L) {
+                BedrockInventoryOpen.useEntity(session, runtime);
             }
             return;
         }

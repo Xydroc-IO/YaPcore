@@ -6,24 +6,10 @@ import com.yapcore.link.bedrock.downstream.JavaDownstreamClient;
 import com.yapcore.link.bedrock.probe.BedrockJoinProbe;
 import com.yapcore.link.bedrock.session.LinkBedrockSession.JoinPhase;
 import com.yapcore.link.bedrock.session.LinkBedrockSession.PendingChunkConsumer;
-import com.yapcore.link.bedrock.session.LinkBedrockSession.PendingJeChunk;
-import com.yapcore.link.bedrock.translator.ChunkUtils;
-import com.yapcore.link.bedrock.translator.JavaBlockUpdateTranslator;
 import com.yapcore.link.bedrock.translator.JavaDimensionTranslator;
-import com.yapcore.link.bedrock.translator.JavaLevelChunkTranslator;
 import com.yapcore.link.bedrock.translator.JavaLoginTranslator;
-import io.netty.buffer.ByteBuf;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.packet.ChunkRadiusUpdatedPacket;
-import org.cloudburstmc.protocol.bedrock.packet.MovePlayerPacket;
-import org.cloudburstmc.protocol.bedrock.packet.MovePlayerPacket.Mode;
-import org.cloudburstmc.protocol.bedrock.packet.MovePlayerPacket.TeleportationCause;
 import org.cloudburstmc.protocol.bedrock.packet.SetTimePacket;
 import org.cloudburstmc.protocol.bedrock.packet.StartGamePacket;
 
@@ -31,9 +17,11 @@ import org.cloudburstmc.protocol.bedrock.packet.StartGamePacket;
 final class LinkBedrockSessionConnect {
 
     private final LinkBedrockSession s;
+    private final LinkBedrockSessionConnectSpawn spawnLogic;
 
     LinkBedrockSessionConnect(LinkBedrockSession session) {
         this.s = session;
+        this.spawnLogic = new LinkBedrockSessionConnectSpawn(session);
     }
 
     void connect() {
@@ -112,211 +100,28 @@ final class LinkBedrockSessionConnect {
                             + ","
                             + fmt(s.spawnFeetZ)
                             + " — waiting spawn-column SOLID before PLAYER_SPAWN / 0x71");
-            schedulePlayerSpawnTimeout();
+            spawnLogic.schedulePlayerSpawnTimeout();
         }
     }
 
     void tryCompletePlayerSpawn(String reason) {
-        if (s.sentSpawnPacket && !s.playerSpawnSent.get()) {
-            boolean timeout = "timeout".equals(reason) || reason != null && reason.startsWith("timeout");
-            if (s.spawnColumnSolid.get() || timeout) {
-                if (s.playerSpawnSent.compareAndSet(false, true)) {
-                    String spawnReason = s.spawnColumnSolid.get() ? "solid" : "timeout";
-                    if (timeout && !s.spawnColumnSolid.get()) {
-                        placeTemporarySpawnPlatform();
-                    }
-
-                    s.sendUpstreamPacket(LinkJoinPackets.playerSpawn());
-                    s.sendUpstreamPacket(LinkJoinPackets.setPlayerGameTypeSurvival());
-                    float eyeY = (float) (s.spawnFeetY + 1.62);
-                    MovePlayerPacket move = new MovePlayerPacket();
-                    move.setRuntimeEntityId(s.runtimeId);
-                    move.setPosition(Vector3f.from((float) s.spawnFeetX, eyeY, (float) s.spawnFeetZ));
-                    move.setRotation(Vector3f.from(s.pitch, s.yaw, s.yaw));
-                    move.setMode(Mode.TELEPORT);
-                    move.setTeleportationCause(TeleportationCause.UNKNOWN);
-                    move.setEntityType(0);
-                    move.setOnGround(true);
-                    move.setRidingRuntimeEntityId(0L);
-                    move.setTick(0L);
-                    s.sendUpstreamPacket(move);
-                    ChunkUtils.updateChunkPosition(s, s.spawnBlockPos());
-                    s.armPostInitPositionConfirm(s.spawnFeetX, s.spawnFeetY, s.spawnFeetZ);
-                    s.groundHoldTicksRemaining = LinkBedrockSession.POST_SPAWN_GROUND_HOLD_TICKS;
-                    scheduleSpawnFreezeTeleports();
-                    BedrockJoinProbe.noteEvent(
-                            s.guid,
-                            "stand_on surfaceY="
-                                    + fmt(s.spawnFeetY)
-                                    + " feetY="
-                                    + fmt(s.spawnFeetY)
-                                    + " eyeY="
-                                    + fmt(eyeY)
-                                    + " platform="
-                                    + s.spawnPlatformPlaced);
-                    BedrockJoinProbe.noteEvent(
-                            s.guid,
-                            "PLAYER_SPAWN+MovePlayer eyeY="
-                                    + fmt(eyeY)
-                                    + " feetY="
-                                    + fmt(s.spawnFeetY)
-                                    + " spawnReal="
-                                    + s.spawnColumnReal.get()
-                                    + " solidBlocks="
-                                    + s.spawnColumnSolidBlocks.get()
-                                    + " reason="
-                                    + spawnReason);
-                    LinkBedrockSession.LOG.info(
-                            "BE PLAYER_SPAWN user="
-                                    + s.username
-                                    + " eyeY="
-                                    + fmt(eyeY)
-                                    + " feetY="
-                                    + fmt(s.spawnFeetY)
-                                    + " spawnReal="
-                                    + s.spawnColumnReal.get()
-                                    + " solidBlocks="
-                                    + s.spawnColumnSolidBlocks.get()
-                                    + " reason="
-                                    + spawnReason
-                                    + " platform="
-                                    + s.spawnPlatformPlaced);
-                }
-            }
-        }
+        spawnLogic.tryCompletePlayerSpawn(reason);
     }
 
-    void placeTemporarySpawnPlatform() {
-        int standFeetBlockY = (int) Math.floor(s.spawnFeetY);
-        int platformY = standFeetBlockY - 1;
-        int stoneRt = s.stoneRuntimeId();
-        JavaBlockUpdateTranslator.sendUpdateBlock(s, s.spawnX, platformY, s.spawnZ, stoneRt);
-        s.setSpawnFromFeet(s.spawnFeetX, standFeetBlockY + 0.0, s.spawnFeetZ);
-        s.punchStandOnAirCells();
-        s.spawnPlatformPlaced = true;
-        BedrockJoinProbe.noteEvent(
-                s.guid,
-                "spawn_platform stone y="
-                        + platformY
-                        + " standFeetY="
-                        + standFeetBlockY
-                        + " stoneRt="
-                        + stoneRt
-                        + " size=1 (timeout without solid)");
-        BedrockJoinProbe.noteEvent(
-                s.guid,
-                "stand_on surfaceY="
-                        + fmt(s.spawnFeetY)
-                        + " feetY="
-                        + fmt(s.spawnFeetY)
-                        + " eyeY="
-                        + fmt(s.spawnFeetY + 1.62)
-                        + " platform=true");
-        LinkBedrockSession.LOG.warning(
-                "BE spawn platform (timeout, solidBlocks="
-                        + s.spawnColumnSolidBlocks.get()
-                        + ") platformY="
-                        + platformY
-                        + " feetY="
-                        + standFeetBlockY
-                        + " stoneRt="
-                        + stoneRt
-                        + " size=1 user="
-                        + s.username);
+    void rearmPlayerSpawnAfterJoinSquare() {
+        spawnLogic.rearmPlayerSpawnAfterJoinSquare();
     }
 
-    void scheduleSpawnFreezeTeleports() {
-        if (s.spawnFreezeScheduled.compareAndSet(false, true)) {
-            JavaDownstreamClient down = s.downstream;
-            if (down != null && down.channel() != null) {
-                int[] remaining = new int[] {40};
-                AtomicReference<ScheduledFuture<?>> future = new AtomicReference<>();
-                future.set(down.channel().eventLoop().scheduleAtFixedRate(
-                        () -> {
-                            if (s.joinPhase == JoinPhase.SPAWNED || remaining[0]-- <= 0) {
-                                ScheduledFuture<?> f = future.get();
-                                if (f != null) {
-                                    f.cancel(false);
-                                }
-                            } else if (s.playerSpawnSent.get()) {
-                                float eyeY = (float) (s.spawnFeetY + 1.62);
-                                MovePlayerPacket move = new MovePlayerPacket();
-                                move.setRuntimeEntityId(s.runtimeId);
-                                move.setPosition(Vector3f.from((float) s.spawnFeetX, eyeY, (float) s.spawnFeetZ));
-                                move.setRotation(Vector3f.from(s.pitch, s.yaw, s.yaw));
-                                move.setMode(Mode.TELEPORT);
-                                move.setTeleportationCause(TeleportationCause.UNKNOWN);
-                                move.setEntityType(0);
-                                move.setOnGround(true);
-                                move.setRidingRuntimeEntityId(0L);
-                                move.setTick(0L);
-                                s.sendUpstreamPacket(move);
-                            }
-                        },
-                        50L,
-                        50L,
-                        TimeUnit.MILLISECONDS));
-            }
-        }
-    }
-
-    void schedulePlayerSpawnTimeout() {
-        if (s.playerSpawnTimeoutScheduled.compareAndSet(false, true)) {
-            JavaDownstreamClient down = s.downstream;
-            if (down != null && down.channel() != null) {
-                down.channel()
-                        .eventLoop()
-                        .schedule(
-                                () -> {
-                                    if (!s.playerSpawnSent.get()) {
-                                        BedrockJoinProbe.noteEvent(
-                                                s.guid,
-                                                "PLAYER_SPAWN timeout after "
-                                                        + LinkBedrockSession.PLAYER_SPAWN_REAL_TIMEOUT_MS
-                                                        + "ms reals="
-                                                        + s.realJeChunksSent.get()
-                                                        + " spawnReal="
-                                                        + s.spawnColumnReal.get()
-                                                        + " solidBlocks="
-                                                        + s.spawnColumnSolidBlocks.get());
-                                        tryCompletePlayerSpawn("timeout");
-                                    }
-                                },
-                                LinkBedrockSession.PLAYER_SPAWN_REAL_TIMEOUT_MS,
-                                TimeUnit.MILLISECONDS);
-            }
-        }
+    void scheduleJoinInitAssist() {
+        spawnLogic.scheduleJoinInitAssist();
     }
 
     boolean consumePostSpawnGroundHold(double feetX, double feetY, double feetZ, boolean onGround) {
-        if (s.groundHoldTicksRemaining <= 0) {
-            return true;
-        }
-
-        boolean near = Math.abs(feetX - s.spawnFeetX) < 0.35
-                && Math.abs(feetZ - s.spawnFeetZ) < 0.35
-                && Math.abs(feetY - s.spawnFeetY) < 0.75;
-        if (!near || !onGround && !(Math.abs(feetY - s.spawnFeetY) < 0.2)) {
-            s.groundHoldTicksRemaining = LinkBedrockSession.POST_SPAWN_GROUND_HOLD_TICKS;
-            if (s.pendingTeleportId < 0) {
-                s.armPostInitPositionConfirm(s.spawnFeetX, s.spawnFeetY, s.spawnFeetZ);
-            }
-
-            return false;
-        } else {
-            s.groundHoldTicksRemaining--;
-            if (s.groundHoldTicksRemaining <= 0) {
-                BedrockJoinProbe.noteEvent(
-                        s.guid, "auth ground-hold released feetY=" + fmt(feetY) + " onGround=" + onGround);
-                return true;
-            } else {
-                return false;
-            }
-        }
+        return spawnLogic.consumePostSpawnGroundHold(feetX, feetY, feetZ, onGround);
     }
 
     void resetPostSpawnGroundHold() {
-        s.groundHoldTicksRemaining = LinkBedrockSession.POST_SPAWN_GROUND_HOLD_TICKS;
+        spawnLogic.resetPostSpawnGroundHold();
     }
 
     static String fmt(double v) {
@@ -326,35 +131,97 @@ final class LinkBedrockSessionConnect {
     void setServerRenderDistance(int renderDistance) {
         renderDistance = Math.min(renderDistance, 96);
         s.serverRenderDistance = renderDistance;
-        int circle = ChunkUtils.squareToCircle(s.serverRenderDistance);
+        // Advertise the square we actually fill. squareToCircle(8)=13 made Bedrock
+        // wait for a ring Folia never sends, so 0x71 arrived in minutes or not at all.
+        int radius = Math.max(2, s.serverRenderDistance);
         ChunkRadiusUpdatedPacket chunkRadiusUpdatedPacket = new ChunkRadiusUpdatedPacket();
-        chunkRadiusUpdatedPacket.setRadius(circle);
+        chunkRadiusUpdatedPacket.setRadius(radius);
         s.sendUpstreamPacket(chunkRadiusUpdatedPacket);
     }
 
     void onJavaLoginPlay(JavaDownstreamClient.LoginPlayInfo info) {
-        if (info != null) {
-            s.pendingJavaView = info.viewDistance() > 0 ? info.viewDistance() : LinkBedrockSession.DEFAULT_JAVA_VIEW;
-            s.setBedrockDimensionId(mapBedrockDimension(info.dimensionName()));
-            // Align Folia Client Information with the server's advertised view (login_play)
-            // so chunk streaming matches ChunkRadiusUpdated, not the old hardcoded 8.
-            JavaDownstreamClient down = s.downstream;
-            if (down != null) {
-                down.sendClientInformationView(s.pendingJavaView);
-            }
-            BedrockJoinProbe.noteEvent(
-                    s.guid, "java_login_play_deferred spawn view=" + s.pendingJavaView + " dim=" + info.dimensionName());
-            LinkBedrockSession.LOG.info(
-                    "BE awaiting Java spawn before StartGame user="
-                            + s.username
-                            + " view="
-                            + s.pendingJavaView
-                            + " dim="
-                            + info.dimensionName());
-            if (!s.awaitingJavaSpawn) {
-                beginBedrockJoinIfNeeded();
-            }
+        if (info == null) {
+            return;
         }
+        if (s.softBackendSwitch && s.sentSpawnPacket) {
+            arriveSoftBackendSwitch(info);
+            return;
+        }
+        s.pendingJavaView = info.viewDistance() > 0 ? info.viewDistance() : LinkBedrockSession.DEFAULT_JAVA_VIEW;
+        s.setBedrockDimensionId(mapBedrockDimension(info.dimensionName()));
+        // Cap Folia streaming during join. Advertising full view (32) made Bedrock wait
+        // ~40–100s on the "Loading resource packs" screen while ~3500 LevelChunks arrived.
+        // Full view is applied after SetLocalPlayerAsInitialized (0x71).
+        JavaDownstreamClient down = s.downstream;
+        if (down != null) {
+            int joinView = Math.min(
+                    JavaLoginTranslator.JOIN_BEDROCK_VIEW,
+                    s.pendingJavaView);
+            down.sendClientInformationView(joinView);
+        }
+        BedrockJoinProbe.noteEvent(
+                s.guid, "java_login_play_deferred spawn joinView="
+                        + Math.min(JavaLoginTranslator.JOIN_BEDROCK_VIEW,
+                                s.pendingJavaView)
+                        + " fullView=" + s.pendingJavaView
+                        + " dim=" + info.dimensionName());
+        LinkBedrockSession.LOG.info(
+                "BE awaiting Java spawn before StartGame user="
+                        + s.username
+                        + " joinView="
+                        + Math.min(JavaLoginTranslator.JOIN_BEDROCK_VIEW,
+                                s.pendingJavaView)
+                        + " fullView="
+                        + s.pendingJavaView
+                        + " dim="
+                        + info.dimensionName());
+        if (!s.awaitingJavaSpawn) {
+            beginBedrockJoinIfNeeded();
+        }
+    }
+
+    /**
+     * Soft Connect arrive: Bedrock already has StartGame — ChangeDimension + clear remotes,
+     * then wait for Folia spawn/chunks like a dimension change.
+     */
+    private void arriveSoftBackendSwitch(JavaDownstreamClient.LoginPlayInfo info) {
+        String target = s.softBackendSwitchTarget;
+        s.softBackendSwitch = false;
+        s.softBackendSwitchTarget = null;
+        s.clearPendingTeleport();
+        s.softSwitchMoveGraceUntilMs = System.currentTimeMillis() + 8_000L;
+        s.pendingJavaView = info.viewDistance() > 0 ? info.viewDistance() : LinkBedrockSession.DEFAULT_JAVA_VIEW;
+        int beDim = mapBedrockDimension(info.dimensionName());
+        // Force a dimension reload even when both backends are overworld.
+        int fromDim = s.bedrockDimensionId();
+        int transit = fromDim == 0 ? 1 : 0;
+        JavaDimensionTranslator.onRespawn(s,
+                new JavaDownstreamClient.RespawnInfo(0, info.dimensionName(), (byte) 0),
+                transit);
+        JavaDimensionTranslator.onRespawn(s,
+                new JavaDownstreamClient.RespawnInfo(0, info.dimensionName(), (byte) 0),
+                beDim);
+        s.removeAllRemoteEntities();
+        s.setJoinPhase(LinkBedrockSession.JoinPhase.SPAWNED);
+        JavaDownstreamClient down = s.downstream;
+        if (down != null) {
+            int view = Math.max(
+                    JavaLoginTranslator.MIN_POST_INIT_VIEW,
+                    Math.min(32, s.pendingJavaView));
+            down.sendClientInformationView(view);
+            s.setServerRenderDistance(view);
+        }
+        s.awaitingJavaSpawn = true;
+        BedrockJoinProbe.noteEvent(s.guid,
+                "soft_switch_arrive target=" + target
+                        + " entity=" + info.entityId()
+                        + " dim=" + info.dimensionName()
+                        + " view=" + s.pendingJavaView);
+        LinkBedrockSession.LOG.info("BE soft-switch arrive user=" + s.username
+                + " target=" + target
+                + " entity=" + info.entityId()
+                + " dim=" + info.dimensionName());
+        sendPlayerLoadedOnce();
     }
 
     /**
@@ -402,13 +269,6 @@ final class LinkBedrockSessionConnect {
         beginBedrockJoinIfNeeded();
     }
 
-
-
-
-
-
-
-
     void beginBedrockJoinIfNeeded() {
         if (!s.sentSpawnPacket) {
             connect();
@@ -416,10 +276,9 @@ final class LinkBedrockSessionConnect {
             sendPlayerLoadedOnce();
             flushPendingJeChunks();
             tryCompletePlayerSpawn("post_connect_flush");
-            schedulePlayerSpawnTimeout();
+            spawnLogic.schedulePlayerSpawnTimeout();
         }
     }
-
 
     static int mapBedrockDimension(String dimensionName) {
         if (dimensionName == null) {
@@ -433,16 +292,15 @@ final class LinkBedrockSessionConnect {
         };
     }
 
-
-    void bufferOrTranslateLevelChunk(int chunkX, int chunkZ, ByteBuf payload) {
+    void bufferOrTranslateLevelChunk(int chunkX, int chunkZ, io.netty.buffer.ByteBuf payload) {
         s.chunksLogic.bufferOrTranslateLevelChunk(chunkX, chunkZ, payload);
     }
 
-    void bufferPendingRealChunk(int chunkX, int chunkZ, ByteBuf payload) {
+    void bufferPendingRealChunk(int chunkX, int chunkZ, io.netty.buffer.ByteBuf payload) {
         s.chunksLogic.bufferPendingRealChunk(chunkX, chunkZ, payload);
     }
 
-    int drainPendingRealChunks(LinkBedrockSession.PendingChunkConsumer consumer) {
+    int drainPendingRealChunks(PendingChunkConsumer consumer) {
         return s.chunksLogic.drainPendingRealChunks(consumer);
     }
 
@@ -469,5 +327,4 @@ final class LinkBedrockSessionConnect {
     static long columnKey(int chunkX, int chunkZ) {
         return LinkBedrockSessionChunks.columnKey(chunkX, chunkZ);
     }
-
 }

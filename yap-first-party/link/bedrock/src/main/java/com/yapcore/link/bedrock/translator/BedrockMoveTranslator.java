@@ -42,8 +42,10 @@ public final class BedrockMoveTranslator {
         Vector3f rot = auth.getRotation();
         float yaw = rot != null ? rot.getY() : session.yaw();
         float pitch = rot != null ? rot.getX() : session.pitch();
-        // Auth-input Y is eye height on Bedrock; JE wants feet (Geyser PLAYER_ENTITY_OFFSET).
-        double feetY = pos.getY() - LinkBedrockSession.PLAYER_EYE_OFFSET;
+        // Auth-input Y is eye height on some clients and feet on others.
+        // Pick whichever is closer to the pose we already have so a feet echo
+        // is not buried 1.62 blocks into the floor (Java then cannot see them).
+        double feetY = toFeetY(session, pos.getY());
         double feetX = pos.getX();
         double feetZ = pos.getZ();
         // Keep session pose current even while JE move is HOLD'd — attacks aim from this.
@@ -58,7 +60,8 @@ public final class BedrockMoveTranslator {
                 if (session.shouldResendTeleport()) {
                     int held = session.unconfirmedAuthMoves();
                     resendLastTeleport(session);
-                    session.resetUnconfirmedAuthMoves();
+                    // Do NOT reset unconfirmedAuthMoves — that made HOLD loop forever
+                    // (resend at 20 → reset → never hit escape hatch at 40).
                     BedrockJoinProbe.noteEvent(session.guid(),
                             "auth HOLD resend TELEPORT held=" + held);
                 } else if ((session.unconfirmedAuthMoves() & 15) == 1) {
@@ -88,13 +91,31 @@ public final class BedrockMoveTranslator {
             if ((session.unconfirmedAuthMoves() & 15) == 1 || session.unconfirmedAuthMoves() == 0) {
                 BedrockJoinProbe.noteEvent(session.guid(),
                         "auth HOLD ground feetY=" + fmt(feetY) + " onGround=" + onGround);
-                resendLastTeleport(session);
             }
+            // Do NOT resend TELEPORT here — that rubber-banded Bedrock to spawn every tick
+            // and Folia never saw walk-ups into portals / NPC range.
             sendClientTickEnd(session);
             return;
         }
         applyMove(session, feetX, feetY, feetZ, yaw, pitch, onGround, horizontalCollision);
         sendClientTickEnd(session);
+    }
+
+    /**
+     * Convert a client Y to JE feet. If the value is already near the last feet pose,
+     * leave it; if it is near last-feet+1.62, subtract the eye offset.
+     */
+    static double toFeetY(LinkBedrockSession session, double rawY) {
+        double eye = LinkBedrockSession.PLAYER_EYE_OFFSET;
+        double lastFeet = session.posY();
+        if (Double.isNaN(lastFeet)) {
+            return rawY - eye;
+        }
+        double lastEye = lastFeet + eye;
+        if (Math.abs(rawY - lastFeet) + 0.2 < Math.abs(rawY - lastEye)) {
+            return rawY;
+        }
+        return rawY - eye;
     }
 
     /**
@@ -181,8 +202,8 @@ public final class BedrockMoveTranslator {
         Vector3f rot = move.getRotation();
         float yaw = rot != null ? rot.getY() : session.yaw();
         float pitch = rot != null ? rot.getX() : session.pitch();
-        // MovePlayer from client is also eye-relative on modern auth-input editions.
-        double feetY = pos.getY() - LinkBedrockSession.PLAYER_EYE_OFFSET;
+        // Same eye-vs-feet choice as auth input.
+        double feetY = toFeetY(session, pos.getY());
         if (!session.confirmOrHoldAuthMove(pos.getX(), feetY, pos.getZ())) {
             sendClientTickEnd(session);
             return;

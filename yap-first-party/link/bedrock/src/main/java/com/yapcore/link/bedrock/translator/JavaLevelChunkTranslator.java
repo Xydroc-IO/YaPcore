@@ -59,8 +59,74 @@ public final class JavaLevelChunkTranslator {
             return;
         }
 
-        // 015924 path: send REAL as they arrive during AWAITING_CLIENT_INIT (do not buffer).
+        // During AWAITING_CLIENT_INIT, only send the join square. Outer REAL columns
+        // are buffered (not dropped) and flushed after 0x71 — Folia will not resend
+        // them, and flooding 200+ heavy LevelChunks before init stalls mobile 0x71.
+        if (session.joinPhase() == LinkBedrockSession.JoinPhase.AWAITING_CLIENT_INIT
+                && outsideJoinSquare(session, chunkX, chunkZ)) {
+            session.bufferPendingRealChunk(chunkX, chunkZ, jePayload);
+            return;
+        }
         sendTranslated(session, chunkX, chunkZ, jePayload);
+    }
+
+    /** Chebyshev distance from spawn chunk vs {@link JavaLoginTranslator#JOIN_BEDROCK_VIEW}. */
+    static boolean outsideJoinSquare(LinkBedrockSession session, int chunkX, int chunkZ) {
+        return chebyshevFromSpawn(session, chunkX, chunkZ) > joinRadius(session);
+    }
+
+    static int joinRadius(LinkBedrockSession session) {
+        return Math.max(2, Math.min(
+                JavaLoginTranslator.JOIN_BEDROCK_VIEW,
+                session.getServerRenderDistance() > 0
+                        ? session.getServerRenderDistance()
+                        : JavaLoginTranslator.JOIN_BEDROCK_VIEW));
+    }
+
+    static int chebyshevFromSpawn(LinkBedrockSession session, int chunkX, int chunkZ) {
+        int scx = session.spawnX() >> 4;
+        int scz = session.spawnZ() >> 4;
+        return Math.max(Math.abs(chunkX - scx), Math.abs(chunkZ - scz));
+    }
+
+    /**
+     * Once every column in the advertised join square is on the wire, re-emit
+     * ChunkRadiusUpdated + NetworkChunkPublisherUpdate so Bedrock stops waiting
+     * for a larger circle (095401: square filled ~4s, 0x71 only at ~56s).
+     */
+    static void maybeNudgeJoinSquareFilled(LinkBedrockSession session) {
+        if (session.joinPhase() != LinkBedrockSession.JoinPhase.AWAITING_CLIENT_INIT) {
+            return;
+        }
+        int join = joinRadius(session);
+        int scx = session.spawnX() >> 4;
+        int scz = session.spawnZ() >> 4;
+        int need = (2 * join + 1) * (2 * join + 1);
+        int have = 0;
+        for (int dx = -join; dx <= join; dx++) {
+            for (int dz = -join; dz <= join; dz++) {
+                if (session.wasRealColumnSent(scx + dx, scz + dz)) {
+                    have++;
+                }
+            }
+        }
+        if (have < need) {
+            return;
+        }
+        if (!session.markJoinSquareNudgeSent()) {
+            return;
+        }
+        session.setServerRenderDistance(join);
+        ChunkUtils.forceUpdateChunkPosition(session, session.spawnBlockPos());
+        // Re-arm PLAYER_SPAWN now that the advertised square is on the wire. Sending it
+        // after the first spawn-column solid (before the ring filled) left mobile clients
+        // on "Generating world" until a ~45s timeout (100346: fill@2s, 0x71@47s).
+        session.rearmPlayerSpawnAfterJoinSquare();
+        session.scheduleJoinInitAssist();
+        BedrockJoinProbe.noteEvent(session.guid(),
+                "join_square_filled nudge r=" + join + " cols=" + have + "/" + need);
+        LOG.info("BE join square filled nudge user=" + session.username()
+                + " r=" + join + " cols=" + have);
     }
 
     /**
@@ -84,7 +150,13 @@ public final class JavaLevelChunkTranslator {
         boolean refresh = session.wasColumnSent(chunkX, chunkZ);
         int payloadBytes = jePayload != null ? jePayload.readableBytes() : 0;
         LevelChunkPacket real = null;
+        // Retain a sign slice before release — calling sendChunkSigns on a freed buf aborts
+        // noteRealJeChunkSent / spawnSolid and leaves reals=0 → empty forceUpdate hole.
+        ByteBuf signSource = null;
         try {
+            if (jePayload != null && jePayload.isReadable()) {
+                signSource = jePayload.retainedDuplicate();
+            }
             if (REAL_LEVEL_CHUNKS) {
                 real = tryEncodeRealColumn(session, chunkX, chunkZ, jePayload);
             } else if (jePayload != null) {
@@ -103,29 +175,50 @@ public final class JavaLevelChunkTranslator {
             }
         }
         if (real != null) {
-            maybeLogRealHex(session, real);
-            session.sendUpstreamPacket(real);
-            if (!refresh) {
-                session.markColumnSent(chunkX, chunkZ);
-            }
-            session.noteRealJeChunkSent();
-            session.noteSpawnColumnReal(chunkX, chunkZ);
-            session.flushPendingSpawnSolidSample();
-            BedrockJoinProbe.noteLevelChunk(session.guid(), true, payloadBytes);
-            BedrockJoinProbe.noteEvent(session.guid(),
-                    "java_level_chunk→bedrock REAL dim=" + session.bedrockDimensionId()
+            // Bookkeeping MUST complete even if sign translate throws — otherwise reals=0
+            // and forceSpawnColumnRefresh blanks the spawn column into a void hole.
+            try {
+                maybeLogRealHex(session, real);
+                session.sendUpstreamPacket(real);
+                if (!refresh) {
+                    session.markColumnSent(chunkX, chunkZ);
+                }
+                session.markRealColumnSent(chunkX, chunkZ);
+                session.noteRealJeChunkSent();
+                session.noteSpawnColumnReal(chunkX, chunkZ);
+                session.flushPendingSpawnSolidSample();
+                BedrockJoinProbe.noteLevelChunk(session.guid(), true, payloadBytes);
+                BedrockJoinProbe.noteEvent(session.guid(),
+                        "java_level_chunk→bedrock REAL dim=" + session.bedrockDimensionId()
+                                + " cx=" + chunkX + " cz=" + chunkZ
+                                + " jeBytes=" + payloadBytes
+                                + (refresh ? " refresh" : ""));
+                long n = session.realJeChunksSent();
+                if (n <= 3L) {
+                    LOG.info("BE JavaLevelChunk→Bedrock REAL user=" + session.username()
                             + " cx=" + chunkX + " cz=" + chunkZ
                             + " jeBytes=" + payloadBytes
-                            + (refresh ? " refresh" : ""));
-            // Rate-limit console: first 3 REAL only (probe already has full timeline).
-            long n = session.realJeChunksSent();
-            if (n <= 3L) {
-                LOG.info("BE JavaLevelChunk→Bedrock REAL user=" + session.username()
-                        + " cx=" + chunkX + " cz=" + chunkZ
-                        + " jeBytes=" + payloadBytes
-                        + " #" + n);
+                            + " #" + n);
+                }
+                maybeNudgeJoinSquareFilled(session);
+            } finally {
+                try {
+                    if (signSource != null) {
+                        JavaSignTranslator.sendChunkSigns(session, chunkX, chunkZ, signSource);
+                    }
+                } catch (Exception e) {
+                    LOG.log(Level.FINE, "BE sign text after REAL cx=" + chunkX + " cz=" + chunkZ, e);
+                } finally {
+                    if (signSource != null) {
+                        signSource.release();
+                        signSource = null;
+                    }
+                }
             }
             return;
+        }
+        if (signSource != null) {
+            signSource.release();
         }
         ChunkUtils.sendEmptyChunk(session, chunkX, chunkZ, false);
         if (!refresh) {
@@ -166,23 +259,36 @@ public final class JavaLevelChunkTranslator {
         BedrockJoinProbe.noteEvent(session.guid(), line);
     }
 
-    /** After real 0x71: force-update spawn column when no REAL was sent yet. */
+    /**
+     * After real 0x71: never blank the spawn column with EMPTY ({@code SubChunksLength=0}).
+     * That is the Bedrock "giant hole / different world" failure mode — REAL terrain already
+     * on the wire gets wiped, the client falls through, and JE rubberbands.
+     *
+     * <p>If we truly have no column yet, place a 1-block stone UpdateBlock under feet only.
+     */
     public static void forceSpawnColumnRefresh(LinkBedrockSession session) {
         if (session == null || !session.isSentSpawnPacket()) {
             return;
         }
-        if (session.realJeChunksSent() > 0) {
-            BedrockJoinProbe.noteEvent(session.guid(),
-                    "spawn_column skip_forceUpdate reals=" + session.realJeChunksSent());
-            return;
-        }
         int cx = session.spawnX() >> 4;
         int cz = session.spawnZ() >> 4;
-        ChunkUtils.sendEmptyChunk(session, cx, cz, true);
-        session.markColumnSent(cx, cz);
+        if (session.realJeChunksSent() > 0
+                || session.isSpawnColumnReal()
+                || session.wasRealColumnSent(cx, cz)
+                || session.wasColumnSent(cx, cz)) {
+            BedrockJoinProbe.noteEvent(session.guid(),
+                    "spawn_column skip_forceUpdate reals=" + session.realJeChunksSent()
+                            + " spawnReal=" + session.isSpawnColumnReal()
+                            + " realCol=" + session.wasRealColumnSent(cx, cz)
+                            + " sent=" + session.wasColumnSent(cx, cz)
+                            + " cx=" + cx + " cz=" + cz);
+            return;
+        }
+        // No LevelChunk at all for spawn — stone under feet only, never EMPTY column.
+        session.placeStandOnCollisionPlatform();
         BedrockJoinProbe.noteEvent(session.guid(),
-                "spawn_column forceUpdate empty+stone cx=" + cx + " cz=" + cz);
-        LOG.info("BE spawn column forceUpdate (Geyser dim-switch style) user="
+                "spawn_column stone_only (no EMPTY forceUpdate) cx=" + cx + " cz=" + cz);
+        LOG.info("BE spawn column stone_only (skip EMPTY forceUpdate) user="
                 + session.username() + " cx=" + cx + " cz=" + cz);
     }
 

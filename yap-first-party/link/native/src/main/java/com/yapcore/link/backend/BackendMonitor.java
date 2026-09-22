@@ -138,6 +138,46 @@ public final class BackendMonitor {
         return cfg.resolveTry();
     }
 
+    /**
+     * Pick hub for mid-session failover when {@code excludeName} (current backend) died.
+     * Prefers configured {@link LinkConfig#fallbackServer()}, then first other {@code try} entry.
+     * Returns a candidate even if the probe briefly says DOWN — soft-switch retries TCP.
+     */
+    public LinkConfig.Backend pickFallback(String excludeName) {
+        LinkConfig cfg = configRef.get();
+        String preferred = cfg.fallbackServer();
+        LinkConfig.Backend preferredBackend = preferred == null || preferred.isBlank()
+                ? null
+                : cfg.findServer(preferred);
+        if (preferredBackend != null
+                && (excludeName == null || !preferredBackend.name().equalsIgnoreCase(excludeName))) {
+            if (isUp(preferredBackend.name()) || cfg.findServer(preferredBackend.name()) != null) {
+                return preferredBackend;
+            }
+        }
+        for (String name : cfg.tryOrder()) {
+            if (excludeName != null && name.equalsIgnoreCase(excludeName)) {
+                continue;
+            }
+            if (isUp(name)) {
+                LinkConfig.Backend b = cfg.findServer(name);
+                if (b != null) {
+                    return b;
+                }
+            }
+        }
+        for (String name : cfg.tryOrder()) {
+            if (excludeName != null && name.equalsIgnoreCase(excludeName)) {
+                continue;
+            }
+            LinkConfig.Backend b = cfg.findServer(name);
+            if (b != null) {
+                return b;
+            }
+        }
+        return null;
+    }
+
     /** Aggregate status for proxy ping (sum online, sum max, merge samples). */
     public ServerStatus aggregateStatus() {
         LinkConfig cfg = configRef.get();

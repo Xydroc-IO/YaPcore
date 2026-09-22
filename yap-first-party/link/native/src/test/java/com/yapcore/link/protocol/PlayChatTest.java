@@ -41,4 +41,15 @@ final class PlayChatTest {
                 PlayChat.plainText(PlayChat.jsonText("Already connected to lobby")));
         assertEquals("raw", PlayChat.plainText("raw"));
     }
+
+    @Test
+    void isDisconnectPacketMatchesPlayDisconnectId() {
+        ByteBuf pkt = PlayChat.disconnectPacket(776, PlayChat.jsonText("Server closed"));
+        assertTrue(PlayChat.isDisconnectPacket(776, pkt));
+        assertEquals(0x20, McCodec.readVarInt(pkt));
+        pkt.release();
+        ByteBuf chat = PlayChat.systemChatPacket(776, PlayChat.jsonText("x"), false);
+        org.junit.jupiter.api.Assertions.assertFalse(PlayChat.isDisconnectPacket(776, chat));
+        chat.release();
+    }
 }

@@ -19,6 +19,13 @@ final class JavaDownstreamPlay {
     }
 
     void handlePlay(ChannelHandlerContext ctx, ByteBuf buf) {
+        // Survive Folia packet-id drift: sniff Connect anywhere in the play frame (native Link does this).
+        if (trySniffBungeeConnect(buf)) {
+            if (buf.refCnt() > 0) {
+                buf.release();
+            }
+            return;
+        }
         int packetId = McCodec.readVarInt(buf);
         try {
             switch (packetId) {
@@ -28,11 +35,14 @@ final class JavaDownstreamPlay {
                     return;
                 }
                 case JavaPlayWire.CB_KEEP_ALIVE -> {
+                    // Reply immediately on the Netty event loop — chunk translation must never
+                    // starve this (Folia kicks at paper.playerconnection.keepalive=30s).
                     long id = buf.readLong();
-                    ByteBuf ka = Unpooled.buffer();
+                    ByteBuf ka = Unpooled.buffer(16);
                     McCodec.writeVarInt(ka, JavaPlayWire.SB_KEEP_ALIVE);
                     ka.writeLong(id);
                     ctx.writeAndFlush(ka);
+                    LOG.fine("JE keep_alive pong id=" + id + " user=" + client.username);
                     return;
                 }
                 case JavaPlayWire.CB_PING -> {
@@ -46,6 +56,8 @@ final class JavaDownstreamPlay {
                             + " view=" + info.viewDistance()
                             + " dim=" + info.dimensionName()
                             + " user=" + client.username);
+                    // Must register before any portal Connect — Folia gates on CraftPlayer.channels().
+                    client.ensureProxyChannelsRegistered();
                     if (client.listener != null) {
                         client.listener.onLoginPlay(info);
                     }
@@ -68,11 +80,25 @@ final class JavaDownstreamPlay {
                     ByteBuf payload = buf.readableBytes() > 0
                             ? buf.readRetainedSlice(buf.readableBytes())
                             : Unpooled.EMPTY_BUFFER;
-                    LOG.info("JE LevelChunk cx=" + chunkX + " cz=" + chunkZ
+                    LOG.fine("JE LevelChunk cx=" + chunkX + " cz=" + chunkZ
                             + " bytes=" + payload.readableBytes()
                             + " user=" + client.username);
                     if (client.listener != null) {
-                        client.listener.onLevelChunk(chunkX, chunkZ, payload);
+                        // Offload translate off the JE inbound loop so keep_alive replies
+                        // are not stuck behind thousands of chunk conversions.
+                        final ByteBuf chunkPayload = payload;
+                        client.chunkExecutor().execute(() -> {
+                            try {
+                                client.listener.onLevelChunk(chunkX, chunkZ, chunkPayload);
+                            } catch (Throwable t) {
+                                if (chunkPayload.refCnt() > 0) {
+                                    chunkPayload.release();
+                                }
+                                LOG.log(java.util.logging.Level.WARNING,
+                                        "JE LevelChunk translate fail cx=" + chunkX
+                                                + " cz=" + chunkZ + " user=" + client.username, t);
+                            }
+                        });
                     } else {
                         payload.release();
                     }
@@ -84,6 +110,12 @@ final class JavaDownstreamPlay {
                 }
                 case 11, 12 -> {
                     // chunk_batch_start / finished — body ignored; LevelChunk packets follow individually
+                    return;
+                }
+                case JavaPlayWire.CB_BLOCK_ENTITY_DATA -> {
+                    if (client.listener != null) {
+                        client.listener.onBlockEntityData(buf);
+                    }
                     return;
                 }
                 case JavaPlayWire.CB_BLOCK_UPDATE -> {
@@ -135,120 +167,6 @@ final class JavaDownstreamPlay {
                     ctx.writeAndFlush(JavaPlayWire.movePosRot(x, y, z, yaw, pitch, false));
                     if (client.listener != null) {
                         client.listener.onPlayerPosition(x, y, z, yaw, pitch, teleportId);
-                    }
-                    return;
-                }
-                case JavaPlayWire.CB_ADD_ENTITY -> {
-                    int entityId = McCodec.readVarInt(buf);
-                    UUID uuid = McCodec.readUuid(buf);
-                    int typeId = McCodec.readVarInt(buf);
-                    double x = buf.readDouble();
-                    double y = buf.readDouble();
-                    double z = buf.readDouble();
-                    byte pitchB = buf.isReadable() ? buf.readByte() : 0;
-                    byte yawB = buf.isReadable() ? buf.readByte() : 0;
-                    float pitch = pitchB * 360f / 256f;
-                    float yaw = yawB * 360f / 256f;
-                    // Was: typeId==155 ? player : armor_stand — every mob became a statue.
-                    String typeKey = JeEntityTypes.bedrockIdentifier(typeId);
-                    if (typeKey == null) {
-                        return;
-                    }
-                    if (client.listener != null) {
-                        client.listener.onAddEntity(entityId, uuid, typeKey, x, y, z, yaw, pitch);
-                    }
-                    return;
-                }
-                case JavaPlayWire.CB_REMOVE_ENTITIES -> {
-                    int count = McCodec.readVarInt(buf);
-                    int[] ids = new int[Math.max(0, Math.min(count, 512))];
-                    for (int i = 0; i < ids.length && buf.isReadable(); i++) {
-                        ids[i] = McCodec.readVarInt(buf);
-                    }
-                    if (client.listener != null) {
-                        client.listener.onRemoveEntities(ids);
-                    }
-                    return;
-                }
-                case JavaPlayWire.CB_ENTITY_POSITION_SYNC -> {
-                    // PositionMoveRotation: pos(3d) + delta(3d) + yRot + xRot + onGround
-                    int entityId = McCodec.readVarInt(buf);
-                    double x = buf.readDouble();
-                    double y = buf.readDouble();
-                    double z = buf.readDouble();
-                    if (buf.readableBytes() >= 24) {
-                        buf.readDouble();
-                        buf.readDouble();
-                        buf.readDouble();
-                    }
-                    float yaw = buf.readableBytes() >= 4 ? buf.readFloat() : 0f;
-                    float pitch = buf.readableBytes() >= 4 ? buf.readFloat() : 0f;
-                    if (buf.isReadable()) {
-                        buf.readBoolean(); // onGround
-                    }
-                    if (client.listener != null) {
-                        client.listener.onEntityMove(entityId, x, y, z, yaw, pitch, false);
-                    }
-                    return;
-                }
-                case JavaPlayWire.CB_TELEPORT_ENTITY -> {
-                    // id + PositionMoveRotation + Relative int bitmask + onGround
-                    int entityId = McCodec.readVarInt(buf);
-                    double x = buf.readDouble();
-                    double y = buf.readDouble();
-                    double z = buf.readDouble();
-                    if (buf.readableBytes() >= 24) {
-                        buf.readDouble();
-                        buf.readDouble();
-                        buf.readDouble();
-                    }
-                    float yaw = buf.readableBytes() >= 4 ? buf.readFloat() : 0f;
-                    float pitch = buf.readableBytes() >= 4 ? buf.readFloat() : 0f;
-                    int relatives = buf.readableBytes() >= 4 ? buf.readInt() : 0;
-                    if (buf.isReadable()) {
-                        buf.readBoolean();
-                    }
-                    if (client.listener != null) {
-                        client.listener.onEntityTeleport(entityId, x, y, z, yaw, pitch, relatives, true);
-                    }
-                    return;
-                }
-                case JavaPlayWire.CB_MOVE_ENTITY_POS,
-                     JavaPlayWire.CB_MOVE_ENTITY_POS_ROT,
-                     JavaPlayWire.CB_MOVE_ENTITY_ROT -> {
-                    // Relative short deltas (1/4096 block). Applied against last known abs pos
-                    // in the Bedrock session so fish/animals keep moving without re-AddEntity.
-                    int entityId = McCodec.readVarInt(buf);
-                    if (packetId == JavaPlayWire.CB_MOVE_ENTITY_ROT) {
-                        float yaw = buf.isReadable() ? buf.readByte() * 360f / 256f : 0f;
-                        float pitch = buf.isReadable() ? buf.readByte() * 360f / 256f : 0f;
-                        boolean onGround = buf.isReadable() && buf.readBoolean();
-                        if (client.listener != null) {
-                            client.listener.onEntityRelativeMove(entityId, 0, 0, 0, yaw, pitch, true, onGround);
-                        }
-                        return;
-                    }
-                    short dx = buf.isReadable() ? buf.readShort() : 0;
-                    short dy = buf.isReadable() ? buf.readShort() : 0;
-                    short dz = buf.isReadable() ? buf.readShort() : 0;
-                    float yaw = Float.NaN;
-                    float pitch = Float.NaN;
-                    if (packetId == JavaPlayWire.CB_MOVE_ENTITY_POS_ROT) {
-                        yaw = buf.isReadable() ? buf.readByte() * 360f / 256f : 0f;
-                        pitch = buf.isReadable() ? buf.readByte() * 360f / 256f : 0f;
-                    }
-                    boolean onGround = buf.isReadable() && buf.readBoolean();
-                    if (client.listener != null) {
-                        client.listener.onEntityRelativeMove(entityId, dx / 4096.0, dy / 4096.0, dz / 4096.0,
-                                yaw, pitch, false, onGround);
-                    }
-                    return;
-                }
-                case JavaPlayWire.CB_HURT_ANIMATION -> {
-                    int entityId = McCodec.readVarInt(buf);
-                    float yaw = buf.isReadable() ? buf.readFloat() : 0f;
-                    if (client.listener != null) {
-                        client.listener.onHurtAnimation(entityId, yaw);
                     }
                     return;
                 }
@@ -419,6 +337,9 @@ final class JavaDownstreamPlay {
                     return;
                 }
                 default -> {
+                    if (JavaDownstreamPlayEntities.handle(client, packetId, buf)) {
+                        return;
+                    }
                     if (JavaDownstreamHud.handle(client, packetId, buf)) {
                         return;
                     }
@@ -432,6 +353,40 @@ final class JavaDownstreamPlay {
             if (buf.refCnt() > 0) {
                 buf.release();
             }
+        }
+    }
+
+    /**
+     * Catch BungeeCord Connect when custom_payload packet id drifted off {@link JavaPlayWire#CB_CUSTOM_PAYLOAD}.
+     * @return true if Connect was handled (caller must release {@code buf})
+     */
+    private boolean trySniffBungeeConnect(ByteBuf buf) {
+        if (buf == null || !buf.isReadable() || client.listener == null) {
+            return false;
+        }
+        buf.markReaderIndex();
+        try {
+            int packetId = McCodec.readVarInt(buf);
+            // Candidate custom_payload ids across 1.20.5–26.2 (never probe add_entity = 1).
+            if (packetId != JavaPlayWire.CB_CUSTOM_PAYLOAD
+                    && packetId != 0x17 && packetId != 0x19 && packetId != 0x1A
+                    && packetId != 0x6E && packetId != 0x6B) {
+                return false;
+            }
+            byte[] hay = new byte[buf.readableBytes()];
+            buf.getBytes(buf.readerIndex(), hay);
+            var target = BedrockBungeeConnect.sniffTarget(hay);
+            if (target.isEmpty()) {
+                return false;
+            }
+            LOG.info("JE BungeeCord Connect sniff → " + target.get()
+                    + " user=" + client.username + " packetId=" + packetId);
+            client.listener.onBungeeConnect(target.get());
+            return true;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            buf.resetReaderIndex();
         }
     }
 

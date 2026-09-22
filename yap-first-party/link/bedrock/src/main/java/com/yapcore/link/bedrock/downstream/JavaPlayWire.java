@@ -15,6 +15,8 @@ public final class JavaPlayWire {
     // Clientbound
     public static final int CB_ADD_ENTITY = 1;
     public static final int CB_BLOCK_UPDATE = 8;
+    /** JE {@code block_entity_data} — sign text and other block actors. */
+    public static final int CB_BLOCK_ENTITY_DATA = 6;
     /** JE {@code boss_event}. */
     public static final int CB_BOSS_EVENT = 9;
     /** JE {@code clear_titles}. */
@@ -297,6 +299,49 @@ public final class JavaPlayWire {
         McCodec.writeVarInt(buf, SB_CLIENT_COMMAND);
         McCodec.writeVarInt(buf, 0); // PERFORM_RESPAWN
         return buf;
+    }
+
+    /** {@code minecraft:interact}: entity, hand, LpVec3 click, sneaking. Not attack. */
+    public static ByteBuf interactUse(int entityId, double x, double y, double z) {
+        ByteBuf buf = Unpooled.buffer(24);
+        McCodec.writeVarInt(buf, SB_INTERACT);
+        McCodec.writeVarInt(buf, entityId);
+        McCodec.writeVarInt(buf, 0); // InteractionHand.MAIN_HAND
+        writeLpVec3(buf, x, y, z);
+        buf.writeBoolean(false);
+        return buf;
+    }
+
+    /** Quantized vec used by 26.2 {@code ServerboundInteractPacket} (see LpVec3). */
+    static void writeLpVec3(ByteBuf output, double x, double y, double z) {
+        x = Double.isNaN(x) ? 0 : Math.clamp(x, -1.7179869183E10, 1.7179869183E10);
+        y = Double.isNaN(y) ? 0 : Math.clamp(y, -1.7179869183E10, 1.7179869183E10);
+        z = Double.isNaN(z) ? 0 : Math.clamp(z, -1.7179869183E10, 1.7179869183E10);
+        double chessboard = Math.max(Math.abs(x), Math.max(Math.abs(y), Math.abs(z)));
+        if (chessboard < 3.051944088384301E-5) {
+            output.writeByte(0);
+            return;
+        }
+        long scale = (long) Math.ceil(chessboard);
+        if (scale < 1) {
+            scale = 1;
+        }
+        boolean partial = (scale & 3L) != scale;
+        long markers = partial ? (scale & 3L) | 4L : scale;
+        long buffer = markers
+                | (packLp(x / scale) << 3)
+                | (packLp(y / scale) << 18)
+                | (packLp(z / scale) << 33);
+        output.writeByte((byte) buffer);
+        output.writeByte((byte) (buffer >> 8));
+        output.writeInt((int) (buffer >> 16));
+        if (partial) {
+            McCodec.writeVarInt(output, (int) (scale >> 2));
+        }
+    }
+
+    private static long packLp(double value) {
+        return Math.round((value * 0.5 + 0.5) * 32766.0);
     }
 
     /** Hex dump helper for attack wire debugging (packet id + entityId). */

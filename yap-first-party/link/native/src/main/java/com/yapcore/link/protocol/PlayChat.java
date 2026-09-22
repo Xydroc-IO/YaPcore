@@ -153,6 +153,21 @@ public final class PlayChat {
         }
     }
 
+    /** {@code true} when {@code packet} is play clientbound disconnect (does not consume). */
+    public static boolean isDisconnectPacket(int protocol, ByteBuf packet) {
+        if (packet == null || !packet.isReadable()) {
+            return false;
+        }
+        int reader = packet.readerIndex();
+        try {
+            return McCodec.readVarInt(packet) == disconnectId(protocol);
+        } catch (Exception e) {
+            return false;
+        } finally {
+            packet.readerIndex(reader);
+        }
+    }
+
     /** Play disconnect is {@code 0x20} on 26.2; older builds used {@code 0x1D}. */
     private static int disconnectId(int protocol) {
         if (protocol >= 775) {

@@ -119,13 +119,24 @@ final class BedrockSessionHostLogin {
         if (state.codec == null) {
             return;
         }
+        var offer = BedrockDefaultPackOffer.resolve(host, state);
+        state.packOffer = offer.orElse(null);
+        org.cloudburstmc.protocol.bedrock.packet.ResourcePacksInfoPacket packs =
+                offer.isPresent()
+                        ? BedrockDefaultPackOffer.infoPacket(offer.get(), true)
+                        : LinkCloudburstCodecs.resourcePacksInfoEmpty();
         host.sendPackets(state, List.of(
                 LinkCloudburstCodecs.playStatusLoginSuccess(),
-                LinkCloudburstCodecs.resourcePacksInfoEmpty()));
+                packs));
         state.phase = BedrockSessionHost.LoginPhase.AWAITING_PACKS;
         BedrockJoinProbe.notePhase(state.guid, state.phase.name());
-        LOG.info("BE LOGIN_SUCCESS + ResourcePacksInfo empty guid="
-                + Long.toHexString(state.guid) + " pack=empty-handshake proto=" + state.protocol);
+        LOG.info("BE LOGIN_SUCCESS + ResourcePacksInfo "
+                + (offer.isPresent()
+                        ? "forced cdn=" + offer.get().cdnUrl()
+                                + " ver=" + offer.get().version()
+                                + " bytes=" + offer.get().sizeBytes()
+                        : "empty")
+                + " guid=" + Long.toHexString(state.guid) + " proto=" + state.protocol);
     }
 
     void handlePackStatus(BedrockSessionHost.ClientState state, int status) {
@@ -151,7 +162,17 @@ final class BedrockSessionHostLogin {
             return;
         }
 
-        if (status == BedrockSessionHost.PACK_REFUSED || status == BedrockSessionHost.PACK_SEND_PACKS || status == BedrockSessionHost.PACK_HAVE_ALL || status < 0) {
+        // CDN offer: SEND_PACKS means client is downloading — wait for HAVE_ALL, but
+        // do not hang forever when the CDN URL is unreachable (was 20+ minute joins).
+        if (status == BedrockSessionHost.PACK_SEND_PACKS && state.packOffer != null) {
+            LOG.info("BE pack SEND_PACKS — awaiting CDN download user=" + state.username
+                    + " cdn=" + state.packOffer.cdnUrl());
+            schedulePackCdnTimeout(state);
+            return;
+        }
+
+        if (status == BedrockSessionHost.PACK_REFUSED || status == BedrockSessionHost.PACK_SEND_PACKS
+                || status == BedrockSessionHost.PACK_HAVE_ALL || status < 0) {
             if (status == BedrockSessionHost.PACK_SEND_PACKS) {
                 LOG.info("BE pack SEND_PACKS — Phase-1 empty stack (no CDN)");
             }
@@ -166,12 +187,45 @@ final class BedrockSessionHostLogin {
         sendStackAndAwait(state);
     }
 
+    /** LAN Faithful mcpack is ~29MB — give Wi‑Fi time before falling back to empty. */
+    private static final long PACK_CDN_TIMEOUT_MS = 90_000L;
+
+    void schedulePackCdnTimeout(BedrockSessionHost.ClientState state) {
+        if (state == null || state.packCdnTimeoutArmed) {
+            return;
+        }
+        state.packCdnTimeoutArmed = true;
+        long guid = state.guid;
+        java.util.concurrent.CompletableFuture.delayedExecutor(
+                        PACK_CDN_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+                .execute(() -> {
+                    BedrockSessionHost.ClientState live = host.byGuid.get(guid);
+                    if (live == null || live != state) {
+                        return;
+                    }
+                    if (live.phase != BedrockSessionHost.LoginPhase.AWAITING_PACKS) {
+                        return;
+                    }
+                    LOG.warning("BE pack CDN timeout (" + (PACK_CDN_TIMEOUT_MS / 1000)
+                            + "s) — continuing with empty stack user=" + live.username
+                            + " cdn=" + (live.packOffer != null ? live.packOffer.cdnUrl() : "?"));
+                    live.packOffer = null;
+                    BedrockJoinProbe.noteEvent(guid, "pack_cdn_timeout → empty stack");
+                    sendStackAndAwait(live);
+                });
+    }
+
     void sendStackAndAwait(BedrockSessionHost.ClientState state) {
-        host.sendPacket(state, LinkCloudburstCodecs.resourcePackStackEmpty());
+        org.cloudburstmc.protocol.bedrock.packet.ResourcePackStackPacket stack =
+                state.packOffer != null
+                        ? BedrockDefaultPackOffer.stackPacket(state.packOffer, true)
+                        : LinkCloudburstCodecs.resourcePackStackEmpty();
+        host.sendPacket(state, stack);
         state.phase = BedrockSessionHost.LoginPhase.AWAITING_STACK_COMPLETE;
         BedrockJoinProbe.notePhase(state.guid, state.phase.name());
-        LOG.info("BE ResourcePackStack empty → await COMPLETED guid="
-                + Long.toHexString(state.guid));
+        LOG.info("BE ResourcePackStack "
+                + (state.packOffer != null ? "pack=" + state.packOffer.packId() : "empty")
+                + " → await COMPLETED guid=" + Long.toHexString(state.guid));
     }
 
     void phase1Done(BedrockSessionHost.ClientState state) {

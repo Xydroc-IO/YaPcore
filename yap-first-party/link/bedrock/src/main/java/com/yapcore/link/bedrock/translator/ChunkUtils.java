@@ -29,12 +29,25 @@ public final class ChunkUtils {
         Vector2i chunkPos = session.getLastChunkPosition();
         Vector2i newChunkPos = Vector2i.from(position.getX() >> 4, position.getZ() >> 4);
         if (chunkPos == null || !chunkPos.equals(newChunkPos)) {
-            NetworkChunkPublisherUpdatePacket packet = new NetworkChunkPublisherUpdatePacket();
-            packet.setPosition(position);
-            packet.setRadius(squareToCircle(session.getServerRenderDistance()) << 4);
-            session.sendUpstreamPacket(packet);
+            sendChunkPublisherUpdate(session, position);
             session.setLastChunkPosition(newChunkPos);
         }
+    }
+
+    /** Always emit NetworkChunkPublisherUpdate (join-square-filled nudge). */
+    public static void forceUpdateChunkPosition(LinkBedrockSession session, Vector3i position) {
+        sendChunkPublisherUpdate(session, position);
+        session.setLastChunkPosition(Vector2i.from(position.getX() >> 4, position.getZ() >> 4));
+    }
+
+    private static void sendChunkPublisherUpdate(LinkBedrockSession session, Vector3i position) {
+        NetworkChunkPublisherUpdatePacket packet = new NetworkChunkPublisherUpdatePacket();
+        packet.setPosition(position);
+        // Blocks. Match ChunkRadiusUpdated (the filled square), not squareToCircle,
+        // or the client keeps the loading screen up for chunks we will not send.
+        int chunks = Math.max(2, session.getServerRenderDistance());
+        packet.setRadius(chunks << 4);
+        session.sendUpstreamPacket(packet);
     }
 
     public static void sendEmptyChunk(LinkBedrockSession session, int chunkX, int chunkZ) {

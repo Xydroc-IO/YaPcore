@@ -4,10 +4,8 @@ import com.yapcore.protocol.McCodec;
 import com.yapcore.protocol.McCompressionCodec;
 import com.yapcore.protocol.McFrameCodec;
 import com.yapcore.protocol.McOutboundPacketEncoder;
-import com.yapcore.protocol.forwarding.ModernForwarding;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
@@ -15,12 +13,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -38,58 +33,18 @@ public final class JavaDownstreamClient {
     public static final int DEFAULT_PROTOCOL = 776;
 
     /**
-     * View distance reported to Folia via Client Information when Bedrock has not yet
-     * requested a radius. Must be high enough that Folia streams a full disk — the old
-     * hardcoded {@code 8} produced the Bedrock gray fog wall after a few chunks.
+     * Initial Client Information view until Bedrock 0x71. Was {@code 32}, which made Folia
+     * stream ~3500 LevelChunks before SetLocalPlayerAsInitialized (~40–100s “loading”).
+     * Full JE view is applied after {@code SetLocalPlayerAsInitialized}.
      */
-    public static final int DEFAULT_VIEW_DISTANCE = 32;
+    public static final int DEFAULT_VIEW_DISTANCE =
+            com.yapcore.link.bedrock.translator.JavaLoginTranslator.JOIN_BEDROCK_VIEW;
 
     /** Last view distance sent (or pending) on Client Information. */
     volatile int requestedViewDistance = DEFAULT_VIEW_DISTANCE;
 
-    // Login clientbound (proto 776)
-    static final int L_DISCONNECT = 0x00;
-    static final int L_SUCCESS = 0x02;
-    static final int L_COMPRESSION = 0x03;
-    static final int L_CUSTOM_QUERY = 0x04;
-
-    // Login serverbound
-    static final int LS_START = 0x00;
-    static final int LS_CUSTOM_QUERY_ANSWER = 0x02;
-    static final int LS_ACKNOWLEDGED = 0x03;
-
-    // Configuration clientbound (Paper / Folia 26.2 proto 776)
-    static final int C_COOKIE_REQUEST = 0x00;
-    static final int C_DISCONNECT = 0x02;
-    static final int C_FINISH = 0x03;
-    static final int C_KEEP_ALIVE = 0x04;
-    static final int C_PING = 0x05;
-    static final int C_RESOURCE_PACK_POP = 0x08;
-    static final int C_RESOURCE_PACK_PUSH = 0x09;
-    static final int C_REGISTRY_DATA = 0x07;
-    static final int C_SELECT_KNOWN_PACKS = 0x0e;
-    static final int C_CODE_OF_CONDUCT = 0x13;
-
-    /**
-     * Geyser {@code JavaSelectKnownPacksTranslator} — echo vanilla packs so Folia can omit
-     * registry NBT. Empty response forces full NBT (dimension_type doubles, …) over the wire.
-     */
-    static final java.util.Set<String> KNOWN_PACK_IDS = java.util.Set.of(
-            "core", "trade_rebalance", "redstone_experiments", "minecart_improvements");
-
-    // Configuration serverbound
-    static final int CS_CLIENT_INFORMATION = 0x00;
-    static final int CS_COOKIE_RESPONSE = 0x01;
-    static final int CS_FINISH = 0x03;
-    static final int CS_KEEP_ALIVE = 0x04;
-    static final int CS_PONG = 0x05;
-    static final int CS_RESOURCE_PACK = 0x06;
-    static final int CS_SELECT_KNOWN_PACKS = 0x07;
-    static final int CS_ACCEPT_CODE_OF_CONDUCT = 0x09;
-
-    /** Resource-pack status: SUCCESSFULLY_LOADED / ACCEPTED (Paper waits for both). */
-    static final int RP_SUCCESSFULLY_LOADED = 0;
-    static final int RP_ACCEPTED = 3;
+    /** Folia only delivers BungeeCord Connect after SB {@code minecraft:register}. */
+    private final AtomicBoolean proxyChannelsRegistered = new AtomicBoolean(false);
 
     public enum Phase {
         CONNECTING, LOGIN, CONFIGURATION, PLAY, CLOSED
@@ -155,6 +110,9 @@ public final class JavaDownstreamClient {
         default void onAddEntity(int entityId, UUID uuid, String typeKey,
                                  double x, double y, double z, float yaw, float pitch) {}
 
+        /** JE {@code block_entity_data}. Default no-op. */
+        default void onBlockEntityData(io.netty.buffer.ByteBuf buf) {}
+
         default void onRemoveEntities(int[] entityIds) {}
 
         default void onContainerSetContent(int windowId, int slotCount) {}
@@ -209,6 +167,10 @@ public final class JavaDownstreamClient {
         default void onPlayerChat(String source, String plain) {}
 
         default void onPlayerInfoAdd(UUID uuid, String name) {}
+        /** JE player_info ADD with optional Mojang {@code textures} property (base64 JSON). */
+        default void onPlayerInfoAdd(UUID uuid, String name, String texturesProperty) {
+            onPlayerInfoAdd(uuid, name);
+        }
 
         default void onPlayerInfoRemove(UUID uuid) {}
 
@@ -261,6 +223,18 @@ public final class JavaDownstreamClient {
     final JeBlockRegistry blockRegistry = new JeBlockRegistry();
     final JavaDownstreamLogin login = new JavaDownstreamLogin(this);
     final JavaDownstreamPlay play = new JavaDownstreamPlay(this);
+    final JavaDownstreamClientSend sendLogic = new JavaDownstreamClientSend(this);
+    /** Serial chunk translate — keeps JE Netty free for keep_alive. */
+    private final java.util.concurrent.ExecutorService chunkExecutor;
+
+    java.util.concurrent.ExecutorService chunkExecutor() {
+        return chunkExecutor;
+    }
+
+    /** @return true if this call first-registered proxy channels. */
+    boolean markProxyChannelsRegistered() {
+        return proxyChannelsRegistered.compareAndSet(false, true);
+    }
 
 
     public JavaDownstreamClient(
@@ -292,6 +266,12 @@ public final class JavaDownstreamClient {
         this.protocolVersion = protocolVersion > 0 ? protocolVersion : DEFAULT_PROTOCOL;
         this.listener = listener;
         this.forwardingSecret = JavaDownstreamNbt.loadForwardingSecret(linkHome);
+        String threadName = "yap-link-je-chunks-" + this.username;
+        this.chunkExecutor = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+            Thread t = new Thread(r, threadName);
+            t.setDaemon(true);
+            return t;
+        });
     }
 
     public Phase phase() {
@@ -356,6 +336,7 @@ public final class JavaDownstreamClient {
             return;
         }
         phase = Phase.CLOSED;
+        chunkExecutor.shutdownNow();
         Channel ch = channel;
         if (ch != null) {
             ch.close();
@@ -363,65 +344,77 @@ public final class JavaDownstreamClient {
     }
 
     public void sendMovePosRot(double x, double y, double z, float yaw, float pitch, boolean onGround) {
-        sendMovePosRot(x, y, z, yaw, pitch, onGround, false);
+        sendLogic.sendMovePosRot(x, y, z, yaw, pitch, onGround);
     }
 
     public void sendMovePosRot(double x, double y, double z, float yaw, float pitch,
                                boolean onGround, boolean horizontalCollision) {
-        writePlay(JavaPlayWire.movePosRot(x, y, z, yaw, pitch, onGround, horizontalCollision));
+        sendLogic.sendMovePosRot(x, y, z, yaw, pitch, onGround, horizontalCollision);
     }
 
     /** Proto 776+ — Geyser sends after every PlayerAuthInput once SPAWNED. */
     public void sendClientTickEnd() {
-        writePlay(JavaPlayWire.clientTickEnd());
+        sendLogic.sendClientTickEnd();
     }
 
     /** Proto 776+ player_input — send before move packets (Geyser InputCache order). */
     public void sendPlayerInput(boolean forward, boolean backward, boolean left, boolean right,
                                 boolean jump, boolean shift, boolean sprint) {
-        writePlay(JavaPlayWire.playerInput(forward, backward, left, right, jump, shift, sprint));
+        sendLogic.sendPlayerInput(forward, backward, left, right, jump, shift, sprint);
     }
 
     public void sendAcceptTeleport(int teleportId) {
-        writePlay(JavaPlayWire.acceptTeleport(teleportId));
+        sendLogic.sendAcceptTeleport(teleportId);
     }
 
     public void sendSetCarriedItem(int hotbarSlot) {
-        writePlay(JavaPlayWire.setCarriedItem(hotbarSlot));
+        sendLogic.sendSetCarriedItem(hotbarSlot);
     }
 
     public void sendContainerClick(int windowId, int stateId, int slot, int button, int mode,
                                    Object ignoredCarried) {
-        writePlay(JavaPlayInventoryWire.containerClick(windowId, stateId, slot, button, mode));
+        sendLogic.sendContainerClick(windowId, stateId, slot, button, mode, ignoredCarried);
     }
 
     public void sendContainerClose(int windowId) {
-        writePlay(JavaPlayInventoryWire.containerClose(windowId));
+        sendLogic.sendContainerClose(windowId);
     }
 
     public void sendRenameItem(String name) {
-        writePlay(JavaPlayInventoryWire.renameItem(name));
+        sendLogic.sendRenameItem(name);
     }
 
     public void sendCustomPayload(String channel, byte[] data) {
-        writePlay(JavaPlayInventoryWire.customPayload(channel, data));
+        sendLogic.sendCustomPayload(channel, data);
+    }
+
+    /**
+     * After Login (play), register BungeeCord so YaPPortals {@code Connect} reaches this
+     * downstream — same requirement as native JE {@code ClientSession.ensureProxyChannelsRegistered}.
+     */
+    public void ensureProxyChannelsRegistered() {
+        sendLogic.ensureProxyChannelsRegistered();
     }
 
     public void sendPlayerAction(int status, int x, int y, int z, int face, int sequence) {
-        writePlay(JavaPlayWire.playerAction(status, x, y, z, face, sequence));
+        sendLogic.sendPlayerAction(status, x, y, z, face, sequence);
     }
 
     public void sendUseItemOn(int x, int y, int z, int face,
                               float cx, float cy, float cz, boolean inside, int hand, int sequence) {
-        writePlay(JavaPlayWire.useItemOn(x, y, z, face, cx, cy, cz, inside, hand, sequence));
+        sendLogic.sendUseItemOn(x, y, z, face, cx, cy, cz, inside, hand, sequence);
     }
 
     public void sendInteractAttack(int entityId, boolean sneaking) {
-        writePlay(JavaPlayWire.interactAttack(entityId, sneaking));
+        sendLogic.sendInteractAttack(entityId, sneaking);
+    }
+
+    public void sendInteractUse(int entityId, double x, double y, double z) {
+        sendLogic.sendInteractUse(entityId, x, y, z);
     }
 
     public void sendClientCommandRespawn() {
-        writePlay(JavaPlayWire.clientCommandRespawn());
+        sendLogic.sendClientCommandRespawn();
     }
 
     /**
@@ -429,22 +422,19 @@ public final class JavaDownstreamClient {
      * Call after Bedrock {@code RequestChunkRadius} or when server view is known.
      */
     public void sendClientInformationView(int viewDistance) {
-        int view = Math.max(2, Math.min(32, viewDistance));
-        this.requestedViewDistance = view;
-        writePlay(JavaPlayWire.clientInformation(view));
-        LOG.info("JE Client Information (play) view=" + view + " user=" + username);
+        sendLogic.sendClientInformationView(viewDistance);
     }
 
     public void sendSwingArm(int hand) {
-        writePlay(JavaPlayWire.swingArm(hand));
+        sendLogic.sendSwingArm(hand);
     }
 
     public void sendChatCommand(String commandWithoutSlash) {
-        writePlay(JavaPlayWire.chatCommand(commandWithoutSlash));
+        sendLogic.sendChatCommand(commandWithoutSlash);
     }
 
     public void sendChatMessage(String message) {
-        writePlay(JavaPlayWire.chatMessage(message));
+        sendLogic.sendChatMessage(message);
     }
 
     void writePlay(ByteBuf packet) {

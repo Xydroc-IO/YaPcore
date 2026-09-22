@@ -55,7 +55,7 @@ final class LinkBedrockSessionSpawn {
                             + s.username
                             + " mapMisses="
                             + s.pendingMapMisses);
-            noteSpawnColumnSolid(near);
+            noteSpawnColumnSolid(near, column);
         }
     }
 
@@ -193,14 +193,34 @@ final class LinkBedrockSessionSpawn {
     }
 
     void noteSpawnColumnSolid(int solidBlocksNearFeet) {
+        noteSpawnColumnSolid(solidBlocksNearFeet, -1);
+    }
+
+    void noteSpawnColumnSolid(int solidBlocksNearFeet, int columnNonAir) {
         int n = Math.max(0, solidBlocksNearFeet);
         s.spawnColumnSolidBlocks.set(n);
         s.spawnColumnReal.set(true);
-        if (n >= 4) {
+        boolean solidEnough = n >= LinkBedrockSession.MIN_SPAWN_SOLID_NEAR_FEET
+                || columnNonAir >= 64;
+        if (solidEnough) {
+            if (n < LinkBedrockSession.MIN_SPAWN_SOLID_NEAR_FEET && columnNonAir >= 64) {
+                BedrockJoinProbe.noteEvent(
+                        s.guid,
+                        "spawn_column solid via columnNonAir="
+                                + columnNonAir
+                                + " nearFeet="
+                                + n);
+            }
             s.spawnColumnSolid.set(true);
             s.tryCompletePlayerSpawn("solid");
         } else {
-            BedrockJoinProbe.noteEvent(s.guid, "spawn_column solidBlocks=" + n + " need>=4 — defer PLAYER_SPAWN");
+            BedrockJoinProbe.noteEvent(
+                    s.guid,
+                    "spawn_column solidBlocks="
+                            + n
+                            + " columnNonAir="
+                            + columnNonAir
+                            + " need>=4 — defer PLAYER_SPAWN");
         }
     }
 

@@ -2,8 +2,11 @@ package com.yapcore.link.bedrock.translator;
 
 import com.yapcore.link.bedrock.cloudburst.LinkPaletteRegistry;
 import com.yapcore.link.bedrock.downstream.JeBlockRegistry;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +31,8 @@ public final class JeToBedrockBlockMapper {
     private final JeBlockRegistry jeRegistry;
     private final Map<String, Integer> bedrockKeyToRuntime = new HashMap<>();
     private final Map<String, Integer> bedrockIdOnlyToRuntime = new HashMap<>();
+    /** Same block id, every palette state — used when the exact key order doesn't match. */
+    private final Map<String, List<PaletteState>> statesById = new HashMap<>();
     private final int airRuntimeId;
     private final int stoneRuntimeId;
     private long mapHits;
@@ -49,6 +54,8 @@ public final class JeToBedrockBlockMapper {
             String id = normalizeIdentifier(def.getIdentifier());
             NbtMap states = def.getState();
             bedrockKeyToRuntime.put(formatKey(def.getIdentifier(), states), runtimeId);
+            statesById.computeIfAbsent(id, k -> new ArrayList<>())
+                    .add(new PaletteState(propsOf(states), runtimeId));
             // Prefer empty/default state for identifier-only fallback.
             if (states == null || states.isEmpty()) {
                 bedrockIdOnlyToRuntime.put(id, runtimeId);
@@ -121,6 +128,20 @@ public final class JeToBedrockBlockMapper {
                 return rt;
             }
         }
+        for (String extra : JeBlockStateRemapper.extraKeys(state)) {
+            rt = lookupRuntimeKey(extra);
+            if (rt != null) {
+                return rt;
+            }
+            rt = fuzzyMatch(extra);
+            if (rt != null) {
+                return rt;
+            }
+        }
+        rt = fuzzyMatch(remapped);
+        if (rt != null) {
+            return rt;
+        }
         if (!state.startsWith("minecraft:")) {
             rt = lookupRuntimeKey("minecraft:" + remapped);
             if (rt != null) {
@@ -132,6 +153,108 @@ public final class JeToBedrockBlockMapper {
             return rt;
         }
         return bedrockIdOnlyToRuntime.get(normalizeIdentifier(remapped));
+    }
+
+    /**
+     * Match when every requested property equals a palette state, even if the palette
+     * lists extra properties or a different key order. That is what was leaving a few
+     * facings on the default (south) variant.
+     */
+    private Integer fuzzyMatch(String key) {
+        ParsedState want = parseState(key);
+        if (want == null || want.props.isEmpty()) {
+            return null;
+        }
+        List<PaletteState> options = statesById.get(want.id);
+        if (options == null) {
+            return null;
+        }
+        PaletteState best = null;
+        int bestScore = -1;
+        int bestExtra = Integer.MAX_VALUE;
+        for (PaletteState option : options) {
+            int score = 0;
+            boolean ok = true;
+            for (Map.Entry<String, String> e : want.props.entrySet()) {
+                String have = option.props.get(e.getKey());
+                if (have == null || !sameProp(have, e.getValue())) {
+                    ok = false;
+                    break;
+                }
+                score++;
+            }
+            if (!ok) {
+                continue;
+            }
+            int extra = option.props.size() - score;
+            if (score > bestScore || (score == bestScore && extra < bestExtra)) {
+                best = option;
+                bestScore = score;
+                bestExtra = extra;
+            }
+        }
+        return best == null ? null : best.runtimeId;
+    }
+
+    private static boolean sameProp(String have, String want) {
+        if (have.equals(want)) {
+            return true;
+        }
+        return ("1".equals(have) && "true".equals(want))
+                || ("0".equals(have) && "false".equals(want))
+                || ("true".equals(have) && "1".equals(want))
+                || ("false".equals(have) && "0".equals(want));
+    }
+
+    private static ParsedState parseState(String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+        String s = normalizeJeState(key);
+        int bracket = s.indexOf('[');
+        String id = bracket < 0 ? s : s.substring(0, bracket);
+        id = normalizeIdentifier(id);
+        Map<String, String> props = new LinkedHashMap<>();
+        if (bracket >= 0 && s.endsWith("]")) {
+            String body = s.substring(bracket + 1, s.length() - 1);
+            for (String part : body.split(",")) {
+                int eq = part.indexOf('=');
+                if (eq <= 0) {
+                    continue;
+                }
+                props.put(normProp(part.substring(0, eq)),
+                        part.substring(eq + 1).trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        return new ParsedState(id, props);
+    }
+
+    private static Map<String, String> propsOf(NbtMap states) {
+        Map<String, String> props = new LinkedHashMap<>();
+        if (states == null) {
+            return props;
+        }
+        for (Map.Entry<String, Object> e : states.entrySet()) {
+            props.put(normProp(e.getKey()), formatStateValue(e.getValue()));
+        }
+        return props;
+    }
+
+    private static String normProp(String key) {
+        if (key == null) {
+            return "";
+        }
+        String k = key.toLowerCase(Locale.ROOT);
+        if (k.startsWith("minecraft:")) {
+            k = k.substring("minecraft:".length());
+        }
+        return k;
+    }
+
+    private record PaletteState(Map<String, String> props, int runtimeId) {
+    }
+
+    private record ParsedState(String id, Map<String, String> props) {
     }
 
     /** Exact key, then {@code true}/{@code false} → {@code 1}/{@code 0} (palette bit bytes). */

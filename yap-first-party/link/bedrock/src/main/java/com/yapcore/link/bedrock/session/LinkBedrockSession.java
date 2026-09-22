@@ -1,7 +1,6 @@
 package com.yapcore.link.bedrock.session;
 import com.yapcore.link.bedrock.codec.LinkCloudburstCodecs;
 import com.yapcore.link.bedrock.downstream.JavaDownstreamClient;
-import com.yapcore.link.bedrock.probe.BedrockJoinProbe;
 import com.yapcore.link.bedrock.translator.JeToBedrockBlockMapper;
 import io.netty.buffer.ByteBuf;
 import java.util.List;
@@ -38,6 +37,8 @@ public final class LinkBedrockSession {
     final LinkBedrockSessionSpawn spawnLogic = new LinkBedrockSessionSpawn(this);
     final LinkBedrockSessionPlay playLogic = new LinkBedrockSessionPlay(this);
     final LinkBedrockSessionChunks chunksLogic = new LinkBedrockSessionChunks(this);
+    final LinkBedrockSessionSwitch switchLogic = new LinkBedrockSessionSwitch(this);
+    final LinkBedrockSessionPose poseLogic = new LinkBedrockSessionPose(this);
     int spawnX = 8;
     int spawnY = 65;
     int spawnZ = -7;
@@ -49,18 +50,30 @@ public final class LinkBedrockSession {
     int clientRenderDistance;
     Vector2i lastChunkPosition;
     boolean sentSpawnPacket;
+    /** True while YaPPortals Connect is soft-switching the JE downstream (no TransferPacket). */
+    volatile boolean softBackendSwitch;
+    volatile String softBackendSwitchTarget;
+    /** Until this epoch ms, auth HOLD is bypassed so portal arrival TPs apply. */
+    volatile long softSwitchMoveGraceUntilMs;
+    /** Proxy Connect (/hub, /server) — host soft-switches JE backend. */
+    volatile Consumer<String> backendSwitchHandler;
     final AtomicBoolean playerSpawnSent = new AtomicBoolean(false);
+    final AtomicBoolean joinInitAssistScheduled = new AtomicBoolean(false);
+    final AtomicBoolean postInitViewExpanded = new AtomicBoolean(false);
+    final AtomicBoolean softPlayableViewExpanded = new AtomicBoolean(false);
     final AtomicBoolean spawnColumnReal = new AtomicBoolean(false);
     final AtomicBoolean spawnColumnSolid = new AtomicBoolean(false);
     final AtomicInteger spawnColumnSolidBlocks = new AtomicInteger(0);
     final AtomicBoolean playerSpawnTimeoutScheduled = new AtomicBoolean(false);
     final AtomicBoolean spawnFreezeScheduled = new AtomicBoolean(false);
-    static final long PLAYER_SPAWN_REAL_TIMEOUT_MS = 10000L;
+    static final long PLAYER_SPAWN_REAL_TIMEOUT_MS = 3000L;
     static final int MIN_SPAWN_SOLID_NEAR_FEET = 4;
     static final int POST_SPAWN_GROUND_HOLD_TICKS = 10;
     boolean upstreamInitialized;
     volatile JoinPhase joinPhase = JoinPhase.NONE;
     final ConcurrentHashMap<Long, Boolean> sentColumns = new ConcurrentHashMap<>();
+    /** Columns that received a REAL (non-empty) JE→BE LevelChunk — never blank these. */
+    final ConcurrentHashMap<Long, Boolean> realColumns = new ConcurrentHashMap<>();
     volatile JavaDownstreamClient downstream;
     volatile JeToBedrockBlockMapper blockMapper;
     volatile int javaEntityId = -1;
@@ -68,6 +81,7 @@ public final class LinkBedrockSession {
     volatile int pendingJavaView = LinkBedrockSession.DEFAULT_JAVA_VIEW;
     volatile boolean awaitingJavaSpawn = true;
     final AtomicBoolean playerLoadedSent = new AtomicBoolean(false);
+    final AtomicBoolean joinSquareNudgeSent = new AtomicBoolean(false);
     final AtomicInteger realJeChunksSent = new AtomicInteger(0);
     final ConcurrentLinkedQueue<PendingJeChunk> pendingJeChunks = new ConcurrentLinkedQueue<>();
     final ConcurrentLinkedQueue<PendingJeChunk> pendingRealChunks = new ConcurrentLinkedQueue<>();
@@ -98,8 +112,10 @@ public final class LinkBedrockSession {
     /** Java entity ids that are remote players (need eye-Y on MoveEntityAbsolute). */
     final java.util.Set<Integer> playerJavaEntityIds = ConcurrentHashMap.newKeySet();
     final ConcurrentHashMap<UUID, String> playerNamesByUuid = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<UUID, Integer> playerEntityByUuid = new ConcurrentHashMap<>();
     /** JE add_entity arrived before StartGame — flush after Bedrock can render. */
     final ConcurrentHashMap<Integer, LinkBedrockSessionPending.PendingAddEntity> pendingAddEntities = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Integer, String> pendingCustomNames = new ConcurrentHashMap<>();
     final Set<String> pluginCommandNames = ConcurrentHashMap.newKeySet();
     volatile int lastJeInventorySlots = 46;
     volatile int lastJeWindowId = -1;
@@ -126,8 +142,8 @@ public final class LinkBedrockSession {
     volatile double pendingStandOnFeetY = Double.NaN;
     volatile boolean spawnPlatformPlaced;
     volatile boolean standOnLiftActive;
-    static final double TELEPORT_CONFIRM_XZ = 0.1;
-    static final double TELEPORT_CONFIRM_Y = 0.1;
+    static final double TELEPORT_CONFIRM_XZ = 1.5;
+    static final double TELEPORT_CONFIRM_Y = 2.0;
     static final int TELEPORT_RESEND_THRESHOLD = 20;
     volatile int unconfirmedAuthMoves;
     volatile int groundHoldTicksRemaining;
@@ -162,37 +178,24 @@ public final class LinkBedrockSession {
     public int protocolVersion() { return this.protocol; }
     public LinkCloudburstCodecs.Session codec() { return this.codec; }
     public JoinPhase joinPhase() { return this.joinPhase; }
-    public void setJoinPhase(JoinPhase phase) {
-        this.joinPhase = phase;
-        BedrockJoinProbe.notePhase(this.guid, phase.name());
-    }
+    public void setJoinPhase(JoinPhase phase) { poseLogic.setJoinPhase(phase); }
     public int getServerRenderDistance() { return this.serverRenderDistance; }
-    public void setPendingFullRenderDistance(int view) {
-        this.pendingFullRenderDistance = Math.max(2, Math.min(32, view));
-    }
+    public void setPendingFullRenderDistance(int view) { poseLogic.setPendingFullRenderDistance(view); }
     public int pendingFullRenderDistance() { return this.pendingFullRenderDistance; }
     public int getClientRenderDistance() { return this.clientRenderDistance; }
-    public void setClientRenderDistance(int clientRenderDistance) {
-        this.clientRenderDistance = clientRenderDistance;
-    }
+    public void setClientRenderDistance(int clientRenderDistance) { poseLogic.setClientRenderDistance(clientRenderDistance); }
     public Vector2i getLastChunkPosition() { return this.lastChunkPosition; }
-    public void setLastChunkPosition(Vector2i pos) {
-        this.lastChunkPosition = pos;
-    }
+    public void setLastChunkPosition(Vector2i pos) { poseLogic.setLastChunkPosition(pos); }
     public boolean isSentSpawnPacket() { return this.sentSpawnPacket; }
     public boolean isUpstreamInitialized() { return this.upstreamInitialized; }
-    public void setUpstreamInitialized(boolean initialized) {
-        this.upstreamInitialized = initialized;
-    }
+    public void setUpstreamInitialized(boolean initialized) { poseLogic.setUpstreamInitialized(initialized); }
     public int bedrockDimensionId() { return this.bedrockDimension; }
-    public void setBedrockDimensionId(int dimensionId) {
-        this.bedrockDimension = dimensionId;
-    }
+    public void setBedrockDimensionId(int dimensionId) { poseLogic.setBedrockDimensionId(dimensionId); }
     public int bedrockDimensionHeight() { return 384; }
     public int spawnX() { return this.spawnX; }
     public int spawnY() { return this.spawnY; }
     public int spawnZ() { return this.spawnZ; }
-    public Vector3i spawnBlockPos() { return Vector3i.from(this.spawnX, this.spawnY, this.spawnZ); }
+    public Vector3i spawnBlockPos() { return poseLogic.spawnBlockPos(); }
     public double spawnFeetX() { return this.spawnFeetX; }
     public double spawnFeetY() { return this.spawnFeetY; }
     public double spawnFeetZ() { return this.spawnFeetZ; }
@@ -200,53 +203,18 @@ public final class LinkBedrockSession {
     public boolean isSpawnColumnReal() { return this.spawnColumnReal.get(); }
     public boolean isSpawnColumnSolid() { return this.spawnColumnSolid.get(); }
     public int spawnColumnSolidBlocks() { return this.spawnColumnSolidBlocks.get(); }
-    public void setSpawnFromFeet(double feetX, double feetY, double feetZ) {
-        this.spawnFeetX = feetX;
-        this.spawnFeetY = feetY;
-        this.spawnFeetZ = feetZ;
-        this.spawnX = (int) Math.floor(feetX);
-        this.spawnY = (int) Math.floor(feetY);
-        this.spawnZ = (int) Math.floor(feetZ);
-        this.posX = feetX;
-        this.posY = feetY;
-        this.posZ = feetZ;
-    }
+    public void setSpawnFromFeet(double feetX, double feetY, double feetZ) { poseLogic.setSpawnFromFeet(feetX, feetY, feetZ); }
     @Deprecated
-    public void setSpawn(int x, int y, int z) {
-        this.setSpawnFromFeet(x + 0.5, y, z + 0.5);
-    }
+    public void setSpawn(int x, int y, int z) { poseLogic.setSpawn(x, y, z); }
     public JavaDownstreamClient downstream() { return this.downstream; }
-    public void setDownstream(JavaDownstreamClient downstream) {
-        this.downstream = downstream;
-        if (downstream != null) {
-            this.blockMapper = new JeToBedrockBlockMapper(this.protocol, downstream.blockRegistry());
-        }
-    }
+    public void setDownstream(JavaDownstreamClient downstream) { poseLogic.setDownstream(downstream); }
     public JeToBedrockBlockMapper blockMapper() { return this.blockMapper; }
-    public void setBlockMapper(JeToBedrockBlockMapper blockMapper) {
-        this.blockMapper = blockMapper;
-    }
+    public void setBlockMapper(JeToBedrockBlockMapper blockMapper) { poseLogic.setBlockMapper(blockMapper); }
     public int javaEntityId() { return this.javaEntityId; }
-    public void setJavaEntityId(int javaEntityId) {
-        this.javaEntityId = javaEntityId;
-    }
+    public void setJavaEntityId(int javaEntityId) { poseLogic.setJavaEntityId(javaEntityId); }
     public int javaPermissionLevel() { return this.javaPermissionLevel; }
-    public boolean setJavaPermissionLevel(int level) {
-        int clamped = Math.max(0, Math.min(4, level));
-        if (this.javaPermissionLevel == clamped) {
-            return false;
-        }
-        this.javaPermissionLevel = clamped;
-        return true;
-    }
-    public void setPosition(double x, double y, double z, float yaw, float pitch) {
-        this.posX = x;
-        this.posY = y;
-        this.posZ = z;
-        this.yaw = yaw;
-        this.pitch = pitch;
-        this.moveTick.incrementAndGet();
-    }
+    public boolean setJavaPermissionLevel(int level) { return poseLogic.setJavaPermissionLevel(level); }
+    public void setPosition(double x, double y, double z, float yaw, float pitch) { poseLogic.setPosition(x, y, z, yaw, pitch); }
     public double posX() { return this.posX; }
     public double posY() { return this.posY; }
     public double posZ() { return this.posZ; }
@@ -257,65 +225,52 @@ public final class LinkBedrockSession {
     public double lastSyncX() { return this.lastSyncX; }
     public double lastSyncY() { return this.lastSyncY; }
     public double lastSyncZ() { return this.lastSyncZ; }
-    public void setPendingTeleportId(int teleportId) {
-        this.pendingTeleportId = teleportId;
-    }
+    public void setPendingTeleportId(int teleportId) { poseLogic.setPendingTeleportId(teleportId); }
     public int pendingTeleportId() { return this.pendingTeleportId; }
     public int lastAcceptedTeleportId() { return this.lastAcceptedTeleportId; }
-    public void clearPendingTeleport() {
-        this.pendingTeleportId = -1;
-        this.unconfirmedAuthMoves = 0;
-    }
+    public void clearPendingTeleport() { poseLogic.clearPendingTeleport(); }
     public int unconfirmedAuthMoves() { return this.unconfirmedAuthMoves; }
-    public void setHeldHotbar(int slot) {
-        this.heldHotbar = Math.max(0, Math.min(8, slot));
-    }
+    public void setHeldHotbar(int slot) { poseLogic.setHeldHotbar(slot); }
     public int heldHotbar() { return this.heldHotbar; }
     public int nextBlockSequence() { return this.blockSequence.getAndIncrement(); }
-    public boolean isDigging(int x, int y, int z) { return this.digSequence >= 0 && this.digX == x && this.digY == y && this.digZ == z; }
+    public boolean isDigging(int x, int y, int z) { return poseLogic.isDigging(x, y, z); }
     public int lastAttackTarget() { return this.lastAttackTarget; }
     public int lastJeInventorySlots() { return this.lastJeInventorySlots; }
     public int lastJeWindowId() { return this.lastJeWindowId; }
     public int lastJeMenuType() { return this.lastJeMenuType; }
     public boolean inventoryOpen() { return this.inventoryOpen; }
-    public void setInventoryOpen(boolean open) {
-        this.inventoryOpen = open;
-    }
+    public void setInventoryOpen(boolean open) { poseLogic.setInventoryOpen(open); }
     public boolean hasBedrockInventorySnapshot() { return this.hasBedrockInventorySnapshot; }
     public ItemData[] bedrockInventorySlots() { return this.bedrockInventorySlots; }
     public ItemData[] bedrockArmorSlots() { return this.bedrockArmorSlots; }
     public ItemData bedrockOffhand() { return this.bedrockOffhand; }
-    public List<ItemDefinition> itemDefinitions() { return this.codec == null ? List.of() : this.codec.itemDefinitions(); }
+    public List<ItemDefinition> itemDefinitions() { return poseLogic.itemDefinitions(); }
     public float lastHealth() { return this.lastHealth; }
     public int lastFood() { return this.lastFood; }
     public float lastSaturation() { return this.lastSaturation; }
-    public BlockDefinition stoneBlockDefinition() { return this.blockDefinitionOrAir(this.stoneRuntimeId()); }
-    public BlockDefinition airBlockDefinition() { return this.blockDefinitionOrAir(this.airRuntimeId()); }
-    public void sendUpstreamPacket(BedrockPacket packet) {
-        if (packet != null && this.upstreamSink != null) {
-            this.upstreamSink.accept(List.of(packet));
-        }
-    }
-    public void sendUpstreamPackets(List<? extends BedrockPacket> packets) {
-        if (packets != null && !packets.isEmpty() && this.upstreamSink != null) {
-            this.upstreamSink.accept(packets);
-        }
-    }
-    public boolean wasColumnSent(int chunkX, int chunkZ) { return this.sentColumns.containsKey(LinkBedrockSessionConnect.columnKey(chunkX, chunkZ)); }
-    public void markColumnSent(int chunkX, int chunkZ) {
-        this.sentColumns.put(LinkBedrockSessionConnect.columnKey(chunkX, chunkZ), Boolean.TRUE);
-    }
+    public BlockDefinition stoneBlockDefinition() { return poseLogic.stoneBlockDefinition(); }
+    public BlockDefinition airBlockDefinition() { return poseLogic.airBlockDefinition(); }
+    public void sendUpstreamPacket(BedrockPacket packet) { poseLogic.sendUpstreamPacket(packet); }
+    public void sendUpstreamPackets(List<? extends BedrockPacket> packets) { poseLogic.sendUpstreamPackets(packets); }
+    public boolean wasColumnSent(int chunkX, int chunkZ) { return poseLogic.wasColumnSent(chunkX, chunkZ); }
+    public void markColumnSent(int chunkX, int chunkZ) { poseLogic.markColumnSent(chunkX, chunkZ); }
+    public boolean wasRealColumnSent(int chunkX, int chunkZ) { return chunksLogic.wasRealColumnSent(chunkX, chunkZ); }
+    public void markRealColumnSent(int chunkX, int chunkZ) { chunksLogic.markRealColumnSent(chunkX, chunkZ); }
+    /** First caller wins — join-square-filled ChunkRadius/publisher nudge. */
+    public boolean markJoinSquareNudgeSent() { return poseLogic.markJoinSquareNudgeSent(); }
+    /** First caller wins — post-0x71 (or late) full-view expand. */
+    public boolean markPostInitViewExpanded() { return poseLogic.markPostInitViewExpanded(); }
+    public boolean isPostInitViewExpanded() { return poseLogic.isPostInitViewExpanded(); }
+    /** First caller wins — soft-SPAWN mid-view (client slider 8–12) before real 0x71. */
+    public boolean markSoftPlayableViewExpanded() { return poseLogic.markSoftPlayableViewExpanded(); }
+    /** Forget column marks after JE respawn / dim change so publisher + REAL tracking reset. */
+    public void clearWorldForDimensionChange() { chunksLogic.clearWorldForDimensionChange(); }
 
-    /**
-     * Forget Bedrock column / publisher state after JE respawn (portal / dim change).
-     * Without this, {@link com.yapcore.link.bedrock.translator.ChunkUtils#updateChunkPosition}
-     * may skip NetworkChunkPublisherUpdate when chunk XZ coincides, and empty-seed marks
-     * from the previous dimension linger.
-     */
-    public void clearWorldForDimensionChange() {
-        this.sentColumns.clear();
-        this.lastChunkPosition = null;
-    }
+    public void beginSoftBackendSwitch(String targetServer) { switchLogic.beginSoftBackendSwitch(targetServer); }
+    public void setBackendSwitchHandler(Consumer<String> handler) { switchLogic.setBackendSwitchHandler(handler); }
+    public boolean requestBackendSwitch(String targetServer) { return switchLogic.requestBackendSwitch(targetServer); }
+    /** Drop every remote actor so the soft-switched backend can re-Add them. */
+    public void removeAllRemoteEntities() { switchLogic.removeAllRemoteEntities(); }
     public enum JoinPhase {
         NONE,
         AWAITING_JAVA_LOGIN,
@@ -332,6 +287,12 @@ public final class LinkBedrockSession {
     }
     public void tryCompletePlayerSpawn(String reason) {
         connectLogic.tryCompletePlayerSpawn(reason);
+    }
+    public void rearmPlayerSpawnAfterJoinSquare() {
+        connectLogic.rearmPlayerSpawnAfterJoinSquare();
+    }
+    public void scheduleJoinInitAssist() {
+        connectLogic.scheduleJoinInitAssist();
     }
     public boolean consumePostSpawnGroundHold(double feetX, double feetY, double feetZ, boolean onGround) { return connectLogic.consumePostSpawnGroundHold(feetX, feetY, feetZ, onGround); }
     public void resetPostSpawnGroundHold() {
@@ -426,13 +387,11 @@ public final class LinkBedrockSession {
     }
 
     public void markPlayerJavaEntity(int javaEntityId) {
-        if (javaEntityId != javaEntityId()) {
-            playerJavaEntityIds.add(javaEntityId);
-        }
+        switchLogic.markPlayerJavaEntity(javaEntityId);
     }
 
     public boolean isPlayerJavaEntity(int javaEntityId) {
-        return playerJavaEntityIds.contains(javaEntityId);
+        return switchLogic.isPlayerJavaEntity(javaEntityId);
     }
 
     public Long runtimeForJava(int javaEntityId) { return playLogic.runtimeForJava(javaEntityId); }
@@ -445,6 +404,12 @@ public final class LinkBedrockSession {
     public void rememberPlayerName(UUID id, String name) {
         playLogic.rememberPlayerName(id, name);
     }
+    public void rememberPlayerEntityUuid(UUID id, int javaEntityId) {
+        switchLogic.rememberPlayerEntityUuid(id, javaEntityId);
+    }
+    public Integer javaEntityForPlayerUuid(UUID id) {
+        return switchLogic.javaEntityForPlayerUuid(id);
+    }
     public void forgetPlayerName(UUID id) {
         playLogic.forgetPlayerName(id);
     }
@@ -453,13 +418,25 @@ public final class LinkBedrockSession {
 
     public void bufferPendingAddEntity(int entityId, UUID uuid, String typeKey,
                                        double x, double y, double z, float yaw, float pitch) {
-        LinkBedrockSessionPending.buffer(this, entityId, uuid, typeKey, x, y, z, yaw, pitch);
+        switchLogic.bufferPendingAddEntity(entityId, uuid, typeKey, x, y, z, yaw, pitch);
     }
 
+    public void rememberPendingCustomName(int entityId, String name, boolean visible) {
+        switchLogic.rememberPendingCustomName(entityId, name, visible);
+    }
+    public String takePendingCustomName(int entityId) {
+        return switchLogic.takePendingCustomName(entityId);
+    }
+    public void dropPendingAddEntity(int entityId) {
+        switchLogic.dropPendingAddEntity(entityId);
+    }
+    public void updatePendingAddEntityPos(int entityId, double x, double y, double z,
+                                          float yaw, float pitch) {
+        switchLogic.updatePendingAddEntityPos(entityId, x, y, z, yaw, pitch);
+    }
     public void flushPendingAddEntities() {
-        LinkBedrockSessionPending.flush(this);
+        switchLogic.flushPendingAddEntities();
     }
-
     public void rememberPluginCommands(Iterable<String> names) {
         playLogic.rememberPluginCommands(names);
     }

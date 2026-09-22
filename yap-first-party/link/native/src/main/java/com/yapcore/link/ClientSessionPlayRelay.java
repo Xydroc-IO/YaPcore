@@ -57,6 +57,12 @@ final class ClientSessionPlayRelay extends ChannelInboundHandlerAdapter {
                 buf.release();
                 return;
             }
+            // Backend kick / graceful shutdown: rescue to hub instead of network disconnect.
+            if (PlayChat.isDisconnectPacket(session.protocolVersion, buf)
+                    && ClientSessionFailover.tryFallbackToHub(session, "backend-disconnect")) {
+                buf.release();
+                return;
+            }
             PlayChat.advertiseSecureChat(session.protocolVersion, buf);
         }
         if (peer.isActive()) {
@@ -69,11 +75,23 @@ final class ClientSessionPlayRelay extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
+        if (fromClient) {
+            peer.close();
+            return;
+        }
+        // Backend TCP died (crash / stop / restart) — keep client on Link and soft-switch to hub.
+        if (ClientSessionFailover.tryFallbackToHub(session, "backend-closed")) {
+            return;
+        }
         peer.close();
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        if (!fromClient && ClientSessionFailover.tryFallbackToHub(session, "backend-error")) {
+            ctx.close();
+            return;
+        }
         ctx.close();
         peer.close();
     }

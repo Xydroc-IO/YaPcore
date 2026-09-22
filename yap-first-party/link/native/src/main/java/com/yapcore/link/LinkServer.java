@@ -250,6 +250,15 @@ public final class LinkServer {
     }
 
     public synchronized void stop() {
+        // Kick JE clients first with a real disconnect packet (not a raw TCP drop).
+        java.util.ArrayList<ClientSession> live = new java.util.ArrayList<>(sessions.values());
+        for (ClientSession s : live) {
+            try {
+                s.kick("Proxy restarting — please reconnect");
+            } catch (Exception e) {
+                LOG.log(Level.FINE, "JE kick on stop", e);
+            }
+        }
         if (metricsHttp != null) {
             metricsHttp.stop();
             metricsHttp = null;
@@ -369,6 +378,14 @@ public final class LinkServer {
             }
 
             @Override
+            public int packCdnPort() {
+                // public-pack-port in chassis server.properties is mirrored here when set;
+                // default 80 so Bedrock CDN matches nginx / Cloudflare, not LAN :8081.
+                int p = cfg.intProp("bedrock-pack-cdn-port", 80);
+                return p > 0 ? p : 80;
+            }
+
+            @Override
             public int motdProtocol() {
                 return cfg.bedrockMotdProtocol();
             }
@@ -381,6 +398,16 @@ public final class LinkServer {
             @Override
             public String motdSub() {
                 return cfg.bedrockMotdSub();
+            }
+
+            @Override
+            public String fallbackHubServer() {
+                return cfg.fallbackServer();
+            }
+
+            @Override
+            public boolean fallbackOnBackendLoss() {
+                return cfg.fallbackOnBackendLoss();
             }
         };
     }

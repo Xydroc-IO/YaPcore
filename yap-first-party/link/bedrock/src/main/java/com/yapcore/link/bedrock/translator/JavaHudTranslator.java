@@ -93,6 +93,9 @@ public final class JavaHudTranslator {
         if (session == null || !session.isSentSpawnPacket() || objectiveId == null || objectiveId.isBlank()) {
             return;
         }
+        if (session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
+            return;
+        }
         if (mode == 1) {
             // Remove — clear sidebar display for this objective.
             SetDisplayObjectivePacket clear = new SetDisplayObjectivePacket();
@@ -118,6 +121,9 @@ public final class JavaHudTranslator {
         if (session == null || !session.isSentSpawnPacket()) {
             return;
         }
+        if (session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
+            return;
+        }
         String slot = switch (position) {
             case 0 -> "list";
             case 1 -> "sidebar";
@@ -138,6 +144,9 @@ public final class JavaHudTranslator {
                 || objective == null || objective.isBlank() || owner == null) {
             return;
         }
+        if (session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
+            return;
+        }
         String line = trimLine(owner);
         long entryId = (objective + ":" + line).hashCode() & 0xffffffffL;
         SetScorePacket packet = new SetScorePacket();
@@ -148,6 +157,9 @@ public final class JavaHudTranslator {
 
     public static void onResetScore(LinkBedrockSession session, String owner, String objective) {
         if (session == null || !session.isSentSpawnPacket() || owner == null) {
+            return;
+        }
+        if (session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
             return;
         }
         String obj = objective != null ? objective : "";

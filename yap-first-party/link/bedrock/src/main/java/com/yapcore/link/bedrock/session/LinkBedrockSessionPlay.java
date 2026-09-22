@@ -53,15 +53,40 @@ final class LinkBedrockSessionPlay {
    }
 
    boolean confirmOrHoldAuthMove(double feetX, double feetY, double feetZ) {
+      // Soft-switch / portal-arrival grace: JE already AcceptTeleport'd; do not freeze
+      // Bedrock auth while ChangeDimension + MovePlayer catch up.
+      if (s.softSwitchMoveGraceUntilMs > 0L
+              && System.currentTimeMillis() < s.softSwitchMoveGraceUntilMs) {
+         if (s.pendingTeleportId >= 0) {
+            s.pendingTeleportId = -1;
+            s.unconfirmedAuthMoves = 0;
+            // Snap lastSync to current client pose so the next JE TP can re-arm cleanly.
+            s.lastSyncX = feetX;
+            s.lastSyncY = feetY;
+            s.lastSyncZ = feetZ;
+         }
+         return true;
+      }
       if (s.pendingTeleportId < 0) {
          s.unconfirmedAuthMoves = 0;
          return true;
       } else if (canConfirmTeleport(feetX, feetY, feetZ)) {
          s.pendingTeleportId = -1;
          s.unconfirmedAuthMoves = 0;
-         return false;
+         // Forward this tick — returning false dropped the first real move and left
+         // Folia at spawn (portals / NPC reach never saw the player).
+         return true;
       } else {
          s.unconfirmedAuthMoves++;
+         // Escape hatch: never HOLD forever if the client drifted during load.
+         if (s.unconfirmedAuthMoves >= LinkBedrockSession.TELEPORT_RESEND_THRESHOLD * 2) {
+            s.pendingTeleportId = -1;
+            s.unconfirmedAuthMoves = 0;
+            s.lastSyncX = feetX;
+            s.lastSyncY = feetY;
+            s.lastSyncZ = feetZ;
+            return true;
+         }
          return false;
       }
    }
@@ -177,6 +202,7 @@ final class LinkBedrockSessionPlay {
    void forgetPlayerName(UUID id) {
       if (id != null) {
          s.playerNamesByUuid.remove(id);
+         s.playerEntityByUuid.remove(id);
       }
    }
 
@@ -289,9 +315,14 @@ final class LinkBedrockSessionPlay {
       return (((long) x & 0x3FFFFFFL) << 38) | (((long) z & 0x3FFFFFFL) << 12) | ((long) y & 0xFFFL);
    }
 
+   /**
+    * Force an absolute teleport-flagged move every N relative updates so Bedrock
+    * does not drift. Was every 20 (~1s) which made fish/mobs look teleported;
+    * 80 (~4s) is enough to correct drift without stutter.
+    */
    boolean bumpEntityMoveForceAbsolute(int javaEntityId) {
       int n = s.entityMoveTicks.merge(javaEntityId, 1, Integer::sum);
-      return n % 20 == 0;
+      return n % 80 == 0;
    }
 
    BlockDefinition blockDefinitionOrAir(int runtimeIdHint) {

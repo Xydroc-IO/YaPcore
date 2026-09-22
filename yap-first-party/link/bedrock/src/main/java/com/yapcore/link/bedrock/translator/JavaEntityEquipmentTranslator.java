@@ -27,9 +27,14 @@ public final class JavaEntityEquipmentTranslator {
         if (session == null || !session.isSentSpawnPacket()) {
             return;
         }
+        // Do not equip actors that are not on Bedrock yet (buffered until 0x71). Fabricating
+        // a runtime from the JE id spammed MobEquipment during the generating-world stall.
+        if (session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
+            return;
+        }
         Long runtime = session.runtimeForJava(entityId);
         if (runtime == null) {
-            runtime = entityId & 0xffffffffL;
+            return;
         }
         ItemData item = JavaInventoryTranslator.jeToBedrock(session, stack);
         if (slot == 0 || slot == 1) {

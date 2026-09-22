@@ -1,6 +1,7 @@
 package com.yapcore.link.bedrock.translator;
 
 import com.yapcore.link.bedrock.cloudburst.LinkJoinPackets;
+import com.yapcore.link.bedrock.cloudburst.LinkJeSkinBridge;
 import com.yapcore.link.bedrock.cloudburst.LinkTrustedSkin;
 import com.yapcore.link.bedrock.codec.LinkCloudburstCodecs;
 import com.yapcore.link.bedrock.probe.BedrockJoinProbe;
@@ -12,7 +13,6 @@ import org.cloudburstmc.math.vector.Vector3f;
 import org.cloudburstmc.protocol.bedrock.data.BuildPlatform;
 import org.cloudburstmc.protocol.bedrock.data.GameType;
 import org.cloudburstmc.protocol.bedrock.data.command.CommandPermission;
-import org.cloudburstmc.protocol.bedrock.data.entity.EntityDataMap;
 import org.cloudburstmc.protocol.bedrock.data.inventory.ItemData;
 import org.cloudburstmc.protocol.bedrock.packet.AddPlayerPacket;
 import org.cloudburstmc.protocol.bedrock.packet.PlayerListPacket;
@@ -30,32 +30,49 @@ public final class JavaPlayerListTranslator {
 
     /** Remember tab-list name for a UUID (from JE player_info ADD). */
     public static void onPlayerInfoAdd(LinkBedrockSession session, UUID uuid, String name) {
+        onPlayerInfoAdd(session, uuid, name, null);
+    }
+
+    public static void onPlayerInfoAdd(LinkBedrockSession session, UUID uuid, String name,
+                                       String texturesProperty) {
         if (session == null || uuid == null) {
             return;
         }
         String n = name == null || name.isBlank() ? "Player" : name;
         session.rememberPlayerName(uuid, n);
-        if (!session.isSentSpawnPacket()) {
-            return;
-        }
         if (uuid.equals(session.uuid())) {
             return;
         }
-        // Tab entry for remotes: only after 0x71 so a bad PlayerList cannot abort join.
-        if (session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
-            BedrockJoinProbe.noteEvent(session.guid(),
-                    "java_player_info BUFFER name=" + n + " (await SPAWNED)");
-            return;
+        BedrockJoinProbe.noteEvent(session.guid(), "java_player_info name=" + n
+                + (texturesProperty != null ? " textures=yes" : ""));
+        if (texturesProperty != null && !texturesProperty.isBlank()) {
+            LinkJeSkinBridge.resolveAsync(uuid, texturesProperty, () -> {
+                Integer javaId = session.javaEntityForPlayerUuid(uuid);
+                if (javaId == null || session.joinPhase() != LinkBedrockSession.JoinPhase.SPAWNED) {
+                    return;
+                }
+                Long runtime = session.runtimeForJava(javaId);
+                if (runtime == null) {
+                    return;
+                }
+                sendRemotePlayerList(session, uuid, runtime, n);
+                BedrockJoinProbe.noteEvent(session.guid(),
+                        "java_skin→be PUSH name=" + n);
+            });
         }
-        if (!sendRemotePlayerList(session, uuid, 0L, n)) {
-            return;
-        }
-        BedrockJoinProbe.noteEvent(session.guid(),
-                "java_player_info→be ADD name=" + n);
     }
 
     public static void onPlayerInfoRemove(LinkBedrockSession session, UUID uuid) {
         if (session == null || uuid == null || uuid.equals(session.uuid())) {
+            return;
+        }
+        // Folia/Paper often churns player_info REMOVE+ADD for skin/list refreshes while the
+        // world entity is still alive. Removing from Bedrock's PlayerList freezes the actor
+        // so MovePlayer updates stop drawing — skip REMOVE when the entity is still tracked.
+        Integer javaId = session.javaEntityForPlayerUuid(uuid);
+        if (javaId != null && session.isPlayerJavaEntity(javaId)) {
+            BedrockJoinProbe.noteEvent(session.guid(),
+                    "java_player_info→be REMOVE skipped (entity live id=" + javaId + ")");
             return;
         }
         session.forgetPlayerName(uuid);
@@ -79,11 +96,19 @@ public final class JavaPlayerListTranslator {
         if (entityId == session.javaEntityId() || (uuid != null && uuid.equals(session.uuid()))) {
             return;
         }
-        // Same as mobs: JE tracks remotes before StartGame — must not drop permanently.
-        if (!session.isSentSpawnPacket()) {
+        // Bedrock drops remote AddPlayer until after 0x71 (local PlayerList + init).
+        // Buffer until SPAWNED so post-0x71 flushPendingAddEntities actually shows bodies.
+        if (!session.isUpstreamInitialized()) {
             session.bufferPendingAddEntity(entityId, uuid, "minecraft:player", x, y, z, yaw, pitch);
+            if (uuid != null) {
+                String n = session.playerName(uuid);
+                if (n != null) {
+                    session.rememberPlayerName(uuid, n);
+                }
+            }
             BedrockJoinProbe.noteEvent(session.guid(),
-                    "java_add_player BUFFER id=" + entityId + " (await StartGame)");
+                    "java_add_player BUFFER id=" + entityId
+                            + (session.isSentSpawnPacket() ? " (await 0x71)" : " (await StartGame)"));
             return;
         }
         // World entity can arrive before 0x71; still spawn after StartGame (see players ASAP).
@@ -106,6 +131,7 @@ public final class JavaPlayerListTranslator {
         UUID id = uuid != null ? uuid : UUID.randomUUID();
         session.trackEntity(entityId, runtime);
         session.markPlayerJavaEntity(entityId);
+        session.rememberPlayerEntityUuid(id, entityId);
         session.setEntityPos(entityId, (float) x, (float) y, (float) z, yaw, pitch);
         session.rememberPlayerName(id, name);
 
@@ -120,6 +146,8 @@ public final class JavaPlayerListTranslator {
         add.setUniqueEntityId(runtime);
         add.setRuntimeEntityId(runtime);
         add.setPlatformChatId("");
+        // Feet here. sendMoveAbsolute adds the eye offset for player runtimes.
+        // Adding it twice put the body a block above the player who was standing next to them.
         add.setPosition(Vector3f.from((float) x, (float) y, (float) z));
         add.setMotion(Vector3f.ZERO);
         add.setRotation(Vector3f.from(pitch, yaw, yaw));
@@ -129,12 +157,34 @@ public final class JavaPlayerListTranslator {
         add.setBuildPlatform(BuildPlatform.UNKNOWN);
         add.setPlayerPermission(org.cloudburstmc.protocol.bedrock.data.PlayerPermission.MEMBER);
         add.setCommandPermission(CommandPermission.ANY);
-        add.setMetadata(new EntityDataMap());
+        add.setAbilityLayers(java.util.List.of(remoteAbilityLayer()));
+        add.setMetadata(JavaEntityTranslator.playerMetadata(name));
         session.sendUpstreamPacket(add);
+        // 1.21.130+: PlayerSkinPacket alone is ignored unless listed. Re-push PlayerList
+        // after AddPlayer so the world skin sticks (Geyser SkinManager path).
+        sendRemotePlayerList(session, id, runtime, name);
+        // AddPlayer is feet. The follow-up MovePlayer is eye height and is what Bedrock draws.
+        JavaEntityTranslator.sendMoveAbsolute(session, runtime, x, y, z, yaw, pitch, true);
 
         BedrockJoinProbe.noteEvent(session.guid(),
-                "java_add_player→be id=" + entityId + " name=" + name);
+                "java_add_player→be id=" + entityId + " name=" + name
+                        + " x=" + (int) x + " y=" + (int) y + " z=" + (int) z);
         LOG.info("BE AddPlayer id=" + entityId + " name=" + name + " user=" + session.username());
+    }
+
+    /** Geyser BASE layer: every Ability in set + values. Empty layers drop the actor. */
+    private static org.cloudburstmc.protocol.bedrock.data.AbilityLayer remoteAbilityLayer() {
+        org.cloudburstmc.protocol.bedrock.data.AbilityLayer layer =
+                new org.cloudburstmc.protocol.bedrock.data.AbilityLayer();
+        layer.setLayerType(org.cloudburstmc.protocol.bedrock.data.AbilityLayer.Type.BASE);
+        layer.setWalkSpeed(0.1f);
+        layer.setFlySpeed(0.05f);
+        layer.setVerticalFlySpeed(1.0f);
+        org.cloudburstmc.protocol.bedrock.data.Ability[] abilities =
+                org.cloudburstmc.protocol.bedrock.data.Ability.values();
+        java.util.Collections.addAll(layer.getAbilitiesSet(), abilities);
+        java.util.Collections.addAll(layer.getAbilityValues(), abilities);
+        return layer;
     }
 
     public static void onRemotePlayerDespawn(LinkBedrockSession session, int entityId) {
@@ -153,14 +203,21 @@ public final class JavaPlayerListTranslator {
     /** Encode-gated remote ADD (same Steve+geometry sanity as ADD-self). */
     static boolean sendRemotePlayerList(LinkBedrockSession session, UUID uuid, long entityId,
                                         String name) {
-        PlayerListPacket list = LinkJoinPackets.playerListAddRemote(uuid, entityId, name);
+        var skin = LinkJeSkinBridge.cachedOrSteve(uuid);
+        PlayerListPacket list = LinkJoinPackets.playerListAddRemote(uuid, entityId, name, skin);
         int encoded = encodePlayerListBytes(session, list);
         String reject = LinkTrustedSkin.rejectReason(list, encoded);
         if (reject != null) {
-            BedrockJoinProbe.noteEvent(session.guid(),
-                    "java_player_info→be SKIPPED sanity=" + reject + " name=" + name);
-            LOG.warning("BE remote PlayerList skipped name=" + name + " reason=" + reject);
-            return false;
+            // Real skin failed sanity — fall back to Steve so the body still draws.
+            list = LinkJoinPackets.playerListAddRemote(uuid, entityId, name, null);
+            encoded = encodePlayerListBytes(session, list);
+            reject = LinkTrustedSkin.rejectReason(list, encoded);
+            if (reject != null) {
+                BedrockJoinProbe.noteEvent(session.guid(),
+                        "java_player_info→be SKIPPED sanity=" + reject + " name=" + name);
+                LOG.warning("BE remote PlayerList skipped name=" + name + " reason=" + reject);
+                return false;
+            }
         }
         session.sendUpstreamPacket(list);
         return true;

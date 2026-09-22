@@ -5,10 +5,10 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 /**
- * JE protocol 26.2 / 776 entity-type registry ids → Bedrock AddEntity identifiers.
+ * Folia/JE entity-type registry ids → Bedrock AddEntity identifiers.
  *
- * <p>Built from minecraft-data {@code pc/26.2/entities.json} with Bedrock actor-name remaps
- * ({@code xp_orb}, {@code fishing_hook}, boat→{@code boat}, etc.). Types with no Bedrock
+ * <p>Built from Folia {@code EntityTypes} registration order (includes {@code sulfur_cube},
+ * which shifts every id after tadpole vs stock minecraft-data 26.2). Types with no Bedrock
  * actor (displays/markers) return null so callers skip AddEntity instead of spawning an
  * armor stand.
  */
@@ -22,26 +22,27 @@ public final class JeEntityTypes {
     private static final String[] BY_ID = new String[160];
 
     static {
-        for (int id : new int[]{15, 69, 72, 73, 84, 131}) {
+        // Folia network ids: block_display=15, interaction=69, item_display=72, marker=84, text_display=132
+        for (int id : new int[]{15, 69, 72, 84, 132}) {
             if (id >= 0 && id < SKIP.length) {
                 SKIP[id] = true;
             }
         }
         Map<Integer, String> m = new HashMap<>();
-                m.put(0, "minecraft:boat");
-                m.put(1, "minecraft:chest_boat");
+                m.put(0, "minecraft:boat"); // acacia_boat
+                m.put(1, "minecraft:chest_boat"); // acacia_chest_boat
                 m.put(2, "minecraft:allay");
                 m.put(3, "minecraft:area_effect_cloud");
                 m.put(4, "minecraft:armadillo");
                 m.put(5, "minecraft:armor_stand");
                 m.put(6, "minecraft:arrow");
                 m.put(7, "minecraft:axolotl");
-                m.put(8, "minecraft:chest_boat");
-                m.put(9, "minecraft:boat");
+                m.put(8, "minecraft:chest_boat"); // bamboo_chest_raft
+                m.put(9, "minecraft:boat"); // bamboo_raft
                 m.put(10, "minecraft:bat");
                 m.put(11, "minecraft:bee");
-                m.put(12, "minecraft:boat");
-                m.put(13, "minecraft:chest_boat");
+                m.put(12, "minecraft:boat"); // birch_boat
+                m.put(13, "minecraft:chest_boat"); // birch_chest_boat
                 m.put(14, "minecraft:blaze");
                 m.put(16, "minecraft:bogged");
                 m.put(17, "minecraft:breeze");
@@ -50,8 +51,8 @@ public final class JeEntityTypes {
                 m.put(20, "minecraft:camel_husk");
                 m.put(21, "minecraft:cat");
                 m.put(22, "minecraft:cave_spider");
-                m.put(23, "minecraft:boat");
-                m.put(24, "minecraft:chest_boat");
+                m.put(23, "minecraft:boat"); // cherry_boat
+                m.put(24, "minecraft:chest_boat"); // cherry_chest_boat
                 m.put(25, "minecraft:chest_minecart");
                 m.put(26, "minecraft:chicken");
                 m.put(27, "minecraft:cod");
@@ -60,8 +61,8 @@ public final class JeEntityTypes {
                 m.put(30, "minecraft:cow");
                 m.put(31, "minecraft:creaking");
                 m.put(32, "minecraft:creeper");
-                m.put(33, "minecraft:boat");
-                m.put(34, "minecraft:chest_boat");
+                m.put(33, "minecraft:boat"); // dark_oak_boat
+                m.put(34, "minecraft:chest_boat"); // dark_oak_chest_boat
                 m.put(35, "minecraft:dolphin");
                 m.put(36, "minecraft:donkey");
                 m.put(37, "minecraft:dragon_fireball");
@@ -86,8 +87,8 @@ public final class JeEntityTypes {
                 m.put(56, "minecraft:furnace_minecart");
                 m.put(57, "minecraft:ghast");
                 m.put(58, "minecraft:happy_ghast");
-                m.put(59, "minecraft:zombie");
-                m.put(60, "minecraft:item_frame");
+                m.put(59, "minecraft:zombie"); // giant
+                m.put(60, "minecraft:item_frame"); // glow_item_frame
                 m.put(61, "minecraft:glow_squid");
                 m.put(62, "minecraft:goat");
                 m.put(63, "minecraft:guardian");
@@ -95,31 +96,32 @@ public final class JeEntityTypes {
                 m.put(65, "minecraft:hopper_minecart");
                 m.put(66, "minecraft:horse");
                 m.put(67, "minecraft:husk");
-                m.put(68, "minecraft:evocation_illager");
+                m.put(68, "minecraft:evocation_illager"); // illusioner
                 m.put(70, "minecraft:iron_golem");
                 m.put(71, "minecraft:item");
-                m.put(74, "minecraft:boat");
-                m.put(75, "minecraft:chest_boat");
+                m.put(73, "minecraft:item_frame");
+                m.put(74, "minecraft:boat"); // jungle_boat
+                m.put(75, "minecraft:chest_boat"); // jungle_chest_boat
                 m.put(76, "minecraft:leash_knot");
                 m.put(77, "minecraft:lightning_bolt");
                 m.put(78, "minecraft:llama");
                 m.put(79, "minecraft:llama_spit");
                 m.put(80, "minecraft:magma_cube");
-                m.put(81, "minecraft:boat");
-                m.put(82, "minecraft:chest_boat");
-                // 26.2: id 83 = mannequin (player model). Armor stands stay id 5.
-                m.put(83, "minecraft:player");
+                m.put(81, "minecraft:boat"); // mangrove_boat
+                m.put(82, "minecraft:chest_boat"); // mangrove_chest_boat
+                // Bedrock npc actor, not AddPlayer — AddPlayer without PlayerList is invisible.
+                m.put(83, "minecraft:npc"); // mannequin
                 m.put(85, "minecraft:minecart");
                 m.put(86, "minecraft:mooshroom");
                 m.put(87, "minecraft:mule");
                 m.put(88, "minecraft:nautilus");
-                m.put(89, "minecraft:boat");
-                m.put(90, "minecraft:chest_boat");
+                m.put(89, "minecraft:boat"); // oak_boat
+                m.put(90, "minecraft:chest_boat"); // oak_chest_boat
                 m.put(91, "minecraft:ocelot");
                 m.put(92, "minecraft:ominous_item_spawner");
                 m.put(93, "minecraft:painting");
-                m.put(94, "minecraft:boat");
-                m.put(95, "minecraft:chest_boat");
+                m.put(94, "minecraft:boat"); // pale_oak_boat
+                m.put(95, "minecraft:chest_boat"); // pale_oak_chest_boat
                 m.put(96, "minecraft:panda");
                 m.put(97, "minecraft:parched");
                 m.put(98, "minecraft:parrot");
@@ -147,40 +149,40 @@ public final class JeEntityTypes {
                 m.put(120, "minecraft:snowball");
                 m.put(121, "minecraft:snow_golem");
                 m.put(122, "minecraft:spawner_minecart");
-                m.put(123, "minecraft:arrow");
+                m.put(123, "minecraft:arrow"); // spectral_arrow
                 m.put(124, "minecraft:spider");
-                m.put(125, "minecraft:boat");
-                m.put(126, "minecraft:chest_boat");
+                m.put(125, "minecraft:boat"); // spruce_boat
+                m.put(126, "minecraft:chest_boat"); // spruce_chest_boat
                 m.put(127, "minecraft:squid");
                 m.put(128, "minecraft:stray");
                 m.put(129, "minecraft:strider");
-                m.put(130, "minecraft:tadpole");
-                m.put(132, "minecraft:tnt");
-                m.put(133, "minecraft:tnt_minecart");
-                m.put(134, "minecraft:trader_llama");
-                m.put(135, "minecraft:thrown_trident");
-                m.put(136, "minecraft:tropicalfish");
-                m.put(137, "minecraft:turtle");
-                m.put(138, "minecraft:vex");
-                m.put(139, "minecraft:villager");
-                m.put(140, "minecraft:vindicator");
-                m.put(141, "minecraft:wandering_trader");
-                m.put(142, "minecraft:warden");
-                m.put(143, "minecraft:wind_charge_projectile");
-                m.put(144, "minecraft:witch");
-                m.put(145, "minecraft:wither");
-                m.put(146, "minecraft:wither_skeleton");
-                m.put(147, "minecraft:wither_skull");
-                m.put(148, "minecraft:wolf");
-                m.put(149, "minecraft:zoglin");
-                m.put(150, "minecraft:zombie");
-                m.put(151, "minecraft:zombie_horse");
-                m.put(152, "minecraft:zombie_nautilus");
-                m.put(153, "minecraft:zombie_villager");
-                // Bedrock actor is zombie_piglin (zombie_pigman spawns as unknown/static).
-                m.put(154, "minecraft:zombie_piglin");
-                m.put(155, "minecraft:player");
-                m.put(156, "minecraft:fishing_hook");
+                m.put(130, "minecraft:magma_cube"); // sulfur_cube (Folia-only; shifts subsequent ids)
+                m.put(131, "minecraft:tadpole");
+                m.put(133, "minecraft:tnt");
+                m.put(134, "minecraft:tnt_minecart");
+                m.put(135, "minecraft:trader_llama");
+                m.put(136, "minecraft:thrown_trident");
+                m.put(137, "minecraft:tropicalfish");
+                m.put(138, "minecraft:turtle");
+                m.put(139, "minecraft:vex");
+                m.put(140, "minecraft:villager");
+                m.put(141, "minecraft:vindicator");
+                m.put(142, "minecraft:wandering_trader");
+                m.put(143, "minecraft:warden");
+                m.put(144, "minecraft:wind_charge_projectile");
+                m.put(145, "minecraft:witch");
+                m.put(146, "minecraft:wither");
+                m.put(147, "minecraft:wither_skeleton");
+                m.put(148, "minecraft:wither_skull");
+                m.put(149, "minecraft:wolf");
+                m.put(150, "minecraft:zoglin");
+                m.put(151, "minecraft:zombie");
+                m.put(152, "minecraft:zombie_horse");
+                m.put(153, "minecraft:zombie_nautilus");
+                m.put(154, "minecraft:zombie_villager");
+                m.put(155, "minecraft:zombie_piglin");
+                m.put(156, "minecraft:player");
+                m.put(157, "minecraft:fishing_hook");
         for (Map.Entry<Integer, String> e : m.entrySet()) {
             int id = e.getKey();
             if (id >= 0 && id < BY_ID.length) {

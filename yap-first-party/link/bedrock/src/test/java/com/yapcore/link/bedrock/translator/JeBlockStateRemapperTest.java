@@ -52,4 +52,19 @@ final class JeBlockStateRemapperTest {
                 "minecraft:dark_oak_wall_sign[facing=west,waterlogged=false]");
         assertEquals("minecraft:darkoak_wall_sign[facing_direction=4]", dark);
     }
+
+    @Test
+    void trapdoorSlabAndLeverUseBedrockProperties() {
+        var trap = JeBlockStateRemapper.extraKeys(
+                "minecraft:oak_trapdoor[facing=west,half=top,open=true,powered=false,waterlogged=false]");
+        assertTrue(trap.contains("minecraft:trapdoor[direction=0,open_bit=1,upside_down_bit=1]"));
+
+        var slab = JeBlockStateRemapper.extraKeys(
+                "minecraft:oak_slab[type=top,waterlogged=false]");
+        assertTrue(slab.contains("minecraft:oak_slab[minecraft:vertical_half=top]"));
+
+        var lever = JeBlockStateRemapper.extraKeys(
+                "minecraft:lever[face=floor,facing=east,powered=true]");
+        assertTrue(lever.contains("minecraft:lever[lever_direction=down_east_west,open_bit=1]"));
+    }
 }

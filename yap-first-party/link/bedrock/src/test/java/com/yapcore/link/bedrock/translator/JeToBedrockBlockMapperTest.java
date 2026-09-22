@@ -70,4 +70,24 @@ final class JeToBedrockBlockMapperTest {
         assertNotEquals(mapper.airRuntimeId(), birch);
         assertNotEquals(stand0, birch);
     }
+
+    @Test
+    void chestsLogsAndDoorsKeepDistinctFacings() {
+        JeToBedrockBlockMapper mapper = new JeToBedrockBlockMapper(2169, new JeBlockRegistry());
+        int chestN = mapper.mapBlockName("minecraft:chest[facing=north,type=single,waterlogged=false]");
+        int chestW = mapper.mapBlockName("minecraft:chest[facing=west,type=single,waterlogged=false]");
+        int logY = mapper.mapBlockName("minecraft:oak_log[axis=y]");
+        int logX = mapper.mapBlockName("minecraft:oak_log[axis=x]");
+        int doorN = mapper.mapBlockName(
+                "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false,powered=false]");
+        int doorS = mapper.mapBlockName(
+                "minecraft:oak_door[facing=south,half=lower,hinge=left,open=false,powered=false]");
+        int ladderN = mapper.mapBlockName("minecraft:ladder[facing=north,waterlogged=false]");
+        int ladderS = mapper.mapBlockName("minecraft:ladder[facing=south,waterlogged=false]");
+        assertNotEquals(mapper.airRuntimeId(), chestN);
+        assertNotEquals(chestN, chestW);
+        assertNotEquals(logY, logX);
+        assertNotEquals(doorN, doorS);
+        assertNotEquals(ladderN, ladderS);
+    }
 }

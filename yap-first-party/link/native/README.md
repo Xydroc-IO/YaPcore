@@ -37,7 +37,7 @@ Never stack a compress `MessageToMessageEncoder` before a frame encoder.
 ## Run
 
 ```bash
-./scripts/start-yap-link.sh          # builds jar + plugins, seeds link.properties
+./scripts/lifecycle/start-yap-link.sh          # builds jar + plugins, seeds link.properties
 java -jar yap-link.jar --home ../link-data
 ```
 

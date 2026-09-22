@@ -9,6 +9,7 @@ import org.cloudburstmc.protocol.bedrock.data.entity.EntityEventType;
 import org.cloudburstmc.protocol.bedrock.packet.DeathInfoPacket;
 import org.cloudburstmc.protocol.bedrock.packet.EntityEventPacket;
 import org.cloudburstmc.protocol.bedrock.packet.RespawnPacket;
+import org.cloudburstmc.protocol.bedrock.packet.SetHealthPacket;
 import org.cloudburstmc.protocol.bedrock.packet.UpdateAttributesPacket;
 
 /**
@@ -57,11 +58,23 @@ public final class JavaEntityCombatTranslator {
         attrs.setTick(0L);
         List<AttributeData> list = new ArrayList<>(3);
         float hp = Math.max(0f, health);
-        list.add(new AttributeData("minecraft:health", 0f, 20f, hp, 0f, 20f, 20f, List.of()));
-        list.add(new AttributeData("minecraft:player.hunger", 0f, 20f, (float) food, 0f, 20f, 20f, List.of()));
-        list.add(new AttributeData("minecraft:player.saturation", 0f, 20f, saturation, 0f, 20f, 5f, List.of()));
+        // Bedrock draws heart rows from maximum. max=1024 made the HUD show hundreds of
+        // empty hearts (100346: hp=1 looked like "~300 hearts"). Match Geyser player bar:
+        // max at least 20, and never below current hp.
+        float maxHp = Math.max(20f, hp);
+        list.add(new AttributeData(
+                "minecraft:health", 0f, maxHp, hp, 0f, maxHp, 20f, List.of()));
+        list.add(new AttributeData(
+                "minecraft:player.hunger", 0f, 20f, (float) Math.max(0, Math.min(20, food)),
+                0f, 20f, 20f, List.of()));
+        list.add(new AttributeData(
+                "minecraft:player.saturation", 0f, 20f, Math.max(0f, Math.min(20f, saturation)),
+                0f, 20f, 5f, List.of()));
         attrs.setAttributes(list);
         session.sendUpstreamPacket(attrs);
+        SetHealthPacket setHealth = new SetHealthPacket();
+        setHealth.setHealth(Math.max(0, Math.round(hp)));
+        session.sendUpstreamPacket(setHealth);
         BedrockJoinProbe.noteEvent(session.guid(),
                 "java_set_health→be hp=" + (int) hp + " food=" + food);
 
@@ -103,6 +116,12 @@ public final class JavaEntityCombatTranslator {
         if (entityId == session.javaEntityId()) {
             return; // local player uses set_health
         }
+        // -1 means the JE attribute packet had no readable max_health. Treating that as
+        // hp=0 sent RemoveEntity in the same tick as AddPlayer (08:48 id=8184), so Bedrock
+        // never drew the Java player standing next to them.
+        if (health < 0f) {
+            return;
+        }
         Long runtime = session.runtimeForJava(entityId);
         if (runtime == null) {
             return;
@@ -117,13 +136,14 @@ public final class JavaEntityCombatTranslator {
         attrs.setAttributes(List.of(
                 new AttributeData("minecraft:health", 0f, max, hp, 0f, max, max, List.of())));
         session.sendUpstreamPacket(attrs);
-        if (old != null && old > 0f && hp <= 0f) {
-            removeDead(session, entityId, runtime);
-        } else if (hp <= 0f) {
+        // Players stay until JE remove_entities. A first reading of 0 is not a death.
+        boolean died = old != null && old > 0f && hp <= 0f;
+        if (died && !session.isPlayerJavaEntity(entityId)) {
             removeDead(session, entityId, runtime);
         }
         BedrockJoinProbe.noteEvent(session.guid(),
-                "java_entity_health→be id=" + entityId + " hp=" + (int) hp);
+                "java_entity_health→be id=" + entityId + " hp=" + (int) hp
+                        + (session.isPlayerJavaEntity(entityId) ? " player" : ""));
     }
 
     /** JE entity_event: 2=hurt, 3=death for living entities. */
@@ -152,7 +172,7 @@ public final class JavaEntityCombatTranslator {
             death.setType(EntityEventType.DEATH);
             death.setData(0);
             session.sendUpstreamPacket(death);
-            if (entityId != session.javaEntityId()) {
+            if (entityId != session.javaEntityId() && !session.isPlayerJavaEntity(entityId)) {
                 removeDead(session, entityId, runtime);
             }
             BedrockJoinProbe.noteEvent(session.guid(), "java_entity_event→be DEATH id=" + entityId);

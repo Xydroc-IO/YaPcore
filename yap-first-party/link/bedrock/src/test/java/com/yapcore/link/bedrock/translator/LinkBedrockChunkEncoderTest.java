@@ -148,4 +148,25 @@ class LinkBedrockChunkEncoderTest {
         double stand = LinkBedrockChunkEncoder.resolveStandOnFeetY(col, -64, -13, 86.0, -12);
         assertEquals(96.0, stand, 0.001, "must climb to surface above pocket");
     }
+
+    @Test
+    void countNonAirColumn_highEvenWhenFeetCellIsAir() {
+        int[][] col = new int[24][];
+        for (int i = 0; i < 24; i++) {
+            col[i] = new int[4096];
+        }
+        // Dense stone in section Y=64..79 except feet cell Y=71 — columnNonAir gate case.
+        int lx = 2;
+        int lz = 5;
+        for (int y = 64; y <= 79; y++) {
+            if (y == 71) {
+                continue;
+            }
+            int section = (y - (-64)) >> 4;
+            int ly = y & 15;
+            col[section][(ly << 8) | (lz << 4) | lx] = 1;
+        }
+        assertTrue(LinkBedrockChunkEncoder.countNonAirColumn(col) >= 14);
+        assertTrue(LinkBedrockChunkEncoder.countNonAirNearFeet(col, -64, 66, 71.0, -11) >= 0);
+    }
 }

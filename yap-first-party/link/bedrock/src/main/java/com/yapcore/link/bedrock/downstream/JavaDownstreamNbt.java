@@ -145,84 +145,110 @@ final class JavaDownstreamNbt {
     }
 
     /**
-     * JE player_info / player_info_update (1.19.3+): actions bitmask + entries.
-     * Bit 0 = ADD_PLAYER (name + properties).
+     * JE {@code player_info_update} (1.19.3+ / proto 776): fixed-size action EnumSet + entries.
+     *
+     * <p>Action bits (Folia 26.2): ADD_PLAYER, INITIALIZE_CHAT, UPDATE_GAME_MODE, UPDATE_LISTED,
+     * UPDATE_LATENCY, UPDATE_DISPLAY_NAME, UPDATE_LIST_ORDER, UPDATE_HAT — written via
+     * {@code writeFixedBitSet} (1 byte for 8 actions), <em>not</em> a VarInt. Reading as VarInt
+     * when all bits are set ({@code 0xFF}) consumed the entry-count byte and dropped every
+     * remote player from Bedrock.
      */
+    private static final int PLAYER_INFO_ACTION_BITS = 8;
+    private static final int ACTION_ADD_PLAYER = 1 << 0;
+    private static final int ACTION_INIT_CHAT = 1 << 1;
+    private static final int ACTION_GAME_MODE = 1 << 2;
+    private static final int ACTION_LISTED = 1 << 3;
+    private static final int ACTION_LATENCY = 1 << 4;
+    private static final int ACTION_DISPLAY_NAME = 1 << 5;
+    private static final int ACTION_LIST_ORDER = 1 << 6;
+    private static final int ACTION_HAT = 1 << 7;
+
     static void parsePlayerInfo(JavaDownstreamClient client, ByteBuf buf) {
         if (client.listener == null || !buf.isReadable()) {
             return;
         }
         try {
-            int actions = McCodec.readVarInt(buf);
+            int actions = readFixedBitSetAsMask(buf, PLAYER_INFO_ACTION_BITS);
             int count = McCodec.readVarInt(buf);
-            boolean add = (actions & 0x01) != 0;
+            boolean add = (actions & ACTION_ADD_PLAYER) != 0;
             for (int i = 0; i < count && buf.isReadable(); i++) {
                 UUID id = McCodec.readUuid(buf);
                 if (add) {
                     String name = McCodec.readString(buf, 16);
                     int props = McCodec.readVarInt(buf);
+                    String textures = null;
                     for (int p = 0; p < props && buf.isReadable(); p++) {
-                        McCodec.readString(buf, 32767);
-                        McCodec.readString(buf, 32767);
+                        String key = McCodec.readString(buf, 64);
+                        String value = McCodec.readString(buf, 32767);
                         if (buf.readBoolean()) {
-                            McCodec.readString(buf, 32767);
+                            McCodec.readString(buf, 1024); // signature
+                        }
+                        if ("textures".equals(key) && value != null && !value.isBlank()) {
+                            textures = value;
                         }
                     }
-                    client.listener.onPlayerInfoAdd(id, name);
-                    // Remaining action payloads for this entry — best-effort skip by stopping
-                    // further structured reads; leftover bytes discarded by caller release.
-                    if ((actions & ~0x01) != 0) {
-                        // Consume remaining fields we know for common bits when present.
-                        if ((actions & 0x02) != 0 && buf.isReadable()) { // chat session
-                            if (buf.readBoolean()) {
-                                McCodec.readUuid(buf);
-                                // skip two key byte arrays if present — length-prefixed
-                                skipPrefixedBytes(buf);
-                                skipPrefixedBytes(buf);
-                            }
-                        }
-                        if ((actions & 0x04) != 0 && buf.isReadable()) {
-                            McCodec.readVarInt(buf); // gamemode
-                        }
-                        if ((actions & 0x08) != 0 && buf.isReadable()) {
-                            buf.readBoolean(); // listed
-                        }
-                        if ((actions & 0x10) != 0 && buf.isReadable()) {
-                            McCodec.readVarInt(buf); // latency
-                        }
-                        if ((actions & 0x20) != 0 && buf.isReadable()) {
-                            if (buf.readBoolean()) {
-                                JavaDownstreamParse.tryPlainFromComponent(buf);
-                            }
-                        }
-                    }
-                } else {
-                    // Non-ADD actions still start with UUID; skip known payloads.
-                    if ((actions & 0x02) != 0 && buf.isReadable()) {
-                        if (buf.readBoolean()) {
-                            McCodec.readUuid(buf);
-                            skipPrefixedBytes(buf);
-                            skipPrefixedBytes(buf);
-                        }
-                    }
-                    if ((actions & 0x04) != 0 && buf.isReadable()) {
-                        McCodec.readVarInt(buf);
-                    }
-                    if ((actions & 0x08) != 0 && buf.isReadable()) {
-                        buf.readBoolean();
-                    }
-                    if ((actions & 0x10) != 0 && buf.isReadable()) {
-                        McCodec.readVarInt(buf);
-                    }
-                    if ((actions & 0x20) != 0 && buf.isReadable()) {
-                        if (buf.readBoolean()) {
-                            JavaDownstreamParse.tryPlainFromComponent(buf);
-                        }
-                    }
+                    client.listener.onPlayerInfoAdd(id, name, textures);
                 }
+                skipPlayerInfoActionPayloads(buf, actions, add);
             }
         } catch (Exception e) {
-            LOG.fine("JE player_info parse skip: " + e.getMessage());
+            LOG.info("JE player_info parse skip: " + e.getMessage());
+        }
+    }
+
+    /** Folia {@code FriendlyByteBuf.writeFixedBitSet} — packed little-endian bytes. */
+    static int readFixedBitSetAsMask(ByteBuf buf, int bitCount) {
+        int bytes = (bitCount + 7) / 8;
+        int mask = 0;
+        for (int i = 0; i < bytes && buf.isReadable(); i++) {
+            mask |= (buf.readUnsignedByte() & 0xFF) << (8 * i);
+        }
+        return mask;
+    }
+
+    static void skipPlayerInfoActionPayloads(ByteBuf buf, int actions, boolean alreadyReadAdd) {
+        // ADD_PLAYER payload already consumed when alreadyReadAdd; otherwise nothing to skip for bit0.
+        if (!alreadyReadAdd && (actions & ACTION_ADD_PLAYER) != 0) {
+            McCodec.readString(buf, 16);
+            int props = McCodec.readVarInt(buf);
+            for (int p = 0; p < props && buf.isReadable(); p++) {
+                McCodec.readString(buf, 64);
+                McCodec.readString(buf, 32767);
+                if (buf.readBoolean()) {
+                    McCodec.readString(buf, 1024);
+                }
+            }
+        }
+        if ((actions & ACTION_INIT_CHAT) != 0 && buf.isReadable()) {
+            if (buf.readBoolean()) {
+                // RemoteChatSession.Data: UUID + Instant(long) + PublicKey + signature
+                McCodec.readUuid(buf);
+                if (buf.readableBytes() >= 8) {
+                    buf.readLong();
+                }
+                skipPrefixedBytes(buf);
+                skipPrefixedBytes(buf);
+            }
+        }
+        if ((actions & ACTION_GAME_MODE) != 0 && buf.isReadable()) {
+            McCodec.readVarInt(buf);
+        }
+        if ((actions & ACTION_LISTED) != 0 && buf.isReadable()) {
+            buf.readBoolean();
+        }
+        if ((actions & ACTION_LATENCY) != 0 && buf.isReadable()) {
+            McCodec.readVarInt(buf);
+        }
+        if ((actions & ACTION_DISPLAY_NAME) != 0 && buf.isReadable()) {
+            if (buf.readBoolean()) {
+                JavaDownstreamParse.tryPlainFromComponent(buf);
+            }
+        }
+        if ((actions & ACTION_LIST_ORDER) != 0 && buf.isReadable()) {
+            McCodec.readVarInt(buf);
+        }
+        if ((actions & ACTION_HAT) != 0 && buf.isReadable()) {
+            buf.readBoolean();
         }
     }
 

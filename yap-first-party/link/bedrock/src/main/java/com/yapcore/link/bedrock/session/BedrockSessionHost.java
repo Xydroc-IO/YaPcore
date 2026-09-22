@@ -172,13 +172,10 @@ public final class BedrockSessionHost {
     }
 
     public synchronized void stop() {
-        for (ClientState state : byGuid.values()) {
-            LinkBedrockSession join = state.joinSession;
-            state.joinSession = null;
-            if (join != null) {
-                join.closeFromBedrock("host_stop");
-            }
-            closeDownstream(state);
+        // Snapshot — disconnectClient mutates byGuid.
+        java.util.ArrayList<ClientState> live = new java.util.ArrayList<>(byGuid.values());
+        for (ClientState state : live) {
+            disconnectClient(state, "Proxy restarting — please reconnect");
         }
         for (Channel listen : listens) {
             listen.close().syncUninterruptibly();
@@ -194,6 +191,48 @@ public final class BedrockSessionHost {
             group = null;
         }
         LOG.info("Bedrock native session host stopped");
+    }
+
+    /**
+     * Send Bedrock {@link org.cloudburstmc.protocol.bedrock.packet.DisconnectPacket}, close JE
+     * downstream, and drop the RakNet peer so the client cannot linger in a ghost world.
+     */
+    void disconnectClient(ClientState state, String reason) {
+        if (state == null) {
+            return;
+        }
+        String msg = reason != null && !reason.isBlank() ? reason : "Disconnected";
+        try {
+            sendPacket(state, BedrockSessionHostTransfer.disconnectPacket(msg));
+        } catch (Exception e) {
+            LOG.fine("BE DisconnectPacket encode/send: " + e.getMessage());
+        }
+        LinkBedrockSession join = state.joinSession;
+        state.joinSession = null;
+        if (join != null) {
+            join.closeFromBedrock(msg);
+        } else {
+            closeDownstream(state);
+            if (BedrockJoinProbe.isActive(state.guid)) {
+                BedrockJoinProbe.finish(state.guid, "disconnect_client");
+            }
+        }
+        closeDownstream(state);
+        if (state.peer != null && state.peer.address() != null) {
+            try {
+                state.peer.setPhase(RakNetSessionManager.Phase.DISCONNECTED);
+                rakNet.remove(state.peer.address());
+            } catch (Exception e) {
+                LOG.fine("BE raknet remove: " + e.getMessage());
+            }
+        }
+        byGuid.remove(state.guid);
+        if (state.peer != null && state.peer.address() != null) {
+            addrToGuid.remove(state.peer.address().toString());
+        }
+        LOG.info("BE disconnectClient user=" + state.username
+                + " guid=" + Long.toHexString(state.guid)
+                + " reason=" + msg);
     }
 
     public InetSocketAddress javaBackend() {
@@ -443,6 +482,12 @@ public final class BedrockSessionHost {
         volatile LoginPhase phase = LoginPhase.NONE;
         volatile LinkBedrockSession joinSession;
         volatile JavaDownstreamClient downstream;
+        /** Link {@code servers.*} id for the current JE backend (lobby / survival / …). */
+        volatile String currentBackendName;
+        /** Non-null when ResourcePacksInfo offered yapcore-default.mcpack (CDN). */
+        volatile BedrockDefaultPackOffer.Offer packOffer;
+        /** Armed once when SEND_PACKS starts the CDN wait. */
+        volatile boolean packCdnTimeoutArmed;
 
         ClientState(long guid, RakNetSessionManager.RakNetPeer peer) {
             this.guid = guid;

@@ -117,6 +117,24 @@ public final class LinkConfig {
      */
     public boolean forceDefaultServer() { return bool("force-default-server", true); }
 
+    /**
+     * When true (default), mid-session backend crash / shutdown / kick soft-switches the player
+     * to {@link #fallbackServer()} instead of disconnecting them from the proxy.
+     */
+    public boolean fallbackOnBackendLoss() { return bool("fallback-on-backend-loss", true); }
+
+    /**
+     * Hub/lobby name used for mid-session failover. Empty → first entry of {@link #tryOrder()}.
+     */
+    public String fallbackServer() {
+        String v = props.getProperty("fallback-server", "").trim();
+        if (!v.isEmpty()) {
+            return v;
+        }
+        List<String> tryOrder = tryOrder();
+        return tryOrder.isEmpty() ? "lobby" : tryOrder.getFirst();
+    }
+
     public boolean aggregatePlayerCount() { return bool("aggregate-player-count", true); }
 
     public boolean globalTabList() { return bool("global-tab-list", false); }

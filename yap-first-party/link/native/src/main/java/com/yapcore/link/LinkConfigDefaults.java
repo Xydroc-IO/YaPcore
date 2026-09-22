@@ -19,6 +19,10 @@ final class LinkConfigDefaults {
         props.setProperty("servers.lobby", "127.0.0.1:25566");
         props.setProperty("try", "lobby");
         props.setProperty("force-default-server", "true");
+        // When survival/creative/etc dies mid-session, soft-switch players to hub (try[0]).
+        props.setProperty("fallback-on-backend-loss", "true");
+        // Empty = first entry of try (usually lobby). Override if hub id differs.
+        props.setProperty("fallback-server", "");
         props.setProperty("enable-server-command", "true");
         props.setProperty("public-host", "127.0.0.1");
         props.setProperty("public-port", "0");

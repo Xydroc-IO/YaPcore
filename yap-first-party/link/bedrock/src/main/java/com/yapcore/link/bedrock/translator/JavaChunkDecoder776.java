@@ -225,4 +225,25 @@ public final class JavaChunkDecoder776 {
             }
         }
     }
+
+    /** Position {@code body} at the block-entity count. False if the chunk layout is not recognized. */
+    static boolean seekBlockEntities(ByteBuf body) {
+        if (body == null || !body.isReadable()) {
+            return false;
+        }
+        try {
+            skipHeightmaps(body);
+            if (!body.isReadable()) {
+                return false;
+            }
+            int dataSize = McCodec.readVarInt(body);
+            if (dataSize < 0 || dataSize > body.readableBytes()) {
+                return false;
+            }
+            body.skipBytes(dataSize);
+            return body.isReadable();
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
 }

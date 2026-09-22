@@ -37,6 +37,14 @@ public interface BedrockNativeConfig {
         return "127.0.0.1";
     }
 
+    /**
+     * HTTP port for {@code /pack/yapcore-default.mcpack}. Prefer 80/443 behind nginx for
+     * public hosts — Bedrock phones cannot reach chassis {@code :8081} through most NATs.
+     */
+    default int packCdnPort() {
+        return 80;
+    }
+
     default int motdProtocol() {
         return 2169;
     }
@@ -47,5 +55,18 @@ public interface BedrockNativeConfig {
 
     default String motdSub() {
         return "YaP Link";
+    }
+
+    /**
+     * Hub/lobby server id for mid-session failover when the current JE backend dies.
+     * Default {@code lobby}.
+     */
+    default String fallbackHubServer() {
+        return "lobby";
+    }
+
+    /** When true, reconnect Bedrock players to hub instead of leaving a ghost session. */
+    default boolean fallbackOnBackendLoss() {
+        return true;
     }
 }

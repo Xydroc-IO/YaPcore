@@ -48,7 +48,7 @@ final class LinkBedrockSessionChunks {
                 s.pendingRealChunks.offer(new LinkBedrockSession.PendingJeChunk(chunkX, chunkZ, payload));
                 BedrockJoinProbe.noteEvent(
                         s.guid,
-                        "java_level_chunk REAL_BUFFERED cx="
+                        "java_level_chunk DEFER_OUTER cx="
                                 + chunkX
                                 + " cz="
                                 + chunkZ
@@ -78,6 +78,28 @@ final class LinkBedrockSessionChunks {
 
     int realJeChunksSent() {
         return s.realJeChunksSent.get();
+    }
+
+    boolean wasRealColumnSent(int chunkX, int chunkZ) {
+        return s.realColumns.containsKey(columnKey(chunkX, chunkZ));
+    }
+
+    void markRealColumnSent(int chunkX, int chunkZ) {
+        long key = columnKey(chunkX, chunkZ);
+        s.realColumns.put(key, Boolean.TRUE);
+        s.sentColumns.put(key, Boolean.TRUE);
+    }
+
+    void clearWorldForDimensionChange() {
+        s.sentColumns.clear();
+        s.realColumns.clear();
+        s.lastChunkPosition = null;
+        s.realJeChunksSent.set(0);
+        s.spawnColumnReal.set(false);
+        s.spawnColumnSolid.set(false);
+        s.spawnColumnSolidBlocks.set(0);
+        s.joinSquareNudgeSent.set(false);
+        s.joinInitAssistScheduled.set(false);
     }
 
     void closeFromBedrock(String reason) {

@@ -250,13 +250,24 @@ public final class LinkJoinPackets {
         return playerListAdd(uuid, entityUniqueId, username, true);
     }
 
-    /** PlayerList ADD for a remote JE player (same trusted Steve skin). */
+    /** PlayerList ADD for a remote JE player (Steve unless a real skin is supplied). */
     public static PlayerListPacket playerListAddRemote(UUID uuid, long entityUniqueId, String username) {
-        return playerListAdd(uuid, entityUniqueId, username, false);
+        return playerListAddRemote(uuid, entityUniqueId, username, null);
+    }
+
+    public static PlayerListPacket playerListAddRemote(UUID uuid, long entityUniqueId, String username,
+                                                       org.cloudburstmc.protocol.bedrock.data.skin.SerializedSkin skin) {
+        return playerListAdd(uuid, entityUniqueId, username, false, skin);
     }
 
     private static PlayerListPacket playerListAdd(UUID uuid, long entityUniqueId, String username,
                                                   boolean host) {
+        return playerListAdd(uuid, entityUniqueId, username, host, null);
+    }
+
+    private static PlayerListPacket playerListAdd(UUID uuid, long entityUniqueId, String username,
+                                                  boolean host,
+                                                  org.cloudburstmc.protocol.bedrock.data.skin.SerializedSkin skin) {
         String name = username == null || username.isBlank() ? "Player" : username;
         UUID id = uuid != null ? uuid : UUID.randomUUID();
         PlayerListPacket packet = new PlayerListPacket();
@@ -268,7 +279,11 @@ public final class LinkJoinPackets {
         entry.setXuid("");
         entry.setPlatformChatId("");
         entry.setBuildPlatform(BuildPlatform.UNKNOWN);
-        entry.setSkin(LinkTrustedSkin.steveWide());
+        if (skin != null) {
+            entry.setSkin(skin);
+        } else {
+            entry.setSkin(host ? LinkTrustedSkin.steveWide() : LinkTrustedSkin.steveRemote());
+        }
         entry.setTeacher(false);
         entry.setHost(host);
         entry.setSubClient(false);
@@ -293,7 +308,7 @@ public final class LinkJoinPackets {
         adventure.setNoMvP(false);
         adventure.setNoPvM(false);
         adventure.setImmutableWorld(false);
-        adventure.setShowNameTags(false);
+        adventure.setShowNameTags(true);
         adventure.setAutoJump(true);
 
         boolean operator = javaPermissionLevel >= 4;

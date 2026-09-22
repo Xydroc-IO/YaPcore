@@ -1,5 +1,6 @@
 package com.yapcore.link.bedrock.cloudburst;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -22,6 +23,10 @@ final class LinkTrustedSkinTest {
         assertTrue(skin.getSkinData().getHeight() >= 32);
         assertTrue(skin.getGeometryData() != null && !skin.getGeometryData().isBlank(),
                 "geometryData must be non-empty (empty-geo → IC-90 on 051738)");
+        assertTrue(skin.isPrimaryUser());
+        SerializedSkin remote = LinkTrustedSkin.steveRemote();
+        assertTrue(remote.isValid());
+        assertFalse(remote.isPrimaryUser());
     }
 
     @Test

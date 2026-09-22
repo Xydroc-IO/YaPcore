@@ -36,6 +36,15 @@ public final class BedrockSetLocalPlayerAsInitializedTranslator {
     }
 
     public static void translate(LinkBedrockSession session) {
+        translate(session, true);
+    }
+
+    /**
+     * @param expandView when false (soft-SPAWN before real 0x71), flush entities/HUD but keep
+     *     the join-capped chunk radius so we do not flood thousands of LevelChunks into a
+     *     client still on the loading screen.
+     */
+    public static void translate(LinkBedrockSession session, boolean expandView) {
         if (session == null) {
             return;
         }
@@ -44,7 +53,15 @@ public final class BedrockSetLocalPlayerAsInitializedTranslator {
         long guid = session.guid();
 
         if (session.isUpstreamInitialized() && phase == LinkBedrockSession.JoinPhase.SPAWNED) {
-            LOG.info("BE SetLocalPlayerAsInitialized mark-ready (already SPAWNED) " + user);
+            // Soft-SPAWN may have run without expandView — finish the open-world step on real 0x71.
+            if (expandView && session.markPostInitViewExpanded()) {
+                JavaLoginTranslator.expandViewAndFillRemaining(session);
+                expandPostInitView(session);
+                BedrockJoinProbe.noteEvent(session.guid(),
+                        "post_0x71 late expand view=" + session.getServerRenderDistance());
+            }
+            LOG.info("BE SetLocalPlayerAsInitialized mark-ready (already SPAWNED) " + user
+                    + " expand=" + expandView);
             return;
         }
         if (phase != LinkBedrockSession.JoinPhase.AWAITING_CLIENT_INIT) {
@@ -61,15 +78,17 @@ public final class BedrockSetLocalPlayerAsInitializedTranslator {
         // Drain any leftover REAL buffer (015924 path sends as-they-arrive; usually empty).
         JavaLevelChunkTranslator.flushBufferedRealChunks(session);
 
-        int filled = JavaLoginTranslator.expandViewAndFillRemaining(session);
+        int filled = 0;
         int view = session.getServerRenderDistance() > 0
                 ? session.getServerRenderDistance()
                 : LinkBedrockSession.DEFAULT_JAVA_VIEW;
-
-        int pubX = (int) Math.floor(session.spawnFeetX());
-        int pubY = (int) Math.floor(session.spawnFeetY());
-        int pubZ = (int) Math.floor(session.spawnFeetZ());
-        ChunkUtils.updateChunkPosition(session, Vector3i.from(pubX, pubY, pubZ));
+        // Soft-SPAWN: flush entities/shops only. Do NOT open soft-playable view here —
+        // expanding Folia streaming before real 0x71 flooded LevelChunks and left the
+        // client on "Loading resource packs" / generating world for minutes.
+        if (expandView && session.markPostInitViewExpanded()) {
+            filled = JavaLoginTranslator.expandViewAndFillRemaining(session);
+            view = expandPostInitView(session);
+        }
 
         JavaLevelChunkTranslator.forceSpawnColumnRefresh(session);
 
@@ -80,10 +99,12 @@ public final class BedrockSetLocalPlayerAsInitializedTranslator {
             BedrockJoinProbe.noteEvent(guid, "post_0x71 interact SKIPPED (postInitAbilities=false)");
         }
 
-        BedrockJoinProbe.noteEvent(guid, "JOIN_OK got0x71 view=" + view + " filled=" + filled);
+        BedrockJoinProbe.noteEvent(guid, "JOIN_OK got0x71 view=" + view
+                + " filled=" + filled + " expand=" + expandView);
         LOG.info("BE SetLocalPlayerAsInitialized mark-ready " + user
                 + " + expand+postInitEmptyFill=" + filled
                 + " + updateChunkPosition view=" + view
+                + " expandView=" + expandView
                 + " postInitAbilities=" + postInitAbilitiesEnabled()
                 + " postInitPlayerList=" + postInitPlayerListEnabled()
                 + " jePerm=" + session.javaPermissionLevel());
@@ -91,6 +112,33 @@ public final class BedrockSetLocalPlayerAsInitializedTranslator {
                 + " guid=" + Long.toHexString(guid));
         // Keep probe open ~60s so post-SPAWN auth→JE / dig AuthInput actions are captured.
         BedrockJoinProbe.scheduleFinish(guid, "JOIN_OK", 60_000L);
+    }
+
+    /**
+     * Open Bedrock fog + Folia streaming to full JE view after join. Always force-publishes
+     * because {@link ChunkUtils#updateChunkPosition} no-ops on the same spawn column.
+     * Floor {@link JavaLoginTranslator#MIN_POST_INIT_VIEW} so soft-SPAWN mid-view (8–12)
+     * is not the final radius when Folia advertises 32.
+     */
+    static int expandPostInitView(LinkBedrockSession session) {
+        int full = session.pendingFullRenderDistance() > 0
+                ? session.pendingFullRenderDistance()
+                : LinkBedrockSession.DEFAULT_JAVA_VIEW;
+        int client = session.getClientRenderDistance();
+        int view = Math.max(full, client);
+        view = Math.max(JavaLoginTranslator.MIN_POST_INIT_VIEW, Math.min(32, view));
+        session.setServerRenderDistance(view);
+        var down = session.downstream();
+        if (down != null && view > 0) {
+            down.sendClientInformationView(view);
+        }
+        int pubX = (int) Math.floor(session.spawnFeetX());
+        int pubY = (int) Math.floor(session.spawnFeetY());
+        int pubZ = (int) Math.floor(session.spawnFeetZ());
+        ChunkUtils.forceUpdateChunkPosition(session, Vector3i.from(pubX, pubY, pubZ));
+        BedrockJoinProbe.noteEvent(session.guid(),
+                "post_init_view r=" + view + " full=" + full + " client=" + client);
+        return view;
     }
 
     /**
@@ -153,30 +201,15 @@ public final class BedrockSetLocalPlayerAsInitializedTranslator {
         BedrockJoinProbe.noteEvent(session.guid(), "post_0x71 InventoryContent windows");
 
         boolean sentList = trySendPlayerListAddSelf(session);
-        // Flush JE tab names remembered before SPAWNED.
-        flushBufferedRemotePlayerList(session);
-        // Re-flush any late-buffered entities (players/mobs) that arrived mid-init.
+        // Do NOT PlayerList-flush remotes with entity id 0 — that mismatches AddPlayer
+        // runtime and Bedrock draws no body. Pending player add_entity was buffered until
+        // SPAWNED; flush those with real ids + AddPlayer.
         session.flushPendingAddEntities();
+        JavaSignTranslator.flushPending(session);
         LOG.info("BE post-0x71 interact packets user=" + session.username()
                 + " Adventure+Abilities+AvailableCommands+SetEntityData"
                 + " playerList=" + sentList
                 + " jePerm=" + perm);
-    }
-
-    /** Send PlayerList ADD for names remembered during AWAITING_CLIENT_INIT. */
-    private static void flushBufferedRemotePlayerList(LinkBedrockSession session) {
-        // Names live on session; re-send via translator for any UUID ≠ self that we know.
-        // Tracked via playerNamesByUuid — expose a snapshot helper.
-        for (var e : session.playerNameSnapshot().entrySet()) {
-            if (e.getKey().equals(session.uuid())) {
-                continue;
-            }
-            if (JavaPlayerListTranslator.sendRemotePlayerList(
-                    session, e.getKey(), 0L, e.getValue())) {
-                BedrockJoinProbe.noteEvent(session.guid(),
-                        "java_player_info→be ADD_FLUSH name=" + e.getValue());
-            }
-        }
     }
 
     /**
@@ -245,8 +278,9 @@ public final class BedrockSetLocalPlayerAsInitializedTranslator {
             feetZ = !Double.isNaN(session.lastSyncZ()) ? session.lastSyncZ() : session.posZ();
         }
         session.setPosition(feetX, feetY, feetZ, session.yaw(), session.pitch());
-        // Soft-correct Y to stand-on feet+eye, then HOLD until auth confirms near lastSync.
-        session.armPostInitPositionConfirm(feetX, feetY, feetZ);
+        // Do NOT arm a pending teleport HOLD — that froze JE at spawn so portals never
+        // saw walk-ups and NPC reach checks failed. Soft ground-hold still burns a few ticks.
+        session.clearPendingTeleport();
         session.resetPostSpawnGroundHold();
 
         float eyeY = (float) (feetY + LinkBedrockSession.PLAYER_EYE_OFFSET);
@@ -254,8 +288,7 @@ public final class BedrockSetLocalPlayerAsInitializedTranslator {
         move.setRuntimeEntityId(session.runtimeId());
         move.setPosition(Vector3f.from((float) feetX, eyeY, (float) feetZ));
         move.setRotation(Vector3f.from(session.pitch(), session.yaw(), session.yaw()));
-        move.setMode(MovePlayerPacket.Mode.TELEPORT);
-        move.setTeleportationCause(MovePlayerPacket.TeleportationCause.UNKNOWN);
+        move.setMode(MovePlayerPacket.Mode.NORMAL);
         move.setEntityType(0);
         move.setOnGround(true);
         move.setRidingRuntimeEntityId(0L);
@@ -270,6 +303,6 @@ public final class BedrockSetLocalPlayerAsInitializedTranslator {
                 "post_0x71 sync MovePlayer before abilities feetY="
                         + String.format(java.util.Locale.ROOT, "%.3f", feetY)
                         + " eyeY=" + String.format(java.util.Locale.ROOT, "%.3f", eyeY)
-                        + " armedSoftConfirm=true pendingTp=" + session.pendingTeleportId());
+                        + " armedSoftConfirm=false pendingTp=" + session.pendingTeleportId());
     }
 }

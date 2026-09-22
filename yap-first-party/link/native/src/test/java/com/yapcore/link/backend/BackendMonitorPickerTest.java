@@ -19,6 +19,25 @@ final class BackendMonitorPickerTest {
     }
 
     @Test
+    void pickFallbackSkipsLostBackendAndUsesTryOrder() throws Exception {
+        java.nio.file.Path home = java.nio.file.Files.createTempDirectory("link-cfg-fb");
+        java.nio.file.Files.writeString(home.resolve("link.properties"), """
+                servers.lobby=127.0.0.1:25566
+                servers.survival=127.0.0.1:25567
+                try=lobby
+                fallback-on-backend-loss=true
+                """);
+        // forwarding.secret is created by LinkConfig.load
+        LinkConfig cfg = LinkConfig.load(home);
+        BackendMonitor mon = new BackendMonitor(cfg);
+        // pickFallback returns try candidates even when probe says DOWN so soft-switch can retry.
+        LinkConfig.Backend hub = mon.pickFallback("survival");
+        assertNotNull(hub);
+        assertEquals("lobby", hub.name());
+        org.junit.jupiter.api.Assertions.assertNull(mon.pickFallback("lobby"));
+    }
+
+    @Test
     void applyMaxCeilingUsesLiveSumNotConfiguredFloor() {
         assertEquals(250, BackendMonitor.applyMaxCeiling(250, 500));
         assertEquals(500, BackendMonitor.applyMaxCeiling(500, 500));

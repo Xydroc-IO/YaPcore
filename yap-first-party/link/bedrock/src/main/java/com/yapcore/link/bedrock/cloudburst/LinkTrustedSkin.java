@@ -29,26 +29,40 @@ public final class LinkTrustedSkin {
     public static final int PREFERRED_ENCODED_BYTES = 4_096;
 
     private static final String GEO_NAME = "geometry.humanoid.custom";
-    /** Cloudburst legacy patch spacing — matches {@code SerializedSkin.convertLegacyGeometryName}. */
+    /** Matches Geyser {@code SkinGeometry.WIDE} resource patch spacing exactly. */
     private static final String RESOURCE_PATCH =
-            "{\"geometry\" : {\"default\" : \"" + GEO_NAME + "\"}}";
+            "{\"geometry\" :{\"default\" :\"" + GEO_NAME + "\"}}";
 
     private static volatile byte[] steveRgba;
     private static volatile String geometryJson;
     private static volatile SerializedSkin cachedSkin;
+    private static volatile SerializedSkin cachedRemoteSkin;
 
     private LinkTrustedSkin() {
     }
 
-    /** Shared trusted Steve skin (immutable payload; safe to reuse across entries). */
+    /** Local player skin. {@code primaryUser} must be true only for this one. */
     public static SerializedSkin steveWide() {
-        SerializedSkin local = cachedSkin;
+        return steve(true);
+    }
+
+    /**
+     * Remote Java players. The same blob with {@code primaryUser=true} is the local persona;
+     * Bedrock then refuses to draw a second body.
+     */
+    public static SerializedSkin steveRemote() {
+        return steve(false);
+    }
+
+    private static SerializedSkin steve(boolean primaryUser) {
+        SerializedSkin local = primaryUser ? cachedSkin : cachedRemoteSkin;
         if (local != null) {
             return local;
         }
         synchronized (LinkTrustedSkin.class) {
-            if (cachedSkin != null) {
-                return cachedSkin;
+            local = primaryUser ? cachedSkin : cachedRemoteSkin;
+            if (local != null) {
+                return local;
             }
             byte[] rgba = loadSteveRgba();
             String geo = loadGeometryJson();
@@ -56,38 +70,45 @@ public final class LinkTrustedSkin {
                 throw new IllegalStateException(
                         "LinkTrustedSkin missing steve RGBA or geometry fixture");
             }
-            cachedSkin = SerializedSkin.builder()
-                    .skinId("Standard_Custom")
+            String skinId = primaryUser ? "Standard_Custom" : "Standard_Custom_Remote";
+            // Geyser: skinResourcePatch carries the geometry JSON; geometryName is unused on wire.
+            SerializedSkin built = SerializedSkin.builder()
+                    .skinId(skinId)
                     .playFabId("")
-                    .geometryName(GEO_NAME)
+                    .geometryName("")
                     .skinResourcePatch(RESOURCE_PATCH)
                     .skinData(ImageData.of(64, 64, rgba))
                     .animations(Collections.emptyList())
                     .capeData(ImageData.EMPTY)
                     .geometryData(geo)
-                    .geometryDataEngineVersion("1.14.0")
+                    .geometryDataEngineVersion("1.26.45")
                     .animationData("")
-                    .premium(false)
+                    .premium(true)
                     .persona(false)
                     .capeOnClassic(false)
-                    .primaryUser(true)
+                    .primaryUser(primaryUser)
                     .capeId("")
-                    .fullSkinId("Standard_Custom")
+                    .fullSkinId(skinId)
                     .armSize("wide")
                     .skinColor("#0")
                     .color(new Color(0, true))
                     .personaPieces(Collections.emptyList())
                     .tintColors(Collections.emptyList())
-                    .overridingPlayerAppearance(false)
+                    .overridingPlayerAppearance(true)
                     .trusted(true)
                     .profileHash("")
                     .build();
-            if (!cachedSkin.isValid()) {
+            if (!built.isValid()) {
                 throw new IllegalStateException("LinkTrustedSkin Steve skin failed SerializedSkin.isValid()");
             }
+            if (primaryUser) {
+                cachedSkin = built;
+            } else {
+                cachedRemoteSkin = built;
+            }
             LOG.info("BE LinkTrustedSkin Steve 64x64 geometryBytes=" + geo.length()
-                    + " rgbaBytes=" + rgba.length + " valid=true");
-            return cachedSkin;
+                    + " rgbaBytes=" + rgba.length + " primary=" + primaryUser + " valid=true");
+            return built;
         }
     }
 
@@ -146,6 +167,11 @@ public final class LinkTrustedSkin {
                 return null;
             }
         }
+    }
+
+    /** Shared by {@link LinkJeSkinBridge} for JE→BE skins. */
+    static String loadGeometryJsonPublic() {
+        return loadGeometryJson();
     }
 
     private static String loadGeometryJson() {

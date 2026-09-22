@@ -36,6 +36,18 @@ public final class BedrockConnectPending {
         return e.serverName;
     }
 
+    /** Peek without consuming (for name resolution before {@link #take}). */
+    public static String peek(String username) {
+        if (username == null || username.isBlank()) {
+            return null;
+        }
+        Entry e = BY_USER.get(username.trim().toLowerCase(Locale.ROOT));
+        if (e == null || e.expiresAtMs < System.currentTimeMillis()) {
+            return null;
+        }
+        return e.serverName;
+    }
+
     private record Entry(String serverName, long expiresAtMs) {
     }
 }
