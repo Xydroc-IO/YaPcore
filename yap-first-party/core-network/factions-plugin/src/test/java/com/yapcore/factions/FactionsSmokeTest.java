@@ -25,6 +25,22 @@ class FactionsSmokeTest {
             assertTrue(yml.contains("yapfactions.admin"));
             assertTrue(yml.contains("yapfactions.create"));
             assertTrue(yml.contains("depend: [YaPDB]"));
+            assertTrue(yml.contains("provides: [YaPConquest]"));
+            assertTrue(yml.contains("yapconquest.use"));
+            assertTrue(yml.contains("yapconquest.admin"));
+        }
+    }
+
+    @Test
+    void conquestDefaultsStayOff() throws Exception {
+        try (InputStream in = FactionsSmokeTest.class.getResourceAsStream("/conquest.yml")) {
+            assertNotNull(in);
+            String yml = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+            assertTrue(yml.contains("enabled: false"));
+            assertTrue(yml.contains("claim-cost: 1"));
+            assertTrue(yml.contains("require-enemy: true"));
+            assertTrue(yml.contains("allies-can-build: true"));
+            assertTrue(yml.contains("enemy-pvp-only: true"));
         }
     }
 

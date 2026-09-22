@@ -2,7 +2,7 @@ package com.yapcore.factions.cmd;
 
 import com.yapcore.factions.integration.ClaimIntegration;
 import com.yapcore.factions.integration.EconomyIntegration;
-import com.yapcore.playerdata.claims.Claim;
+import com.yapcore.claims.Claim;
 import com.yapcore.sched.YapSched;
 import org.bukkit.entity.Player;
 

@@ -23,8 +23,11 @@ dependencies {
     implementation(project(":yap-sched"))
     implementation(project(":yap-messages-api"))
     implementation(project(":yap-factions-api"))
+    implementation(project(":yap-conquest-api"))
     compileOnly(project(":yap-db-api"))
     compileOnly(project(":playerdata-plugin"))
+    compileOnly(project(":claims-plugin"))
+    compileOnly(project(":yap-claims-api"))
     compileOnly(project(":placeholderapi-plugin"))
 
     implementation("com.zaxxer:HikariCP:6.2.1")

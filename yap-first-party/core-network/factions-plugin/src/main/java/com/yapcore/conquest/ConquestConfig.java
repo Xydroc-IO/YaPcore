@@ -1,7 +1,6 @@
 package com.yapcore.conquest;
 
 import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashSet;
 import java.util.List;
@@ -10,7 +9,7 @@ import java.util.Set;
 
 public final class ConquestConfig {
 
-    private final JavaPlugin plugin;
+    private final ConquestPlugin plugin;
     private boolean enabled;
     private boolean useSharedYapdb = true;
     private String jdbcUrl;
@@ -51,7 +50,7 @@ public final class ConquestConfig {
     private boolean combatTagBlockFly = true;
     private String combatTagMessage;
 
-    public ConquestConfig(JavaPlugin plugin) {
+    public ConquestConfig(ConquestPlugin plugin) {
         this.plugin = plugin;
     }
 

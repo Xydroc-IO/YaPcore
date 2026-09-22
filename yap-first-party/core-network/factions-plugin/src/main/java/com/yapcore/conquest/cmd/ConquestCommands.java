@@ -61,7 +61,7 @@ public final class ConquestCommands implements CommandExecutor, TabCompleter {
     private boolean claim(Player player) {
         boolean wasClaimed = conquest.chunkAt(player.getLocation()).isPresent();
         conquest.claim(player, player.getLocation())
-                .thenAccept(chunk -> YapSched.entity(plugin, player, () -> {
+                .thenAccept(chunk -> YapSched.entity(plugin.bukkit(), player, () -> {
                     if (wasClaimed) {
                         player.sendMessage("§aOverclaimed chunk §f" + chunk.chunkX() + "," + chunk.chunkZ()
                                 + " §a(cost " + chunk.powerCost() + ").");
@@ -71,7 +71,7 @@ public final class ConquestCommands implements CommandExecutor, TabCompleter {
                     }
                 }))
                 .exceptionally(ex -> {
-                    YapSched.entity(plugin, player, () -> player.sendMessage("§c" + rootMessage(ex)));
+                    YapSched.entity(plugin.bukkit(), player, () -> player.sendMessage("§c" + rootMessage(ex)));
                     return null;
                 });
         return true;
@@ -79,10 +79,10 @@ public final class ConquestCommands implements CommandExecutor, TabCompleter {
 
     private boolean unclaim(Player player) {
         conquest.unclaim(player, player.getLocation())
-                .thenRun(() -> YapSched.entity(plugin, player, () ->
+                .thenRun(() -> YapSched.entity(plugin.bukkit(), player, () ->
                         player.sendMessage("§aChunk unclaimed.")))
                 .exceptionally(ex -> {
-                    YapSched.entity(plugin, player, () -> player.sendMessage("§c" + rootMessage(ex)));
+                    YapSched.entity(plugin.bukkit(), player, () -> player.sendMessage("§c" + rootMessage(ex)));
                     return null;
                 });
         return true;

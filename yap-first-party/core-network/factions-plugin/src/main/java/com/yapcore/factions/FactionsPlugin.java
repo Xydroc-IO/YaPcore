@@ -1,5 +1,6 @@
 package com.yapcore.factions;
 
+import com.yapcore.conquest.ConquestPlugin;
 import com.yapcore.factions.cmd.FactionCommands;
 import com.yapcore.factions.cmd.YapFactionsCommand;
 import com.yapcore.factions.chat.FactionChatState;
@@ -34,6 +35,7 @@ public final class FactionsPlugin extends JavaPlugin {
     private Listener territoryListener;
     private Listener chatListener;
     private boolean featuresActive;
+    private ConquestPlugin conquest;
 
     @Override
     public void onEnable() {
@@ -43,6 +45,8 @@ public final class FactionsPlugin extends JavaPlugin {
         bindCommand("yapfactions", new YapFactionsCommand(this, null));
         reloadFactions();
         applyFeatureState();
+        this.conquest = new ConquestPlugin(this);
+        conquest.enable();
         if (!config.enabled()) {
             getLogger().info("YaPFactions disabled via config (opt-in). Set enabled: true then /yapfactions reload.");
         }
@@ -50,6 +54,10 @@ public final class FactionsPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (conquest != null) {
+            conquest.disable();
+            conquest = null;
+        }
         tearDownFeatures();
         if (database != null) {
             database.close();

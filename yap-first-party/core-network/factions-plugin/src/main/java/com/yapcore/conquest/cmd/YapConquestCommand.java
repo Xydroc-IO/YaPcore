@@ -75,11 +75,11 @@ public final class YapConquestCommand implements CommandExecutor, TabCompleter {
         int cz = player.getLocation().getBlockZ() >> 4;
         ConquestServiceImpl service = plugin.conquestService();
         service.setChunkZone(world, cx, cz, type)
-                .thenRun(() -> YapSched.entity(plugin, player, () ->
+                .thenRun(() -> YapSched.entity(plugin.bukkit(), player, () ->
                         player.sendMessage("§aChunk zone set to §f" + type.name().toLowerCase(Locale.ROOT)
                                 + " §a(" + cx + "," + cz + ").")))
                 .exceptionally(ex -> {
-                    YapSched.entity(plugin, player, () ->
+                    YapSched.entity(plugin.bukkit(), player, () ->
                             player.sendMessage("§c" + ConquestCommands.rootMessage(ex)));
                     return null;
                 });
@@ -98,10 +98,10 @@ public final class YapConquestCommand implements CommandExecutor, TabCompleter {
         int cx = player.getLocation().getBlockX() >> 4;
         int cz = player.getLocation().getBlockZ() >> 4;
         plugin.conquestService().clearChunkZone(world, cx, cz)
-                .thenRun(() -> YapSched.entity(plugin, player, () ->
+                .thenRun(() -> YapSched.entity(plugin.bukkit(), player, () ->
                         player.sendMessage("§aChunk zone override cleared (" + cx + "," + cz + ").")))
                 .exceptionally(ex -> {
-                    YapSched.entity(plugin, player, () ->
+                    YapSched.entity(plugin.bukkit(), player, () ->
                             player.sendMessage("§c" + ConquestCommands.rootMessage(ex)));
                     return null;
                 });
@@ -117,12 +117,12 @@ public final class YapConquestCommand implements CommandExecutor, TabCompleter {
         int cx = player.getLocation().getBlockX() >> 4;
         int cz = player.getLocation().getBlockZ() >> 4;
         plugin.conquestService().setChunkFrozen(world, cx, cz, frozen)
-                .thenRun(() -> YapSched.entity(plugin, player, () ->
+                .thenRun(() -> YapSched.entity(plugin.bukkit(), player, () ->
                         player.sendMessage(frozen
                                 ? "§aChunk frozen (" + cx + "," + cz + ")."
                                 : "§aChunk unfrozen (" + cx + "," + cz + ").")))
                 .exceptionally(ex -> {
-                    YapSched.entity(plugin, player, () ->
+                    YapSched.entity(plugin.bukkit(), player, () ->
                             player.sendMessage("§c" + ConquestCommands.rootMessage(ex)));
                     return null;
                 });

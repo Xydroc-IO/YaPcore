@@ -10,16 +10,29 @@ import com.yapcore.conquest.listener.ConquestFlyListener;
 import com.yapcore.conquest.listener.ConquestTerritoryListener;
 import com.yapcore.conquest.service.ConquestServiceImpl;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
-public final class ConquestPlugin extends JavaPlugin {
+/**
+ * Chunk conquest hosted by YaPFactions. Off unless {@code conquest.yml} {@code enabled} is true.
+ */
+public final class ConquestPlugin {
 
+    private final JavaPlugin host;
+    private File configFile;
+    private FileConfiguration fileConfig;
     private ConquestConfig config;
     private ConquestDatabase database;
     private ConquestRepository repository;
@@ -29,19 +42,25 @@ public final class ConquestPlugin extends JavaPlugin {
     private final List<Listener> listeners = new ArrayList<>();
     private boolean featuresActive;
 
-    @Override
-    public void onEnable() {
+    public ConquestPlugin(JavaPlugin host) {
+        this.host = host;
+    }
+
+    public JavaPlugin bukkit() {
+        return host;
+    }
+
+    public void enable() {
         saveDefaultConfig();
         bindCommand("yapconquest", new YapConquestCommand(this));
         reloadConquest();
-        applyFeatureState();
-        if (!config.enabled()) {
-            getLogger().info("YaPConquest disabled via config (opt-in). Set enabled: true then /yapconquest reload.");
+        if (config != null && !config.enabled()) {
+            host.getLogger().info("YaPConquest disabled (conquest.yml enabled: false). "
+                    + "Set enabled: true then /yapconquest reload.");
         }
     }
 
-    @Override
-    public void onDisable() {
+    public void disable() {
         tearDownFeatures();
         if (database != null) {
             database.close();
@@ -56,12 +75,12 @@ public final class ConquestPlugin extends JavaPlugin {
         config.reload();
 
         if (database == null) {
-            database = new ConquestDatabase(this, config);
+            database = new ConquestDatabase(host, config);
         }
         try {
             database.open();
         } catch (Exception e) {
-            getLogger().severe("YaPConquest database failed: " + e.getMessage());
+            host.getLogger().severe("YaPConquest database failed: " + e.getMessage());
             conquestService = null;
             applyFeatureState();
             return;
@@ -74,10 +93,48 @@ public final class ConquestPlugin extends JavaPlugin {
         }
 
         if (conquestService != null) {
-            getServer().getServicesManager().unregister(ConquestService.class, conquestService);
+            host.getServer().getServicesManager().unregister(ConquestService.class, conquestService);
         }
-        conquestService = new ConquestServiceImpl(this, config, repository, zoneRepository);
+        conquestService = new ConquestServiceImpl(host, config, repository, zoneRepository);
         applyFeatureState();
+    }
+
+    public Logger getLogger() {
+        return host.getLogger();
+    }
+
+    public FileConfiguration getConfig() {
+        return fileConfig;
+    }
+
+    public void saveDefaultConfig() {
+        if (!host.getDataFolder().isDirectory() && !host.getDataFolder().mkdirs()) {
+            host.getLogger().warning("Could not create " + host.getDataFolder());
+        }
+        configFile = new File(host.getDataFolder(), "conquest.yml");
+        if (!configFile.isFile()) {
+            File legacy = new File(host.getDataFolder().getParentFile(), "YaPConquest/config.yml");
+            if (legacy.isFile()) {
+                try {
+                    Files.copy(legacy.toPath(), configFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    host.getLogger().info("Migrated " + legacy + " → " + configFile);
+                } catch (IOException e) {
+                    host.getLogger().warning("Could not migrate conquest config: " + e.getMessage());
+                }
+            }
+            if (!configFile.isFile() && host.getResource("conquest.yml") != null) {
+                host.saveResource("conquest.yml", false);
+            }
+        }
+        reloadConfig();
+    }
+
+    public void reloadConfig() {
+        if (configFile == null) {
+            saveDefaultConfig();
+            return;
+        }
+        fileConfig = YamlConfiguration.loadConfiguration(configFile);
     }
 
     private void applyFeatureState() {
@@ -102,10 +159,10 @@ public final class ConquestPlugin extends JavaPlugin {
         register(flyListener);
         register(new ConquestCombatListener(config, conquestService, flyListener));
 
-        getServer().getServicesManager().register(
-                ConquestService.class, conquestService, this, ServicePriority.Normal);
+        host.getServer().getServicesManager().register(
+                ConquestService.class, conquestService, host, ServicePriority.Normal);
         featuresActive = true;
-        getLogger().info("YaPConquest ready (" + featureSummary() + ")");
+        host.getLogger().info("YaPConquest ready (" + featureSummary() + ")");
     }
 
     private String featureSummary() {
@@ -130,7 +187,7 @@ public final class ConquestPlugin extends JavaPlugin {
     }
 
     private void register(Listener listener) {
-        getServer().getPluginManager().registerEvents(listener, this);
+        host.getServer().getPluginManager().registerEvents(listener, host);
         listeners.add(listener);
     }
 
@@ -144,14 +201,14 @@ public final class ConquestPlugin extends JavaPlugin {
             flyListener = null;
         }
         if (conquestService != null) {
-            getServer().getServicesManager().unregister(ConquestService.class, conquestService);
+            host.getServer().getServicesManager().unregister(ConquestService.class, conquestService);
         }
         featuresActive = false;
     }
 
     private void bindDisabledPlayerCommands() {
         org.bukkit.command.CommandExecutor disabled = (sender, command, label, args) -> {
-            sender.sendMessage("§cYaPConquest is disabled. Set §fenabled: true §cin plugins/YaPConquest/config.yml then §f/yapconquest reload§c.");
+            sender.sendMessage("§cYaPConquest is disabled. Set §fenabled: true §cin plugins/YaPFactions/conquest.yml then §f/yapconquest reload§c.");
             return true;
         };
         bindCommand("c", disabled);
@@ -170,7 +227,7 @@ public final class ConquestPlugin extends JavaPlugin {
     }
 
     private void bindCommand(String name, Object executor) {
-        PluginCommand cmd = getCommand(name);
+        PluginCommand cmd = host.getCommand(name);
         if (cmd == null) {
             return;
         }

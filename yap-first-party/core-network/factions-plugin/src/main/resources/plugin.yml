@@ -6,7 +6,8 @@ folia-supported: true
 description: Factions/guilds overlay on playerdata claims — power, relations, warps, bank
 authors: [YapLabs]
 depend: [YaPDB]
-softdepend: [YaPPlayerData, PlaceholderAPI, YaPDiscord, YaPPerms, YaPTab]
+softdepend: [YaPClaims, YaPPlayerData, PlaceholderAPI, YaPDiscord, YaPPerms, YaPTab]
+provides: [YaPConquest]
 commands:
   f:
     description: Faction commands
@@ -20,6 +21,14 @@ commands:
     description: YaPFactions admin
     usage: /yapfactions reload|snapshot
     aliases: [yapf]
+  c:
+    description: Conquest chunk commands
+    usage: /c help
+    aliases: [conquest]
+  yapconquest:
+    description: YaPConquest admin
+    usage: /yapconquest reload
+    aliases: [yapc]
 permissions:
   yapfactions.use:
     description: Basic faction commands
@@ -36,3 +45,9 @@ permissions:
   yapfactions.leader:
     description: Leader actions (disband, transfer, join mode)
     default: true
+  yapconquest.use:
+    description: Basic conquest commands
+    default: true
+  yapconquest.admin:
+    description: /yapconquest admin + build/PvP bypass
+    default: op

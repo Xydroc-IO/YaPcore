@@ -5,7 +5,7 @@ import com.yapcore.factions.FactionRelation;
 import com.yapcore.factions.FactionsConfig;
 import com.yapcore.factions.integration.ClaimIntegration;
 import com.yapcore.factions.service.FactionServiceImpl;
-import com.yapcore.playerdata.claims.Claim;
+import com.yapcore.claims.Claim;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
