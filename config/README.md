@@ -12,7 +12,7 @@ Edit **here** for day-to-day tuning.
 | `templates/highpop/` | Canonical Paper/Spigot/Bukkit templates (EAR=0) |
 | `templates/highpop-ear/` | Optional tight EAR — not the product default |
 
-`./scripts/seed-defaults.sh` (also run from `start.sh`) copies `defaults/**` into
+`./scripts/setup/seed-defaults.sh` (also run from `start.sh`) copies `defaults/**` into
 `config/`, `plugins/`, and `link-data/` **only when those files are missing**.
 
 Gameplay encyclopedia: `plugins/YaPGameplayKnobs/knobs.yml` (jar in `plugins/`).

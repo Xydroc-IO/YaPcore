@@ -29,3 +29,18 @@ stats-write-interval-ticks: 100
 
 # Log when a budget trips (rate-limited). Off by default — trips still enforce; avoid console flood.
 log-trips: false
+
+# ClearLagg-style timed ground-item / XP clear with countdown warnings.
+item-clear:
+  enabled: true
+  interval-seconds: 900
+  warn-seconds: [60, 30, 10]
+  clear-items: true
+  clear-xp-orbs: true
+  min-age-ticks: 40
+  skip-named: false
+  worlds: []
+  world-blacklist: []
+  exempt-regions: []
+  warn-message: "&eGround items clear in &f{seconds}&e seconds."
+  clear-message: "&aCleared &f{items}&a items and &f{xp}&a XP orbs."

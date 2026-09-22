@@ -48,6 +48,28 @@ editor:
 
 server-id: lobby
 
+# Resource worlds: wipe + recreate on a timer (bases stay on main / claimed land).
+# Create once with /yapworld create resource, then enable the reset schedule here.
+# Pair with YaPClaims claims.deny-worlds: [resource]
+resource:
+  worlds:
+    resource:
+      name: resource
+      reset-interval-hours: 24
+      announce-minutes: [60, 15, 5]
+      environment: NORMAL
+      type: NORMAL
+      generate-structures: true
+      deny-claims: true
+  # Same-world ore respawn outside claims (optional; off by default)
+  wilderness-replenish:
+    enabled: false
+    delay-seconds: 300
+    # Empty materials = default ore set when enabled
+    materials: []
+    worlds: []
+    exclude-worlds: []
+
 # Always day, no weather, no natural mobs. Unset = on when this instance is "creative".
 # climate:
 #   enabled: true

@@ -1,5 +1,5 @@
 # YaP Skills — shipped defaults (typical SMP)
-# Enable for mining / woodcutting / strength / marathon / builder / herbalism / excavation / alchemy / health + overall.
+# Enable for mining / woodcutting / strength / marathon / swimming / builder / herbalism / excavation / alchemy / health + overall.
 enabled: true
 
 # Shared MariaDB via YaPDB when available
@@ -53,6 +53,8 @@ power:
   keep-block-chance-at-max: 0.25
   extra-hearts-at-max: 10.0
   brew-speed-bonus-at-max: 1.0
+  swim-water-efficiency-at-max: 1.0
+  swim-oxygen-bonus-at-max: 8.0
   abilities:
     duration-seconds: 12
     cooldown-seconds: 90

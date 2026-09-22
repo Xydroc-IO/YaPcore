@@ -1,6 +1,6 @@
 # Shipped release defaults
 
-First-boot / fresh-install configs copied by `./scripts/seed-defaults.sh`
+First-boot / fresh-install configs copied by `./scripts/setup/seed-defaults.sh`
 (also invoked from `start.sh` via `yap_ensure_dirs`).
 
 **Profile:** typical SMP knobs (chat slow-mode, claim tax off, map claim markers on);
@@ -24,7 +24,7 @@ opt-in gameplay stays **off**. Secrets/binds stay LAN-safe.
 | `plugins/YaPDisasters/config.yml` | Extreme weather **off** (`enabled: false`) until opted in |
 | `plugins/YaPGameplayKnobs/knobs.yml` | Encyclopedia knobs **off** (`settings.enabled: false`) |
 | `plugins/YaPModeration\|Admin\|Protect\|World\|Regions\|Npcs\|Map\|Floodgate\|Pregen/…` | Core+network seeds (LAN-safe binds / passwords; typical SMP knobs) |
-| `plugins/PlaceholderAPI\|YaPPluginCompat/…` | Compat / placeholders |
+| `plugins/PlaceholderAPI/…` | Placeholders |
 | `plugins/YaPPerms\|Chat\|Tab\|Essentials\|Guard\|LagGuard\|Packs\|Commands/…` | Core gameplay UX (opt-ins stay off) |
 | `link.properties` | YaP Link single-backend + plugins on |
 
