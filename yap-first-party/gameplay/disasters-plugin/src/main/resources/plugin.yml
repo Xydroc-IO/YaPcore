@@ -6,7 +6,7 @@ folia-supported: true
 author: YapLabs
 description: First-party Folia-safe natural disasters and extreme weather
 website: https://github.com/yaplabs
-softdepend: [YaPEssentials, YaPPerms, YaPRegions, YaPProtect, YaPPlayerData]
+softdepend: [YaPEssentials, YaPPerms, YaPRegions, YaPProtect, YaPClaims, YaPPlayerData]
 commands:
   yapdisaster:
     description: Natural disasters GUI / trigger

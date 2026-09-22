@@ -22,7 +22,7 @@ dependencies {
     implementation(project(":yap-sched"))
     implementation(project(":yap-messages-api"))
     compileOnly(project(":yap-regions-api"))
-    compileOnly(project(":playerdata-plugin"))
+    compileOnly(project(":yap-claims-api"))
 
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
