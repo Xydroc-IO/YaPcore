@@ -16,7 +16,7 @@ Hardcore conquest land (chunk grid / overclaim / warzone) is **YaPConquest** —
 gradle :factions-plugin:installIntoPlugins
 # or full core network:
 gradle installProductDefaults
-./scripts/seed-defaults.sh   # copies config/defaults/plugins/YaPFactions/ if missing
+./scripts/setup/seed-defaults.sh   # copies config/defaults/plugins/YaPFactions/ if missing
 ```
 
 Requires `yap-db.jar`, `yap-playerdata.jar` (soft), and shared YaPDB.
@@ -154,7 +154,7 @@ Guild social layer: [GAMEPLAY.md](GAMEPLAY.md).
 gradle :conquest-plugin:installIntoPlugins
 # or:
 gradle installProductDefaults
-./scripts/seed-defaults.sh   # copies config/defaults/plugins/YaPConquest/ if missing
+./scripts/setup/seed-defaults.sh   # copies config/defaults/plugins/YaPConquest/ if missing
 ```
 
 Requires `yap-db.jar` and (soft) `yap-factions.jar` with factions `enabled: true`.

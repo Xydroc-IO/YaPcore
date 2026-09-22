@@ -34,7 +34,7 @@ YaP Link (if used) is a **separate** JVM (~512 MB–1 GB). MariaDB/Postgres 
 | **Minimum (dev / empty)** | `2048` (ship default) | ~1 GB | Local smoke, 0–5 players |
 | **Minimum (public-safe)** | `4096` | ~2 GB | Small lobby / light SMP |
 | **Optimal (soft-launch / normal network)** | `8000` | ~4 GB | Typical production starting point |
-| **Heavy / prod launcher** | `12288` (`./scripts/start-prod.sh`, override with `--heap-gb=N`) | ~6 GB | Busy Folia, farms, large plugin surface |
+| **Heavy / prod launcher** | `12288` (`./scripts/lifecycle/start-prod.sh`, override with `--heap-gb=N`) | ~6 GB | Busy Folia, farms, large plugin surface |
 
 Change live via dashboard **Server setup** (`ram-mb`) or edit `config/server.properties`, then restart. Pin equal Xms/Xmx with `jvm-heap-pin=true` (default on prod paths).
 
@@ -84,7 +84,7 @@ Fair MSPT benches also force uncapped EAR themselves.
 Created automatically on start (`ConfigHub` / `yap_ensure_config_hub`).
 
 ```bash
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 gradle installProductDefaults
 gradle :gameplay-knobs-plugin:installIntoPlugins   # or installGameplayDefaults
 ```
@@ -115,7 +115,7 @@ YaP encyclopedia (`yap-gameplay-knobs.jar`) — **original YaP code**, Purpur-in
 | **gameplay.*** | Wired / Partial | blindness×, void fix, netherite fire resist, totem-in-void, crop slow via `BlockGrowEvent`; `tick-fluids` + fast crops need **E2 NMS** |
 | **server-mod-name** | Wired | Best-effort brand / `yap.encyclopedia.server-mod-name` |
 | **disable-give-dropping** | Wired | Suppress drops after `/give` (metadata window) |
-| **Crop growth NMS / fluid tick** | E2-NMS | `gameplay.crop-growth-nms` + YaP-Folia `YapEncyclopediaHooks` (`vendor/folia/patches/0025-yap-encyclopedia-hooks.patch`) — rebuild `./scripts/build-yap-folia.sh`; soak-gate before enabling |
+| **Crop growth NMS / fluid tick** | E2-NMS | `gameplay.crop-growth-nms` + YaP-Folia `YapEncyclopediaHooks` (`vendor/folia/patches/0025-yap-encyclopedia-hooks.patch`) — rebuild `./scripts/folia/build-yap-folia.sh`; soak-gate before enabling |
 
 **Not full Purpur without NMS.** Event-wired encyclopedia features work on any YaP-Folia jar. Crop NMS acceleration and `tick-fluids: false` require patch **0025** (`/yapknobs status` → `nmsHooks: present=true`). Enabling those knobs without the patch logs a WARNING and does nothing at NMS level.
 
@@ -123,11 +123,11 @@ YaP encyclopedia (`yap-gameplay-knobs.jar`) — **original YaP code**, Purpur-in
 
 ```bash
 # 1. Rebuild YaP-Folia (applies 0025 in post phase via folia-patch.sh)
-./scripts/build-yap-folia.sh
+./scripts/folia/build-yap-folia.sh
 
 # 2. Point product at the new jar (folia-jar-source=build / lib/yap-folia-*.jar)
 # 3. Keep knobs defaults: crop-growth-nms: false, tick-fluids: true
-./scripts/yapctl soak-compat   # PASS before production enable
+./scripts/lifecycle/yapctl soak-compat   # PASS before production enable
 
 # 4. Only then (dev/test profile first):
 #    gameplay.crop-growth-nms: true

@@ -40,7 +40,7 @@ the Gradle shadow jar. After Link protocol changes run
 ## Folia backend (YaP-Folia fork)
 
 Product default: **`folia-jar-source=build`** (YaP-Folia under `lib/yap-folia-*.jar`),
-not stock Fill Folia. Build with `./scripts/build-yap-folia.sh`.
+not stock Fill Folia. Build with `./scripts/folia/build-yap-folia.sh`.
 
 Two forwarding modes:
 
@@ -69,10 +69,10 @@ Link still bridges on Login Success but skins will not apply. Product **default 
 ```bash
 # Product default: velocity-enabled=true + forwarding.secret (skins).
 # Optional re-seed / toggle:
-./scripts/setup-velocity-forwarding.sh          # enable (default)
-./scripts/setup-velocity-forwarding.sh --disable  # direct joins without Link
-./scripts/start.sh              # Folia game
-./scripts/start-yap-link.sh     # native YaP Link
+./scripts/setup/setup-velocity-forwarding.sh          # enable (default)
+./scripts/setup/setup-velocity-forwarding.sh --disable  # direct joins without Link
+./scripts/lifecycle/start.sh              # Folia game
+./scripts/lifecycle/start-yap-link.sh     # native YaP Link
 # players → :25565
 ```
 
@@ -97,7 +97,7 @@ Open `http://127.0.0.1:8080/` → **Link** tab — start/stop, full proxy settin
 
 ## Control GUI (Swing)
 
-Open `./scripts/gui.sh` → **Link** tab (same controls as web dashboard):
+Open `./scripts/lifecycle/gui.sh` → **Link** tab (same controls as web dashboard):
 
 - **Start Link / Stop Link** — runs `yap-link.jar` as its own JVM (like Velocity)
 - **Configure…** — backends (hub, survival, …), try order, forced hosts, bind/MOTD
@@ -174,7 +174,8 @@ See also: [`yap-first-party/link/api/`](../../yap-first-party/link/api/) · [`ya
 | `link.properties` + `link.toml` | — | ✓ | **0** ✓ |
 | Ping **passthrough** | ✓ | ✓ cached backend probe | **1** ✓ |
 | Forced hosts | ✓ | ✓ `forced-host.<host>=server` | **1** ✓ |
-| Backend health + try failover | ✓ | ✓ `BackendMonitor` | **1** ✓ |
+| Backend health + try failover | ✓ | ✓ `BackendMonitor` (login + mid-session hub rescue) | **1** ✓ |
+| Mid-session backend loss → hub | plugins | ✓ `fallback-on-backend-loss` soft-switch to `try`/hub | **1** ✓ |
 | Connect / login / read timeouts | ✓ | ✓ | **1** ✓ |
 | Play-phase system chat | ✓ | ✓ `PlayChat` | **1** ✓ |
 | Aggregate player count in ping | ✓ | ✓ `aggregate-player-count` | **2** ✓ |
@@ -219,10 +220,14 @@ servers.lobby.bedrock=127.0.0.1:19132
 # Hub-first: join/reconnect always uses try (lobby). Never list survival here.
 try=lobby
 force-default-server=true
+# If survival/creative crashes or restarts, soft-switch players back to hub (stay on Link).
+fallback-on-backend-loss=true
+# Optional override; empty = first entry of try
+# fallback-server=lobby
 ping-passthrough=true
 plugins-enabled=false
 # Server-selector always-join-hub=true also forces hub on PreConnect
-# First run: ./scripts/start-yap-link.sh seeds plugins-enabled=true + plugin jars
+# First run: ./scripts/lifecycle/start-yap-link.sh seeds plugins-enabled=true + plugin jars
 floodgate-key-file=floodgate-key.pem
 bedrock-enabled=false
 bedrock-bind=0.0.0.0:19132
@@ -238,7 +243,7 @@ Plugins load from `link-data/plugins/*.jar` with `link-plugin.json` descriptors.
 ```bash
 gradle :yap-link-native:shadowJar
 gradle :yap-link-plugin-chat-bridge:installIntoLinkPlugins   # optional
-./scripts/start-yap-link.sh
+./scripts/lifecycle/start-yap-link.sh
 ```
 
 **Embedded Link (dev / single-box):** `config/server.properties`:
@@ -311,7 +316,7 @@ a native port of [GeyserMC/Geyser](https://github.com/GeyserMC/Geyser) join path
 
 ### Pre-start Bedrock path toggle (GUI / dashboard)
 
-On the **Link** tab (or `./scripts/set-bedrock-mode.sh`):
+On the **Link** tab (or `./scripts/setup/set-bedrock-mode.sh`):
 
 | Mode | Who owns `:19132` |
 |------|-------------------|
@@ -334,7 +339,7 @@ See also [CROSSPLAY.md](CROSSPLAY.md) · [CROSSPLAY.md](../network/CROSSPLAY.md)
 | Rule | Detail |
 |------|--------|
 | **Plugins default OFF in code** | `LinkConfig.applyDefaults()` → `plugins-enabled=false`. Unit tests and bare `LinkConfig.load()` stay plugin-free until config opts in. |
-| **First run / release turns plugins ON** | `./scripts/start-yap-link.sh` seeds `link.properties` with `plugins-enabled=true`, builds `yap-link-plugin-*` jars into `link-data/plugins/`. `assembleRelease` should mirror that seed. |
+| **First run / release turns plugins ON** | `./scripts/lifecycle/start-yap-link.sh` seeds `link.properties` with `plugins-enabled=true`, builds `yap-link-plugin-*` jars into `link-data/plugins/`. `assembleRelease` should mirror that seed. |
 | **Bedrock ctor** | **`new BedrockUdpForwarder(LinkConfig)`** only — not the old 4-arg host/port stub. |
 | **Plain chat** | Built-in **`ChatRelay`** (Phase 2) — serverbound play chat + console `say`. |
 | **Backend `yap:chat`** | **`yap-link-plugin-chat-bridge`** when backends send on channel `yap:chat` and `plugins-enabled=true` (`PluginMessageEvent`). Do not duplicate in `ClientSession`. |

@@ -21,7 +21,7 @@ Release trees: `build/dist/yapcore-release/linux/` and `…/windows/`.
 | `./start-prod.sh` | `start-prod.cmd` |
 
 Product path is **Folia** (`game-authority=folia`). YaP stays at the install root;
-the Folia child JVM uses `folia-kernel/`. Fetch with `./scripts/fetch-folia.sh`
+the Folia child JVM uses `folia-kernel/`. Fetch with `./scripts/folia/fetch-folia.sh`
 (Linux) before first boot if you want the jar pre-cached under `lib/`.
 
 > **Retired:** YaP Paperclip / Phase 3 vendor scripts (`Vendor-Paper.ps1`,
@@ -37,7 +37,7 @@ Generated: `deploy/nginx/generated/`.
 .\scripts\Nginx-Setup.ps1          # or nginx-setup.cmd in a release tree
 ```
 
-Linux: `./scripts/nginx-setup.sh`.
+Linux: `./scripts/setup/nginx-setup.sh`.
 
 ## Database (YaPDB)
 

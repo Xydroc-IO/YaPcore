@@ -8,4 +8,4 @@ Product UI captures linked from the root [README.md](../../../README.md).
 | `web-dashboard.png` | Browser admin dashboard — health / Bedrock-feel |
 | `web-fleet.png` | Browser Fleet page — Link edge + fleet controls |
 
-Refresh from a running chassis (`./scripts/gui.sh`, dashboard `:8080`). Prefer cropping console stack traces out of marketing shots. In-game / Bedrock client shots are operator-supplied.
+Refresh from a running chassis (`./scripts/lifecycle/gui.sh`, dashboard `:8080`). Prefer cropping console stack traces out of marketing shots. In-game / Bedrock client shots are operator-supplied.

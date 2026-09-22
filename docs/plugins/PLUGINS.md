@@ -4,7 +4,7 @@ YaPcore supports **three** extension kinds: Folia-aware / Spigot-style plugins, 
 **modules**. See [PLUGINS.md](PLUGINS.md) for modules + coverage.
 Compatibility matrix: [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md).
 
-**Product game:** **YaP-Folia** (`game-authority=folia`, `folia-jar-source=build`) — not stock Folia, not Paper. Build with `./scripts/build-yap-folia.sh`.
+**Product game:** **YaP-Folia** (`game-authority=folia`, `folia-jar-source=build`) — not stock Folia, not Paper. Build with `./scripts/folia/build-yap-folia.sh`.
 
 **One folder:** drop first-party Folia-native jars into **`plugins/`**.
 `folia-kernel/plugins` (and legacy `paper-kernel/plugins`) symlink to that folder.
@@ -18,7 +18,7 @@ First-party plugins use [`YapSched`](../plugins/PLUGINS.md)
 
 ```bash
 cp MyPlugin.jar plugins/
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 ```
 
 ## 1. Legacy Spigot / Paper / Purpur (`plugin.yml`)
@@ -80,8 +80,8 @@ like mods. See [PLUGINS.md](PLUGINS.md).
 
 **CORE + NETWORK (default)** on `gradle shadowJar` / `assembleRelease`:
 
-`yap-placeholderapi`, `yap-pregen`, `yap-plugin-compat`, `yap-db`, `yap-perms`,
-`yap-playerdata`, `yap-moderation`, `yap-essentials`, `yap-admin`, `yap-packs`, `yap-commands`, `yap-chat`, `yap-tab`,
+`yap-placeholderapi`, `yap-pregen`, `yap-db`, `yap-perms`,
+`yap-playerdata`, `yap-claims`, `yap-moderation`, `yap-essentials`, `yap-admin`, `yap-packs`, `yap-commands`, `yap-chat`, `yap-tab`,
 `yap-discord`, `yap-lib`, `yap-holo`, `yap-protect`, `yap-world`, `yap-regions`, `yap-portals`, `yap-guard`, `yap-lagguard`,
 `yap-map`, `yap-npcs`, `yap-factions`, `yap-floodgate`, `yap-bedrock-ui`, `yap-tailor`,
 `yap-bedrock-blocks`, `yap-folia-bridge`, `yap-items` ([YAPITEMS.md](YAPITEMS.md)),
@@ -91,7 +91,8 @@ like mods. See [PLUGINS.md](PLUGINS.md).
 `yap-skills` (thin mining/woodcutting/strength/marathon/builder/herbalism/excavation/alchemy/health — [PLUGINS.md](PLUGINS.md)),
 `yap-dungeons` (procedural instances L1–50 + prestige 51–100 — [PLUGINS.md](PLUGINS.md)),
 `yap-stacker`, `yap-disasters`, `yap-leveled-mobs` (distance-based mob levels),
-`yap-gameplay-knobs` (YaP Encyclopedia — [TUNE.md](../ops/TUNE.md)).
+`yap-gameplay-knobs` (YaP Encyclopedia — [TUNE.md](../ops/TUNE.md)),
+`yap-420` (plant/cure/craft/consume — [YAP420.md](YAP420.md)).
 Factions ships in CORE+NETWORK.
 
 SQL plugin authors: `compileOnly(project(":yap-db-api"))` and soft-depend `YaPDB`
@@ -197,7 +198,7 @@ Runtime matrix: `com.yapcore.api.ApiCoverage`.
 
 Runtime matrix: `com.yapcore.api.ApiCoverage` (see source).
 
-> **Retired:** Paperclip / Phase 3 vendor scripts were removed. Use `./scripts/fetch-folia.sh` and `./scripts/build-yap-folia.sh` on the Folia product path.
+> **Retired:** Paperclip / Phase 3 vendor scripts were removed. Use `./scripts/folia/fetch-folia.sh` and `./scripts/folia/build-yap-folia.sh` on the Folia product path.
 
 ## Author checklist
 
@@ -422,14 +423,14 @@ Per-chunk lag-machine governor for **YaP-Folia** (`folia-supported: true`). Canc
 entity spawns, primed TNT, hopper moves, redstone / observer updates, and piston cycles when
 a chunk is hot. Optional minecart density cap.
 
-Runs on the product game path (`game-authority=folia`, `folia-jar-source=build`). Build with `./scripts/build-yap-folia.sh`.
+Runs on the product game path (`game-authority=folia`, `folia-jar-source=build`). Build with `./scripts/folia/build-yap-folia.sh`.
 
 ## Install
 
 ```bash
 gradle installProductDefaults   # → plugins/yap-lagguard.jar
 # or included in assembleRelease
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 ```
 
 ## Config (`plugins/YaPLagGuard/config.yml`)
@@ -452,6 +453,14 @@ gradle installProductDefaults   # → plugins/yap-lagguard.jar
 | `escalation.trips-threshold` | `50` | Trips in window before one cull |
 | `escalation.window-ticks` | `200` | Escalation window |
 | `escalation.max-items-removed` | `32` | Cap on items removed per cull |
+| `item-clear.enabled` | `true` | Timed ClearLagg-style ground item / XP sweep |
+| `item-clear.interval-seconds` | `900` | Seconds between clears (min 30) |
+| `item-clear.warn-seconds` | `[60, 30, 10]` | Chat countdown at these remaining seconds |
+| `item-clear.clear-items` / `clear-xp-orbs` | `true` | What to remove |
+| `item-clear.min-age-ticks` | `40` | Skip freshly dropped entities |
+| `item-clear.skip-named` | `false` | Skip items with a custom display name |
+| `item-clear.worlds` / `world-blacklist` | `[]` | Empty worlds = all; blacklist wins |
+| `item-clear.exempt-regions` | `[]` | Soft-depend YaPRegions: never clear inside these |
 | `stats-write-interval-ticks` | `100` | Writes `stats.json` for Prometheus/dashboard |
 | `log-trips` | `false` | Rate-limited trip logs (off by default — budgets still enforce) |
 | `world-multipliers` | `{}` | Per-world budget multipliers (e.g. `creative: 2.0`) |
@@ -519,7 +528,29 @@ machine over turning escalation on.
 **Creative / redstone lab:** raise hopper + redstone + piston windows (e.g. 256 / 512) or set `world-multipliers.creative: 2.0`.  
 **Anarchy:** leave on — lag cannons trip TNT + entity budgets first; escalation stays off unless you want aggressive item culls.
 
-Commands: `/yaplagguard status|reload|top [n]` (`yaplagguard.admin`).
+### Timed item clear (ClearLagg-style)
+
+```yaml
+item-clear:
+  enabled: true
+  interval-seconds: 900
+  warn-seconds: [60, 30, 10]
+  clear-items: true
+  clear-xp-orbs: true
+  min-age-ticks: 40
+  skip-named: false
+  worlds: []
+  world-blacklist: []
+  exempt-regions: []
+  warn-message: "&eGround items clear in &f{seconds}&e seconds."
+  clear-message: "&aCleared &f{items}&a items and &f{xp}&a XP orbs."
+```
+
+Broadcasts a countdown at each `warn-seconds` value, then removes ground `Item` entities
+and XP orbs (Folia-safe: `remove()` on each entity's region). Vanilla
+`item-despawn-rate` still applies independently. `/yaplagguard clear` forces a sweep now.
+
+Commands: `/yaplagguard status|reload|top [n]|clear` (`yaplagguard.admin`).
 
 API: `LagGuardService.topChunks(n)` → `(world, cx, cz, trips)`.
 

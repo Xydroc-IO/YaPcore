@@ -94,7 +94,7 @@ Practical SMP on one backend: tens to ~100 concurrent actives with ship knobs, L
 
 Classic Paper/Purpur keep one main world tick. Upstream Folia already regionizes: **one tick thread owns one region**. Stock Folia will not split a packed spawn and keep both sides entity-ticking. YaP-Folia carves an empty corridor, then force-partitions along that cut (`0061`–`0079`). Both shards stay on the Folia regionizer — no second clock.
 
-That split is the product jar. Fullcite `20260919T165559Z` on `76aeaf3fefcf34bc9e80f441d0419df7` held 500 players at both ends, TNT 2400, hoppers 770, 32 villagers, fuse drop 808.5, and logged `YaP force-partition region #0 into 2 shards`. The busiest region was 37.24 ms. Stock on the same scene (`20260919T171015Z`) started at 500 and ended at 119, busiest region 65.03 ms. Those 119 left because the encoder ran out of direct memory, not because a watchdog fired. `0073`–`0079` keep spawn search off the cut, including chunk X=−1, and finish login without a configuration keepalive after the client is in play. Aligned microticks (`0026`–`0030`) stay optional phase tagging. Lab contiguous-strip check: `./scripts/smoke-contiguous-bar.sh`.
+That split is the product jar. Fullcite `20260919T165559Z` on `76aeaf3fefcf34bc9e80f441d0419df7` held 500 players at both ends, TNT 2400, hoppers 770, 32 villagers, fuse drop 808.5, and logged `YaP force-partition region #0 into 2 shards`. The busiest region was 37.24 ms. Stock on the same scene (`20260919T171015Z`) started at 500 and ended at 119, busiest region 65.03 ms. Those 119 left because the encoder ran out of direct memory, not because a watchdog fired. `0073`–`0079` keep spawn search off the cut, including chunk X=−1, and finish login without a configuration keepalive after the client is in play. Aligned microticks (`0026`–`0030`) stay optional phase tagging. Lab contiguous-strip check: `./scripts/folia/smoke-contiguous-bar.sh`.
 
 | Knob (defaults) | Role |
 |-----------------|------|
@@ -114,7 +114,7 @@ That split is the product jar. Fullcite `20260919T165559Z` on `76aeaf3fefcf34bc9
 
 **YapEngine** (edge/chassis) sequences bridge and plugin work with **µs-resolution** `SequenceToken`s so I/O and menus stay ordered without owning the world heartbeat.
 
-Citeable MSPT vs stock Folia / Canvas (ship knobs disclosed): [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) · soak profile: [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) · patch inventory: [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md). We do **not** claim single-thread Paper MSPT victory. Re-verify after tick changes: `./scripts/yapctl cite-fullcite`.
+Citeable MSPT vs stock Folia / Canvas (ship knobs disclosed): [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) · soak profile: [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md) · patch inventory: [YAP_FOLIA_PATCHES.md](docs/folia/YAP_FOLIA_PATCHES.md). We do **not** claim single-thread Paper MSPT victory. Re-verify after tick changes: `./scripts/lifecycle/yapctl cite-fullcite`.
 
 ---
 
@@ -122,7 +122,7 @@ Citeable MSPT vs stock Folia / Canvas (ship knobs disclosed): [YAP_FOLIA_PATCHES
 
 ### Operators — download a release
 
-1. Take **linux** or **windows** from the [0.0.0.1 prerelease](https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.1). GitHub **Latest** still points at stable **1.0.0.0**.
+1. Take **linux** or **windows** from the [0.0.0.1 prerelease](https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.1). Do not use GitHub **Latest**: **1.0.0.0** was deleted, so `/releases/latest` stays empty until a non-prerelease exists.
 2. Unzip → `yapcore-release/linux` (or `windows`).
 3. Configure secrets ([SECRETS.md](docs/start/SECRETS.md)), then launch:
 
@@ -144,19 +144,19 @@ Requires **Java 25+**.
 
 ```bash
 git clone https://github.com/Xydroc-IO/YaPcore.git && cd YaPcore
-chmod +x scripts/*.sh scripts/db/*.sh scripts/yapctl
-./scripts/build-yap-folia.sh          # → lib/yap-folia-26.2.jar
+find scripts -type f \( -name '*.sh' -o -name yapctl \) -exec chmod +x {} +
+./scripts/folia/build-yap-folia.sh          # → lib/yap-folia-26.2.jar
 gradle installProductDefaults shadowJar
-./scripts/seed-defaults.sh
+./scripts/setup/seed-defaults.sh
 ./scripts/db/ensure-db.sh --server-id lobby
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 ```
 
 Local release trees (gitignored):
 
 ```bash
-./scripts/build-yap-folia.sh
-./scripts/build-yap-client-render.sh
+./scripts/folia/build-yap-folia.sh
+./scripts/packs/build-yap-client-render.sh
 gradle publishReleasesFolder -PyapGameplay=true
 # → releases/0.0.0.1/yapcore-release-{linux,windows}.zip
 ```
@@ -186,7 +186,7 @@ Domain line gate: `gradle checkDomainLineLimits` (≤500 lines per first-party d
 
 | Layer | Role |
 |-------|------|
-| **YaP-Folia** | Game tick — build with `./scripts/build-yap-folia.sh` |
+| **YaP-Folia** | Game tick — build with `./scripts/folia/build-yap-folia.sh` |
 | **YapEngine** | Edge networking, dual-stack, I/O, dashboard, Swing GUI |
 | **YaP Link** | Multi-backend proxy + **Link-native Bedrock** — [YAP_LINK.md](docs/network/YAP_LINK.md) · [YAP_LINK.md](docs/network/YAP_LINK.md) |
 | **Plugins** | First-party stack under [`yap-first-party/`](yap-first-party/README.md) |
@@ -206,6 +206,7 @@ Deep dive: [YAPCORE_WHITEPAPER.md](docs/whitepaper/YAPCORE_WHITEPAPER.md) · joi
 | `yap-moderation.jar` | Ban / mute / warn / kick + history |
 | `yap-essentials.jar` | Spawn, tpa, fly, vanish, bag/economy cmds |
 | `yap-playerdata.jar` | Cross-server data, economy, backpacks |
+| `yap-claims.jar` | Player land claims (`/claim`) |
 | `yap-db.jar` | Shared SQL pool (MariaDB / Postgres / SQLite) |
 | `yap-packs.jar` | Multi-active resource packs |
 | `yap-floodgate.jar` | Bedrock identity |
@@ -221,7 +222,7 @@ Optional Fabric clients: [`client/`](client/) — presence + blocks required onl
 
 ## Documentation
 
-Operator and engineering docs live under [`docs/`](docs/) (**Markdown is the source of truth**). Start from the [Wiki](docs/README.md). Optional local PDF prints: `./scripts/export-docs-pdf.sh` (gitignored under `docs/pdf/`).
+Operator and engineering docs live under [`docs/`](docs/) (**Markdown is the source of truth**). Start from the [Wiki](docs/README.md). Optional local PDF prints: `./scripts/docs/export-docs-pdf.sh` (gitignored under `docs/pdf/`).
 
 | Audience | Start here |
 |----------|------------|

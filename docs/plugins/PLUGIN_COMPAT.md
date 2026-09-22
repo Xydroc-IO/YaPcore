@@ -20,7 +20,7 @@ Drop **all** plugin jars into **[`plugins/`](../plugins/)** — one folder.
 | Will LuckPerms / WorldEdit / Vault / most **Paper** plugins work? | **Often no** on Folia (same as stock Folia). Use Folia builds, or legacy `game-authority=paper` for Paper benches |
 | Is Folia API coverage on product path? | **Yes** — real Folia owns the API |
 | Is Paper API complete on Paper path? | **Yes** — legacy Paper authority ([PLUGIN_COMPAT.md](PLUGIN_COMPAT.md)) |
-| Can 1.20–1.21 plugins run on 26.2? | **Often** on Paper path — Tier A+B rewrite ([PLUGIN_COMPAT.md](PLUGIN_COMPAT.md)); Folia still needs Folia-aware jars |
+| Can 1.20–1.21 plugins run on 26.2? | **No.** The jar rewrite was removed. Use jars built for 26.2. Folia still needs Folia-aware plugins |
 | Can I use Folia-only plugins? | **Yes** on the Folia product path |
 | Do I need two plugin folders? | **No** — only `plugins/` |
 | Is every NMS/reflection plugin guaranteed? | **No** — same caveats as stock Folia/Paper |
@@ -38,7 +38,7 @@ Drop **all** plugin jars into **[`plugins/`](../plugins/)** — one folder.
 
 ```bash
 gradle installProductDefaults   # includes yap-perms.jar
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 # Confirm enable in folia-kernel/logs/ or logs/server.log
 ```
 
@@ -55,7 +55,7 @@ Layout: keep all jars in **`plugins/`** (Folia kernel symlinks to the same folde
 
 ```bash
 cp MyPlugin.jar plugins/
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 ```
 
 ## What “within reason” means
@@ -112,8 +112,8 @@ not “Paper incompatible.”
 
 ## Verify
 
-Put jars in **`plugins/`** and boot with `./scripts/start.sh --fg`.
+Put jars in **`plugins/`** and boot with `./scripts/lifecycle/start.sh --fg`.
 
-> **Retired:** Paperclip / Phase 3 vendor scripts were removed. Use `./scripts/fetch-folia.sh` and `./scripts/build-yap-folia.sh` on the Folia product path.
+> **Retired:** Paperclip / Phase 3 vendor scripts were removed. Use `./scripts/folia/fetch-folia.sh` and `./scripts/folia/build-yap-folia.sh` on the Folia product path.
 
 Also: [PLUGINS.md](PLUGINS.md) · [YAPCORE_WHITEPAPER.md](../whitepaper/YAPCORE_WHITEPAPER.md).

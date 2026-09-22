@@ -9,7 +9,7 @@ Quick setup:
 ```bash
 cp deploy/mariadb/.env.example deploy/mariadb/.env   # edit passwords first
 ./scripts/db/ensure-db.sh --server-id lobby          # writes JDBC from .env
-./scripts/start.sh --fg                              # auto-generates dashboard token if empty
+./scripts/lifecycle/start.sh --fg                              # auto-generates dashboard token if empty
 ```
 
 ---
@@ -24,7 +24,7 @@ cp deploy/mariadb/.env.example deploy/mariadb/.env   # edit passwords first
 | **JDBC password (fallback)** | `plugins/YaPPlayerData/config.yml` → `jdbc.password` | No | Used only if YaPDB missing |
 | **Web dashboard token** | `config/server.properties` → `web-dashboard-token` | **Yes** — Admin → rotate token | Auto-generated on first boot if empty |
 | **Minecraft OPs** | `config/server.properties` → `ops` | **Yes** — Access & ranks | Comma-separated names |
-| **Velocity forwarding secret** | `forwarding.secret` (repo root or link dir) | Partial — Network setup | `./scripts/setup-velocity-forwarding.sh` |
+| **Velocity forwarding secret** | `forwarding.secret` (repo root or link dir) | Partial — Network setup | `./scripts/setup/setup-velocity-forwarding.sh` |
 | **YaP Link forwarding** | `link-data/link.properties` → `forwarding-secret-file` | **Yes** — YaP Link tab | Points at `forwarding.secret` |
 | **Floodgate / Bedrock key** | `floodgate-key.pem` or `key.pem` | No | Optional; offline UUID works without |
 | **Discord webhooks** | `plugins/YaPDiscord/config.yml` → `webhooks.*` | **Yes** — Discord tab | Paste webhook URLs |
@@ -44,8 +44,8 @@ cp deploy/mariadb/.env.example deploy/mariadb/.env   # edit passwords first
 5. Enable PlayerData auth if using offline-mode public: `auth.enabled: true`.
 6. Start server once; copy the generated **dashboard token** from the log (or rotate in Admin tab).
 7. Set Discord webhooks before enabling relay; set a strong `inbound.secret` if enabling inbound HTTP.
-8. Forwarding secret is auto-seeded; re-run `./scripts/setup-velocity-forwarding.sh` to refresh or `--disable` for direct `:25566`.
-9. Walk [CROSSPLAY.md §E](../network/CROSSPLAY.md) live checklist; start `./scripts/yapctl soak-long 12` in the background.
+8. Forwarding secret is auto-seeded; re-run `./scripts/setup/setup-velocity-forwarding.sh` to refresh or `--disable` for direct `:25566`.
+9. Walk [CROSSPLAY.md §E](../network/CROSSPLAY.md) live checklist; start `./scripts/lifecycle/yapctl soak-long 12` in the background.
 
 ---
 
@@ -72,7 +72,7 @@ Tracked templates use placeholders only: `config/defaults/`, `*.example`, `deplo
 |------------|----------------|
 | Dashboard token | Web dashboard → Admin → **rotate token** (persists to `config/server.properties`) |
 | DB password | Update `.env`, `ALTER USER` in MariaDB, re-run `./configure-db.sh` |
-| Forwarding secret | Re-run `./scripts/setup-velocity-forwarding.sh`; restart Link + backends |
+| Forwarding secret | Re-run `./scripts/setup/setup-velocity-forwarding.sh`; restart Link + backends |
 | Discord inbound | Change `inbound.secret` in dashboard or YAML; update your Discord bot/webhook caller |
 
 ---

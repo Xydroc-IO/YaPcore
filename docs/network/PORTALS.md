@@ -16,7 +16,7 @@ YaPPortals uses:
 
 - Interior fill: dye-colored **stained glass** blocks
 - Look: **YaP Portals** resource-pack textures (animated portal sheets for all 16 dyes —
-  `scripts/generate-yap-portals.py`, built into `yapcore-default.zip`)
+  `scripts/packs/generate-yap-portals.py`, built into `yapcore-default.zip`)
 - Soft particle swirl on top
 - Enter by walking into / against the pad (adjacent blocks count)
 
@@ -25,6 +25,62 @@ Accept the server resource pack so the portal sheets load.
 Existing pads are repainted on `/portal reload` or plugin enable. Fill only replaces
 **air, nether portal, and stained glass** — signs and solid builds in the volume are left
 alone.
+
+## Spawn arrival
+
+Default landing is **server spawn** (`/setspawn` via YaPEssentials, else world spawn):
+
+```text
+# Hub → survival spawn (arrival defaults to spawn — no setarrival needed)
+/portal create to-survival survival lime
+
+# Same-server pad that warps to this backend's spawn
+/portal create to-spawn survival cyan
+/portal setarrival to-spawn spawn
+```
+
+Same-server spawn pads do not use Link Connect — walk in and teleport to spawn.
+Cross-server pads Connect then land at the destination’s spawn on join.
+
+## Random / wild arrival (RTP)
+
+Portals can land players on a **random safe spot** instead of spawn:
+
+```text
+# Hub → survival wild
+/portal create to-survival-wild survival lime
+/portal setarrival to-survival-wild rtp
+
+# Same-server wild pad on survival (target = this server-id)
+/portal create wild survival lime
+/portal setarrival wild rtp
+```
+
+Requires **YaPEssentials** RTP on the destination (`/rtp` / `/wild`). Claimed land is skipped when
+`rtp.avoid-claims: true`. Same-server wild pads do not use Link Connect.
+
+Players can also run `/rtp` (alias `/wild`) directly on survival/factions backends.
+
+## Home arrival
+
+Portals can land players at **their** YaPPlayerData home (`/sethome`):
+
+```text
+# Same-server pad on survival (target = this server-id)
+/portal create home-pad survival lime
+/portal setarrival home-pad home
+
+# Named home (optional)
+/portal setarrival home-pad home cabin
+
+# Lobby → survival home
+/portal create to-survival-home survival cyan
+/portal setarrival to-survival-home home
+```
+
+Requires **YaPPlayerData** with `features.homes: true` on the destination. Same-server home
+pads do not use Link Connect. If the player has no home set, they get a message (fleet
+transfers fall back to spawn).
 
 ## Requirements
 
@@ -71,7 +127,7 @@ land at that backend’s spawn (`/setspawn` via YaPEssentials, else world spawn)
 | `/portal create <name> <server> [color]` | Define from wand selection |
 | `/portal delete <name>` | Remove |
 | `/portal list` / `info <name>` | Inspect |
-| `/portal settarget\|setperm\|setcooldown\|setmessage\|setcolor` | Meta |
+| `/portal settarget\|setperm\|setcooldown\|setmessage\|setcolor\|setarrival` | Meta (`setarrival` = spawn / rtp / home) |
 | `/portal enable\|disable <name>` | Toggle |
 | `/portal go <name\|server>` | Admin test transfer |
 | `/portal reload` | Reload config + portals.yml |

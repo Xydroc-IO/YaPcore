@@ -3,9 +3,9 @@
 Ordered deltas under [`vendor/folia/patches/`](../../vendor/folia/patches/). Authors: **YapLabs** (`folia@yaplabs.com`).
 
 **Apply:** `folia-patch.sh pre` → Folia `applyAllPatches` → `folia-patch.sh post`  
-(see [`scripts/build-yap-folia.sh`](../../scripts/build-yap-folia.sh)).
+(see [`scripts/folia/build-yap-folia.sh`](../../scripts/folia/build-yap-folia.sh)).
 
-Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
+Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/folia/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
 
 The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0079` (**46**) are Folia-itself improvements on that pin. Product jar md5 `76aeaf3fefcf34bc9e80f441d0419df7`. Fullcite `20260919T165559Z` held 500 players at both ends, TNT 2400, hoppers 770, 32 villagers, fuse drop 808.5, `into 2 shards`, busiest region 37.24 ms. Stock `20260919T171015Z` started at 500 on that scene and ended at 119, busiest region 65.03 ms. Those 119 left because the encoder ran out of direct memory, not because a watchdog fired. `0073`–`0079` keep spawn search off the cut (including chunk X=−1), skip block spread into the hole, and finish the login handshake without a configuration keepalive after the client is in play.
 
@@ -128,7 +128,7 @@ YaP split guards (`0016`/`0032`) keep entities, connections, players, block-enti
 
 **Packed spawn:** stock Folia (and Canvas) will not split a contiguous loaded blob. `0041` registers the corridor as a first-class cut: `addChunk` will not create empty glue sections, merge BFS will not jump the band, and PLAYER/sim tickets will not refill it (a player standing in the strip still pins that chunk). `0062` actually drops the pre-cut ticket *level* on that band — skip without zero left holders at `lvl=MAX` with empty `getTicketsAt`. Ship `folia-grid-exponent=3` so a default view-distance-10 spawn has four 8-chunk sections — enough for left / hole / right. A blob that fits in one section still cannot split; that is the regionizer atom. Partition still refuses if the hole is loaded.
 
-**Split bar:** a **live contiguous** hot region splits and holds without a YaP epoch/microtick barrier. Aligned microticks (`0026`–`0030`) are optional phase tagging. Same-tick BLOCKS lockstep across shards **is** a second clock and is not required for the regionizer to be correct. `0041` is the native cut; `0043` relocates a live corridor; `0045` keeps neighbor sim-distance from refilling the hole; `0046` keeps spawn nether/end frames and dest-search tickets off that clamp. Lab check: `./scripts/smoke-contiguous-bar.sh` (PASS: force+split+gap hold, `pulses_ran=0`).
+**Split bar:** a **live contiguous** hot region splits and holds without a YaP epoch/microtick barrier. Aligned microticks (`0026`–`0030`) are optional phase tagging. Same-tick BLOCKS lockstep across shards **is** a second clock and is not required for the regionizer to be correct. `0041` is the native cut; `0043` relocates a live corridor; `0045` keeps neighbor sim-distance from refilling the hole; `0046` keeps spawn nether/end frames and dest-search tickets off that clamp. Lab check: `./scripts/folia/smoke-contiguous-bar.sh` (PASS: force+split+gap hold, `pulses_ran=0`).
 
 ### Aligned micro/sub-ticks (patches 0026–0030)
 
@@ -158,11 +158,11 @@ Lab-only (`-Dyap.folia.scheduler-probe`, lowered MSPT threshold / delay / min-se
 
 ```bash
 # Pre-gapped lobes:
-./scripts/smoke-partition-cut.sh 240
+./scripts/folia/smoke-partition-cut.sh 240
 
 # Contiguous-strip check — live strip, product VD=10, aligned microticks off.
 # Uses lib/yap-folia-26.2-lab.jar when present (does not overwrite the GUI product jar).
-./scripts/smoke-contiguous-bar.sh 420
+./scripts/folia/smoke-contiguous-bar.sh 420
 ```
 
 Pre-gapped lab last run: `contiguous_carve=false` / `gapHalf=32`. Contiguous-strip pass: `contiguous_carve=true`, `forcePartition` + `RegionizedWorldData.split`, `gap_bands>=1` and `ticking_regions>=2` after a hold under view-distance **10**. Same-tick BLOCKS pulse is **not** the pass.
@@ -210,10 +210,10 @@ Scheduler: `folia-kernel/config/paper-global.yml` → `threaded-regions.schedule
 Ship default **on** (`folia-aligned-microticks=true`) after idle smoke with universal RTQ tagging (`0030`). Wave timeouts log at debug. Barriers are per-world: a region waits only when same-world peers have arrived at the prior phase. This is **optional coherence**, not the professional split bar.
 
 ```bash
-./scripts/build-yap-folia.sh
-YAP_FOLIA_ALIGNED_MICROTICKS=true ./scripts/smoke-folia.sh
-./scripts/yapctl soak-compat
-./scripts/yapctl cite-fullcite   # disclose knob_aligned_microticks in JSON
+./scripts/folia/build-yap-folia.sh
+YAP_FOLIA_ALIGNED_MICROTICKS=true ./scripts/folia/smoke-folia.sh
+./scripts/lifecycle/yapctl soak-compat
+./scripts/lifecycle/yapctl cite-fullcite   # disclose knob_aligned_microticks in JSON
 ```
 
 Rollback: `folia-aligned-microticks=false`.
@@ -223,9 +223,9 @@ Rollback: `folia-aligned-microticks=false`.
 Ship default **on** (`folia-physics-substeps=true`, patch `0031`). Feel/combat stability, not MSPT capacity.
 
 ```bash
-./scripts/build-yap-folia.sh
+./scripts/folia/build-yap-folia.sh
 # product defaults already forward -Dyap.folia.physics-substeps=*
-./scripts/yapctl soak-compat
+./scripts/lifecycle/yapctl soak-compat
 ```
 
 Rollback: `folia-physics-substeps=false`.
@@ -234,7 +234,7 @@ Rollback: `folia-physics-substeps=false`.
 
 ```bash
 # cite-fullcite.sh already exports ship knobs + NO_DIG + VD/sim 8
-./scripts/yapctl cite-fullcite
+./scripts/lifecycle/yapctl cite-fullcite
 
 # Heavypop + Canvas peer:
 ./scripts/bench/cite-canvas-heavypop.sh 40
@@ -320,10 +320,10 @@ shows async+hopper alone (~−7% heavypop); ship profile adds headroom under hot
 ## Stability
 
 ```bash
-./scripts/yapctl soak-compat   # PASS 20260904T033554Z (ship knobs ON); also PASS after 0025 jar `20260905T010908Z`
-./scripts/yapctl soak-perf 30  # PASS 20260904T033626Z
-./scripts/yapctl cite-fullcite # PASS 20260904T040935Z (−5.53%; peak cite −12.40% at shipFc2)
-./scripts/yapctl soak-long 12  # PASS 20260905T031507Z — soak-proven (heap/thread slope OK; Folia pid locked 12h)
+./scripts/lifecycle/yapctl soak-compat   # PASS 20260904T033554Z (ship knobs ON); also PASS after 0025 jar `20260905T010908Z`
+./scripts/lifecycle/yapctl soak-perf 30  # PASS 20260904T033626Z
+./scripts/lifecycle/yapctl cite-fullcite # PASS 20260904T040935Z (−5.53%; peak cite −12.40% at shipFc2)
+./scripts/lifecycle/yapctl soak-long 12  # PASS 20260905T031507Z — soak-proven (heap/thread slope OK; Folia pid locked 12h)
 ./scripts/bench/cite-canvas-heavypop.sh 40  # Canvas ≥5% campaign (heavypop)
 ```
 
@@ -331,8 +331,8 @@ shows async+hopper alone (~−7% heavypop); ship profile adds headroom under hot
 Encyclopedia E2 NMS (`0025-yap-encyclopedia-hooks.patch`): **defaults off**. Not part of the soft-launch claim.
 Enable `gameplay.crop-growth-nms` / `tick-fluids=false` only after:
 
-1. `./scripts/build-yap-folia.sh` (post patches include `002*.patch`)
-2. `./scripts/yapctl soak-compat` PASS
+1. `./scripts/folia/build-yap-folia.sh` (post patches include `002*.patch`)
+2. `./scripts/lifecycle/yapctl soak-compat` PASS
 3. `/yapknobs status` shows `nmsHooks: present=true`
 
 Without the patch, enabling those knobs logs a WARNING (event-wired encyclopedia still works).

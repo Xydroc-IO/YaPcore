@@ -12,9 +12,9 @@ game-authority=folia
 folia-embed=true
 folia-version=26.2
 folia-dir=folia-kernel
-# Default product jar: YaP-Folia (./scripts/build-yap-folia.sh)
+# Default product jar: YaP-Folia (./scripts/folia/build-yap-folia.sh)
 folia-jar-source=build
-# Stock Fill: folia-jar-source=fetch + ./scripts/fetch-folia.sh
+# Stock Fill: folia-jar-source=fetch + ./scripts/folia/fetch-folia.sh
 paper-phase3-tick-bridge=false
 paper-phase3-nms-tick=false
 ```
@@ -32,14 +32,14 @@ paper-phase3-nms-tick=false
 **Java 25+** for Folia/Paper 26.2. Recommended Folia product path:
 
 ```bash
-./scripts/build-yap-folia.sh          # → lib/yap-folia-26.2.jar
-./scripts/start.sh --fg
+./scripts/folia/build-yap-folia.sh          # → lib/yap-folia-26.2.jar
+./scripts/lifecycle/start.sh --fg
 ```
 
 Stock Fill fallback:
 
 ```bash
-./scripts/fetch-folia.sh              # → lib/folia-26.2.jar
+./scripts/folia/fetch-folia.sh              # → lib/folia-26.2.jar
 # folia-jar-source=fetch
 ```
 
@@ -125,9 +125,9 @@ resource-pack-prompt=This server offers a resource pack. Click Yes to download, 
 ```
 
 Attach **`yapcore-default.zip`** and **`yapcore-default.mcpack`** (same bytes you built) to nginx
-(`./scripts/sync-pack-to-nginx.sh`) and/or as GitHub **prerelease** assets. Tag **`0.0.0.1`** publishes them
+(`./scripts/packs/sync-pack-to-nginx.sh`) and/or as GitHub **prerelease** assets. Tag **`0.0.0.1`** publishes them
 as a prerelease — operators and the chassis must use
-`/releases/download/0.0.0.1/{file}`. GitHub **`/releases/latest`** still points at stable **1.0.0.0**.
+`/releases/download/0.0.0.1/{file}`. GitHub **`/releases/latest`** ignores prereleases. **1.0.0.0** was deleted, so that URL stays empty until a non-prerelease exists.
 YaP hashes the **download URL** at boot so
 Paper’s SHA-1 matches what clients fetch. If the advertised SHA is from a newer local rebuild than
 GitHub/nginx, Minecraft shows **“1 of 1 pack failed to download.”**
@@ -142,14 +142,14 @@ JE clients must download from **GitHub** `releases/download/0.0.0.1` (not a dead
 **Publish for GitHub (recommended):**
 
 ```bash
-./scripts/build-default-resourcepack.sh
-./scripts/build-default-bedrock-pack.sh
+./scripts/packs/build-default-resourcepack.sh
+./scripts/packs/build-default-bedrock-pack.sh
 gh release upload 0.0.0.1 \
   resourcepacks/yapcore-default.zip \
   resourcepacks/yapcore-default.mcpack \
   --clobber -R Xydroc-IO/YaPcore
 # or create/update the 0.0.0.1 prerelease and attach the assets
-# (/releases/latest still points at stable 1.0.0.0)
+# (/releases/latest stays empty until a non-prerelease exists; 1.0.0.0 was deleted)
 ```
 
 **Publish for Cloudflare / nginx (optional):** after rebuilding the zip, copy it into nginx’s docroot
@@ -158,7 +158,7 @@ reports “failed to download” when the SHA-1 in `server.properties` does not 
 the bytes it fetched.
 
 ```bash
-./scripts/build-default-resourcepack.sh
+./scripts/packs/build-default-resourcepack.sh
 # then copy resourcepacks/yapcore-default.zip into your pack www root
 curl -sL http://127.0.0.1:8081/pack/yapcore-default.zip | sha1sum
 ```
@@ -169,8 +169,8 @@ authority, YaPcore writes the active pack URL + SHA-1 into the game’s
 and downloads from that URL.
 If `resource-pack-forced=true`, declining kicks the player.
 
-Refresh the zip: `./scripts/fetch-faithful-64x.sh` then
-`./scripts/build-default-resourcepack.sh`.
+Refresh the zip: `./scripts/packs/fetch-faithful-64x.sh` then
+`./scripts/packs/build-default-resourcepack.sh`.
 
 | Client location | Pack URL offered |
 |-----------------|------------------|
@@ -196,16 +196,16 @@ Folia plugin) that applies Hor+ with **separate profiles** for each panel class.
 
 ```bash
 cd client/yap-ultrawide && ./gradlew build
-# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.3.jar
-# or: ./scripts/build-yap-client-render.sh → dist/client-mods/client_mods.zip
-```
+# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.5.jar
+# or: ./scripts/packs/build-yap-client-render.sh → dist/client-mods/client_mods.zip
+#    (also synced into releases/<ver>/ by publishReleasesFolder)```
 
 Config: `.minecraft/config/yap-ultrawide.json`
 
 | Band | Typical panels | Default mode |
 |------|----------------|--------------|
 | `ultrawide_21_9` | 2560×1080, 3440×1440 (aspect ≈1.90–2.80) | `match_16_9` + ~100° HFOV cap |
-| `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (≥2.80) | `match_16_9` + ~103° HFOV cap |
+| `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (≥2.80) | `match_21_9` + ~128° HFOV cap + 48° V floor |
 
 32:9 uses the same horizontal FOV a 16:9 panel would have at the vanilla slider —
 it does **not** letterbox your 32:9 screen. For a locked cinematic feel use
@@ -255,7 +255,7 @@ cd client/yap-staff && ./gradlew build
 
 Config: `.minecraft/config/yap-staff.json`. See [yap-staff/README.md](../../client/yap-staff/README.md), [WEB_DASHBOARD.md](../ops/WEB_DASHBOARD.md), and [YAPITEMS.md](../plugins/YAPITEMS.md).
 
-The Fabric **yap-staff** mod scrolls/scales to the window (scroll position preserved on rebuild), uses a searchable player picker that returns to the calling tool, includes spawn-mobs + give + **YaPItems create** (glow / unbreakable / enchant picker / categorized abilities), and a full YaPPerms ranks editor UI. Update **yap-admin.jar** + **yap-items.jar** on the server.
+The Fabric **yap-staff** mod scrolls/scales to the window (scroll position preserved on rebuild), uses a searchable player picker that returns to the calling tool, includes spawn-mobs + give + **YaPItems create** (glow / unbreakable / enchant picker / categorized abilities), **YaP420** plant/cure give hub, and a full YaPPerms ranks editor UI. Update **yap-admin.jar** + **yap-items.jar** (+ **yap-420.jar** when using YaP420) on the server.
 
 ## Realistic skies / YaP Shaders
 
@@ -300,8 +300,8 @@ YaP Iris (jar-in-jar) and installs YaP Shaders on first launch.
 | YaP Shaders (auto-extract) | Water + skies pack | GPLv3 |
 
 ```bash
-./scripts/build-yap-client-render.sh
-# → dist/client-mods/client_mods.zip         (release upload — visuals + bag + presence + blocks + staff + ultrawide)
+./scripts/packs/build-yap-client-render.sh
+# → dist/client-mods/client_mods.zip         (release upload — visuals + bag + yap-420 + presence + blocks + staff + ultrawide)
 # → dist/client-mods/yap-visuals-*.jar       (also loose jars for local installs)
 # → dist/client-mods/yap-client-visuals.zip  (visuals-only Discord / site bundle)
 ./scripts/parity/smoke-bedrock-feel.sh       # Phase 6 matrix smoke
@@ -311,5 +311,5 @@ Install: Fabric Loader 0.19+ · MC 26.2 · **only** `yap-visuals-*.jar` in `.min
 (do not also install separate Sodium/Iris/shaders). Upstream Iris + any Iris pack also work.
 Complementary / BSL are **not** redistributed (custom licenses).
 
-Refresh pack skies textures: `python3 scripts/generate-yap-skies.py` then
-`./scripts/build-default-resourcepack.sh`.
+Refresh pack skies textures: `python3 scripts/packs/generate-yap-skies.py` then
+`./scripts/packs/build-default-resourcepack.sh`.

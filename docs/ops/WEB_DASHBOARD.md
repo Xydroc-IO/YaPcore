@@ -3,7 +3,7 @@
 Browser-based **admin control panel** for headless hosts and remote operators.
 Set up the network, configure YaP Link, manage plugins, and monitor health — no SSH required for day-to-day ops.
 
-Controls the **YaPcore chassis** in front of **YaP-Folia** (game child JVM). Build with `./scripts/build-yap-folia.sh`.
+Controls the **YaPcore chassis** in front of **YaP-Folia** (game child JVM). Build with `./scripts/folia/build-yap-folia.sh`.
 
 Modern **sidebar shell** with three operator modes (**Operate · Configure · Gameplay**), teal brand theme aligned with the Swing control panel, cross-mode page search, stat cards, and full plugin config editors where the backend supports it.
 
@@ -249,7 +249,7 @@ These ship as **Plugin settings** editors (or in-game hubs) on purpose — they 
 | YaPEssentials | `block-reach` (place/break distance) under Plugin settings |
 | YaPWorld | Creative climate (always day, no weather, no mobs) under Plugin settings |
 | floodgate / bedrock-ui / folia-bridge | Crossplay bridge config |
-| placeholderapi / plugin-compat | Expansion / soft-dep config |
+| placeholderapi | Local placeholder expansions |
 
 ### NPCs (`yap-npcs`)
 

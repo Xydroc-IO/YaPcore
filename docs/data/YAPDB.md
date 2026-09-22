@@ -183,7 +183,7 @@ If host **:3306** is already taken, `start-mariadb.sh` remaps to **3316** automa
 
 ```bash
 ./scripts/db/ensure-db.sh --server-id lobby
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 ```
 
 `ensure-db.sh` starts MariaDB (if needed), writes JDBC into `plugins/YaPDB` + `plugins/YaPPlayerData`, and probes login before you boot.
@@ -199,7 +199,7 @@ For a custom home / smoke workdir:
 ```bash
 ./scripts/db/start-mariadb.sh --configure --server-id lobby
 # or: ./scripts/db/ensure-db.sh --server-id lobby
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 ```
 
 JDBC points at `127.0.0.1` (port from `.env`). Shared config: `plugins/YaPDB/config.yml`.
@@ -260,7 +260,7 @@ Packaged Docker Postgres for YaPDB + first-party SQL plugins.
 ./scripts/db/configure-db.sh --engine postgres --server-id lobby
 # or one-shot:
 ./scripts/db/ensure-postgres.sh --server-id lobby
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 ```
 
 Compose: [`deploy/postgres/`](../../deploy/postgres/). Credentials: `.env` from `.env.example`.
@@ -299,7 +299,7 @@ Zero-Docker SQL for a **single** Folia JVM. Not for multi-backend or shared Link
 
 ```bash
 ./scripts/db/configure-db.sh --engine sqlite --server-id lobby
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 ```
 
 Creates/uses:

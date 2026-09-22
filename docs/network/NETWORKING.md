@@ -35,15 +35,15 @@ srv-enabled=true
 3. Install nginx edge:
 
 ```bash
-./scripts/nginx-setup.sh --dry-run
-sudo ./scripts/nginx-setup.sh --install-pkg   # first time
-sudo ./scripts/nginx-setup.sh
+./scripts/setup/nginx-setup.sh --dry-run
+sudo ./scripts/setup/nginx-setup.sh --install-pkg   # first time
+sudo ./scripts/setup/nginx-setup.sh
 ```
 
 4. Forward on the router/firewall to the **origin**:
    - **TCP+UDP** `25565` → nginx stream → YaPcore `:25566`
    - **TCP** `80` (packs) → nginx → YaPcore `:8081`
-5. Restart: `./scripts/gui.sh` or `./scripts/start.sh` — boot banner prints join URLs.
+5. Restart: `./scripts/lifecycle/gui.sh` or `./scripts/lifecycle/start.sh` — boot banner prints join URLs.
 
 ## What the boot banner means
 
@@ -273,7 +273,7 @@ max-concurrent-per-ip=32
 # or max-concurrent-per-ip-enabled=false for LAN only
 ```
 
-Keep loopback exemption **on** for local admin tools and `./scripts/start.sh`.
+Keep loopback exemption **on** for local admin tools and `./scripts/lifecycle/start.sh`.
 
 ## Verify throttles
 
@@ -294,8 +294,8 @@ Templates: `deploy/nginx/yapcore-stream.conf.template`
 Hardened example (conn limits): `deploy/nginx/yapcore-stream-hardened.conf.example`
 
 ```bash
-./scripts/nginx-setup.sh --dry-run
-sudo ./scripts/nginx-setup.sh
+./scripts/setup/nginx-setup.sh --dry-run
+sudo ./scripts/setup/nginx-setup.sh
 ```
 
 Point **grey-cloud** DNS at the origin. Orange-cloud Minecraft TCP needs Spectrum.
@@ -412,9 +412,9 @@ port=25566
 ## Install nginx on the origin
 
 ```bash
-./scripts/nginx-setup.sh --dry-run
-sudo ./scripts/nginx-setup.sh --install-pkg   # first time
-sudo ./scripts/nginx-setup.sh                # apply configs
+./scripts/setup/nginx-setup.sh --dry-run
+sudo ./scripts/setup/nginx-setup.sh --install-pkg   # first time
+sudo ./scripts/setup/nginx-setup.sh                # apply configs
 ```
 
 Or use the GUI **nginx** tab. Restart YaPcore after saving domain/ports so the

@@ -1,16 +1,16 @@
 # Shipped defaults & first boot
 
 YaPcore ships **jar-embedded** plugin YAML plus a tracked **`config/defaults/`** pack
-that `./scripts/seed-defaults.sh` (and `start.sh`) copy into place **only when missing**.
+that `./scripts/setup/seed-defaults.sh` (and `start.sh`) copy into place **only when missing**.
 
-**Game path:** product defaults use **YaP-Folia** (`game-authority=folia`, `folia-jar-source=build`). Build with `./scripts/build-yap-folia.sh`.
+**Game path:** product defaults use **YaP-Folia** (`game-authority=folia`, `folia-jar-source=build`). Build with `./scripts/folia/build-yap-folia.sh`.
 
 ## What works without editing
 
 | Layer | OOTB |
 |-------|------|
-| Chat, Tab (sidebar), Guard, LagGuard, Packs, PluginCompat, PlaceholderAPI | Yes |
-| Admin menu, World tools, Regions, **Portals (on)**, Npcs, Protect, Moderation, Pregen, Floodgate, Map | Yes (SQL plugins need MariaDB / shared YaPDB) |
+| Chat, Tab (sidebar), Guard, LagGuard, Packs, PlaceholderAPI | Yes |
+| Admin menu, World tools, Regions, **Claims**, **Portals (on)**, Npcs, Protect, Moderation, Pregen, Floodgate, Map | Yes (SQL plugins need MariaDB / shared YaPDB) |
 | YaP-Folia + first-party plugin jars | Yes (after `installAllProductDefaults` / release zip + `lib/yap-folia-*.jar`) |
 | YaP Link + link plugins | Yes once `link.properties` seeded; **modern forwarding ON by default** (skins) — join **:25565** |
 | Resource pack prompt | Yes — JE pulls `yapcore-default.zip` from the **0.0.0.1** GitHub prerelease |
@@ -33,8 +33,8 @@ for MariaDB, dashboard token, forwarding secret, Discord inbound, and auth.
 ## Fresh install (recommended)
 
 ```bash
-./scripts/build-yap-folia.sh        # once — lib/yap-folia-26.2.jar
-./scripts/seed-defaults.sh          # or just ./start.sh (seeds automatically)
+./scripts/folia/build-yap-folia.sh        # once — lib/yap-folia-26.2.jar
+./scripts/setup/seed-defaults.sh          # or just ./start.sh (seeds automatically)
 ./configure-db.sh --server-id lobby # starts Docker MariaDB + writes JDBC
 # or: ./scripts/db/ensure-postgres.sh --server-id lobby
 # or: ./scripts/db/configure-db.sh --engine sqlite --server-id lobby
@@ -54,6 +54,7 @@ config/defaults/
   link.properties            → link-data/link.properties
   plugins/YaPDB/config.yml
   plugins/YaPPlayerData/…    # auth.enabled=false for LAN
+  plugins/YaPClaims/…        # land claims (/claim) — CORE default
   plugins/YaPDiscord/…       # inbound off
   plugins/YaP-QoL/…           # product default timber/excavator
   plugins/YaPItems/…
@@ -68,7 +69,7 @@ config/defaults/
   plugins/YaPFactions/…      # enabled: false (opt-in)
   plugins/YaPConquest/…      # enabled: false (opt-in chunk land)
   plugins/YaPModeration|Admin|Protect|World|Regions|Portals|Npcs|Floodgate|Pregen/…
-  plugins/PlaceholderAPI|YaPPluginCompat/…
+  plugins/PlaceholderAPI/…
   plugins/YaPPerms|Chat|Tab|Essentials|Guard|LagGuard|Packs|Commands/…
 ```
 
@@ -93,7 +94,7 @@ and let YaP-Folia re-extract from the jar after seed).
 | YaPWorld editor.bind | `127.0.0.1` | `0.0.0.0` + firewall if remote editors |
 | YaPMap mesh.enabled | `false` | `true` when you want 3D tiles |
 
-**Existing installs:** seeds never overwrite operator files. To pick up new shipped defaults, delete `plugins/<Name>/config.yml` (or the whole folder) and re-run `./scripts/seed-defaults.sh`.
+**Existing installs:** seeds never overwrite operator files. To pick up new shipped defaults, delete `plugins/<Name>/config.yml` (or the whole folder) and re-run `./scripts/setup/seed-defaults.sh`.
 
 ## Release note
 

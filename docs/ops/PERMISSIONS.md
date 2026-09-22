@@ -10,7 +10,7 @@ PlaceholderAPI `%yapperms_*%`. `/lp` is an alias.
 ```bash
 gradle installProductDefaults
 ./scripts/db/ensure-db.sh --server-id lobby
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 # console or dashboard:
 ranks apply
 /yapperm user Steve parent set vip

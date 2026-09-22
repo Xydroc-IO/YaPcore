@@ -336,7 +336,7 @@ Tebex’s **plugin** is third-party (**GPLv3**). We can legally ship/redistribut
 separate jar; we do **not** vendor it in git. Fetch the Folia build:
 
 ```bash
-./scripts/fetch-tebex.sh          # → plugins/tebex.jar
+./scripts/plugins/fetch-tebex.sh          # → plugins/tebex.jar
 # or: gradle fetchTebex
 ```
 
@@ -362,7 +362,7 @@ Both jars are **Hub / lobby only** (not survival, not YaP Link).
 
 Web admin → **Tebex store** (`GET/POST /api/tebex`):
 
-1. Confirm `tebex.jar` is installed on **Hub / lobby only** (`./scripts/fetch-tebex.sh`).
+1. Confirm `tebex.jar` is installed on **Hub / lobby only** (`./scripts/plugins/fetch-tebex.sh`).
 2. Open [creator.tebex.io](https://creator.tebex.io/) → add a **Minecraft (Java / Folia) game server**.
 3. Paste the **secret key** into the dashboard → **Save secret** (runs `tebex secret <key>` + writes `plugins/Tebex/config.yml`).
 4. Optional: toggle `/buy`, proxy, verbose, update checks, auto-report, GUI home title/rows → **Save settings**.
@@ -477,7 +477,7 @@ kit grant {username} adventurer
 
 ## Checklist
 
-1. Hub has CORE+NETWORK jars + `tebex.jar` (`./scripts/fetch-tebex.sh`) and optionally `yap-tebex.jar`.
+1. Hub has CORE+NETWORK jars + `tebex.jar` (`./scripts/plugins/fetch-tebex.sh`) and optionally `yap-tebex.jar`.
 2. Shared SQL via YaPDB (`use-shared-yapdb: true`) — MariaDB/MySQL · PostgreSQL · SQLite.
 3. Identical `plugins/YaPPlayerData/kits.yml` on Hub + survival.
 4. Secret set via dashboard **Tebex store** or `tebex secret <key>` on Hub.

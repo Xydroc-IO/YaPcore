@@ -6,11 +6,11 @@ Install store delivery on your **Hub/lobby** Folia backend — not on YaP Link /
 
 | Path | Install | Notes |
 |------|---------|--------|
-| **Poll / GUI** | `./scripts/fetch-tebex.sh` → `plugins/tebex.jar` | GPLv3 Folia plugin; `/buy`, GUI, `tebex forcecheck` |
+| **Poll / GUI** | `./scripts/plugins/fetch-tebex.sh` → `plugins/tebex.jar` | GPLv3 Folia plugin; `/buy`, GUI, `tebex forcecheck` |
 | **Webhook push** | `gradle :tebex-webhook-plugin:installIntoPlugins` → `yap-tebex.jar` | First-party; `POST /tebex/webhook` → package ID → console |
 
 ```bash
-./scripts/fetch-tebex.sh    # GPLv3 Folia jar → plugins/tebex.jar
+./scripts/plugins/fetch-tebex.sh    # GPLv3 Folia jar → plugins/tebex.jar
 # Dashboard: Tebex store → paste game-server secret → Save secret
 # Or Hub console: tebex secret <your-key>
 

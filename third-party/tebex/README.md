@@ -6,7 +6,7 @@ Official **Tebex Folia** plugin for Hub web-store command delivery.
 |--|--|
 | License | **GNU GPLv3** |
 | Upstream | https://github.com/tebexio/Tebex-Minecraft |
-| Install | `./scripts/fetch-tebex.sh` → `plugins/tebex.jar` |
+| Install | `./scripts/plugins/fetch-tebex.sh` → `plugins/tebex.jar` |
 | Setup | Dashboard **Tebex store** or Hub console `tebex secret <key>` — [TEBEX.md](../../docs/ops/TEBEX.md) → [INTEGRATIONS.md](../../docs/ops/INTEGRATIONS.md#tebex) |
 
 YaPcore does **not** vendor this jar in git (same policy as stock Folia). Redistribution
@@ -14,4 +14,4 @@ in release zips is allowed under GPLv3 when `NOTICE.txt` + `LICENSE-GPLv3.txt` s
 alongside the binary and source is available from upstream. YaPcore itself is also GPLv3.
 
 Setup: [docs/ops/TEBEX.md](../../docs/ops/TEBEX.md) (points at [INTEGRATIONS.md](../../docs/ops/INTEGRATIONS.md#tebex)).
-Install on **Hub / lobby only** — `./scripts/fetch-tebex.sh` copies into `plugins/` and `fleet/instances/lobby/plugins/`.
+Install on **Hub / lobby only** — `./scripts/plugins/fetch-tebex.sh` copies into `plugins/` and `fleet/instances/lobby/plugins/`.

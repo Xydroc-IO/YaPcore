@@ -10,7 +10,7 @@ Copyright:  GrimAnticheat contributors
 YaPcore does not modify this jar. It is an optional third-party anti-cheat for
 YaP-Folia backends. Fetch with:
 
-  ./scripts/fetch-grim.sh
+  ./scripts/plugins/fetch-grim.sh
 
 Source code corresponding to the binary is available from the upstream GitHub
 repository and Modrinth release files. If you redistribute a YaPcore package that

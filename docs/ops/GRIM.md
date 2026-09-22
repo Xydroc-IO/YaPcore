@@ -6,13 +6,13 @@ YaPcore ships **YaPGuard** as a lightweight native default (always on). **Grim i
 downloaded automatically on first setup** but **not loaded** until you enable it.
 
 ```bash
-./scripts/grim-ac.sh enable   # → grim.jar + turns off YaPGuard movement checks
+./scripts/plugins/grim-ac.sh enable   # → grim.jar + turns off YaPGuard movement checks
 # restart YaP-Folia (required)
 ```
 
 ## First install (automatic)
 
-`./scripts/seed-defaults.sh` (also run from `start.sh`) downloads the latest
+`./scripts/setup/seed-defaults.sh` (also run from `start.sh`) downloads the latest
 Folia-capable Grim build from Modrinth as:
 
 ```text
@@ -21,33 +21,33 @@ plugins/grim.jar.disabled
 
 Folia ignores `*.jar.disabled` — Grim does **not** run until you enable it.
 
-Skip the download (offline / CI): `YAP_SKIP_OPTIONAL_FETCH=1 ./scripts/seed-defaults.sh`
+Skip the download (offline / CI): `YAP_SKIP_OPTIONAL_FETCH=1 ./scripts/setup/seed-defaults.sh`
 
 ## Enable Grim (operator action)
 
 ```bash
-./scripts/grim-ac.sh enable    # → grim.jar + turns off YaPGuard movement checks
+./scripts/plugins/grim-ac.sh enable    # → grim.jar + turns off YaPGuard movement checks
 # restart YaP-Folia
 ```
 
 Disable again:
 
 ```bash
-./scripts/grim-ac.sh disable   # → grim.jar.disabled
+./scripts/plugins/grim-ac.sh disable   # → grim.jar.disabled
 # restart YaP-Folia
 ```
 
 Status:
 
 ```bash
-./scripts/grim-ac.sh status
+./scripts/plugins/grim-ac.sh status
 ```
 
 Manual fetch (same as setup, still disabled):
 
 ```bash
-./scripts/fetch-grim.sh --disabled
-# or active jar for dev: ./scripts/fetch-grim.sh
+./scripts/plugins/fetch-grim.sh --disabled
+# or active jar for dev: ./scripts/plugins/fetch-grim.sh
 # or: gradle fetchGrim
 ```
 
@@ -71,7 +71,7 @@ Restart Folia after enable/disable. Config appears under `plugins/GrimAC/`.
 
 **Do not run both at full sensitivity.** Typical setups:
 
-- **Grim only** — `./scripts/grim-ac.sh enable` (disables YaPGuard movement checks)
+- **Grim only** — `./scripts/plugins/grim-ac.sh enable` (disables YaPGuard movement checks)
 - **YaPGuard only** — leave Grim disabled (default after setup)
 - **Grim + YaPGuard alerts** — Grim punishes; YaPGuard checks off, alerts optional
 

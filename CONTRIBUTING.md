@@ -7,7 +7,7 @@ Thank you for contributing to a production Folia network stack.
 1. **Repository hygiene** — never commit build outputs, live Paper/Folia trees, worlds, logs, plugin jars, bench workdirs, Link `link.properties`, or secrets. Docs are Markdown under `docs/`. See [README.md](README.md) and [RELEASES.md](docs/start/RELEASES.md).
 2. **Threading** — world / inventory / block changes on **SYNC**; DB/HTTP on **HEAVY**; menu polish on **UI**.
 3. **Size** — **hard rule:** ≤500 lines per domain `.java` file under `src/main/java` and
-   `yap-first-party/` (enforced by `./scripts/check-domain-line-limits.sh` / `gradle checkDomainLineLimits`).
+   `yap-first-party/` (enforced by `./scripts/check/check-domain-line-limits.sh` / `gradle checkDomainLineLimits`).
    YaP classes under `vendor/folia/` patches (`YapCorridorCarver` and siblings) follow the same 500-line split.
    Split by package when a class grows ([whitepaper](docs/whitepaper/YAPCORE_WHITEPAPER.md)).
    Link JE outbound framing belongs in `McOutboundPacketEncoder`, not a stacked compress+frame Netty pair.
@@ -21,10 +21,10 @@ Thank you for contributing to a production Folia network stack.
 ```bash
 git clone https://github.com/Xydroc-IO/YaPcore.git
 cd YaPcore
-chmod +x scripts/*.sh scripts/db/*.sh scripts/yapctl
-./scripts/build-yap-folia.sh
+find scripts -type f \( -name '*.sh' -o -name yapctl \) -exec chmod +x {} +
+./scripts/folia/build-yap-folia.sh
 gradle shadowJar
-./scripts/gui.sh
+./scripts/lifecycle/gui.sh
 ```
 
 - **Java 25+** to build and run the product path (YaP-Folia 26.2).

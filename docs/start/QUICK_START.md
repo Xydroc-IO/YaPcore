@@ -3,7 +3,7 @@
 Get a YaPcore server running in **under 10 minutes**. No nginx, no public domain, no
 plugin hunting — everything you need ships in the box.
 
-**Game jar:** product default is **YaP-Folia** (`lib/yap-folia-*.jar`, `folia-jar-source=build`) — our Folia 26.2 fork, not stock Fill Folia. Build with `./scripts/build-yap-folia.sh`.
+**Game jar:** product default is **YaP-Folia** (`lib/yap-folia-*.jar`, `folia-jar-source=build`) — our Folia 26.2 fork, not stock Fill Folia. Build with `./scripts/folia/build-yap-folia.sh`.
 
 ## Requirements
 
@@ -25,17 +25,17 @@ Pre-built jars, plugins, packs, and launch scripts — no Gradle required.
 If the release includes `lib/yap-folia-*.jar`, you’re on the product path. If missing:
 
 ```bash
-./scripts/build-yap-folia.sh    # JDK 25+, Git, network (source tree)
+./scripts/folia/build-yap-folia.sh    # JDK 25+, Git, network (source tree)
 # config/server.properties:
 folia-jar-source=build
 ```
 
-Stock Folia fallback (benches only): `folia-jar-source=fetch` + `./scripts/fetch-folia.sh`.
+Stock Folia fallback (benches only): `folia-jar-source=fetch` + `./scripts/folia/fetch-folia.sh`.
 
 1. Download **`yapcore-release-linux.zip`** or **`yapcore-release-windows.zip`**
    from the **[0.0.0.1 prerelease](https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.1)**
    (`https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/yapcore-release-linux.zip`).
-   GitHub’s **Latest** button still serves stable **1.0.0.0**.
+   GitHub’s **Latest** button does not serve this line. **1.0.0.0** was deleted, so `/releases/latest` stays empty until a non-prerelease exists.
    Source builds: `gradle publishReleasesFolder` (gitignored under `releases/`)
    or `gradle assembleRelease` → `build/dist/yapcore-release/`.
 
@@ -55,7 +55,7 @@ echo "eula=true" > eula.txt
 4. Seed shippable defaults (optional — `start.sh` also does this):
 
 ```bash
-./scripts/seed-defaults.sh
+./scripts/setup/seed-defaults.sh
 ```
 
 5. Start MariaDB and wire JDBC (one command):
@@ -100,12 +100,12 @@ git clone https://github.com/Xydroc-IO/YaPcore.git
 cd YaPcore
 chmod +x scripts/*.sh
 
-./scripts/build-yap-folia.sh      # YaP-Folia → lib/yap-folia-26.2.jar
+./scripts/folia/build-yap-folia.sh      # YaP-Folia → lib/yap-folia-26.2.jar
 gradle installProductDefaults     # first-party plugins → plugins/
 gradle shadowJar                  # yapcore.jar
 
 ./scripts/db/ensure-db.sh --server-id lobby
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 ```
 
 Release tree (for distribution):
@@ -215,7 +215,7 @@ Compose: [`deploy/mariadb/`](../../deploy/mariadb/) · [`deploy/postgres/`](../.
 | Problem | Fix |
 |---------|-----|
 | “Java 25 required” | Install JDK 25+; `java -version` |
-| YaP-Folia won't start | Run `./scripts/build-yap-folia.sh`; check `lib/yap-folia-*.jar` and `folia-kernel/` |
+| YaP-Folia won't start | Run `./scripts/folia/build-yap-folia.sh`; check `lib/yap-folia-*.jar` and `folia-kernel/` |
 | Stock Folia only | You set `folia-jar-source=fetch` — switch to `build` for product path |
 | No DB connection | Run `ensure-db.sh` / `ensure-postgres.sh` / `--engine sqlite`; check Docker if using MariaDB/Postgres |
 | Can't join Java | Check port in boot banner; firewall; `online-mode` vs client auth |

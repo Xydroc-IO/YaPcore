@@ -9,7 +9,7 @@ Copyright: Tebex Ltd and contributors
 YaPcore does not modify this jar. It is an optional third-party plugin for
 web-store command delivery on Hub (YaP-Folia). Fetch with:
 
-  ./scripts/fetch-tebex.sh
+  ./scripts/plugins/fetch-tebex.sh
 
 Source code corresponding to the binary is available from the upstream GitHub
 repository and release tags. If you redistribute a YaPcore package that includes

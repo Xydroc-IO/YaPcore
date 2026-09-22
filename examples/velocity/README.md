@@ -40,7 +40,7 @@ online-mode = true
 
 ```bash
 # Terminal A — game
-cd /path/to/YaPcore && ./scripts/start.sh --fg
+cd /path/to/YaPcore && ./scripts/lifecycle/start.sh --fg
 
 # Terminal B — proxy
 cd /path/to/velocity && java -jar velocity.jar

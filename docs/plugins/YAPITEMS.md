@@ -15,7 +15,7 @@ Jar: `plugins/yap-items.jar`. Soft API: `com.yapcore.items.api.ItemService` (`ya
 Rebuild the default pack so clients see custom models:
 
 ```bash
-./scripts/build-default-resourcepack.sh
+./scripts/packs/build-default-resourcepack.sh
 ```
 
 Overlay source: [`resourcepacks/yap-items/`](../../resourcepacks/yap-items/) (merged into `yapcore-default`).

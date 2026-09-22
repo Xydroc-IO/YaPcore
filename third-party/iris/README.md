@@ -5,7 +5,7 @@
 | License | **LGPL-3.0-only** (Iris) |
 | Upstream | https://github.com/IrisShaders/Iris (branch `26.2`) |
 | YaP tree | [`yap-iris/`](../../client/yap-iris/) |
-| Build | `./scripts/build-yap-client-render.sh` |
+| Build | `./scripts/packs/build-yap-client-render.sh` |
 
 ## Corresponding source
 

@@ -4,7 +4,7 @@ Operator and engineering documentation lives as **Markdown** under [`docs/`](../
 This folder holds optional local PDF prints — **gitignored**, never committed.
 
 ```bash
-./scripts/export-docs-pdf.sh
+./scripts/docs/export-docs-pdf.sh
 # → docs/pdf/*.pdf (chromium / google-chrome headless)
 ```
 

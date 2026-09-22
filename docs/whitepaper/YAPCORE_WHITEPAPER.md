@@ -206,12 +206,12 @@ YaPcore does **not** ship stock PaperMC Folia as the product game jar. Upstream 
 | `0073`–`0074` | Spawn search uses the registered cut. Spread and grow do not snapshot a cut section | **on** (ship) |
 | `0075`–`0079` | Queued login stays alive on the global tick. Chunk X=−1 is refused. Play packets follow the protocol switch. No configuration keepalive after finish | **on** (ship) |
 
-Build: `./scripts/build-yap-folia.sh` → `lib/yap-folia-26.2.jar`.  
+Build: `./scripts/folia/build-yap-folia.sh` → `lib/yap-folia-26.2.jar`.  
 Docs: [YAP_FOLIA_PATCHES.md](../folia/YAP_FOLIA_PATCHES.md) · [QUICK_START.md](../start/QUICK_START.md).
 
-Packed spawn is a live split the regionizer holds, without a YaP phase clock. Cite `20260919T165559Z`: 500 at both ends, `into 2 shards`, TNT 2400, hoppers 770, 32 villagers, fuse drop 808.5, busiest region 37.24 ms. Stock beside it (`20260919T171015Z`) started at 500 and ended at 119, busiest region 65.03 ms, because the encoder ran out of direct memory. Product jar md5 `76aeaf3fefcf34bc9e80f441d0419df7`. Lab strip check remains `./scripts/smoke-contiguous-bar.sh`.
+Packed spawn is a live split the regionizer holds, without a YaP phase clock. Cite `20260919T165559Z`: 500 at both ends, `into 2 shards`, TNT 2400, hoppers 770, 32 villagers, fuse drop 808.5, busiest region 37.24 ms. Stock beside it (`20260919T171015Z`) started at 500 and ended at 119, busiest region 65.03 ms, because the encoder ran out of direct memory. Product jar md5 `76aeaf3fefcf34bc9e80f441d0419df7`. Lab strip check remains `./scripts/folia/smoke-contiguous-bar.sh`.
 
-Stock Folia fallback: `folia-jar-source=fetch` + `./scripts/fetch-folia.sh` (bench / comparison only).
+Stock Folia fallback: `folia-jar-source=fetch` + `./scripts/folia/fetch-folia.sh` (bench / comparison only).
 
 ---
 
@@ -259,7 +259,6 @@ Sources live under `yap-first-party/`. Install tiers:
 | `yap-packs.jar` | YaPPacks | Multi resource-pack push |
 | `yap-floodgate.jar` | YaPFloodgate | Bedrock identity without Floodgate jar |
 | `yap-placeholderapi.jar` | PlaceholderAPI | Clip-compatible PAPI (local expansions; eCloud out of scope by design) |
-| `yap-plugin-compat.jar` | YaPPluginCompat | 1.20–1.21 → 26.2 back-compat status |
 | `yap-pregen.jar` | YaPPregen | Folia-safe chunk pre-generator |
 | `yap-folia-bridge.jar` | YaPFoliaBridge | Folia surface / scheduler smoke |
 | `yap-lib.jar` | YaPLib | ProtocolLib-class packet intercept |
@@ -392,7 +391,7 @@ Dashboard Phase 8 ops tabs are **shipped** (Factions / Disasters / Stacker / Ski
 ## 11. Evaluation methodology
 
 Unit tests (JUnit) cover plugin and API behavior. Operators validate with a local boot:
-`./scripts/seed-defaults.sh` then `./scripts/start.sh --fg`.
+`./scripts/setup/seed-defaults.sh` then `./scripts/lifecycle/start.sh --fg`.
 
 **Metrics:** region MSPT p99, bridge queue depth, join success by protocol version, HEAVY pool saturation, MariaDB pool health.
 
@@ -493,15 +492,15 @@ Future work emphasizes **real contiguous Folia splits that hold without a YaP ph
 
 ```bash
 # Java 25+
-./scripts/build-yap-folia.sh          # → lib/yap-folia-26.2.jar
+./scripts/folia/build-yap-folia.sh          # → lib/yap-folia-26.2.jar
 ./scripts/db/ensure-db.sh --server-id lobby
 gradle installProductDefaults         # CORE+NETWORK → plugins/
 # optional:
 gradle installGameplayDefaults        # skills + stacker + knobs + disasters
 gradle assembleRelease
-./scripts/start.sh --fg
+./scripts/lifecycle/start.sh --fg
 # multi-backend:
-./scripts/start-yap-link.sh
+./scripts/lifecycle/start-yap-link.sh
 ```
 
 ### Appendix C — Citation

@@ -5,7 +5,7 @@ Canonical setup, package recipes, Hub-only install, and checklist live in
 
 Quick path:
 
-1. `./scripts/fetch-tebex.sh` → Hub / lobby only (`plugins/tebex.jar`)
+1. `./scripts/plugins/fetch-tebex.sh` → Hub / lobby only (`plugins/tebex.jar`)
 2. Web admin → **Tebex store** → paste game-server secret
 3. Copy package console commands (`{username}`) from the tab into creator.tebex.io
    **or** enable **webhook endpoint** (`yap-tebex.jar`) and map package IDs in

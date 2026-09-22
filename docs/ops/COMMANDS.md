@@ -130,6 +130,7 @@ Duration examples: `30m`, `2h`, `7d`, `1w`.
 | Command | Permission | Description |
 |---------|------------|-------------|
 | `/spawn` | `yapessentials.spawn` | Teleport to spawn |
+| `/rtp` `/wild` | `yapessentials.rtp` | Random safe spot in the wild |
 | `/setspawn` | `yapessentials.setspawn` | Set spawn |
 | `/back` | `yapessentials.back` | Previous location |
 | `/tpa` `/tpahere` `/tpaccept` `/tpdeny` | `yapessentials.tpa` | Teleport requests |
@@ -213,11 +214,10 @@ In-game kitchen-sink hub: players, give (presets + kits + materials), moderation
 | Skills | `/skills` · `/stats` · `/skill` · `/skill top` · `/yskills reload` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | Dungeons | `/dungeon` · `/dungeon invite\|accept\|deny\|leave\|status` · `/yapdungeons …` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | NPCs | `/npc …` · `/quests …` · `/npc shop …` · `/npc setname` · `/npc move` · `/npc respawn` · `/npc setspawn` · `/npc setserver` | dashboard **NPCs** + **Shops** · [PLAYERDATA.md](../data/PLAYERDATA.md) |
-| Fleet portals | `/portal …` (wand / create `[color]` / setcolor / go) · Link `/hub` `/server` | [PORTALS.md](../network/PORTALS.md) |
+| Fleet portals | `/portal …` (wand / create / setcolor / setarrival rtp / go) · Link `/hub` `/server` | [PORTALS.md](../network/PORTALS.md) |
 | Admin regions | `/region …` (flag / **gamemode** / **worldborder** / template) | [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
 | Disasters | `/yapdisaster …` | dashboard **Disasters** tab |
 | Gameplay knobs | `/yapknobs …` | [TUNE.md](TUNE.md) |
-| Plugin compat | `/yapcompat …` | [PLUGIN_COMPAT.md](PLUGIN_COMPAT.md) |
 | PlaceholderAPI | `/papi …` | [PLUGINS.md](../plugins/PLUGINS.md) |
 | Player data | `/yapdata …` · auth `/login` `/register` | [PLAYERDATA.md](../data/PLAYERDATA.md) |
 | Essentials QoL + data-backed cmds | `/spawn` `/tpa` … · `/bal` `/bag` `/kit` `/home` `/shop` `/ah` `/claim` `/menu` | this section + [PLAYERDATA.md](../data/PLAYERDATA.md) |

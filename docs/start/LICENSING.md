@@ -23,8 +23,8 @@ responsible for complying with each when you ship or run a server.
 | Component | License | Notes |
 |-----------|---------|-------|
 | **Folia / Paper** | **GPLv3** | Downloaded separately (`fetch-folia.sh`); not redistributed in-repo |
-| **Tebex** (optional store plugin) | **GPLv3** | `./scripts/fetch-tebex.sh` → `plugins/tebex.jar`; notices in `third-party/tebex/` |
-| **Grim Anticheat** (optional AC) | **GPLv3** | `./scripts/fetch-grim.sh` → `plugins/grim.jar`; notices in `third-party/grim/` |
+| **Tebex** (optional store plugin) | **GPLv3** | `./scripts/plugins/fetch-tebex.sh` → `plugins/tebex.jar`; notices in `third-party/tebex/` |
+| **Grim Anticheat** (optional AC) | **GPLv3** | `./scripts/plugins/fetch-grim.sh` → `plugins/grim.jar`; notices in `third-party/grim/` |
 | **Minecraft server software** | Mojang EULA | You must accept `eula=true`; not open source |
 | **Faithful 64x** (default pack) | See `resourcepacks/FAITHFUL_LICENSE.txt` | Bundled in release zips when present |
 | **Sodium** (optional client) | **PolyForm Shield 1.0.0** | Official jar pin only — [yap-sodium/](../../client/yap-sodium/); notices in `third-party/sodium/` |
@@ -46,13 +46,13 @@ licenses and your legal counsel.
 ### Tebex (GPLv3, optional)
 
 The official [Tebex Minecraft plugin](https://github.com/tebexio/Tebex-Minecraft) is
-**GPLv3**. Fetch with `./scripts/fetch-tebex.sh` or `gradle fetchTebex`; ship notices
+**GPLv3**. Fetch with `./scripts/plugins/fetch-tebex.sh` or `gradle fetchTebex`; ship notices
 from `third-party/tebex/`. Setup: [INTEGRATIONS.md](../ops/INTEGRATIONS.md).
 
 ### Grim Anticheat (GPLv3, optional)
 
 The official [Grim Anticheat](https://github.com/GrimAnticheat/Grim) plugin is
-**GPLv3**. Fetch with `./scripts/fetch-grim.sh` or `gradle fetchGrim`; ship notices
+**GPLv3**. Fetch with `./scripts/plugins/fetch-grim.sh` or `gradle fetchGrim`; ship notices
 from `third-party/grim/`. Setup: [GRIM.md](../ops/GRIM.md).
 
 ### Optional client render stack (Sodium / YaP Iris / YaP Shaders)
@@ -63,11 +63,11 @@ never forced by the server.
 
 | Piece | License | Notes |
 |-------|---------|-------|
-| **Sodium** | PolyForm Shield 1.0.0 | Official unmodified jar only. A YaP fork would compete with Sodium and is **not** allowed under PolyForm Shield. Pin + fetch: [yap-sodium/](../../client/yap-sodium/), `./scripts/fetch-sodium.sh` |
+| **Sodium** | PolyForm Shield 1.0.0 | Official unmodified jar only. A YaP fork would compete with Sodium and is **not** allowed under PolyForm Shield. Pin + fetch: [yap-sodium/](../../client/yap-sodium/), `./scripts/packs/fetch-sodium.sh` |
 | **YaP Iris** | LGPL-3.0 | LGPL fork of [Iris](https://github.com/IrisShaders/Iris) in [yap-iris/](../../client/yap-iris/). Embeds **glsl-transformer** (**AGPL-3.0**) — distributing the jar requires AGPL compliance for that dependency ([LICENSE-DEPENDENCIES](../../client/yap-iris/LICENSE-DEPENDENCIES)). Corresponding source: `client/yap-iris/` in this repo. |
 | **YaP Shaders** | GPLv3 | First-party Iris-format pack (water + foliage wind + skies). Not a Complementary/BSL fork. |
 
-Build / bundle: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`
+Build / bundle: `./scripts/packs/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`
 (and loose jars). Docs: [CLIENTS_AND_PACKS.md](../network/CLIENTS_AND_PACKS.md).
 
 YaPcore first-party code (chassis, plugins, Link) is **GPLv3** unless a file says

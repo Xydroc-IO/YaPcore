@@ -2,20 +2,20 @@
 
 All first-party artifacts share version **0.0.0.1** (Gradle `version`, plugin `plugin.yml`, Link `link-plugin.json`).
 
-**This line ships as a GitHub prerelease.** `/releases/latest` stays on stable **1.0.0.0**. Operators, packs, and the chassis use tag URLs:
+**This line ships as a GitHub prerelease.** `/releases/latest` ignores prereleases. The old stable **1.0.0.0** release was deleted, so that URL stays empty until a non-prerelease exists. Operators, packs, and the chassis use tag URLs:
 
 `https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}`
 
 **Release notes:** [RELEASE_NOTES.md](RELEASE_NOTES.md)  
 **License:** release trees include root **`LICENSE`** (GNU GPLv3). See [LICENSING.md](LICENSING.md).
 
-**Game jar:** product path expects **YaP-Folia** (`lib/yap-folia-26.2.jar`) built via `./scripts/build-yap-folia.sh`. Stock Fill Folia is not the release default. Build with `./scripts/build-yap-folia.sh`.
+**Game jar:** product path expects **YaP-Folia** (`lib/yap-folia-26.2.jar`) built via `./scripts/folia/build-yap-folia.sh`. Stock Fill Folia is not the release default. Build with `./scripts/folia/build-yap-folia.sh`.
 
 ## Build commands
 
 | Task | Output |
 |------|--------|
-| `./scripts/build-yap-folia.sh` | `lib/yap-folia-26.2.jar` — **required for product path** |
+| `./scripts/folia/build-yap-folia.sh` | `lib/yap-folia-26.2.jar` — **required for product path** |
 | `gradle assembleRelease` | `build/dist/yapcore-release/` — **linux/** + **windows/** full trees (all plugins) |
 | `gradle assembleRelease` | Slim CORE+NETWORK by default (`yapGameplay=false`) |
 | `gradle assembleRelease -PyapGameplay=true` | Full box including GAMEPLAY (skills / dungeons / stacker / knobs / disasters) |
@@ -30,7 +30,7 @@ All first-party artifacts share version **0.0.0.1** (Gradle `version`, plugin `p
 ## Durable release folder
 
 ```bash
-./scripts/build-yap-folia.sh
+./scripts/folia/build-yap-folia.sh
 gradle publishReleasesFolder
 # → releases/0.0.0.1/
 #      yapcore-release/linux/   yapcore-release/windows/
@@ -43,7 +43,7 @@ The entire `releases/` directory is **gitignored** (local artifacts only). Rebui
 ## GitHub prerelease assets (tag `0.0.0.1`)
 
 Attach (or refresh with `--clobber`) so `/releases/download/0.0.0.1/{file}` works.
-Do **not** rely on `/releases/latest` — that URL ignores prereleases and still serves **1.0.0.0**.
+Do **not** rely on `/releases/latest` — that URL ignores prereleases. **1.0.0.0** was deleted, so it stays empty until a non-prerelease exists.
 
 | Asset | Role |
 |-------|------|
@@ -51,9 +51,9 @@ Do **not** rely on `/releases/latest` — that URL ignores prereleases and still
 | `yap-network-suite.zip` / `yap-gameplay-suite.zip` | Standalone suites |
 | `yapcore-default.zip` | **Required** for JE pack CDN (`resource-pack-url` default) |
 | `yapcore-default.mcpack` | **Required** for Bedrock pack CDN (`resource-pack-bedrock-file`) |
-| `client_mods.zip` | Optional Fabric clients — unzip → `client_mods/` with **yap-visuals**, **yap-bag**, **yap-presence**, **yap-blocks**, **yap-staff**, **yap-ultrawide** |
+| `client_mods.zip` | Optional Fabric clients — unzip → `client_mods/` with **yap-visuals**, **yap-bag**, **yap-420**, **yap-presence**, **yap-blocks**, **yap-staff**, **yap-ultrawide** |
 
-Build clients: `./scripts/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.  
+Build clients: `./scripts/packs/build-yap-client-render.sh` → `dist/client-mods/client_mods.zip`.  
 Parity smoke: `./scripts/parity/smoke-bedrock-feel.sh`.  
 Prefer the zip for releases (one upload). Loose jars stay under `dist/client-mods/` for local installs only.
 
@@ -123,13 +123,13 @@ See [WINDOWS.md](WINDOWS.md) and [YAPDB.md](../data/YAPDB.md).
 When docs/plugins change but the product version stays **0.0.0.1**:
 
 ```bash
-./scripts/build-yap-folia.sh   # if Folia fork patches changed
+./scripts/folia/build-yap-folia.sh   # if Folia fork patches changed
 gradle publishReleasesFolder   # refreshes releases/0.0.0.1/ trees + zips
 ```
 
 Update [RELEASE_NOTES.md](RELEASE_NOTES.md) “After 0.0.0.1” — do **not** change Gradle `version`.
 
-**Latest:** 2026-09-19 — **0.0.0.1** (no version bump). Product jar `76aeaf3f` (`0073`–`0079`). Fullcite `20260919T165559Z` held 500 at 37.24 ms against stock `20260919T171015Z` ending at 119 (65.03 ms; encoder out of direct memory, not a watchdog). Packs pin `/releases/download/0.0.0.1/{file}`. Rebuild: `gradle publishReleasesFolder -PyapGameplay=true`.
+**Latest:** 2026-09-22 — **0.0.0.1** (no version bump). YaP420 gameplay + admin hub; `client_mods.zip` includes **yap-420** haze; staff 1.0.34. Rebuild: `./scripts/packs/build-default-resourcepack.sh` · `./scripts/packs/build-yap-client-render.sh` · `gradle publishReleasesFolder -PyapGameplay=true`.
 
 ## Version bump checklist (new tag only)
 
