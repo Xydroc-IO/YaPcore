@@ -11,7 +11,7 @@ import java.util.Set;
 
 /**
  * Player-facing QoL modules (bag, homes, warps, kits, mail, economy cmds, shops, AH, jobs,
- * claims UX, /menu) owned by <strong>YaPEssentials</strong> and backed by YaPPlayerData storage.
+ * /menu) owned by <strong>YaPEssentials</strong> and backed by YaPPlayerData storage.
  * Essentials binds these from its own {@code plugin.yml} via {@link PlayerFeaturesProvider}.
  */
 public interface PlayerFeatures {

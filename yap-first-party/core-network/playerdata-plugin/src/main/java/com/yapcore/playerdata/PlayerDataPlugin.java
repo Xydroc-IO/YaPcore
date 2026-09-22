@@ -2,12 +2,6 @@ package com.yapcore.playerdata;
 
 import com.yapcore.playerdata.auth.AuthListener;
 import com.yapcore.playerdata.auth.AuthService;
-import com.yapcore.playerdata.claims.ClaimFlagRepository;
-import com.yapcore.playerdata.claims.ClaimFlagService;
-import com.yapcore.playerdata.claims.ClaimListener;
-import com.yapcore.playerdata.claims.ClaimMessageRepository;
-import com.yapcore.playerdata.claims.ClaimService;
-import com.yapcore.playerdata.claims.TaxService;
 import com.yapcore.playerdata.bag.BackpackListener;
 import com.yapcore.playerdata.bag.BackpackService;
 import com.yapcore.playerdata.cmd.AdminCommand;
@@ -15,7 +9,6 @@ import com.yapcore.playerdata.cmd.AuctionCommands;
 import com.yapcore.playerdata.cmd.AuthCommands;
 import com.yapcore.playerdata.cmd.BagCommands;
 import com.yapcore.playerdata.cmd.BalanceCommands;
-import com.yapcore.playerdata.cmd.ClaimCommands;
 import com.yapcore.playerdata.cmd.HomeCommands;
 import com.yapcore.playerdata.cmd.JobCommands;
 import com.yapcore.playerdata.cmd.KitCommands;
@@ -26,7 +19,6 @@ import com.yapcore.playerdata.cmd.WarpCommands;
 import com.yapcore.playerdata.db.AuctionRepository;
 import com.yapcore.playerdata.db.AuthRepository;
 import com.yapcore.playerdata.db.BackpackRepository;
-import com.yapcore.playerdata.db.ClaimRepository;
 import com.yapcore.playerdata.db.Database;
 import com.yapcore.playerdata.db.HomesRepository;
 import com.yapcore.playerdata.db.JobRepository;
@@ -46,6 +38,7 @@ import com.yapcore.playerdata.kit.KitDelivery;
 import com.yapcore.playerdata.kit.KitGrantService;
 import com.yapcore.playerdata.kit.KitSignListener;
 import com.yapcore.playerdata.npc.NpcTraderService;
+import com.yapcore.playerdata.service.HomeAccessImpl;
 import com.yapcore.playerdata.service.PlayerDataServiceImpl;
 import com.yapcore.playerdata.service.PlayerFeaturesImpl;
 import com.yapcore.playerdata.sync.JoinQuitListener;
@@ -64,6 +57,7 @@ import java.util.List;
 /**
  * Cross-server player data plane: sync, session lock, auth, schema, service APIs.
  * Player-facing QoL commands are owned by YaPEssentials via {@link PlayerFeatures}.
+ * Land claims live in YaPClaims.
  */
 public final class PlayerDataPlugin extends JavaPlugin {
 
@@ -71,8 +65,6 @@ public final class PlayerDataPlugin extends JavaPlugin {
     private Database database;
     private SyncService sync;
     private YaPEconomy economy;
-    private ClaimService claims;
-    private TaxService taxes;
     private NpcTraderService traders;
     private Menus menus;
     private BackpackService backpack;
@@ -80,6 +72,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
     private PlayerFeaturesImpl playerFeatures;
     private KitGrantService kitGrants;
     private PlaytimeTracker playtime;
+    private HomeAccess homeAccess;
 
     @Override
     public void onEnable() {
@@ -132,20 +125,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
         ShopRepository shops = new ShopRepository(database);
         JobRepository jobs = new JobRepository(database);
         AuctionRepository auctions = new AuctionRepository(database);
-        ClaimRepository claimRepo = new ClaimRepository(database);
         NpcTraderRepository traderRepo = new NpcTraderRepository(database);
-
-        if (config.featureClaims()) {
-            ClaimFlagRepository flagRepo = new ClaimFlagRepository(database);
-            ClaimFlagService flagService = new ClaimFlagService(flagRepo, config);
-            ClaimMessageRepository messageRepo = new ClaimMessageRepository(database);
-            claims = new ClaimService(this, config, claimRepo, flagService, messageRepo);
-            claims.start();
-            if (config.claimsTaxEnabled()) {
-                taxes = new TaxService(this, config, claims, balances);
-                taxes.start();
-            }
-        }
 
         if (config.featureTraders()) {
             traders = new NpcTraderService(this, config, traderRepo, balances);
@@ -154,7 +134,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
                     NpcTraderAccess.class, traders, this, ServicePriority.Normal);
         }
 
-        menus = new Menus(this, config, sync, balances, homes, warps, kits, jobs, auctions, mail, claims);
+        menus = new Menus(this, config, sync, balances, homes, warps, kits, jobs, auctions, mail);
         playerFeatures = new PlayerFeaturesImpl(this);
 
         if (config.featureBackpack()) {
@@ -178,9 +158,6 @@ public final class PlayerDataPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new AuthListener(auth, repository, config), this);
 
         playerFeatures.addListener(new MenuListener(menus, traders));
-        if (claims != null) {
-            playerFeatures.addListener(new ClaimListener(this, claims));
-        }
 
         if (config.economyEnabled()) {
             BalanceCommands balanceCommands = new BalanceCommands(balances, sync);
@@ -212,6 +189,9 @@ public final class PlayerDataPlugin extends JavaPlugin {
             playerFeatures.put("home", homeCommands, homeCommands);
             playerFeatures.put("delhome", homeCommands, homeCommands);
             playerFeatures.put("homes", homeCommands, homeCommands);
+            homeAccess = new HomeAccessImpl(config, homes, getLogger());
+            getServer().getServicesManager().register(
+                    HomeAccess.class, homeAccess, this, ServicePriority.Normal);
         } else {
             playerFeatures.putDisabled("sethome", "features.homes");
             playerFeatures.putDisabled("home", "features.homes");
@@ -282,13 +262,6 @@ public final class PlayerDataPlugin extends JavaPlugin {
             playerFeatures.putDisabled("ah", config.economyEnabled() ? "features.auctions" : "economy");
         }
 
-        if (config.featureClaims() && claims != null) {
-            ClaimCommands claimCommands = new ClaimCommands(this, claims, taxes, sync, menus);
-            playerFeatures.put("claim", claimCommands, claimCommands);
-        } else {
-            playerFeatures.putDisabled("claim", "features.claims");
-        }
-
         getServer().getServicesManager().register(
                 PlayerFeatures.class, playerFeatures, this, ServicePriority.Normal);
 
@@ -311,7 +284,7 @@ public final class PlayerDataPlugin extends JavaPlugin {
                 + " auth=" + (auth.isActive() ? "on" : "off")
                 + " economy=" + (config.economyEnabled() ? "on" : "off")
                 + " modules=" + enabledModulesSummary()
-                + " (QoL commands via YaPEssentials)");
+                + " (QoL commands via YaPEssentials; claims via YaPClaims)");
     }
 
     private String enabledModulesSummary() {
@@ -336,9 +309,6 @@ public final class PlayerDataPlugin extends JavaPlugin {
         }
         if (config.featureAuctions()) {
             on.add("ah");
-        }
-        if (config.featureClaims()) {
-            on.add("claims");
         }
         if (config.featureTraders()) {
             on.add("npc-shops");
@@ -371,14 +341,6 @@ public final class PlayerDataPlugin extends JavaPlugin {
             traders.stop();
             traders = null;
         }
-        if (taxes != null) {
-            taxes.stop();
-            taxes = null;
-        }
-        if (claims != null) {
-            claims.stop();
-            claims = null;
-        }
         if (playtime != null) {
             playtime.flushAllOnline();
             playtime = null;
@@ -392,6 +354,13 @@ public final class PlayerDataPlugin extends JavaPlugin {
             } catch (Throwable ignored) {
             }
             economy = null;
+        }
+        if (homeAccess != null) {
+            try {
+                getServer().getServicesManager().unregister(HomeAccess.class, homeAccess);
+            } catch (Throwable ignored) {
+            }
+            homeAccess = null;
         }
         if (playerDataService != null) {
             getServer().getServicesManager().unregister(PlayerDataService.class, playerDataService);
@@ -411,10 +380,6 @@ public final class PlayerDataPlugin extends JavaPlugin {
 
     public Menus menus() {
         return menus;
-    }
-
-    public ClaimService claims() {
-        return claims;
     }
 
     private void bind(String name, org.bukkit.command.CommandExecutor exec,

@@ -3,8 +3,6 @@ package com.yapcore.playerdata.gui;
 import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.PlayerDataPlugin;
 import com.yapcore.playerdata.bag.BackpackService;
-import com.yapcore.playerdata.claims.Claim;
-import com.yapcore.playerdata.claims.ClaimService;
 import com.yapcore.playerdata.cmd.Perms;
 import com.yapcore.playerdata.db.AuctionRepository;
 import com.yapcore.playerdata.db.HomesRepository;
@@ -47,7 +45,6 @@ public final class Menus {
     final JobRepository jobs;
     final AuctionRepository auctions;
     final MailRepository mail;
-    final ClaimService claims;
     BackpackService backpack;
 
     /** slot → auction id / home name / etc for click routing */
@@ -56,7 +53,7 @@ public final class Menus {
     public Menus(PlayerDataPlugin plugin, PlayerDataConfig config, SyncService sync,
                  BalanceStore balances, HomesRepository homes, WarpsRepository warps,
                  KitRepository kits, JobRepository jobs, AuctionRepository auctions,
-                 MailRepository mail, ClaimService claims) {
+                 MailRepository mail) {
         this.plugin = plugin;
         this.config = config;
         this.sync = sync;
@@ -67,7 +64,6 @@ public final class Menus {
         this.jobs = jobs;
         this.auctions = auctions;
         this.mail = mail;
-        this.claims = claims;
     }
 
     public void bindBackpack(BackpackService backpack) {
@@ -125,8 +121,9 @@ public final class Menus {
         if (config.featureMail()) {
             inv.setItem(31, YapMenuHolder.icon(Material.WRITABLE_BOOK, "Mail", "Click to open"));
         }
-        if (config.featureClaims() && claims != null) {
-            inv.setItem(33, YapMenuHolder.icon(Material.GOLDEN_SHOVEL, "Claims", "Click to open"));
+        if (Bukkit.getPluginManager().getPlugin("YaPClaims") != null
+                && player.hasPermission("yapdata.claim")) {
+            inv.setItem(33, YapMenuHolder.icon(Material.GOLDEN_SHOVEL, "Claims", "/claim"));
         }
         if (player.hasPermission("yapadmin.menu")
                 && Bukkit.getPluginManager().getPlugin("YaPAdmin") != null) {
@@ -438,53 +435,6 @@ public final class Menus {
         }
         inv.setItem(49, YapMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(53, YapMenuHolder.icon(Material.LAVA_BUCKET, NamedTextColor.RED, "Clear all"));
-        player.openInventory(inv);
-    }
-
-    public void openClaims(Player player) {
-        if (!config.featureClaims() || claims == null) {
-            player.sendMessage("§cClaims are disabled.");
-            return;
-        }
-        if (!Perms.require(player, "yapdata.claim")) {
-            return;
-        }
-        YapMenuHolder holder = new YapMenuHolder(YapMenuHolder.Kind.CLAIMS);
-        Inventory inv = Bukkit.createInventory(holder, 54, Component.text("Claims", NamedTextColor.GREEN));
-        holder.bind(inv);
-        YapMenuHolder.fillBorder(inv);
-        Map<Integer, String> meta = new HashMap<>();
-        try {
-            int blocks = claims.repo().getBlocks(player.getUniqueId(), config.claimsStartingBlocks());
-            inv.setItem(4, YapMenuHolder.icon(Material.GOLDEN_SHOVEL, "Claim blocks",
-                    String.valueOf(blocks),
-                    "Tool: golden shovel (2 corners)",
-                    "Inspect: stick"));
-            int slot = 10;
-            for (Claim c : claims.repo().listOwned(player.getUniqueId())) {
-                while (slot % 9 == 0 || slot % 9 == 8) {
-                    slot++;
-                }
-                if (slot >= 44) {
-                    break;
-                }
-                inv.setItem(slot, YapMenuHolder.icon(
-                        c.isSubdivision() ? Material.OAK_FENCE : Material.GRASS_BLOCK,
-                        (c.isSubdivision() ? "Sub #" : "#") + c.id() + " " + c.name(),
-                        "Server: " + c.serverId(),
-                        "Area: " + c.area()
-                                + (c.isSubdivision() ? " · parent #" + c.parentId() : ""),
-                        c.isSubdivision() ? "Subdivision" : ("Tax: $" + String.format("%.2f", c.taxDue())
-                                + (c.taxFrozen() ? " FROZEN" : "")),
-                        "Click: visualize · Shift: abandon"));
-                meta.put(slot, String.valueOf(c.id()));
-                slot++;
-            }
-        } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "claims gui", e);
-        }
-        inv.setItem(49, YapMenuHolder.icon(Material.ARROW, "Back"));
-        clickMeta.put(player.getUniqueId(), meta);
         player.openInventory(inv);
     }
 

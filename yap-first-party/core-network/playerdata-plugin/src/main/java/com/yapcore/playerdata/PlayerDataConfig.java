@@ -11,7 +11,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -60,29 +59,10 @@ public final class PlayerDataConfig {
     private boolean featureShops = true;
     private boolean featureJobs = false;
     private boolean featureAuctions = true;
-    private boolean featureClaims = true;
     private boolean featureTraders = false;
     private boolean featureBackpack = true;
     private int backpackDefaultPages = 3;
     private int backpackMaxPages = 9;
-
-    private boolean claimsEnabled = true;
-    private boolean claimsRequireClaimToBuild = false;
-    private Material claimsTool = Material.GOLDEN_SHOVEL;
-    private Material claimsInspectTool = Material.STICK;
-    private int claimsStartingBlocks = 2500;
-    private int claimsBlocksPerHour = 100;
-    private int claimsMinArea = 9;
-    private int claimsMaxArea = 50_000;
-    private int claimsVisualSeconds = 8;
-    private int claimsSubMinArea = 4;
-    private boolean claimsTaxEnabled = true;
-    private double claimsTaxPerBlockPerDay = 0.01;
-    private int claimsTaxTickMinutes = 60;
-    private double claimsTaxFreezeAmount = 50.0;
-    private double claimsTaxAbandonAmount = 200.0;
-    private final EnumMap<com.yapcore.regions.RegionFlag, com.yapcore.regions.FlagValue> claimDefaultFlags =
-            new EnumMap<>(com.yapcore.regions.RegionFlag.class);
 
     private boolean authEnabled = true;
     private boolean authForce = false;
@@ -140,25 +120,6 @@ public final class PlayerDataConfig {
         backpackDefaultPages = Math.max(1, c.getInt("backpack.default-pages", 3));
         backpackMaxPages = Math.max(backpackDefaultPages, c.getInt("backpack.max-pages", 9));
         backpackMaxPages = Math.min(9, backpackMaxPages);
-        // features.claims AND legacy claims.enabled
-        featureClaims = c.getBoolean("features.claims", true) && c.getBoolean("claims.enabled", true);
-
-        claimsEnabled = featureClaims;
-        claimsRequireClaimToBuild = c.getBoolean("claims.require-claim-to-build", false);
-        claimsTool = parseMaterial(c.getString("claims.tool", "GOLDEN_SHOVEL"), Material.GOLDEN_SHOVEL);
-        claimsInspectTool = parseMaterial(c.getString("claims.inspect-tool", "STICK"), Material.STICK);
-        claimsStartingBlocks = Math.max(0, c.getInt("claims.starting-blocks", 2500));
-        claimsBlocksPerHour = Math.max(0, c.getInt("claims.blocks-per-hour", 100));
-        claimsMinArea = Math.max(1, c.getInt("claims.min-area", 9));
-        claimsMaxArea = Math.max(claimsMinArea, c.getInt("claims.max-area", 50_000));
-        claimsVisualSeconds = Math.max(1, c.getInt("claims.visual-seconds", 8));
-        claimsSubMinArea = Math.max(1, c.getInt("claims.subdivide-min-area", 4));
-        claimsTaxEnabled = economyEnabled && featureClaims && c.getBoolean("claims.tax.enabled", true);
-        claimsTaxPerBlockPerDay = Math.max(0, c.getDouble("claims.tax.per-block-per-day", 0.01));
-        claimsTaxTickMinutes = Math.max(1, c.getInt("claims.tax.tick-minutes", 60));
-        claimsTaxFreezeAmount = Math.max(0, c.getDouble("claims.tax.freeze-at", 50.0));
-        claimsTaxAbandonAmount = Math.max(claimsTaxFreezeAmount, c.getDouble("claims.tax.abandon-at", 200.0));
-        loadClaimDefaultFlags(c.getConfigurationSection("claims.default-flags"));
 
         authEnabled = c.getBoolean("auth.enabled", true);
         authForce = c.getBoolean("auth.force", false);
@@ -339,10 +300,6 @@ public final class PlayerDataConfig {
         return featureAuctions;
     }
 
-    public boolean featureClaims() {
-        return featureClaims;
-    }
-
     public boolean featureTraders() {
         return featureTraders;
     }
@@ -381,84 +338,6 @@ public final class PlayerDataConfig {
 
     public Map<String, JobDef> jobs() {
         return jobs;
-    }
-
-    public boolean claimsEnabled() {
-        return claimsEnabled;
-    }
-
-    public boolean claimsRequireClaimToBuild() {
-        return claimsRequireClaimToBuild;
-    }
-
-    public Material claimsTool() {
-        return claimsTool;
-    }
-
-    public Material claimsInspectTool() {
-        return claimsInspectTool;
-    }
-
-    public int claimsStartingBlocks() {
-        return claimsStartingBlocks;
-    }
-
-    public int claimsBlocksPerHour() {
-        return claimsBlocksPerHour;
-    }
-
-    public int claimsMinArea() {
-        return claimsMinArea;
-    }
-
-    public int claimsMaxArea() {
-        return claimsMaxArea;
-    }
-
-    public int claimsVisualSeconds() {
-        return claimsVisualSeconds;
-    }
-
-    public int claimsSubMinArea() {
-        return claimsSubMinArea;
-    }
-
-    public boolean claimsTaxEnabled() {
-        return claimsTaxEnabled;
-    }
-
-    public double claimsTaxPerBlockPerDay() {
-        return claimsTaxPerBlockPerDay;
-    }
-
-    public int claimsTaxTickMinutes() {
-        return claimsTaxTickMinutes;
-    }
-
-    public double claimsTaxFreezeAmount() {
-        return claimsTaxFreezeAmount;
-    }
-
-    public double claimsTaxAbandonAmount() {
-        return claimsTaxAbandonAmount;
-    }
-
-    public com.yapcore.regions.FlagValue defaultClaimFlag(com.yapcore.regions.RegionFlag flag) {
-        return claimDefaultFlags.getOrDefault(flag, switch (flag) {
-            case PVP, FIRE_SPREAD, TNT, CREEPER_EXPLOSION -> com.yapcore.regions.FlagValue.DENY;
-            default -> com.yapcore.regions.FlagValue.ALLOW;
-        });
-    }
-
-    private void loadClaimDefaultFlags(ConfigurationSection section) {
-        claimDefaultFlags.clear();
-        if (section == null) {
-            return;
-        }
-        for (String key : section.getKeys(false)) {
-            com.yapcore.regions.RegionFlag.parse(key).ifPresent(flag ->
-                    claimDefaultFlags.put(flag, com.yapcore.regions.FlagValue.parse(section.getString(key))));
-        }
     }
 
     public boolean authEnabled() {

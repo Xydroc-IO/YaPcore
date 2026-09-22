@@ -81,7 +81,7 @@ public final class HomeCommands implements CommandExecutor, TabCompleter {
             return true;
         }
         if (Teleports.tryTeleport(player, opt.get(), config.serverId())) {
-            player.sendMessage("§aTeleported to home §f" + name);
+            player.sendMessage(HomeTeleportText.arrived(name));
         }
         return true;
     }

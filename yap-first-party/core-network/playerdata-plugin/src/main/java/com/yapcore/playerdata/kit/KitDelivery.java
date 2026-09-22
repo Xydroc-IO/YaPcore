@@ -4,6 +4,7 @@ import com.yapcore.playerdata.PlayerDataConfig;
 import com.yapcore.playerdata.cmd.Perms;
 import com.yapcore.playerdata.db.KitRepository;
 import com.yapcore.playerdata.economy.BalanceStore;
+import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -129,15 +130,19 @@ public final class KitDelivery {
         if (def.commands().isEmpty()) {
             return;
         }
-        for (String raw : def.commands()) {
-            String cmd = raw.replace("{player}", player.getName())
-                    .replace("{name}", player.getName())
-                    .replace("{uuid}", player.getUniqueId().toString());
-            if (cmd.startsWith("/")) {
-                cmd = cmd.substring(1);
+        // Folia only allows Bukkit.dispatchCommand on the global tick thread.
+        // Admin /kit give runs on the player entity scheduler, so hop here.
+        YapSched.global(plugin, () -> {
+            for (String raw : def.commands()) {
+                String cmd = raw.replace("{player}", player.getName())
+                        .replace("{name}", player.getName())
+                        .replace("{uuid}", player.getUniqueId().toString());
+                if (cmd.startsWith("/")) {
+                    cmd = cmd.substring(1);
+                }
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
             }
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd);
-        }
+        });
     }
 
     public JavaPlugin plugin() {

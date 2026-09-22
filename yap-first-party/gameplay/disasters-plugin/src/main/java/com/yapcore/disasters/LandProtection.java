@@ -1,16 +1,13 @@
 package com.yapcore.disasters;
 
-import com.yapcore.playerdata.PlayerDataPlugin;
-import com.yapcore.playerdata.claims.Claim;
+import com.yapcore.claims.ClaimLookups;
 import com.yapcore.regions.FlagValue;
 import com.yapcore.regions.RegionFlag;
 import com.yapcore.regions.RegionServices;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.plugin.Plugin;
 
 /**
- * Gates disaster block changes against YaPRegions + YaPPlayerData claims.
+ * Gates disaster block changes against YaPRegions + YaPClaims.
  * System disasters never grief claimed land or BUILD-deny regions when protection is on.
  */
 public final class LandProtection {
@@ -32,7 +29,7 @@ public final class LandProtection {
         if (config.protectRegions() && regionDeniesBuild(loc)) {
             return false;
         }
-        if (config.protectClaims() && claimBlocksSystemGrief(loc)) {
+        if (config.protectClaims() && !ClaimLookups.canSystemModify(loc)) {
             return false;
         }
         return true;
@@ -46,7 +43,7 @@ public final class LandProtection {
         if (config.protectRegions() && regionDenies(loc, RegionFlag.FIRE_SPREAD)) {
             return false;
         }
-        if (config.protectClaims() && claimDeniesFlag(loc, RegionFlag.FIRE_SPREAD)) {
+        if (config.protectClaims() && claimDeniesFireSpread(loc)) {
             return false;
         }
         return true;
@@ -62,26 +59,8 @@ public final class LandProtection {
                 .orElse(false);
     }
 
-    private static boolean claimBlocksSystemGrief(Location loc) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerData");
-        if (!(plugin instanceof PlayerDataPlugin playerData) || !plugin.isEnabled()) {
-            return false;
-        }
-        var claimOpt = playerData.claims().getAt(loc);
-        // Any player claim is protected from system disaster grief.
-        return claimOpt.isPresent();
-    }
-
-    private static boolean claimDeniesFlag(Location loc, RegionFlag flag) {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerData");
-        if (!(plugin instanceof PlayerDataPlugin playerData) || !plugin.isEnabled()) {
-            return false;
-        }
-        var claimOpt = playerData.claims().getAt(loc);
-        if (claimOpt.isEmpty()) {
-            return false;
-        }
-        Claim claim = claimOpt.get();
-        return playerData.claims().flags().resolveOrDefault(claim.id(), flag) == FlagValue.DENY;
+    private static boolean claimDeniesFireSpread(Location loc) {
+        // Default claim flags deny fire-spread; without flag API here, any claim blocks system fire.
+        return ClaimLookups.find().flatMap(lookup -> lookup.at(loc)).isPresent();
     }
 }

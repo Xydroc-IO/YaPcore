@@ -1,7 +1,5 @@
 package com.yapcore.playerdata.gui;
 
-import com.yapcore.playerdata.claims.Claim;
-import com.yapcore.playerdata.claims.ClaimVisualizer;
 import com.yapcore.playerdata.cmd.Perms;
 import com.yapcore.playerdata.util.Teleports;
 import com.yapcore.messages.YapMessages;
@@ -40,7 +38,6 @@ final class MenuClickHandler {
                 case JOBS -> jobsClick(player, slot, name);
                 case AUCTIONS -> auctionsClick(player, slot, name);
                 case MAIL -> mailClick(player, name);
-                case CLAIMS -> claimsClick(player, slot, shift, name);
                 case NPC_TRADER, NPC_TRADER_QTY -> {
                     // routed via NpcTraderService from MenuListener
                     yield false;
@@ -105,9 +102,8 @@ final class MenuClickHandler {
                 yield true;
             }
             case "Claims" -> {
-                if (menus.config.featureClaims()) {
-                    menus.openClaims(player);
-                }
+                player.closeInventory();
+                player.performCommand("claim");
                 yield true;
             }
             case "Staff" -> {
@@ -258,45 +254,6 @@ final class MenuClickHandler {
             menus.mail.clear(player.getUniqueId());
             player.sendMessage("§aMail cleared.");
             menus.openMail(player);
-        }
-        return true;
-    }
-
-    boolean claimsClick(Player player, int slot, boolean shift, String name) throws Exception {
-        if (menus.claims == null) {
-            return true;
-        }
-        if ("Back".equals(name)) {
-            menus.openHub(player);
-            return true;
-        }
-        Map<Integer, String> meta = menus.clickMeta.getOrDefault(player.getUniqueId(), Map.of());
-        String idStr = meta.get(slot);
-        if (idStr == null) {
-            return true;
-        }
-        long id = Long.parseLong(idStr);
-        var opt = menus.claims.repo().get(id);
-        if (opt.isEmpty()) {
-            menus.openClaims(player);
-            return true;
-        }
-        Claim c = opt.get();
-        if (shift) {
-            if (menus.claims.abandon(player, c)) {
-                player.sendMessage("§aAbandoned claim §f#" + id);
-            } else {
-                player.sendMessage("§cCannot abandon.");
-            }
-            menus.openClaims(player);
-            return true;
-        }
-        player.closeInventory();
-        if (c.serverId().equals(menus.config.serverId()) && player.getWorld().getName().equals(c.world())) {
-            ClaimVisualizer.show(menus.plugin, player, c, menus.config.claimsVisualSeconds());
-            player.sendMessage("§aShowing claim §f#" + id);
-        } else {
-            player.sendMessage("§cClaim is on §f" + c.serverId() + "/" + c.world());
         }
         return true;
     }

@@ -19,12 +19,12 @@ public final class PlayerDataTuneModule extends FineTuneModule {
                 "Config: plugins/YaPPlayerData/config.yml",
                 "",
                 "economy.enabled          — master money switch",
-                "features.homes|warps|kits|mail|shops|jobs|auctions|claims|traders|backpack",
+                "features.homes|warps|kits|mail|shops|jobs|auctions|traders|backpack",
                 "backpack.default-pages / max-pages — extra bag (/bag)",
                 "auth.*                   — offline /login",
                 "sync.inventory|xp|vitals|economy",
-                "claims.* / claims.tax.*  — land claim + tax (tax needs economy)",
                 "",
+                "Land claims: YaPClaims (yap-claims.jar) — not this plugin",
                 "Docs: docs/data/PLAYERDATA.md · docs/data/YAPDB.md",
                 "No-econ network: economy.enabled=false"
         );

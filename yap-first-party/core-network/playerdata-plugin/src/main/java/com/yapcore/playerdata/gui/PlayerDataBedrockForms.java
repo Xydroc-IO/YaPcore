@@ -92,9 +92,10 @@ public final class PlayerDataBedrockForms {
             buttons.add("Mail");
             actions.add(() -> menus.openMail(player));
         }
-        if (menus.config.featureClaims() && menus.claims != null && player.hasPermission("yapdata.claim")) {
+        if (org.bukkit.Bukkit.getPluginManager().getPlugin("YaPClaims") != null
+                && player.hasPermission("yapdata.claim")) {
             buttons.add("Claims");
-            actions.add(() -> menus.openClaims(player));
+            actions.add(() -> player.performCommand("claim"));
         }
         if (player.hasPermission("yapadmin.menu")
                 && org.bukkit.Bukkit.getPluginManager().getPlugin("YaPAdmin") != null) {

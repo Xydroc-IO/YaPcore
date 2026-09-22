@@ -1,0 +1,21 @@
+name: YaPClaims
+version: '0.0.0.1'
+main: com.yapcore.claims.ClaimsPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Player land claims (shared DB tables; /claim via YaPEssentials)
+website: https://github.com/yaplabs
+# Enable before YaPEssentials so /claim soft-dep classloader + ClaimFeaturesProvider resolve.
+loadbefore: [YaPEssentials]
+softdepend: [YaPDB, YaPPlayerData, YaPBedrockUI]
+permissions:
+  yapdata.claim:
+    description: Use land claims
+    default: true
+  yapdata.claims.admin:
+    description: Bypass claim protection / manage any claim
+    default: op
+  yapdata.claims.wilderness:
+    description: Build in wilderness when require-claim-to-build is on
+    default: false

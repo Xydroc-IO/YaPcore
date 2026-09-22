@@ -37,7 +37,7 @@ kits:
         amount: 1
 
   # Donor / VIP loadout (also covered by yapdata.kit.* on vip rank)
-  # YaP-QoL tools via console commands (needs yap-qol.jar on the backend)
+  # Timber axe + 3×3 excavator via YaPItems (needs yap-items.jar)
   vip:
     delay-seconds: 43200
     commands:

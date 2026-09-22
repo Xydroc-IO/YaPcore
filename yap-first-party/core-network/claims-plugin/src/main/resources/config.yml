@@ -1,0 +1,66 @@
+# YaPClaims — player land claims (same SQL tables as legacy YaPPlayerData claims)
+
+# Prefer shared YaPDB so claim rows stay with playerdata / factions on one DB
+use-shared-yapdb: true
+
+# Used only when YaPDB is missing or use-shared-yapdb is false
+jdbc:
+  url: jdbc:mysql://127.0.0.1:3306/yap_playerdata?useSSL=false&allowPublicKeyRetrieval=true
+  user: yap
+  password: change-me
+
+pool:
+  maximum-pool-size: 8
+  minimum-idle: 2
+  connection-timeout-ms: 10000
+
+# Unique id for this backend (fleet yap-server-id.txt wins when present)
+server-id: lobby
+
+claims:
+  enabled: true
+  require-claim-to-build: false
+  tool: GOLDEN_SHOVEL
+  inspect-tool: STICK
+  # chunk = one shovel click / /claim claim takes the 16×16 Minecraft chunk (default)
+  # freeform = two-corner selection (legacy GriefPrevention-style)
+  mode: chunk
+  # Off = no claim-block budget; use max-claims slots instead
+  use-claim-blocks: false
+  max-claims: 16
+  # Horizontal plot size (64 → 64×64). Depth = blocks below claim Y; top = world max height.
+  plot-size: 64
+  plot-depth: 64
+  # Charge YaPPlayerData balance per top-level claim
+  cost:
+    enabled: true
+    amount: 10000
+    refund-on-abandon: false
+    refund-percent: 0
+  # Only used when use-claim-blocks: true
+  starting-blocks: 2500
+  blocks-per-hour: 0
+  min-area: 9
+  max-area: 50000
+  visual-seconds: 8
+  subdivide-min-area: 4
+  # Resource / mining worlds — no permanent bases (pair with YaPWorld resource resets)
+  deny-worlds:
+    - resource
+  tax:
+    # Needs YaPPlayerData economy for paytax / auto-abandon money
+    enabled: false
+    per-block-per-day: 0.01
+    tick-minutes: 60
+    freeze-at: 50.0
+    abandon-at: 200.0
+  default-flags:
+    pvp: deny
+    mob-damage: allow
+    entry: allow
+    fire-spread: deny
+    mob-spawning: allow
+    item-drop: allow
+    item-pickup: allow
+    tnt: deny
+    creeper-explosion: deny

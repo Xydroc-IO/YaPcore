@@ -1,0 +1,59 @@
+package com.yapcore.claims;
+
+import com.yapcore.claims.db.ClaimsDatabase;
+import com.yapcore.regions.FlagValue;
+import com.yapcore.regions.RegionFlag;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+
+public final class ClaimFlagRepository {
+
+    private final ClaimsDatabase database;
+
+    public ClaimFlagRepository(ClaimsDatabase database) {
+        this.database = database;
+    }
+
+    public Map<RegionFlag, FlagValue> load(long claimId) throws SQLException {
+        Map<RegionFlag, FlagValue> out = new EnumMap<>(RegionFlag.class);
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(
+                     "SELECT flag_name, flag_value FROM yap_claim_flags WHERE claim_id = ?")) {
+            ps.setLong(1, claimId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    RegionFlag flag = RegionFlag.parse(rs.getString("flag_name")).orElse(null);
+                    if (flag != null) {
+                        out.put(flag, FlagValue.parse(rs.getString("flag_value")));
+                    }
+                }
+            }
+        }
+        return out;
+    }
+
+    public void set(long claimId, RegionFlag flag, FlagValue value) throws SQLException {
+        String sql = database.dialect().upsert(
+                "yap_claim_flags",
+                List.of("claim_id", "flag_name"),
+                List.of("claim_id", "flag_name", "flag_value"),
+                Map.of("flag_value", "EXCLUDED.flag_value"));
+        try (Connection c = database.connection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, claimId);
+            ps.setString(2, flag.name());
+            ps.setString(3, value.name());
+            ps.executeUpdate();
+        }
+    }
+
+    public void clearCache() {
+        // no-op — ClaimFlagService owns cache
+    }
+}

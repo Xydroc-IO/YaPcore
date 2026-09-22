@@ -49,7 +49,6 @@ features:
   shops: true
   jobs: false
   auctions: true
-  claims: true
   traders: true
   backpack: true
 
@@ -88,32 +87,6 @@ auctions:
   expire-hours: 48
   fee-percent: 0
 
-claims:
-  # Legacy: also AND'd with features.claims
-  enabled: true
-  require-claim-to-build: false
-  tool: GOLDEN_SHOVEL
-  inspect-tool: STICK
-  starting-blocks: 2500
-  blocks-per-hour: 100
-  min-area: 9
-  max-area: 50000
-  visual-seconds: 8
-  subdivide-min-area: 4
-  tax:
-    # Opt-in claim tax (GriefPrevention-style). Off by default — enable when you want upkeep.
-    # Forced off when economy.enabled=false
-    enabled: false
-    per-block-per-day: 0.01
-    tick-minutes: 60
-    freeze-at: 50.0
-    abandon-at: 200.0
-  default-flags:
-    pvp: deny
-    mob-damage: allow
-    entry: allow
-    fire-spread: deny
-    mob-spawning: allow
 
 kits:
   starter:

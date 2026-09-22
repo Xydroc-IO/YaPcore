@@ -1,30 +1,29 @@
 package com.yapcore.factions.integration;
 
-import com.yapcore.playerdata.PlayerDataPlugin;
-import com.yapcore.playerdata.claims.Claim;
-import com.yapcore.playerdata.claims.ClaimService;
-import com.yapcore.playerdata.db.ClaimRepository;
+import com.yapcore.claims.Claim;
+import com.yapcore.claims.ClaimService;
+import com.yapcore.claims.ClaimsPlugin;
+import com.yapcore.claims.db.ClaimRepository;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
-/** Soft bridge to YaPPlayerData claims (no schema changes). */
+/** Soft bridge to YaPClaims (no schema changes). */
 public final class ClaimIntegration {
 
     private ClaimIntegration() {
     }
 
     public static Optional<ClaimService> claims() {
-        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPPlayerData");
-        if (!(plugin instanceof PlayerDataPlugin playerData) || !plugin.isEnabled()) {
+        Plugin plugin = Bukkit.getPluginManager().getPlugin("YaPClaims");
+        if (!(plugin instanceof ClaimsPlugin claimsPlugin) || !plugin.isEnabled()) {
             return Optional.empty();
         }
-        return Optional.of(playerData.claims());
+        ClaimService service = claimsPlugin.claims();
+        return service == null ? Optional.empty() : Optional.of(service);
     }
 
     public static Optional<Claim> claimAt(Player player) {

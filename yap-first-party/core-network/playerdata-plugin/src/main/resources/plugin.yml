@@ -33,7 +33,7 @@ commands:
     permission: yapdata.admin
 permissions:
   yapdata.admin:
-    description: Reload, status, force-save, manage shops/auctions/claims
+    description: Reload, status, force-save, manage shops/auctions
     default: op
   yapdata.menu:
     description: Open /menu hub GUI
@@ -104,15 +104,7 @@ permissions:
   yapdata.ah:
     description: Use the auction house
     default: true
-  yapdata.claim:
-    description: Use land claims
-    default: true
-  yapdata.claims.admin:
-    description: Bypass claim protection
-    default: op
-  yapdata.claims.wilderness:
-    description: Build in wilderness when require-claim-to-build is true
-    default: false
+  # Claim perms moved to YaPClaims (yapdata.claim* kept there for LP compat)
   yapdata.bag:
     description: Open /bag extra storage
     default: true
