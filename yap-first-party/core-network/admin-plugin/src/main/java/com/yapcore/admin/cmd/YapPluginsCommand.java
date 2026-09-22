@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 public final class YapPluginsCommand implements CommandExecutor, TabCompleter {
 
     private static final Set<String> CORE = Set.of(
-            "yap-db", "yap-folia-bridge", "yap-perms", "yap-playerdata", "yap-essentials",
+            "yap-db", "yap-folia-bridge", "yap-perms", "yap-playerdata", "yap-claims", "yap-essentials",
             "yap-chat", "yap-moderation", "yap-protect", "yap-admin");
 
     private record SoftSpec(String dataDir, String file, String key, String reload) {
@@ -402,6 +402,7 @@ public final class YapPluginsCommand implements CommandExecutor, TabCompleter {
         Map<String, SoftSpec> m = new LinkedHashMap<>();
         put(m, "yap-perms", "YaPPerms", "config.yml", "enabled", "yapperm reload");
         put(m, "yap-playerdata", "YaPPlayerData", "config.yml", "enabled", "yapdata reload");
+        put(m, "yap-claims", "YaPClaims", "config.yml", "claims.enabled", "claim reload");
         put(m, "yap-moderation", "YaPModeration", "config.yml", "enabled", "yapmod reload");
         put(m, "yap-essentials", "YaPEssentials", "config.yml", "enabled", "yapess reload");
         put(m, "yap-admin", "YaPAdmin", "config.yml", "enabled", "yapadmin reload");
@@ -421,11 +422,10 @@ public final class YapPluginsCommand implements CommandExecutor, TabCompleter {
         put(m, "yap-lagguard", "YaPLagGuard", "config.yml", "enabled", "yaplagguard reload");
         put(m, "yap-map", "YaPMap", "config.yml", "enabled", "yapmap reload");
         put(m, "yap-factions", "YaPFactions", "config.yml", "enabled", "yapfactions reload");
-        put(m, "yap-conquest", "YaPConquest", "config.yml", "enabled", "yapconquest reload");
+        put(m, "yap-conquest", "YaPFactions", "conquest.yml", "enabled", "yapconquest reload");
         put(m, "yap-db", "YaPDB", "config.yml", "enabled", "yapdb reload");
         put(m, "yap-pregen", "YaPPregen", "config.yml", "enabled", "yappregen reload");
-        put(m, "yap-stacker", "YaPStacker", "config.yml", "enabled", "yapstacker reload");
-        put(m, "yap-qol", "YaP-QoL", "config.yml", "enabled", "yapqol reload");
+        put(m, "yap-mobs", "YaPMobs", "stacker.yml", "enabled", "yapstacker reload");
         put(m, "yap-gameplay-knobs", "YaPGameplayKnobs", "knobs.yml", "settings.enabled", "yapknobs reload");
         put(m, "yap-skills", "YaPSkills", "config.yml", "enabled", "yskills reload");
         put(m, "yap-disasters", "YaPDisasters", "config.yml", "enabled", "yapdisaster reload");

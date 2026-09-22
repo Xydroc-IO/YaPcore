@@ -70,9 +70,73 @@ final class AdminMenusOps {
                     "Timber axe · excavator give",
                     "Toggle features · /yapqol"));
         }
+        if (plugin.actions().pluginEnabled("YaPProtect")) {
+            inv.setItem(29, AdminMenuHolder.icon(Material.RECOVERY_COMPASS, NamedTextColor.GOLD, "Rollback…",
+                    "Undo logged block changes",
+                    "5m · 15m · 30m · 1h · 8h · 24h",
+                    "This world · YaPProtect"));
+        }
         inv.setItem(AdminMenuSlots.SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(AdminMenuSlots.SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
         player.openInventory(inv);
+    }
+
+    /** Time-window rollback via YaPProtect for the player's current world. */
+    void openServerRollback(Player player) {
+        plugin.session(player.getUniqueId()).clearPendingRollback();
+        AdminMenuHolder holder = new AdminMenuHolder(AdminMenuKind.SERVER_ROLLBACK);
+        Inventory inv = Bukkit.createInventory(holder, 54,
+                Component.text("Rollback", NamedTextColor.GOLD));
+        holder.bind(inv);
+        AdminMenuHolder.fillAll(inv);
+
+        String world = player.getWorld().getName();
+        boolean protectOn = plugin.actions().pluginEnabled("YaPProtect");
+        boolean canRollback = player.hasPermission("yapprotect.rollback");
+        if (!protectOn) {
+            inv.setItem(AdminMenuSlots.SLOT_INFO, AdminMenuHolder.icon(Material.BARRIER, NamedTextColor.RED,
+                    "YaPProtect offline",
+                    "Enable YaPProtect to roll back"));
+        } else if (!canRollback) {
+            inv.setItem(AdminMenuSlots.SLOT_INFO, AdminMenuHolder.icon(Material.BARRIER, NamedTextColor.RED,
+                    "No permission",
+                    "Need yapprotect.rollback"));
+        } else {
+            inv.setItem(AdminMenuSlots.SLOT_INFO, AdminMenuHolder.icon(Material.RECOVERY_COMPASS,
+                    NamedTextColor.GOLD, "Rollback this world",
+                    "World: " + world,
+                    "Restores logged blocks / chests / explosions",
+                    "Click a duration, then click again to confirm"));
+        }
+
+        putRollbackDuration(inv, 19, Material.LIME_CONCRETE, NamedTextColor.GREEN, "5 minutes", "5m",
+                protectOn && canRollback);
+        putRollbackDuration(inv, 20, Material.LIME_CONCRETE, NamedTextColor.GREEN, "15 minutes", "15m",
+                protectOn && canRollback);
+        putRollbackDuration(inv, 21, Material.YELLOW_CONCRETE, NamedTextColor.YELLOW, "30 minutes", "30m",
+                protectOn && canRollback);
+        putRollbackDuration(inv, 22, Material.ORANGE_CONCRETE, NamedTextColor.GOLD, "1 hour", "1h",
+                protectOn && canRollback);
+        putRollbackDuration(inv, 23, Material.RED_CONCRETE, NamedTextColor.RED, "8 hours", "8h",
+                protectOn && canRollback);
+        putRollbackDuration(inv, 24, Material.RED_CONCRETE, NamedTextColor.DARK_RED, "24 hours", "24h",
+                protectOn && canRollback);
+
+        inv.setItem(AdminMenuSlots.SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
+        inv.setItem(AdminMenuSlots.SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
+        player.openInventory(inv);
+    }
+
+    private static void putRollbackDuration(Inventory inv, int slot, Material mat, NamedTextColor color,
+                                            String label, String duration, boolean enabled) {
+        if (enabled) {
+            inv.setItem(slot, AdminMenuHolder.icon(mat, color, label,
+                    "Roll back last " + label.toLowerCase(Locale.ROOT),
+                    "Click twice to confirm · " + duration));
+        } else {
+            inv.setItem(slot, AdminMenuHolder.icon(Material.GRAY_CONCRETE, label,
+                    "Unavailable"));
+        }
     }
 
     private static boolean keepInventoryEnabled() {
@@ -142,6 +206,11 @@ final class AdminMenusOps {
                     "Timber axe · excavator",
                     "Toggle + give VIP tools"));
         }
+        inv.setItem(28, AdminMenuHolder.icon(Material.KELP, NamedTextColor.DARK_GREEN, "YaP420",
+                "Plant · cure · give · reload",
+                plugin.actions().pluginEnabled("YaP420")
+                        ? "YaP420 online"
+                        : "YaP420 offline — open for status"));
         inv.setItem(AdminMenuSlots.SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(AdminMenuSlots.SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
         player.openInventory(inv);
@@ -153,12 +222,23 @@ final class AdminMenusOps {
         holder.bind(inv);
         AdminMenuHolder.fillAll(inv);
         inv.setItem(AdminMenuSlots.SLOT_INFO, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, "Skills",
-                "Mining · woodcutting · strength"));
+                "Marathon · swimming · mining · more"));
         if (plugin.actions().pluginEnabled("YaPSkills")) {
-            inv.setItem(22, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, "Skills menu", "/skills"));
+            inv.setItem(19, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, NamedTextColor.YELLOW, "Skills menu",
+                    "Open /skills"));
+            inv.setItem(21, AdminMenuHolder.icon(Material.LIME_DYE, NamedTextColor.GREEN, "★ Give XP…",
+                    "Pick a player → skill → amount",
+                    "Marathon, swimming, mining, …"));
+            inv.setItem(23, AdminMenuHolder.icon(Material.DIAMOND, NamedTextColor.AQUA, "★ Set level…",
+                    "Pick a player → skill → level",
+                    "1 · 10 · 25 · 50 · 75 · 100 · max"));
+        } else {
+            inv.setItem(22, AdminMenuHolder.icon(Material.BARRIER, NamedTextColor.RED, "YaPSkills offline",
+                    "Enable the skills plugin first"));
         }
-        if (plugin.actions().pluginEnabled("YaPLeveledMobs")) {
-            inv.setItem(24, AdminMenuHolder.icon(Material.ZOMBIE_HEAD, "Leveled mobs",
+        if (plugin.actions().pluginEnabled("YaPLeveledMobs")
+                || plugin.actions().pluginEnabled("YaPMobs")) {
+            inv.setItem(25, AdminMenuHolder.icon(Material.ZOMBIE_HEAD, "Leveled mobs",
                     "Enable · strategy · levels"));
         }
         inv.setItem(AdminMenuSlots.SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));

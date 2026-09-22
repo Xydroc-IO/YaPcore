@@ -17,11 +17,19 @@ public final class AdminSession {
     private int materialPage;
     private MaterialCategory category = MaterialCategory.ALL;
     private boolean confirmClear;
+    /** Pending YaPProtect time-rollback duration (e.g. {@code 5m}); empty = none. */
+    private String pendingRollbackDuration = "";
     private Material pendingMaterial;
     /** When true, speed picker sets fly speed; otherwise walk. */
     private boolean speedFly;
     /** When true, player-head click opens troll menu instead of player actions. */
     private boolean pickForTrolls;
+    /** When true, player-head click starts skill XP grant flow. */
+    private boolean pickForSkillXp;
+    /** When true, player-head click starts skill set-level flow. */
+    private boolean pickForSkillLevel;
+    /** Pending skill id for XP / level pickers. */
+    private String skillId = "";
     private String customItemId = "";
     /** Template group for create wizard: weapon|tool|gem|prop|other */
     private String createTemplateGroup = "weapon";
@@ -94,6 +102,20 @@ public final class AdminSession {
         this.confirmClear = confirmClear;
     }
 
+    public String pendingRollbackDuration() {
+        return pendingRollbackDuration == null ? "" : pendingRollbackDuration;
+    }
+
+    public void setPendingRollbackDuration(String pendingRollbackDuration) {
+        this.pendingRollbackDuration = pendingRollbackDuration == null
+                ? ""
+                : pendingRollbackDuration.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    public void clearPendingRollback() {
+        this.pendingRollbackDuration = "";
+    }
+
     public boolean speedFly() {
         return speedFly;
     }
@@ -116,6 +138,42 @@ public final class AdminSession {
 
     public void setPickForTrolls(boolean pickForTrolls) {
         this.pickForTrolls = pickForTrolls;
+        if (pickForTrolls) {
+            pickForSkillXp = false;
+            pickForSkillLevel = false;
+        }
+    }
+
+    public boolean pickForSkillXp() {
+        return pickForSkillXp;
+    }
+
+    public void setPickForSkillXp(boolean pickForSkillXp) {
+        this.pickForSkillXp = pickForSkillXp;
+        if (pickForSkillXp) {
+            pickForTrolls = false;
+            pickForSkillLevel = false;
+        }
+    }
+
+    public boolean pickForSkillLevel() {
+        return pickForSkillLevel;
+    }
+
+    public void setPickForSkillLevel(boolean pickForSkillLevel) {
+        this.pickForSkillLevel = pickForSkillLevel;
+        if (pickForSkillLevel) {
+            pickForTrolls = false;
+            pickForSkillXp = false;
+        }
+    }
+
+    public String skillId() {
+        return skillId == null ? "" : skillId;
+    }
+
+    public void setSkillId(String skillId) {
+        this.skillId = skillId == null ? "" : skillId.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     public String customItemId() {

@@ -73,8 +73,8 @@ public final class AdminTrollActions {
         }
         YapSched.entity(plugin, target, () -> {
             Location up = target.getLocation().clone().add(0, 25, 0);
-            target.teleport(up);
-            target.setVelocity(new Vector(0, -3.5, 0));
+            target.teleportAsync(up).thenAccept(ok -> YapSched.entity(plugin, target, () ->
+                    target.setVelocity(new Vector(0, -3.5, 0))));
         });
         admin.sendMessage("§eSquashed §f" + target.getName() + "§e.");
     }

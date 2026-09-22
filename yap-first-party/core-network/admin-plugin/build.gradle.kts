@@ -25,6 +25,7 @@ dependencies {
     compileOnly(project(":yap-bedrock-ui-api"))
     compileOnly(project(":yap-playerdata-api"))
     compileOnly(project(":yap-items-api"))
+    compileOnly(project(":yap-mmo-api"))
 
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")

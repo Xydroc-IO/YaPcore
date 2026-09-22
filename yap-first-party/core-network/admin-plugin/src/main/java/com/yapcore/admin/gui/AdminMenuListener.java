@@ -22,6 +22,8 @@ public final class AdminMenuListener implements Listener {
     private final AdminMenuClickOps ops;
     private final AdminMenuClickCustomItemsBrowse customItemsBrowse;
     private final AdminMenuClickCustomItemsWizard customItemsWizard;
+    private final AdminMenuClickSkills skills;
+    private final AdminMenuClickYap420 yap420;
 
     public AdminMenuListener(AdminPlugin plugin) {
         this.plugin = plugin;
@@ -30,6 +32,8 @@ public final class AdminMenuListener implements Listener {
         this.ops = new AdminMenuClickOps(plugin);
         this.customItemsBrowse = new AdminMenuClickCustomItemsBrowse(plugin);
         this.customItemsWizard = new AdminMenuClickCustomItemsWizard(plugin);
+        this.skills = new AdminMenuClickSkills(plugin);
+        this.yap420 = new AdminMenuClickYap420(plugin);
     }
 
     @EventHandler
@@ -58,16 +62,21 @@ public final class AdminMenuListener implements Listener {
             case PLAYER_ACTIONS -> core.handlePlayerActions(player, holder, slot);
             case SELF_TOOLS -> core.handleSelfTools(player, slot);
             case SPEED_PICKER -> core.handleSpeedPicker(player, holder, slot);
+            case NV_PICKER -> core.handleNvPicker(player, holder, slot);
             case GIVE_HUB -> give.handleGiveHub(player, slot);
             case GIVE_PRESETS -> give.handleGivePresets(player, slot, clicked, shift);
             case GIVE_GEAR -> give.handleGiveGear(player, slot, clicked);
             case GIVE_KITS -> give.handleGiveKits(player, slot, clicked);
             case GIVE_MATERIALS -> give.handleGiveMaterials(player, slot, clicked);
             case SERVER_OPS -> ops.handleServerOps(player, slot, clicked);
+            case SERVER_ROLLBACK -> ops.handleServerRollback(player, slot);
             case ECONOMY -> ops.handleEconomy(player, slot, clicked);
             case DEEP_LINKS -> ops.handleDeepLinks(player, slot);
             case SCHEMATICS -> ops.handleSchematics(player, slot, shift);
             case COMBAT_SKILLS -> ops.handleCombatSkills(player, slot);
+            case SKILL_PICK -> skills.handleSkillPick(player, holder, slot, clicked);
+            case SKILL_XP_AMOUNT -> skills.handleXpAmount(player, holder, slot);
+            case SKILL_SET_LEVEL -> skills.handleSetLevel(player, holder, slot);
             case LEVELED_MOBS -> ops.handleLeveledMobs(player, slot, shift);
             case QOL -> ops.handleQolTools(player, slot);
             case TROLLS -> core.handleTrolls(player, holder, slot);
@@ -82,6 +91,8 @@ public final class AdminMenuListener implements Listener {
             case CUSTOM_ITEMS_COOLDOWN -> customItemsBrowse.handleCustomItemsCooldown(player, slot, clicked);
             case CUSTOM_ITEMS_COOLDOWN_EDIT -> customItemsBrowse.handleCustomItemsCooldownEdit(player, slot, clicked);
             case CUSTOM_ITEMS_MANAGE -> customItemsBrowse.handleCustomItemsManage(player, slot);
+            case YAP420_HUB -> yap420.handleHub(player, slot);
+            case YAP420_GIVE -> yap420.handleGive(player, slot, clicked);
             default -> {
             }
         }

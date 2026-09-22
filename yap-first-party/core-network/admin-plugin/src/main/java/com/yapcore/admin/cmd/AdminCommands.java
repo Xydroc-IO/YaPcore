@@ -2,6 +2,7 @@ package com.yapcore.admin.cmd;
 
 import com.yapcore.admin.AdminPlugin;
 import com.yapcore.admin.action.AdminActions;
+import com.yapcore.admin.action.AdminNightVision;
 import com.yapcore.messages.YapMessages;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -95,13 +96,16 @@ public final class AdminCommands implements CommandExecutor, TabCompleter {
                 yield true;
             }
             case "spawnmob", "mob", "summon" -> {
-                // /yapadmin spawnmob <type> [amount] [player]
+                // /yapadmin spawnmob <type> [amount] [level] [player]
+                // also: … level|lvl|l <n>
                 if (!player.hasPermission("yapadmin.spawnmob")) {
                     YapMessages.noPermission(player, "yapadmin.spawnmob");
                     yield true;
                 }
                 if (args.length < 2) {
-                    player.sendMessage("§cUsage: /yapadmin spawnmob <type> [amount] [player]");
+                    player.sendMessage("§cUsage: /yapadmin spawnmob <type> [amount] [level] [player]");
+                    player.sendMessage("§7Example: §f/yapadmin spawnmob zombie 3 50");
+                    player.sendMessage("§7Or: §f/yapadmin spawnmob zombie 2 level 80 Steve");
                     yield true;
                 }
                 org.bukkit.entity.EntityType type = parseEntityType(args[1]);
@@ -109,29 +113,22 @@ public final class AdminCommands implements CommandExecutor, TabCompleter {
                     player.sendMessage("§cUnknown entity: " + args[1]);
                     yield true;
                 }
-                int amount = 1;
-                Player at = player;
-                if (args.length >= 3) {
-                    try {
-                        amount = Integer.parseInt(args[2]);
-                    } catch (NumberFormatException e) {
-                        Player named = Bukkit.getPlayerExact(args[2]);
-                        if (named == null) {
-                            player.sendMessage("§cPlayer offline or bad amount: " + args[2]);
-                            yield true;
-                        }
-                        at = named;
-                    }
+                String[] rest = java.util.Arrays.copyOfRange(args, 2, args.length);
+                var parsed = com.yapcore.admin.action.SpawnMobArgs.parse(rest);
+                if (parsed.error != null) {
+                    player.sendMessage("§c" + parsed.error);
+                    yield true;
                 }
-                if (args.length >= 4) {
-                    Player named = Bukkit.getPlayerExact(args[3]);
-                    if (named == null) {
-                        player.sendMessage("§cPlayer offline: " + args[3]);
+                Player at = player;
+                if (parsed.playerName != null) {
+                    Player named = Bukkit.getPlayerExact(parsed.playerName);
+                    if (named == null || !named.isOnline()) {
+                        player.sendMessage("§cPlayer offline: " + parsed.playerName);
                         yield true;
                     }
                     at = named;
                 }
-                actions.spawnMobs(player, at, type, amount);
+                actions.spawnMobs(player, at, type, parsed.amount, parsed.level);
                 yield true;
             }
             case "troll" -> {
@@ -167,7 +164,35 @@ public final class AdminCommands implements CommandExecutor, TabCompleter {
                 yield true;
             }
             case "nv", "nightvision" -> {
-                actions.toggleNightVision(player);
+                // /yapadmin nv [15m|1h|on|off] [player]
+                AdminNightVision.Mode mode;
+                Player target = player;
+                if (args.length >= 2) {
+                    var parsed = AdminNightVision.parseMode(args[1]);
+                    if (parsed.isPresent()) {
+                        mode = parsed.get();
+                        if (args.length >= 3) {
+                            target = Bukkit.getPlayerExact(args[2]);
+                            if (target == null) {
+                                player.sendMessage("§cPlayer offline: " + args[2]);
+                                yield true;
+                            }
+                        }
+                    } else {
+                        // /yapadmin nv <player> → open picker for them
+                        target = Bukkit.getPlayerExact(args[1]);
+                        if (target == null) {
+                            player.sendMessage("§cUsage: /yapadmin nv [15m|1h|on|off] [player]");
+                            yield true;
+                        }
+                        plugin.menus().openNvPicker(player, target);
+                        yield true;
+                    }
+                } else {
+                    plugin.menus().openNvPicker(player, null);
+                    yield true;
+                }
+                actions.setNightVision(player, target, mode);
                 yield true;
             }
             case "clear" -> {
@@ -370,6 +395,26 @@ public final class AdminCommands implements CommandExecutor, TabCompleter {
                 }
             }
             return out;
+        }
+        if (args.length >= 3 && isSpawnMobSub(args[0])) {
+            String p = args[args.length - 1].toLowerCase(Locale.ROOT);
+            List<String> out = new ArrayList<>();
+            for (String s : List.of("1", "2", "3", "5", "10", "level", "lvl",
+                    "1", "5", "10", "25", "50", "80", "100")) {
+                if (s.startsWith(p) && !out.contains(s)) {
+                    out.add(s);
+                }
+            }
+            out.addAll(onlineNames(args[args.length - 1]));
+            return out;
+        }
+        if (args.length == 2 && ("nv".equalsIgnoreCase(args[0]) || "nightvision".equalsIgnoreCase(args[0]))) {
+            List<String> opts = filter(args[1], List.of("15m", "1h", "on", "off"));
+            opts.addAll(onlineNames(args[1]));
+            return opts;
+        }
+        if (args.length == 3 && ("nv".equalsIgnoreCase(args[0]) || "nightvision".equalsIgnoreCase(args[0]))) {
+            return onlineNames(args[2]);
         }
         if (args.length >= 2 && needsPlayer(args[0])) {
             int playerArg = playerArgIndex(args[0]);

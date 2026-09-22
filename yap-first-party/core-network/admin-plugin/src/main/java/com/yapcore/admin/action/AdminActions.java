@@ -13,12 +13,10 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
-import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import java.util.Locale;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 /** Staff actions for the admin super menu (Folia-safe). */
 public final class AdminActions {
@@ -26,11 +24,19 @@ public final class AdminActions {
     private final AdminPlugin plugin;
     private final AdminTrollActions trolls;
     private final AdminItemActions items;
+    private final AdminModerationActions moderationActions;
+    private final AdminNightVision nightVision;
 
     public AdminActions(AdminPlugin plugin) {
         this.plugin = plugin;
         this.trolls = new AdminTrollActions(plugin);
         this.items = new AdminItemActions(this);
+        this.moderationActions = new AdminModerationActions(this);
+        this.nightVision = new AdminNightVision(plugin);
+    }
+
+    public AdminNightVision nightVision() {
+        return nightVision;
     }
 
     public boolean pluginEnabled(String name) {
@@ -160,9 +166,18 @@ public final class AdminActions {
 
     /**
      * Spawn living / spawnable entities at a player's feet (Folia entity thread).
-     * {@code at} null → spawn at admin.
+     * {@code at} null → spawn at admin. {@code level} null → leave leveling to YaPLeveledMobs.
      */
     public void spawnMobs(Player admin, Player at, org.bukkit.entity.EntityType type, int amount) {
+        spawnMobs(admin, at, type, amount, null);
+    }
+
+    public void spawnMobs(
+            Player admin,
+            Player at,
+            org.bukkit.entity.EntityType type,
+            int amount,
+            Integer level) {
         if (!admin.hasPermission("yapadmin.spawnmob")) {
             YapMessages.noPermission(admin, "yapadmin.spawnmob");
             return;
@@ -183,9 +198,15 @@ public final class AdminActions {
                     var entity = host.getWorld().spawnEntity(loc, type,
                             org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.COMMAND);
                     if (entity != null && entity.isValid() && !entity.isDead()) {
+                        if (level != null && entity instanceof org.bukkit.entity.LivingEntity living) {
+                            if (!LeveledMobBridge.setLevel(living, level, plugin.getLogger())) {
+                                lastFail = "spawned but level " + level
+                                        + " not applied (YaPMobs / YaPLeveledMobs missing?)";
+                            }
+                        }
                         spawned++;
                     } else {
-                        lastFail = "spawn cancelled (check YaPGameplayKnobs mob enabled flags / LagGuard)";
+                        lastFail = "spawn cancelled (region mob-entry/mob-spawning, LagGuard, or knobs)";
                         break;
                     }
                 } catch (Exception e) {
@@ -200,11 +221,15 @@ public final class AdminActions {
                         + (lastFail != null ? "§c: " + lastFail : "§c."));
                 return;
             }
+            String lvlBit = level != null ? " §7(lv §f" + level + "§7)" : "";
             admin.sendMessage("§aSpawned §f" + n + "× " + type.name().toLowerCase(Locale.ROOT)
-                    + " §aat §f" + host.getName() + "§a.");
+                    + lvlBit + " §aat §f" + host.getName() + "§a.");
             if (!host.equals(admin)) {
                 host.sendMessage("§e" + admin.getName() + " §7spawned §f" + n + "× "
                         + type.name().toLowerCase(Locale.ROOT) + " §7on you.");
+            }
+            if (lastFail != null && level != null) {
+                admin.sendMessage("§eNote: §7" + lastFail);
             }
         });
     }
@@ -260,79 +285,24 @@ public final class AdminActions {
     }
 
     public void runAs(Player admin, String command) {
-        // Folia: command dispatch must run on the command sender's region thread.
-        YapSched.entity(plugin, admin, () -> Bukkit.dispatchCommand(admin, command));
+        // Folia: Bukkit.dispatchCommand requires the global tick thread.
+        YapSched.global(plugin, () -> Bukkit.dispatchCommand(admin, command));
     }
 
     public void kick(Player admin, Player target, String reason) {
-        if (!admin.hasPermission("yapmod.kick")) {
-            YapMessages.noPermission(admin, "yapmod.kick");
-            return;
-        }
-        YapSched.entity(plugin, target, () ->
-                target.kick(Component.text(reason, NamedTextColor.RED)));
-        admin.sendMessage("§aKicked §f" + target.getName() + "§a.");
+        moderationActions.kick(admin, target, reason);
     }
 
     public void warn(Player admin, Player target, String reason) {
-        if (!admin.hasPermission("yapmod.warn")) {
-            YapMessages.noPermission(admin, "yapmod.warn");
-            return;
-        }
-        moderation().ifPresentOrElse(svc -> {
-            svc.warn(target.getUniqueId(), target.getName(),
-                            admin.getUniqueId(), admin.getName(), reason)
-                    .whenComplete((p, err) -> YapSched.entity(plugin, admin, () -> {
-                        if (err != null) {
-                            admin.sendMessage("§cWarn failed: " + err.getMessage());
-                        } else {
-                            admin.sendMessage("§aWarned §f" + target.getName() + "§a.");
-                            target.sendMessage("§cYou were warned: §f" + reason);
-                        }
-                    }));
-        }, () -> runAs(admin, "warn " + target.getName() + " " + reason));
+        moderationActions.warn(admin, target, reason);
     }
 
     public void muteHour(Player admin, Player target, String reason) {
-        if (!admin.hasPermission("yapmod.mute")) {
-            YapMessages.noPermission(admin, "yapmod.mute");
-            return;
-        }
-        long expires = System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1);
-        moderation().ifPresentOrElse(svc -> {
-            svc.mute(target.getUniqueId(), target.getName(),
-                            admin.getUniqueId(), admin.getName(), reason, expires)
-                    .whenComplete((p, err) -> YapSched.entity(plugin, admin, () -> {
-                        if (err != null) {
-                            admin.sendMessage("§cMute failed: " + err.getMessage());
-                        } else {
-                            admin.sendMessage("§aMuted §f" + target.getName() + " §afor 1h.");
-                        }
-                    }));
-        }, () -> runAs(admin, "tempmute " + target.getName() + " 1h " + reason));
+        moderationActions.muteHour(admin, target, reason);
     }
 
     public void tempbanDay(Player admin, Player target, String reason) {
-        if (!admin.hasPermission("yapmod.ban")) {
-            YapMessages.noPermission(admin, "yapmod.ban");
-            return;
-        }
-        long expires = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1);
-        moderation().ifPresentOrElse(svc -> {
-            svc.ban(target.getUniqueId(), target.getName(),
-                            admin.getUniqueId(), admin.getName(), reason, expires, false)
-                    .whenComplete((p, err) -> YapSched.entity(plugin, admin, () -> {
-                        if (err != null) {
-                            admin.sendMessage("§cTempban failed: " + err.getMessage());
-                            return;
-                        }
-                        admin.sendMessage("§aTempbanned §f" + target.getName() + " §afor 1d.");
-                        if (target.isOnline()) {
-                            YapSched.entity(plugin, target, () ->
-                                    target.kick(Component.text(reason, NamedTextColor.RED)));
-                        }
-                    }));
-        }, () -> runAs(admin, "tempban " + target.getName() + " 1d " + reason));
+        moderationActions.tempbanDay(admin, target, reason);
     }
 
     public void heal(Player admin, Player target) {
@@ -353,16 +323,17 @@ public final class AdminActions {
         admin.sendMessage("§aFed §f" + target.getName() + "§a.");
     }
 
+    @Deprecated
     public void toggleNightVision(Player admin) {
-        YapSched.entity(plugin, admin, () -> {
-            if (admin.hasPotionEffect(PotionEffectType.NIGHT_VISION)) {
-                admin.removePotionEffect(PotionEffectType.NIGHT_VISION);
-                admin.sendMessage("§7Night vision off.");
-            } else {
-                admin.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 20 * 300, 0, false, false));
-                admin.sendMessage("§aNight vision on (5m).");
-            }
-        });
+        if (admin.hasPotionEffect(PotionEffectType.NIGHT_VISION)) {
+            nightVision.apply(admin, admin, AdminNightVision.Mode.OFF);
+        } else {
+            nightVision.apply(admin, admin, AdminNightVision.Mode.UNLIMITED);
+        }
+    }
+
+    public void setNightVision(Player admin, Player target, AdminNightVision.Mode mode) {
+        nightVision.apply(admin, target, mode);
     }
 
     public boolean requireTroll(Player admin) {
@@ -435,7 +406,15 @@ public final class AdminActions {
 
     public void closeAndRun(Player admin, String command) {
         admin.closeInventory();
-        YapSched.entityLater(plugin, admin, () -> Bukkit.dispatchCommand(admin, command), 1L);
+        YapSched.globalLater(plugin, () -> Bukkit.dispatchCommand(admin, command), 1L);
+    }
+
+    public boolean giveYapItem(Player admin, String targetName, String itemId, int amount) {
+        return items.giveYapItem(admin, targetName, itemId, amount);
+    }
+
+    AdminPlugin plugin() {
+        return plugin;
     }
 
     public boolean setItemAbilityCooldown(Player admin, String itemId, String duration) {

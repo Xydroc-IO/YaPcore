@@ -2,7 +2,10 @@ package com.yapcore.admin.action;
 
 import com.yapcore.items.api.ItemServices;
 import com.yapcore.messages.YapMessages;
+import com.yapcore.sched.YapSched;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.Locale;
 
@@ -56,5 +59,46 @@ public final class AdminItemActions {
         } catch (AbstractMethodError | NoSuchMethodError e) {
             return "—";
         }
+    }
+
+    /**
+     * Give a YaPItems stack to {@code targetName} (online player). Prefer ItemService;
+     * returns false if the item or target cannot be resolved.
+     */
+    public boolean giveYapItem(Player admin, String targetName, String itemId, int amount) {
+        if (admin == null || itemId == null || itemId.isBlank()) {
+            return false;
+        }
+        if (!admin.hasPermission("yapadmin.give")
+                && !admin.hasPermission("yap420.admin")
+                && !admin.isOp()) {
+            YapMessages.noPermission(admin, "yapadmin.give");
+            return false;
+        }
+        Player target = Bukkit.getPlayerExact(targetName == null ? "" : targetName);
+        if (target == null || !target.isOnline()) {
+            admin.sendMessage("§cPlayer not online: §f" + targetName);
+            return false;
+        }
+        int qty = Math.max(1, Math.min(64, amount));
+        String id = itemId.trim().toLowerCase(Locale.ROOT);
+        var stackOpt = ItemServices.find().flatMap(s -> s.create(id, qty));
+        if (stackOpt.isEmpty()) {
+            admin.sendMessage("§cUnknown YaP item §f" + id + "§c (is YaPItems loaded with yap420.yml?).");
+            return false;
+        }
+        ItemStack stack = stackOpt.get();
+        YapSched.entity(actions.plugin(), target, () -> {
+            var leftover = target.getInventory().addItem(stack);
+            leftover.values().forEach(left ->
+                    target.getWorld().dropItemNaturally(target.getLocation(), left));
+            target.sendMessage("§aReceived §f" + qty + "× " + id + "§a.");
+        });
+        if (!target.equals(admin)) {
+            admin.sendMessage("§aGave §f" + qty + "× " + id + " §ato §f" + target.getName() + "§a.");
+        } else {
+            admin.sendMessage("§aGave §f" + qty + "× " + id + "§a.");
+        }
+        return true;
     }
 }

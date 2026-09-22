@@ -86,8 +86,9 @@ final class AdminMenusWorldTools {
             inv.setItem(33, AdminMenuHolder.icon(Material.GRAY_CONCRETE, "Flip X",
                     "No preview active"));
         }
-        inv.setItem(31, AdminMenuHolder.icon(Material.ORANGE_CONCRETE, "Undo last edit",
-                "Undo last paste / fill / set"));
+        inv.setItem(31, AdminMenuHolder.icon(Material.ORANGE_CONCRETE, NamedTextColor.GOLD, "Undo paste",
+                "Undo last paste / fill / set",
+                "Also: //undo · //schem undo"));
 
         inv.setItem(AdminMenuSlots.SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(AdminMenuSlots.SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));

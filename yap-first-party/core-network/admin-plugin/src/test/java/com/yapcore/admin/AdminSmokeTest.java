@@ -78,6 +78,12 @@ class AdminSmokeTest {
         session.cycleGiveAmount();
         assertEquals(1, session.giveAmount());
 
+        assertEquals("", session.pendingRollbackDuration());
+        session.setPendingRollbackDuration("5m");
+        assertEquals("5m", session.pendingRollbackDuration());
+        session.clearPendingRollback();
+        assertEquals("", session.pendingRollbackDuration());
+
         assertEquals("Diamond sword", AdminActions.pretty(Material.DIAMOND_SWORD));
         assertTrue(AdminActions.isTool(Material.IRON_PICKAXE));
         assertTrue(AdminActions.isCombat(Material.IRON_SWORD));

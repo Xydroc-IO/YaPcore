@@ -1,6 +1,7 @@
 package com.yapcore.admin;
 
 import com.yapcore.admin.action.AdminActions;
+import com.yapcore.admin.action.AdminNightVisionListener;
 import com.yapcore.admin.cmd.AdminCommands;
 import com.yapcore.admin.cmd.YapPluginsCommand;
 import com.yapcore.admin.gui.AdminMenuListener;
@@ -31,6 +32,7 @@ public final class AdminPlugin extends JavaPlugin {
         actions = new AdminActions(this);
         menus = new AdminMenus(this);
         getServer().getPluginManager().registerEvents(new AdminMenuListener(this), this);
+        getServer().getPluginManager().registerEvents(new AdminNightVisionListener(this), this);
         AdminCommands cmds = new AdminCommands(this);
         var yapadmin = getCommand("yapadmin");
         if (yapadmin != null) {

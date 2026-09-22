@@ -11,12 +11,14 @@ softdepend:
   - YaPModeration
   - YaPPerms
   - YaPWorld
+  - YaPProtect
   - YaPStacker
   - YaPPlayerData
   - YaPSkills
   - YaPItems
   - YaPDisasters
   - YaPLeveledMobs
+  - YaPMobs
   - YaP-QoL
   - YaPBedrockUI
 commands:
@@ -45,6 +47,9 @@ permissions:
     default: op
   yapadmin.troll:
     description: Staff trolls (smite, launch, burn, …)
+    default: op
+  yapadmin.auto-nv:
+    description: Auto night vision on join (admins / owners / OP)
     default: op
   yapadmin.spawnmob:
     description: Spawn mobs at self or another player

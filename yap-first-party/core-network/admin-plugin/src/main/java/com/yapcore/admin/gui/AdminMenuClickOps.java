@@ -2,6 +2,8 @@ package com.yapcore.admin.gui;
 
 import com.yapcore.admin.AdminPlugin;
 import com.yapcore.admin.action.AdminActions;
+import com.yapcore.admin.session.AdminSession;
+import com.yapcore.messages.YapMessages;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -28,6 +30,10 @@ final class AdminMenuClickOps {
         }
         if (slot == 28) {
             plugin.actions().closeAndRun(player, "yapperm gui");
+            return;
+        }
+        if (slot == 29) {
+            plugin.menus().openServerRollback(player);
             return;
         }
         if (slot == 30) {
@@ -66,6 +72,49 @@ final class AdminMenuClickOps {
             }
         } catch (NumberFormatException ignored) {
         }
+    }
+
+    void handleServerRollback(Player player, int slot) {
+        if (slot == AdminMenus.SLOT_BACK) {
+            plugin.session(player.getUniqueId()).clearPendingRollback();
+            plugin.menus().openServerOps(player);
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            plugin.session(player.getUniqueId()).clearPendingRollback();
+            player.closeInventory();
+            return;
+        }
+        String duration = switch (slot) {
+            case 19 -> "5m";
+            case 20 -> "15m";
+            case 21 -> "30m";
+            case 22 -> "1h";
+            case 23 -> "8h";
+            case 24 -> "24h";
+            default -> null;
+        };
+        if (duration == null) {
+            return;
+        }
+        if (!plugin.actions().pluginEnabled("YaPProtect")) {
+            player.sendMessage("§cYaPProtect is not loaded.");
+            return;
+        }
+        if (!player.hasPermission("yapprotect.rollback")) {
+            YapMessages.noPermission(player, "yapprotect.rollback");
+            return;
+        }
+        AdminSession session = plugin.session(player.getUniqueId());
+        String pending = session.pendingRollbackDuration();
+        if (!duration.equals(pending)) {
+            session.setPendingRollbackDuration(duration);
+            player.sendMessage("§eClick §f" + duration + " §eagain to confirm rollback on §f"
+                    + player.getWorld().getName() + "§e.");
+            return;
+        }
+        session.clearPendingRollback();
+        plugin.actions().closeAndRun(player, "yapprotect rollback time " + duration);
     }
 
     void handleEconomy(Player player, int slot, ItemStack clicked) {
@@ -110,6 +159,7 @@ final class AdminMenuClickOps {
             case 23 -> actions.closeAndRun(player, "yappregen status");
             case 24 -> plugin.menus().openLeveledMobs(player);
             case 25 -> plugin.menus().openQolTools(player);
+            case 28 -> plugin.menus().openYap420Hub(player);
             default -> {
             }
         }
@@ -186,19 +236,27 @@ final class AdminMenuClickOps {
         }
         AdminActions actions = plugin.actions();
         switch (slot) {
-            case 20 -> actions.closeAndRun(player, "skills");
-            case 22 -> {
+            case 19 -> {
                 if (plugin.actions().pluginEnabled("YaPSkills")) {
                     actions.closeAndRun(player, "skills");
-                } else {
-                    actions.heal(player, player);
                 }
             }
-            case 24 -> {
-                if (plugin.actions().pluginEnabled("YaPLeveledMobs")) {
+            case 21 -> {
+                if (plugin.actions().pluginEnabled("YaPSkills")) {
+                    plugin.session(player.getUniqueId()).setPickForSkillXp(true);
+                    plugin.menus().openPlayers(player);
+                }
+            }
+            case 23 -> {
+                if (plugin.actions().pluginEnabled("YaPSkills")) {
+                    plugin.session(player.getUniqueId()).setPickForSkillLevel(true);
+                    plugin.menus().openPlayers(player);
+                }
+            }
+            case 25 -> {
+                if (plugin.actions().pluginEnabled("YaPLeveledMobs")
+                        || plugin.actions().pluginEnabled("YaPMobs")) {
                     plugin.menus().openLeveledMobs(player);
-                } else {
-                    actions.closeAndRun(player, "prayer list");
                 }
             }
             default -> {

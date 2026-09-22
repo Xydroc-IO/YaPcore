@@ -21,6 +21,7 @@ public final class AdminMenus {
     public static final int HUB_LINKS = AdminMenuSlots.HUB_LINKS;
     public static final int HUB_SCHEMATICS = AdminMenuSlots.HUB_SCHEMATICS;
     public static final int HUB_COMBAT = AdminMenuSlots.HUB_COMBAT;
+    public static final int HUB_YAP420 = AdminMenuSlots.HUB_YAP420;
 
     public static final int GIVE_PRESETS = AdminMenuSlots.GIVE_PRESETS;
     public static final int GIVE_GEAR = AdminMenuSlots.GIVE_GEAR;
@@ -47,6 +48,8 @@ public final class AdminMenus {
     private final AdminMenusPluginPanels pluginPanels;
     private final AdminMenusCustomItemsBrowse customItemsBrowse;
     private final AdminMenusCustomItemsWizard customItemsWizard;
+    private final AdminMenusSkills skills;
+    private final AdminMenusYap420 yap420;
 
     public AdminMenus(AdminPlugin plugin) {
         this.core = new AdminMenusCore(plugin);
@@ -56,6 +59,8 @@ public final class AdminMenus {
         this.pluginPanels = new AdminMenusPluginPanels(plugin);
         this.customItemsBrowse = new AdminMenusCustomItemsBrowse(plugin);
         this.customItemsWizard = new AdminMenusCustomItemsWizard(plugin);
+        this.skills = new AdminMenusSkills(plugin);
+        this.yap420 = new AdminMenusYap420(plugin);
     }
 
     public void openHub(Player player) {
@@ -87,6 +92,10 @@ public final class AdminMenus {
         core.openSpeedPicker(player, target, fly);
     }
 
+    public void openNvPicker(Player player, Player target) {
+        core.openNvPicker(player, target);
+    }
+
     public void openGiveHub(Player player) {
         give.openGiveHub(player);
     }
@@ -111,6 +120,11 @@ public final class AdminMenus {
         ops.openServerOps(player);
     }
 
+    /** YaPProtect time-window rollback for the current world. */
+    public void openServerRollback(Player player) {
+        ops.openServerRollback(player);
+    }
+
     public void openEconomy(Player player) {
         ops.openEconomy(player);
     }
@@ -132,6 +146,18 @@ public final class AdminMenus {
 
     public void openCombatSkills(Player player) {
         ops.openCombatSkills(player);
+    }
+
+    public void openSkillPick(Player player, Player target, boolean forXp) {
+        skills.openSkillPick(player, target, forXp);
+    }
+
+    public void openSkillXpAmount(Player player, Player target, String skillId) {
+        skills.openXpAmount(player, target, skillId);
+    }
+
+    public void openSkillSetLevel(Player player, Player target, String skillId) {
+        skills.openSetLevel(player, target, skillId);
     }
 
     public void openLeveledMobs(Player player) {
@@ -184,5 +210,13 @@ public final class AdminMenus {
 
     public void openCustomItemsCreateTriggers(Player player) {
         customItemsWizard.openCustomItemsCreateTriggers(player);
+    }
+
+    public void openYap420Hub(Player player) {
+        yap420.openHub(player);
+    }
+
+    public void openYap420Give(Player player) {
+        yap420.openGive(player);
     }
 }

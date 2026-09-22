@@ -88,10 +88,17 @@ final class AdminMenusCore {
                     "World edit · schematics · paste preview",
                     "One place for build tools"));
         }
-        if (plugin.actions().pluginEnabled("YaPSkills")) {
-            inv.setItem(AdminMenuSlots.HUB_COMBAT, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, "Skills",
-                    "Open the skills menu"));
-        }
+        // Always show Skills entry so grant UI is discoverable (offline = barrier inside).
+        inv.setItem(AdminMenuSlots.HUB_COMBAT, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, NamedTextColor.GREEN, "Skills",
+                "Give XP · set skill levels",
+                plugin.actions().pluginEnabled("YaPSkills")
+                        ? "YaPSkills online"
+                        : "YaPSkills offline on this server"));
+        inv.setItem(AdminMenuSlots.HUB_YAP420, AdminMenuHolder.icon(Material.KELP, NamedTextColor.DARK_GREEN, "YaP420",
+                "Plant · cure · give · reload",
+                plugin.actions().pluginEnabled("YaP420")
+                        ? "YaP420 online"
+                        : "YaP420 offline on this server"));
         inv.setItem(AdminMenuSlots.SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
         player.openInventory(inv);
     }
@@ -151,6 +158,8 @@ final class AdminMenusCore {
                 "Bring them to you"));
         inv.setItem(12, AdminMenuHolder.icon(Material.OAK_DOOR, "TP to spawn",
                 "Send them to world spawn"));
+        inv.setItem(13, AdminMenuHolder.icon(Material.GOLDEN_CARROT, NamedTextColor.AQUA, "Night vision…",
+                "15m · 1h · unlimited · off"));
         inv.setItem(14, AdminMenuHolder.icon(Material.PACKED_ICE, "Freeze",
                 "Toggle freeze (Essentials)"));
         inv.setItem(15, AdminMenuHolder.icon(Material.CHEST, "Invsee",
@@ -171,6 +180,12 @@ final class AdminMenusCore {
                 "Pick 1–10 for them"));
         inv.setItem(18, AdminMenuHolder.icon(Material.FEATHER, "Fly speed…",
                 "Pick 1–10 for them"));
+        if (plugin.actions().pluginEnabled("YaPSkills")) {
+            inv.setItem(26, AdminMenuHolder.icon(Material.EXPERIENCE_BOTTLE, NamedTextColor.GREEN, "Give skill XP…",
+                    "Pick skill → amount"));
+            inv.setItem(27, AdminMenuHolder.icon(Material.DIAMOND, NamedTextColor.AQUA, "Set skill level…",
+                    "Pick skill → level"));
+        }
         inv.setItem(23, AdminMenuHolder.icon(Material.EMERALD, "Promote",
                 "/promote " + target.getName()));
         inv.setItem(24, AdminMenuHolder.icon(Material.REDSTONE, "Demote",
@@ -259,7 +274,8 @@ final class AdminMenusCore {
         inv.setItem(21, AdminMenuHolder.icon(Material.GLASS, "Vanish", "Hide from players"));
         inv.setItem(22, AdminMenuHolder.icon(Material.GOLDEN_APPLE, "Heal", "Restore health and hunger"));
         inv.setItem(23, AdminMenuHolder.icon(Material.COOKED_BEEF, "Feed", "Fill hunger"));
-        inv.setItem(24, AdminMenuHolder.icon(Material.ENDER_EYE, "Night vision", "Toggle for 5 minutes"));
+        inv.setItem(24, AdminMenuHolder.icon(Material.ENDER_EYE, "Night vision…",
+                "15m · 1h · unlimited · off"));
         inv.setItem(28, AdminMenuHolder.icon(Material.GRASS_BLOCK, "Survival", "Set gamemode survival"));
         inv.setItem(29, AdminMenuHolder.icon(Material.COMMAND_BLOCK, "Creative", "Set gamemode creative"));
         inv.setItem(30, AdminMenuHolder.icon(Material.STONE, "Adventure", "Set gamemode adventure"));
@@ -307,6 +323,37 @@ final class AdminMenusCore {
         }
         inv.setItem(22, AdminMenuHolder.icon(Material.IRON_NUGGET, "Reset default",
                 fly ? "Fly speed 1/10 (vanilla)" : "Walk speed 2/10 (vanilla)"));
+        inv.setItem(AdminMenuSlots.SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
+        inv.setItem(AdminMenuSlots.SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
+        player.openInventory(inv);
+    }
+
+    /**
+     * Night vision duration picker. {@code target == null} means apply to the admin (self).
+     */
+    void openNvPicker(Player player, Player target) {
+        Player applyTo = target != null ? target : player;
+        plugin.session(player.getUniqueId()).setTarget(applyTo.getUniqueId(), applyTo.getName());
+        boolean self = applyTo.getUniqueId().equals(player.getUniqueId());
+        AdminMenuHolder holder = new AdminMenuHolder(
+                AdminMenuKind.NV_PICKER, applyTo.getUniqueId(), applyTo.getName());
+        String title = "Night vision: " + (self ? "you" : applyTo.getName());
+        Inventory inv = Bukkit.createInventory(holder, 54,
+                Component.text(title, NamedTextColor.AQUA));
+        holder.bind(inv);
+        AdminMenuHolder.fillAll(inv);
+        inv.setItem(AdminMenuSlots.SLOT_INFO, AdminMenuHolder.icon(Material.ENDER_EYE, "Night vision",
+                "Pick a duration",
+                self ? "Applies to you" : "Applies to " + applyTo.getName()));
+        inv.setItem(20, AdminMenuHolder.icon(Material.CLOCK, NamedTextColor.YELLOW, "15 minutes",
+                "Night vision for 15 minutes"));
+        inv.setItem(21, AdminMenuHolder.icon(Material.CLOCK, NamedTextColor.GOLD, "1 hour",
+                "Night vision for 1 hour"));
+        inv.setItem(22, AdminMenuHolder.icon(Material.BEACON, NamedTextColor.GREEN, "Unlimited",
+                "Until you turn it off",
+                "Survives death / milk / reconnect"));
+        inv.setItem(24, AdminMenuHolder.icon(Material.BARRIER, NamedTextColor.RED, "Turn off",
+                "Remove night vision now"));
         inv.setItem(AdminMenuSlots.SLOT_BACK, AdminMenuHolder.icon(Material.ARROW, "Back"));
         inv.setItem(AdminMenuSlots.SLOT_CLOSE, AdminMenuHolder.icon(Material.DARK_OAK_DOOR, "Close"));
         player.openInventory(inv);

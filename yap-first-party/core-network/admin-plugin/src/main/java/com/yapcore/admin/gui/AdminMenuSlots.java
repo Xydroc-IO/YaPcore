@@ -18,9 +18,23 @@ final class AdminMenuSlots {
     static final int HUB_ECONOMY = 30;
     static final int HUB_LINKS = 32;
     static final int HUB_SCHEMATICS = 22;
-    static final int HUB_COMBAT = 34;
+    /** Skills — give XP / set levels (was 34, easy to miss). */
+    static final int HUB_COMBAT = 21;
+    /** YaP420 plant / cure / give hub. */
+    static final int HUB_YAP420 = 23;
 
-    // Give hub
+    // YaP420 hub
+    static final int Y420_GIVE_SEEDS = 19;
+    static final int Y420_GIVE_BUDS = 20;
+    static final int Y420_GIVE_CONSUME = 21;
+    static final int Y420_GIVE_RACK = 22;
+    static final int Y420_GIVE_ALL = 23;
+    static final int Y420_BROWSE = 24;
+    static final int Y420_AMOUNT = 25;
+    static final int Y420_RELOAD = 28;
+    static final int Y420_REMOVE = 29;
+    static final int Y420_INFO = 30;
+    static final int Y420_STARTER = 31;
     static final int GIVE_PRESETS = 19;
     static final int GIVE_GEAR = 21;
     static final int GIVE_KITS = 23;

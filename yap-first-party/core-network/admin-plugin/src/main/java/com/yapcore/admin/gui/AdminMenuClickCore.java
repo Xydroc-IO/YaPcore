@@ -2,6 +2,7 @@ package com.yapcore.admin.gui;
 
 import com.yapcore.admin.AdminPlugin;
 import com.yapcore.admin.action.AdminActions;
+import com.yapcore.admin.action.AdminNightVision;
 import com.yapcore.admin.session.AdminSession;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -28,6 +29,8 @@ final class AdminMenuClickCore {
         switch (slot) {
             case AdminMenus.HUB_PLAYERS, AdminMenus.HUB_MOD -> {
                 plugin.session(player.getUniqueId()).setPickForTrolls(false);
+                plugin.session(player.getUniqueId()).setPickForSkillXp(false);
+                plugin.session(player.getUniqueId()).setPickForSkillLevel(false);
                 plugin.menus().openPlayers(player);
             }
             case AdminMenus.HUB_TROLLS -> {
@@ -52,6 +55,7 @@ final class AdminMenuClickCore {
             case AdminMenus.HUB_LINKS -> plugin.menus().openDeepLinks(player);
             case AdminMenus.HUB_SCHEMATICS -> plugin.menus().openWorldTools(player);
             case AdminMenus.HUB_COMBAT -> plugin.menus().openCombatSkills(player);
+            case AdminMenus.HUB_YAP420 -> plugin.menus().openYap420Hub(player);
             default -> {
             }
         }
@@ -83,6 +87,16 @@ final class AdminMenuClickCore {
             plugin.menus().openTrolls(player, target);
             return;
         }
+        if (session.pickForSkillXp()) {
+            session.setPickForSkillXp(false);
+            plugin.menus().openSkillPick(player, target, true);
+            return;
+        }
+        if (session.pickForSkillLevel()) {
+            session.setPickForSkillLevel(false);
+            plugin.menus().openSkillPick(player, target, false);
+            return;
+        }
         plugin.menus().openPlayerActions(player, target);
     }
 
@@ -107,6 +121,7 @@ final class AdminMenuClickCore {
             case 10 -> actions.teleportToPlayer(player, target);
             case 11 -> actions.teleportHere(player, target);
             case 12 -> actions.teleportSpawn(player, target);
+            case 13 -> plugin.menus().openNvPicker(player, target);
             case 14 -> actions.closeAndRun(player, "freeze " + target.getName());
             case 15 -> actions.closeAndRun(player, "invsee " + target.getName());
             case 16 -> actions.closeAndRun(player, "echest " + target.getName());
@@ -127,6 +142,16 @@ final class AdminMenuClickCore {
             case 23 -> actions.closeAndRun(player, "promote " + target.getName());
             case 24 -> actions.closeAndRun(player, "demote " + target.getName());
             case 25 -> plugin.menus().openGiveHub(player);
+            case 26 -> {
+                if (plugin.actions().pluginEnabled("YaPSkills")) {
+                    plugin.menus().openSkillPick(player, target, true);
+                }
+            }
+            case 27 -> {
+                if (plugin.actions().pluginEnabled("YaPSkills")) {
+                    plugin.menus().openSkillPick(player, target, false);
+                }
+            }
             case 28 -> {
                 player.closeInventory();
                 actions.kick(player, target, DEFAULT_REASON);
@@ -200,7 +225,7 @@ final class AdminMenuClickCore {
             case 21 -> actions.closeAndRun(player, "vanish");
             case 22 -> actions.heal(player, player);
             case 23 -> actions.feed(player, player);
-            case 24 -> actions.toggleNightVision(player);
+            case 24 -> plugin.menus().openNvPicker(player, null);
             case 28 -> actions.closeAndRun(player, "gms");
             case 29 -> actions.closeAndRun(player, "gmc");
             case 30 -> actions.closeAndRun(player, "gma");
@@ -255,5 +280,41 @@ final class AdminMenuClickCore {
         } else {
             actions.closeAndRun(player, "speed " + target.getName() + " " + level + " " + mode);
         }
+    }
+
+    void handleNvPicker(Player player, AdminMenuHolder holder, int slot) {
+        if (slot == AdminMenus.SLOT_BACK) {
+            Player target = holder.targetUuid() == null ? null : Bukkit.getPlayer(holder.targetUuid());
+            boolean self = target == null || target.getUniqueId().equals(player.getUniqueId());
+            if (self) {
+                plugin.menus().openSelfTools(player);
+            } else if (target != null && target.isOnline()) {
+                plugin.menus().openPlayerActions(player, target);
+            } else {
+                plugin.menus().openHub(player);
+            }
+            return;
+        }
+        if (slot == AdminMenus.SLOT_CLOSE) {
+            player.closeInventory();
+            return;
+        }
+        Player target = holder.targetUuid() == null ? null : Bukkit.getPlayer(holder.targetUuid());
+        if (target == null || !target.isOnline()) {
+            player.sendMessage("§cPlayer is offline.");
+            plugin.menus().openHub(player);
+            return;
+        }
+        AdminNightVision.Mode mode = switch (slot) {
+            case 20 -> AdminNightVision.Mode.MINUTES_15;
+            case 21 -> AdminNightVision.Mode.HOUR;
+            case 22 -> AdminNightVision.Mode.UNLIMITED;
+            case 24 -> AdminNightVision.Mode.OFF;
+            default -> null;
+        };
+        if (mode == null) {
+            return;
+        }
+        plugin.actions().setNightVision(player, target, mode);
     }
 }
