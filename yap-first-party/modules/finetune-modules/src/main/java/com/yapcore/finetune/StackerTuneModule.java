@@ -17,7 +17,7 @@ public final class StackerTuneModule extends FineTuneModule {
     protected List<String> guideLines() {
         return List.of(
                 "Requires GAMEPLAY install: gradle installGameplayDefaults",
-                "Config: plugins/YaPStacker/config.yml",
+                "Config: plugins/YaPMobs/stacker.yml",
                 "  mobs.* / items.* / spawners.* radii & caps",
                 "  kill-mode, tools, PlaceholderAPI hooks",
                 "Command: /yapstacker",

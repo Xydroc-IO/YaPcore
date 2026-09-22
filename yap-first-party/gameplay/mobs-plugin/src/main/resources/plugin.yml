@@ -1,0 +1,43 @@
+name: YaPMobs
+version: '0.0.0.1'
+main: com.yapcore.mobs.MobsPlugin
+api-version: '1.21'
+folia-supported: true
+author: YapLabs
+description: Opt-in mob mechanics — PDC stacking plus distance-based levels
+website: https://github.com/yaplabs
+provides: [YaPStacker, YaPLeveledMobs]
+softdepend: [PlaceholderAPI, MythicMobs, Citizens, YaPGameplayKnobs, YaPDungeons]
+commands:
+  yapstacker:
+    description: YaP Stacker admin — reload, gui, give tools, stats
+    usage: /yapstacker <reload|status|gui|stats|give <wand|tool|aura> [player]>
+    aliases: [stacker]
+    permission: yapstacker.admin
+  yaplevel:
+    description: Inspect / configure / set mob levels
+    usage: /yaplevel [toggle|strategy|min|max|blocks|nametag|reload|info|set <level>]
+    aliases: [ylevel, moblevel, lm]
+    permission: yapleveledmobs.admin
+permissions:
+  yapstacker.admin:
+    description: Full YaP Stacker admin
+    default: op
+  yapstacker.gui:
+    description: Open stacker admin GUI
+    default: op
+  yapstacker.give:
+    description: Give stacker tools
+    default: op
+  yapstacker.aura:
+    description: Use kill-aura item
+    default: op
+  yapstacker.wand:
+    description: Use stack wand (spawners)
+    default: op
+  yapstacker.tool:
+    description: Use stack tool (mobs)
+    default: op
+  yapleveledmobs.admin:
+    description: Configure leveled mobs and set levels
+    default: op
