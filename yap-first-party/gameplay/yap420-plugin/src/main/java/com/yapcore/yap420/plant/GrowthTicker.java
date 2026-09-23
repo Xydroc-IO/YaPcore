@@ -47,6 +47,9 @@ public final class GrowthTicker {
 
     private void tickAll() {
         for (PlotState plot : plots.all()) {
+            if (PlotStore.isEphemeralWorld(plot.world())) {
+                continue;
+            }
             if (plot.stage() >= config.maxStageIndex()) {
                 continue;
             }
@@ -61,6 +64,9 @@ public final class GrowthTicker {
     private void advanceIfReady(PlotState snapshot) {
         PlotState plot = plots.get(snapshot.world(), snapshot.x(), snapshot.y(), snapshot.z()).orElse(null);
         if (plot == null || plot.stage() >= config.maxStageIndex()) {
+            return;
+        }
+        if (PlotStore.isEphemeralWorld(plot.world())) {
             return;
         }
         World world = Bukkit.getWorld(plot.world());

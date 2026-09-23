@@ -135,11 +135,11 @@ public final class DungeonCarver {
                     return chain;
                 })
                 .thenCompose(v -> {
-                    // Push light / block updates to clients — sealed carve with
-                    // applyPhysics=false leaves Iris showing a black rectangle.
-                    progress.accept("Lighting…");
-                    return forEachChunk(world, minX, minZ, maxX, maxZ, (cx, cz) ->
-                            world.refreshChunk(cx, cz));
+                    // Only nudge the entrance chunk — full-layout refresh hammered Folia
+                    // and (with wild plant floods) blew the heap.
+                    progress.accept("Ready…");
+                    return regionRun(world, entrance.getBlockX(), entrance.getBlockZ(), () ->
+                            world.refreshChunk(entrance.getBlockX() >> 4, entrance.getBlockZ() >> 4));
                 })
                 .whenComplete((v, err) -> {
                     if (err != null) {

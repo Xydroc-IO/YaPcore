@@ -135,11 +135,15 @@ public final class WildSpawnListener implements Listener {
         if (env == World.Environment.NETHER || env == World.Environment.THE_END) {
             return false;
         }
+        String name = world.getName().toLowerCase(Locale.ROOT);
+        // Instant dungeon / ephemeral worlds — never plant here (chunk floods → OOM)
+        if (name.startsWith("yd_") || name.startsWith("yap_tmp_") || name.startsWith("tmp_")) {
+            return false;
+        }
         List<String> names = wild.worlds();
         if (names.isEmpty()) {
             return true;
         }
-        String name = world.getName().toLowerCase(Locale.ROOT);
         for (String allowed : names) {
             if (name.equals(allowed.toLowerCase(Locale.ROOT))) {
                 return true;
