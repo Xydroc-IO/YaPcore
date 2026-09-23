@@ -1,20 +1,22 @@
 package com.yapcore.dungeons.portal;
 
-import io.papermc.paper.datacomponent.DataComponentTypes;
-import net.kyori.adventure.key.Key;
 import org.bukkit.Axis;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemDisplay;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
 /**
- * Lime portal disc (same YaP pack art as fleet lime pads) centered in a dungeon frame.
+ * Animated lime portal face for dungeon frames.
+ * {@link BlockDisplay} of lime stained glass uses the pack flipbook with no collision,
+ * so the opening stays walkable while the swirl still renders.
  */
 public final class DungeonPortalVisuals {
 
@@ -26,40 +28,33 @@ public final class DungeonPortalVisuals {
     public static void spawnFace(PortalStructure.Frame frame) {
         clearFace(frame);
         World world = frame.world();
-        float faceW = Math.max(1f, frame.sizeAlong() - 2);
-        float faceH = Math.max(1f, frame.height() - 2);
-        float diameter = Math.min(faceW, faceH);
-        double cx;
-        double cy = frame.minY() + frame.height() / 2.0;
-        double cz;
-        AxisAngle4f facing;
-        if (frame.axis() == Axis.X) {
-            cx = (frame.minAlong() + frame.maxAlong() + 1) / 2.0;
-            cz = frame.fixed() + 0.5;
-            facing = new AxisAngle4f();
-        } else {
-            cx = frame.fixed() + 0.5;
-            cz = (frame.minAlong() + frame.maxAlong() + 1) / 2.0;
-            facing = new AxisAngle4f((float) (Math.PI / 2.0), 0f, 1f, 0f);
+        for (Block cell : frame.interiorBlocks()) {
+            Location loc = cell.getLocation();
+            final Vector3f translation;
+            final Vector3f scale;
+            if (frame.axis() == Axis.X) {
+                translation = new Vector3f(0f, 0f, 0.35f);
+                scale = new Vector3f(1.02f, 1.02f, 0.3f);
+            } else {
+                translation = new Vector3f(0.35f, 0f, 0f);
+                scale = new Vector3f(0.3f, 1.02f, 1.02f);
+            }
+            world.spawn(loc, BlockDisplay.class, display -> {
+                display.setBlock(Material.LIME_STAINED_GLASS.createBlockData());
+                display.setTransformation(new Transformation(
+                        translation,
+                        new AxisAngle4f(),
+                        scale,
+                        new AxisAngle4f()));
+                display.setBrightness(new Display.Brightness(15, 15));
+                display.setBillboard(Display.Billboard.FIXED);
+                display.setShadowRadius(0f);
+                display.setShadowStrength(0f);
+                display.setViewRange(64f);
+                display.setPersistent(true);
+                display.addScoreboardTag(DISPLAY_TAG);
+            });
         }
-        Location loc = new Location(world, cx, cy, cz);
-        ItemStack visual = limeDisc();
-        world.spawn(loc, ItemDisplay.class, display -> {
-            display.setItemStack(visual);
-            display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.NONE);
-            display.setTransformation(new Transformation(
-                    new Vector3f(0f, 0f, 0f),
-                    facing,
-                    new Vector3f(diameter, diameter, 0.35f),
-                    new AxisAngle4f()));
-            display.setBrightness(new Display.Brightness(15, 15));
-            display.setBillboard(Display.Billboard.FIXED);
-            display.setShadowRadius(0f);
-            display.setShadowStrength(0f);
-            display.setViewRange(48f);
-            display.setPersistent(true);
-            display.addScoreboardTag(DISPLAY_TAG);
-        });
     }
 
     public static void clearFace(PortalStructure.Frame frame) {
@@ -79,40 +74,35 @@ public final class DungeonPortalVisuals {
             minZ = frame.minAlong();
             maxZ = frame.maxAlong();
         }
+        int minY = frame.minY();
+        int maxY = frame.maxY();
         int minCx = (minX >> 4) - 1;
         int maxCx = (maxX >> 4) + 1;
         int minCz = (minZ >> 4) - 1;
         int maxCz = (maxZ >> 4) + 1;
-        double midY = frame.minY() + frame.height() / 2.0;
         for (int cx = minCx; cx <= maxCx; cx++) {
             for (int cz = minCz; cz <= maxCz; cz++) {
                 if (!world.isChunkLoaded(cx, cz)) {
                     continue;
                 }
-                for (var entity : world.getChunkAt(cx, cz).getEntities()) {
-                    if (!(entity instanceof ItemDisplay display)) {
+                for (Entity entity : world.getChunkAt(cx, cz).getEntities()) {
+                    if (!(entity instanceof BlockDisplay) && !(entity instanceof ItemDisplay)) {
                         continue;
                     }
-                    if (!display.getScoreboardTags().contains(DISPLAY_TAG)) {
+                    if (!entity.getScoreboardTags().contains(DISPLAY_TAG)) {
                         continue;
                     }
-                    Location at = display.getLocation();
-                    if (Math.abs(at.getY() - midY) > frame.height()) {
+                    Location at = entity.getLocation();
+                    if (at.getBlockY() < minY - 1 || at.getBlockY() > maxY + 1) {
                         continue;
                     }
-                    if (at.getBlockX() < minX - 2 || at.getBlockX() > maxX + 2
-                            || at.getBlockZ() < minZ - 2 || at.getBlockZ() > maxZ + 2) {
+                    if (at.getBlockX() < minX - 1 || at.getBlockX() > maxX + 1
+                            || at.getBlockZ() < minZ - 1 || at.getBlockZ() > maxZ + 1) {
                         continue;
                     }
-                    display.remove();
+                    entity.remove();
                 }
             }
         }
-    }
-
-    private static ItemStack limeDisc() {
-        ItemStack stack = new ItemStack(Material.PAPER);
-        stack.setData(DataComponentTypes.ITEM_MODEL, Key.key("yap", "portal/lime"));
-        return stack;
     }
 }

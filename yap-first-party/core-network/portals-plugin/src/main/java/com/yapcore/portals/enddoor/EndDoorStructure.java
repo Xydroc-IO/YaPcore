@@ -126,38 +126,16 @@ public final class EndDoorStructure {
     }
 
     private Optional<Frame> scan(Block origin, Axis axis) {
-        // Prefer configured size, then other vanilla portal sizes
-        for (int w : widthsToTry()) {
-            for (int h : heightsToTry()) {
-                Optional<Frame> hit = scanSize(origin, axis, w, h);
-                if (hit.isPresent()) {
-                    return hit;
-                }
-            }
-        }
-        return Optional.empty();
+        // Exact configured size only — sliding over many sizes blamed frame obsidian as "inside"
+        return scanSize(origin, axis, outerWidth, outerHeight);
     }
 
     private int[] widthsToTry() {
-        List<Integer> out = new ArrayList<>();
-        out.add(outerWidth);
-        for (int w = MIN_W; w <= Math.min(MAX_W, 10); w++) {
-            if (w != outerWidth) {
-                out.add(w);
-            }
-        }
-        return out.stream().mapToInt(Integer::intValue).toArray();
+        return new int[]{outerWidth};
     }
 
     private int[] heightsToTry() {
-        List<Integer> out = new ArrayList<>();
-        out.add(outerHeight);
-        for (int h = MIN_H; h <= Math.min(MAX_H, 10); h++) {
-            if (h != outerHeight) {
-                out.add(h);
-            }
-        }
-        return out.stream().mapToInt(Integer::intValue).toArray();
+        return new int[]{outerHeight};
     }
 
     private Optional<Frame> scanSize(Block origin, Axis axis, int width, int height) {
@@ -292,20 +270,33 @@ public final class EndDoorStructure {
                     }
                 }
                 // Skip windows that barely look like a portal (terrain noise)
-                if (frameNeed > 0 && frameOk * 2 < frameNeed) {
-                    continue;
+                if (frameNeed > 0 && frameOk * 4 < frameNeed * 3) {
+                    continue; // need ≥75% frame match
                 }
                 Block badIn = null;
                 Material badInMat = null;
+                boolean onlyFrameAsInterior = false;
                 for (Block b : frame.interiorBlocks()) {
-                    if (!isAllowedInterior(b.getType())) {
-                        badIn = b;
-                        badInMat = b.getType();
-                        break;
+                    if (isAllowedInterior(b.getType())) {
+                        continue;
                     }
+                    if (isFrameBlock(b.getType())) {
+                        // Frame material "inside" = misaligned scan window — ignore for tips
+                        onlyFrameAsInterior = true;
+                        continue;
+                    }
+                    badIn = b;
+                    badInMat = b.getType();
+                    onlyFrameAsInterior = false;
+                    break;
+                }
+                if (badIn == null && onlyFrameAsInterior) {
+                    continue;
                 }
                 int missing = frameNeed - frameOk;
-                int score = missing * 10 + (badIn != null ? 3 : 0) + Math.abs(width - outerWidth) + Math.abs(height - outerHeight);
+                // Prefer configured size so nearby wrong windows don't win tip fights
+                int sizePenalty = (Math.abs(width - outerWidth) + Math.abs(height - outerHeight)) * 25;
+                int score = missing * 10 + (badIn != null ? 3 : 0) + sizePenalty;
                 String msg;
                 if (badIn != null) {
                     msg = "clear " + pretty(badInMat) + " at " + badIn.getX() + "," + badIn.getY() + "," + badIn.getZ()

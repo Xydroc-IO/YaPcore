@@ -76,7 +76,7 @@ public final class EndDoorListener implements Listener {
         if (!config.endDoorsEnabled()) {
             return;
         }
-        if (event.getHand() != EquipmentSlot.HAND && event.getHand() != EquipmentSlot.OFF_HAND) {
+        if (event.getHand() != EquipmentSlot.HAND) {
             return;
         }
         if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
