@@ -123,7 +123,10 @@ public final class PortalStructureTags {
 
     public void deactivate(Block keystone, PortalStructure structure) {
         Optional<PortalStructure.Frame> frame = frameFromKeystone(keystone);
-        frame.ifPresent(structure::clearInterior);
+        frame.ifPresent(f -> {
+            DungeonPortalVisuals.clearFace(f);
+            structure.clearInterior(f);
+        });
         if (isKeystone(keystone)) {
             keystone.setType(structure.frameMaterial(), false);
         }

@@ -36,7 +36,7 @@ public final class DungeonsConfig {
             "OBSIDIAN", "ENDER_EYE", "OBSIDIAN");
     private boolean structureEnabled = true;
     private Material structureFrame = Material.CRYING_OBSIDIAN;
-    private Material structureInterior = Material.NETHER_PORTAL;
+    private Material structureInterior = Material.LIME_STAINED_GLASS;
     private Material structureActivateItem = Material.ENDER_EYE;
     private int structureWidth = 4;
     private int structureHeight = 5;
@@ -75,7 +75,7 @@ public final class DungeonsConfig {
         }
         structureEnabled = c.getBoolean("portal.structure.enabled", true);
         structureFrame = material(c.getString("portal.structure.frame", "CRYING_OBSIDIAN"), Material.CRYING_OBSIDIAN);
-        structureInterior = material(c.getString("portal.structure.interior", "NETHER_PORTAL"), Material.NETHER_PORTAL);
+        structureInterior = material(c.getString("portal.structure.interior", "LIME_STAINED_GLASS"), Material.LIME_STAINED_GLASS);
         structureActivateItem = material(c.getString("portal.structure.activate-item", "ENDER_EYE"), Material.ENDER_EYE);
         structureWidth = Math.max(3, c.getInt("portal.structure.width", 4));
         structureHeight = Math.max(4, c.getInt("portal.structure.height", 5));

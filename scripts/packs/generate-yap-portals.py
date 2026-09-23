@@ -114,6 +114,60 @@ def _write_clear_glass(path: Path) -> None:
     )
 
 
+def _write_animated_glass(path: Path, rgb: tuple[int, int, int]) -> None:
+    """Vertical flipbook swirl for small openings (dungeon 2×3 lime portals)."""
+    palette = _portal_palette(rgb)
+    frames = []
+    for i in range(SHEET_FRAMES):
+        spin = (i / SHEET_FRAMES) * _TAU
+        idx = _disc_index(spin)
+        rgb_img = palette[idx]
+        image = np.zeros((SHEET_SIZE, SHEET_SIZE, 4), dtype=np.uint8)
+        image[..., :3] = rgb_img
+        # Soft edge so glass still reads translucent
+        image[..., 3] = np.where(idx == 0, 0, 210).astype(np.uint8)
+        frames.append(image)
+    sheet = np.vstack(frames)
+    _save_rgba(path, sheet.astype(np.float64))
+    path.with_suffix(path.suffix + ".mcmeta").write_text(
+        json.dumps(
+            {"animation": {"frametime": FRAMETIME, "interpolate": True}},
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+# Dyes that keep a visible in-block swirl (dungeon portals / Bedrock without item displays).
+VISIBLE_GLASS_DYES = frozenset({"lime"})
+
+
+def _write_glass_overlays() -> None:
+    """Clear glass for fleet pads (disc does the art); animated lime for dungeon doors."""
+    for name, rgb in DYE_RGB.items():
+        glass = BLOCK / f"{name}_stained_glass.png"
+        pane = BLOCK / f"{name}_stained_glass_pane.png"
+        pane_top = BLOCK / f"{name}_stained_glass_pane_top.png"
+        if name in VISIBLE_GLASS_DYES:
+            _write_animated_glass(glass, rgb)
+            _write_animated_glass(pane, rgb)
+            # Pane top stays a single bright tile
+            palette = _portal_palette(rgb)
+            tile = np.zeros((16, 16, 4), dtype=np.uint8)
+            tile[..., :3] = palette[2]
+            tile[..., 3] = 200
+            _save_rgba(pane_top, tile.astype(np.float64))
+            meta = pane_top.with_suffix(pane_top.suffix + ".mcmeta")
+            if meta.exists():
+                meta.unlink()
+        else:
+            _write_clear_glass(glass)
+            _write_clear_glass(pane)
+            _write_clear_glass(pane_top)
+    print(f"  glass overlays dyes={len(DYE_RGB)} animated={sorted(VISIBLE_GLASS_DYES)}")
+
+
 def _envelope(n: int, attack: float, release: float) -> np.ndarray:
     env = np.ones(n, dtype=np.float64)
     a = max(1, int(n * attack))
@@ -365,8 +419,9 @@ def main() -> None:
         encoding="utf-8",
     )
 
-    # Stained-glass sheets stay as the visible portal. Writing a 16×16 clear
-    # texture here is what made in-world portals disappear from the pack.
+    # Fleet pads: clear stained glass + spinning disc. Lime glass keeps an
+    # animated swirl so YaPDungeons 2×3 openings read as lime portals on JE/BE.
+    _write_glass_overlays()
     _write_sounds()
     _write_cohesive_sheet()
     print(f"Wrote YaP portal textures + sounds → {OUT}")

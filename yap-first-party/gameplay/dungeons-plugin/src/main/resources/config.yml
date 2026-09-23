@@ -51,7 +51,7 @@ portal:
   structure:
     enabled: true
     frame: CRYING_OBSIDIAN
-    interior: NETHER_PORTAL
+    interior: LIME_STAINED_GLASS
     activate-item: ENDER_EYE
     # Outer size: 4 wide × 5 tall (inner opening 2×3)
     width: 4

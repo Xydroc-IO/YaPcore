@@ -145,7 +145,8 @@ public final class PortalStructure {
         for (Block b : frame.interiorBlocks()) {
             Material t = b.getType();
             // Overworld caves often leave CAVE_AIR — treat all air like empty opening
-            if (!t.isAir() && t != interiorMaterial && t != Material.NETHER_PORTAL) {
+            if (!t.isAir() && t != interiorMaterial && t != Material.NETHER_PORTAL
+                    && !isStainedGlass(t)) {
                 return false;
             }
         }
@@ -201,7 +202,8 @@ public final class PortalStructure {
                 }
                 for (Block b : frame.interiorBlocks()) {
                     Material t = b.getType();
-                    if (!t.isAir() && t != interiorMaterial && t != Material.NETHER_PORTAL) {
+                    if (!t.isAir() && t != interiorMaterial && t != Material.NETHER_PORTAL
+                            && !isStainedGlass(t)) {
                         return Optional.of("opening blocked at " + b.getX() + "," + b.getY() + "," + b.getZ()
                                 + " by " + pretty(t) + " — clear the inner "
                                 + (outerWidth - 2) + "×" + (outerHeight - 2));
@@ -275,13 +277,20 @@ public final class PortalStructure {
 
     public void clearInterior(Frame frame) {
         for (Block b : frame.interiorBlocks()) {
-            if (b.getType() == interiorMaterial || b.getType() == Material.NETHER_PORTAL) {
+            Material t = b.getType();
+            if (t == interiorMaterial || t == Material.NETHER_PORTAL || isStainedGlass(t)) {
                 b.setType(Material.AIR, false);
             }
         }
     }
 
     public boolean isInteriorBlock(Block block) {
-        return block.getType() == interiorMaterial || block.getType() == Material.NETHER_PORTAL;
+        Material t = block.getType();
+        return t == interiorMaterial || t == Material.NETHER_PORTAL || isStainedGlass(t);
+    }
+
+    private static boolean isStainedGlass(Material t) {
+        String n = t.name();
+        return n.endsWith("_STAINED_GLASS") || n.endsWith("_STAINED_GLASS_PANE");
     }
 }

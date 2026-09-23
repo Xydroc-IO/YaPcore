@@ -4,6 +4,7 @@ import com.yapcore.claims.ClaimLookups;
 import com.yapcore.dungeons.DungeonsConfig;
 import com.yapcore.dungeons.gen.DungeonCarver;
 import com.yapcore.dungeons.gui.DungeonMenu;
+import com.yapcore.dungeons.portal.DungeonPortalVisuals;
 import com.yapcore.dungeons.portal.PortalItems;
 import com.yapcore.dungeons.portal.PortalStructure;
 import com.yapcore.dungeons.portal.PortalStructureTags;
@@ -27,6 +28,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
@@ -191,6 +193,7 @@ public final class DungeonListener implements Listener {
         }
         structure.fillInterior(frame);
         structureTags.installKeystone(frame, player.getUniqueId());
+        DungeonPortalVisuals.spawnFace(frame);
         if (player.getGameMode() != GameMode.CREATIVE) {
             used.setAmount(used.getAmount() - 1);
         }
@@ -317,6 +320,30 @@ public final class DungeonListener implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMove(PlayerMoveEvent event) {
+        if (!config.enabled() || !config.structureEnabled()) {
+            return;
+        }
+        Location to = event.getTo();
+        if (to == null || to.getWorld() == null) {
+            return;
+        }
+        Location from = event.getFrom();
+        if (from.getBlockX() == to.getBlockX()
+                && from.getBlockY() == to.getBlockY()
+                && from.getBlockZ() == to.getBlockZ()
+                && from.getWorld() != null
+                && from.getWorld().equals(to.getWorld())) {
+            return;
+        }
+        if (dungeonFrameAt(to).isEmpty()) {
+            return;
+        }
+        // Reuse portal hijack path (claim + keystone + menu) without needing a nether hop
+        hijackDungeonPortal(event.getPlayer(), to, PlayerTeleportEvent.TeleportCause.NETHER_PORTAL);
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onPortal(PlayerPortalEvent event) {
         if (!hijackDungeonPortal(event.getPlayer(), event.getFrom(), event.getCause())) {
@@ -342,9 +369,16 @@ public final class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onTeleport(PlayerTeleportEvent event) {
+        Location to = event.getTo();
+        boolean toNether = to != null && to.getWorld() != null
+                && to.getWorld().getEnvironment() == org.bukkit.World.Environment.NETHER;
         // Walk-through hijack (Folia may fire teleport without PlayerPortalEvent)
         if (!(event instanceof PlayerPortalEvent)
-                && hijackDungeonPortal(event.getPlayer(), event.getFrom(), event.getCause())) {
+                && (event.getCause() == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL || toNether)
+                && hijackDungeonPortal(event.getPlayer(), event.getFrom(),
+                event.getCause() == PlayerTeleportEvent.TeleportCause.NETHER_PORTAL
+                        ? event.getCause()
+                        : PlayerTeleportEvent.TeleportCause.NETHER_PORTAL)) {
             event.setCancelled(true);
             return;
         }
@@ -354,8 +388,8 @@ public final class DungeonListener implements Listener {
             return;
         }
         String from = event.getFrom().getWorld() != null ? event.getFrom().getWorld().getName() : "";
-        String to = event.getTo().getWorld() != null ? event.getTo().getWorld().getName() : "";
-        if (from.equals(run.worldName()) && !to.equals(run.worldName())) {
+        String toName = event.getTo().getWorld() != null ? event.getTo().getWorld().getName() : "";
+        if (from.equals(run.worldName()) && !toName.equals(run.worldName())) {
             instances.removePlayer(event.getPlayer().getUniqueId(), false);
             event.getPlayer().sendMessage("§7Left dungeon (teleported out).");
         }
@@ -369,9 +403,7 @@ public final class DungeonListener implements Listener {
         if (!config.enabled() || !config.structureEnabled()) {
             return false;
         }
-        if (cause != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) {
-            return false;
-        }
+        // Accept NETHER_PORTAL cause, or any probe inside a dungeon frame (move enter / Folia)
         Location probe = from != null ? from : player.getLocation();
         Optional<PortalStructure.Frame> frame = dungeonFrameAt(probe);
         if (frame.isEmpty()) {
