@@ -70,7 +70,8 @@ public final class PortalsPlugin extends JavaPlugin {
             EndDoorTags endTags = new EndDoorTags(this);
             getServer().getPluginManager().registerEvents(
                     new EndDoorListener(this, config, endStructure, endTags, service.cooldown()), this);
-            getLogger().info("End doors enabled — frame=" + config.endDoorFrame()
+            getLogger().info("End doors enabled — build=" + EndDoorListener.BUILD
+                    + " frame=" + config.endDoorFrame()
                     + " " + config.endDoorWidth() + "x" + config.endDoorHeight()
                     + " → " + config.endDoorWorld());
         }
@@ -86,7 +87,8 @@ public final class PortalsPlugin extends JavaPlugin {
         YapSched.globalLater(this, () -> service.visuals().applyAll(service.list()), 40L);
         YapSched.globalTimer(this, () -> service.visuals().tickParticles(service.list()), 20L, 5L);
 
-        getLogger().info("YaPPortals ready — server-id=" + config.serverId()
+        getLogger().info("YaPPortals ready — build=" + EndDoorListener.BUILD
+                + " server-id=" + config.serverId()
                 + " portals=" + service.list().size()
                 + " enabled=" + config.enabled());
     }
