@@ -2,6 +2,7 @@ package net.irisshaders.iris.pipeline;
 
 import com.mojang.blaze3d.opengl.GlStateManager;
 import net.irisshaders.iris.Iris;
+import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
 import net.irisshaders.iris.gui.option.IrisVideoSettings;
 import net.irisshaders.iris.shaderpack.materialmap.NamespacedId;
 import net.irisshaders.iris.shaderpack.materialmap.WorldRenderingSettings;
@@ -51,8 +52,8 @@ public class PipelineManager {
 	 * Sodium chunk meshes have to be rebuilt once the shader vertex format is in
 	 * place. {@code allChanged} during {@code LevelRenderer.render} destroys the
 	 * section manager mid-frame and the world stays blank until a later reload
-	 * (opening Sodium Video Settings). Queue it for the next client tick instead,
-	 * and leave the flag set when there is no world yet.
+	 * (opening Sodium Video Settings). Arm {@link SodiumWorldKick}
+	 * for the next client tick instead, and leave the flag set when there is no world yet.
 	 */
 	private void scheduleReloadOutsideFrame() {
 		if (!WorldRenderingSettings.INSTANCE.isReloadRequired()) {
@@ -60,16 +61,14 @@ public class PipelineManager {
 		}
 		Minecraft mc = Minecraft.getInstance();
 		if (mc.level == null || mc.levelExtractor == null) {
+			// Keep the flag — title-screen / pre-world prepare must not eat it.
 			return;
 		}
+		// Clear only after a successful arm. arm() never drops requests now
+		// (queues through kickNow), so this is safe; bare allChanged is not enough
+		// without the Video Settings reset+invalidate that kickNow performs.
 		WorldRenderingSettings.INSTANCE.clearReloadRequired();
-		mc.execute(() -> {
-			if (mc.level == null || mc.levelExtractor == null) {
-				WorldRenderingSettings.INSTANCE.markReloadRequired();
-				return;
-			}
-			mc.levelExtractor.allChanged();
-		});
+		SodiumWorldKick.arm(2);
 	}
 
 	@Nullable

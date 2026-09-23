@@ -8,6 +8,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializerRegistry;
 import net.irisshaders.iris.compat.dh.DHCompat;
+import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
 import net.irisshaders.iris.config.IrisConfig;
 import net.irisshaders.iris.gl.GLDebug;
 import net.irisshaders.iris.gl.IrisRenderSystem;
@@ -176,6 +177,16 @@ public class Iris {
 		if (loadShaderPackWhenPossible) {
 			loadShaderPackWhenPossible = false;
 			Iris.loadShaderpack();
+			// Title-screen preparePipeline often ran with currentPack == null (DH
+			// deferred load), caching a VanillaRenderingPipeline forever. Destroy
+			// and rebuild so IrisRenderingPipeline actually attaches.
+			getPipelineManager().destroyPipeline();
+			if (minecraft.level != null) {
+				getPipelineManager().preparePipeline(getCurrentDimension());
+			} else {
+				getPipelineManager().preparePipeline(DimensionId.OVERWORLD);
+			}
+			SodiumWorldKick.armWithFollowUp(2, 24);
 		}
 
 		if (Iris.getIrisConfig().areDebugOptionsEnabled()) {
@@ -583,6 +594,8 @@ public class Iris {
 		// https://github.com/IrisShaders/Iris/issues/1330
 		if (Minecraft.getInstance().level != null) {
 			Iris.getPipelineManager().preparePipeline(Iris.getCurrentDimension());
+			// Same refresh as opening Video Settings after a pack swap.
+			SodiumWorldKick.armWithFollowUp(2, 20);
 		}
 	}
 

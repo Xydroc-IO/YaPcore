@@ -23,7 +23,7 @@ public class MixinDisableFabulousGraphics {
 	@Inject(method = "onResourceManagerReload", at = @At("RETURN"))
 	private void iris$kickRendererAfterResources(CallbackInfo ci) {
 		if (Minecraft.getInstance().level != null) {
-			SodiumWorldKick.arm(8);
+			SodiumWorldKick.armWithFollowUp(8, 24);
 		}
 	}
 

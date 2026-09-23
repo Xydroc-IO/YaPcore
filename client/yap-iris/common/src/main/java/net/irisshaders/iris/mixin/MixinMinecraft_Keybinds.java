@@ -1,13 +1,10 @@
 package net.irisshaders.iris.mixin;
 
 import net.irisshaders.iris.Iris;
-import net.irisshaders.iris.IrisVKOnly;
 import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.profiling.Profiler;
-import net.minecraft.util.profiling.ProfilerFiller;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -25,8 +22,12 @@ public class MixinMinecraft_Keybinds {
 	private void iris$onTick(CallbackInfo ci) {
 		Profiler.get().push("iris_keybinds");
 
-		Iris.handleKeybinds((Minecraft) (Object) this);
+		// Process pending kicks before deferred pack load / pipeline rebuild.
+		// handleKeybinds may destroy+prepare and arm(2); if onClientTick ran
+		// after that, the countdown could hit 0 same tick and allChanged ran
+		// before beginLevelRendering set block-ID maps.
 		SodiumWorldKick.onClientTick((Minecraft) (Object) this);
+		Iris.handleKeybinds((Minecraft) (Object) this);
 
 		Profiler.get().pop();
 	}

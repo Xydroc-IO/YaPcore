@@ -873,10 +873,12 @@ public class IrisRenderingPipeline implements WorldRenderingPipeline, ShaderRend
 			WorldRenderingSettings.INSTANCE.setBlockStateIds(
 				BlockMaterialMapping.createBlockStateIdMap(pack.getIdMap().getBlockProperties(), pack.getIdMap().getTagEntries()));
 			WorldRenderingSettings.INSTANCE.setBlockTypeIds(BlockMaterialMapping.createBlockTypeMap(pack.getIdMap().getBlockRenderTypeMap()));
-			// setBlock*Ids raises reloadRequired. PipelineManager applies that on the
-			// next tick — allChanged here runs inside LevelRenderer.render and leaves
-			// terrain, entities, and skins blank until Video Settings reloads Sodium.
+			// setBlock*Ids raises reloadRequired. Never allChanged here — it runs
+			// inside LevelRenderer.render and leaves terrain/entities/skins blank.
+			// Arm SodiumWorldKick so the rebuild happens on a client tick *after*
+			// these ID maps exist (PipelineManager alone can race this frame).
 			initializedBlockIds = true;
+			net.irisshaders.iris.compat.sodium.SodiumWorldKick.arm(1);
 		}
 
 		// Make sure we're using texture unit 0 for this.

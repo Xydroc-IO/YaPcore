@@ -1,9 +1,9 @@
 package net.irisshaders.iris.compat.sodium.mixin;
 
-import net.caffeinemc.mods.sodium.client.config.ConfigManager;
 import net.caffeinemc.mods.sodium.client.config.structure.Config;
 import net.caffeinemc.mods.sodium.client.gui.VideoSettingsScreen;
 import net.irisshaders.iris.Iris;
+import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -58,7 +58,10 @@ public abstract class MixinSodiumVideoSettingsScreen {
 			if (Minecraft.getInstance().gui.screen() != self) {
 				return;
 			}
-			ConfigManager.CONFIG.resetAllOptionsFromBindings();
+			// kickNow = reset + invalidate + allChanged (Video Settings ctor+init
+			// plus mesh rebuild). init() after that rebuilds the UI only — stock
+			// init also invalidate()s again, which is harmless.
+			SodiumWorldKick.kickNow(Minecraft.getInstance());
 			self.init(self.width, self.height);
 		});
 	}

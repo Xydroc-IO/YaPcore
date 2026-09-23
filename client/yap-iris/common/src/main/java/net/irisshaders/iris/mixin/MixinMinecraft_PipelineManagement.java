@@ -2,7 +2,8 @@ package net.irisshaders.iris.mixin;
 
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.compat.sodium.SodiumWorldKick;
-import net.minecraft.client.Minecraft;
+import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
+import net.irisshaders.iris.pipeline.WorldRenderingPipeline;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
 import org.jetbrains.annotations.Nullable;
@@ -47,9 +48,21 @@ public class MixinMinecraft_PipelineManagement {
 	 */
 	@Inject(method = "updateLevelInEngines", at = @At("HEAD"))
 	private void iris$resetPipeline(@Nullable ClientLevel level, CallbackInfo ci) {
-		if (Iris.getCurrentDimension() != Iris.lastDimension) {
-			Iris.logger.info("Reloading pipeline on dimension change: " + Iris.lastDimension + " => " + Iris.getCurrentDimension());
-			// Destroy pipelines when changing dimensions.
+		boolean dimensionChanged = Iris.getCurrentDimension() != Iris.lastDimension;
+		// Title-screen preparePipeline often cached VanillaRenderingPipeline while
+		// currentPack was still null (DH). Joining the same dimension skips the
+		// destroy below and would reuse Vanilla forever even after the pack loads.
+		WorldRenderingPipeline cached = Iris.getPipelineManager().getPipelineNullable();
+		// Pack loaded but pipelinesPerDimension still holds title-screen Vanilla
+		// (same-dimension join never destroyed). Force IrisRenderingPipeline.
+		boolean staleVanilla = level != null
+			&& Iris.getCurrentPack().isPresent()
+			&& !(cached instanceof IrisRenderingPipeline);
+
+		if (dimensionChanged || staleVanilla) {
+			Iris.logger.info("Reloading pipeline on {}: {} => {}",
+				dimensionChanged ? "dimension change" : "stale vanilla pipeline",
+				Iris.lastDimension, Iris.getCurrentDimension());
 			Iris.getPipelineManager().destroyPipeline();
 
 			// NB: We need create the pipeline immediately, so that it is ready by the time that Sodium starts trying to
@@ -60,8 +73,9 @@ public class MixinMinecraft_PipelineManagement {
 		}
 		if (level != null) {
 			// Same refresh as opening Video Settings, after the level (and any
-			// pack reload that follows) has settled. A later resource reload re-arms this.
-			SodiumWorldKick.arm(8);
+			// pack reload that follows) has settled. Follow-up catches skins /
+			// block-ID maps that finish a moment later.
+			SodiumWorldKick.armWithFollowUp(8, 24);
 		}
 	}
 }
