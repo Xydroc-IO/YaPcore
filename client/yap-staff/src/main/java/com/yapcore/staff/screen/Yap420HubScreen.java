@@ -70,7 +70,7 @@ public final class Yap420HubScreen extends StaffPanelScreen {
                     closeToGame();
                     StaffCmds.run("yap420 info");
                 }),
-                action("Open dealer", "/yap420 sell", () -> {
+                action("Open Blazed Boutique", "/yap420 sell", () -> {
                     closeToGame();
                     StaffCmds.run("yap420 sell");
                 }),

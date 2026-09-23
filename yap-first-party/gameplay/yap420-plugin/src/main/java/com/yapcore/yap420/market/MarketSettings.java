@@ -54,7 +54,7 @@ public final class MarketSettings {
                 msg(msgSec, "unpacked", "&aUnpacked into &f{amount}x {item}&a."),
                 msg(msgSec, "need-items", "&cNeed &f{need}x {item}&c (have &f{have}&c)."),
                 msg(msgSec, "no-economy", "&cEconomy unavailable — enable YaPPlayerData."),
-                msg(msgSec, "disabled", "&cYaP420 dealer is disabled."),
+                msg(msgSec, "disabled", "&cBlazed Boutique is disabled."),
                 msg(msgSec, "cannot-afford", "&cNeed &f{money}&c (balance &f{balance}&c)."),
                 msg(msgSec, "nothing-to-sell", "&cNo sellable YaP420 items in inventory."),
                 msg(msgSec, "inventory-full", "&cInventory full.")
@@ -79,7 +79,7 @@ public final class MarketSettings {
                         "&aUnpacked into &f{amount}x {item}&a.",
                         "&cNeed &f{need}x {item}&c (have &f{have}&c).",
                         "&cEconomy unavailable — enable YaPPlayerData.",
-                        "&cYaP420 dealer is disabled.",
+                        "&cBlazed Boutique is disabled.",
                         "&cNeed &f{money}&c (balance &f{balance}&c).",
                         "&cNo sellable YaP420 items in inventory.",
                         "&cInventory full."

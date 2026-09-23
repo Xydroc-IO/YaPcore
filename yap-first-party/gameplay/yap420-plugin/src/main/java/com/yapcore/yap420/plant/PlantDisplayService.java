@@ -20,7 +20,11 @@ import org.joml.Vector3f;
 import java.util.UUID;
 import java.util.logging.Level;
 
-/** ItemDisplay visuals for plant stages. */
+/**
+ * ItemDisplay visuals for plant stages.
+ * Models are {@code block/cross} (and stacked cross for mature stages) so plants
+ * read as crop bushes rather than flat inventory icons.
+ */
 public final class PlantDisplayService {
 
     private final JavaPlugin plugin;
@@ -40,7 +44,8 @@ public final class PlantDisplayService {
         if (world == null) {
             return plot;
         }
-        Location loc = new Location(world, plot.x() + 0.5, plot.y() + 0.15, plot.z() + 0.5);
+        // Sit on the farmland surface; cross models are anchored at their feet.
+        Location loc = new Location(world, plot.x() + 0.5, plot.y() + 0.02, plot.z() + 0.5);
         String itemId = Yap420ItemIds.plantStage(plot.strain(), plot.stage());
         ItemStack visual = items.create(itemId, 1).orElse(null);
         if (visual == null) {
@@ -48,9 +53,7 @@ public final class PlantDisplayService {
             return plot;
         }
         applyPlantModel(visual, plot);
-        ItemDisplay display = world.spawn(loc, ItemDisplay.class, ent -> {
-            applyVisual(ent, visual, plot);
-        });
+        ItemDisplay display = world.spawn(loc, ItemDisplay.class, ent -> applyVisual(ent, visual, plot));
         return plot.withEntity(display.getUniqueId());
     }
 
@@ -68,15 +71,9 @@ public final class PlantDisplayService {
         if (display == null || display.isDead()) {
             return spawn(plot);
         }
-        float scale = 0.85f + (plot.stage() / (float) Math.max(1, config.maxStageIndex())) * 0.55f;
+        display.teleportAsync(new Location(world, plot.x() + 0.5, plot.y() + 0.02, plot.z() + 0.5));
         display.setItemStack(visual);
-        display.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-        display.setBillboard(org.bukkit.entity.Display.Billboard.FIXED);
-        display.setTransformation(new Transformation(
-                new Vector3f(0, 0.35f, 0),
-                new AxisAngle4f(),
-                new Vector3f(scale, scale, scale),
-                new AxisAngle4f()));
+        applyTransform(display, plot.stage());
         display.getPersistentDataContainer().set(keys.stage(), PersistentDataType.INTEGER, plot.stage());
         return plot;
     }
@@ -133,6 +130,7 @@ public final class PlantDisplayService {
                 continue;
             }
             YapSched.region(plugin, world, plot.x(), plot.z(), () -> {
+                remove(plot);
                 PlotState updated = spawn(plot);
                 registry.put(updated);
             });
@@ -149,19 +147,29 @@ public final class PlantDisplayService {
     }
 
     private void applyVisual(ItemDisplay ent, ItemStack visual, PlotState plot) {
-        float scale = 0.85f + (plot.stage() / (float) Math.max(1, config.maxStageIndex())) * 0.55f;
         ent.setItemStack(visual);
-        ent.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-        ent.setBillboard(org.bukkit.entity.Display.Billboard.FIXED);
-        ent.setTransformation(new Transformation(
-                new Vector3f(0, 0.35f, 0),
-                new AxisAngle4f(),
-                new Vector3f(scale, scale, scale),
-                new AxisAngle4f()));
+        applyTransform(ent, plot.stage());
         ent.setPersistent(true);
         ent.getPersistentDataContainer().set(keys.plotId(), PersistentDataType.STRING, plot.key());
         ent.getPersistentDataContainer().set(keys.strain(), PersistentDataType.STRING, plot.strain().id());
         ent.getPersistentDataContainer().set(keys.stage(), PersistentDataType.INTEGER, plot.stage());
+    }
+
+    /**
+     * Cross models already encode height (1 / 2 / 3 blocks). Keep scale near 1 so
+     * mature plants read as tall bushes, not inflated flat icons.
+     */
+    private void applyTransform(ItemDisplay ent, int stage) {
+        int max = Math.max(1, config.maxStageIndex());
+        int s = Math.max(0, Math.min(stage, max));
+        float scale = s >= 4 ? 1.0f : 0.88f + (s / (float) max) * 0.12f;
+        ent.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+        ent.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+        ent.setTransformation(new Transformation(
+                new Vector3f(0f, 0f, 0f),
+                new AxisAngle4f(),
+                new Vector3f(scale, scale, scale),
+                new AxisAngle4f()));
     }
 
     public void safeUpdate(PlotState plot, PlotRegistry registry) {

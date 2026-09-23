@@ -21,7 +21,7 @@ import java.util.Map;
 /** Chest GUI for sell / buy / pack. */
 public final class DealerGui {
 
-    public static final String TITLE = "YaP420 Dealer";
+    public static final String TITLE = "Blazed Boutique";
 
     public static final int SLOT_SELL_ALL = 49;
     public static final int SLOT_INFO = 4;
@@ -75,7 +75,7 @@ public final class DealerGui {
                 ? dealer.economy().format(dealer.economy().balance(player))
                 : "n/a";
 
-        inv.setItem(SLOT_INFO, glass(Material.LIME_STAINED_GLASS_PANE, "&aYaP420 Dealer",
+        inv.setItem(SLOT_INFO, glass(Material.LIME_STAINED_GLASS_PANE, "&aBlazed Boutique",
                 "&7Balance: &f" + bal,
                 "&7Click sell icons · shift = all of that item",
                 "&7Pack: " + math.gramsPerOunce() + "g = 1oz · "

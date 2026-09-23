@@ -85,7 +85,7 @@ market:
     unpacked: "&aUnpacked into &f{amount}x {item}&a."
     need-items: "&cNeed &f{need}x {item}&c (have &f{have}&c)."
     no-economy: "&cEconomy unavailable — enable YaPPlayerData."
-    disabled: "&cYaP420 dealer is disabled."
+    disabled: "&cBlazed Boutique is disabled."
     cannot-afford: "&cNeed &f{money}&c (balance &f{balance}&c)."
     nothing-to-sell: "&cNo sellable YaP420 items in inventory."
     inventory-full: "&cInventory full."
