@@ -341,15 +341,45 @@ public final class PresenceChannel implements PluginMessageListener {
             }
             ActiveSkin active = activeOpt.get();
             String skinUrl = resolveSkinUrl(active);
-            if (skinUrl == null || skinUrl.isBlank()) {
-                return;
-            }
-            // Only attach real custom geometryData — standard humanoid skins use the vanilla JE model.
+            boolean slim = active.model() == SkinModel.SLIM;
             String geometryJson = extractGeometryData(active.bedrockCanonicalJson());
             if (geometryJson == null) {
                 geometryJson = "";
             }
-            boolean slim = active.model() == SkinModel.SLIM;
+            String geoB64 = geometryJson.isEmpty()
+                    ? ""
+                    : Base64.getEncoder().encodeToString(geometryJson.getBytes(StandardCharsets.UTF_8));
+
+            // Prefer in-band PNG so other yap-presence clients don't depend on HTTP / unsigned
+            // GameProfile textures (Mojang CDN URLs applied via YaPTailor unsigned props).
+            byte[] png = readSkinPng(active);
+            if (png != null && png.length > 0 && png.length <= 96_000) {
+                String inline = "SKIN|INLINE|"
+                        + subjectUuid
+                        + "|"
+                        + (slim ? "1" : "0")
+                        + "|"
+                        + Base64.getEncoder().encodeToString(png)
+                        + "|"
+                        + geoB64;
+                byte[] inlineBytes = inline.getBytes(StandardCharsets.UTF_8);
+                YapSched.global(plugin, () -> {
+                    Player viewer = Bukkit.getPlayer(viewerUuid);
+                    if (viewer == null || !viewer.isOnline()) {
+                        return;
+                    }
+                    viewer.sendPluginMessage(plugin, CHANNEL, inlineBytes);
+                });
+            }
+
+            if (skinUrl == null || skinUrl.isBlank()) {
+                if (png == null || png.length == 0) {
+                    plugin.getLogger().warning(
+                            "PresenceChannel: no public skin URL or PNG for " + subjectUuid
+                                    + " — set skin-host-public-base-url so other clients can download");
+                }
+                return;
+            }
             String payload = "SKIN|"
                     + subjectUuid
                     + "|"
@@ -357,9 +387,7 @@ public final class PresenceChannel implements PluginMessageListener {
                     + "|"
                     + skinUrl
                     + "|"
-                    + (geometryJson.isEmpty()
-                            ? ""
-                            : Base64.getEncoder().encodeToString(geometryJson.getBytes(StandardCharsets.UTF_8)));
+                    + geoB64;
             byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
             YapSched.global(plugin, () -> {
                 Player viewer = Bukkit.getPlayer(viewerUuid);
@@ -370,6 +398,25 @@ public final class PresenceChannel implements PluginMessageListener {
             });
         } catch (Exception e) {
             plugin.getLogger().log(Level.FINE, "PresenceChannel sendSkin failed: " + e.getMessage());
+        }
+    }
+
+    private byte[] readSkinPng(ActiveSkin active) {
+        if (active == null || active.playerUuid() == null) {
+            return null;
+        }
+        byte[] local = service.images().readStoredSkin(active.playerUuid());
+        if (local != null && local.length > 0) {
+            return local;
+        }
+        String url = resolveSkinUrl(active);
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        try {
+            return service.images().downloadAndValidate(url);
+        } catch (Exception e) {
+            return null;
         }
     }
 

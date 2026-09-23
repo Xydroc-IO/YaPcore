@@ -136,12 +136,29 @@ public final class TailorServiceImpl implements TailorService {
                     .filter(p -> "textures".equals(p.getName()))
                     .findFirst();
             if (textures.isPresent()) {
-                String value = textures.get().getValue();
+                ProfileProperty prop = textures.get();
+                String value = prop.getValue();
                 String url = TailorMojangLookup.extractSkinUrl(value).orElse(null);
                 SkinModel model = TailorMojangLookup.extractModel(value).orElse(config.defaultModel());
                 String cape = TailorMojangLookup.extractCapeUrl(value).orElse(null);
+                // Prefer Mojang-signed property when present so other clients accept it.
+                String signedValue = value;
+                if (prop.getSignature() == null || prop.getSignature().isBlank()) {
+                    try {
+                        TailorMojangLookup.MojangTextures mojang =
+                                TailorMojangLookup.lookupByName(targetName, model);
+                        if (mojang.textureValue() != null) {
+                            signedValue = mojang.textureValue();
+                            url = mojang.skinUrl() != null ? mojang.skinUrl() : url;
+                            cape = mojang.capeUrl() != null ? mojang.capeUrl() : cape;
+                            model = mojang.model() != null ? mojang.model() : model;
+                        }
+                    } catch (TailorException ignored) {
+                        // keep unsigned value
+                    }
+                }
                 ActiveSkin skin = ActiveSkin.of(
-                        viewer.getUniqueId(), url, cape, model, value, System.currentTimeMillis());
+                        viewer.getUniqueId(), url, cape, model, signedValue, System.currentTimeMillis());
                 try {
                     database.saveActive(skin);
                 } catch (Exception e) {

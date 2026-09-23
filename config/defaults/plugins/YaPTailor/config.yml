@@ -5,8 +5,10 @@ max-png-bytes: 1048576
 # Empty list or include "*" to allow any HTTPS host
 allowed-hosts:
   - "*"
-# Chassis ResourcePack HTTP base for Fabric upload + wardrobe thumbs.
-# Example: "http://127.0.0.1:8081" or your public pack host. Empty until set.
+# Chassis ResourcePack HTTP base for Fabric upload + wardrobe thumbs + other-player skins.
+# Must be reachable by other clients (same host as resource-pack-public-host), NOT only 127.0.0.1.
+# Example: "http://yapcoremc.yaplabs.us:8081" — host root only (no trailing /skin).
+# Empty: fleet injects YAP_SKIN_HOST_PUBLIC_BASE_URL from chassis PublicEndpoint when available.
 skin-host-public-base-url: ""
 default-model: WIDE
 

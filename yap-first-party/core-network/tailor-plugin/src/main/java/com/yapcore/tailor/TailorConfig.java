@@ -53,9 +53,20 @@ public final class TailorConfig {
             allowedHosts = normalized.isEmpty() ? List.of("*") : List.copyOf(normalized);
         }
         String base = c.getString("skin-host-public-base-url", "");
-        skinHostPublicBaseUrl = base == null ? "" : base.trim();
-        if (skinHostPublicBaseUrl.endsWith("/")) {
-            skinHostPublicBaseUrl = skinHostPublicBaseUrl.substring(0, skinHostPublicBaseUrl.length() - 1);
+        skinHostPublicBaseUrl = normalizeSkinHostBase(base);
+        if (skinHostPublicBaseUrl == null) {
+            skinHostPublicBaseUrl = "";
+        }
+        if (skinHostPublicBaseUrl.isBlank()) {
+            SkinHostResolver.resolvePublicBase(plugin.getLogger()).ifPresent(resolved -> {
+                skinHostPublicBaseUrl = resolved;
+            });
+        }
+        if (skinHostPublicBaseUrl.isBlank()) {
+            plugin.getLogger().warning(
+                    "skin-host-public-base-url is empty — you will see skins locally (yap-presence), "
+                            + "but other players will keep Mojang/previous skins. Set it to the same "
+                            + "public pack base as resource-pack-public-host (e.g. http://host:8081).");
         }
         defaultModel = SkinModel.fromString(c.getString("default-model", "WIDE"));
 
@@ -92,6 +103,12 @@ public final class TailorConfig {
 
     public String skinHostPublicBaseUrl() {
         return skinHostPublicBaseUrl;
+    }
+
+    /** Used when {@link SkinHostResolver} discovers a host after config reload. */
+    void setSkinHostPublicBaseUrl(String base) {
+        String n = normalizeSkinHostBase(base);
+        this.skinHostPublicBaseUrl = n == null ? "" : n;
     }
 
     public SkinModel defaultModel() {
@@ -152,7 +169,7 @@ public final class TailorConfig {
     }
 
     public String publicSkinUrl(java.util.UUID uuid, String fallbackUrl) {
-        if (skinHostPublicBaseUrl != null && !skinHostPublicBaseUrl.isBlank()) {
+        if (skinHostPublicBaseUrl != null && !skinHostPublicBaseUrl.isBlank() && uuid != null) {
             // Chassis ResourcePackHttpServer serves PNGs at /skin/{uuid}.png
             return skinHostPublicBaseUrl + "/skin/" + uuid + ".png";
         }
@@ -160,7 +177,7 @@ public final class TailorConfig {
     }
 
     public String publicCapeUrl(java.util.UUID uuid, String fallbackUrl) {
-        if (skinHostPublicBaseUrl != null && !skinHostPublicBaseUrl.isBlank()) {
+        if (skinHostPublicBaseUrl != null && !skinHostPublicBaseUrl.isBlank() && uuid != null) {
             return skinHostPublicBaseUrl + "/skin/" + uuid + "_cape.png";
         }
         return fallbackUrl;
@@ -186,5 +203,26 @@ public final class TailorConfig {
 
     public boolean hasPublicSkinHost() {
         return skinHostPublicBaseUrl != null && !skinHostPublicBaseUrl.isBlank();
+    }
+
+    /**
+     * Normalize configured / discovered pack root. Strips trailing slashes and a trailing
+     * {@code /skin} so {@link #publicSkinUrl} does not produce {@code …/skin/skin/…}.
+     */
+    public static String normalizeSkinHostBase(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String base = raw.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        if (base.endsWith("/skin")) {
+            base = base.substring(0, base.length() - "/skin".length());
+            while (base.endsWith("/")) {
+                base = base.substring(0, base.length() - 1);
+            }
+        }
+        return base.isBlank() ? null : base;
     }
 }

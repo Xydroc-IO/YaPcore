@@ -7,7 +7,8 @@ allowed-hosts:
   - "*"
 # When set, applied textures use {base}/skin/{uuid}.png and wardrobe thumbs at
 # {base}/skin/wardrobe/{uuid}/{slotId}.png (chassis ResourcePack HTTP).
-# Required for Fabric file-upload + saved-look thumbnails. Leave empty until set.
+# Required for other players to see your skin. Use the public pack host root
+# (same as resource-pack-public-host) — no trailing /skin. Empty → env discovery.
 skin-host-public-base-url: ""
 default-model: WIDE
 

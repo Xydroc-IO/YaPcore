@@ -16,6 +16,13 @@ final class ChassisSkinPushTest {
     }
 
     @Test
+    void resolveSkinApplyBaseIgnoresPublicHost() {
+        // Public host must not be used for POST /skin/apply (hairpin NAT).
+        String base = ChassisSkinPush.resolveSkinApplyBase(null);
+        assertEquals("http://127.0.0.1:" + ChassisSkinPush.resolvePackHttpPort() + "/skin", base);
+    }
+
+    @Test
     void buildApplyJsonIncludesUsernameAndNullCanonical() {
         UUID uuid = UUID.fromString("11111111-1111-1111-1111-111111111111");
         ActiveSkin skin = ActiveSkin.of(uuid, "https://example/skin.png", null, SkinModel.WIDE, null, 1L);

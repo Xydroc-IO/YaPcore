@@ -14,7 +14,15 @@ final class TailorMojangLookup {
     private TailorMojangLookup() {
     }
 
-    record MojangTextures(String skinUrl, String capeUrl, SkinModel model, String textureValue) {
+    record MojangTextures(
+            String skinUrl,
+            String capeUrl,
+            SkinModel model,
+            String textureValue,
+            String textureSignature) {
+        MojangTextures(String skinUrl, String capeUrl, SkinModel model, String textureValue) {
+            this(skinUrl, capeUrl, model, textureValue, null);
+        }
     }
 
     static MojangTextures lookupByName(String name, SkinModel defaultModel) throws TailorException {
@@ -39,16 +47,58 @@ final class TailorMojangLookup {
             if (value == null) {
                 throw new TailorException("No textures for " + name);
             }
+            String signature = extractTexturesSignature(profileJson);
             return new MojangTextures(
                     extractSkinUrl(value).orElse(null),
                     extractCapeUrl(value).orElse(null),
                     extractModel(value).orElse(defaultModel),
-                    value);
+                    value,
+                    signature);
         } catch (TailorException e) {
             throw e;
         } catch (Exception e) {
             throw new TailorException("Mojang lookup failed: " + e.getMessage(), e);
         }
+    }
+
+    /** True when value was built by YaPTailor unsigned helper (other clients often ignore these). */
+    static boolean isUnsignedYapTailorValue(String textureValueBase64) {
+        if (textureValueBase64 == null || textureValueBase64.isBlank()) {
+            return true;
+        }
+        try {
+            String json = new String(Base64.getDecoder().decode(textureValueBase64), StandardCharsets.UTF_8);
+            return json.contains("\"profileName\":\"YaPTailor\"")
+                    || json.contains("\"profileId\":\"00000000000000000000000000000000\"");
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    static boolean isMojangTextureUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+        String u = url.toLowerCase(java.util.Locale.ROOT);
+        return u.contains("textures.minecraft.net/texture/");
+    }
+
+    private static String extractTexturesSignature(String profileJson) {
+        int nameIdx = profileJson.indexOf("\"textures\"");
+        if (nameIdx < 0) {
+            return null;
+        }
+        int sigIdx = profileJson.indexOf("\"signature\"", nameIdx);
+        if (sigIdx < 0) {
+            return null;
+        }
+        int colon = profileJson.indexOf(':', sigIdx);
+        int start = profileJson.indexOf('"', colon + 1);
+        int end = profileJson.indexOf('"', start + 1);
+        if (start < 0 || end < 0) {
+            return null;
+        }
+        return profileJson.substring(start + 1, end);
     }
 
     static Optional<String> extractSkinUrl(String textureValueBase64) {

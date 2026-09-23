@@ -41,30 +41,131 @@ final class TailorOnlineApply {
     void applyToOnline(Player player, ActiveSkin skin) {
         YapSched.entity(plugin, player, () -> {
             try {
-                PlayerProfile profile = player.getPlayerProfile();
-                if (skin.textureValueBase64() != null && !skin.textureValueBase64().isBlank()) {
-                    profile.setProperty(new ProfileProperty("textures", skin.textureValueBase64()));
-                } else if (skin.sourceUrl() != null && !skin.sourceUrl().isBlank()) {
-                    PlayerTextures textures = profile.getTextures();
-                    URL skinUrl = URI.create(skin.sourceUrl()).toURL();
-                    PlayerTextures.SkinModel bukkitModel = skin.model() == SkinModel.SLIM
-                            ? PlayerTextures.SkinModel.SLIM
-                            : PlayerTextures.SkinModel.CLASSIC;
-                    textures.setSkin(skinUrl, bukkitModel);
-                    if (skin.capeUrl() != null && !skin.capeUrl().isBlank()) {
-                        textures.setCape(URI.create(skin.capeUrl()).toURL());
-                    } else {
-                        textures.setCape(null);
-                    }
-                    profile.setTextures(textures);
-                }
-                player.setPlayerProfile(profile);
+                applyProfileTextures(player, skin);
                 hideShowRefresh(player);
             } catch (Exception e) {
                 plugin.getLogger().log(Level.WARNING, "Failed to apply skin to " + player.getName(), e);
             }
         });
         pushChassisAsync(player, skin);
+    }
+
+    /**
+     * Mutate the Paper profile other clients read.
+     *
+     * <p><b>Never</b> write an unsigned {@code YaPTailor} textures property. That replaces
+     * Velocity-forwarded Mojang-signed textures; other clients reject it and fall back to
+     * Steve/Alex — which matches “not Tailor, not my account skin.”
+     */
+    private void applyProfileTextures(Player player, ActiveSkin skin) throws Exception {
+        String source = skin.sourceUrl();
+        if (source == null || source.isBlank()) {
+            return;
+        }
+
+        if (TailorMojangLookup.isMojangTextureUrl(source)) {
+            applySignedMojangOrKeepLogin(player, skin, source);
+            return;
+        }
+
+        // Custom / chassis-hosted URL — Paper PlayerTextures path (no fake YaPTailor JSON).
+        PlayerProfile profile = player.getPlayerProfile();
+        PlayerTextures textures = profile.getTextures();
+        URL skinUrl = URI.create(source).toURL();
+        PlayerTextures.SkinModel bukkitModel = skin.model() == SkinModel.SLIM
+                ? PlayerTextures.SkinModel.SLIM
+                : PlayerTextures.SkinModel.CLASSIC;
+        textures.setSkin(skinUrl, bukkitModel);
+        if (skin.capeUrl() != null && !skin.capeUrl().isBlank()) {
+            textures.setCape(URI.create(skin.capeUrl()).toURL());
+        } else {
+            textures.setCape(null);
+        }
+        profile.setTextures(textures);
+        player.setPlayerProfile(profile);
+    }
+
+    private void applySignedMojangOrKeepLogin(Player player, ActiveSkin skin, String source) {
+        try {
+            TailorMojangLookup.MojangTextures signed =
+                    TailorMojangLookup.lookupByName(player.getName(), skin.model());
+            if (signed.textureValue() == null || signed.textureValue().isBlank()
+                    || signed.textureSignature() == null || signed.textureSignature().isBlank()) {
+                plugin.getLogger().info(
+                        "Keeping login textures for " + player.getName()
+                                + " — Mojang lookup returned no signature (refusing unsigned apply)");
+                return;
+            }
+            boolean sameTexture = urlsSameTexture(source, signed.skinUrl());
+            if (!sameTexture && !TailorMojangLookup.isUnsignedYapTailorValue(skin.textureValueBase64())) {
+                // Tailor points at a different Mojang CDN hash than this account — cannot sign it.
+                // Use PlayerTextures URL apply; presence INLINE still covers yap-presence clients.
+                applyUrlTextures(player, skin, source);
+                return;
+            }
+            PlayerProfile profile = player.getPlayerProfile();
+            profile.setProperty(new ProfileProperty(
+                    "textures", signed.textureValue(), signed.textureSignature()));
+            player.setPlayerProfile(profile);
+            persistSignedValueBestEffort(skin, signed);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.INFO,
+                    "Keeping login textures for " + player.getName()
+                            + " — signed Mojang refresh failed: " + e.getMessage());
+        }
+    }
+
+    private void applyUrlTextures(Player player, ActiveSkin skin, String source) throws Exception {
+        PlayerProfile profile = player.getPlayerProfile();
+        PlayerTextures textures = profile.getTextures();
+        URL skinUrl = URI.create(source).toURL();
+        PlayerTextures.SkinModel bukkitModel = skin.model() == SkinModel.SLIM
+                ? PlayerTextures.SkinModel.SLIM
+                : PlayerTextures.SkinModel.CLASSIC;
+        textures.setSkin(skinUrl, bukkitModel);
+        if (skin.capeUrl() != null && !skin.capeUrl().isBlank()) {
+            textures.setCape(URI.create(skin.capeUrl()).toURL());
+        } else {
+            textures.setCape(null);
+        }
+        profile.setTextures(textures);
+        player.setPlayerProfile(profile);
+    }
+
+    private void persistSignedValueBestEffort(ActiveSkin skin, TailorMojangLookup.MojangTextures signed) {
+        try {
+            ActiveSkin updated = ActiveSkin.of(
+                    skin.playerUuid(),
+                    signed.skinUrl() != null ? signed.skinUrl() : skin.sourceUrl(),
+                    signed.capeUrl() != null ? signed.capeUrl() : skin.capeUrl(),
+                    signed.model() != null ? signed.model() : skin.model(),
+                    signed.textureValue(),
+                    System.currentTimeMillis(),
+                    skin.activeSlotId());
+            if (skin.bedrockCanonicalJson() != null) {
+                updated = updated.withBedrockCanonicalJson(skin.bedrockCanonicalJson());
+            }
+            database.saveActive(updated);
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.FINE, "persist signed textures: " + e.getMessage());
+        }
+    }
+
+    private static boolean urlsSameTexture(String a, String b) {
+        if (a == null || b == null || a.isBlank() || b.isBlank()) {
+            return false;
+        }
+        if (a.equals(b)) {
+            return true;
+        }
+        String ha = hashTail(a);
+        String hb = hashTail(b);
+        return !ha.isEmpty() && ha.equals(hb);
+    }
+
+    private static String hashTail(String url) {
+        int slash = url.lastIndexOf('/');
+        return slash >= 0 ? url.substring(slash + 1) : url;
     }
 
     void restoreDefault(Player player) {

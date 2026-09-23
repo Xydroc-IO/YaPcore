@@ -98,6 +98,18 @@ public final class SkinImageService {
         if (bytes.length > config.maxPngBytes()) {
             throw new TailorException("Image exceeds max-png-bytes (" + config.maxPngBytes() + ")");
         }
+        // Resolve public host before writing — otherwise local yap-presence looks correct
+        // while ActiveSkin stays on Mojang URL and other players never see the upload.
+        if (!config.hasPublicSkinHost()) {
+            SkinHostResolver.resolvePublicBase(plugin.getLogger()).ifPresent(config::setSkinHostPublicBaseUrl);
+        }
+        String pub = config.publicSkinUrl(uuid, fallbackUrl);
+        if (pub == null || pub.isBlank()) {
+            throw new TailorException(
+                    "File upload needs skin-host-public-base-url in YaPTailor config "
+                            + "(HTTPS base that serves /skin/{uuid}.png). "
+                            + "Without it only you see the skin; others keep Mojang/previous.");
+        }
         validatePng(bytes);
         try {
             ensureDirs();
@@ -106,12 +118,6 @@ public final class SkinImageService {
             throw new TailorException("Failed to store skin PNG", e);
         }
         ChassisSkinPush.writeSharedSkinPng(plugin, uuid, bytes);
-        String pub = config.publicSkinUrl(uuid, fallbackUrl);
-        if (pub == null || pub.isBlank()) {
-            throw new TailorException(
-                    "File upload needs skin-host-public-base-url in YaPTailor config "
-                            + "(HTTPS base that serves /skin/{uuid}.png)");
-        }
         return pub;
     }
 

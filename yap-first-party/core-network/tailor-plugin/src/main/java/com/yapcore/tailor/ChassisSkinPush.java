@@ -196,30 +196,24 @@ public final class ChassisSkinPush {
                 }
                 return Optional.of(buildCompactCanonicalJson(uuid, slim, skinPng, capePng, activeSkin));
             }
-            log.warning("ChassisSkinPush HTTP apply HTTP " + code + " for " + applyUrl);
+            log.warning("ChassisSkinPush HTTP apply HTTP " + code + " for " + applyUrl
+                    + " — other players may keep seeing the previous skin until chassis /skin is reachable");
             conn.disconnect();
             return Optional.empty();
         } catch (Exception e) {
-            log.log(Level.FINE, "ChassisSkinPush HTTP apply failed (" + applyUrl + "): " + e.getMessage(), e);
+            log.log(Level.WARNING, "ChassisSkinPush HTTP apply failed (" + applyUrl + "): " + e.getMessage());
             return Optional.empty();
         }
     }
 
+    /**
+     * Chassis {@code POST /skin/apply} must hit the local pack HTTP, not the public
+     * skin-host hostname. Folia is a separate JVM from YaPcore; posting to the
+     * advertised public host often fails (hairpin NAT / firewall) while clients can
+     * still GET stale PNGs — wearer looks correct locally, others keep the old skin.
+     */
     static String resolveSkinApplyBase(TailorConfig config) {
-        String configured = config == null ? null : config.skinHostPublicBaseUrl();
-        if (configured != null && !configured.isBlank()) {
-            String base = configured.trim();
-            while (base.endsWith("/")) {
-                base = base.substring(0, base.length() - 1);
-            }
-            // Configured texture CDN may be host root; chassis apply lives under /skin
-            if (base.endsWith("/skin")) {
-                return base;
-            }
-            return base + "/skin";
-        }
-        int port = resolvePackHttpPort();
-        return "http://127.0.0.1:" + port + "/skin";
+        return "http://127.0.0.1:" + resolvePackHttpPort() + "/skin";
     }
 
     static int resolvePackHttpPort() {
@@ -435,6 +429,9 @@ public final class ChassisSkinPush {
 
     private static Path resolveSharedSkinsDir(JavaPlugin plugin) {
         String home = System.getProperty("yapcore.home");
+        if (home == null || home.isBlank()) {
+            home = System.getenv("YAPCORE_HOME");
+        }
         if (home != null && !home.isBlank()) {
             return Path.of(home).resolve("skins");
         }
@@ -469,6 +466,10 @@ public final class ChassisSkinPush {
         try {
             Path skins = resolveSharedSkinsDir(plugin);
             if (skins == null) {
+                if (log != null) {
+                    log.warning("ChassisSkinPush: no shared skins/ dir (set -Dyapcore.home) — "
+                            + "relying on POST /skin/apply so other players can download PNGs");
+                }
                 return;
             }
             Files.createDirectories(skins);
@@ -481,7 +482,7 @@ public final class ChassisSkinPush {
                 log.fine("ChassisSkinPush wrote shared skins/" + uuid + "_cape.png");
             }
         } catch (Exception e) {
-            log.log(Level.FINE, "ChassisSkinPush shared skins write skipped: " + e.getMessage());
+            log.log(Level.WARNING, "ChassisSkinPush shared skins write failed: " + e.getMessage());
         }
     }
 }

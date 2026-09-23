@@ -73,10 +73,8 @@ public final class ChassisEmotePush {
 
     private static boolean pushViaHttp(
             TailorConfig config, String username, UUID uuid, String emoteId, Logger log) {
-        String base = config.skinHostPublicBaseUrl();
-        if (base == null || base.isBlank()) {
-            base = "http://127.0.0.1:8081";
-        }
+        // Prefer localhost — same hairpin issue as ChassisSkinPush skin apply.
+        String base = "http://127.0.0.1:" + ChassisSkinPush.resolvePackHttpPort();
         String url = base.endsWith("/") ? base + "emote/play" : base + "/emote/play";
         try {
             HttpURLConnection conn = (HttpURLConnection) URI.create(url).toURL().openConnection();
