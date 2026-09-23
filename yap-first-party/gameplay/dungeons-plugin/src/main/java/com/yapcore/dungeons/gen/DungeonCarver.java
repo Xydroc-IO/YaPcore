@@ -279,6 +279,7 @@ public final class DungeonCarver {
     /**
      * 2×2 walkable tunnel. Always punches air through room walls — never places
      * side-walls on the path (that used to reseal doorways and force mining).
+     * Never destroys chests / barrels (re-punch after decor used to wipe loot).
      */
     private void digHallInChunk(World world, int x, int y, int z, ThemeTable.Theme theme, int cx, int cz) {
         for (int dx = 0; dx <= 1; dx++) {
@@ -289,17 +290,42 @@ public final class DungeonCarver {
                     continue;
                 }
                 world.getBlockAt(wx, y - 1, wz).setType(Material.BEDROCK, false);
-                world.getBlockAt(wx, y, wz).setType(theme.floor(), false);
-                world.getBlockAt(wx, y + 1, wz).setType(Material.AIR, false);
-                world.getBlockAt(wx, y + 2, wz).setType(Material.AIR, false);
-                world.getBlockAt(wx, y + 3, wz).setType(Material.AIR, false);
-                world.getBlockAt(wx, y + 4, wz).setType(theme.wall(), false);
+                Block floor = world.getBlockAt(wx, y, wz);
+                if (!isLootContainer(floor.getType())) {
+                    floor.setType(theme.floor(), false);
+                }
+                for (int yy = y + 1; yy <= y + 3; yy++) {
+                    Block b = world.getBlockAt(wx, yy, wz);
+                    if (isLootContainer(b.getType())) {
+                        continue;
+                    }
+                    if (!b.getType().isAir()) {
+                        b.setType(Material.AIR, false);
+                    }
+                }
+                Block ceil = world.getBlockAt(wx, y + 4, wz);
+                if (!isLootContainer(ceil.getType())) {
+                    ceil.setType(theme.wall(), false);
+                }
             }
         }
         if ((x >> 4) == cx && (z >> 4) == cz && ((x + z) & 7) == 0) {
-            world.getBlockAt(x, y + 3, z).setType(Material.AIR, false);
-            placeCorridorLight(world, x, y + 3, z);
+            Block lightAt = world.getBlockAt(x, y + 3, z);
+            if (!isLootContainer(lightAt.getType())) {
+                placeCorridorLight(world, x, y + 3, z);
+            }
         }
+    }
+
+    private static boolean isLootContainer(Material t) {
+        return t == Material.CHEST
+                || t == Material.TRAPPED_CHEST
+                || t == Material.BARREL
+                || t == Material.ENDER_CHEST
+                || t == Material.CRAFTING_TABLE
+                || t == Material.FURNACE
+                || t == Material.BLAST_FURNACE
+                || t == Material.SMOKER;
     }
 
     private static void placeCorridorLight(World world, int x, int y, int z) {
@@ -319,13 +345,18 @@ public final class DungeonCarver {
             World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme,
             DifficultyTable.LevelDiff diff, Random rng, String runId) {
         int count = diff.mobsPerRoom();
+        int minX = room.x() + 3;
+        int minZ = room.z() + 3;
+        int spanX = Math.max(1, room.sizeX() - 6);
+        int spanZ = Math.max(1, room.sizeZ() - 6);
         for (int i = 0; i < count; i++) {
             EntityType type = theme.mobs().get(rng.nextInt(theme.mobs().size()));
-            Location loc = new Location(world,
-                    room.x() + 3 + rng.nextInt(Math.max(1, room.sizeX() - 6)) + 0.5,
-                    y + 1,
-                    room.z() + 3 + rng.nextInt(Math.max(1, room.sizeZ() - 6)) + 0.5);
-            LivingEntity entity = (LivingEntity) world.spawnEntity(loc, type);
+            int bx = minX + rng.nextInt(spanX);
+            int bz = minZ + rng.nextInt(spanZ);
+            LivingEntity entity = spawnPinned(world, bx, y, bz, type);
+            if (entity == null) {
+                continue;
+            }
             scale(entity, diff, rng.nextDouble() < diff.eliteChance());
             tag(entity, MOB_PDC_KEY, runId);
         }
@@ -333,18 +364,19 @@ public final class DungeonCarver {
 
     private void spawnBoss(
             World world, Location loc, ThemeTable.Theme theme, DifficultyTable.LevelDiff diff, String runId) {
-        // Clear a stand spot on the dais (decoration may have filled it)
         int bx = loc.getBlockX();
-        int by = loc.getBlockY();
+        int by = loc.getBlockY() - 1; // floor under feet
         int bz = loc.getBlockZ();
-        for (int dy = 0; dy <= 2; dy++) {
-            world.getBlockAt(bx, by + dy, bz).setType(Material.AIR, false);
-            world.getBlockAt(bx + 1, by + dy, bz).setType(Material.AIR, false);
-            world.getBlockAt(bx, by + dy, bz + 1).setType(Material.AIR, false);
+        // Prefer room floor Y if loc feet are already at originY+1
+        if (by < RoomGraphBuilder.ROOM_Y - 1) {
+            by = RoomGraphBuilder.ROOM_Y;
         }
-        world.getBlockAt(bx, by - 1, bz).setType(Material.STONE_BRICKS, false);
-
-        LivingEntity boss = (LivingEntity) world.spawnEntity(loc, theme.boss());
+        LivingEntity boss = spawnPinned(world, bx, by, bz, theme.boss());
+        if (boss == null) {
+            plugin.getLogger().warning("Failed to spawn dungeon boss " + theme.boss() + " at "
+                    + bx + "," + by + "," + bz);
+            return;
+        }
         boss.customName(net.kyori.adventure.text.Component.text("Dungeon Boss"));
         boss.setCustomNameVisible(true);
         boss.setRemoveWhenFarAway(false);
@@ -361,8 +393,47 @@ public final class DungeonCarver {
         tag(boss, BOSS_PDC_KEY, runId);
         tag(boss, MOB_PDC_KEY, runId);
         plugin.getLogger().info("Spawned dungeon boss " + theme.boss() + " at "
-                + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ()
+                + boss.getLocation().getBlockX() + "," + boss.getLocation().getBlockY()
+                + "," + boss.getLocation().getBlockZ()
                 + " run=" + runId);
+    }
+
+    /**
+     * Pin mobs to the dungeon floor. Flat worlds have ground at ~-60; vanilla/Paper
+     * "safe spawn" will drop entities there if the room column isn't solid underfoot.
+     */
+    private LivingEntity spawnPinned(World world, int blockX, int floorY, int blockZ, EntityType type) {
+        world.getBlockAt(blockX, floorY - 1, blockZ).setType(Material.BEDROCK, false);
+        world.getBlockAt(blockX, floorY, blockZ).setType(Material.STONE_BRICKS, false);
+        for (int dy = 1; dy <= 3; dy++) {
+            Block air = world.getBlockAt(blockX, floorY + dy, blockZ);
+            if (!isLootContainer(air.getType())) {
+                air.setType(Material.AIR, false);
+            }
+        }
+        Location feet = new Location(world, blockX + 0.5, floorY + 1.0, blockZ + 0.5);
+        org.bukkit.entity.Entity raw;
+        try {
+            raw = world.spawnEntity(feet, type, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM);
+        } catch (Throwable t) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING, "spawnEntity " + type, t);
+            return null;
+        }
+        if (!(raw instanceof LivingEntity entity)) {
+            raw.remove();
+            return null;
+        }
+        entity.teleport(feet);
+        entity.setFallDistance(0f);
+        entity.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
+        entity.setRemoveWhenFarAway(false);
+        entity.setPersistent(true);
+        // Yank back if something still shoved them onto the flat surface below
+        if (entity.getLocation().getY() < floorY) {
+            entity.teleport(feet);
+            entity.setFallDistance(0f);
+        }
+        return entity;
     }
 
     private void scale(LivingEntity entity, DifficultyTable.LevelDiff diff, boolean elite) {

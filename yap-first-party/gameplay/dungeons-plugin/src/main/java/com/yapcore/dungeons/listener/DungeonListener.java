@@ -5,6 +5,8 @@ import com.yapcore.dungeons.DungeonsConfig;
 import com.yapcore.dungeons.gen.DungeonCarver;
 import com.yapcore.dungeons.gui.DungeonMenu;
 import com.yapcore.dungeons.portal.DungeonPortalRegistry;
+import com.yapcore.dungeons.portal.DungeonPortalRehydrate;
+import com.yapcore.dungeons.portal.DungeonPortalStore;
 import com.yapcore.dungeons.portal.PortalItems;
 import com.yapcore.dungeons.portal.PortalStructure;
 import com.yapcore.dungeons.portal.PortalStructureTags;
@@ -56,6 +58,7 @@ public final class DungeonListener implements Listener {
     private final PortalItems portalItems;
     private final PortalStructure structure;
     private final PortalStructureTags structureTags;
+    private final DungeonPortalStore store;
     private final DungeonMenu menu;
     private final DungeonInstanceManager instances;
     private final NamespacedKey ownerKey;
@@ -69,6 +72,7 @@ public final class DungeonListener implements Listener {
             PortalItems portalItems,
             PortalStructure structure,
             PortalStructureTags structureTags,
+            DungeonPortalStore store,
             DungeonMenu menu,
             DungeonInstanceManager instances) {
         this.plugin = plugin;
@@ -76,6 +80,7 @@ public final class DungeonListener implements Listener {
         this.portalItems = portalItems;
         this.structure = structure;
         this.structureTags = structureTags;
+        this.store = store;
         this.menu = menu;
         this.instances = instances;
         this.ownerKey = new NamespacedKey(plugin, "yap_dungeon_portal_owner");
@@ -213,6 +218,7 @@ public final class DungeonListener implements Listener {
                 || structureTags.findNearbyKeystone(frame.keystone(), 1).isPresent()) {
             structure.ensureWalkable(frame);
             DungeonPortalRegistry.register(frame);
+            store.upsert(frame);
             player.sendMessage("§7Dungeon portal is active — walk through to pick a level.");
             return;
         }
@@ -227,6 +233,7 @@ public final class DungeonListener implements Listener {
         structureTags.installKeystone(frame, player.getUniqueId());
         structure.fillInterior(frame); // keystone is on the frame; keep opening air + swirl
         DungeonPortalRegistry.register(frame);
+        store.upsert(frame);
         if (player.getGameMode() != GameMode.CREATIVE) {
             used.setAmount(used.getAmount() - 1);
         }
@@ -298,7 +305,10 @@ public final class DungeonListener implements Listener {
             return;
         }
         structureTags.deactivate(keystone.get(), structure);
-        frame.ifPresent(DungeonPortalRegistry::unregister);
+        frame.ifPresent(f -> {
+            DungeonPortalRegistry.unregister(f);
+            store.remove(f);
+        });
         player.sendMessage("§7Dungeon portal deactivated.");
     }
 
@@ -307,16 +317,7 @@ public final class DungeonListener implements Listener {
         if (!config.enabled() || !config.structureEnabled()) {
             return;
         }
-        for (org.bukkit.block.BlockState state : event.getChunk().getTileEntities()) {
-            Block block = state.getBlock();
-            if (block.getType() != Material.END_PORTAL_FRAME || !structureTags.isKeystone(block)) {
-                continue;
-            }
-            structureTags.frameFromKeystone(block).ifPresent(frame -> {
-                DungeonPortalRegistry.register(frame);
-                structure.ensureWalkable(frame);
-            });
-        }
+        DungeonPortalRehydrate.rehydrateChunk(plugin, structure, structureTags, store, event.getChunk());
     }
 
     @EventHandler
@@ -373,7 +374,7 @@ public final class DungeonListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
-        if (!config.enabled() || !config.structureEnabled()) {
+        if (!config.enabled()) {
             return;
         }
         Location to = event.getTo();
@@ -386,6 +387,20 @@ public final class DungeonListener implements Listener {
                 && from.getBlockZ() == to.getBlockZ()
                 && from.getWorld() != null
                 && from.getWorld().equals(to.getWorld())) {
+            return;
+        }
+
+        // Lime return portal after boss clear
+        LiveRun run = instances.byPlayer(event.getPlayer().getUniqueId()).orElse(null);
+        if (run != null
+                && run.state() == com.yapcore.dungeons.DungeonRunState.CLEARED
+                && com.yapcore.dungeons.portal.DungeonExitPortal.near(to, run.exitPortal(), 2.25)) {
+            event.getPlayer().sendMessage("§aReturning from dungeon…");
+            instances.removePlayer(event.getPlayer().getUniqueId(), true);
+            return;
+        }
+
+        if (!config.structureEnabled()) {
             return;
         }
         if (dungeonFrameAt(to).isEmpty()) {

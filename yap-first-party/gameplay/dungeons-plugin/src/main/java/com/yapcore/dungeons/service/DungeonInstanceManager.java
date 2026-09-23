@@ -11,6 +11,7 @@ import com.yapcore.dungeons.gen.DungeonCarver;
 import com.yapcore.dungeons.gen.RoomGraphBuilder;
 import com.yapcore.dungeons.gen.ThemeTable;
 import com.yapcore.dungeons.loot.LootService;
+import com.yapcore.dungeons.portal.DungeonExitPortal;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
@@ -130,6 +131,7 @@ public final class DungeonInstanceManager {
         int maxLives = UnlockMath.maxLives(partyGuess, config.baseLives(), config.livesPerExtraMember(), config.livesCap());
         LiveRun run = new LiveRun(runId, level, leader.getUniqueId(), worldName, seed,
                 DungeonRunState.GENERATING, maxLives, maxLives);
+        run.setReturnLocation(leader.getLocation().clone());
         byId.put(runId, run);
         byPlayer.put(leader.getUniqueId(), runId);
         byWorld.put(worldName, runId);
@@ -162,6 +164,7 @@ public final class DungeonInstanceManager {
             return carver.carve(world, layout, theme, diff, seed, runId, msg -> carver.notifyPlayers(notify, msg))
                     .thenCompose(result -> {
                         run.setEntrance(result.entrance());
+                        run.setBossArena(result.bossArena());
                         // Folia: chest inventories must be filled on the owning region thread
                         CompletableFuture<Void> fills = CompletableFuture.completedFuture(null);
                         for (Location chestLoc : result.chestLocations()) {
@@ -169,8 +172,17 @@ public final class DungeonInstanceManager {
                                 CompletableFuture<Void> step = new CompletableFuture<>();
                                 YapSched.region(plugin, chestLoc, () -> {
                                     try {
-                                        if (chestLoc.getBlock().getState() instanceof org.bukkit.block.Chest chest) {
+                                        org.bukkit.block.Block block = chestLoc.getBlock();
+                                        if (!(block.getState() instanceof org.bukkit.block.Chest)) {
+                                            // Corridor punch may have wiped it — re-place then fill
+                                            block.setType(org.bukkit.Material.CHEST, false);
+                                        }
+                                        if (block.getState() instanceof org.bukkit.block.Chest chest) {
                                             loot.fillChest(chest, level, seed);
+                                            plugin.getLogger().info("Filled dungeon chest at "
+                                                    + chestLoc.getBlockX() + "," + chestLoc.getBlockY()
+                                                    + "," + chestLoc.getBlockZ()
+                                                    + " items=" + chest.getInventory().getSize());
                                         } else {
                                             plugin.getLogger().warning("Dungeon chest missing at "
                                                     + chestLoc.getBlockX() + "," + chestLoc.getBlockY()
@@ -239,13 +251,25 @@ public final class DungeonInstanceManager {
         }
     }
 
-    /** Daytime + no weather so enclosed rooms aren't pitch black on entry. */
+    /** Daytime + no weather; kill natural spawns on the flat surface under rooms. */
     private static void prepareDungeonWorld(World world) {
         world.setTime(1000L);
         world.setStorm(false);
         world.setThundering(false);
         world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
         world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+        try {
+            world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+        } catch (Throwable ignored) {
+            // removed in some Paper builds — spawn limits below still help
+        }
+        world.setSpawnFlags(false, false);
+        world.setMonsterSpawnLimit(0);
+        world.setAnimalSpawnLimit(0);
+        world.setWaterAnimalSpawnLimit(0);
+        world.setAmbientSpawnLimit(0);
+        // Keep dungeon rooms far above the flat surface (~-60)
+        world.setSpawnLocation(6, RoomGraphBuilder.ROOM_Y + 1, 6);
     }
 
     public void removePlayer(UUID playerId, boolean teleportOut) {
@@ -258,8 +282,10 @@ public final class DungeonInstanceManager {
         if (teleportOut) {
             Player p = Bukkit.getPlayer(playerId);
             if (p != null) {
+                Location ret = run.returnLocation();
                 World fb = Bukkit.getWorlds().getFirst();
-                YapSched.entity(plugin, p, () -> p.teleportAsync(fb.getSpawnLocation()));
+                Location dest = ret != null && ret.getWorld() != null ? ret : fb.getSpawnLocation();
+                YapSched.entity(plugin, p, () -> p.teleportAsync(dest));
             }
         }
         if (run.leader().equals(playerId) || run.members().isEmpty()) {
@@ -282,7 +308,31 @@ public final class DungeonInstanceManager {
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "clear state", e);
         }
-        Bukkit.getPluginManager().callEvent(new DungeonCompleteEvent(run.snapshot(), clearMs));
+
+        // Event is async-only — never call it on the region/death thread
+        DungeonRun snap = run.snapshot();
+        YapSched.async(plugin, () -> {
+            try {
+                Bukkit.getPluginManager().callEvent(new DungeonCompleteEvent(snap, clearMs));
+            } catch (Throwable t) {
+                plugin.getLogger().log(Level.WARNING, "DungeonCompleteEvent", t);
+            }
+        });
+
+        Location boss = run.bossArena();
+        if (boss != null && boss.getWorld() != null) {
+            YapSched.region(plugin, boss, () -> {
+                try {
+                    Location exit = DungeonExitPortal.spawn(boss);
+                    run.setExitPortal(exit);
+                } catch (Throwable t) {
+                    plugin.getLogger().log(Level.WARNING, "exit portal spawn", t);
+                }
+            });
+        }
+
+        int cleared = run.dungeonLevel();
+        int next = cleared < 50 ? cleared + 1 : (cleared < 100 ? cleared + 1 : cleared);
         for (UUID id : run.members()) {
             Player p = Bukkit.getPlayer(id);
             if (p == null) {
@@ -291,19 +341,25 @@ public final class DungeonInstanceManager {
             YapSched.entity(plugin, p, () -> {
                 try {
                     var progress = repository.getProgress(id);
-                    repository.upsertProgress(UnlockMath.afterClear(progress, run.dungeonLevel()));
-                    int today = repository.clearsToday(id, run.dungeonLevel());
-                    repository.recordClear(id, run.dungeonLevel(), clearMs, 0);
-                    var items = loot.rollClearRewards(run.dungeonLevel(), run.seed(), today);
-                    double eco = loot.economyPayout(run.dungeonLevel(), today);
+                    repository.upsertProgress(UnlockMath.afterClear(progress, cleared));
+                    int today = repository.clearsToday(id, cleared);
+                    repository.recordClear(id, cleared, clearMs, 0);
+                    var items = loot.rollClearRewards(cleared, run.seed(), today);
+                    double eco = loot.economyPayout(cleared, today);
                     loot.grant(p, items, eco);
-                    p.sendMessage("§aDungeon cleared! Time: §f" + (clearMs / 1000) + "s");
+                    p.sendMessage("§aDungeon " + cleared + " cleared! §7Time: §f" + (clearMs / 1000) + "s");
+                    if (next > cleared && next <= 100) {
+                        p.sendMessage("§aUnlocked dungeon level §e" + next + "§a.");
+                    }
+                    p.sendMessage("§eWalk into the lime return portal §7(or §e/dungeon leave§7).");
                 } catch (Exception e) {
                     plugin.getLogger().log(Level.WARNING, "clear rewards", e);
+                    p.sendMessage("§cClear rewards failed — use §e/dungeon leave§c. Progress may need a retry.");
                 }
             });
         }
-        YapSched.globalLater(plugin, () -> cleanup(run.runId(), "cleared"), 20L * config.clearGcSeconds());
+        // Give players time to loot / take the exit portal before world wipe
+        YapSched.globalLater(plugin, () -> cleanup(run.runId(), "cleared"), 20L * Math.max(60, config.clearGcSeconds()));
     }
 
     public void onPlayerDeath(LiveRun run, Player player) {
@@ -337,7 +393,15 @@ public final class DungeonInstanceManager {
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "fail state", e);
         }
-        Bukkit.getPluginManager().callEvent(new DungeonFailEvent(run.snapshot(), reason));
+        DungeonRun snap = run.snapshot();
+        String why = reason;
+        YapSched.async(plugin, () -> {
+            try {
+                Bukkit.getPluginManager().callEvent(new DungeonFailEvent(snap, why));
+            } catch (Throwable t) {
+                plugin.getLogger().log(Level.WARNING, "DungeonFailEvent", t);
+            }
+        });
         for (UUID id : List.copyOf(run.members())) {
             Player p = Bukkit.getPlayer(id);
             if (p != null) {
@@ -358,8 +422,10 @@ public final class DungeonInstanceManager {
             byPlayer.remove(id);
             Player p = Bukkit.getPlayer(id);
             if (p != null && p.getWorld().getName().equals(run.worldName())) {
+                Location ret = run.returnLocation();
                 World fb = Bukkit.getWorlds().getFirst();
-                YapSched.entity(plugin, p, () -> p.teleportAsync(fb.getSpawnLocation()));
+                Location dest = ret != null && ret.getWorld() != null ? ret : fb.getSpawnLocation();
+                YapSched.entity(plugin, p, () -> p.teleportAsync(dest));
             }
         }
         byWorld.remove(run.worldName());

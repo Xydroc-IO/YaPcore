@@ -25,6 +25,9 @@ public final class LiveRun {
     private final Instant startedAt;
     private volatile Instant endedAt;
     private volatile Location entrance;
+    private volatile Location bossArena;
+    private volatile Location returnLocation;
+    private volatile Location exitPortal;
     private volatile Instant lastOccupiedAt = Instant.now();
     private final AtomicInteger deaths = new AtomicInteger();
 
@@ -116,6 +119,30 @@ public final class LiveRun {
 
     public void setEntrance(Location entrance) {
         this.entrance = entrance;
+    }
+
+    public Location bossArena() {
+        return bossArena;
+    }
+
+    public void setBossArena(Location bossArena) {
+        this.bossArena = bossArena;
+    }
+
+    public Location returnLocation() {
+        return returnLocation;
+    }
+
+    public void setReturnLocation(Location returnLocation) {
+        this.returnLocation = returnLocation;
+    }
+
+    public Location exitPortal() {
+        return exitPortal;
+    }
+
+    public void setExitPortal(Location exitPortal) {
+        this.exitPortal = exitPortal;
     }
 
     public Instant lastOccupiedAt() {
