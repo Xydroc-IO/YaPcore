@@ -13,6 +13,7 @@ import com.yapcore.dungeons.gen.ThemeTable;
 import com.yapcore.dungeons.loot.LootService;
 import com.yapcore.sched.YapSched;
 import org.bukkit.Bukkit;
+import org.bukkit.GameRule;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -152,6 +153,7 @@ public final class DungeonInstanceManager {
                         leader.sendMessage("§cDungeon world missing after create. Try again."));
                 return CompletableFuture.completedFuture(Optional.empty());
             }
+            prepareDungeonWorld(world);
             DifficultyTable.LevelDiff diff = difficulty.get(level);
             ThemeTable.Theme theme = themes.themeFor(level);
             RoomGraphBuilder.Layout layout = graphBuilder.build(seed, diff.rooms());
@@ -179,6 +181,10 @@ public final class DungeonInstanceManager {
                                         leader.sendMessage("§cDungeon ready but teleport failed — try §e/dungeon leave§c.");
                                         return;
                                     }
+                                    // Enclosed rooms start pitch-black until client light updates — brief NV
+                                    leader.addPotionEffect(new org.bukkit.potion.PotionEffect(
+                                            org.bukkit.potion.PotionEffectType.NIGHT_VISION,
+                                            20 * 20, 0, false, false, true));
                                     leader.sendMessage("§aDungeon ready. Invite friends with §e/dungeon invite <player>");
                                     run.setState(DungeonRunState.ACTIVE);
                                 }));
@@ -210,6 +216,17 @@ public final class DungeonInstanceManager {
             // can't mutate maxLives easily — leave starting max; lives stay
             break;
         }
+    }
+
+    /** Daytime + no weather so enclosed rooms aren't pitch black on entry. */
+    private static void prepareDungeonWorld(World world) {
+        world.setTime(1000L);
+        world.setStorm(false);
+        world.setThundering(false);
+        world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
+        world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
+        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
+        world.setSpawnFlags(true, false);
     }
 
     public void removePlayer(UUID playerId, boolean teleportOut) {

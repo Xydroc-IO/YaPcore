@@ -102,6 +102,12 @@ public final class RoomTemplates {
                 world.getBlockAt(cx + dx, y, cz + dz).setType(theme.accent(), false);
             }
         }
+        // Skylight over the pad so flat-world daylight reaches the spawn
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                world.getBlockAt(cx + dx, y + 5, cz + dz).setType(Material.GLASS, false);
+            }
+        }
         // Welcome pillars
         pillar(world, room.x() + 2, y, room.z() + 2, theme, 3);
         pillar(world, room.x() + room.sizeX() - 3, y, room.z() + 2, theme, 3);
@@ -110,6 +116,9 @@ public final class RoomTemplates {
         // Wall alcove shelves
         world.getBlockAt(cx, y + 2, room.z() + 1).setType(Material.CRAFTING_TABLE, false);
         world.getBlockAt(cx + 1, y + 2, room.z() + 1).setType(Material.BARREL, false);
+        // Guaranteed bright spawn lights (invisible LIGHT + sea lantern)
+        placeLight(world, cx, y + 3, cz);
+        world.getBlockAt(cx, y + 4, cz).setType(Material.SEA_LANTERN, false);
     }
 
     private void combat(World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme, Random rng) {
@@ -233,10 +242,23 @@ public final class RoomTemplates {
     private void lights(World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme) {
         int cx = room.centerX();
         int cz = room.centerZ();
-        world.getBlockAt(cx, y + 5, cz).setType(theme.light(), false);
-        world.getBlockAt(room.x() + 2, y + 3, room.z() + 2).setType(theme.light(), false);
-        world.getBlockAt(room.x() + room.sizeX() - 3, y + 3, room.z() + room.sizeZ() - 3)
-                .setType(theme.light(), false);
+        // LIGHT blocks never pop off and always light the room (torches on ceilings often drop)
+        placeLight(world, cx, y + 4, cz);
+        placeLight(world, room.x() + 2, y + 3, room.z() + 2);
+        placeLight(world, room.x() + room.sizeX() - 3, y + 3, room.z() + room.sizeZ() - 3);
+        placeLight(world, room.x() + 2, y + 3, room.z() + room.sizeZ() - 3);
+        placeLight(world, room.x() + room.sizeX() - 3, y + 3, room.z() + 2);
+        // Keep a visible themed fixture on a wall support so the room still "looks" lit
+        world.getBlockAt(cx, y + 3, room.z() + 1).setType(theme.light(), false);
+    }
+
+    private static void placeLight(World world, int x, int y, int z) {
+        Block b = world.getBlockAt(x, y, z);
+        b.setType(Material.LIGHT, false);
+        if (b.getBlockData() instanceof org.bukkit.block.data.type.Light light) {
+            light.setLevel(15);
+            b.setBlockData(light, false);
+        }
     }
 
     private void floorOre(World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme, Random rng) {
