@@ -236,6 +236,9 @@ public final class YaPcoreServer {
                 ? scheme + "://" + host
                 : "http://" + host + ":" + packPort;
         gateway.skinService().setPublicSkinBaseUrl(base);
+        // Fleet GUI starts pack HTTP without DualStackGateway.start(), which is the
+        // only other place that wires POST /skin/apply. Without this, Tailor gets 503.
+        resourcePacks.setSkinService(gateway.skinService());
     }
 
     public int getOnlinePlayers() {

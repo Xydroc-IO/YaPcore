@@ -108,6 +108,20 @@ class PaperResourcePackSyncTest {
     }
 
     @Test
+    void githubOfferNeverSubstitutesLocalZipHash() {
+        assertEquals("", PaperFiles.sha1ForGithubOffer(null, "not-a-hash"));
+        assertEquals("", PaperFiles.sha1ForGithubOffer("", "zz"));
+        assertEquals(
+                "34fbff120445ed36bc08e299664dc3369d0e9323",
+                PaperFiles.sha1ForGithubOffer(null, "34FBFF120445ED36BC08E299664DC3369D0E9323"));
+        assertEquals(
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                PaperFiles.sha1ForGithubOffer(
+                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "34fbff120445ed36bc08e299664dc3369d0e9323"));
+    }
+
+    @Test
     void writeServerPropertiesClearsPackWhenDisabled() throws Exception {
         Path root = temp.resolve("root3");
         Path paper = temp.resolve("paper3");

@@ -210,14 +210,25 @@ public final class PaperFiles {
                 sha1 = sha1Hex(pack);
                 LOG.info("Resource pack SHA-1 from local zip");
             } else if (githubCdn) {
-                // GitHub tag CDN — always hash the bytes clients will download.
+                // Clients download the GitHub asset. A local-zip hash makes Minecraft
+                // report "failed to download" even when the URL itself is fine.
+                String remote = null;
                 try {
-                    sha1 = sha1HexFromUrl(url);
+                    remote = sha1HexFromUrl(url);
                     LOG.info("Resource pack SHA-1 from remote URL (matches what clients download)");
                 } catch (IOException remoteErr) {
-                    sha1 = sha1Hex(pack);
-                    LOG.warning("Remote pack SHA-1 failed (" + remoteErr.getMessage()
-                            + ") — using local zip hash until CDN is reachable: " + sha1);
+                    LOG.warning("Remote pack SHA-1 failed (" + remoteErr.getMessage() + ")");
+                }
+                sha1 = sha1ForGithubOffer(remote, configuredSha);
+                if (sha1.isEmpty()) {
+                    LOG.severe("GitHub pack SHA-1 unavailable — not advertising the local zip"
+                            + " (clients download " + url + ")");
+                    clearPackProps(p);
+                    return;
+                }
+                if (remote == null) {
+                    LOG.warning("Using configured GitHub SHA-1 until the release asset can be hashed: "
+                            + sha1);
                 }
             } else if (looksAbsoluteHttp(url)
                     && configuredSha != null
@@ -256,6 +267,26 @@ public final class PaperFiles {
             LOG.warning("Could not prepare resource pack offer: " + e.getMessage());
             clearPackProps(p);
         }
+    }
+
+    /**
+     * Hash clients will check against a GitHub release asset.
+     * Remote bytes win. Configured SHA-1 is the fallback. The on-disk zip is not.
+     *
+     * @return 40 hex, or empty when neither source is usable
+     */
+    static String sha1ForGithubOffer(String remoteSha, String configuredSha) {
+        if (isSha1(remoteSha)) {
+            return remoteSha.toLowerCase(Locale.ROOT);
+        }
+        if (isSha1(configuredSha)) {
+            return configuredSha.toLowerCase(Locale.ROOT);
+        }
+        return "";
+    }
+
+    private static boolean isSha1(String s) {
+        return s != null && s.matches("(?i)[a-f0-9]{40}");
     }
 
     private static boolean looksAbsoluteHttp(String url) {

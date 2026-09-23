@@ -16,19 +16,6 @@
       "address": "127.0.0.1:25567"
     },
     {
-      "id": "survival",
-      "serverId": "survival",
-      "nodeId": "local",
-      "relativeDir": "fleet/instances/survival",
-      "port": 25568,
-      "bind": "127.0.0.1",
-      "autoStart": true,
-      "displayName": "Survival",
-      "ramMb": 0,
-      "ramMinMb": 0,
-      "address": "127.0.0.1:25568"
-    },
-    {
       "id": "creative",
       "serverId": "creative",
       "nodeId": "local",
@@ -40,6 +27,32 @@
       "ramMb": 4000,
       "ramMinMb": 512,
       "address": "127.0.0.1:25569"
+    },
+    {
+      "id": "factions",
+      "serverId": "factions",
+      "nodeId": "local",
+      "relativeDir": "fleet/instances/factions",
+      "port": 25570,
+      "bind": "127.0.0.1",
+      "autoStart": true,
+      "displayName": "Factions",
+      "ramMb": 2000,
+      "ramMinMb": 512,
+      "address": "127.0.0.1:25570"
+    },
+    {
+      "id": "survival",
+      "serverId": "survival",
+      "nodeId": "local",
+      "relativeDir": "fleet/instances/survival",
+      "port": 25568,
+      "bind": "127.0.0.1",
+      "autoStart": true,
+      "displayName": "Survival",
+      "ramMb": 4000,
+      "ramMinMb": 512,
+      "address": "127.0.0.1:25568"
     }
   ],
   "nodes": []

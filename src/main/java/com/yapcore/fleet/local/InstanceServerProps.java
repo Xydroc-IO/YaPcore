@@ -4,11 +4,14 @@ import com.yapcore.fleet.model.FleetInstance;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 
 /** Read / patch Folia {@code server.properties} for a fleet instance tree. */
 public final class InstanceServerProps {
@@ -66,6 +69,52 @@ public final class InstanceServerProps {
             p.store(out, "YaP fleet instance " + instance.id());
         }
         return read(rootDir, instance);
+    }
+
+    /**
+     * Point an existing fleet {@code server.properties} at the GitHub pack clients download.
+     * A local-zip SHA-1 against that URL makes Minecraft fail the download.
+     *
+     * @return true when the file was updated
+     */
+    public static boolean syncGithubPackOffer(Path propsFile, String urlTemplate, String sha1, String fileName)
+            throws IOException {
+        if (propsFile == null || !Files.isRegularFile(propsFile)) {
+            return false;
+        }
+        if (urlTemplate == null || urlTemplate.isBlank() || !isGithubPackUrl(urlTemplate)) {
+            return false;
+        }
+        if (!isSha1(sha1)) {
+            return false;
+        }
+        String file = (fileName == null || fileName.isBlank()) ? "yapcore-default.zip" : fileName.trim();
+        String url = urlTemplate.replace("{file}", file);
+        String hex = sha1.toLowerCase(Locale.ROOT);
+        String id = UUID.nameUUIDFromBytes(("yapcore-pack:" + file + ":" + hex)
+                .getBytes(StandardCharsets.UTF_8)).toString();
+        Properties p = load(propsFile);
+        if (url.equals(p.getProperty("resource-pack"))
+                && hex.equals(p.getProperty("resource-pack-sha1"))
+                && id.equals(p.getProperty("resource-pack-id"))) {
+            return false;
+        }
+        p.setProperty("resource-pack", url);
+        p.setProperty("resource-pack-sha1", hex);
+        p.setProperty("resource-pack-id", id);
+        try (OutputStream out = Files.newOutputStream(propsFile)) {
+            p.store(out, "YaP fleet instance");
+        }
+        return true;
+    }
+
+    static boolean isGithubPackUrl(String url) {
+        String u = url.toLowerCase(Locale.ROOT);
+        return u.contains("github.com/") || u.contains("githubusercontent.com/");
+    }
+
+    private static boolean isSha1(String s) {
+        return s != null && s.matches("(?i)[a-f0-9]{40}");
     }
 
     static boolean isAllowed(String key) {

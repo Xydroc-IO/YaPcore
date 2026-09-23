@@ -37,10 +37,17 @@ public final class InstanceJvmCommand {
             cmd.add("-Djava.awt.headless=true");
             cmd.add("--enable-native-access=ALL-UNNAMED");
         }
+        if (rootDir != null) {
+            cmd.add("-Dyapcore.home=" + rootDir.toAbsolutePath().normalize());
+        }
         for (String name : System.getProperties().stringPropertyNames()) {
             if (name.startsWith("yap.bench.")
                     || name.startsWith("yap.folia.")
                     || "yapcore.home".equals(name)) {
+                // Prefer explicit rootDir -Dyapcore.home above; skip duplicate.
+                if ("yapcore.home".equals(name) && rootDir != null) {
+                    continue;
+                }
                 String value = System.getProperty(name);
                 if (value != null && !value.isBlank()) {
                     cmd.add("-D" + name + "=" + value);

@@ -63,6 +63,14 @@ public final class InstanceLayout {
                     "server-port", Integer.toString(instance.port()),
                     "server-ip", bind == null ? "" : bind,
                     "online-mode", Boolean.toString(online)));
+            // JE downloads resource-pack-url (GitHub). Keep that URL + SHA-1, not a LAN zip.
+            if (InstanceServerProps.syncGithubPackOffer(
+                    props,
+                    config.getResourcePackUrl(),
+                    config.getResourcePackSha1(),
+                    config.getResourcePackFile())) {
+                LOG.info("Synced GitHub resource pack offer → " + instance.id());
+            }
         }
         FoliaFiles.applyVelocitySupport(rootDir, dir, config);
         FoliaSurface.ensureMarker(dir);
@@ -416,7 +424,11 @@ public final class InstanceLayout {
                 "YaPEssentials", "yap-essentials",
                 "YaPPortals", "yap-portals",
                 "YaPNpcs", "yap-npcs",
-                "YaPRegions", "yap-regions"
+                "YaPRegions", "yap-regions",
+                "YaPChat", "yap-chat",
+                "YaPProtect", "yap-protect",
+                "YaPWorld", "yap-world",
+                "YaPTab", "yap-tab"
         };
         for (String folder : pluginFolders) {
             Path cfg = dir.resolve("plugins").resolve(folder).resolve("config.yml");

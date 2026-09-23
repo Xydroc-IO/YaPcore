@@ -70,9 +70,17 @@ public final class SettingsPanel {
         return root;
     }
 
-    /** When set, Save also writes MOTD / max-players / view-distance onto that fleet instance. */
+    /**
+     * Scope identity / limits to a fleet game server. When set, the form loads that instance's
+     * display name + server.properties (not the shared chassis name).
+     */
     public void setFleetInstance(String instanceId) {
-        this.fleetInstanceId = instanceId == null || instanceId.isBlank() ? null : instanceId.trim();
+        String next = instanceId == null || instanceId.isBlank() ? null : instanceId.trim();
+        boolean changed = !java.util.Objects.equals(this.fleetInstanceId, next);
+        this.fleetInstanceId = next;
+        if (changed) {
+            loadFromConfig();
+        }
     }
 
     public void setOnSaved(Consumer<Void> onSaved) {
@@ -196,6 +204,49 @@ public final class SettingsPanel {
         backwardsBox.setSelected(cfg.isBackwardsCompatible());
         onlineModeBox.setSelected(cfg.isOnlineMode());
         packsBox.setSelected(cfg.isResourcePackEnabled());
+        overlayFleetInstance(cfg);
+    }
+
+    /** Replace identity / limits with the selected fleet instance's values. */
+    private void overlayFleetInstance(ServerConfig cfg) {
+        if (fleetInstanceId == null || !cfg.isFleetEnabled()) {
+            return;
+        }
+        try {
+            java.util.Map<String, Object> snap = server.fleet().readInstanceSettings(fleetInstanceId);
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Object> inst = (java.util.Map<String, Object>) snap.get("instance");
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, String> props = (java.util.Map<String, String>) snap.get("properties");
+            if (inst != null) {
+                Object dn = inst.get("displayName");
+                nameField.setText(dn == null || String.valueOf(dn).isBlank()
+                        ? fleetInstanceId : String.valueOf(dn));
+                int ram = asPositiveInt(inst.get("ramMb"));
+                int ramMin = asPositiveInt(inst.get("ramMinMb"));
+                if (ram > 0) {
+                    ramMaxSpinner.setValue(ram);
+                }
+                if (ramMin > 0) {
+                    ramMinSpinner.setValue(ramMin);
+                }
+            }
+            if (props != null) {
+                if (props.containsKey("motd")) {
+                    motdField.setText(props.get("motd"));
+                }
+                Integer max = parsePositive(props.get("max-players"));
+                if (max != null) {
+                    maxPlayersSpinner.setValue(max);
+                }
+                Integer view = parsePositive(props.get("view-distance"));
+                if (view != null) {
+                    viewDistanceSpinner.setValue(view);
+                }
+            }
+        } catch (Exception ignored) {
+            // keep chassis fallbacks already filled above
+        }
     }
 
     private void save() {
@@ -208,16 +259,21 @@ public final class SettingsPanel {
                         "Invalid", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            cfg.setServerName(nameField.getText().trim());
-            cfg.setMotd(motdField.getText());
+            boolean fleetScoped = fleetInstanceId != null && cfg.isFleetEnabled();
+            // Identity + limits are per game server when a fleet instance is selected —
+            // do not clobber the shared chassis name / MOTD / heap with one sibling's values.
+            if (!fleetScoped) {
+                cfg.setServerName(nameField.getText().trim());
+                cfg.setMotd(motdField.getText());
+                cfg.setMaxPlayers((Integer) maxPlayersSpinner.getValue());
+                cfg.setRamMb(ramMax);
+                cfg.setRamMinMb(ramMin);
+                cfg.setViewDistance((Integer) viewDistanceSpinner.getValue());
+            }
             cfg.setBindHost(bindField.getText().trim());
             cfg.setPort((Integer) javaPortSpinner.getValue());
             cfg.setBedrockPort((Integer) bedrockPortSpinner.getValue());
             cfg.setResourcePackHttpPort((Integer) packPortSpinner.getValue());
-            cfg.setMaxPlayers((Integer) maxPlayersSpinner.getValue());
-            cfg.setRamMb(ramMax);
-            cfg.setRamMinMb(ramMin);
-            cfg.setViewDistance((Integer) viewDistanceSpinner.getValue());
             cfg.setJavaEnabled(javaBox.isSelected());
             boolean wantBedrock = bedrockBox.isSelected();
             boolean wantJava = javaBox.isSelected();
@@ -255,8 +311,12 @@ public final class SettingsPanel {
             cfg.save();
             com.yapcore.web.DashboardLinkSnapshot.setAllowBedrockPlayers(
                     server.getRootDir(), cfg.getLinkEmbedHome(), wantBedrock);
-            server.getEngine().setMaxPlayers(cfg.getMaxPlayers());
-            String synced = syncFleetInstanceProps(cfg);
+            if (!fleetScoped) {
+                server.getEngine().setMaxPlayers(cfg.getMaxPlayers());
+            }
+            String synced = fleetScoped
+                    ? saveFleetInstanceProps(ramMax, ramMin)
+                    : syncPrimaryFleetProps(cfg);
             onSaved.accept(null);
             var ep = new com.yapcore.network.publicity.PublicEndpoint(cfg);
             String join = ep.crossplayJoinAddress();
@@ -277,15 +337,34 @@ public final class SettingsPanel {
         }
     }
 
-    private String syncFleetInstanceProps(ServerConfig cfg) {
+    /** Persist display name + Folia props for the selected fleet instance only. */
+    private String saveFleetInstanceProps(int ramMax, int ramMin) {
+        try {
+            java.util.HashMap<String, String> body = new java.util.HashMap<>();
+            String display = nameField.getText().trim();
+            if (display.isEmpty()) {
+                display = fleetInstanceId;
+            }
+            body.put("displayName", display);
+            body.put("motd", motdField.getText() == null ? "" : motdField.getText());
+            body.put("max-players", Integer.toString((Integer) maxPlayersSpinner.getValue()));
+            body.put("view-distance", Integer.toString((Integer) viewDistanceSpinner.getValue()));
+            body.put("ramMb", Integer.toString(ramMax));
+            body.put("ramMinMb", Integer.toString(ramMin));
+            server.fleet().writeInstanceSettings(fleetInstanceId, body);
+            return "Saved display name / MOTD / limits → " + fleetInstanceId;
+        } catch (Exception e) {
+            return "Fleet instance save failed: " + e.getMessage();
+        }
+    }
+
+    /** Legacy: chassis Settings with no instance selected still mirrors onto primary. */
+    private String syncPrimaryFleetProps(ServerConfig cfg) {
         if (!cfg.isFleetEnabled()) {
             return "";
         }
         try {
-            String id = fleetInstanceId;
-            if (id == null || id.isBlank()) {
-                id = server.fleet().store().primaryId();
-            }
+            String id = server.fleet().store().primaryId();
             if (id == null || id.isBlank()) {
                 return "";
             }
@@ -297,6 +376,32 @@ public final class SettingsPanel {
             return "Also wrote MOTD / max-players / view-distance → fleet instance " + id;
         } catch (Exception e) {
             return "Fleet instance sync skipped: " + e.getMessage();
+        }
+    }
+
+    private static int asPositiveInt(Object raw) {
+        if (raw instanceof Number n) {
+            return n.intValue();
+        }
+        if (raw == null) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(raw).trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private static Integer parsePositive(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        try {
+            int v = Integer.parseInt(raw.trim());
+            return v > 0 ? v : null;
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 

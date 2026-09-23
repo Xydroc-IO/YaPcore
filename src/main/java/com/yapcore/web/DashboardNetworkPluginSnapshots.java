@@ -317,7 +317,7 @@ public final class DashboardNetworkPluginSnapshots {
         out.put("flags", List.of(
                 "pvp", "mob-damage", "damage", "build", "use", "interact", "entry", "chest-access",
                 "fire-spread", "mob-spawning", "mob-entry", "item-drop", "item-pickup", "tnt",
-                "creeper-explosion", "hunger", "farmland-trample", "item-frame", "armor-stand",
+                "creeper-explosion", "nether-portal", "hunger", "farmland-trample", "item-frame", "armor-stand",
                 "leaf-decay", "pistons", "vehicle-place", "vehicle-destroy", "weather"));
         return out;
     }

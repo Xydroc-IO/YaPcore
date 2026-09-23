@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -68,6 +69,15 @@ public final class InstanceProcess {
 
     public void start(List<String> command, int listenPort, int readyTimeoutSec)
             throws IOException, InterruptedException {
+        start(command, listenPort, readyTimeoutSec, null);
+    }
+
+    public void start(
+            List<String> command,
+            int listenPort,
+            int readyTimeoutSec,
+            Map<String, String> extraEnv)
+            throws IOException, InterruptedException {
         if (!processRunning.compareAndSet(false, true)) {
             return;
         }
@@ -75,6 +85,9 @@ public final class InstanceProcess {
         ProcessBuilder pb = new ProcessBuilder(command);
         pb.directory(instanceDir.toFile());
         pb.redirectErrorStream(true);
+        if (extraEnv != null && !extraEnv.isEmpty()) {
+            pb.environment().putAll(extraEnv);
+        }
         process = pb.start();
         processStdin = new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8);
         process.onExit().thenAccept(p -> {

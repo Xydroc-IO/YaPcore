@@ -107,6 +107,14 @@ public final class ResourcePackManager {
 
     public synchronized void startHttp() throws IOException {
         if (httpServer != null) {
+            // Already listening — still (re)wire SkinService so POST /skin/apply is not 503
+            // when fleet GUI called startHttp before DualStackGateway.start().
+            if (skinService != null) {
+                httpServer.setSkinService(skinService);
+            }
+            if (emotePlayHandler != null) {
+                httpServer.setEmotePlayHandler(emotePlayHandler);
+            }
             return;
         }
         ensureDirectory();

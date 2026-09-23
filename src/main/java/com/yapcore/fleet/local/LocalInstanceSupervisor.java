@@ -4,9 +4,12 @@ import com.yapcore.config.ServerConfig;
 import com.yapcore.fleet.model.FleetInstance;
 import com.yapcore.fleet.model.InstanceState;
 import com.yapcore.folia.FoliaFiles;
+import com.yapcore.network.publicity.PublicEndpoint;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.logging.Level;
@@ -72,7 +75,7 @@ public final class LocalInstanceSupervisor {
             LOG.info("Starting fleet instance " + instance.id()
                     + " port=" + instance.port()
                     + " ram=" + heap[1] + "M");
-            process.start(cmd, instance.port(), config.getFoliaReadyTimeoutSec());
+            process.start(cmd, instance.port(), config.getFoliaReadyTimeoutSec(), skinHostEnv());
             state.set(InstanceState.RUNNING);
         } catch (IOException | InterruptedException e) {
             state.set(InstanceState.FAILED);
@@ -80,6 +83,29 @@ public final class LocalInstanceSupervisor {
             LOG.log(Level.WARNING, "Failed to start " + instance.id(), e);
             throw e;
         }
+    }
+
+    /**
+     * Env so YaPTailor on Folia can advertise the same public {@code /skin/} base the
+     * chassis ResourcePack HTTP serves — without requiring every instance config.yml edit.
+     */
+    private Map<String, String> skinHostEnv() {
+        Map<String, String> env = new LinkedHashMap<>();
+        env.put("YAPCORE_HOME", rootDir.toAbsolutePath().normalize().toString());
+        try {
+            String packBase = new PublicEndpoint(config).packBaseUrl();
+            if (packBase != null && !packBase.isBlank()) {
+                env.put("YAP_PACK_BASE_URL", packBase);
+                env.put("YAP_SKIN_HOST_PUBLIC_BASE_URL", packBase);
+            }
+            int packPort = new PublicEndpoint(config).advertisedPackPort();
+            if (packPort > 0) {
+                env.put("RESOURCE_PACK_HTTP_PORT", Integer.toString(packPort));
+            }
+        } catch (Exception e) {
+            LOG.log(Level.FINE, "skin host env: " + e.getMessage());
+        }
+        return env;
     }
 
     public synchronized void stop() {

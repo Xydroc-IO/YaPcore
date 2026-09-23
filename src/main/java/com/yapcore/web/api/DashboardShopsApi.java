@@ -54,7 +54,8 @@ public final class DashboardShopsApi {
             List<String> presets = DashboardShopUtil.parsePresetsJson(
                     server.executeCommand("npc shop presets json"));
             if (presets.isEmpty()) {
-                presets = List.of("weapons", "armor", "tools", "food", "blocks", "redstone", "crafting", "enchants");
+                presets = List.of("weapons", "armor", "tools", "food", "blocks", "redstone", "crafting",
+                        "enchants", "farming", "fishing");
             }
             snap.put("ok", true);
             snap.put("shops", shops);
