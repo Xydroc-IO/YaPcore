@@ -336,9 +336,10 @@ public final class PortalStructure {
             }
         }
         if (dirty) {
-            fillInterior(frame);
+            fillInterior(frame); // clears + fresh swirl
         } else {
-            DungeonPortalVisuals.spawnFace(frame);
+            // Do NOT clearFace — that made the swirl blink out every rehydrate tick
+            DungeonPortalVisuals.ensureFace(frame);
         }
     }
 

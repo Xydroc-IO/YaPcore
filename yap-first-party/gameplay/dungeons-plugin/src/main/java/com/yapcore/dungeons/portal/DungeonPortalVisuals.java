@@ -14,6 +14,9 @@ import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /** One spinning lime portal sheet for dungeon openings. */
 public final class DungeonPortalVisuals {
 
@@ -22,14 +25,28 @@ public final class DungeonPortalVisuals {
     private DungeonPortalVisuals() {
     }
 
+    /** Force a fresh swirl (activation / repair of blocked interior). */
     public static void spawnFace(PortalStructure.Frame frame) {
         clearFace(frame);
+        spawnFaceNew(frame);
+    }
+
+    /** Keep an existing swirl; only spawn if missing. Avoids the 30s clear flicker. */
+    public static void ensureFace(PortalStructure.Frame frame) {
+        if (findFaces(frame).isEmpty()) {
+            spawnFaceNew(frame);
+        }
+    }
+
+    private static void spawnFaceNew(PortalStructure.Frame frame) {
         World world = frame.world();
         FaceGeom g = geom(frame);
         if (g == null) {
             return;
         }
         Location loc = new Location(world, g.cx, g.cy, g.cz);
+        // Keep the display chunk hot so it does not despawn out of view
+        world.getChunkAt(loc);
         ItemStack visual = faceItem("lime");
         world.spawn(loc, ItemDisplay.class, display -> {
             display.setItemStack(visual);
@@ -39,11 +56,12 @@ public final class DungeonPortalVisuals {
             display.setBillboard(Display.Billboard.FIXED);
             display.setShadowRadius(0f);
             display.setShadowStrength(0f);
-            display.setViewRange(64f);
+            display.setViewRange(128f);
             display.setPersistent(true);
+            display.setInvisible(false);
             display.addScoreboardTag(DISPLAY_TAG);
         });
-        world.spawnParticle(org.bukkit.Particle.PORTAL, loc, 60, g.scaleX * 0.25, g.scaleY * 0.25, 0.2, 0.7);
+        world.spawnParticle(org.bukkit.Particle.PORTAL, loc, 40, g.scaleX * 0.25, g.scaleY * 0.25, 0.2, 0.5);
     }
 
     public static void spin(PortalStructure.Frame frame, float angle) {
@@ -58,19 +76,20 @@ public final class DungeonPortalVisuals {
             return;
         }
         Transformation next = transform(g.facing, g.scaleX, g.scaleY, g.scaleZ, angle);
-        for (Entity entity : world.getChunkAt(bx >> 4, bz >> 4).getEntities()) {
-            if (!(entity instanceof ItemDisplay display)) {
-                continue;
-            }
-            if (!display.getScoreboardTags().contains(DISPLAY_TAG)) {
-                continue;
-            }
-            Location at = display.getLocation();
-            if (Math.abs(at.getX() - g.cx) > 2 || Math.abs(at.getZ() - g.cz) > 2) {
+        List<ItemDisplay> faces = findFaces(frame);
+        if (faces.isEmpty()) {
+            spawnFaceNew(frame);
+            return;
+        }
+        // Deduplicate if rehydrate/spin raced and left extras
+        for (int i = 0; i < faces.size(); i++) {
+            ItemDisplay display = faces.get(i);
+            if (i > 0) {
+                display.remove();
                 continue;
             }
             display.setInterpolationDelay(0);
-            display.setInterpolationDuration(5);
+            display.setInterpolationDuration(4);
             display.setTransformation(next);
         }
     }
@@ -82,48 +101,51 @@ public final class DungeonPortalVisuals {
     }
 
     public static void clearFace(PortalStructure.Frame frame) {
-        World world = frame.world();
-        int minX;
-        int maxX;
-        int minZ;
-        int maxZ;
-        if (frame.axis() == Axis.X) {
-            minX = frame.minAlong();
-            maxX = frame.maxAlong();
-            minZ = frame.fixed();
-            maxZ = frame.fixed();
-        } else {
-            minX = frame.fixed();
-            maxX = frame.fixed();
-            minZ = frame.minAlong();
-            maxZ = frame.maxAlong();
+        for (ItemDisplay display : findFaces(frame)) {
+            display.remove();
         }
-        int minY = frame.minY();
-        int maxY = frame.maxY();
-        for (int cx = (minX >> 4) - 1; cx <= (maxX >> 4) + 1; cx++) {
-            for (int cz = (minZ >> 4) - 1; cz <= (maxZ >> 4) + 1; cz++) {
+    }
+
+    /** Search neighboring chunks — portal center often sits on a chunk seam. */
+    private static List<ItemDisplay> findFaces(PortalStructure.Frame frame) {
+        List<ItemDisplay> out = new ArrayList<>();
+        FaceGeom g = geom(frame);
+        if (g == null) {
+            return out;
+        }
+        World world = frame.world();
+        int minX = (int) Math.floor(g.cx) - 2;
+        int maxX = (int) Math.ceil(g.cx) + 2;
+        int minZ = (int) Math.floor(g.cz) - 2;
+        int maxZ = (int) Math.ceil(g.cz) + 2;
+        int minCx = (minX >> 4) - 1;
+        int maxCx = (maxX >> 4) + 1;
+        int minCz = (minZ >> 4) - 1;
+        int maxCz = (maxZ >> 4) + 1;
+        for (int cx = minCx; cx <= maxCx; cx++) {
+            for (int cz = minCz; cz <= maxCz; cz++) {
                 if (!world.isChunkLoaded(cx, cz)) {
                     continue;
                 }
                 for (Entity entity : world.getChunkAt(cx, cz).getEntities()) {
-                    if (!(entity instanceof ItemDisplay) && !(entity instanceof Display)) {
+                    if (!(entity instanceof ItemDisplay display)) {
                         continue;
                     }
-                    if (!entity.getScoreboardTags().contains(DISPLAY_TAG)) {
+                    if (!display.getScoreboardTags().contains(DISPLAY_TAG)) {
                         continue;
                     }
-                    Location at = entity.getLocation();
-                    if (at.getBlockY() < minY - 1 || at.getBlockY() > maxY + 1) {
+                    Location at = display.getLocation();
+                    if (Math.abs(at.getX() - g.cx) > 3.0 || Math.abs(at.getZ() - g.cz) > 3.0) {
                         continue;
                     }
-                    if (at.getBlockX() < minX - 1 || at.getBlockX() > maxX + 1
-                            || at.getBlockZ() < minZ - 1 || at.getBlockZ() > maxZ + 1) {
+                    if (Math.abs(at.getY() - g.cy) > 4.0) {
                         continue;
                     }
-                    entity.remove();
+                    out.add(display);
                 }
             }
         }
+        return out;
     }
 
     private static FaceGeom geom(PortalStructure.Frame frame) {

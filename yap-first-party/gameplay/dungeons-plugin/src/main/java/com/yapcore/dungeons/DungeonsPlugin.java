@@ -16,6 +16,8 @@ import com.yapcore.dungeons.loot.LootService;
 import com.yapcore.dungeons.loot.LootTable;
 import com.yapcore.dungeons.papi.DungeonsPlaceholders;
 import com.yapcore.dungeons.portal.DungeonPortalRegistry;
+import com.yapcore.dungeons.portal.DungeonPortalRehydrate;
+import com.yapcore.dungeons.portal.DungeonPortalStore;
 import com.yapcore.dungeons.portal.DungeonPortalVisuals;
 import com.yapcore.dungeons.portal.PortalItems;
 import com.yapcore.dungeons.portal.PortalStructure;
@@ -72,8 +74,13 @@ public final class DungeonsPlugin extends JavaPlugin {
         }
 
         getServer().getPluginManager().registerEvents(new DungeonMenuListener(dungeonService, menu), this);
+        DungeonPortalStore portalStore = new DungeonPortalStore(this);
+        if (config.structureEnabled()) {
+            portalStore.load();
+        }
         getServer().getPluginManager().registerEvents(
-                new DungeonListener(this, config, portalItems, portalStructure, portalStructureTags, menu, instances),
+                new DungeonListener(this, config, portalItems, portalStructure, portalStructureTags,
+                        portalStore, menu, instances),
                 this);
 
         bind("dungeon", new DungeonCommand(dungeonService, menu));
@@ -87,6 +94,26 @@ public final class DungeonsPlugin extends JavaPlugin {
         instances.recoverOrphans();
         instances.startGcTimer();
         if (config.structureEnabled()) {
+            YapSched.globalLater(this, () -> {
+                DungeonPortalRehydrate.scanLoaded(this, portalStructure, portalStructureTags, portalStore);
+                getLogger().info("Dungeon portal rehydrate — registry="
+                        + DungeonPortalRegistry.all().size()
+                        + " persisted=" + portalStore.all().size());
+            }, 80L);
+            // Soft keep-alive: ensure swirl present, do not clear/rebuild every pass
+            YapSched.globalTimer(this, () -> {
+                for (PortalStructure.Frame frame : DungeonPortalRegistry.all()) {
+                    int midAlong = frame.minAlong() + (frame.sizeAlong() / 2);
+                    int midX = frame.axis() == org.bukkit.Axis.X ? midAlong : frame.fixed();
+                    int midZ = frame.axis() == org.bukkit.Axis.X ? frame.fixed() : midAlong;
+                    YapSched.region(this, frame.world(), midX, midZ,
+                            () -> DungeonPortalVisuals.ensureFace(frame));
+                }
+            }, 20L * 40, 20L * 40);
+            // Occasional full rehydrate for keystones after chunk loads (less aggressive)
+            YapSched.globalTimer(this, () -> {
+                DungeonPortalRehydrate.scanLoaded(this, portalStructure, portalStructureTags, portalStore);
+            }, 20L * 60, 20L * 120);
             final int[] pulse = {0};
             YapSched.globalTimer(this, () -> {
                 if (DungeonPortalRegistry.all().isEmpty()) {
