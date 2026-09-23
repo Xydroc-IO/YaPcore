@@ -130,7 +130,7 @@ public final class ResourcePackManager {
                 }
             }
         }
-        // Pull Bedrock .mcpack from the 0.0.0.1 GitHub prerelease when resource-pack-url
+        // Pull Bedrock .mcpack from the 0.0.0.2 GitHub prerelease when resource-pack-url
         // points at GitHub, then serve it with application/zip (BE cannot download GH Releases).
         syncBedrockPackFromGitHub();
         // Always host packs/map on :8081 so operators can curl/test even when the login offer is off.
@@ -364,7 +364,7 @@ public final class ResourcePackManager {
      * Bedrock clients <strong>cannot</strong> download GitHub Releases directly —
      * GitHub serves {@code application/octet-stream} and modern BE requires
      * {@code application/zip} + {@code Content-Length}. JE still uses
-     * {@code resource-pack-url} (0.0.0.1 GitHub prerelease). Bedrock gets the same
+     * {@code resource-pack-url} (0.0.0.2 GitHub prerelease). Bedrock gets the same
      * {@code .mcpack} bytes from {@link ResourcePackHttpServer}.
      *
      * @param clientAddress peer address string (e.g. {@code /127.0.0.1:34956}); may be blank
@@ -379,7 +379,7 @@ public final class ResourcePackManager {
     }
 
     /**
-     * Bedrock pack download URL — zip-typed YaP/nginx CDN (same bytes as the 0.0.0.1 prerelease).
+     * Bedrock pack download URL — zip-typed YaP/nginx CDN (same bytes as the 0.0.0.2 prerelease).
      * Never raw github.com Releases URLs ({@code application/octet-stream} → client kick).
      */
     String bedrockPackUrl(String fileName, String clientAddress) {

@@ -1,6 +1,6 @@
-# YaPcore releases (v0.0.0.1)
+# YaPcore releases (v0.0.0.2)
 
-All first-party artifacts share version **0.0.0.1**.
+All first-party artifacts share version **0.0.0.2**.
 
 **Upload from one place only:** the repo-root **`UPLOAD/`** folder.
 
@@ -17,7 +17,7 @@ gradle publishReleasesFolder -PyapGameplay=true
 ./scripts/release/stage-github-upload.sh
 
 # 4) Push to GitHub — ONLY UPLOAD/
-gh release upload 0.0.0.1 UPLOAD/*.{zip,mcpack} --clobber -R Xydroc-IO/YaPcore
+gh release upload 0.0.0.2 UPLOAD/*.{zip,mcpack} --clobber -R Xydroc-IO/YaPcore
 # or: ./scripts/release/stage-github-upload.sh --upload
 ```
 
@@ -32,7 +32,7 @@ gh release upload 0.0.0.1 UPLOAD/*.{zip,mcpack} --clobber -R Xydroc-IO/YaPcore
 
 Do **not** upload `yapcore-release/` trees, `dist/`, or anything under an old tag folder.
 
-CDN URL: `https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}`  
+CDN URL: `https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/{file}`  
 (`/releases/latest` ignores prereleases.)
 
 **Release notes:** [RELEASE_NOTES.md](RELEASE_NOTES.md) · **License:** [LICENSING.md](LICENSING.md)
@@ -46,7 +46,7 @@ CDN URL: `https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}`
 | `gradle publishReleasesFolder` | `releases/<version>/` **and** refreshes `UPLOAD/` |
 | `./scripts/release/stage-github-upload.sh` | Sync packs → stage `UPLOAD/` |
 
-## GitHub assets (tag `0.0.0.1`)
+## GitHub assets (tag `0.0.0.2`)
 
 | Asset | Role |
 |-------|------|
@@ -62,7 +62,7 @@ After `publishReleasesFolder`, unzipped trees (local testing only) live under
 `releases/<version>/yapcore-release/{linux,windows}/` — **not** GitHub assets.
 
 ```bash
-cd releases/0.0.0.1/yapcore-release/linux && ./start.sh --fg
+cd releases/0.0.0.2/yapcore-release/linux && ./start.sh --fg
 ```
 
 See [QUICK_START.md](QUICK_START.md) for product launch from `build/dist/`.

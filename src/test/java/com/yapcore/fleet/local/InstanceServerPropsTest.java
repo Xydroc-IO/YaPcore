@@ -86,7 +86,7 @@ class InstanceServerPropsTest {
         String sha = "34fbff120445ed36bc08e299664dc3369d0e9323";
         assertTrue(InstanceServerProps.syncGithubPackOffer(
                 props,
-                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}",
+                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/{file}",
                 sha,
                 "yapcore-default.zip"));
         Properties p = new Properties();
@@ -94,13 +94,13 @@ class InstanceServerPropsTest {
             p.load(in);
         }
         assertEquals(
-                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/yapcore-default.zip",
+                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/yapcore-default.zip",
                 p.getProperty("resource-pack"));
         assertEquals(sha, p.getProperty("resource-pack-sha1"));
         assertEquals("Lobby", p.getProperty("motd"));
         assertTrue(!InstanceServerProps.syncGithubPackOffer(
                 props,
-                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}",
+                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/{file}",
                 sha,
                 "yapcore-default.zip"));
     }

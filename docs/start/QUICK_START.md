@@ -33,8 +33,8 @@ folia-jar-source=build
 Stock Folia fallback (benches only): `folia-jar-source=fetch` + `./scripts/folia/fetch-folia.sh`.
 
 1. Download **`yapcore-release-linux.zip`** or **`yapcore-release-windows.zip`**
-   from the **[0.0.0.1 prerelease](https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.1)**
-   (`https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/yapcore-release-linux.zip`).
+   from the **[0.0.0.2 prerelease](https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.2)**
+   (`https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/yapcore-release-linux.zip`).
    GitHub’s **Latest** button does not serve this line. **1.0.0.0** was deleted, so `/releases/latest` stays empty until a non-prerelease exists.
    Source builds: `gradle publishReleasesFolder` (gitignored under `releases/`)
    or `gradle assembleRelease` → `build/dist/yapcore-release/`.

@@ -4,8 +4,8 @@
 
 | Version | Supported |
 |---------|-----------|
-| **0.0.0.1** | Yes — current product line (GitHub **prerelease**) |
-| **1.0.0.0** | No — GitHub release deleted; fixes land on **0.0.0.1** |
+| **0.0.0.2** | Yes — current product line (GitHub **prerelease**) |
+| **1.0.0.0** | No — GitHub release deleted; fixes land on **0.0.0.2** |
 | Other pre-1.0 / forks | Best-effort only |
 
 ## Reporting a vulnerability

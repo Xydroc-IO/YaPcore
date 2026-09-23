@@ -1,7 +1,7 @@
 {
   "id": "yaplink-server-selector",
   "name": "YaP Link Server Selector",
-  "version": "0.0.0.1",
+  "version": "0.0.0.2",
   "main": "com.yapcore.link.selector.ServerSelectorPlugin",
   "authors": ["YapLabs"]
 }

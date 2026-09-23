@@ -9,8 +9,8 @@
 #   ./scripts/release/stage-github-upload.sh --upload
 set -euo pipefail
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
-VER="${YAP_VERSION:-$(grep -E '^version\s*=' "$ROOT/gradle.properties" 2>/dev/null | head -1 | cut -d= -f2 | tr -d ' ' || true)}"
-VER="${VER:-0.0.0.1}"
+VER="${YAP_VERSION:-$(grep -E '^version\s*=' "$ROOT/build.gradle.kts" 2>/dev/null | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || true)}"
+VER="${VER:-0.0.0.2}"
 SRC="$ROOT/releases/$VER"
 DEST="$ROOT/UPLOAD"
 DO_UPLOAD=0

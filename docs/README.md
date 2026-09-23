@@ -7,7 +7,7 @@ Operator docs. Markdown under `docs/` is the source of truth.
 | Need | Doc |
 |------|-----|
 | First boot | [QUICK_START.md](start/QUICK_START.md) |
-| Releases | [RELEASES.md](start/RELEASES.md) · [RELEASE_NOTES.md](start/RELEASE_NOTES.md) · [0.0.0.1 prerelease](https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.1) |
+| Releases | [RELEASES.md](start/RELEASES.md) · [RELEASE_NOTES.md](start/RELEASE_NOTES.md) · [0.0.0.2 prerelease](https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.2) |
 | Secrets | [SECRETS.md](start/SECRETS.md) |
 | Networking / edge / fleet | [NETWORKING.md](network/NETWORKING.md) |
 | YaP Link | [YAP_LINK.md](network/YAP_LINK.md) |

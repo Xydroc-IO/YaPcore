@@ -1,5 +1,5 @@
 name: YaPLib
-version: '0.0.0.1'
+version: '0.0.0.2'
 main: com.yapcore.lib.YapLibPlugin
 api-version: '1.21'
 folia-supported: true

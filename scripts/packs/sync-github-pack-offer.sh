@@ -4,7 +4,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 FILE="yapcore-default.zip"
-GH_URL="https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/${FILE}"
+GH_URL="https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/${FILE}"
 
 echo "Hashing GitHub release asset…"
 SHA="$(python3 - <<PY
@@ -34,7 +34,7 @@ PROMPT_PLAIN='This server offers a resource pack. Click Yes to download, or No t
 
 # Product config
 CFG="$ROOT/config/server.properties"
-sed -i "s|^resource-pack-url=.*|resource-pack-url=https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}|" "$CFG"
+sed -i "s|^resource-pack-url=.*|resource-pack-url=https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/{file}|" "$CFG"
 grep -q '^resource-pack-sha1=' "$CFG" || echo 'resource-pack-sha1=' >> "$CFG"
 sed -i "s|^resource-pack-sha1=.*|resource-pack-sha1=${SHA}|" "$CFG"
 

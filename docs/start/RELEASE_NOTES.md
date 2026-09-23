@@ -1,9 +1,9 @@
 # YaPcore release notes
 
-Product version **0.0.0.1** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2**
+Product version **0.0.0.2** · YaP Link **0.6.0-phase6** · YaP-Folia **26.2**
 
 GitHub ships this tag as a **prerelease**. Packs and zips are
-`https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}`.
+`https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/{file}`.
 `/releases/latest` ignores prereleases. The old stable **1.0.0.0** release was deleted, so that URL stays empty until a non-prerelease exists.
 
 For build commands and zip layout see [RELEASES.md](RELEASES.md). For live status see
@@ -13,9 +13,9 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
-## After 0.0.0.1 — portals, ultrawide Panini, createWorld (2026-09-23)
+## v0.0.0.2 — portals, ultrawide Panini, createWorld (2026-09-23)
 
-Same ship version. No product bump. Client mods bumped (ultrawide **1.0.13**, visuals **1.0.18**, presence **1.0.12**). Rebuild packs + clients + `publishReleasesFolder -PyapGameplay=true` → stage `UPLOAD/`.
+Product bump from **0.0.0.1**. All first-party jars / `plugin.yml` / Link plugins share **0.0.0.2**. Client mods: ultrawide **1.0.13**, visuals **1.0.18**, presence **1.0.12**. Rebuild packs + clients + `publishReleasesFolder -PyapGameplay=true` → stage `UPLOAD/`. Create GitHub prerelease tag **`0.0.0.2`**.
 
 | Area | Change |
 |------|--------|
@@ -26,8 +26,9 @@ Same ship version. No product bump. Client mods bumped (ultrawide **1.0.13**, vi
 | **Client** | Ultrawide Panini edge correct + Hor+; Iris pipeline / Sodium kick harden; presence skin refresh via SodiumWorldKick only. |
 | **Fleet** | Local instance props / layout sync. |
 | **Pack** | YaP420 plant generator + refreshed `yapcore-default.zip` / `.mcpack`. |
+| **CDN** | Default `resource-pack-url` → `/releases/download/0.0.0.2/{file}`. |
 
-Upload: `gh release upload 0.0.0.1 UPLOAD/*.{zip,mcpack} --clobber -R Xydroc-IO/YaPcore`.
+Upload: `gh release upload 0.0.0.2 UPLOAD/*.{zip,mcpack} --clobber -R Xydroc-IO/YaPcore`.
 
 ---
 
@@ -1080,4 +1081,4 @@ when cutting a refreshed zip; do **not** change Gradle `version` until a real ta
 
 ---
 
-*0.0.0.1 is the ship version. The **1.0.0.0** GitHub release was deleted, so `/releases/latest` stays empty until a non-prerelease exists. Bump only when cutting a later tagged release.*
+*0.0.0.2 is the ship version. Prior prerelease **0.0.0.1** remains for history. The **1.0.0.0** GitHub release was deleted, so `/releases/latest` stays empty until a non-prerelease exists.*

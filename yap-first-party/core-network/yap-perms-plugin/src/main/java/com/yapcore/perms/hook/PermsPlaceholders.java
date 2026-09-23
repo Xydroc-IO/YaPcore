@@ -28,7 +28,7 @@ public final class PermsPlaceholders extends PlaceholderExpansion {
 
     @Override
     public @NotNull String getVersion() {
-        return "0.0.0.1";
+        return "0.0.0.2";
     }
 
     @Override

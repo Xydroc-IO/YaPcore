@@ -1,5 +1,5 @@
 name: YaPChat
-version: '0.0.0.1'
+version: '0.0.0.2'
 main: com.yapcore.chat.ChatPlugin
 api-version: '1.21'
 folia-supported: true

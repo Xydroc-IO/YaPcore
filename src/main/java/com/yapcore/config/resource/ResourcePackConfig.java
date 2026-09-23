@@ -12,16 +12,16 @@ import java.util.Properties;
 public final class ResourcePackConfig {
 
     /**
-     * Pack CDN for product {@code 0.0.0.1}. GitHub {@code /releases/latest} stays on
+     * Pack CDN for product {@code 0.0.0.2}. GitHub {@code /releases/latest} stays on
      * the last stable tag ({@code 1.0.0.0}) while this line ships as a prerelease.
      */
     public static final String GITHUB_PRERELEASE_PACK_URL =
-            "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}";
+            "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/{file}";
 
     private static final String GITHUB_LATEST_PACK_PATH =
             "github.com/xydroc-io/yapcore/releases/latest/download";
     private static final String GITHUB_PRERELEASE_PACK_PATH =
-            "github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1";
+            "github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2";
 
     private final Properties props;
 
@@ -176,7 +176,7 @@ public final class ResourcePackConfig {
 
     /**
      * GitHub {@code /releases/latest} ignores prereleases (and currently 404s the pack).
-     * Rewrite our repo's latest pack CDN onto tag {@code 0.0.0.1}.
+     * Rewrite our repo's latest pack CDN onto tag {@code 0.0.0.2}.
      *
      * @return true when {@code resource-pack-url} was rewritten
      */
@@ -190,7 +190,7 @@ public final class ResourcePackConfig {
         return true;
     }
 
-    /** Pin YaP GitHub {@code /releases/latest/download/…} onto the 0.0.0.1 prerelease tag. */
+    /** Pin YaP GitHub {@code /releases/latest/download/…} onto the 0.0.0.2 prerelease tag. */
     public static String pinPrereleasePackUrl(String url) {
         if (url == null || url.isBlank()) {
             return url == null ? "" : url;

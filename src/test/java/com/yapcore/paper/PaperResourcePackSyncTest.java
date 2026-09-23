@@ -96,14 +96,14 @@ class PaperResourcePackSyncTest {
         ServerConfig config = new ServerConfig(cfgFile);
         config.load();
         assertEquals(
-                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}",
+                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/{file}",
                 config.getResourcePackUrl());
         String persisted = Files.readString(cfgFile);
-        assertTrue(persisted.contains("/releases/download/0.0.0.1/{file}"), persisted);
+        assertTrue(persisted.contains("/releases/download/0.0.0.2/{file}"), persisted);
         assertFalse(persisted.contains("/releases/latest/download/"), persisted);
         var ep = new com.yapcore.network.publicity.PublicEndpoint(config);
         assertEquals(
-                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/yapcore-default.zip",
+                "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/yapcore-default.zip",
                 ep.packUrl("yapcore-default.zip"));
     }
 

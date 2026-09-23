@@ -65,7 +65,7 @@ getScheduler().runHeavy(() -> {
 ```yaml
 name: MegaStore
 main: com.example.MegaStorePlugin
-version: 0.0.0.1
+version: 0.0.0.2
 api: yap-1
 author: You
 description: All-in-one store (GUI + economy + DB) without lag
@@ -159,7 +159,7 @@ GUI tabs: **Plugins**, **Modules**, and **Tune**. Headless: [WEB_DASHBOARD.md](.
 ```yaml
 name: SpawnTweaks
 main: com.example.SpawnTweaksModule
-version: 0.0.0.1
+version: 0.0.0.2
 api: yap-module-1
 author: You
 description: Optional spawn radius / MOTD tweaks

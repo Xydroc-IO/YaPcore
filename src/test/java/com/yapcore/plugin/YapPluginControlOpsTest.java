@@ -21,7 +21,7 @@ class YapPluginControlOpsTest {
     void softAndHardToggleRoundTrip() throws Exception {
         Path plugins = root.resolve("plugins");
         Files.createDirectories(plugins);
-        Path jar = plugins.resolve("yap-skills-0.0.0.1.jar");
+        Path jar = plugins.resolve("yap-skills-0.0.0.2.jar");
         Files.writeString(jar, "fake");
         Path cfgDir = plugins.resolve("YaPSkills");
         Files.createDirectories(cfgDir);
@@ -30,21 +30,21 @@ class YapPluginControlOpsTest {
         PluginManager pm = new PluginManager(plugins);
         YapPluginControl ctrl = new YapPluginControl(root, pm);
 
-        Map<String, Object> softOff = ctrl.setEnabled("yap-skills-0.0.0.1.jar", false, YapPluginControl.Mode.SOFT, false);
+        Map<String, Object> softOff = ctrl.setEnabled("yap-skills-0.0.0.2.jar", false, YapPluginControl.Mode.SOFT, false);
         assertTrue(Boolean.TRUE.equals(softOff.get("ok")) || softOff.get("ok") == null || softOff.containsKey("softEnabled"));
         assertEquals(false, softOff.get("softEnabled"));
         String yaml = Files.readString(cfgDir.resolve("config.yml"));
         assertTrue(yaml.contains("enabled: false") || yaml.contains("enabled:false"));
 
-        Map<String, Object> hardOff = ctrl.setEnabled("yap-skills-0.0.0.1.jar", false, YapPluginControl.Mode.HARD, false);
-        assertTrue(Files.exists(plugins.resolve("yap-skills-0.0.0.1.jar.disabled")));
+        Map<String, Object> hardOff = ctrl.setEnabled("yap-skills-0.0.0.2.jar", false, YapPluginControl.Mode.HARD, false);
+        assertTrue(Files.exists(plugins.resolve("yap-skills-0.0.0.2.jar.disabled")));
         assertFalse(Files.exists(jar));
 
-        Map<String, Object> hardOn = ctrl.setEnabled("yap-skills-0.0.0.1.jar.disabled", true, YapPluginControl.Mode.HARD, false);
+        Map<String, Object> hardOn = ctrl.setEnabled("yap-skills-0.0.0.2.jar.disabled", true, YapPluginControl.Mode.HARD, false);
         assertTrue(Files.exists(jar));
         assertEquals(true, hardOn.get("hardEnabled"));
 
-        PluginConfigCatalog.Entry entry = YapPluginControl.findEntry("yap-skills-0.0.0.1.jar");
+        PluginConfigCatalog.Entry entry = YapPluginControl.findEntry("yap-skills-0.0.0.2.jar");
         assertEquals("yap-skills", entry.id());
     }
 }

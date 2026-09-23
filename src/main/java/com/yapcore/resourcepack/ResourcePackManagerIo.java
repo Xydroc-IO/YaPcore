@@ -31,7 +31,7 @@ final class ResourcePackManagerIo {
     /**
      * When {@code resource-pack-url} is GitHub Releases, download the Bedrock
      * {@code .mcpack} into {@code resourcepacks/} so the zip HTTP CDN serves
-     * the same bytes clients expect from the {@code 0.0.0.1} prerelease tag.
+     * the same bytes clients expect from the {@code 0.0.0.2} prerelease tag.
      */
     static void syncBedrockPackFromGitHub(ResourcePackManager mgr) {
         ServerConfig config = mgr.config();
@@ -77,7 +77,7 @@ final class ResourcePackManagerIo {
                 } catch (java.nio.file.AtomicMoveNotSupportedException e) {
                     Files.move(tmp, dest, StandardCopyOption.REPLACE_EXISTING);
                 }
-                LOG.info("Synced Bedrock pack from GitHub 0.0.0.1 prerelease → " + dest.getFileName()
+                LOG.info("Synced Bedrock pack from GitHub 0.0.0.2 prerelease → " + dest.getFileName()
                         + " (" + Files.size(dest) + " bytes); BE clients download via zip CDN");
             } catch (Exception e) {
                 LOG.warning("GitHub pack sync failed: " + e.getMessage());

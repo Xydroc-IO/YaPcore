@@ -9,8 +9,8 @@ contact_links:
     url: https://github.com/Xydroc-IO/YaPcore/blob/main/docs/whitepaper/YAPCORE_WHITEPAPER.md
     about: Technical architecture
   - name: Releases
-    url: https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.1
-    about: Download linux/windows packages, suites, and resource pack (0.0.0.1 prerelease)
+    url: https://github.com/Xydroc-IO/YaPcore/releases/tag/0.0.0.2
+    about: Download linux/windows packages, suites, and resource pack (0.0.0.2 prerelease)
   - name: Security
     url: https://github.com/Xydroc-IO/YaPcore/blob/main/SECURITY.md
     about: Report vulnerabilities privately — do not file public security issues

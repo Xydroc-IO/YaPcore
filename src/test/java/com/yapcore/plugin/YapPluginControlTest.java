@@ -10,16 +10,16 @@ class YapPluginControlTest {
 
     @Test
     void jarTokenStripsVersionAndDisabledSuffix() {
-        assertEquals("yap-skills", YapPluginControl.jarToken("yap-skills-0.0.0.1.jar"));
-        assertEquals("yap-skills", YapPluginControl.jarToken("yap-skills-0.0.0.1.jar.disabled"));
+        assertEquals("yap-skills", YapPluginControl.jarToken("yap-skills-0.0.0.2.jar"));
+        assertEquals("yap-skills", YapPluginControl.jarToken("yap-skills-0.0.0.2.jar.disabled"));
         assertEquals("placeholderapi", YapPluginControl.jarToken("PlaceholderAPI-2.11.5.jar"));
     }
 
     @Test
     void findEntryMatchesCatalogTokens() {
-        assertNotNull(YapPluginControl.findEntry("yap-skills-0.0.0.1.jar"));
-        assertEquals("yap-skills", YapPluginControl.findEntry("yap-skills-0.0.0.1.jar").id());
-        assertEquals("yap-gameplay-knobs", YapPluginControl.findEntry("yap-gameplay-knobs-0.0.0.1.jar").id());
+        assertNotNull(YapPluginControl.findEntry("yap-skills-0.0.0.2.jar"));
+        assertEquals("yap-skills", YapPluginControl.findEntry("yap-skills-0.0.0.2.jar").id());
+        assertEquals("yap-gameplay-knobs", YapPluginControl.findEntry("yap-gameplay-knobs-0.0.0.2.jar").id());
         assertNull(YapPluginControl.findEntry("random-unknown-plugin.jar"));
     }
 
@@ -40,7 +40,7 @@ class YapPluginControlTest {
 
     @Test
     void optInMarksShippedSoftOffPlugins() {
-        assertEquals(true, YapPluginControl.isOptIn("yap-disasters-0.0.0.1.jar"));
+        assertEquals(true, YapPluginControl.isOptIn("yap-disasters-0.0.0.2.jar"));
         assertEquals(true, YapPluginControl.isOptIn("yap-factions.jar"));
         assertEquals(true, YapPluginControl.isOptIn("yap-gameplay-knobs.jar"));
         assertEquals(false, YapPluginControl.isOptIn("yap-dungeons.jar"));

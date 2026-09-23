@@ -37,7 +37,7 @@ class FloodgateUnitTest {
         String linked = "Alex;" + UUID.fromString("11111111-1111-1111-1111-111111111111")
                 + ";" + UUID.fromString("22222222-2222-2222-2222-222222222222");
         String[] fields = {
-                "1.21", "BedrockSteve", "999", "7", "en_US", "", "", "10.0.0.1", linked, "1", "", ""
+                "1.21", "BedrockSteve", "999", "7", "en_US", "", "", "10.0.0.2", linked, "1", "", ""
         };
         FloodgateRuntime.BedrockData data =
                 FloodgateRuntime.BedrockData.parse(String.join("\0", fields));

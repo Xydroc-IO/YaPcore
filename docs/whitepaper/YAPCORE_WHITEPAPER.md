@@ -3,7 +3,7 @@
 **YapLabs Technical Whitepaper**  
 Version **0.6** · September 2026  
 Document ID: `YAP-WP-16T-001`  
-Product: YaPcore **0.0.0.1**  
+Product: YaPcore **0.0.0.2**  
 Supersedes: v0.5 (September 2026)
 
 > Operator docs: [QUICK_START.md](../start/QUICK_START.md) · [docs/README.md](README.md).
@@ -413,7 +413,7 @@ Unit tests (JUnit) cover plugin and API behavior. Operators validate with a loca
 
 | Area | Status |
 |------|--------|
-| YaP-Folia product path | **Default** (`folia-jar-source=build`) — product **0.0.0.1** |
+| YaP-Folia product path | **Default** (`folia-jar-source=build`) — product **0.0.0.2** |
 | Subregion real split (no second clock) | **Not proven** — `0041` native cut landed; live contiguous carve/hold unproven |
 | YapEngine slim chassis | **Always on** |
 | YaP Link phases 0–6 | **Shipped** (`0.6.0-phase6`) |

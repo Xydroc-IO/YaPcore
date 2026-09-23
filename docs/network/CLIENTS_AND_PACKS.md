@@ -96,12 +96,12 @@ active pack applies without play-phase `addResourcePack`.
 Bedrock receives `resource-pack-bedrock-file` (default `yapcore-default.mcpack`) when that file exists and packs are enabled.
 
 The Bedrock client requires CDN responses with **`Content-Type: application/zip`** and a correct **`Content-Length`**.
-GitHub Releases always serve **`application/octet-stream`**, so Bedrock **cannot** HTTP-download `github.com/.../releases/download/0.0.0.1/...` directly (immediate disconnect).
+GitHub Releases always serve **`application/octet-stream`**, so Bedrock **cannot** HTTP-download `github.com/.../releases/download/0.0.0.2/...` directly (immediate disconnect).
 
 YaP keeps GitHub as the **source of truth**:
-1. On boot, when `resource-pack-url` points at GitHub, the chassis **syncs** `yapcore-default.mcpack` from the **0.0.0.1 prerelease** tag.
+1. On boot, when `resource-pack-url` points at GitHub, the chassis **syncs** `yapcore-default.mcpack` from the **0.0.0.2 prerelease** tag.
 2. Bedrock clients download that same file from the **zip CDN** (`ResourcePackHttpServer` / nginx `/pack/…`, e.g. `http://yapcoremc.yaplabs.us/pack/yapcore-default.mcpack` or `http://127.0.0.1:8081/pack/...` on LAN).
-3. Java clients still use `resource-pack-url` (the **0.0.0.1** prerelease asset) unchanged.
+3. Java clients still use `resource-pack-url` (the **0.0.0.2** prerelease asset) unchanged.
 
 Modern JE clients on the Via edge still get the Yes/No prompt; only mid-band /
 legacy clients are auto-acked so they are not stuck on join.
@@ -115,8 +115,8 @@ resource-pack-prompt=This server offers a resource pack. Click Yes to download, 
 # Prefer self-hosted nginx so SHA-1 always matches the local zip after rebuild:
 # (leave resource-pack-url empty → PublicEndpoint uses public host + pack port)
 # resource-pack-url=
-# Or GitHub 0.0.0.1 prerelease (must re-upload zip/.mcpack after every rebuild or SHA fails):
-# resource-pack-url=https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}
+# Or GitHub 0.0.0.2 prerelease (must re-upload zip/.mcpack after every rebuild or SHA fails):
+# resource-pack-url=https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.2/{file}
 resource-pack-http-port=8081
 resource-pack-prompt=This server offers a resource pack. Click Yes to download, or No to play without it.
 # resource-pack-public-host=yapcoremc.yaplabs.us
@@ -125,16 +125,16 @@ resource-pack-prompt=This server offers a resource pack. Click Yes to download, 
 ```
 
 Attach **`yapcore-default.zip`** and **`yapcore-default.mcpack`** (same bytes you built) to nginx
-(`./scripts/packs/sync-pack-to-nginx.sh`) and/or as GitHub **prerelease** assets. Tag **`0.0.0.1`** publishes them
+(`./scripts/packs/sync-pack-to-nginx.sh`) and/or as GitHub **prerelease** assets. Tag **`0.0.0.2`** publishes them
 as a prerelease — operators and the chassis must use
-`/releases/download/0.0.0.1/{file}`. GitHub **`/releases/latest`** ignores prereleases. **1.0.0.0** was deleted, so that URL stays empty until a non-prerelease exists.
+`/releases/download/0.0.0.2/{file}`. GitHub **`/releases/latest`** ignores prereleases. **1.0.0.0** was deleted, so that URL stays empty until a non-prerelease exists.
 YaP hashes the **download URL** at boot so
 Paper’s SHA-1 matches what clients fetch. If the advertised SHA is from a newer local rebuild than
 GitHub/nginx, Minecraft shows **“1 of 1 pack failed to download.”**
 
 **Default packs:** `yapcore-default.zip` (Java) and `yapcore-default.mcpack` (Bedrock) —
 Faithful **64×** (blocks **and** held-item textures) + YaP Skies + YaP Water.
-JE clients must download from **GitHub** `releases/download/0.0.0.1` (not a dead public-host
+JE clients must download from **GitHub** `releases/download/0.0.0.2` (not a dead public-host
 `/pack/` URL). Built on `gradle prepareClientPack` /
 `gradle prepareClientPackBedrock`. Credit / license:
 `resourcepacks/CREDITS.md`, `FAITHFUL_LICENSE.txt`.
@@ -144,11 +144,11 @@ JE clients must download from **GitHub** `releases/download/0.0.0.1` (not a dead
 ```bash
 ./scripts/packs/build-default-resourcepack.sh
 ./scripts/packs/build-default-bedrock-pack.sh
-gh release upload 0.0.0.1 \
+gh release upload 0.0.0.2 \
   resourcepacks/yapcore-default.zip \
   resourcepacks/yapcore-default.mcpack \
   --clobber -R Xydroc-IO/YaPcore
-# or create/update the 0.0.0.1 prerelease and attach the assets
+# or create/update the 0.0.0.2 prerelease and attach the assets
 # (/releases/latest stays empty until a non-prerelease exists; 1.0.0.0 was deleted)
 ```
 
