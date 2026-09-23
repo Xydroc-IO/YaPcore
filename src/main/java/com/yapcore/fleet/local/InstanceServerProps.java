@@ -7,6 +7,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -108,9 +109,55 @@ public final class InstanceServerProps {
         return true;
     }
 
+    /**
+     * Stamp the on-disk pack SHA-1 onto a fleet properties file whose
+     * {@code resource-pack} URL already points at that zip. Clients reject the
+     * download when the advertised hash and the file disagree, and keep the old pack.
+     *
+     * @return true when the file was updated
+     */
+    public static boolean syncLocalZipSha(Path propsFile, Path zipFile) throws IOException {
+        if (propsFile == null || !Files.isRegularFile(propsFile) || zipFile == null || !Files.isRegularFile(zipFile)) {
+            return false;
+        }
+        Properties p = load(propsFile);
+        String url = p.getProperty("resource-pack", "");
+        if (url.isBlank() || isGithubPackUrl(url) || !url.contains(zipFile.getFileName().toString())) {
+            return false;
+        }
+        String hex = sha1(zipFile);
+        String id = UUID.nameUUIDFromBytes(("yapcore-pack:" + zipFile.getFileName() + ":" + hex)
+                .getBytes(StandardCharsets.UTF_8)).toString();
+        if (hex.equalsIgnoreCase(p.getProperty("resource-pack-sha1", ""))
+                && id.equals(p.getProperty("resource-pack-id", ""))) {
+            return false;
+        }
+        p.setProperty("resource-pack-sha1", hex);
+        p.setProperty("resource-pack-id", id);
+        try (OutputStream out = Files.newOutputStream(propsFile)) {
+            p.store(out, "YaP fleet instance");
+        }
+        return true;
+    }
+
     static boolean isGithubPackUrl(String url) {
         String u = url.toLowerCase(Locale.ROOT);
         return u.contains("github.com/") || u.contains("githubusercontent.com/");
+    }
+
+    private static String sha1(Path file) throws IOException {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            digest.update(Files.readAllBytes(file));
+            byte[] hash = digest.digest();
+            StringBuilder hex = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                hex.append(String.format(Locale.ROOT, "%02x", b & 0xff));
+            }
+            return hex.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            throw new IOException("SHA-1 unavailable", e);
+        }
     }
 
     private static boolean isSha1(String s) {

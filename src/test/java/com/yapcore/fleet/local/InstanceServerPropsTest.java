@@ -6,10 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.yapcore.config.ServerConfig;
 import com.yapcore.fleet.model.FleetInstance;
 import com.yapcore.paper.PaperFiles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -101,5 +103,36 @@ class InstanceServerPropsTest {
                 "https://github.com/Xydroc-IO/YaPcore/releases/download/0.0.0.1/{file}",
                 sha,
                 "yapcore-default.zip"));
+    }
+
+    @Test
+    void syncLocalZipShaUpdatesLanOfferToFileHash() throws Exception {
+        Path zip = root.resolve("resourcepacks/yapcore-default.zip");
+        Files.createDirectories(zip.getParent());
+        Files.writeString(zip, "plant-pack");
+        Path props = root.resolve("server.properties");
+        Files.writeString(props, """
+                resource-pack=http://10.0.0.215:8081/pack/yapcore-default.zip
+                resource-pack-sha1=337d4f8738bc1b00bedb38c0c5cde3617cb73d3f
+                resource-pack-id=3cf25b58-aa2c-3905-80e8-2b801294bbf2
+                motd=Survival
+                """);
+        assertTrue(InstanceServerProps.syncLocalZipSha(props, zip));
+        Properties p = new Properties();
+        try (var in = Files.newInputStream(props)) {
+            p.load(in);
+        }
+        byte[] hex = java.security.MessageDigest.getInstance("SHA-1")
+                .digest("plant-pack".getBytes(StandardCharsets.UTF_8));
+        StringBuilder expected = new StringBuilder();
+        for (byte b : hex) {
+            expected.append(String.format("%02x", b & 0xff));
+        }
+        String id = UUID.nameUUIDFromBytes(
+                ("yapcore-pack:yapcore-default.zip:" + expected).getBytes(StandardCharsets.UTF_8)).toString();
+        assertEquals(expected.toString(), p.getProperty("resource-pack-sha1"));
+        assertEquals(id, p.getProperty("resource-pack-id"));
+        assertEquals("Survival", p.getProperty("motd"));
+        assertTrue(!InstanceServerProps.syncLocalZipSha(props, zip));
     }
 }

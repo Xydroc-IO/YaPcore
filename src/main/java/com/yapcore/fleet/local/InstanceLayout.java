@@ -70,6 +70,15 @@ public final class InstanceLayout {
                     config.getResourcePackSha1(),
                     config.getResourcePackFile())) {
                 LOG.info("Synced GitHub resource pack offer → " + instance.id());
+            } else {
+                String packFile = config.getResourcePackFile();
+                if (packFile == null || packFile.isBlank()) {
+                    packFile = "yapcore-default.zip";
+                }
+                Path zip = rootDir.resolve(config.getResourcePackDir()).resolve(packFile);
+                if (InstanceServerProps.syncLocalZipSha(props, zip)) {
+                    LOG.info("Synced local resource pack SHA-1 → " + instance.id());
+                }
             }
         }
         FoliaFiles.applyVelocitySupport(rootDir, dir, config);
