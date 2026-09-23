@@ -215,13 +215,20 @@ public final class RoomTemplates {
             Random rng, String runId, List<org.bukkit.Location> chests) {
         int cx = room.centerX();
         int cz = room.centerZ();
-        // Raised dais 5x5
+        // Raised dais 5x5 with open center for the boss to stand
         for (int dx = -2; dx <= 2; dx++) {
             for (int dz = -2; dz <= 2; dz++) {
                 world.getBlockAt(cx + dx, y, cz + dz).setType(theme.accent(), false);
-                world.getBlockAt(cx + dx, y + 1, cz + dz).setType(theme.accent(), false);
+                if (Math.abs(dx) <= 1 && Math.abs(dz) <= 1) {
+                    world.getBlockAt(cx + dx, y + 1, cz + dz).setType(Material.AIR, false);
+                } else {
+                    world.getBlockAt(cx + dx, y + 1, cz + dz).setType(theme.accent(), false);
+                }
             }
         }
+        world.getBlockAt(cx, y + 1, cz).setType(Material.AIR, false);
+        world.getBlockAt(cx, y + 2, cz).setType(Material.AIR, false);
+        world.getBlockAt(cx, y + 3, cz).setType(Material.AIR, false);
         // Stairs up onto dais from south
         for (int dx = -1; dx <= 1; dx++) {
             world.getBlockAt(cx + dx, y + 1, cz + 3).setType(Material.AIR, false);

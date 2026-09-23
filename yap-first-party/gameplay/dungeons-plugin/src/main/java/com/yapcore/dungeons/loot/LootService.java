@@ -73,19 +73,34 @@ public final class LootService {
 
     public void fillChest(org.bukkit.block.Chest chest, int level, long seed) {
         LootTable.LevelLoot loot = table.get(level);
-        Random rng = new Random(seed ^ chest.getX() * 31L ^ chest.getZ());
+        Random rng = new Random(seed ^ chest.getX() * 31L ^ chest.getZ() * 997L ^ level);
+        org.bukkit.inventory.Inventory inv = chest.getInventory();
+        inv.clear();
+        // Always put something tangible in every dungeon chest
         List<ItemStack> stacks = new ArrayList<>();
         if (!loot.guaranteed().isEmpty()) {
-            stacks.add(stack(loot.guaranteed().get(rng.nextInt(loot.guaranteed().size())), level));
+            for (LootTable.Entry e : loot.guaranteed()) {
+                stacks.add(stack(e, level));
+            }
+        } else {
+            stacks.add(new ItemStack(MaterialSafe.IRON_INGOT, 2 + rng.nextInt(4)));
         }
-        if (rng.nextDouble() < 0.55) {
+        stacks.add(weighted(loot.rare(), level, rng));
+        if (level >= 10 || rng.nextDouble() < 0.45) {
             stacks.add(weighted(loot.rare(), level, rng));
         }
-        chest.getInventory().clear();
+        int slot = 0;
         for (ItemStack s : stacks) {
-            chest.getInventory().addItem(s);
+            if (s == null || s.getType().isAir()) {
+                continue;
+            }
+            if (slot < inv.getSize()) {
+                inv.setItem(slot++, s);
+            } else {
+                inv.addItem(s);
+            }
         }
-        chest.update();
+        chest.update(true, false);
     }
 
     private ItemStack weighted(List<LootTable.Entry> entries, int level, Random rng) {

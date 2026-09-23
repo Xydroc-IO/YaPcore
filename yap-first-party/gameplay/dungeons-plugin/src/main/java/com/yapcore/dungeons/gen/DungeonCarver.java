@@ -57,7 +57,7 @@ public final class DungeonCarver {
         RoomGraphBuilder.Room bossRoom = layout.rooms().getLast();
         Location bossLoc = new Location(world,
                 bossRoom.centerX() + 0.5,
-                layout.originY() + 3,
+                layout.originY() + 1,
                 bossRoom.centerZ() + 0.5);
         List<Location> chests = new ArrayList<>();
         Map<Integer, RoomGraphBuilder.Room> byId = new HashMap<>();
@@ -116,6 +116,20 @@ public final class DungeonCarver {
                     return chain;
                 })
                 .thenCompose(v -> {
+                    // Re-punch corridors after decor — cover walls / bars used to seal the path
+                    progress.accept("Opening paths…");
+                    return forEachChunk(world, minX, minZ, maxX, maxZ, (cx, cz) -> {
+                        for (RoomGraphBuilder.Corridor c : layout.corridors()) {
+                            RoomGraphBuilder.Room a = byId.get(c.fromId());
+                            RoomGraphBuilder.Room b = byId.get(c.toId());
+                            if (a == null || b == null) {
+                                continue;
+                            }
+                            carveCorridorInChunk(world, a, b, layout.originY(), theme, cx, cz);
+                        }
+                    });
+                })
+                .thenCompose(v -> {
                     progress.accept("Spawning hostiles…");
                     CompletableFuture<Void> chain = regionRun(world, entrance.getBlockX(), entrance.getBlockZ(),
                             () -> world.setSpawnLocation(entrance));
@@ -135,8 +149,6 @@ public final class DungeonCarver {
                     return chain;
                 })
                 .thenCompose(v -> {
-                    // Only nudge the entrance chunk — full-layout refresh hammered Folia
-                    // and (with wild plant floods) blew the heap.
                     progress.accept("Ready…");
                     return regionRun(world, entrance.getBlockX(), entrance.getBlockZ(), () ->
                             world.refreshChunk(entrance.getBlockX() >> 4, entrance.getBlockZ() >> 4));
@@ -260,11 +272,17 @@ public final class DungeonCarver {
             digHallInChunk(world, x, y, z, theme, cx, cz);
             z += Integer.compare(bz, z);
         }
+        // Final cell at destination center
+        digHallInChunk(world, bx, y, bz, theme, cx, cz);
     }
 
+    /**
+     * 2×2 walkable tunnel. Always punches air through room walls — never places
+     * side-walls on the path (that used to reseal doorways and force mining).
+     */
     private void digHallInChunk(World world, int x, int y, int z, ThemeTable.Theme theme, int cx, int cz) {
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
+        for (int dx = 0; dx <= 1; dx++) {
+            for (int dz = 0; dz <= 1; dz++) {
                 int wx = x + dx;
                 int wz = z + dz;
                 if ((wx >> 4) != cx || (wz >> 4) != cz) {
@@ -275,20 +293,21 @@ public final class DungeonCarver {
                 world.getBlockAt(wx, y + 1, wz).setType(Material.AIR, false);
                 world.getBlockAt(wx, y + 2, wz).setType(Material.AIR, false);
                 world.getBlockAt(wx, y + 3, wz).setType(Material.AIR, false);
-                if (Math.abs(dx) == 1 || Math.abs(dz) == 1) {
-                    world.getBlockAt(wx, y + 1, wz).setType(theme.wall(), false);
-                    world.getBlockAt(wx, y + 2, wz).setType(theme.wall(), false);
-                }
                 world.getBlockAt(wx, y + 4, wz).setType(theme.wall(), false);
             }
         }
-        if ((x >> 4) == cx && (z >> 4) == cz) {
-            world.getBlockAt(x, y + 1, z).setType(Material.AIR, false);
-            world.getBlockAt(x, y + 2, z).setType(Material.AIR, false);
+        if ((x >> 4) == cx && (z >> 4) == cz && ((x + z) & 7) == 0) {
             world.getBlockAt(x, y + 3, z).setType(Material.AIR, false);
-            if (((x + z) & 7) == 0) {
-                world.getBlockAt(x, y + 3, z).setType(theme.light(), false);
-            }
+            placeCorridorLight(world, x, y + 3, z);
+        }
+    }
+
+    private static void placeCorridorLight(World world, int x, int y, int z) {
+        Block b = world.getBlockAt(x, y, z);
+        b.setType(Material.LIGHT, false);
+        if (b.getBlockData() instanceof org.bukkit.block.data.type.Light light) {
+            light.setLevel(12);
+            b.setBlockData(light, false);
         }
     }
 
@@ -314,9 +333,22 @@ public final class DungeonCarver {
 
     private void spawnBoss(
             World world, Location loc, ThemeTable.Theme theme, DifficultyTable.LevelDiff diff, String runId) {
+        // Clear a stand spot on the dais (decoration may have filled it)
+        int bx = loc.getBlockX();
+        int by = loc.getBlockY();
+        int bz = loc.getBlockZ();
+        for (int dy = 0; dy <= 2; dy++) {
+            world.getBlockAt(bx, by + dy, bz).setType(Material.AIR, false);
+            world.getBlockAt(bx + 1, by + dy, bz).setType(Material.AIR, false);
+            world.getBlockAt(bx, by + dy, bz + 1).setType(Material.AIR, false);
+        }
+        world.getBlockAt(bx, by - 1, bz).setType(Material.STONE_BRICKS, false);
+
         LivingEntity boss = (LivingEntity) world.spawnEntity(loc, theme.boss());
         boss.customName(net.kyori.adventure.text.Component.text("Dungeon Boss"));
         boss.setCustomNameVisible(true);
+        boss.setRemoveWhenFarAway(false);
+        boss.setPersistent(true);
         var hp = boss.getAttribute(Attribute.MAX_HEALTH);
         if (hp != null) {
             hp.setBaseValue(diff.bossMaxHealth());
@@ -328,6 +360,9 @@ public final class DungeonCarver {
         }
         tag(boss, BOSS_PDC_KEY, runId);
         tag(boss, MOB_PDC_KEY, runId);
+        plugin.getLogger().info("Spawned dungeon boss " + theme.boss() + " at "
+                + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ()
+                + " run=" + runId);
     }
 
     private void scale(LivingEntity entity, DifficultyTable.LevelDiff diff, boolean elite) {

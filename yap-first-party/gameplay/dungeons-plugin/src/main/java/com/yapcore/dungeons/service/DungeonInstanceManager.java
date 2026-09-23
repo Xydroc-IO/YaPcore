@@ -160,13 +160,34 @@ public final class DungeonInstanceManager {
             List<Player> notify = List.of(leader);
             carver.notifyPlayers(notify, "Generating dungeon level " + level + "…");
             return carver.carve(world, layout, theme, diff, seed, runId, msg -> carver.notifyPlayers(notify, msg))
-                    .thenApply(result -> {
+                    .thenCompose(result -> {
                         run.setEntrance(result.entrance());
+                        // Folia: chest inventories must be filled on the owning region thread
+                        CompletableFuture<Void> fills = CompletableFuture.completedFuture(null);
                         for (Location chestLoc : result.chestLocations()) {
-                            if (chestLoc.getBlock().getState() instanceof org.bukkit.block.Chest chest) {
-                                loot.fillChest(chest, level, seed);
-                            }
+                            fills = fills.thenCompose(ignored -> {
+                                CompletableFuture<Void> step = new CompletableFuture<>();
+                                YapSched.region(plugin, chestLoc, () -> {
+                                    try {
+                                        if (chestLoc.getBlock().getState() instanceof org.bukkit.block.Chest chest) {
+                                            loot.fillChest(chest, level, seed);
+                                        } else {
+                                            plugin.getLogger().warning("Dungeon chest missing at "
+                                                    + chestLoc.getBlockX() + "," + chestLoc.getBlockY()
+                                                    + "," + chestLoc.getBlockZ());
+                                        }
+                                    } catch (Throwable t) {
+                                        plugin.getLogger().log(Level.WARNING, "fillChest", t);
+                                    } finally {
+                                        step.complete(null);
+                                    }
+                                });
+                                return step;
+                            });
                         }
+                        return fills.thenApply(v -> result);
+                    })
+                    .thenApply(result -> {
                         run.setState(DungeonRunState.OPEN);
                         try {
                             repository.updateRunState(runId, DungeonRunState.OPEN, false);
