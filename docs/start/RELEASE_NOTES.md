@@ -13,6 +13,24 @@ YaP-Folia provenance polish + `UPSTREAM.lock` refresh — [YAP_FOLIA_PATCHES.md]
 
 ---
 
+## After 0.0.0.1 — portals, ultrawide Panini, createWorld (2026-09-23)
+
+Same ship version. No product bump. Client mods bumped (ultrawide **1.0.13**, visuals **1.0.18**, presence **1.0.12**). Rebuild packs + clients + `publishReleasesFolder -PyapGameplay=true` → stage `UPLOAD/`.
+
+| Area | Change |
+|------|--------|
+| **YaPPortals** | End doors fill **black stained glass** (not `NETHER_PORTAL`); registry + walkable travel; cancel Folia nether hops at portal-ready. |
+| **YaPDungeons** | Portal registry, air opening + lime pack swirl, Folia-safe instance world ops / teleports. |
+| **YaP420** | Boutique packing premium on ounce/pound; dealer GUI + plant display polish. |
+| **Folia** | `0080` portal-couple safe reschedule; `0081` enable Bukkit `createWorld` (unload stays stubbed). Jar md5 `ec017174`. |
+| **Client** | Ultrawide Panini edge correct + Hor+; Iris pipeline / Sodium kick harden; presence skin refresh via SodiumWorldKick only. |
+| **Fleet** | Local instance props / layout sync. |
+| **Pack** | YaP420 plant generator + refreshed `yapcore-default.zip` / `.mcpack`. |
+
+Upload: `gh release upload 0.0.0.1 UPLOAD/*.{zip,mcpack} --clobber -R Xydroc-IO/YaPcore`.
+
+---
+
 ## After 0.0.0.1 — domain ≤500 + YaP420 ship (2026-09-22)
 
 Same ship version. No version bump. `gradle checkDomainLineLimits` green. Rebuild clients + `publishReleasesFolder -PyapGameplay=true`.
