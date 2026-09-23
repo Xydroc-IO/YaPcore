@@ -112,17 +112,17 @@ public final class MarketSettings {
 
     private static Map<String, Double> defaultSell() {
         Map<String, Double> m = new LinkedHashMap<>();
-        // Bud ≡ gram
+        // Bud ≡ gram. Larger packs pay a packaging premium so oz/lb beat loose grams.
         m.put(Yap420ItemIds.BUD_CURED_SATIVA, 8.0);
         m.put(Yap420ItemIds.BUD_CURED_INDICA, 9.0);
         m.put(Yap420ItemIds.GRAM_SATIVA, 8.0);
         m.put(Yap420ItemIds.GRAM_INDICA, 9.0);
-        // 28g packs — slight bulk discount vs loose grams
-        m.put(Yap420ItemIds.OUNCE_SATIVA, 200.0);
-        m.put(Yap420ItemIds.OUNCE_INDICA, 225.0);
-        // 16 oz = 1 pound (item id still yap420_brick_*)
-        m.put(Yap420ItemIds.BRICK_SATIVA, 2800.0);
-        m.put(Yap420ItemIds.BRICK_INDICA, 3200.0);
+        // 28g → 1oz at +25% vs loose (28×8=224 → 280; 28×9=252 → 315)
+        m.put(Yap420ItemIds.OUNCE_SATIVA, 280.0);
+        m.put(Yap420ItemIds.OUNCE_INDICA, 315.0);
+        // 16oz → 1 pound at +25% vs ounces (16×280=4480 → 5600; 16×315=5040 → 6300)
+        m.put(Yap420ItemIds.BRICK_SATIVA, 5600.0);
+        m.put(Yap420ItemIds.BRICK_INDICA, 6300.0);
         m.put(Yap420ItemIds.JOINT_SATIVA, 18.0);
         m.put(Yap420ItemIds.JOINT_INDICA, 20.0);
         m.put(Yap420ItemIds.BLUNT_SATIVA, 35.0);

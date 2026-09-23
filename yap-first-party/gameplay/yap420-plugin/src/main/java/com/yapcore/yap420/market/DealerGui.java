@@ -79,7 +79,8 @@ public final class DealerGui {
                 "&7Balance: &f" + bal,
                 "&7Click sell icons · shift = all of that item",
                 "&7Pack: " + math.gramsPerOunce() + "g = 1oz · "
-                        + math.ouncesPerBrick() + "oz = 1 pound"));
+                        + math.ouncesPerBrick() + "oz = 1 pound",
+                "&aPacking pays &7— ounces/pounds sell above loose grams"));
 
         Map<String, Integer> sellables = dealer.countSellables(player.getInventory());
         int si = 0;
@@ -119,12 +120,12 @@ public final class DealerGui {
             }
         }
 
-        inv.setItem(SLOT_PACK_GRAM_S, packButton(StrainId.SATIVA, PackUnit.GRAM, math));
-        inv.setItem(SLOT_PACK_OZ_S, packButton(StrainId.SATIVA, PackUnit.OUNCE, math));
-        inv.setItem(SLOT_PACK_BRICK_S, packButton(StrainId.SATIVA, PackUnit.BRICK, math));
-        inv.setItem(SLOT_PACK_GRAM_I, packButton(StrainId.INDICA, PackUnit.GRAM, math));
-        inv.setItem(SLOT_PACK_OZ_I, packButton(StrainId.INDICA, PackUnit.OUNCE, math));
-        inv.setItem(SLOT_PACK_BRICK_I, packButton(StrainId.INDICA, PackUnit.BRICK, math));
+        inv.setItem(SLOT_PACK_GRAM_S, packButton(StrainId.SATIVA, PackUnit.GRAM, math, market));
+        inv.setItem(SLOT_PACK_OZ_S, packButton(StrainId.SATIVA, PackUnit.OUNCE, math, market));
+        inv.setItem(SLOT_PACK_BRICK_S, packButton(StrainId.SATIVA, PackUnit.BRICK, math, market));
+        inv.setItem(SLOT_PACK_GRAM_I, packButton(StrainId.INDICA, PackUnit.GRAM, math, market));
+        inv.setItem(SLOT_PACK_OZ_I, packButton(StrainId.INDICA, PackUnit.OUNCE, math, market));
+        inv.setItem(SLOT_PACK_BRICK_I, packButton(StrainId.INDICA, PackUnit.BRICK, math, market));
 
         inv.setItem(SLOT_SELL_ALL, glass(Material.GOLD_INGOT, "&6Sell everything",
                 "&7Sell all priced YaP420 items",
@@ -132,21 +133,55 @@ public final class DealerGui {
         inv.setItem(SLOT_CLOSE, glass(Material.BARRIER, "&cClose"));
     }
 
-    private ItemStack packButton(StrainId strain, PackUnit unit, PackMath math) {
+    private ItemStack packButton(StrainId strain, PackUnit unit, PackMath math, MarketSettings market) {
         String id = Yap420ItemIds.packId(unit, strain);
         ItemStack icon = items.create(id, 1).orElse(glass(Material.CHEST, "&ePack " + unit.id()));
+        double sell = market.sellPrice(id);
         String need = switch (unit) {
             case GRAM -> "1 cured bud → 1g bag";
             case OUNCE -> math.gramsPerOunce() + " cured/g → 1 oz";
             case BRICK -> math.ouncesPerBrick() + " oz → 1 pound";
         };
-        lore(icon,
-                "&e" + strain.id() + " · pack " + unit.id(),
-                "&7" + need,
-                "&7Click: pack 1 · Shift: pack as many as possible",
-                "&7Q / drop-key style: use /yap420 unpack",
-                "&8pack:" + unit.id() + ":" + strain.id());
+        List<String> lines = new ArrayList<>();
+        lines.add("&e" + strain.id() + " · pack " + unit.id());
+        lines.add("&7" + need);
+        if (sell > 0) {
+            lines.add("&7Sells for &a" + dealer.economy().format(sell));
+            String premium = packagingPremiumHint(strain, unit, math, market, sell);
+            if (premium != null) {
+                lines.add(premium);
+            }
+        }
+        lines.add("&7Click: pack 1 · Shift: pack as many as possible");
+        lines.add("&7Q / drop-key style: use /yap420 unpack");
+        lines.add("&8pack:" + unit.id() + ":" + strain.id());
+        lore(icon, lines.toArray(String[]::new));
         return icon;
+    }
+
+    /** Lore showing why packing beats selling the same weight loose. */
+    private String packagingPremiumHint(
+            StrainId strain, PackUnit unit, PackMath math, MarketSettings market, double sell
+    ) {
+        return switch (unit) {
+            case GRAM -> null;
+            case OUNCE -> {
+                double loose = market.sellPrice(Yap420ItemIds.gram(strain)) * math.gramsPerOunce();
+                if (loose <= 0 || sell <= loose) {
+                    yield null;
+                }
+                yield "&a+" + dealer.economy().format(sell - loose)
+                        + " &7vs selling those grams loose";
+            }
+            case BRICK -> {
+                double loose = market.sellPrice(Yap420ItemIds.ounce(strain)) * math.ouncesPerBrick();
+                if (loose <= 0 || sell <= loose) {
+                    yield null;
+                }
+                yield "&a+" + dealer.economy().format(sell - loose)
+                        + " &7vs selling those ounces loose";
+            }
+        };
     }
 
     private static ItemStack glass(Material mat, String name, String... loreLines) {

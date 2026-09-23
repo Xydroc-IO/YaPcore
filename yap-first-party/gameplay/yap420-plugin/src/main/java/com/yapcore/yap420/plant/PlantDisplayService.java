@@ -164,7 +164,8 @@ public final class PlantDisplayService {
         int s = Math.max(0, Math.min(stage, max));
         float scale = s >= 4 ? 1.0f : 0.88f + (s / (float) max) * 0.12f;
         ent.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-        ent.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+        // Standing cross, not a camera-facing card. CENTER billboard flattens the bush.
+        ent.setBillboard(org.bukkit.entity.Display.Billboard.FIXED);
         ent.setTransformation(new Transformation(
                 new Vector3f(0f, 0f, 0f),
                 new AxisAngle4f(),

@@ -50,6 +50,7 @@ haze:
   default-duration-ticks: 200
 
 # Dealer + pack ladder (1 cured bud ≡ 1g; 28g = 1oz; 16oz = 1 pound).
+# Ounce/pound sell prices include a packaging premium vs loose grams — packing pays.
 # Pack/unpack via /yap420 pack|unpack or the dealer GUI. NPC: player:yap420 sell
 market:
   enabled: true
@@ -61,10 +62,12 @@ market:
     yap420_bud_cured_indica: 9.0
     yap420_gram_sativa: 8.0
     yap420_gram_indica: 9.0
-    yap420_ounce_sativa: 200.0
-    yap420_ounce_indica: 225.0
-    yap420_brick_sativa: 2800.0
-    yap420_brick_indica: 3200.0
+    # +25% vs 28× gram
+    yap420_ounce_sativa: 280.0
+    yap420_ounce_indica: 315.0
+    # +25% vs 16× ounce
+    yap420_brick_sativa: 5600.0
+    yap420_brick_indica: 6300.0
     yap420_joint_sativa: 18.0
     yap420_joint_indica: 20.0
     yap420_blunt_sativa: 35.0
