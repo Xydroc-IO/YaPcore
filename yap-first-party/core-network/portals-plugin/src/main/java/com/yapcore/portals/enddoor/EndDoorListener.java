@@ -15,13 +15,13 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -117,9 +117,8 @@ public final class EndDoorListener implements Listener {
         Optional<EndDoorStructure.Frame> complete = structure.findCompleteFrame(block);
         if (complete.isEmpty()) {
             String why = structure.explainIncomplete(block)
-                    .orElse("need exact " + structure.outerWidth() + "×" + structure.outerHeight()
-                            + " " + pretty(structure.frameMaterial()));
-            player.sendMessage("§cEnd door not ready: §7" + why);
+                    .orElse("build a hollow obsidian nether-portal ring and clear the middle");
+            player.sendMessage("§cCan't light End door — §7" + why);
             return;
         }
         EndDoorStructure.Frame frame = complete.get();
@@ -143,10 +142,6 @@ public final class EndDoorListener implements Listener {
         plugin.getLogger().info("End door activated by " + player.getName()
                 + " at " + frame.keystone().getX() + "," + frame.keystone().getY()
                 + "," + frame.keystone().getZ());
-    }
-
-    private static String pretty(Material material) {
-        return material.name().toLowerCase(Locale.ROOT).replace('_', ' ');
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -177,6 +172,35 @@ public final class EndDoorListener implements Listener {
         player.sendMessage("§7End door deactivated.");
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onMove(PlayerMoveEvent event) {
+        if (!config.endDoorsEnabled()) {
+            return;
+        }
+        Location to = event.getTo();
+        if (to == null || to.getWorld() == null) {
+            return;
+        }
+        Location from = event.getFrom();
+        if (from.getBlockX() == to.getBlockX()
+                && from.getBlockY() == to.getBlockY()
+                && from.getBlockZ() == to.getBlockZ()
+                && from.getWorld() != null
+                && from.getWorld().equals(to.getWorld())) {
+            return;
+        }
+        if (!isInsideEndDoor(to)) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Long prev = recentEnterMs.get(event.getPlayer().getUniqueId());
+        if (prev != null && now - prev < 1500L) {
+            return;
+        }
+        recentEnterMs.put(event.getPlayer().getUniqueId(), now);
+        travel.tryEnter(event.getPlayer(), to);
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onPortal(PlayerPortalEvent event) {
         if (!hijackEndDoor(event.getPlayer(), event.getFrom(), event.getCause())) {
@@ -205,7 +229,14 @@ public final class EndDoorListener implements Listener {
         if (event instanceof PlayerPortalEvent) {
             return;
         }
-        if (!hijackEndDoor(event.getPlayer(), event.getFrom(), event.getCause())) {
+        Location to = event.getTo();
+        boolean toNether = to != null && to.getWorld() != null
+                && to.getWorld().getEnvironment() == org.bukkit.World.Environment.NETHER;
+        if (event.getCause() != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL && !toNether) {
+            return;
+        }
+        if (!hijackEndDoor(event.getPlayer(), event.getFrom(),
+                PlayerTeleportEvent.TeleportCause.NETHER_PORTAL)) {
             return;
         }
         event.setCancelled(true);
@@ -217,9 +248,6 @@ public final class EndDoorListener implements Listener {
     private boolean hijackEndDoor(
             Player player, Location from, PlayerTeleportEvent.TeleportCause cause) {
         if (!config.endDoorsEnabled()) {
-            return false;
-        }
-        if (cause != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) {
             return false;
         }
         Location probe = from != null ? from : player.getLocation();

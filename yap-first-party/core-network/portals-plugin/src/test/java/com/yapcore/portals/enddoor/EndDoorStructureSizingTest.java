@@ -19,7 +19,7 @@ class EndDoorStructureSizingTest {
     @Test
     void clampsMinimumSize() {
         EndDoorStructure s = new EndDoorStructure(Material.OBSIDIAN, Material.NETHER_PORTAL, 1, 1);
-        assertTrue(s.outerWidth() >= 3);
-        assertTrue(s.outerHeight() >= 4);
+        assertTrue(s.outerWidth() >= 4);
+        assertTrue(s.outerHeight() >= 5);
     }
 }

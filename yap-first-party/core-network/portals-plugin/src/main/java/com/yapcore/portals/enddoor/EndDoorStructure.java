@@ -8,13 +8,21 @@ import org.bukkit.block.data.Orientable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 /**
  * Standing rectangular frame (nether-portal style) that YaP lights as an End door.
- * Outer size defaults to 4 wide × 5 tall; inner opening 2×3.
+ * Accepts classic sizes (prefer config 4×5, also any vanilla 4–23 × 5–23) and
+ * optional corner blocks so common builds light without fighting nearby terrain tips.
  */
 public final class EndDoorStructure {
+
+    /** Vanilla nether-portal outer limits. */
+    private static final int MIN_W = 4;
+    private static final int MAX_W = 23;
+    private static final int MIN_H = 5;
+    private static final int MAX_H = 23;
 
     public record Frame(World world, int minX, int minY, int minZ, int sizeAlong, int height, Axis axis) {
         public int maxY() {
@@ -70,6 +78,12 @@ public final class EndDoorStructure {
             }
             return world.getBlockAt(fixed(), y, along);
         }
+
+        private boolean isCorner(int along, int y) {
+            boolean a = along == minAlong() || along == maxAlong();
+            boolean v = y == minY() || y == maxY();
+            return a && v;
+        }
     }
 
     private final Material frameMaterial;
@@ -80,8 +94,8 @@ public final class EndDoorStructure {
     public EndDoorStructure(Material frameMaterial, Material interiorMaterial, int outerWidth, int outerHeight) {
         this.frameMaterial = frameMaterial;
         this.interiorMaterial = interiorMaterial;
-        this.outerWidth = Math.max(3, outerWidth);
-        this.outerHeight = Math.max(4, outerHeight);
+        this.outerWidth = Math.max(MIN_W, outerWidth);
+        this.outerHeight = Math.max(MIN_H, outerHeight);
     }
 
     public Material frameMaterial() {
@@ -101,7 +115,7 @@ public final class EndDoorStructure {
     }
 
     public Optional<Frame> findCompleteFrame(Block origin) {
-        if (origin.getType() != frameMaterial && origin.getType() != Material.END_PORTAL_FRAME) {
+        if (!isFrameBlock(origin.getType())) {
             return Optional.empty();
         }
         Optional<Frame> x = scan(origin, Axis.X);
@@ -112,19 +126,54 @@ public final class EndDoorStructure {
     }
 
     private Optional<Frame> scan(Block origin, Axis axis) {
+        // Prefer configured size, then other vanilla portal sizes
+        for (int w : widthsToTry()) {
+            for (int h : heightsToTry()) {
+                Optional<Frame> hit = scanSize(origin, axis, w, h);
+                if (hit.isPresent()) {
+                    return hit;
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private int[] widthsToTry() {
+        List<Integer> out = new ArrayList<>();
+        out.add(outerWidth);
+        for (int w = MIN_W; w <= Math.min(MAX_W, 10); w++) {
+            if (w != outerWidth) {
+                out.add(w);
+            }
+        }
+        return out.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private int[] heightsToTry() {
+        List<Integer> out = new ArrayList<>();
+        out.add(outerHeight);
+        for (int h = MIN_H; h <= Math.min(MAX_H, 10); h++) {
+            if (h != outerHeight) {
+                out.add(h);
+            }
+        }
+        return out.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private Optional<Frame> scanSize(Block origin, Axis axis, int width, int height) {
         World world = origin.getWorld();
         int ox = origin.getX();
         int oy = origin.getY();
         int oz = origin.getZ();
-        for (int dy = 0; dy < outerHeight; dy++) {
-            for (int da = 0; da < outerWidth; da++) {
+        for (int dy = 0; dy < height; dy++) {
+            for (int da = 0; da < width; da++) {
                 int minY = oy - dy;
                 int minAlong = (axis == Axis.X ? ox : oz) - da;
                 int fixed = axis == Axis.X ? oz : ox;
                 Frame frame = axis == Axis.X
-                        ? new Frame(world, minAlong, minY, fixed, outerWidth, outerHeight, Axis.X)
-                        : new Frame(world, fixed, minY, minAlong, outerWidth, outerHeight, Axis.Z);
-                if (isComplete(frame) && contains(frame, origin)) {
+                        ? new Frame(world, minAlong, minY, fixed, width, height, Axis.X)
+                        : new Frame(world, fixed, minY, minAlong, width, height, Axis.Z);
+                if (contains(frame, origin) && isComplete(frame) && originOnPerimeter(frame, origin)) {
                     return Optional.of(frame);
                 }
             }
@@ -134,85 +183,149 @@ public final class EndDoorStructure {
 
     public boolean isComplete(Frame frame) {
         for (Block b : frame.frameBlocks()) {
-            Material t = b.getType();
-            if (t != frameMaterial && t != Material.END_PORTAL_FRAME) {
+            int along = frame.axis() == Axis.X ? b.getX() : b.getZ();
+            if (frame.isCorner(along, b.getY())) {
+                // Corners optional (common "nether portal" builds omit bottom corners)
+                if (!b.getType().isAir() && !isFrameBlock(b.getType())) {
+                    return false;
+                }
+                continue;
+            }
+            if (!isFrameBlock(b.getType())) {
                 return false;
             }
         }
         for (Block b : frame.interiorBlocks()) {
-            Material t = b.getType();
-            // Overworld caves often leave CAVE_AIR — treat all air like empty opening
-            if (!t.isAir() && t != interiorMaterial && t != Material.NETHER_PORTAL) {
+            if (!isAllowedInterior(b.getType())) {
                 return false;
             }
         }
         return true;
     }
 
-    /**
-     * Human-readable reason when {@link #findCompleteFrame} fails, or empty if complete.
-     */
-    public Optional<String> explainIncomplete(Block origin) {
-        if (origin.getType() != frameMaterial && origin.getType() != Material.END_PORTAL_FRAME) {
-            return Optional.of("click an " + pretty(frameMaterial) + " frame block (you clicked "
-                    + pretty(origin.getType()) + ")");
-        }
-        // Prefer reporting the first almost-matching window's defect
-        for (Axis axis : List.of(Axis.X, Axis.Z)) {
-            Optional<String> reason = explainScan(origin, axis);
-            if (reason.isPresent()) {
-                return reason;
-            }
-        }
-        return Optional.of("need exact " + outerWidth + "×" + outerHeight + " "
-                + pretty(frameMaterial) + " with empty "
-                + (outerWidth - 2) + "×" + (outerHeight - 2) + " opening");
+    private boolean isFrameBlock(Material t) {
+        return t == frameMaterial || t == Material.END_PORTAL_FRAME;
     }
 
-    private Optional<String> explainScan(Block origin, Axis axis) {
+    private boolean isAllowedInterior(Material t) {
+        if (t.isAir() || t == interiorMaterial || t == Material.NETHER_PORTAL) {
+            return true;
+        }
+        String n = t.name();
+        return n.endsWith("_STAINED_GLASS") || n.endsWith("_STAINED_GLASS_PANE");
+    }
+
+    private static boolean originOnPerimeter(Frame frame, Block origin) {
+        int along = frame.axis() == Axis.X ? origin.getX() : origin.getZ();
+        int y = origin.getY();
+        boolean onAlong = along == frame.minAlong() || along == frame.maxAlong();
+        boolean onY = y == frame.minY() || y == frame.maxY();
+        boolean inAlong = along >= frame.minAlong() && along <= frame.maxAlong();
+        boolean inY = y >= frame.minY() && y <= frame.maxY();
+        return inAlong && inY && (onAlong || onY);
+    }
+
+    /**
+     * Best-effort tip: score only windows that already look like a portal ring
+     * (most frame blocks correct) so nearby stone/water is not blamed.
+     */
+    public Optional<String> explainIncomplete(Block origin) {
+        if (!isFrameBlock(origin.getType())) {
+            return Optional.of("click " + pretty(frameMaterial) + " (you clicked " + pretty(origin.getType()) + ")");
+        }
+        Optional<Defect> best = Optional.empty();
+        for (Axis axis : List.of(Axis.X, Axis.Z)) {
+            for (int w : widthsToTry()) {
+                for (int h : heightsToTry()) {
+                    Optional<Defect> d = bestDefect(origin, axis, w, h);
+                    if (d.isEmpty()) {
+                        continue;
+                    }
+                    if (best.isEmpty() || d.get().score < best.get().score) {
+                        best = d;
+                    }
+                }
+            }
+        }
+        if (best.isPresent()) {
+            return Optional.of(best.get().message);
+        }
+        return Optional.of("build a hollow " + pretty(frameMaterial) + " ring like a nether portal "
+                + "(about " + outerWidth + "×" + outerHeight + "), clear the middle, then eye the frame");
+    }
+
+    private record Defect(int score, String message) {
+    }
+
+    private Optional<Defect> bestDefect(Block origin, Axis axis, int width, int height) {
         World world = origin.getWorld();
         int ox = origin.getX();
         int oy = origin.getY();
         int oz = origin.getZ();
-        String best = null;
-        for (int dy = 0; dy < outerHeight; dy++) {
-            for (int da = 0; da < outerWidth; da++) {
+        Defect best = null;
+        for (int dy = 0; dy < height; dy++) {
+            for (int da = 0; da < width; da++) {
                 int minY = oy - dy;
                 int minAlong = (axis == Axis.X ? ox : oz) - da;
                 int fixed = axis == Axis.X ? oz : ox;
                 Frame frame = axis == Axis.X
-                        ? new Frame(world, minAlong, minY, fixed, outerWidth, outerHeight, Axis.X)
-                        : new Frame(world, fixed, minY, minAlong, outerWidth, outerHeight, Axis.Z);
-                if (!contains(frame, origin)) {
+                        ? new Frame(world, minAlong, minY, fixed, width, height, Axis.X)
+                        : new Frame(world, fixed, minY, minAlong, width, height, Axis.Z);
+                if (!contains(frame, origin) || !originOnPerimeter(frame, origin)) {
                     continue;
                 }
+                int frameNeed = 0;
+                int frameOk = 0;
+                Block badFrame = null;
+                Material badFrameMat = null;
                 for (Block b : frame.frameBlocks()) {
-                    Material t = b.getType();
-                    if (t != frameMaterial && t != Material.END_PORTAL_FRAME) {
-                        best = "frame hole at " + b.getX() + "," + b.getY() + "," + b.getZ()
-                                + " is " + pretty(t) + " (want " + pretty(frameMaterial) + ")";
+                    int along = frame.axis() == Axis.X ? b.getX() : b.getZ();
+                    if (frame.isCorner(along, b.getY())) {
+                        continue;
+                    }
+                    frameNeed++;
+                    if (isFrameBlock(b.getType())) {
+                        frameOk++;
+                    } else if (badFrame == null) {
+                        badFrame = b;
+                        badFrameMat = b.getType();
+                    }
+                }
+                // Skip windows that barely look like a portal (terrain noise)
+                if (frameNeed > 0 && frameOk * 2 < frameNeed) {
+                    continue;
+                }
+                Block badIn = null;
+                Material badInMat = null;
+                for (Block b : frame.interiorBlocks()) {
+                    if (!isAllowedInterior(b.getType())) {
+                        badIn = b;
+                        badInMat = b.getType();
                         break;
                     }
                 }
-                if (best != null) {
+                int missing = frameNeed - frameOk;
+                int score = missing * 10 + (badIn != null ? 3 : 0) + Math.abs(width - outerWidth) + Math.abs(height - outerHeight);
+                String msg;
+                if (badIn != null) {
+                    msg = "clear " + pretty(badInMat) + " at " + badIn.getX() + "," + badIn.getY() + "," + badIn.getZ()
+                            + " inside the portal";
+                } else if (badFrame != null) {
+                    msg = "replace " + pretty(badFrameMat) + " at " + badFrame.getX() + "," + badFrame.getY() + ","
+                            + badFrame.getZ() + " with " + pretty(frameMaterial);
+                } else {
                     continue;
                 }
-                for (Block b : frame.interiorBlocks()) {
-                    Material t = b.getType();
-                    if (!t.isAir() && t != interiorMaterial && t != Material.NETHER_PORTAL) {
-                        return Optional.of("opening blocked at " + b.getX() + "," + b.getY() + "," + b.getZ()
-                                + " by " + pretty(t) + " — clear the inner "
-                                + (outerWidth - 2) + "×" + (outerHeight - 2));
-                    }
+                if (best == null || score < best.score) {
+                    best = new Defect(score, msg);
                 }
-                return Optional.empty();
             }
         }
-        return best == null ? Optional.empty() : Optional.of(best);
+        return Optional.ofNullable(best);
     }
 
     private static String pretty(Material material) {
-        return material.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+        return material.name().toLowerCase(Locale.ROOT).replace('_', ' ');
     }
 
     public boolean contains(Frame frame, Block block) {
@@ -244,13 +357,13 @@ public final class EndDoorStructure {
 
     public void clearInterior(Frame frame) {
         for (Block b : frame.interiorBlocks()) {
-            if (b.getType() == interiorMaterial || b.getType() == Material.NETHER_PORTAL) {
+            if (isAllowedInterior(b.getType()) && !b.getType().isAir()) {
                 b.setType(Material.AIR, false);
             }
         }
     }
 
     public boolean isInteriorBlock(Block block) {
-        return block.getType() == interiorMaterial || block.getType() == Material.NETHER_PORTAL;
+        return isAllowedInterior(block.getType());
     }
 }

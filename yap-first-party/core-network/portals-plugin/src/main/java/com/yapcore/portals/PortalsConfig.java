@@ -20,7 +20,7 @@ public final class PortalsConfig {
 
     private boolean endDoorsEnabled = true;
     private Material endDoorFrame = Material.OBSIDIAN;
-    private Material endDoorInterior = Material.NETHER_PORTAL;
+    private Material endDoorInterior = Material.BLACK_STAINED_GLASS;
     private Material endDoorActivateItem = Material.ENDER_EYE;
     private int endDoorWidth = 4;
     private int endDoorHeight = 5;
@@ -55,7 +55,7 @@ public final class PortalsConfig {
 
         endDoorsEnabled = c.getBoolean("end-doors.enabled", true);
         endDoorFrame = material(c.getString("end-doors.frame", "OBSIDIAN"), Material.OBSIDIAN);
-        endDoorInterior = material(c.getString("end-doors.interior", "NETHER_PORTAL"), Material.NETHER_PORTAL);
+        endDoorInterior = material(c.getString("end-doors.interior", "BLACK_STAINED_GLASS"), Material.BLACK_STAINED_GLASS);
         endDoorActivateItem = material(c.getString("end-doors.activate-item", "ENDER_EYE"), Material.ENDER_EYE);
         endDoorWidth = Math.max(3, c.getInt("end-doors.width", 4));
         endDoorHeight = Math.max(4, c.getInt("end-doors.height", 5));

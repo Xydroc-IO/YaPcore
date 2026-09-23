@@ -73,9 +73,12 @@ Same-server pads (target = this `server-id`) teleport locally — no Link Connec
 
 On survival (same Folia world as `world_the_end`), players can build a **vertical** End portal:
 
-1. Build a standing **4×5** **regular obsidian** frame (inner opening **2×3**), like a nether portal — not crying obsidian
-2. Right-click any frame block with an **Ender Eye** (main or off hand) to light it — incomplete frames get a chat tip instead of a silent eye throw
-3. Walk through → teleport to The End spawn on this server
+1. Build a standing **hollow obsidian ring** like a nether portal (about **4×5**, corners optional) — not crying obsidian
+2. **Clear the middle** (no water/stone/torches in the opening)
+3. Right-click any **obsidian** frame block with an **Ender Eye** (main or off hand)
+4. Walk through → teleport to The End spawn on this server
+
+If lighting fails, chat now names the real problem (e.g. clear water inside) instead of nearby terrain.
 
 Claimed doors are **private by default** (same flag as nether portals):
 
