@@ -35,10 +35,12 @@ YaP-authored overlays in this tree (skies, water, foliage, etc.) follow YaPcore�
 
 ## YaP420 item art (CMD 12200–12230)
 
-Original 16×16 sprites in `yap-items` (`yap420_*.png`), including tall-crop
-bottom / middle / top sheets. In-world plants use `block/cross` and
-stacked-cross models. Sativa is the pale yellow-green column; indica is the
-shorter, darker bush. The drying-rack icon is a wood frame with hanging strips.
+Original YaP pixel art in `yap-items` (`yap420_*.png`), including tall-crop
+bottom / middle / top sheets. Plant block sheets are **64×64** CannabisCraft-style
+ladder tiers (`scripts/packs/generate-yap420-plants.py`) — opposite palmate fans,
+gold buds at nodes, 4-plane bush models. Not CannabisCraft / GanjaCraft assets.
+Sativa is the brighter lime column; indica is darker/bushier. The drying-rack
+icon is a wood frame with hanging strips.
 
 ## YaP Skies + Water + Foliage + Portals
 

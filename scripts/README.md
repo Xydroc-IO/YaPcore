@@ -72,7 +72,7 @@ find scripts -type f \( -name '*.sh' -o -name yapctl \) -exec chmod +x {} +
 | Script | Purpose |
 |--------|---------|
 | `plugins/fetch-tebex.sh` · `plugins/fetch-grim.sh` · `plugins/grim-ac.sh` | Optional Tebex / Grim AC (**PvP: enable Grim**) |
-| `packs/build-default-resourcepack.sh` · `packs/fetch-faithful-64x.sh` · `packs/generate-yap-skies.py` · `packs/generate-yap-water.py` · `packs/generate-yap-foliage.py` | Default pack overlays |
+| `packs/build-default-resourcepack.sh` · `packs/fetch-faithful-64x.sh` · `packs/generate-yap-skies.py` · `packs/generate-yap-water.py` · `packs/generate-yap-foliage.py` · `packs/generate-yap420-plants.py` | Default pack overlays |
 | `packs/build-yap-client-render.sh` | Fabric `client_mods.zip` (visuals + bag + **yap-420** + presence + blocks + staff + ultrawide) |
 | `packs/sync-github-pack-offer.sh` | Hash GitHub Releases latest pack → Folia `resource-pack` + YaPPacks `active.json` |
 

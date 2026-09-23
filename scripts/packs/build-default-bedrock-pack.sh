@@ -24,6 +24,7 @@ if [ ! -f "$SKIES_DIR/assets/minecraft/textures/environment/celestial/sun.png" ]
 fi
 python3 "$ROOT/scripts/packs/generate-yap-water.py"
 python3 "$ROOT/scripts/packs/generate-yap-foliage.py"
+python3 "$ROOT/scripts/packs/generate-yap420-plants.py"
 # Portal stained-glass overlays (YaPPortals) — JE pack has them; BE Faithful does not.
 if [ ! -f "$PACKS/yap-portals/assets/minecraft/textures/block/purple_stained_glass.png" ]; then
   python3 "$ROOT/scripts/packs/generate-yap-portals.py"

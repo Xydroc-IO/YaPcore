@@ -45,6 +45,8 @@ python3 "$ROOT/scripts/packs/generate-yap-water.py"
 python3 "$ROOT/scripts/packs/generate-yap-foliage.py"
 # Colored portal sheets for stained glass (YaPPortals multi-color look).
 python3 "$ROOT/scripts/packs/generate-yap-portals.py"
+# YaP420 cannabis crop sheets (original palmate-leaf pixel art).
+python3 "$ROOT/scripts/packs/generate-yap420-plants.py"
 if [ -d "$SKIES_DIR/assets" ]; then
   mkdir -p "$STAGE/assets"
   cp -a "$SKIES_DIR/assets/." "$STAGE/assets/"
