@@ -51,7 +51,9 @@ public final class DungeonCarver {
         Location entrance = new Location(world,
                 entranceRoom.centerX() + 0.5,
                 layout.originY() + 1,
-                entranceRoom.centerZ() + 0.5);
+                entranceRoom.centerZ() + 0.5,
+                0.0f,
+                25.0f);
         RoomGraphBuilder.Room bossRoom = layout.rooms().getLast();
         Location bossLoc = new Location(world,
                 bossRoom.centerX() + 0.5,
@@ -131,6 +133,13 @@ public final class DungeonCarver {
                         }
                     }
                     return chain;
+                })
+                .thenCompose(v -> {
+                    // Push light / block updates to clients — sealed carve with
+                    // applyPhysics=false leaves Iris showing a black rectangle.
+                    progress.accept("Lighting…");
+                    return forEachChunk(world, minX, minZ, maxX, maxZ, (cx, cz) ->
+                            world.refreshChunk(cx, cz));
                 })
                 .whenComplete((v, err) -> {
                     if (err != null) {

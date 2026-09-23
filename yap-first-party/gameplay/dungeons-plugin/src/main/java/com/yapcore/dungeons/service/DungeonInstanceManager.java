@@ -225,8 +225,6 @@ public final class DungeonInstanceManager {
         world.setThundering(false);
         world.setGameRule(GameRule.DO_DAYLIGHT_CYCLE, false);
         world.setGameRule(GameRule.DO_WEATHER_CYCLE, false);
-        world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-        world.setSpawnFlags(true, false);
     }
 
     public void removePlayer(UUID playerId, boolean teleportOut) {

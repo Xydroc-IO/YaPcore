@@ -96,29 +96,39 @@ public final class RoomTemplates {
     private void entrance(World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme) {
         int cx = room.centerX();
         int cz = room.centerZ();
-        // Spawn pad
-        for (int dx = -1; dx <= 1; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
-                world.getBlockAt(cx + dx, y, cz + dz).setType(theme.accent(), false);
+        // Open courtyard: strip the carved ceiling so skylight + daytime hit the spawn.
+        // Sealed rooms under Iris/shaders read as a solid black rectangle, not "dark cave".
+        for (int x = room.x() + 1; x < room.x() + room.sizeX() - 1; x++) {
+            for (int z = room.z() + 1; z < room.z() + room.sizeZ() - 1; z++) {
+                world.getBlockAt(x, y + 5, z).setType(Material.AIR, false);
             }
         }
-        // Skylight over the pad so flat-world daylight reaches the spawn
+        // Bright spawn pad (glowstone reads even before the light engine catches up)
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                world.getBlockAt(cx + dx, y + 5, cz + dz).setType(Material.GLASS, false);
+                world.getBlockAt(cx + dx, y, cz + dz).setType(Material.GLOWSTONE, true);
             }
         }
+        // Corner lanterns + invisible LIGHT flood
+        world.getBlockAt(room.x() + 2, y + 1, room.z() + 2).setType(Material.SEA_LANTERN, true);
+        world.getBlockAt(room.x() + room.sizeX() - 3, y + 1, room.z() + 2).setType(Material.SEA_LANTERN, true);
+        world.getBlockAt(room.x() + 2, y + 1, room.z() + room.sizeZ() - 3).setType(Material.SEA_LANTERN, true);
+        world.getBlockAt(room.x() + room.sizeX() - 3, y + 1, room.z() + room.sizeZ() - 3)
+                .setType(Material.SEA_LANTERN, true);
+        placeLight(world, cx, y + 2, cz);
+        placeLight(world, cx, y + 3, cz);
+        placeLight(world, cx - 2, y + 2, cz);
+        placeLight(world, cx + 2, y + 2, cz);
+        placeLight(world, cx, y + 2, cz - 2);
+        placeLight(world, cx, y + 2, cz + 2);
         // Welcome pillars
-        pillar(world, room.x() + 2, y, room.z() + 2, theme, 3);
-        pillar(world, room.x() + room.sizeX() - 3, y, room.z() + 2, theme, 3);
-        pillar(world, room.x() + 2, y, room.z() + room.sizeZ() - 3, theme, 3);
-        pillar(world, room.x() + room.sizeX() - 3, y, room.z() + room.sizeZ() - 3, theme, 3);
+        pillar(world, room.x() + 3, y, room.z() + 3, theme, 3);
+        pillar(world, room.x() + room.sizeX() - 4, y, room.z() + 3, theme, 3);
+        pillar(world, room.x() + 3, y, room.z() + room.sizeZ() - 4, theme, 3);
+        pillar(world, room.x() + room.sizeX() - 4, y, room.z() + room.sizeZ() - 4, theme, 3);
         // Wall alcove shelves
         world.getBlockAt(cx, y + 2, room.z() + 1).setType(Material.CRAFTING_TABLE, false);
         world.getBlockAt(cx + 1, y + 2, room.z() + 1).setType(Material.BARREL, false);
-        // Guaranteed bright spawn lights (invisible LIGHT + sea lantern)
-        placeLight(world, cx, y + 3, cz);
-        world.getBlockAt(cx, y + 4, cz).setType(Material.SEA_LANTERN, false);
     }
 
     private void combat(World world, RoomGraphBuilder.Room room, int y, ThemeTable.Theme theme, Random rng) {
@@ -254,10 +264,11 @@ public final class RoomTemplates {
 
     private static void placeLight(World world, int x, int y, int z) {
         Block b = world.getBlockAt(x, y, z);
-        b.setType(Material.LIGHT, false);
+        // applyPhysics=true so the light engine actually pushes brightness to clients
+        b.setType(Material.LIGHT, true);
         if (b.getBlockData() instanceof org.bukkit.block.data.type.Light light) {
             light.setLevel(15);
-            b.setBlockData(light, false);
+            b.setBlockData(light, true);
         }
     }
 
