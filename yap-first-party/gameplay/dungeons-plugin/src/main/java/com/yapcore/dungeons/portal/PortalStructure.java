@@ -139,10 +139,7 @@ public final class PortalStructure {
         for (Block b : frame.frameBlocks()) {
             int along = frame.axis() == Axis.X ? b.getX() : b.getZ();
             if (isCorner(frame, along, b.getY())) {
-                // Corners optional (same as vanilla nether portals)
-                if (!b.getType().isAir() && !isFrameBlock(b.getType())) {
-                    return false;
-                }
+                // Vanilla Java: corners ignored (floor/wall blocks often sit here)
                 continue;
             }
             if (!isFrameBlock(b.getType())) {

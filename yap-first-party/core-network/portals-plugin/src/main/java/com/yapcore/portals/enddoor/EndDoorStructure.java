@@ -163,10 +163,8 @@ public final class EndDoorStructure {
         for (Block b : frame.frameBlocks()) {
             int along = frame.axis() == Axis.X ? b.getX() : b.getZ();
             if (frame.isCorner(along, b.getY())) {
-                // Corners optional (common "nether portal" builds omit bottom corners)
-                if (!b.getType().isAir() && !isFrameBlock(b.getType())) {
-                    return false;
-                }
+                // Vanilla Java: corners are not part of the portal frame at all
+                // (floor stone / wall blocks commonly sit here)
                 continue;
             }
             if (!isFrameBlock(b.getType())) {
