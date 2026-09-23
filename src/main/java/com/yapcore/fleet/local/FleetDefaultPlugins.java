@@ -10,8 +10,9 @@ import java.util.Set;
 /**
  * Product jar sets seeded onto every fleet instance by default.
  * <p>
- * CORE+NETWORK always ships. {@code yap-items} (including timber axe and excavator definitions)
- * also seeds when present in the root catalog — other gameplay jars stay opt-in via catalog install.
+ * CORE+NETWORK always ships. {@code yap-items}, {@code yap-skills}, {@code yap-dungeons},
+ * and {@code yap-420} also seed when present in the root catalog — other gameplay jars stay
+ * opt-in via catalog install.
  */
 public final class FleetDefaultPlugins {
 
@@ -49,10 +50,11 @@ public final class FleetDefaultPlugins {
             "yap-tailor.jar",
             "yap-bedrock-blocks.jar");
 
-    /** Always-on gameplay suite (VIP tools + custom items + skills + YaP420). */
+    /** Always-on gameplay suite (VIP tools + custom items + skills + dungeons + YaP420). */
     private static final List<String> GAMEPLAY_DEFAULTS = List.of(
             "yap-items.jar",
             "yap-skills.jar",
+            "yap-dungeons.jar",
             "yap-420.jar");
 
     private static final Set<String> CORE_NETWORK_SET =

@@ -35,7 +35,7 @@ public final class DungeonsConfig {
             "DEEPSLATE", "ENDER_EYE", "DEEPSLATE",
             "OBSIDIAN", "ENDER_EYE", "OBSIDIAN");
     private boolean structureEnabled = true;
-    private Material structureFrame = Material.OBSIDIAN;
+    private Material structureFrame = Material.CRYING_OBSIDIAN;
     private Material structureInterior = Material.NETHER_PORTAL;
     private Material structureActivateItem = Material.ENDER_EYE;
     private int structureWidth = 4;
@@ -74,7 +74,7 @@ public final class DungeonsConfig {
             portalRecipe = List.copyOf(recipe);
         }
         structureEnabled = c.getBoolean("portal.structure.enabled", true);
-        structureFrame = material(c.getString("portal.structure.frame", "OBSIDIAN"), Material.OBSIDIAN);
+        structureFrame = material(c.getString("portal.structure.frame", "CRYING_OBSIDIAN"), Material.CRYING_OBSIDIAN);
         structureInterior = material(c.getString("portal.structure.interior", "NETHER_PORTAL"), Material.NETHER_PORTAL);
         structureActivateItem = material(c.getString("portal.structure.activate-item", "ENDER_EYE"), Material.ENDER_EYE);
         structureWidth = Math.max(3, c.getInt("portal.structure.width", 4));

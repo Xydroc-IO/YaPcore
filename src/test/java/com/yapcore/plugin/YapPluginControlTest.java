@@ -43,6 +43,7 @@ class YapPluginControlTest {
         assertEquals(true, YapPluginControl.isOptIn("yap-disasters-0.0.0.1.jar"));
         assertEquals(true, YapPluginControl.isOptIn("yap-factions.jar"));
         assertEquals(true, YapPluginControl.isOptIn("yap-gameplay-knobs.jar"));
+        assertEquals(false, YapPluginControl.isOptIn("yap-dungeons.jar"));
         assertEquals(false, YapPluginControl.isOptIn("yap-db.jar"));
         assertEquals(false, YapPluginControl.isOptIn("yap-chat.jar"));
         assertEquals(false, YapPluginControl.isOptIn("yap-portals.jar"));

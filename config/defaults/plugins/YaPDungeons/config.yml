@@ -1,10 +1,9 @@
 # YaP Dungeons — shipped defaults (typical SMP)
-# Opt-in plugins: leave enabled: false until you want them
 # Go public: see docs/start/SECRETS.md + DEFAULTS.md LAN vs public table
 # Prefer dashboard: Plugin settings (or Gameplay tab) → Save → reload
 
-# Opt-in instanced dungeons. Leave false until packs + SQL are ready.
-enabled: false
+# Instanced procedural dungeons — on by default (needs YaPSkills + SQL).
+enabled: true
 
 use-shared-yapdb: true
 
@@ -53,10 +52,10 @@ portal:
     - OBSIDIAN
     - ENDER_EYE
     - OBSIDIAN
-  # Standing multi-block frame (nether-portal style) at your base
+  # Standing multi-block frame (crying obsidian — distinct from YaPPortals End doors)
   structure:
     enabled: true
-    frame: OBSIDIAN
+    frame: CRYING_OBSIDIAN
     interior: NETHER_PORTAL
     activate-item: ENDER_EYE
     # Outer size: 4 wide × 5 tall (inner opening 2×3)

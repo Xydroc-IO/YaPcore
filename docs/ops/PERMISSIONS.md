@@ -253,7 +253,7 @@ Placeholders (PlaceholderAPI): `%yapskill_<skill>_level%`, `%yapskill_<skill>_xp
 
 Public leaderboard: `/skill top <skill> [page]` (no extra permission). See [PLUGINS.md](../plugins/PLUGINS.md).
 
-## YaPDungeons (`yap-dungeons.jar`, gameplay opt-in)
+## YaPDungeons (`yap-dungeons.jar`, gameplay — on by default)
 
 | Node | Default | Grants |
 |------|---------|--------|

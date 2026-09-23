@@ -20,8 +20,8 @@ that `./scripts/setup/seed-defaults.sh` (and `start.sh`) copy into place **only 
 | YaPConquest / chunk land | **Off** (`enabled: false`) — hardcore grid; needs YaPFactions · [GAMEPLAY.md](../gameplay/GAMEPLAY.md) |
 | YaP-QoL (timber / excavator) | **On** — product default · VIP kit grants tools |
 | YaPItems | **On** — product default |
-| YaPSkills / YaPLeveledMobs | **On** in shipped defaults (skills + distance mob levels) — [PLUGINS.md](../plugins/PLUGINS.md) |
-| YaPStacker / Dungeons / Disasters / GameplayKnobs | **Off** until opted in (`enabled: false` / knobs settings) |
+| YaPSkills / YaPLeveledMobs / YaPDungeons | **On** in shipped defaults (skills + distance mob levels + instanced dungeons) — [PLUGINS.md](../plugins/PLUGINS.md) |
+| YaPStacker / Disasters / GameplayKnobs | **Off** until opted in (`enabled: false` / knobs settings) |
 | YaPMap 3D mesh | **Off** (`mesh.enabled: false`) — enable + `/yapmap render` for BlueMap-class 3D |
 | Economy / claims / moderation / SQL plugins | **Needs SQL** (MariaDB default; Postgres or SQLite OK — [YAPDB.md](../data/YAPDB.md)) |
 | Discord webhooks | Needs your webhook URLs |
@@ -63,7 +63,8 @@ config/defaults/
   plugins/YaPPortals/…        # product default on — fleet walk-through portals
   plugins/YaPSkills/…         # enabled: true (mining/woodcutting/strength/marathon/builder/herbalism/excavation/alchemy/health)
   plugins/YaPLeveledMobs/…    # enabled: true
-  plugins/YaPStacker|Dungeons|Disasters/…  # enabled: false (opt-in)
+  plugins/YaPDungeons/…       # enabled: true (instanced L1–100)
+  plugins/YaPStacker|Disasters/…  # enabled: false (opt-in)
   plugins/YaPGameplayKnobs/knobs.yml    # settings.enabled: false
   plugins/YaPMap/…            # mesh.enabled: false (3D opt-in)
   plugins/YaPFactions/…      # enabled: false (opt-in)

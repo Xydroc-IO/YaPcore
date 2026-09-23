@@ -23,12 +23,14 @@ final class FleetDefaultPluginsTest {
         assertTrue(FleetDefaultPlugins.isCoreNetwork("yap-portals.jar"));
         assertTrue(FleetDefaultPlugins.isSeedDefault("yap-items.jar"));
         assertTrue(FleetDefaultPlugins.isSeedDefault("yap-skills.jar"));
+        assertTrue(FleetDefaultPlugins.isSeedDefault("yap-dungeons.jar"));
         assertTrue(FleetDefaultPlugins.isSeedDefault("yap-420.jar"));
         assertTrue(FleetDefaultPlugins.isCoreNetwork("yap-factions.jar"));
         assertFalse(FleetDefaultPlugins.isSeedDefault("yap-qol.jar"));
         assertFalse(FleetDefaultPlugins.isCoreNetwork("yap-conquest.jar"));
         assertFalse(FleetDefaultPlugins.isSeedDefault("yap-plugin-compat.jar"));
         assertFalse(FleetDefaultPlugins.isCoreNetwork("yap-skills.jar"));
+        assertFalse(FleetDefaultPlugins.isCoreNetwork("yap-dungeons.jar"));
         assertFalse(FleetDefaultPlugins.isCoreNetwork("yap-420.jar"));
         assertFalse(FleetDefaultPlugins.isCoreNetwork("grim.jar"));
     }

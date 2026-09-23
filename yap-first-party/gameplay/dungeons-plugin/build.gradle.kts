@@ -27,6 +27,7 @@ dependencies {
     compileOnly(project(":yap-mmo-api"))
     compileOnly(project(":yap-world-api"))
     compileOnly(project(":yap-playerdata-api"))
+    compileOnly(project(":yap-claims-api"))
     compileOnly(project(":placeholderapi-plugin"))
 
     implementation("com.zaxxer:HikariCP:6.2.1")

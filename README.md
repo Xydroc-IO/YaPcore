@@ -45,7 +45,7 @@ YaPcore is a **shippable Minecraft network product**, not a plugin mashup. Game 
 | **Crossplay** | Java (1.20.2+) + Bedrock on one product story — Link-native Bedrock join by default; Bedrock form hubs for `/menu`, kits, ranks, admin |
 | **Bedrock-feel parity** | Convert-verified skins / emotes / movement / catalog blocks — [BEDROCK_FEEL_PARITY.md](docs/product/BEDROCK_FEEL_PARITY.md) |
 | **Network** | YaP Link native proxy (`0.6.0-phase6`), Floodgate-class identity, dual-stack gateway |
-| **Plugin suite** | First-party CORE + NETWORK; **Items + QoL** on by default; opt-in GAMEPLAY (skills / stacker / knobs / disasters / dungeons); opt-in Factions + Conquest |
+| **Plugin suite** | First-party CORE + NETWORK; **Items + QoL + Skills + Dungeons** on by default; opt-in GAMEPLAY (stacker / knobs / disasters); opt-in Factions + Conquest |
 | **Ops** | Web dashboard (`:8080`), Swing GUI, seed defaults, MariaDB / Postgres / SQLite paths, shared messages + reload UX |
 | **Packs** | `yapcore-default.zip` / `.mcpack` from the **0.0.0.1** GitHub prerelease (`/releases/download/0.0.0.1/…`) |
 | **Clients (optional)** | Fabric: visuals, bag, staff, ultrawide, **yap-presence**, **yap-blocks** — vanilla/Bedrock still join when parity mode is off |

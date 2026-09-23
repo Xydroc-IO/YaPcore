@@ -52,7 +52,7 @@ Static assets: `src/main/resources/web/` — `app-shell.js`, `app-core.js`, `app
 
 ## First-boot plugin config
 
-CORE + NETWORK plugins are ready with typical SMP defaults (chat slow-mode, economy/homes/claims, protect, lagguard). Opt-in jars (Factions, Conquest, Skills, Stacker, Dungeons, Disasters, GameplayKnobs) show an **Opt-in** badge on the **Plugins** tab — installed, soft-off until you enable them from Plugins or Plugin settings, then Save → reload.
+CORE + NETWORK plugins are ready with typical SMP defaults (chat slow-mode, economy/homes/claims, protect, lagguard). Opt-in jars (Factions, Conquest, Stacker, Disasters, GameplayKnobs) show an **Opt-in** badge on the **Plugins** tab — installed, soft-off until you enable them from Plugins or Plugin settings, then Save → reload. Skills and Dungeons ship **on** by default when the jar is present.
 
 Secrets stay LAN-safe (`auth` off, dashboard/map binds on localhost). Walk [DEFAULTS.md](../start/DEFAULTS.md) LAN vs public before exposing the box.
 
@@ -205,7 +205,7 @@ Requires YaP-Folia running + `yap-moderation` / `yap-perms` / `yap-playerdata`. 
 
 ### Dungeons (`yap-dungeons`)
 
-Instanced procedural dungeons (opt-in GAMEPLAY). See [PLUGINS.md](../plugins/PLUGINS.md). Commands: `/dungeon`, `/yapdungeons`.
+Instanced procedural dungeons (GAMEPLAY, on by default). See [PLUGINS.md](../plugins/PLUGINS.md). Commands: `/dungeon`, `/yapdungeons`. Buildable crying-obsidian portals: walk through → level picker (vanilla nether/End untouched).
 
 `GET/POST /api/skills` — jar presence, `enabled`, skill packs, online sample; reload via `yskills reload`.
 

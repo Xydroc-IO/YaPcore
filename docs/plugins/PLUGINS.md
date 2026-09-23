@@ -769,27 +769,27 @@ Per-level **mining / strength** floors ship in `plugins/YaPDungeons/dungeons/gat
 - **YaPDB** (soft; shared MariaDB/Postgres/SQLite pool)
 - **YaPSkills** (soft; required for gates — overall + mining/strength)
 - **YaPWorld** (soft; preferred for `createWorld` / `deleteWorld`; Bukkit fallback exists)
-- Enable in `plugins/YaPDungeons/config.yml`: `enabled: true`
+- Ships `enabled: true` — set `enabled: false` in `plugins/YaPDungeons/config.yml` to soft-off
 
 ## Player loop
 
-1. **Craftable portal:** craft a Dungeon Portal item, place it, right-click.
-2. **Buildable portal (base):** build a standing **4×5** obsidian frame (like a nether portal). When complete you get a chat tip — right-click any frame block with an **Ender Eye** to activate. Right-click the lit portal to open the menu.
-3. Or `/dungeon open` from anywhere.
-4. Pick an unlocked level → instance generates into an ephemeral `yd_*` world.
+1. **Craftable portal:** craft a Dungeon Portal item, place it, right-click → **level picker GUI** (unlocked levels only).
+2. **Buildable portal (base):** build a standing **4×5** crying obsidian frame (like a nether portal). When complete you get a chat tip — right-click any frame block with an **Ender Eye** to activate. **Walk through** the lit portal to open the level picker (vanilla nether hop is cancelled only for this tagged frame).
+3. Or `/dungeon` / `/dungeon open` from anywhere (same GUI).
+4. Click an unlocked level → instance generates into an ephemeral `yd_*` world.
 5. Invite with `/dungeon invite <player>`; they `/dungeon accept <prefix>`.
 6. Kill the **Dungeon Boss** to clear → loot + unlock next → world deleted after grace.
 7. Shared **party lives** (base 3 + 1 per extra member, cap 6). Inventory kept on death.
 
 ### Buildable frame shape (default)
 
-Outer **4 wide × 5 tall** obsidian (inner opening **2×3**), facing north/south or east/west — same proportions as a nether portal. Configurable under `portal.structure` in `config.yml`.
+Outer **4 wide × 5 tall** crying obsidian (inner opening **2×3**), facing north/south or east/west — same proportions as a nether portal. Distinct from YaPPortals End doors (regular obsidian) and vanilla nether (regular obsidian) — walk-through only hijacks tagged dungeon frames. Configurable under `portal.structure` in `config.yml`.
 
 **Materials**
 
 | Portal type | Materials |
 |-------------|-----------|
-| Buildable frame | Obsidian (frame) + 1 Ender Eye to activate |
+| Buildable frame | Crying obsidian (frame) + 1 Ender Eye to activate |
 | Craftable item | 4 Obsidian + 2 Deepslate + 3 Ender Eyes (3×3 recipe) |
 
 Staff: `/yapdungeons giveportal [player]`.
@@ -839,7 +839,7 @@ gradle installGameplayDefaults
 gradle assembleRelease -PyapGameplay=true
 ```
 
-Set `enabled: true` in `plugins/YaPDungeons/config.yml` after first boot.
+Ships **on** (`enabled: true`). Fleet seeds `yap-dungeons.jar` with skills/items. Soft-off with `enabled: false` if needed.
 
 
 ---

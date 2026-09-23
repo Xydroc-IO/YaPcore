@@ -1,5 +1,6 @@
 package com.yapcore.dungeons.listener;
 
+import com.yapcore.claims.ClaimLookups;
 import com.yapcore.dungeons.DungeonsConfig;
 import com.yapcore.dungeons.gen.DungeonCarver;
 import com.yapcore.dungeons.gui.DungeonMenu;
@@ -10,6 +11,7 @@ import com.yapcore.dungeons.service.DungeonInstanceManager;
 import com.yapcore.dungeons.service.LiveRun;
 import com.yapcore.messages.YapMessages;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
@@ -22,8 +24,10 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -32,8 +36,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Dungeon portals: craftable block (click) + crying-obsidian frame (walk-through).
+ * Cancels vanilla nether hops only when the portal belongs to an activated dungeon frame.
+ * Regular obsidian nether portals and End portals are untouched.
+ */
 public final class DungeonListener implements Listener {
 
     private final JavaPlugin plugin;
@@ -45,6 +57,8 @@ public final class DungeonListener implements Listener {
     private final DungeonInstanceManager instances;
     private final NamespacedKey ownerKey;
     private final NamespacedKey bossKey;
+    /** Debounce so move + portal events do not double-open the menu. */
+    private final Map<UUID, Long> recentEnterMs = new ConcurrentHashMap<>();
 
     public DungeonListener(
             JavaPlugin plugin,
@@ -89,7 +103,7 @@ public final class DungeonListener implements Listener {
                         event.getPlayer().getUniqueId().toString());
                 tile.update();
             }
-            event.getPlayer().sendMessage("§aDungeon portal placed. Interact to open the menu.");
+            event.getPlayer().sendMessage("§aDungeon portal placed. Right-click to open the level picker.");
             return;
         }
 
@@ -100,7 +114,7 @@ public final class DungeonListener implements Listener {
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onInteract(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) {
             return;
@@ -114,10 +128,13 @@ public final class DungeonListener implements Listener {
         }
         Player player = event.getPlayer();
 
-        // Craftable single-block portal
+        // Craftable single-block portal (no walk-through) → menu
         if (block.getState() instanceof org.bukkit.block.TileState tile
                 && tile.getPersistentDataContainer().has(portalItems.blockKey(), PersistentDataType.BYTE)) {
             event.setCancelled(true);
+            if (denyClaimedPortal(player, block.getLocation())) {
+                return;
+            }
             menu.open(player, 0);
             return;
         }
@@ -126,14 +143,16 @@ public final class DungeonListener implements Listener {
             return;
         }
 
-        // Already-activated structure → open menu
+        // Already-activated structure → tip (walk-through opens the menu)
         Optional<Block> keystone = structureTags.findNearbyKeystone(
                 block, Math.max(structure.outerWidth(), structure.outerHeight()));
         if (keystone.isPresent()) {
             Optional<PortalStructure.Frame> frame = structureTags.frameFromKeystone(keystone.get());
             if (frame.isPresent() && structure.contains(frame.get(), block)) {
-                event.setCancelled(true);
-                menu.open(player, 0);
+                if (player.getInventory().getItemInMainHand().getType() == config.structureActivateItem()) {
+                    event.setCancelled(true);
+                    player.sendMessage("§7Dungeon portal is active — walk through to pick a level.");
+                }
                 return;
             }
         }
@@ -151,11 +170,10 @@ public final class DungeonListener implements Listener {
             return;
         }
         PortalStructure.Frame frame = complete.get();
-        // Skip if already activated
         if (structureTags.isKeystone(frame.keystone())
                 || structureTags.findNearbyKeystone(frame.keystone(), 1).isPresent()) {
             event.setCancelled(true);
-            menu.open(player, 0);
+            player.sendMessage("§7Dungeon portal is active — walk through to pick a level.");
             return;
         }
         event.setCancelled(true);
@@ -163,13 +181,27 @@ public final class DungeonListener implements Listener {
             YapMessages.noPermission(player, "yapdungeons.portal.place");
             return;
         }
+        if (denyClaimedPortal(player, block.getLocation())) {
+            return;
+        }
         structure.fillInterior(frame);
         structureTags.installKeystone(frame, player.getUniqueId());
         if (player.getGameMode() != GameMode.CREATIVE) {
             hand.setAmount(hand.getAmount() - 1);
         }
-        player.sendMessage("§aDungeon portal activated! §7Right-click it to open dungeons.");
-        menu.open(player, 0);
+        player.sendMessage("§aDungeon portal activated! §7Walk through to pick a level.");
+    }
+
+    /**
+     * Same claim gate as nether / End / YaP End doors ({@code nether-portal} flag).
+     * Default deny → owner + ACCESS+ trust + staff only.
+     */
+    private static boolean denyClaimedPortal(Player player, Location location) {
+        if (ClaimLookups.canUsePortal(player, location)) {
+            return false;
+        }
+        player.sendMessage("§cClaimed dungeon portal — only the owner and trusted players can use it.");
+        return true;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -266,6 +298,7 @@ public final class DungeonListener implements Listener {
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
+        recentEnterMs.remove(event.getPlayer().getUniqueId());
         LiveRun run = instances.byPlayer(event.getPlayer().getUniqueId()).orElse(null);
         if (run == null) {
             return;
@@ -276,7 +309,37 @@ public final class DungeonListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onPortal(PlayerPortalEvent event) {
+        if (!hijackDungeonPortal(event.getPlayer(), event.getFrom(), event.getCause())) {
+            return;
+        }
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onEntityPortal(EntityPortalEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        PlayerTeleportEvent.TeleportCause cause =
+                event.getPortalType() == org.bukkit.PortalType.NETHER
+                        ? PlayerTeleportEvent.TeleportCause.NETHER_PORTAL
+                        : PlayerTeleportEvent.TeleportCause.UNKNOWN;
+        if (!hijackDungeonPortal(player, event.getFrom(), cause)) {
+            return;
+        }
+        event.setCancelled(true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event) {
+        // Walk-through hijack (Folia may fire teleport without PlayerPortalEvent)
+        if (!(event instanceof PlayerPortalEvent)
+                && hijackDungeonPortal(event.getPlayer(), event.getFrom(), event.getCause())) {
+            event.setCancelled(true);
+            return;
+        }
+
         LiveRun run = instances.byPlayer(event.getPlayer().getUniqueId()).orElse(null);
         if (run == null || run.isTerminal() || event.getTo() == null) {
             return;
@@ -287,5 +350,58 @@ public final class DungeonListener implements Listener {
             instances.removePlayer(event.getPlayer().getUniqueId(), false);
             event.getPlayer().sendMessage("§7Left dungeon (teleported out).");
         }
+    }
+
+    /**
+     * @return true when this was an activated dungeon portal (event should cancel vanilla nether hop)
+     */
+    private boolean hijackDungeonPortal(
+            Player player, Location from, PlayerTeleportEvent.TeleportCause cause) {
+        if (!config.enabled() || !config.structureEnabled()) {
+            return false;
+        }
+        if (cause != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) {
+            return false;
+        }
+        Location probe = from != null ? from : player.getLocation();
+        if (!isInsideDungeonPortal(probe)) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        Long prev = recentEnterMs.get(player.getUniqueId());
+        if (prev != null && now - prev < 1500L) {
+            return true;
+        }
+        recentEnterMs.put(player.getUniqueId(), now);
+        if (denyClaimedPortal(player, probe)) {
+            return true;
+        }
+        if (instances.byPlayer(player.getUniqueId()).isPresent()) {
+            player.sendMessage("§cYou are already in a dungeon. Use §e/dungeon leave §cfirst.");
+            return true;
+        }
+        menu.open(player, 0);
+        return true;
+    }
+
+    private boolean isInsideDungeonPortal(Location loc) {
+        if (loc == null || loc.getWorld() == null) {
+            return false;
+        }
+        Block block = loc.getBlock();
+        int radius = Math.max(structure.outerWidth(), structure.outerHeight());
+        Optional<Block> keystone = structureTags.findNearbyKeystone(block, radius);
+        if (keystone.isEmpty()) {
+            keystone = structureTags.findNearbyKeystone(block.getRelative(0, -1, 0), radius);
+        }
+        if (keystone.isEmpty()) {
+            return false;
+        }
+        Optional<PortalStructure.Frame> frame = structureTags.frameFromKeystone(keystone.get());
+        if (frame.isEmpty()) {
+            return false;
+        }
+        return structure.contains(frame.get(), block)
+                || structure.contains(frame.get(), block.getRelative(0, -1, 0));
     }
 }

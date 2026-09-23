@@ -18,9 +18,9 @@ opt-in gameplay stays **off**. Secrets/binds stay LAN-safe.
 | `plugins/YaPConquest/config.yml` | Chunk conquest **off** (`enabled: false`) until opted in |
 | `plugins/YaPTailor/config.yml` | Skins/wardrobe; `skin-host-public-base-url` empty until set |
 | `plugins/YaPTebex/config.yml` | Webhook inbound **off** until secret set |
-| `plugins/YaPSkills/config.yml` | Skills RPG **off** until opted in |
+| `plugins/YaPSkills/config.yml` | Skills RPG **on** by default |
 | `plugins/YaPStacker/config.yml` | Mob/item stacker **off** until opted in |
-| `plugins/YaPDungeons/config.yml` | Instanced dungeons **off** until opted in |
+| `plugins/YaPDungeons/config.yml` | Instanced dungeons **on** by default (needs YaPSkills + SQL) |
 | `plugins/YaPDisasters/config.yml` | Extreme weather **off** (`enabled: false`) until opted in |
 | `plugins/YaPGameplayKnobs/knobs.yml` | Encyclopedia knobs **off** (`settings.enabled: false`) |
 | `plugins/YaPModeration\|Admin\|Protect\|World\|Regions\|Npcs\|Map\|Floodgate\|Pregen/…` | Core+network seeds (LAN-safe binds / passwords; typical SMP knobs) |

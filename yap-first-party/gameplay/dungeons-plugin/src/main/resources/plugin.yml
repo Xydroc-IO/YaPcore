@@ -6,7 +6,7 @@ folia-supported: true
 description: Instanced procedural dungeons (L1-50 + prestige 51-100)
 authors: [YapLabs]
 depend: []
-softdepend: [YaPDB, YaPSkills, YaPWorld, YaPPlayerData, PlaceholderAPI]
+softdepend: [YaPDB, YaPSkills, YaPWorld, YaPPlayerData, YaPClaims, PlaceholderAPI]
 commands:
   dungeon:
     description: Dungeon menu, invites, leave, status

@@ -1,4 +1,4 @@
-enabled: false
+enabled: true
 
 use-shared-yapdb: true
 
@@ -47,10 +47,10 @@ portal:
     - OBSIDIAN
     - ENDER_EYE
     - OBSIDIAN
-  # Standing multi-block frame (nether-portal style) at your base
+  # Standing multi-block frame (crying obsidian — distinct from YaPPortals End doors)
   structure:
     enabled: true
-    frame: OBSIDIAN
+    frame: CRYING_OBSIDIAN
     interior: NETHER_PORTAL
     activate-item: ENDER_EYE
     # Outer size: 4 wide × 5 tall (inner opening 2×3)
