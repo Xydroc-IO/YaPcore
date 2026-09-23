@@ -90,17 +90,29 @@ final class FactionInfoHomeCommands {
             return true;
         }
         if (!faction.get().home().isSet()) {
-            player.sendMessage("§cYour " + ctx.singularLower() + " has no home set.");
+            player.sendMessage("§cYour " + ctx.singularLower()
+                    + " has no base home. Officers: §f/" + ctx.cmd() + " sethome");
             return true;
         }
         var home = faction.get().home();
+        String homeServer = home.serverId();
+        String here = ctx.config.serverId();
+        if (homeServer != null && !homeServer.isBlank() && !homeServer.equalsIgnoreCase(here)) {
+            player.sendMessage("§c" + ctx.singular() + " home is on server §f" + homeServer
+                    + "§c. Switch backends (Velocity), then §f/" + ctx.cmd() + " home§c.");
+            return true;
+        }
         var world = Bukkit.getWorld(home.world());
         if (world == null) {
-            player.sendMessage("§cHome world unavailable.");
+            player.sendMessage("§cHome world §f" + home.world() + " §cis not loaded here"
+                    + (homeServer != null && !homeServer.isBlank() ? " (server §f" + homeServer + "§c)" : "")
+                    + ".");
             return true;
         }
         YapSched.entity(ctx.plugin, player, () ->
-                player.teleport(new org.bukkit.Location(world, home.x(), home.y(), home.z(), home.yaw(), home.pitch())));
+                player.teleportAsync(new org.bukkit.Location(
+                        world, home.x(), home.y(), home.z(), home.yaw(), home.pitch())));
+        player.sendMessage("§aTeleporting to " + ctx.singularLower() + " base…");
         return true;
     }
 
@@ -111,7 +123,9 @@ final class FactionInfoHomeCommands {
             return true;
         }
         ctx.factions.setHome(member.get().factionId(), player.getLocation(), player.getUniqueId()).thenRun(() ->
-                YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§a" + ctx.singular() + " home set.")))
+                YapSched.entity(ctx.plugin, player, () -> player.sendMessage(
+                        "§a" + ctx.singular() + " base home set §7(shared by all members). "
+                                + "§8Use §f/" + ctx.cmd() + " home §8— personal homes stay §f/sethome§8.")))
                 .exceptionally(ex -> {
                     YapSched.entity(ctx.plugin, player, () -> player.sendMessage("§c" + FactionCommandSupport.rootMessage(ex)));
                     return null;
@@ -208,7 +222,9 @@ final class FactionInfoHomeCommands {
             player.sendMessage("§7Bank §f" + String.format("%.2f", faction.bankBalance()));
         }
         if (faction.home().isSet()) {
-            player.sendMessage("§7Home §f" + faction.home().world());
+            String sid = faction.home().serverId();
+            player.sendMessage("§7Base home §f" + faction.home().world()
+                    + (sid != null && !sid.isBlank() ? " §7@ §f" + sid : ""));
         }
         var relations = ctx.factions.relationsFor(faction.id());
         if (!relations.isEmpty()) {

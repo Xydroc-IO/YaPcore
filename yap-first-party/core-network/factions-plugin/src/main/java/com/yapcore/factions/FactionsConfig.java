@@ -63,6 +63,8 @@ public final class FactionsConfig {
     private String perksPrefixFormat = "&7[%tag%] ";
     private boolean discordRoleSync;
     private Map<String, String> discordRoles = Map.of();
+    /** Fleet backend id for faction home / warp cross-server checks (mirrors YaPPlayerData). */
+    private String serverId = "survival";
 
     public FactionsConfig(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -74,6 +76,12 @@ public final class FactionsConfig {
         FileConfiguration c = plugin.getConfig();
         enabled = c.getBoolean("enabled", false);
         useSharedYapdb = c.getBoolean("use-shared-yapdb", true);
+        serverId = c.getString("server-id", "survival");
+        if (serverId == null || serverId.isBlank()) {
+            serverId = "survival";
+        } else {
+            serverId = serverId.trim();
+        }
         jdbcUrl = c.getString("jdbc.url", "jdbc:mysql://127.0.0.1:3306/yap");
         jdbcUser = c.getString("jdbc.user", "yap");
         jdbcPassword = c.getString("jdbc.password", "change-me");
@@ -145,6 +153,10 @@ public final class FactionsConfig {
 
     public boolean enabled() {
         return enabled;
+    }
+
+    public String serverId() {
+        return serverId;
     }
 
     public boolean useSharedYapdb() {

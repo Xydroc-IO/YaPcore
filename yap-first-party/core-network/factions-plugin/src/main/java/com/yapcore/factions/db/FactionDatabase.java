@@ -141,6 +141,7 @@ public final class FactionDatabase implements AutoCloseable {
         tryAlter(st, "ALTER TABLE yap_factions ADD COLUMN home_z DOUBLE NULL");
         tryAlter(st, "ALTER TABLE yap_factions ADD COLUMN home_yaw FLOAT NULL");
         tryAlter(st, "ALTER TABLE yap_factions ADD COLUMN home_pitch FLOAT NULL");
+        tryAlter(st, "ALTER TABLE yap_factions ADD COLUMN home_server_id VARCHAR(64) NULL");
         tryAlter(st, "ALTER TABLE yap_factions ADD COLUMN shield_until TIMESTAMP NULL");
         tryAlter(st, "ALTER TABLE yap_factions ADD COLUMN upkeep_unpaid_since TIMESTAMP NULL");
     }

@@ -65,9 +65,9 @@ public final class FactionCommands implements CommandExecutor, TabCompleter {
             case "open" -> infoHome.joinMode(player, FactionJoinMode.OPEN);
             case "closed" -> infoHome.joinMode(player, FactionJoinMode.CLOSED);
             case "inviteonly" -> infoHome.joinMode(player, FactionJoinMode.INVITE);
-            case "home" -> infoHome.home(player);
-            case "sethome" -> infoHome.setHome(player);
-            case "delhome" -> infoHome.delHome(player);
+            case "home", "base", "fhome" -> infoHome.home(player);
+            case "sethome", "setbase" -> infoHome.setHome(player);
+            case "delhome", "delbase" -> infoHome.delHome(player);
             case "chat", "c" -> infoHome.chat(player, args);
             case "allychat", "ac" -> infoHome.allyChat(player, args);
             case "info" -> infoHome.info(player, args);
@@ -104,7 +104,7 @@ public final class FactionCommands implements CommandExecutor, TabCompleter {
         if (args.length == 1) {
             for (String sub : List.of("help", "create", "disband", "join", "leave", "kick", "invite", "accept",
                     "deny", "promote", "demote", "leader", "desc", "motd", "open", "closed", "inviteonly",
-                    "home", "sethome", "delhome", "chat", "allychat", "info", "list", "members", "claims",
+                    "home", "base", "sethome", "setbase", "delhome", "delbase", "chat", "allychat", "info", "list", "members", "claims",
                     "top", "map", "power", "ally", "enemy", "neutral", "claim", "claimall", "unclaim",
                     "deposit", "withdraw", "bank", "setwarp", "delwarp", "warp", "warps", "upkeep")) {
                 if (sub.startsWith(args[0].toLowerCase(Locale.ROOT))) {

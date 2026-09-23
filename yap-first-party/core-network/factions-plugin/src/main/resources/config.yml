@@ -1,6 +1,9 @@
 enabled: false
 # Opt-in: set enabled: true for faction/guild servers. Leave false for vanilla survival.
 
+# Must match YaPPlayerData server-id on this backend (for /f home cross-server checks).
+server-id: survival
+
 use-shared-yapdb: true
 
 jdbc:

@@ -46,6 +46,7 @@ final class FactionSqlMapping {
             return FactionHome.unset();
         }
         return new FactionHome(
+                getString(rs, "home_server_id", null),
                 world,
                 getDouble(rs, "home_x", 0),
                 getDouble(rs, "home_y", 64),

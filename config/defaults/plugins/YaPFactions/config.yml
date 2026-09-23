@@ -4,6 +4,8 @@
 # Prefer dashboard: Plugin settings (or Gameplay tab) → Save → reload
 
 enabled: false
+
+server-id: survival
 # Opt-in faction/guild overlay. Leave false unless you run a faction server.
 # Enable: set enabled: true then /yapfactions reload (or restart).
 

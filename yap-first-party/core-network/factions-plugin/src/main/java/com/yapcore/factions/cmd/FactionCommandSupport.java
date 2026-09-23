@@ -63,7 +63,9 @@ final class FactionCommandSupport {
         player.sendMessage("§6--- YaP " + plural() + " ---");
         player.sendMessage("§6" + c + " create|disband|join|leave|kick|invite|accept|deny");
         player.sendMessage("§6" + c + " promote|demote|leader|desc|motd|open|closed|inviteonly");
-        player.sendMessage("§6" + c + " home|sethome|delhome|chat|allychat|members|claims|top|map");
+        player.sendMessage("§6" + c + " home|base|sethome|setbase|delhome|chat|allychat|members|claims|top|map");
+        player.sendMessage("§7Personal homes: §f/sethome §7· §f/home §8(yours only)");
+        player.sendMessage("§7" + singular() + " base: §f" + c + " sethome §7then §f" + c + " home §8(all members)");
         player.sendMessage("§6" + c + " setwarp|delwarp|warp|warps|upkeep");
         player.sendMessage("§6" + c + " ally|enemy|neutral|claim|claimall|unclaim|deposit|withdraw|bank");
         player.sendMessage("§7Aliases: §f/f §7· §f/guild §7· §f/g §7· §f/clan");

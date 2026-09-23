@@ -77,6 +77,7 @@ final class FactionEconomyHomeOps {
                     throw new IllegalStateException("invalid location");
                 }
                 FactionHome home = new FactionHome(
+                        s.config.serverId(),
                         location.getWorld().getName(),
                         location.getX(),
                         location.getY(),

@@ -220,25 +220,28 @@ public final class FactionRepository {
         try (Connection c = database.connection();
              PreparedStatement ps = c.prepareStatement("""
                      UPDATE yap_factions
-                     SET home_world = ?, home_x = ?, home_y = ?, home_z = ?, home_yaw = ?, home_pitch = ?
+                     SET home_server_id = ?, home_world = ?, home_x = ?, home_y = ?, home_z = ?,
+                         home_yaw = ?, home_pitch = ?
                      WHERE id = ?
                      """)) {
             if (home.isSet()) {
-                ps.setString(1, home.world());
-                ps.setDouble(2, home.x());
-                ps.setDouble(3, home.y());
-                ps.setDouble(4, home.z());
-                ps.setFloat(5, home.yaw());
-                ps.setFloat(6, home.pitch());
+                ps.setString(1, home.serverId());
+                ps.setString(2, home.world());
+                ps.setDouble(3, home.x());
+                ps.setDouble(4, home.y());
+                ps.setDouble(5, home.z());
+                ps.setFloat(6, home.yaw());
+                ps.setFloat(7, home.pitch());
             } else {
                 ps.setString(1, null);
-                ps.setNull(2, java.sql.Types.DOUBLE);
+                ps.setString(2, null);
                 ps.setNull(3, java.sql.Types.DOUBLE);
                 ps.setNull(4, java.sql.Types.DOUBLE);
-                ps.setNull(5, java.sql.Types.FLOAT);
+                ps.setNull(5, java.sql.Types.DOUBLE);
                 ps.setNull(6, java.sql.Types.FLOAT);
+                ps.setNull(7, java.sql.Types.FLOAT);
             }
-            ps.setLong(7, factionId);
+            ps.setLong(8, factionId);
             ps.executeUpdate();
         }
     }
