@@ -12,6 +12,8 @@ Stock Paper jars are unsupported on the Folia product path.
 
 See [docs/plugins/PLUGINS.md](../docs/plugins/PLUGINS.md) and [docs/plugins/PLUGIN_COMPAT.md](../docs/plugins/PLUGIN_COMPAT.md).
 
+**Usage how-tos** (player/operator workflows): [docs/how-to/plugins/](../docs/how-to/plugins/README.md).
+
 ## Install tiers
 
 | Tier | Gradle | What’s installed |

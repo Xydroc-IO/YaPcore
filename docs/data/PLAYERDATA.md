@@ -127,9 +127,11 @@ backpack:
 
 **NPC shops:** administered via **YaPNpcs** — `/npc shop enable|apply|presets|addbuy|addsell|setitem|setoffer|list|clearoffers|clear`
 (and dashboard **Shops** tab). Built-in presets (`weapons`, `armor`, `tools`, `food`, `blocks`,
-`redstone`, `crafting`, `enchants`): unlimited stock, buy + sell spreads (~38% buyback),
-enchanted lines buy-only. `setitem` upserts buy+sell for one material in a single command
-(blank/`-` disables a side).
+`redstone`, `crafting`, `enchants`, `farming` / `tractor_supply`, `fishing` / `tackle_shack`):
+unlimited stock, buy + sell spreads (~38% buyback), enchanted lines buy-only. `farming` is
+Tractor Supply (seeds, saplings, soil, crops, bone meal — no tools). `fishing` is Tackle Shack
+(rods, bait/catch, buckets, ocean loot). `setitem` upserts buy+sell for one material in a single
+command (blank/`-` disables a side).
 
 **Trade GUI:** one icon per item — **left-click** to buy, **right-click** to sell; quantity
 picker shows running totals (you pay / you receive) before confirm.

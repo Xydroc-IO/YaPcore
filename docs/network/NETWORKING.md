@@ -137,6 +137,8 @@ fleet/
   instances/
     lobby/
     survival/
+    creative/
+    factions/       # YaPFactions enabled on this backend
   agents/
     node-2.token    # bearer token; never commit
 ```
@@ -192,6 +194,8 @@ Agent endpoints: `/v1/health`, `/v1/instances`, `/v1/instances/{id}/start|stop`,
 Creates lobby (+ optional survival and **creative**), optionally runs `scripts/db/ensure-db.sh` / `ensure-postgres.sh` per `server-id`, enables velocity, syncs Link. Does not start JVMs unless requested.
 
 Default `fleet/fleet.json` includes a **creative** instance (`inventory-profile: server`, YaPWorld climate auto-on). Flat world swap also writes peaceful + no-spawn in `server.properties`.
+
+Add a **factions** backend with Fleet → Add server (`id=factions`), then set `plugins/YaPFactions/config.yml` → `enabled: true` on that instance only (leave it off on lobby/survival/creative). Players reach it via `/server factions`, portals (`/portal create to-factions factions`), or NPC `server:factions`.
 
 **Database only:** Fleet → **Database (YaPDB)** (web) or **Database…** (Swing) — pick engine, start Docker, write JDBC, sync catalog without creating instances. See [YAPDB.md](../data/YAPDB.md).
 

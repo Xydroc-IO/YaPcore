@@ -610,7 +610,7 @@ Same ship version (no product bump). Rebuild with `gradle publishReleasesFolder 
 | **YaPWorld** | Creative-hub climate: always noon, no weather cycle, no natural mobs (`climate.enabled`, auto-on for instance `creative`) |
 | **YaPEssentials** | `block-reach` (survival 6.5 / creative 8); optional hub spawn-on-join |
 | **YaPPortals** | Pad fill only replaces air / portal / glass — does not overwrite signs or builds |
-| **Fleet** | Default **creative** instance; flat swap sets peaceful + no-spawn; per-instance PlayerData inventory profile |
+| **Fleet** | Default **creative** instance; flat swap sets peaceful + no-spawn; per-instance PlayerData inventory profile; **factions** backend (`id=factions`) with YaPFactions enabled |
 | **Dashboard** | Kit item fields + YaPItems catalog; fleet world-swap-flat; plugin hints for reach/climate |
 | **YaP Link / Bedrock** | JE→BE block remapper, dimension/join, entity list, Bungee Connect pending |
 | **yap-ultrawide** | Hor+ HUD shares world frustum; viewmodel + view-bob scaled so placement matches the crosshair |
@@ -626,7 +626,7 @@ Same ship version (no product bump). Rebuild with `gradle publishReleasesFolder 
 
 | Area | Change |
 |------|--------|
-| **YaPPlayerData / YaPNpcs** | Built-in shop presets (`weapons`/`armor`/`tools`/`food`/`blocks`/`redstone`/`crafting`/`enchants`); unlimited stock; buyback ≈38%; enchanted buy-only |
+| **YaPPlayerData / YaPNpcs** | Built-in shop presets (`weapons`/`armor`/`tools`/`food`/`blocks`/`redstone`/`crafting`/`enchants`/`farming` aka Tractor Supply / `fishing` aka Tackle Shack); unlimited stock; buyback ≈38%; enchanted buy-only |
 | **In-game shop GUI** | One icon per item — left-click buy / right-click sell; quantity picker with running totals |
 | **`/npc shop`** | `apply` / `presets` / `setitem` (buy+sell upsert) / `setoffer` / `clearoffers`; `/npc setname` / `move` |
 | **Dashboard** | **Shops** tab — one row per item (Buy $ + Sell $); `/api/shops` (`setitem`, presets, list) |

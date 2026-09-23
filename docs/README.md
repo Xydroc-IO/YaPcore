@@ -14,7 +14,8 @@ Operator docs. Markdown under `docs/` is the source of truth.
 | Fleet portals | [PORTALS.md](network/PORTALS.md) |
 | Crossplay | [CROSSPLAY.md](network/CROSSPLAY.md) |
 | Clients & packs | [CLIENTS_AND_PACKS.md](network/CLIENTS_AND_PACKS.md) |
-| Plugins | [PLUGINS.md](plugins/PLUGINS.md) |
+| Plugins (API / catalog) | [PLUGINS.md](plugins/PLUGINS.md) |
+| Plugin **how-to** (detailed usage) | [how-to/plugins/](how-to/plugins/README.md) |
 | Database | [YAPDB.md](data/YAPDB.md) · [PLAYERDATA.md](data/PLAYERDATA.md) |
 | Gameplay | [GAMEPLAY.md](gameplay/GAMEPLAY.md) |
 | Folia | [YAP_FOLIA_PATCHES.md](folia/YAP_FOLIA_PATCHES.md) |
@@ -29,6 +30,7 @@ Operator docs. Markdown under `docs/` is the source of truth.
 | [ops/](ops/) | Commands, permissions, dashboard, tune, Grim, [integrations / Tebex](ops/INTEGRATIONS.md) |
 | [network/](network/) | Ports, Link, crossplay, packs |
 | [plugins/](plugins/) | Plugin guide + Items / World / Protect / compat |
+| [how-to/](how-to/) | Usage how-tos — [plugins/](how-to/plugins/README.md) |
 | [data/](data/) | YaPDB + playerdata |
 | [gameplay/](gameplay/) | Factions / conquest / regions |
 | [product/](product/) | Bedrock-feel parity |

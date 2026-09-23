@@ -196,7 +196,7 @@ Folia plugin) that applies Hor+ with **separate profiles** for each panel class.
 
 ```bash
 cd client/yap-ultrawide && ./gradlew build
-# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.5.jar
+# → client/yap-ultrawide/build/libs/yap-ultrawide-1.0.7.jar
 # or: ./scripts/packs/build-yap-client-render.sh → dist/client-mods/client_mods.zip
 #    (also synced into releases/<ver>/ by publishReleasesFolder)```
 
@@ -204,16 +204,15 @@ Config: `.minecraft/config/yap-ultrawide.json`
 
 | Band | Typical panels | Default mode |
 |------|----------------|--------------|
-| `ultrawide_21_9` | 2560×1080, 3440×1440 (aspect ≈1.90–2.80) | `match_16_9` + ~100° HFOV cap |
-| `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (≥2.80) | `match_21_9` + ~128° HFOV cap + 48° V floor |
+| `ultrawide_21_9` | 2560×1080, 3440×1440 (aspect ≈1.90–2.80) | `match_16_9` + 90° HFOV cap |
+| `superwide_32_9` | 3840×1080, 5120×1440, 7680×2160 / 57" (≥2.80) | `match_21_9` + 105° HFOV cap |
 
-32:9 uses the same horizontal FOV a 16:9 panel would have at the vanilla slider —
-it does **not** letterbox your 32:9 screen. For a locked cinematic feel use
-`fixed_hfov`.
+The horizontal cap is applied after the vertical floor, so the floor cannot reopen edge stretch. Neither band letterboxes the panel. For a locked cinematic feel use `fixed_hfov`.
 
 Hands share the world frustum (`affectHudFov: true`) so block placement matches
-the crosshair; the viewmodel is scaled so weapons stay on screen. View-bob is
-scaled with Hor+ zoom so walking does not slide the world under the crosshair.
+the crosshair. The viewmodel is scaled on Y so held items keep the vanilla gap
+above the hotbar. View-bob is scaled with Hor+ zoom so walking does not slide
+the world under the crosshair.
 
 Vanilla, Bedrock, and players without the mod still join.
 See [yap-ultrawide/README.md](../../client/yap-ultrawide/README.md).

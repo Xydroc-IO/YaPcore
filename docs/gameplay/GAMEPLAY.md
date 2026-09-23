@@ -299,6 +299,7 @@ Per-claim overrides persist in `yap_claim_flags` (shared SQL via YaPDB).
 | `item-pickup` | allow | Player item pickup (trust/bypass can override deny) |
 | `tnt` | deny | TNT explosion block damage |
 | `creeper-explosion` | deny | Creeper explosion block damage |
+| `nether-portal` | deny | Vanilla nether portal use (owner / `/claim trust` only; `allow` = public) |
 | `weather` | allow | Deny = clear skies for players in the area (client overlay) |
 
 ```bash
@@ -343,6 +344,7 @@ full world height.
 /region flag set spawn hunger deny
 /region flag set spawn item-frame deny
 /region flag set spawn armor-stand deny
+/region flag set spawn npc-damage deny
 /region flag set spawn farmland-trample deny
 /region flag set spawn leaf-decay deny
 /region flag set spawn pistons deny
@@ -382,8 +384,8 @@ Custom text still works and becomes the subtitle:
 | Flag | Admin regions (`YaPRegions`) | Player claims (`YaPPlayerData`) |
 |------|------------------------------|----------------------------------|
 | `pvp`, `mob-damage`, `damage`, `build`, `use`, `interact`, `entry`, `chest-access`, `fire-spread`, `mob-spawning`, `mob-entry`, `weather` | yes | yes |
-| `item-drop`, `item-pickup`, `tnt`, `creeper-explosion` | yes | yes |
-| `hunger`, `farmland-trample`, `item-frame`, `armor-stand`, `leaf-decay`, `pistons`, `vehicle-place`, `vehicle-destroy` | yes | yes (stored; admin regions enforce) |
+| `item-drop`, `item-pickup`, `tnt`, `creeper-explosion`, `nether-portal` | yes | yes |
+| `hunger`, `farmland-trample`, `item-frame`, `armor-stand`, `npc-damage`, `leaf-decay`, `pistons`, `vehicle-place`, `vehicle-destroy` | yes | yes (stored; admin regions enforce) |
 
 ### Admin region flags
 
@@ -404,10 +406,12 @@ Custom text still works and becomes the subtitle:
 | `item-pickup` | Cancel player item pickup |
 | `tnt` | Cancel TNT explosion damage to blocks |
 | `creeper-explosion` | Cancel creeper block damage |
+| `nether-portal` | Gate vanilla nether portal use (deny = trust list) |
 | `hunger` | Cancel food drain |
 | `farmland-trample` | Cancel farmland trampling |
 | `item-frame` | Protect item frames / paintings |
 | `armor-stand` | Protect armor stands |
+| `npc-damage` | Protect tagged YaP NPCs (aliases: `npc-protect`, `npc`). Unset inherits `damage` |
 | `leaf-decay` | Cancel natural leaf decay |
 | `pistons` | Cancel piston extend/retract affecting the region |
 | `vehicle-place` / `vehicle-destroy` | Cancel boat/minecart place or break |
