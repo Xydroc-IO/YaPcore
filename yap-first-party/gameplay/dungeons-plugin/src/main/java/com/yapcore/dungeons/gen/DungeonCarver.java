@@ -423,15 +423,35 @@ public final class DungeonCarver {
             raw.remove();
             return null;
         }
-        entity.teleport(feet);
+        // Folia forbids Entity#teleport on region threads — spawn at feet already.
+        // If something shoved the mob onto the flat surface (~-60), remove and retry once.
         entity.setFallDistance(0f);
         entity.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
         entity.setRemoveWhenFarAway(false);
         entity.setPersistent(true);
-        // Yank back if something still shoved them onto the flat surface below
         if (entity.getLocation().getY() < floorY) {
-            entity.teleport(feet);
+            entity.remove();
+            try {
+                raw = world.spawnEntity(feet, type, org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason.CUSTOM);
+            } catch (Throwable t) {
+                plugin.getLogger().log(java.util.logging.Level.WARNING, "spawnEntity retry " + type, t);
+                return null;
+            }
+            if (!(raw instanceof LivingEntity retry)) {
+                raw.remove();
+                return null;
+            }
+            entity = retry;
             entity.setFallDistance(0f);
+            entity.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
+            entity.setRemoveWhenFarAway(false);
+            entity.setPersistent(true);
+            if (entity.getLocation().getY() < floorY) {
+                plugin.getLogger().warning("Mob " + type + " still below dungeon floor at y="
+                        + entity.getLocation().getY() + " (want ≥" + floorY + ")");
+                entity.remove();
+                return null;
+            }
         }
         return entity;
     }
