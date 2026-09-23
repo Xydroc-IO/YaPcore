@@ -155,7 +155,6 @@ public final class DungeonListener implements Listener {
             if (frame.isPresent() && structure.contains(frame.get(), block, 1)) {
                 event.setCancelled(true);
                 structure.ensureWalkable(frame.get());
-                DungeonPortalVisuals.spawnFace(frame.get());
                 if (denyClaimedPortal(player, block.getLocation())) {
                     return;
                 }
@@ -165,6 +164,28 @@ public final class DungeonListener implements Listener {
                 }
                 menu.open(player, 0);
                 return;
+            }
+        }
+
+        // Also allow right-click on the lime interior glass
+        if (structure.isInteriorBlock(block) || block.getType().name().contains("STAINED_GLASS")) {
+            Optional<Block> near = structureTags.findNearbyKeystone(
+                    block, Math.max(structure.outerWidth(), structure.outerHeight()) + 1);
+            if (near.isPresent()) {
+                Optional<PortalStructure.Frame> fr = structureTags.frameFromKeystone(near.get());
+                if (fr.isPresent() && structure.contains(fr.get(), block, 1)) {
+                    event.setCancelled(true);
+                    structure.ensureWalkable(fr.get());
+                    if (denyClaimedPortal(player, block.getLocation())) {
+                        return;
+                    }
+                    if (instances.byPlayer(player.getUniqueId()).isPresent()) {
+                        player.sendMessage("§cYou are already in a dungeon. Use §e/dungeon leave §cfirst.");
+                        return;
+                    }
+                    menu.open(player, 0);
+                    return;
+                }
             }
         }
 
@@ -200,11 +221,10 @@ public final class DungeonListener implements Listener {
         }
         structure.fillInterior(frame);
         structureTags.installKeystone(frame, player.getUniqueId());
-        DungeonPortalVisuals.spawnFace(frame);
         if (player.getGameMode() != GameMode.CREATIVE) {
             used.setAmount(used.getAmount() - 1);
         }
-        player.sendMessage("§aDungeon portal activated! §7Walk through to pick a level.");
+        player.sendMessage("§aDungeon portal activated! §7Right-click the lime glass to pick a level.");
     }
 
     private static String pretty(Material material) {
@@ -430,7 +450,6 @@ public final class DungeonListener implements Listener {
                 || structureTags.findNearbyKeystone(frame.get().keystone(), 1).isPresent();
         if (keyed) {
             structure.ensureWalkable(frame.get());
-            DungeonPortalVisuals.spawnFace(frame.get());
         }
         if (!keyed) {
             player.sendMessage("§eDungeon frame detected. §7Right-click the frame with an §fEnder Eye §7to activate.");

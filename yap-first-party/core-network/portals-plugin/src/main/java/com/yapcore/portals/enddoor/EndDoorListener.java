@@ -2,9 +2,12 @@ package com.yapcore.portals.enddoor;
 
 import com.yapcore.portals.PortalsConfig;
 import com.yapcore.portals.service.PortalCooldown;
+import com.yapcore.sched.YapSched;
+import io.papermc.paper.event.entity.EntityPortalReadyEvent;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.PortalType;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -13,6 +16,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityPortalEnterEvent;
 import org.bukkit.event.entity.EntityPortalEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -29,7 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Player-built vertical End doors: 4×5 obsidian + Ender Eye → The End.
- * Cancels vanilla nether hops when the portal blocks belong to an End door.
+ * Never leaves real {@link Material#NETHER_PORTAL} blocks in the frame — Folia's
+ * teleport pipeline hops those to the Nether before Bukkit {@code PlayerTeleportEvent}.
  */
 public final class EndDoorListener implements Listener {
 
@@ -38,7 +43,6 @@ public final class EndDoorListener implements Listener {
     private final EndDoorStructure structure;
     private final EndDoorTags tags;
     private final EndDoorTravel travel;
-    /** Debounce so move + portal events do not double-fire. */
     private final Map<UUID, Long> recentEnterMs = new ConcurrentHashMap<>();
 
     public EndDoorListener(
@@ -90,12 +94,12 @@ public final class EndDoorListener implements Listener {
         ItemStack used = player.getInventory().getItem(event.getHand());
 
         Optional<Block> keystone = tags.findNearbyKeystone(
-                block, Math.max(structure.outerWidth(), structure.outerHeight()));
+                block, Math.max(structure.outerWidth(), structure.outerHeight()) + 1);
         if (keystone.isPresent()) {
             Optional<EndDoorStructure.Frame> frame = tags.frameFromKeystone(keystone.get());
-            if (frame.isPresent() && structure.contains(frame.get(), block)) {
-                // Already lit — walking in handles travel; eye click is a no-op tip.
-                structure.ensureWalkable(frame.get());
+            if (frame.isPresent() && structure.contains(frame.get(), block, 1)) {
+                // Force-repair leftover nether portal blocks from older builds
+                structure.fillInterior(frame.get());
                 if (used.getType() == config.endDoorActivateItem()) {
                     event.setCancelled(true);
                     player.sendMessage("§7End door is active — walk through to enter The End.");
@@ -113,7 +117,6 @@ public final class EndDoorListener implements Listener {
         if (tags.isDungeonKeystone(block)) {
             return;
         }
-        // Cancel eye throw while probing / lighting an End-door frame
         event.setCancelled(true);
         Optional<EndDoorStructure.Frame> complete = structure.findCompleteFrame(block);
         if (complete.isEmpty()) {
@@ -126,6 +129,7 @@ public final class EndDoorListener implements Listener {
         if (tags.isDungeonKeystone(frame.keystone())
                 || tags.isKeystone(frame.keystone())
                 || tags.findNearbyKeystone(frame.keystone(), 1).isPresent()) {
+            structure.fillInterior(frame);
             player.sendMessage("§7End door is active — walk through to enter The End.");
             return;
         }
@@ -153,12 +157,12 @@ public final class EndDoorListener implements Listener {
         Block block = event.getBlock();
         Player player = event.getPlayer();
         Optional<Block> keystone = tags.findNearbyKeystone(
-                block, Math.max(structure.outerWidth(), structure.outerHeight()));
+                block, Math.max(structure.outerWidth(), structure.outerHeight()) + 1);
         if (keystone.isEmpty()) {
             return;
         }
         Optional<EndDoorStructure.Frame> frame = tags.frameFromKeystone(keystone.get());
-        if (frame.isEmpty() || !structure.contains(frame.get(), block)) {
+        if (frame.isEmpty() || !structure.contains(frame.get(), block, 1)) {
             return;
         }
         Optional<UUID> owner = tags.owner(keystone.get());
@@ -173,7 +177,10 @@ public final class EndDoorListener implements Listener {
         player.sendMessage("§7End door deactivated.");
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    /**
+     * Strip leftover nether-portal blocks as soon as the player approaches, before Folia hops.
+     */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void onMove(PlayerMoveEvent event) {
         if (!config.endDoorsEnabled()) {
             return;
@@ -190,100 +197,141 @@ public final class EndDoorListener implements Listener {
                 && from.getWorld().equals(to.getWorld())) {
             return;
         }
-        if (!isInsideEndDoor(to)) {
+        Optional<EndDoorStructure.Frame> frame = endDoorFrameAt(to);
+        if (frame.isEmpty()) {
             return;
         }
-        long now = System.currentTimeMillis();
-        Long prev = recentEnterMs.get(event.getPlayer().getUniqueId());
-        if (prev != null && now - prev < 1500L) {
-            return;
-        }
-        recentEnterMs.put(event.getPlayer().getUniqueId(), now);
-        travel.tryEnter(event.getPlayer(), to);
+        // Kill any real nether portal blocks immediately
+        structure.fillInterior(frame.get());
+        enterEnd(event.getPlayer(), to);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    /** Fired when standing in a portal block — cancel before readiness ticks. */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    public void onPortalEnter(EntityPortalEnterEvent event) {
+        if (!config.endDoorsEnabled()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        if (event.getPortalType() != PortalType.NETHER) {
+            return;
+        }
+        Location at = event.getLocation();
+        Optional<EndDoorStructure.Frame> frame = endDoorFrameAt(at);
+        if (frame.isEmpty()) {
+            frame = endDoorFrameAt(player.getLocation());
+        }
+        if (frame.isEmpty()) {
+            return;
+        }
+        event.setCancelled(true);
+        structure.fillInterior(frame.get());
+        enterEnd(player, at);
+    }
+
+    /** Last chance before Folia TeleportTx — cancel nether readiness near an End door. */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    public void onPortalReady(EntityPortalReadyEvent event) {
+        if (!config.endDoorsEnabled()) {
+            return;
+        }
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+        if (event.getPortalType() != PortalType.NETHER) {
+            return;
+        }
+        Optional<EndDoorStructure.Frame> frame = endDoorFrameAt(player.getLocation());
+        if (frame.isEmpty()) {
+            return;
+        }
+        event.setCancelled(true);
+        event.setTargetWorld(null);
+        structure.fillInterior(frame.get());
+        enterEnd(player, player.getLocation());
+    }
+
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onPortal(PlayerPortalEvent event) {
-        if (!hijackEndDoor(event.getPlayer(), event.getFrom(), event.getCause())) {
+        if (!hijack(event.getPlayer(), event.getFrom())) {
             return;
         }
         event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onEntityPortal(EntityPortalEvent event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
-        PlayerTeleportEvent.TeleportCause cause =
-                event.getPortalType() == org.bukkit.PortalType.NETHER
-                        ? PlayerTeleportEvent.TeleportCause.NETHER_PORTAL
-                        : PlayerTeleportEvent.TeleportCause.UNKNOWN;
-        if (!hijackEndDoor(player, event.getFrom(), cause)) {
+        if (!hijack(player, event.getFrom())) {
             return;
         }
         event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
     public void onTeleport(PlayerTeleportEvent event) {
         Location to = event.getTo();
         boolean toNether = to != null && to.getWorld() != null
                 && to.getWorld().getEnvironment() == org.bukkit.World.Environment.NETHER;
-        // Folia portal-couple may skip PlayerPortalEvent — catch any hop to the Nether
-        // from beside a lit End door and send the player to The End instead.
         if (!toNether && event.getCause() != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) {
             return;
         }
-        if (!hijackEndDoor(event.getPlayer(), event.getFrom(),
-                PlayerTeleportEvent.TeleportCause.NETHER_PORTAL)) {
+        if (!hijack(event.getPlayer(), event.getFrom())) {
             return;
         }
         event.setCancelled(true);
     }
 
-    /**
-     * @return true when this was an End door and travel was attempted (event should cancel)
-     */
-    private boolean hijackEndDoor(
-            Player player, Location from, PlayerTeleportEvent.TeleportCause cause) {
+    private boolean hijack(Player player, Location from) {
         if (!config.endDoorsEnabled()) {
             return false;
         }
         Location probe = from != null ? from : player.getLocation();
-        if (!isInsideEndDoor(probe)) {
+        Optional<EndDoorStructure.Frame> frame = endDoorFrameAt(probe);
+        if (frame.isEmpty()) {
             return false;
         }
-        long now = System.currentTimeMillis();
-        Long prev = recentEnterMs.get(player.getUniqueId());
-        if (prev != null && now - prev < 1500L) {
-            return true;
-        }
-        recentEnterMs.put(player.getUniqueId(), now);
-        travel.tryEnter(player, probe);
+        structure.fillInterior(frame.get());
+        enterEnd(player, probe);
         return true;
     }
 
-    private boolean isInsideEndDoor(Location loc) {
+    private void enterEnd(Player player, Location probe) {
+        long now = System.currentTimeMillis();
+        Long prev = recentEnterMs.get(player.getUniqueId());
+        if (prev != null && now - prev < 1500L) {
+            return;
+        }
+        recentEnterMs.put(player.getUniqueId(), now);
+        // Schedule on entity thread so Folia region rules are happy
+        YapSched.entity(plugin, player, () -> travel.tryEnter(player, probe));
+    }
+
+    private Optional<EndDoorStructure.Frame> endDoorFrameAt(Location loc) {
         if (loc == null || loc.getWorld() == null) {
-            return false;
+            return Optional.empty();
         }
         Block block = loc.getBlock();
-        int radius = Math.max(structure.outerWidth(), structure.outerHeight()) + 1;
+        int radius = Math.max(structure.outerWidth(), structure.outerHeight()) + 2;
         Optional<Block> keystone = tags.findNearbyKeystone(block, radius);
         if (keystone.isEmpty()) {
             keystone = tags.findNearbyKeystone(block.getRelative(0, -1, 0), radius);
         }
         if (keystone.isEmpty()) {
-            return false;
+            return Optional.empty();
         }
         Optional<EndDoorStructure.Frame> frame = tags.frameFromKeystone(keystone.get());
         if (frame.isEmpty()) {
-            return false;
+            return Optional.empty();
         }
-        structure.ensureWalkable(frame.get());
-        // depth=1: player often stands one block in front of the thin portal plane
-        return structure.contains(frame.get(), block, 1)
-                || structure.contains(frame.get(), block.getRelative(0, -1, 0), 1);
+        if (structure.contains(frame.get(), block, 2)
+                || structure.contains(frame.get(), block.getRelative(0, -1, 0), 2)) {
+            return frame;
+        }
+        return Optional.empty();
     }
 }

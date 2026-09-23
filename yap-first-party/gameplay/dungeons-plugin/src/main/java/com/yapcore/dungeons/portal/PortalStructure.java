@@ -315,23 +315,31 @@ public final class PortalStructure {
     }
 
     /**
-     * Opens the portal so players can walk through. Solid config materials (e.g. stained glass)
-     * become air; {@link DungeonPortalVisuals} provides the lime swirl without blocking.
+     * Place animated lime glass (pack swirl) so the portal is visibly lit.
+     * Right-click the frame or glass to open the level picker.
      */
     public void fillInterior(Frame frame) {
+        Material fill = interiorMaterial.isSolid() ? interiorMaterial : Material.LIME_STAINED_GLASS;
         for (Block b : frame.interiorBlocks()) {
-            b.setType(Material.AIR, false);
+            b.setType(fill, false);
         }
+        // Real glass carries the pack flipbook; clear any leftover displays
+        DungeonPortalVisuals.clearFace(frame);
     }
 
-    /** Ensure an already-lit frame is walkable (repairs old solid-glass / nether fills). */
+    /** Repair already-lit frames (strip nether portal leftovers; restore lime glass). */
     public void ensureWalkable(Frame frame) {
+        boolean dirty = false;
         for (Block b : frame.interiorBlocks()) {
             Material t = b.getType();
-            if (t.isSolid() || t == Material.NETHER_PORTAL) {
-                fillInterior(frame);
-                return;
+            if (t == Material.NETHER_PORTAL || t.isAir()
+                    || (t != interiorMaterial && !isStainedGlass(t))) {
+                dirty = true;
+                break;
             }
+        }
+        if (dirty) {
+            fillInterior(frame);
         }
     }
 
