@@ -141,11 +141,78 @@ public final class EndDoorStructure {
         }
         for (Block b : frame.interiorBlocks()) {
             Material t = b.getType();
-            if (t != Material.AIR && t != interiorMaterial && t != Material.NETHER_PORTAL) {
+            // Overworld caves often leave CAVE_AIR — treat all air like empty opening
+            if (!t.isAir() && t != interiorMaterial && t != Material.NETHER_PORTAL) {
                 return false;
             }
         }
         return true;
+    }
+
+    /**
+     * Human-readable reason when {@link #findCompleteFrame} fails, or empty if complete.
+     */
+    public Optional<String> explainIncomplete(Block origin) {
+        if (origin.getType() != frameMaterial && origin.getType() != Material.END_PORTAL_FRAME) {
+            return Optional.of("click an " + pretty(frameMaterial) + " frame block (you clicked "
+                    + pretty(origin.getType()) + ")");
+        }
+        // Prefer reporting the first almost-matching window's defect
+        for (Axis axis : List.of(Axis.X, Axis.Z)) {
+            Optional<String> reason = explainScan(origin, axis);
+            if (reason.isPresent()) {
+                return reason;
+            }
+        }
+        return Optional.of("need exact " + outerWidth + "×" + outerHeight + " "
+                + pretty(frameMaterial) + " with empty "
+                + (outerWidth - 2) + "×" + (outerHeight - 2) + " opening");
+    }
+
+    private Optional<String> explainScan(Block origin, Axis axis) {
+        World world = origin.getWorld();
+        int ox = origin.getX();
+        int oy = origin.getY();
+        int oz = origin.getZ();
+        String best = null;
+        for (int dy = 0; dy < outerHeight; dy++) {
+            for (int da = 0; da < outerWidth; da++) {
+                int minY = oy - dy;
+                int minAlong = (axis == Axis.X ? ox : oz) - da;
+                int fixed = axis == Axis.X ? oz : ox;
+                Frame frame = axis == Axis.X
+                        ? new Frame(world, minAlong, minY, fixed, outerWidth, outerHeight, Axis.X)
+                        : new Frame(world, fixed, minY, minAlong, outerWidth, outerHeight, Axis.Z);
+                if (!contains(frame, origin)) {
+                    continue;
+                }
+                for (Block b : frame.frameBlocks()) {
+                    Material t = b.getType();
+                    if (t != frameMaterial && t != Material.END_PORTAL_FRAME) {
+                        best = "frame hole at " + b.getX() + "," + b.getY() + "," + b.getZ()
+                                + " is " + pretty(t) + " (want " + pretty(frameMaterial) + ")";
+                        break;
+                    }
+                }
+                if (best != null) {
+                    continue;
+                }
+                for (Block b : frame.interiorBlocks()) {
+                    Material t = b.getType();
+                    if (!t.isAir() && t != interiorMaterial && t != Material.NETHER_PORTAL) {
+                        return Optional.of("opening blocked at " + b.getX() + "," + b.getY() + "," + b.getZ()
+                                + " by " + pretty(t) + " — clear the inner "
+                                + (outerWidth - 2) + "×" + (outerHeight - 2));
+                    }
+                }
+                return Optional.empty();
+            }
+        }
+        return best == null ? Optional.empty() : Optional.of(best);
+    }
+
+    private static String pretty(Material material) {
+        return material.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
     }
 
     public boolean contains(Frame frame, Block block) {

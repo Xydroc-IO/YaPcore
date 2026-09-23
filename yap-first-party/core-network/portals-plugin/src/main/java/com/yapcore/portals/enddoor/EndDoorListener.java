@@ -116,12 +116,10 @@ public final class EndDoorListener implements Listener {
         event.setCancelled(true);
         Optional<EndDoorStructure.Frame> complete = structure.findCompleteFrame(block);
         if (complete.isEmpty()) {
-            player.sendMessage("§cEnd door frame incomplete. §7Need a §f"
-                    + structure.outerWidth() + "×" + structure.outerHeight()
-                    + " §7" + pretty(structure.frameMaterial())
-                    + " frame with an empty "
-                    + (structure.outerWidth() - 2) + "×" + (structure.outerHeight() - 2)
-                    + " opening (not crying obsidian — that is for dungeons).");
+            String why = structure.explainIncomplete(block)
+                    .orElse("need exact " + structure.outerWidth() + "×" + structure.outerHeight()
+                            + " " + pretty(structure.frameMaterial()));
+            player.sendMessage("§cEnd door not ready: §7" + why);
             return;
         }
         EndDoorStructure.Frame frame = complete.get();
@@ -179,7 +177,7 @@ public final class EndDoorListener implements Listener {
         player.sendMessage("§7End door deactivated.");
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onPortal(PlayerPortalEvent event) {
         if (!hijackEndDoor(event.getPlayer(), event.getFrom(), event.getCause())) {
             return;
@@ -187,7 +185,7 @@ public final class EndDoorListener implements Listener {
         event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onEntityPortal(EntityPortalEvent event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
@@ -202,7 +200,7 @@ public final class EndDoorListener implements Listener {
         event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onTeleport(PlayerTeleportEvent event) {
         if (event instanceof PlayerPortalEvent) {
             return;

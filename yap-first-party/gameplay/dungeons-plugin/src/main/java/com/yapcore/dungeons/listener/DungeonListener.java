@@ -170,12 +170,10 @@ public final class DungeonListener implements Listener {
         event.setCancelled(true);
         Optional<PortalStructure.Frame> complete = structure.findCompleteFrame(block);
         if (complete.isEmpty()) {
-            player.sendMessage("§cDungeon portal frame incomplete. §7Need a §f"
-                    + structure.outerWidth() + "×" + structure.outerHeight()
-                    + " §7" + pretty(structure.frameMaterial())
-                    + " frame with an empty "
-                    + (structure.outerWidth() - 2) + "×" + (structure.outerHeight() - 2)
-                    + " opening (not regular obsidian).");
+            String why = structure.explainIncomplete(block)
+                    .orElse("need exact " + structure.outerWidth() + "×" + structure.outerHeight()
+                            + " " + pretty(structure.frameMaterial()));
+            player.sendMessage("§cDungeon portal not ready: §7" + why);
             return;
         }
         PortalStructure.Frame frame = complete.get();
@@ -319,7 +317,7 @@ public final class DungeonListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onPortal(PlayerPortalEvent event) {
         if (!hijackDungeonPortal(event.getPlayer(), event.getFrom(), event.getCause())) {
             return;
@@ -327,7 +325,7 @@ public final class DungeonListener implements Listener {
         event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onEntityPortal(EntityPortalEvent event) {
         if (!(event.getEntity() instanceof Player player)) {
             return;
@@ -342,7 +340,7 @@ public final class DungeonListener implements Listener {
         event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onTeleport(PlayerTeleportEvent event) {
         // Walk-through hijack (Folia may fire teleport without PlayerPortalEvent)
         if (!(event instanceof PlayerPortalEvent)
@@ -364,7 +362,7 @@ public final class DungeonListener implements Listener {
     }
 
     /**
-     * @return true when this was an activated dungeon portal (event should cancel vanilla nether hop)
+     * @return true when this was a dungeon crying-obsidian portal (cancel vanilla nether hop)
      */
     private boolean hijackDungeonPortal(
             Player player, Location from, PlayerTeleportEvent.TeleportCause cause) {
@@ -375,7 +373,8 @@ public final class DungeonListener implements Listener {
             return false;
         }
         Location probe = from != null ? from : player.getLocation();
-        if (!isInsideDungeonPortal(probe)) {
+        Optional<PortalStructure.Frame> frame = dungeonFrameAt(probe);
+        if (frame.isEmpty()) {
             return false;
         }
         long now = System.currentTimeMillis();
@@ -387,6 +386,13 @@ public final class DungeonListener implements Listener {
         if (denyClaimedPortal(player, probe)) {
             return true;
         }
+        // Lit crying frame without YaP keystone still must not go to the Nether
+        boolean keyed = structureTags.isKeystone(frame.get().keystone())
+                || structureTags.findNearbyKeystone(frame.get().keystone(), 1).isPresent();
+        if (!keyed) {
+            player.sendMessage("§eDungeon frame detected. §7Right-click the frame with an §fEnder Eye §7to activate.");
+            return true;
+        }
         if (instances.byPlayer(player.getUniqueId()).isPresent()) {
             player.sendMessage("§cYou are already in a dungeon. Use §e/dungeon leave §cfirst.");
             return true;
@@ -395,9 +401,9 @@ public final class DungeonListener implements Listener {
         return true;
     }
 
-    private boolean isInsideDungeonPortal(Location loc) {
+    private Optional<PortalStructure.Frame> dungeonFrameAt(Location loc) {
         if (loc == null || loc.getWorld() == null) {
-            return false;
+            return Optional.empty();
         }
         Block block = loc.getBlock();
         int radius = Math.max(structure.outerWidth(), structure.outerHeight());
@@ -405,14 +411,18 @@ public final class DungeonListener implements Listener {
         if (keystone.isEmpty()) {
             keystone = structureTags.findNearbyKeystone(block.getRelative(0, -1, 0), radius);
         }
-        if (keystone.isEmpty()) {
-            return false;
+        if (keystone.isPresent()) {
+            Optional<PortalStructure.Frame> fromKey = structureTags.frameFromKeystone(keystone.get());
+            if (fromKey.isPresent()
+                    && (structure.contains(fromKey.get(), block)
+                    || structure.contains(fromKey.get(), block.getRelative(0, -1, 0)))) {
+                return fromKey;
+            }
         }
-        Optional<PortalStructure.Frame> frame = structureTags.frameFromKeystone(keystone.get());
-        if (frame.isEmpty()) {
-            return false;
+        Optional<PortalStructure.Frame> around = structure.findFrameContaining(block);
+        if (around.isPresent()) {
+            return around;
         }
-        return structure.contains(frame.get(), block)
-                || structure.contains(frame.get(), block.getRelative(0, -1, 0));
+        return structure.findFrameContaining(block.getRelative(0, -1, 0));
     }
 }
