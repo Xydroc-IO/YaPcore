@@ -47,6 +47,8 @@ public final class WorldEditHttpServer {
     private final WorldEditActionHandler actions;
     private final ClipboardService clipboard;
     private HttpServer http;
+    /** Actual bound port (may differ from config when fleet instances share a host). */
+    private volatile int boundPort = -1;
 
     public WorldEditHttpServer(WorldPlugin plugin, WorldConfig config, WorldEditSessionRegistry sessions,
                                WorldManagerServiceImpl worldManager, SelectionServiceImpl selection,
@@ -66,23 +68,75 @@ public final class WorldEditHttpServer {
             return;
         }
         String bind = config.editorBind();
-        int port = config.editorPort();
-        InetSocketAddress addr = new InetSocketAddress("0.0.0.0".equals(bind) ? "0.0.0.0" : bind, port);
-        http = HttpServer.create(addr, 0);
-        http.createContext("/editor/", this::serveStatic);
-        http.createContext("/api/world-edit/state", this::apiState);
-        http.createContext("/api/world-edit/action", this::apiAction);
-        http.createContext("/api/world-edit/schematic/download", this::schematicDownload);
-        http.createContext("/api/world-edit/clipboard/download", this::clipboardDownload);
-        http.createContext("/api/world-edit/clipboard/upload", this::clipboardUpload);
-        http.createContext("/editor/health", ex -> text(ex, 200, "ok"));
-        http.setExecutor(Executors.newFixedThreadPool(6, r -> {
-            Thread t = new Thread(r, "yap-world-edit-http");
-            t.setDaemon(true);
-            return t;
-        }));
-        http.start();
-        LOG.info("World edit studio http://" + bind + ":" + port + "/editor/");
+        String host = "0.0.0.0".equals(bind) || bind == null || bind.isBlank() ? "0.0.0.0" : bind;
+        IOException last = null;
+        for (int port : candidatePorts()) {
+            try {
+                InetSocketAddress addr = new InetSocketAddress(host, port);
+                HttpServer server = HttpServer.create(addr, 0);
+                server.createContext("/editor/", this::serveStatic);
+                server.createContext("/api/world-edit/state", this::apiState);
+                server.createContext("/api/world-edit/action", this::apiAction);
+                server.createContext("/api/world-edit/schematic/download", this::schematicDownload);
+                server.createContext("/api/world-edit/clipboard/download", this::clipboardDownload);
+                server.createContext("/api/world-edit/clipboard/upload", this::clipboardUpload);
+                server.createContext("/editor/health", ex -> text(ex, 200, "ok"));
+                server.setExecutor(Executors.newFixedThreadPool(6, r -> {
+                    Thread t = new Thread(r, "yap-world-edit-http");
+                    t.setDaemon(true);
+                    return t;
+                }));
+                server.start();
+                http = server;
+                boundPort = port;
+                if (port != config.editorPort()) {
+                    LOG.info("World edit studio http://" + host + ":" + port
+                            + "/editor/ (auto port; config was " + config.editorPort() + ")");
+                } else {
+                    LOG.info("World edit studio http://" + host + ":" + port + "/editor/");
+                }
+                return;
+            } catch (IOException e) {
+                last = e;
+            }
+        }
+        boundPort = -1;
+        throw last != null ? last : new IOException("no free editor port");
+    }
+
+    /**
+     * Prefer a port unique per Minecraft listen port (fleet-safe), then scan nearby free ports.
+     * Base 25565 + editor.port → lobby/survival/creative each get their own studio.
+     */
+    private int[] candidatePorts() {
+        int base = config.editorPort();
+        int gamePort = 25565;
+        try {
+            gamePort = Bukkit.getPort();
+        } catch (Throwable ignored) {
+            // early boot / tests
+        }
+        int preferred = base + Math.max(0, gamePort - 25565);
+        preferred = Math.max(1024, Math.min(65535, preferred));
+        int[] out = new int[24];
+        int n = 0;
+        out[n++] = preferred;
+        if (base != preferred) {
+            out[n++] = base;
+        }
+        for (int i = 1; n < out.length; i++) {
+            int p = preferred + i;
+            if (p > 65535) {
+                break;
+            }
+            out[n++] = p;
+        }
+        if (n < out.length) {
+            int[] trimmed = new int[n];
+            System.arraycopy(out, 0, trimmed, 0, n);
+            return trimmed;
+        }
+        return out;
     }
 
     public synchronized void stop() {
@@ -90,10 +144,15 @@ public final class WorldEditHttpServer {
             http.stop(0);
             http = null;
         }
+        boundPort = -1;
+    }
+
+    public int boundPort() {
+        return boundPort > 0 ? boundPort : config.editorPort();
     }
 
     public String editorUrl(String token) {
-        return "http://" + config.editorPublicHost() + ":" + config.editorPort()
+        return "http://" + config.editorPublicHost() + ":" + boundPort()
                 + "/editor/?token=" + token;
     }
 

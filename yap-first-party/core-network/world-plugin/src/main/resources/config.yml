@@ -37,6 +37,7 @@ editor:
   port: 8092
   bind: "0.0.0.0"
   # Hostname/IP players use in the browser (set to your server address)
+  # Per-instance fleet: binds editor.port + (game-port - 25565), with free-port fallback
   public-host: "127.0.0.1"
   clipboard-web: true
 

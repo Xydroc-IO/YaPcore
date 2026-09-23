@@ -1,27 +1,46 @@
 package com.yapcore.world.edit;
 
-import com.yapcore.sched.YapSched;
 import com.yapcore.world.util.BlockCodec;
-import org.bukkit.Location;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Per-player undo/redo stacks. Apply uses the same chunk-parallel {@link BlockBatch}
+ * path as paste so undoing a large schem is not one Folia region hop per block.
+ */
 public final class UndoService {
 
-    private final JavaPlugin plugin;
     private final int maxSessions;
+    private final BlockBatch batch;
     private final Map<UUID, Deque<EditSession>> undoStacks = new ConcurrentHashMap<>();
     private final Map<UUID, Deque<EditSession>> redoStacks = new ConcurrentHashMap<>();
 
     public UndoService(JavaPlugin plugin, int maxSessions) {
-        this.plugin = plugin;
         this.maxSessions = Math.max(1, maxSessions);
+        // Shared apply path only — undo of undo is not recorded (player=null → no history push).
+        this.batch = new BlockBatch(plugin, this);
+    }
+
+    public void setParallelChunks(int n) {
+        batch.setParallelChunks(n);
+    }
+
+    public void setLargePasteTuning(int largeBlocks, int parallelLarge) {
+        batch.setLargePasteBlocks(largeBlocks);
+        batch.setParallelChunksLarge(parallelLarge);
+        // Never skip history while applying undo/redo payloads.
+        batch.setAutoFastLarge(false);
     }
 
     public void push(UUID playerId, EditSession session) {
@@ -76,28 +95,31 @@ public final class UndoService {
     }
 
     private CompletableFuture<Integer> applySession(EditSession session, boolean undo) {
-        CompletableFuture<Integer> result = CompletableFuture.completedFuture(0);
+        Map<String, List<BlockBatch.Encoded>> byWorld = new LinkedHashMap<>();
         for (EditSession.BlockEdit edit : session.edits()) {
-            Location loc = EditSession.location(edit);
-            if (loc == null) {
+            if (Bukkit.getWorld(edit.world()) == null) {
                 continue;
             }
             String target = undo ? edit.before() : edit.after();
-            result = result.thenCompose(count -> applyOne(loc, target).thenApply(ok -> ok ? count + 1 : count));
-        }
-        return result;
-    }
-
-    private CompletableFuture<Boolean> applyOne(Location loc, String encoded) {
-        CompletableFuture<Boolean> done = new CompletableFuture<>();
-        YapSched.region(plugin, loc, () -> {
-            try {
-                BlockCodec.apply(loc.getBlock(), encoded);
-                done.complete(true);
-            } catch (Exception e) {
-                done.complete(false);
+            if (target == null || target.isBlank()) {
+                continue;
             }
-        });
-        return done;
+            byWorld.computeIfAbsent(edit.world(), w -> new ArrayList<>())
+                    .add(new BlockBatch.Encoded(edit.x(), edit.y(), edit.z(), target));
+        }
+        if (byWorld.isEmpty()) {
+            return CompletableFuture.completedFuture(0);
+        }
+        CompletableFuture<Integer> chain = CompletableFuture.completedFuture(0);
+        for (Map.Entry<String, List<BlockBatch.Encoded>> entry : byWorld.entrySet()) {
+            World world = Bukkit.getWorld(entry.getKey());
+            if (world == null) {
+                continue;
+            }
+            List<BlockBatch.Encoded> plans = entry.getValue();
+            chain = chain.thenCompose(sum ->
+                    batch.applyEncoded(null, world, plans).thenApply(n -> sum + n));
+        }
+        return chain;
     }
 }

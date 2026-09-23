@@ -145,6 +145,8 @@ public final class WorldPlugin extends JavaPlugin {
             playerEditState = new PlayerEditState();
         }
         undoService = new UndoService(this, config.undoSessions());
+        undoService.setParallelChunks(config.parallelChunks());
+        undoService.setLargePasteTuning(config.largePasteBlocks(), config.parallelChunksLarge());
         if (paster == null) {
             paster = new SchematicPaster(this, undoService);
         } else {
