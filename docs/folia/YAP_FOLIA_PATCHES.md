@@ -7,7 +7,7 @@ Ordered deltas under [`vendor/folia/patches/`](../../vendor/folia/patches/). Aut
 
 Upstream pin: [`vendor/folia/UPSTREAM.lock`](../../vendor/folia/UPSTREAM.lock) — **`14b7fee` / `ver/26.2.x` / 2026-09-06**. Refresh with `./scripts/folia/vendor-folia.sh --update-lock` then rebuild and re-verify cites.
 
-The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0079` (**46**) are Folia-itself improvements on that pin. Product jar md5 `76aeaf3fefcf34bc9e80f441d0419df7`. Fullcite `20260919T165559Z` held 500 players at both ends, TNT 2400, hoppers 770, 32 villagers, fuse drop 808.5, `into 2 shards`, busiest region 37.24 ms. Stock `20260919T171015Z` started at 500 on that scene and ended at 119, busiest region 65.03 ms. Those 119 left because the encoder ran out of direct memory, not because a watchdog fired. `0073`–`0079` keep spawn search off the cut (including chunk X=−1), skip block spread into the hole, and finish the login handshake without a configuration keepalive after the client is in play.
+The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or repairs to that behavior. `0034`–`0081` (**48**) are Folia-itself improvements on that pin. Product jar md5 `ec017174c8f35273c814c6cbdf9a3989`. Fullcite `20260919T165559Z` held 500 players at both ends, TNT 2400, hoppers 770, 32 villagers, fuse drop 808.5, `into 2 shards`, busiest region 37.24 ms. Stock `20260919T171015Z` started at 500 on that scene and ended at 119, busiest region 65.03 ms. Those 119 left because the encoder ran out of direct memory, not because a watchdog fired. `0073`–`0079` keep spawn search off the cut (including chunk X=−1), skip block spread into the hole, and finish the login handshake without a configuration keepalive after the client is in play. `0080` makes portal-couple reschedule safe; `0081` re-enables Bukkit `createWorld` for YaPWorld / YaPDungeons (unload stays stubbed).
 
 ## Patches
 
@@ -85,6 +85,8 @@ The pin is still **`14b7fee`**. `0000`–`0033` (**26**) are YaP behavior or rep
 | `0077-yap-chunk-neg1-and-login-ack.patch` | Spawn search returns null for chunk X=−1 before the cut is registered. Login acknowledgement does not park the global tick | landed |
 | `0078-yap-protocol-switch-before-play.patch` | Play packets are sent only after the protocol switch | landed |
 | `0079-yap-no-config-keepalive-after-finish.patch` | No configuration keepalive after `finish_configuration`. The client is already in play | landed |
+| `0080-yap-portal-couple-safe-reschedule.patch` | Portal-couple partner tick reschedule must not race a dead region | landed |
+| `0081-yap-enable-createworld-api.patch` | Unstub Bukkit `createWorld` (Paper body) for ephemeral worlds; keep `unloadWorld` stubbed | landed |
 
 Scheduler shim is **not** a Folia patch — it is `yap-sched-agent` (`-javaagent`). See [PLUGINS.md](../plugins/PLUGINS.md).
 

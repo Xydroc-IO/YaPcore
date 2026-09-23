@@ -1,0 +1,21 @@
+From: YapLabs <folia@yaplabs.com>
+Subject: Enable Bukkit.createWorld on Folia (keep unload stubbed)
+
+Folia stubs createWorld with UnsupportedOperationException. Paper's
+implementation remains intact underneath and is what YaPWorld / YaPDungeons
+need for ephemeral instance worlds. Unload stays stubbed (unsafe on Folia).
+
+diff --git a/paper-server/src/main/java/org/bukkit/craftbukkit/CraftServer.java b/paper-server/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+index 3fac32b42..df46e695b 100644
+--- a/paper-server/src/main/java/org/bukkit/craftbukkit/CraftServer.java
++++ b/paper-server/src/main/java/org/bukkit/craftbukkit/CraftServer.java
+@@ -1197,7 +1197,8 @@ public final class CraftServer implements Server {
+ 
+     @Override
+     public World createWorld(WorldCreator creator) {
+-        if (true) throw new UnsupportedOperationException(); // Folia - not implemented properly yet
++        // YaP: Folia stubbed this API; Paper body below is what runtime world create needs
++        // (dungeons / YapWorld). Keep unloadWorld stubbed — teardown is still unsafe on Folia.
+         Preconditions.checkState(this.console.getAllLevels().iterator().hasNext(), "Cannot create additional worlds on STARTUP");
+         //Preconditions.checkState(!this.console.isIteratingOverLevels, "Cannot create a world while worlds are being ticked"); // Paper - Cat - Temp disable. We'll see how this goes.
+         Preconditions.checkArgument(creator != null, "WorldCreator cannot be null");

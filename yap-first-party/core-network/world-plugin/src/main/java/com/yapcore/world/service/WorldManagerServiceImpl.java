@@ -126,16 +126,22 @@ public final class WorldManagerServiceImpl implements WorldManagerService {
                                 .findFirst()
                                 .orElse(null);
                         if (fallback != null) {
-                            p.teleport(fallback.getSpawnLocation());
+                            p.teleportAsync(fallback.getSpawnLocation());
                         }
                     }
-                    if (!Bukkit.unloadWorld(world, false)) {
-                        future.complete(false);
+                    try {
+                        if (!Bukkit.unloadWorld(world, false)) {
+                            future.complete(false);
+                            return;
+                        }
+                    } catch (UnsupportedOperationException uoe) {
+                        plugin.getLogger().warning("Folia cannot unload " + worldName + " — left loaded empty");
+                        future.complete(true);
                         return;
                     }
                 }
                 java.nio.file.Path folder = plugin.getServer().getWorldContainer().toPath().resolve(worldName);
-                if (java.nio.file.Files.exists(folder)) {
+                if (java.nio.file.Files.exists(folder) && Bukkit.getWorld(worldName) == null) {
                     deleteRecursive(folder);
                 }
                 future.complete(true);
