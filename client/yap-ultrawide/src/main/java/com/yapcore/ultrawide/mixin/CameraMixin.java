@@ -14,9 +14,8 @@ public abstract class CameraMixin {
     }
 
     /**
-     * Hands use {@code calculateHudFov}. Matching world Hor+ VFOV keeps the
-     * held item in the same frustum as block picking; viewmodel scale (see
-     * {@code ItemInHandRendererMixin}) keeps weapons on screen.
+     * Hands use {@code calculateHudFov}. Default leaves that value alone so the
+     * weapon stays in the corner. {@code affectHudFov} opts into world Hor+.
      */
     @ModifyReturnValue(method = "calculateHudFov(F)F", at = @At("RETURN"))
     private float yap$horPlusHud(float original) {

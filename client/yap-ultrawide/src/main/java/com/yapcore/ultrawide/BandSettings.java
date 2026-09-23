@@ -24,44 +24,40 @@ public final class BandSettings {
      */
     public float minVerticalFov = 0.0f;
     /**
-     * Extra hand nudge in view space, on top of the automatic vertical FOV
-     * scale. Negative X = pull left (keeps swords on-screen on 32:9).
-     * Positive Y = lift further above the hotbar. {@code 0} keeps the vanilla gap.
+     * Unused by the renderer. Kept so older configs still load.
+     * Hands stay on the vanilla HUD camera.
      */
     public float viewmodelOffsetX = 0.0f;
     public float viewmodelOffsetY = 0.0f;
-    /** Multiplier on Hor+ viewmodel scale ({@code >1} = bigger hand on screen). */
+    /** Unused by the renderer. Kept so older configs still load. */
     public float viewmodelExtraScale = 1.0f;
 
     public static BandSettings ultrawide21Defaults() {
         BandSettings s = new BandSettings();
+        // Slider in, same horizontal FOV a 16:9 panel would have. No cap, no floor.
         s.mode = "match_16_9";
-        s.targetHorizontalFov = 90.0f;
-        // 16:9 at the default slider is ~102° horizontal; 90° drops the edge stretch
-        // you still see on a 21:9 panel at that match.
-        s.maxHorizontalFov = 90.0f;
+        s.targetHorizontalFov = 100.0f;
+        s.maxHorizontalFov = 0.0f;
         s.fovScale = 1.0f;
-        s.minVerticalFov = 40.0f;
+        s.minVerticalFov = 0.0f;
         s.viewmodelOffsetX = 0.0f;
         s.viewmodelOffsetY = 0.0f;
-        s.viewmodelExtraScale = 1.05f;
+        s.viewmodelExtraScale = 1.0f;
         return s;
     }
 
     public static BandSettings superwide32Defaults() {
         BandSettings s = new BandSettings();
-        // Match 21:9, then cap. Uncapped match_21_9 is ~117° horizontal (still fisheye).
-        // A 103° cap was ~39° vertical and felt telephoto — 105° is the middle.
+        // Same idea as 21:9, matched to a 21:9 panel so 32:9 is not telephoto.
+        // The Minecraft FOV slider still scales this. No cap.
         s.mode = "match_21_9";
-        s.targetHorizontalFov = 105.0f;
-        s.maxHorizontalFov = 105.0f;
+        s.targetHorizontalFov = 110.0f;
+        s.maxHorizontalFov = 0.0f;
         s.fovScale = 1.0f;
-        s.minVerticalFov = 38.0f;
-        // Dual-4K 32:9 pushes the vanilla bottom-right hand off-frame — pull inward.
-        // Height above the hotbar comes from the Y FOV scale, not a translate.
-        s.viewmodelOffsetX = -0.08f;
+        s.minVerticalFov = 0.0f;
+        s.viewmodelOffsetX = 0.0f;
         s.viewmodelOffsetY = 0.0f;
-        s.viewmodelExtraScale = 1.22f;
+        s.viewmodelExtraScale = 1.0f;
         return s;
     }
 

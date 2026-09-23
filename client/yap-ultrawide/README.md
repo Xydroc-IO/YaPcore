@@ -6,11 +6,12 @@ On 21:9 and 32:9, vanilla’s vertical FOV slider becomes a fish-eye horizontal 
 This mod applies **Hor+** with **separate profiles** for each panel class. 16:9 is
 unchanged. Spyglass / zoom FOVs pass through.
 
-Hands share the **world** frustum (so blocks place on the crosshair). Hor+ lowers
-vertical FOV, which would drop held items onto the hotbar. The viewmodel is
-**scaled on Y** so hands, blocks, and items keep the vanilla gap above the hotbar,
-and **nudged on X** so they stay on screen on extreme 32:9 panels. View-bob is
-scaled with Hor+ zoom so the world does not slide under the crosshair while walking.
+The FOV slider still widens and tightens the view. On 21:9 and 32:9 a normal
+slider position (70) is about 102° across, so the view stays wide. The edges
+are compressed after the world is drawn, which keeps the sides straight. Hands
+stay on the vanilla HUD camera, so the weapon stays in the corner. View-bob is
+scaled with the FOV change so the world does not slide under the crosshair
+while walking.
 
 ## Install
 
@@ -29,28 +30,29 @@ cd client/yap-ultrawide && ./gradlew build
 
 ```json
 {
-  "configVersion": 9,
+  "configVersion": 14,
   "enabled": true,
-  "affectHudFov": true,
+  "affectHudFov": false,
+  "edgeCorrect": 1.0,
   "ultrawide_21_9": {
     "mode": "match_16_9",
-    "targetHorizontalFov": 90.0,
-    "maxHorizontalFov": 90.0,
+    "targetHorizontalFov": 100.0,
+    "maxHorizontalFov": 0.0,
     "fovScale": 1.0,
-    "minVerticalFov": 40.0,
+    "minVerticalFov": 0.0,
     "viewmodelOffsetX": 0.0,
     "viewmodelOffsetY": 0.0,
-    "viewmodelExtraScale": 1.05
+    "viewmodelExtraScale": 1.0
   },
   "superwide_32_9": {
     "mode": "match_21_9",
-    "targetHorizontalFov": 105.0,
-    "maxHorizontalFov": 105.0,
+    "targetHorizontalFov": 110.0,
+    "maxHorizontalFov": 0.0,
     "fovScale": 1.0,
-    "minVerticalFov": 38.0,
-    "viewmodelOffsetX": -0.08,
+    "minVerticalFov": 0.0,
+    "viewmodelOffsetX": 0.0,
     "viewmodelOffsetY": 0.0,
-    "viewmodelExtraScale": 1.22
+    "viewmodelExtraScale": 1.0
   }
 }
 ```
@@ -64,7 +66,8 @@ cd client/yap-ultrawide && ./gradlew build
 
 | Key | Meaning |
 |-----|---------|
-| `affectHudFov` | Hor+ on first-person hands so they share the world frustum. Keep **true**. The mod scales the viewmodel on Y so held items keep the vanilla gap above the hotbar. `false` restores vanilla 70° hands (can look like you are aiming off the crosshair) |
+| `affectHudFov` | Leave **false**. Hands keep the vanilla camera so the weapon stays in the corner. `true` puts Hor+ on the hand camera too |
+| `edgeCorrect` | **1** compresses the edges of the wide view. **0** leaves them rectilinear |
 
 ### Per-band keys
 
@@ -72,19 +75,16 @@ cd client/yap-ultrawide && ./gradlew build
 |-----|---------|
 | `mode` | `match_16_9` · `match_21_9` · `fixed_hfov` |
 | `targetHorizontalFov` | Locked HFOV when mode is `fixed_hfov` |
-| `maxHorizontalFov` | Hard HFOV cap (`0` = off) |
-| `fovScale` | Extra tighten (`0.90`–`1.0`) if edges still stretch |
-| `minVerticalFov` | Floor on vertical FOV so the view never telephotos (hand/world vanishing). `0` = off |
+| `maxHorizontalFov` | Hard HFOV cap. **`0` = off** so the Minecraft FOV slider works |
+| `fovScale` | Extra multiplier on vertical FOV. **`1.0`** leaves the slider alone |
+| `minVerticalFov` | Floor on vertical FOV. **`0` = off** so the slider is not clamped |
 | `viewmodelOffsetX` | Extra hand nudge (negative = left). Stacks on auto aspect offset |
 | `viewmodelOffsetY` | Extra lift after the automatic FOV scale (positive = up). `0` is the vanilla gap above the hotbar |
 | `viewmodelExtraScale` | Multiply hand size (`>1` = bigger on screen) |
 
 ### 75" / dual-4K 32:9 tips
 
-Use `superwide_32_9` only (your panel is detected as that band). Defaults start
-from a **21:9** horizontal match, then cap at **105°** so the edges do not stretch,
-and pull the hand inward. Height above the hotbar follows
-the FOV automatically. If the hand is still clipped on the right: lower
-`viewmodelOffsetX` (e.g. `-0.15`). If it still sits on the hotbar: raise
-`viewmodelOffsetY` (e.g. `0.06`). If edges still fish-eye: drop `maxHorizontalFov`
-toward `95`. If the world feels too zoomed: raise `maxHorizontalFov` toward `115`.
+Use `superwide_32_9` only (your panel is detected as that band). The FOV slider
+still changes the view. At 70 the picture is about 102° across, with the edges
+compressed so the sides stay straight. Raising the slider widens it toward
+115°. Lowering it tightens it toward 90°.

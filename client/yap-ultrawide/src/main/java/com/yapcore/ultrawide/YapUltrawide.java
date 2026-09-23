@@ -20,9 +20,11 @@ public final class YapUltrawide implements ClientModInitializer {
     private static float lastViewmodelOffsetX;
     private static float lastViewmodelOffsetY;
     private static boolean lastHorPlusActive;
+    private static Panini.Frame paniniFrame = Panini.OFF;
 
     @Override
     public void onInitializeClient() {
+        Panini.selfCheck();
         config = UltrawideConfig.load();
         BandSettings u21 = config.ultrawide_21_9;
         BandSettings s32 = config.superwide_32_9;
@@ -49,17 +51,23 @@ public final class YapUltrawide implements ClientModInitializer {
     public static float applyWorld(float vanillaVerticalFov) {
         lastVanillaVfov = vanillaVerticalFov;
         lastHorPlusActive = false;
+        paniniFrame = Panini.OFF;
         float applied = computeHorPlus(vanillaVerticalFov);
         lastAppliedVfov = applied;
-        refreshViewmodelAdjustments(applied, HorPlus.VANILLA_HUD_FOV);
+        if (lastHorPlusActive) {
+            paniniFrame = Panini.solve(applied, lastAspect, config.edgeCorrect);
+        }
+        clearViewmodelAdjustments();
         return applied;
     }
 
+    public static Panini.Frame paniniFrame() {
+        return paniniFrame;
+    }
+
     /**
-     * First-person hand camera. When Hor+ is active, use the <em>world</em>
-     * VFOV so the held item shares the world frustum (block aim matches the
-     * crosshair). {@link #viewmodelVerticalScale()} lifts held items back to
-     * the vanilla gap above the hotbar.
+     * First-person hand camera. Default is the vanilla HUD FOV so the weapon
+     * stays in the corner. {@code affectHudFov} opts into the world Hor+ FOV.
      */
     public static float applyHud(float vanillaHudFov) {
         if (!config.affectHudFov) {
@@ -75,7 +83,7 @@ public final class YapUltrawide implements ClientModInitializer {
             }
             lastAppliedVfov = computed;
         }
-        refreshViewmodelAdjustments(lastAppliedVfov, vanillaHudFov);
+        clearViewmodelAdjustments();
         return lastAppliedVfov;
     }
 
@@ -127,20 +135,6 @@ public final class YapUltrawide implements ClientModInitializer {
         lastViewmodelOffsetY = 0.0f;
     }
 
-    private static void refreshViewmodelAdjustments(float worldVfov, float hudVfov) {
-        if (!lastHorPlusActive) {
-            clearViewmodelAdjustments();
-            return;
-        }
-        BandSettings band = config.forBand(lastBand);
-        float scale = HorPlus.viewmodelScale(worldVfov, hudVfov) * band.viewmodelExtraScale;
-        lastViewmodelScale = Math.max(0.55f, Math.min(1.55f, scale));
-        lastViewmodelVerticalScale = HorPlus.viewmodelVerticalScale(worldVfov, hudVfov);
-        lastViewmodelOffsetX = HorPlus.autoViewmodelOffsetX(lastAspect) + band.viewmodelOffsetX;
-        // Vertical placement is the Y scale. A translate here stacks on top of it.
-        lastViewmodelOffsetY = band.viewmodelOffsetY;
-    }
-
     private static float computeHorPlus(float vanillaVerticalFov) {
         UltrawideConfig cfg = config;
         if (!cfg.enabled || vanillaVerticalFov <= HorPlus.ZOOM_PASSTHROUGH_MAX) {
@@ -169,12 +163,13 @@ public final class YapUltrawide implements ClientModInitializer {
 
         BandSettings bandCfg = cfg.forBand(band);
         float vfov;
-        if (bandCfg.match21x9()) {
-            vfov = HorPlus.match21x9(vanillaVerticalFov, aspect);
-        } else if (bandCfg.match16x9()) {
-            vfov = HorPlus.match16x9(vanillaVerticalFov, aspect);
-        } else {
+        if (!bandCfg.match16x9() && !bandCfg.match21x9()) {
             vfov = HorPlus.verticalForTargetHorizontal(bandCfg.targetHorizontalFov, aspect);
+        } else {
+            // Wide field from the slider. The edge pass compresses the sides
+            // so this stays straight while the view stays wide.
+            vfov = HorPlus.verticalForTargetHorizontal(
+                    HorPlus.comfortableHorizontal(vanillaVerticalFov), aspect);
         }
 
         if (bandCfg.fovScale != 1.0f) {

@@ -3,7 +3,7 @@
   "id": "yap-ultrawide",
   "version": "${version}",
   "name": "YaP Ultrawide",
-  "description": "Hor+ FOV for 21:9 and 32:9. Client-only; join YaPcore / Folia with Fabric.",
+  "description": "Wide ultrawide view with straight edges for 21:9 and 32:9. Client-only; join YaPcore / Folia with Fabric.",
   "authors": [
     "YaP Labs"
   ],

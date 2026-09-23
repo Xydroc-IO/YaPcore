@@ -20,16 +20,20 @@ import java.nio.file.Path;
 public final class UltrawideConfig {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     /** Bumped when defaults change in a way that should rewrite existing configs. */
-    private static final int CURRENT_VERSION = 9;
+    private static final int CURRENT_VERSION = 14;
 
     public int configVersion = 0;
     public boolean enabled = true;
     /**
-     * Apply world Hor+ VFOV to first-person hands so the held item shares the
-     * world frustum (block aim matches the crosshair). Viewmodel scale keeps
-     * weapons on screen.
+     * When false, first-person hands keep the vanilla HUD camera so the weapon
+     * stays in the corner. World Hor+ does not move the viewmodel.
      */
-    public boolean affectHudFov = true;
+    public boolean affectHudFov = false;
+    /**
+     * 0 leaves the edges rectilinear. 1 compresses them (Panini) so wide FOV
+     * bows less. The FOV slider still sets the center of the view.
+     */
+    public float edgeCorrect = 1.0f;
 
     /** 21:9 ultrawide (≈1.90–2.80: 2560×1080, 3440×1440, …). */
     public BandSettings ultrawide_21_9;
@@ -90,6 +94,10 @@ public final class UltrawideConfig {
 
         ultrawide_21_9.normalize();
         superwide_32_9.normalize();
+        if (Float.isNaN(edgeCorrect)) {
+            edgeCorrect = 1.0f;
+        }
+        edgeCorrect = Math.max(0.0f, Math.min(1.0f, edgeCorrect));
 
         if (configVersion < CURRENT_VERSION) {
             // v1 wrote affectHudFov=true without viewmodel scale (hands zoomed off-screen).
@@ -192,6 +200,63 @@ public final class UltrawideConfig {
                 YapUltrawide.LOGGER.info(
                         "v9: HFOV caps 21:9=90° / 32:9=105° (cap wins over the vertical floor)");
             }
+            // v10: caps and the vertical floor ignored the FOV slider and zoomed
+            // the world. Viewmodel scale pulled the weapon onto the hotbar.
+            if (configVersion < 10) {
+                affectHudFov = false;
+                if (ultrawide_21_9 != null) {
+                    ultrawide_21_9.mode = "match_16_9";
+                    ultrawide_21_9.maxHorizontalFov = 0.0f;
+                    ultrawide_21_9.fovScale = 1.0f;
+                    ultrawide_21_9.minVerticalFov = 0.0f;
+                    ultrawide_21_9.viewmodelOffsetX = 0.0f;
+                    ultrawide_21_9.viewmodelOffsetY = 0.0f;
+                    ultrawide_21_9.viewmodelExtraScale = 1.0f;
+                }
+                if (superwide_32_9 != null) {
+                    superwide_32_9.mode = "match_21_9";
+                    superwide_32_9.maxHorizontalFov = 0.0f;
+                    superwide_32_9.fovScale = 1.0f;
+                    superwide_32_9.minVerticalFov = 0.0f;
+                    superwide_32_9.viewmodelOffsetX = 0.0f;
+                    superwide_32_9.viewmodelOffsetY = 0.0f;
+                    superwide_32_9.viewmodelExtraScale = 1.0f;
+                }
+                YapUltrawide.LOGGER.info(
+                        "v10: FOV slider drives Hor+ (no cap); hands stay on the vanilla camera");
+            }
+            // v11: edge bow is the projection, not a FOV cap. Panini compresses
+            // the edges; the slider still sets the center.
+            if (configVersion < 11) {
+                edgeCorrect = 1.0f;
+                YapUltrawide.LOGGER.info(
+                        "v11: edge correction on (FOV slider still sets the center)");
+            }
+            // v12: the edge pass did not remove the bow, so any slider above
+            // the bottom still stretched. Keep the slider, hold horizontal
+            // FOV in the straight range.
+            if (configVersion < 12) {
+                edgeCorrect = 0.0f;
+                affectHudFov = false;
+                YapUltrawide.LOGGER.info(
+                        "v12: slider maps to a 75–105° horizontal field (edges stay straight)");
+            }
+            // v13: 75–105° was still wide enough to stretch the sides. 64°
+            // across is the picture that stayed straight.
+            if (configVersion < 13) {
+                edgeCorrect = 0.0f;
+                affectHudFov = false;
+                YapUltrawide.LOGGER.info(
+                        "v13: slider 70 is 64° across; slider still moves 50–78°");
+            }
+            // v14: the straight picture was a zoom. Keep a wide field and
+            // compress the edges so the sides stay straight.
+            if (configVersion < 14) {
+                edgeCorrect = 1.0f;
+                affectHudFov = false;
+                YapUltrawide.LOGGER.info(
+                        "v14: wide slider field, edges compressed (hands stay vanilla)");
+            }
             configVersion = CURRENT_VERSION;
         }
 
@@ -241,6 +306,7 @@ public final class UltrawideConfig {
         out.configVersion = configVersion;
         out.enabled = enabled;
         out.affectHudFov = affectHudFov;
+        out.edgeCorrect = edgeCorrect;
         out.ultrawide_21_9 = ultrawide_21_9;
         out.superwide_32_9 = superwide_32_9;
         return out;

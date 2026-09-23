@@ -59,6 +59,17 @@ public final class HorPlus {
         return verticalFromHorizontal(targetHorizontalDegrees, aspect);
     }
 
+    /**
+     * Wide horizontal field for the FOV slider. Edges are compressed after
+     * the world is drawn, so this width stays straight. Slider 30 → 90°,
+     * slider 70 → 102°, slider 110 → 115°.
+     */
+    public static float comfortableHorizontal(float sliderVerticalDegrees) {
+        float slider = Math.max(30.0f, Math.min(110.0f, sliderVerticalDegrees));
+        float t = (slider - 30.0f) / 80.0f;
+        return 90.0f + t * 25.0f;
+    }
+
     /** Clamp resulting VFOV so horizontal FOV never exceeds {@code maxHfov}. */
     public static float clampHorizontal(float verticalDegrees, float aspect, float maxHfov) {
         if (maxHfov <= 0.0f) {
