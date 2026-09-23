@@ -15,6 +15,8 @@ import com.yapcore.dungeons.listener.DungeonListener;
 import com.yapcore.dungeons.loot.LootService;
 import com.yapcore.dungeons.loot.LootTable;
 import com.yapcore.dungeons.papi.DungeonsPlaceholders;
+import com.yapcore.dungeons.portal.DungeonPortalRegistry;
+import com.yapcore.dungeons.portal.DungeonPortalVisuals;
 import com.yapcore.dungeons.portal.PortalItems;
 import com.yapcore.dungeons.portal.PortalStructure;
 import com.yapcore.dungeons.portal.PortalStructureTags;
@@ -22,6 +24,7 @@ import com.yapcore.dungeons.service.DungeonInstanceManager;
 import com.yapcore.dungeons.service.DungeonServiceImpl;
 import com.yapcore.dungeons.service.DungeonWorldOps;
 import com.yapcore.mmo.SkillServices;
+import com.yapcore.sched.YapSched;
 import com.yapcore.world.WorldServices;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.ServicePriority;
@@ -83,6 +86,22 @@ public final class DungeonsPlugin extends JavaPlugin {
 
         instances.recoverOrphans();
         instances.startGcTimer();
+        if (config.structureEnabled()) {
+            final int[] pulse = {0};
+            YapSched.globalTimer(this, () -> {
+                if (DungeonPortalRegistry.all().isEmpty()) {
+                    return;
+                }
+                float spin = (float) ((pulse[0]++ % 10) * (Math.PI * 2.0 / 10.0));
+                for (PortalStructure.Frame frame : DungeonPortalRegistry.all()) {
+                    int midAlong = frame.minAlong() + (frame.sizeAlong() / 2);
+                    int midX = frame.axis() == org.bukkit.Axis.X ? midAlong : frame.fixed();
+                    int midZ = frame.axis() == org.bukkit.Axis.X ? frame.fixed() : midAlong;
+                    YapSched.region(this, frame.world(), midX, midZ,
+                            () -> DungeonPortalVisuals.spin(frame, spin));
+                }
+            }, 20L, 5L);
+        }
         getLogger().info("YaPDungeons ready — activeRuns=" + dungeonService.activeRuns().size());
     }
 

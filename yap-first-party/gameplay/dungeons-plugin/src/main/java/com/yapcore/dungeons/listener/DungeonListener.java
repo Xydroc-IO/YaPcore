@@ -4,7 +4,7 @@ import com.yapcore.claims.ClaimLookups;
 import com.yapcore.dungeons.DungeonsConfig;
 import com.yapcore.dungeons.gen.DungeonCarver;
 import com.yapcore.dungeons.gui.DungeonMenu;
-import com.yapcore.dungeons.portal.DungeonPortalVisuals;
+import com.yapcore.dungeons.portal.DungeonPortalRegistry;
 import com.yapcore.dungeons.portal.PortalItems;
 import com.yapcore.dungeons.portal.PortalStructure;
 import com.yapcore.dungeons.portal.PortalStructureTags;
@@ -155,6 +155,7 @@ public final class DungeonListener implements Listener {
             if (frame.isPresent() && structure.contains(frame.get(), block, 1)) {
                 event.setCancelled(true);
                 structure.ensureWalkable(frame.get());
+                DungeonPortalRegistry.register(frame.get());
                 if (denyClaimedPortal(player, block.getLocation())) {
                     return;
                 }
@@ -176,6 +177,7 @@ public final class DungeonListener implements Listener {
                 if (fr.isPresent() && structure.contains(fr.get(), block, 1)) {
                     event.setCancelled(true);
                     structure.ensureWalkable(fr.get());
+                    DungeonPortalRegistry.register(fr.get());
                     if (denyClaimedPortal(player, block.getLocation())) {
                         return;
                     }
@@ -209,6 +211,8 @@ public final class DungeonListener implements Listener {
         PortalStructure.Frame frame = complete.get();
         if (structureTags.isKeystone(frame.keystone())
                 || structureTags.findNearbyKeystone(frame.keystone(), 1).isPresent()) {
+            structure.ensureWalkable(frame);
+            DungeonPortalRegistry.register(frame);
             player.sendMessage("§7Dungeon portal is active — walk through to pick a level.");
             return;
         }
@@ -221,10 +225,12 @@ public final class DungeonListener implements Listener {
         }
         structure.fillInterior(frame);
         structureTags.installKeystone(frame, player.getUniqueId());
+        structure.fillInterior(frame); // keystone is on the frame; keep opening air + swirl
+        DungeonPortalRegistry.register(frame);
         if (player.getGameMode() != GameMode.CREATIVE) {
             used.setAmount(used.getAmount() - 1);
         }
-        player.sendMessage("§aDungeon portal activated! §7Right-click the lime glass to pick a level.");
+        player.sendMessage("§aDungeon portal activated! §7Walk through (or right-click the frame) to pick a level.");
     }
 
     private static String pretty(Material material) {
@@ -292,7 +298,25 @@ public final class DungeonListener implements Listener {
             return;
         }
         structureTags.deactivate(keystone.get(), structure);
+        frame.ifPresent(DungeonPortalRegistry::unregister);
         player.sendMessage("§7Dungeon portal deactivated.");
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onChunkLoad(org.bukkit.event.world.ChunkLoadEvent event) {
+        if (!config.enabled() || !config.structureEnabled()) {
+            return;
+        }
+        for (org.bukkit.block.BlockState state : event.getChunk().getTileEntities()) {
+            Block block = state.getBlock();
+            if (block.getType() != Material.END_PORTAL_FRAME || !structureTags.isKeystone(block)) {
+                continue;
+            }
+            structureTags.frameFromKeystone(block).ifPresent(frame -> {
+                DungeonPortalRegistry.register(frame);
+                structure.ensureWalkable(frame);
+            });
+        }
     }
 
     @EventHandler
@@ -445,11 +469,13 @@ public final class DungeonListener implements Listener {
         if (denyClaimedPortal(player, probe)) {
             return true;
         }
-        // Lit crying frame without YaP keystone still must not go to the Nether
-        boolean keyed = structureTags.isKeystone(frame.get().keystone())
+        // Registry means already activated — skip TileState on the move hot path when possible
+        boolean keyed = DungeonPortalRegistry.at(probe).isPresent()
+                || structureTags.isKeystone(frame.get().keystone())
                 || structureTags.findNearbyKeystone(frame.get().keystone(), 1).isPresent();
         if (keyed) {
             structure.ensureWalkable(frame.get());
+            DungeonPortalRegistry.register(frame.get());
         }
         if (!keyed) {
             player.sendMessage("§eDungeon frame detected. §7Right-click the frame with an §fEnder Eye §7to activate.");
@@ -459,6 +485,9 @@ public final class DungeonListener implements Listener {
             player.sendMessage("§cYou are already in a dungeon. Use §e/dungeon leave §cfirst.");
             return true;
         }
+        plugin.getLogger().info("Dungeon portal walk-in " + player.getName()
+                + " at " + probe.getBlockX() + "," + probe.getBlockY() + "," + probe.getBlockZ());
+        player.sendMessage("§7Opening dungeon menu…");
         menu.open(player, 0);
         return true;
     }
@@ -466,6 +495,10 @@ public final class DungeonListener implements Listener {
     private Optional<PortalStructure.Frame> dungeonFrameAt(Location loc) {
         if (loc == null || loc.getWorld() == null) {
             return Optional.empty();
+        }
+        Optional<PortalStructure.Frame> registered = DungeonPortalRegistry.at(loc);
+        if (registered.isPresent()) {
+            return registered;
         }
         Block block = loc.getBlock();
         int radius = Math.max(structure.outerWidth(), structure.outerHeight());
@@ -476,8 +509,9 @@ public final class DungeonListener implements Listener {
         if (keystone.isPresent()) {
             Optional<PortalStructure.Frame> fromKey = structureTags.frameFromKeystone(keystone.get());
             if (fromKey.isPresent()
-                    && (structure.contains(fromKey.get(), block, 1)
-                    || structure.contains(fromKey.get(), block.getRelative(0, -1, 0), 1))) {
+                    && (structure.contains(fromKey.get(), block, 4)
+                    || structure.contains(fromKey.get(), block.getRelative(0, -1, 0), 4))) {
+                DungeonPortalRegistry.register(fromKey.get());
                 return fromKey;
             }
         }

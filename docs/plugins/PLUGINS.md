@@ -774,7 +774,7 @@ Per-level **mining / strength** floors ship in `plugins/YaPDungeons/dungeons/gat
 ## Player loop
 
 1. **Craftable portal:** craft a Dungeon Portal item, place it, right-click → **level picker GUI** (unlocked levels only).
-2. **Buildable portal (base):** build a standing **4×5** crying obsidian frame (like a nether portal). When complete you get a chat tip — right-click any frame block with an **Ender Eye** to activate. Lit interiors use **lime** portal glass + disc (resource pack). **Walk through** to open the level picker (vanilla nether hop is cancelled only for this tagged frame).
+2. **Buildable portal (base):** build a standing **4×5** crying obsidian frame (like a nether portal). When complete you get a chat tip — right-click any frame block with an **Ender Eye** to activate. Lit openings stay **air** with **lime** swirling pack visuals (not a real nether portal). **Walk through** to open the level picker (vanilla nether hop is cancelled only for this tagged frame).
 3. Or `/dungeon` / `/dungeon open` from anywhere (same GUI).
 4. Click an unlocked level → instance generates into an ephemeral `yd_*` world.
 5. Invite with `/dungeon invite <player>`; they `/dungeon accept <prefix>`.
@@ -789,7 +789,7 @@ Outer **4 wide × 5 tall** crying obsidian (inner opening **2×3**), facing nort
 
 | Portal type | Materials |
 |-------------|-----------|
-| Buildable frame | Crying obsidian (frame) + 1 Ender Eye to activate (purple glass fill — not a real nether portal) |
+| Buildable frame | Crying obsidian (frame) + 1 Ender Eye to activate (air opening + lime swirling pack visuals — not a real nether portal) |
 | Craftable item | 4 Obsidian + 2 Deepslate + 3 Ender Eyes (3×3 recipe) |
 
 Staff: `/yapdungeons giveportal [player]`.

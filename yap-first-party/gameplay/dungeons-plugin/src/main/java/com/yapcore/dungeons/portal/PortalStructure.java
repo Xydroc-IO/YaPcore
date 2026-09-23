@@ -315,38 +315,38 @@ public final class PortalStructure {
     }
 
     /**
-     * Place animated lime glass (pack swirl) so the portal is visibly lit.
-     * Right-click the frame or glass to open the level picker.
+     * Always air — never place solid glass or {@link Material#NETHER_PORTAL}.
+     * Visuals are {@link DungeonPortalVisuals} BlockDisplays (no collision).
      */
     public void fillInterior(Frame frame) {
-        Material fill = interiorMaterial.isSolid() ? interiorMaterial : Material.LIME_STAINED_GLASS;
         for (Block b : frame.interiorBlocks()) {
-            b.setType(fill, false);
+            b.setType(Material.AIR, false);
         }
-        // Real glass carries the pack flipbook; clear any leftover displays
-        DungeonPortalVisuals.clearFace(frame);
+        DungeonPortalVisuals.spawnFace(frame);
     }
 
-    /** Repair already-lit frames (strip nether portal leftovers; restore lime glass). */
+    /** Repair already-lit frames (strip solid glass / nether portal leftovers). */
     public void ensureWalkable(Frame frame) {
         boolean dirty = false;
         for (Block b : frame.interiorBlocks()) {
             Material t = b.getType();
-            if (t == Material.NETHER_PORTAL || t.isAir()
-                    || (t != interiorMaterial && !isStainedGlass(t))) {
+            if (t.isSolid() || t == Material.NETHER_PORTAL) {
                 dirty = true;
                 break;
             }
         }
         if (dirty) {
             fillInterior(frame);
+        } else {
+            DungeonPortalVisuals.spawnFace(frame);
         }
     }
 
     public void clearInterior(Frame frame) {
+        DungeonPortalVisuals.clearFace(frame);
         for (Block b : frame.interiorBlocks()) {
             Material t = b.getType();
-            if (t == interiorMaterial || t == Material.NETHER_PORTAL || isStainedGlass(t)) {
+            if (t == Material.NETHER_PORTAL || isStainedGlass(t) || t == interiorMaterial) {
                 b.setType(Material.AIR, false);
             }
         }

@@ -16,8 +16,13 @@ final class LocationTeleport {
             return;
         }
         YapSched.entity(plugin, player, () -> {
-            player.teleport(ent);
-            player.sendMessage("§aJoined dungeon L" + run.dungeonLevel());
+            player.teleportAsync(ent).thenAccept(ok -> YapSched.entity(plugin, player, () -> {
+                if (Boolean.TRUE.equals(ok)) {
+                    player.sendMessage("§aJoined dungeon L" + run.dungeonLevel());
+                } else {
+                    player.sendMessage("§cCould not teleport into the dungeon.");
+                }
+            }));
         });
     }
 }

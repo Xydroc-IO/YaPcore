@@ -136,6 +136,8 @@ public final class DungeonInstanceManager {
         return worlds.createFlat(worldName, seed).thenCompose(ok -> {
             if (!ok) {
                 forget(run);
+                YapSched.entity(plugin, leader, () ->
+                        leader.sendMessage("§cCould not create dungeon world — Folia world create failed. Try again."));
                 return CompletableFuture.completedFuture(Optional.empty());
             }
             try {
@@ -146,6 +148,8 @@ public final class DungeonInstanceManager {
             World world = Bukkit.getWorld(worldName);
             if (world == null) {
                 forget(run);
+                YapSched.entity(plugin, leader, () ->
+                        leader.sendMessage("§cDungeon world missing after create. Try again."));
                 return CompletableFuture.completedFuture(Optional.empty());
             }
             DifficultyTable.LevelDiff diff = difficulty.get(level);
@@ -170,16 +174,25 @@ public final class DungeonInstanceManager {
                         YapSched.entity(plugin, leader, () -> {
                             Location ent = run.entrance();
                             if (ent != null) {
-                                leader.teleport(ent);
+                                leader.teleportAsync(ent).thenAccept(tpOk -> YapSched.entity(plugin, leader, () -> {
+                                    if (!Boolean.TRUE.equals(tpOk)) {
+                                        leader.sendMessage("§cDungeon ready but teleport failed — try §e/dungeon leave§c.");
+                                        return;
+                                    }
+                                    leader.sendMessage("§aDungeon ready. Invite friends with §e/dungeon invite <player>");
+                                    run.setState(DungeonRunState.ACTIVE);
+                                }));
+                            } else {
+                                leader.sendMessage("§cDungeon generated without an entrance.");
                             }
-                            leader.sendMessage("§aDungeon ready. Invite friends with §e/dungeon invite <player>");
-                            run.setState(DungeonRunState.ACTIVE);
                         });
                         return Optional.of(run);
                     })
                     .exceptionally(ex -> {
                         plugin.getLogger().log(Level.SEVERE, "generation failed", ex);
                         cleanup(runId, "gen-fail");
+                        YapSched.entity(plugin, leader, () ->
+                                leader.sendMessage("§cDungeon generation failed."));
                         return Optional.empty();
                     });
         });
@@ -210,7 +223,7 @@ public final class DungeonInstanceManager {
             Player p = Bukkit.getPlayer(playerId);
             if (p != null) {
                 World fb = Bukkit.getWorlds().getFirst();
-                YapSched.entity(plugin, p, () -> p.teleport(fb.getSpawnLocation()));
+                YapSched.entity(plugin, p, () -> p.teleportAsync(fb.getSpawnLocation()));
             }
         }
         if (run.leader().equals(playerId) || run.members().isEmpty()) {
@@ -273,7 +286,7 @@ public final class DungeonInstanceManager {
         }
         Location ent = run.entrance();
         if (ent != null) {
-            YapSched.entity(plugin, player, () -> player.teleport(ent));
+            YapSched.entity(plugin, player, () -> player.teleportAsync(ent));
         }
     }
 
@@ -310,7 +323,7 @@ public final class DungeonInstanceManager {
             Player p = Bukkit.getPlayer(id);
             if (p != null && p.getWorld().getName().equals(run.worldName())) {
                 World fb = Bukkit.getWorlds().getFirst();
-                YapSched.entity(plugin, p, () -> p.teleport(fb.getSpawnLocation()));
+                YapSched.entity(plugin, p, () -> p.teleportAsync(fb.getSpawnLocation()));
             }
         }
         byWorld.remove(run.worldName());

@@ -75,13 +75,20 @@ public final class DungeonWorldOps {
                     for (Player p : world.getPlayers()) {
                         World fb = Bukkit.getWorlds().stream().filter(w -> !w.equals(world)).findFirst().orElse(null);
                         if (fb != null) {
-                            p.teleport(fb.getSpawnLocation());
+                            p.teleportAsync(fb.getSpawnLocation());
                         }
                     }
-                    Bukkit.unloadWorld(world, false);
+                    try {
+                        Bukkit.unloadWorld(world, false);
+                    } catch (UnsupportedOperationException uoe) {
+                        // Folia still stubs unload — leave empty world loaded
+                        plugin.getLogger().warning("Folia cannot unload " + worldName + " — left loaded empty");
+                        future.complete(true);
+                        return;
+                    }
                 }
                 Path folder = plugin.getServer().getWorldContainer().toPath().resolve(worldName);
-                if (Files.exists(folder)) {
+                if (Files.exists(folder) && Bukkit.getWorld(worldName) == null) {
                     try (var walk = Files.walk(folder)) {
                         walk.sorted(Comparator.reverseOrder()).forEach(p -> {
                             try {
